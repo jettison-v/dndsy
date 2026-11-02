@@ -1,4 +1,5 @@
 {# Side panel for one number at the top of Battle / Character: what it means and how it adds up. #}
+{% from "_char.html" import roll_attrs %}
 {% set s = sheet %}
 {% macro sum(parts, total, unit="", signed=true) -%}
 <div class="table-scroll"><table class="calc">
@@ -39,6 +40,7 @@
     <h3>What it means</h3>
     {{ explain("How far you can move on your turn, and you can split it up around your action. The Dash action gives you extra movement equal to your Speed. Difficult Terrain costs 1 extra foot per foot, and being Grappled or Restrained makes it 0.") }}
   {% elif kind == "initiative" %}
+    <div class="row tight mb-3"><button type="button" class="btn small primary" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }}>Roll</button></div>
     <h3>How it adds up</h3>
     {{ sum(s.initiative_parts or [("Initiative", s.initiative | int)], s.initiative) }}
     <h3>What it means</h3>

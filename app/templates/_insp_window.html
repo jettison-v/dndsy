@@ -1,0 +1,15 @@
+{# Heroic Inspiration's window, inside the roll window (app.js "using an item"; app/resources.py): the question is the
+   confirmation, and the change goes to D&D Beyond through the bridge. #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">Heroic Inspiration</div>
+<p class="use-cost">{{ c.name }} {{ "has it" if have else "doesn't have it" }}</p>
+{% if reachable %}
+<div class="rw-row">
+  <button type="button" class="btn primary small" data-use-go data-to="{{ 'spend' if have else 'gain' }}">{{ "Spend it" if have else "Give it" }}</button>
+  <button type="button" class="btn link small" data-use-close>{{ "Keep it" if have else "Cancel" }}</button>
+</div>
+<p class="use-said" role="alert" hidden></p>
+{% else %}
+<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to change this here, or change it on D&amp;D Beyond (askdnd shows it within seconds).</p>
+{% endif %}
+<button type="button" class="btn link small" data-panel-url="/characters/{{ c.id }}/vital/inspiration" tabindex="0">What it does</button>

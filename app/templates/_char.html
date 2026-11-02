@@ -203,15 +203,16 @@
   {{ hp_tile(s, c, change=change_hp) }}
   <div {{ tile(c, "ac") }}><small>Armor class</small><b>{{ s.armor_class }}</b></div>
   <div {{ tile(c, "speed") }}><small>Speed</small><b>{{ s.speed.walk }} ft</b>{% set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}{% if extra %}<span class="note"> {% for k, v in extra %}{{ k }} {{ v }}{{ ", " if not loop.last }}{% endfor %}</span>{% endif %}</div>
-  <div {{ tile(c, "initiative") }}><small>Initiative</small><b>{{ s.initiative }}</b>{{ adv(s.initiative_adv) }}<button type="button" class="roll-chip tile-roll" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">Roll</button></div>
+  <div {{ tile(c, "initiative") }}><small>Initiative</small><button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">{{ s.initiative }}</button>{{ adv(s.initiative_adv) }}</div>
   {% for sc in s.spellcasting[:1] %}<div {{ tile(c, "spell") }}><small><span class="tile-full">Spell DC / attack</span><span class="tile-short">Spell DC</span></small><b>{{ sc.save_dc }}</b><span class="note"> / {{ sc.attack }}</span></div>{% endfor %}
 </div>
 {%- endmacro %}
 
 {# Heroic Inspiration on Battle (Brett, 2026-11-01, docs/mockups/battle-band/): with what you can spend, a star filled and gold
    when you have it, hollow and grey when you don't. #}
-{% macro insp_mark(s, c, cls="") -%}
-<span class="res res-insp{{ ' on' if s.inspiration }} {{ cls }}" {{ tile(c, "inspiration") }} title="Heroic Inspiration: {{ 'you have it' if s.inspiration else 'not right now' }}"><svg width="14" height="14" viewBox="0 0 24 24" fill="{{ 'currentColor' if s.inspiration else 'none' }}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 3 1.1-6.3L3 9.7l6.2-.9z"/></svg>Insp.</span>
+{% macro insp_mark(s, c, change=false) -%}
+{%- set word = 'Heroic Inspiration: ' ~ ('you have it' if s.inspiration else 'not right now') -%}
+{%- if change %}<button type="button" class="res res-insp{{ ' on' if s.inspiration }}" data-use-url="/characters/{{ c.id }}/inspiration" {{ mark(c, "inspiration") }}{{ sync(s, "inspiration") }} aria-label="{{ word }}" title="{{ word }}">{% else %}<span class="res res-insp{{ ' on' if s.inspiration }}" {{ tile(c, "inspiration") }} aria-label="{{ word }}" title="{{ word }}">{% endif %}<svg width="18" height="18" viewBox="0 0 24 24" fill="{{ 'currentColor' if s.inspiration else 'none' }}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1.1 6.3L12 17.5l-5.6 3 1.1-6.3L3 9.7l6.2-.9z"/></svg>Insp.{% if change %}</button>{% else %}</span>{% endif %}
 {%- endmacro %}
 
 {# The six saves as tiles, styled like the Character page's ability cards: green ● when

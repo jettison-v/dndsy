@@ -133,6 +133,26 @@ def test_minus_on_hit_points_is_click_type_enter(chrome, server):
     page.wait_for_function("!document.querySelector('.roll-win input[name=amount]')", timeout=5000)
 
 
+def test_inspiration_asks_first_and_undo_takes_it_back(chrome, server):
+    """Brett, 2026-11-01: the star opens a question, and nothing changes until it's answered."""
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    page.bring_to_front()
+    page.click(".res-row .res-insp")
+    page.locator(".roll-win [data-use-close]").click(timeout=5000)
+    assert page.locator("#cards > .card", has_text="Heroic Inspiration").count() == 0
+    page.click(".res-row .res-insp")
+    page.locator(".roll-win [data-use-go]").click(timeout=5000)
+    card = page.locator("#cards > .card", has_text="Heroic Inspiration")
+    card.wait_for(timeout=5000)
+    card.locator(".card-act").click()
+    page.locator("#cards > .card", has_text="Heroic Inspiration").nth(1).wait_for(timeout=5000)
+
+
 def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server):
     """Brett, 2026-10-31 (docs/mockups/usability/): the slot is spent and the roll opens, at the table by default."""
     page = chrome.pages[0]

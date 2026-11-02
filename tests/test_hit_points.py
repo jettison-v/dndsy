@@ -202,3 +202,28 @@ def test_minus_and_plus_on_battles_tile_open_the_small_window(player, dm, db, sh
     small = player.get(f"/characters/{cole.id}/hp?mode=heal&quick=1").text
     assert 'class="rp-x"' in small and "peek-head" not in small and "autofocus" in small and 'value="heal" checked' in small
 
+
+def test_inspiration_is_spent_and_given_through_the_bridge_with_a_question_first(player, dm, db, sheet):
+    """Brett, 2026-11-01: the star asks first, then changes it on D&D Beyond; the DM can give it too."""
+    cole = char(db, "Cole")
+    assert f'data-use-url="/characters/{cole.id}/inspiration"' in player.get(f"/characters/{cole.id}/battle").text
+    window = player.get(f"/characters/{cole.id}/inspiration").text
+    assert "Give it" in window or "Spend it" in window
+    have = "Spend it" in window
+    assert player.post(f"/characters/{cole.id}/inspiration", data={"to": "gain" if have else "spend"}).status_code == 409  # already so
+    done = player.post(f"/characters/{cole.id}/inspiration", data={"to": "spend" if have else "gain"})
+    assert done.status_code == 200 and done.json()["undo"] == {"to": "gain" if have else "spend"}
+    intent = db.scalars(select(BridgeIntent)).all()[-1]
+    assert intent.kind == "set" and intent.data["field"] == "inspiration" and intent.data["value"] is (not have)
+    set_role(db, "dm@example.com")
+    assert dm.get(f"/characters/{cole.id}/inspiration").status_code == 200
+
+
+def test_without_a_reachable_sheet_inspiration_stays_as_it_is(player, db, sheet):
+    """Decided 2026-10-28: a change for D&D Beyond is taken only while the sheet can be reached."""
+    cole = char(db, "Cole")
+    cole.sheet_heard_at = None
+    db.commit()
+    assert "can't be reached" in player.get(f"/characters/{cole.id}/inspiration").text
+    assert player.post(f"/characters/{cole.id}/inspiration", data={"to": "gain"}).status_code == 409
+

@@ -186,9 +186,10 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { 
 .cond-rest { display: inline-flex; align-items: center; min-height: var(--chip-h); padding: 0 var(--sp-3); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--r-pill); color: var(--muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
 .cond-rest:hover { color: var(--text); border-color: var(--muted); }
 .res-row > .cond-rest { margin-left: auto; }  /* Rest ends Resources, at the far right */
-.res-row .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--faint); cursor: pointer; }
-.res-insp:hover { color: var(--text); }
-.res-insp.on { color: var(--amber); font-weight: 600; }
+/* Heroic Inspiration: a chip you can press, lit when you have it, grey and hollow when you don't */
+.res-row .res.res-insp, .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--chip-h); margin-left: var(--sp-3); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font: 600 var(--fs-md)/1 var(--sans); cursor: pointer; }
+.res-insp:hover, .res-insp:focus-visible { color: var(--text); border-color: var(--muted); }
+.res-row .res.res-insp.on, .res-insp.on { color: var(--amber); border-color: var(--amber); background: var(--amber-soft); }
 .status-phone { display: none; }
 /* Party's rows, while a fight runs (Brett, 2026-10-31, docs/mockups/usability/) */
 .pt-view { display: inline-flex; gap: 2px; padding: 2px; margin-bottom: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); }
@@ -1245,6 +1246,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .roll-chip { font: inherit; font-size: var(--fs-xs); font-weight: 600; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 0 8px; margin-left: 4px; cursor: pointer; vertical-align: middle; }
 .roll-chip:hover, .roll-chip:focus-visible { color: var(--amber); border-color: var(--amber); }
 .tile-roll { float: right; margin-top: 4px; }
+.roll-hit.tile-hit { display: block; font-size: var(--fs-lg); line-height: 1.3; }  /* Initiative's number is its roll, like an attack's to-hit */
 .st[data-roll], .save-row[data-roll] { cursor: pointer; }
 .st[data-roll]:hover { box-shadow: inset 0 0 0 1px var(--amber); }
 .save-row[data-roll]:hover b { color: var(--amber); }
@@ -2492,8 +2494,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
   .battle-head > .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 0; border: none; }
   .battle-head .st .adv-badge { position: absolute; order: 0; background: var(--bg); }
   .status-phone { display: contents; }
-  .status-phone .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--chip-h); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font-size: var(--fs-sm); }
-  .status-phone .res-insp.on { color: var(--amber); border-color: var(--amber); }
+  .status-phone .res-insp { margin-left: 0; }
   .battlebar > .res-more { order: 2; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: var(--control-h-sm); margin-top: var(--sp-2); padding: 0 var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; cursor: pointer; }
   .battlebar > .res-row { order: 3; display: none; margin: var(--sp-2) 0 0; }
   body.res-open .battlebar > .res-row { display: flex; }

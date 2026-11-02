@@ -2171,6 +2171,8 @@
     if (win && win.contains(e.target)) {
       if (e.target.closest('.rp-x')) { closeWin(); return; }
       if (e.target.closest('[data-use-go]')) { useItem(e.target.closest('[data-use-go]')); return; }
+      if (e.target.closest('[data-use-close]')) { closeWin(); return; }
+      if (e.target.closest('[data-panel-url]')) { setTimeout(closeWin); return; }  // (the side panel opens from its own click)
       if (e.target.closest('[data-use-give]')) {
         const names = win.querySelector('.use-names');
         names.hidden = !names.hidden;
