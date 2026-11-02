@@ -59,6 +59,12 @@ Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the b
 | `close-after-roll` | Repeats closing a sheet right after a roll, at different moments |
 | `hit-points` | Damage and healing in askdnd land on the real sheet and are confirmed |
 | `condition` | A condition started and ended in askdnd lands on and leaves the real sheet |
+| `cast`, `resource`, `coins`, `rests` | Slots, uses, coins and rests made in askdnd land on the real sheet and are put back |
+| `temp-hp`, `death-saves`, `inspiration`, `exhaustion`, `inventory` | Temporary Hit Points, death saves, Heroic Inspiration, Exhaustion and items made in askdnd land on the real sheet and are put back |
+
+The full list, and what each must do, is in [live-test-plan.md](live-test-plan.md). Part 1 also runs every night at 4:00 (live-test-plan.md › Every night).
+
+**Added for the runs (2026-11-02):** Cathartic's test sheet carries 3 Potions of Healing and a Staff of Healing (D&D Beyond's 2024 items), for the inventory run. If they go missing or run short, the run adds them back on D&D Beyond before it starts.
 
 Still by hand: the fight on D&D Beyond's VTT.
 

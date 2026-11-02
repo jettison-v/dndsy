@@ -143,6 +143,23 @@ def test_a_dropped_write_is_sent_again_on_its_own(player, db, sheet, monkeypatch
     assert st["to_make"] == ["Hit points 42 (D&D Beyond has 45)"]
 
 
+def test_a_change_d_and_d_beyond_was_slow_to_show_is_offered_again_at_once(player, db, sheet):
+    """Oct 30, the live test: D&D Beyond showed a Short Rest's Hit Point Die after the read-back gave up, and the batch
+    waited 5 seconds and then the extension's next check, over 30 in all. The first retry is offered at once; the
+    extension finds D&D Beyond has it now, writes nothing again, and the read-back settles it."""
+    cole = char(db, "Cole")
+    cls = sheet["classes"][0]["id"]
+    ddb_bridge.add(db, cole, "short_rest", {"spend": {str(cls): 1}}, "Cole: Hit Point Dice spent")
+    batch = ddb_bridge.outbox(db, cole)
+    ddb_bridge.delivered(db, batch["id"], ok=True)  # written, but not shown yet
+    again = ddb_bridge.outbox(db, cole)
+    assert again and again["id"] == batch["id"]  # at once, not in 5 seconds
+    make(sheet, again)  # (D&D Beyond shows it now: the extension's check finds it there)
+    ddb_bridge.delivered(db, again["id"], ok=True)
+    assert ddb_bridge.outbox(db, cole) is None
+    assert player.get(f"/bridge/state/{cole.id}").json()["log"][0]["state"] == "live"
+
+
 def test_a_value_askdnd_cant_explain_is_never_written_over(player, db, sheet):
     cole = char(db, "Cole")
     drink(db, cole)

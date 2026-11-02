@@ -9,8 +9,8 @@ other live; these do.
 - D&D Beyond is never called: the server's outbound requests go to a dead proxy, and Cole's sheet comes from the test
   fixture.
 
-Run with the rest (`uv run pytest`). They need Playwright's Chromium (`uv run playwright install chromium`): without
-it they skip on a laptop and fail on GitHub, like the database.
+Run with the rest (`uv run pytest`). They need Playwright's Chromium and WebKit (`uv run playwright install chromium
+webkit`): without them they skip on a laptop and fail on GitHub, like the database.
 """
 
 import os
@@ -30,10 +30,14 @@ ROOT = Path(__file__).resolve().parents[2]
 PEOPLE = {"player": "player@example.com", "other": "other@example.com", "dm": "dm@example.com", "admin": "admin@example.com"}
 
 
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
+def _listening() -> socket.socket:
+    """A socket already listening on a free port, handed to the server as it starts. Picking a free port and letting the
+    server bind it later left a gap: another session's server could take the port meanwhile, and the tests would then
+    talk to that server (Nov 2: setup errors and odd failures, only while other sessions ran tests too)."""
+    s = socket.socket()
+    s.bind(("127.0.0.1", 0))
+    s.listen(128)
+    return s
 
 
 @pytest.fixture(scope="module")  # per file: torn down before the server tests run
@@ -82,16 +86,22 @@ def server(browser_db, tmp_path_factory, request):
     """askdnd itself, as it runs on beta (uvicorn, its startup and the Postgres listener), on a free port. A test file's
     SERVER_ENV adds to its settings (the bridge, for test_extension.py)."""
     database_url, ids = browser_db
-    port = _free_port()
+    sock = _listening()
+    port = sock.getsockname()[1]
     env = {**os.environ, "DATABASE_URL": database_url, "APP_ENV": "development", "SESSION_SECRET": "browser-tests",
            "FILE_STORAGE": str(tmp_path_factory.mktemp("files")),
            "DEV_LOGIN_EMAIL": PEOPLE["admin"], "ADMIN_EMAILS": PEOPLE["admin"], "ALLOWED_EMAILS": ",".join(PEOPLE.values()),
            "AUTO_DRAFT": "0", "HTTP_PROXY": "http://127.0.0.1:9", "HTTPS_PROXY": "http://127.0.0.1:9",  # never D&D Beyond
            "NO_PROXY": "127.0.0.1,localhost", **getattr(request.module, "SERVER_ENV", {})}
-    proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", str(port)],
-                            cwd=ROOT, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    # Its log goes to a file: a pipe nobody reads fills after ~64 KB of request lines, and the server then stops answering
+    # mid-file (Nov 2: failures only in slow runs, which make more requests)
+    log = tmp_path_factory.mktemp("server") / "askdnd.log"
+    with log.open("w") as out:
+        proc = subprocess.Popen([sys.executable, "-m", "uvicorn", "app.main:app", "--fd", str(sock.fileno())], pass_fds=[sock.fileno()],
+                                cwd=ROOT, env=env, stdout=out, stderr=subprocess.STDOUT)
+    sock.close()  # (the server has its own copy)
     base = f"http://127.0.0.1:{port}"
-    end = time.monotonic() + 30
+    end = time.monotonic() + 60  # (a machine busy with other tests can take a while to start it)
     while True:
         try:
             with urllib.request.urlopen(base + "/login", timeout=2):
@@ -99,7 +109,7 @@ def server(browser_db, tmp_path_factory, request):
         except Exception:
             if proc.poll() is not None or time.monotonic() > end:
                 proc.kill()
-                pytest.fail("askdnd didn't start:\n" + (proc.stdout.read() if proc.stdout else ""))
+                pytest.fail("askdnd didn't start:\n" + log.read_text())
             time.sleep(0.2)
     yield {"base": base, **ids}
     proc.terminate()
@@ -110,18 +120,39 @@ def server(browser_db, tmp_path_factory, request):
 
 
 @pytest.fixture(scope="module")  # per file: torn down before the server tests run
-def chromium():
-    from playwright.sync_api import Error, sync_playwright
+def playwright():
+    """One Playwright per file, for every browser in it: a second one started beside it fails ("Sync API inside the
+    asyncio loop"), as test_extension.py's own did."""
+    from playwright.sync_api import sync_playwright
 
     with sync_playwright() as p:
-        try:
-            browser = p.chromium.launch()
-        except Error:
-            if os.getenv("CI"):
-                raise
-            pytest.skip("Playwright's Chromium isn't installed (uv run playwright install chromium)")
-        yield browser
-        browser.close()
+        yield p
+
+
+def _launch(kind):
+    from playwright.sync_api import Error
+
+    try:
+        return kind.launch()
+    except Error:
+        if os.getenv("CI"):
+            raise
+        pytest.skip(f"Playwright's {kind.name} isn't installed (uv run playwright install {kind.name})")
+
+
+@pytest.fixture(scope="module")
+def chromium(playwright):
+    browser = _launch(playwright.chromium)
+    yield browser
+    browser.close()
+
+
+@pytest.fixture(scope="module")
+def webkit(playwright):
+    """Safari's engine: Brett plays on an iPhone, and every browser there is WebKit underneath."""
+    browser = _launch(playwright.webkit)
+    yield browser
+    browser.close()
 
 
 class Person:
@@ -129,17 +160,23 @@ class Person:
     same; the tests don't wait for dice to land), in the table's time zone (Pacific).
     `errors` collects the page's JavaScript errors."""
 
-    def __init__(self, chromium, server, who: str):
+    def __init__(self, browser, server, who: str, **device):
         self.server, self.errors = server, []
-        self.context = chromium.new_context(viewport={"width": 1400, "height": 900}, timezone_id="America/Los_Angeles")
-        self.context.set_default_timeout(10_000)  # a page that's working answers well within this
+        self.context = browser.new_context(**{"viewport": {"width": 1400, "height": 900}, **device}, timezone_id="America/Los_Angeles")
+        webkit = browser.browser_type.name == "webkit"
+        self.context.set_default_timeout(20_000 if webkit else 10_000)  # a page that's working answers well within this (WebKit is slower)
         self.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'off'); if (!sessionStorage.getItem('fresh')) { sessionStorage.setItem('fresh', '1'); localStorage.setItem('askdnd.rollsSide', 'open'); }")
         self.page = self.context.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(str(e)))
         # The console's "Failed to load resource" doesn't say which: record the failing address instead
-        self.page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and self.errors.append(m.text))
+        # (Safari's engine says a request cut short by leaving the page failed to send, which htmx reports; a real failure
+        # still shows as its response below)
+        cut_short = ("htmx:sendError", "htmx:afterRequest") if webkit else ()
+        self.page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and m.text not in cut_short
+                     and self.errors.append(m.text))
         self.page.on("response", lambda r: r.status >= 400 and self.errors.append(f"{r.status} {r.url.replace(server['base'], '')}"))
-        self.page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}")
+        # (a fresh browser's first page, WebKit's especially, can take longer: Nov 2, 10 seconds ran out on a busy machine)
+        self.page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}", timeout=30_000)
 
     def open(self, path: str):
         self.page.goto(self.server["base"] + path)

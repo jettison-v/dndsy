@@ -151,6 +151,18 @@ def test_temporary_hit_points_are_set_on_d_and_d_beyond(player, db, sheet):
     assert vals["hp"]["temporaryHitPoints"] == 18 and vals["hp"]["removedHitPoints"] == 14
 
 
+def test_typing_an_amount_starts_keep_or_take_again_on_the_higher(player, db, sheet):
+    """Nov 2, found by the live test: the window opened on "Keep 0" with no amount yet, and typing 5 left it there, so
+    Set stayed at 0. A choice holds for the amount it was made on."""
+    cole = char(db, "Cole")
+    work = lambda **f: player.post(f"/characters/{cole.id}/hp/work", data={"mode": "temp", **f}).text
+    assert "Set 5 temp" in work(amount="5", take="0", take_for="0")  # (typed after the window opened)
+    assert "Set 0 temp" in work(amount="5", take="0", take_for="5")  # kept on purpose
+    assert player.post(f"/characters/{cole.id}/hp/apply", data={"mode": "temp", "amount": "5", "take": "0", "take_for": "0"}).status_code == 200
+    it = db.scalar(select(BridgeIntent).where(BridgeIntent.character_id == cole.id))
+    assert (it.kind, it.data) == ("temp", {"value": 5})
+
+
 def test_in_a_wild_shape_form_its_resistances_count(player, db, sheet):
     """Cole as a Polar Bear (Circle of the Moon): the Bear's Cold resistance halves a cold hit."""
     cole = char(db, "Cole")

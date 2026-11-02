@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The nightly canary on the Mac Mini (docs/live-test-plan.md › Every night): part 1 of the live test at 4:00, Mini
+     time. A user LaunchAgent, so it runs in the signed-in session where the seats' Chrome windows can open. Installed with
+       cp scripts/ai.askdnd.live-test.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.askdnd.live-test.plist
+     A Mini asleep at 4:00 runs it when it wakes. -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.askdnd.live-test</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/bash</string><string>/Users/brettcupta/askdnd-tests/real_table_nightly.sh</string>
+  </array>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>4</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardInPath</key><string>/dev/null</string>
+  <key>StandardOutPath</key><string>/Users/brettcupta/askdnd-tests/logs/launchd.log</string>
+  <key>StandardErrorPath</key><string>/Users/brettcupta/askdnd-tests/logs/launchd.log</string>
+</dict></plist>

@@ -749,19 +749,22 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
     elif any(now.get(f) != b.before.get(f) for f in missing):
         _stop(db, b, f"D&D Beyond's {_say(missing, b)} isn't what askdnd wrote or what it had before.", missing)
     else:
-        _again(db, b, "D&D Beyond answered OK but didn't keep it.")
+        # The first time, at once, while the extension is here to take it: D&D Beyond is often just slow to show it, and the
+        # extension then finds it there and writes nothing (Oct 30: a Short Rest's Hit Point Die waited 5 seconds, then the
+        # extension's next check, over 30 in all)
+        _again(db, b, "D&D Beyond answered OK but didn't keep it.", at_once=b.attempts == 1)
 
 
 def _say(fs: list[str], b: BridgeBatch) -> str:
     return " and ".join(dict.fromkeys(b.names.get(f, "numbers") for f in fs))
 
 
-def _again(db: Session, b: BridgeBatch, why: str) -> None:
+def _again(db: Session, b: BridgeBatch, why: str, at_once: bool = False) -> None:
     if b.attempts >= MAX_ATTEMPTS:
         _stop(db, b, f"{why} Tried {MAX_ATTEMPTS} times.")
         return
     b.state, b.error = "ready", why[:400]
-    b.next_at = time.time() + RETRY_SECONDS[min(b.attempts, len(RETRY_SECONDS) - 1)]
+    b.next_at = 0 if at_once else time.time() + RETRY_SECONDS[min(b.attempts, len(RETRY_SECONDS) - 1)]
     b.attempts += 1
 
 

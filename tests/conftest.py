@@ -7,12 +7,40 @@ from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool
 
 # Each copy of the code (the main folder, each session's worktree) tests on its own database, named after its folder
 # (askdnd_test_dndsy, askdnd_test_blissful_mestorf_689aef, …), so test runs in different copies never block each other.
 # TEST_DATABASE_URL overrides it (GitHub sets it).
 _CHECKOUT = re.sub(r"[^a-z0-9]+", "_", Path(__file__).resolve().parents[1].name.lower()).strip("_")[:30]
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL") or f"postgresql+psycopg://localhost/askdnd_test_{_CHECKOUT}"
+# Two runs at once on the same databases (two sessions in one folder, or the same TEST_DATABASE_URL) drop each other's
+# tables and browser databases mid-run (Nov 2: four browser tests failed at random, passing on rerun). So a run holds
+# a lock on its name for as long as it lasts; a second run finds it held and takes a name of its own (…_2, …_3).
+# The workers inherit the run's choice.
+_RUN_LOCK = None
+
+
+def _claim(url: str) -> str:
+    global _RUN_LOCK
+    base = make_url(url)
+    try:
+        admin = create_engine(base.set(database="postgres"), isolation_level="AUTOCOMMIT", poolclass=NullPool)
+        conn = admin.connect()
+    except OperationalError:
+        return url  # (no database here: the fixtures skip, or fail on GitHub)
+    for n in range(1, 10):
+        name = base.database if n == 1 else f"{base.database}_{n}"
+        if conn.scalar(text("SELECT pg_try_advisory_lock(hashtext('askdnd tests'), hashtext(:n))"), {"n": name}):
+            _RUN_LOCK = conn  # (kept open: the lock lasts as long as this run)
+            return base.set(database=name).render_as_string(hide_password=False)
+    conn.close()
+    return url
+
+
+if not os.getenv("PYTEST_XDIST_WORKER") and os.getenv("ASKDND_TESTS_CLAIMED") != str(os.getpid()):  # (once, though imported twice)
+    os.environ["TEST_DATABASE_URL"] = TEST_DATABASE_URL = _claim(TEST_DATABASE_URL)
+    os.environ["ASKDND_TESTS_CLAIMED"] = str(os.getpid())
 # The tests run in parallel (pytest-xdist, `-n auto` in pyproject.toml): each worker gets a database of its own
 # (…_gw0, …_gw1), so one worker dropping its tables never pulls them from under another.
 if WORKER := os.getenv("PYTEST_XDIST_WORKER"):

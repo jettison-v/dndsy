@@ -18,7 +18,7 @@ Say "run the live tests" and Claude does part 1, then gives you what's left in p
 - [ ] After an extension update: reopen the seats (`real_table_seats.sh close`, then `open`). They update themselves from the store like any Chrome, so don't `copy` for this: a copy from a profile that hasn't updated yet puts the old version back
 - [ ] Open the seats: `real_table_seats.sh open`
 
-## Part 1: automatic, about 5 minutes
+## Part 1: automatic, about 12 minutes
 
 On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everything below.
 
@@ -33,8 +33,25 @@ On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everythi
 | `resource` | A resource counts down on D&D Beyond and comes back | Every time |
 | `coins` | Coins gained in askdnd land on D&D Beyond, and Undo takes them off | Every time |
 | `rests` | A Short Rest spends a real Hit Point Die and heals; a Long Rest brings back Hit Points, Hit Point Dice, slots and a resource | Every time |
+| `temp-hp` | Temporary Hit Points given in askdnd land on the sheet; damage takes them first and leaves Hit Points be | Every time |
+| `death-saves` | Down to 0: Unconscious and the marks start on the sheet; a death save rolled in askdnd marks itself; healing clears the marks and ends Unconscious | Every time |
+| `inspiration` | Heroic Inspiration given and spent in askdnd follows on the sheet | Every time |
+| `exhaustion` | Exhaustion started in askdnd lands at its level, a new level follows, and ending it takes it off | Every time |
+| `inventory` | On Cathartic's sheet: equip and attune the Staff of Healing, spend and give back a charge, use and give back a Crossbow Bolt, drink a Potion of Healing (one fewer, and it heals) and Undo it | Every time |
+
+Part 1 starts by checking that both test sheets are clean (full Hit Points, nothing marked, spent or in force) and ends by checking each is back as it found it. A miss at the start means an earlier run didn't put something back: it's reported, and hit points, death saves and conditions are put right on D&D Beyond so the rest can run.
 
 Run it three times after a bridge change: the timing bugs so far only showed in some runs.
+
+## Every night: the canary
+
+A canary is a small check that runs on its own and warns you before anyone else notices. At 4:00, Mini time, launchd on the Mac Mini runs `real_table_nightly.sh`: it opens the seats, runs part 1 against beta and closes them. Any miss, or seats that won't open, becomes an issue in [Sentry](https://brett-vw.sentry.io/issues/?project=askdnd-v2) titled "Live test part 1: … missed" (environment `live-test`), which alerts Brett like the app's own errors. Each night's output is in `~/askdnd-tests/logs/nightly-<date>.log` on the Mini. The seats are test accounts, so game nights don't matter.
+
+- **The job:** `~/Library/LaunchAgents/ai.askdnd.live-test.plist` (its source is `scripts/ai.askdnd.live-test.plist`). A Mini asleep at 4:00 runs it when it wakes. To switch it on, from the repo on your Mac: `scp scripts/ai.askdnd.live-test.plist mac-mini-server:Library/LaunchAgents/ && ssh mac-mini-server 'launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.askdnd.live-test.plist'` (on since Nov 2, Brett approved; a deliberate miss reached Sentry).
+- **The Sentry key:** `SENTRY_DSN` in `~/askdnd-tests/.env` on the Mini, readable only by its owner, put there with `scripts/set-secret.sh SENTRY_DSN --mini`. Never in git.
+- **Try the alert:** `real_table_nightly.sh --try-alert closed-sheet` on the Mini adds one deliberate miss to a short run. Resolve the issue it makes in Sentry afterwards.
+- **After changing the scripts:** the Mini runs its own copies. Copy them again: `scp scripts/real_table.py scripts/real_table_seats.sh scripts/real_table_nightly.sh mac-mini-server:askdnd-tests/`.
+- **Turn it off:** `launchctl bootout gui/$(id -u)/ai.askdnd.live-test` on the Mini.
 
 ## Part 2: by hand, about 15 minutes
 
@@ -62,3 +79,4 @@ These need a person, or D&D Beyond's VTT, which is a game canvas a script can't 
 | 2026-10-30 | 0.9.4 | closed-sheet, hit-points, condition passed. game-log 3 of 5 | The misses were a closed sheet saying Connected, fixed in 0.9.5, waiting on the store |
 | 2026-10-30, evening | 0.9.5 | closed-sheet, game-log, hit-points 3 of 3. close-after-roll 14 of 15, one at 14 seconds. cast, resource, coins, rests new; rests 3 of 4 | In one rests run a Hit Point Die took over 30 seconds and a resource wasn't back in 25, not reproduced in two reruns. A condition stayed on Battle up to about 8 seconds while D&D Beyond confirmed it, so the run now allows 15. Part 2 not run |
 | 2026-11-01 | 0.9.5 | Not run | A one-off, not part 1: the DM's seat changed Cathartic's test sheet from D&D Beyond's own page, and the player's seat read each back: hit points, Heroic Inspiration, a spell slot, a limited-use resource, a condition, the character's name. All saved and all were put back. |
+| 2026-11-02 | 0.9.5 | Four rounds of the widened part 1 (14 runs): 81 of 87, 83 of 89, 81 of 87, 83 of 89. Not three clean rounds: waits on beta | New runs temp-hp, death-saves, inspiration, exhaustion and inventory all passed on the real sheets at least once; inventory 17 of 17 alone. They found two bugs, fixed in PR 148: Temporary HP's Set stuck at 0, and a change D&D Beyond was slow to show waiting 30+ seconds for its retry (Oct 30's rests). The misses left: beta ran out of database connections under the three seats (Sentry ASKDND-V2-7 to C), so some changes took up to a minute or timed out; PR 148 raises the pool, and the cause underneath is a follow-up. Also seen: D&D Beyond serving an older copy for a moment, and reordering a race's options. The nightly canary's alert reached Sentry (ASKDND-V2-D, deliberate, resolved). After PR 148 is on beta: run part 1 three times again. |

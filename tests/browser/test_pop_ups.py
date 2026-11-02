@@ -77,7 +77,7 @@ def test_a_long_button_stays_inside_its_window(people, server):
     assert all(x <= 0 for x in spilled), spilled
     page.keyboard.press("Escape")
     page.locator('[data-tour="battle"] .head-add').first.click()  # the side panel
-    page.locator(".peek.open").wait_for()
+    page.locator(".peek.open .peek-body").wait_for()
     out = page.evaluate("""label => {
         const box = document.querySelector('.peek.open .peek-body'), b = document.createElement('button');
         b.className = 'btn primary'; b.textContent = label; box.append(b);

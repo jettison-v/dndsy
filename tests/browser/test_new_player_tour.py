@@ -114,6 +114,22 @@ def test_leaving_mid_wild_shape_puts_battle_back(people, server):
     assert player.errors == []
 
 
+BELOW_THE_BAR = """() => { const bar = document.querySelector('.topbar').getBoundingClientRect(),
+    head = document.querySelector('[data-tour="battle"] .econ-head').getBoundingClientRect(),
+    spot = document.querySelector('.tour-spot').getBoundingClientRect();
+  return { bar: bar.bottom, head: head.top, spot: spot.top }; }"""
+
+
+def clear(page) -> None:
+    """Battle's headings and the light come to rest below the menu bar (waited for: a fixed 600 ms ran out on a busy
+    machine, Nov 2)."""
+    try:
+        page.wait_for_function(f"(() => {{ const g = ({BELOW_THE_BAR})(); return g.head >= g.bar && g.spot >= g.bar - 8; }})()", timeout=5000)
+    except Exception:
+        got = page.evaluate(BELOW_THE_BAR)
+        raise AssertionError(got) from None
+
+
 @pytest.mark.parametrize("size", [(1000, 540), (1300, 950)])  # short, where Battle's columns are tall; a laptop, where they fit
 def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server, size):
     """The menu bar sticks across the top of the screen; Battle's columns' tops (their headings) are shown and lit below
@@ -125,22 +141,12 @@ def test_a_large_section_is_lit_below_the_bars_stuck_over_it(people, server, siz
     page.click('[data-tour-start="battle"]')
     page.wait_for_url(f"**/characters/{server['cole']}/battle")
     page.wait_for_function("() => document.querySelector('.tour-card h3')?.textContent.startsWith('Battle:')", timeout=10000)
-    page.wait_for_timeout(600)  # the page settling, and the light following
-    got = page.evaluate("""() => { const bar = document.querySelector('.topbar').getBoundingClientRect(),
-        head = document.querySelector('[data-tour="battle"] .econ-head').getBoundingClientRect(),
-        spot = document.querySelector('.tour-spot').getBoundingClientRect();
-      return { bar: bar.bottom, head: head.top, spot: spot.top }; }""")
-    assert got["head"] >= got["bar"] and got["spot"] >= got["bar"] - 8, got
+    clear(page)
     # Seconds later Battle is redrawn (a fresh sheet) and its numbers grow: the headings are kept clear
     page.wait_for_timeout(2500)
     for _ in range(5):  # a finger resting on a laptop's trackpad: tiny scroll events, not a scroll
         page.mouse.wheel(0, 1)
     page.evaluate("""() => { const b = document.getElementById('battle-body'); b.replaceWith(b.cloneNode(true));
       const d = document.createElement('div'); d.style.height = '70px'; document.querySelector('.battlebar').prepend(d); }""")
-    page.wait_for_timeout(600)
-    got = page.evaluate("""() => { const bar = document.querySelector('.topbar').getBoundingClientRect(),
-        head = document.querySelector('[data-tour="battle"] .econ-head').getBoundingClientRect(),
-        spot = document.querySelector('.tour-spot').getBoundingClientRect();
-      return { bar: bar.bottom, head: head.top, spot: spot.top }; }""")
-    assert got["head"] >= got["bar"] and got["spot"] >= got["bar"] - 8, got
+    clear(page)
     assert player.errors == []

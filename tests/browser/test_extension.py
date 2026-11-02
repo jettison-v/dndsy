@@ -58,14 +58,11 @@ def with_extension(chromium_type, server, tmp_path, who):
 
 
 @pytest.fixture
-def chrome(server, tmp_path):
+def chrome(playwright, server, tmp_path):
     """Cole's player's browser, with the extension."""
-    from playwright.sync_api import sync_playwright
-
-    with sync_playwright() as p:
-        context = with_extension(p.chromium, server, tmp_path, "player")
-        yield context
-        context.close()
+    context = with_extension(playwright.chromium, server, tmp_path, "player")
+    yield context
+    context.close()
 
 
 def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server):

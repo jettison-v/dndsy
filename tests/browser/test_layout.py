@@ -8,6 +8,8 @@ from pathlib import Path
 import pytest
 from sqlalchemy import create_engine, text
 
+from tests.browser.conftest import Person
+
 CHECK = (Path(__file__).parent / "layout_check.js").read_text()
 
 WIDTHS = (375, 768, 1000, 1280)
@@ -36,10 +38,11 @@ def problems(page, where: str) -> list[str]:
     return [f"{where} · {p['kind']}: {p['where']} ({p['detail']})" for p in page.evaluate(CHECK)]
 
 
-def check(person, server, paths) -> list[str]:
+def check(person, server, paths, widths=WIDTHS) -> list[str]:
     page, found = person.page, []
-    for width in WIDTHS:
-        page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+    for width in widths:
+        if page.viewport_size["width"] != width:
+            page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
         for path in paths:
             path = path.format(cole=server["cole"])
             person.open(path)
@@ -71,6 +74,25 @@ def test_a_players_pages_hold_together_at_every_width(people, server, long_names
         player.page.keyboard.press("Escape")
     assert not found, "\n".join(found)
     assert player.errors == []
+
+
+# Safari's engine as Brett's iPhone and an iPad draw them (Playwright's own settings for each: size, touch, Safari's
+# user agent). Every browser on an iPhone is WebKit underneath, so a page that holds together in Chromium can still
+# break there (fonts, form controls, flex and grid details).
+SAFARI = {375: "iPhone 13 Mini", 768: "iPad Mini"}
+
+
+@pytest.mark.parametrize("who", ["player", "admin"])
+def test_pages_hold_together_in_safari_on_a_phone_and_a_tablet(webkit, playwright, server, long_names, who):
+    found = []
+    for width, device in SAFARI.items():
+        person = Person(webkit, server, who, **{k: v for k, v in playwright.devices[device].items() if k != "default_browser_type"})
+        try:
+            found += [f"Safari · {f}" for f in check(person, server, PAGES[who], widths=(width,))]
+            assert person.errors == [], person.errors
+        finally:
+            person.context.close()
+    assert not found, "\n".join(found)
 
 
 def test_a_long_group_of_resources_fits_a_phone(people, server):

@@ -1,11 +1,15 @@
 """Real fights on the real D&D Beyond: named runs on the Mac Mini's test seats (docs/testing-setup.md).
 
-Run by hand on the Mini, never on GitHub: `.venv/bin/python real_table.py <run>` after `seats.sh <seat>` has opened each
-seat in real Chrome. Each run does what a person would do, then says what happened and what it expected. It only ever
-touches the test seats in VTT test on beta: Brett's primary account is not a seat here, and it never signs in to anything.
+On the Mini, never on GitHub: `.venv/bin/python real_table.py [run …]` after `real_table_seats.sh open` (every run when
+none is named), and every night at 4:00 through real_table_nightly.sh, which adds `--sentry` (a miss goes to Sentry).
+Each run does what a person would do, then says what happened and what it expected, and puts back what it changed;
+part 1 starts by checking the test sheets are clean. It only ever touches the test seats in VTT test on beta: Brett's
+primary account is not a seat here, and it never signs in to anything.
 """
 
+import json
 import sys
+import time
 
 from playwright.sync_api import Page, sync_playwright
 
@@ -13,15 +17,34 @@ BETA = "https://beta.askdnd.ai/c/vtt-test"
 SEATS = {"dm": 9231, "player2": 9232, "player3": 9233}
 SHEETS = {"player2": 172986165, "player3": 172992073}  # Cathartic and the new Vi, never the first Vi or Spurt
 
+# How long a change may take to show in D&D Beyond's own record. Usually a few seconds; now and then much longer (Nov 2:
+# up to a minute, while D&D Beyond served an older copy for a moment), and a pass past 10 seconds is said as slow.
+SLOW = 60
+
+
+class Seats(dict):
+    """Each seat's Chrome, reached the first time a run needs it."""
+
+    def __init__(self, p):
+        super().__init__()
+        self.p = p
+
+    def __missing__(self, seat: str):
+        self[seat] = self.p.chromium.connect_over_cdp(f"http://127.0.0.1:{SEATS[seat]}").contexts[0]
+        return self[seat]
+
 
 class Table:
     def __init__(self, p):
-        self.contexts = {seat: p.chromium.connect_over_cdp(f"http://127.0.0.1:{port}").contexts[0] for seat, port in SEATS.items()}
+        self.contexts = Seats(p)
         self.results: list[tuple[bool, str]] = []
+        self.run = ""
+        self.last: Page | None = None
 
     def page(self, seat: str, url: str) -> Page:
         page = next((x for x in self.contexts[seat].pages if x.url.startswith(url)), None) or self.contexts[seat].new_page()
         page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        self.last = page  # (what a run that stops was looking at)
         return page
 
     def sheet(self, seat: str, frames: list[str] | None = None) -> Page:
@@ -46,17 +69,19 @@ class Table:
 
     def expect(self, what: str, check, seconds: float = 20) -> bool:
         """Waits for `check()` to be true, like a person watching the page; a miss is a result, not a crash."""
-        page = next(iter(self.contexts.values())).pages[0]
+        page = next(iter(self.contexts.values())).pages[0]  # (waiting on a page, so what pages hear keeps arriving)
+        start = time.time()
         for _ in range(int(seconds * 2)):
             try:
                 if check():
-                    self.results.append((True, what))
-                    print("PASS", what, flush=True)
+                    self.results.append((True, f"{self.run}: {what}"))
+                    took = time.time() - start
+                    print("PASS", what, f"(slow: {took:.0f} seconds)" if took > 10 else "", flush=True)
                     return True
             except Exception:
                 pass
             page.wait_for_timeout(500)
-        self.results.append((False, what))
+        self.results.append((False, f"{self.run}: {what}"))
         print("FAIL", what, flush=True)
         return False
 
@@ -155,10 +180,10 @@ def change_hp(page: Page, mode: int, amount: int) -> None:
     """Hit points' panel, then Damage or Heal in the window, as a player does it."""
     page.locator('[data-panel-url$="/vital/hp"]').first.click()
     page.locator(".hp-open button").nth(mode).click(timeout=8000)
-    page.locator('.hp-form input[name="amount"]').first.fill(str(amount), timeout=8000)
-    page.locator('.hp-form input[name="amount"]').first.press("Tab")
+    page.locator('.peek.open .hp-form input[name="amount"]').first.fill(str(amount), timeout=8000)
+    page.locator('.peek.open .hp-form input[name="amount"]').first.press("Tab")
     page.wait_for_timeout(800)
-    page.locator('.hp-form button[type="submit"]').first.click(timeout=5000)
+    page.locator('.peek.open .hp-form button[type="submit"]:not([disabled])').first.click(timeout=10000)  # (once its working has caught up)
     page.wait_for_timeout(800)
     page.keyboard.press("Escape")
 
@@ -175,14 +200,14 @@ def hit_points(t: Table, seat: str = "player2") -> None:
     start = hp(page)
     print("  hit points:", start, flush=True)
     change_hp(page, 0, 1)
-    t.expect("the tile shows 1 less at once", lambda: hp(page) == start - 1, 6)
-    t.expect("D&D Beyond confirms it", lambda: settled(page), 25)
-    t.expect("the real sheet shows it", lambda: str(start - 1) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), 15)
+    t.expect("the tile shows 1 less at once", lambda: hp(page) == start - 1, 10)
+    t.expect("D&D Beyond confirms it", lambda: settled(page), SLOW)
+    t.expect("the real sheet shows it", lambda: str(start - 1) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), SLOW)
     page.wait_for_timeout(1000)
     change_hp(page, 1, 1)
-    t.expect("healing puts it back", lambda: hp(page) == start, 6)
-    t.expect("D&D Beyond confirms the healing", lambda: settled(page), 25)
-    t.expect("the real sheet shows it back", lambda: str(start) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), 15)
+    t.expect("healing puts it back", lambda: hp(page) == start, 10)
+    t.expect("D&D Beyond confirms the healing", lambda: settled(page), SLOW)
+    t.expect("the real sheet shows it back", lambda: str(start) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), SLOW)
 
 
 def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
@@ -193,12 +218,12 @@ def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     page.locator("details.cond-add > summary").click(timeout=5000)
     page.locator(f'.ls-chip:has-text("{name}")').first.click(timeout=5000)
     t.expect("the condition shows on Battle", lambda: page.locator(f'.cond-pill:has-text("{name}")').count() > 0, 8)
-    t.expect("it reaches the real sheet", lambda: name in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), 25)
+    t.expect("it reaches the real sheet", lambda: name in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), SLOW)
     page.wait_for_timeout(1500)
     page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") > summary').first.click(timeout=5000)
     page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") button:has-text("End")').first.click(timeout=5000)
     t.expect("it ends on Battle", lambda: page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}")').count() == 0, 15)
-    t.expect("it leaves the real sheet", lambda: name not in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), 25)
+    t.expect("it leaves the real sheet", lambda: name not in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), SLOW)
 
 
 def record(sheet: Page) -> dict:
@@ -214,14 +239,15 @@ def changes(before, after, path: str = "") -> list[tuple[str, object, object]]:
         return [c for k in sorted(set(before) | set(after)) if k not in ("dateModified", "providedFrom", "readonlyUrl", "definition")
                 for c in changes(before.get(k), after.get(k), f"{path}.{k}")]
     if isinstance(before, list) and isinstance(after, list) and len(before) == len(after):
-        if all(isinstance(x, dict) and "id" in x for x in before + after):  # (D&D Beyond's lists come in any order)
-            before, after = sorted(before, key=lambda x: str(x["id"])), sorted(after, key=lambda x: str(x["id"]))
+        if all(isinstance(x, dict) for x in before + after):  # (D&D Beyond's lists come in any order, ids not always unique)
+            order = lambda x: (str(x.get("id")), json.dumps(x, sort_keys=True, default=str))
+            before, after = sorted(before, key=order), sorted(after, key=order)
         return [c for i, (a, b) in enumerate(zip(before, after)) for c in changes(a, b, f"{path}[{i}]")]
     return [] if before == after else [(path, before, after)]
 
 
 def show(diff: list) -> str:
-    return "; ".join(f"{path} {a} to {b}" for path, a, b in diff[:8]) + (f" and {len(diff) - 8} more" if len(diff) > 8 else "") or "nothing"
+    return "; ".join(f"{path} {str(a)[:60]} to {str(b)[:60]}" for path, a, b in diff[:8]) + (f" and {len(diff) - 8} more" if len(diff) > 8 else "") or "nothing"
 
 
 def go(page: Page, opener) -> None:
@@ -230,7 +256,7 @@ def go(page: Page, opener) -> None:
     page.wait_for_selector("[data-use-go]", timeout=8000)
 
 
-def changed(t: Table, sheet: Page, before: dict, what: str, seconds: float = 25) -> list:
+def changed(t: Table, sheet: Page, before: dict, what: str, seconds: float = SLOW) -> list:
     """Waits for D&D Beyond's own record to differ from `before`."""
     t.expect(what, lambda: bool(changes(before, record(sheet))), seconds)
     diff = changes(before, record(sheet))
@@ -238,12 +264,19 @@ def changed(t: Table, sheet: Page, before: dict, what: str, seconds: float = 25)
     return diff
 
 
-def undone(t: Table, sheet: Page, before: dict, what: str, seconds: float = 25) -> None:
+def undone(t: Table, sheet: Page, before: dict, what: str, seconds: float = SLOW) -> None:
     t.expect(what, lambda: not changes(before, record(sheet)), seconds)
 
 
-def undo(page: Page) -> None:
-    page.locator('#cards button:has-text("Undo")').last.click(timeout=8000)
+def undo(page: Page) -> bool:
+    """The corner card's Undo, if its card is still up: a card with a button stays 20 seconds (app.js), and D&D Beyond
+    can take longer than that to show the change. False when it's gone, and the run puts the change back another way."""
+    button = page.locator('#cards button:has-text("Undo")')
+    if not button.count():
+        print("  (Undo's card had gone: put back another way)", flush=True)
+        return False
+    button.last.click(timeout=8000)
+    return True
 
 
 def spell_window(page: Page) -> None:
@@ -266,9 +299,13 @@ def cast(t: Table, seat: str = "player3") -> None:
     before = record(sheet)
     spell_window(page)
     print("  spell:", page.locator(".rw-title").first.inner_text(), page.locator('select[name="way"] option').all_inner_texts(), flush=True)
+    level = page.locator('select[name="way"] option:checked').first.get_attribute("data-level") or "1"
     page.locator("[data-use-go]").first.click()
     changed(t, sheet, before, "the slot is spent on D&D Beyond")
-    undo(page)
+    if not undo(page):
+        page.goto(page.url, wait_until="domcontentloaded")  # (Battle afresh: the Spell Book closed)
+        go(page, page.locator(f'[data-use-url$="/count?field=slot:{level}"]:visible').first)
+        page.locator('[data-use-go][data-to="back"]').first.click(timeout=15000)
     undone(t, sheet, before, "Undo gives the slot back on D&D Beyond")
 
 
@@ -291,19 +328,25 @@ def resource(t: Table, seat: str = "player3") -> None:
 
 
 def coins(t: Table, seat: str = "player3") -> None:
-    """Coins gained in askdnd land on D&D Beyond; Undo takes them off."""
+    """Coins gained in askdnd land on D&D Beyond; spending them takes them off."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
     t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
     before = record(sheet)
     page.goto(page.url.replace("/battle", ""), wait_until="domcontentloaded")
-    page.locator('[data-tab="t-items"]').first.click(timeout=8000)
-    go(page, page.locator('[data-use-url$="/coins"]').first)
-    page.locator('input[name="amount"]').first.fill("1")
-    page.locator('[data-use-go][data-to="gain"]').first.click()
-    changed(t, sheet, before, "the coin is on D&D Beyond")
-    undo(page)
-    undone(t, sheet, before, "Undo takes the coin off")
+    for to, what in (("gain", "the coin is on D&D Beyond"), ("spend", "spending it takes it off")):  # (the window both ways:
+        tab = page.locator('[data-tab="t-items"]:visible').first                                       # Undo's card is gone
+        if tab.get_attribute("aria-selected") != "true":                                                # after a few seconds)
+            tab.click(timeout=8000)
+        go(page, page.locator('[data-use-url$="/coins"]:visible').first)
+        page.locator('.roll-win input[name="amount"]').first.fill("1")
+        page.locator(f'[data-use-go][data-to="{to}"]').first.click()
+        if to == "gain":
+            changed(t, sheet, before, what)
+        else:
+            undone(t, sheet, before, what)
+        page.wait_for_timeout(1500)
+        page.keyboard.press("Escape")
 
 
 def spent(data: dict) -> int:
@@ -322,14 +365,14 @@ def rests(t: Table, seat: str = "player3") -> None:
     page = t.battle(seat)
     t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
     change_hp(page, 0, 3)
-    t.expect("D&D Beyond confirms the damage", lambda: settled(page), 25)
+    t.expect("D&D Beyond confirms the damage", lambda: settled(page), SLOW)
     page.wait_for_timeout(1500)
     start = record(sheet)
     print("  before the rest:", start["removedHitPoints"], "down,", [c.get("hitDiceUsed") for c in start["classes"]], "Hit Point Dice used", flush=True)
     rest_window(page, "short")
     page.locator('select[name^="dice_"]').first.select_option("1")
     page.locator("[data-use-go]").first.click()
-    t.expect("a Hit Point Die is spent on D&D Beyond", lambda: sum(c.get("hitDiceUsed") or 0 for c in record(sheet)["classes"]) > sum(c.get("hitDiceUsed") or 0 for c in start["classes"]), 30)
+    t.expect("a Hit Point Die is spent on D&D Beyond", lambda: sum(c.get("hitDiceUsed") or 0 for c in record(sheet)["classes"]) > sum(c.get("hitDiceUsed") or 0 for c in start["classes"]), SLOW)
     print("  after the Short Rest:", show(changes(start, record(sheet))), flush=True)
     page.wait_for_timeout(2500)
     page.keyboard.press("Escape")
@@ -338,38 +381,372 @@ def rests(t: Table, seat: str = "player3") -> None:
                 if (x.get("limitedUse") or {}).get("resetType") == 2 and x["limitedUse"].get("maxUses"))  # (back on a Long Rest)
     go(page, page.locator(f'.res-go[data-use-url*="/count"]:has-text("{name}")').first)
     page.locator('[data-use-go][data-to="use"]').first.click()
-    t.expect("a use is spent before the Long Rest", lambda: spent(record(sheet)) > spent(start), 25)
+    t.expect("a use is spent before the Long Rest", lambda: spent(record(sheet)) > spent(start), SLOW)
     page.wait_for_timeout(1500)
     page.keyboard.press("Escape")
     spell_window(page)
     page.locator("[data-use-go]").first.click()
-    t.expect("a slot is spent before the Long Rest", lambda: any(x["used"] for x in record(sheet)["spellSlots"]), 25)
+    t.expect("a slot is spent before the Long Rest", lambda: any(x["used"] for x in record(sheet)["spellSlots"]), SLOW)
     page.wait_for_timeout(2500)
     page.goto(page.url, wait_until="domcontentloaded")
     middle = record(sheet)
     print("  before the Long Rest:", middle["removedHitPoints"], "down,", spent(middle), "uses spent,", [x["used"] for x in middle["spellSlots"]], "slots used", flush=True)
     rest_window(page, "long")
     page.locator("[data-use-go]").first.click()
-    t.expect("the Long Rest gives Hit Point Dice back on D&D Beyond", lambda: not any(c.get("hitDiceUsed") for c in record(sheet)["classes"]), 40)
+    t.expect("the Long Rest gives Hit Point Dice back on D&D Beyond", lambda: not any(c.get("hitDiceUsed") for c in record(sheet)["classes"]), SLOW)
     t.expect("the Long Rest gives Hit Points back on D&D Beyond", lambda: record(sheet)["removedHitPoints"] == 0, 15)
-    t.expect("the Long Rest gives slots back on D&D Beyond", lambda: not any(x["used"] for x in record(sheet)["spellSlots"]), 25)
-    t.expect("the Long Rest gives the use back on D&D Beyond", lambda: spent(record(sheet)) <= spent(start), 25)
+    t.expect("the Long Rest gives slots back on D&D Beyond", lambda: not any(x["used"] for x in record(sheet)["spellSlots"]), SLOW)
+    t.expect("the Long Rest gives the use back on D&D Beyond", lambda: spent(record(sheet)) <= spent(start), 70)
     print("  after the Long Rest:", show(changes(middle, record(sheet))), flush=True)
 
 
+def mode(page: Page, which: str) -> None:
+    """Hit points' panel, then one of its windows: Damage, Heal or Temporary HP."""
+    page.locator('[data-panel-url$="/vital/hp"]').first.click()
+    page.locator(f'.hp-open [data-modal-url$="mode={which}"]').first.click(timeout=8000)
+
+
+def hp_window(page: Page, which: str, amount: int) -> None:
+    mode(page, which)
+    page.locator('.peek.open .hp-form input[name="amount"]').first.fill(str(amount), timeout=8000)
+    page.locator('.peek.open .hp-form input[name="amount"]').first.press("Tab")
+    page.wait_for_timeout(800)
+    # Temporary HP: the player's choice is to take the new ones, pressed until the window says so (before PR 148, a late
+    # redraw from typing the amount could put it back on Keep)
+    for _ in range(8 if which == "temp" else 0):
+        if f"Set {amount} temp" in page.locator(".peek.open .hp-form button[type=submit]").first.inner_text():
+            break
+        page.locator('.peek.open .hp-take label:has(input[value="1"])').first.click(timeout=5000)
+        page.wait_for_timeout(1000)
+    page.locator('.peek.open .hp-form button[type="submit"]:not([disabled])').first.click(timeout=10000)  # (once its working has caught up)
+    page.wait_for_timeout(800)
+    page.keyboard.press("Escape")
+
+
+def temp_hp(t: Table, seat: str = "player2") -> None:
+    """Temporary Hit Points given in askdnd land on the real sheet; damage takes them first and leaves Hit Points be."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    start = record(sheet)
+    hp_window(page, "temp", 5)
+    t.expect("D&D Beyond has 5 Temporary Hit Points", lambda: record(sheet)["temporaryHitPoints"] == 5, SLOW)
+    page.wait_for_timeout(1500)
+    hp_window(page, "damage", 5)
+    t.expect("damage takes the Temporary Hit Points first", lambda: record(sheet)["temporaryHitPoints"] == 0, SLOW)
+    t.expect("and leaves Hit Points as they were", lambda: record(sheet)["removedHitPoints"] == start["removedHitPoints"], 5)
+
+
+def unconscious(data: dict) -> bool:
+    return any(c["id"] == 15 for c in data.get("conditions") or [])
+
+
+def death_saves(t: Table, seat: str = "player2") -> None:
+    """At 0 Hit Points: Unconscious and the marks start on the real sheet, a death save rolled in askdnd marks itself
+    there, and healing clears the marks and ends Unconscious."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    start, now = record(sheet), hp(page)
+    print("  hit points:", now, flush=True)
+    hp_window(page, "damage", now)
+    t.expect("D&D Beyond has 0 Hit Points and Unconscious", lambda: (lambda d: d["removedHitPoints"] >= start["removedHitPoints"] + now and unconscious(d))(record(sheet)), SLOW)
+    t.expect("the Dying tile offers the death save", lambda: page.locator('[data-roll="death"]:visible').count() > 0, 15)
+    page.wait_for_timeout(1500)
+    page.locator('[data-roll="death"]:visible').first.click(modifiers=["Shift"])
+    page.wait_for_timeout(1500)
+    page.keyboard.press("Escape")
+    marked = lambda d: (d["deathSaves"]["successCount"] or 0) + (d["deathSaves"]["failCount"] or 0) > 0 or d["removedHitPoints"] < start["removedHitPoints"] + now  # (a 20 is back with 1 Hit Point)
+    t.expect("the death save marks the real sheet", lambda: marked(record(sheet)), SLOW)
+    print("  death saves:", record(sheet)["deathSaves"], flush=True)
+    page.wait_for_timeout(1500)
+    page.goto(page.url, wait_until="domcontentloaded")
+    back = record(sheet)["removedHitPoints"] - start["removedHitPoints"]
+    hp_window(page, "heal", back)
+    t.expect("healing clears the marks on D&D Beyond", lambda: not any((record(sheet)["deathSaves"][k] or 0) for k in ("successCount", "failCount")), SLOW)
+    t.expect("and ends Unconscious", lambda: not unconscious(record(sheet)), 15)
+    t.expect("and Hit Points are back", lambda: record(sheet)["removedHitPoints"] == start["removedHitPoints"], 15)
+
+
+def inspiration(t: Table, seat: str = "player2") -> None:
+    """Heroic Inspiration given in askdnd lands on the real sheet; spending it takes it off."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    had = record(sheet)["inspiration"]
+    for want in (not had, had):
+        go(page, page.locator('[data-use-url$="/inspiration"]:visible').first)
+        page.locator("[data-use-go]").first.click()
+        t.expect(f"D&D Beyond {'has' if want else 'no longer has'} it", lambda: record(sheet)["inspiration"] == want, SLOW)
+        page.wait_for_timeout(1500)
+        page.keyboard.press("Escape")
+
+
+def exhaustion(t: Table, seat: str = "player2") -> None:
+    """Exhaustion started in askdnd lands on the real sheet at its level; a new level follows, and ending it leaves."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    level = lambda: next((c.get("level") for c in record(sheet).get("conditions") or [] if c["id"] == 4), None)
+    page.locator("details.cond-add > summary").click(timeout=5000)
+    page.locator('.ls-chip:has-text("Exhaustion")').first.click(timeout=5000)
+    t.expect("D&D Beyond has Exhaustion 1", lambda: level() == 1, 25)
+    page.wait_for_timeout(1500)
+    pill_ = 'details.cond-pill:not(.cond-add):has-text("Exhaustion")'
+    page.locator(f"{pill_} > summary").first.click(timeout=5000)
+    page.locator(f'{pill_} button[title="Exhaustion level 2"]').first.click(timeout=5000)
+    t.expect("D&D Beyond has Exhaustion 2", lambda: level() == 2, 25)
+    page.wait_for_timeout(1500)
+    page.locator(f"{pill_} > summary").first.click(timeout=5000)
+    page.locator(f'{pill_} button:has-text("End")').first.click(timeout=5000)
+    t.expect("ending it takes it off D&D Beyond", lambda: level() is None, 25)
+
+
+# What the inventory run needs on Cathartic's test sheet (D&D Beyond's 2024 items): added once, as its player would
+STOCK = {"Potion of Healing": (8960641, 112130694, 3), "Staff of Healing": (9229097, 112130694, 1)}
+STOCKING = """async ([id, want]) => {
+  const t = await fetch('https://auth-service.dndbeyond.com/v1/cobalt-token', {method: 'POST', credentials: 'include'});
+  const h = {'Content-Type': 'application/json', Authorization: 'Bearer ' + (await t.json()).token};
+  const r = await fetch('https://character-service.dndbeyond.com/character/v5/inventory/item', {method: 'POST', headers: h,
+    body: JSON.stringify({characterId: id, equipment: want.map(([e, type, n]) => ({entityId: e, entityTypeId: type, quantity: n,
+      containerEntityId: id, containerEntityTypeId: 1581111423}))})});
+  return r.status;
+}"""
+
+
+def stock(sheet: Page) -> dict:
+    """The inventory rows the run uses, by name, adding any that are missing and topping up any run short first."""
+    have = {i["definition"]["name"]: i for i in record(sheet)["inventory"]}
+    missing = [list(v) for k, v in STOCK.items() if k not in have]
+    short = [["PUT", "inventory/item/quantity", {"id": have[k]["id"], "quantity": n}] for k, (_, _, n) in STOCK.items() if k in have and have[k]["quantity"] < n]
+    if missing:
+        print("  adding to the test sheet:", [k for k in STOCK if k not in have], sheet.evaluate(STOCKING, [SHEETS["player2"], missing]), flush=True)
+    if short:
+        print("  topping up the test sheet:", sheet.evaluate(TIDYING, [SHEETS["player2"], short]), flush=True)
+    if missing or short:
+        have = {i["definition"]["name"]: i for i in record(sheet)["inventory"]}
+    return have
+
+
+def item(data: dict, iid: int) -> dict:
+    return next(i for i in data["inventory"] if i["id"] == iid)
+
+
+def item_panel(page: Page, cid: str, iid: int) -> None:
+    """Sheet › Items, then the item's own panel."""
+    page.goto(f"https://beta.askdnd.ai/characters/{cid}", wait_until="domcontentloaded")
+    tab = page.locator('[data-tab="t-items"]:visible').first
+    tab.wait_for(timeout=15000)
+    if tab.get_attribute("aria-selected") != "true":  # (the page may open on it: it remembers your last tab)
+        tab.click(timeout=8000)
+    page.locator(f'[data-panel-url*="ref=item%3A{iid}"]:visible').first.click(timeout=8000)
+    page.wait_for_selector(".peek.open .peek-body", timeout=8000)
+
+
+def press(page: Page, cid: str, iid: int, label: str) -> None:
+    """The item's panel button with exactly this label, once askdnd's copy of the sheet has caught up to show it."""
+    for _ in range(10):
+        item_panel(page, cid, iid)
+        button = page.locator(f'.peek.open button:text-is("{label}")')
+        if button.count():
+            button.first.click(timeout=8000)
+            return
+        page.wait_for_timeout(2000)
+    raise TimeoutError(f"no {label} in the item's panel")
+
+
+def inventory(t: Table, seat: str = "player2") -> None:
+    """Equip, attune, an item's count, its charges and a potion drunk through Use, each made in askdnd and confirmed on
+    D&D Beyond's own record, then put back."""
+    sheet = t.sheet(seat)
+    have = stock(sheet)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    cid = page.url.split("/characters/")[1].split("/")[0]
+    staff, potion = have["Staff of Healing"]["id"], have["Potion of Healing"]["id"]
+    start = record(sheet)
+    for field, on, off in (("equipped", "Equip", "Unequip"), ("isAttuned", "Attune", "End attunement")):
+        was = item(start, staff)[field]
+        press(page, cid, staff, off if was else on)
+        t.expect(f"{on}: D&D Beyond follows", lambda: item(record(sheet), staff)[field] != was, SLOW)
+        press(page, cid, staff, on if was else off)
+        t.expect(f"{on}: and back", lambda: item(record(sheet), staff)[field] == was, SLOW)
+    item_panel(page, cid, staff)
+    used = lambda d: (item(d, staff).get("limitedUse") or {}).get("numberUsed") or 0
+    go(page, page.locator('.peek.open [data-use-url*="field=charges"]').first)
+    page.locator('[data-use-go][data-to="use"]').first.click()
+    t.expect("a charge is spent on D&D Beyond", lambda: used(record(sheet)) == used(start) + 1, SLOW)
+    page.wait_for_timeout(1500)
+    page.keyboard.press("Escape")
+    item_panel(page, cid, staff)
+    go(page, page.locator('.peek.open [data-use-url*="field=charges"]').first)
+    page.locator('[data-use-go][data-to="back"]').first.click()
+    t.expect("and given back", lambda: used(record(sheet)) == used(start), SLOW)
+    page.wait_for_timeout(1500)
+    page.keyboard.press("Escape")
+    bolts = have["Crossbow Bolts"]["id"]
+    many = lambda d: item(d, bolts)["quantity"]
+    for to, n, what in (("use", -1, "one is used on D&D Beyond"), ("back", 0, "and given back")):
+        item_panel(page, cid, bolts)
+        go(page, page.locator('.peek.open [data-use-url*="field=item"]').first)
+        page.locator(f'[data-use-go][data-to="{to}"]').first.click()
+        t.expect(f"Crossbow Bolts: {what}", lambda: many(record(sheet)) == many(start) + n, SLOW)
+        page.wait_for_timeout(1500)
+        page.keyboard.press("Escape")
+    count = lambda d: item(d, potion)["quantity"]
+    hp_window(page, "damage", 5)  # (so the potion's healing shows)
+    hurt = start["removedHitPoints"] + 5
+    t.expect("D&D Beyond has the damage", lambda: record(sheet)["removedHitPoints"] == hurt, SLOW)
+    page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
+    page.locator('[data-panel-url$="/all/bonus?items=1"]').first.click(timeout=8000)  # (every potion is a Bonus Action)
+    go(page, page.locator(f'.peek.open [data-use-url$="/use/{potion}"]').first)
+    page.locator("[data-use-go]").first.click()
+    t.expect("drinking a Potion of Healing takes one off D&D Beyond", lambda: count(record(sheet)) == count(start) - 1, SLOW)
+    t.expect("and heals there", lambda: record(sheet)["removedHitPoints"] < hurt, SLOW)
+    page.wait_for_timeout(1500)
+    page.keyboard.press("Escape")
+    if undo(page):
+        t.expect("Undo puts the potion back on D&D Beyond", lambda: count(record(sheet)) == count(start), SLOW)
+        t.expect("and the healing", lambda: record(sheet)["removedHitPoints"] == hurt, SLOW)
+    else:
+        stock(sheet)
+    page.wait_for_timeout(1500)
+    healed = record(sheet)["removedHitPoints"] - start["removedHitPoints"]
+    if healed > 0:
+        hp_window(page, "heal", healed)
+    t.expect("and Hit Points are back", lambda: record(sheet)["removedHitPoints"] == start["removedHitPoints"], SLOW)
+
+
 RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
-        "cast": cast, "resource": resource, "coins": coins, "rests": rests}
+        "cast": cast, "resource": resource, "coins": coins, "rests": rests, "temp-hp": temp_hp, "death-saves": death_saves,
+        "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory}
+# What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
+KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
+
+
+def as_found(t: Table, before: dict) -> None:
+    """Each test sheet is back as part 1 found it: what a run changes, it puts back (a miss here is a run that didn't)."""
+    for seat, was in before.items():
+        sheet = t.sheet(seat)
+        left = lambda: changes({k: v for k, v in was.items() if k not in KEPT}, {k: v for k, v in record(sheet).items() if k not in KEPT})
+        if not t.expect(f"{seat}'s sheet is back as found", lambda: not left(), 20):  # (D&D Beyond can serve an older copy for a moment)
+            print("  still changed:", show(left()), flush=True)
+
+
+def report(missed: list[str], ran: list[str], log: str) -> None:
+    """To Sentry (askdnd-v2), where the app's own errors go and alert Brett: one issue for the live test, whatever missed."""
+    import os
+
+    import sentry_sdk
+
+    sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], environment="live-test", server_name="mac-mini", default_integrations=False)
+    with sentry_sdk.new_scope() as scope:
+        scope.fingerprint = ["live-test", "part-1"]
+        scope.set_tag("source", "live-test")
+        scope.set_context("live test", {"runs": ", ".join(ran), "missed": missed[:40], "log": log[-6000:]})
+        sentry_sdk.capture_message(f"Live test part 1: {len(missed)} missed ({missed[0][:120]})", level="error")
+    sentry_sdk.flush(10)
+
+
+class Kept:
+    """What a run prints, kept for the report as well as shown."""
+
+    def __init__(self, out):
+        self.out, self.text = out, []
+
+    def write(self, text: str) -> int:
+        self.text.append(text)
+        return self.out.write(text)
+
+    def flush(self) -> None:
+        self.out.flush()
+
+
+# Each test sheet between runs: nothing taken, marked or spent. A run leaves it so, since it puts back what it changes.
+TIDYING = """async ([id, ops]) => {
+  const t = await fetch('https://auth-service.dndbeyond.com/v1/cobalt-token', {method: 'POST', credentials: 'include'});
+  const h = {'Content-Type': 'application/json', Authorization: 'Bearer ' + (await t.json()).token};
+  const out = [];
+  for (const [method, path, body] of ops)
+    out.push((await fetch('https://character-service.dndbeyond.com/character/v5/' + path, {method, headers: h, body: JSON.stringify({characterId: id, ...body})})).status);
+  return out;
+}"""
+
+
+def left_over(d: dict) -> list[str]:
+    ds = d.get("deathSaves") or {}
+    return ([f"{d['removedHitPoints']} Hit Points down"] if d.get("removedHitPoints") else []) + (
+        [f"{d['temporaryHitPoints']} Temporary Hit Points"] if d.get("temporaryHitPoints") else []) + (
+        ["death save marks"] if ds.get("successCount") or ds.get("failCount") else []) + (
+        [f"conditions {[c['id'] for c in d['conditions']]}"] if d.get("conditions") else []) + (
+        ["Hit Point Dice spent"] if any(c.get("hitDiceUsed") for c in d["classes"]) else []) + (
+        ["spell slots spent"] if any(x.get("used") for x in d.get("spellSlots") or []) else []) + (
+        ["limited uses spent"] if spent(d) else [])
+
+
+def clean_start(t: Table, seat: str) -> None:
+    """Part 1 starts on clean sheets. Anything left over (a run before this one that didn't put it back) is a miss, and
+    hit points, death saves and conditions are put right on D&D Beyond, as the seat's player could on the sheet."""
+    sheet = t.sheet(seat)
+    d = record(sheet)
+    found = left_over(d)
+    t.results.append((not found, f"{seat}'s sheet starts clean"))
+    print("PASS" if not found else "FAIL", f"{seat}'s sheet starts clean", "; ".join(found), flush=True)
+    ops = ([["PUT", "life/hp/damage-taken", {"removedHitPoints": 0, "temporaryHitPoints": 0}]] if d.get("removedHitPoints") or d.get("temporaryHitPoints") else []) + (
+        [["PUT", "life/death-saves", {"failCount": 0, "successCount": 0}]] if (d.get("deathSaves") or {}).get("failCount") or (d.get("deathSaves") or {}).get("successCount") else []) + [
+        ["DELETE", "condition", {"id": c["id"]}] for c in d.get("conditions") or []]
+    if ops:
+        print("  put right on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], ops]), flush=True)
+
+
+def used(names: list[str]) -> set[str]:
+    """The sheets these runs act on (each run names its seats as defaults)."""
+    import inspect
+
+    return {p.default for n in names for p in inspect.signature(RUNS[n]).parameters.values() if p.default in SHEETS}
 
 
 def main() -> int:
-    names = sys.argv[1:] or list(RUNS)
+    args = sys.argv[1:]
+    to_sentry = "--sentry" in args
+    names = [a for a in args if not a.startswith("--")] or list(RUNS)
+    sys.stdout = out = Kept(sys.stdout)
     with sync_playwright() as p:
         t = Table(p)
-        for name in names:
+        if "--try-alert" in args:  # (a deliberate miss: checks the way to Sentry, real_table_nightly.sh --try-alert)
+            t.results.append((False, "a deliberate miss, to try the alert (--try-alert)"))
+        try:
+            if "inventory" in names:
+                stock(t.sheet("player2"))  # (before the sheets are noted: stocking is setting up, not a run's change)
+            for seat in sorted(used(names)):
+                clean_start(t, seat)
+            before = {seat: record(t.sheet(seat)) for seat in SHEETS if seat in used(names)}
+        except Exception as e:  # (the seats aren't open, or D&D Beyond can't be reached)
+            t.results.append((False, f"the seats open: {type(e).__name__}: {str(e)[:200]}"))
+            before = {}
+        for name in names if before else []:
             print("==", name, flush=True)
-            RUNS[name](t)
+            t.run = name
+            try:
+                RUNS[name](t)
+            except Exception as e:  # one run going wrong is a result, and the rest still run
+                lines = str(e).splitlines()
+                at = next((x.strip() for x in lines if "waiting for" in x), "")  # (what it was waiting for)
+                t.results.append((False, f"{name}: stopped with {type(e).__name__}: {lines[0][:120]} {at[:160]}"))
+                print("FAIL", t.results[-1][1], flush=True)
+                try:
+                    shot = f"logs/stopped-{time.strftime('%Y-%m-%d-%H%M')}-{name}.png"
+                    t.last.screenshot(path=shot)
+                    print("  what it was looking at:", shot, flush=True)
+                except Exception:
+                    pass
+        if before:
+            t.run = "after"
+            as_found(t, before)
     missed = [what for ok, what in t.results if not ok]
     print(f"{len(t.results) - len(missed)} of {len(t.results)} as expected", flush=True)
+    if missed and to_sentry:
+        report(missed, names, "".join(out.text))
     return 1 if missed else 0
 
 
