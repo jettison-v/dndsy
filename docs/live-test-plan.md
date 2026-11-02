@@ -33,8 +33,25 @@ On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everythi
 | `resource` | A resource counts down on D&D Beyond and comes back | Every time |
 | `coins` | Coins gained in askdnd land on D&D Beyond, and Undo takes them off | Every time |
 | `rests` | A Short Rest spends a real Hit Point Die and heals; a Long Rest brings back Hit Points, Hit Point Dice, slots and a resource | Every time |
+| `temp-hp` | Temporary Hit Points given in askdnd land on the sheet; damage takes them first and leaves Hit Points be | Every time |
+| `death-saves` | Down to 0: Unconscious and the marks start on the sheet; a death save rolled in askdnd marks itself; healing clears the marks and ends Unconscious | Every time |
+| `inspiration` | Heroic Inspiration given and spent in askdnd follows on the sheet | Every time |
+| `exhaustion` | Exhaustion started in askdnd lands at its level, a new level follows, and ending it takes it off | Every time |
+| `inventory` | On Cathartic's sheet: equip and attune the Staff of Healing, spend and give back a charge, use and give back a Crossbow Bolt, drink a Potion of Healing (one fewer, and it heals) and Undo it | Every time |
+
+Part 1 starts by checking that both test sheets are clean (full Hit Points, nothing marked, spent or in force) and ends by checking each is back as it found it. A miss at the start means an earlier run didn't put something back: it's reported, and hit points, death saves and conditions are put right on D&D Beyond so the rest can run.
 
 Run it three times after a bridge change: the timing bugs so far only showed in some runs.
+
+## Every night: the canary
+
+A canary is a small check that runs on its own and warns you before anyone else notices. At 4:00, Mini time, launchd on the Mac Mini runs `real_table_nightly.sh`: it opens the seats, runs part 1 against beta and closes them. Any miss, or seats that won't open, becomes an issue in [Sentry](https://brett-vw.sentry.io/issues/?project=askdnd-v2) titled "Live test part 1: … missed" (environment `live-test`), which alerts Brett like the app's own errors. Each night's output is in `~/askdnd-tests/logs/nightly-<date>.log` on the Mini. The seats are test accounts, so game nights don't matter.
+
+- **The job:** `~/Library/LaunchAgents/ai.askdnd.live-test.plist` (its source is `scripts/ai.askdnd.live-test.plist`). A Mini asleep at 4:00 runs it when it wakes.
+- **The Sentry key:** `SENTRY_DSN` in `~/askdnd-tests/.env` on the Mini, readable only by its owner, put there with `scripts/set-secret.sh SENTRY_DSN --mini`. Never in git.
+- **Try the alert:** `real_table_nightly.sh --try-alert closed-sheet` on the Mini adds one deliberate miss to a short run. Resolve the issue it makes in Sentry afterwards.
+- **After changing the scripts:** the Mini runs its own copies. Copy them again: `scp scripts/real_table.py scripts/real_table_seats.sh scripts/real_table_nightly.sh mac-mini-server:askdnd-tests/`.
+- **Turn it off:** `launchctl bootout gui/$(id -u)/ai.askdnd.live-test` on the Mini.
 
 ## Part 2: by hand, about 15 minutes
 

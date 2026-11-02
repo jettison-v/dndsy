@@ -137,9 +137,12 @@ How each part gives way:
 
 **Checking:** `tests/browser/test_layout.py` opens every main page (player and admin, with long names on purpose),
 each tab, the menu bar's menus and Battle's side panel at 375, 768, 1000 and 1280px, and fails on anything that
-scrolls sideways, spills, wraps or overlaps (`tests/browser/layout_check.js`). At the end of each roadmap phase,
-`scripts/layout_sweep.py` runs the same check over every page of a copy of real data, as each role, and saves a
-screenshot of each page at each width for a look-over.
+scrolls sideways, spills, wraps or overlaps (`tests/browser/layout_check.js`). It checks again in WebKit, Safari's
+engine, as an iPhone (375px) and an iPad (768px): every browser on an iPhone is WebKit underneath (2026-11-02). At the
+end of each roadmap phase, `scripts/layout_sweep.py` runs the same check over every page of a copy of real data, as
+each role, and saves a screenshot of each page at each width for a look-over; it also lists rows of one list whose
+small last item (an icon, a ↗) doesn't line up with the others, which the tests don't fail on yet (on a phone, the
+Character page's Features and Wild Shape rows put their marks at two places, depending on how a row wraps).
 
 ## Components
 
