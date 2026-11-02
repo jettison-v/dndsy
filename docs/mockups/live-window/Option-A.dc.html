@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option A: one line per sheet</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./live.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 760px">
+  <div class="head">
+    <div class="num">Option A · a table</div>
+    <h1>One line per sheet</h1>
+    <p class="where"><b>Where you'll find it:</b> the same Live window. Each sheet is one line of the same height: a coloured dot, the name, how it's connected with the time folded in, and a plain ↗ that opens it on D&amp;D Beyond. A thin line between rows.</p>
+  </div>
+  <div class="scenes">
+    <div class="scene">
+      <div class="tag">On a computer</div>
+      <div class="mbar"><span class="lpill on"><i></i>Connected</span></div>
+      <div class="drop">
+        <div class="win">
+          <div class="whead">How each sheet is connected</div>
+          <div class="a-list">
+            <div class="a-row"><span class="dot ok"></span><span class="a-name" style="font-weight: 600">Cole <span class="you">(you)</span></span><span class="a-state ok">Connected</span><a class="go" href="#" aria-label="Open Cole on D&amp;D Beyond">↗</a></div>
+            <div class="a-row"><span class="dot via"></span><span class="a-name">Trah</span><span class="a-state via">Through the DM</span><a class="go" href="#" aria-label="Open Trah on D&amp;D Beyond">↗</a></div>
+            <div class="a-row"><span class="dot off"></span><span class="a-name">Big C</span><span class="a-state off">Not connected · 14 h</span><a class="go" href="#" aria-label="Open Big C on D&amp;D Beyond">↗</a></div>
+            <div class="a-row"><span class="dot bad"></span><span class="a-name">No Name</span><span class="a-state bad">2 to make by hand</span><a class="go" href="#" aria-label="Open No Name on D&amp;D Beyond">↗</a></div>
+          </div>
+          <div class="acts two">
+            <button type="button" class="btn main">Refresh Cole</button>
+            <button type="button" class="btn">Refresh everyone</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scene">
+      <div class="tag">On a phone</div>
+      <div class="phone">
+        <div class="mbar"><span class="lpill on"><i></i>Live</span></div>
+        <div class="drop">
+          <div class="win">
+            <div class="whead">How each sheet is connected</div>
+            <div class="a-list">
+              <div class="a-row"><span class="dot ok"></span><span class="a-name" style="font-weight: 600">Cole <span class="you">(you)</span></span><span class="a-state ok">Connected</span><a class="go" href="#" aria-label="Open Cole on D&amp;D Beyond">↗</a></div>
+              <div class="a-row"><span class="dot via"></span><span class="a-name">Trah</span><span class="a-state via">Through the DM</span><a class="go" href="#" aria-label="Open Trah on D&amp;D Beyond">↗</a></div>
+              <div class="a-row"><span class="dot off"></span><span class="a-name">Big C</span><span class="a-state off">Not connected · 14 h</span><a class="go" href="#" aria-label="Open Big C on D&amp;D Beyond">↗</a></div>
+              <div class="a-row"><span class="dot bad"></span><span class="a-name">No Name</span><span class="a-state bad">2 to make by hand</span><a class="go" href="#" aria-label="Open No Name on D&amp;D Beyond">↗</a></div>
+            </div>
+            <div class="acts two">
+              <button type="button" class="btn main">Refresh Cole</button>
+              <button type="button" class="btn">Refresh everyone</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side-notes">
+      <h3>Good</h3>
+      <p>The shortest window, and it reads like a table: every dot, name, word and ↗ sits in its own column.</p>
+      <h3>The cost</h3>
+      <p>The words have to stay short to fit one line. "updated 14 hours ago" becomes "· 14 h", and a longer status (a reason something couldn't refresh) goes in the ↗'s hover or gets cut off. On a narrow phone the name gets the squeeze.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

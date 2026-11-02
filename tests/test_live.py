@@ -133,8 +133,8 @@ def test_live_popover_lists_each_copy_and_who_can_refresh(player, dm, db):
     characters.refresh(db, cole)
     characters.refresh(db, trah)  # private on D&D Beyond: fails
     panel = player.get("/live", params={"c": cole.id}).text
-    assert "Refresh Cole now" in panel and "Refresh everyone" not in panel and "Game Mode" not in panel
-    assert "couldn&#39;t refresh" in panel and "not linked" in panel  # Trah failed; Big C has no link
+    assert "Refresh Cole<" in panel and "Refresh everyone" not in panel and "Game Mode" not in panel
+    assert "Couldn&#39;t refresh" in panel and "Not linked" in panel  # Trah failed; Big C has no link
     assert 'hx-swap-oob="true"' in panel  # opening it updates the pill too
     assert "Refresh everyone" in dm.get("/live", params={"c": cole.id}).text
 

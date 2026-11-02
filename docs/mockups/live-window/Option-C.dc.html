@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option C: grouped by how they're connected</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./live.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 760px">
+  <div class="head">
+    <div class="num">Option C · sections</div>
+    <h1>Grouped by how they're connected</h1>
+    <p class="where"><b>Where you'll find it:</b> the same Live window. The sheets are sorted under a heading for each state, coloured like the pill, so a row is only a name, a time where it helps, and ↗. A state with no sheets has no heading.</p>
+  </div>
+  <div class="scenes">
+    <div class="scene">
+      <div class="tag">On a computer</div>
+      <div class="mbar"><span class="lpill on"><i></i>Connected</span></div>
+      <div class="drop">
+        <div class="win">
+          <div class="c-group">
+            <div class="c-head ok"><span class="dot ok"></span>Connected</div>
+            <div class="c-row"><span style="font-weight: 600">Cole <span class="you">(you)</span></span><span></span><a class="go" href="#" aria-label="Open Cole on D&amp;D Beyond">↗</a></div>
+          </div>
+          <div class="c-group">
+            <div class="c-head via"><span class="dot via"></span>Through the DM</div>
+            <div class="c-row"><span>Trah</span><span></span><a class="go" href="#" aria-label="Open Trah on D&amp;D Beyond">↗</a></div>
+          </div>
+          <div class="c-group">
+            <div class="c-head bad"><span class="dot bad"></span>To make by hand</div>
+            <div class="c-row"><span>No Name</span><span class="c-when">2 changes</span><a class="go" href="#" aria-label="Open No Name on D&amp;D Beyond">↗</a></div>
+          </div>
+          <div class="c-group">
+            <div class="c-head off"><span class="dot off"></span>Not connected</div>
+            <div class="c-row"><span>Big C</span><span class="c-when">updated 14 h ago</span><a class="go" href="#" aria-label="Open Big C on D&amp;D Beyond">↗</a></div>
+          </div>
+          <div class="acts two">
+            <button type="button" class="btn main">Refresh Cole</button>
+            <button type="button" class="btn">Refresh everyone</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="scene">
+      <div class="tag">On a phone</div>
+      <div class="phone">
+        <div class="mbar"><span class="lpill on"><i></i>Live</span></div>
+        <div class="drop">
+          <div class="win">
+            <div class="c-group">
+              <div class="c-head ok"><span class="dot ok"></span>Connected</div>
+              <div class="c-row"><span style="font-weight: 600">Cole <span class="you">(you)</span></span><span></span><a class="go" href="#" aria-label="Open Cole on D&amp;D Beyond">↗</a></div>
+            </div>
+            <div class="c-group">
+              <div class="c-head via"><span class="dot via"></span>Through the DM</div>
+              <div class="c-row"><span>Trah</span><span></span><a class="go" href="#" aria-label="Open Trah on D&amp;D Beyond">↗</a></div>
+            </div>
+            <div class="c-group">
+              <div class="c-head bad"><span class="dot bad"></span>To make by hand</div>
+              <div class="c-row"><span>No Name</span><span class="c-when">2 changes</span><a class="go" href="#" aria-label="Open No Name on D&amp;D Beyond">↗</a></div>
+            </div>
+            <div class="c-group">
+              <div class="c-head off"><span class="dot off"></span>Not connected</div>
+              <div class="c-row"><span>Big C</span><span class="c-when">updated 14 h ago</span><a class="go" href="#" aria-label="Open Big C on D&amp;D Beyond">↗</a></div>
+            </div>
+            <div class="acts two">
+              <button type="button" class="btn main">Refresh Cole</button>
+              <button type="button" class="btn">Refresh everyone</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="side-notes">
+      <h3>Good</h3>
+      <p>Answers "who isn't connected?" at a glance, which is what the DM asks at the start of a session. When everyone is connected it's one heading and a list of names.</p>
+      <h3>The cost</h3>
+      <p>Sheets move between sections as people open and close them, so your own name isn't in a fixed place. Four states can mean four headings for four people, which is more headings than names at a small table.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
