@@ -617,9 +617,163 @@ def inventory(t: Table, seat: str = "player2") -> None:
     t.expect("and Hit Points are back", lambda: record(sheet)["removedHitPoints"] == start["removedHitPoints"], SLOW)
 
 
+def record_of(page: Page, ddb_id: int) -> dict:
+    """A sheet's record read from any D&D Beyond page, for when the sheet itself is closed."""
+    got = page.evaluate("""url => fetch(url, {credentials: 'include'}).then(r => r.json())""", f"https://character-service.dndbeyond.com/character/v5/character/{ddb_id}")
+    return got["data"]
+
+
+def cid_of(page: Page) -> str:
+    return page.url.split("/characters/")[1].split("/")[0]
+
+
+def sheet_tab(page: Page, cid: str, tab: str) -> None:
+    """The character's Sheet on one of its tabs (Spells, Items), as a player opens it."""
+    page.goto(f"https://beta.askdnd.ai/characters/{cid}", wait_until="domcontentloaded")
+    t = page.locator(f'[data-tab="{tab}"]:visible').first
+    t.wait_for(timeout=15000)
+    if t.get_attribute("aria-selected") != "true":
+        t.click(timeout=8000)
+
+
+def prepared(data: dict) -> set[str]:
+    return {sp["definition"]["name"] for cs in data.get("classSpells") or [] for sp in cs.get("spells") or [] if sp.get("prepared")}
+
+
+def prepare_these(page: Page, cid: str, names: list[str]) -> None:
+    """Sheet › Spells › Prepare spells: tick or untick each of `names`, then Make these changes."""
+    sheet_tab(page, cid, "t-spells")
+    page.locator('[data-modal-url*="/spells/prepare"]:visible').first.click(timeout=8000)
+    page.wait_for_selector(".peek.open [data-prep]", timeout=15000)
+    for n in names:
+        page.locator(f'.peek.open .prep-row[data-name="{n}"] [data-prep-tick]').first.click(timeout=8000)
+    page.locator(".peek.open [data-prep-make]").first.click(timeout=8000)
+    page.wait_for_timeout(2500)
+    page.keyboard.press("Escape")
+
+
+def prepare(t: Table, seat: str = "player2") -> None:
+    """Prepare spells (extension 0.9.8): one spell prepared and one dropped in askdnd's window reach D&D Beyond; then both
+    put back the same way."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    cid, start = cid_of(page), prepared(record(sheet))
+    sheet_tab(page, cid, "t-spells")
+    page.locator('[data-modal-url*="/spells/prepare"]:visible').first.click(timeout=8000)
+    page.wait_for_selector(".peek.open [data-prep]", timeout=15000)
+    add = page.locator('.peek.open .prep-row[data-on=""]:not([data-always])').first.get_attribute("data-name")
+    drop = page.locator('.peek.open .prep-row[data-on="1"]:not([data-always])').first.get_attribute("data-name")
+    page.keyboard.press("Escape")
+    print(f"  prepare {add}, drop {drop}", flush=True)
+    prepare_these(page, cid, [add, drop])
+    t.expect(f"D&D Beyond has {add} prepared and {drop} not", lambda: (lambda p: add in p and drop not in p)(prepared(record(sheet))), SLOW)
+    page.wait_for_timeout(1500)
+    prepare_these(page, cid, [add, drop])
+    t.expect("and both back as they were", lambda: prepared(record(sheet)) == start, SLOW)
+
+
+def how_many(data: dict, name: str) -> int:
+    return sum(i["quantity"] for i in data["inventory"] if i["definition"]["name"] == name)
+
+
+def give_one(page: Page, cid: str, iid: int, to: str) -> None:
+    """An item's panel › Give, to the character named `to`, once askdnd's copy of the sheet shows the item."""
+    for _ in range(10):
+        sheet_tab(page, cid, "t-items")
+        link = page.locator(f'[data-panel-url*="ref=item%3A{iid}"]:visible')
+        if link.count():
+            break
+        page.wait_for_timeout(3000)
+    link.first.click(timeout=8000)
+    page.wait_for_selector(".peek.open .peek-body", timeout=8000)
+    page.locator('.peek.open [data-use-url$="/give"]').first.click(timeout=8000)
+    page.wait_for_selector("[data-use-go]", timeout=8000)
+    pick = page.locator('select[name="receiver"]').first
+    label = next(o for o in pick.locator("option").all_inner_texts() if o.startswith(to))
+    pick.select_option(label=label)
+    page.locator("[data-use-go]").first.click()
+    page.wait_for_timeout(2500)
+    page.keyboard.press("Escape")
+
+
+def give(t: Table, seat: str = "player2", other: str = "player3") -> None:
+    """Give (extension 0.9.8): a Potion of Healing handed to another character at the table comes off one sheet and onto
+    the other, and is given back the same way. D&D Beyond can't move an item, so each side gets a fresh row: the run
+    puts the giver's rows back as one."""
+    sheet, theirs = t.sheet(seat), t.sheet(other)
+    have = stock(sheet)
+    page, them = t.battle(seat), t.battle(other)
+    t.expect("both sheets connect", lambda: "Connected" in pill(page) and "Connected" in pill(them), 40)
+    name, potion = "Potion of Healing", have["Potion of Healing"]["id"]
+    mine0, theirs0 = how_many(record(sheet), name), how_many(record(theirs), name)
+    name_of = lambda pg: pg.locator(".char-name h1").first.inner_text().split("\n")[0].strip()  # (askdnd's name, as the list says it)
+    give_one(page, cid_of(page), potion, name_of(them))
+    t.expect("one fewer on the giver's sheet", lambda: how_many(record(sheet), name) == mine0 - 1, SLOW)
+    t.expect("and one more on the other", lambda: how_many(record(theirs), name) == theirs0 + 1, SLOW)
+    page.wait_for_timeout(1500)
+    new = max(i["id"] for i in record(theirs)["inventory"] if i["definition"]["name"] == name)
+    give_one(them, cid_of(them), new, name_of(page))
+    t.expect("given back: the giver has as many as before", lambda: how_many(record(sheet), name) == mine0, SLOW)
+    t.expect("and the other as many as before", lambda: how_many(record(theirs), name) == theirs0, SLOW)
+    rows = [i for i in record(sheet)["inventory"] if i["definition"]["name"] == name]
+    extra = [i["id"] for i in rows if i["id"] != potion]
+    if extra:  # (the giver's fresh row folded back into the first)
+        print("  tidying the giver's rows:", sheet.evaluate(TIDYING, [SHEETS[seat], [["PUT", "inventory/item/quantity", {"id": potion, "quantity": mine0}],
+                                                                                    *[["DELETE", "inventory/item", {"id": x, "removeContainerContents": False}] for x in extra]]]), flush=True)
+
+
+def loot(t: Table, seat: str = "player2") -> None:
+    """Give loot (the DM): a Torch from D&D Beyond's 2024 items and 1 gp land on a player's sheet; then taken off."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    cid, start = cid_of(page), record(sheet)
+    gp = lambda d: (d.get("currencies") or {}).get("gp") or 0
+    dm = t.page("dm", f"https://beta.askdnd.ai/characters/{cid}")
+    sheet_tab(dm, cid, "t-items")
+    go(dm, dm.locator('[data-use-url$="/loot"]:visible').first)
+    dm.locator('input[name="item"]').first.fill("Torch")
+    dm.locator('.roll-win input[name="amount"]').first.fill("1")
+    dm.locator("[data-use-go]").first.click()
+    t.expect("a Torch reaches the sheet", lambda: how_many(record(sheet), "Torch") == how_many(start, "Torch") + 1, SLOW)
+    t.expect("and 1 gp", lambda: gp(record(sheet)) == gp(start) + 1, SLOW)
+    dm.wait_for_timeout(1500)
+    dm.keyboard.press("Escape")
+    added = [i["id"] for i in record(sheet)["inventory"] if i["definition"]["name"] == "Torch" and i["id"] not in {x["id"] for x in start["inventory"]}]
+    if added:
+        print("  taking the Torch off:", sheet.evaluate(TIDYING, [SHEETS[seat], [["DELETE", "inventory/item", {"id": x, "removeContainerContents": False}] for x in added]]), flush=True)
+    sheet_tab(page, cid, "t-items")
+    go(page, page.locator('[data-use-url$="/coins"]:visible').first)
+    page.locator('.roll-win input[name="amount"]').first.fill("1")
+    page.locator('[data-use-go][data-to="spend"]').first.click()
+    t.expect("the gp spent again", lambda: gp(record(sheet)) == gp(start), SLOW)
+    page.wait_for_timeout(1500)
+    page.keyboard.press("Escape")
+
+
+def dm_backup(t: Table, seat: str = "player2") -> None:
+    """DM Backup (extension 0.9.8): with a player's sheet closed, the DM's browser with a D&D Beyond page open makes
+    askdnd's change on it; the pill says so, then Connected again once the sheet is back."""
+    page = t.battle(seat)
+    for x in [p for p in t.contexts[seat].pages if "dndbeyond.com/characters/" in p.url]:
+        x.close()
+    ddb = t.page("dm", "https://www.dndbeyond.com/campaigns/8224496")
+    t.expect("the player's pill says through the DM", lambda: "Through the DM" in pill(page), 60)
+    start = record_of(ddb, SHEETS[seat])["removedHitPoints"]
+    change_hp(page, 0, 1)
+    t.expect("the DM's browser makes the hit on D&D Beyond", lambda: record_of(ddb, SHEETS[seat])["removedHitPoints"] == start + 1, SLOW)
+    page.wait_for_timeout(1500)
+    change_hp(page, 1, 1)
+    t.expect("and the healing", lambda: record_of(ddb, SHEETS[seat])["removedHitPoints"] == start, SLOW)
+    t.sheet(seat)
+    t.expect("the sheet open again: Connected", lambda: "Connected" in pill(page), 40)
+
+
 RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
         "cast": cast, "resource": resource, "coins": coins, "rests": rests, "temp-hp": temp_hp, "death-saves": death_saves,
-        "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory}
+        "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
+        "loot": loot, "dm-backup": dm_backup}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 
@@ -732,7 +886,7 @@ def main() -> int:
             except Exception as e:  # one run going wrong is a result, and the rest still run
                 lines = str(e).splitlines()
                 at = next((x.strip() for x in lines if "waiting for" in x), "")  # (what it was waiting for)
-                t.results.append((False, f"{name}: stopped with {type(e).__name__}: {lines[0][:120]} {at[:160]}"))
+                t.results.append((False, f"{name}: stopped with {type(e).__name__}: {lines[0][:120] if lines else ''} {at[:160]}"))
                 print("FAIL", t.results[-1][1], flush=True)
                 try:
                     shot = f"logs/stopped-{time.strftime('%Y-%m-%d-%H%M')}-{name}.png"

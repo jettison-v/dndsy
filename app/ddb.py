@@ -149,15 +149,20 @@ def fetch_character(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:
                 always[str(class_id)] = spells
         class_id = _d(c, "definition", "id")
         if class_id and _d(c, "definition", "canCastSpells"):
-            seen, pool = set(), []
+            # One copy of each spell. D&D Beyond lists both the 2014 and the 2024 copy of some (Detect Evil and Good),
+            # the 2014 one first: keep the 2024 one, the only kind askdnd offers to prepare (Nov 2: dropping such a
+            # spell left nothing to prepare it again with)
+            from app.ddb_sheet import CORE_SOURCES
+
+            core = lambda sp: bool(set(_source_ids(sp.get("definition") or {})) & CORE_SOURCES)
+            pool: dict[str, dict] = {}
             for url in CLASS_SPELLS_URLS:
                 for sp in _spell_list(url.format(class_id=class_id, level=level), timeout):
                     name = _d(sp, "definition", "name")
-                    if name and name not in seen:
-                        seen.add(name)
-                        pool.append(_slim_spell(sp))
+                    if name and (name not in pool or (core(sp) and not core(pool[name]))):
+                        pool[name] = sp
             if pool:
-                available[str(class_id)] = pool
+                available[str(class_id)] = [_slim_spell(sp) for sp in pool.values()]
     data["askdnd"] = {"alwaysPreparedSpells": always, "availableSpells": available}
     return data
 
