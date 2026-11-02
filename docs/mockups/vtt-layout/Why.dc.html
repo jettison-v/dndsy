@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Why the frame around the map</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.why section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; }
+.why h2 { margin: 0; font: 600 19px/1.25 var(--serif); color: var(--strong); }
+.why p { color: var(--muted); font-size: 14px; }
+.why p b { color: var(--text); font-weight: 600; }
+.why .n { font: 700 12px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.why section.wide { grid-column: span 3; }
+.trade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.trade div { display: grid; gap: 4px; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1180px">
+  <div class="head">
+    <div class="num">The thinking behind it</div>
+    <h1>Why the frame around the map</h1>
+    <p class="where"><b>Where you'll find it:</b> this is the reasoning behind the first board. The short version: a fight needs four things in view at once, askdnd already gave each of them a place, and keeping those places means the first simple step is built in the final page.</p>
+  </div>
+  <div class="why">
+    <section>
+      <span class="n">1 · What a fight needs</span>
+      <h2>Four things at once, plus the map</h2>
+      <p>During a fight everyone glances, over and over, at <b>whose turn it is and who's next</b>, <b>what was just rolled</b>, <b>their own numbers</b> and <b>what they can do now</b>. Each needs a place that's always in view. Hiding any one behind a tab or a button costs a click every turn, and covering the map makes people move things out of the way.</p>
+    </section>
+    <section>
+      <span class="n">2 · Places people know</span>
+      <h2>Every piece stays where it already lives</h2>
+      <p>askdnd already put the fight band along the top, Table rolls on the left, the side panel on the right, corner cards at the bottom right, and windows over the middle. The table has learned those. On the VTT page they stay put, so there's nothing new to learn, and each is the same piece of code as on every other page: a fix to Table rolls fixes it everywhere.</p>
+    </section>
+    <section>
+      <span class="n">3 · Build once</span>
+      <h2>Step 1 is the final page with a different middle</h2>
+      <p>The first simple step (rows of fighters, no map) and the finished VTT differ only in the middle. The turn bar, Table rolls, the side panel and your turn's bar are built in step 1 and never move. When maps arrive, the middle becomes the map and the rows' details move into the turn bar and the side panel. That's how the layout avoids a rebuild later.</p>
+    </section>
+    <section>
+      <span class="n">4 · Close to the action</span>
+      <h2>Your turn's bar sits under the map</h2>
+      <p>On your turn you move and act on the map, so what you can do sits right under it: the shortest trip for the mouse and the eye. <b>Movement left</b> belongs here because it's yours and it's per turn, and it survives taking an action in the middle of a move. When it isn't your turn, the bar shows only your Reactions.</p>
+    </section>
+    <section>
+      <span class="n">5 · What may cover what</span>
+      <h2>Windows open over the bottom of the map</h2>
+      <p>A roll, Cast or Hit Points window is open for seconds. Covering the bottom of the map for that long costs less than covering the turn order or your numbers, so windows never open over the bars or the panels. Corner cards keep their corner, above your turn's bar.</p>
+    </section>
+    <section>
+      <span class="n">6 · Inform, don't advise</span>
+      <h2>The map shows; it never decides</h2>
+      <p>Moving shows the feet so far and what's left, by the diagonal rule the DM picked. A spell's area shows which squares count and who's in them, measured from a Large creature's whole space. Nothing stops a move or picks a target: going over your Speed turns red, and close calls are the DM's ruling.</p>
+    </section>
+    <section>
+      <span class="n">7 · Room for the map</span>
+      <h2>Enough on a laptop, more when you need it</h2>
+      <p>On a 1440-pixel-wide screen the map gets about 880 by 660 pixels, 24 by 18 squares at full size; on a 1280 laptop, about 720 wide. Table rolls closes to a thin strip and the side panel closes too, giving the map about 1,200 pixels, and the map zooms. The bars top and bottom stay, because they're what a fight reads every few seconds.</p>
+    </section>
+    <section>
+      <span class="n">8 · Phones</span>
+      <h2>The same order, top to bottom</h2>
+      <p>A phone keeps the turn bar on top and the map in the middle, and the two panels become sheets that slide up from the bottom: your turn's bar, and whatever you tapped. Table rolls stays the thin line it is today. Nothing new to learn between a phone and a computer.</p>
+    </section>
+    <section>
+      <span class="n">9 · Where new things go</span>
+      <h2>Each later feature already has a home</h2>
+      <p>Fog, walls, scenes and adding creatures go in the map's tool strip, under the DM's line. Enemy stat blocks and spells go in the side panel. Attacks the DM confirms go in Table rolls, as Apply to does now. Showing a handout to the table can be a window. None of them needs a new region.</p>
+    </section>
+    <section class="wide">
+      <span class="n">10 · What I traded away</span>
+      <div class="trade">
+        <div><h2>Less map than a full screen</h2><p>Floating panels over a full-screen map give more map, but they cover tokens, and askdnd's panels would behave differently here than everywhere else. Closing the panels gets most of that space back when it matters.</p></div>
+        <div><h2>More pieces than one column</h2><p>One column of tabs is the simplest to build, but a fight needs the order, the rolls and your numbers at the same moment, and tabs show one at a time.</p></div>
+        <div><h2>Not open yet</h2><p>Whether the DM wants a second screen or window (the map on one, notes on another), and where music controls sit. Both fit the DM's side of the frame without moving anything for players.</p></div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
