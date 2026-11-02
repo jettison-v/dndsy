@@ -10,7 +10,7 @@
 {% if kind == "short" %}{% for d in p.dice if d.left %}<div class="rw-row"><span class="rw-label">Spend</span><select class="rw-slot" name="dice_{{ d.id }}" aria-label="{{ d.class }} Hit Point Dice to spend">{% for n in range(d.left + 1) %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select><span class="note">{{ d.die }} {{ d.class }}, {{ d.left }} left</span></div>{% endfor %}{% endif %}
 {% if lines %}<ul class="use-what rest-list">{% for l in lines %}<li>{{ l }}</li>{% endfor %}</ul>{% else %}<p class="use-what">Nothing else comes back.</p>{% endif %}
 {% if p.dawn %}<p class="note">Back at dawn, not on a rest: {{ p.dawn | join(", ") }}.</p>{% endif %}
-{% if prepare %}<p class="note">After it, you can change your prepared spells: <a href="/characters/{{ c.id }}/spells/prepare?cls={{ prepare[0] | urlencode }}">Prepare spells</a>.</p>{% endif %}
+{% if prepare %}<p class="note">After it, you can change your prepared spells: <button type="button" class="btn link small" data-modal-url="/characters/{{ c.id }}/spells/prepare?cls={{ prepare[0] | urlencode }}" data-modal-size="large">Prepare spells</button>.</p>{% endif %}
 {% if reachable %}
 <div class="rw-row cast-go"><button type="button" class="btn primary small" data-use-go>Take a {{ "Short" if kind == "short" else "Long" }} Rest</button></div>
 <p class="use-said" role="alert" hidden></p>

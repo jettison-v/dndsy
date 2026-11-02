@@ -1,8 +1,8 @@
 """Changing prepared spells (Brett, 2026-11-02): a spell's side panel has Prepare or Unprepare, confirmed in the roll
 window, and the change goes to D&D Beyond through the bridge (app/ddb_fields.py "prep", the request D&D Beyond's own
 sheet sends, seen on the test sheet the same day). Prepare spells (`/characters/<id>/spells/prepare`, Brett 2026-11-02,
-docs/mockups/prepare-spells/) is its own screen for the lot: tick and untick with the count in view, then one Make for
-all the changes.
+docs/mockups/prepare-spells/) is a large modal like the Spell Book for the lot: tick and untick with the count in view
+and your notes on each spell, then one Make for all the changes.
 
 Only for a class that prepares from a list (a cleric, a druid, a wizard from the spellbook), and only a spell of 1st
 level or higher. The window says how many are prepared and the class's number at its level; going over is allowed, as
@@ -103,7 +103,8 @@ def prepare_screen(request: Request, character_id: int, cls: str = "", db: Sessi
     if not books:
         raise HTTPException(404)
     book = next((b for b in books if b["class"] == cls), books[0])
-    fav = set(picks.picks(db, ch, user)["fav"]) if picks.can_see(user, ch) else set()
+    mine = picks.picks(db, ch, user) if picks.can_see(user, ch) else {"fav": [], "notes": {}}
+    fav, notes = set(mine["fav"]), mine.get("notes") or {}
     on_way = {k for k, v in (sheet.get("sync") or {}).items() if k.startswith("prep:") and v == "on"}
     rows = []
     for sp in book["spells"]:
@@ -113,9 +114,10 @@ def prepare_screen(request: Request, character_id: int, cls: str = "", db: Sessi
         rows.append({"key": sp["key"], "name": sp["name"], "level": sp["level"], "time": {"Bonus action": "Bonus"}.get(sp.get("casting_time"), sp.get("casting_time") or ""),
                      "effect": dict(sb.EFFECTS).get(sb.effect_of(sp), ""), "conc": sp.get("concentration"), "what": _what(sp),
                      "always": sp["state"] == "always", "on": sp["state"] in ("prepared", "always"), "fav": sp["key"] in fav,
+                     "note": notes.get(sp["key"], ""),
                      "going": f"prep:{p.get('cls')}:{p.get('entry')}" in on_way})
     levels = sorted({r["level"] for r in rows})
-    return templates.TemplateResponse(request, "prepare_spells.html", {
+    return templates.TemplateResponse(request, "_prepare_spells.html", {
         "c": ch, "book": book, "books": books, "rows": rows, "levels": [(lv, ORDINAL.get(lv, f"{lv}th")) for lv in levels],
         "effects": [label for _, label in sb.EFFECTS if any(r["effect"] == label for r in rows)],
         "rule": RULES.get(book["class"], ""), "reachable": ddb_bridge.reachable(ch)})
