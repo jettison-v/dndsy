@@ -3,7 +3,7 @@
 {% from "_form_list.html" import form_list %}
 {% from "_item_list.html" import item_list %}
 {% from "_feature_list.html" import feature_list %}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs, ntile, hp_tile, inspiration, purse %}
+{% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs, ntile, hp_tile, inspiration, purse, rest_btn %}
 {% set s = sheet %}
 {% if s %}
 {# Row 1: the numbers you look up most #}
@@ -27,7 +27,7 @@
       <div class="sv{{ ' prof' if sv.proficient }}">Save {{ sv.label }} {{ adv(sv.adv) }}</div></div>
     {% endfor %}
   </div>
-  <p class="note m-0 mt-2">{% if s.save_adv_all %}{{ adv(s.save_adv_all) }} on every save {% for a in s.save_adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %} · {% endif %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>
+  <div class="sheet-hd"><p class="note m-0">{% if s.save_adv_all %}{{ adv(s.save_adv_all) }} on every save {% for a in s.save_adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %} · {% endif %}Hit dice {% for h in s.hit_points.hit_dice %}{{ h.total - h.used }}/{{ h.total }} {{ h.die }}{{ ", " if not loop.last }}{% endfor %}</p>{% if can_play %}{{ rest_btn(c) }}{% endif %}</div>
 </section>
 
 {# Row 3: everything else, in tabs #}

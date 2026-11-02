@@ -139,6 +139,12 @@
 </span>
 {%- if roll and dying_state(s) == "dying" %}<button type="button" class="roll-chip tile-roll" data-roll="death" data-label="Death save" title="Roll your death save: 10 or more a success, a 1 two failures, a 20 back with 1 Hit Point. It marks itself.">Roll</button>{% endif -%}
 {%- endmacro %}
+{# Rest, with a moon so it stands out from the chips around it (Brett, 2026-11-02): Battle's Resources row (the Status row on
+   a phone) and Sheet's Hit dice line. It opens the rest window (app/rests.py), Short Rest first. #}
+{% macro rest_btn(c) -%}
+<button type="button" class="cond-rest" data-use-url="/characters/{{ c.id }}/rest?kind=short"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z" fill="currentColor"/></svg>Rest</button>
+{%- endmacro %}
+
 {# Coins as a purse (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html, question 6): each coin in its metal, the total in
    gold beside them. On Sheet › Items, where the bridge works, pressing it opens Change coins; on a Party card it only
    shows. A coin on its way to D&D Beyond has its ↻. `total` says the gold it's all worth beside it (else on hover). #}
