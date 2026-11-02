@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "askdnd bridge",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "Keeps your D&D Beyond sheet and askdnd in step, both ways, and hears the turns of a fight in D&D Beyond's VTT.",
   "permissions": [
     "storage",
@@ -25,6 +25,18 @@
         "ddb.js"
       ],
       "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.dndbeyond.com/*"
+      ],
+      "exclude_matches": [
+        "https://www.dndbeyond.com/characters/*"
+      ],
+      "js": [
+        "carry.js"
+      ],
+      "run_at": "document_idle"
     },
     {
       "matches": [

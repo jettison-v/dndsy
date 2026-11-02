@@ -1,5 +1,7 @@
 {# The Live window (app/live.py): how each sheet is connected to D&D Beyond, and refreshing now. "Refresh everyone" is for
-   reviewers only. Also refreshes the pill. #}
+   reviewers only. Also refreshes the pill. With the DM as a backup (app/ddb_bridge.py `carried`, docs/mockups/dm-backup/):
+   a closed sheet's player reads that the DM is making their changes and is asked to open it; the DM reads which sheets are
+   made through them, a nudge to open D&D Beyond when one can't be reached while the table plays, and what they made. #}
 {% set f = tn.focus %}{% set q = '?c=%s' % f.id if f else '' %}
 <div class="live-pop" role="dialog" aria-label="D&amp;D Beyond">
   {% if tn.connectable and bridge_extension_url %}{% set sheet = tn.mine if tn.mine and tn.mine.connects else None %}
@@ -14,6 +16,24 @@
     <p class="bridge-small">Free. It only works on D&amp;D Beyond and askdnd.</p>
     <p class="bridge-other">The askdnd bridge needs Chrome. Open askdnd in Chrome on a computer to connect {{ "your sheet" if sheet else "D&amp;D Beyond" | safe }}.</p>
   </section>{% endif %}
+  {% set me = tn.mine if tn.mine and tn.mine.connects else None %}
+  {% if me and me.via %}
+  <div class="live-say via"><span>Your sheet is closed, so the DM's D&amp;D Beyond is making your changes. Open it so your rolls reach D&amp;D Beyond's Game Log too.</span>
+    <a class="btn small" href="https://www.dndbeyond.com/characters/{{ me.ddb_id }}" target="_blank" rel="noopener">Open sheet ↗</a></div>
+  {% elif me and not me.step and (tn.playing or fight_now()) %}
+  <div class="live-say bad"><span>Your changes can't reach D&amp;D Beyond: your sheet is closed{% if backup and dm_here %}, and your character isn't in this campaign's D&amp;D Beyond campaign, where the DM could make them{% elif backup %} and the DM has no D&amp;D Beyond page open{% endif %}. Open it in Chrome with the askdnd bridge.</span>
+    <a class="btn small" href="https://www.dndbeyond.com/characters/{{ me.ddb_id }}" target="_blank" rel="noopener">Open sheet ↗</a></div>
+  {% endif %}
+  {% set unreached = tn.characters | selectattr("connects") | rejectattr("step") | rejectattr("via") | list %}
+  {% if tn.dm and backup and unreached and (tn.playing or fight_now()) %}
+  {% set names = unreached | map(attribute="name") | join(", ") %}
+  {% if dm_here %}
+  <div class="live-say bad"><span>{% if unreached | length == 1 %}{{ names }} isn't in this campaign's D&amp;D Beyond campaign, so only its own sheet can make its changes.{% else %}{{ names }} aren't in this campaign's D&amp;D Beyond campaign, so only their own sheets can make their changes.{% endif %}</span></div>
+  {% else %}
+  <div class="live-say bad"><span>{{ names }}: {{ "the sheet is" if unreached | length == 1 else "their sheets are" }} closed. Open D&amp;D Beyond in this browser to make {{ "its" if unreached | length == 1 else "their" }} changes.</span>
+    <a class="btn small" href="{{ 'https://www.dndbeyond.com/campaigns/%s' % ddb_game if ddb_game else 'https://www.dndbeyond.com/my-campaigns' }}" target="_blank" rel="noopener">Open ↗</a></div>
+  {% endif %}
+  {% endif %}
   <div class="live-list">
     <div class="live-head">How each sheet is connected</div>
     {% for r in tn.characters %}
@@ -21,12 +41,19 @@
       {% if not r.linked %}<span class="note">not linked</span>
       {% elif r.by_hand %}<span class="quiet-warn">{{ r.by_hand }} to make by hand</span>
       {% elif r.step %}<span class="live-ok">connected</span>
+      {% elif r.via %}<span class="quiet-warn">through {{ "you" if tn.dm else "the DM" }}</span>
       {% elif not r.fetched_at %}<span class="quiet-warn">{{ "couldn't refresh" if r.failed else "not fetched yet" }}</span>
       {% elif r.failed %}<span class="quiet-warn" title="{{ r.error }}">couldn't refresh · showing {{ r.fetched_at | ago }}</span>
       {% elif r.connects %}<span class="note">not connected</span><small class="live-when">updated {{ r.fetched_at | ago }}</small>
       {% else %}<small class="live-when">updated {{ r.fetched_at | ago }}</small>{% endif %}</div>
     {% else %}<p class="muted">No characters yet.</p>{% endfor %}
   </div>
+  {% if made_through %}
+  <div class="live-list">
+    <div class="live-head">Made through {{ "you" if tn.dm else "the DM" }}</div>
+    {% for line in made_through %}<div class="live-made"><b>{{ line.name }}</b>: {{ line.text }} <small class="live-when">{{ line.at | ago }}</small></div>{% endfor %}
+  </div>
+  {% endif %}
   {% if (f and f.linked) or (reviewer and tn.linked) %}
   <div class="live-actions">
     {% if f and f.linked %}<button type="button" class="btn primary small" hx-post="/live/refresh/{{ f.id }}" hx-target="#live-menu" hx-disabled-elt="this">Refresh {{ f.name }} now</button>{% endif %}

@@ -1,8 +1,10 @@
-// Runs inside the D&D Beyond sheet's own page (injected by ddb.js), as the signed-in person.
+// Runs inside a D&D Beyond page, as the signed-in person: a character's sheet (injected by ddb.js), or, for the DM as a
+// backup, any other D&D Beyond page (carry.js), where only 2. runs.
 // 1. Hears the sheet save: every successful change it sends to character-service is reported (no numbers: askdnd reads
 //    the sheet back from D&D Beyond itself).
-// 2. Makes askdnd's batches: only the requests askdnd may make (WRITES), only for the character whose sheet this is,
-//    with a short-lived token D&D Beyond gives this page from its own sign-in. Nothing is stored.
+// 2. Makes askdnd's batches: only the requests askdnd may make (WRITES), only for the character the batch names (on a
+//    sheet, the one whose sheet this is, unless the DM's browser is making a closed sheet's change: app/ddb_bridge.py
+//    `carried`), with a short-lived token D&D Beyond gives this page from its own sign-in. Nothing is stored.
 // 3. Hears rolls made on the sheet: the finished roll the sheet sends to D&D Beyond's game log is passed on to askdnd's
 //    Table rolls. And sends the player's askdnd rolls to the game log (app/gamelog.py; Brett, 2026-10-29), as
 //    askdnd's own: source "askdnd" and ⓐ in the name, never passed off as D&D Beyond's; askdnd builds each one, this
@@ -26,6 +28,7 @@
     'PUT /character/v5/inventory/currency/electrum', 'PUT /character/v5/inventory/currency/gold',
     'PUT /character/v5/inventory/currency/platinum']);
   const sheetId = () => (location.pathname.match(/\/characters\/(\d+)/) || [])[1];
+  const onSheet = !!sheetId();  // (elsewhere it only makes batches: nothing of the page is heard or changed)
   const post = m => window.postMessage({ askdndBridge: 'from-page', characterId: sheetId(), ...m }, location.origin);
   let saving = 0;  // the sheet's own changes on their way to D&D Beyond
   const isSave = (method, url) => {
@@ -35,63 +38,65 @@
     try { const u = new URL(url, location.href); post({ type: 'saved', path: u.pathname }); } catch (e) { /* not a URL */ }
   };
 
-  const open = XMLHttpRequest.prototype.open, send = XMLHttpRequest.prototype.send;
-  XMLHttpRequest.prototype.open = function (m, u) { this.__askdnd = [String(m).toUpperCase(), String(u)]; return open.apply(this, arguments); };
-  XMLHttpRequest.prototype.send = function () {
-    const x = this;
-    if (x.__askdnd && isSave(...x.__askdnd)) {
-      saving++;
-      x.addEventListener('loadend', () => { saving--; if (x.status >= 200 && x.status < 300) saved(...x.__askdnd); });
-    }
-    return send.apply(this, arguments);
-  };
   const ofetch = window.fetch;
-  window.fetch = async function (input, init) {
-    const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-    const url = typeof input === 'string' ? input : input.url;
-    if (!isSave(method, url)) return ofetch.apply(this, arguments);
-    saving++;
-    try {
-      const res = await ofetch.apply(this, arguments);
-      if (res.ok) saved(method, url);
-      return res;
-    } finally { saving--; }
-  };
-
-  // Rolls made on this sheet: the sheet tells D&D Beyond's game log each finished roll; askdnd only listens (the message
-  // goes out exactly as the sheet sent it) and passes this character's own on to Table rolls
-  const asRoll = m => {
-    const j = typeof m === 'string' && m.includes('dice/roll/fulfilled') ? JSON.parse(m) : null;
-    return j && j.eventType === 'dice/roll/fulfilled' && j.data ? j : null;
-  };
-  // The game log also brings this page the rolls made elsewhere in the game: the DM's for a monster (so a player can
-  // apply the hit, app/hit_points.py) and a character's made on another page. Each is passed on as it came;
-  // askdnd keeps each roll once (app/ddb_bridge.py heard_in_game). Heard from the moment the page opens its connection
-  const listening = new WeakSet();
-  let gameLog = null;  // this sheet's connection to its game's log (askdnd's rolls go out on it)
-  const listen = ws => {
-    if (listening.has(ws)) return;
-    listening.add(ws);
-    if (String(ws.url).includes('game-log-api')) gameLog = ws;
-    ws.addEventListener('message', e => {
-      try {
-        const j = asRoll(e.data);
-        if (j) post({ type: 'heard', message: j });  // (this sheet's own come back too: kept once)
-      } catch (err) { /* not a roll */ }
-    });
-  };
-  window.WebSocket = new Proxy(WebSocket, { construct(t, args, nt) { const ws = Reflect.construct(t, args, nt); listen(ws); return ws; } });
   const wsend = WebSocket.prototype.send;
-  WebSocket.prototype.send = function (m) {
-    try {
-      const j = asRoll(m);
-      if (j && String(j.entityId) === sheetId() && j.source !== 'askdnd') {  // (askdnd's own: Table rolls has it)
-        post({ type: 'roll', roll: { id: j.data.rollId, action: j.data.action, rolls: j.data.rolls, scope: j.messageScope, target: j.messageTarget, user: j.userId } });
+  let gameLog = null;  // this sheet's connection to its game's log (askdnd's rolls go out on it)
+  if (onSheet) {  // hearing the sheet: its saves and its rolls
+    const open = XMLHttpRequest.prototype.open, send = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.open = function (m, u) { this.__askdnd = [String(m).toUpperCase(), String(u)]; return open.apply(this, arguments); };
+    XMLHttpRequest.prototype.send = function () {
+      const x = this;
+      if (x.__askdnd && isSave(...x.__askdnd)) {
+        saving++;
+        x.addEventListener('loadend', () => { saving--; if (x.status >= 200 && x.status < 300) saved(...x.__askdnd); });
       }
-    } catch (e) { /* not a roll */ }
-    listen(this);  // (a connection opened before this script ran)
-    return wsend.apply(this, arguments);
-  };
+      return send.apply(this, arguments);
+    };
+    window.fetch = async function (input, init) {
+      const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+      const url = typeof input === 'string' ? input : input.url;
+      if (!isSave(method, url)) return ofetch.apply(this, arguments);
+      saving++;
+      try {
+        const res = await ofetch.apply(this, arguments);
+        if (res.ok) saved(method, url);
+        return res;
+      } finally { saving--; }
+    };
+
+    // Rolls made on this sheet: the sheet tells D&D Beyond's game log each finished roll; askdnd only listens (the message
+    // goes out exactly as the sheet sent it) and passes this character's own on to Table rolls
+    const asRoll = m => {
+      const j = typeof m === 'string' && m.includes('dice/roll/fulfilled') ? JSON.parse(m) : null;
+      return j && j.eventType === 'dice/roll/fulfilled' && j.data ? j : null;
+    };
+    // The game log also brings this page the rolls made elsewhere in the game: the DM's for a monster (so a player can
+    // apply the hit, app/hit_points.py) and a character's made on another page. Each is passed on as it came;
+    // askdnd keeps each roll once (app/ddb_bridge.py heard_in_game). Heard from the moment the page opens its connection
+    const listening = new WeakSet();
+    const listen = ws => {
+      if (listening.has(ws)) return;
+      listening.add(ws);
+      if (String(ws.url).includes('game-log-api')) gameLog = ws;
+      ws.addEventListener('message', e => {
+        try {
+          const j = asRoll(e.data);
+          if (j) post({ type: 'heard', message: j });  // (this sheet's own come back too: kept once)
+        } catch (err) { /* not a roll */ }
+      });
+    };
+    window.WebSocket = new Proxy(WebSocket, { construct(t, args, nt) { const ws = Reflect.construct(t, args, nt); listen(ws); return ws; } });
+    WebSocket.prototype.send = function (m) {
+      try {
+        const j = asRoll(m);
+        if (j && String(j.entityId) === sheetId() && j.source !== 'askdnd') {  // (askdnd's own: Table rolls has it)
+          post({ type: 'roll', roll: { id: j.data.rollId, action: j.data.action, rolls: j.data.rolls, scope: j.messageScope, target: j.messageTarget, user: j.userId } });
+        }
+      } catch (e) { /* not a roll */ }
+      listen(this);  // (a connection opened before this script ran)
+      return wsend.apply(this, arguments);
+    };
+  }
 
   let token = null, until = 0;
   async function auth(fresh) {
@@ -111,7 +116,7 @@
     }
   }
   // The character as the sheet reads it when it opens (with its custom items)
-  const character = async () => (await call('GET', '/character/v5/character/' + sheetId() + '?includeCustomItems=true')).data || {};
+  const character = async (id = sheetId()) => (await call('GET', '/character/v5/character/' + id + '?includeCustomItems=true')).data || {};
 
   // Where a field is in a character, as app/ddb_fields.py `pick` reads it (keep the two the same)
   function pick(data, steps) {
@@ -191,6 +196,7 @@
   window.addEventListener('message', e => {
     if (e.source !== window || !e.data) return;
     if (e.data.askdndBridge === 'apply') queue = queue.then(() => run(e.data.batch), () => run(e.data.batch));
+    if (!onSheet) return;
     if (e.data.askdndBridge === 'show') show();  // askdnd changed this character from another copy of the sheet
     if (e.data.askdndBridge === 'check') check(e.data.fields || []);
     if (e.data.askdndBridge === 'gamelog') toGameLog(e.data.messages || []);
@@ -220,26 +226,29 @@
   // Each total is checked against what D&D Beyond has right now (signed in, so not a cached copy): already there is
   // skipped (a repeat never doubles a change), still at the old value is written, anything else is someone else's
   // change, and then nothing is written at all.
+  // The batch names its character (`ddb`); every request must be for that one.
   async function run(batch) {
-    const id = batch.id;
+    const id = batch.id, who = String(batch.ddb || sheetId() || '');
+    const done = m => post({ type: 'applied', batch: id, ddb: who, ...m });
     try {
+      if (!who) throw new Error('No character named.');
       for (const op of batch.ops) {
         if (!WRITES.has(op.method + ' ' + op.path)) throw new Error("That isn't a change askdnd may make.");
-        if (String(op.body && op.body.characterId) !== sheetId()) throw new Error("A different character's sheet is open.");
+        if (String(op.body && op.body.characterId) !== who) throw new Error("A request for a different character.");
       }
-      const d = await character();
+      const d = await character(who);
       const todo = [], conflicts = [];
       for (const op of batch.ops) {
         const v = pick(d, op.read);
         if (same(v, op.to)) continue;
         if (same(v, op.from)) todo.push(op); else conflicts.push(op.field);
       }
-      if (conflicts.length) return post({ type: 'applied', batch: id, ok: false, conflicts });
+      if (conflicts.length) return done({ ok: false, conflicts });
       for (const op of todo) await call(op.method, op.path, op.body);
-      post({ type: 'applied', batch: id, ok: true, wrote: todo.length > 0 });
-      if (todo.length) show();  // the sheet shows what D&D Beyond has now, and can't save old numbers back
+      done({ ok: true, wrote: todo.length > 0 });
+      if (todo.length && who === sheetId()) show();  // the sheet shows what D&D Beyond has now, and can't save old numbers back
     } catch (err) {
-      post({ type: 'applied', batch: id, ok: false, error: String((err && err.message) || err) });
+      done({ ok: false, error: String((err && err.message) || err) });
     }
   }
 })();

@@ -152,10 +152,16 @@ body.bridge-elsewhere .bridge-other { display: block; font-size: var(--fs-sm); }
 body.bridge-elsewhere .bridge-steps, body.bridge-elsewhere .bridge-small { display: none; }
 body.no-bridge:not(.bridge-elsewhere) .live-noext-box ~ .live-actions .btn.primary { background: var(--surface-2); border-color: var(--line); color: var(--text); font-weight: 500; }  /* one main action: adding the bridge */
 body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { display: none; }
+/* Its colour (DM Backup, Brett 2026-11-02): green your own sheet, yellow through the DM, red can't while the table plays
+   or something to make by hand, grey no one's connected; warn: couldn't refresh */
 .live-pill.warn .live-dot { background: var(--amber); }
-.live-pill.step .live-dot { background: var(--green); }  /* connected */
-.live-pill.cue { border-color: var(--amber); color: var(--text); }  /* in a fight with your sheet closed */
-.live-pill.cue .live-dot { background: var(--amber); }
+.live-pill.step .live-dot { background: var(--green); }
+.live-pill.via { border-color: var(--amber); color: var(--text); }
+.live-pill.via .live-dot { background: var(--amber); }
+.live-pill.bad { border-color: var(--red-line); color: var(--text); }
+.live-pill.bad .live-dot { background: var(--red); }
+body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-noext { display: none; }  /* (a phone: the DM carries it, no nag) */
+body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-word { display: inline; }
 .live-pill.htmx-request { opacity: .7; }
 @media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live" or "● Game on"; the dot's colour says in step or to make by hand, the window the rest */
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
@@ -213,6 +219,11 @@ body.pt-rows .pt-with-track { display: none; }
 .live-row.here > span:first-child { font-weight: 600; }
 .live-row .quiet-warn { text-align: right; }
 .live-when { grid-column: 1 / -1; grid-row: 2; color: var(--faint); font-size: var(--fs-xs); }
+.live-say { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 10px; }
+.live-say.via { border-color: var(--amber); }
+.live-say.bad { border-color: var(--red-line); }
+.live-made { font-size: var(--fs-xs); color: var(--muted); }
+.live-made b { color: var(--text); font-weight: 600; }
 .live-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .live-actions .btn { flex: 1 1 auto; white-space: nowrap; }  /* the spinner never wraps the label */
 /* Phones: a bottom bar with the main pages; More holds the rest (base.html) */

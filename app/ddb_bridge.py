@@ -38,6 +38,13 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    spell and Pact Magic slots, limited uses, an item's count, equipped, attuned, charges, container,
    coins, adding and removing an item. A roll made on the sheet is only heard, into Table rolls ("on D&D Beyond").
    After a change, every open copy of the sheet shows D&D Beyond's numbers in place (ddb-page.js `show`).
+9. **The DM as a backup** (the VTT piece "dm_backup"; DM Backup Option A, Brett 2026-11-02, docs/mockups/dm-backup/).
+   A D&D Beyond campaign's DM can change its players' sheets (tested on the real D&D Beyond, 2026-11-01 and 11-02, from
+   the campaign page and the VTT with the sheet closed). So when a character's own sheet is closed, a browser of its
+   campaign's DM with any D&D Beyond page open makes its changes on its own (`carried`: the extension says so through
+   `/bridge/carry` every few seconds). The player's own open sheet always goes first, the same one batch at a time per
+   character keeps two browsers from doubling a change, askdnd's log says which were made through the DM (D&D Beyond
+   doesn't say who), and the Live pill keeps asking the player to open their sheet: only it sends rolls to the Game Log.
 
 States for a change: waiting (and sending), live (D&D Beyond has it), not_yet (can't be made; the end state is listed
 to make by hand), plus seen in the log (changed on D&D Beyond itself). The outbox, the batches, the log and the
@@ -56,14 +63,14 @@ import hashlib
 import json
 import secrets
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app import access, config, ddb, ddb_fields, ddb_sheet, live, picks, realtime, table_rolls, web
 from app import conditions as cond
@@ -194,17 +201,62 @@ def _span(seconds: float) -> str:
     return f"{seconds / 3600:g} hours" if seconds >= 3600 else f"{seconds / 60:g} minutes"
 
 
+def _fresh(at: datetime | None) -> bool:
+    return bool(at) and time.time() - at.timestamp() <= live.REACH.total_seconds()  # (the bridge's one clock, time.time)
+
+
+def own_sheet(character: Character) -> bool:
+    """Its own D&D Beyond sheet is open: its player's extension heard it in the last live.REACH."""
+    return _fresh(character.sheet_heard_at)
+
+
+def backup_on(campaign: Campaign | None) -> bool:
+    """The campaign has the bridge and the DM as a backup (the VTT piece "dm_backup"; a test campaign always does)."""
+    from app import vtt
+
+    return bool(config.DDB_BRIDGE and campaign is not None and vtt.on(campaign, "ddb_bridge") and vtt.on(campaign, "dm_backup"))
+
+
+def dm_here(campaign: Campaign | None) -> bool:
+    """A browser of this campaign's DM with a D&D Beyond page open was heard in the last live.REACH (`/bridge/carry`)."""
+    return backup_on(campaign) and _fresh(campaign.backup_heard_at)
+
+
+def _campaign_of(character: Character) -> Campaign | None:
+    db = object_session(character)
+    return db.get(Campaign, character.campaign_id) if db is not None and character.campaign_id else None
+
+
+def in_its_game(campaign: Campaign, ddb_game: str | None) -> bool:
+    """A character in this D&D Beyond game is in the campaign's own (or the campaign doesn't say which is its own)."""
+    return bool(ddb_game) and campaign.ddb_campaign_id in (None, "", ddb_game)
+
+
+def carried(character: Character, campaign: Campaign | None = None) -> bool:
+    """The DM's browser can make this character's changes now: the DM is here (`dm_here`) and the character is in that
+    campaign's D&D Beyond game (only its DM may change it there). Never a test copy, as with the bridge itself."""
+    if character.copy_of_id is not None:
+        return False
+    campaign = campaign or _campaign_of(character)
+    return dm_here(campaign) and in_its_game(campaign, character.ddb_campaign_id)
+
+
+def how(character: Character) -> str | None:
+    """How a change reaches its D&D Beyond sheet now: "sheet" (its own open sheet, always first), "dm" (the DM's
+    browser, `carried`) or None (it can't)."""
+    return "sheet" if own_sheet(character) else "dm" if carried(character) else None
+
+
 def reachable(character: Character) -> bool:
-    """Its D&D Beyond sheet can be reached now: its player's extension heard it in the last live.REACH. askdnd takes a
-    change for D&D Beyond only then (decided 2026-10-28: a change with no way there isn't accepted)."""
-    heard = character.sheet_heard_at  # (the bridge's one clock, time.time, as the give-up timer reads it)
-    return bool(heard) and time.time() - heard.timestamp() <= live.REACH.total_seconds()
+    """Its D&D Beyond sheet can be reached now, through its own open sheet or the DM's browser. askdnd takes a change for
+    D&D Beyond only then (decided 2026-10-28: a change with no way there isn't accepted)."""
+    return how(character) is not None
 
 
 def sheet_is_open(db: Session, character: Character) -> None:
     """The extension heard this sheet: it can be reached now. Open pages hear when that starts, so the pill and the roll
     window say so at once; hearing it every 30 seconds after that isn't news."""
-    was = reachable(character)
+    was = own_sheet(character)
     character.sheet_heard_at = datetime.fromtimestamp(time.time(), UTC)
     if not was:
         realtime.announce(db, character.campaign_id, "character", id=character.id)
@@ -224,6 +276,7 @@ def _give_up(db: Session) -> None:
     quiet = {cid: name for cid, name, heard in db.execute(
         select(Character.id, Character.name, Character.sheet_heard_at).join(BridgeIntent, BridgeIntent.character_id == Character.id)
         .where(BridgeIntent.state.in_(("waiting", "sending"))).distinct()) if heard is None or now - heard.timestamp() > wait}
+    quiet = {cid: name for cid, name in quiet.items() if not carried(db.get(Character, cid))}  # (the DM's browser makes it)
     if not quiet:
         return
     for b in db.scalars(select(BridgeBatch).where(BridgeBatch.character_id.in_(quiet), BridgeBatch.state.in_(("sending", "ready")))):
@@ -555,10 +608,11 @@ def as_shown(db: Session, character: Character, summary: dict | None) -> dict | 
     return {**shown, "conditions": conditions, "sync": sync, "ending": ending}
 
 
-def outbox(db: Session, character: Character) -> dict | None:
+def outbox(db: Session, character: Character, by: str = "sheet") -> dict | None:
     """The batch the extension should make on this character's sheet now, or None. A new batch is built on askdnd's
     copy of the sheet when it's recent (COPY_SECONDS), else on a fresh read; either way the extension checks each total
-    against what D&D Beyond has the moment before writing it."""
+    against what D&D Beyond has the moment before writing it. `by` "dm": the DM's browser makes it (`carried`), and
+    its log line says so. The batch names its sheet (`ddb`): the page making it checks every request is for that one."""
     _lock(db, character.id)
     if not awake(db)["awake"]:
         return None
@@ -574,7 +628,9 @@ def outbox(db: Session, character: Character) -> dict | None:
                 return None
             live.attempts += 1
         live.state, live.sent_at = "sending", now
-        return {"id": live.id, "ops": live.ops}
+        for i in _intents_of(db, live):
+            i.data = {**i.data, "by": by}
+        return {"id": live.id, "ops": live.ops, "ddb": character.ddb_id}
     waiting = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state == "waiting")
                               .order_by(BridgeIntent.id)))
     if not waiting:
@@ -610,20 +666,40 @@ def outbox(db: Session, character: Character) -> dict | None:
                         next_at=0, check=keep[0].data.get("check", ""), names={f: ddb_fields.name(n["raw"], f) for f in target})
     db.add(batch)
     for i in keep:  # (each intent's own fields: a batch stopped part way settles the ones D&D Beyond has)
-        i.state, i.data = "sending", {**i.data, "fields": sorted(plan([_as_dict(i)], n, every=True)[0])}
+        i.state, i.data = "sending", {**i.data, "fields": sorted(plan([_as_dict(i)], n, every=True)[0]), "by": by}
     db.flush()
-    return {"id": batch.id, "ops": batch.ops}
+    return {"id": batch.id, "ops": batch.ops, "ddb": character.ddb_id}
 
 
 def _intents_of(db: Session, b: BridgeBatch) -> list[BridgeIntent]:
     return list(db.scalars(select(BridgeIntent).where(BridgeIntent.id.in_(b.intents)).order_by(BridgeIntent.id)))
 
 
+THROUGH_DM = " (made through the DM)"  # a log line's end, when the DM's browser made it (D&D Beyond doesn't say who)
+
+
+def _log_line(it: BridgeIntent) -> str:
+    return it.label + (THROUGH_DM if it.data.get("by") == "dm" else "")
+
+
+def made_through(db: Session, campaign: Campaign, hours: int = 6, limit: int = 5) -> list[dict]:
+    """The newest changes the DM's browser made for this campaign's characters (the Live window's "Made through you")."""
+    from app.models import CampaignCharacter
+
+    since = datetime.now(UTC) - timedelta(hours=hours)
+    rows = db.execute(select(Character.name, BridgeLog.text, BridgeLog.at).join(Character, Character.id == BridgeLog.character_id)
+                      .join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
+                      .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None),
+                             BridgeLog.at >= since, BridgeLog.text.endswith(THROUGH_DM))
+                      .order_by(BridgeLog.id.desc()).limit(limit))
+    return [{"name": name, "text": text.removesuffix(THROUGH_DM), "at": at} for name, text, at in rows]
+
+
 def _settle(db: Session, b: BridgeBatch) -> None:
     b.state = "done"
     for it in _intents_of(db, b):
         it.state = "live"
-        _log(db, b.character_id, it.label, "live")
+        _log(db, b.character_id, _log_line(it), "live")
     _check_step(db, b, True)
 
 
@@ -690,7 +766,7 @@ def _stop(db: Session, b: BridgeBatch, why: str, missing: list[str] | None = Non
     for it in _intents_of(db, b):
         if missing is not None and not bad.intersection(it.data.get("fields", b.target)):
             it.state = "live"
-            _log(db, b.character_id, it.label, "live")
+            _log(db, b.character_id, _log_line(it), "live")
         else:
             it.state, it.error = "not_yet", (why + " Nothing was written over.")[:400]
             left.append(it)
@@ -1071,12 +1147,70 @@ def bridge_by_ddb(ddb_id: str, request: Request, db: Session = Depends(get_db)):
 def bridge_outbox(ddb_id: str, request: Request, db: Session = Depends(get_db)):
     """The extension, with this character's sheet open, collects what to make there now (or nothing)."""
     character, user = _by_ddb(db, request, ddb_id)
-    if not picks.can_edit(db, user, character):
-        return _json({"batch": None})  # only the character's own player's browser writes their sheet
-    sheet_is_open(db, character)  # (asking for work: its sheet is open)
-    batch = outbox(db, character)
+    if picks.can_edit(db, user, character):  # the character's own player's browser, from its open sheet
+        sheet_is_open(db, character)  # (asking for work: its sheet is open)
+        batch = outbox(db, character)
+    elif not own_sheet(character) and carried(character) and is_dm(user, character.campaign_id):
+        batch = outbox(db, character, by="dm")  # its sheet is closed: its DM's browser, from any D&D Beyond page
+    else:
+        return _json({"batch": None})
     db.commit()
     return _json({"batch": batch})
+
+
+CARRY_EVERY = 5  # seconds between a carrying browser's checks (/bridge/carry)
+CARRY_MARK = timedelta(seconds=20)  # the DM's browser is marked as here at most this often (it counts for live.REACH)
+
+
+def _carries_for(db: Session, user: dict) -> list[Campaign]:
+    """The campaigns this person is the DM of, with the DM as a backup on."""
+    return [c for c in db.scalars(select(Campaign).order_by(Campaign.id)) if backup_on(c) and is_dm(user, c.id)]
+
+
+def _party(db: Session, campaign: Campaign) -> list[Character]:
+    from app.models import CampaignCharacter
+
+    return list(db.scalars(select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
+                           .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None),
+                                  Character.ddb_id.is_not(None), Character.copy_of_id.is_(None)).order_by(Character.id)))
+
+
+@router.post("/bridge/carry")
+def bridge_carry(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
+    """The extension, from a browser with `pages` D&D Beyond pages open (0: the last one closed). For each campaign this
+    person is the DM of with the backup on, it's here while it has a page open, and makes the changes of a character
+    whose own sheet is closed (`carried`). Answers which of those sheets have a change waiting now, and how soon to ask
+    again (0: it carries for no campaign; it asks again within the minute, in case that changes)."""
+    user = _signed_in(request, db)
+    pages = body.get("pages") if isinstance(body, dict) else 0
+    pages = pages if isinstance(pages, int) and pages > 0 else 0
+    sheets: list[str] = []
+    campaigns = _carries_for(db, user)
+    now = datetime.now(UTC)
+    for campaign in campaigns:
+        was = dm_here(campaign)
+        if not pages:
+            campaign.backup_heard_at = None
+        elif not was or now - campaign.backup_heard_at >= CARRY_MARK:
+            campaign.backup_heard_at = now
+        party = _party(db, campaign)
+        if was != dm_here(campaign):  # the party's pills change colour: yellow for each closed sheet, or back
+            for ch in party:
+                if not own_sheet(ch):
+                    realtime.announce(db, campaign.id, "character", id=ch.id)
+        if not pages:
+            continue
+        for ch in party:
+            if own_sheet(ch) or not carried(ch, campaign):
+                continue
+            if db.scalar(select(BridgeIntent.id).where(BridgeIntent.character_id == ch.id, BridgeIntent.state == "not_yet",
+                                                       BridgeIntent.data["quiet"].astext == "true").limit(1)):
+                heard(db, ch, saved=False)  # (one that gave up while no one could reach the sheet is made now: _catch_up)
+            if db.scalar(select(BridgeIntent.id).where(BridgeIntent.character_id == ch.id,
+                                                       BridgeIntent.state.in_(("waiting", "sending"))).limit(1)):
+                sheets.append(ch.ddb_id)
+    db.commit()
+    return _json({"sheets": sheets, "every": CARRY_EVERY if pages and campaigns else 0})
 
 
 @router.post("/bridge/delivered/{batch_id:int}")
