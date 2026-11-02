@@ -1,121 +1,20 @@
 <title>askdnd Next Steps</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-:root { --bg: #f6f3ee; --surface: #ffffff; --line: #e2dcd2; --text: #24211c; --muted: #6b645a; --strong: #111; --accent: #b3392f; --accent-soft: #f6e3e1;
-  --done: #2f7d4f; --done-soft: #e3f1e8; --wait: #9a6b12; --wait-soft: #f7ecd6; --code: #f1ece4;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --mono: ui-monospace, "SF Mono", Menlo, monospace; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15171a; --surface: #1f2226; --line: #34383e; --text: #ebe7df; --muted: #a29d93; --strong: #fff; --accent: #f08a8a; --accent-soft: #3a2224;
-  --done: #5bbf7f; --done-soft: #1d3326; --wait: #e8b34b; --wait-soft: #3a3020; --code: #272b30; color-scheme: dark } }
-:root[data-theme="dark"] { --bg: #15171a; --surface: #1f2226; --line: #34383e; --text: #ebe7df; --muted: #a29d93; --strong: #fff; --accent: #f08a8a; --accent-soft: #3a2224;
-  --done: #5bbf7f; --done-soft: #1d3326; --wait: #e8b34b; --wait-soft: #3a3020; --code: #272b30; color-scheme: dark }
+:root { --bg: #f6f3ee; --surface: #ffffff; --line: #e2dcd2; --text: #24211c; --muted: #6b645a; --strong: #111; --accent: #b3392f;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #15171a; --surface: #1f2226; --line: #34383e; --text: #ebe7df; --muted: #a29d93; --strong: #fff; --accent: #f08a8a; color-scheme: dark } }
+:root[data-theme="dark"] { --bg: #15171a; --surface: #1f2226; --line: #34383e; --text: #ebe7df; --muted: #a29d93; --strong: #fff; --accent: #f08a8a; color-scheme: dark }
 body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
-.wrap { max-width: 860px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
-.eyebrow { font: 700 12px/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
-h1 { margin: 6px 0 4px; font: 600 34px/1.15 var(--serif); color: var(--strong); text-wrap: balance; }
-.lede { color: var(--muted); margin: 0; max-width: 65ch; }
-h2 { margin: 0 0 10px; font: 600 22px/1.25 var(--serif); color: var(--strong); text-wrap: balance; }
-section { display: grid; gap: 12px; }
-.step { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
-.step.now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-.step-head { display: flex; align-items: flex-start; gap: 12px; }
-.step-head input { margin-top: 5px; width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
-.step-head h3 { margin: 0; font: 600 17px/1.35 var(--sans); color: var(--strong); flex: 1; min-width: 0; }
-.chip { font: 700 11px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 5px 9px; white-space: nowrap; flex: none; }
-.chip.now { background: var(--accent-soft); color: var(--accent); }
-.chip.wait { background: var(--wait-soft); color: var(--wait); }
-.chip.done { background: var(--done-soft); color: var(--done); }
-.step p { margin: 0; max-width: 70ch; }
-.step ol, .step ul { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
-.why { color: var(--muted); font-size: 14px; }
-code, pre { font-family: var(--mono); font-size: 13px; background: var(--code); border-radius: 6px; }
-code { padding: 1px 5px; }
-pre { margin: 0; padding: 10px 12px; overflow-x: auto; white-space: pre; }
-a { color: var(--accent); }
-.done-step h3 { text-decoration: line-through; color: var(--muted); }
-.running { display: grid; gap: 8px; }
-.running div { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-.running b { color: var(--strong); }
-footer { color: var(--muted); font-size: 13px; }
+.wrap { max-width: 640px; margin: 0 auto; padding-block: 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; display: grid; gap: 10px; }
+h1 { margin: 0; font: 600 26px/1.2 var(--serif); color: var(--strong); text-wrap: balance; }
+p { margin: 0; }
+.muted { color: var(--muted); font-size: 14px; }
+a { color: var(--accent); font-weight: 600; }
 </style>
-
-<div class="wrap">
-  <header>
-    <div class="eyebrow">askdnd · your next steps · Nov 2, evening</div>
-    <h1>What's waiting on you, in order</h1>
-    <p class="lede">Each step says exactly where to click or what to type. Tick a step when it's done; the ticks stay in this browser. I'll update this page as things change, and the Roadmap stays the big picture.</p>
-  </header>
-
-  <section>
-    <h2>Now</h2>
-
-    <div class="step now" data-step="mm">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>1. Load the whole Monster Manual on beta</h3><span class="chip now">Ready now</span></div>
-      <p>The upload is on beta. The terminal command couldn't work (beta's database has no public address), so it's a file instead:</p>
-      <ol>
-        <li>Open <a href="https://beta.askdnd.ai/manage/backups#books">beta's Backups and imports › Books</a>.</li>
-        <li>Press <b>Choose file</b> and pick <code>~/Code/dndsy/private/books/mm-2024-upload.json.gz</code> (it's already made).</li>
-        <li>Press <b>Upload book</b>. The Monster Manual's row says <b>510 monsters</b>.</li>
-      </ol>
-    </div>
-  </section>
-
-  <section>
-    <h2>Next, in this order</h2>
-
-    <div class="step" data-step="review-live">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>2. Review live state on beta</h3><span class="chip wait">Ready now</span></div>
-      <p>0.9.8 is published (Nov 2): update it in Chrome first (chrome://extensions › Developer mode › Update). Then in <a href="https://beta.askdnd.ai/c/vtt-test/">VTT test</a>, with one of your own characters (Vi or Spurt) and its D&amp;D Beyond sheet open in Chrome:</p>
-      <ul>
-        <li><b>Cast</b> a spell from Battle: a slot goes on D&amp;D Beyond; Undo gives it back.</li>
-        <li><b>Resources</b>: press a resource, Use one, Give one back.</li>
-        <li><b>Rest</b>: Short Rest and Long Rest.</li>
-        <li><b>Items</b>: an item's side panel, Equip, Attune, Count, <b>Give</b> (to someone at the table). Sheet › Items, <b>Change coins</b>.</li>
-        <li><b>Give loot</b> (you're an admin): Sheet › Items on a character, pick an item and some gold.</li>
-        <li><b>Prepare</b>: Sheet › Spells › Prepare spells, or a spell's side panel for one quick swap.</li>
-      </ul>
-      <p>Each change shows ↻ until D&amp;D Beyond has it, then lands on your sheet within seconds. Tell me what felt wrong, or <b>switch it on for the table</b>: I mark it ready as one switch, <b>Play through askdnd</b> (the bridge, casting, resources and rests, and the DM as a backup), on Manage › Settings › Virtual tabletop.</p>
-    </div>
-
-    <div class="step" data-step="share">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>3. Share the bridge with the table</h3><span class="chip wait">When you're ready</span></div>
-      <ol>
-        <li>Send the table this link: <code>https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl</code> (it's also in Help › FAQ). Each player adds it in Chrome on a computer.</li>
-        <li>Send them the <a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">bridge's risk summary</a>. Before you send it I'll update it for DM Backup and preparing spells, and share it from its Share menu so they can open it.</li>
-        <li>On beta, open <a href="https://beta.askdnd.ai/c/main/manage/settings">The Adventure Begins › Manage › Settings</a>, scroll to <b>Virtual tabletop</b>, switch on <b>D&amp;D Beyond bridge</b>, and save. Leave the others off until step 2 says they're ready.</li>
-        <li>Each player: open askdnd once in that Chrome, signed in, then open their D&amp;D Beyond sheet. The Live pill turns green: <b>Connected</b>.</li>
-      </ol>
-    </div>
-  </section>
-
-  <section>
-    <h2>When you say</h2>
-    <div class="step" data-step="vtt">
-      <div class="step-head"><input type="checkbox" aria-label="Done"><h3>4. Start the VTT</h3><span class="chip now">Ready</span></div>
-      <p>Phase 1 is complete (the UI pass is on beta, Nov 2). The VTT gets built here, one working slice at a time, behind its own switch, <b>askdnd's VTT</b>: its way in is the menu bar's Table button, which stays D&amp;D Beyond's VTT until it's on, so the table never stumbles on it. The layout is decided (<a href="https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W">VTT Layout</a>). Step 1 is the fight without a map, in the final frame. Say <b>start the VTT</b>.</p>
-    </div>
-  </section>
-
-  <section>
-    <h2>Running without you</h2>
-    <div class="step running">
-      <div><b>Done today</b><span>askdnd.ai is v2 and signs in; extension 0.9.8 is published, and the Mac Mini’s seats run it; prepare, give, loot and DM Backup all pass live, after PR 155 fixed a spell that vanished once dropped.</span></div>
-      <div><b>The nightly live test</b><span>on the Mac Mini at 4:00, against beta's test seats; a miss emails you through Sentry. Installed and tried Nov 2 (a deliberate miss reached Sentry). Its fixes are in <a href="https://github.com/jettison-v/dndsy/pull/148">PR 148</a>, reviewed line by line and passing: say "merge 148" when you like.</span></div>
-      <div><b>On beta now</b><span>Give, Give loot (test campaigns), the new Live window, the phone layouts, Prepare spells as a large window (it makes changes once 0.9.8 is approved), and the database connection fix.</span></div>
-      
-    </div>
-  </section>
-
-  <footer>Kept in the repo as <code>docs/artifacts/next-steps.html</code>. The Roadmap is the big picture: <a href="https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3">askdnd Roadmap</a>.</footer>
-</div>
-
-<script>
-document.querySelectorAll('.step[data-step]').forEach(step => {
-  const box = step.querySelector('input[type=checkbox]');
-  if (!box) return;
-  const key = 'askdnd-next-' + step.dataset.step;
-  try { box.checked = localStorage.getItem(key) === '1'; } catch (e) { /* no storage here */ }
-  const show = () => step.classList.toggle('done-step', box.checked);
-  show();
-  box.addEventListener('change', () => { show(); try { localStorage.setItem(key, box.checked ? '1' : '0'); } catch (e) { /* no storage */ } });
-});
-</script>
+<div class="wrap"><div class="card">
+  <h1>Your next steps are on the roadmap now</h1>
+  <p>Since Nov 2 there's one list: the <a href="https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3">askdnd Roadmap</a>. Everything left to do is there in order, yours marked <b>Yours</b> with exactly where to click, and everything done is at the bottom.</p>
+  <p class="muted">Kept in the repo as <code>docs/artifacts/next-steps.html</code>, so this old link still leads somewhere.</p>
+</div></div>

@@ -2,7 +2,8 @@
 
 The long-range plan for growing askdnd into a full virtual tabletop (VTT) for our table. **The one page Brett reads is
 the askdnd Roadmap** (`docs/roadmap.html`, published at https://claude.ai/artifact/EtCBFsKNwLK5LNhQjcbzS3; master
-since 2026-10-28): now, waiting, next, parked, later, done, and every plan and mockup with whether it's current. This
+since 2026-10-28, one list since 2026-11-02): everything left to do in order, then what's done, then every plan and
+mockup with whether it's current. The VTT's slices are in `docs/plans/2026-11-02-vtt-build-plan.md`. This
 file is the detail behind it (how we build, principles, each item's reasoning); when a status changes, change both.
 
 ## Decided (Brett, 2026-10-22)
