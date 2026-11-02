@@ -134,7 +134,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <p><b>Read the <a href="https://claude.ai/artifact/DYL6vpaq3Q1hS37SfuiYbB">VTT Feature Map</a></b>: what D&amp;D Beyond has, what people love elsewhere, the MVP and five decisions. It updates the <a href="https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x">Simple VTT</a> design, whose questions still stand.</p>
       <p><b>Check the usability round on beta</b>, built from the <a href="https://claude.ai/artifact/Bt4d1DHjadCiRvXBA1PquB">Usability Mockups</a>. <a href="https://claude.ai/artifact/1SHdzwsmtnwfBYVRL5bwM1">Battle Band</a> (Option E) and <a href="https://claude.ai/artifact/QzNtDwYURngJFvb4gFC4Cn">Hit Points Flow</a> (Option B) are on beta. Live changes to Hit Points still need a look from you.</p>
       <p><b>Say yes to the Live pill's colours on <a href="https://claude.ai/artifact/AddqtVULn7Cfx9xNCgoghk">DM Backup</a></b>: you chose Option A (the DM's D&amp;D Beyond page makes a change when a player's sheet is closed). Green connected, yellow through the DM, red can't reach, grey when no one's playing. Then it gets built.</p>
-      <p><b>Your exact steps are on <a href="https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW">Next Steps</a></b>: upload the Monster Manual file, upload extension 0.9.8, then review live state, share the bridge, and move askdnd.ai to v2 (approved Nov 2).</p>
+      <p><b>Your exact steps are on <a href="https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW">Next Steps</a></b>: move askdnd.ai to v2 (approved Nov 2; Google first), upload the Monster Manual file, upload extension 0.9.8, then review live state and share the bridge.</p>
           </div>
     <div class="steps">
       <div class="step"><span class="n">1</span><div class="body"><h3>Game Mode for the table, and the Live pill</h3>
@@ -180,10 +180,10 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
   <section id="waiting">
     <div class="sec-head"><div class="eyebrow">Waiting on</div><h2>Someone else's move</h2></div>
     <div class="cards">
-      <div class="box"><div class="head"><h3>Testing you can trust</h3><span class="chip s-wait">Yours: merge, one command</span></div>
+      <div class="box"><div class="head"><h3>Testing you can trust</h3><span class="chip s-wait">Yours: merge</span></div>
         <p class="small">Every testing gap that didn't need you, in <a href="https://github.com/jettison-v/dndsy/pull/148">PR 148</a>: the flaky browser tests found and fixed (two test runs shared one database), the layout checked in Safari's engine as an iPhone and an iPad, and the live test on the real D&amp;D Beyond widened to Temporary Hit Points, death saves, Heroic Inspiration, Exhaustion and items. It found and fixed two bugs (Temporary HP's Set button stuck at 0; a slow change waiting 30+ seconds for its retry), and beta running out of database connections with three test players, eased here and the rest a follow-up. I review it line by line before you're asked to merge. Then two steps are yours:</p>
         <ol><li>Merge PR 148.</li>
-          <li>Switch on the nightly live test (4:00 on the Mac Mini; a miss emails you through Sentry). Claude isn't allowed to start a job that keeps running on the Mini by itself: say "install the nightly live test" to approve it, or run the one command in the PR's notes on the Mini yourself.</li></ol></div>
+          <li><s>Switch on the nightly live test.</s> Done Nov 2 (you approved it): 4:00 on the Mac Mini, and a deliberate miss reached Sentry.</li></ol></div>
       <div class="box"><div class="head"><h3>Extension 0.9.8 for the store</h3><span class="chip s-wait">Yours to upload</span></div>
         <p class="small">Built Nov 2 (<code>private/extension/askdnd-bridge-0.9.8.zip</code>): the DM as a backup and preparing spells, plus 0.9.6's window from the extension's icon. It replaces 0.9.6, still in Google's review. Steps on <a href="https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW">Next Steps</a>. Until it's approved, preparing a spell on beta doesn't stick, and the DM can't carry a closed sheet.</p></div>
       <div class="box"><div class="head"><h3>Sharing the bridge with the table</h3><span class="chip s-wait">Yours, when ready</span></div>
@@ -216,8 +216,8 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
   </section>
 
   <section id="polish">
-    <div class="sec-head"><div class="eyebrow">After the structural work</div><h2>A UI polish pass</h2></div>
-    <div class="box"><div class="head"><h3>Wrapping and colours, all in one go</h3><span class="chip s-parked">Queued Nov 2</span></div>
+    <div class="sec-head"><div class="eyebrow">Next, before the VTT</div><h2>A UI polish pass</h2></div>
+    <div class="box"><div class="head"><h3>Wrapping and colours, all in one go</h3><span class="chip s-wait">Starts after askdnd.ai moves</span></div>
       <p class="small">Brett, Nov 2: ship Prepare spells now and polish the look once the structural changes are in, since wrapping needs work in several places. Collected so far:</p>
       <ul class="small"><li><b>Prepare spells' changes</b>: the amber rows with green and red ticks clash; one calm way to mark "will prepare" and "will drop", the same in the list and in Your changes.</li>
         <li><b>Prepare spells on narrower screens</b>: the title, the count and ✕ wrap onto loose rows, and the filter chips wrap unevenly.</li>
@@ -248,7 +248,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <li><b>How much map automation</b> (3): decide after using simple maps.</li>
       <li><b>Where music comes from</b> (4): tracks the DM uploads or has rights to.</li>
       <li><b>Video and the privacy rule</b> (6): recording stays on your Mac, or the rule changes.</li>
-      <li><b>When askdnd.ai moves to v2</b>: any time you say.</li>
+      <li><b>askdnd.ai moves to v2</b>: approved Nov 2, the same app and data as beta; the old app stays at legacy.askdnd.ai.</li>
       <li><b>A faster bridge: count D&amp;D Beyond's reply</b> (with the next extension update): clear the ↻ mark on D&amp;D Beyond's own answer to a write and check it again in the background, about 1 to 3 seconds faster. The cost: when D&amp;D Beyond answers OK without keeping a change (it has happened), the mark clears and comes back as ! a few seconds later.</li></ul></div>
   </section>
 

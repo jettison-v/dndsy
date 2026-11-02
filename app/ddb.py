@@ -21,7 +21,7 @@ from html.parser import HTMLParser
 
 CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/{id}"
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
-USER_AGENT = "askdnd/2 (private table companion; +https://beta.askdnd.ai)"
+USER_AGENT = "askdnd/2 (private table companion; +https://askdnd.ai)"
 TIMEOUT_SECONDS = 15
 PARSER_VERSION = 25  # bump when the summary shape changes; stored summaries are re-parsed
 

@@ -144,3 +144,11 @@ def test_dev_login_as_the_campaigns_dm_or_a_player_needs_no_email(monkeypatch, d
     assert _dev_person(db, "player", "/c/main/") == "other@example.com"  # not you
     assert _dev_person(db, "dm", "/c/nowhere/") == "x@invalid"  # no such campaign: no sign-in
     assert _dev_person(db, "other@example.com", "/") == "other@example.com"  # an email as it is
+
+
+def test_www_goes_to_askdnd_ai():
+    """One address (Brett, 2026-11-02): www.askdnd.ai sends you to the same page at askdnd.ai, so one sign-in and one
+    address Google returns to."""
+    r = TestClient(app, base_url="https://www.askdnd.ai").get("/c/main/campaign?tab=map", follow_redirects=False)
+    assert (r.status_code, r.headers["location"]) == (308, "https://askdnd.ai/c/main/campaign?tab=map")
+    assert TestClient(app, base_url="https://askdnd.ai").get("/login", follow_redirects=False).status_code == 200

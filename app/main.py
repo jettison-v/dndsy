@@ -127,6 +127,16 @@ app.add_middleware(
     same_site="lax",
     https_only=config.IS_PRODUCTION,
 )
+
+
+@app.middleware("http")  # (added last, so it runs first)
+async def one_address(request: Request, call_next):
+    """askdnd.ai, never www.askdnd.ai (Brett, 2026-11-02: askdnd.ai moves to v2): one address, so one sign-in and one
+    place Google returns to."""
+    if request.headers.get("host", "").lower().startswith("www."):
+        query = f"?{request.url.query}" if request.url.query else ""
+        return RedirectResponse(f"https://{request.headers['host'][4:]}{request.url.path}{query}", status_code=308)
+    return await call_next(request)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(auth_router)
 app.include_router(view_as_router)
