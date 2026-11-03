@@ -14,8 +14,8 @@ import time
 from playwright.sync_api import Page, sync_playwright
 
 BETA = "https://beta.askdnd.ai/c/vtt-test"
-SEATS = {"dm": 9231, "player2": 9232, "player3": 9233}
-SHEETS = {"player2": 172986165, "player3": 172992073}  # Cathartic and the new Vi, never the first Vi or Spurt
+SEATS = {"dm": 9231, "player2": 9232, "player3": 9233, "player4": 9234}
+SHEETS = {"player2": 172986165, "player3": 172992073, "player4": 173148163}  # Cathartic, the new Vi and Levi; never the first Vi or Spurt
 
 # How long a change may take to show in D&D Beyond's own record. Usually a few seconds; now and then much longer (Nov 2:
 # up to a minute, while D&D Beyond served an older copy for a moment), and a pass past 10 seconds is said as slow.
@@ -797,6 +797,34 @@ def add_item(t: Table, seat: str = "player2") -> None:
                                                                          for k, w in {"cp": "copper", "sp": "silver", "ep": "electrum", "gp": "gold", "pp": "platinum"}.items()]]), flush=True)
 
 
+def wild_shape(t: Table, seat: str = "player4") -> None:
+    """Wild Shape (Levi, Druid 6): Shift into a form on Battle spends a Wild Shape use and gives the form's Temporary Hit
+    Points on D&D Beyond, and Battle shows the form; Undo puts back the use, the Temporary Hit Points and the form."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    before = record(sheet)
+    form = page.locator('.ws-chip[data-use-url*="wild-shape?form="]:visible').first
+    name = form.inner_text().strip()
+    print("  form:", name, flush=True)
+    go(page, form)
+    page.locator('[data-use-go][data-to="shift"]').first.click(timeout=8000)
+    changed(t, sheet, before, "the use and the Temporary Hit Points land on D&D Beyond")
+    t.expect("both of them", lambda: len(changes(before, record(sheet))) >= 2, SLOW)
+    t.expect(f"Battle is drawn as the {name}", lambda: page.locator(".ws-form").count() > 0, 15)
+    if not undo(page):
+        page.goto(page.url, wait_until="domcontentloaded")
+        go(page, page.locator('.ws-chip[data-use-url$="/wild-shape"]:visible').first)  # (Normal: Leave)
+        page.locator('[data-use-go][data-to="leave"]').first.click(timeout=8000)
+        print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], [
+            ["PUT", "life/hp/damage-taken", {"removedHitPoints": before.get("removedHitPoints") or 0, "temporaryHitPoints": before.get("temporaryHitPoints") or 0}]]]), flush=True)
+        go(page, page.locator('.ws-label .pips-go:visible').first)
+        page.locator('[data-use-go][data-to="back"]').first.click(timeout=15000)
+    undone(t, sheet, before, "Undo puts the use and the Temporary Hit Points back on D&D Beyond")
+    page.goto(page.url, wait_until="domcontentloaded")
+    t.expect("and Battle is the druid again", lambda: page.locator(".ws-form").count() == 0, 15)
+
+
 def dm_backup(t: Table, seat: str = "player2") -> None:
     """DM Backup (extension 0.9.8): with a player's sheet closed, the DM's browser with a D&D Beyond page open makes
     askdnd's change on it; the pill says so, then Connected again once the sheet is back."""
@@ -818,7 +846,7 @@ def dm_backup(t: Table, seat: str = "player2") -> None:
 RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
         "cast": cast, "resource": resource, "coins": coins, "rests": rests, "temp-hp": temp_hp, "death-saves": death_saves,
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
-        "loot": loot, "add-item": add_item, "dm-backup": dm_backup}
+        "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 
