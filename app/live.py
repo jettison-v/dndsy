@@ -24,7 +24,7 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import characters as chars
@@ -64,8 +64,6 @@ def rows_from(db: Session) -> list[dict]:
     by_hand: dict[int, int] = {}
     on_way: dict[int, list[dict]] = {}
     if bridge:
-        from sqlalchemy import func
-
         waits_for_sheet = BridgeIntent.data["quiet"].astext == "true"  # (made by itself once its sheet is open: ddb_bridge._catch_up)
         by_hand = dict(db.execute(select(BridgeIntent.character_id, func.count())
                                   .where(BridgeIntent.state == "not_yet", func.coalesce(waits_for_sheet, False).is_(False))
@@ -187,6 +185,22 @@ def pill(db: Session, user: dict, focus_id: int | None) -> str:
         fight_now=lambda: fight.loader(here["id"], user.get("email")) if here else None)
 
 
+def stopped(db: Session, user: dict, rows: list[dict]) -> dict[int, list[BridgeIntent]]:
+    """The changes that stopped short of D&D Beyond, per character, for its player and the DM: the Live window offers
+    Try again and Undo on each (Nov 3: they were only on a page nothing linked to)."""
+    from app.hit_points import can_apply
+
+    ids = [r["id"] for r in rows if r.get("by_hand")]
+    out: dict[int, list[BridgeIntent]] = {}
+    if not ids:
+        return out
+    waits_for_sheet = BridgeIntent.data["quiet"].astext == "true"
+    for it in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id.in_(ids), BridgeIntent.state == "not_yet")
+                         .where(func.coalesce(waits_for_sheet, False).is_(False)).order_by(BridgeIntent.id)):
+        out.setdefault(it.character_id, []).append(it)
+    return {cid: its for cid, its in out.items() if can_apply(db, user, db.get(Character, cid))}
+
+
 def panel(request: Request, db: Session, user: dict, focus_id: int | None, toast: str = "", ids: list[int] = ()):
     """The Live window: how each sheet is connected, refreshing."""
     from app import ddb_bridge
@@ -194,7 +208,7 @@ def panel(request: Request, db: Session, user: dict, focus_id: int | None, toast
     tn = table(user, "", rows_from(db), focus_id)
     campaign = web.campaign(db)
     backup = ddb_bridge.backup_on(campaign)
-    resp = templates.TemplateResponse(request, "_live_panel.html", {
+    resp = templates.TemplateResponse(request, "_live_panel.html", {"stopped": stopped(db, user, tn["characters"]),
         "tn": tn, "reviewer": is_reviewer(user), "bridge": config.DDB_BRIDGE and vtt.on(campaign, "ddb_bridge"),
         "backup": backup, "dm_here": ddb_bridge.dm_here(campaign), "ddb_game": campaign.ddb_campaign_id if campaign else None,
         "made_through": ddb_bridge.made_through(db, campaign) if backup else []})
