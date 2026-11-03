@@ -2,11 +2,11 @@
    search, sorts and the side panel, like Sheet › Spells. `items` is sheet.inventory (apply_overrides gives each
    its group: battle, equipped, Weapons, Armor, Magic items, Potions and scrolls, Gear). #}
 {% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
-{% from "_char.html" import pick_btn, pips, sync_attrs %}
+{% from "_char.html" import pick_btn, pips, count_pips, sync_attrs %}
 {# `sync` is the sheet's changes on their way to D&D Beyond (ddb_bridge.as_shown): each row marks its count, equipping,
    attuning and charges with the one ↻ (Brett, 2026-11-02, the UI pass) #}
 {# `end`: what sits at the toolbar's right end (Sheet › Items: the coin purse, Give loot) #}
-{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=(), sync={}, end="") -%}
+{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=(), sync={}, end="", play=false) -%}
 {%- set GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapons", "Weapons"), ("Armor", "Armor"),
                   ("Magic items", "Magic items"), ("Potions and scrolls", "Potions and scrolls"), ("Gear", "Gear")] -%}
 {%- set RARITY = ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"] -%}
@@ -51,7 +51,7 @@
             {% if it.summary %}<span class="ls-what">{{ it.summary }}</span>{% endif %}
             {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
           <span>{{ it.kind_label }}{% if it.magic and it.rarity %}<span class="note it-rarity">{{ it.rarity }}</span>{% endif %}</span>
-          <span{{ sync_attrs(sync.get("charges:" ~ iid)) }}>{% if it.charges and it.charges.reset != "Used up" %}{{ pips(it.charges) }}{% elif it.charges %}<span class="note">{{ it.charges.left }} left</span>{% else %}<span class="note">—</span>{% endif %}</span>
+          <span{{ sync_attrs(sync.get("charges:" ~ iid)) }}>{% if it.charges %}{{ count_pips(c if play and it.key.startswith("item:") else none, "charges:" ~ iid, it.charges, it.name, show=("" if it.charges.reset != "Used up" else '<span class="note">%s left</span>' % it.charges.left) | safe) }}{% else %}<span class="note">—</span>{% endif %}</span>
           <span class="sb-range">{{ [it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ") or "—" }}</span>
           <span class="ls-marks"><span>{{ pick_btn(c, "fav", it.key, it.key in picks.fav, can_pick) }}</span><span>{% if it.battle %}{{ pick_btn(c, "star", it.key, it.key in picks.star, can_pick) }}{% endif %}</span><span>{{ pick_btn(c, "remind", it.key, it.key in picks.remind, can_pick) }}</span></span>
         </div>
