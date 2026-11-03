@@ -14,7 +14,7 @@
   </div>{% endif %}
   {% for g in groups %}<div class="opt-group" data-kind="{{ g.kind }}">
     {% if groups | length > 1 %}<h3 class="divider">{{ g.label }} <span class="count">{{ g.opts | length }}</span></h3>{% endif %}
-    <div class="rows one">{% for o in g.opts %}{{ opt_row(c, o, picks, can_pick, can_use) }}{% endfor %}</div>
+    <div class="rows one">{% for o in g.opts %}{{ opt_row(c, o, picks, can_pick, can_use, can_play) }}{% endfor %}</div>
   </div>{% endfor %}
   <p class="muted" data-opt-none hidden>Nothing matches.</p>
   {% if adding and not opts %}<p class="muted">Everything here is already pinned.</p>{% endif %}
