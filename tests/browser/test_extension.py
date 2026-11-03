@@ -74,6 +74,8 @@ def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server)
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     page.wait_for_function("!document.body.classList.contains('no-bridge')")
     assert "Open your sheet to connect" in page.locator(PILL).inner_text()
+    # which extension this browser has (0.9.9 on), for feedback and support
+    assert page.evaluate("document.body.dataset.bridgeVersion") == json.load(open(os.path.join(SOURCE, "manifest.json")))["version"]
 
     sheet = chrome.new_page()
     sheet.goto(SHEET)
