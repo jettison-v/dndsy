@@ -165,7 +165,7 @@ def test_needs_you_reads_each_sessions_status_in_one_go(monkeypatch, db):
     assert "2 sessions ready to review" in client_for(monkeypatch, db, "dm@example.com").get("/c/main/manage").text
 
 
-def test_needs_you_says_when_a_character_couldnt_refresh(monkeypatch, db):
+def test_needs_you_says_when_a_character_couldnt_refresh(monkeypatch, db, no_network):
     """It reads only each sheet's status and when it was fetched, not the sheets themselves."""
     from app import characters
     from tests.table_setup import BUNDLE, char

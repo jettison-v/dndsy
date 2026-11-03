@@ -14,7 +14,7 @@ from tests.table_setup import BUNDLE, COLE, char, owned_by
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
-def test_only_the_player_stars_and_reminds(player, admin, db):
+def test_only_the_player_stars_and_reminds(player, admin, db, no_network):
     """A standing rule: pins, the Shortlist and Remind me are the character's player's; nobody else changes them (an
     admin neither)."""
     import_bundle(db, BUNDLE)
