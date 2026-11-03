@@ -48,6 +48,9 @@ DEV_LOGIN_EMAIL = "" if IS_PRODUCTION else os.getenv("DEV_LOGIN_EMAIL", "").stri
 # The D&D Beyond bridge (app/ddb_bridge.py, extension/askdnd-bridge) may run where DDB_BRIDGE=1 (beta since 2026-10-28,
 # roadmap step 4); each campaign still has it only once switched on (the VTT piece "ddb_bridge", app/vtt.py)
 DDB_BRIDGE = os.getenv("DDB_BRIDGE", "").strip() == "1"
+# Claude's key to the feedback queue (app/feedback.py `/api/feedback`, scripts/feedback.py): set with scripts/set-secret.sh;
+# unset, the API answers nothing
+FEEDBACK_KEY = os.getenv("FEEDBACK_KEY", "").strip()
 # Where the table adds the extension: its Chrome Web Store listing (unlisted: only people with this link find it)
 BRIDGE_EXTENSION_URL = "https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl"
 

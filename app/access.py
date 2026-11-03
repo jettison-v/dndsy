@@ -61,7 +61,7 @@ def rows_from(db) -> dict[str, dict]:
     from app.dice import prefs
 
     out: dict = {u.email.lower(): {"id": u.id, "access": u.access, "roles": roles.get(u.id, {}), "current": u.current_campaign_id,
-                                   "dice": prefs(u)} for u in db.scalars(select(User))}
+                                   "dice": prefs(u), "feedback": u.feedback} for u in db.scalars(select(User))}
     from app.dice import tuning_from
 
     out[TUNING] = tuning_from(db)
@@ -159,6 +159,14 @@ def level(email: str | None, rows: dict[str, dict] | None = None) -> str | None:
         return stored
     listed = config.is_allowed(email, config.ALLOWED_EMAILS) or config.is_allowed(email, config.REVIEWER_EMAILS)
     return MEMBER if listed else None
+
+
+def sends_feedback(email: str | None, rows: dict[str, dict] | None = None) -> bool:
+    """Whether this person can send feedback for Claude (app/feedback.py): admins, and accounts switched on for it on
+    Manage › Accounts (Brett's test accounts, Nov 3)."""
+    if level(email, rows) == ADMIN:
+        return True
+    return bool(email and ((_rows() if rows is None else rows).get(email.strip().lower()) or {}).get("feedback"))
 
 
 def role(email: str | None, campaign_id: int | None = None, rows: dict[str, dict] | None = None) -> str | None:

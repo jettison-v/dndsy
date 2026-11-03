@@ -18,6 +18,7 @@ from app.ddb_bridge import router as ddb_bridge_router
 from app.death_saves import router as death_saves_router
 from app.table_page import router as table_router
 from app.shifting import router as shifting_router
+from app.feedback import router as feedback_router
 from app.hit_points import router as hit_points_router
 from app.casting import router as casting_router
 from app.inventory import router as inventory_router
@@ -179,6 +180,7 @@ app.include_router(hit_points_router)  # (through the bridge: on_for)
 app.include_router(death_saves_router)  # (through the bridge: on_for)
 app.include_router(table_router)  # askdnd's VTT (app/vtt.py vtt_table)
 app.include_router(shifting_router)  # Wild Shape: shifting and leaving
+app.include_router(feedback_router)  # notes for Claude from any page, and the queue
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",
