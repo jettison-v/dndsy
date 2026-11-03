@@ -18,8 +18,9 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    again from the new numbers. **Reads come from the sheet itself** where it's open (extension 0.9.9; Brett, Nov 3): the
    extension reads it signed in, as the sheet does, after the sheet saves, right after writing (the read-back) and on
    the regular pull, and askdnd keeps that read (`fresh_read`). D&D Beyond's public copy, read otherwise, can trail a
-   save by minutes, so a copy older than the one kept, by D&D Beyond's own `dateModified`, is never kept
-   (`characters.older`), and a field askdnd just wrote that D&D Beyond holds at anything else was changed there after.
+   save by minutes. A read-back that doesn't show the change yet is read again a few times: D&D Beyond's servers can
+   disagree for a few seconds, the signed-in read too, and its `dateModified` goes back and forth, so it's never used to
+   choose between copies (Nov 3). A field askdnd just wrote that D&D Beyond holds at anything else was changed there after.
 5. **Never a guess.** A field D&D Beyond holds at a value askdnd can't explain after writing to it isn't written over:
    the change stops as "not on D&D Beyond yet", with the end state to make by hand.
 6. **Awake whenever someone is using it, with no switch** (Brett, 2026-10-27: always active when it needs to be,
@@ -773,10 +774,13 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, error or "The change couldn't be made.")
         return
     now = {}
-    for attempt in range(1 if fresh else 4):  # D&D Beyond's public copy can take a moment to serve what it just saved
+    # The extension's own read right after writing first, then D&D Beyond again a few times, a second apart: its servers
+    # answer from copies that can disagree for a few seconds, the signed-in read too (Nov 3, the live runs: a read just
+    # after attuning still said not attuned, and its last-changed stamp went back and forth)
+    for attempt in range(4):
         if attempt:
             time.sleep(1)
-        if not _reread(db, b, character, fresh):
+        if not _reread(db, b, character, fresh if attempt == 0 else None):
             return
         n = numbers(character)
         now = {f: _value(n, f) for f in b.target} if n else {}
