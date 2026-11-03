@@ -2,6 +2,7 @@
 {% from "_char.html" import pips, adv, mark, sync, sync_attrs, dying_state, dying_marks, hp_tile, ntile, purse, res_name %}
 {% from "_cond_icons.html" import cond_icon, cond_badges with context %}
 {% from "_lists.html" import filter_column, search_box, active_row %}
+{% from "_fight_rows.html" import fight_rows with context %}
 {% block title %}Party · askdnd{% endblock %}
 {% block content %}
 {# Party (character_pages.party_page; Brett, 2026-10-26, docs/mockups/party.html): the same pieces as Sheet and Campaign.
@@ -28,16 +29,7 @@
     {% set f = fight_now() %}
     {% if f and rows %}
     <div class="pt-view" role="group" aria-label="Show the party as" data-pt-view-default="{{ 'rows' if is_dm else 'cards' }}"><button type="button" data-pt-view="cards" aria-pressed="false">Cards</button><button type="button" data-pt-view="rows" aria-pressed="false">Rows</button></div>
-    <div class="table-scroll pt-track-wrap"><table class="pt-track">
-      <thead><tr><th>Turn</th><th>Name</th><th>Hit Points</th><th>AC</th><th>Conditions</th><th>Concentration</th></tr></thead>
-      <tbody>{% for x in f.order %}{% set r = rows | selectattr("c.id", "equalto", x.character) | first if x.character else none %}{% set hp = r.sheet.hit_points if r and r.sheet else none %}
-        <tr class="{{ 'now' if x.active }}"><td>{{ "Now" if x.active else loop.index }}</td>
-          <td><b>{{ x.name }}</b></td>
-          <td>{% if hp %}<button type="button" class="pt-hp{{ ' low' if hp.max and hp.current * 2 <= hp.max }}" data-panel-url="/characters/{{ r.c.id }}/vital/hp" title="Open Hit points">{{ hp.current }} / {{ hp.max }}</button>{% else %}<span class="note">—</span>{% endif %}</td>
-          <td>{% if r and r.sheet %}{{ r.sheet.armor_class }}{% else %}<span class="note">—</span>{% endif %}</td>
-          <td>{% if r %}{% for k in r.conditions if k.name != "Concentration" %}{{ k.name }}{{ ", " if not loop.last }}{% else %}<span class="note">None</span>{% endfor %}{% endif %}</td>
-          <td>{% if r and r.c.concentration %}{{ r.c.concentration.spell }}{% elif r %}<span class="note">None</span>{% endif %}</td></tr>{% endfor %}</tbody>
-    </table></div>
+    {{ fight_rows(f, rows) }}
     {% endif %}
     {% if rows %}<div class="pt-cards{{ ' pt-with-track' if f }}">
       {% for r in rows %}

@@ -237,6 +237,18 @@ body.pt-rows .pt-with-track { display: none; }
 .pt-track .pt-hp { background: none; border: 1px solid var(--line-strong); border-radius: var(--r-sm); padding: 2px 8px; color: var(--text-strong); font: inherit; font-weight: 700; white-space: nowrap; cursor: pointer; }
 .pt-track .pt-hp:hover { border-color: var(--muted); }
 .pt-track .pt-hp.low { color: var(--amber); }
+/* The fight's rows (_fight_rows.html): Party's Rows and the middle of askdnd's table, which shows them whatever Party's choice */
+.pt-track-wrap.always { display: block; }
+.pt-track tr[data-panel-url] { cursor: pointer; }
+.pt-track tr[data-panel-url]:hover td { background: var(--surface-2); }
+.pt-track .ft-init { font-weight: 700; color: var(--muted); white-space: nowrap; }
+.pt-track .ft-now { display: block; font-size: var(--fs-xs); color: var(--amber); }
+.pt-track .ft-who { display: flex; align-items: center; gap: var(--sp-2); min-width: 9em; }  /* (a phone scrolls the rows sideways: slice 5 makes them its own) */
+.pt-track .ft-who .roll-av { width: 28px; height: 28px; font-size: var(--fs-xs); }
+.pt-track .ft-who .roll-av.enemy { box-shadow: 0 0 0 2px var(--red); }
+.pt-track .ft-who b { color: var(--text-strong); }
+.pt-track .ft-conds .ft-rem { display: block; font-size: var(--fs-xs); color: var(--muted); }
+.table-page .tb-middle { display: grid; gap: var(--sp-3); }
 .live-row.here .live-name { font-weight: 600; }
 .live-say { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 10px; }
 .live-say.via { border-color: var(--amber); }

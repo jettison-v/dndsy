@@ -175,3 +175,35 @@ def test_pages_dont_shift_as_they_load(people, server):
     assert not found, "\n".join(found)
     assert player.errors == []
 
+
+
+def test_the_table_page_holds_together(people, server, browser_db, long_names):
+    """askdnd's table (VTT slice 1) as a player, with a fight heard from D&D Beyond's VTT and without one, at every
+    width; its campaign a test one for the test only (askdnd's VTT is a test campaign's until Brett switches it on)."""
+    import json
+    from datetime import UTC, datetime
+
+    order = [{"key": "t-cole", "name": "Cole", "kind": "character", "character": server["cole"], "monster": None, "initiative": 18,
+              "hidden": False, "active": True, "image": None},
+             {"key": "t-e1", "name": "Enemy 1 the Exceptionally Long-Named", "kind": "monster", "character": None, "monster": None,
+              "initiative": 15, "hidden": False, "active": False, "image": None}]
+    fight = {"id": "f1", "round": 2, "turn": 1, "order": order, "reminders": []}
+    engine = create_engine(browser_db[0])
+    player = people("player")
+
+    def set_campaign(is_test, f):
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE campaigns SET is_test = :t, fight = CAST(:f AS JSONB), fight_at = :at WHERE id = :c"),
+                         {"t": is_test, "f": json.dumps(f) if f else None, "at": datetime.now(UTC) if f else None, "c": server["campaign"]})
+            conn.commit()
+
+    try:
+        set_campaign(True, None)
+        found = check(player, server, ("/c/main/table",))
+        set_campaign(True, fight)
+        found += check(player, server, ("/c/main/table",))
+    finally:
+        set_campaign(False, None)
+        engine.dispose()
+    assert not found, "\n".join(found)
+    assert player.errors == []

@@ -1,0 +1,21 @@
+{# The fight as rows, in turn order: Party's Rows and the middle of askdnd's table (VTT slice 1; VTT Layout › The first
+   step, docs/mockups/vtt-layout/First-step.dc.html). A row per fighter: initiative, picture and name, Hit Points (a
+   character's own; a creature's come when askdnd runs the fight, slice 2), AC, and what it's under with the reminders
+   for it. A character's row opens its short version in the side panel; its Hit Points open Hit points. `rows`: Party's
+   rows (character_pages.party_rows), `always`: shown whatever Party's Cards or Rows choice is. #}
+{% from "_cond_icons.html" import cond_badges with context %}
+{% macro fight_rows(f, rows, always=false) %}
+<div class="table-scroll pt-track-wrap{{ ' always' if always }}"><table class="pt-track">
+  <thead><tr><th>Init.</th><th>Fighter</th><th>Hit Points</th><th>AC</th><th>Conditions and reminders</th></tr></thead>
+  <tbody>{% for x in f.order %}{% set r = rows | selectattr("c.id", "equalto", x.character) | first if x.character else none %}{% set hp = r.sheet.hit_points if r and r.sheet else none %}
+    <tr class="{{ 'now' if x.active }}{{ ' enemy' if x.kind == 'monster' }}"{% if r %} data-panel-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ x.name }}: a short version"{% endif %}>
+      <td class="ft-init">{% if x.initiative is not none %}{{ x.initiative | int }}{% else %}<span class="note">—</span>{% endif %}{% if x.active %}<span class="ft-now">Now</span>{% endif %}</td>
+      <td><span class="ft-who"><span class="roll-av hue{{ (x.character or loop.index) % 6 }}{{ ' enemy' if x.kind == 'monster' }}" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b>{% if r %}{{ cond_badges(r.conditions, r.c, true) }}{% endif %}{% if x.hidden %} <span class="tag draft" title="Hidden from the players on D&amp;D Beyond">Hidden</span>{% endif %}</span></td>
+      <td>{% if hp %}<button type="button" class="pt-hp{{ ' low' if hp.max and hp.current * 2 <= hp.max }}" data-panel-url="/characters/{{ r.c.id }}/vital/hp" title="Open Hit points">{{ hp.current }} / {{ hp.max }}</button>{% else %}<span class="note">—</span>{% endif %}</td>
+      <td>{% if r and r.sheet %}{{ r.sheet.armor_class }}{% else %}<span class="note">—</span>{% endif %}</td>
+      <td class="ft-conds">{% if r %}{% for k in r.conditions %}<span class="nowrap">{{ k.name }}{% if k.name == "Concentration" and k.spell %} ({{ k.spell }}){% endif %}</span>{{ ", " if not loop.last }}{% endfor %}
+        {% for m in (f.reminders or []) | selectattr("character", "equalto", r.c.id) | list | reverse %}{% if loop.index <= 2 %}<span class="ft-rem">{{ m.name }}: {{ m.text }}</span>{% endif %}{% endfor %}
+        {% if not r.conditions and not ((f.reminders or []) | selectattr("character", "equalto", r.c.id) | list) %}<span class="note">None</span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody>
+</table></div>
+{% endmacro %}
