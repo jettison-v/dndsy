@@ -215,6 +215,7 @@ a.live-row:hover .live-go { color: var(--text); }
 .cond-rest svg { color: var(--amber); flex: none; }  /* (a moon: Rest stands out from the chips beside it, Brett 2026-11-02) */
 .sheet-hd { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-2); }  /* Sheet: Rest, then Hit dice */
 .planner-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-2) var(--sp-3); flex-wrap: wrap; }
+.row > .planner-prep { margin-left: auto; }  /* Prepare spells ends its class's counts, at the far right */
 .res-row > .cond-rest { margin-left: auto; }  /* Rest ends Resources, at the far right */
 /* Heroic Inspiration: a chip you can press, lit when you have it, grey and hollow when you don't */
 .res-row .res.res-insp, .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--chip-h); margin-left: var(--sp-2); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font: 600 var(--fs-md)/1 var(--sans); cursor: pointer; }
@@ -1741,7 +1742,9 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .sb-slots { display: inline-flex; flex-wrap: wrap; gap: 4px 12px; font-size: var(--fs-sm); }
 .sb-slot { white-space: nowrap; }
 .sb-starred { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: auto; }
-.conc-pill { position: relative; display: inline-flex; align-items: center; gap: 10px; background: var(--surface-2); border-radius: var(--r-pill); padding: 4px 6px 4px 12px; font-size: var(--fs-sm); }
+/* Concentration's pill: one look wherever it is (Battle's Status row, the Spell Book's head; Brett, Nov 3) */
+.conc-pill { position: relative; display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); border-radius: var(--r-pill); min-height: var(--chip-h); padding: 3px 5px 3px var(--sp-2); font-size: var(--fs-sm); }
+.conc-pill > .cond-icon { margin-right: -4px; }
 .conc-k { color: var(--muted); font-size: var(--fs-xs); }
 .conc-next { font: inherit; font-size: var(--fs-xs); background: none; border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-pill); padding: 0 7px; cursor: pointer; }
 .conc-pop { position: relative; }
@@ -1936,8 +1939,6 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 [data-cond="concentration"] { --c: var(--cond-concentration); } [data-cond="enlarged"] { --c: var(--cond-enlarged); } [data-cond="flying"] { --c: var(--cond-flying); } [data-cond="water-breathing"] { --c: var(--cond-water-breathing); }
 .cond-icon { width: 16px; height: 16px; flex: none; color: var(--c); }
 /* Concentration first in the Status row, like a condition pill in its color, then a divider before the conditions */
-.cond-bar .conc-pill { border: 1px solid var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); min-height: var(--chip-h); padding: 3px 5px 3px var(--sp-2); }
-.cond-bar .conc-pill > .cond-icon { margin-right: -4px; }
 .cond-sep { align-self: stretch; width: 1px; margin: 2px var(--sp-1); background: var(--line); }
 .cond-sep:last-child { display: none; }
 .cond-pill:not(.cond-add) > summary { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); padding-left: var(--sp-2); }
@@ -2672,7 +2673,7 @@ body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
 .prep-name .link-plain { display: inline-block; max-width: 100%; vertical-align: bottom; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .prep-name small { display: block; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .prep-col { color: var(--muted); font-size: var(--fs-sm); }
-.prep-fav { color: var(--amber); text-align: center; }
+.prep-fav { text-align: center; }  /* the shortlist's bookmark, as on every list (Brett, Nov 3: it was a star) */
 .prep-side { display: grid; gap: var(--sp-2); position: sticky; top: 0; }
 .prep-changes { display: grid; gap: var(--sp-1); }
 .prep-change { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; column-gap: var(--sp-2); align-items: baseline; padding: 2px 0; }

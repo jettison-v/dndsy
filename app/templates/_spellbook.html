@@ -10,7 +10,7 @@
     <div class="note">{{ c.name }}{% if sc.save_dc %} · {{ sc.class }} spells · DC {{ sc.save_dc }} · {{ sc.attack }} to hit{% endif %}</div>
     <h2 id="peek-title">Spell Book</h2>
   </div>
-  {% if conc %}<span class="conc-pill sb-conc" data-cond="concentration" title="Concentrating on {{ conc.spell }}: a new Concentration spell ends it"><span class="conc-k">Conc.</span><b>{{ conc.spell }}</b>
+  {% if conc %}<span class="conc-pill sb-conc" data-cond="concentration" title="Concentrating on {{ conc.spell }}: a new Concentration spell ends it">{{ cond_icon("Concentration") }}<span class="sr">Concentrating on</span><b>{{ conc.spell }}</b>
     <span class="conc-k">{{ conc.level | ordinal if conc.level else "cantrip" }}{% if conc.rounds %} · round {{ conc.round }}/{{ conc.rounds }}{% endif %}</span></span>{% endif %}
   <div class="fm-actions">{% if can_prepare %}<button type="button" class="btn small" data-modal-url="/characters/{{ c.id }}/spells/prepare" data-modal-size="large">Prepare spells</button>{% endif %}<button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
 </div>

@@ -2,6 +2,7 @@
    Spell Book. Tick and untick with the count in view, your notes under each spell, then one Make for all the changes
    (app.js "Prepare spells"). The count against the class's number is said, never enforced; the always-prepared spells
    are listed and not counted. #}
+{% from "_char.html" import bookmark_icon %}
 {% set most = book.prepared_max %}
 <div class="peek-head prep-head">
   <div class="fm-title">
@@ -26,7 +27,7 @@
     <details class="prep-fold" open><summary>Filters</summary>
     <aside class="prep-filters" aria-label="Filters">
       <span class="ls-label">Show</span>
-      <div class="chips">{% for k, label in (("all", "All"), ("on", "Prepared"), ("off", "Not prepared"), ("fav", "★ Shortlist")) %}<button type="button" class="chip{{ ' on' if k == 'all' }}" data-prep-show="{{ k }}">{{ label }}</button>{% endfor %}</div>
+      <div class="chips">{% for k, label in (("all", "All"), ("on", "Prepared"), ("off", "Not prepared"), ("fav", "Shortlist")) %}<button type="button" class="chip{{ ' on' if k == 'all' }}" data-prep-show="{{ k }}">{{ label }}</button>{% endfor %}</div>
       {% if levels | length > 1 %}<span class="ls-label">Level</span><div class="chips">{% for lv, label in levels %}<button type="button" class="chip" data-prep-level="{{ lv }}">{{ label }}</button>{% endfor %}</div>{% endif %}
       {% if effects | length > 1 %}<span class="ls-label">Effect</span><div class="chips">{% for e in effects %}<button type="button" class="chip" data-prep-effect="{{ e }}">{{ e }}</button>{% endfor %}</div>{% endif %}
       {% if noting %}<label class="ls-check"><input type="checkbox" data-ls-notes> Full notes</label>{% endif %}
@@ -46,7 +47,7 @@
           {% if r.note %}<span class="ls-note prep-note" title="{{ r.note }}">✎ {{ r.note }}</span>{% endif %}</span>
         <span class="prep-col">{{ r.time }}</span>
         <span class="prep-col">{{ r.effect }}</span>
-        <span class="prep-fav" aria-label="{{ 'On your Shortlist' if r.fav else '' }}">{{ "★" if r.fav }}</span>
+        <span class="prep-fav">{% if r.fav %}<span class="pick fav on static" title="On your shortlist" aria-label="On your shortlist">{{ bookmark_icon() }}</span>{% endif %}</span>
       </div>
       {% endfor %}
       {% endfor %}
