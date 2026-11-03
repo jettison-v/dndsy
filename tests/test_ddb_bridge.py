@@ -1092,9 +1092,30 @@ def test_a_save_is_read_from_the_sheet_itself_not_the_public_copy(player, db, sh
     db.refresh(cole.snapshot)
     assert coin_left(cole) == 3
     assert not any("Soul Coin" in entry["text"] for entry in st["log"])  # (0 → 0 as askdnd last saw it: nothing to log)
-    player.post("/bridge/heard/75423618?pull=1")  # the public copy, older by D&D Beyond's own stamp, changes nothing
+
+
+def test_a_read_is_kept_whatever_d_and_d_beyonds_stamp_says(player, db, sheet):
+    """The live runs, Nov 3: D&D Beyond's dateModified goes back and forth between reads seconds apart (its servers
+    disagree for a moment), so a read with an earlier-looking stamp can hold the newer sheet. It's kept."""
+    cole = char(db, "Cole")
+    player.post("/bridge/heard/75423618", json={"data": as_read(sheet, 0, at="2026-11-03T22:55:11.616Z")})
+    player.post("/bridge/heard/75423618", json={"data": as_read(sheet, 2, at="2026-11-03T22:54:40.000Z")})
     db.refresh(cole.snapshot)
-    assert coin_left(cole) == 3
+    assert coin_left(cole) == 1
+
+
+def test_a_read_back_that_lags_is_read_again_not_taken_as_lost(player, db, sheet):
+    """The live runs, Nov 3: right after writing, the extension's own read can still show the old value for a few
+    seconds. askdnd reads D&D Beyond again, as before 0.9.9, and confirms it, instead of retrying at once and giving up."""
+    cole = char(db, "Cole")
+    player.post("/bridge/heard/75423618")
+    player.post(f"/characters/{cole.id}/count?field=charges:{SOUL_COIN}", data={"to": "use"})
+    batch = ddb_bridge.outbox(db, cole)
+    make(sheet, batch)  # D&D Beyond has it (what askdnd reads next)…
+    lagging = as_read(sheet, 0)  # …but the extension's read just after writing doesn't show it yet
+    player.post(f"/bridge/delivered/{batch['id']}", json={"ok": True, "wrote": True, "data": lagging})
+    assert [i.state for i in db.scalars(select(BridgeIntent))] == ["live"]
+    assert ddb_bridge.outbox(db, cole) is None
 
 
 def test_a_use_given_back_right_after_askdnd_spent_it_is_the_players(player, db, sheet):
