@@ -256,6 +256,10 @@ body.pt-rows .pt-with-track { display: none; }
 .live-made { font-size: var(--fs-xs); color: var(--muted); }
 .live-made b { color: var(--text); font-weight: 600; }
 .live-made small { color: var(--faint); }
+/* A change that stopped short of D&D Beyond, under its character, with Try again and Undo (live.stopped) */
+.live-stopped { display: grid; gap: var(--sp-2); margin: 0 0 var(--sp-2) var(--sp-3); padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--red); background: var(--red-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; font-size: var(--fs-sm); }
+.live-stopped b { color: var(--text-strong); font-weight: 600; }
+.live-stopped .note { display: block; font-size: var(--fs-xs); }
 .live-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .live-actions .btn { flex: 1 1 0; white-space: nowrap; }  /* the spinner never wraps the label */
 /* Phones: a bottom bar with the main pages; More holds the rest (base.html) */

@@ -1593,29 +1593,46 @@ def bridge_change(character_id: int, request: Request, body=web.JsonBody, db: Se
     return _json(state(db, character, user))
 
 
-@router.post("/bridge/retry/{intent_id:int}")
-def bridge_retry(intent_id: int, request: Request, db: Session = Depends(get_db)):
+def _intent_of(db: Session, request: Request, intent_id: int) -> tuple[BridgeIntent, Character, dict]:
+    """A change, for its character's player or the DM (hit_points.can_apply: who may make changes for them)."""
+    from app.hit_points import can_apply
+
     user = _signed_in(request, db)
     it = db.get(BridgeIntent, intent_id)
-    if it is not None:
-        reach(db.get(Character, it.character_id))
+    character = db.get(Character, it.character_id) if it else None
+    if character is None or not can_apply(db, user, character):
+        raise HTTPException(404)
+    return it, character, user
+
+
+@router.post("/bridge/retry/{intent_id:int}")
+def bridge_retry(intent_id: int, request: Request, live: int = 0, db: Session = Depends(get_db)):
+    """Try again a change that stopped (Live window, the bridge page)."""
+    it, character, user = _intent_of(db, request, intent_id)
+    reach(character)
     retry(db, intent_id)
     db.commit()
-    return _for_intent(db, intent_id, user)
+    return _answer(request, db, character, user, live, f"{it.label}: trying again")
 
 
 @router.post("/bridge/dismiss/{intent_id:int}")
-def bridge_dismiss(intent_id: int, request: Request, db: Session = Depends(get_db)):
-    user = _signed_in(request, db)
+def bridge_dismiss(intent_id: int, request: Request, live: int = 0, db: Session = Depends(get_db)):
+    """Undo a change that hasn't reached D&D Beyond: askdnd stops showing it as made."""
+    it, character, user = _intent_of(db, request, intent_id)
     dismiss(db, intent_id)
     db.commit()
-    return _for_intent(db, intent_id, user)
+    return _answer(request, db, character, user, live, f"{it.label}: undone in askdnd")
 
 
-def _for_intent(db: Session, intent_id: int, user: dict) -> JSONResponse:
-    it = db.get(BridgeIntent, intent_id)
-    character = db.get(Character, it.character_id) if it else None
-    return _made(db, character, user) if character else _json({"ok": True})
+def _answer(request: Request, db: Session, character: Character, user: dict, live: int, said: str):
+    """The bridge page's state, or the Live window again (`live`), with the page told and the extension told to make it."""
+    if not live:
+        return _made(db, character, user)
+    from app import live as live_window
+
+    resp = live_window.panel(request, db, user, character.id)
+    resp.headers["HX-Trigger"] = web.changed(character, toast=said, deliver=True)
+    return resp
 
 
 @router.get("/characters/{character_id:int}/bridge")

@@ -2,6 +2,7 @@
 a fake sheet stands in, and each test changes it the way the extension, a player or a misbehaving D&D Beyond would."""
 
 import copy
+import json
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -1037,3 +1038,29 @@ def test_admins_read_the_log_further_back_with_its_batches(admin, player, db, sh
     assert newest["intents"] == ["Cole took 80"] and newest["copy_age"] is None and newest["state"] == "sending"
     assert older["intents"] == ["Cole took 5"] and older["copy_age"] is not None and older["state"] == "done"
     assert player.get(f"/manage/bridge/log/{cole.id}").status_code == 403  # admins only
+
+
+def test_a_stopped_change_offers_try_again_and_undo_in_the_live_window(player, dm, db, sheet):
+    """Nov 3 (Brett): the bridge's panel says "Try again or undo it in askdnd", but only a page nothing linked to had
+    the buttons. The Live window lists each stopped change under its character, for its player and the DM; no one else
+    may press them (they were open to anyone signed in)."""
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    set_role(db, "dm@example.com", "dm")
+    ddb_bridge.add(db, cole, "hp", {"amount": -1}, "Cole took 1")
+    batch = ddb_bridge.outbox(db, cole)
+    ddb_bridge.delivered(db, batch["id"], ok=False, error="That isn't a change askdnd may make.")
+    db.commit()
+    it = db.scalar(select(BridgeIntent).where(BridgeIntent.character_id == cole.id))
+    page = player.get("/live", params={"c": cole.id}).text
+    assert "Cole took 1" in page and f'hx-post="/bridge/retry/{it.id}?live=1"' in page and f'hx-post="/bridge/dismiss/{it.id}?live=1"' in page
+    assert f"/bridge/retry/{it.id}" in dm.get("/live", params={"c": cole.id}).text  # the DM too
+    r = player.post(f"/bridge/retry/{it.id}?live=1")
+    assert r.status_code == 200 and "How each sheet is connected" in r.text and json.loads(r.headers["HX-Trigger"])["characterChanged"]
+    db.refresh(it)
+    assert it.state == "waiting"
+    ddb_bridge.add(db, trah, "hp", {"amount": -1}, "Trah took 1")
+    db.commit()
+    theirs = db.scalar(select(BridgeIntent).where(BridgeIntent.character_id == trah.id))
+    assert player.post(f"/bridge/dismiss/{theirs.id}").status_code == 404  # not their character
+    db.refresh(theirs)
+    assert theirs.state == "waiting"

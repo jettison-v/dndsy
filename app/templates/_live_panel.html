@@ -1,7 +1,9 @@
 {# The Live window (app/live.py): how each sheet is connected to D&D Beyond, and refreshing now. "Refresh everyone" is for
    reviewers only. Also refreshes the pill. With the DM as a backup (app/ddb_bridge.py `carried`, docs/mockups/dm-backup/):
    a closed sheet's player reads that the DM is making their changes and is asked to open it; the DM reads which sheets are
-   made through them, a nudge to open D&D Beyond when one can't be reached while the table plays, and what they made. #}
+   made through them, a nudge to open D&D Beyond when one can't be reached while the table plays, and what they made. A
+   change that stopped short of D&D Beyond is listed under its character with Try again and Undo, for its player and the
+   DM (live.stopped). #}
 {% set f = tn.focus %}{% set q = '?c=%s' % f.id if f else '' %}
 <div class="live-pop" role="dialog" aria-label="D&amp;D Beyond">
   {% if tn.connectable and bridge_extension_url %}{% set sheet = tn.mine if tn.mine and tn.mine.connects else None %}
@@ -50,6 +52,11 @@
     {%- set inner %}<span class="live-who"><span class="live-name">{{ r.name }}{% if r.mine %} <span class="note">(you)</span>{% endif %}</span><span class="live-state {{ st }}"{% if r.failed and r.error %} title="{{ r.error }}"{% endif %}><span class="live-mark" aria-hidden="true"></span><span>{{ says }}</span></span></span>{% endset %}
     {%- if r.ddb_id %}<a class="live-row{{ ' here' if f and r.id == f.id }}" href="https://www.dndbeyond.com/characters/{{ r.ddb_id }}" target="_blank" rel="noopener" title="Open {{ r.name }} on D&amp;D Beyond">{{ inner }}<span class="live-go" aria-hidden="true">↗</span></a>
     {%- else %}<div class="live-row{{ ' here' if f and r.id == f.id }}">{{ inner }}</div>{% endif %}
+    {%- for it in stopped.get(r.id, []) %}
+    <div class="live-stopped"><div><b>{{ it.label }}</b>{% if it.error %}<span class="note">{{ it.error }}</span>{% endif %}</div>
+      <div class="row tight"><button type="button" class="btn primary small" hx-post="/bridge/retry/{{ it.id }}?live=1" hx-target="#live-menu" hx-disabled-elt="this">Try again</button>
+        <button type="button" class="btn small" hx-post="/bridge/dismiss/{{ it.id }}?live=1" hx-target="#live-menu" hx-disabled-elt="this">Undo</button></div></div>
+    {%- endfor %}
     {% else %}<p class="muted">No characters yet.</p>{% endfor %}
   </div>
   {% if made_through %}
