@@ -1,5 +1,5 @@
 {# Side panel: everything about one thing on the sheet. Same layout for spells, actions, items, features. #}
-{% from "_char.html" import pips, pick_btn, detail_marks, spell_mech, spends_detail, STATE_LABELS, hit %}
+{% from "_char.html" import pips, count_pips, pick_btn, detail_marks, spell_mech, spends_detail, STATE_LABELS, hit %}
 {% set o = opt %}
 <div class="peek-head">
   <div><div class="note">{{ c.name }} · {{ {"spells": "Spell", "actions": "Action", "attacks": "Attack", "inventory": "Item", "features": "Feature", "situational": "Situational", "creatures": "Form"}.get(section, "") }}</div>
@@ -31,7 +31,7 @@
       {% if o %}<dt>Costs</dt><dd>{{ o.cost if o.cost != "Other" else (x.activation or "Special") }}{% if o.cost_from in ("campaign", "askdnd") %}<div class="note">{{ cost_from[o.cost_from] }}</div>{% endif %}</dd>{% endif %}
       {% if o and o.hit %}<dt>To hit / DC</dt><dd>{{ o.hit }}</dd>{% endif %}
       {% if o and o.meta %}<dt>Details</dt><dd>{{ o.meta }}</dd>{% endif %}
-      {% if x.uses %}<dt>Uses</dt><dd>{{ pips(x.uses) }} {{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}</dd>{% endif %}
+      {% if x.uses %}<dt>Uses</dt><dd>{{ count_pips(c if can_play and x.id else none, "uses:" ~ x.id, x.uses, x.name) }} {{ x.uses.left }} of {{ x.uses.max }} · {{ x.uses.reset_phrase }}</dd>{% endif %}
       {% if o and o.spends %}<dt>Spends</dt><dd>{{ spends_detail(o.spends) }}</dd>{% endif %}
     {% elif section == "inventory" %}
       <dt>Type</dt><dd>{{ x.type }}{% if x.magic and x.rarity %} · {{ x.rarity }}{% endif %}</dd>

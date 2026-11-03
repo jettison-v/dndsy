@@ -83,3 +83,20 @@ def test_a_campaign_without_sync_doesnt_see_any_of_it(player, db, sheet):
     assert player.get(f"/characters/{cole.id}/count?field=slot:1").status_code == 404
     assert player.post(f"/characters/{cole.id}/rest?kind=long").status_code == 404
 
+
+
+def test_every_count_of_yours_opens_use_one_and_give_one_back(player, dm, db, sheet):
+    """Brett, Nov 3: Wild Shape's pips open the same window as spell slots, and so does every count of the player's that
+    shows: Sheet's slots and Wild Shape uses, a feature's uses, an item's charges (a Soul Coin's too), the side panel's.
+    Someone else's character only shows them."""
+    cole = char(db, "Cole")
+    ws, coin = field(cole, "Wild Shape"), "charges:992695540"
+    battle, page = player.get(f"/characters/{cole.id}/battle").text, player.get(f"/characters/{cole.id}").text
+    opens = lambda html, f: f'data-use-url="/characters/{cole.id}/count?field={f.replace(":", "%3A")}"' in html  # noqa: E731
+    assert opens(battle, ws)  # Battle's Wild Shape row
+    assert opens(page, "slot%3A1".replace("%3A", ":")) and opens(page, ws) and opens(page, coin)  # Sheet: slots, Wild Shape, an item's charges
+    assert page.count(f"count?field={ws.replace(':', '%3A')}") >= 2  # (and Features' Wild Shape row)
+    panel = player.get(f"/characters/{cole.id}/detail", params={"ref": "action:Wild Shape"}).text
+    assert opens(panel, ws)
+    assert player.get(f"/characters/{cole.id}/count?field={coin}").status_code == 200  # (the window itself)
+    assert not opens(dm.get(f"/characters/{cole.id}").text, coin)  # (not the DM's: only the player's own)

@@ -1,4 +1,4 @@
-{% from "_char.html" import pips, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, insp_mark, portrait, spends, adv, hit, roll_attrs, sync_attrs, rest_btn %}
+{% from "_char.html" import pips, count_pips, sync, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, insp_mark, portrait, spends, adv, hit, roll_attrs, sync_attrs, rest_btn %}
 {% from "_notes_macros.html" import combo_body %}
 {% from "_cond_icons.html" import cond_icon, cond_halo with context %}
 {% set s = sheet %}
@@ -35,7 +35,8 @@
   </div>
   {% if s and known_forms %}
   <div class="ws-bar ws-row" aria-label="Wild Shape">
-    <span class="ws-label">Wild Shape{% if druid.uses %} {{ pips(druid.uses) }}{% endif %}</span>
+    {%- set ws_act = s.actions | selectattr("name", "equalto", "Wild Shape") | selectattr("uses") | first if s else none %}
+    <span class="ws-label">Wild Shape{% if druid.uses %} {{ count_pips(c if can_play else none, "uses:" ~ ws_act.id if ws_act and ws_act.id else "", druid.uses, "Wild Shape", sync(s, "uses:" ~ ws_act.id) if ws_act else "") }}{% endif %}</span>
     {% if can_pick %}
     {# A pill opens the Shift window (app/shifting.py): the form's cost and Temporary Hit Points, then Shift; Normal opens Leave #}
     <button type="button" class="ws-chip{{ ' on' if not form }}"{% if form %} data-use-url="/characters/{{ c.id }}/wild-shape"{% endif %} aria-pressed="{{ 'false' if form else 'true' }}">Normal</button>

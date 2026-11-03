@@ -906,6 +906,8 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .lu-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-1); }
 .res-go { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
 .res-go:hover { color: var(--amber); }
+.pips-go { display: inline-flex; align-items: center; padding: 0; vertical-align: middle; border-radius: var(--r-xs); }  /* a count's pips that open Use one and Give one back (count_pips) */
+.pips-go:hover, .pips-go:focus-visible { outline: 1px solid var(--amber); outline-offset: 2px; }
 .tile-short { display: none; }
 .ph-short { display: none; }
 @media (max-width: 640px) { .tile-full, .ph-full { display: none; } .tile-short, .ph-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
