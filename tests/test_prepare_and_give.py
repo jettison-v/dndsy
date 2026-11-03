@@ -99,8 +99,8 @@ def test_giving_part_of_a_stack_takes_it_off_one_sheet_and_adds_it_to_the_other(
     assert "Give Potion of Healing" in w and "Cole has 2" in w and f'value="{trah.id}"' in w
     r = player.post(f"/characters/{cole.id}/items/758022089/give", data={"receiver": str(trah.id), "quantity": "1"})
     assert r.status_code == 200, r.text
-    took, got = intents(db)
-    assert (took.character_id, took.kind, took.data["delta"]) == (cole.id, "item", -1)
+    got, took = intents(db)  # the receiver's first: the giver's waits for it (took.data["after"])
+    assert (took.character_id, took.kind, took.data["delta"], took.data["after"]) == (cole.id, "item", -1, got.id)
     assert (got.character_id, got.kind) == (trah.id, "add_item")
     assert got.data | {"name": ""} == {"definition": sheet_def(sheet, 758022089), "entityTypeId": 112130694, "quantity": 1, "name": ""}
     assert took.label == "Cole gave Trah Potion of Healing" and got.label == "Trah got Potion of Healing from Cole"
@@ -113,8 +113,30 @@ def sheet_def(sheet, item_id):
 def test_giving_the_last_one_removes_it(player, db, sheet):
     cole, trah = char(db, "Cole"), trah_too(db)
     player.post(f"/characters/{cole.id}/items/758020411/give", data={"receiver": str(trah.id)})
-    took, got = intents(db)
-    assert took.kind == "remove_item" and got.kind == "add_item"
+    got, took = intents(db)
+    assert took.kind == "remove_item" and got.kind == "add_item" and took.data["after"] == got.id
+
+
+def test_a_given_item_leaves_the_giver_only_once_the_receiver_has_it(player, db, sheet):
+    """Nov 3 (Brett, a Rope from Roscoe to Cathartic, whose sheet was reached through the DM): the giver's copy went
+    and the receiver's didn't, so for 3 minutes no one had it. Now the receiver's change is made first and the giver's
+    waits for D&D Beyond to have it; if the receiver's is undone, the giver's is too and the item stays."""
+    cole, trah = char(db, "Cole"), trah_too(db)
+    player.post(f"/characters/{cole.id}/items/758020411/give", data={"receiver": str(trah.id)})
+    got, took = intents(db)
+    assert ddb_bridge.outbox(db, cole) is None  # the giver's waits
+    batch = ddb_bridge.outbox(db, trah)
+    assert [op["field"].split(":")[0] for op in batch["ops"]] == ["add"]
+    ddb_bridge.delivered(db, batch["id"], ok=False, error="That isn't a change askdnd may make.")  # (stopped at once)
+    db.flush()
+    assert got.state == "not_yet" and ddb_bridge.outbox(db, cole) is None  # stopped: still with Cole
+    ddb_bridge.dismiss(db, got.id)  # the receiver's undone
+    assert ddb_bridge.outbox(db, cole) is None
+    assert took.state == "dismissed" and "stays here" in took.error
+    got.state = "live"  # (and had it arrived: the giver's goes)
+    took.state = "waiting"
+    db.flush()
+    assert [op["field"].split(":")[0] for op in ddb_bridge.outbox(db, cole)["ops"]] == ["item"]
 
 
 def test_nothing_is_taken_while_the_other_sheet_cant_be_reached(player, db, sheet):
