@@ -143,13 +143,13 @@ def test_refresh_now_is_for_anyone_and_throttled(player, db, monkeypatch):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     calls = []
-    real = characters.refresh
+    real = characters.read_released  # (every read from D&D Beyond for a page, with the database let go)
 
     def counting(db_, ch, *a, **kw):
         calls.append(ch.id)
         return real(db_, ch, *a, **kw)
 
-    monkeypatch.setattr(live.chars, "refresh", counting)
+    monkeypatch.setattr(live.chars, "read_released", counting)
     r = player.post(f"/live/refresh/{cole.id}")
     assert r.status_code == 200 and cole.snapshot.status == "ok" and calls == [cole.id]
     trigger = json.loads(r.headers["HX-Trigger"])
@@ -184,13 +184,13 @@ def test_an_open_page_keeps_the_party_fresh(player, dm, db, monkeypatch):
     cole = char(db, "Cole")
     owned_by(db, cole, "player@example.com")
     calls = []
-    real = characters.refresh
+    real = characters.read_released
 
     def counting(db_, ch, *a, **kw):
         calls.append(ch.entity.name)
         return real(db_, ch, *a, **kw)
 
-    monkeypatch.setattr(live.chars, "refresh", counting)
+    monkeypatch.setattr(live.chars, "read_released", counting)
     pill = player.post("/live/sync").text  # no character on screen: your own first, then the rest of the party
     assert calls == ["Cole", "Trah"] and 'id="live-pill"' in pill and "just now" in pill and "<html" not in pill
     player.post("/live/sync")

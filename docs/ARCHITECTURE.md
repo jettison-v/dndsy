@@ -1,124 +1,124 @@
-# askdnd v2 — Architecture (DRAFT)
+# askdnd v2: Architecture
 
-_Last updated 2026-10-19 · Pairs with [BRIEF.md](BRIEF.md)_
+_Rewritten 2026-11-02 as today's map (it was the 2026-10-14 draft of the first three weeks; that plan is in git and
+the roadmap's Done list). Pairs with [BRIEF.md](BRIEF.md). The picture of the services and who changes each is
+[stack.html](stack.html); where every page and module is, CLAUDE.md › Where things are; what's next,
+[roadmap.html](roadmap.html) and [plans/2026-11-02-vtt-build-plan.md](plans/2026-11-02-vtt-build-plan.md)._
 
-## What changed since v1 (early 2025), and why it matters here
+## The shape in one paragraph
 
-| v1 problem | What's different now | v2 approach |
+One FastAPI app (server-rendered Jinja pages with HTMX and one app.js) and one Postgres database on Railway, at
+askdnd.ai and beta.askdnd.ai (the same service; legacy.askdnd.ai is the old app). Every open page keeps a WebSocket to
+its campaign, fed through Postgres, so a change shows on every screen. A Chrome extension in each player's browser, the
+**bridge**, sits in their D&D Beyond tab and makes askdnd's changes on their sheet, then askdnd reads the sheet back to
+confirm. Claude (the Anthropic API) drafts recaps and explains characters; raw session audio and transcripts never
+leave Brett's Mac. Files go to S3 under `v2/`, errors to Sentry, a backup to S3 every night.
+
+## Who owns which data
+
+| Owner | What | How askdnd treats it |
 |---|---|---|
-| Retrieval pulled irrelevant pages | Models can **search iteratively with tools**: search, read a whole section, follow a cross-reference, search again. This replaces the old single search that returned the top few chunks. | The model gets tools (search rules, open a page or section, check the glossary) and works the question like a person flipping through the book. |
-| Answers had no real analysis | Models reason much better and handle long contexts, so they can read full sections, not fragments. | Books are pre-converted into clean, structured sections (headings, page numbers, stat blocks) so the model reads whole rules, not 500-character chunks. |
-| Chunking long PDFs was poor | Models can now **read PDF pages directly**, including tables, stat blocks and layout. | One-time conversion of each book into structured text with an AI model, keeping page numbers and page images (v1's best feature). |
-| No official clarifications or community input | Model APIs have a **built-in web search** that can be limited to chosen sites. | Rules answers can check Sage Advice, errata and D&D Beyond forums, label them as such, and skip 2014-rules discussion. |
-| No game context | Context windows are large and repeated context is cheap (**prompt caching**). | The whole campaign record and the asker's character fit directly in the prompt, so no vector database is needed for them. |
-| Four parallel stores to maintain | — | One database for everything. |
+| **D&D Beyond** | Each character's sheet: build, level, spells known and prepared, inventory and coins, and its play state (hit points, slots, resource uses, the 15 conditions and Exhaustion, Heroic Inspiration, death saves) | askdnd keeps the last good copy (`character_snapshots`) and never edits it directly. A change goes through the bridge and counts only once a read shows D&D Beyond has it. While it's on its way, pages show it as made, marked ↻ (`ddb_bridge.as_shown`). |
+| **askdnd** | The campaign: sessions, recaps, entries, glossary, quests, relationships, history; people, roles and campaigns; Table rolls; Concentration and askdnd's own conditions (item effects, how long one lasts); the fight as heard from D&D Beyond's VTT (`Campaign.fight`) and its reminders; players' notes, pins and shortlists; house rules and tool corrections; dice settings | Postgres. Every edit to story and notes is a revision (Manage › History). |
+| **askdnd, coming with the VTT** | Fights askdnd runs, creatures and their hit points and conditions (they have no D&D Beyond sheet), maps and tokens | Their own tables, one row per fighter, changed row by row under the fight's lock, with a log for the DM's Undo (architecture review, Nov 2). Maps in S3. |
+| **The rules** | The SRD 5.2.1 as data in git (`app/data/srd/`); books the DM owns (the Monster Manual) only in the database (`book_entries`); a campaign's own creations (`campaign_content`) | Read through `rules_data.catalog/find`: the campaign's own, then its books, then the SRD. |
+| **Brett's Mac** | Raw transcripts and their local filter (Ollama); offline copies of the 2024 books (`private/books/`) | Never in git or the cloud. Only the filtered game text is sent for extraction. |
+| **The Mac Mini** | Three test seats (real Chrome, real D&D Beyond test accounts) | The live test, by hand or every night at 4:00; a miss goes to Sentry. Never a real player's sheet. |
 
-## The stack (recommendation)
+## How a change travels
 
-The diagram of how these connect, and who changes each piece, is `docs/stack.html`.
+**On askdnd's own data** (a roll, a recap edit, a condition's timer): the page posts to a route; the route changes the
+database and calls `realtime.announce(db, campaign, kind, …)`; after the commit, Postgres NOTIFY carries "this kind
+changed" to every copy of the app, which tells every page at that campaign over its WebSocket; each page fetches what
+changed at its usual address (which decides who sees what) and swaps it in place (app.js `showInPlace`). The message
+carries data only where waiting for a fetch would be wrong: a roll the whole table sees carries what throwing its dice
+takes, and the VTT's token moves will (vtt-roadmap › Live connection).
+
+**On a D&D Beyond sheet** (Cast, a potion, Hit points, Prepare, Give):
+1. The route checks the sheet can be reached now (its own sheet open with the extension, or the DM's browser as a
+   backup), adds a **change** (`BridgeIntent`) and answers with `deliver`, so the page tells the extension at once.
+2. The extension asks for the character's **outbox**: askdnd builds one batch from every waiting change, on its copy
+   of the sheet if under a minute old, else on a fresh read.
+3. The extension makes each request on D&D Beyond from the sheet's own page, checking every total against D&D Beyond
+   the moment before writing, and reports back.
+4. askdnd **reads the sheet back** and settles each change: live (D&D Beyond has it), again (D&D Beyond was slow), or
+   stopped and listed to make by hand. Nothing is ever written over a number D&D Beyond changed meanwhile.
+
+**From D&D Beyond** (a player changes their sheet there, or rolls there): the extension hears the save and asks askdnd
+to read the sheet; the read logs what changed (`ddb_bridge.seen`), settles any batch it confirms, and announces it.
+Rolls made on D&D Beyond, and the DM's monster rolls in the game log, come into Table rolls. On an open VTT page the
+extension follows the fight (order, round, whose turn) and reports it; askdnd only listens to D&D Beyond's VTT.
+
+## Keeping requests out of each other's way
+
+- **Reading D&D Beyond never holds the database** (Nov 2, after it ran beta out of connections):
+  `characters.read_released` commits what the request did so far, then reads; the caller takes its lock again,
+  checks nothing moved meanwhile, and `characters.store` keeps the read unless a newer copy was kept first.
+- **One batch at a time per character**: `ddb_bridge._lock` holds the character's row (FOR NO KEY UPDATE, not FOR
+  UPDATE: the stronger lock deadlocked with new rows pointing at the character, Oct 29).
+- **One fight writer at a time per campaign**: `fight.lock`, the same kind of lock on the campaign's row; every open
+  VTT page reports each turn, and two saved at once doubled reminders (Nov 2).
+- **Routes that use the database are plain `def`** and run on worker threads, so the one event loop stays free for
+  the live connections. The pool is 10 connections plus 20 more when busy; beta's Postgres allows 100.
+- **More than one copy of the app works**: the live connection goes through Postgres, locks are in Postgres, and the
+  in-memory caches (roles for 10 seconds, D&D Beyond's item and spell lists) expire on their own.
+
+## The stack
 
 | Piece | Choice | Why |
 |---|---|---|
-| App | **Python (FastAPI)**: one app serving both the web pages and the API | Python is best for PDF and AI work and is what v1 used. One codebase and one deploy. |
-| Pages | Server-rendered HTML with light JavaScript (HTMX) | No separate frontend project to set up. Works well on a phone. |
-| Database | **Postgres on Railway** (with pgvector for rules search later) | Replaces Qdrant. Users, campaigns, story, characters and notes all live in one place. |
-| Files | S3 `askdnd-ai/v2/files/` (a folder locally, `private/files/`), through `app/files.py` | Pictures now; maps, handouts, tokens and audio later (VTT 0.5). Keys are `<campaign id>/<sha256>.<ext>`, listed in `stored_files`; each feature serves them from its own route after its own access check (never public links), cached by browsers for good. Types and sizes are limited in `files.TYPES`. The app's AWS key (user `askdnd-v2-files`) can read and write `v2/files/`, not delete. Kept separate from legacy's data. |
-| Campaign pictures | File storage (`entity_pictures.file_key`, `thumb_key`) | Portraits, maps and banners on campaign pages, resized to WebP (≤1200 px + a 320 px thumbnail). Player characters fall back to their D&D Beyond portrait. Only in storage since 2026-10-27 (VTT 0.5); the database lists each file but keeps no copy. |
-| Campaign map | AideDD's Sword Coast atlas, embedded | The Map tab shows aidedd.org in a frame; place pages link to its markers. We store only marker names, never the map image. |
-| Rules content | `app/data/srd/` + Postgres (`campaign_content`) | The SRD 5.2.1 (CC-BY-4.0) as data: monsters, spells, magic items and the Rules Glossary (conditions), read from the official PDF by `scripts/srd_import.py`. A campaign's own creations (or entries from books the DM owns) are in the database, never the public repo. `app/rules_data.py` checks every entry against its kind's schema and reads both as one; Wild Shape's Beasts and the roll recipes are built on it. Shapes: `docs/rules/README.md`. |
-| Version history | Postgres (`revisions`) | Every change to entries, glossary, sessions, key moments, other names, relationships, facts, characters, people and players' notes (old value, new value, who, how). Manage › History restores; Manage › Data undoes a whole import. Players' notes stay hidden from the DM there too. |
-| Database backups | S3 `askdnd-ai/v2/backups/` | Nightly at 10:00 UTC, the `askdnd-backup` Railway cron service runs `scripts/backup_db.py`: every table in one gzipped JSON, 30 days kept. Its AWS key can use `v2/backups/`, and list, read and delete in `v2/files/`. Files aren't in the backup; `stored_files` lists them, and after each backup `files.sweep()` checks they're all in S3 and deletes files unused for 35 days (longer than any kept backup). `scripts/restore_db.py` loads one into an empty database; `scripts/fetch_files.py` copies its files for a local database. |
-| AI (cloud) | **Claude via the Anthropic API** | Tool use, web search, citations, PDF reading. |
-| Spending limit | Anthropic Console limit + askdnd's own monthly limit (`campaigns.monthly_limit_usd`) | Set on Manage › Usage; once a month's spending reaches it, askdnd stops calling Claude and says why (`app/spending.py`). |
-| Rule books | `private/books/` (gitignored) | Offline copies of the 2024 PHB, DMG and MM, saved from Brett's D&D Beyond sign-in for reference while building. The repo is public: only summaries (`docs/rules/`) and SRD data are committed. |
-| Tests and deploys | GitHub Actions + Railway "Wait for CI" | Every push runs ruff (lint) and pytest with a throwaway Postgres; Railway deploys beta only when they pass. |
-| AI (local) | **Ollama on Brett's Mac** (~30B-class model; test 2–3 on a real transcript) | The banter filter. Raw transcripts never leave the Mac. |
-| Sign-in | **Google sign-in, limited to 5 approved emails** | No passwords to manage. A good setup skill to reuse. |
-| Characters | D&D Beyond public character data (unofficial) | Could break without notice. Keep the last good copy so a failure doesn't break the app. |
-| Hosting | **New Railway service** at `beta.askdnd.ai` | Legacy is untouched. Switch askdnd.ai over when v2 is ready. |
-
-Note: API usage is **billed separately** from a Claude Pro/Max subscription (Anthropic Console, pay-as-you-go). For 5 users it should be modest; the monthly limit is set both in the Anthropic Console and on Manage › Usage.
-
-## How the pieces fit
-
-```
-AFTER EACH SESSION (Brett)
-  MacWhisper transcript ──► local filter script (Ollama, on Mac) ──► filtered transcript
-        ──► upload on admin page ──► Claude extracts: recap, NPCs, places, quests, loot
-        ──► Brett reviews/edits ──► published to campaign record
-
-BEFORE A SESSION (everyone)
-  Refresher page = "Previously on…" (campaign record)
-                 + character briefing (D&D Beyond data + player notes, explained by Claude)
-
-DURING A SESSION (phase 2)
-  Rules question ──► Claude with tools: search books · read section · glossary ·
-                     web search (Sage Advice / DDB) · this character · this campaign
-                 ──► short answer + reasoning + cited pages with images
-```
-
-## What the first real transcript taught us (2026-08-29 session)
-- **Echo duplicates everything.** Zoom audio leaks back into Brett's mic, so most lines appear twice under different speaker names. A simple de-duplication pass removed ~45% of the words. **Speaker labels can't be trusted** (DM narration often shows up as "Brett"). Fix at the source: Brett wears headphones during sessions. The pipeline still needs a de-dup step.
-- **About half the session is off-topic.** There's a long pre-game catch-up, mid-game breaks and a scheduling chat at the end. The local filter has real work to do, and the cloud model should only ever see the game.
-- **The DM's narration carries the story.** Extraction should weight it, and use player lines for decisions and plans.
-- **Sessions open with a short player-led recap.** It's useful, but the DM's recap next session will be better for filling gaps.
-- **D&D Beyond has a campaign journal** in the Maps VTT that players already write in. It's a possible extra source; check whether it's reachable.
-- **Size:** about 63k raw words (≈350 KB) per ~4-hour session; about 34k after de-dup. That's well within one cloud extraction call.
+| App | **Python (FastAPI)**, managed with uv: one app for the pages and the API | Python suits the PDF and AI work; one codebase, one deploy. |
+| Pages | Server-rendered Jinja with HTMX and `app/static/app.js` | No separate frontend project; works on a phone. The VTT's map gets its own script, loaded only on the table page. |
+| Database | **Postgres on Railway** | Everything in one place; Alembic migrations in `migrations/`. |
+| Live connection | WebSockets (`/live/connect`) fed by Postgres NOTIFY/LISTEN (`app/realtime.py`) | Reaches pages on any copy of the app; no extra service. |
+| The bridge | Chrome extension `extension/askdnd-bridge/`, unlisted on the Chrome Web Store | D&D Beyond has no API for writing; the player's own signed-in tab makes the change, as their sheet would. Packaged by `scripts/build_extension.py`. |
+| Files | S3 `askdnd-ai/v2/files/` (a folder locally), through `app/files.py` | Keys `<campaign id>/<sha256>.<ext>`, listed in `stored_files`, served by each feature's own route after its access check, never public links. The app's AWS key reads and writes `v2/files/`, never deletes. |
+| Backups | The `askdnd-backup` Railway cron service, nightly to S3 `v2/backups/` | Every table as gzipped JSON, 30 days kept; `files.sweep()` checks files and removes ones unused for 35 days. `scripts/restore_db.py` loads one into an empty database. |
+| AI (cloud) | **Claude via the Anthropic API** | Extraction, recaps, briefings. Every call checks the monthly limit first (`app/spending.py`, Manage › Usage). |
+| AI (local) | Ollama on Brett's Mac | The transcript filter. Raw transcripts never leave the Mac. |
+| Sign-in | Google, for the people askdnd knows (Manage › Accounts; owners in `ADMIN_EMAILS`) | No passwords to keep. Roles per campaign; every rule in `app/access.py`. |
+| Rules data | SRD 5.2.1 in `app/data/srd/` (built by `scripts/srd_import.py`); books in `book_entries` | Public data in git, private books only in the database (uploaded on Manage › Backups and imports). |
+| Dice | @3d-dice/dice-box-threejs, vendored in `app/static/vendor/` | Thrown 3D dice made to land on askdnd's numbers. |
+| Errors | Sentry (project askdnd-v2), pages' errors through `POST /errors/page` | Private by default: no bodies, cookies, query strings, emails or names. |
+| Tests and deploys | GitHub Actions (Server tests, Browser tests) + Railway "Wait for CI"; main protected (both must pass on an up-to-date branch) | `scripts/deploy_check.py` follows each merge to beta. |
+| Hosting and DNS | Railway service `askdnd-v2`; Cloudflare DNS, records written by Railway | askdnd.ai and beta.askdnd.ai; www redirects to askdnd.ai. |
 
 ## Data (in plain terms)
-- **Campaign** → has sessions, story entries (NPCs, places, quests, items), players and characters.
-- **Session** → date, approved recap, extracted events. Raw transcript is NOT stored.
-- **Character** → its own name, owner, D&D Beyond ID (and the D&D Beyond campaign its sheet says it's in), latest good D&D Beyond copy, and the player's structured notes (battle combos, leveling strategy, personal quests, general notes), pins and reminders. It belongs to its player, not to a campaign, so all of this travels with it.
-- **Campaign character** (`campaign_characters`, since 2026-10-22) → a character in a campaign: its story page there, when it joined and left, and the DM's Wild Shape ruling (what it keeps). One campaign at a time; leaving keeps the row and the story, so who was at the table stays answerable. Personal quests remember the campaign they were written in. The full plan (roles, house rules, more campaigns): `docs/plans/2026-10-21-data-organization.md`.
-- **People and roles** (since 2026-10-23): a person's **tool role** (`users.access`: member or admin; owners are `ADMIN_EMAILS`) is about askdnd as a whole: admins set up people, characters, spending and imports. Their **campaign role** (`campaign_members.role`: DM, reviewer or player, with joined and left dates) is about one table. The DM includes Reviewer in their campaign. All rules are in `app/access.py` (`allows()`); Manage › People sets both and draws its chart from those rules.
-- **More than one campaign** (since 2026-10-23): story pages live at `/c/<campaign>/…`; app/campaign_paths.py reads the prefix in front of every page, so routes don't repeat it, and old addresses of story pages redirect to the person's current campaign (`users.current_campaign_id`, set by the switcher in the menu bar or by opening a `/c/…` address). `web.campaign(db)` is that campaign. People see only campaigns they have a role in (admins see all). Admins create campaigns and move characters on Manage › Campaigns. The Claude spending limit is tool-wide (`tool_settings`).
-- **Changes to the tool's knowledge** (since 2026-10-23) are rows that point at what they change, never edits: a **tool correction** (`tool_corrections`, an admin fixing how askdnd reads D&D Beyond, for everyone) and a **house rule** (`house_rules`, the DM's ruling for one campaign, e.g. one roll for all of Magic Missile's darts). `app/house_rules.py` works out the effective value: tool knowledge, then correction, then house rule. Manage › House rules is the DM's page; the roll window says "House rule" when one applies.
-- **Visibility rule**: players' notes, pins and reminders are visible to players, hidden from the DM of the campaign the character is in now (even if that DM is an admin). Everything else is visible to everyone.
-- **Book content** (phase 2) → sections with page numbers and page images.
+- **Campaign** → sessions, story entries (NPCs, places, quests, items), members with roles, characters, house rules,
+  its books, its VTT pieces, and the fight heard from its D&D Beyond game.
+- **Session** → date, approved recap, extracted events. Raw transcripts are never stored.
+- **Character** → its own name, owner, D&D Beyond id (and the D&D Beyond campaign its sheet is in), the last good copy
+  of its sheet, its player's notes, pins and reminders, askdnd's own conditions and Concentration. It belongs to its
+  player, not a campaign, so all of this travels with it. A **test copy** (`copy_of_id`) shares the sheet and has its
+  own play state, and the bridge never writes through it.
+- **Campaign character** (`campaign_characters`) → a character at one table: its story page there, when it joined and
+  left, the DM's Wild Shape ruling, the player's choices of item kinds. Leaving keeps the row and the story.
+- **People and roles** → a tool role (`users.access`: member or admin) and a role per campaign (`campaign_members`:
+  DM, reviewer or player, with dates). The DM includes Reviewer in their campaign.
+- **The bridge's records** → each change (`bridge_intents`), each batch (`bridge_batches`) and a log of what changed
+  where (`bridge_log`), so a change's whole life can be followed.
+- **Corrections** → rows that point at what they change, never edits: a tool correction (admins, everyone) and a house
+  rule (the DM, one campaign). `app/house_rules.py` works out the value top down.
+- **Visibility** → players' notes, pins and reminders are visible to players and hidden from the DM (even an admin
+  DM); everything else is visible to everyone at the table.
 
-## Build plan: 3 weeks to the first milestone
-
-**Week 1 — Foundation (setup-heavy, which is the learning goal)**
-- Clear `main`; new project skeleton; v2 CLAUDE.md and DECISIONS.md
-- Railway: new service and Postgres, `beta.askdnd.ai` in Cloudflare, environment variables, Railway CLI
-- Anthropic API key with a spending limit; Google sign-in with the 5-email allowlist
-- Local filter script; test candidate Ollama models on the recorded session
-
-**Week 2 — Campaign memory**
-- Import the Google Doc notes and the filtered transcript
-- **Transcript processor GUI** (Brett's request: as much GUI as possible, no Terminal): a local page on Brett's Mac, opened by a double-click launcher. Drag in the MacWhisper JSON → Filter (progress bar) → review cuts with Keep/Cut toggles → "Send to askdnd" uploads only the filtered text to beta. It runs locally because Ollama and the raw transcript stay on the Mac.
-- Extraction, a review/edit screen for Brett, the campaign record, the "Previously on…" page
-
-**Next up (as of 2026-10-15, Week 2 status)**
-- Done: database and migrations, campaign import, Google Docs notes sync, local transcript Processor GUI, Claude extraction, review page (questions, recap, key moments, suggestions with undo), new design and navigation, Previously on… / Sessions / Campaign pages.
-- To do: Brett drafts and publishes Sessions 17–29 from notes; wire **Send to askdnd** from the Processor for the Aug 29 transcript; **Usage** page (app-tracked costs and balance estimate); **Reviewer** role for the DM; **Add Session** for gaps (design to be discussed first; see DECISIONS.md).
-
-**Week 3 — Character briefing and launch to the table**
-- Done (2026-10-16): Battle · Character · Party pages, stars and reminders (only the character's player; hidden from the DM), Game Mode, Manage › People with access levels and who plays which character.
-- Done (2026-10-18): structured player notes on the Character page (Battle combos over several turns, Leveling strategy, Personal quest, General notes), replacing Notes sync of character Google Docs; visible to players, hidden from the DM.
-- Done (2026-10-16): D&D Beyond import (3a). Characters page with a card per character and a full readable sheet; reviewers link and refresh; last good copy kept in `character_snapshots`; `app.characters.character_summary()` is the input for briefings.
-- Pull the 5 characters from D&D Beyond; plain-language briefings (wild shapes, spells, features)
-- Seed notes from Brett's doc; enforce the visibility rule; phone polish
-- Invite the table; dry run before the session
-
-**Status (2026-10-19)**
-- Done since: Map tab; Wild Shape planner (forms adjusted for the druid's stats, Moon rules, kept items and traits); Manage regrouped with an access chart; import preview and undo; version history; nightly S3 backups with alerts; tests and lint before every deploy; monthly spending limit.
-- Next: Brett drafts and publishes the remaining recaps; plan rules answers (the third core feature) in the planning chat; navigation simplification and D&D Beyond campaign auto-discovery need Brett's input (see `docs/reviews/2026-10-19-app-review.md`).
-
-**Phase 2 (after the session)**
-- Rules companion (book conversion, tool-using search, Sage Advice and community input, page images)
-- Per-player chat that remembers character reasoning
-- Move askdnd.ai to v2; retire or clean up legacy
+## What the first real transcript taught us (2026-08-29 session)
+- **Echo duplicates everything.** Zoom audio leaks back into Brett's mic, so most lines appear twice under different
+  speaker names; de-duplication removed about 45% of the words, and speaker labels can't be trusted. Headphones fix it
+  at the source; the pipeline still de-duplicates.
+- **About half the session is off-topic** (catch-up, breaks, scheduling): the local filter has real work to do, and
+  the cloud model only ever sees the game.
+- **The DM's narration carries the story**; player lines carry decisions and plans.
+- **Size:** about 63k raw words per ~4-hour session, about 34k after de-duplication: one extraction call.
 
 ## Getting more accurate over time (the feedback loop)
-Brett reviews every AI-drafted recap before the table sees it, and every correction is kept and reused:
-- **Campaign glossary.** Proper nouns with correct spellings and short descriptions (Lillippi, Babbletree, Ashardalon, Mount Hotenow…). Transcription will mangle fantasy names; the glossary is fed to every extraction so mistakes stop recurring. It's seeded from the existing notes.
-- **Correction log.** Each edit is saved with what the AI got wrong. Recurring kinds of mistakes become standing instructions for future extractions, e.g. "player banter about real-world jobs is never story."
-- **Speaker map.** MacWhisper speaker labels are mapped to people and characters once per campaign.
-- **Facts vs. theories.** Brett's notes mix events with his speculation (marked with ←). Extraction keeps them separate, so recaps state facts and list theories as open threads.
+Brett reviews every AI-drafted recap before the table sees it, and every correction is kept and reused: a **campaign
+glossary** of proper nouns fed to every extraction, a **correction log** whose recurring kinds become standing
+instructions, a **speaker map** per campaign, and **facts kept apart from theories** (Brett's speculation becomes open
+threads, not recap).
 
-## Decided (2026-10-14)
-- Everyone has a Google account → Google sign-in with a 5-email allowlist.
-- Brett reviews each recap before publishing, and his corrections feed future extractions (above).
-- Stack: Python/FastAPI.
-- Personal notes and transcripts never go in the git repo; they're imported into the app's database.
+## Decided (2026-10-14, still standing)
+- Google sign-in for the people askdnd knows.
+- Brett reviews each recap before publishing; his corrections feed future extractions.
+- Python/FastAPI.
+- Personal notes and transcripts never go in git; campaign data lives in the database.

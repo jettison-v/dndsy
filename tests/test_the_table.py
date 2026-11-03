@@ -39,7 +39,7 @@ def test_one_add_does_a_person_and_their_character_together(admin, db):
 def test_a_character_added_by_its_link_takes_its_name_from_the_sheet(admin, db, monkeypatch):
     from tests.table_setup import COLE
 
-    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: COLE,))
+    monkeypatch.setattr(characters, "FETCH", lambda _id: COLE)
     admin.post(f"{TABLE}/add", data={"ddb_link": "https://www.dndbeyond.com/characters/12345678"})
     ch = db.scalar(select(Character).where(Character.ddb_id == "12345678"))
     assert ch.name == "Cole Lockhard" and ch.membership.entity.name == "Cole Lockhard"
