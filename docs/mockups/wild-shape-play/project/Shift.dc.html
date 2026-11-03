@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shifting and leaving</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 900px">
+  <div class="head">
+    <div class="num">Choice 1A · Shifting is a change</div>
+    <h1>Pick a form, see what it costs, Shift</h1>
+    <p class="where"><b>Where you'll find it:</b> Battle's Wild Shape row (and "Wild Shape again" in Bonus Action) opens this window, like Cast. Shift spends a use and gives the Temporary Hit Points on D&amp;D Beyond; the form itself is askdnd's. Try it: press Polar Bear, choose keep or take, Shift, then Leave.</p>
+  </div>
+  <div class="grid2">
+    <div class="screen">
+      <div class="body">
+        <div class="row"><div><div class="name">Cole</div><div class="sub">{{ status }}</div></div><div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+        <div class="wsbar"><span class="lbl" style="color: var(--amber)">Wild Shape</span><span class="dots"><sc-for list="{{ pips }}" as="p" hint-placeholder-count="3"><i class="{{ p.cls }}"></i></sc-for></span>
+          <sc-for list="{{ forms }}" as="f" hint-placeholder-count="4"><button type="button" class="stat {{ f.cls }}" onClick="{{ f.pick }}">{{ f.name }}</button></sc-for></div>
+        <div class="numtile" style="max-width: 260px"><small>Hit points</small><span><b>46</b> / 51 <sc-if value="{{ hasTemp }}" hint-placeholder-val="{{ true }}"><span class="temp">+{{ temp }} temp</span></sc-if></span></div>
+        <sc-if value="{{ inForm }}" hint-placeholder-val="{{ false }}">
+          <div class="formband"><span class="pic" aria-hidden="true">PB</span><div><b>In Wild Shape: Polar Bear</b> <span class="note">up to 3 hours</span></div><span style="flex: 1"></span><button type="button" class="btn" onClick="{{ askLeave }}">Leave <span class="note">Bonus</span></button></div>
+        </sc-if>
+        <sc-if value="{{ card }}" hint-placeholder-val="{{ false }}">
+          <div class="cornercard" style="justify-self: end"><span style="color: var(--green)">✓</span><span>{{ cardText }}</span><button type="button" class="btn mini" onClick="{{ undo }}">Undo</button></div>
+        </sc-if>
+      </div>
+    </div>
+    <div style="display: grid; gap: 14px; align-content: start">
+      <sc-if value="{{ asking }}" hint-placeholder-val="{{ true }}">
+        <div class="win" role="dialog" aria-label="Wild Shape into Polar Bear">
+          <div class="row"><h3>Wild Shape: Polar Bear</h3><button type="button" class="btn mini" aria-label="Close" onClick="{{ close }}">✕</button></div>
+          <div class="wline"><span>Takes</span><span><b>Bonus Action</b></span></div>
+          <div class="wline"><span>Spends</span><span><b>1 Wild Shape use</b> · 3 left → 2, on D&amp;D Beyond</span></div>
+          <div class="wline"><span>Temporary HP</span><span><b>18</b> (3 × Druid level, Circle Forms). You have 5: they don't add up.
+            <span class="row start" style="gap: 6px; margin-top: 6px"><button type="button" class="stat {{ takeCls }}" onClick="{{ take }}">Take 18</button><button type="button" class="stat {{ keepCls }}" onClick="{{ keep }}">Keep 5</button></span></span></div>
+          <div class="wline"><span>Lasts</span><span>Up to 3 hours; ends on another Wild Shape, Incapacitated, or death. Leave early as a Bonus Action.</span></div>
+          <div class="wline"><span>Stays</span><span>Concentration on Moonbeam; your Hit Points; only Circle of the Moon spells can be cast.</span></div>
+          <div class="row start" style="gap: 8px"><button type="button" class="btn main" onClick="{{ shift }}">Shift</button><button type="button" class="btn" onClick="{{ close }}">Cancel</button></div>
+          <p class="note">Where Cole's sheet can't be reached, Shift still changes the form in askdnd, and the card says to mark the use and the Temporary Hit Points on D&amp;D Beyond.</p>
+        </div>
+      </sc-if>
+      <sc-if value="{{ leaving }}" hint-placeholder-val="{{ false }}">
+        <div class="win" role="dialog" aria-label="Leave the form">
+          <div class="row"><h3>Leave the Polar Bear form</h3><button type="button" class="btn mini" aria-label="Close" onClick="{{ close }}">✕</button></div>
+          <div class="wline"><span>Takes</span><span><b>Bonus Action</b></span></div>
+          <div class="wline"><span>Temporary HP</span><span><b>Your {{ temp }} stay</b> until they're used up.</span></div>
+          <div class="wline"><span>Nothing else</span><span>No use comes back; nothing changes on D&amp;D Beyond.</span></div>
+          <div class="row start" style="gap: 8px"><button type="button" class="btn main" onClick="{{ leave }}">Leave</button><button type="button" class="btn" onClick="{{ close }}">Cancel</button></div>
+        </div>
+      </sc-if>
+      <div class="card"><h3>What changes where</h3>
+        <div class="ln"><span>The form</span><span class="note">askdnd (D&amp;D Beyond has no Wild Shape state)</span></div>
+        <div class="ln"><span>The use</span><span class="note">D&amp;D Beyond, through the bridge</span></div>
+        <div class="ln"><span>Temporary HP</span><span class="note">D&amp;D Beyond, through the bridge</span></div>
+        <div class="ln"><span>Undo</span><span class="note">puts back all three</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":900}}'>
+class Component extends DCLogic {
+  state = { form: '', asking: true, leaving: false, uses: 3, temp: 5, pick: 'take', card: false, cardText: '' };
+  renderVals() {
+    const s = this.state, names = ['Normal', 'Spider', 'Giant Toad', 'Polar Bear'];
+    return {
+      status: s.form ? 'In Wild Shape: Polar Bear' : 'Druid 6 (Circle of the Moon) / Monk 2',
+      pips: [0, 1, 2].map(i => ({ cls: i < s.uses ? '' : 'off' })),
+      forms: names.map(n => ({ name: n, cls: (n === 'Normal' ? !s.form : s.form === n) ? 'on' : '', pick: () => n === 'Normal' ? (s.form && this.setState({ leaving: true, asking: false })) : this.setState({ asking: true, leaving: false }) })),
+      temp: s.temp, hasTemp: s.temp > 0, inForm: !!s.form, asking: s.asking, leaving: s.leaving, card: s.card, cardText: s.cardText,
+      takeCls: s.pick === 'take' ? 'on' : '', keepCls: s.pick === 'keep' ? 'on' : '',
+      take: () => this.setState({ pick: 'take' }), keep: () => this.setState({ pick: 'keep' }),
+      close: () => this.setState({ asking: false, leaving: false }),
+      askLeave: () => this.setState({ leaving: true, asking: false }),
+      shift: () => this.setState({ form: 'Polar Bear', asking: false, uses: s.uses - 1, temp: s.pick === 'take' ? 18 : s.temp, card: true, cardText: `Cole is a Polar Bear: 1 Wild Shape use spent, ${s.pick === 'take' ? '18 Temporary Hit Points' : 'kept 5 Temporary Hit Points'}` }),
+      leave: () => this.setState({ form: '', leaving: false, card: true, cardText: `Cole left the form; ${s.temp} Temporary Hit Points stay` }),
+      undo: () => this.setState({ form: '', uses: 3, temp: 5, card: false, asking: false }),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sheet in a form</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 820px">
+  <div class="head">
+    <div class="num">Choice 3A · Sheet warns, never hides</div>
+    <h1>Sheet stays Cole's, and says what a bear can't do</h1>
+    <p class="where"><b>Where you'll find it:</b> Cole's Sheet while he's a Polar Bear. His own numbers stay (it's his character sheet); a band says he's in a form, and anything the form can't use is greyed with its reason. Equipment isn't greyed: the DM decides what fits.</p>
+  </div>
+  <div class="screen">
+    <div class="body">
+      <div class="row"><div><div class="name">Cole</div><div class="sub">Druid 6 (Circle of the Moon) / Monk 2</div></div><div class="tabs"><span>Battle</span><b>Sheet</b><span>Plan</span></div></div>
+      <div class="formband"><span class="pic" aria-hidden="true">PB</span><div><b>In Wild Shape: Polar Bear.</b> <span class="note">These are Cole's own numbers. Battle shows the form's: AC 17, Speed 50 ft, swim 50 ft.</span></div><span style="flex: 1"></span><button type="button" class="btn">Battle</button></div>
+      <div class="tabbar"><b>Actions</b><span>Spells</span><span>Wild Shape</span><span>Inventory</span><span>Features</span><span>Skills &amp; situational</span></div>
+      <div class="grid2">
+        <div class="rows">
+          <div class="lbl" style="color: var(--k-action); margin: 6px 0">Actions</div>
+          <div class="rw"><span><b>Unarmed Strike</b> <span class="note">1d6 + 3 bludgeoning</span></span><span class="btn mini">+6</span></div>
+          <div class="rw greyed"><span><b>Thorn Whip</b> <span class="note">cantrip</span><br><span class="why">Not in this form: only Circle of the Moon spells</span></span><span class="btn mini">+7</span></div>
+          <div class="rw"><span><b>Starry Wisp</b> <span class="tagg">Circle spell</span></span><span class="btn mini">+7</span></div>
+          <div class="rw"><span><b>Soul coins</b> <span class="note">equipment</span><br><span class="note">In a form: the DM decides whether you can use it</span></span><span class="btn mini">Use</span></div>
+        </div>
+        <div class="rows">
+          <div class="lbl" style="color: var(--k-bonus); margin: 6px 0">Bonus actions</div>
+          <div class="rw"><span><b>Flurry of Blows</b> <span class="note">1 Focus Point</span></span><span class="btn mini">+6</span></div>
+          <div class="rw"><span><b>Potion of Healing</b> <span class="note">×2</span><br><span class="note">In a form: the DM decides whether you can drink it</span></span><span class="btn mini">Drink</span></div>
+          <div class="lbl" style="color: #b9a3e3; margin: 10px 0 6px">Other</div>
+          <div class="rw greyed"><span><b>Mask of the Wild</b> <span class="note">species trait</span><br><span class="why">Not in this form: a Wild Shape form replaces your species traits</span></span><span></span></div>
+          <div class="rw"><span><b>Luck Points</b> <span class="note">feat</span></span><span class="dots"><i></i><i></i><i></i></span></div>
+        </div>
+      </div>
+      <div class="note">Greyed rows can still be opened and rolled from: the DM makes every ruling, and askdnd only says what the rules say.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

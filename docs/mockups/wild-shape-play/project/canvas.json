@@ -1,0 +1,17 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-03T20:00:00Z"},
+  "title": "Wild Shape Play",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1360, "h": 900, "title": "Battle in a form (choice 2A)", "is_interactive": true},
+    "Shift.dc.html": {"x": 1440, "y": 0, "w": 1360, "h": 900, "title": "Shifting and leaving (choice 1A)", "is_interactive": true},
+    "Phone.dc.html": {"x": 2880, "y": 0, "w": 520, "h": 900, "title": "Battle in a form on a phone"},
+    "Sheet.dc.html": {"x": 0, "y": 1020, "w": 1360, "h": 820, "title": "Sheet in a form (choice 3A)"},
+    "Elsewhere.dc.html": {"x": 1440, "y": 1020, "w": 1360, "h": 820, "title": "Everyone else, and Cast (choices 4A and 5A)"}
+  },
+  "order": ["Main.dc.html", "Shift.dc.html", "Phone.dc.html", "Sheet.dc.html", "Elsewhere.dc.html"],
+  "notes": {},
+  "designSystems": []
+}
