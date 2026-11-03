@@ -171,6 +171,33 @@ def shown(own: list[dict] | None, sheet: list[dict] | None, synced: bool) -> lis
             + [{**c, "on_ddb": False} for c in own if c.get("name") not in there and not (synced and c.get("name") in ON_DDB)])
 
 
+# What conditions do to Speed (SRD 5.2.1 Rules Glossary): these say "Your Speed is 0 and can't increase", and each level
+# of Exhaustion reduces it by 5 feet
+SPEED_ZERO = ("Grappled", "Paralyzed", "Petrified", "Restrained", "Unconscious")
+
+
+def speed_now(speed: dict | None, conditions: list[dict] | None) -> dict | None:
+    """The sheet's speeds as the conditions that count leave them (`counts`, character_pages.listed): Exhaustion takes
+    5 feet a level off each, and Speed 0 makes each 0. Each change is a part of Speed's sum with its reason, so its
+    panel shows the working; it says what the rules make the number, never stops a move."""
+    if not speed:
+        return speed
+    on = [c for c in conditions or [] if c.get("counts", True)]
+    level = max((int(c.get("level") or 0) for c in on if c.get("name") == "Exhaustion"), default=0)
+    zero = next((c["name"] for c in on if c.get("name") in SPEED_ZERO), None)
+    if not level and not zero:
+        return speed
+    out, parts = dict(speed), list(speed.get("parts") or [("Walking", speed.get("walk") or 0)])
+    for kind in [k for k in speed if k not in ("parts", "notes")]:
+        out[kind] = 0 if zero else max(0, (speed[kind] or 0) - 5 * level)
+    if level:
+        parts.append((f"Exhaustion {level} (5 ft a level)", -min(5 * level, speed.get("walk") or 0)))
+    if zero:
+        parts.append((f"{zero}: Speed 0, and it can't increase", -sum(v for _, v in parts)))
+    out["parts"] = parts
+    return out
+
+
 def usable(it: dict) -> bool:
     """An item whose powers work now: equipped (or attuned), and attuned if it needs attunement."""
     return bool(it.get("magic")) and (it.get("equipped") or it.get("attunement") == "attuned") and it.get("attunement") != "required"
