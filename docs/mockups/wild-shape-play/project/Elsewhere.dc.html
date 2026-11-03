@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Everyone else, and Cast</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 820px">
+  <div class="head">
+    <div class="num">Choices 4A and 5A · everyone sees the bear; Cast says, never stops</div>
+    <h1>The table sees "Cole (Polar Bear)"</h1>
+    <p class="where"><b>Where you'll find it:</b> the fight band and the fight's rows (Party's Rows, askdnd's table), Party's card, Table rolls, and the Cast window for a spell the form can't cast. The bear's picture and AC wherever Cole is shown; his own Hit Points.</p>
+  </div>
+  <div class="grid2">
+    <div style="display: grid; gap: 14px">
+      <div class="band"><span class="big">Cole's turn</span><span class="note">Round 2 · Next: Enemy 1</span><span style="flex: 1"></span><span class="fb now"><i>PB</i>Cole (Polar Bear)</span><span class="fb"><i>E</i>Enemy 1</span><span class="fb"><i>T</i>Trah</span></div>
+      <div class="card">
+        <div class="lbl">The fight's rows</div>
+        <table class="track">
+          <thead><tr><th>Init.</th><th>Fighter</th><th>Hit Points</th><th>AC</th><th>Conditions and reminders</th></tr></thead>
+          <tbody>
+            <tr class="now"><td>17</td><td><span class="who"><span class="av bear">PB</span><b>Cole</b> <span class="tagg form">Polar Bear</span></span></td><td><span class="hpb">51 / 51</span> <span class="note">+18</span></td><td>17</td><td>Concentration (Moonbeam)</td></tr>
+            <tr><td>12</td><td><span class="who"><span class="av" style="box-shadow: 0 0 0 2px var(--red)">E</span><b>Enemy 1</b></span></td><td class="note">—</td><td class="note">—</td><td class="note">—</td></tr>
+            <tr><td>9</td><td><span class="who"><span class="av">T</span><b>Trah</b></span></td><td><span class="hpb">52 / 52</span></td><td>17</td><td class="note">None</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="rolls card" style="background: var(--chrome)">
+        <div class="lbl" style="color: var(--amber)">Table rolls</div>
+        <div class="ln"><span class="who"><span class="av bear">PB</span><span><b>Cole (Polar Bear)</b><br><span class="note">Rend to hit · then 1d8 + 5 slashing</span></span></span><b style="font-size: 22px">19</b></div>
+      </div>
+    </div>
+    <div style="display: grid; gap: 14px; align-content: start">
+      <div class="card">
+        <div class="lbl">Party's card</div>
+        <div class="row start" style="gap: 10px"><span class="av bear" style="width: 40px; height: 40px">PB</span><div><b style="color: var(--strong); font-size: 16px">Cole</b> <span class="tagg form">Polar Bear</span><div class="note">Druid 6 / Monk 2 · in Wild Shape, up to 3 hours</div></div></div>
+        <div class="nums" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><span class="numtile"><small>Hit points</small><span><b>51</b> / 51 <span class="temp">+18</span></span></span><span class="numtile form"><small>Armor class</small><b>17</b></span><span class="numtile form"><small>Speed</small><b>50 ft</b></span></div>
+      </div>
+      <div class="win" role="dialog" aria-label="Cast Healing Word">
+        <div class="row"><h3>Cast Healing Word</h3><button type="button" class="btn mini" aria-label="Close">✕</button></div>
+        <div class="formband" style="padding: 6px 10px"><span class="note" style="color: var(--amber)">In Wild Shape you can cast only Circle of the Moon spells: Healing Word isn't one. The DM rules.</span></div>
+        <div class="wline"><span>Takes</span><span><b>Bonus Action</b> · 60 ft</span></div>
+        <div class="wline"><span>Slot</span><span><b>1st-level</b> · 4 left</span></div>
+        <div class="row start" style="gap: 8px"><button type="button" class="btn main">Cast anyway</button><button type="button" class="btn">Cancel</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

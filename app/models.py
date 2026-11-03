@@ -743,7 +743,8 @@ class TableRoll(Base):
     user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
     # A follow-up (damage, reroll, bonus) points at the roll it belongs to, and shares its audience
     parent_id: Mapped[int | None] = mapped_column(ForeignKey("table_rolls.id", ondelete="CASCADE"), index=True)
-    who: Mapped[str] = mapped_column(String(80), default="", server_default="")  # shown when there's no character ("DM")
+    # Shown when there's no character ("DM"); with one, the Wild Shape form it rolled in ("Polar Bear": "Cole (Polar Bear)")
+    who: Mapped[str] = mapped_column(String(80), default="", server_default="")
     label: Mapped[str] = mapped_column(String(120))  # "Wis save", "Initiative", "Rend"; a reroll's reason
     # save | check | attack | death | damage | heal | dice; follow-ups: damage | reroll | bonus
     kind: Mapped[str] = mapped_column(String(10))

@@ -97,18 +97,25 @@ def test_wild_shape_tab_panel_and_battle_switch(db, cole, player, dm):
     assert "Darkvision 60 ft. Resists Cold." in panel and "Stat block from the SRD 5.2.1 (see Help › About)" in panel
     assert player.get(f"/characters/{cole.id}/form?name=Unicorn").status_code == 404
 
-    assert dm.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}).status_code == 403  # their player only
-    assert player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Tiger"}, headers=HX).status_code == 400  # not known
-    r = player.post(f"/characters/{cole.id}/wild-shape", data={"form": "polar bear"}, headers=HX)
-    assert "In Wild Shape: Polar Bear" in r.text and "Wild Shape: Polar Bear" in r.headers["HX-Trigger"]
-    assert 'data-modal-size="large"' in r.text
+    # A pill opens Shift (app/shifting.py, Nov 3): what it takes and does, then Shift makes it
+    assert dm.get(f"/characters/{cole.id}/wild-shape?form=Polar Bear").status_code == 404  # their player only
+    assert player.get(f"/characters/{cole.id}/wild-shape?form=Tiger").status_code == 404  # not known
+    w = player.get(f"/characters/{cole.id}/wild-shape?form=Polar Bear").text
+    assert "Wild Shape: Polar Bear" in w and "Bonus Action" in w and "1 Wild Shape use" in w and "18</b> (3 × Druid level, Circle Forms)" in w
+    r = player.post(f"/characters/{cole.id}/wild-shape", data={"form": "polar bear", "to": "shift"})
+    assert r.status_code == 200 and r.json()["text"].startswith("Cole is a Polar Bear") and r.json()["undo"]["was"] == ""
     db.refresh(cole)
     assert cole.wild_shape == "Polar Bear"
-    assert "In Wild Shape: Polar Bear" in dm.get(f"/characters/{cole.id}/battle").text  # the whole table sees it
-    assert '<span class="res-label">Resources</span>' in r.text  # resources can still be spent in a form
-    player.post(f"/characters/{cole.id}/wild-shape", data={"form": ""}, headers=HX)
+    page = dm.get(f"/characters/{cole.id}/battle").text  # the whole table sees it
+    assert "In Wild Shape: Polar Bear" in page and 'class="battle-head in-form"' in page and 'class="nt in-form"' in page
+    assert '<span class="res-label">Resources</span>' in page and "cond-bar" in page  # resources and the Status row stay
+    assert "Leave the Polar Bear form" in player.get(f"/characters/{cole.id}/wild-shape").text
+    r = player.post(f"/characters/{cole.id}/wild-shape", data={"to": "leave"})
     db.refresh(cole)
-    assert cole.wild_shape is None
+    assert cole.wild_shape is None and r.json()["undo"] == {"to": "undo", "was": "Polar Bear"}
+    player.post(f"/characters/{cole.id}/wild-shape", data=r.json()["undo"])  # Undo puts the form back
+    db.refresh(cole)
+    assert cole.wild_shape == "Polar Bear"
 
 
 def test_one_note_per_form_is_the_players_and_hidden_from_the_dm(db, cole, player, dm):
@@ -339,7 +346,7 @@ def test_battle_shows_saves_for_the_normal_form_and_in_wild_shape(db, cole, play
     assert block.count('role="listitem"') == 6 and block.count('class="st prof"') == 2  # Int and Wis
     assert 'Con</small><b>+2</b>' in block and "to maintain Concentration · War Caster" in block
     assert "on every save against being charmed (Fey Ancestry)" in block
-    player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}, headers=HX)
+    player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear", "to": "shift"})
     page = dm.get(f"/characters/{cole.id}/battle").text
     block = page[page.index('class="ws-form"'):page.index('class="econ"')]
     assert 'Con</small><b>+8</b>' in block  # by default everything is kept: Luckstone +1 too
@@ -385,16 +392,16 @@ def test_the_tours_preview_shows_a_form_and_saves_nothing(db, cole, player):
 def test_a_forms_speed_follows_exhaustion_and_speed_0(db, cole, player, dm):
     """Nov 2: the form's speeds on Battle follow the same conditions as the character's own (conditions.speed_now):
     Exhaustion's 5 feet a level, and Speed 0. A Polar Bear walks and swims 40 (SRD), 50 with Cole's Unarmored Movement."""
-    player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}, headers=HX)
+    player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear", "to": "shift"})
 
-    def form_speed():
+    def form_speed():  # (Battle's Speed tile, the form's in a form: Nov 3)
         page = dm.get(f"/characters/{cole.id}/battle").text
-        return page.split("<small>Speed</small>", 1)[1].split("</b>", 1)[0]
+        return page.split('class="battle-head', 1)[1].split("<small>Speed</small>", 1)[1].split("</div>", 1)[0]
 
-    assert "50 ft., swim 50 ft." in form_speed()
+    assert "<b>50 ft</b>" in form_speed() and "swim 50" in form_speed()
     cole.conditions = [{"name": "Exhaustion", "level": 2}]
     db.flush()
-    assert "40 ft., swim 40 ft." in form_speed()
+    assert "<b>40 ft</b>" in form_speed() and "swim 40" in form_speed()
     cole.conditions = [{"name": "Grappled"}]
     db.flush()
-    assert ">0 ft., swim 0 ft." in form_speed()
+    assert "<b>0 ft</b>" in form_speed() and "swim 0" in form_speed()

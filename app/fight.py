@@ -254,10 +254,18 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
         from app import characters as chars  # Manual art (rules_data.pictures, by D&D Beyond's monster id)
         from app import rules_data
 
+        from app import wild_shape as ws
+
         ids = {x["character"] for x in f["order"] if x.get("character")}
-        sheets = {c.id: chars.character_summary(c) or {} for c in db.scalars(select(Character).where(Character.id.in_(ids)))} if ids else {}
+        found = list(db.scalars(select(Character).where(Character.id.in_(ids)))) if ids else []
+        sheets = {c.id: chars.character_summary(c) or {} for c in found}
+        # A character in a Wild Shape form shows as the form: its picture, and "(Polar Bear)" after the name (Nov 3)
+        forms = {c.id: c.wild_shape for c in found if c.wild_shape}
+        pool = ws.beasts(db, campaign.id) if forms else ()
+        beast_art = {n: (ws.catalog_beast(n, pool) or {}).get("image") or "" for n in set(forms.values())}
         art = {str(p["ddb_id"]): p["image"] for p in rules_data.pictures().values() if p.get("ddb_id") and p.get("image")}
-        f["order"] = [{**x, "picture": sheets.get(x.get("character"), {}).get("portrait") or x.get("image") or art.get(x.get("monster") or ""),
+        f["order"] = [{**x, "form": forms.get(x.get("character"), ""),
+                       "picture": beast_art.get(forms.get(x.get("character"), "")) or sheets.get(x.get("character"), {}).get("portrait") or x.get("image") or art.get(x.get("monster") or ""),
                        # a character at 0 Hit Points (app/death_saves.py): its token striped, "0 HP"
                        "down": ((sheets.get(x.get("character")) or {}).get("hit_points") or {}).get("current") == 0}
                       for x in f["order"]]

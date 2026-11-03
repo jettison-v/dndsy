@@ -1059,10 +1059,18 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .ws-row { margin: -4px 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .ws-label { font-family: var(--cond); text-transform: uppercase; letter-spacing: .06em; font-size: var(--fs-xs); color: var(--amber); margin-right: 4px; }
 .ws-chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
-.ws-form { display: flex; gap: 14px; align-items: flex-start; margin-top: 10px; padding: 10px; border: 1px solid var(--green); border-radius: var(--r-lg); background: var(--green-soft); cursor: pointer; }
-.ws-pic { width: 84px; height: 84px; border-radius: var(--r-md); object-fit: cover; flex: none; }
-.ws-form-main { min-width: 0; } .ws-form .vitals { margin: 6px 0; }
-@media (max-width: 640px) { .ws-pic { width: 56px; height: 56px; } .form-abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* In a Wild Shape form: a band naming it (its page and Leave at the right) above Battle's usual top row, whose form numbers
+   are edged green (Brett, 2026-11-03, docs/mockups/wild-shape-play/) */
+.ws-form { display: flex; gap: var(--sp-3); align-items: center; margin: 10px 0 var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--green); border-radius: var(--r-lg); background: var(--green-soft); }
+.ws-pic { width: 48px; height: 48px; border-radius: var(--r-md); object-fit: cover; flex: none; }
+.ws-form-main { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.ws-form-acts { display: flex; gap: var(--sp-2); flex: none; }
+.nt.in-form { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); }  /* a Wild Shape form's number (Battle, Party) */
+.ws-sheet-band { margin: 0 0 var(--sp-3); }
+.ri.form-no { opacity: .55; } .ri.form-no .ri-what { color: var(--amber); }  /* what a Wild Shape form can't do, on Sheet */
+.tag.form-note { color: var(--muted); }
+.tag.pt-form, .tag.ft-form { color: var(--green); border-color: color-mix(in srgb, var(--green) 50%, var(--line)); }
+@media (max-width: 640px) { .ws-pic { width: 32px; height: 32px; } .ws-form-note { display: none; } .form-abilities { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 /* Large modal (Wild Shape forms): wide on desktop, a full-height sheet on phones */
 .peek.modal.large { width: min(var(--modal-lg-w), calc(100% - 48px)); max-height: 90vh; height: 90vh; }
@@ -1282,7 +1290,6 @@ a.sheet-ref { text-decoration-style: dotted; }
 .st .adv-badge { font-size: var(--fs-xs); padding: 0 4px; line-height: 1.35; order: 1; }  /* inside its tile, before the number (the UI pass, 2026-11-02) */
 .st b { order: 2; }
 .save-all { margin: 6px 0 0; }
-.ws-form .save-tiles { margin-top: 8px; }
 @media (max-width: 640px) { .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
   .strip.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
@@ -1336,6 +1343,13 @@ a.sheet-ref { text-decoration-style: dotted; }
 .use-cost { margin: 0 0 6px; font-size: var(--fs-sm); color: var(--muted); }
 .use-what { margin: 0 0 6px; font-size: var(--fs-sm); }
 .use-said { margin: 6px 0 0; font-size: var(--fs-sm); color: var(--amber); }
+/* Wild Shape's window (app/shifting.py): what shifting takes and does, a line each */
+.shift-lines { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; margin: 4px 0 10px; font-size: var(--fs-sm); max-width: 30rem; }
+.shift-lines dt { color: var(--muted); }
+.shift-lines dd { margin: 0; }
+.shift-lines dd b { color: var(--text-strong); }
+.shift-lines select { margin-top: 4px; display: block; }
+.shift-warn { color: var(--amber); }
 .rw-title { font-weight: 700; font-size: var(--fs-md); padding-right: 24px; margin-bottom: 8px; }
 .rw-title .roll-sub { font-weight: 400; }
 .rw-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 8px 0; }

@@ -287,7 +287,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
         if how is None:
             continue
         mine = viewer_id is not None and r.user_id == viewer_id
-        name = names.get(r.character_id) or r.who or "Someone"
+        name = (f"{names[r.character_id]} ({r.who})" if r.who else names[r.character_id]) if r.character_id in names else (r.who or "Someone")
         e = {"id": r.id, "seq": seq[r.id], "character_id": r.character_id or 0, "name": name, "initial": name[:1].upper(),
              "portrait": pics.get(r.character_id) or "", "hue": (r.character_id or 0) % 6 if r.character_id else 6,
              "mine": mine, "to": r.visibility, "hidden": how == "hidden", "dice": dice.get(r.user_id) or prefs(None), "ddb": bool(r.ddb_roll_id),
@@ -531,7 +531,8 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
         result["total"] = result["total"] + sum(x["total"] for x in rolled)
         result["total"] = max(result["total"], 0) if kind != "dice" else result["total"]
         mode = "normal"
-    who = "" if ch else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
+    # With a character, `who` is the Wild Shape form it rolled in, kept with the roll (Table rolls says "Cole (Polar Bear)")
+    who = (ch.wild_shape or "")[:80] if ch else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)

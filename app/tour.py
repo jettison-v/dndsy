@@ -109,22 +109,23 @@ STOPS = [
      "what": "<b>Cast at</b> works out every average again as if cast with a higher slot.", "why": "See what a higher slot adds before you spend it."},
     {"group": "wildshape", "title": "Wild Shape: pick a form", "page": "battle", "needs": "druid",
      "at": '#battle-body [data-tour="ws-form"]',
-     "what": "On the <b>Wild Shape</b> bar, click a form's pill to shift into it. Battle is worked out for the beast at once, "
-             "and <b>Normal</b> brings you back.",
+     "what": "On the <b>Wild Shape</b> bar, a form's pill opens <b>Shift</b>: it spends a use and gives the Temporary Hit "
+             "Points, and Battle is worked out for the beast. <b>Normal</b> (or Leave) brings you back.",
      "why": "Next, what that looks like. (The tour shows a preview; it won't shift you.)"},
     {"group": "wildshape", "title": "Wild Shape: you as the beast", "page": "battle", "needs": "druid", "swap": "form",
      "at": "#battle-body .ws-form",
-     "what": "This is Battle in your first Wild Shape form: the beast's HP, AC and speed, your own features carried "
-             "over, and its attacks in the columns. (A preview: nothing changes, and no one else sees it.)",
+     "what": "This is Battle in your first Wild Shape form: the beast's AC, Speed and saves in the top row, your own Hit "
+             "Points and features, and its attacks in the columns. (A preview: nothing changes, and no one else sees it.)",
      "why": "D&D Beyond shows the beast's stat block. askdnd shows <b>you</b> as the beast."},
     {"group": "wildshape", "title": "The form's full page", "page": "battle", "needs": "druid", "swap": "form",
-     "panel": True, "open": ["#battle-body .ws-form"], "at": ".peek.open",
-     "what": "Click the form's name for its full page: everything it can do, worked out for your character.",
+     "panel": True, "open": ["#battle-body .ws-form [data-modal-url]"], "at": ".peek.open",
+     "what": "<b>Full form</b> opens its whole page: everything it can do, worked out for your character.",
      "why": "A second character sheet, for as long as you hold the shape."},
     {"group": "wildshape", "title": "Back to Normal", "page": "battle", "needs": "druid", "swap": "own",
      "at": "#battle-body .ws-chip",
-     "what": "<b>Normal</b> brings you back: your own numbers and columns return.",
-     "why": "One click each way, mid-fight."},
+     "what": "<b>Normal</b> opens Leave, a Bonus Action: your own numbers and columns return, and leftover Temporary Hit "
+             "Points stay.",
+     "why": "Each way is one window, with Undo."},
     {"group": "rolling", "page": "battle", "needs": "character", "at": '[data-tour="roll"]',
      "what": "Click any number to roll it. One window offers Advantage and extra dice; <b>Enter</b> rolls, <b>Esc</b> "
              "closes, and <b>Shift-click</b> rolls without the window.",

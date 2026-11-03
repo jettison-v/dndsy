@@ -1,0 +1,33 @@
+{# Shifting into a Wild Shape form, or leaving it (app/shifting.py; docs/mockups/wild-shape-play/ Shift), inside the roll
+   window (app.js "using an item"): what it takes and does, then Shift or Leave. The form is askdnd's; the use and the
+   Temporary Hit Points go to D&D Beyond through the bridge where the sheet can be reached. #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+{% if name %}
+<div class="rw-title">Wild Shape: {{ name }}{% if now %} <span class="note">(from {{ now }})</span>{% endif %}</div>
+<dl class="shift-lines">
+  <dt>Takes</dt><dd><b>Bonus Action</b></dd>
+  <dt>Spends</dt><dd>{% if uses %}<b>1 Wild Shape use</b> · {{ uses.left }} left → {{ uses.left - 1 }}{% if bridge %}, on D&amp;D Beyond{% endif %}{% else %}1 Wild Shape use{% endif %}</dd>
+  <dt>Temporary HP</dt><dd><b>{{ d.temp_hp }}</b> ({% if d.moon %}3 × Druid level, Circle Forms{% else %}your Druid level{% endif %}){% if temp %}. You have {{ temp }}: they don't add up.
+    <select name="temp" aria-label="Temporary Hit Points"><option value="take"{{ ' selected' if d.temp_hp > temp }}>Take {{ d.temp_hp }}</option><option value="keep"{{ ' selected' if d.temp_hp <= temp }}>Keep {{ temp }}</option></select>{% endif %}</dd>
+  <dt>Lasts</dt><dd>Up to {{ d.hours }} hour{{ "s" if d.hours != 1 }}; ends on another Wild Shape, Incapacitated, or death. Leave early as a Bonus Action.</dd>
+  <dt>Stays</dt><dd>Your Hit Points{% if conc %}, Concentration on {{ conc }}{% endif %}; {% if d.beast_spells %}your spells, without costly or consumed Material components{% elif d.moon_spells %}only Circle of the Moon spells can be cast{% else %}no spellcasting{% endif %}.</dd>
+</dl>
+<div class="rw-row use-foot">
+  <button type="button" class="btn primary small" data-use-go data-to="shift"{% if uses and not uses.left %} disabled{% endif %}>Shift</button>
+  <button type="button" class="btn link small" data-use-close>Cancel</button>
+</div>
+{% if uses and not uses.left %}<p class="use-cost shift-warn">No Wild Shape uses left: one comes back on a Short Rest, all on a Long Rest.</p>
+{% elif not bridge %}<p class="use-cost shift-warn">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: Shift changes the form in askdnd, and you mark the use{% if d.temp_hp > temp %} and the Temporary Hit Points{% endif %} on D&amp;D Beyond.</p>{% endif %}
+{% else %}
+<div class="rw-title">Leave the {{ now }} form</div>
+<dl class="shift-lines">
+  <dt>Takes</dt><dd><b>Bonus Action</b></dd>
+  <dt>Temporary HP</dt><dd>{% if temp %}Your {{ temp }} stay until they're used up.{% else %}None to keep.{% endif %}</dd>
+  <dt>Nothing else</dt><dd>No use comes back, and nothing changes on D&amp;D Beyond.</dd>
+</dl>
+<div class="rw-row use-foot">
+  <button type="button" class="btn primary small" data-use-go data-to="leave">Leave</button>
+  <button type="button" class="btn link small" data-use-close>Cancel</button>
+</div>
+{% endif %}
+<p class="use-said" role="alert" hidden></p>

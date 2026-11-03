@@ -71,7 +71,21 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     ch, _ = _guard(db, request, character_id)
     sheet, e = _spell(db, ch, key)
     return templates.TemplateResponse(request, "_cast_window.html", {"c": ch, "e": e, "ways": ways(sheet, e), "reachable": ddb_bridge.reachable(ch),
-                                                                     "ends": ch.concentration if e["conc"] and ch.concentration and ch.concentration.get("key") != key else None})
+                                                                     "ends": ch.concentration if e["conc"] and ch.concentration and ch.concentration.get("key") != key else None,
+                                                                     "form_no": form_no(sheet, ch, e["name"])})
+
+
+def form_no(sheet: dict, ch: Character, name: str) -> str:
+    """In a Wild Shape form, a spell the form can't cast: said in Cast's window, never stopped (Brett, 2026-11-03: the
+    DM rules). "" when it can be cast, or the character isn't in a form."""
+    from app import wild_shape as ws
+
+    d = ws.druid(sheet) if ch.wild_shape else None
+    if not d or d.get("beast_spells") or name in (d.get("moon_spells") or []):
+        return ""
+    if d.get("moon_spells"):
+        return f"In Wild Shape you can cast only Circle of the Moon spells: {name} isn't one. The DM rules."
+    return "In Wild Shape you can't cast spells. The DM rules."
 
 
 @router.post("/characters/{character_id:int}/cast")

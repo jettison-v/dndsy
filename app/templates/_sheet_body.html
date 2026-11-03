@@ -11,7 +11,8 @@
   {{ hp_tile(s, c, roll=false, short=false) }}
   {{ ntile(s, tile(c, "ac"), "Armor class", ("<b>%s</b>" | format(s.armor_class)) | safe) }}
   {%- set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}
-  {{ ntile(s, tile(c, "speed"), "Speed", ("<b>%s ft</b>" | format(s.speed.walk)) | safe, foot=(('<span class="note">' ~ (extra | map("join", " ") | join(", ") | e) ~ '</span>') | safe if extra else "")) }}
+  {%- set sp_foot %}{% if extra %}<span class="note">{{ extra | map("join", " ") | join(", ") }}</span>{% endif %}{% endset %}
+  {{ ntile(s, tile(c, "speed"), "Speed", ("<b>%s ft</b>" | format(s.speed.walk)) | safe, foot=sp_foot) }}
   {{ ntile(s, tile(c, "initiative"), "Initiative", ("<b>%s</b>" | format(s.initiative)) | safe, foot=adv(s.initiative_adv)) }}
   {{ ntile(s, tile(c, "proficiency"), "Proficiency", ("<b>+%s</b>" | format(s.proficiency_bonus)) | safe) }}
   {{ ntile(s, tile(c, "perception"), "Passive Perception", ("<b>%s</b>" | format(s.passive_perception)) | safe) }}
@@ -32,6 +33,9 @@
 
 {# Row 3: everything else, in tabs #}
 <section class="section" data-tour="sheet">
+  {% if in_form %}<div class="ws-form ws-sheet-band"><div class="ws-form-main"><b>In Wild Shape: {{ in_form.name }}.</b>
+    <span class="note">These are {{ c.name }}'s own numbers; Battle shows the form's. What the form can't do is greyed, with why: the DM rules.</span></div>
+    <div class="ws-form-acts"><a class="btn small" href="/characters/{{ c.id }}/battle">Battle</a></div></div>{% endif %}
   <div class="tabbar" role="tablist">
     <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
     {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
