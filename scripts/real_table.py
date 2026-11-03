@@ -226,11 +226,19 @@ def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     t.expect("it leaves the real sheet", lambda: name not in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), SLOW)
 
 
+# D&D Beyond's record read as its own sheet reads it (and the extension: ddb-page.js `character`): signed in with a
+# token, custom items included. Nov 2: a read with the browser's cookies alone lagged a change by a minute or more
+# (three misses in round 3, each confirmed by askdnd's own read within seconds), so it's never used.
+READ = """async url => {
+  const t = await fetch('https://auth-service.dndbeyond.com/v1/cobalt-token', {method: 'POST', credentials: 'include'}).then(r => r.json());
+  return fetch(url, {headers: {Authorization: 'Bearer ' + t.token, Accept: 'application/json'}, cache: 'no-store'}).then(r => r.json());
+}"""
+
+
 def record(sheet: Page) -> dict:
     """The sheet as D&D Beyond itself keeps it, so a run never relies on a label on either page."""
     cid = sheet.url.split("/characters/")[1].split("/")[0].split("?")[0]
-    got = sheet.evaluate("""url => fetch(url, {credentials: 'include'}).then(r => r.json())""", f"https://character-service.dndbeyond.com/character/v5/character/{cid}")
-    return got["data"]
+    return record_of(sheet, cid)
 
 
 def changes(before, after, path: str = "") -> list[tuple[str, object, object]]:
@@ -619,7 +627,7 @@ def inventory(t: Table, seat: str = "player2") -> None:
 
 def record_of(page: Page, ddb_id: int) -> dict:
     """A sheet's record read from any D&D Beyond page, for when the sheet itself is closed."""
-    got = page.evaluate("""url => fetch(url, {credentials: 'include'}).then(r => r.json())""", f"https://character-service.dndbeyond.com/character/v5/character/{ddb_id}")
+    got = page.evaluate(READ, f"https://character-service.dndbeyond.com/character/v5/character/{ddb_id}?includeCustomItems=true")
     return got["data"]
 
 
