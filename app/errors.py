@@ -72,6 +72,7 @@ def setup(service: str = "web") -> bool:
     if not dsn:
         return False
     import sentry_sdk
+    from starlette.requests import ClientDisconnect
 
     sentry_sdk.init(
         dsn=dsn,
@@ -87,6 +88,9 @@ def setup(service: str = "web") -> bool:
         traces_sample_rate=0,  # errors only, no performance tracing
         before_send=_scrub,
         before_breadcrumb=_breadcrumb,
+        # A browser that went away mid-request (a tab closed while it sent "someone's here") isn't askdnd's error
+        # (Sentry ASKDND-V2-E, 2026-11-02)
+        ignore_errors=[ClientDisconnect],
     )
     sentry_sdk.set_tag("service", service)
     _state["on"] = True

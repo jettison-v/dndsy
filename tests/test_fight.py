@@ -174,3 +174,51 @@ def test_a_report_that_isnt_json_doesnt_end_the_fight(player, db, sheet):
     player.post(f"/bridge/fight/{GAME}", json={"fight": heard()})
     r = player.post(f"/bridge/fight/{GAME}", content="not json", headers={"Content-Type": "application/json"})
     assert r.status_code == 200 and r.json() == {"ok": False, "changed": False} and campaign.fight
+
+
+
+def test_two_changes_to_the_fight_at_once_both_stay(db_engine):
+    """Architecture review, 2026-11-02: each change to a fight reads it, adds to it and saves it whole, so two saved at
+    the same moment lost one (a dying character's card at the start of a turn and another for its massive damage: one
+    of them never reached the player or the DM). Two sessions in two threads, released together: `fight.lock` makes
+    the second wait for the first and build on it."""
+    import threading
+
+    from sqlalchemy.orm import Session
+
+    from app import characters as chars
+    from app import death_saves
+
+    with Session(db_engine) as s:  # (committed, so both threads see it; removed at the end)
+        camp = Campaign(name="Two changes", slug="two-changes", ddb_campaign_id="7007")
+        racer = Character(name="Racer", ddb_id="7007001")
+        s.add_all([camp, racer])
+        s.flush()
+        chars.move(s, racer, camp.id)
+        fight.heard(s, camp, heard(turn=1, cole_ddb="7007001"))
+        s.commit()
+        ids = camp.id, racer.id
+    try:
+        together = threading.Barrier(2)
+
+        def card(text):
+            with Session(db_engine) as s:
+                ch = s.get(Character, ids[1])
+                s.get(Campaign, ids[0]).fight  # (read before the other saves: what each did before the lock)
+                together.wait()
+                death_saves.tell(s, ch, "dying", text)
+                s.commit()
+
+        threads = [threading.Thread(target=card, args=(t,)) for t in ("Racer is down to 0", "Racer took massive damage")]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=20)
+        with Session(db_engine) as s:
+            said = sorted(r["text"] for r in s.get(Campaign, ids[0]).fight["reminders"])
+        assert said == ["Racer is down to 0", "Racer took massive damage"]
+    finally:
+        with Session(db_engine) as s:
+            s.delete(s.get(Campaign, ids[0]))
+            s.delete(s.get(Character, ids[1]))
+            s.commit()

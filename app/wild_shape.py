@@ -161,7 +161,7 @@ def why_not(d: dict, beast: dict) -> str:
     return ""
 
 
-def _speed_text(speed: dict) -> str:
+def speed_text(speed: dict) -> str:
     return ", ".join(f"{v} ft." if k == "walk" else f"{k} {v} ft." for k, v in speed.items())
 
 
@@ -198,7 +198,7 @@ def forms(sheet: dict, fav: set[str], keep=None, beasts: tuple | None = None) ->
             continue
         rows.append({
             "key": key, "name": b["name"], "cr": b["cr"], "cr_label": b["cr_label"], "size": b.get("size", ""),
-            "ac": b["ac"], "speed": _speed_text(b.get("speed") or {}), "moves": sorted(k for k in b.get("speed") or {} if k != "walk"),
+            "ac": b["ac"], "speed": speed_text(b.get("speed") or {}), "moves": sorted(k for k in b.get("speed") or {} if k != "walk"),
             "image": b.get("image", ""), "known": is_known, "why_not": reason, "summary": _first_attack(b),
             "book": b["source"] if b.get("source") in BOOK_LABELS else "",  # "MM 2024": from one of the campaign's books
             "card": card(sheet, b, keep),
@@ -398,7 +398,7 @@ def card(sheet: dict, beast: dict, keep=None) -> dict:
     return {
         "ac": f["ac"], "ac_moon": d.get("moon") and f["ac"] > beast["ac"], "temp_hp": f["temp_hp"],
         "attack": t["text"], "hit": t["hit"], "hit_value": t["hit_value"], "per_turn": t["per_turn"], "radiant": d.get("lunar_radiance", False), "extra": extra,
-        "speed": _speed_text(speed), "fastest": max(speed.values(), default=0), "senses": senses_text(beast),
+        "speed": speed_text(speed), "fastest": max(speed.values(), default=0), "senses": senses_text(beast),
         "resist": ", ".join((beast.get("resistances") or []) + (beast.get("immunities") or [])),
         "saves": [saves[k] for k in ("str", "dex", "con")], "skills": skills,
         "traits": [x["name"] for x in beast.get("traits") or []],
@@ -663,7 +663,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
 
     return {
         "beast": beast, "druid": d, "ac": ac, "ac_parts": ac_parts, "temp_hp": d["temp_hp"], "hp": hp,
-        "speed": _speed_text(speed), "speed_dict": speed, "senses": senses_text(beast), "abilities": abilities, "saves": saves, "skills": skills,
+        "speed": speed_text(speed), "speed_dict": speed, "senses": senses_text(beast), "abilities": abilities, "saves": saves, "skills": skills,
         "passive_perception": 10 + perception, "initiative": _signed(sum(v for _, v in init_parts)), "initiative_parts": init_parts,
         "initiative_adv": advantage.initiative(advs), "save_adv_all": advantage.all_saves(advs), "speed_parts": speed_parts,
         "kept": kp,
