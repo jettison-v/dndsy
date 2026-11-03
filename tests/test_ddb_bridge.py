@@ -1064,3 +1064,71 @@ def test_a_stopped_change_offers_try_again_and_undo_in_the_live_window(player, d
     assert player.post(f"/bridge/dismiss/{theirs.id}").status_code == 404  # not their character
     db.refresh(theirs)
     assert theirs.state == "waiting"
+
+
+# ------------------------------------------------------------------ the sheet as it reads itself (extension 0.9.9)
+SOUL_COIN = 992695540  # Cole's Soul Coin: 3 charges
+
+
+def coin_left(cole) -> int:
+    return next(i for i in characters.character_summary(cole)["inventory"] if i["key"] == f"item:{SOUL_COIN}")["charges"]["left"]
+
+
+def as_read(sheet, used, at="2026-11-03T20:06:58.000Z"):
+    """The sheet as the extension reads it, signed in: newer than D&D Beyond's public copy (the fake `sheet`)."""
+    data = copy.deepcopy(sheet)
+    next(i for i in data["inventory"] if i["id"] == SOUL_COIN)["limitedUse"]["numberUsed"] = used
+    data["dateModified"] = at
+    return data
+
+
+def test_a_save_is_read_from_the_sheet_itself_not_the_public_copy(player, db, sheet):
+    """Brett, Nov 3: a Soul Coin's use given back on D&D Beyond stayed spent in askdnd for minutes. D&D Beyond's public
+    copy can trail a save; the extension's own signed-in read can't, so askdnd keeps that one, and logs the change."""
+    cole = char(db, "Cole")
+    player.post("/bridge/heard/75423618")
+    next(i for i in sheet["inventory"] if i["id"] == SOUL_COIN)["limitedUse"]["numberUsed"] = 1  # the public copy, stale
+    st = player.post("/bridge/heard/75423618", json={"data": as_read(sheet, 0)}).json()
+    db.refresh(cole.snapshot)
+    assert coin_left(cole) == 3
+    assert not any("Soul Coin" in entry["text"] for entry in st["log"])  # (0 → 0 as askdnd last saw it: nothing to log)
+    player.post("/bridge/heard/75423618?pull=1")  # the public copy, older by D&D Beyond's own stamp, changes nothing
+    db.refresh(cole.snapshot)
+    assert coin_left(cole) == 3
+
+
+def test_a_use_given_back_right_after_askdnd_spent_it_is_the_players(player, db, sheet):
+    """Brett, Nov 3: askdnd spent a Soul Coin's use, he un-clicked it on D&D Beyond seconds later, and askdnd took that
+    for its own write lost: it kept 2/3, logged nothing and would have written the use back. Confirmed from the
+    extension's read right after writing, askdnd's change settles; the un-click after it is logged as his and stays."""
+    cole = char(db, "Cole")
+    player.post("/bridge/heard/75423618")
+    player.post(f"/characters/{cole.id}/count?field=charges:{SOUL_COIN}", data={"to": "use"})
+    batch = ddb_bridge.outbox(db, cole)
+    r = player.post(f"/bridge/delivered/{batch['id']}", json={"ok": True, "wrote": True, "data": as_read(sheet, 1, "2026-11-03T20:06:48.000Z")})
+    assert r.status_code == 200  # (the public copy, `sheet`, still says 0 used: never read here)
+    assert [i.state for i in db.scalars(select(BridgeIntent))] == ["live"]
+    st = player.post("/bridge/heard/75423618", json={"data": as_read(sheet, 0)}).json()
+    assert st["log"][0]["text"] == "Cole (on D&D Beyond): Soul Coin 1 used → 0 used"
+    assert ddb_bridge.outbox(db, cole) is None
+    db.refresh(cole.snapshot)
+    assert coin_left(cole) == 3
+
+
+def test_only_the_player_or_the_dm_sends_the_sheet(player, dm, db, sheet):
+    """A read from anyone else at the table is ignored (askdnd reads the public copy): only the character's player's
+    browser, or the DM's (which makes a closed sheet's changes), reads it signed in."""
+    cole = char(db, "Cole")
+    set_role(db, "dm@example.com", "dm")
+    player.post("/bridge/heard/75423618")
+    other = copy.deepcopy(as_read(sheet, 2))
+    from app import picks
+
+    user = {"email": "someone@example.com", "name": "Someone"}
+    assert ddb_bridge.fresh_read(db, user, cole, other) is None
+    assert ddb_bridge.fresh_read(db, {"email": "player@example.com"}, cole, {**other, "id": 1}) is None  # another character's
+    assert picks.can_edit(db, {"email": "player@example.com"}, cole)
+    assert ddb_bridge.fresh_read(db, {"email": "player@example.com"}, cole, other) is not None
+    dm.post("/bridge/heard/75423618", json={"data": other})
+    db.refresh(cole.snapshot)
+    assert coin_left(cole) == 1

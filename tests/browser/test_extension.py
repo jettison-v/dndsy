@@ -52,6 +52,8 @@ def with_extension(chromium_type, server, tmp_path, who):
     context = chromium_type.launch_persistent_context(str(tmp_path / "profile"), channel="chromium", headless=True,
                                                       args=[f"--disable-extensions-except={folder}", f"--load-extension={folder}"])
     context.route(re.compile(r"https://www\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="text/html", body="<!doctype html><title>Sheet</title><main>Stand-in sheet</main>"))
+    # D&D Beyond's own servers are never reached: a test that needs them stands in for them (its route wins)
+    context.route(re.compile(r"https://(auth-service|character-service)\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=503, body=""))
     page = context.pages[0] if context.pages else context.new_page()
     page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}")
     return context
@@ -232,7 +234,7 @@ def test_the_dms_browser_makes_a_closed_sheets_change_from_any_dnd_beyond_page(w
 
     def character_service(route):
         if route.request.method == "GET":
-            return route.fulfill(status=200, content_type="application/json", body=json.dumps({"data": COLE}))
+            return route.fulfill(status=200, content_type="application/json", body=json.dumps({"data": {**COLE, "campaign": {**(COLE.get("campaign") or {}), "id": 1}}}))
         writes.append(json.loads(route.request.post_data or "{}"))
         route.fulfill(status=200, content_type="application/json", body="{}")
 
@@ -259,3 +261,52 @@ def test_the_dms_browser_makes_a_closed_sheets_change_from_any_dnd_beyond_page(w
     finally:
         dm.close()
     assert writes and writes[0]["characterId"] == 75423618 and writes[0]["removedHitPoints"] == COLE["removedHitPoints"] + 3
+
+
+def test_a_save_on_the_sheet_reaches_askdnd_from_the_sheets_own_read(chrome, server, browser_db):
+    """Brett, Nov 3: a Soul Coin's use given back on D&D Beyond stayed spent in askdnd, as D&D Beyond's public copy
+    trailed the save. The sheet now reads itself, signed in, once its saves stop, and askdnd keeps that read (here the
+    public copy can't be reached at all, so only that read can tell askdnd)."""
+    import copy
+    from datetime import UTC, datetime
+
+    from tests.table_setup import COLE
+
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:  # (what the tests before left waiting, as in the DM's test)
+        conn.execute(text("UPDATE bridge_intents SET state = 'live' WHERE character_id = :c"), {"c": server["cole"]})
+        conn.execute(text("UPDATE bridge_batches SET state = 'done' WHERE character_id = :c"), {"c": server["cole"]})
+        conn.commit()
+    engine.dispose()
+    held = copy.deepcopy(COLE)
+    held["dateModified"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+    def character_service(route):
+        if route.request.method == "GET":
+            return route.fulfill(status=200, content_type="application/json", body=json.dumps({"data": held}))
+        body = json.loads(route.request.post_data or "{}")
+        if route.request.url.endswith("/inventory/item/charge"):
+            next(i for i in held["inventory"] if i["id"] == body["id"])["limitedUse"]["numberUsed"] = body["uses"]
+            held["dateModified"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")  # (as D&D Beyond stamps a save)
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    chrome.route(re.compile(r"https://auth-service\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="application/json", body='{"token": "t", "ttl": 300}'))
+    chrome.route(re.compile(r"https://character-service\.dndbeyond\.com/.*"), character_service)
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    panel = f"async () => (await (await fetch('/characters/{server['cole']}/detail?ref=item:992695540')).text()).replace(/\\s+/g, ' ')"
+    used = 1 if "2 of 3" not in page.evaluate(panel) else 2  # (a number askdnd doesn't show yet)
+    # the sheet's own save, as D&D Beyond's page sends it: a use of the Soul Coin
+    sheet.evaluate("""u => fetch('https://character-service.dndbeyond.com/character/v5/inventory/item/charge',
+        {method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({characterId: 75423618, id: 992695540, uses: u, charges: u})})""", used)
+    want = f"{3 - used} of 3"
+    for _ in range(40):  # (askdnd reads it once the sheet's saves stop, a second and a half)
+        if want in page.evaluate(panel):
+            break
+        page.wait_for_timeout(500)
+    got = page.evaluate(panel)
+    assert want in got, got[got.find("Charges") - 20:got.find("Charges") + 160]

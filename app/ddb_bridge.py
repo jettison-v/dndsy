@@ -15,7 +15,11 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    syncQueue.ts), so a change counts only once askdnd reads it back. A field still at its old value is sent again, up to
    MAX_ATTEMPTS times. Just before writing, the extension reads the sheet itself: a field already at its new value is
    skipped (no double drink), and if D&D Beyond changed in the moment since askdnd read it, the batch is worked out
-   again from the new numbers.
+   again from the new numbers. **Reads come from the sheet itself** where it's open (extension 0.9.9; Brett, Nov 3): the
+   extension reads it signed in, as the sheet does, after the sheet saves, right after writing (the read-back) and on
+   the regular pull, and askdnd keeps that read (`fresh_read`). D&D Beyond's public copy, read otherwise, can trail a
+   save by minutes, so a copy older than the one kept, by D&D Beyond's own `dateModified`, is never kept
+   (`characters.older`), and a field askdnd just wrote that D&D Beyond holds at anything else was changed there after.
 5. **Never a guess.** A field D&D Beyond holds at a value askdnd can't explain after writing to it isn't written over:
    the change stops as "not on D&D Beyond yet", with the end state to make by hand.
 6. **Awake whenever someone is using it, with no switch** (Brett, 2026-10-27: always active when it needs to be,
@@ -738,8 +742,10 @@ OUT_OF_DATE = ("The askdnd extension in the browser making it is older than this
                "Developer mode › Update; Chrome also does it within a few hours), then Try again.")
 
 
-def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: list[str] | None = None) -> None:
-    """The extension's answer for a batch, then the read-back that decides it, field by field."""
+def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: list[str] | None = None,
+              fresh: chars.Read | None = None) -> None:
+    """The extension's answer for a batch, then the read-back that decides it, field by field: the extension's own
+    signed-in read right after writing (`fresh`) when it sends one, else D&D Beyond's public copy, a few times."""
     b = db.get(BridgeBatch, batch_id)
     if not b:
         return
@@ -752,7 +758,7 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         replans = max((it.data.get("replans", 0) for it in _intents_of(db, b)), default=0)
         if b.attempts == 1 and replans < MAX_ATTEMPTS:  # nothing of it was written: work it out again from the new numbers
             # (read now: the next batch mustn't build on the copy that was out of date)
-            if not _reread(db, b, character):
+            if not _reread(db, b, character, fresh):
                 return
             b.state = "replanned"
             for it in _intents_of(db, b):
@@ -767,10 +773,10 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, error or "The change couldn't be made.")
         return
     now = {}
-    for attempt in range(4):  # D&D Beyond can take a moment to serve what it just saved
+    for attempt in range(1 if fresh else 4):  # D&D Beyond's public copy can take a moment to serve what it just saved
         if attempt:
             time.sleep(1)
-        if not _reread(db, b, character):
+        if not _reread(db, b, character, fresh):
             return
         n = numbers(character)
         now = {f: _value(n, f) for f in b.target} if n else {}
@@ -788,10 +794,26 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, "D&D Beyond answered OK but didn't keep it.", at_once=b.attempts == 1)
 
 
-def _reread(db: Session, b: BridgeBatch, character: Character) -> bool:
-    """Read the sheet with the database let go, then hold the character again and keep the read. False when the batch
-    was settled meanwhile (a pull or another copy of the app got there first): nothing more to do with it."""
-    got = chars.read_released(db, character)
+def fresh_read(db: Session, user: dict, character: Character, data) -> chars.Read | None:
+    """The sheet as the extension just read it, signed in as the sheet itself reads it: never D&D Beyond's public copy,
+    which can trail a save by minutes (Nov 3: a Soul Coin's use given back on D&D Beyond stayed spent in askdnd, and the
+    bridge took it for its own write lost). Only this character's, only from its player or the DM (whose browser makes
+    a closed sheet's changes), and only a sheet that parses; anything else is None and askdnd reads the public copy."""
+    if not isinstance(data, dict) or str(data.get("id")) != str(character.ddb_id) or not data.get("name"):
+        return None
+    if not (picks.can_edit(db, user, character) or is_dm(user) or is_admin(user)):
+        return None
+    try:
+        got = chars.read(character.ddb_id, fetch=lambda _id: data)
+    except Exception:  # (a sheet D&D Beyond never sent: nothing of it is kept)
+        return None
+    return got if got.raw is not None else None
+
+
+def _reread(db: Session, b: BridgeBatch, character: Character, fresh: chars.Read | None = None) -> bool:
+    """Read the sheet with the database let go (or take the extension's `fresh` read), then hold the character again and
+    keep the read. False when the batch was settled meanwhile (a pull or another copy of the app got there first)."""
+    got = fresh or chars.read_released(db, character)
     _lock(db, b.character_id)
     db.refresh(b)
     if b.state != "sending":
@@ -830,16 +852,16 @@ def _stop(db: Session, b: BridgeBatch, why: str, missing: list[str] | None = Non
     _check_step(db, b, False, why, [f for f in b.target if f not in bad])
 
 
-def heard(db: Session, character: Character, saved: bool = True) -> None:
+def heard(db: Session, character: Character, saved: bool = True, fresh: chars.Read | None = None) -> None:
     """A read of the sheet, after the extension heard it save (`saved`) or on its every-30-seconds pull: it settles any
     batch D&D Beyond now holds the totals of (so a lost "done" from the extension still gets confirmed). What D&D
     Beyond changed itself is logged by the read (`seen`)."""
     if saved:  # a person saved something on D&D Beyond: always read and recorded, and it counts as using it
         _health["heard_at"] = time.time()
         active(db)
-    elif not awake(db)["awake"]:
-        return  # asleep: the background pull reads nothing from D&D Beyond
-    got = chars.read_released(db, character)  # (with the database let go: D&D Beyond can take 15 seconds)
+    elif not fresh and not awake(db)["awake"]:
+        return  # asleep: the background pull reads nothing from D&D Beyond (the extension's own read costs it nothing)
+    got = fresh or chars.read_released(db, character)  # (with the database let go: D&D Beyond can take 15 seconds)
     _lock(db, character.id)
     chars.store(db, character, got)
     n = numbers(character)
@@ -861,9 +883,11 @@ def seen(db: Session, character: Character, before: dict | None, after: dict, su
         return
     was, now = ddb_fields.tracked(before), ddb_fields.tracked(after)
     recent = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.sent_at > time.time() - 60)).all()
-    ours = {f for b in recent for f in b.target}
-    rested = any(f.startswith("hitdice:") for f in ours)  # askdnd's Short Rest restored what a Short Rest restores
-    ours |= {f for f in now if rested and f.split(":")[0] in ("uses", "pact", "slot", "charges")}
+    wrote = {f: v for b in recent for f, v in b.target.items()}  # what askdnd wrote to each field this last minute
+    rested = any(f.startswith("hitdice:") for f in wrote)  # askdnd's Short Rest restored what a Short Rest restores
+    ours = {f for f in now if rested and f.split(":")[0] in ("uses", "pact", "slot", "charges")}
+    # (a field askdnd just wrote, now at anything else, was changed on D&D Beyond after it: the player's, Nov 3)
+    ours |= {f for f, v in wrote.items() if now.get(f) == v}
     hp_max = ddb_fields.max_hp(summary)
     lines = [ddb_fields.changed(after, f, was[f], v, hp_max) for f, v in now.items()
              if f in was and was[f] is not None and v != was[f] and f not in ours]
@@ -1282,23 +1306,27 @@ def bridge_carry(request: Request, body=web.JsonBody, db: Session = Depends(get_
 
 @router.post("/bridge/delivered/{batch_id:int}")
 async def bridge_delivered(batch_id: int, request: Request, db: Session = Depends(get_db)):
-    _signed_in(request, db)
+    user = _signed_in(request, db)
     body = await request.json()
 
     def settle():  # off the event loop: the read-back waits on D&D Beyond, a second at a time
-        delivered(db, batch_id, bool(body.get("ok")), str(body.get("error") or "")[:200], [str(c) for c in body.get("conflicts") or []])
+        b = db.get(BridgeBatch, batch_id)
+        character = db.get(Character, b.character_id) if b else None
+        fresh = fresh_read(db, user, character, body.get("data")) if character else None
+        delivered(db, batch_id, bool(body.get("ok")), str(body.get("error") or "")[:200], [str(c) for c in body.get("conflicts") or []], fresh)
         db.commit()
     await run_in_threadpool(settle)
     return _json({"ok": True})
 
 
 @router.post("/bridge/heard/{ddb_id}")
-def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Depends(get_db)):
-    """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`)."""
+def bridge_heard(ddb_id: str, request: Request, pull: int = 0, body=web.JsonBody, db: Session = Depends(get_db)):
+    """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`). A newer extension
+    sends the sheet as it just read it, signed in (`data`): askdnd keeps that instead of reading D&D Beyond's public copy."""
     character, user = _by_ddb(db, request, ddb_id)
     if picks.can_edit(db, user, character):  # (a copy open in the DM's browser isn't its own sheet: the DM carries it)
         sheet_is_open(db, character)
-    heard(db, character, saved=not pull)
+    heard(db, character, saved=not pull, fresh=fresh_read(db, user, character, (body or {}).get("data") if isinstance(body, dict) else None))
     db.commit()
     return _json({**state(db, character, user), "check": check(character)})
 

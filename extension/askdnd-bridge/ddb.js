@@ -20,13 +20,14 @@
   window.addEventListener('message', e => {
     if (e.source !== window || !e.data || e.data.askdndBridge !== 'from-page') return;
     if (e.data.type === 'gamelog') return;  // (sent, or no game log open: Table rolls has the roll either way)
-    send({ ...e.data, type: { saved: 'ddb-saved', roll: 'ddb-roll', heard: 'ddb-heard' }[e.data.type] || 'ddb-applied' });  // (the page's own type last would win)
+    send({ ...e.data, type: { saved: 'ddb-saved', roll: 'ddb-roll', heard: 'ddb-heard', fresh: 'ddb-fresh' }[e.data.type] || 'ddb-applied' });  // (the page's own type last would win)
   });
   chrome.runtime.onMessage.addListener((m, sender, reply) => {
     if (m.type === 'apply') { window.postMessage({ askdndBridge: 'apply', batch: m.batch }, location.origin); reply({ took: true }); }  // (so the extension knows this tab is alive)
     if (m.type === 'gamelog') { window.postMessage({ askdndBridge: 'gamelog', messages: m.messages }, location.origin); reply({ took: true }); }
     if (m.type === 'panel-state') draw(m.state, m.error, m.askdnd);
     if (m.type === 'show' || m.type === 'check') window.postMessage({ askdndBridge: m.type, fields: m.fields }, location.origin);  // (ddb-page.js)
+    if (m.type === 'read') { window.postMessage({ askdndBridge: 'read' }, location.origin); reply({ took: true }); }  // (the sheet reads itself for askdnd)
   });
 
   // ---- the panel: askdnd's colors (app.css tokens), the four states
