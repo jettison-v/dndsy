@@ -3,7 +3,7 @@
 {% from "_form_list.html" import form_list %}
 {% from "_item_list.html" import item_list %}
 {% from "_feature_list.html" import feature_list %}
-{% from "_char.html" import pips, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs, ntile, hp_tile, inspiration, purse, rest_btn %}
+{% from "_char.html" import pips, count_pips, sync, res, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs, ntile, hp_tile, inspiration, purse, rest_btn %}
 {% set s = sheet %}
 {% if s %}
 {# Row 1: the numbers you look up most #}
@@ -76,8 +76,9 @@
       </div>
       {% endfor %}
       <div class="planner-class"><b>Slots</b>
-        <div class="res-row mt-1">{% for sl in s.spell_slots.slots %}<span class="res">{{ sl.level }}{{ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th") }} {{ pips({"max": sl.max, "left": sl.max - sl.used}) }}</span>{% endfor %}
-          {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}<span class="res">Pact, level {{ p.level }} {{ pips({"max": p.max, "left": p.max - p.used}) }}</span>{% endif %}</div></div>
+        {# (each opens Use one and Give one back, as on Battle's spell bar: Brett, 2026-11-03) #}
+        <div class="res-row mt-1">{% for sl in s.spell_slots.slots %}{{ res(s, c if can_play else none, "slot:" ~ sl.level, (sl.level ~ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th")), {"max": sl.max, "left": sl.max - sl.used}) }}{% endfor %}
+          {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}{{ res(s, c if can_play else none, "pact:" ~ p.level, "Pact, level " ~ p.level, {"max": p.max, "left": p.max - p.used}) }}{% endif %}</div></div>
     </div>
     {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")]) }}
   </div>
@@ -86,11 +87,11 @@
   <div id="t-items" hidden>
     {%- set end %}{{ purse(s, c, can_play, total=false) }}{% if can_loot %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/loot">Give loot</button>{% endif %}{% endset %}
     {% if s.attuned %}<p class="note m-0 mb-3">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
-    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("all", "All"), ("ready", "Equipped"), ("fav", "Shortlist")], s.sync or {}, end) }}
+    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("all", "All"), ("ready", "Equipped"), ("fav", "Shortlist")], s.sync or {}, end, play=can_play) }}
   </div>
 
   <div id="t-features" hidden>
-    {{ feature_list(c, feature_rows, picks, can_pick, show_picks, "sheet-features", ([("all", "All"), ("fav", "Shortlist")] if show_picks else ())) }}
+    {{ feature_list(c, feature_rows, picks, can_pick, show_picks, "sheet-features", ([("all", "All"), ("fav", "Shortlist")] if show_picks else ()), play=can_play) }}
   </div>
 
   <div id="t-skills" hidden>
@@ -138,7 +139,8 @@
           <span class="tag {{ '' if d.fly else 'faint' }}">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
         </div></div>
       <div class="planner-class"><b>In a form</b>
-        <div class="row tight mt-1">{% if d.uses %}<span class="res">Uses {{ pips(d.uses) }}</span>{% endif %}
+        {%- set ws_act = s.actions | selectattr("name", "equalto", "Wild Shape") | selectattr("uses") | first %}
+        <div class="row tight mt-1">{% if d.uses %}{{ res(s, c if can_play and ws_act and ws_act.id else none, "uses:" ~ (ws_act.id if ws_act else ""), "Uses", d.uses, "Wild Shape uses") }}{% endif %}
           <span class="tag">+{{ d.temp_hp }} temp HP</span>{% if d.moon %}<span class="tag">AC at least {{ 13 + ((s.abilities | selectattr("key", "equalto", "wisdom") | first).modifier) }}</span>{% endif %}
           <span class="tag">Up to {{ d.hours }} h</span></div>
         {# Spells and what's kept in a form, folded (Brett, Nov 3: the tile was too tall to review forms beside it) #}
