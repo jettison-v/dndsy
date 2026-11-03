@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Battle in a form</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 900px">
+  <div class="head">
+    <div class="num">Choice 2A · Battle you can play in</div>
+    <h1>Battle in a form: the usual page, with the bear's numbers</h1>
+    <p class="where"><b>Where you'll find it:</b> Cole's Battle after he shifts into a Polar Bear. The green card becomes a slim band; the top row is Battle's own, with the bear's AC, Speed, Initiative and saves (marked green) and Cole's own Hit Points. Press − and + on Hit Points: damage takes the 18 Temporary Hit Points first.</p>
+  </div>
+  <div class="screen">
+    <div class="body">
+      <div class="row"><div><div class="name">Cole</div><div class="sub">Druid 6 (Circle of the Moon) / Monk 2</div></div><div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+      <div class="formband">
+        <span class="pic" aria-hidden="true">PB</span>
+        <div><b>In Wild Shape: Polar Bear</b> <span class="note">CR 2 · Large · up to 3 hours · Circle Forms: AC at least 17</span><div class="note">Your Hit Points, Int, Wis, Cha, feats and class features stay yours; only Circle of the Moon spells.</div></div>
+        <span class="sp"></span>
+        <button type="button" class="btn">Full form</button>
+        <button type="button" class="btn">Leave <span class="note">Bonus</span></button>
+      </div>
+      <div class="row start" style="gap: 6px"><span class="lbl" style="margin-right: 4px">Resources</span><span class="stat">Luck <span class="dots"><i></i><i></i><i></i></span></span><span class="stat">Focus <span class="dots"><i></i><i></i></span></span><span class="stat">Wild Res. <span class="dots"><i></i></span></span><span class="stat">Metabolism <span class="dots"><i></i></span></span><span class="stat" style="color: var(--amber); border-color: var(--amber)">★ Insp.</span></div>
+      <div class="numrow">
+        <div class="nums">
+          <div class="numtile"><small><span>Hit points</span><span class="pm"><button type="button" class="sq" aria-label="Damage" onClick="{{ hurt }}">−</button><button type="button" class="sq" aria-label="Heal" onClick="{{ heal }}">+</button></span></small><span><b>{{ hp }}</b> / 51 <sc-if value="{{ hasTemp }}" hint-placeholder-val="{{ true }}"><span class="temp">+{{ temp }} temp</span></sc-if></span></div>
+          <div class="numtile form"><small>Armor class</small><b>17</b></div>
+          <div class="numtile form"><small>Speed</small><span><b>50</b> ft · swim 50</span></div>
+          <div class="numtile form"><small>Initiative</small><b>+4</b></div>
+          <div class="numtile"><small>Spell DC</small><span><b>15</b> / +7</span></div>
+        </div>
+        <span class="numsep" aria-hidden="true"></span>
+        <div class="saves6"><span class="mini-tile form">Str<b>+6</b></span><span class="mini-tile form">Dex<b>+4</b></span><span class="mini-tile form">Con<b>+8</b></span><span class="mini-tile">Int<b>+4</b></span><span class="mini-tile">Wis<b>+8</b></span><span class="mini-tile">Cha<b>+3</b></span></div>
+      </div>
+      <div class="note">{{ said }}</div>
+      <div class="row start" style="gap: 6px"><span class="cond conc">◎ Moonbeam <span class="note">2nd · round 2/10</span> <span class="stat" style="padding: 1px 7px">Save +8 Adv</span></span><span class="cond add">+ Condition</span><span class="stat">☾ Rest</span></div>
+      <div class="wsbar"><span class="lbl" style="color: var(--amber)">Wild Shape</span><span class="dots"><i></i><i></i><i class="off"></i></span><span class="stat">Normal</span><span class="stat">Spider</span><span class="stat">Giant Octopus</span><span class="stat">Giant Toad</span><span class="stat">Giant Constrictor Snake</span><span class="stat">Hunter Shark</span><span class="stat on">Polar Bear</span></div>
+      <div class="spellbar"><span class="btn mini" style="background: #3b5aa0; color: #fff; border-color: #3b5aa0">Spell Book</span><span>1st <span class="dots"><i></i><i></i><i></i><i></i></span></span><span>2nd <span class="dots"><i></i><i></i><i class="off"></i></span></span><span>3rd <span class="dots"><i></i><i></i><i></i></span></span><span class="note" style="margin-left: auto">Only Circle of the Moon spells in this form</span></div>
+      <div class="cols">
+        <div class="col"><h4 class="a">Action</h4><div class="ln"><span><b>Multiattack</b> <span class="tagg form">Form</span></span></div><div class="ln"><span><b>Rend</b> <span class="tagg form">Form</span> <span class="note">9 slashing or radiant</span></span><span class="btn mini">+8</span></div><div class="ln"><span><b>Unarmed Strike</b> <span class="tagg">Yours</span></span><span class="btn mini">+9</span></div><div class="ln"><span><b>Moonbeam</b> <span class="tagg">Circle spell</span></span><span class="btn mini">Cast</span></div></div>
+        <div class="col"><h4 class="b">Bonus Action</h4><div class="ln"><span><b>Leave the form</b></span><span class="btn mini">Leave</span></div><div class="ln"><span><b>Wild Shape again</b> <span class="note">another form</span></span><span class="btn mini">Shift</span></div><div class="ln"><span><b>Flurry of Blows</b> <span class="tagg">Yours</span></span><span class="btn mini">+6</span></div></div>
+        <div class="col"><h4 class="r">Reaction</h4><div class="ln"><span><b>Opportunity Attack</b></span><span class="btn mini">+8</span></div><div class="ln"><span><b>Reactive Spell</b> <span class="tagg">Yours</span></span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":900}}'>
+class Component extends DCLogic {
+  state = { hp: 51, temp: 18, said: 'Shifted this turn: 18 Temporary Hit Points, one Wild Shape use spent (on D&D Beyond too).' };
+  renderVals() {
+    const { hp, temp, said } = this.state;
+    return {
+      hp, temp, hasTemp: temp > 0, said,
+      hurt: () => { const d = 7, soak = Math.min(temp, d); this.setState({ temp: temp - soak, hp: Math.max(0, hp - (d - soak)), said: `Took 7: ${soak} from Temporary Hit Points` + (d - soak ? `, ${d - soak} from Hit Points.` : '.') }); },
+      heal: () => this.setState({ hp: Math.min(51, hp + 7), said: 'Healed 7: your own Hit Points, never Temporary ones.' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

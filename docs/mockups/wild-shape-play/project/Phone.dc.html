@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Battle in a form on a phone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 520px; height: 900px">
+  <div class="head">
+    <div class="num">On a phone</div>
+    <h1 style="font-size: 24px">Hit Points still come first</h1>
+    <p class="where" style="font-size: 14px">The band is one line; the bear's numbers follow, then the Status row.</p>
+  </div>
+  <div class="screen" style="width: 390px; justify-self: center; border-radius: 26px">
+    <div class="body" style="gap: 8px">
+      <div class="row"><div><div class="name">Cole</div><div class="sub">Druid 6 / Monk 2</div></div></div>
+      <div class="tabs" style="width: 100%"><b>Battle</b><span>Sheet</span><span>Plan</span></div>
+      <div class="formband" style="padding: 6px 8px; gap: 8px"><span class="pic" style="width: 30px; height: 30px; font-size: 11px" aria-hidden="true">PB</span><b style="font-size: 14px">Polar Bear</b><span class="note">3 h</span><span style="flex: 1"></span><button type="button" class="btn mini">Leave</button></div>
+      <div class="numtile"><small><span>Hit points</span><span class="pm"><button type="button" class="sq" aria-label="Damage">−</button><button type="button" class="sq" aria-label="Heal">+</button></span></small><span><b>51</b> / 51 <span class="temp">+18 temp</span></span></div>
+      <div class="nums" style="grid-template-columns: repeat(3, minmax(0, 1fr))"><span class="numtile form"><small>AC</small><b>17</b></span><span class="numtile form"><small>Speed</small><b>50</b></span><span class="numtile form"><small>Init.</small><b>+4</b></span></div>
+      <div class="row start" style="gap: 6px; flex-wrap: wrap"><span class="cond conc">◎ Moonbeam</span><span class="cond add">+ Condition</span></div>
+      <div class="stat" style="justify-content: space-between">Resources <span class="note">5</span></div>
+      <div class="wsbar"><span class="lbl" style="color: var(--amber)">Wild Shape</span><span class="dots"><i></i><i></i><i class="off"></i></span><span class="stat on">Polar Bear</span><span class="note">+5 more</span></div>
+      <div class="tabbar" style="gap: 12px"><b>Action 5</b><span>Bonus 4</span><span>Reaction 2</span></div>
+      <div class="col"><div class="ln"><span><b>Rend</b> <span class="tagg form">Form</span></span><span class="btn mini">+8</span></div><div class="ln"><span><b>Unarmed Strike</b> <span class="tagg">Yours</span></span><span class="btn mini">+9</span></div><div class="ln"><span><b>Moonbeam</b></span><span class="btn mini">Cast</span></div></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
