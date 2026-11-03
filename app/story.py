@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app import web
 from app import campaign_views, review
@@ -179,6 +179,7 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
             db.scalars(
                 select(Entity)
                 .where(Entity.campaign_id == campaign.id)
+                .options(selectinload(Entity.aliases))  # every name down the left shows its other names
                 .order_by(Entity.name)
             )
         )

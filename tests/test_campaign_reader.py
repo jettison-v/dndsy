@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app import relations
 from app.extraction import store_result
 from app.importer import import_bundle
-from app.models import Entity, ExtractionRun, Fact, GameSession
+from app.models import Entity, ExtractionRun, Fact, GameSession, Status
 from app.review import publish
 from tests.roles import set_role
 from tests.test_entities import BUNDLE, HX, admin, lillippi, player, published_events  # noqa: F401
@@ -168,3 +168,41 @@ def test_hidden_entries_and_quest_status_are_for_the_dm(monkeypatch, db):
     dm.post(f"/campaign/{widow.id}/quest", data={"open": "0"})  # not a quest: nothing changes
     db.refresh(widow)
     assert widow.quest_open is None
+
+
+def _queries(db, client, path):
+    """How many SQL statements opening `path` takes."""
+    from sqlalchemy import event
+
+    n = [0]
+
+    def count(*_):
+        n[0] += 1
+
+    db.expire_all()  # the page shares the test's session: start from nothing loaded, as a real request does
+    conn = db.connection()
+    event.listen(conn, "before_cursor_execute", count)
+    try:
+        assert client.get(path).status_code == 200
+    finally:
+        event.remove(conn, "before_cursor_execute", count)
+    return n[0]
+
+
+def test_more_entries_dont_mean_more_queries(player, db):  # noqa: F811
+    """The Campaign page loads its entries' other names together (Nov 2: one query per entry, 47 on beta's copy and
+    growing every session). Ten more entries, each with another name (what the search box matches), must not add a
+    query."""
+    import_bundle(db, BUNDLE)
+    import_bundle(db, QUESTS)
+    published_events(db)
+    player.get("/c/main/campaign")  # the first opening also fills the roles' cache
+    before = _queries(db, player, "/c/main/campaign")
+    more = [{"kind": "npc", "name": f"Enemy {i}", "summary": "Someone.", "aliases": [f"The {i}th"]} for i in range(10)]
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": more})
+    for e in db.scalars(select(Entity).where(Entity.name.like("Enemy %"))):
+        e.status = Status.PUBLISHED
+    db.flush()
+    page = player.get("/c/main/campaign").text
+    assert "enemy 9 the 9th" in page  # the name and its other name, in what the search box matches
+    assert _queries(db, player, "/c/main/campaign") == before

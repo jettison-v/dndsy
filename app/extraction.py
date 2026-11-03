@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 import anthropic
 from sqlalchemy import delete, func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.characters import campaign_characters
 
@@ -306,7 +306,8 @@ def timeline(db: Session, campaign_id: int) -> list[GameSession]:
     """Sessions in story order. Dated sessions sort by date; an undated session
     (e.g. early notes without dates) takes the date of the next dated session
     with a higher number, and ties break by number."""
-    sessions = list(db.scalars(select(GameSession).where(GameSession.campaign_id == campaign_id)))
+    sessions = list(db.scalars(select(GameSession).where(GameSession.campaign_id == campaign_id)
+                               .options(selectinload(GameSession.recaps))))  # most callers show each session's recap
     dated_numbered = sorted((s for s in sessions if s.played_on and s.number is not None), key=lambda s: s.number)
 
     def effective(s: GameSession):
