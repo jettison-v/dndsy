@@ -1178,8 +1178,10 @@ _carry_read: dict[int, float] = {}
 
 
 def _carries_for(db: Session, user: dict) -> list[Campaign]:
-    """The campaigns this person is the DM of, with the DM as a backup on."""
-    return [c for c in db.scalars(select(Campaign).order_by(Campaign.id)) if backup_on(c) and is_dm(user, c.id)]
+    """The campaigns this person is the DM of, with the DM as a backup on (the roles askdnd keeps in memory pick them, so
+    the many ticks from players' browsers read no campaign at all)."""
+    ids = [c["id"] for c in access.campaigns_for(user.get("email")) if is_dm(user, c["id"])]
+    return [c for c in db.scalars(select(Campaign).where(Campaign.id.in_(ids)).order_by(Campaign.id)) if backup_on(c)] if ids else []
 
 
 def _party(db: Session, campaign: Campaign) -> list[Character]:

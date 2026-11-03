@@ -114,14 +114,20 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 
   <section id="todo">
     <div class="sec-head"><div class="eyebrow">To do · in order</div><h2>What's left</h2>
-      <p class="why">Where beta stands tonight: it runs PR 155. The UI pass (PR 156) is merged but didn't deploy, because one browser test failed on GitHub; item 1 fixes that.</p></div>
+      <p class="why">Where beta stands tonight: it runs PR 158, so the UI pass is live. The code review of PRs 140–158 and an architecture review before the VTT are done; their fixes wait in PR 159 (item 1), and what's left from them is items 2, 9 and 10.</p></div>
     <div class="steps">
-      <div class="step mine" data-step="merge-158"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>1. Merge PR 158 so the UI pass reaches beta</h3>
-        <p>After PR 156, Party's cards drew each resource's whole name, wrapped, then shortened it, so the cards moved as the page loaded, and GitHub's check for pages that shift failed. Railway skipped the deploy. <a href="https://github.com/jettison-v/dndsy/pull/158">PR 158</a> starts the names short and lengthens them only when they fit. Say <b>merge 158</b> once its checks are green; I follow it to beta and send you Try it yourself.</p></div>
-        <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Checks running</span></div></div>
-      <div class="step mine" data-step="merge-157"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>2. Merge PR 157: this page, the VTT build plan, the decisions</h3>
-        <p>Docs only: this page as one list, Next Steps folded into it, <code>docs/plans/2026-11-02-vtt-build-plan.md</code>, and the decisions to build the VTT in this session with two switches. Say <b>merge 157</b>.</p></div>
+      <div class="step mine" data-step="merge-159"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>1. Merge PR 159: the review's fixes</h3>
+        <p><a href="https://github.com/jettison-v/dndsy/pull/159">PR 159</a>: Give loot no longer hangs when D&amp;D Beyond's item list is down, Prepare spells skips a spell it can't prepare instead of failing them all, the menu bar fits at 1000px without the extension, and two fight reports can no longer be saved over each other (doubled reminders). Say <b>merge 159</b>; I merge it once both checks pass.</p></div>
         <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready</span></div></div>
+      <div class="step mine" data-step="protect"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>2. Make GitHub refuse a merge until the tests pass</h3>
+        <p>GitHub Pro allows it now; askdnd's permission check stopped me changing GitHub's settings, so it's a few clicks for you:</p>
+        <ol><li>Open <a href="https://github.com/jettison-v/dndsy/settings/branches">the repo's Settings › Branches</a> and press <b>Add classic branch protection rule</b>.</li>
+          <li><b>Branch name pattern</b>: <code>main</code>.</li>
+          <li>Tick <b>Require status checks to pass before merging</b>, then <b>Require branches to be up to date before merging</b>. In its search box add <b>Server tests</b> and <b>Browser tests</b>.</li>
+          <li>Tick <b>Do not allow bypassing the above settings</b> (it holds for you and me too), then <b>Create</b>.</li>
+          <li>Then <a href="https://github.com/jettison-v/dndsy/settings">Settings › General</a>, under Pull Requests, tick <b>Allow auto-merge</b>.</li></ol>
+        <p class="small muted">After that, "merge it when it's green" works by itself, and a red or unfinished PR can't be merged at all (PR 156 went in mid-run on Nov 2).</p></div>
+        <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready now</span></div></div>
       <div class="step mine" data-step="mm"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>3. Load the whole Monster Manual on beta</h3>
         <ol><li>Open <a href="https://askdnd.ai/manage/backups#books">Backups and imports › Books</a>.</li>
           <li>Press <b>Choose file</b> and pick <code>~/Code/dndsy/private/books/mm-2024-upload.json.gz</code> (already made).</li>
@@ -129,9 +135,9 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <p class="small muted">Then tell me: I can't see beta's Books without signing in as you. Wild Shape gets every Beast, and the VTT's creatures (slice 4) come from it; until then, from the SRD.</p></div>
         <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready now</span></div></div>
       <div class="step mine" data-step="ui-review"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>4. Your holistic review of the UI pass</h3>
-        <p>On beta once item 1 lands; I'll send the Try it yourself list then. You decide whether another pass is needed. Its punch list so far:</p>
+        <p>On beta now (Try it yourself is in this session's reply). You decide whether another pass is needed. Its punch list so far:</p>
         <ul><li><b>Compare, as on a retail site</b> (Nov 2): tick two to four spells, or Wild Shape forms, and press Compare to see them side by side: casting time, range, damage or healing, Concentration, your notes; for forms, AC, Hit Points, Speed, attacks and senses.</li></ul></div>
-        <div class="tags"><span class="chip yours">Yours</span><span class="chip s-todo">After 1</span></div></div>
+        <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready now</span></div></div>
       <div class="step mine" data-step="review-live"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>5. Review live state on beta</h3>
         <p>Update the extension to 0.9.8 first: <code>chrome://extensions</code> › Developer mode › <b>Update</b>. Then in <a href="https://askdnd.ai/c/vtt-test/">VTT test</a>, with Vi's or Spurt's D&amp;D Beyond sheet open in Chrome:</p>
         <ul><li><b>Cast</b> a spell from Battle: a slot goes on D&amp;D Beyond; Undo gives it back.</li>
@@ -152,6 +158,12 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="step" data-step="exhaustion"><span class="n"></span><div class="body"><h3>8. Check Exhaustion's Speed on Battle</h3>
         <p>In the 2024 rules each level of Exhaustion is −5 feet of Speed. The roll window already applies its −2 a level; whether the Speed tile shows the lower Speed was never checked. Slice 3's movement counter needs it right.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Before slice 3</span><span class="chip eff">S</span></div></div>
+      <div class="step" data-step="db-hold"><span class="n"></span><div class="body"><h3>9. Don't hold the database while D&amp;D Beyond answers</h3>
+        <p>From the architecture review: when the bridge needs a fresh copy of a sheet, a request waits up to 15 seconds on D&amp;D Beyond while holding a database connection and that character's lock. It's what ran beta out of connections with three test players on Nov 2. Read D&amp;D Beyond first, then take the lock. The VTT adds the DM and every player changing things during a fight, so this comes before slice 2.</p></div>
+        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Before slice 2</span><span class="chip eff">M</span></div></div>
+      <div class="step" data-step="arch-doc"><span class="n"></span><div class="body"><h3>10. Rewrite ARCHITECTURE.md as today's map</h3>
+        <p>It's still the Oct 14 draft of the first three weeks. A short current map instead: the services, who owns which data (D&amp;D Beyond owns a character's play state through the bridge; askdnd owns the story, rules data, fights and creatures), how a change travels. Before slice 1 adds to it.</p></div>
+        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Before slice 1</span><span class="chip eff">S</span></div></div>
     </div>
   </section>
 
@@ -159,67 +171,67 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">To do · the VTT</div><h2>askdnd's own table, slice by slice</h2>
       <p class="why">The build plan: <code>docs/plans/2026-11-02-vtt-build-plan.md</code>. Built here, one working slice at a time, each tried locally, then on beta behind the switch <b>askdnd's VTT</b>, which only test campaigns see until you switch it on. The layout is decided: <a href="https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W">VTT Layout</a>, the frame around the map. Sizes at today's pace: S a day or two · M about a week · L 2–3 weeks · XL a month or more.</p></div>
     <div class="steps">
-      <div class="step mine" data-step="vtt-go"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>9. Look over slices 0 to 10, then say "start the VTT"</h3>
+      <div class="step mine" data-step="vtt-go"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>11. Look over slices 0 to 10, then say "start the VTT"</h3>
         <p>They're the build plan, right below. Anything you'd reorder or cut, say so; otherwise say <b>start the VTT</b> and slice 0 begins.</p></div>
         <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready now</span></div></div>
-      <div class="step" data-step="s0"><span class="n"></span><div class="body"><h3>10. Slice 0 · The two switches</h3>
+      <div class="step" data-step="s0"><span class="n"></span><div class="body"><h3>12. Slice 0 · The two switches</h3>
         <p>Manage › Settings › Virtual tabletop: <b>Play through askdnd</b> (the bridge, casting, resources and rests, the DM as a backup; one switch once you've reviewed live state) and <b>askdnd's VTT</b>. The menu bar's Table button opens askdnd's table where the VTT is on, D&amp;D Beyond's everywhere else; the page is refused while it's off.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Next</span><span class="chip eff">S</span></div></div>
-      <div class="step" data-step="s1"><span class="n"></span><div class="body"><h3>11. Slice 1 · The table's frame</h3>
+      <div class="step" data-step="s1"><span class="n"></span><div class="body"><h3>13. Slice 1 · The table's frame</h3>
         <p><code>/c/&lt;campaign&gt;/table</code>: the turn bar (today's fight band), Table rolls, the side panel, corner cards and your turn's bar around a middle that lists the fight's rows, still heard from D&amp;D Beyond's VTT. Every piece is the one Battle and Party already use.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s2"><span class="n"></span><div class="body"><h3>12. Slice 2 · askdnd runs the fight</h3>
-        <p>The DM starts a fight here, adds creatures (hidden ones only the DM sees), players roll their own initiative into it, the DM presses Next turn. Reminders and Concentration count from askdnd's turns. Players see enemies as Healthy, Bloodied or Down, the default in a DM battle settings menu. This is the turn order parked on Oct 28, built with your answers from then.</p></div>
+      <div class="step" data-step="s2"><span class="n"></span><div class="body"><h3>14. Slice 2 · askdnd runs the fight</h3>
+        <p>The DM starts a fight here, adds creatures (hidden ones only the DM sees), players roll their own initiative into it, the DM presses Next turn. askdnd owns the creatures' Hit Points and conditions (they have no D&amp;D Beyond sheet), kept as a fight and its fighters, one row each, with Undo for the DM. Reminders and Concentration count from askdnd's turns. Players see enemies as Healthy, Bloodied or Down, the default in a DM battle settings menu. This is the turn order parked on Oct 28, built with your answers from then.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">L</span></div></div>
-      <div class="step" data-step="s3"><span class="n"></span><div class="body"><h3>13. Slice 3 · Your turn's bar</h3>
+      <div class="step" data-step="s3"><span class="n"></span><div class="body"><h3>15. Slice 3 · Your turn's bar</h3>
         <p>Movement left with − and + 5 ft (a move split around an action is kept), Dash, what you've used of your Action, Bonus Action and Reaction, Battle's pins in three columns, End turn. Off your turn: your Reactions.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s4"><span class="n"></span><div class="body"><h3>14. Slice 4 · Creatures in the side panel</h3>
+      <div class="step" data-step="s4"><span class="n"></span><div class="body"><h3>16. Slice 4 · Creatures in the side panel</h3>
         <p>Click a creature for its stat block (2.3): Hit Points with − and + for the DM, what players see of it (2.6), its actions with Roll. On a creature's turn the bottom bar is the creature's. The DM's rolls for creatures are made in askdnd and keep Apply to.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">L</span></div></div>
-      <div class="step" data-step="s5"><span class="n"></span><div class="body"><h3>15. Slice 5 · Phones</h3>
+      <div class="step" data-step="s5"><span class="n"></span><div class="body"><h3>17. Slice 5 · Phones</h3>
         <p>The same page on a phone: the turn bar on top, Table rolls as its thin line, your turn's bar and the side panel as sheets that slide up.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
       <div class="mark">Milestone A · a fight run in askdnd, the map still on D&amp;D Beyond<span>A playtest with the table. Their feedback (you speak for them until then) decides what slice 6 onward needs first.</span></div>
-      <div class="step" data-step="s6"><span class="n"></span><div class="body"><h3>16. Slice 6 · The map, from any builder</h3>
+      <div class="step" data-step="s6"><span class="n"></span><div class="body"><h3>18. Slice 6 · The map, from any builder</h3>
         <p>The middle becomes a map. The DM uploads any picture and sets its grid, or imports a Universal VTT file (.dd2vtt from Dungeon Alchemist; Dungeondraft and others export it too) with its grid in one step. One map per scene (3.6). The rows move into the turn bar and the side panel. How the map is drawn is chosen and tried on an iPhone first.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">L</span></div></div>
-      <div class="step" data-step="s7"><span class="n"></span><div class="body"><h3>17. Slice 7 · Tokens</h3>
+      <div class="step" data-step="s7"><span class="n"></span><div class="body"><h3>19. Slice 7 · Tokens</h3>
         <p>A token per fighter, tied to its character or creature (3.2), with its conditions and reminders; hidden creatures only on the DM's map.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">L</span></div></div>
-      <div class="step" data-step="s8"><span class="n"></span><div class="body"><h3>18. Slice 8 · Moving and measuring</h3>
+      <div class="step" data-step="s8"><span class="n"></span><div class="body"><h3>20. Slice 8 · Moving and measuring</h3>
         <p>Drag a token: feet per square, movement left in your turn's bar, Difficult Terrain the DM paints, the table's diagonal rule in Manage › House rules (3.3). Leaving a creature's reach says it may provoke an Opportunity Attack. It counts and shows; it never stops a move.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s9"><span class="n"></span><div class="body"><h3>19. Slice 9 · Fog</h3>
+      <div class="step" data-step="s9"><span class="n"></span><div class="body"><h3>21. Slice 9 · Fog</h3>
         <p>The DM hides and reveals parts of the map (3.4).</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s10"><span class="n"></span><div class="body"><h3>20. Slice 10 · Spell areas</h3>
+      <div class="step" data-step="s10"><span class="n"></span><div class="body"><h3>22. Slice 10 · Spell areas</h3>
         <p>The area tool, and Cast starting it for a spell with an area; who's in it carries to the roll and Apply to (3.5). The DM rules close calls.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
       <div class="mark">Milestone B · a session on askdnd's maps<span>Instead of D&amp;D Beyond Maps. The table dice built on Oct 23 (everyone's rolls thrown across the screen, 3.11) are released with it.</span></div>
-      <div class="step" data-step="p2b"><span class="n"></span><div class="body"><h3>21. The rest of combat (Phase 2b)</h3>
+      <div class="step" data-step="p2b"><span class="n"></span><div class="body"><h3>23. The rest of combat (Phase 2b)</h3>
         <ul><li>2.4 Attacks and saves that resolve, the DM confirms (L)</li><li>2.1 Encounters with the 2024 DMG's budget (L)</li><li>Nice to have: 2.5 Reactions at the right moment (M) · 2.7 Fights flow into the recap (S)</li></ul>
         <p class="small muted">Milestone: a whole fight in askdnd.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p3"><span class="n"></span><div class="body"><h3>22. More for maps (Phase 3, nice to have)</h3>
+      <div class="step" data-step="p3"><span class="n"></span><div class="body"><h3>24. More for maps (Phase 3, nice to have)</h3>
         <ul><li>3.7 Walls, doors and vision (XL; an imported .dd2vtt's walls make it smaller)</li><li>3.9 Draw and ping (S) · 3.10 Story map (M)</li></ul>
         <p class="small muted">To decide then: how much map automation, after using simple maps.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p4"><span class="n"></span><div class="body"><h3>23. The DM's table tools (Phase 4)</h3>
+      <div class="step" data-step="p4"><span class="n"></span><div class="body"><h3>25. The DM's table tools (Phase 4)</h3>
         <ul><li>4.1 Show to the table (S) · 4.4 Asset library (M) · 4.5 Make stat blocks and items (L) · 4.6 Session prep (M)</li><li>Nice to have: 4.2 Music and ambience (M) · 4.3 Sound effects (S) · 4.7 Whispers (S; secret rolls are in) · 4.8 Paste-in import (M)</li></ul>
         <p class="small muted">To decide then: where music comes from (tracks the DM uploads or has rights to).</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p5"><span class="n"></span><div class="body"><h3>24. During play (Phase 5)</h3>
+      <div class="step" data-step="p5"><span class="n"></span><div class="body"><h3>26. During play (Phase 5)</h3>
         <ul><li>5.1 Rules answers in play (L)</li><li>Nice to have: 5.2 Table chat with rolls (M) · 5.4 Start-of-turn summary (S)</li></ul></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="bridge-faster"><span class="n"></span><div class="body"><h3>25. A faster bridge: count D&amp;D Beyond's reply</h3>
+      <div class="step" data-step="bridge-faster"><span class="n"></span><div class="body"><h3>27. A faster bridge: count D&amp;D Beyond's reply</h3>
         <p>With the next extension update: clear the ↻ mark on D&amp;D Beyond's own answer to a change and check it again in the background, about 1 to 3 seconds faster. The cost: when D&amp;D Beyond answers OK without keeping a change (it has happened), the mark clears and comes back as ! a few seconds later. Yours to decide then.</p></div>
         <div class="tags"><span class="chip yours">Yours to decide</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p6"><span class="n"></span><div class="body"><h3>26. Voice and video (Phase 6)</h3>
+      <div class="step" data-step="p6"><span class="n"></span><div class="body"><h3>28. Voice and video (Phase 6)</h3>
         <ul><li>6.1 Voice and video in askdnd (L) · 6.2 One recording track per person (L) · 6.3 Recording straight to recap (L) · 6.4 Live captions (M)</li></ul>
         <p class="small muted">Needs your decision first: recording stays on your Mac, or the raw-transcript privacy rule changes.</p></div>
         <div class="tags"><span class="chip s-parked">Nice to have</span></div></div>
-      <div class="step" data-step="p7"><span class="n"></span><div class="body"><h3>27. Other groups (Phase 7)</h3>
+      <div class="step" data-step="p7"><span class="n"></span><div class="body"><h3>29. Other groups (Phase 7)</h3>
         <ul><li>7.1 Content and licensing check (S, before sharing) · 7.2 Invite another group (L) · 7.3 Accounts and costs per group (L)</li></ul></div>
         <div class="tags"><span class="chip s-parked">Not planned</span></div></div>
     </div>
@@ -229,7 +241,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
       <div class="day"><span class="d">Nov 2</span><ul>
-        <li>The UI and UX pass: every page, window and panel scanned as a player, the DM and an admin at phone and desktop widths (734 views, 112 kinds of window), one page of 18 findings and 7 choices (<a href="https://claude.ai/artifact/2abF1Z1bAFQPGauYFvRZwR">UI and UX Pass</a>, all answered A), then built: one number tile, one ↻ mark, lists starting where you left them, Full notes on every list, window buttons, tab bars on phones, Prepare spells' changes, the coin purse, Rest with its moon on Sheet, Party's purse and short names, rounded switches, blue chips. Merged (<a href="https://github.com/jettison-v/dndsy/pull/156">PR 156</a>); reaches beta with item 1</li>
+        <li>The UI and UX pass: every page, window and panel scanned as a player, the DM and an admin at phone and desktop widths (734 views, 112 kinds of window), one page of 18 findings and 7 choices (<a href="https://claude.ai/artifact/2abF1Z1bAFQPGauYFvRZwR">UI and UX Pass</a>, all answered A), then built: one number tile, one ↻ mark, lists starting where you left them, Full notes on every list, window buttons, tab bars on phones, Prepare spells' changes, the coin purse, Rest with its moon on Sheet, Party's purse and short names, rounded switches, blue chips. Merged (<a href="https://github.com/jettison-v/dndsy/pull/156">PR 156</a>); on beta with PR 158</li>
         <li>Prepare spells kept a spell D&amp;D Beyond lists in both its 2014 and 2024 copies, which vanished once dropped (<a href="https://github.com/jettison-v/dndsy/pull/155">PR 155</a>, on beta)</li>
         <li>Extension 0.9.8 published (the DM as a backup, preparing spells); the Mac Mini's seats run it, and give 9 of 9, loot and DM Backup 10 of 10, prepare 5 of 5 pass on the real D&amp;D Beyond</li>
         <li>askdnd.ai is v2 and signs in; www.askdnd.ai goes to it; the old app is at legacy.askdnd.ai (<a href="https://github.com/jettison-v/dndsy/pull/153">PR 153</a>, <a href="https://github.com/jettison-v/dndsy/pull/154">154</a>)</li>
@@ -239,7 +251,10 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <li>Preparing spells, Give and the DM's Give loot (<a href="https://github.com/jettison-v/dndsy/pull/147">PR 147</a>); Prepare spells as a large window like the Spell Book, the Long Rest window fixed, the Monster Manual as a file to upload, beta's database connections eased (<a href="https://github.com/jettison-v/dndsy/pull/149">PR 149</a>, <a href="https://github.com/jettison-v/dndsy/pull/150">150</a>); Game Mode's two unused columns dropped (<a href="https://github.com/jettison-v/dndsy/pull/151">151</a>)</li>
         <li>On a phone, Battle's numbers in two lines and Hit Points sharing the row (<a href="https://github.com/jettison-v/dndsy/pull/143">PR 143</a>, <a href="https://github.com/jettison-v/dndsy/pull/146">146</a>); the Live window's list as two lines a sheet, the whole row opening it (<a href="https://github.com/jettison-v/dndsy/pull/145">145</a>)</li>
         <li>The VTT's layout chosen: the frame around the map (<a href="https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W">VTT Layout</a>, "I love it"); maps from any builder, Dungeon Alchemist's .dd2vtt first; the VTT built in this session; two switches</li>
-        <li>This page as one list, and the VTT build plan</li></ul></div>
+        <li>This page as one list, and the VTT build plan (<a href="https://github.com/jettison-v/dndsy/pull/157">PR 157</a>)</li>
+        <li>The UI pass reached beta once <a href="https://github.com/jettison-v/dndsy/pull/158">PR 158</a> stopped Party's cards jumping as they load (the test that held up the deploy)</li>
+        <li>The end-of-phase layout sweep as a player, the DM and an admin at five widths: one real problem (the menu bar at 1000px without the extension), fixed in PR 159</li>
+        <li>A code review of PRs 140–158 (9 findings: 5 fixed, Give's note made exact, 3 left with reasons) and an architecture review before the VTT (<code>docs/plans/2026-11-02-architecture-review.md</code>): fixes in PR 159, the rest items 9 and 10</li></ul></div>
       <div class="day"><span class="d">Nov 1</span><ul>
         <li>Battle's top as Option E on <a href="https://claude.ai/artifact/1SHdzwsmtnwfBYVRL5bwM1">Battle Band</a>: the numbers and saves in one row; − and + on Hit Points, ready to type in (Option B on <a href="https://claude.ai/artifact/QzNtDwYURngJFvb4gFC4Cn">Hit Points Flow</a>) (<a href="https://github.com/jettison-v/dndsy/pull/140">PR 140</a>)</li>
         <li>Inspiration as a star you press, spent or given through the bridge; Initiative's number is its roll (<a href="https://github.com/jettison-v/dndsy/pull/141">PR 141</a>); Battle's resources shorten only when they won't fit (<a href="https://github.com/jettison-v/dndsy/pull/142">142</a>)</li>
@@ -315,6 +330,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <thead><tr><th>Document</th><th>Status</th><th>Date</th><th>What it is</th></tr></thead>
       <tbody>
         <tr><td><b>askdnd Roadmap</b> (this page)</td><td><span class="chip s-done">Current</span></td><td>Nov 2</td><td class="what">The one page to read: one list of what's left, then what's done. Source <code>docs/roadmap.html</code>; detail behind it in <code>docs/plans/2026-10-22-vtt-roadmap.md</code></td></tr>
+        <tr><td>Architecture review <code>docs/plans/2026-11-02-architecture-review.md</code></td><td><span class="chip s-done">Current</span></td><td>Nov 2</td><td class="what">What the VTT will lean on: the live connection, who owns which state, the database under load, the page code</td></tr>
         <tr><td>VTT build plan <code>docs/plans/2026-11-02-vtt-build-plan.md</code></td><td><span class="chip s-done">Current</span></td><td>Nov 2</td><td class="what">The VTT's slices 0 to 10 and two milestones, with what's decided behind each</td></tr>
         <tr><td><a href="https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW">Next Steps</a></td><td><span class="chip s-todo">Superseded</span></td><td>Nov 2</td><td class="what">By this page: your steps are the Yours items above. Source <code>docs/artifacts/next-steps.html</code></td></tr>
         <tr><td><a href="https://claude.ai/artifact/2abF1Z1bAFQPGauYFvRZwR">UI and UX Pass</a></td><td><span class="chip s-done">Answered, built</span></td><td>Nov 2</td><td class="what">The full scan before the VTT: what it found, the fixes, seven choices (all A). <code>docs/artifacts/ui-ux-pass.html</code></td></tr>

@@ -165,6 +165,10 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-no
 body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-word { display: inline; }
 .live-pill.htmx-request { opacity: .7; }
 @media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live" or "● Game on"; the dot's colour says in step or to make by hand, the window the rest */
+@media (max-width: 1240px) {  /* without the extension too: "Add the askdnd bridge" pushed the menu bar past a 1000px window (the layout sweep, Nov 2); the window still has the steps */
+  body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-noext { display: none; }
+  body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-word { display: inline; }
+}
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
 .live-menu:empty { display: none; }
 .live-pop { padding: 14px 16px; display: grid; gap: 12px; font-size: var(--fs-sm); }
