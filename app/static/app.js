@@ -3511,13 +3511,20 @@
       style: { transform: 'translate(' + -scrollX + 'px, ' + -scrollY + 'px)' },
       // (not this window or the corner cards, no picture the page itself couldn't load, which would stop the drawing,
       // and none from another site, such as a D&D Beyond portrait: it can't be read from here, and isn't fetched again)
-      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || (n.tagName === 'IMG' && (!n.complete || !n.naturalWidth || !n.src.startsWith(location.origin + '/')))),
+      // (and not Battle's condition edge: its border-image comes out as a wash over the whole picture)
+      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || (n.classList && n.classList.contains('cond-halo'))
+        || (n.tagName === 'IMG' && (!n.complete || !n.naturalWidth || !n.src.startsWith(location.origin + '/')))),
     };
-    try { return await h.toJpeg(document.body, options); } catch (e) { return null; }
+    // An attribute named with a colon (htmx's hx-on::after-request) is fine in a page but not in the picture's SVG, where
+    // it stops the whole drawing: they're set aside while it's drawn, and put back
+    const aside = [];
+    document.querySelectorAll('*').forEach(el => { for (const at of [...el.attributes]) if (at.name.includes(':')) { aside.push([el, at.name, at.value]); el.removeAttribute(at.name); } });
+    try { return await h.toJpeg(document.body, options); } catch (e) { return null; } finally { aside.forEach(([el, name, value]) => el.setAttribute(name, value)); }
   }
   function browser() {
     const ua = navigator.userAgent, d = navigator.userAgentData;
-    const brand = d && d.brands ? d.brands.find(b => !/Not.?A.?Brand|Chromium/i.test(b.brand)) || d.brands[0] : null;
+    const brands = d && d.brands ? d.brands.filter(b => !/Not.?A.?Brand/i.test(b.brand)) : [];  // (the made-up one every Chrome lists)
+    const brand = brands.find(b => b.brand !== 'Chromium') || brands[0] || null;
     const safari = /Version\/([\d.]+).*Safari/.exec(ua), firefox = /Firefox\/([\d.]+)/.exec(ua);
     const name = brand ? brand.brand + ' ' + brand.version : safari ? 'Safari ' + safari[1] : firefox ? 'Firefox ' + firefox[1] : ua.slice(0, 60);
     const os = (d && d.platform) || (/iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Mac OS X/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : '');
@@ -3534,7 +3541,7 @@
       window: innerWidth + ' × ' + innerHeight, screen: screen.width + ' × ' + screen.height + ' · ' + devicePixelRatio + '× pixels',
       zoom: 'about ' + Math.round(zoom * (outer > 0.5 && outer < 4 ? outer : 1) * 100) + '%', browser: browser(), user_agent: navigator.userAgent,
       extension: body.dataset.bridgeVersion || (body.classList.contains('no-bridge') ? 'not in this browser' : ''),
-      live: pill ? pill.textContent.trim().replace(/\s+/g, ' ') : '', tab: tab ? tab.textContent.trim().replace(/\s+/g, ' ').slice(0, 60) : '',
+      live: pill ? [((pill.querySelector('.live-ago') || pill).textContent || '').trim().replace(/\s+/g, ' '), pill.className.replace('live-pill', '').trim()].filter(Boolean).join(' · ') : '', tab: tab ? tab.textContent.trim().replace(/\s+/g, ' ').slice(0, 60) : '',
       panel: panel ? panel.textContent.trim().slice(0, 80) : '', fight: body.dataset.fight ? 'on' : '', scroll: scrollX + ', ' + scrollY,
       errors: (window.askdndErrors || []).slice(-5),
     };
