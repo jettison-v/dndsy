@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Feedback from a phone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 520px; height: 900px">
+  <div class="head">
+    <div class="num">3 · From your phone</div>
+    <h1 style="font-size: 24px">The same, from More</h1>
+    <p class="where" style="font-size: 14px"><b>Where:</b> the bottom bar's <b>More</b> › <b>Feedback for Claude</b> as an admin; as a test account, tap the askdnd logo three times (a phone has no <span class="kbd">\</span> key). <b>Point at it</b> works by tapping. For a picture, take an iPhone screenshot first, then <b>Add a screenshot</b> picks it from Photos.</p>
+  </div>
+  <div class="screen" style="width: 390px; height: 700px; justify-self: center; display: grid; grid-template-rows: minmax(0, 1fr) auto">
+    <div style="position: relative; overflow: hidden">
+      <div class="body" style="opacity: .45">
+        <div class="name">Cole</div>
+        <div class="nums" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><div class="numtile"><small>Hit points</small><b>51</b></div><div class="numtile"><small>Armor class</small><b>16</b></div></div>
+        <div class="row start" style="gap: 6px"><span class="stat">Luck <span class="dots"><i></i><i></i><i></i></span></span><span class="stat">☾ Rest</span></div>
+      </div>
+      <div class="fbwin" style="position: absolute; left: 0; right: 0; bottom: 0; border-radius: 16px 16px 0 0; gap: 10px">
+        <div class="row"><h3>Feedback for Claude</h3><button type="button" class="btn mini" aria-label="Close">✕</button></div>
+        <label class="note" for="fb-phone">What's wrong, or what would be better?</label>
+        <textarea id="fb-phone" class="field" style="min-height: 80px">The Rest button wraps onto two lines.</textarea>
+        <div class="row start" style="gap: 8px; flex-wrap: wrap"><button type="button" class="btn">Point at it</button><button type="button" class="btn">Add a screenshot</button></div>
+        <div class="note">Sent with it: this page, the time, iPhone Safari at 390 × 844, and the page as drawn.</div>
+        <button type="button" class="btn main" style="min-height: 44px">Send</button>
+      </div>
+    </div>
+    <div class="row" style="border-top: 1px solid var(--line); padding: 10px 16px; font-size: 13px; color: var(--muted)"><span>Story</span><span>Campaign</span><span>Cole</span><span>Party</span><b style="color: var(--strong)">More</b></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
