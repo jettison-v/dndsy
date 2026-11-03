@@ -803,6 +803,8 @@ class BridgeBatch(Timestamped, Base):
     next_at: Mapped[float] = mapped_column(Float, default=0, server_default="0")
     check: Mapped[str] = mapped_column(String(10), default="", server_default="")  # the round trip's "out" or "back"
     error: Mapped[str] = mapped_column(String(400), default="", server_default="")
+    # How old askdnd's copy of the sheet was when this was built, in seconds (None: read fresh for it), for Manage's log
+    copy_age: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 class BridgeLog(Base):

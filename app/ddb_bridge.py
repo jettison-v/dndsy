@@ -672,7 +672,9 @@ def outbox(db: Session, character: Character, by: str = "sheet", got: chars.Read
         return None
     if not keep:
         return None
-    batch = BridgeBatch(character_id=character.id, intents=[i.id for i in keep], ops=_ops(character, target, n, extra),
+    snap = character.snapshot
+    age = None if got is not None or not (snap and snap.fetched_at) else round(max(0.0, now - snap.fetched_at.timestamp()), 1)
+    batch = BridgeBatch(character_id=character.id, intents=[i.id for i in keep], ops=_ops(character, target, n, extra), copy_age=age,
                         before={f: _value(n, f) for f in target}, target=target, state="sending", attempts=1, sent_at=now,
                         next_at=0, check=keep[0].data.get("check", ""), names={f: ddb_fields.name(n["raw"], f) for f in target})
     db.add(batch)
@@ -1628,6 +1630,27 @@ def manage_page(request: Request, db: Session = Depends(get_db)):
         "health": h, "a": h["awake"], "last": _wake_row(db)[1].get("last"), "timers": TIMERS,
         "now": {key: round(tm[key] / unit) for key, _, _, unit, *_ in TIMERS},
         "toast": request.session.pop("toast", None)})
+
+
+@router.get("/manage/bridge/log/{character_id:int}")
+def manage_log(character_id: int, request: Request, limit: int = 200, db: Session = Depends(get_db)):
+    """A character's bridge log further back than its pages show (30), with the batches that made each change: when,
+    how it ended, how many tries, how old askdnd's copy was (null: read fresh), what D&D Beyond held and what it should
+    hold (Brett, 2026-11-02: for the live test's analysis). Admins; JSON."""
+    _allowed()
+    _, stop = web.require(request, is_admin, "The D&D Beyond bridge's log is for admins.")
+    if stop:
+        return stop
+    character = db.get(Character, character_id)
+    if character is None:
+        return _json({"error": "No such character."}, 404)
+    limit = max(1, min(limit, 500))
+    log = [{"at": r.at.isoformat(), "state": r.state, "text": r.text}
+           for r in db.scalars(select(BridgeLog).where(BridgeLog.character_id == character.id).order_by(BridgeLog.id.desc()).limit(limit))]
+    batches = [{"id": b.id, "at": b.created_at.isoformat(), "state": b.state, "attempts": b.attempts, "copy_age": b.copy_age,
+                "intents": [i.label for i in _intents_of(db, b)], "before": b.before, "target": b.target, "error": b.error}
+               for b in db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id).order_by(BridgeBatch.id.desc()).limit(limit))]
+    return _json({"character": {"id": character.id, "name": character.name}, "log": log, "batches": batches})
 
 
 @router.post("/manage/bridge")

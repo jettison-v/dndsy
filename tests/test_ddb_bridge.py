@@ -1005,3 +1005,24 @@ def test_an_older_read_never_replaces_a_newer_copy(db, sheet):
     characters.store(db, cole, characters.read(cole.ddb_id))  # a later read, kept first
     characters.store(db, cole, older)  # the earlier one arrives late
     assert characters.character_summary(cole)["hit_points"]["current"] == 31
+
+
+def test_admins_read_the_log_further_back_with_its_batches(admin, player, db, sheet, monkeypatch):
+    """Brett, 2026-11-02 (the live test's death save miss was past the 30 lines a page shows): Manage's log goes back
+    further and says, per batch, how old askdnd's copy was when it was built (null: read fresh)."""
+    cole = char(db, "Cole")
+    for n in range(35):
+        ddb_bridge._log(db, cole.id, f"line {n}", "seen")
+    ddb_bridge.add(db, cole, "hp", {"amount": -5}, "Cole took 5")
+    copy_built = ddb_bridge.outbox(db, cole)  # on askdnd's copy, read moments ago
+    make(sheet, copy_built)
+    ddb_bridge.delivered(db, copy_built["id"], ok=True)
+    ddb_bridge.add(db, cole, "hp", {"amount": -80}, "Cole took 80")  # down to 0: read fresh first
+    ddb_bridge.outbox(db, cole)
+    db.flush()
+    got = admin.get(f"/manage/bridge/log/{cole.id}?limit=50").json()
+    assert len(got["log"]) > 30
+    newest, older = got["batches"][0], got["batches"][1]
+    assert newest["intents"] == ["Cole took 80"] and newest["copy_age"] is None and newest["state"] == "sending"
+    assert older["intents"] == ["Cole took 5"] and older["copy_age"] is not None and older["state"] == "done"
+    assert player.get(f"/manage/bridge/log/{cole.id}").status_code == 403  # admins only
