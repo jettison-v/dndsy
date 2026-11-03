@@ -3478,6 +3478,110 @@
   document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-prep]'); if (root) start(root); });
 })();
 
+// ---------------------------------------------------------------- Item browser
+// (app/item_browser.py, _item_browser.html; Brett, 2026-11-03, docs/mockups/item-browser/) A large modal over D&D
+// Beyond's 2024 items, using the Lists pattern for search and filters. A name (or its row) shows what the item is beside
+// the list, over it on a narrow screen; + puts one in Adding, where − and + change how many; one press makes them all.
+// What's paid starts at the book's price for the items that have one and is the player's to change (the DM agrees a
+// price); once they've typed in it, it stays theirs.
+(function () {
+  const COPPER = { gp: 100, sp: 10, cp: 1 };
+  const money = cp => Object.entries(COPPER).map(([c, v]) => { const n = Math.floor(cp / v); cp -= n * v; return n ? n.toLocaleString() + ' ' + c : ''; })
+    .filter(Boolean).join(' ') || '0 gp';
+  function start(root) {
+    if (root._ib) return;
+    root._ib = true;
+    const loot = root.dataset.mode === 'loot', $ = s => root.querySelector(s);
+    const basket = new Map();  // id -> {name, n, cp}
+    const detail = $('[data-ib-detail]'), pay = $('[data-ib-pay]'), paying = $('[data-ib-paying]'), go = $('[data-ib-go]');
+    const amount = $('[data-ib-amount]'), said = $('[data-ib-said]');
+    let typed = false, shown = null;
+    const rowOf = id => root.querySelector('[data-ls-row][data-id="' + id + '"]');
+    function draw() {
+      const box = $('[data-ib-basket]');
+      box.replaceChildren(...[...basket].map(([id, b]) => {
+        const chip = document.createElement('span');
+        chip.className = 'ib-chip';
+        const name = document.createElement('b');
+        name.textContent = b.name;
+        const n = document.createElement('span');
+        n.textContent = '×' + b.n;
+        const less = document.createElement('button'), more = document.createElement('button');
+        less.type = more.type = 'button';
+        less.textContent = '−'; more.textContent = '+';
+        less.dataset.ibLess = more.dataset.ibMore = id;
+        less.setAttribute('aria-label', 'One fewer ' + b.name);
+        more.setAttribute('aria-label', 'One more ' + b.name);
+        chip.append(name, n, less, more);
+        return chip;
+      }));
+      const items = [...basket.values()], count = items.reduce((t, b) => t + b.n, 0);
+      $('[data-ib-empty]').hidden = count > 0;
+      root.querySelectorAll('[data-ls-row]').forEach(r => r.classList.toggle('in-basket', basket.has(r.dataset.id)));
+      if (pay) {
+        if (!typed) pay.value = count ? money(items.reduce((t, b) => t + b.n * b.cp, 0)) : '';
+        pay.disabled = !paying.checked;
+        const unpriced = items.filter(b => !b.cp).length, note = $('[data-ib-price-note]');
+        note.hidden = !unpriced;
+        note.textContent = unpriced ? (unpriced === 1 ? '1 item has' : unpriced + ' items have') + " no price in the books (a magic item never does): what you pay for it is the DM's to say." : '';
+      }
+      const coins = amount && +amount.value > 0 ? (+amount.value).toLocaleString() + ' ' + $('[data-ib-coin]').value : '';
+      if (go) {
+        go.disabled = !count && !coins;
+        const what = [count && count + ' item' + (count === 1 ? '' : 's'), coins].filter(Boolean).join(' and ');
+        go.textContent = (loot ? 'Give ' : 'Add ') + (what || '');
+      }
+    }
+    function add(id, n = 1) {
+      const r = rowOf(id); if (!r) return;
+      const b = basket.get(id) || { name: r.dataset.label, n: 0, cp: +r.dataset.cp || 0 };
+      b.n = Math.min(100, b.n + n);
+      if (b.n > 0) basket.set(id, b); else basket.delete(id);
+      draw();
+    }
+    function show(id) {
+      shown = id;
+      root.querySelectorAll('[data-ls-row]').forEach(r => r.classList.toggle('sel', r.dataset.id === id));
+      fetch(root.dataset.detailUrl + id, { headers: { 'HX-Request': 'true' } })
+        .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
+        .then(html => { if (shown !== id) return; detail.innerHTML = html; detail.scrollTop = 0; root.classList.add('ib-showing'); })
+        .catch(() => { detail.innerHTML = '<p class="note">That item didn\'t load. Try again.</p>'; });
+    }
+    root.addEventListener('click', e => {
+      const plus = e.target.closest('[data-ib-add]');
+      if (plus) { add((plus.closest('[data-ls-row], [data-ib-card]')).dataset.id); return; }
+      const less = e.target.closest('[data-ib-less]'); if (less) { add(less.dataset.ibLess, -1); return; }
+      const more = e.target.closest('[data-ib-more]'); if (more) { add(more.dataset.ibMore, 1); return; }
+      if (e.target.closest('[data-ib-hide]')) { root.classList.remove('ib-showing'); return; }
+      const row = e.target.closest('[data-ls-row]');
+      if (row) { show(row.dataset.id); return; }
+      if (go && e.target.closest('[data-ib-go]') && !go.disabled) {
+        go.disabled = true;
+        said.hidden = true;
+        const body = { items: [...basket].map(([id, b]) => ({ id: +id, n: b.n })), into: $('[data-ib-into]').value };
+        if (paying && paying.checked) body.pay = pay.value;
+        if (amount) { body.amount = amount.value; body.coin = $('[data-ib-coin]').value; }
+        fetch(root.dataset.url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' }, body: JSON.stringify(body) })
+          .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || "askdnd couldn't do that"); return j; }))
+          .then(j => {
+            document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver }));
+            document.body.dispatchEvent(new CustomEvent('characterChanged'));
+            window.askdndToast(j.text);
+            const x = root.closest('.peek').querySelector('.peek-close'); if (x) x.click();
+          })
+          .catch(err => { said.hidden = false; said.textContent = err.message; go.disabled = false; });
+      }
+    });
+    root.addEventListener('input', e => {
+      if (e.target === pay) { typed = pay.value.trim() !== ''; draw(); }
+      if (e.target === amount) draw();
+    });
+    root.addEventListener('change', e => { if (e.target === paying || e.target.matches('[data-ib-coin]')) draw(); });
+    draw();
+  }
+  document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-ib]'); if (root) start(root); });
+})();
+
 // ---------------------------------------------------------------- feedback for Claude
 // (app/feedback.py; Brett, 2026-11-03, docs/mockups/feedback-queue/) A note for Claude from any page, for whoever the
 // page lets send one (body[data-feedback]: admins and the accounts switched on for it on Accounts). \ opens it (never

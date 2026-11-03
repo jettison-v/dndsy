@@ -1,0 +1,136 @@
+{
+ "data": [
+  {
+   "id": 415,
+   "entityTypeId": 1439493548,
+   "name": "Rope",
+   "sources": [
+    {
+     "sourceId": 145,
+     "sourceType": 1
+    }
+   ],
+   "filterType": "Other Gear",
+   "description": "<p>Rope, as the book says.</p>",
+   "cost": 1,
+   "weight": 5
+  },
+  {
+   "id": 437,
+   "entityTypeId": 1439493548,
+   "name": "Torch",
+   "sources": [
+    {
+     "sourceId": 145,
+     "sourceType": 1
+    }
+   ],
+   "filterType": "Other Gear",
+   "description": "<p>Torch, as the book says.</p>",
+   "cost": 0.01,
+   "weight": 1
+  },
+  {
+   "id": 9001,
+   "entityTypeId": 1439493548,
+   "name": "Longsword",
+   "sources": [
+    {
+     "sourceId": 148,
+     "sourceType": 1
+    }
+   ],
+   "filterType": "Weapon",
+   "description": "<p>Longsword, as the book says.</p>",
+   "cost": 15,
+   "weight": 3,
+   "subType": "Martial",
+   "damage": {
+    "diceString": "1d8"
+   },
+   "damageType": "Slashing",
+   "properties": [
+    {
+     "name": "Versatile",
+     "notes": "1d10"
+    }
+   ]
+  },
+  {
+   "id": 8960641,
+   "entityTypeId": 1439493548,
+   "name": "Potion of Healing",
+   "sources": [
+    {
+     "sourceId": 146,
+     "sourceType": 1
+    }
+   ],
+   "filterType": "Potion",
+   "description": "<p>Potion of Healing, as the book says.</p>",
+   "magic": true,
+   "rarity": "Common",
+   "weight": 0.5,
+   "largeAvatarUrl": "https://www.dndbeyond.com/avatars/potion.jpg"
+  },
+  {
+   "id": 9002,
+   "entityTypeId": 1439493548,
+   "name": "Cloak of Protection",
+   "sources": [
+    {
+     "sourceId": 146,
+     "sourceType": 1
+    }
+   ],
+   "filterType": "Wondrous item",
+   "description": "<p>Cloak of Protection, as the book says.</p>",
+   "magic": true,
+   "rarity": "Uncommon",
+   "canAttune": true,
+   "avatarUrl": "https://example.com/not-d-and-d-beyond.png"
+  },
+  {
+   "id": 9003,
+   "entityTypeId": 1439493548,
+   "name": "Rope",
+   "sources": [
+    {
+     "sourceId": 1,
+     "sourceType": 1
+    }
+   ],
+   "filterType": "Other Gear",
+   "description": "<p>Rope, as the book says.</p>",
+   "cost": 1,
+   "isLegacy": true
+  },
+  {
+   "id": 9004,
+   "entityTypeId": 1439493548,
+   "name": "Sword of Made-Up Things",
+   "sources": [
+    {
+     "sourceId": 145,
+     "sourceType": 1
+    }
+   ],
+   "filterType": "Other Gear",
+   "description": "<p>Sword of Made-Up Things, as the book says.</p>",
+   "isHomebrew": true
+  },
+  {
+   "id": 9005,
+   "entityTypeId": 1439493548,
+   "name": "Deck of Many Things",
+   "sources": [
+    {
+     "sourceId": 3,
+     "sourceType": 1
+    }
+   ],
+   "filterType": "Other Gear",
+   "description": "<p>Deck of Many Things, as the book says.</p>"
+  }
+ ]
+}

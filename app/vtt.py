@@ -31,7 +31,7 @@ FEATURES: list[Feature] = [
     Feature("sync", "Sync with D&D Beyond",
             "Every change made in askdnd or on D&D Beyond reaches the other, through the askdnd extension in each player's "
             "Chrome: hit points, conditions and death saves, Heroic Inspiration, casting, resources and rests, items and "
-            "coins, Give and Give loot, preparing spells, and the DM's browser making changes for a player whose sheet is "
+            "coins, adding items (Add item, Give loot) and Give, preparing spells, and the DM's browser making changes for a player whose sheet is "
             "closed. Tell the table first: D&D Beyond's terms don't allow tools like this.",
             "Live character state (Phase 1) and the D&D Beyond bridge; finished Nov 3."),
     Feature("vtt", "askdnd's VTT",
