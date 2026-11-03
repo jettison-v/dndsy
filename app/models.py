@@ -96,7 +96,7 @@ class Campaign(Timestamped, Base):
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     dm_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
     ddb_campaign_id: Mapped[str | None] = mapped_column(String(40))  # the matching campaign on D&D Beyond, if known
-    # The VTT switch (app/vtt.py): a test campaign sees every VTT piece; others only the finished ones switched on here
+    # Features and Labs switched on here (app/vtt.py: feature keys and "labs"); a test campaign switches nothing on by itself
     is_test: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     vtt_pieces: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     # Its books (app/books.py): which private rules books its lookups use, set on Manage › Settings › Books

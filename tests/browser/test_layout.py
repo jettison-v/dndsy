@@ -179,7 +179,7 @@ def test_pages_dont_shift_as_they_load(people, server):
 
 def test_the_table_page_holds_together(people, server, browser_db, long_names):
     """askdnd's table (VTT slice 1) as a player, with a fight heard from D&D Beyond's VTT and without one, at every
-    width; its campaign a test one for the test only (askdnd's VTT is a test campaign's until Brett switches it on)."""
+    width; askdnd's VTT (Labs) on in its campaign for the test only."""
     import json
     from datetime import UTC, datetime
 
@@ -191,10 +191,11 @@ def test_the_table_page_holds_together(people, server, browser_db, long_names):
     engine = create_engine(browser_db[0])
     player = people("player")
 
-    def set_campaign(is_test, f):
+    def set_campaign(vtt_on, f):
         with engine.connect() as conn:
-            conn.execute(text("UPDATE campaigns SET is_test = :t, fight = CAST(:f AS JSONB), fight_at = :at WHERE id = :c"),
-                         {"t": is_test, "f": json.dumps(f) if f else None, "at": datetime.now(UTC) if f else None, "c": server["campaign"]})
+            conn.execute(text("UPDATE campaigns SET vtt_pieces = CAST(:p AS JSONB), fight = CAST(:f AS JSONB), fight_at = :at WHERE id = :c"),
+                         {"p": json.dumps(["labs", "vtt"] if vtt_on else []), "f": json.dumps(f) if f else None,
+                          "at": datetime.now(UTC) if f else None, "c": server["campaign"]})
             conn.commit()
 
     try:

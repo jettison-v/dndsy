@@ -13,8 +13,8 @@ DRUID = 184968818  # Cole's Druid on his D&D Beyond sheet (the class's row, not 
 
 @pytest.fixture(autouse=True)
 def test_campaign(db, sheet):
-    """Live state is a VTT piece still being reviewed: a test campaign sees it."""
-    db.get(Campaign, char(db, "Cole").campaign_id).is_test = True
+    """Live state comes with Sync with D&D Beyond (app/vtt.py), switched on for the campaign."""
+    db.get(Campaign, char(db, "Cole").campaign_id).vtt_pieces = ["sync"]
     db.flush()
 
 
@@ -76,10 +76,10 @@ def test_a_prepared_spell_on_its_way_shows_as_prepared():
     assert ddb_fields.value(data, f) is False
 
 
-def test_preparing_is_the_players_and_only_in_a_test_campaign_for_now(player, dm, db, sheet):
+def test_preparing_is_the_players_and_only_where_sync_is_on(player, dm, db, sheet):
     cole = char(db, "Cole")
     assert dm.get(f"/characters/{cole.id}/prepare?key=spell:Healing Word").status_code == 404
-    db.get(Campaign, cole.campaign_id).is_test = False
+    db.get(Campaign, cole.campaign_id).vtt_pieces = []
     db.flush()
     assert player.get(f"/characters/{cole.id}/prepare?key=spell:Healing Word").status_code == 404
 

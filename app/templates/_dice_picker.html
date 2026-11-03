@@ -21,6 +21,10 @@
         <label class="check"><input type="checkbox" data-dice-anim> Dice animation <span class="note">(this device)</span></label>
         <label class="check"><input type="checkbox" data-dice-sound> Dice sounds <span class="note">(this device)</span></label>
       </div>
+      <h3>Labs <span class="tag draft">Ready to try</span></h3>
+      <div class="dp-opts">
+        <label class="check"><input type="checkbox" name="tray" value="1"{{ ' checked' if d.tray }}> <span><b>Dice tray: less intrusive dice.</b> <span class="note">Your own rolls are still thrown across the screen. Others' rolls tumble in a small tray in the bottom-left corner instead, so they don't cover the page you're planning on; on askdnd's table every roll is thrown across the screen.</span></span></label>
+      </div>
       <p class="note dp-about">Everyone sees your rolls in your dice. Turning the animation off on a device shows the numbers without throwing dice.</p>
     </div>
     <div class="dp-preview" data-dice-preview><span class="note dp-loading">Loading the dice…</span></div>

@@ -18,11 +18,11 @@ GAME = "8224496"  # the campaign's D&D Beyond game
 
 @pytest.fixture
 def table(db, sheet):
-    """Cole's sheet closed, Cole in the campaign's D&D Beyond game, the backup on (a test campaign has every piece) and
+    """Cole's sheet closed, Cole in the campaign's D&D Beyond game, the backup on (Sync with D&D Beyond) and
     dm@example.com its DM. Everyone else's sheet is closed too."""
     cole = char(db, "Cole")
     campaign = db.get(Campaign, cole.campaign_id)
-    campaign.is_test, campaign.ddb_campaign_id = True, GAME
+    campaign.vtt_pieces, campaign.ddb_campaign_id = ["sync"], GAME
     set_role(db, "dm@example.com", "dm", "Dee", campaign)
     for ch in db.scalars(select(Character)):
         ch.sheet_heard_at, ch.ddb_campaign_id = None, GAME
@@ -80,7 +80,7 @@ def test_only_the_dm_carries_only_where_its_on_and_only_in_its_game(player, dm, 
     assert ddb_bridge.how(cole) is None
     cole.ddb_campaign_id = GAME
     campaign = db.get(Campaign, cole.campaign_id)
-    campaign.is_test, campaign.vtt_pieces = False, ["ddb_bridge"]  # a campaign that isn't a test one, without the piece
+    campaign.vtt_pieces = []  # a campaign without Sync with D&D Beyond
     db.flush()
     assert ddb_bridge.how(cole) is None and carry(dm)["every"] == 0
 

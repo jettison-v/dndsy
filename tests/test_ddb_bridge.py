@@ -341,10 +341,9 @@ def test_only_the_player_changes_and_only_where_switched_on(player, dm, db, shee
 
 def test_a_test_copy_never_reaches_d_and_d_beyond(admin, db, sheet):
     """A standing rule (Brett, 2026-10-27: test only on Vi, never a table character's real sheet): a test copy shares
-    the real character's D&D Beyond sheet, so the bridge never works on one, even in a test campaign (which has every
-    VTT piece)."""
+    the real character's D&D Beyond sheet, so the bridge never works on one, even in a campaign with Sync on."""
     cole = char(db, "Cole")
-    test = Campaign(slug="vtt-test", name="VTT test", is_test=True)
+    test = Campaign(slug="vtt-test", name="VTT test", is_test=True, vtt_pieces=["sync"])
     db.add(test)
     db.flush()
     copy_ = characters.test_copy(db, cole, test.id)

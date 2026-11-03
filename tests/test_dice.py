@@ -1,5 +1,5 @@
 """Each person's dice (app/dice.py; docs/mockups/dice-two-ways.html): a set, a material and whether damage dice take
-their damage type's look; pages carry yours, rolls carry their roller's, and the VTT piece throws everyone's."""
+their damage type's look; pages carry yours, rolls carry their roller's, and the dice tray is each person's own."""
 
 import json
 
@@ -14,7 +14,7 @@ def test_defaults_differ_by_person_and_bad_values_fall_back():
     a, b = User(id=1, email="a@x", name="A"), User(id=2, email="b@x", name="B")
     assert dice.prefs(a)["set"] != dice.prefs(b)["set"] and dice.prefs(a)["material"] == "glass" and dice.prefs(a)["by_type"]
     a.dice = {"set": "nope", "material": "jelly", "by_type": False}
-    assert dice.prefs(a) == {"set": dice.DEFAULTS[1], "material": "glass", "by_type": False}
+    assert dice.prefs(a) == {"set": dice.DEFAULTS[1], "material": "glass", "by_type": False, "tray": False}
 
 
 def test_choose_your_dice(two, db):  # noqa: F811
@@ -22,21 +22,23 @@ def test_choose_your_dice(two, db):  # noqa: F811
     page = pat.get("/dice").text
     assert page.count('name="set"') == len(dice.SETS) and "Dice sounds" in page
     r = pat.post("/dice", data={"set": "bloodmoon", "material": "metal", "by_type": ""})
-    assert json.loads(r.headers["HX-Trigger"])["diceChanged"] == {"set": "bloodmoon", "material": "metal", "by_type": False}
+    assert json.loads(r.headers["HX-Trigger"])["diceChanged"] == {"set": "bloodmoon", "material": "metal", "by_type": False, "tray": False}
     me = db.scalar(select(User).where(User.email == "pat@example.com"))
-    assert me.dice == {"set": "bloodmoon", "material": "metal", "by_type": False}
+    assert me.dice == {"set": "bloodmoon", "material": "metal", "by_type": False, "tray": False}
     access.invalidate()
-    assert "data-dice='{\"by_type\": false, \"material\": \"metal\", \"set\": \"bloodmoon\"}'" in pat.get("/c/main/").text
+    assert "data-dice='{\"by_type\": false, \"material\": \"metal\", \"set\": \"bloodmoon\", \"tray\": false}'" in pat.get("/c/main/").text
     assert 'data-modal-url="/dice"' in pat.get("/c/main/").text  # Your dice, in the account menu
 
 
-def test_the_vtt_piece_throws_everyones_rolls(two, db):  # noqa: F811
-    admin, strahd = two["admin"], two["strahd"]
-    assert "data-dice-all" not in admin.get("/c/strahd/").text
-    strahd.is_test = True  # a test campaign has every VTT piece
-    db.flush()
+def test_the_dice_tray_is_each_persons_own(two, db):  # noqa: F811
+    """Brett, 2026-11-03: others' rolls are thrown across the whole screen; the dice tray (Labs, in Your dice) is each
+    person's choice to have them tumble in the corner instead (app.js reads `tray` from the page's data-dice)."""
+    pat, sam = two["pat"], two["sam"]
+    assert '"tray": false' in pat.get("/c/main/").text and "Dice tray: less intrusive dice" in pat.get("/dice").text
+    r = pat.post("/dice", data={"set": "bloodmoon", "material": "glass", "by_type": "1", "tray": "1"})
+    assert json.loads(r.headers["HX-Trigger"])["diceChanged"]["tray"] is True
     access.invalidate()
-    assert "data-dice-all" in admin.get("/c/strahd/").text
+    assert '"tray": true' in pat.get("/c/main/").text and '"tray": false' in sam.get("/c/strahd/").text  # Pat's own
 
 
 def test_tuning_is_kept_in_range():

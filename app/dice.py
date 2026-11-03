@@ -4,8 +4,9 @@ The dice are @3d-dice/dice-box-threejs 0.0.12 (MIT), vendored in app/static/vend
 numbers still come from askdnd (the server for table rolls, the browser for private ones); the dice are made to land
 on them. Where they're thrown:
 - your own roll: across the whole page, which dims behind them;
-- someone else's roll on a character page: a small tray in the bottom-left corner;
-- with the VTT piece "table_dice" (app/vtt.py) on: everyone's rolls are thrown across the page.
+- someone else's roll: across the whole page too (Brett, 2026-11-03), with a tag saying who rolled;
+- the dice tray (Labs, each person's own choice: `tray`): someone else's roll tumbles in a small tray in the
+  bottom-left corner instead, except on askdnd's table, where every roll is thrown across the screen.
 Everyone sees your rolls in your set; damage dice can take their damage type's look instead (`by_type`).
 
 How the dice move and how long they stay is the same for everyone: admins set it on Manage › askdnd › Dice tuning
@@ -56,11 +57,11 @@ _PAGE = [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "
 PLACES = [
     ("mine", "Your roll", "You rolled, on any page: your dice are thrown across the whole page, the page behind them goes dark, "
      "and the total shows at the top, clear of the roll window.", _PAGE),
-    ("tray", "Others' rolls in the tray", "Someone else rolled while you're on a character page: a small tray slides up in the "
-     "corner, their dice tumble in it, and it shows who and the total.",
+    ("tray", "Others' rolls in the tray", "Someone else rolled, for a person who chose the dice tray (Labs, Your dice): a small "
+     "tray slides up in the corner, their dice tumble in it, and it shows who and the total.",
      [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "light"]), ("Timing", ["slide", "stay"])]),
-    ("vtt", "Others' rolls on the VTT", "Someone else rolled while their campaign has the VTT's table dice on: their dice cross "
-     "the whole screen with a tag saying who rolled.", _PAGE),
+    ("vtt", "Others' rolls, full screen", "Someone else rolled (everyone without the dice tray, and everyone on askdnd's table): "
+     "their dice cross the whole screen with a tag saying who rolled.", _PAGE),
 ]
 # askdnd's own tuning (what it did before the Dice tuning page)
 TUNING = {
@@ -120,13 +121,14 @@ def shown(value, how: str) -> str:
 
 
 def prefs(user: User | None) -> dict:
-    """Their dice: {"set", "material", "by_type"}; askdnd's default where they haven't chosen."""
+    """Their dice: {"set", "material", "by_type", "tray"}; askdnd's default where they haven't chosen (others' rolls
+    across the whole screen: no tray)."""
     d = (user.dice if user is not None else None) or {}
     keys = {k for k, _ in SETS}
     default = DEFAULTS[(user.id or 0) % len(DEFAULTS)] if user is not None else "white"
     return {"set": d.get("set") if d.get("set") in keys else default,
             "material": d.get("material") if d.get("material") in MATERIALS else "glass",
-            "by_type": d.get("by_type", True) is not False}
+            "by_type": d.get("by_type", True) is not False, "tray": d.get("tray") is True}
 
 
 def mine() -> dict:
@@ -152,14 +154,15 @@ def picker(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/dice")
-def save(request: Request, set: str = Form(""), material: str = Form(""), by_type: str = Form(""), db: Session = Depends(get_db)):
+def save(request: Request, set: str = Form(""), material: str = Form(""), by_type: str = Form(""), tray: str = Form(""),
+         db: Session = Depends(get_db)):
     me, stop = _me(db, request)
     if stop:
         return stop
     if me is None:
         return web.forbidden(request, "Sign in again to choose your dice.")
     me.dice = {"set": set if set in {k for k, _ in SETS} else prefs(me)["set"],
-               "material": material if material in MATERIALS else "glass", "by_type": bool(by_type)}
+               "material": material if material in MATERIALS else "glass", "by_type": bool(by_type), "tray": bool(tray)}
     db.commit()
     access.invalidate()
     name = dict(SETS)[me.dice["set"]]

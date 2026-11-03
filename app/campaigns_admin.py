@@ -121,7 +121,7 @@ def save_settings(request: Request, name: str = Form(""), dm_name: str = Form(""
 
 @router.post("/manage/settings/test")
 def set_test(request: Request, is_test: str = Form(""), db: Session = Depends(get_db)):
-    """Make the campaign in the address a test campaign (every VTT piece shows), or not. Admins only."""
+    """Mark the campaign in the address as a test campaign (it holds test data: test copies of characters), or not. Admins only."""
     user, denied = web.require(request, is_admin, "Only admins make a campaign a test one.")
     if denied:
         return denied
@@ -130,13 +130,13 @@ def set_test(request: Request, is_test: str = Form(""), db: Session = Depends(ge
         c.is_test = bool(is_test)
         db.commit()
         access.invalidate()
-        request.session["toast"] = f"{c.name} is {'a test campaign: every VTT piece shows here' if c.is_test else 'no longer a test campaign'}."
-    return RedirectResponse(f"{web.base(c)}/manage/settings#vtt", status_code=303)
+        request.session["toast"] = f"{c.name} is {'a test campaign: test copies of characters can be added on Manage › Table' if c.is_test else 'no longer a test campaign'}."
+    return RedirectResponse(f"{web.base(c)}/manage/settings#test", status_code=303)
 
 
 @router.post("/manage/settings/vtt/{key}")
 def switch_piece(request: Request, key: str, on: str = Form(""), db: Session = Depends(get_db)):
-    """Switch a finished VTT piece on or off for this campaign's table: its DM or an admin."""
+    """Switch a feature, or Labs, on or off for this campaign's table (app/vtt.py): its DM or an admin."""
     user, denied = web.require(request, can_edit_settings, SETTINGS_DENIED)
     if denied:
         return denied
@@ -145,7 +145,8 @@ def switch_piece(request: Request, key: str, on: str = Form(""), db: Session = D
         request.session["toast"] = vtt.switch(c, key, bool(on))
         db.commit()
         access.invalidate()
-    return RedirectResponse(f"{web.base(c)}/manage/settings#vtt", status_code=303)
+    f = vtt.feature(key)
+    return RedirectResponse(f"{web.base(c)}/manage/settings#{'labs' if key == vtt.LABS or (f and f.labs) else 'features'}", status_code=303)
 
 
 @router.post("/manage/settings/books/{key}")
