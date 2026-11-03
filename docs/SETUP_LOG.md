@@ -915,3 +915,18 @@ Railway's settings, pictures in S3, Sentry, the deploy itself, or several people
 2. Pick one address and redirect the others (www, old names) to it: a sign-in belongs to one address.
 3. Point the new domain at the same service as your test address when the test address is what people already use; split into separate production and staging copies only when you need to try changes away from real users.
 4. Keep the old app reachable at its own subdomain until you're sure nothing needs it.
+
+## 2026-11-02 — main only takes green pull requests
+
+**What we set up**
+- **GitHub Pro** ($4 a month) on Brett's account. On the free plan a private repository can't protect a branch, so GitHub couldn't stop a merge before its tests finished.
+- **A protection rule on `main`**: a pull request merges only once **Server tests** and **Browser tests** both pass, on a branch that's up to date with `main`, and nobody can skip it, admins included.
+- **Auto-merge on**: "merge it when it's green" is one click (or one command) and GitHub does the rest.
+
+**Why**
+Earlier that day a pull request was merged four minutes after its last change, while its tests were still running. Its own browser test then failed, `main` went red, and Railway (which waits for green) didn't deploy, so a finished piece of work sat off the live site until a fix landed.
+
+**Reuse this on a new project**
+1. Protect the main branch from the first day: require the test jobs by name, require the branch to be up to date, and don't let admins skip it.
+2. Turn on auto-merge, so approving a change and waiting for its tests are one step.
+3. Have the host deploy only from green commits (Railway's "wait for CI"), so a red main never reaches people.
