@@ -798,15 +798,27 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, "D&D Beyond didn't keep it.", at_once=b.attempts == 1)
 
 
+def _classes(data: dict) -> list[tuple]:
+    """A sheet's classes, subclasses and levels: what its spell lists depend on."""
+    return sorted((str((c.get("definition") or {}).get("id")), str((c.get("subclassDefinition") or {}).get("id")), c.get("level"))
+                  for c in data.get("classes") or [] if isinstance(c, dict))
+
+
 def fresh_read(db: Session, user: dict, character: Character, data) -> chars.Read | None:
     """The sheet as the extension just read it, signed in as the sheet itself reads it: never D&D Beyond's public copy,
     which can trail a save by minutes (Nov 3: a Soul Coin's use given back on D&D Beyond stayed spent in askdnd, and the
-    bridge took it for its own write lost). Only this character's, only from its player or the DM (whose browser makes
+    bridge took it for its own write lost). It keeps the class spell lists askdnd's last read added (the sheet itself has
+    none); a new class or level waits for a public read, which fetches them. Only this character's, only from its player or the DM (whose browser makes
     a closed sheet's changes), and only a sheet that parses; anything else is None and askdnd reads the public copy."""
     if not isinstance(data, dict) or str(data.get("id")) != str(character.ddb_id) or not data.get("name"):
         return None
     if not (picks.can_edit(db, user, character) or is_dm(user) or is_admin(user)):
         return None
+    if "askdnd" not in data:  # (what askdnd adds to a public read: each class's spell lists, for Prepare spells)
+        kept = (character.snapshot.raw or {}) if character.snapshot else {}
+        if "askdnd" not in kept or _classes(kept) != _classes(data):
+            return None  # (a new class or level: the public read fetches its lists; Nov 3, Prepare spells lost them)
+        data = {**data, "askdnd": kept["askdnd"]}
     try:
         got = chars.read(character.ddb_id, fetch=lambda _id: data)
     except Exception:  # (a sheet D&D Beyond never sent: nothing of it is kept)

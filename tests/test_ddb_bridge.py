@@ -1077,9 +1077,28 @@ def coin_left(cole) -> int:
 def as_read(sheet, used, at="2026-11-03T20:06:58.000Z"):
     """The sheet as the extension reads it, signed in: newer than D&D Beyond's public copy (the fake `sheet`)."""
     data = copy.deepcopy(sheet)
+    data.pop("askdnd", None)  # (what askdnd adds to a public read: the sheet itself never has it)
     next(i for i in data["inventory"] if i["id"] == SOUL_COIN)["limitedUse"]["numberUsed"] = used
     data["dateModified"] = at
     return data
+
+
+def test_a_fresh_read_keeps_the_class_spell_lists(player, db, sheet):
+    """Live test, Nov 3: since 0.9.9 askdnd kept the sheet as the extension read it, which has no class spell lists, so
+    Prepare spells listed only the spells already prepared. A fresh read keeps the last read's lists; a new class level
+    needs new lists, so that one is left to the public read."""
+    cole = char(db, "Cole")
+    aid = next(s for s in sheet["askdnd"]["availableSpells"]["2190878"] if s["definition"]["name"] == "Aid")
+    aid.update(id=21170801, entityTypeId=435869154)  # (a spell from the class list, ready to prepare)
+    characters.refresh(db, cole)
+    assert 'data-name="Aid"' in player.get(f"/characters/{cole.id}/spells/prepare").text
+    player.post("/bridge/heard/75423618", json={"data": as_read(sheet, 0)})
+    db.refresh(cole.snapshot)
+    assert cole.snapshot.raw["askdnd"]["availableSpells"] == sheet["askdnd"]["availableSpells"]
+    assert 'data-name="Aid"' in player.get(f"/characters/{cole.id}/spells/prepare").text
+    leveled = as_read(sheet, 0)
+    leveled["classes"][0]["level"] += 1
+    assert ddb_bridge.fresh_read(db, {"email": "player@example.com"}, cole, leveled) is None
 
 
 def test_a_save_is_read_from_the_sheet_itself_not_the_public_copy(player, db, sheet):
