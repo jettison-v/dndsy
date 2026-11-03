@@ -641,8 +641,8 @@ def outbox(db: Session, character: Character, by: str = "sheet", got: chars.Read
         for i in _intents_of(db, live):
             i.data = {**i.data, "by": by}
         return {"id": live.id, "ops": live.ops, "ddb": character.ddb_id}
-    waiting = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state == "waiting")
-                              .order_by(BridgeIntent.id)))
+    waiting = _due(db, list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.state == "waiting")
+                                       .order_by(BridgeIntent.id))))
     if not waiting:
         return None
     if got is not None:
@@ -682,6 +682,21 @@ def outbox(db: Session, character: Character, by: str = "sheet", got: chars.Read
         i.state, i.data = "sending", {**i.data, "fields": sorted(plan([_as_dict(i)], n, every=True)[0]), "by": by}
     db.flush()
     return {"id": batch.id, "ops": batch.ops, "ddb": character.ddb_id}
+
+
+def _due(db: Session, waiting: list[BridgeIntent]) -> list[BridgeIntent]:
+    """The waiting changes that may go now. One made `after` another (giving: the giver's copy goes only once D&D Beyond
+    has the receiver's, Nov 3: a Rope left one sheet and didn't reach the other for 3 minutes) waits until that one is
+    made; if that one is undone, so is this, and the item stays where it was."""
+    out = []
+    for it in waiting:
+        first = db.get(BridgeIntent, it.data["after"]) if it.data.get("after") else None
+        if first is not None and first.state == "dismissed":
+            it.state, it.error = "dismissed", "Undone: the other sheet never got it, so it stays here."
+            _log(db, it.character_id, f"{it.label}: undone, since the other sheet never got it", "live")
+        elif first is None or first.state == "live":
+            out.append(it)
+    return out
 
 
 def _intents_of(db: Session, b: BridgeBatch) -> list[BridgeIntent]:

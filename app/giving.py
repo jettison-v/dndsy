@@ -6,9 +6,10 @@ adding one), so nothing new is written there.
 D&D Beyond can't move an item between characters: the giver's copy goes and the receiver gets a fresh one of the same
 item. What belonged to that copy (charges used, attunement, a note, a new name) stays behind, and the window says so. A
 custom item, a homebrew one or a container with things in it is handed over on D&D Beyond. Both sheets have to be
-reachable when it's given. The giver's change goes out at once and the receiver's at their extension's next check, as
-two changes: if the receiver's sheet closes first, theirs is made when it opens again, and one D&D Beyond refuses is
-listed for them to make by hand, so a given item always arrives or is flagged, never lost quietly.
+reachable when it's given. It's two changes, the receiver's first: the giver's copy goes only once D&D Beyond has the
+receiver's (ddb_bridge._due; Nov 3, a Rope left Roscoe and didn't reach Cathartic for 3 minutes). If the receiver's is
+stopped, Try again makes it and then the giver's; if it's undone, the giver's is undone too and the item stays. So a
+given item is at worst briefly on both sheets, never on neither.
 """
 
 import time
@@ -108,15 +109,16 @@ def give(request: Request, character_id: int, item_id: int, receiver: str = Form
     d = row["definition"]
     name = ddb_fields.item_name(ch.snapshot.raw, item_id)
     what = name + (f" ×{n}" if n > 1 else "")
+    got = ddb_bridge.add(db, other, "add_item", {"definition": d["id"], "entityTypeId": d["entityTypeId"], "quantity": n, "name": d.get("name") or name},
+                         f"{other.name} got {what} from {ch.name}")
+    after = {"after": got}  # (the giver's copy goes once D&D Beyond has the receiver's: ddb_bridge._due)
     if n >= count:
-        ddb_bridge.add(db, ch, "remove_item", {"item": item_id, "name": name}, f"{ch.name} gave {other.name} {what}")
+        ddb_bridge.add(db, ch, "remove_item", {"item": item_id, "name": name, **after}, f"{ch.name} gave {other.name} {what}")
     else:
-        ddb_bridge.add(db, ch, "item", {"item": item_id, "delta": -n, "name": name}, f"{ch.name} gave {other.name} {what}")
-    ddb_bridge.add(db, other, "add_item", {"definition": d["id"], "entityTypeId": d["entityTypeId"], "quantity": n, "name": d.get("name") or name},
-                   f"{other.name} got {what} from {ch.name}")
+        ddb_bridge.add(db, ch, "item", {"item": item_id, "delta": -n, "name": name, **after}, f"{ch.name} gave {other.name} {what}")
     realtime.announce(db, other.campaign_id, "character", id=other.id)
     db.commit()
-    return JSONResponse({"text": f"{what} to {other.name}: on its way to D&D Beyond", "deliver": web.deliver_now(ch)})
+    return JSONResponse({"text": f"{what} to {other.name}: it leaves {ch.name}'s sheet once {other.name}'s has it", "deliver": web.deliver_now(ch)})
 
 
 # ------------------------------------------------------------------ loot from the DM
