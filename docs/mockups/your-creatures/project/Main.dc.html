@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Where creatures are today</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 640px">
+  <div class="head">
+    <div class="num">Your creatures · today</div>
+    <h1>A familiar or a Homunculus is only a Wild Shape form today</h1>
+    <p class="where"><b>Where you'll find it:</b> a creature on a character's D&amp;D Beyond Extras tab (a wizard's familiar, an artificer's Homunculus Servant, a pet, a summon) comes into askdnd, but only as Wild Shape forms do. Nothing below lets its player run it in a fight.</p>
+  </div>
+  <div class="grid2">
+    <div class="screen">
+      <div class="body">
+        <div class="row"><div><div class="name">Vi</div><div class="sub">Artificer 10</div></div><div class="tabs"><span>Battle</span><b>Sheet</b><span>Plan</span></div></div>
+        <div class="tabbar"><span>Overview</span><span>Actions</span><span>Spells</span><span>Items</span><b>Forms</b></div>
+        <div class="card">
+          <div class="row"><h3>Homunculus Servant</h3><span class="note">Creature</span></div>
+          <div class="note">CR · AC 13 · <span class="bad">1 HP</span> · walk 20 ft, fly 30 ft</div>
+        </div>
+        <div class="card">
+          <div class="note">Side panel</div>
+          <h3>Vi · <span class="bad">Form</span></h3>
+          <div class="note">Force Strike. Ranged Weapon Attack: <span class="bad">+4</span> to hit, range 30 ft. Hit: <span class="bad">1d4 + 2</span> force damage.</div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="gap: 12px">
+      <h3>What's wrong with that</h3>
+      <div class="ln"><span>Called a <b>Form</b>, under a <b>Forms</b> tab</span><span class="note">it's a creature Vi commands</span></div>
+      <div class="ln"><span>No Hit Points to track, no − and +</span><span class="note">D&amp;D Beyond keeps its damage</span></div>
+      <div class="ln"><span>Its numbers are level 1's: <span class="bad">1 HP, +4, 1d4 + 2</span></span><span class="note">Vi at Artificer 10: 13 HP, +6, 1d4 + 4</span></div>
+      <div class="ln"><span>Force Strike can't be rolled</span><span class="note">nothing on Battle</span></div>
+      <div class="ln"><span>In a fight it's a row with no numbers</span><span class="note">or no row at all</span></div>
+      <div class="rule">The same for Trah's owl familiar (Find Familiar), a ranger's beast, a Steel Defender, a summoned spirit. The options that follow use Trah and his owl; Vi's Homunculus works the same way.</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

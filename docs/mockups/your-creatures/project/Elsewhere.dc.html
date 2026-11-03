@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Everywhere else a creature shows</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 760px">
+  <div class="head">
+    <div class="num">Whichever option · the same everywhere else</div>
+    <h1>Everywhere else a creature shows</h1>
+    <p class="where"><b>Where you'll find it:</b> the fight's rows (Party's Rows and askdnd's table), Table rolls, Sheet, and the numbers askdnd works out itself. Its player runs it; the DM sees it like any fighter.</p>
+  </div>
+  <div class="grid2">
+    <div style="display: grid; gap: 16px">
+      <div class="card">
+        <div class="lbl">The fight's rows · its player's, under them</div>
+        <table class="track">
+          <thead><tr><th>Init.</th><th>Fighter</th><th>Hit Points</th><th>AC</th><th>Conditions and reminders</th></tr></thead>
+          <tbody>
+            <tr class="now"><td>18</td><td><span class="who"><span class="pic sm" style="box-shadow: none">T</span><b>Trah</b></span></td><td><span class="hpb">52 / 52</span></td><td>17</td><td>Concentration (Detect Magic)</td></tr>
+            <tr class="pet"><td>14</td><td><span class="who"><span class="pic sm" aria-hidden="true">O</span><b>Owl</b> <span class="ctag">Trah's</span></span></td><td><span class="hpb">1 / 1</span></td><td>11</td><td class="note">None</td></tr>
+            <tr><td>12</td><td><span class="who"><span class="pic sm" style="box-shadow: 0 0 0 2px var(--red)">E</span><b>Enemy 1</b></span></td><td class="note">Bloodied</td><td>—</td><td class="note">—</td></tr>
+            <tr><td>9</td><td><span class="who"><span class="pic sm" style="box-shadow: none">B</span><b>Big C</b></span></td><td><span class="hpb">72 / 72</span></td><td>19</td><td class="note">None</td></tr>
+          </tbody>
+        </table>
+        <div class="note">A familiar rolls its own initiative. A creature that shares its master's (Vi's Homunculus) sits right after them.</div>
+      </div>
+      <div class="rolls">
+        <div class="lbl" style="color: var(--amber)">Table rolls</div>
+        <div class="rollrow"><span class="pic sm" aria-hidden="true">H</span><span><b>Homunculus</b> <span class="ctag">Vi's</span><br><span class="note">Force Strike to hit · then 1d4 + 4 force</span></span><span class="big">17</span></div>
+        <div class="rollrow"><span class="pic sm" aria-hidden="true">O</span><span><b>Owl</b> <span class="ctag">Trah's</span><br><span class="note">Initiative</span></span><span class="big">14</span></div>
+      </div>
+    </div>
+    <div style="display: grid; gap: 16px">
+      <div class="card">
+        <div class="lbl">Sheet · its own tab, Creatures</div>
+        <div class="tabbar"><span>Overview</span><span>Actions</span><span>Spells</span><span>Items</span><b>Creatures</b></div>
+        <div class="ln"><span class="who"><span class="pic sm" aria-hidden="true">H</span><b>Homunculus Servant</b></span><span class="note">Vi's · AC 13 · 13 HP · fly 30 ft</span></div>
+        <div class="note">Its whole stat block, as D&amp;D Beyond has it, with askdnd's numbers where they grow with Vi. A druid keeps Wild Shape as its own tab, as today.</div>
+      </div>
+      <div class="card">
+        <div class="lbl">The numbers askdnd works out · Vi, Artificer 10</div>
+        <div class="ln"><span>Hit Points</span><span><span class="strike">1</span> <b style="color: var(--strong)">13</b> <span class="note">1 + Int +2 + Artificer 10</span></span></div>
+        <div class="ln"><span>Force Strike to hit</span><span><span class="strike">+4</span> <b style="color: var(--strong)">+6</b> <span class="note">Might of the Master: Proficiency +4</span></span></div>
+        <div class="ln"><span>Force Strike damage</span><span><span class="strike">1d4 + 2</span> <b style="color: var(--strong)">1d4 + 4</b></span></div>
+        <div class="ln"><span>Its turn</span><span class="note">Right after Vi's; Dodge unless Vi commands it with her Bonus Action</span></div>
+        <div class="rule">D&amp;D Beyond's stat block shows its numbers at level 1. Where the rules don't say, askdnd shows D&amp;D Beyond's and the DM can correct it (Correct this, as for items).</div>
+      </div>
+      <div class="card">
+        <div class="lbl">Synced with D&amp;D Beyond</div>
+        <div class="note">Its damage is kept on the sheet's Extras, so − and + reach D&amp;D Beyond like the character's own (Sync with D&amp;D Beyond). Summoned and dismissed, it comes and goes there too.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

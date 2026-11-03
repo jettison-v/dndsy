@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option C: a chip that opens the side panel</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 760px">
+  <div class="head">
+    <div class="num">Option C · small until you need it</div>
+    <h1>A chip that opens the side panel</h1>
+    <p class="where"><b>Where you'll find it:</b> Trah's Battle, in the row with Concentration and his conditions: a teal chip <b>Owl 1/1</b>. Press it and the side panel opens with everything the owl can do, as a spell or an item opens today. Press the chip.</p>
+  </div>
+  <div class="screen" style="height: 560px">
+    <div class="body">
+      <div class="row"><div><div class="name">Trah</div><div class="sub">Wizard 7 / Fighter 1</div></div><div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+      <div class="row start" style="gap: 6px"><span class="lbl" style="margin-right: 4px">Resources</span><span class="stat">Second Wind <span class="dots"><i></i><i></i></span></span><span class="stat">Arcane Recovery <span class="dots"><i></i></span></span></div>
+      <div class="numrow">
+        <div class="nums"><span class="numtile"><small>Hit points</small><span><b>52</b> / 52</span></span><span class="numtile"><small>Armor class</small><b>17</b></span><span class="numtile"><small>Speed</small><span><b>30</b> ft</span></span><span class="numtile"><small>Initiative</small><b>+2</b></span><span class="numtile"><small>Spell DC</small><span><b>15</b> / +7</span></span></div>
+        <span class="numsep" aria-hidden="true"></span>
+        <div class="saves6"><span class="mini-tile">Str<b>−1</b></span><span class="mini-tile">Dex<b>+2</b></span><span class="mini-tile">Con<b>+2</b></span><span class="mini-tile">Int<b>+7</b></span><span class="mini-tile">Wis<b>+4</b></span><span class="mini-tile">Cha<b>−1</b></span></div>
+      </div>
+      <div class="row start" style="gap: 6px"><button type="button" class="chip" aria-expanded="{{ open }}" onClick="{{ toggle }}"><span class="pic sm" aria-hidden="true">O</span><b>Owl</b> 1/1</button><span class="cond conc">◎ Detect Magic</span><span class="stat">Rest</span><span class="stat">+ Condition</span></div>
+      <div class="cols">
+        <div class="col"><h4 class="a">Action</h4><div class="ln">Fire Bolt <span class="note">+7</span></div><div class="ln">Magic Missile <span class="note">3 darts</span></div><div class="ln">Shortsword <span class="note">+5</span></div></div>
+        <div class="col"><h4 class="b">Bonus Action</h4><div class="ln">Second Wind <span class="note">1d10 + 1</span></div></div>
+        <div class="col"><h4 class="r">Reaction</h4><div class="ln">Shield <span class="note">+5 AC</span></div><div class="ln">Opportunity Attack</div></div>
+      </div>
+    </div>
+    <sc-if value="{{ open }}" hint-placeholder-val="{{ true }}">
+      <aside class="panel" aria-label="Owl">
+        <div class="row"><div class="row start" style="gap: 10px"><span class="pic" aria-hidden="true">O</span><div><h3>Owl</h3><div class="note">Trah's familiar · Find Familiar · Tiny Beast</div></div></div><button type="button" class="btn mini" aria-label="Close" onClick="{{ toggle }}">✕</button></div>
+        <div class="row start" style="gap: 8px">
+          <span class="hpctl"><button type="button" class="sq" aria-label="Owl takes damage">−</button><b>1 <small>/ 1</small></b><button type="button" class="sq" aria-label="Owl heals">+</button></span>
+          <span class="numtile" style="width: 70px"><small>AC</small><b>11</b></span>
+          <span class="numtile" style="width: 100px"><small>Fly</small><span><b>60</b> ft</span></span>
+        </div>
+        <div class="row start" style="gap: 6px"><button type="button" class="btn">Initiative +1</button><span class="note">Its own turn, in Table rolls as "Owl (Trah's)".</span></div>
+        <div class="lbl">On its turn</div>
+        <div class="note">It can't attack. Help · Dash · Disengage · Hide · Search.</div>
+        <div class="lbl">Through Trah</div>
+        <div class="ln"><span>Deliver a touch spell</span><button type="button" class="btn mini">Cast</button></div>
+        <div class="lbl">What it has</div>
+        <div class="note">Flyby: no Opportunity Attacks when it flies out of reach. Darkvision 120 ft. Perception +5, Stealth +5.</div>
+        <div class="rule">At 0 Hit Points it disappears; casting Find Familiar again brings it back.</div>
+      </aside>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  state = { open: false };
+  renderVals() {
+    return { open: this.state.open, toggle: () => this.setState({ open: !this.state.open }) };
+  }
+}
+</script>
+</body>
+</html>

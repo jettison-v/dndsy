@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option B: switch who you're playing</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 760px">
+  <div class="head">
+    <div class="num">Option B · one at a time, the whole page</div>
+    <h1>Switch who you're playing</h1>
+    <p class="where"><b>Where you'll find it:</b> Trah's Battle, by his name: <b>Trah · Owl</b>. Pick the owl on its turn and Battle becomes the owl's, the way Wild Shape shows a druid's form; pick Trah to come back. Try it.</p>
+  </div>
+  <div class="screen">
+    <div class="body">
+      <div class="row">
+        <div class="row start" style="gap: 14px">
+          <div class="seg" role="group" aria-label="Who you're playing">
+            <button type="button" class="{{ trahCls }}" aria-pressed="{{ isTrah }}" onClick="{{ pickTrah }}"><span class="pic sm" style="box-shadow: none">T</span>Trah</button>
+            <button type="button" class="{{ owlCls }}" aria-pressed="{{ isOwl }}" onClick="{{ pickOwl }}"><span class="pic sm" aria-hidden="true">O</span>Owl</button>
+          </div>
+          <div class="sub">{{ subtitle }}</div>
+        </div>
+        <div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div>
+      </div>
+      <sc-if value="{{ isTrah }}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; gap: 10px">
+          <div class="row start" style="gap: 6px"><span class="lbl" style="margin-right: 4px">Resources</span><span class="stat">Second Wind <span class="dots"><i></i><i></i></span></span><span class="stat">Arcane Recovery <span class="dots"><i></i></span></span></div>
+          <div class="numrow">
+            <div class="nums"><span class="numtile"><small>Hit points</small><span><b>52</b> / 52</span></span><span class="numtile"><small>Armor class</small><b>17</b></span><span class="numtile"><small>Speed</small><span><b>30</b> ft</span></span><span class="numtile"><small>Initiative</small><b>+2</b></span><span class="numtile"><small>Spell DC</small><span><b>15</b> / +7</span></span></div>
+            <span class="numsep" aria-hidden="true"></span>
+            <div class="saves6"><span class="mini-tile">Str<b>−1</b></span><span class="mini-tile">Dex<b>+2</b></span><span class="mini-tile">Con<b>+2</b></span><span class="mini-tile">Int<b>+7</b></span><span class="mini-tile">Wis<b>+4</b></span><span class="mini-tile">Cha<b>−1</b></span></div>
+          </div>
+          <div class="cols">
+            <div class="col"><h4 class="a">Action</h4><div class="ln">Fire Bolt <span class="note">+7</span></div><div class="ln">Magic Missile <span class="note">3 darts</span></div><div class="ln">Shortsword <span class="note">+5</span></div></div>
+            <div class="col"><h4 class="b">Bonus Action</h4><div class="ln">Second Wind <span class="note">1d10 + 1</span></div></div>
+            <div class="col"><h4 class="r">Reaction</h4><div class="ln">Shield <span class="note">+5 AC</span></div><div class="ln">Deliver a touch spell <span class="note">through the owl</span></div></div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isOwl }}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; gap: 10px">
+          <div class="row start" style="gap: 6px"><span class="ctag">Trah's familiar</span><span class="note">Its own turn: initiative +1. It can't attack, but it can take other actions.</span></div>
+          <div class="numrow" style="grid-template-columns: minmax(0, 1fr) auto auto">
+            <div class="nums"><span class="numtile"><small>Hit points</small><span><b>1</b> / 1</span></span><span class="numtile"><small>Armor class</small><b>11</b></span><span class="numtile"><small>Speed</small><span><b>60</b> ft fly · 5 walk</span></span><span class="numtile"><small>Initiative</small><b>+1</b></span><span class="numtile"><small>Perception</small><span><b>+5</b> · 15 passive</span></span></div>
+            <span class="numsep" aria-hidden="true"></span>
+            <div class="saves6"><span class="mini-tile">Str<b>−4</b></span><span class="mini-tile">Dex<b>+1</b></span><span class="mini-tile">Con<b>−1</b></span><span class="mini-tile">Int<b>−4</b></span><span class="mini-tile">Wis<b>+1</b></span><span class="mini-tile">Cha<b>−2</b></span></div>
+          </div>
+          <div class="cols">
+            <div class="col"><h4 class="a">Action</h4><div class="ln">Help <span class="note">advantage on an ally's next roll</span></div><div class="ln">Dash · Disengage · Hide · Search</div></div>
+            <div class="col"><h4 class="b">Bonus Action</h4><div class="note">None</div></div>
+            <div class="col"><h4 class="r">Reaction</h4><div class="note">Delivers Trah's touch spell when he casts one through it</div></div>
+          </div>
+          <div class="row start" style="gap: 6px"><span class="cond">Flyby <span class="note">no Opportunity Attacks when it flies out of reach</span></span><span class="cond">Darkvision 120 ft</span><span class="cond add">+ Condition</span></div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  state = { who: 'trah' };
+  renderVals() {
+    const owl = this.state.who === 'owl';
+    return {
+      isTrah: !owl, isOwl: owl, trahCls: owl ? '' : 'on', owlCls: owl ? 'on' : '',
+      subtitle: owl ? 'Owl · Tiny Beast · Find Familiar' : 'Wizard 7 / Fighter 1',
+      pickTrah: () => this.setState({ who: 'trah' }), pickOwl: () => this.setState({ who: 'owl' }),
+    };
+  }
+}
+</script>
+</body>
+</html>

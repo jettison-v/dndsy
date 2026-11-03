@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option A: a card under the columns</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 760px">
+  <div class="head">
+    <div class="num">Option A · always in view</div>
+    <h1>A card under the columns</h1>
+    <p class="where"><b>Where you'll find it:</b> Trah's Battle, below Action, Bonus Action and Reaction: a section <b>Your creatures</b>, a card each, with its Hit Points, its numbers and what it can do. Try − and + on the owl.</p>
+  </div>
+  <div class="screen">
+    <div class="body">
+      <div class="row"><div><div class="name">Trah</div><div class="sub">Wizard 7 / Fighter 1</div></div><div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+      <div class="row start" style="gap: 6px"><span class="lbl" style="margin-right: 4px">Resources</span><span class="stat">Second Wind <span class="dots"><i></i><i></i></span></span><span class="stat">Arcane Recovery <span class="dots"><i></i></span></span></div>
+      <div class="numrow">
+        <div class="nums"><span class="numtile"><small>Hit points</small><span><b>52</b> / 52</span></span><span class="numtile"><small>Armor class</small><b>17</b></span><span class="numtile"><small>Speed</small><span><b>30</b> ft</span></span><span class="numtile"><small>Initiative</small><b>+2</b></span><span class="numtile"><small>Spell DC</small><span><b>15</b> / +7</span></span></div>
+        <span class="numsep" aria-hidden="true"></span>
+        <div class="saves6"><span class="mini-tile">Str<b>−1</b></span><span class="mini-tile">Dex<b>+2</b></span><span class="mini-tile">Con<b>+2</b></span><span class="mini-tile">Int<b>+7</b></span><span class="mini-tile">Wis<b>+4</b></span><span class="mini-tile">Cha<b>−1</b></span></div>
+      </div>
+      <div class="cols">
+        <div class="col"><h4 class="a">Action</h4><div class="ln">Fire Bolt <span class="note">+7</span></div><div class="ln">Magic Missile <span class="note">3 darts</span></div><div class="ln">Shortsword <span class="note">+5</span></div></div>
+        <div class="col"><h4 class="b">Bonus Action</h4><div class="ln">Second Wind <span class="note">1d10 + 1</span></div><div class="note">See all bonus actions</div></div>
+        <div class="col"><h4 class="r">Reaction</h4><div class="ln">Shield <span class="note">+5 AC</span></div><div class="ln">Opportunity Attack</div></div>
+      </div>
+      <div class="lbl" style="margin-top: 4px">Your creatures</div>
+      <div class="ccard">
+        <div class="row">
+          <div class="row start" style="gap: 10px"><span class="pic" aria-hidden="true">O</span><div><div class="row start" style="gap: 8px"><b style="color: var(--strong); font-size: 16px">Owl</b><span class="ctag">Familiar</span></div><div class="note">Find Familiar · Tiny Beast · rolls its own initiative and takes its own turn</div></div></div>
+          <div class="row start" style="gap: 8px">
+            <span class="hpctl"><button type="button" class="sq" aria-label="Owl takes damage" onClick="{{ hurt }}">−</button><b>{{ hp }} <small>/ 1</small></b><button type="button" class="sq" aria-label="Owl heals" onClick="{{ heal }}">+</button></span>
+            <span class="numtile" style="width: 74px"><small>AC</small><b>11</b></span>
+            <span class="numtile" style="width: 110px"><small>Speed</small><span><b>60</b> ft fly</span></span>
+            <button type="button" class="btn">Initiative +1</button>
+          </div>
+        </div>
+        <sc-if value="{{ gone }}" hint-placeholder-val="{{ false }}"><div class="note bad">At 0 Hit Points the owl disappears. Casting Find Familiar again brings it back.</div></sc-if>
+        <div class="cols">
+          <div class="col"><h4 class="a">Its action</h4><div class="note">It can't attack (Find Familiar).</div><div class="ln">Help <span class="note">an ally's next roll</span></div><div class="ln">Dash · Disengage · Hide · Search</div></div>
+          <div class="col"><h4 class="b">Through Trah</h4><div class="ln">Deliver a touch spell <button type="button" class="btn mini">Cast</button></div><div class="note">Trah's reaction; the owl within 100 ft.</div></div>
+          <div class="col"><h4 class="r">What it has</h4><div class="ln">Flyby <span class="note">no Opportunity Attacks</span></div><div class="ln">Darkvision 120 ft <span class="note">Perception +5</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":760}}'>
+class Component extends DCLogic {
+  state = { hp: 1 };
+  renderVals() {
+    const hp = this.state.hp;
+    return { hp, gone: hp === 0, hurt: () => this.setState({ hp: 0 }), heal: () => this.setState({ hp: 1 }) };
+  }
+}
+</script>
+</body>
+</html>
