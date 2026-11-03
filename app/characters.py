@@ -167,8 +167,6 @@ def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
         db.refresh(snap)  # (as it is now: another request may have stored a newer copy)
     if snap.fetched_at is not None and snap.fetched_at > got.at:
         return snap
-    if got.raw is not None and older(got.raw, snap.raw):
-        return snap  # D&D Beyond's public copy, behind a newer one askdnd has: it would put old numbers back
     snap.attempted_at = got.at
     if got.raw is None:
         snap.status, snap.error = "error", got.error
@@ -192,19 +190,6 @@ def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
                 character.membership.entity.name = character.name
     db.flush()
     return snap
-
-
-def older(raw: dict, than: dict | None) -> bool:
-    """Whether this copy of a sheet is from before `than`, by D&D Beyond's own stamp of its last change. Its public copy
-    can trail a save by minutes while the sheet's own signed-in read never does (Nov 3), so a read can come back older
-    than one already kept. Copies without the stamp are never older."""
-    def stamp(copy):
-        try:
-            return datetime.fromisoformat(str((copy or {}).get("dateModified")))
-        except ValueError:
-            return None
-    a, b = stamp(raw), stamp(than)
-    return bool(a and b and a < b)
 
 
 def refresh(db: Session, character: Character, fetch: Fetch | None = None) -> CharacterSnapshot:
