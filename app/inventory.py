@@ -1,7 +1,7 @@
 """Inventory in play (roadmap 1.5): equip, attune and coins, through the bridge. An item's count and charges are counted
 in app/resources.py, using one in app/item_use.py.
 
-An item's side panel has Equip and Attune; Sheet › Items has Change coins. D&D Beyond keeps all of it, and what it does to
+An item's side panel has Equip, Attune and Move to (another of your bags, or carried); Sheet › Items has Change coins. D&D Beyond keeps all of it, and what it does to
 a character's numbers (AC, spells from an item) comes back with its next read. Attunement stops at 3, as the rules do.
 """
 
@@ -33,7 +33,7 @@ def _item(db: Session, ch, item_id: int) -> tuple[dict, dict]:
     return sheet, it
 
 
-def _set(db: Session, ch, field: str, value: bool, said: str) -> Response:
+def _set(db: Session, ch, field: str, value: bool | int, said: str) -> Response:
     ddb_bridge.reach(ch)
     n = ddb_bridge.numbers(ch)
     made = ddb_bridge._change(n, {"kind": "set", "field": field, "value": value})
@@ -62,6 +62,23 @@ def attune(request: Request, character_id: int, item_id: int, on: str = Form("")
     if on and len(sheet.get("attuned") or []) >= 3:
         raise HTTPException(409, "All 3 attunement slots are in use: end one first.")
     return _set(db, ch, f"attuned:{item_id}", bool(on), f"{it['name']} {'attuned' if on else 'no longer attuned'}")
+
+
+@router.post("/characters/{character_id:int}/items/{item_id:int}/move")
+def move(request: Request, character_id: int, item_id: int, to: str = Form(""), db: Session = Depends(get_db)):
+    """Into one of the character's bags, or out of them ("me": carried). A bag itself stays where it is."""
+    ch, _ = _guard(db, request, character_id)
+    sheet, it = _item(db, ch, item_id)
+    if it.get("bag"):
+        raise HTTPException(404)
+    if to == "me":
+        value, where = int((ch.snapshot.raw or {}).get("id") or 0), "carried"
+    else:
+        bag = next((b for b in sheet.get("inventory") or [] if b["key"] == f"item:{to}" and b.get("bag")), None)
+        if bag is None:
+            raise HTTPException(404)
+        value, where = int(to), f"in {bag['name']}"
+    return _set(db, ch, f"container:{item_id}", value, f"{it['name']} {where}")
 
 
 @router.get("/characters/{character_id:int}/coins")

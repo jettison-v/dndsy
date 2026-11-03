@@ -69,3 +69,19 @@ def test_only_the_player_and_only_where_sync_is_on(player, dm, db, sheet):
     db.flush()
     assert player.post(f"/characters/{cole.id}/items/{iid(it)}/equip", data={"on": "1"}).status_code == 404
     assert player.get(f"/characters/{cole.id}/coins").status_code == 404
+
+
+def test_move_an_item_to_another_bag_or_carried(player, db, sheet):
+    """Brett, Nov 3 (parity with D&D Beyond): an item's panel has Move to, listing the character's bags and Carried; a
+    bag itself isn't moved, and only into a bag the character has."""
+    cole = char(db, "Cole")
+    bag = next(i for i in sheet["inventory"] if (i.get("definition") or {}).get("isContainer"))
+    thing = next(i for i in sheet["inventory"] if not (i.get("definition") or {}).get("isContainer") and i["containerEntityId"] == sheet["id"])
+    panel = player.get(f"/characters/{cole.id}/detail", params={"ref": f"item:{thing['id']}"}).text
+    assert f'hx-post="/characters/{cole.id}/items/{thing["id"]}/move"' in panel and f'<option value="{bag["id"]}">' in panel
+    r = player.post(f"/characters/{cole.id}/items/{thing['id']}/move", data={"to": str(bag["id"])})
+    assert r.status_code == 204, r.text
+    assert db.scalar(select(BridgeIntent)).data == {"field": f"container:{thing['id']}", "value": bag["id"]}
+    assert player.post(f"/characters/{cole.id}/items/{thing['id']}/move", data={"to": "me"}).status_code == 204
+    assert player.post(f"/characters/{cole.id}/items/{thing['id']}/move", data={"to": str(thing["id"])}).status_code == 404
+    assert player.post(f"/characters/{cole.id}/items/{bag['id']}/move", data={"to": "me"}).status_code == 404

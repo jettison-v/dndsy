@@ -978,6 +978,7 @@ class _Sheet:
                 "attunement_note": df.get("attunementDescription") or "",
                 "charges": charges,
                 "in": _d(container, "definition", "name") if container else "",
+                "in_id": str(i.get("containerEntityId") or ""), "bag": bool(df.get("isContainer")),  # (Move to, app/inventory.py)
                 "damage": f"{dmg} {df.get('damageType') or ''}".strip() if dmg else "",
                 "properties": [p.get("name") for p in df.get("properties") or [] if p.get("name")],
                 "armor_class": df.get("armorClass"),
@@ -992,7 +993,7 @@ class _Sheet:
                 "key": f"custom:{c.get('id')}", "name": c["name"].strip(), "base_name": c["name"].strip(), "custom": True,
                 "changes": ["Has a note from the player (below)"] if f"custom:{c.get('id')}" in noted else [], "battle": False, "category": "Other Gear", "type": "Custom item", "quantity": c.get("quantity") or 1,
                 "equipped": False, "magic": False, "rarity": "", "attunement": "", "attunement_note": "", "charges": None,
-                "in": "", "damage": "", "properties": [], "armor_class": None,
+                "in": "", "in_id": "", "bag": False, "damage": "", "properties": [], "armor_class": None,
                 "summary": _first_paragraph(text, 280), "text": text,
             })
         out.sort(key=lambda x: (not x["equipped"], not x["magic"], bool(x["in"]), x["name"]))

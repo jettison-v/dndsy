@@ -54,6 +54,29 @@ def test_no_rest_at_0_hit_points():
     assert not rests.plan(s, "long")["can"]
 
 
+def test_concentration_ends_when_the_rest_outlasts_it():
+    """Brett, Nov 3: a Short Rest (an hour) ends a spell lasting an hour or less; a Long Rest's sleep ends any."""
+    minute, day, unknown = {"spell": "Moonbeam", "rounds": 10}, {"spell": "Find the Path", "rounds": 14400}, {"spell": "X", "rounds": 0}
+    assert rests.conc_ends(minute, "short") == "Moonbeam" and rests.conc_ends({"spell": "Y", "rounds": 600}, "short") == "Y"
+    assert rests.conc_ends(day, "short") == "" and rests.conc_ends(unknown, "short") == ""
+    assert rests.conc_ends(day, "long") == "Find the Path" and rests.conc_ends(None, "long") == ""
+
+
+def test_a_rest_ends_concentration_unless_you_untick_it(player, db, sheet):
+    cole = char(db, "Cole")
+    cole.concentration = {"spell": "Moonbeam", "key": "spell:Moonbeam", "level": 2, "round": 1, "rounds": 10}
+    db.flush()
+    page = player.get(f"/characters/{cole.id}/rest?kind=short").text
+    assert 'name="conc_ends" value="1" checked' in page and "Concentration on Moonbeam ends" in page
+    player.post(f"/characters/{cole.id}/rest?kind=short")  # unticked: not sent, so it lasts (the DM's ruling)
+    db.refresh(cole)
+    assert cole.concentration["spell"] == "Moonbeam"
+    r = player.post(f"/characters/{cole.id}/rest?kind=short", data={"conc_ends": "1"})
+    assert "Concentration on Moonbeam ended" in r.json()["text"]
+    db.refresh(cole)
+    assert cole.concentration is None
+
+
 def worn(db, sheet, cole):
     """Cole with damage, a slot and Focus Points used, as D&D Beyond has it."""
     data = sheet
