@@ -95,6 +95,22 @@ def rename(request: Request, email: str = Form(...), name: str = Form(""), db: S
     return RedirectResponse(BACK, status_code=303)
 
 
+@router.post("/feedback")
+def feedback(request: Request, email: str = Form(...), on: str = Form(""), db: Session = Depends(get_db)):
+    """Whether an account that isn't an admin can send feedback for Claude with the backslash key (Brett's test accounts, Nov 3;
+    app/feedback.py). It only sends: the queue stays admins'."""
+    _, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    u = db.scalar(select(User).where(User.email == email.strip().lower()))
+    if u is not None:
+        u.feedback = bool(on)
+        db.commit()
+        access.invalidate()
+        request.session["toast"] = f"{u.name}: {'sends' if u.feedback else 'no longer sends'} feedback"
+    return RedirectResponse(BACK, status_code=303)
+
+
 @router.post("/update")
 def update(request: Request, email: str = Form(...), admin: str = Form(""), remove: str = Form(""),
            db: Session = Depends(get_db)):

@@ -47,6 +47,7 @@ PAGES = (
     ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", is_admin, ()),
     ("accounts", "Accounts", "/manage/accounts", "Who can sign in, who's an admin, their campaigns", ASKDND, PEOPLE, is_admin, ()),
     ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign; start one, move a character", ASKDND, PEOPLE, is_admin, ()),
+    ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, RUNNING, is_admin, ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, RUNNING, is_admin, ()),
     ("backups", "Backups and imports", "/manage/backups", "Nightly backups, then imports", ASKDND, RUNNING, is_admin, ()),
     ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, RUNNING, is_admin, ()),
@@ -58,8 +59,8 @@ PAGES = (
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, is_admin, ()),
 )
 IN_MENU = ("needs", "inbox", "sessions", "table",  # each menu's own items (Manage, then Admin); the rest are on one line
-           "overview", "accounts", "campaigns", "usage", "backups")
-COUNTED = ("needs", "inbox")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
+           "overview", "feedback", "accounts", "campaigns", "usage", "backups")
+COUNTED = ("needs", "inbox", "feedback")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
 
 
 def pages_for(user: dict | None, path: str = "") -> list[dict]:
@@ -203,10 +204,13 @@ def counts(request: Request, db: Session = Depends(get_db)):
     pages, so no other page waits for them)."""
     from app.suggestions import waiting_count
 
+    from app import feedback
+
     user = current_user(request)
+    mine = {"feedback": feedback.waiting(db)} if is_admin(user) else {}  # (notes for Claude: admins)
     if not user or not can_moderate(user) or web.campaign(db) is None:
-        return JSONResponse({}, headers={"Cache-Control": "no-store"})
-    return JSONResponse({"needs": len(needs(db, user)), "inbox": waiting_count(db)}, headers={"Cache-Control": "no-store"})
+        return JSONResponse(mine, headers={"Cache-Control": "no-store"})
+    return JSONResponse({"needs": len(needs(db, user)), "inbox": waiting_count(db), **mine}, headers={"Cache-Control": "no-store"})
 
 
 @router.get("/manage/askdnd")

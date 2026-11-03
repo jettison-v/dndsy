@@ -19,7 +19,7 @@
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-{% set fr = fight_now() %}<body{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% endif %}>
+{% set fr = fight_now() %}<body{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if feedback_send(request) %} data-feedback{% endif %}{% endif %}>
 {% if user %}<script>
 /* The Table rolls sidebar's place, before the page is drawn, so pages don't shift sideways as they load (Brett,
    2026-10-26). The same rules as app.js "the sidebar's state", which takes over once it runs: at the table in a
@@ -103,9 +103,9 @@
     {% if admin_pages %}{% set on_admin = admin_pages | selectattr("here") | list %}
     <div class="manage admin">
       <button class="{{ 'active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true"><span aria-hidden="true">⚙</span> Admin ▾</button>
-      <div class="menu manage-menu" id="admin-menu" hidden>
+      <div class="menu manage-menu" id="admin-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head tool"><b>askdnd admin</b><span>Every campaign</span></div>
-        {% for p in admin_pages if p.menu %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}" title="{{ p.about }}">{{ p.label }}</a>{% endfor %}
+        {% for p in admin_pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
         {% set more = admin_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
       </div>
     </div>
@@ -127,6 +127,7 @@
         <a href="#" class="menu-me" tabindex="-1">{{ user.name }}<small>{{ user.email }}</small></a>
         <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions<small>What happened to each one</small></a>
         <a href="#" data-modal-url="/dice" data-modal-size="large">Your dice<small>How your rolls look to the table</small></a>
+        {% if feedback_menu(request) %}<a href="#" data-fb-open>Feedback for Claude <kbd>\</kbd><small>A note for Claude about this page</small></a>{% endif %}
         <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
         <form method="post" action="/logout"><button type="submit">Sign out</button></form>
       </div>
@@ -153,10 +154,12 @@
   {% set camp_home = manage_pages | selectattr("group", "equalto", "campaign") | first %}{% set admin_home = manage_pages | selectattr("group", "equalto", "askdnd") | first %}
   {% if camp_home %}<a href="{{ camp_home.href }}" class="{{ 'active' if camp_home.group == 'campaign' and (manage_pages | selectattr('group', 'equalto', 'campaign') | selectattr('here') | list) }}">Manage<small>Running {{ here.name if here else "the campaign" }}</small></a>{% endif %}
   {% if admin_home %}<a href="{{ admin_home.href }}" class="{{ 'active' if manage_pages | selectattr('group', 'equalto', 'askdnd') | selectattr('here') | list }}">⚙ Admin<small>askdnd, for every campaign</small></a>{% endif %}
+  {% if feedback_menu(request) %}<a href="#" data-fb-open>Feedback for Claude<small>A note for Claude about this page</small></a>{% endif %}
   <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
   <form method="post" action="/logout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>
 </div>
 {% include "_table_rolls.html" %}
+{% if feedback_send(request) %}{% include "_feedback_window.html" %}{% endif %}
 {% endif %}
 {% block content %}{% endblock %}
 {% endblock %}

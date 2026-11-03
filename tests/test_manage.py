@@ -56,7 +56,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
 
     overview = admin.get("/manage/askdnd").text
     assert "<h1>askdnd admin</h1>" in overview and "No backup recorded yet" in overview and 'href="/manage/accounts"' in overview
-    assert admin.get("/c/main/manage/counts").json() == {"needs": 1, "inbox": 0}  # (the backup to check)
+    assert admin.get("/c/main/manage/counts").json() == {"needs": 1, "inbox": 0, "feedback": 0}  # (the backup to check; notes for Claude, admins)
 
 
 def test_reviewers_see_campaign_pages_only_and_players_none(monkeypatch, db):

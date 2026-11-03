@@ -1,0 +1,17 @@
+{# Feedback for Claude (app/feedback.py; docs/mockups/feedback-queue/): only on the page for someone who can send one
+   (feedback_send). app.js "feedback for Claude" opens it with \ (or the account menu, More, three taps on the logo),
+   takes the page's picture first, and sends what's filled in here with where, when and how the page was. #}
+<dialog class="fb-win" id="fb-win" aria-labelledby="fb-title">
+  <form method="dialog" class="fb-form">
+    <div class="row"><h2 id="fb-title">Feedback for Claude</h2><span class="note">Goes to the queue, not to Claude right away</span></div>
+    <label class="field"><span>What's wrong, or what would be better?</span><textarea name="text" rows="4" required maxlength="4000"></textarea></label>
+    <div class="row start tight"><button type="button" class="btn small" data-fb-point>Point at it</button><span class="note" data-fb-pointed>Click the thing you mean, if it helps</span></div>
+    <div class="fb-shots">
+      <figure class="fb-shot"><img data-fb-shot alt="The page, as you opened this" hidden><span class="note" data-fb-shot-note>Taking the page's picture…</span><figcaption class="note">The page, as you opened this</figcaption></figure>
+      <label class="fb-drop" data-fb-drop><img data-fb-pasted alt="Your screenshot" hidden><span data-fb-drop-note><b>Add your own screenshot</b><br>Paste it here (<kbd>⌘⌃⇧4</kbd>, then <kbd>⌘V</kbd>), drop it, or choose one</span><input type="file" accept="image/png,image/jpeg,image/webp" data-fb-file class="sr"></label>
+    </div>
+    <details class="fold"><summary class="note">Sent with it, so Claude can see what you saw</summary><dl class="fb-ctx" data-fb-ctx></dl></details>
+    <p class="use-said" role="alert" hidden data-fb-said></p>
+    <div class="row"><span></span><span class="row tight"><button type="button" class="btn small" data-fb-cancel>Cancel</button><button type="submit" class="btn primary small" data-fb-send>Send</button></span></div>
+  </form>
+</dialog>

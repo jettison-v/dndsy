@@ -9,6 +9,7 @@
   const sentErrors = new Set();
   const PAGE_V = (/[?&]v=(\w+)/.exec((document.currentScript || {}).src || '') || [])[1] || '';  // this app.js's version: a tab opened before a deploy shows as old
   function reportError(message, source, line, column, stack) {
+    (window.askdndErrors = window.askdndErrors || []).push({ message: String(message).slice(0, 300), at: new Date().toISOString() });  // (a note for Claude carries them)
     if (!document.body || !document.body.dataset.dice) return;  // signed in (the server checks too)
     if (!source || new URL(source, location.href).origin !== location.origin) return;
     const key = message + '|' + source + '|' + line;
@@ -3261,7 +3262,7 @@
     addEventListener('message', e => {
       if (e.source !== window || !e.data || e.data.askdndBridge !== 'hello') return;
       heard = true;
-      if (e.data.version) document.body.dataset.bridgeVersion = e.data.version;  // (0.9.9 on: which extension this browser has)
+      document.body.dataset.bridgeVersion = e.data.version || 'before 0.9.9';  // which extension this browser has (0.9.9 on says)
       document.body.classList.remove('no-bridge');
     });
     window.postMessage({ askdndBridge: 'ping' }, location.origin);
@@ -3355,7 +3356,7 @@
 })();
 
 // ---------------------------------------------------------------- Manage counts
-// Beside Needs you and Inbox (app/manage.py counts): asked for once, when the Manage menu opens or a Manage page
+// Beside Needs you, Inbox and Feedback (app/manage.py counts): asked for once, when the Manage or Admin menu opens or a Manage page
 // loads, so no other page waits for them
 (function () {
   let asked = false;
@@ -3368,7 +3369,7 @@
     }).catch(() => {});
   }
   if (document.querySelector('.manage-side')) fill();
-  document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"]')) fill(); });
+  document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"], [data-menu="admin-menu"]')) fill(); });
 })();
 
 // ---------------------------------------------------------------- Prepare spells
@@ -3475,4 +3476,169 @@
     draw();
   }
   document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-prep]'); if (root) start(root); });
+})();
+
+// ---------------------------------------------------------------- feedback for Claude
+// (app/feedback.py; Brett, 2026-11-03, docs/mockups/feedback-queue/) A note for Claude from any page, for whoever the
+// page lets send one (body[data-feedback]: admins and the accounts switched on for it on Accounts). \ opens it (never
+// while typing), as do the account menu's item and More's (admins), and pressing and holding the askdnd logo (a phone,
+// as a test account). The page's picture is taken first, before the window covers anything (html-to-image, vendored),
+// and sent with the note, where it was pointed at, a pasted or chosen screenshot, the page as drawn, and where, when
+// and how the page was.
+(function () {
+  const win = document.getElementById('fb-win');
+  if (!win || document.body.dataset.feedback === undefined) return;
+  const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
+  const shotImg = win.querySelector('[data-fb-shot]'), shotNote = win.querySelector('[data-fb-shot-note]');
+  const pastedImg = win.querySelector('[data-fb-pasted]'), dropNote = win.querySelector('[data-fb-drop-note]'), pointedNote = win.querySelector('[data-fb-pointed]');
+  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null;
+  const typing = el => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+  const say = text => { said.textContent = text; said.hidden = !text; };
+  const loadLib = () => lib || (lib = new Promise((ok, no) => {
+    const s = document.createElement('script');
+    s.src = '/static/vendor/html-to-image-1.11.11/html-to-image.js';
+    s.onload = () => ok(window.htmlToImage); s.onerror = no;
+    document.head.append(s);
+  }));
+  const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+  async function picture() {  // what's on screen: the page drawn again as an image (the 3D dice and some fonts may differ)
+    let h;
+    try { h = await loadLib(); } catch (e) { return null; }
+    // (fonts aren't embedded: Google's stylesheet can't be read from here, so the picture uses the browser's own font)
+    const options = {
+      quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK,
+      backgroundColor: getComputedStyle(document.body).backgroundColor,
+      style: { transform: 'translate(' + -scrollX + 'px, ' + -scrollY + 'px)' },
+      // (not this window or the corner cards, no picture the page itself couldn't load, which would stop the drawing,
+      // and none from another site, such as a D&D Beyond portrait: it can't be read from here, and isn't fetched again)
+      // (and not Battle's condition edge: its border-image comes out as a wash over the whole picture)
+      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || (n.classList && n.classList.contains('cond-halo'))
+        || (n.tagName === 'IMG' && (!n.complete || !n.naturalWidth || !n.src.startsWith(location.origin + '/')))),
+    };
+    // An attribute named with a colon (htmx's hx-on::after-request) is fine in a page but not in the picture's SVG, where
+    // it stops the whole drawing: they're set aside while it's drawn, and put back
+    const aside = [];
+    document.querySelectorAll('*').forEach(el => { for (const at of [...el.attributes]) if (at.name.includes(':')) { aside.push([el, at.name, at.value]); el.removeAttribute(at.name); } });
+    try { return await h.toJpeg(document.body, options); } catch (e) { return null; } finally { aside.forEach(([el, name, value]) => el.setAttribute(name, value)); }
+  }
+  function browser() {
+    const ua = navigator.userAgent, d = navigator.userAgentData;
+    const brands = d && d.brands ? d.brands.filter(b => !/Not.?A.?Brand/i.test(b.brand)) : [];  // (the made-up one every Chrome lists)
+    const brand = brands.find(b => b.brand !== 'Chromium') || brands[0] || null;
+    const safari = /Version\/([\d.]+).*Safari/.exec(ua), firefox = /Firefox\/([\d.]+)/.exec(ua);
+    const name = brand ? brand.brand + ' ' + brand.version : safari ? 'Safari ' + safari[1] : firefox ? 'Firefox ' + firefox[1] : ua.slice(0, 60);
+    const os = (d && d.platform) || (/iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Mac OS X/.test(ua) ? 'macOS' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : '');
+    return name + (os ? ' on ' + os : '');
+  }
+  function gather() {
+    const pill = document.getElementById('live-pill'), body = document.body;
+    const tab = document.querySelector('main [role=tab][aria-selected=true], main .tabbar .on, main .sub-tabs .on, main .tabs .on');
+    const panel = document.querySelector('.peek:not([hidden]) #peek-title');
+    const zoom = window.visualViewport ? visualViewport.scale : 1, outer = outerWidth && innerWidth ? outerWidth / innerWidth : 1;
+    const now = new Date();
+    return {
+      page: document.title.replace(/ · askdnd$/, ''), at: now.toLocaleString() + ' (' + Intl.DateTimeFormat().resolvedOptions().timeZone + ')', at_iso: now.toISOString(),
+      window: innerWidth + ' × ' + innerHeight, screen: screen.width + ' × ' + screen.height + ' · ' + devicePixelRatio + '× pixels',
+      zoom: 'about ' + Math.round(zoom * (outer > 0.5 && outer < 4 ? outer : 1) * 100) + '%', browser: browser(), user_agent: navigator.userAgent,
+      extension: body.dataset.bridgeVersion || (body.classList.contains('no-bridge') ? 'not in this browser' : ''),
+      live: pill ? [((pill.querySelector('.live-ago') || pill).textContent || '').trim().replace(/\s+/g, ' '), pill.className.replace('live-pill', '').trim()].filter(Boolean).join(' · ') : '', tab: tab ? tab.textContent.trim().replace(/\s+/g, ' ').slice(0, 60) : '',
+      panel: panel ? panel.textContent.trim().slice(0, 80) : '', fight: body.dataset.fight ? 'on' : '', scroll: scrollX + ', ' + scrollY,
+      errors: (window.askdndErrors || []).slice(-5),
+    };
+  }
+  function drawCtx() {
+    const dl = win.querySelector('[data-fb-ctx]');
+    dl.replaceChildren();
+    [['Page', ctx.page + ' · ' + location.pathname], ['When', ctx.at], ['Window', ctx.window + ' · zoom ' + ctx.zoom], ['Browser', ctx.browser],
+     ['askdnd bridge', ctx.extension], ['Live pill', ctx.live], ['Page errors', String(ctx.errors.length)], ['The page itself', 'As drawn (' + Math.round(html.length / 1024) + ' KB)']]
+      .filter(([, v]) => v).forEach(([k, v]) => { dl.append(Object.assign(document.createElement('dt'), { textContent: k }), Object.assign(document.createElement('dd'), { textContent: v })); });
+  }
+  function unmark() { if (outlined) outlined.classList.remove('fb-pointed'); outlined = null; }
+  async function open() {
+    if (win.open) return;
+    unmark(); pointed = null; pasted = null; shot = null;
+    ctx = gather(); html = document.documentElement.outerHTML.slice(0, 3000000);
+    const pic = picture();  // (before the window covers anything)
+    form.reset(); say(''); send.disabled = false;
+    shotImg.hidden = true; shotNote.hidden = false; shotNote.textContent = "Taking the page's picture…";
+    pastedImg.hidden = true; dropNote.hidden = false; pointedNote.textContent = 'Click the thing you mean, if it helps';
+    drawCtx();
+    win.showModal();
+    form.text.focus();
+    shot = await pic;
+    if (shot) { shotImg.src = shot; shotImg.hidden = false; shotNote.hidden = true; } else shotNote.textContent = "No picture this time: paste one if it helps";
+  }
+  function describe(el) {
+    const t = el.closest('[aria-label], [title], [data-tour], .nt, .ri, button, a, h1, h2, h3, label, li, td') || el;
+    const words = (t.getAttribute('aria-label') || t.getAttribute('title') || t.textContent || '').trim().replace(/\s+/g, ' ');
+    return words.slice(0, 60) || t.tagName.toLowerCase();
+  }
+  function where(el) {  // a short path to it, for finding it in the page's HTML
+    const out = [];
+    for (let n = el; n && n !== document.body && out.length < 6; n = n.parentElement) {
+      out.unshift(n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + (n.classList.length ? '.' + [...n.classList].slice(0, 2).join('.') : ''));
+    }
+    return out.join(' > ');
+  }
+  win.querySelector('[data-fb-point]').addEventListener('click', () => {
+    win.close();
+    document.body.classList.add('fb-pointing');
+    const done = () => { document.removeEventListener('click', pick, true); document.removeEventListener('keydown', esc, true); document.body.classList.remove('fb-pointing'); win.showModal(); };
+    const pick = e => {
+      e.preventDefault(); e.stopPropagation();
+      unmark();
+      outlined = e.target; outlined.classList.add('fb-pointed');
+      pointed = { label: describe(e.target), path: where(e.target), text: (e.target.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 160) };
+      pointedNote.textContent = 'Pointed at: ' + pointed.label;
+      done();
+    };
+    const esc = e => { if (e.key === 'Escape') { e.preventDefault(); done(); } };
+    setTimeout(() => { document.addEventListener('click', pick, true); document.addEventListener('keydown', esc, true); }, 0);
+  });
+  function take(file) {
+    if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) return say('A picture as PNG, JPEG or WebP, please.');
+    if (file.size > 8e6) return say('That picture is over 8 MB.');
+    const r = new FileReader();
+    r.onload = () => { pasted = r.result; pastedImg.src = pasted; pastedImg.hidden = false; dropNote.hidden = true; say(''); };
+    r.readAsDataURL(file);
+  }
+  win.addEventListener('paste', e => {
+    const f = [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
+    if (f) { e.preventDefault(); take(f); }
+  });
+  const drop = win.querySelector('[data-fb-drop]');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); take(e.dataTransfer.files[0]); });
+  win.querySelector('[data-fb-file]').addEventListener('change', e => take(e.target.files[0]));
+  win.querySelector('[data-fb-cancel]').addEventListener('click', () => { win.close(); unmark(); });
+  win.addEventListener('cancel', unmark);
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const text = form.text.value.trim();
+    if (!text) return say("Say what it's about first.");
+    send.disabled = true; say('');
+    try {
+      const r = await fetch('/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ text, url: location.href, context: { ...ctx, pointed }, html, shot, pasted }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
+      win.close(); unmark();
+      if (window.askdndToast) window.askdndToast('In the queue · ' + j.waiting + ' new');
+    } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
+  });
+  // \ anywhere but a field; the menus' item; pressing and holding the logo
+  document.addEventListener('keydown', e => {
+    if (e.key !== '\\' || e.metaKey || e.ctrlKey || e.altKey || typing(document.activeElement) || document.querySelector('dialog[open]')) return;
+    e.preventDefault(); open();
+  });
+  document.addEventListener('click', e => { if (e.target.closest('[data-fb-open]')) { e.preventDefault(); open(); } });
+  const logo = document.querySelector('.brand');
+  if (logo) {
+    let held = null, fired = false;
+    logo.addEventListener('touchstart', () => { fired = false; held = setTimeout(() => { fired = true; open(); }, 700); }, { passive: true });
+    ['touchend', 'touchmove', 'touchcancel'].forEach(k => logo.addEventListener(k, () => clearTimeout(held), { passive: true }));
+    logo.addEventListener('click', e => { if (fired) { e.preventDefault(); fired = false; } });
+    logo.addEventListener('contextmenu', e => { if (fired) e.preventDefault(); });
+  }
 })();

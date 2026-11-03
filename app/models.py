@@ -87,6 +87,8 @@ class User(Timestamped, Base):
     current_campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dice: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # their dice: set, material, by_type (app/dice.py)
+    # Can send feedback for Claude with \ though not an admin (Brett's test accounts; app/feedback.py), set on Accounts
+    feedback: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
 
 
 class Campaign(Timestamped, Base):
@@ -825,6 +827,28 @@ class BridgeKey(Timestamped, Base):
     __tablename__ = "bridge_keys"
     key_hash: Mapped[str] = mapped_column(String(64), primary_key=True)
     email: Mapped[str] = mapped_column(String(320), index=True)
+
+
+class Feedback(Timestamped, Base):
+    """A note for Claude, sent from any askdnd page by an admin or an account that can send feedback (app/feedback.py;
+    Brett, 2026-11-03, docs/mockups/feedback-queue/), with what the page was at that moment: where and when, the screen,
+    the browser and the extension's version (`context`), the page as drawn (`html`), its picture and a pasted one. It
+    waits in Manage › askdnd › Feedback until Claude works through the queue: new → question (Claude asked, in
+    `thread`) → planned → done (with its PR), or deleted."""
+
+    __tablename__ = "feedback"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    sender: Mapped[str] = mapped_column(String(300), default="", server_default="")  # who and as what: "Cathartic (player)"
+    text: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="new", server_default="new", index=True)
+    url: Mapped[str] = mapped_column(String(1000), default="", server_default="")
+    context: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    html: Mapped[str] = mapped_column(Text, default="", server_default="")
+    shot_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
+    pasted_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
+    thread: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"who": "claude"|"you", "text", "at"}]
+    pr: Mapped[str] = mapped_column(String(300), default="", server_default="")
 
 
 from app import history  # noqa: E402,F401

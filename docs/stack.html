@@ -393,6 +393,7 @@ td { min-width: 0; }
         <tr><td><code>AWS_ACCESS_KEY_ID</code>, <code>_SECRET_ACCESS_KEY</code></td><td>website and backup, each its own user</td><td>AWS › IAM › Users › Security credentials</td><td>Brett</td></tr>
         <tr><td><code>SENTRY_DSN</code></td><td>website and backup (Railway), and the Mac Mini's nightly live test (<code>~/askdnd-tests/.env</code>, through <code>scripts/set-secret.sh --mini</code>); never your Mac's <code>.env</code></td><td>Sentry › askdnd-v2 › Client Keys</td><td>Brett made it; Claude copied it to the Mini</td></tr>
         <tr><td><code>SESSION_SECRET</code>, <code>UPLOAD_TOKEN</code></td><td>website (the token also in your <code>.env</code> for the Processor)</td><td>Random, generated on the Mac</td><td>Either</td></tr>
+        <tr><td><code>FEEDBACK_KEY</code></td><td>website, and your <code>.env</code> for Claude's <code>scripts/feedback.py</code> (the feedback queue)</td><td>Random, generated on the Mac</td><td>Brett, with <code>scripts/set-secret.sh</code></td></tr>
         <tr><td><code>DATABASE_URL</code></td><td>website and backup</td><td>A Railway reference to Postgres, never copied</td><td>Automatic</td></tr>
       </tbody>
     </table></div>
@@ -417,5 +418,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-02 (askdnd.ai moved to v2; the Mac Mini's nightly live test).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-03 (FEEDBACK_KEY, Claude's key to the feedback queue).</p>
 </main>

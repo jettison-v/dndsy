@@ -19,6 +19,7 @@
       <span>{% if fixed and p.invited %}<span class="tag published">Admin</span>
         {% else %}<label class="check"><input type="checkbox" name="admin" value="1" form="acct-{{ p.email }}" {{ "checked" if p.level == "admin" }}> Admin</label>{% endif %}</span>
       <span class="record-actions">{% if not (fixed and p.invited) %}<button class="btn small" type="submit" form="acct-{{ p.email }}">{{ "Invite" if not p.invited else "Save" }}</button>{% endif %}
+        {% if p.user and p.invited and p.level != "admin" %}<form method="post" action="/manage/accounts/feedback" class="inline"><input type="hidden" name="email" value="{{ p.email }}"><input type="hidden" name="on" value="{{ '' if p.user.feedback else '1' }}"><button class="btn small" type="submit" aria-pressed="{{ 'true' if p.user.feedback else 'false' }}" title="Lets this account send feedback for Claude with \ (for your test accounts; admins always can)">Sends feedback: {{ "on" if p.user.feedback else "off" }}</button></form>{% endif %}
         {% if p.email in can_view %}<form method="post" action="/view-as" class="inline"><input type="hidden" name="email" value="{{ p.email }}"><button class="btn small" type="submit" title="See askdnd as {{ p.name or p.email }} does, read-only">View as</button></form>{% endif %}
         {% if p.invited and not fixed %}<button class="btn link small danger" type="submit" name="remove" value="1" form="acct-{{ p.email }}">Remove</button>{% endif %}</span>
     </li>
