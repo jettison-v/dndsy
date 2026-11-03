@@ -133,6 +133,18 @@ def test_several_changes_go_as_one_end_state(player, db, sheet):
     assert len(batch["ops"]) == 1 and batch["ops"][0]["body"]["removedHitPoints"] == 21  # 14 + 2 - 5 + 10
 
 
+def test_an_extension_too_old_for_a_change_says_so_at_once(player, db, sheet):
+    """Nov 3 (Brett preparing a spell from a Chrome still on extension 0.9.5): an extension refuses a request it doesn't
+    know. Trying again can't help, and it isn't one to make by hand: askdnd stops at once and says to update it."""
+    cole = char(db, "Cole")
+    ddb_bridge.add(db, cole, "hp", {"amount": -1}, "Cole took 1")
+    batch = ddb_bridge.outbox(db, cole)
+    ddb_bridge.delivered(db, batch["id"], ok=False, error="That isn't a change askdnd may make.")
+    it = db.scalar(select(BridgeIntent))
+    assert it.state == "not_yet" and "older than this change needs" in it.error and "Update it" in it.error
+    assert ddb_bridge.outbox(db, cole) is None  # not sent again on its own
+
+
 def test_a_dropped_write_is_sent_again_on_its_own(player, db, sheet, monkeypatch):
     """D&D Beyond can answer OK and not keep a write (DDB Importer's experience): askdnd notices on read-back and sends
     the batch again, and after MAX_ATTEMPTS it stops and lists the end state to make by hand."""
