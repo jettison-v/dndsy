@@ -261,6 +261,7 @@ body.pt-rows .pt-with-track { display: none; }
 .live-stopped { display: grid; gap: var(--sp-2); margin: 0 0 var(--sp-2) var(--sp-3); padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--red); background: var(--red-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; font-size: var(--fs-sm); }
 .live-stopped b { color: var(--text-strong); font-weight: 600; }
 .live-stopped .note { display: block; font-size: var(--fs-xs); }
+.live-stopped.on { border-left-color: var(--amber); background: var(--amber-soft); }  /* on its way, trying again: not yours to do yet */
 .live-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .live-actions .btn { flex: 1 1 0; white-space: nowrap; }  /* the spinner never wraps the label */
 /* Phones: a bottom bar with the main pages; More holds the rest (base.html) */
@@ -1549,6 +1550,12 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .card-tx b { color: var(--text-strong); font-weight: 600; }
 .card-tx b.nat20 { color: var(--green); } .card-tx b.nat1 { color: var(--red); }
 .card-acts { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--sp-2); }  /* its buttons, a row under the text */
+/* A card following its change to D&D Beyond (app.js "following a change"; Bridge Review, Nov 3): its icon turns until
+   it's settled, and a line under the text says how it stands */
+.card .card-sub { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
+.card.following .card-ic { animation: card-turn 1.2s linear infinite; }
+@keyframes card-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .card.following .card-ic { animation: none; opacity: .6; } }
 .card-act.main { background: color-mix(in srgb, var(--k) 16%, transparent); }
 .card-act { font: 600 var(--fs-xs)/1 var(--sans); color: var(--k); background: transparent; border: 1px solid color-mix(in srgb, var(--k) 55%, transparent); border-radius: var(--r-md); padding: 6px 9px; cursor: pointer; white-space: nowrap; }
 .card-x { width: 26px; height: 26px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm); }
@@ -2528,8 +2535,8 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
   .pt-list { padding: 16px; }
 }
 
-/* The D&D Beyond bridge (bridge.html, app/ddb_bridge.py; docs/mockups/ddb-overlay.html): four states,
-   the same everywhere, Live, Waiting, Not on D&D Beyond yet and Changed on D&D Beyond */
+/* The D&D Beyond bridge's states (app/ddb_bridge.py `progress`; docs/artifacts/bridge-review.html), the same words
+   everywhere: On D&D Beyond, On its way (Trying again), Didn't go through, Changed on D&D Beyond */
 .br-st { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); font-weight: 600; border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); white-space: nowrap; }
 .br-st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .br-st.br-live { background: var(--green-soft); color: var(--green); }
@@ -2537,25 +2544,12 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .br-st.br-off { background: var(--red-soft); color: var(--link); }
 .br-st.br-seen { background: var(--blue-soft); color: var(--blue); }
 .br-st.br-asleep { background: var(--surface-2); color: var(--muted); }  /* between games: no calls to D&D Beyond */
-.br-tiles { grid-template-columns: minmax(0, 180px); margin: 0; }
-.br-tiles .br-wait { box-shadow: inset 0 0 0 1px var(--amber); }
-.br-tiles .br-off { box-shadow: inset 0 0 0 1px var(--red); }
-.br-items { display: grid; gap: var(--sp-2); }
-.br-item { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border-radius: var(--r-md); }
-.br-change { display: grid; gap: var(--sp-2); padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); justify-items: start; }
-.br-change.br-wait { border-color: var(--amber); background: var(--amber-soft); }
-.br-change.br-off { border-color: var(--red); background: var(--red-soft); }
-.br-change.br-live { border-color: var(--green); background: var(--green-soft); }
 .br-log { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
 .br-log li { padding: var(--sp-2) 0; border-top: 1px solid var(--line-soft); display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: baseline; }
 /* the bridge's health, bottom right on every page (bottom left is Table rolls' pop-ups and tray); phones read only */
 button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridge's health on Manage › askdnd › D&D Beyond bridge: a click runs the check */
 .br-phone { display: none; }
 @media (max-width: 640px) { .br-phone { display: block; } }
-/* The bridge page: what shows with and without the extension in this browser (body.br-ext, app.js), and what's
-   for a computer only */
-body:not(.br-ext) .br-ext-on, body.br-ext .br-ext-off { display: none; }
-@media (max-width: 640px) { .br-desk { display: none; } }
 .br-now { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 0; }
 .br-now dt { color: var(--muted); }
 .br-now dd { margin: 0; }

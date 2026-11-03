@@ -166,7 +166,7 @@ def test_a_dropped_write_is_sent_again_on_its_own(player, db, sheet, monkeypatch
         ddb_bridge.delivered(db, batch["id"], ok=True)  # dropped every time
         batch = ddb_bridge.outbox(db, cole) or batch
     st = player.get(f"/bridge/state/{cole.id}").json()
-    assert st["changes"][0]["state"] == "not_yet" and "Tried 3 times" in st["changes"][0]["error"]
+    assert st["changes"][0]["state"] == "not_yet" and "(3 tries)" in st["changes"][0]["error"]
     assert st["to_make"] == ["Hit points 42 (D&D Beyond has 45)"]
 
 
@@ -195,7 +195,7 @@ def test_a_value_askdnd_cant_explain_is_never_written_over(player, db, sheet):
     sheet["removedHitPoints"] = 30  # someone else changed it right after askdnd wrote
     ddb_bridge.delivered(db, batch["id"], ok=True)
     st = player.get(f"/bridge/state/{cole.id}").json()
-    assert st["changes"][0]["state"] == "not_yet" and "Nothing was written over" in st["changes"][0]["error"]
+    assert st["changes"][0]["state"] == "not_yet" and "Nothing on the sheet changed" in st["changes"][0]["error"]
     assert ddb_bridge.outbox(db, cole) is None  # and nothing more is sent
 
 
@@ -340,7 +340,7 @@ def test_only_the_player_changes_and_only_where_switched_on(player, dm, db, shee
     assert dm.post(f"/bridge/drink/{cole.id}/{POTION}").status_code == 403
     assert dm.post("/bridge/outbox/75423618").json() == {"batch": None}  # only the player's own browser writes the sheet
     assert player.post(f"/bridge/drink/{cole.id}/12345").status_code == 400
-    assert "with D&amp;D Beyond" in player.get(f"/characters/{cole.id}/bridge").text
+    assert player.get(f"/characters/{cole.id}/bridge", follow_redirects=False).headers["location"] == f"/characters/{cole.id}/battle?live=1"
     db.get(Campaign, cole.campaign_id).vtt_pieces = []  # its campaign switched it off (Manage › Settings)
     db.flush()
     assert player.get(f"/bridge/state/{cole.id}").status_code == 404 and player.post("/bridge/heard/75423618").status_code == 404
@@ -575,7 +575,7 @@ def test_a_batch_no_sheet_ever_answers_for_stops_after_three_tries(player, db, s
     for _ in range(ddb_bridge.MAX_ATTEMPTS + 1):
         ddb_bridge.outbox(db, cole)  # offered, never answered
     st = player.get(f"/bridge/state/{cole.id}").json()
-    assert st["changes"][0]["state"] == "not_yet" and "No D&D Beyond sheet answered" in st["changes"][0]["error"]
+    assert st["changes"][0]["state"] == "not_yet" and "The sheet didn't answer" in st["changes"][0]["error"]
 
 
 # ------------------------------------------------------------------ everything a player changes in play
@@ -852,7 +852,7 @@ def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_
     drink(db, cole)
     db.scalar(select(BridgeIntent)).state = "not_yet"
     db.flush()
-    assert "1 to make by hand" in pill()
+    assert "1 didn't go through" in pill()
     cole.sheet_heard_at -= timedelta(minutes=5)  # the sheet was closed a while ago
     db.scalar(select(BridgeIntent)).state = "dismissed"
     db.flush()
@@ -1132,3 +1132,77 @@ def test_only_the_player_or_the_dm_sends_the_sheet(player, dm, db, sheet):
     dm.post("/bridge/heard/75423618", json={"data": other})
     db.refresh(cole.snapshot)
     assert coin_left(cole) == 1
+
+
+# ------------------------------------------------------------------ how a change stands, in one set of words (Bridge Review)
+
+
+def test_a_change_says_how_it_stands_the_same_everywhere(player, db, sheet, monkeypatch):
+    """Bridge Review, Nov 3: one set of words in every place: On its way, Trying again (2 of 3), Waits for the change
+    before it, Didn't go through (with Try again and Undo), then On D&D Beyond. The corner card follows its change by
+    web.deliver_now's `upto`."""
+    from app import web
+
+    monkeypatch.setattr(ddb_bridge, "RETRY_SECONDS", (0, 0, 0))  # (each try offered again at once)
+    cole = char(db, "Cole")
+    drink(db, cole)
+    db.commit()
+    upto = web.deliver_now(cole)["upto"]
+    follow = lambda: player.get(f"/bridge/follow/{cole.id}?upto={upto}").json()  # noqa: E731
+    assert follow()["says"] == "On its way"
+    batch = ddb_bridge.outbox(db, cole)
+    ddb_bridge.delivered(db, batch["id"], False, "D&D Beyond answered 500.")
+    db.commit()
+    assert follow()["says"] == "Trying again (2 of 3)"
+    ddb_bridge.add(db, cole, "set", {"field": "inspiration", "value": True}, "Cole: Heroic Inspiration")
+    db.commit()
+    later = web.deliver_now(cole)["upto"]
+    assert player.get(f"/bridge/follow/{cole.id}?upto={later}").json()["says"] == "Trying again (2 of 3)"  # (the furthest behind)
+    st = player.get(f"/bridge/state/{cole.id}").json()
+    assert [c["says"] for c in st["changes"]] == ["Waits for the change before it", "Trying again (2 of 3)"]
+    for _ in range(2):
+        b = ddb_bridge.outbox(db, cole)
+        if b:
+            ddb_bridge.delivered(db, b["id"], False, "D&D Beyond answered 500.")
+    db.commit()
+    f = follow()
+    assert f["state"] == "failed" and f["says"] == "Didn't go through" and "(3 tries)" in f["error"]
+    live_window = player.get(f"/live?c={cole.id}").text
+    assert "Didn&#39;t go through" in live_window and f"/bridge/retry/{f['failed'][0]['id']}?live=1" in live_window
+    assert "Cole: Heroic Inspiration" in live_window and "On its way" in live_window  # (the one after it, now on its way, without buttons)
+    assert "1 didn't go through" in player.get(f"/characters/{cole.id}/battle").text  # the pill
+
+
+def test_the_corner_card_follows_only_a_change_just_made(player, db, sheet):
+    """A route that changes nothing on D&D Beyond (a sheet that can't be reached) still sends the extension its word, but
+    names no change: there's nothing for its card to follow."""
+    from datetime import UTC, datetime, timedelta
+
+    from app import web
+
+    cole = char(db, "Cole")
+    drink(db, cole)
+    db.commit()
+    assert "upto" in web.deliver_now(cole)
+    it = db.scalar(select(BridgeIntent))
+    it.created_at = datetime.now(UTC) - timedelta(minutes=1)
+    db.commit()
+    assert web.deliver_now(cole) == {"ddbId": "75423618"}
+
+
+def test_the_bridges_icon_says_how_each_sheet_stands(player, db, sheet):
+    """Bridge Review, Nov 3: the popup said Connected even with the sheet closed and a change stuck. It now says, per
+    character, whether its sheet is open, what's on its way and what didn't go through, and the newest extension."""
+    import json as js
+    from pathlib import Path
+
+    cole = char(db, "Cole")
+    drink(db, cole)
+    db.commit()
+    j = player.get("/bridge/links").json()
+    me = next(c for c in j["characters"] if c["name"] == "Cole")
+    assert me["how"] == "sheet" and me["on_way"] == 1 and me["failed"] == 0
+    assert j["version"] == js.loads((Path(__file__).parent.parent / "extension" / "askdnd-bridge" / "manifest.json").read_text())["version"]
+    cole.sheet_heard_at = None
+    db.commit()
+    assert next(c for c in player.get("/bridge/links").json()["characters"] if c["name"] == "Cole")["how"] is None

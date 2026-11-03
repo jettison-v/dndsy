@@ -128,7 +128,7 @@ def test_with_the_bridge_a_condition_is_made_on_d_and_d_beyond_and_shows_at_once
 
     cole = char(db, "Cole")
     r = player.post(f"/characters/{cole.id}/conditions", data={"name": "Poisoned", "source": "Giant Spider"}, headers=HX)
-    assert r.status_code == 200 and json.loads(r.headers["HX-Trigger"])["bridgeDeliver"] == {"ddbId": "75423618"}  # sent now, from Battle
+    assert r.status_code == 200 and json.loads(r.headers["HX-Trigger"])["bridgeDeliver"]["ddbId"] == "75423618"  # sent now, from Battle
     it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id)).all()[-1]
     assert (it.kind, it.data) == ("set", {"field": "condition:11", "value": True})
     assert 'data-sync="on"' in r.text.split('class="cond-bar"')[1]  # shown already, on its way
@@ -170,7 +170,7 @@ def test_a_hit_on_its_way_shows_on_battle_and_party_at_once(player, dm, db, shee
     """Brett, 2026-10-29: the numbers change at once; the Hit points tile is marked until D&D Beyond has the hit."""
     cole = char(db, "Cole")
     r = player.post(f"/bridge/hp/{cole.id}", data={"amount": "-10"})
-    assert json.loads(r.headers["HX-Trigger"])["bridgeDeliver"] == {"ddbId": "75423618"}
+    assert json.loads(r.headers["HX-Trigger"])["bridgeDeliver"]["ddbId"] == "75423618"
     tile = dm.get(f"/characters/{cole.id}/battle").text.split(f'data-mark="{cole.id}:hp"')[1][:400]
     assert 'data-sync="on"' in tile and "<b>27</b>" in tile  # 37 − 10, before D&D Beyond has it
     assert 'data-sync="on"' in dm.get("/c/main/party").text.split(f'data-mark="{cole.id}:hp"')[1][:80]

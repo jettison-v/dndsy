@@ -1,5 +1,5 @@
 {# The menu bar's Live control (app/live.py), one question (docs/mockups/table-without-modes.html): is your sheet
-   connected? Connected, what to do to connect, something to make by hand, or when the copy was last read.
+   connected? Connected, what to do to connect, a change that didn't go through, or when the copy was last read.
    Someone with no character of their own, like the DM, has no sheet to connect: they see how many of the party's are
    (Brett, 2026-10-30: the DM's pill said Connected from someone else's sheet). Without the extension in this browser
    (body.no-bridge, app.js) it says to add it, and the Live window has the link. `data-log` tells the roll window whether
@@ -21,9 +21,9 @@
 {% else %}{% set tone = "" %}{% endif %}
 <button type="button" id="live-pill" class="live-pill{{ ' ' + tone if tone }}" data-menu="live-menu" aria-haspopup="dialog" aria-controls="live-menu"
   hx-get="/live{{ '?c=%s' % fid if fid }}" hx-target="#live-menu" hx-trigger="click" data-focus="{{ fid }}" data-every="{{ tn.every }}"{% if tn.connectable %} data-wants-bridge="1"{% endif %}{% if m and m.in_game %} data-log="{{ 'on' if m.step else 'sheet' }}" data-log-until="{{ m.step_until }}"{% else %} data-log="" data-log-until="0"{% endif %}{% if oob %} hx-swap-oob="true"{% endif %}
-  title="{% if p.by_hand %}{{ p.name }}: askdnd couldn't make {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} on D&amp;D Beyond; make {{ 'them' if p.by_hand != 1 else 'it' }} there{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif party %}How many of the party's D&amp;D Beyond sheets are connected{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd change together (the bridge){% elif p.via %}{{ p.name }}'s sheet is closed, so the DM's D&amp;D Beyond makes the changes. Open it so rolls reach D&amp;D Beyond's Game Log too{% elif ours %}Open {{ p.name }}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge{% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
+  title="{% if p.by_hand %}{{ p.name }}: {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} didn't go through to D&amp;D Beyond: Try again or Undo in this window{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif party %}How many of the party's D&amp;D Beyond sheets are connected{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd change together (the bridge){% elif p.via %}{{ p.name }}'s sheet is closed, so the DM's D&amp;D Beyond makes the changes. Open it so rolls reach D&amp;D Beyond's Game Log too{% elif ours %}Open {{ p.name }}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge{% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
   <span class="live-dot" aria-hidden="true"></span><span class="live-ago">
-  {%- if p.by_hand -%}{{ p.by_hand }} to make by hand
+  {%- if p.by_hand -%}{{ p.by_hand }} didn't go through
   {%- elif party and tn.via -%}{{ tn.connected + tn.via }} of {{ tn.connectable }} connected · {{ tn.via }} through {{ "you" if tn.dm else "the DM" }}
   {%- elif party -%}{{ tn.connected }} of {{ tn.connectable }} sheets connected
   {%- elif p.step and p.mine -%}Connected

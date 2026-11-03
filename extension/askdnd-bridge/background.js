@@ -234,6 +234,12 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
     if (m.type === 'ddb-tab') { await opened(sender.tab.id, { sheet: here }); await active(here); await refreshPanels(here); hello(); return deliver(here, sender.tab.id); }
     if (m.type === 'ddb-active') return active(here);
     if (m.type === 'panel-refresh') return refreshPanels(here);
+    // Try again or Undo on a change that didn't go through, from the panel beside the sheet (Bridge Review, Nov 3)
+    if (m.type === 'panel-act' && /^\d+$/.test(String(m.id)) && (m.act === 'retry' || m.act === 'dismiss')) {
+      await api('POST', '/bridge/' + m.act + '/' + m.id).catch(() => {});
+      await refreshPanels(here); toAskdndTabs({ type: 'bridge-update' });
+      return deliver(here, sender.tab.id);
+    }
     if (m.type === 'ddb-saved') return m.fresh ? null : heardSoon(here, sender.tab.id);  // (a fresh read follows: 'ddb-fresh')
     if (m.type === 'ddb-fresh') return m.data ? heard(here, m.why === 'pull', sender.tab.id, m.data) : heardSoon(here, sender.tab.id);
     if (m.type === 'ddb-roll') return api('POST', '/bridge/roll/' + here, m.roll).catch(() => {});  // into Table rolls, "on D&D Beyond"
