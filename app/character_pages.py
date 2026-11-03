@@ -118,18 +118,24 @@ def _page(request: Request, name: str, ctx: dict):
 # ---------------------------------------------------------------- top-level
 
 
-@router.get("/party")
-def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
-    user = current_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    overrides = _overrides(db)
-    rows = []
+def party_rows(db: Session, user: dict | None) -> list[dict]:
+    """The campaign's characters as Party shows them (also the middle of askdnd's table, app/table_page.py): each one's
+    sheet as shown, with what it's under."""
+    overrides, rows = _overrides(db), []
     for r in _party_rows(db, user):
         sheet, now = views.apply_overrides(r["sheet"], overrides), listed(db, r["c"], r["sheet"])
         if sheet:
             sheet["speed"] = cond.speed_now(sheet.get("speed"), now)  # (as on the character's own pages)
         rows.append({**r, "sheet": sheet, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
+    return rows
+
+
+@router.get("/party")
+def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    rows = party_rows(db, user)
     return _page(request, "party.html", {
         "rows": rows,
         "spells": views.party_spell_list(rows),

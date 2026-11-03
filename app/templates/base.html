@@ -65,7 +65,8 @@
   <nav class="nav" aria-label="The campaign">
     <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Story</a>
     <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
-    {% if table_url %}<a class="nav-table" href="{{ table_url }}" target="_blank" rel="noopener" title="Open the table: D&amp;D Beyond's VTT">Table ↗</a>{% endif %}
+    {% if table_url and table_url.startswith('/') %}<a class="nav-table{{ ' active' if path == '/table' }}" href="{{ table_url }}" title="Open the table">Table</a>
+    {% elif table_url %}<a class="nav-table" href="{{ table_url }}" target="_blank" rel="noopener" title="Open the table: D&amp;D Beyond's VTT">Table ↗</a>{% endif %}
   </nav>
   <span class="nav-sep" aria-hidden="true"></span>
   <nav class="table-nav" aria-label="Your table">
@@ -142,7 +143,8 @@
 {{ party_menu("party-menu-m", tn, "sheet-menu") }}
 <div class="menu more-menu sheet-menu" id="more-menu" hidden>
   {% if my_campaigns | length > 1 %}{% for c in my_campaigns if not (here and c.id == here.id) %}<a href="/c/{{ c.slug }}{{ switch_path }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}<small>Switch campaign</small></a>{% endfor %}{% endif %}
-  {% if table_url %}<a href="{{ table_url }}" target="_blank" rel="noopener">Table ↗<small>D&amp;D Beyond's VTT</small></a>{% endif %}
+  {% if table_url and table_url.startswith('/') %}<a href="{{ table_url }}" class="{{ 'active' if path == '/table' }}">Table<small>askdnd's table</small></a>
+  {% elif table_url %}<a href="{{ table_url }}" target="_blank" rel="noopener">Table ↗<small>D&amp;D Beyond's VTT</small></a>{% endif %}
   <a href="/your-suggestions" class="{{ 'active' if path == '/your-suggestions' }}">Your suggestions</a>
   <a href="#" data-modal-url="/dice" data-modal-size="large">Your dice</a>
   {% set camp_home = manage_pages | selectattr("group", "equalto", "campaign") | first %}{% set admin_home = manage_pages | selectattr("group", "equalto", "askdnd") | first %}

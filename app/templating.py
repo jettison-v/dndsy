@@ -90,7 +90,10 @@ def _dice_tuning() -> dict:
 
 
 def table_url(campaign: dict | None) -> str:
-    """Where this campaign plays: D&D Beyond's VTT for now, askdnd's own when it has one. The Table button stays put."""
+    """Where this campaign plays: askdnd's own table once its switch is on (askdnd's VTT), else D&D Beyond's VTT. The
+    Table button stays put."""
+    if campaign and vtt.on(campaign, "vtt_table"):
+        return f"/c/{campaign['slug']}/table"
     game = (campaign or {}).get("ddb_campaign_id")
     return f"https://www.dndbeyond.com/games/{game}" if game else ""
 

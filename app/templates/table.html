@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_fight_rows.html" import fight_rows with context %}
+{% block title %}Table · {{ campaign.name }} · askdnd{% endblock %}
+{% block content %}
+{# askdnd's table (app/table_page.py; VTT slice 1, VTT Layout › The first step): the frame around a middle. The fight band
+   is the turn bar; Table rolls (left), the side panel (right) and corner cards are every page's own. While the map stays on
+   D&D Beyond, the middle is the fight's rows (_fight_rows.html, as Party's Rows). Slices 2 onward fill it in: askdnd runs
+   the fight, your turn's bar under the middle, creatures in the side panel, then the map. #}
+<main class="page wide table-page">
+  {% include "_fight_band.html" %}
+  <div class="title-row"><h1>The table</h1></div>
+  {% set f = fight_now() %}
+  {% if f %}
+  <section class="tb-middle" aria-label="The fight">
+    {{ fight_rows(f, rows, always=true) }}
+    <p class="note">The map stays on D&amp;D Beyond for now{% if here and here.ddb_campaign_id %}: <a href="https://www.dndbeyond.com/games/{{ here.ddb_campaign_id }}" target="_blank" rel="noopener">its VTT ↗</a>{% endif %}. The order, round and whose turn are heard from it. A character's row opens its short version here.</p>
+  </section>
+  {% else %}
+  <section class="section tb-empty">
+    <h2>No fight yet</h2>
+    <p>When the DM starts one on D&amp;D Beyond's VTT{% if here and here.ddb_campaign_id %} (<a href="https://www.dndbeyond.com/games/{{ here.ddb_campaign_id }}" target="_blank" rel="noopener">open it ↗</a>){% endif %}, the order, round and whose turn show here, a row per fighter, with each one's Hit Points, AC and what they're under.</p>
+    <p class="note">Until then, Table rolls is on the left and the party is on <a href="/party">Party</a>. Running the fight in askdnd itself comes next.</p>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

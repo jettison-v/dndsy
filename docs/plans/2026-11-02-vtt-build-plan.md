@@ -41,8 +41,8 @@ to-do list; this file is the detail behind them.
 
 | # | Slice | Size | What you can do when it lands |
 |---|---|---|---|
-| 0 | The two switches | S | Manage › Settings shows Play through askdnd (once live state is reviewed) and askdnd's VTT. The Table button opens askdnd's table in a test campaign, D&D Beyond's everywhere else. |
-| 1 | The table's frame | M | `/c/<campaign>/table`: the turn bar, Table rolls, the side panel, corner cards and your turn's bar around a middle that lists the fight's rows as heard from D&D Beyond's VTT. Nothing new to learn: every piece is the one from Battle and Party. |
+| 0 | The two switches | S | Manage › Settings shows Play through askdnd (once live state is reviewed) and askdnd's VTT. The Table button opens askdnd's table in a test campaign, D&D Beyond's everywhere else. **Built Nov 2** (ahead of Brett's review: Play through askdnd gives the bridge until live state is Ready, then the rest with it). |
+| 1 | The table's frame | M | `/c/<campaign>/table`: the turn bar, Table rolls, the side panel, corner cards and your turn's bar around a middle that lists the fight's rows as heard from D&D Beyond's VTT. Nothing new to learn: every piece is the one from Battle and Party. **Built Nov 2**: the middle is Party's Rows (one piece, `_fight_rows.html`); a character's row opens its short version in the side panel; your turn's bar comes with its content in slice 3. |
 | 2 | askdnd runs the fight | L | The DM starts a fight here, adds creatures (from the books or the SRD; hidden ones only the DM sees), players roll their own initiative into it, the DM presses Next turn. Rounds, reminders and Concentration count from askdnd's turns, as they do from D&D Beyond's today. Players see enemies as Healthy, Bloodied or Down. |
 | 3 | Your turn's bar | M | Movement left counted with − and + 5 ft (a split move kept), Dash, what you've used of your Action, Bonus Action and Reaction, Battle's pins in three columns, End turn. Off your turn: your Reactions. |
 | 4 | Creatures in the side panel | L | Click a creature: its stat block (2.3), its Hit Points with − and + for the DM, what players see of it (2.6), its actions with Roll. On a creature's turn the bottom bar is the creature's. The DM's rolls for creatures are made in askdnd and reach Apply to as today. |
@@ -60,5 +60,6 @@ to-do list; this file is the detail behind them.
 - How the map is drawn (slice 6): a drawing library that handles a large Dungeon Alchemist picture and many tokens
   smoothly on an iPhone, vendored like the dice. Chosen and tried on the iPhone in WebKit before slice 6 starts.
 - Where maps are kept: S3 under `v2/maps/`, never in git, like the Monster Manual's pictures.
-- What a fight saves: askdnd's own fight lives on the campaign, like `Campaign.fight` today, so every open page hears
-  it through the live table connection.
+- What a fight saves: askdnd's own fight and its fighters are rows of their own, changed one at a time under the
+  fight's lock (Before slice 1), and announced like `Campaign.fight` today, so every open page hears them through the
+  live table connection.

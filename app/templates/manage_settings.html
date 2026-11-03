@@ -47,16 +47,17 @@
     </form>
     {% if vtt_rows %}
     <ul class="records cols-4">
-      <li class="records-head" aria-hidden="true"><span>Piece</span><span>Phase</span><span>State</span><span>Here</span></li>
-      {% for r in vtt_rows %}{% set p = r.p %}
-      <li class="record{{ ' faded' if not p.ready and not campaign.is_test }}"><span class="record-main"><b>{{ p.name }}</b><span class="note">{{ p.about }}</span></span>
-        <span>{{ p.phase }}</span><span><span class="tag {{ 'done' if p.ready else 'draft' }}">{{ "Ready" if p.ready else "Being built" }}</span></span>
-        <span class="record-actions">{% if r.can_switch %}<form method="post" action="{{ cbase }}/manage/settings/vtt/{{ p.key }}">{% if not r.on %}<input type="hidden" name="on" value="1">{% endif %}
-          <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if r.on else 'false' }}" aria-label="{{ p.name }} on here"></button></form>
-          {% elif campaign.is_test %}<button class="switch" type="button" role="switch" aria-checked="true" aria-label="{{ p.name }} on here" disabled></button>{% endif %}</span>
+      <li class="records-head" aria-hidden="true"><span>Switch</span><span>Phase</span><span>State</span><span>Here</span></li>
+      {% for r in vtt_rows %}
+      <li class="record{{ ' faded' if not r.some_ready and not campaign.is_test }}"><span class="record-main"><b>{{ r.name }}</b><span class="note">{{ r.about }}</span>
+        {% if r.parts %}<span class="note vtt-parts">Includes: {% for p in r.parts %}{{ p.name }}{% if not p.ready %} <span class="tag draft">{{ "Being reviewed" if r.key == "play" else "Being built" }}</span>{% endif %}{{ " · " if not loop.last }}{% endfor %}</span>{% endif %}</span>
+        <span>{{ r.phase }}</span><span><span class="tag {{ 'done' if r.ready else 'draft' }}">{{ "Ready" if r.ready else ("Part ready" if r.some_ready else "Being built") }}</span></span>
+        <span class="record-actions">{% if r.can_switch %}<form method="post" action="{{ cbase }}/manage/settings/vtt/{{ r.key }}">{% if not r.on %}<input type="hidden" name="on" value="1">{% endif %}
+          <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if r.on else 'false' }}" aria-label="{{ r.name }} on here"></button></form>
+          {% elif campaign.is_test %}<button class="switch" type="button" role="switch" aria-checked="true" aria-label="{{ r.name }} on here" disabled></button>{% endif %}</span>
       </li>{% endfor %}
     </ul>
-    <p class="note">{% if campaign.is_test %}On a test campaign every piece is on.{% else %}Switch a Ready piece on to give it to this table; switching it off puts that page back the way it was, and nothing the table did is lost.{% endif %}</p>
+    <p class="note">{% if campaign.is_test %}On a test campaign every piece is on.{% else %}Switch one on to give it to this table. A switch that's part ready gives what's ready now, and the rest comes with it once it is. Switching it off puts those pages back the way they were, and nothing the table did is lost.{% endif %}</p>
     {% else %}<p class="muted">No VTT pieces yet. The first ones come in Phase 1: live character state.</p>{% endif %}
   </section>
 </main>

@@ -16,6 +16,7 @@ from app import config
 from app.admin import router as admin_router
 from app.ddb_bridge import router as ddb_bridge_router
 from app.death_saves import router as death_saves_router
+from app.table_page import router as table_router
 from app.hit_points import router as hit_points_router
 from app.casting import router as casting_router
 from app.inventory import router as inventory_router
@@ -175,6 +176,7 @@ app.include_router(errors_router)
 app.include_router(ddb_bridge_router)  # only where DDB_BRIDGE=1, per campaign (app/ddb_bridge.py)
 app.include_router(hit_points_router)  # (through the bridge: on_for)
 app.include_router(death_saves_router)  # (through the bridge: on_for)
+app.include_router(table_router)  # askdnd's VTT (app/vtt.py vtt_table)
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

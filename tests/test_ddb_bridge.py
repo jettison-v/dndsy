@@ -110,6 +110,20 @@ def test_a_recent_copy_of_the_sheet_is_built_on_without_reading_it_first(db, she
     assert len(reads) == 1 and batch["ops"][0]["body"]["removedHitPoints"] == 51  # down to 0: read fresh first
 
 
+def test_a_change_the_copy_says_is_made_already_is_read_fresh_first(db, sheet, monkeypatch):
+    """The live test, Nov 2: healing from 0 clears the death save marks, but askdnd's copy (under a minute old) didn't
+    have the mark D&D Beyond had just kept, so clearing looked made already, wasn't sent, and the extension's check
+    (only what's written) couldn't notice. A field left out because the copy has it already is read fresh first."""
+    reads, read = [], characters.read_released
+    monkeypatch.setattr(characters, "read_released", lambda db, ch, *a, **k: reads.append(ch.id) or read(db, ch, *a, **k))
+    cole = char(db, "Cole")
+    sheet["deathSaves"].update(failCount=1)  # on D&D Beyond, not yet in askdnd's copy
+    ddb_bridge.add(db, cole, "set", {"field": "death", "value": {"successCount": 0, "failCount": 0}}, "Cole: death saves cleared")
+    batch = ddb_bridge.outbox(db, cole)
+    assert reads == [cole.id] and [op["field"] for op in batch["ops"]] == ["death"]
+    assert batch["ops"][0]["to"] == {"successCount": 0, "failCount": 0}
+
+
 def test_several_changes_go_as_one_end_state(player, db, sheet):
     """Brett, 2026-10-27: not 12 → 10 → 15 → 45 → 34, just the end state."""
     cole = char(db, "Cole")
@@ -991,3 +1005,24 @@ def test_an_older_read_never_replaces_a_newer_copy(db, sheet):
     characters.store(db, cole, characters.read(cole.ddb_id))  # a later read, kept first
     characters.store(db, cole, older)  # the earlier one arrives late
     assert characters.character_summary(cole)["hit_points"]["current"] == 31
+
+
+def test_admins_read_the_log_further_back_with_its_batches(admin, player, db, sheet, monkeypatch):
+    """Brett, 2026-11-02 (the live test's death save miss was past the 30 lines a page shows): Manage's log goes back
+    further and says, per batch, how old askdnd's copy was when it was built (null: read fresh)."""
+    cole = char(db, "Cole")
+    for n in range(35):
+        ddb_bridge._log(db, cole.id, f"line {n}", "seen")
+    ddb_bridge.add(db, cole, "hp", {"amount": -5}, "Cole took 5")
+    copy_built = ddb_bridge.outbox(db, cole)  # on askdnd's copy, read moments ago
+    make(sheet, copy_built)
+    ddb_bridge.delivered(db, copy_built["id"], ok=True)
+    ddb_bridge.add(db, cole, "hp", {"amount": -80}, "Cole took 80")  # down to 0: read fresh first
+    ddb_bridge.outbox(db, cole)
+    db.flush()
+    got = admin.get(f"/manage/bridge/log/{cole.id}?limit=50").json()
+    assert len(got["log"]) > 30
+    newest, older = got["batches"][0], got["batches"][1]
+    assert newest["intents"] == ["Cole took 80"] and newest["copy_age"] is None and newest["state"] == "sending"
+    assert older["intents"] == ["Cole took 5"] and older["copy_age"] is not None and older["state"] == "done"
+    assert player.get(f"/manage/bridge/log/{cole.id}").status_code == 403  # admins only
