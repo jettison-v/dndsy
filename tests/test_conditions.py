@@ -192,7 +192,7 @@ def test_without_the_bridge_a_condition_ticked_on_d_and_d_beyond_shows_and_ends_
     from tests.table_setup import COLE
 
     data = {**copy.deepcopy(COLE), "conditions": [{"id": 1, "level": None}]}
-    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: copy.deepcopy(data),))
+    monkeypatch.setattr(characters, "FETCH", lambda _id: copy.deepcopy(data))
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
@@ -200,3 +200,16 @@ def test_without_the_bridge_a_condition_ticked_on_d_and_d_beyond_shows_and_ends_
     assert 'data-name="Blinded"' in player.get(f"/characters/{cole.id}/battle").text and "cond-halo dark" in player.get(f"/characters/{cole.id}/battle").text
     r = player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Blinded"}, headers=HX)
     assert r.status_code == 409 and "end it there" in r.text
+
+
+def test_exhaustion_and_speed_0_change_speed_with_the_working():
+    """2024 rules (SRD 5.2.1 Rules Glossary): each level of Exhaustion reduces Speed by 5 feet; Grappled, Paralyzed,
+    Petrified, Restrained and Unconscious make it 0. Speed's panel sums the parts, so the reason shows there (Nov 2:
+    found unchecked on the roadmap; the VTT's movement counter starts from this number)."""
+    speed = {"walk": 45, "fly": 30, "parts": [("Wood Elf base speed", 35), ("Unarmored Movement", 10)], "notes": []}
+    tired = cd.speed_now(speed, [{"name": "Exhaustion", "level": 2}])
+    assert (tired["walk"], tired["fly"]) == (35, 20) and sum(v for _, v in tired["parts"]) == 35
+    held = cd.speed_now(speed, [{"name": "Exhaustion", "level": 2}, {"name": "Grappled"}])
+    assert (held["walk"], held["fly"]) == (0, 0) and sum(v for _, v in held["parts"]) == 0
+    assert cd.speed_now(speed, [{"name": "Grappled", "counts": False}]) is speed  # one ending doesn't count
+    assert cd.speed_now(speed, [{"name": "Poisoned"}]) is speed and speed["walk"] == 45  # (the sheet's own copy is left alone)

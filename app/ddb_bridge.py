@@ -616,11 +616,13 @@ def as_shown(db: Session, character: Character, summary: dict | None) -> dict | 
     return {**shown, "conditions": conditions, "sync": sync, "ending": ending}
 
 
-def outbox(db: Session, character: Character, by: str = "sheet") -> dict | None:
+def outbox(db: Session, character: Character, by: str = "sheet", got: chars.Read | None = None) -> dict | None:
     """The batch the extension should make on this character's sheet now, or None. A new batch is built on askdnd's
     copy of the sheet when it's recent (COPY_SECONDS), else on a fresh read; either way the extension checks each total
     against what D&D Beyond has the moment before writing it. `by` "dm": the DM's browser makes it (`carried`), and
-    its log line says so. The batch names its sheet (`ddb`): the page making it checks every request is for that one."""
+    its log line says so. The batch names its sheet (`ddb`): the page making it checks every request is for that one.
+    A fresh read is made with the database let go (`chars.read_released`, which ends this lock), then everything here
+    is looked at again under the lock with it (`got`), since another copy of the app may have moved on meanwhile."""
     _lock(db, character.id)
     if not awake(db)["awake"]:
         return None
@@ -643,21 +645,20 @@ def outbox(db: Session, character: Character, by: str = "sheet") -> dict | None:
                               .order_by(BridgeIntent.id)))
     if not waiting:
         return None
-    snap = character.snapshot
-    recent = bool(snap and snap.status != "error" and snap.fetched_at and now - snap.fetched_at.timestamp() < COPY_SECONDS)
-    if not recent:
-        chars.refresh(db, character)
+    if got is not None:
+        chars.store(db, character, got)
+    else:
+        snap = character.snapshot
+        if not (snap and snap.status != "error" and snap.fetched_at and now - snap.fetched_at.timestamp() < COPY_SECONDS):
+            return outbox(db, character, by, chars.read_released(db, character))
     n = numbers(character)
     if not n:
         return None
     dicts = [_as_dict(i) for i in waiting]
     target, _lines, impossible, extra = plan(dicts, n)
-    if recent and (impossible or (target.get("hp") or {}).get("removedHitPoints", 0) >= n["max"]):
-        chars.refresh(db, character)  # what the extension's check doesn't cover: read fresh and work it out again
-        n = numbers(character)
-        if not n:
-            return None
-        target, _lines, impossible, extra = plan(dicts, n)
+    if got is None and (impossible or (target.get("hp") or {}).get("removedHitPoints", 0) >= n["max"]):
+        # what the extension's check doesn't cover: read fresh and work it out again
+        return outbox(db, character, by, chars.read_released(db, character))
     for d, why in impossible:  # (by identity: two drinks of the same potion are equal dicts)
         it = waiting[next(k for k, x in enumerate(dicts) if x is d)]
         it.state, it.error = "not_yet", why
@@ -724,7 +725,9 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
     if conflicts:  # D&D Beyond changed in the moment since askdnd read it, and the extension wrote nothing
         replans = max((it.data.get("replans", 0) for it in _intents_of(db, b)), default=0)
         if b.attempts == 1 and replans < MAX_ATTEMPTS:  # nothing of it was written: work it out again from the new numbers
-            chars.refresh(db, character)  # (read now: the next batch mustn't build on the copy that was out of date)
+            # (read now: the next batch mustn't build on the copy that was out of date)
+            if not _reread(db, b, character):
+                return
             b.state = "replanned"
             for it in _intents_of(db, b):
                 it.state, it.data = "waiting", {**it.data, "replans": it.data.get("replans", 0) + 1}
@@ -738,7 +741,8 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
     for attempt in range(4):  # D&D Beyond can take a moment to serve what it just saved
         if attempt:
             time.sleep(1)
-        chars.refresh(db, character)
+        if not _reread(db, b, character):
+            return
         n = numbers(character)
         now = {f: _value(n, f) for f in b.target} if n else {}
         missing = [f for f, v in b.target.items() if now.get(f) != v]
@@ -753,6 +757,18 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         # extension then finds it there and writes nothing (Oct 30: a Short Rest's Hit Point Die waited 5 seconds, then the
         # extension's next check, over 30 in all)
         _again(db, b, "D&D Beyond answered OK but didn't keep it.", at_once=b.attempts == 1)
+
+
+def _reread(db: Session, b: BridgeBatch, character: Character) -> bool:
+    """Read the sheet with the database let go, then hold the character again and keep the read. False when the batch
+    was settled meanwhile (a pull or another copy of the app got there first): nothing more to do with it."""
+    got = chars.read_released(db, character)
+    _lock(db, b.character_id)
+    db.refresh(b)
+    if b.state != "sending":
+        return False
+    chars.store(db, character, got)
+    return True
 
 
 def _say(fs: list[str], b: BridgeBatch) -> str:
@@ -794,8 +810,9 @@ def heard(db: Session, character: Character, saved: bool = True) -> None:
         active(db)
     elif not awake(db)["awake"]:
         return  # asleep: the background pull reads nothing from D&D Beyond
+    got = chars.read_released(db, character)  # (with the database let go: D&D Beyond can take 15 seconds)
     _lock(db, character.id)
-    chars.refresh(db, character)
+    chars.store(db, character, got)
     n = numbers(character)
     if not n:
         return

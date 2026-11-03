@@ -45,8 +45,10 @@ def _overrides(db: Session) -> dict[tuple[str, str], str]:
 def _view(db: Session, ch: Character, user: dict) -> dict:
     snap = ch.snapshot
     sheet = views.apply_overrides(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)), _overrides(db))  # with what's on its way
+    now = listed(db, ch, sheet)
     if sheet:
         sheet["_item_choices"] = ch.item_choices
+        sheet["speed"] = cond.speed_now(sheet.get("speed"), now)  # (Exhaustion and Speed 0 conditions: slice 3 counts movement from it)
     mine = picks.picks(db, ch, user)
     druid = ws.druid(sheet)
     return {
@@ -70,7 +72,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "item_notes": chars.item_notes(db, ch),
         # what it's under, as badges after the name on every mode (Brett, 2026-10-29); everyone sees them; how long each
         # lasts, by the turns heard from D&D Beyond's VTT (app/fight.py timing)
-        "conditions": _timings(db, ch, [{**x, "rules": cond.rules_text(x["name"])} for x in listed(db, ch, sheet)]),
+        "conditions": _timings(db, ch, [{**x, "rules": cond.rules_text(x["name"])} for x in now]),
     }
 
 
@@ -122,7 +124,12 @@ def party_page(request: Request, pick: str = "", db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/login", status_code=303)
     overrides = _overrides(db)
-    rows = [{**r, "sheet": views.apply_overrides(r["sheet"], overrides), "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in listed(db, r["c"], r["sheet"])]} for r in _party_rows(db, user)]
+    rows = []
+    for r in _party_rows(db, user):
+        sheet, now = views.apply_overrides(r["sheet"], overrides), listed(db, r["c"], r["sheet"])
+        if sheet:
+            sheet["speed"] = cond.speed_now(sheet.get("speed"), now)  # (as on the character's own pages)
+        rows.append({**r, "sheet": sheet, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
     return _page(request, "party.html", {
         "rows": rows,
         "spells": views.party_spell_list(rows),
