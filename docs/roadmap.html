@@ -114,22 +114,19 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 
   <section id="todo">
     <div class="sec-head"><div class="eyebrow">To do · in order</div><h2>What's left</h2>
-      <p class="why">Where beta stands tonight: it runs everything merged on Nov 2: the UI pass, the reviews' fixes, reading D&amp;D Beyond with the database let go, Speed under conditions, the security fix. Since tonight it also runs PRs 167 to 171: VTT slices 0 and 1 (test campaigns), the death save fix, a longer bridge log, fewer Campaign page queries. The Monster Manual is loaded and on for The Adventure Begins; it's a test campaign on beta, which until PR 173 turns everything on there (item 2 sets it right).</p></div>
+      <p class="why">Where beta stands (Nov 3): it runs everything merged on Nov 2: the UI pass, the reviews' fixes, reading D&amp;D Beyond with the database let go, Speed under conditions, the security fix. It also runs PRs 167 to 173, Features and Labs included: VTT slices 0 and 1 (in Labs), the death save fix, a longer bridge log, fewer Campaign page queries. The Monster Manual is loaded and on for The Adventure Begins; it has Sync with D&amp;D Beyond on and Labs off, so the table gets everything that syncs once they add the extension (item 1).</p></div>
     <div class="steps">
-      <div class="step mine" data-step="merge-173"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>1. Try Features and Labs, then say merge 173</h3>
-        <p>On your computer: <code>http://localhost:8000/dev/login?next=/c/main/manage/settings%23features</code>. You'll see <b>Features</b> (Sync with D&amp;D Beyond) and <b>Labs</b> (switch it on: askdnd's VTT and the Dice tray below it). Your dice (account menu) has the <b>Dice tray</b> under Labs. Then say <b>merge 173</b> (<a href="https://github.com/jettison-v/dndsy/pull/173">PR 173</a>).</p></div>
-        <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready now</span></div></div>
-      <div class="step mine" data-step="share"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>2. Give the table Sync with D&amp;D Beyond (today)</h3>
-        <ol><li>Once PR 173 is on beta, open <a href="https://askdnd.ai/c/main/manage/settings">The Adventure Begins › Manage › Settings</a>: <b>Test campaign</b> at the bottom off (it's the table's campaign); <b>Sync with D&amp;D Beyond</b> on (the data move keeps it on); <b>Labs</b> off unless you want the table trying askdnd's VTT.</li>
+      <div class="step mine" data-step="share"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>1. Give the table Sync with D&amp;D Beyond (today)</h3>
+        <ol><li>Already set on beta: <a href="https://askdnd.ai/c/main/manage/settings">The Adventure Begins › Manage › Settings</a> has <b>Sync with D&amp;D Beyond</b> on, Labs off, and it isn't a test campaign.</li>
           <li>Send the table the extension's link (also in Help › FAQ): <code>https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl</code>. Each player adds it in Chrome on a computer.</li>
           <li>Share the <a href="https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G">bridge's summary</a> from its Share menu and send it to them, with a word that D&amp;D Beyond's terms don't allow tools like this.</li>
           <li>Each player opens askdnd once in that Chrome, signed in, then their D&amp;D Beyond sheet. The Live pill turns green: <b>Connected</b>.</li></ol></div>
-        <div class="tags"><span class="chip yours">Yours</span><span class="chip s-todo">After item 1</span></div></div>
-      <div class="step mine" data-step="ui-review"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>3. Your holistic review of the UI pass</h3>
+        <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready now</span></div></div>
+      <div class="step mine" data-step="ui-review"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>2. Your holistic review of the UI pass</h3>
         <p>On beta now (Try it yourself is in this session's reply). You decide whether another pass is needed. Its punch list so far:</p>
         <ul><li><b>Compare, as on a retail site</b> (Nov 2): tick two to four spells, or Wild Shape forms, and press Compare to see them side by side: casting time, range, damage or healing, Concentration, your notes; for forms, AC, Hit Points, Speed, attacks and senses.</li></ul></div>
         <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready now</span></div></div>
-      <div class="step mine" data-step="review-live"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>4. Look over what syncs, after launch</h3>
+      <div class="step mine" data-step="review-live"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>3. Look over what syncs, after launch</h3>
         <p>Casting, resources and rests, items, Give, preparing and the DM as a backup are part of Sync with D&amp;D Beyond since Nov 3 (they passed on the real D&amp;D Beyond). In <a href="https://askdnd.ai/c/vtt-test/">VTT test</a>, with Vi's or Spurt's sheet open in Chrome: Cast and Undo, a resource's Use one, Short and Long Rest, an item's Equip, Attune and Give, Change coins, Give loot, Prepare spells. Tell me anything that felt wrong.</p></div>
         <div class="tags"><span class="chip yours">Yours</span><span class="chip s-todo">When you can</span></div></div>
     </div>
@@ -139,64 +136,64 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">To do · the VTT</div><h2>askdnd's own table, slice by slice</h2>
       <p class="why">The build plan: <code>docs/plans/2026-11-02-vtt-build-plan.md</code>. Built here, one working slice at a time, each tried locally, then on beta behind the switch <b>askdnd's VTT</b>, which only test campaigns see until you switch it on. The layout is decided: <a href="https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W">VTT Layout</a>, the frame around the map. Sizes at today's pace: S a day or two · M about a week · L 2–3 weeks · XL a month or more.</p></div>
     <div class="steps">
-      <div class="step mine" data-step="max-hp"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>5. Decide: change maximum hit points from askdnd (Aid)</h3>
+      <div class="step mine" data-step="max-hp"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>4. Decide: change maximum hit points from askdnd (Aid)</h3>
         <p>Almost everything that changes in play already goes both ways with D&amp;D Beyond. The one realistic gap: maximum hit points going up or down (Aid, a bonus someone sets). askdnd reads it but can't change it, so casting Aid from askdnd doesn't raise anyone's maximum; it's set on D&amp;D Beyond. Adding it means recording the request D&amp;D Beyond's own sheet sends, on a test seat, as was done for preparing spells; then it's small. Rarer, the same kind of work: a wizard copying a found spell into their spellbook. Say which, if either.</p></div>
         <div class="tags"><span class="chip yours">Yours to decide</span><span class="chip eff">S</span></div></div>
-      <div class="step mine" data-step="vtt-go"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>6. Look over slices 2 to 10, then say "carry on"</h3>
+      <div class="step mine" data-step="vtt-go"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>5. Look over slices 2 to 10, then say "carry on"</h3>
         <p>They're the build plan, right below. Slices 0 and 1 are built (you said to go ahead, Nov 2). Anything you'd reorder or cut from 2 onward, say so; otherwise say <b>carry on</b> and slice 2 begins: askdnd runs the fight.</p></div>
         <div class="tags"><span class="chip yours">Yours</span><span class="chip s-ready">Ready now</span></div></div>
-      <div class="step" data-step="s2"><span class="n"></span><div class="body"><h3>7. Slice 2 · askdnd runs the fight</h3>
+      <div class="step" data-step="s2"><span class="n"></span><div class="body"><h3>6. Slice 2 · askdnd runs the fight</h3>
         <p>The DM starts a fight here, adds creatures (hidden ones only the DM sees), players roll their own initiative into it, the DM presses Next turn. askdnd owns the creatures' Hit Points and conditions (they have no D&amp;D Beyond sheet), kept as a fight and its fighters, one row each, with Undo for the DM. Reminders and Concentration count from askdnd's turns. Players see enemies as Healthy, Bloodied or Down, the default in a DM battle settings menu. This is the turn order parked on Oct 28, built with your answers from then.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">L</span></div></div>
-      <div class="step" data-step="s3"><span class="n"></span><div class="body"><h3>8. Slice 3 · Your turn's bar</h3>
+      <div class="step" data-step="s3"><span class="n"></span><div class="body"><h3>7. Slice 3 · Your turn's bar</h3>
         <p>Movement left with − and + 5 ft (a move split around an action is kept), Dash, what you've used of your Action, Bonus Action and Reaction, Battle's pins in three columns, End turn. Off your turn: your Reactions.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s4"><span class="n"></span><div class="body"><h3>9. Slice 4 · Creatures in the side panel</h3>
+      <div class="step" data-step="s4"><span class="n"></span><div class="body"><h3>8. Slice 4 · Creatures in the side panel</h3>
         <p>Click a creature for its stat block (2.3): Hit Points with − and + for the DM, what players see of it (2.6), its actions with Roll. On a creature's turn the bottom bar is the creature's. The DM's rolls for creatures are made in askdnd and keep Apply to.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">L</span></div></div>
-      <div class="step" data-step="s5"><span class="n"></span><div class="body"><h3>10. Slice 5 · Phones</h3>
+      <div class="step" data-step="s5"><span class="n"></span><div class="body"><h3>9. Slice 5 · Phones</h3>
         <p>The same page on a phone: the turn bar on top, Table rolls as its thin line, your turn's bar and the side panel as sheets that slide up.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
       <div class="mark">Milestone A · a fight run in askdnd, the map still on D&amp;D Beyond<span>A playtest with the table. Their feedback (you speak for them until then) decides what slice 6 onward needs first.</span></div>
-      <div class="step" data-step="s6"><span class="n"></span><div class="body"><h3>11. Slice 6 · The map, from any builder</h3>
+      <div class="step" data-step="s6"><span class="n"></span><div class="body"><h3>10. Slice 6 · The map, from any builder</h3>
         <p>The middle becomes a map. The DM uploads any picture and sets its grid, or imports a Universal VTT file (.dd2vtt from Dungeon Alchemist; Dungeondraft and others export it too) with its grid in one step. One map per scene (3.6). The rows move into the turn bar and the side panel. How the map is drawn is chosen and tried on an iPhone first.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">L</span></div></div>
-      <div class="step" data-step="s7"><span class="n"></span><div class="body"><h3>12. Slice 7 · Tokens</h3>
+      <div class="step" data-step="s7"><span class="n"></span><div class="body"><h3>11. Slice 7 · Tokens</h3>
         <p>A token per fighter, tied to its character or creature (3.2), with its conditions and reminders; hidden creatures only on the DM's map.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">L</span></div></div>
-      <div class="step" data-step="s8"><span class="n"></span><div class="body"><h3>13. Slice 8 · Moving and measuring</h3>
+      <div class="step" data-step="s8"><span class="n"></span><div class="body"><h3>12. Slice 8 · Moving and measuring</h3>
         <p>Drag a token: feet per square, movement left in your turn's bar, Difficult Terrain the DM paints, the table's diagonal rule in Manage › House rules (3.3). Leaving a creature's reach says it may provoke an Opportunity Attack. It counts and shows; it never stops a move.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s9"><span class="n"></span><div class="body"><h3>14. Slice 9 · Fog</h3>
+      <div class="step" data-step="s9"><span class="n"></span><div class="body"><h3>13. Slice 9 · Fog</h3>
         <p>The DM hides and reveals parts of the map (3.4).</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s10"><span class="n"></span><div class="body"><h3>15. Slice 10 · Spell areas</h3>
+      <div class="step" data-step="s10"><span class="n"></span><div class="body"><h3>14. Slice 10 · Spell areas</h3>
         <p>The area tool, and Cast starting it for a spell with an area; who's in it carries to the roll and Apply to (3.5). The DM rules close calls.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
       <div class="mark">Milestone B · a session on askdnd's maps<span>Instead of D&amp;D Beyond Maps. The table dice built on Oct 23 (everyone's rolls thrown across the screen, 3.11) are released with it.</span></div>
-      <div class="step" data-step="p2b"><span class="n"></span><div class="body"><h3>16. The rest of combat (Phase 2b)</h3>
+      <div class="step" data-step="p2b"><span class="n"></span><div class="body"><h3>15. The rest of combat (Phase 2b)</h3>
         <ul><li>2.4 Attacks and saves that resolve, the DM confirms (L)</li><li>2.1 Encounters with the 2024 DMG's budget (L)</li><li>Nice to have: 2.5 Reactions at the right moment (M) · 2.7 Fights flow into the recap (S)</li></ul>
         <p class="small muted">Milestone: a whole fight in askdnd.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p3"><span class="n"></span><div class="body"><h3>17. More for maps (Phase 3, nice to have)</h3>
+      <div class="step" data-step="p3"><span class="n"></span><div class="body"><h3>16. More for maps (Phase 3, nice to have)</h3>
         <ul><li>3.7 Walls, doors and vision (XL; an imported .dd2vtt's walls make it smaller)</li><li>3.9 Draw and ping (S) · 3.10 Story map (M)</li></ul>
         <p class="small muted">To decide then: how much map automation, after using simple maps.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p4"><span class="n"></span><div class="body"><h3>18. The DM's table tools (Phase 4)</h3>
+      <div class="step" data-step="p4"><span class="n"></span><div class="body"><h3>17. The DM's table tools (Phase 4)</h3>
         <ul><li>4.1 Show to the table (S) · 4.4 Asset library (M) · 4.5 Make stat blocks and items (L) · 4.6 Session prep (M)</li><li>Nice to have: 4.2 Music and ambience (M) · 4.3 Sound effects (S) · 4.7 Whispers (S; secret rolls are in) · 4.8 Paste-in import (M)</li></ul>
         <p class="small muted">To decide then: where music comes from (tracks the DM uploads or has rights to).</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p5"><span class="n"></span><div class="body"><h3>19. During play (Phase 5)</h3>
+      <div class="step" data-step="p5"><span class="n"></span><div class="body"><h3>18. During play (Phase 5)</h3>
         <ul><li>5.1 Rules answers in play (L)</li><li>Nice to have: 5.2 Table chat with rolls (M) · 5.4 Start-of-turn summary (S)</li></ul></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="bridge-faster"><span class="n"></span><div class="body"><h3>20. A faster bridge: count D&amp;D Beyond's reply</h3>
+      <div class="step" data-step="bridge-faster"><span class="n"></span><div class="body"><h3>19. A faster bridge: count D&amp;D Beyond's reply</h3>
         <p>With the next extension update: clear the ↻ mark on D&amp;D Beyond's own answer to a change and check it again in the background, about 1 to 3 seconds faster. The cost: when D&amp;D Beyond answers OK without keeping a change (it has happened), the mark clears and comes back as ! a few seconds later. Yours to decide then.</p></div>
         <div class="tags"><span class="chip yours">Yours to decide</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p6"><span class="n"></span><div class="body"><h3>21. Voice and video (Phase 6)</h3>
+      <div class="step" data-step="p6"><span class="n"></span><div class="body"><h3>20. Voice and video (Phase 6)</h3>
         <ul><li>6.1 Voice and video in askdnd (L) · 6.2 One recording track per person (L) · 6.3 Recording straight to recap (L) · 6.4 Live captions (M)</li></ul>
         <p class="small muted">Needs your decision first: recording stays on your Mac, or the raw-transcript privacy rule changes.</p></div>
         <div class="tags"><span class="chip s-parked">Nice to have</span></div></div>
-      <div class="step" data-step="p7"><span class="n"></span><div class="body"><h3>22. Other groups (Phase 7)</h3>
+      <div class="step" data-step="p7"><span class="n"></span><div class="body"><h3>21. Other groups (Phase 7)</h3>
         <ul><li>7.1 Content and licensing check (S, before sharing) · 7.2 Invite another group (L) · 7.3 Accounts and costs per group (L)</li></ul></div>
         <div class="tags"><span class="chip s-parked">Not planned</span></div></div>
     </div>
@@ -206,7 +203,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
       <div class="day"><span class="d">Nov 2</span><ul>
-        <li>Features and Labs, built and waiting on item 1 (Nov 3, <a href="https://github.com/jettison-v/dndsy/pull/173">PR 173</a>): Sync with D&amp;D Beyond one finished switch; Labs one switch over askdnd's VTT; the dice tray each person's own; a test campaign holds test data only</li>
+        <li>Features and Labs, on beta (Nov 3, <a href="https://github.com/jettison-v/dndsy/pull/173">PR 173</a>): Sync with D&amp;D Beyond one finished switch; Labs one switch over askdnd's VTT; the dice tray each person's own; a test campaign holds test data only</li>
         <li>Merged and on beta (<a href="https://github.com/jettison-v/dndsy/pull/169">PR 169</a>, with 167, 168 and 170; <a href="https://github.com/jettison-v/dndsy/pull/171">171</a> fixed a test of mine that made main red for 20 minutes): VTT slices 0 and 1 in test campaigns (Manage › Settings shows the two switches, Play through askdnd and askdnd's VTT; the Table button opens askdnd's table at /c/&lt;campaign&gt;/table, its middle the fight's rows, the same piece as Party's Rows), healing from 0 clearing the death save marks (then 9 of 9, three times, on the real sheets), a longer bridge log for admins, the Campaign page's queries, the live test reading D&amp;D Beyond as its sheet does</li>
         <li>Tonight's live test on the real D&amp;D Beyond, three rounds of part 1 after PR 164: 104 of 105, 104 of 105, 100 of 103. One real miss (healing from 0 could leave a death save mark: fixed in PR 168), four that were the test's own reading of D&amp;D Beyond (fixed in PR 170: then 34 of 34 twice). No database trouble under the three seats; Sentry has nothing open (the closed-tab issue resolved)</li>
         <li>Every main page timed with its database queries on the local copy of beta: player pages under 80 ms, the slowest admin page about 250 ms; the Campaign page's queries that grew with the story cut (PR 167)</li>
