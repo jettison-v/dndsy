@@ -181,6 +181,10 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
         beast = ws.beast_for(ctx["sheet"], wild, ctx["beasts"]) if wild and ctx["druid"] else None
         if beast:
             ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
+            slowed = cond.speed_now(ctx["form"]["speed_dict"], ctx["conditions"])  # (the form's speeds, as the character's)
+            if slowed is not ctx["form"]["speed_dict"]:
+                moves = {k: v for k, v in slowed.items() if k != "parts"}
+                ctx["form"] = {**ctx["form"], "speed_dict": moves, "speed": ws.speed_text(moves)}
             own = ctx["columns"]  # (items stay: what a form's limbs can handle is the DM's to say)
             ctx["columns"] = {k: {**v, "items": own[k]["items"], "item_count": own[k]["item_count"]} for k, v in ctx["form"]["columns"].items()}
             ctx["columns"]["No action"] = own["No action"]

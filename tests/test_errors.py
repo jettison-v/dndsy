@@ -73,6 +73,17 @@ def test_a_server_error_reaches_sentry_without_its_local_variables(sentry):
     assert frames and not any("vars" in f for f in frames)  # no local variables, so the plan stays here
 
 
+def test_a_browser_that_went_away_isnt_an_error(sentry):
+    """Sentry ASKDND-V2-E (Nov 2): a tab closed while its request was still being read showed up as askdnd's error."""
+    from starlette.requests import ClientDisconnect
+
+    try:
+        raise ClientDisconnect()
+    except ClientDisconnect:
+        sentry_sdk.capture_exception()
+    assert sentry.events == []
+
+
 def test_a_pages_javascript_error_comes_home(table, sentry):  # noqa: F811
     from fastapi.testclient import TestClient
 
