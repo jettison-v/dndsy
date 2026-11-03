@@ -121,12 +121,20 @@ def _page(request: Request, name: str, ctx: dict):
 def party_rows(db: Session, user: dict | None) -> list[dict]:
     """The campaign's characters as Party shows them (also the middle of askdnd's table, app/table_page.py): each one's
     sheet as shown, with what it's under."""
-    overrides, rows = _overrides(db), []
+    overrides, rows, beasts = _overrides(db), [], None
     for r in _party_rows(db, user):
         sheet, now = views.apply_overrides(r["sheet"], overrides), listed(db, r["c"], r["sheet"])
         if sheet:
             sheet["speed"] = cond.speed_now(sheet.get("speed"), now)  # (as on the character's own pages)
-        rows.append({**r, "sheet": sheet, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
+        form = None
+        if sheet and r["c"].wild_shape and ws.druid(sheet):  # in a Wild Shape form: the table sees the form (Nov 3)
+            beasts = beasts if beasts is not None else ws.beasts(db, r["c"].campaign_id)
+            beast = ws.beast_for(sheet, r["c"].wild_shape, beasts)
+            if beast:
+                f = ws.shaped(sheet, beast, keep=ws.chosen_keep(sheet, r["c"].wild_shape_keep))
+                speed = cond.speed_now(f["speed_dict"], now)
+                form = {"name": beast["name"], "ac": f["ac"], "speed": speed.get("walk") or 0, "image": beast.get("image") or ""}
+        rows.append({**r, "sheet": sheet, "form": form, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
     return rows
 
 
@@ -213,6 +221,27 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     return ctx
 
 
+def _in_form(ctx: dict, ch: Character) -> dict | None:
+    """Sheet in a Wild Shape form (Brett, 2026-11-03; docs/mockups/wild-shape-play/ Sheet): Sheet stays the character's
+    own, says it's in a form, and marks what the form can't do with the reason (greyed, never hidden: the DM rules). An
+    item says the DM decides, as the rules leave equipment to the DM."""
+    d, sheet = ctx.get("druid"), ctx.get("sheet") or {}
+    if not ch.wild_shape or not d:
+        return None
+    castable = _castable_in_form(ctx)
+    no_spells = ("Not in this form: only Circle of the Moon spells" if d.get("moon_spells") else
+                 "Not in this form: a form can't cast spells")
+    species = {a["key"] for a in sheet.get("actions") or [] if a.get("source") == "race"}
+    for o in ctx["options"]:
+        if o["kind"] == "spell" and not d.get("beast_spells") and o["name"] not in castable:
+            o["form_why"] = no_spells
+        elif o["key"] in species:
+            o["form_why"] = "Not in this form: a Wild Shape form replaces your species traits"
+        elif o["kind"] == "item":
+            o["form_note"] = "In a form: the DM decides whether you can use it"
+    return {"name": ch.wild_shape}
+
+
 def _castable_in_form(ctx: dict) -> set[str]:
     d = ctx.get("druid") or {}
     return set(d.get("moon_spells") or []) | ({sp["name"] for sp in (ctx["sheet"] or {}).get("spells") or []} if d.get("beast_spells") else set())
@@ -258,6 +287,7 @@ def _sheet_ctx(db: Session, ch: Character, user: dict) -> dict:
         # Actions tab: everything except leveled spells (those are on the Spells tab), like D&D Beyond
         ctx["options"] = [o for o in views.options(ctx["sheet"], ctx["picks"]["star"])
                           if o["kind"] != "spell" or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
+        ctx["in_form"] = _in_form(ctx, ch)
         ctx["feature_rows"] = views.feature_rows(ctx["sheet"], views.options(ctx["sheet"]))  # Features tab: the shared list
         ctx["forms"] = ws.forms(ctx["sheet"], ctx["picks"]["fav"], ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep), ctx["beasts"])
         ctx["ws_other_uses"] = ws.other_uses(ctx["sheet"]) if ctx["druid"] else []
@@ -546,27 +576,6 @@ def set_wild_shape_keep(request: Request, character_id: int, form=web.FormBody, 
     ch.wild_shape_keep = sorted(k for k in form.getlist("keep") if k in allowed)
     db.commit()
     return form_panel(request, character_id, str(form.get("name", "")), db)
-
-
-@router.post("/characters/{character_id:int}/wild-shape")
-def set_wild_shape(request: Request, character_id: int, form: str = Form(""), db: Session = Depends(get_db)):
-    """Battle's Wild Shape switch (the character's player): show a known form's
-    battle cards, or go back to normal. Everyone at the table sees it."""
-    user, ch, stop = _load(request, db, character_id)
-    if stop:
-        return stop
-    if not picks.can_edit(db, user, ch):
-        return _forbidden(request, "Only this character's player can do that.")
-    known = {f["name"].lower(): f["name"] for f in ws.known_forms(chars.character_summary(ch))}
-    if form and form.lower() not in known:
-        return HTMLResponse("", status_code=400)
-    ch.wild_shape = known[form.lower()] if form else None
-    db.commit()
-    if request.headers.get("HX-Request"):
-        resp = templates.TemplateResponse(request, "_battle_body.html", _battle_ctx(db, ch, user))
-        resp.headers["HX-Trigger"] = json.dumps({"toast": f"Wild Shape: {ch.wild_shape}" if ch.wild_shape else "Back to normal form"})
-        return resp
-    return RedirectResponse(f"/characters/{ch.id}/battle", status_code=303)
 
 
 @router.get("/characters/{character_id:int}/battle/preview")

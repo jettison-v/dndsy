@@ -5,6 +5,7 @@
 <button type="button" class="rp-x" aria-label="Close">×</button>
 <div class="rw-title">{{ e.name }}</div>
 <p class="use-cost">{{ e.time }}{% if e.range %} · {{ e.range }}{% endif %}{% if e.duration %} · {{ e.duration }}{% endif %}</p>
+{% if form_no %}<p class="use-cost shift-warn">{{ form_no }}</p>{% endif %}
 {% if ends %}<p class="use-what">Ends Concentration on {{ ends.spell }}.</p>{% endif %}
 {% if ways and reachable %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for w in ways %}<option value="{{ w.way }}" data-level="{{ w.level }}">{{ w.label }}</option>{% endfor %}</select></div>{% endif %}
 {% if reachable %}

@@ -234,14 +234,22 @@
 {%- endmacro %}
 
 {# Battle's header: the Character page's number strip, with the labels and tiles it uses, tighter. #}
-{% macro battle_strip(s, c, change_hp=false) -%}
+{# Battle's top row. In a Wild Shape form (`form`, wild_shape.shaped) AC, Speed and Initiative are the form's, edged green
+   and opening the form's page; Hit Points stay your own (Brett, 2026-11-03, docs/mockups/wild-shape-play/). #}
+{% macro battle_strip(s, c, change_hp=false, form=none) -%}
+{%- set f = form -%}
+{%- set fa -%}{% if f %}data-modal-url="/characters/{{ c.id }}/form?name={{ f.beast.name | urlencode }}" data-modal-size="large" tabindex="0" role="button" title="The {{ f.beast.name }}'s: how it adds up"{% endif %}{%- endset -%}
+{%- set fcls = "in-form" if f else "" -%}
 <div class="strip compact">
   {{ hp_tile(s, c, change=change_hp) }}
-  {{ ntile(s, tile(c, "ac"), '<span class="ph-full">Armor class</span><span class="ph-short">AC</span>' | safe, ("<b>%s</b>" | format(s.armor_class)) | safe) }}
-  {%- set extra = s.speed.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}
-  {{ ntile(s, tile(c, "speed"), "Speed", ("<b>%s ft</b>" | format(s.speed.walk)) | safe, foot=(('<span class="note ph-hide">' ~ (extra | map("join", " ") | join(", ") | e) ~ '</span>') | safe if extra else "")) }}
-  {%- set init %}<button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }} title="Roll Initiative">{{ s.initiative }}</button>{% endset %}
-  {{ ntile(s, tile(c, "initiative"), '<span class="ph-full">Initiative</span><span class="ph-short">Init.</span>' | safe, init, foot=adv(s.initiative_adv)) }}
+  {{ ntile(s, fa if f else tile(c, "ac"), '<span class="ph-full">Armor class</span><span class="ph-short">AC</span>' | safe, ("<b>%s</b>" | format(f.ac if f else s.armor_class)) | safe, cls=fcls) }}
+  {%- set sp = f.speed_dict if f else s.speed %}
+  {%- set extra = sp.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}
+  {%- set sp_foot %}{% if extra %}<span class="note ph-hide">{{ extra | map("join", " ") | join(", ") }}</span>{% endif %}{% endset %}
+  {{ ntile(s, fa if f else tile(c, "speed"), "Speed", ("<b>%s ft</b>" | format(sp.walk or 0)) | safe, foot=sp_foot, cls=fcls) }}
+  {%- set ini, ini_adv = (f.initiative, f.initiative_adv) if f else (s.initiative, s.initiative_adv) %}
+  {%- set init %}<button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", ini, "", ini_adv) }} title="Roll Initiative">{{ ini }}</button>{% endset %}
+  {{ ntile(s, fa if f else tile(c, "initiative"), '<span class="ph-full">Initiative</span><span class="ph-short">Init.</span>' | safe, init, foot=adv(ini_adv), cls=fcls) }}
   {% for sc in s.spellcasting[:1] %}{{ ntile(s, tile(c, "spell"), '<span class="tile-full">Spell DC / attack</span><span class="tile-short"><span class="ph-full">Spell DC</span><span class="ph-short">Spell</span></span>' | safe, ("<b>%s</b><span class=\"note ph-hide\"> / %s</span>" | format(sc.save_dc, sc.attack)) | safe) }}{% endfor %}
 </div>
 {%- endmacro %}
@@ -315,8 +323,10 @@
 {%- set go = (can_use and o.use) or cast -%}
 {%- set btn -%}{% if cast %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ o.key | urlencode }}">Cast</button>
 {%- elif go %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button>{% endif %}{%- endset -%}
-{{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags, what=o.summary or o.meta,
-      mech=o.meta if o.summary else "", hit=btn if go else o.hit, uses=o.uses, spend=o.spends, hit_adv=o.adv, roll=o if not go and (o.dice or (o.hit and o.hit[0] in "+-−")) else None) }}
+{#- In a Wild Shape form (Sheet, character_pages._in_form): what the form can't do greyed with its reason, an item's note -#}
+{{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags + ([(o.form_note, "form-note")] if o.form_note else []),
+      what=o.form_why or o.summary or o.meta, mech=o.meta if o.summary else "", cls="form-no" if o.form_why else "",
+      hit=btn if go else o.hit, uses=o.uses, spend=o.spends, hit_adv=o.adv, roll=o if not go and (o.dice or (o.hit and o.hit[0] in "+-−")) else None) }}
 {%- endmacro %}
 
 {# A character's picture from D&D Beyond (their image server). Hidden if it doesn't load. #}
