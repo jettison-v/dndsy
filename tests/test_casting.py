@@ -102,3 +102,11 @@ def test_a_free_use_comes_first_and_takes_the_place_of_no_slot():
     assert got[0]["label"] == "Free: Fey Touched (1 left)"
     assert not any(w["way"] == casting.NO_SLOT for w in got)
     assert any(w["way"] == casting.NO_SLOT for w in casting.ways(sheet, e | {"uses": {"left": 0, "max": 1}}))
+
+
+def test_a_spell_in_the_side_panels_list_has_cast_as_on_battle(player, db, sheet):
+    """Brett, Nov 3: a pinned spell had Cast on Battle, but the same spell in its column's full list (the side panel's
+    "everything you can do") had only its roll. The list draws the same Cast."""
+    cole = char(db, "Cole")
+    every = player.get(f"/characters/{cole.id}/all/action").text
+    assert f'data-use-url="/characters/{cole.id}/cast?key=spell' in every
