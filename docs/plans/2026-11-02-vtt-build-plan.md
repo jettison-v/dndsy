@@ -60,5 +60,6 @@ to-do list; this file is the detail behind them.
 - How the map is drawn (slice 6): a drawing library that handles a large Dungeon Alchemist picture and many tokens
   smoothly on an iPhone, vendored like the dice. Chosen and tried on the iPhone in WebKit before slice 6 starts.
 - Where maps are kept: S3 under `v2/maps/`, never in git, like the Monster Manual's pictures.
-- What a fight saves: askdnd's own fight lives on the campaign, like `Campaign.fight` today, so every open page hears
-  it through the live table connection.
+- What a fight saves: askdnd's own fight and its fighters are rows of their own, changed one at a time under the
+  fight's lock (Before slice 1), and announced like `Campaign.fight` today, so every open page hears them through the
+  live table connection.
