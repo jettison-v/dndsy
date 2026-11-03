@@ -916,7 +916,7 @@ Railway's settings, pictures in S3, Sentry, the deploy itself, or several people
 3. Point the new domain at the same service as your test address when the test address is what people already use; split into separate production and staging copies only when you need to try changes away from real users.
 4. Keep the old app reachable at its own subdomain until you're sure nothing needs it.
 
-## 2026-11-02 — main only takes green pull requests
+## 2026-11-02: main only takes green pull requests
 
 **What we set up**
 - **GitHub Pro** ($4 a month) on Brett's account. On the free plan a private repository can't protect a branch, so GitHub couldn't stop a merge before its tests finished.
