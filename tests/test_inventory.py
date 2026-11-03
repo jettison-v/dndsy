@@ -10,8 +10,8 @@ from tests.table_setup import char
 
 @pytest.fixture(autouse=True)
 def test_campaign(db, sheet):
-    """Live state is a VTT piece still being reviewed: a test campaign sees it."""
-    db.get(Campaign, char(db, "Cole").campaign_id).is_test = True
+    """Live state comes with Sync with D&D Beyond (app/vtt.py), switched on for the campaign."""
+    db.get(Campaign, char(db, "Cole").campaign_id).vtt_pieces = ["sync"]
     db.flush()
 
 
@@ -61,11 +61,11 @@ def test_an_items_count_goes_down_as_its_used(player, db, sheet):
     assert change.kind == "item" and change.data["delta"] == -1
 
 
-def test_only_the_player_and_only_in_a_test_campaign_for_now(player, dm, db, sheet):
+def test_only_the_player_and_only_where_sync_is_on(player, dm, db, sheet):
     cole = char(db, "Cole")
     it = item(cole, equipped=True)
     assert dm.post(f"/characters/{cole.id}/items/{iid(it)}/equip", data={"on": "1"}).status_code == 404
-    db.get(Campaign, cole.campaign_id).is_test = False
+    db.get(Campaign, cole.campaign_id).vtt_pieces = []
     db.flush()
     assert player.post(f"/characters/{cole.id}/items/{iid(it)}/equip", data={"on": "1"}).status_code == 404
     assert player.get(f"/characters/{cole.id}/coins").status_code == 404

@@ -346,7 +346,7 @@ def add_test_copies(request: Request, character_ids: list[int] = Form([]), db: S
         return denied
     campaign = web.campaign(db)
     if campaign is None or not campaign.is_test:
-        request.session["toast"] = web.notice("Test copies are only for a test campaign (Settings › Virtual tabletop).", "warn")
+        request.session["toast"] = web.notice("Test copies are only for a test campaign (Manage › Settings › Test campaign).", "warn")
         return _back()
     can = {c.id: c for c, copied in chars.copy_candidates(db, campaign.id) if not copied}
     # A copy keeps its player if they're in the test campaign, or are the admin making it (they play their own copy)

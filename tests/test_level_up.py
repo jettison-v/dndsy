@@ -36,7 +36,7 @@ def test_two_levels_before_reading_the_first_are_one_list():
 
 @pytest.fixture
 def leveled(db, sheet):
-    db.get(Campaign, char(db, "Cole").campaign_id).is_test = True
+    db.get(Campaign, char(db, "Cole").campaign_id).vtt_pieces = ["sync"]
     cole = char(db, "Cole")
     next(c for c in sheet["classes"])["level"] += 1
     characters.refresh(db, cole)

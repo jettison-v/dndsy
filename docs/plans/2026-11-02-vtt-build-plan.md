@@ -1,8 +1,8 @@
 # The VTT build plan (Nov 2, 2026)
 
 askdnd's own table, built in this session, one working slice at a time (Brett, 2026-11-02: "Fine working all in this
-thread to promote quality"). Each slice is tried locally, merged, and lands on beta behind the switch **askdnd's VTT**,
-which only test campaigns see until Brett switches it on. The layout is decided: the frame around the map
+thread to promote quality"). Each slice is tried locally, merged, and lands on beta as **askdnd's VTT**, a Labs feature
+(Manage › Settings › Labs, Nov 3) that a campaign tries by switching Labs and it on. The layout is decided: the frame around the map
 (`docs/mockups/vtt-layout/`, published as VTT Layout). The roadmap (`docs/roadmap.html`) lists these slices in its one
 to-do list; this file is the detail behind them.
 
@@ -17,7 +17,7 @@ to-do list; this file is the detail behind them.
   as today. Brett's answers from the parked turn order (Oct 28) apply: enemy Hit Points hidden from players by default
   (they see Healthy, Bloodied or Down), in a DM battle settings menu that keeps defaults; players roll their own
   initiative; the DM's change to a player whose sheet can't be reached is listed for them to make by hand.
-- **Two switches** (DECISIONS 2026-11-02): Play through askdnd (the bridge, casting, resources and rests, the DM as a
+- **Two switches** (DECISIONS 2026-11-02; since Nov 3 a Feature, Sync with D&D Beyond, and a Labs feature, askdnd's VTT): Play through askdnd (the bridge, casting, resources and rests, the DM as a
   backup) and askdnd's VTT (its way in is the menu bar's Table button, D&D Beyond's VTT until it's on; its page is
   refused while it's off).
 - **Movement and spell areas** (VTT Layout › Movement, Areas): askdnd counts and shows, never stops a move; Dash and a

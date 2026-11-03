@@ -10,8 +10,8 @@ from tests.table_setup import char
 
 @pytest.fixture(autouse=True)
 def test_campaign(db, sheet):
-    """Live state is a VTT piece still being reviewed: a test campaign sees it."""
-    db.get(Campaign, char(db, "Cole").campaign_id).is_test = True
+    """Live state comes with Sync with D&D Beyond (app/vtt.py), switched on for the campaign."""
+    db.get(Campaign, char(db, "Cole").campaign_id).vtt_pieces = ["sync"]
     db.flush()
 
 
@@ -73,10 +73,10 @@ def test_battle_has_cast_and_the_resources_open_their_window(player, db, sheet):
     assert f'/characters/{cole.id}/count?field=uses%3A' in page or f'/characters/{cole.id}/count?field=uses:' in page
 
 
-def test_a_campaign_that_isnt_a_test_doesnt_see_any_of_it_yet(player, db, sheet):
-    """Live state is hidden from the table until Brett has reviewed it (the VTT piece live_state)."""
+def test_a_campaign_without_sync_doesnt_see_any_of_it(player, db, sheet):
+    """Live state comes only with Sync with D&D Beyond (app/vtt.py): without it, none of it shows."""
     cole = char(db, "Cole")
-    db.get(Campaign, cole.campaign_id).is_test = False
+    db.get(Campaign, cole.campaign_id).vtt_pieces = []
     db.flush()
     page = player.get(f"/characters/{cole.id}/battle").text
     assert "/count?field=" not in page and "/cast?key=" not in page

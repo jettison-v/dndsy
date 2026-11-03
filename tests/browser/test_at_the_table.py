@@ -143,3 +143,31 @@ def test_rolls_made_while_you_were_away_dont_replay_when_you_come_back(people, s
     watching.wait_for_function("document.body.classList.contains('rolls-open')")
     assert "Wis save" in newest(watching)
 
+
+
+def test_others_rolls_are_full_screen_unless_you_chose_the_dice_tray(people, server):
+    """Brett, 2026-11-03: someone else's roll is thrown across the whole screen with who rolled; the dice tray (Labs,
+    each person's own in Your dice) puts it in the bottom-left corner instead."""
+    player, dm = people("player", "dm")
+    dm.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'on')")  # (after Person's own, which turns dice off)
+    watching = dm.open("/c/main/party")
+    dm.live()
+    page = player.open(f"/characters/{server['cole']}/battle")
+    dex = '[data-roll=save][data-label="Dex save"]:visible >> nth=0'
+    page.wait_for_selector(dex)
+    page.click(dex, modifiers=["Shift"])
+    watching.wait_for_selector(".dice-throw.others", timeout=15000)
+    assert "Dex save" in watching.locator(".dice-throw .dt-who").inner_text()
+    assert watching.locator(".dice-tray.up").count() == 0
+    watching.evaluate("""async () => {
+        const f = new FormData(); f.append('set', 'bronze'); f.append('material', 'glass'); f.append('tray', '1');
+        await fetch('/dice', {method: 'POST', body: f});
+    }""")  # Your dice › Dice tray
+    watching.reload()
+    dm.live()
+    watching.wait_for_function("JSON.parse(document.body.dataset.dice).tray === true")
+    page.keyboard.press("Escape")
+    page.click(dex, modifiers=["Shift"])
+    watching.wait_for_selector(".dice-tray.up", timeout=15000)
+    assert "Dex save" in watching.locator(".dice-tray").inner_text()
+    assert player.errors == [] and dm.errors == []

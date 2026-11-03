@@ -1717,8 +1717,10 @@
   // ---------------------------------------------------------------- thrown dice
   // (Brett, 2026-10-23; docs/mockups/dice-two-ways.html; app/dice.py) Real 3D dice (@3d-dice/dice-box-threejs, vendored)
   // made to land on askdnd's numbers, in the roller's own set. Your roll: thrown across the page, which dims behind it.
-  // Someone else's: a small tray in the bottom-left corner, or thrown like yours where the VTT piece "table_dice" is on
-  // (body[data-dice-all]). If the dice can't load (an old browser, no WebGL), the gem stage above stands in.
+  // Someone else's: thrown like yours, with a tag saying who rolled (Brett, 2026-11-03); for a person who chose the dice
+  // tray (Labs, Your dice: data-dice's `tray`), a small tray in the bottom-left corner instead, except on askdnd's table
+  // (.table-page), where every roll is thrown across the screen. If the dice can't load (an old browser, no WebGL), the
+  // gem stage above stands in.
   const LIB = '/static/vendor/dice-box-threejs-0.0.12/';
   const TYPE_SETS = { fire: 'fire', cold: 'ice', radiant: 'radiant', necrotic: 'necrotic', poison: 'poison', acid: 'acid',
                       thunder: 'thunder', lightning: 'lightning', force: 'force', psychic: 'psychic' };
@@ -1884,7 +1886,7 @@
     const nat = followUp ? null : li.classList.contains('nat20') ? 20 : li.classList.contains('nat1') ? 1 : null;
     const dice = diceOf(li);
     const swatch = '<i class="sw-' + esc(dice.set || 'white') + '"></i>';
-    if (document.body.hasAttribute('data-dice-all')) {
+    if (!diceOf(document.body).tray || document.querySelector('.table-page')) {
       const box = thrower(), tune = tuning('vtt');
       return box.ready.then(() => box.throw(list, dice, () => {
         clearTimeout(throwTimer);
@@ -1913,7 +1915,7 @@
   // Your dice changed (the picker saved): use them from now on
   document.body.addEventListener('diceChanged', ev => {
     const d = ev.detail || {};  // htmx adds the form (elt) to it: keep only the dice
-    if (d.set) document.body.dataset.dice = JSON.stringify({ set: d.set, material: d.material, by_type: d.by_type });
+    if (d.set) document.body.dataset.dice = JSON.stringify({ set: d.set, material: d.material, by_type: d.by_type, tray: d.tray });
     const x = document.querySelector('.peek.open .peek-close'); if (x) x.click();
   });
   // The picker: throw a d20 in the preview whenever the set or material changes; sounds are per device

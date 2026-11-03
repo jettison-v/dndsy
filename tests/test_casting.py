@@ -11,8 +11,8 @@ from tests.table_setup import char
 
 @pytest.fixture(autouse=True)
 def test_campaign(db, sheet):
-    """Live state is a VTT piece still being reviewed: a test campaign sees it."""
-    db.get(Campaign, char(db, "Cole").campaign_id).is_test = True
+    """Live state comes with Sync with D&D Beyond (app/vtt.py), switched on for the campaign."""
+    db.get(Campaign, char(db, "Cole").campaign_id).vtt_pieces = ["sync"]
     db.flush()
 
 

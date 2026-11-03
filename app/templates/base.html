@@ -16,7 +16,7 @@
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-{% set fr = fight_now() %}<body{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if vtt_on("table_dice") %} data-dice-all{% endif %}{% endif %}>
+{% set fr = fight_now() %}<body{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% endif %}>
 {% if user %}<script>
 /* The Table rolls sidebar's place, before the page is drawn, so pages don't shift sideways as they load (Brett,
    2026-10-26). The same rules as app.js "the sidebar's state", which takes over once it runs: at the table in a
@@ -52,13 +52,13 @@
   {% if user and here %}
   {% if my_campaigns | length > 1 %}
   <div class="campaign-switch">
-    <button class="campaign-name" data-menu="campaign-menu" aria-haspopup="true" aria-label="Campaign: {{ here.name }}{{ ' (test)' if here.is_test }}. Switch campaign">{{ here.name }}{% if here.is_test %} <span class="tag draft campaign-test" title="A test campaign: every VTT piece shows here">Test</span>{% endif %} ▾</button>
+    <button class="campaign-name" data-menu="campaign-menu" aria-haspopup="true" aria-label="Campaign: {{ here.name }}{{ ' (test)' if here.is_test }}. Switch campaign">{{ here.name }}{% if here.is_test %} <span class="tag draft campaign-test" title="A test campaign: it holds test data">Test</span>{% endif %} ▾</button>
     <div class="menu" id="campaign-menu" hidden>
       <div class="menu-group">Your campaigns</div>
       {% for c in my_campaigns %}<a href="/c/{{ c.slug }}{{ switch_path }}" class="{{ 'active' if c.id == here.id }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}{% if c.id == here.id %}<small>You're here</small>{% elif campaign_role(c.id) %}<small>{{ campaign_role(c.id) }}</small>{% endif %}</a>{% endfor %}
     </div>
   </div>
-  {% else %}<span class="campaign-name" title="The campaign you're in">{{ here.name }}{% if here.is_test %} <span class="tag draft campaign-test" title="A test campaign: every VTT piece shows here">Test</span>{% endif %}</span>{% endif %}
+  {% else %}<span class="campaign-name" title="The campaign you're in">{{ here.name }}{% if here.is_test %} <span class="tag draft campaign-test" title="A test campaign: it holds test data">Test</span>{% endif %}</span>{% endif %}
   {% endif %}
   {% if user %}{% set tn = tablenav() %}{% set mine_here = tn.here and tn.here.mine %}
   <span class="nav-sep" aria-hidden="true"></span>

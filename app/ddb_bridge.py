@@ -122,7 +122,7 @@ def plays(db: Session, character: Character | None) -> bool:
 
 def on_for(db: Session, character: Character | None) -> bool:
     """Whether the bridge works on this character: it may run here, its campaign has it switched on (the VTT piece
-    "ddb_bridge"; a test campaign always does), and it's a character of its own. Never a test copy: a copy shares a
+    "ddb_bridge": Sync with D&D Beyond, app/vtt.py), and it's a character of its own. Never a test copy: a copy shares a
     real character's D&D Beyond sheet, so a change to it would land on the real one."""
     from app import vtt
     from app.models import Campaign
@@ -211,7 +211,7 @@ def own_sheet(character: Character) -> bool:
 
 
 def backup_on(campaign: Campaign | None) -> bool:
-    """The campaign has the bridge and the DM as a backup (the VTT piece "dm_backup"; a test campaign always does)."""
+    """The campaign has the bridge and the DM as a backup (the piece "dm_backup": Sync with D&D Beyond, app/vtt.py)."""
     from app import vtt
 
     return bool(config.DDB_BRIDGE and campaign is not None and vtt.on(campaign, "ddb_bridge") and vtt.on(campaign, "dm_backup"))

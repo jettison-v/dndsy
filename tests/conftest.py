@@ -253,7 +253,7 @@ def sheet(monkeypatch, db):
     ddb_bridge._health.update(extension_at=0.0, sheets=[], heard_at=0.0, read_check=None, round_trip=None)
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
-    db.get(Campaign, cole.campaign_id).vtt_pieces = ["ddb_bridge"]  # the DM switched it on (Manage › Settings)
+    db.get(Campaign, cole.campaign_id).vtt_pieces = ["sync"]  # the DM switched Sync with D&D Beyond on (Manage › Settings)
     owned_by(db, cole, "player@example.com")
     characters.refresh(db, cole)
     for ch in db.scalars(select(Character)):  # the extension has each sheet open (test_ddb_bridge's later tests: when it hasn't)

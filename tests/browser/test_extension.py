@@ -39,7 +39,7 @@ def extension_for(base: str, folder) -> str:
 def bridge_on(server, browser_db):
     engine = create_engine(browser_db[0])
     with engine.connect() as conn:
-        conn.execute(text("UPDATE campaigns SET is_test = true WHERE id = :c"), {"c": server["campaign"]})
+        conn.execute(text("""UPDATE campaigns SET vtt_pieces = '["sync"]' WHERE id = :c"""), {"c": server["campaign"]})
         conn.commit()
     engine.dispose()
 

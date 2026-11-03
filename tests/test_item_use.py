@@ -95,7 +95,7 @@ def test_items_follow_pinning_and_the_rest_are_in_the_side_panel(player, db, she
     cole, pid = hurt(db, sheet)
     bonus = lambda page: page.split('data-econ-col="bonus"')[1].split('data-econ-col="reaction"')[0]  # noqa: E731
     page = bonus(player.get(f"/characters/{cole.id}/battle").text)
-    assert "Items" in page and "All items (2)" in page and "data-use-url" not in page  # (with the ring's Become visible)
+    assert "Items" in page and "All items (2)" in page and "/use/" not in page  # no item pinned yet (Cast shows: Sync is on)
     picks.toggle(db, cole, "star", f"item:{pid}", "Potion of Healing")
     db.commit()
     page = bonus(player.get(f"/characters/{cole.id}/battle").text)
