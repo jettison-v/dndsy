@@ -7,10 +7,13 @@ code. The roadmap (`docs/roadmap.html`) carries what came out of it as to-do ite
 
 ## What it found
 
-1. **Fight reports could be saved over each other (fixed, PR 159).** Every open D&D Beyond VTT page reports each turn,
-   and nothing kept two reports from being saved at once: both saw the turn begin (doubled reminders) and the later
-   wrote over the earlier. `fight.lock` now holds the campaign's row (FOR NO KEY UPDATE, like the bridge's own lock)
-   before any change to the fight. Slice 2's own fight inherits it.
+1. **Two changes to a fight saved at once lost one (fixed, PR 159; proven by a test the same night).** Each change
+   (a turn report from any open VTT page, a death-save card) reads the fight, adds to it and saves it whole, and
+   nothing kept two from being saved at the same moment, so one was dropped: a dying character's card could never
+   reach the player or the DM. `fight.lock` now holds the campaign's row (FOR NO KEY UPDATE, like the bridge's own
+   lock) before any change to the fight. tests/test_fight.py saves two cards at once in two threads: with the lock both
+   stay, without it the test fails. (First written up as "doubled reminders"; the test showed the real harm was the
+   lost one.) Slice 2's own fight inherits it.
 
 2. **A request holds the database while D&D Beyond answers (open since Nov 2).** When the bridge builds a batch on a
    copy of the sheet older than a minute, it reads the sheet from D&D Beyond (up to 15 seconds, plus the class spell

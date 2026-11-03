@@ -380,3 +380,21 @@ def test_the_tours_preview_shows_a_form_and_saves_nothing(db, cole, player):
     swap = next(s for s in stops if s["group"] == "wildshape" and s["swap"])
     assert swap["swap"].startswith(f"/characters/{cole.id}/battle/preview?form=")
     assert swap["restore"] == f"/characters/{cole.id}/battle/preview"
+
+
+def test_a_forms_speed_follows_exhaustion_and_speed_0(db, cole, player, dm):
+    """Nov 2: the form's speeds on Battle follow the same conditions as the character's own (conditions.speed_now):
+    Exhaustion's 5 feet a level, and Speed 0. A Polar Bear walks and swims 40 (SRD), 50 with Cole's Unarmored Movement."""
+    player.post(f"/characters/{cole.id}/wild-shape", data={"form": "Polar Bear"}, headers=HX)
+
+    def form_speed():
+        page = dm.get(f"/characters/{cole.id}/battle").text
+        return page.split("<small>Speed</small>", 1)[1].split("</b>", 1)[0]
+
+    assert "50 ft., swim 50 ft." in form_speed()
+    cole.conditions = [{"name": "Exhaustion", "level": 2}]
+    db.flush()
+    assert "40 ft., swim 40 ft." in form_speed()
+    cole.conditions = [{"name": "Grappled"}]
+    db.flush()
+    assert ">0 ft., swim 0 ft." in form_speed()
