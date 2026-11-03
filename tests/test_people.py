@@ -279,7 +279,7 @@ def test_a_character_added_while_private_takes_its_name_from_the_sheet_once_it_c
             raise ddb.DdbError("D&D Beyond says this character is private.")
         return copy.deepcopy(COLE)
 
-    monkeypatch.setattr(characters.refresh, "__defaults__", (fetch,))
+    monkeypatch.setattr(characters, "FETCH", fetch)
     owner.post("/manage/table/add", data={"ddb_link": "https://www.dndbeyond.com/characters/12345678"})
     ch = db.scalar(select(Character).where(Character.ddb_id == "12345678"))
     assert ch.name == "New character"

@@ -192,7 +192,7 @@ def test_without_the_bridge_a_condition_ticked_on_d_and_d_beyond_shows_and_ends_
     from tests.table_setup import COLE
 
     data = {**copy.deepcopy(COLE), "conditions": [{"id": 1, "level": None}]}
-    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: copy.deepcopy(data),))
+    monkeypatch.setattr(characters, "FETCH", lambda _id: copy.deepcopy(data))
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
     characters.refresh(db, cole)
