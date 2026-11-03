@@ -53,6 +53,9 @@
         {% if x.attunement %}<button type="button" class="btn small" hx-post="/characters/{{ c.id }}/items/{{ iid }}/attune" hx-vals='{{ {"on": "" if x.attunement == "attuned" else "1"} | tojson }}' hx-swap="none">{{ "End attunement" if x.attunement == "attuned" else "Attune" }}</button>{% endif %}
         {% if x.charges %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/count?field=charges:{{ iid }}">Charges</button>{% elif x.quantity > 1 or x.count == 0 %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/count?field=item:{{ iid }}">Count</button>{% endif %}
         {% if x.count %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/items/{{ iid }}/give">Give</button>{% endif %}
+        {% set bags = (sheet.inventory or []) | selectattr("bag") | list %}
+        {% if bags and not x.bag %}<label class="move-to">Move to <select name="to" hx-post="/characters/{{ c.id }}/items/{{ iid }}/move" hx-trigger="change" hx-swap="none" aria-label="Move {{ x.name }} to">
+          <option value="me"{{ " selected" if not x.in }}>Carried</option>{% for b in bags %}<option value="{{ b.key.split(':', 1)[1] }}"{{ " selected" if x.in_id == b.key.split(':', 1)[1] }}>{{ b.name }}</option>{% endfor %}</select></label>{% endif %}
       </dd>{% endif %}
     {% elif section == "features" %}
       <dt>From</dt><dd>{{ x.source }}{% if x.level %}, level {{ x.level }}{% endif %}</dd>

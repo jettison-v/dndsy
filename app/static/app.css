@@ -1353,6 +1353,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rw-title { font-weight: 700; font-size: var(--fs-md); padding-right: 24px; margin-bottom: 8px; }
 .rw-title .roll-sub { font-weight: 400; }
 .rw-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: 8px 0; }
+.rest-conc .note { flex-basis: 100%; padding-left: 24px; }
 .rw-label { width: 70px; flex: none; color: var(--muted); font-size: var(--fs-xs); }
 .rw-mode .roll-modes { display: flex; width: 100%; }
 .rw-mode .roll-modes button { flex: 1; padding: 7px 4px; font-size: var(--fs-sm); }

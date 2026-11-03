@@ -9,6 +9,8 @@ D&D Beyond through the bridge. Nothing moves until the player confirms, and only
   that comes back on one, Exhaustion down 1.
 - **At 0 Hit Points** neither can start: the window says so, and the DM rules.
 - Something back **at dawn** isn't a rest: it's listed, and stays the table's to mark.
+- **Concentration** ends when the rest outlasts the spell (a Short Rest is an hour) and on any Long Rest (its sleep is
+  Unconscious): listed ticked, and unticking keeps it, for the DM's ruling (Brett, 2026-11-03).
 
 Interruptions are the table's: askdnd can't see the hour pass.
 """
@@ -63,11 +65,22 @@ def dice(sheet: dict) -> list[dict]:
             for d in (sheet.get("hit_points") or {}).get("hit_dice") or [] if d.get("id")]
 
 
-def plan(sheet: dict, kind: str) -> dict:
+SHORT_REST_ROUNDS = 600  # an hour
+
+
+def conc_ends(conc: dict | None, kind: str) -> str:
+    """The spell whose Concentration this rest ends, or "": any on a Long Rest, one lasting an hour or less on a Short."""
+    if not conc:
+        return ""
+    return conc.get("spell", "") if kind == LONG or 0 < (conc.get("rounds") or 0) <= SHORT_REST_ROUNDS else ""
+
+
+def plan(sheet: dict, kind: str, conc: dict | None = None) -> dict:
     """What this rest brings back, for the window and for making it."""
     hp = sheet.get("hit_points") or {}
     exhaustion = next((c.get("level", 0) for c in sheet.get("conditions") or [] if c.get("name") == "Exhaustion"), 0)
-    p = {"counts": counts(sheet, kind), "dawn": at_dawn(sheet), "dice": dice(sheet), "can": hp.get("current", 0) >= 1, "hp": 0, "temp": 0, "exhaustion": 0}
+    p = {"counts": counts(sheet, kind), "dawn": at_dawn(sheet), "dice": dice(sheet), "can": hp.get("current", 0) >= 1, "hp": 0, "temp": 0, "exhaustion": 0,
+         "conc": conc_ends(conc, kind)}
     if kind == LONG:
         p |= {"hp": hp.get("damage", 0), "temp": hp.get("temp", 0), "exhaustion": exhaustion}
     return p
@@ -109,7 +122,7 @@ def window(request: Request, character_id: int, kind: str, db: Session = Depends
 
     ch, _ = _guard(db, request, character_id)
     sheet = _sheet(db, ch)
-    p = plan(sheet, _kind(kind))
+    p = plan(sheet, _kind(kind), ch.concentration)
     prepare = [b["class"] for b in books_to_prepare(sheet)] if kind == "long" else []  # (a Long Rest is when most classes change them)
     return templates.TemplateResponse(request, "_rest_window.html", {"c": ch, "kind": kind, "title": TITLE[kind], "p": p, "lines": lines(p, kind),
                                                                      "reachable": ddb_bridge.reachable(ch), "prepare": prepare})
@@ -125,10 +138,13 @@ def _make(request: Request, db: Session, character_id: int, kind: str, form) -> 
     ch, user = _guard(db, request, character_id)
     ddb_bridge.reach(ch)
     sheet = _sheet(db, ch)
-    p = plan(sheet, kind)
+    p = plan(sheet, kind, ch.concentration)
     if not p["can"]:
         raise HTTPException(409, "To start a rest you must have at least 1 Hit Point.")
     said = lines(p, kind)
+    if p["conc"] and form.get("conc_ends"):
+        ch.concentration = None  # (askdnd's own, as End does on Battle)
+        said.append(f"Concentration on {p['conc']} ended")
     for c in p["counts"]:
         fk, arg = c["field"].split(":", 1)
         ddb_bridge.add(db, ch, "use", {"field": c["field"], "delta": -c["back"], "max": ddb_sheet.most(ch.snapshot.raw, fk, arg)}, f"{ch.name}: {c['name']} back")

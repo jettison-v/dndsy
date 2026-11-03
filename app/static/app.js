@@ -2143,7 +2143,7 @@
   function useItem(btn) {
     const w = win, said = w.querySelector('.use-said');
     w.querySelectorAll('button').forEach(b => { b.disabled = true; });
-    const chosen = Object.fromEntries([...w.querySelectorAll('select[name], input[name]')].map(s => [s.name, s.value]));
+    const chosen = Object.fromEntries([...w.querySelectorAll('select[name], input[name]')].filter(s => !/^(checkbox|radio)$/.test(s.type) || s.checked).map(s => [s.name, s.value]));
     posted(w._use, { ...chosen, to: btn.dataset.to || '' }).then(j => {
       // Cast and roll: the roll opens where the Cast window was, at the level just cast
       const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll');
