@@ -1,7 +1,7 @@
-"""Handing items over (Brett, 2026-11-02): Give in an item's side panel hands it to another character at the table, and
-the DM's Give loot on a character's Sheet › Items adds an item from D&D Beyond's own list, or coins. Both go to D&D
-Beyond through the bridge with the requests the sheet itself sends (app/ddb_fields.py: an item's count, removing it,
-adding one), so nothing new is written there.
+"""Handing items over (Brett, 2026-11-02): Give in an item's side panel hands it to another character at the table. It
+goes to D&D Beyond through the bridge with the requests the sheet itself sends (app/ddb_fields.py: an item's count,
+removing it, adding one), so nothing new is written there. D&D Beyond's own list of items is read here too, for the
+item browser (app/item_browser.py: Add item, and the DM's Give loot).
 
 D&D Beyond can't move an item between characters: the giver's copy goes and the receiver gets a fresh one of the same
 item. What belonged to that copy (charges used, attunement, a note, a new name) stays behind, and the window says so. A
@@ -12,14 +12,14 @@ stopped, Try again makes it and then the giver's; if it's undone, the giver's is
 given item is at worst briefly on both sheets, never on neither.
 """
 
+import os
 import time
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app import ddb, ddb_bridge, ddb_fields, realtime, web
-from app.auth import current_user, is_admin, is_dm
+from app import books, ddb, ddb_bridge, ddb_fields, realtime, web
 from app.characters import campaign_characters
 from app.db import get_db
 from app.ddb_sheet import CORE_SOURCES
@@ -29,9 +29,10 @@ from app.templating import templates
 
 router = APIRouter()
 COINS = ("cp", "sp", "ep", "gp", "pp")
-ITEMS_URL = "https://character-service.dndbeyond.com/character/v5/game-data/items?sharingSetting=2"
+# (DDB_ITEMS_URL: tests/browser/test_extension.py's stand-in list, a file; never set on beta)
+ITEMS_URL = os.environ.get("DDB_ITEMS_URL") or "https://character-service.dndbeyond.com/character/v5/game-data/items?sharingSetting=2"
 CATALOG_SECONDS = 24 * 3600
-CATALOG_RETRY = 300  # seconds before a failed read is tried again: D&D Beyond down mustn't hold every Give loot for its timeout
+CATALOG_RETRY = 300  # seconds before a failed read is tried again: D&D Beyond down mustn't hold every item browser for its timeout
 _catalog: dict = {"at": 0.0, "tried": 0.0, "items": []}
 
 
@@ -121,11 +122,35 @@ def give(request: Request, character_id: int, item_id: int, receiver: str = Form
     return JSONResponse({"text": f"{what} to {other.name}: it leaves {ch.name}'s sheet once {other.name}'s has it", "deliver": web.deliver_now(ch)})
 
 
-# ------------------------------------------------------------------ loot from the DM
+# ------------------------------------------------------------------ D&D Beyond's items (the item browser: app/item_browser.py)
+
+
+FREE_RULES = 148  # D&D Beyond's free 2024 rules, where it keeps the plain weapons and armor (a Longsword, Chain Mail)
+ITEM_BOOKS = {**{b.ddb_source_id: b.title for b in books.BOOKS}, FREE_RULES: "Free Rules (2024)"}
+KINDS = {"Other Gear": "Adventuring gear", "Weapon": "Weapons", "Armor": "Armor", "Potion": "Potions", "Wondrous item": "Wondrous items",
+         "Ring": "Rings", "Wand": "Wands", "Rod": "Rods", "Staff": "Staffs", "Scroll": "Scrolls"}
+PICTURES = ("https://www.dndbeyond.com/", "https://media.dndbeyond.com/")  # (only D&D Beyond's own, as with token art)
+
+
+def _item(i: dict, book: int) -> dict:
+    """One of D&D Beyond's items, as the item browser shows it (app/item_browser.py). A price only where D&D Beyond
+    has one (plain gear: no magic item has one, and the DM sets those); its picture only from D&D Beyond's own hosts."""
+    magic = bool(i.get("magic"))
+    cost, damage = i.get("cost"), i.get("damage") or {}
+    picture = next((u for u in (i.get("largeAvatarUrl"), i.get("avatarUrl")) if isinstance(u, str) and u.startswith(PICTURES)), "")
+    return {"id": i["id"], "entityTypeId": i.get("entityTypeId"), "name": i["name"], "magic": magic,
+            "rarity": (i.get("rarity") or "") if magic else "Not magic", "kind": KINDS.get(i.get("filterType"), "Other"),
+            "type": i.get("subType") or i.get("type") or "", "attune": bool(i.get("canAttune")), "attune_note": i.get("attunementDescription") or "",
+            "cost_cp": round(float(cost) * 100) if isinstance(cost, int | float) and cost > 0 else None,
+            "weight": float(i.get("weight") or 0) * float(i.get("weightMultiplier") or 1),
+            "damage": f"{damage.get('diceString') or ''} {i.get('damageType') or ''}".strip() if damage.get("diceString") else "",
+            "ac": i.get("armorClass"), "properties": [p["name"] + (f" ({p['notes']})" if p.get("notes") else "") for p in i.get("properties") or [] if p.get("name")],
+            "picture": picture, "book": ITEM_BOOKS.get(book, ""), "text": ddb.html_to_text(i.get("description"))[:6000], "container": bool(i.get("isContainer"))}
 
 
 def catalog() -> list[dict]:
-    """D&D Beyond's items from the 2024 core books (askdnd's rules are 2024 only), by name, read once a day."""
+    """D&D Beyond's items from the 2024 books (askdnd's rules are 2024 only), with the plain weapons and armor it keeps in
+    its free 2024 rules, by name, read once a day: what the item browser lists (app/item_browser.py)."""
     now = time.time()
     if (now - _catalog["at"] > CATALOG_SECONDS or not _catalog["items"]) and now - _catalog["tried"] > CATALOG_RETRY:
         _catalog["tried"] = now
@@ -139,58 +164,8 @@ def catalog() -> list[dict]:
             for i in rows:
                 if not isinstance(i, dict) or i.get("isHomebrew") or not i.get("name") or not i.get("id"):
                     continue
-                if {s.get("sourceId") for s in i.get("sources") or [] if s.get("sourceType") == 1} & CORE_SOURCES:
-                    core.setdefault(i["name"], {"id": i["id"], "entityTypeId": i.get("entityTypeId"), "name": i["name"],
-                                                "magic": bool(i.get("magic")), "rarity": i.get("rarity") or ""})
+                book = next((s.get("sourceId") for s in i.get("sources") or [] if s.get("sourceType") == 1 and s.get("sourceId") in CORE_SOURCES | {FREE_RULES}), None)
+                if book is not None and not i.get("isLegacy"):
+                    core.setdefault(i["name"], _item(i, book))
             _catalog.update(at=time.time(), items=sorted(core.values(), key=lambda x: x["name"]))
     return _catalog["items"]
-
-
-def _dm(db: Session, request: Request, character_id: int) -> Character:
-    user = current_user(request)
-    ch = db.get(Character, character_id)
-    if not user or not ch or not ddb_bridge.plays(db, ch) or not (is_admin(user) or is_dm(user, ch.campaign_id)):
-        raise HTTPException(404)
-    return ch
-
-
-@router.get("/characters/{character_id:int}/loot")
-def loot_window(request: Request, character_id: int, db: Session = Depends(get_db)):
-    """The DM's Give loot: an item from D&D Beyond's list, coins, or both."""
-    ch = _dm(db, request, character_id)
-    items = catalog()
-    return templates.TemplateResponse(request, "_loot_window.html", {"c": ch, "items": items, "coins": COINS, "reachable": ddb_bridge.reachable(ch)})
-
-
-@router.post("/characters/{character_id:int}/loot")
-def loot(request: Request, character_id: int, item: str = Form(""), quantity: str = Form("1"), amount: str = Form(""), coin: str = Form("gp"),
-         db: Session = Depends(get_db)):
-    ch = _dm(db, request, character_id)
-    ddb_bridge.reach(ch)
-    item, said = item.strip(), []
-    if item:
-        found = next((i for i in catalog() if i["name"].lower() == item.lower()), None)
-        if not found:
-            raise HTTPException(409, f"D&D Beyond's 2024 books have no item called {item}. Pick one from the list.")
-        n = int(quantity) if quantity.isdigit() else 0
-        if not 0 < n <= 100:
-            raise HTTPException(409, "Give 1 to 100 of it.")
-        what = found["name"] + (f" ×{n}" if n > 1 else "")
-        ddb_bridge.add(db, ch, "add_item", {"definition": found["id"], "entityTypeId": found["entityTypeId"], "quantity": n, "name": found["name"]},
-                       f"{ch.name} got {what} from the DM")
-        said.append(what)
-    if amount.strip():
-        m = int(amount) if amount.isdigit() else 0
-        if coin not in COINS or not 0 < m <= 100000:
-            raise HTTPException(409, "Enter how many coins.")
-        numbers = ddb_bridge.numbers(ch)
-        made = ddb_bridge._change(numbers, {"kind": "use", "field": f"coin:{coin}", "delta": m})
-        if not made:
-            raise HTTPException(409, "That isn't a change askdnd can make on D&D Beyond.")
-        ddb_bridge.add(db, ch, *made, f"{ch.name} got {m:,} {coin} from the DM")
-        said.append(f"{m:,} {coin}")
-    if not said:
-        raise HTTPException(409, "Pick an item or enter coins.")
-    realtime.announce(db, ch.campaign_id, "character", id=ch.id)
-    db.commit()
-    return JSONResponse({"text": f"{' and '.join(said)} to {ch.name}: on its way to D&D Beyond", "deliver": web.deliver_now(ch)})

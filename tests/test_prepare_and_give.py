@@ -159,35 +159,6 @@ def test_a_bag_with_things_in_it_and_a_homebrew_item_are_handed_over_on_d_and_d_
     assert r.status_code == 409 and "homebrew" in r.json()["detail"] and not intents(db)
 
 
-# ------------------------------------------------------------------ loot from the DM
-
-
-@pytest.fixture
-def items(monkeypatch):
-    monkeypatch.setattr(giving, "_catalog", {"at": 9e18, "items": [{"id": 8960641, "entityTypeId": 112130694, "name": "Potion of Healing", "magic": True, "rarity": "Common"}]})
-
-
-def test_the_dm_gives_loot_an_item_and_coins(dm, db, sheet, items):
-    cole = char(db, "Cole")
-    set_role(db, "dm@example.com", "dm")
-    w = dm.get(f"/characters/{cole.id}/loot").text
-    assert "Loot for Cole" in w and 'value="Potion of Healing"' in w
-    r = dm.post(f"/characters/{cole.id}/loot", data={"item": "potion of healing", "quantity": "2", "amount": "50", "coin": "gp"}).json()
-    assert r["text"] == "Potion of Healing ×2 and 50 gp to Cole: on its way to D&D Beyond"
-    item, coins = intents(db)
-    assert item.data == {"definition": 8960641, "entityTypeId": 112130694, "quantity": 2, "name": "Potion of Healing"}
-    assert coins.data["field"] == "coin:gp" and coins.data["delta"] == 50 and item.label == "Cole got Potion of Healing ×2 from the DM"
-
-
-def test_loot_is_the_dms_and_only_from_d_and_d_beyonds_list(player, dm, db, sheet, items):
-    cole = char(db, "Cole")
-    set_role(db, "dm@example.com", "dm")
-    assert player.get(f"/characters/{cole.id}/loot").status_code == 404
-    r = dm.post(f"/characters/{cole.id}/loot", data={"item": "Sword of Made-Up Things"})
-    assert r.status_code == 409 and "no item called" in r.json()["detail"] and not intents(db)
-    assert "Give loot" in dm.get(f"/characters/{cole.id}").text
-
-
 # ------------------------------------------------------------------ the Prepare spells screen
 
 
@@ -258,7 +229,7 @@ def test_a_class_d_and_d_beyond_gives_no_number_for_gets_the_rules_number(player
 
 
 def test_a_failed_item_list_isnt_read_again_at_once(monkeypatch):
-    """Review, Nov 2: with D&D Beyond's item list down, every Give loot waited for its timeout; now a failed read waits
+    """Review, Nov 2: with D&D Beyond's item list down, every Give loot (now the item browser) waited for its timeout; now a failed read waits
     CATALOG_RETRY before the next try."""
     calls = []
 
