@@ -96,8 +96,8 @@ def test_a_change_is_built_on_what_d_and_d_beyond_has_when_it_goes(db, sheet, mo
 def test_a_recent_copy_of_the_sheet_is_built_on_without_reading_it_first(db, sheet, monkeypatch):
     """Brett, 2026-10-29 (a second faster): a batch builds on askdnd's copy when it's under a minute old; what the
     extension's check right before writing doesn't cover is read fresh first: a hit down to 0 (from maximum hit points)."""
-    reads, read = [], characters.refresh
-    monkeypatch.setattr(characters, "refresh", lambda db, ch, *a, **k: reads.append(ch.id) or read(db, ch, *a, **k))
+    reads, read = [], characters.read_released
+    monkeypatch.setattr(characters, "read_released", lambda db, ch, *a, **k: reads.append(ch.id) or read(db, ch, *a, **k))
     cole = char(db, "Cole")
     ddb_bridge.add(db, cole, "hp", {"amount": -5}, "Cole took 5")
     batch = ddb_bridge.outbox(db, cole)
@@ -422,7 +422,7 @@ def asleep(db):
 
 def counting_reads(monkeypatch, sheet):
     reads = []
-    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: reads.append(_id) or copy.deepcopy(sheet),))
+    monkeypatch.setattr(characters, "FETCH", lambda _id: reads.append(_id) or copy.deepcopy(sheet))
     monkeypatch.setattr(ddb, "fetch_character_json", lambda _id, timeout=None: reads.append(_id) or copy.deepcopy(sheet))
     return reads
 
@@ -964,3 +964,30 @@ def test_the_pill_says_how_long_a_sheet_counts_as_open_and_the_window_links_the_
     assert 'data-log="on"' in pill and 'data-log-until="0"' not in pill and "data-wants-bridge" in pill
     assert "chromewebstore.google.com" in player.get("/live", params={"c": cole.id}).text
 
+
+
+def test_d_and_d_beyond_is_read_with_the_database_let_go(db, sheet, monkeypatch):
+    """Architecture review, 2026-11-02: a request held its database connection and the character's lock while D&D Beyond
+    took up to 15 seconds (Sentry ASKDND-V2-7 ran beta out of connections). The bridge's reads now happen with no
+    transaction open, and the lock is taken again after."""
+    cole = char(db, "Cole")
+    open_while_reading = []
+
+    def fetch(_id):
+        open_while_reading.append(db.in_transaction())
+        return copy.deepcopy(sheet)
+
+    monkeypatch.setattr(characters, "FETCH", fetch)
+    ddb_bridge.heard(db, cole)  # the extension heard the sheet save
+    assert open_while_reading == [False] and ddb_bridge.numbers(cole)["max"] == 51
+
+
+def test_an_older_read_never_replaces_a_newer_copy(db, sheet):
+    """Two requests can read the same sheet at once now that neither holds the lock while D&D Beyond answers: whichever
+    finishes last, the copy kept is the one read last."""
+    cole = char(db, "Cole")
+    older = characters.read(cole.ddb_id)
+    sheet["removedHitPoints"] = 20
+    characters.store(db, cole, characters.read(cole.ddb_id))  # a later read, kept first
+    characters.store(db, cole, older)  # the earlier one arrives late
+    assert characters.character_summary(cole)["hit_points"]["current"] == 31

@@ -161,7 +161,7 @@ def maybe_refresh(db: Session, ch: Character, min_age: timedelta) -> bool:
     last = snap.attempted_at if snap else None
     if last is not None and datetime.now(UTC) - last < min_age:
         return False
-    chars.refresh(db, ch)
+    chars.store(db, ch, chars.read_released(db, ch))  # (open pages ask often: never hold the database while D&D Beyond answers)
     db.commit()
     return True
 

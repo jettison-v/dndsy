@@ -108,7 +108,7 @@ def test_the_sync_reads_the_character_on_screen_first_and_is_throttled(player, d
         calls.append(ddb_id)
         return fake_fetch(ddb_id)
 
-    monkeypatch.setattr(characters.refresh, "__defaults__", (counting,))
+    monkeypatch.setattr(characters, "FETCH", counting)
     pill = player.post(f"/live/sync?c={cole.id}").text
     assert 'id="live-pill"' in pill and "<html" not in pill and calls == [cole.ddb_id, "135831636"]  # then the party (Trah)
     player.post(f"/live/sync?c={cole.id}")
