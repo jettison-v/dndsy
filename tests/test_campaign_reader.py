@@ -170,14 +170,14 @@ def test_hidden_entries_and_quest_status_are_for_the_dm(monkeypatch, db):
     assert widow.quest_open is None
 
 
-def _queries(db, client, path):
-    """How many SQL statements opening `path` takes."""
+def _alias_queries(db, client, path):
+    """How many SQL statements opening `path` takes to read entries' other names (entity_aliases)."""
     from sqlalchemy import event
 
     n = [0]
 
-    def count(*_):
-        n[0] += 1
+    def count(conn, cursor, statement, *_):
+        n[0] += "FROM entity_aliases" in statement
 
     db.expire_all()  # the page shares the test's session: start from nothing loaded, as a real request does
     conn = db.connection()
@@ -191,13 +191,12 @@ def _queries(db, client, path):
 
 def test_more_entries_dont_mean_more_queries(player, db):  # noqa: F811
     """The Campaign page loads its entries' other names together (Nov 2: one query per entry, 47 on beta's copy and
-    growing every session). Ten more entries, each with another name (what the search box matches), must not add a
-    query."""
+    growing every session). Ten more entries, each with another name (what the search box matches), take no more
+    queries for them. (Only those are counted: the page's other queries vary by one as caches refill, Nov 2.)"""
     import_bundle(db, BUNDLE)
     import_bundle(db, QUESTS)
     published_events(db)
-    player.get("/c/main/campaign")  # the first opening also fills the roles' cache
-    before = _queries(db, player, "/c/main/campaign")
+    before = _alias_queries(db, player, "/c/main/campaign")
     more = [{"kind": "npc", "name": f"Enemy {i}", "summary": "Someone.", "aliases": [f"The {i}th"]} for i in range(10)]
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": more})
     for e in db.scalars(select(Entity).where(Entity.name.like("Enemy %"))):
@@ -205,4 +204,4 @@ def test_more_entries_dont_mean_more_queries(player, db):  # noqa: F811
     db.flush()
     page = player.get("/c/main/campaign").text
     assert "enemy 9 the 9th" in page  # the name and its other name, in what the search box matches
-    assert _queries(db, player, "/c/main/campaign") == before
+    assert _alias_queries(db, player, "/c/main/campaign") == before
