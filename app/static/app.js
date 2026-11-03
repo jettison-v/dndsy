@@ -3262,7 +3262,7 @@
     addEventListener('message', e => {
       if (e.source !== window || !e.data || e.data.askdndBridge !== 'hello') return;
       heard = true;
-      if (e.data.version) document.body.dataset.bridgeVersion = e.data.version;  // (0.9.9 on: which extension this browser has)
+      document.body.dataset.bridgeVersion = e.data.version || 'before 0.9.9';  // which extension this browser has (0.9.9 on says)
       document.body.classList.remove('no-bridge');
     });
     window.postMessage({ askdndBridge: 'ping' }, location.origin);
