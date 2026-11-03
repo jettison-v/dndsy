@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add item on a phone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 520px; height: 960px">
+  <div class="head">
+    <div class="num">3 · On a phone</div>
+    <h1 style="font-size: 24px">One column: search, kinds, the list</h1>
+    <p class="where" style="font-size: 14px">The filters become a row of kinds you swipe; tapping an item opens what it is over the list, with <b>+ Add</b>. <b>Adding</b> stays pinned at the bottom.</p>
+  </div>
+  <div class="screen" style="width: 390px; height: 760px; justify-self: center; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto">
+    <div class="row" style="padding: 12px 14px; border-bottom: 1px solid var(--line)"><b style="color: var(--strong); font-size: 17px">Add to Cole</b><button type="button" class="btn mini" aria-label="Close">✕</button></div>
+    <div style="padding: 10px 14px; display: grid; gap: 8px; border-bottom: 1px solid var(--line)">
+      <label class="sr" for="ph-search">Search items</label>
+      <input id="ph-search" class="search" type="search" value="potion">
+      <div class="row start" style="gap: 6px; overflow: hidden; flex-wrap: nowrap"><span class="stat" style="color: var(--strong); border-color: var(--strong)">Potions</span><span class="stat">Gear</span><span class="stat">Weapons</span><span class="stat">Armor</span><span class="stat">Wondrous</span></div>
+    </div>
+    <div style="position: relative; overflow: hidden">
+      <div style="display: grid">
+        <div class="row" style="padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 14px"><span><b style="color: var(--strong)">Potion of Healing</b><br><span class="note">Common · ½ lb</span></span><button type="button" class="plus" style="width: 44px; height: 44px" aria-label="Add Potion of Healing">+</button></div>
+        <div class="row" style="padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 14px"><span><b style="color: var(--strong)">Potion of Greater Healing</b><br><span class="note">Uncommon · ½ lb</span></span><button type="button" class="plus" style="width: 44px; height: 44px" aria-label="Add Potion of Greater Healing">+</button></div>
+        <div class="row" style="padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 14px"><span><b style="color: var(--strong)">Potion of Climbing</b><br><span class="note">Common · ½ lb</span></span><button type="button" class="plus" style="width: 44px; height: 44px" aria-label="Add Potion of Climbing">+</button></div>
+      </div>
+      <div class="win" style="position: absolute; left: 10px; right: 10px; bottom: 10px">
+        <div class="row"><h3>Potion of Healing</h3><span class="rar common">Common</span></div>
+        <div class="facts" style="font-size: 13px"><span>Cost</span><span>Ask the DM</span><span>Heals</span><span>2d4 + 2</span><span>You have</span><span>2</span></div>
+        <p class="note">Drink it, or give it, as a Bonus Action, and regain Hit Points.</p>
+        <button type="button" class="btn main" style="min-height: 44px">+ Add Potion of Healing</button>
+      </div>
+    </div>
+    <div style="border-top: 1px solid var(--line); padding: 10px 14px; display: grid; gap: 8px; background: var(--surface)">
+      <div class="row"><span class="note">Adding: Potion of Healing ×1</span><span class="note">Pay: ask the DM</span></div>
+      <button type="button" class="btn main" style="min-height: 44px">Add 1 item</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

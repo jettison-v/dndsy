@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A shop the DM opens</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 960px">
+  <div class="head">
+    <div class="num">4 · A shop the DM opens · later, but the browser is ready for it</div>
+    <h1>The DM stocks a shop with her prices; in town, she opens it for the table</h1>
+    <p class="where"><b>Where it would live:</b> the DM's Manage › <b>Shops</b>: name a shop, pick its stock from the same browser, set each price (hers alone: nothing is suggested). <b>Open for the table</b> pops a corner card on every player's page; it opens the browser on that shop: only its stock, at her prices. Paying is still a box the player can change when she agrees a deal. <b>Close the shop</b> when you leave town.</p>
+  </div>
+  <div class="grid2" style="align-items: stretch">
+    <div class="ib" style="height: 720px; grid-template-rows: auto minmax(0, 1fr) auto">
+      <div class="ib-top"><h3>Ruby's Curios</h3><span class="tagg">The DM's</span><span class="note" style="margin-left: auto">Shops: Ruby's Curios · The Salty Anchor · + New shop</span></div>
+      <div style="display: grid; align-content: start; overflow: hidden">
+        <div class="irow head" style="grid-template-columns: minmax(0, 1fr) 90px 120px 70px"><span>Stock</span><span>Rarity</span><span>Her price</span><span>How many</span></div>
+        <div class="irow" style="grid-template-columns: minmax(0, 1fr) 90px 120px 70px"><b>Potion of Healing</b><span class="rar common">Common</span><input class="sel-box" type="text" value="60 gp" aria-label="Price of Potion of Healing"><input class="sel-box" type="text" value="4" aria-label="How many Potions of Healing"></div>
+        <div class="irow" style="grid-template-columns: minmax(0, 1fr) 90px 120px 70px"><b>Bag of Holding</b><span class="rar uncommon">Uncommon</span><input class="sel-box" type="text" value="550 gp" aria-label="Price of Bag of Holding"><input class="sel-box" type="text" value="1" aria-label="How many Bags of Holding"></div>
+        <div class="irow" style="grid-template-columns: minmax(0, 1fr) 90px 120px 70px"><b>Wand of Web</b><span class="rar uncommon">Uncommon</span><input class="sel-box" type="text" value="" placeholder="Not for sale yet" aria-label="Price of Wand of Web"><input class="sel-box" type="text" value="1" aria-label="How many Wands of Web"></div>
+        <div class="irow" style="grid-template-columns: minmax(0, 1fr) 90px 120px 70px"><b>Rope</b><span class="rar mundane">Not magic</span><input class="sel-box" type="text" value="1 gp" aria-label="Price of Rope"><input class="sel-box" type="text" value="Any" aria-label="How much Rope"></div>
+        <div style="padding: 12px"><button type="button" class="btn">+ Add stock from the browser</button></div>
+      </div>
+      <div class="ib-foot"><span class="note">Closed · the table can't see it</span><span style="flex: 1"></span><button type="button" class="btn main">Open for the table</button></div>
+    </div>
+    <div style="display: grid; gap: 12px; align-content: start">
+      <div class="cornercard" style="justify-self: end"><b style="color: var(--amber)">⌂</b> The DM opened <b style="color: var(--strong)">Ruby's Curios</b> <button type="button" class="btn mini">Look inside</button></div>
+      <div class="ib" style="height: 640px">
+        <div class="ib-top"><h3>Add to Cole</h3>
+          <div class="tabs" style="width: auto; grid-template-columns: auto auto; flex: none" role="group" aria-label="Where from"><span style="padding: 5px 12px">All items</span><b style="padding: 5px 12px">Ruby's Curios</b></div>
+          <span class="note">4 for sale</span></div>
+        <div style="display: grid; align-content: start; overflow: hidden">
+          <div class="irow head" style="grid-template-columns: minmax(0, 1fr) 90px 80px 60px 34px"><span>Item</span><span>Rarity</span><span>Price</span><span>Left</span><span></span></div>
+          <div class="irow sel" style="grid-template-columns: minmax(0, 1fr) 90px 80px 60px 34px"><button type="button" class="iname"><b>Potion of Healing</b></button><span class="rar common">Common</span><span>60 gp</span><span class="note">4</span><button type="button" class="plus" aria-label="Add Potion of Healing">+</button></div>
+          <div class="irow" style="grid-template-columns: minmax(0, 1fr) 90px 80px 60px 34px"><button type="button" class="iname"><b>Bag of Holding</b></button><span class="rar uncommon">Uncommon</span><span>550 gp</span><span class="note">1</span><button type="button" class="plus" aria-label="Add Bag of Holding">+</button></div>
+          <div class="irow" style="grid-template-columns: minmax(0, 1fr) 90px 80px 60px 34px"><button type="button" class="iname"><b>Rope</b></button><span class="rar mundane">Not magic</span><span>1 gp</span><span class="note">Any</span><button type="button" class="plus" aria-label="Add Rope">+</button></div>
+          <div class="irow" style="grid-template-columns: minmax(0, 1fr) 90px 80px 60px 34px"><button type="button" class="iname"><b>Wand of Web</b></button><span class="rar uncommon">Uncommon</span><span class="note">Ask</span><span class="note">1</span><button type="button" class="plus" aria-label="Add Wand of Web">+</button></div>
+        </div>
+        <div class="ib-foot"><span class="lbl">Adding</span><div class="basket"><span class="bchip">Potion of Healing ×2 <button type="button" aria-label="One fewer">−</button><button type="button" aria-label="One more">+</button></span></div>
+          <label class="check"><input type="checkbox" checked=""> Pay</label><input class="sel-box" style="width: 100px" type="text" value="110 gp" aria-label="Amount to pay"><span class="note">her price 120 gp</span><button type="button" class="btn main">Buy 2</button></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
