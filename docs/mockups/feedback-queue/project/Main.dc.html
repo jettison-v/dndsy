@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sending feedback from any page</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 940px">
+  <div class="head">
+    <div class="num">1 · Sending feedback · admins only</div>
+    <h1>One sentence from any page; askdnd adds the rest</h1>
+    <p class="where"><b>Where you'll find it:</b> on any askdnd page, press <span class="kbd">\</span>, or open your account menu (your initial, top right) › <b>Feedback for Claude</b>. Only admins see either. askdnd takes a picture of the page the moment you open it, before the window covers anything. Try <b>Point at it</b>, then <b>Send</b>.</p>
+  </div>
+  <div class="screen" style="height: 740px">
+    <div class="bar"><span class="brand">askdnd</span><span>Main</span><span>Story</span><span>Campaign</span><span class="stat" style="padding: 3px 10px">C Cole</span><span>Party ▾</span><span class="sp"></span><span class="pill">● Connected</span><span>Manage ▾</span><span>⚙ Admin ▾</span><span>?</span><span class="av">B</span></div>
+    <div class="menu" style="right: 12px; top: 52px">
+      <a href="#"><span>Brett</span><small>Admin</small></a>
+      <a href="#">Your suggestions<small>What happened to each one</small></a>
+      <a href="#">Your dice<small>How your rolls look to the table</small></a>
+      <a href="#" class="hi"><span>Feedback for Claude <span class="kbd">\</span></span><small>A note for Claude about this page</small></a>
+      <a href="#">Help<small>The FAQ and About askdnd</small></a>
+    </div>
+    <div class="body" style="padding-right: 560px">
+      <div class="row"><div><div class="name">Cole</div><div class="sub">Druid 6 (Circle of the Moon) / Monk 2</div></div><div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+      <div class="row start" style="gap: 6px"><span class="lbl" style="margin-right: 4px">Resources</span><span class="stat">Luck <span class="dots"><i></i><i></i><i></i></span></span><span class="stat">Focus <span class="dots"><i></i><i></i></span></span><span class="stat">Wild Res. <span class="dots"><i></i></span></span></div>
+      <div class="nums" style="grid-template-columns: repeat(4, minmax(0, 1fr))">
+        <div class="numtile"><small>Hit points</small><b>51</b></div>
+        <div class="numtile"><small>Armor class</small><b>16</b></div>
+        <sc-if value="{{ pointing }}" hint-placeholder-val="{{ true }}"><div class="numtile pointed"><span class="pointtag">You pointed at: Speed</span><small>Speed</small><span><b>45</b> ft</span></div></sc-if>
+        <sc-if value="{{ notPointing }}" hint-placeholder-val="{{ false }}"><div class="numtile"><small>Speed</small><span><b>45</b> ft</span></div></sc-if>
+        <div class="numtile"><small>Initiative</small><b>+3</b></div>
+      </div>
+      <div class="wsbar"><span class="lbl" style="color: var(--amber)">Wild Shape</span><span class="dots"><i></i><i></i><i></i></span><span class="stat on">Normal</span><span class="stat">Spider</span><span class="stat">Polar Bear</span></div>
+      <div class="cols" style="grid-template-columns: repeat(2, minmax(0, 1fr))">
+        <div class="col"><h4 class="a">Action</h4><div class="ln"><b>Unarmed Strike</b><span class="btn mini">+6</span></div><div class="ln"><b>Guidance</b><span class="btn mini">Cast</span></div></div>
+        <div class="col"><h4 class="b">Bonus action</h4><div class="ln"><b>Healing Word</b><span class="btn mini">Cast</span></div><div class="ln"><b>Wild Shape</b><span class="dots"><i></i><i></i><i></i></span></div></div>
+      </div>
+    </div>
+    <div class="fbwin" style="position: absolute; right: 18px; top: 250px; width: 520px">
+      <div class="row"><h3>Feedback for Claude</h3><span class="note">Goes to the queue, not to Claude right away</span></div>
+      <label class="note" for="fb-text">What's wrong, or what would be better?</label>
+      <textarea id="fb-text" class="field">Speed should show the swim speed too when the form has one.</textarea>
+      <div class="row start" style="gap: 8px">
+        <button type="button" class="btn" onClick="{{ point }}">{{ pointLabel }}</button>
+        <span class="note">{{ pointNote }}</span>
+      </div>
+      <div class="shots">
+        <div class="shot"><div class="img"><i style="left: 8px; top: 22px; width: 60%; height: 10px"></i><i style="left: 8px; top: 40px; width: 40%; height: 24px"></i><i style="left: 60%; top: 40px; width: 30%; height: 24px"></i></div><div class="cap"><span>The page, as you opened this</span><a href="#">Retake</a></div></div>
+        <div class="drop"><div><b style="color: var(--text)">Add your own screenshot</b><br>Paste it here: <span class="kbd">⌘⌃⇧4</span> then <span class="kbd">⌘V</span><br>or drop a picture</div></div>
+      </div>
+      <details class="ctx" open="">
+        <summary class="note">Sent with it, so Claude can see what you saw</summary>
+        <div class="kv"><span>Page</span><span>Cole · Battle, at /characters/1/battle</span></div>
+        <div class="kv"><span>When</span><span>Nov 3, 3:42:07 PM (finds it in beta's logs)</span></div>
+        <div class="kv"><span>Screen</span><span>Window 1440 × 900 · zoom 100% · Retina</span></div>
+        <div class="kv"><span>Browser</span><span>Chrome 132 on macOS · askdnd bridge 0.9.9</span></div>
+        <div class="kv"><span>At the time</span><span>Live pill: Connected · no fight · 0 page errors</span></div>
+        <div class="kv"><span>The page itself</span><span>As drawn (its HTML, 412 KB), kept with the note</span></div>
+      </details>
+      <div class="row"><span class="note">{{ sent }}</span><span class="row start" style="gap: 8px"><button type="button" class="btn">Cancel</button><button type="button" class="btn main" onClick="{{ send }}">Send</button></span></div>
+    </div>
+    <sc-if value="{{ hasCard }}" hint-placeholder-val="{{ false }}"><div class="cornercard" style="position: absolute; right: 18px; bottom: 18px"><b style="color: var(--green)">✓</b> In the queue · 8 new</div></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":940}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { pointing: true, sent: false }; }
+  renderVals() {
+    const p = this.state.pointing;
+    return {
+      pointing: p, notPointing: !p,
+      pointLabel: p ? 'Point again' : 'Point at it',
+      pointNote: p ? 'Speed, on Battle (outlined in amber)' : 'Click the thing you mean, if it helps',
+      point: () => this.setState({ pointing: !p }),
+      send: () => this.setState({ sent: true }),
+      hasCard: this.state.sent,
+      sent: this.state.sent ? 'Sent' : 'Optional: point, add a screenshot',
+    };
+  }
+}
+</script>
+</body>
+</html>

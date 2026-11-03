@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How we work through the queue</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 900px">
+  <div class="head">
+    <div class="num">4 · How we work through it</div>
+    <h1>You send as you go; Claude picks them up when you say so</h1>
+    <p class="where"><b>Nothing interrupts the work in progress:</b> notes wait in the queue until you say <b>"review the feedback"</b> in this chat, at the end of a section of your review.</p>
+  </div>
+  <div class="flow">
+    <div class="step"><span class="who" style="color: var(--link)">You, any time</span><b>Send</b>One sentence from the page, and point or paste if it helps. Small things too: they cost a few seconds now.</div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="step"><span class="who" style="color: var(--link)">You, in this chat</span><b>"Review the feedback"</b>When a section of your review is done. Claude reads the queue from askdnd, with every screenshot and page.</div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="step"><span class="who" style="color: var(--blue)">Claude</span><b>Groups and asks</b>Like notes become one fix ("Battle on a phone"), marked <b>Planned</b>. What's unclear gets a question on the note itself: <b>Question for you</b>.</div>
+  </div>
+  <div class="flow">
+    <div class="step"><span class="who" style="color: var(--blue)">Claude</span><b>Says the plan here</b>A short list in this chat: the groups, what each fixes, what's waiting on your answers. Bigger ones get a mockup first, as now.</div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="step"><span class="who" style="color: var(--blue)">Claude, then you</span><b>Fixes, you try it</b>Built and tried locally or on beta, as today, with Try it yourself.</div>
+    <div class="arrow" aria-hidden="true">→</div>
+    <div class="step"><span class="who" style="color: var(--green)">Claude</span><b>Marks it Done</b>With the PR that fixed it, so the queue shows what happened to every note. Delete only when you say.</div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h3>What Claude gets for each note</h3>
+      <div class="files">private/feedback/42/  (never committed)<br>  note.md       your words, and any answers<br>  shot.png      the page as you opened the window<br>  pasted.png    your own screenshot, if you added one<br>  page.html     the page as drawn<br>  context.json  where, when, screen, browser, extension</div>
+      <p class="note">The time finds the moment in beta's logs, and the extension's version answers "had it updated yet?" at once.</p></div>
+    <div class="card"><h3>What it takes to set up</h3>
+      <p class="note">One step for you: a key for Claude, set once with <b>scripts/set-secret.sh</b> (it goes into Railway and your computer, never into the chat or git). Claude can't sign in to beta as you, so its script reads the queue with that key.</p>
+      <p class="note">Kept like the rest of askdnd: admins only, in askdnd's own database and files on beta, never in git or Sentry (the notes hold campaign pages). The extension isn't needed: no new permissions, nothing for Google to review.</p></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
