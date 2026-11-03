@@ -143,9 +143,10 @@ function heardSoon(ddbId, tabId) {
     quiet.set(ddbId, setTimeout(() => heard(ddbId, true, tabId), AGAIN_MS));
   }, QUIET_MS));
 }
-async function heard(ddbId, pull, tabId) {
+// `data`: the sheet as it just read itself, signed in (ddb-page.js 5.); without it askdnd reads D&D Beyond's public copy
+async function heard(ddbId, pull, tabId, data) {
   if (!(await sheetTabs(ddbId)).length) return;  // (its last tab closed since this was asked for)
-  const st = await api('POST', '/bridge/heard/' + ddbId + (pull ? '?pull=1' : '')).catch(() => null);
+  const st = await api('POST', '/bridge/heard/' + ddbId + (pull ? '?pull=1' : ''), data ? { data } : undefined).catch(() => null);
   if (await stillClosed(ddbId)) return;
   // What askdnd just read from D&D Beyond: an open copy of the sheet holding anything else shows D&D Beyond's numbers
   // (not the copy that just saved: it has its own change)
@@ -163,14 +164,22 @@ async function hello() {
   try { h = await api('POST', '/bridge/hello', { sheets }); } catch (err) { return; /* not connected yet */ }
   carry();
   if (!h.awake || !h.awake.awake) return;  // asleep (no one is using askdnd or a sheet): no background pulls
-  for (const id of sheets) heard(id, true);
+  for (const id of sheets) pull(id);
+}
+// A pull: an open copy of the sheet reads itself for askdnd; a page from before this version can't, and askdnd reads
+// the public copy
+async function pull(ddbId) {
+  for (const t of (await sheetTabs(ddbId)).filter(awake)) {
+    try { const r = await chrome.tabs.sendMessage(t.id, { type: 'read' }); if (r && r.took) return; } catch (err) { /* the next */ }
+  }
+  return heard(ddbId, true);
 }
 // A batch made, on a sheet or by the DM's browser on any D&D Beyond page (`ddbId`: the character it was for)
 async function applied(ddbId, m, tabId) {
   // Every other open copy of this sheet shows the old numbers, and D&D Beyond's page would save them back over the
   // new ones on its next change: each shows D&D Beyond's numbers now, in place (the tab that wrote does it itself)
   if (m.wrote) for (const t of await sheetTabs(ddbId)) if (t.id !== tabId) chrome.tabs.sendMessage(t.id, { type: 'show' }).catch(() => {});
-  await api('POST', '/bridge/delivered/' + m.batch, { ok: m.ok, error: m.error, conflicts: m.conflicts }).catch(() => {});
+  await api('POST', '/bridge/delivered/' + m.batch, { ok: m.ok, error: m.error, conflicts: m.conflicts, data: m.data }).catch(() => {});
   busy.delete(ddbId);
   await refreshPanels(ddbId); toAskdndTabs({ type: 'bridge-update' });
   return deliver(ddbId);  // the next batch, if any
@@ -225,7 +234,14 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
     if (m.type === 'ddb-tab') { await opened(sender.tab.id, { sheet: here }); await active(here); await refreshPanels(here); hello(); return deliver(here, sender.tab.id); }
     if (m.type === 'ddb-active') return active(here);
     if (m.type === 'panel-refresh') return refreshPanels(here);
-    if (m.type === 'ddb-saved') return heardSoon(here, sender.tab.id);
+    // Try again or Undo on a change that didn't go through, from the panel beside the sheet (Bridge Review, Nov 3)
+    if (m.type === 'panel-act' && /^\d+$/.test(String(m.id)) && (m.act === 'retry' || m.act === 'dismiss')) {
+      await api('POST', '/bridge/' + m.act + '/' + m.id).catch(() => {});
+      await refreshPanels(here); toAskdndTabs({ type: 'bridge-update' });
+      return deliver(here, sender.tab.id);
+    }
+    if (m.type === 'ddb-saved') return m.fresh ? null : heardSoon(here, sender.tab.id);  // (a fresh read follows: 'ddb-fresh')
+    if (m.type === 'ddb-fresh') return m.data ? heard(here, m.why === 'pull', sender.tab.id, m.data) : heardSoon(here, sender.tab.id);
     if (m.type === 'ddb-roll') return api('POST', '/bridge/roll/' + here, m.roll).catch(() => {});  // into Table rolls, "on D&D Beyond"
     if (m.type === 'ddb-heard') return api('POST', '/bridge/others-roll/' + here, m.message).catch(() => {});  // someone else's roll in the game
     if (m.type === 'ddb-applied') return applied(String(m.ddb || here), m, sender.tab.id);  // (the DM's browser can make another character's on a sheet)

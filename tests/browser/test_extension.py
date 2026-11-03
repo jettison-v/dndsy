@@ -52,6 +52,8 @@ def with_extension(chromium_type, server, tmp_path, who):
     context = chromium_type.launch_persistent_context(str(tmp_path / "profile"), channel="chromium", headless=True,
                                                       args=[f"--disable-extensions-except={folder}", f"--load-extension={folder}"])
     context.route(re.compile(r"https://www\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="text/html", body="<!doctype html><title>Sheet</title><main>Stand-in sheet</main>"))
+    # D&D Beyond's own servers are never reached: a test that needs them stands in for them (its route wins)
+    context.route(re.compile(r"https://(auth-service|character-service)\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=503, body=""))
     page = context.pages[0] if context.pages else context.new_page()
     page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}")
     return context
@@ -72,6 +74,8 @@ def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server)
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     page.wait_for_function("!document.body.classList.contains('no-bridge')")
     assert "Open your sheet to connect" in page.locator(PILL).inner_text()
+    # which extension this browser has (0.9.9 on), for feedback and support
+    assert page.evaluate("document.body.dataset.bridgeVersion") == json.load(open(os.path.join(SOURCE, "manifest.json")))["version"]
 
     sheet = chrome.new_page()
     sheet.goto(SHEET)
@@ -232,7 +236,7 @@ def test_the_dms_browser_makes_a_closed_sheets_change_from_any_dnd_beyond_page(w
 
     def character_service(route):
         if route.request.method == "GET":
-            return route.fulfill(status=200, content_type="application/json", body=json.dumps({"data": COLE}))
+            return route.fulfill(status=200, content_type="application/json", body=json.dumps({"data": {**COLE, "campaign": {**(COLE.get("campaign") or {}), "id": 1}}}))
         writes.append(json.loads(route.request.post_data or "{}"))
         route.fulfill(status=200, content_type="application/json", body="{}")
 
@@ -259,3 +263,118 @@ def test_the_dms_browser_makes_a_closed_sheets_change_from_any_dnd_beyond_page(w
     finally:
         dm.close()
     assert writes and writes[0]["characterId"] == 75423618 and writes[0]["removedHitPoints"] == COLE["removedHitPoints"] + 3
+
+
+def test_a_save_on_the_sheet_reaches_askdnd_from_the_sheets_own_read(chrome, server, browser_db):
+    """Brett, Nov 3: a Soul Coin's use given back on D&D Beyond stayed spent in askdnd, as D&D Beyond's public copy
+    trailed the save. The sheet now reads itself, signed in, once its saves stop, and askdnd keeps that read (here the
+    public copy can't be reached at all, so only that read can tell askdnd)."""
+    page, sheet, held, _ = cole_at_the_table(chrome, server, browser_db)
+    panel = f"async () => (await (await fetch('/characters/{server['cole']}/detail?ref=item:992695540')).text()).replace(/\\s+/g, ' ')"
+    used = 1 if "2 of 3" not in page.evaluate(panel) else 2  # (a number askdnd doesn't show yet)
+    # the sheet's own save, as D&D Beyond's page sends it: a use of the Soul Coin
+    sheet.evaluate("""u => fetch('https://character-service.dndbeyond.com/character/v5/inventory/item/charge',
+        {method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({characterId: 75423618, id: 992695540, uses: u, charges: u})})""", used)
+    want = f"{3 - used} of 3"
+    for _ in range(40):  # (askdnd reads it once the sheet's saves stop, a second and a half)
+        if want in page.evaluate(panel):
+            break
+        page.wait_for_timeout(500)
+    got = page.evaluate(panel)
+    assert want in got, got[got.find("Charges") - 20:got.find("Charges") + 160]
+
+
+def stand_in_ddb(context, held, rules):
+    """D&D Beyond's own servers, standing in: the sheet (`held`) as the signed-in read gets it, and the writes the bridge
+    and the sheet send kept in it, stamped as D&D Beyond stamps a save (`rules["keeps"]` False drops each one while
+    answering OK, as D&D Beyond sometimes does)."""
+    from datetime import UTC, datetime
+
+    def character_service(route):
+        if route.request.method == "GET":
+            return route.fulfill(status=200, content_type="application/json", body=json.dumps({"data": held}))
+        body, url = json.loads(route.request.post_data or "{}"), route.request.url
+        if rules["keeps"]:
+            if url.endswith("/life/hp/damage-taken"):
+                held.update({k: body[k] for k in ("removedHitPoints", "temporaryHitPoints") if k in body})
+            elif url.endswith("/inventory/item/charge"):
+                next(i for i in held["inventory"] if i["id"] == body["id"])["limitedUse"]["numberUsed"] = body["uses"]
+            held["dateModified"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        route.fulfill(status=200, content_type="application/json", body="{}")
+
+    context.route(re.compile(r"https://auth-service\.dndbeyond\.com/.*"), lambda r: r.fulfill(status=200, content_type="application/json", body='{"token": "t", "ttl": 300}'))
+    context.route(re.compile(r"https://character-service\.dndbeyond\.com/.*"), character_service)
+
+
+def cole_at_the_table(chrome, server, browser_db):
+    """Cole's Battle and his sheet open in the player's browser, with a stand-in D&D Beyond holding a copy of his sheet,
+    and nothing left waiting from the tests before."""
+    import copy
+    from datetime import UTC, datetime
+
+    from tests.table_setup import COLE
+
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        conn.execute(text("UPDATE bridge_intents SET state = 'live' WHERE character_id = :c"), {"c": server["cole"]})
+        conn.execute(text("UPDATE bridge_batches SET state = 'done' WHERE character_id = :c"), {"c": server["cole"]})
+        conn.commit()
+    engine.dispose()
+    held, rules = copy.deepcopy(COLE), {"keeps": True}
+    held["dateModified"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+    stand_in_ddb(chrome, held, rules)
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.bring_to_front()
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    return page, sheet, held, rules
+
+
+def take_damage(page, n):
+    page.click(".hp-btn[aria-label=Damage]")
+    page.locator(".roll-win input[name=amount]").wait_for(timeout=5000)
+    page.keyboard.type(str(n))
+    page.locator(".roll-win .hp-go button[type=submit]:not([disabled])").wait_for(timeout=5000)
+    page.keyboard.press("Enter")
+
+
+def test_the_corner_card_follows_its_change_to_d_and_d_beyond(chrome, server, browser_db):
+    """Bridge Review, Nov 3: "✓ Cole took 3" came the moment Enter was pressed, before D&D Beyond had it. The card now
+    says it's on its way, and ✓ On D&D Beyond once askdnd has read it there."""
+    page, sheet, held, _ = cole_at_the_table(chrome, server, browser_db)
+    before = held["removedHitPoints"]
+    take_damage(page, 3)
+    card = page.locator("#cards > .card", has_text="took 3")
+    card.wait_for(timeout=5000)
+    card.locator(".card-sub", has_text="On D&D Beyond").wait_for(timeout=20000)
+    assert held["removedHitPoints"] == before + 3
+
+
+def test_try_again_in_the_panel_beside_the_sheet(chrome, server, browser_db):
+    """Bridge Review, Nov 3 (Brett: should retries be part of the extension's window?): a change that didn't go through
+    has Try again and Undo in the panel beside the sheet, not only in askdnd."""
+    page, sheet, held, rules = cole_at_the_table(chrome, server, browser_db)
+    before = held["removedHitPoints"]
+    rules["keeps"] = False  # D&D Beyond drops it
+    take_damage(page, 3)
+    page.locator("#cards > .card", has_text="took 3").wait_for(timeout=5000)
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:  # (it gives up after 3 tries, half a minute: given up here at once)
+        page.wait_for_timeout(1500)
+        conn.execute(text("UPDATE bridge_intents SET state = 'not_yet', error = 'D&D Beyond didn''t keep it (3 tries).' WHERE character_id = :c AND state <> 'live'"), {"c": server["cole"]})
+        conn.execute(text("UPDATE bridge_batches SET state = 'stopped' WHERE character_id = :c AND state IN ('sending', 'ready')"), {"c": server["cole"]})
+        conn.commit()
+    engine.dispose()
+    rules["keeps"] = True
+    sheet.reload()  # (the panel is drawn again)
+    sheet.wait_for_function("() => !!document.getElementById('askdnd-bridge')?.shadowRoot?.querySelector('[data-act=retry]')", timeout=15000)
+    assert "didn't go through" in sheet.evaluate("() => document.getElementById('askdnd-bridge').shadowRoot.textContent")
+    sheet.evaluate("() => document.getElementById('askdnd-bridge').shadowRoot.querySelector('[data-act=retry]').click()")
+    for _ in range(40):
+        if held["removedHitPoints"] == before + 3:
+            break
+        sheet.wait_for_timeout(500)
+    assert held["removedHitPoints"] == before + 3

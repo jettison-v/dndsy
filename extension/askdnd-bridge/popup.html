@@ -4,17 +4,29 @@
 <meta charset="utf-8">
 <title>askdnd bridge</title>
 <style>
-  body { width: 280px; margin: 0; padding: 12px; background: #1f2226; color: #ebe7df; font: 14px/1.4 Inter, system-ui, sans-serif; display: grid; gap: 8px; }
+  /* askdnd's colours (app.css tokens): green your sheet, yellow through the DM, red something needs you, grey closed */
+  body { width: 300px; margin: 0; padding: 12px; background: #1f2226; color: #ebe7df; font: 14px/1.4 Inter, system-ui, sans-serif; display: grid; gap: 10px; }
   h1 { margin: 0; font-size: 14px; color: #fff; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
-  h1 span { font-size: 12px; font-weight: 500; color: #a29d93; }
-  a { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; background: #272b30; border: 1px solid #4a4f57; border-radius: 8px; color: #ebe7df; text-decoration: none; }
-  a:hover { border-color: #a29d93; }
+  h1 span { font-size: 12px; font-weight: 600; }
+  .ok { color: #5bbf7f; } .via { color: #e8b34b; } .off { color: #a29d93; } .bad { color: #f08a8a; }
+  #links { display: grid; gap: 8px; }
+  .who { display: grid; gap: 6px; padding: 10px; background: #272b30; border: 1px solid #34383e; border-radius: 10px; }
+  .who-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .who-head b { color: #fff; }
+  .st { font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .row { display: flex; gap: 6px; }
+  a.go { flex: 1; display: flex; justify-content: space-between; gap: 8px; padding: 7px 10px; background: #1f2226; border: 1px solid #4a4f57; border-radius: 8px; color: #ebe7df; text-decoration: none; }
+  #links > a.go { background: #272b30; }
+  a.go:hover { border-color: #a29d93; }
   p { margin: 0; color: #a29d93; font-size: 13px; }
+  p.bad { color: #f08a8a; }
+  #foot { color: #8b867d; font-size: 12px; }
 </style>
 </head>
 <body>
 <h1>askdnd bridge <span id="state"></span></h1>
-<div id="links" style="display: grid; gap: 6px"></div>
+<div id="links"></div>
+<div id="foot"></div>
 <script src="popup.js"></script>
 </body>
 </html>

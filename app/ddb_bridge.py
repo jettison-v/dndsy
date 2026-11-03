@@ -15,7 +15,11 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    syncQueue.ts), so a change counts only once askdnd reads it back. A field still at its old value is sent again, up to
    MAX_ATTEMPTS times. Just before writing, the extension reads the sheet itself: a field already at its new value is
    skipped (no double drink), and if D&D Beyond changed in the moment since askdnd read it, the batch is worked out
-   again from the new numbers.
+   again from the new numbers. **Reads come from the sheet itself** where it's open (extension 0.9.9; Brett, Nov 3): the
+   extension reads it signed in, as the sheet does, after the sheet saves, right after writing (the read-back) and on
+   the regular pull, and askdnd keeps that read (`fresh_read`). D&D Beyond's public copy, read otherwise, can trail a
+   save by minutes, so a copy older than the one kept, by D&D Beyond's own `dateModified`, is never kept
+   (`characters.older`), and a field askdnd just wrote that D&D Beyond holds at anything else was changed there after.
 5. **Never a guess.** A field D&D Beyond holds at a value askdnd can't explain after writing to it isn't written over:
    the change stops as "not on D&D Beyond yet", with the end state to make by hand.
 6. **Awake whenever someone is using it, with no switch** (Brett, 2026-10-27: always active when it needs to be,
@@ -634,7 +638,7 @@ def outbox(db: Session, character: Character, by: str = "sheet", got: chars.Read
             return None  # the extension is on it, or it waits before trying again
         if live.state == "sending":  # taken but never answered for: that was a try too
             if live.attempts >= MAX_ATTEMPTS:
-                _stop(db, live, f"No D&D Beyond sheet answered. Tried {MAX_ATTEMPTS} times.")
+                _stop(db, live, f"The sheet didn't answer ({MAX_ATTEMPTS} tries).")
                 return None
             live.attempts += 1
         live.state, live.sent_at = "sending", now
@@ -738,8 +742,10 @@ OUT_OF_DATE = ("The askdnd extension in the browser making it is older than this
                "Developer mode › Update; Chrome also does it within a few hours), then Try again.")
 
 
-def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: list[str] | None = None) -> None:
-    """The extension's answer for a batch, then the read-back that decides it, field by field."""
+def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: list[str] | None = None,
+              fresh: chars.Read | None = None) -> None:
+    """The extension's answer for a batch, then the read-back that decides it, field by field: the extension's own
+    signed-in read right after writing (`fresh`) when it sends one, else D&D Beyond's public copy, a few times."""
     b = db.get(BridgeBatch, batch_id)
     if not b:
         return
@@ -752,7 +758,7 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         replans = max((it.data.get("replans", 0) for it in _intents_of(db, b)), default=0)
         if b.attempts == 1 and replans < MAX_ATTEMPTS:  # nothing of it was written: work it out again from the new numbers
             # (read now: the next batch mustn't build on the copy that was out of date)
-            if not _reread(db, b, character):
+            if not _reread(db, b, character, fresh):
                 return
             b.state = "replanned"
             for it in _intents_of(db, b):
@@ -767,10 +773,10 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, error or "The change couldn't be made.")
         return
     now = {}
-    for attempt in range(4):  # D&D Beyond can take a moment to serve what it just saved
+    for attempt in range(1 if fresh else 4):  # D&D Beyond's public copy can take a moment to serve what it just saved
         if attempt:
             time.sleep(1)
-        if not _reread(db, b, character):
+        if not _reread(db, b, character, fresh):
             return
         n = numbers(character)
         now = {f: _value(n, f) for f in b.target} if n else {}
@@ -785,13 +791,29 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         # The first time, at once, while the extension is here to take it: D&D Beyond is often just slow to show it, and the
         # extension then finds it there and writes nothing (Oct 30: a Short Rest's Hit Point Die waited 5 seconds, then the
         # extension's next check, over 30 in all)
-        _again(db, b, "D&D Beyond answered OK but didn't keep it.", at_once=b.attempts == 1)
+        _again(db, b, "D&D Beyond didn't keep it.", at_once=b.attempts == 1)
 
 
-def _reread(db: Session, b: BridgeBatch, character: Character) -> bool:
-    """Read the sheet with the database let go, then hold the character again and keep the read. False when the batch
-    was settled meanwhile (a pull or another copy of the app got there first): nothing more to do with it."""
-    got = chars.read_released(db, character)
+def fresh_read(db: Session, user: dict, character: Character, data) -> chars.Read | None:
+    """The sheet as the extension just read it, signed in as the sheet itself reads it: never D&D Beyond's public copy,
+    which can trail a save by minutes (Nov 3: a Soul Coin's use given back on D&D Beyond stayed spent in askdnd, and the
+    bridge took it for its own write lost). Only this character's, only from its player or the DM (whose browser makes
+    a closed sheet's changes), and only a sheet that parses; anything else is None and askdnd reads the public copy."""
+    if not isinstance(data, dict) or str(data.get("id")) != str(character.ddb_id) or not data.get("name"):
+        return None
+    if not (picks.can_edit(db, user, character) or is_dm(user) or is_admin(user)):
+        return None
+    try:
+        got = chars.read(character.ddb_id, fetch=lambda _id: data)
+    except Exception:  # (a sheet D&D Beyond never sent: nothing of it is kept)
+        return None
+    return got if got.raw is not None else None
+
+
+def _reread(db: Session, b: BridgeBatch, character: Character, fresh: chars.Read | None = None) -> bool:
+    """Read the sheet with the database let go (or take the extension's `fresh` read), then hold the character again and
+    keep the read. False when the batch was settled meanwhile (a pull or another copy of the app got there first)."""
+    got = fresh or chars.read_released(db, character)
     _lock(db, b.character_id)
     db.refresh(b)
     if b.state != "sending":
@@ -806,7 +828,7 @@ def _say(fs: list[str], b: BridgeBatch) -> str:
 
 def _again(db: Session, b: BridgeBatch, why: str, at_once: bool = False) -> None:
     if b.attempts >= MAX_ATTEMPTS:
-        _stop(db, b, f"{why} Tried {MAX_ATTEMPTS} times.")
+        _stop(db, b, f"{why[:-1] if why.endswith('.') else why} ({MAX_ATTEMPTS} tries).")
         return
     b.state, b.error = "ready", why[:400]
     b.next_at = 0 if at_once else time.time() + RETRY_SECONDS[min(b.attempts, len(RETRY_SECONDS) - 1)]
@@ -824,22 +846,22 @@ def _stop(db: Session, b: BridgeBatch, why: str, missing: list[str] | None = Non
             it.state = "live"
             _log(db, b.character_id, _log_line(it), "live")
         else:
-            it.state, it.error = "not_yet", (why + " Nothing was written over.")[:400]
+            it.state, it.error = "not_yet", (why + " Nothing on the sheet changed.")[:400]
             left.append(it)
     _note_stopped(numbers(db.get(Character, b.character_id)), left, quiet=False)
     _check_step(db, b, False, why, [f for f in b.target if f not in bad])
 
 
-def heard(db: Session, character: Character, saved: bool = True) -> None:
+def heard(db: Session, character: Character, saved: bool = True, fresh: chars.Read | None = None) -> None:
     """A read of the sheet, after the extension heard it save (`saved`) or on its every-30-seconds pull: it settles any
     batch D&D Beyond now holds the totals of (so a lost "done" from the extension still gets confirmed). What D&D
     Beyond changed itself is logged by the read (`seen`)."""
     if saved:  # a person saved something on D&D Beyond: always read and recorded, and it counts as using it
         _health["heard_at"] = time.time()
         active(db)
-    elif not awake(db)["awake"]:
-        return  # asleep: the background pull reads nothing from D&D Beyond
-    got = chars.read_released(db, character)  # (with the database let go: D&D Beyond can take 15 seconds)
+    elif not fresh and not awake(db)["awake"]:
+        return  # asleep: the background pull reads nothing from D&D Beyond (the extension's own read costs it nothing)
+    got = fresh or chars.read_released(db, character)  # (with the database let go: D&D Beyond can take 15 seconds)
     _lock(db, character.id)
     chars.store(db, character, got)
     n = numbers(character)
@@ -861,9 +883,11 @@ def seen(db: Session, character: Character, before: dict | None, after: dict, su
         return
     was, now = ddb_fields.tracked(before), ddb_fields.tracked(after)
     recent = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.sent_at > time.time() - 60)).all()
-    ours = {f for b in recent for f in b.target}
-    rested = any(f.startswith("hitdice:") for f in ours)  # askdnd's Short Rest restored what a Short Rest restores
-    ours |= {f for f in now if rested and f.split(":")[0] in ("uses", "pact", "slot", "charges")}
+    wrote = {f: v for b in recent for f, v in b.target.items()}  # what askdnd wrote to each field this last minute
+    rested = any(f.startswith("hitdice:") for f in wrote)  # askdnd's Short Rest restored what a Short Rest restores
+    ours = {f for f in now if rested and f.split(":")[0] in ("uses", "pact", "slot", "charges")}
+    # (a field askdnd just wrote, now at anything else, was changed on D&D Beyond after it: the player's, Nov 3)
+    ours |= {f for f, v in wrote.items() if now.get(f) == v}
     hp_max = ddb_fields.max_hp(summary)
     lines = [ddb_fields.changed(after, f, was[f], v, hp_max) for f, v in now.items()
              if f in was and was[f] is not None and v != was[f] and f not in ours]
@@ -1008,11 +1032,11 @@ def health(db: Session) -> dict:
     elif rt and rt["state"] == "failed":
         state, text = "off", "D&D Beyond · check failed"
     elif stuck:
-        state, text = "off", f"D&D Beyond · {stuck} to make by hand"
+        state, text = "off", f"D&D Beyond · {stuck} didn't go through"
     elif rt and rt["state"] == "running":
         state, text = "wait", "D&D Beyond · checking…"
     elif waiting:
-        state, text = "wait", f"D&D Beyond · {waiting} waiting"
+        state, text = "wait", f"D&D Beyond · {waiting} on the way"
     elif not extension:
         state, text = "wait", "D&D Beyond · extension not connected"
     elif rt and rt["state"] == "passed":
@@ -1027,6 +1051,52 @@ def health(db: Session) -> dict:
 # ------------------------------------------------------------------ what pages show
 
 
+TRYING = "trying"  # (a change's progress, `progress`: on, trying, behind, sheet, failed)
+
+
+def progress(db: Session, character: Character, intents: list[BridgeIntent]) -> dict[int, dict]:
+    """How each open change stands, in the words every place uses (Bridge Review, Nov 3): on its way, trying again (2 of
+    3), behind the change before it (one batch at a time per character), waiting for the sheet to open, or didn't go
+    through. {intent id: {"state", "try", "of"}}."""
+    batches = list(db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.state.in_(("sending", "ready")))))
+    out = {}
+    for it in intents:
+        if it.state == "not_yet":
+            out[it.id] = {"state": "sheet" if _for_sheet(it) else "failed"}
+            continue
+        b = next((b for b in batches if it.id in b.intents), None)
+        if b and b.attempts > 1:
+            out[it.id] = {"state": TRYING, "try": b.attempts, "of": MAX_ATTEMPTS}
+        else:
+            out[it.id] = {"state": "behind" if not b and batches else "on"}
+    return out
+
+
+SAYS = {"on": "On its way", TRYING: "Trying again", "behind": "Waits for the change before it", "sheet": "Made once the sheet is open",
+        "failed": "Didn't go through"}
+
+
+def says(p: dict) -> str:
+    return f"{SAYS[p['state']]} ({p['try']} of {p['of']})" if p["state"] == TRYING else SAYS[p["state"]]
+
+
+def follow(db: Session, character: Character, upto: int) -> dict:
+    """How a change made from a page stands (the corner card follows it, app.js "following a change"): everything for
+    this character up to it. Done once none is open; else the furthest behind of them."""
+    its = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == character.id, BridgeIntent.id <= upto,
+                                                     BridgeIntent.state.in_(OPEN)).order_by(BridgeIntent.id)))
+    if not its:
+        return {"state": "done", "says": "On D&D Beyond"}
+    ps = progress(db, character, its)
+    failed = [it for it in its if ps[it.id]["state"] == "failed"]
+    if failed:
+        return {"state": "failed", "says": "Didn't go through", "error": failed[-1].error,
+                "failed": [{"id": it.id, "label": it.label} for it in failed]}
+    order = ("sheet", TRYING, "behind", "on")
+    p = min(ps.values(), key=lambda p: order.index(p["state"]))
+    return {**p, "says": says(p)}
+
+
 def state(db: Session, character: Character, user: dict | None) -> dict:
     asleep = not awake(db)["awake"]  # (time to sleep settles what's waiting first, so the page shows it)
     summary = chars.character_summary(character)
@@ -1035,7 +1105,9 @@ def state(db: Session, character: Character, user: dict | None) -> dict:
                            .order_by(BridgeIntent.id.desc())))
     # A change that only waits for its sheet to be open again shows as waiting: it's made by itself then (_catch_up), so
     # it isn't one to make by hand (that would make it twice)
-    changes = [{"id": i.id, "label": i.label, "state": "waiting" if _for_sheet(i) else i.state, "error": i.error} for i in mine]
+    ps = progress(db, character, mine)
+    changes = [{"id": i.id, "label": i.label, "state": "waiting" if _for_sheet(i) else i.state, "error": i.error,
+                "progress": ps[i.id]["state"], "says": says(ps[i.id])} for i in mine]
     stuck = [i for i in reversed(mine) if i.state == "not_yet" and not _for_sheet(i)]
     to_make = []
     if stuck and n:  # the end state only, one line per number
@@ -1121,15 +1193,36 @@ def bridge_connect(request: Request, db: Session = Depends(get_db)):
     return _json({"key": key})
 
 
+def _newest_extension() -> str:
+    """The extension's version in this copy of askdnd (extension/askdnd-bridge/manifest.json): the popup says when the
+    one in the browser is older."""
+    try:
+        from pathlib import Path
+
+        return json.loads((Path(__file__).resolve().parent.parent / "extension" / "askdnd-bridge" / "manifest.json").read_text())["version"]
+    except (OSError, ValueError, KeyError):
+        return ""
+
+
+EXTENSION_VERSION = _newest_extension()
+
+
 @router.get("/bridge/links")
 def bridge_links(request: Request, db: Session = Depends(get_db)):
-    """What the bridge's icon in Chrome opens: your characters' sheets and pages, and the table."""
+    """What the bridge's icon in Chrome opens (Bridge Review, Nov 3: a status card): each of your characters, whether its
+    sheet is open (or reached through the DM), its changes on their way and those that didn't go through, with its sheet
+    and its page; the table; the newest extension."""
     user = _signed_in(request, db)
     me = picks.user_row(db, user)
     mine = list(db.scalars(select(Character).where(Character.owner_id == me.id, Character.ddb_id.is_not(None), Character.copy_of_id.is_(None)))) if me else []
     game = next((c.ddb_campaign_id for c in mine if c.ddb_campaign_id), None)
-    return _json({"characters": [{"name": c.name, "sheet": f"https://www.dndbeyond.com/characters/{c.ddb_id}", "page": f"/characters/{c.id}/battle"} for c in mine],
-                  "table": f"https://www.dndbeyond.com/games/{game}" if game else ""})
+    out = []
+    for c in mine:
+        its = list(db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == c.id, BridgeIntent.state.in_(OPEN))))
+        failed = sum(1 for p in progress(db, c, its).values() if p["state"] == "failed")
+        out.append({"name": c.name, "sheet": f"https://www.dndbeyond.com/characters/{c.ddb_id}", "page": f"/characters/{c.id}/battle",
+                    "how": how(c) if on_for(db, c) else None, "on_way": len(its) - failed, "failed": failed})
+    return _json({"characters": out, "table": f"https://www.dndbeyond.com/games/{game}" if game else "", "version": EXTENSION_VERSION})
 
 
 @router.post("/bridge/hello")
@@ -1282,23 +1375,27 @@ def bridge_carry(request: Request, body=web.JsonBody, db: Session = Depends(get_
 
 @router.post("/bridge/delivered/{batch_id:int}")
 async def bridge_delivered(batch_id: int, request: Request, db: Session = Depends(get_db)):
-    _signed_in(request, db)
+    user = _signed_in(request, db)
     body = await request.json()
 
     def settle():  # off the event loop: the read-back waits on D&D Beyond, a second at a time
-        delivered(db, batch_id, bool(body.get("ok")), str(body.get("error") or "")[:200], [str(c) for c in body.get("conflicts") or []])
+        b = db.get(BridgeBatch, batch_id)
+        character = db.get(Character, b.character_id) if b else None
+        fresh = fresh_read(db, user, character, body.get("data")) if character else None
+        delivered(db, batch_id, bool(body.get("ok")), str(body.get("error") or "")[:200], [str(c) for c in body.get("conflicts") or []], fresh)
         db.commit()
     await run_in_threadpool(settle)
     return _json({"ok": True})
 
 
 @router.post("/bridge/heard/{ddb_id}")
-def bridge_heard(ddb_id: str, request: Request, pull: int = 0, db: Session = Depends(get_db)):
-    """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`)."""
+def bridge_heard(ddb_id: str, request: Request, pull: int = 0, body=web.JsonBody, db: Session = Depends(get_db)):
+    """The sheet saved a change (the extension heard it), or the extension's regular pull (`?pull=1`). A newer extension
+    sends the sheet as it just read it, signed in (`data`): askdnd keeps that instead of reading D&D Beyond's public copy."""
     character, user = _by_ddb(db, request, ddb_id)
     if picks.can_edit(db, user, character):  # (a copy open in the DM's browser isn't its own sheet: the DM carries it)
         sheet_is_open(db, character)
-    heard(db, character, saved=not pull)
+    heard(db, character, saved=not pull, fresh=fresh_read(db, user, character, (body or {}).get("data") if isinstance(body, dict) else None))
     db.commit()
     return _json({**state(db, character, user), "check": check(character)})
 
@@ -1405,8 +1502,8 @@ def _back_up(db: Session, character: Character, was_at_0: bool, healed: int) -> 
 
 
 def _made(db: Session, character: Character, user: dict) -> JSONResponse:
-    """A change made from the bridge page: its state, the page and its panels told (web.changed), and the extension
-    told to make it now (app.js "bridgeDeliver")."""
+    """A change made through the bridge's own routes (the panel beside the sheet, a corner card's Try again or Undo): its
+    state, the page and its panels told (web.changed), and the extension told to make it now (app.js "bridgeDeliver")."""
     out = _json(state(db, character, user))
     out.headers["HX-Trigger"] = web.changed(character, deliver=True)
     return out
@@ -1650,10 +1747,19 @@ def _answer(request: Request, db: Session, character: Character, user: dict, liv
     return resp
 
 
+@router.get("/bridge/follow/{character_id:int}")
+def bridge_follow(character_id: int, request: Request, upto: int = 0, db: Session = Depends(get_db)):
+    """How a change made from a page stands, for its corner card (`follow`)."""
+    character, _ = _mine(db, request, character_id)
+    return _json(follow(db, character, upto))
+
+
 @router.get("/characters/{character_id:int}/bridge")
 def bridge_page(character_id: int, request: Request, db: Session = Depends(get_db)):
-    character, user = _mine(db, request, character_id)
-    return templates.TemplateResponse(request, "bridge.html", {"c": character, "state": state(db, character, user)})
+    """The first proof's page, retired (Bridge Review, Nov 3): an older extension's Open in askdnd lands on the
+    character's Battle with the Live window open, where each change's Try again and Undo are."""
+    character, _ = _mine(db, request, character_id)
+    return RedirectResponse(f"/characters/{character.id}/battle?live=1", status_code=303)
 
 
 # ------------------------------------------------------------------ Manage › askdnd › D&D Beyond bridge (admins)

@@ -94,8 +94,22 @@ def changed(character, toast: str = "", closePanel: bool = False, deliver: bool 
 
 def deliver_now(character) -> dict:
     """The "bridgeDeliver" event for a change for D&D Beyond just made here: whatever page it was made on tells the
-    extension to make it now (app.js → askdnd.js), instead of at its next check every 30 seconds."""
-    return {"ddbId": str(character.ddb_id or "")}
+    extension to make it now (app.js → askdnd.js), instead of at its next check every 30 seconds. With the change it
+    just made (`upto`, its newest one from the last few seconds), the corner card saying so follows it to D&D Beyond
+    (app.js "following a change"; Bridge Review, Nov 3)."""
+    from datetime import UTC, datetime, timedelta
+
+    from sqlalchemy import select
+    from sqlalchemy.orm import object_session
+
+    from app.models import BridgeIntent
+
+    out = {"ddbId": str(character.ddb_id or "")}
+    db = object_session(character)
+    newest = db.scalar(select(BridgeIntent).where(BridgeIntent.character_id == character.id).order_by(BridgeIntent.id.desc()).limit(1)) if db else None
+    if newest is not None and newest.created_at and newest.created_at > datetime.now(UTC) - timedelta(seconds=15):
+        out |= {"character": character.id, "upto": newest.id}
+    return out
 
 
 async def _body_json(request: Request):

@@ -9,6 +9,9 @@
 //    Table rolls. And sends the player's askdnd rolls to the game log (app/gamelog.py; Brett, 2026-10-29), as
 //    askdnd's own: source "askdnd" and ⓐ in the name, never passed off as D&D Beyond's; askdnd builds each one, this
 //    page adds only who is signed in, an id and the time.
+// 5. Reads the sheet for askdnd, signed in as the sheet itself reads it, whenever askdnd needs it read: after the sheet
+//    saves, after askdnd's change is written, and on the regular pull. D&D Beyond's public copy, which askdnd reads
+//    otherwise, can trail a save by minutes (Nov 3: a Soul Coin's use given back on D&D Beyond stayed spent).
 // 4. Keeps the open sheet showing what D&D Beyond has (Brett, 2026-10-27: no reloading): after askdnd changes the
 //    character, or when askdnd's read of D&D Beyond differs from what this page holds, the page reads the character as
 //    the sheet does when it opens and hands it to the sheet's own store, so it can't save an old number back.
@@ -34,9 +37,17 @@
   const isSave = (method, url) => {
     try { const u = new URL(url, location.href); return u.origin === CS && method !== 'GET'; } catch (e) { return false; }
   };
-  const saved = (method, url) => {
-    try { const u = new URL(url, location.href); post({ type: 'saved', path: u.pathname }); } catch (e) { /* not a URL */ }
+  const saved = (method, url) => {  // (`fresh`: this page reads the sheet for askdnd once the saves stop)
+    try { const u = new URL(url, location.href); post({ type: 'saved', path: u.pathname, fresh: true }); freshSoon(); } catch (e) { /* not a URL */ }
   };
+  // The sheet for askdnd, as it is once the sheet's own changes are saved (5.): `why` "saved" or "pull"
+  let freshTimer = null;
+  const freshSoon = () => { clearTimeout(freshTimer); freshTimer = setTimeout(() => fresh('saved'), 1500); };
+  async function fresh(why) {
+    let data = null;
+    try { await quiet(); data = await character(); } catch (e) { /* askdnd reads the public copy instead */ }
+    post({ type: 'fresh', why, data });
+  }
 
   const ofetch = window.fetch;
   const wsend = WebSocket.prototype.send;
@@ -198,6 +209,7 @@
     if (e.data.askdndBridge === 'apply') queue = queue.then(() => run(e.data.batch), () => run(e.data.batch));
     if (!onSheet) return;
     if (e.data.askdndBridge === 'show') show();  // askdnd changed this character from another copy of the sheet
+    if (e.data.askdndBridge === 'read') fresh('pull');  // the regular pull (5.)
     if (e.data.askdndBridge === 'check') check(e.data.fields || []);
     if (e.data.askdndBridge === 'gamelog') toGameLog(e.data.messages || []);
   });
@@ -243,9 +255,10 @@
         if (same(v, op.to)) continue;
         if (same(v, op.from)) todo.push(op); else conflicts.push(op.field);
       }
-      if (conflicts.length) return done({ ok: false, conflicts });
+      if (conflicts.length) return done({ ok: false, conflicts, data: d });
       for (const op of todo) await call(op.method, op.path, op.body);
-      done({ ok: true, wrote: todo.length > 0 });
+      // askdnd confirms from this read, made right after writing (5.)
+      done({ ok: true, wrote: todo.length > 0, data: todo.length ? await character(who).catch(() => null) : d });
       if (todo.length && who === sheetId()) show();  // the sheet shows what D&D Beyond has now, and can't save old numbers back
     } catch (err) {
       done({ ok: false, error: String((err && err.message) || err) });

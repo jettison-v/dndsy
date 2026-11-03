@@ -76,14 +76,67 @@
       });
       el.append(row);
     }
-    const wait = stay ? 0 : acts.length ? 20000 : ms, start = () => { if (wait) el._hide = setTimeout(close, wait); };
+    // (a card following a change to D&D Beyond stays until it's settled: followChange)
+    const wait = stay ? 0 : acts.length ? 20000 : ms, start = () => { if (wait && !el._following) el._hide = setTimeout(close, wait); };
+    el._close = close;
     el.addEventListener('mouseenter', () => clearTimeout(el._hide));
     el.addEventListener('mouseleave', start);
     start();
     box.append(el);
     const most = matchMedia('(max-width: 900px)').matches ? 1 : 3;
     while (box.children.length > most) box.firstElementChild.remove();
+    if (waitingFollow && Date.now() - waitingFollow.at < 1500) followChange(el, waitingFollow.d);  // (its change came first)
+    waitingFollow = null;
+    lastCard = { el, at: Date.now() };
     return el;
+  }
+  // ---- following a change (Bridge Review, Nov 3): the card saying a change for D&D Beyond was made stays with it, "On
+  // its way", "Trying again (2 of 3)", until D&D Beyond has it (✓ On D&D Beyond), or says it didn't go through, with Try
+  // again and Undo. The change is web.deliver_now's `upto`; app/ddb_bridge.py `follow` says how it stands.
+  let lastCard = null, waitingFollow = null;
+  function followChange(el, d) {
+    if (!el || el._following || !d || !d.upto || !d.character) return;
+    el._following = true;
+    clearTimeout(el._hide);
+    el.classList.add('following');
+    const ic = el.querySelector('.card-ic'), sub = Object.assign(document.createElement('small'), { className: 'card-sub', textContent: 'On its way to D&D Beyond' });
+    el.querySelector('.card-tx').append(sub);
+    if (ic) ic.textContent = '↻';
+    const settle = (ms) => { el._following = false; el.classList.remove('following'); el._hide = setTimeout(el._close, ms); };
+    const told = () => {  // the page shows its new copy, and the extension makes it now
+      document.body.dispatchEvent(new CustomEvent('characterChanged', { detail: { character: d.character } }));
+      document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: { ddbId: d.ddbId } }));
+    };
+    const end = Date.now() + 120000;
+    const tick = async () => {
+      if (!el.isConnected) return;
+      let s = null;
+      try { const r = await fetch('/bridge/follow/' + d.character + '?upto=' + d.upto, { headers: { Accept: 'application/json' } }); if (r.ok) s = await r.json(); } catch (e) { /* offline: ask again */ }
+      if (s && s.state === 'done') {
+        el.className = 'card k-ok'; if (ic) ic.textContent = '✓'; sub.textContent = 'On D&D Beyond';
+        return settle(4000);
+      }
+      if (s && s.state === 'failed') {
+        el.className = 'card k-warn'; el.setAttribute('role', 'alert'); if (ic) ic.textContent = '!';
+        sub.textContent = "Didn't go through" + (s.error ? ': ' + s.error : '');
+        const ids = (s.failed || []).map(f => f.id), act = (path, then) => () => Promise.all(ids.map(id => fetch(path + id, { method: 'POST', headers: { Accept: 'application/json' } }))).then(then);
+        const row = Object.assign(document.createElement('span'), { className: 'card-acts card-follow-acts' });
+        [['Try again', act('/bridge/retry/', () => { row.remove(); el.className = 'card k-ok following'; if (ic) ic.textContent = '↻'; sub.textContent = 'Trying again'; el._following = true; clearTimeout(el._hide); told(); setTimeout(tick, 1500); })],
+         ['Undo', act('/bridge/dismiss/', () => { row.remove(); sub.textContent = 'Undone in askdnd'; told(); settle(4000); })]].forEach(([label, run]) => {
+          const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: label });
+          b.addEventListener('click', run);
+          row.append(b);
+        });
+        el.querySelector('.card-follow-acts')?.remove();
+        el.append(row);
+        el._following = false; el.classList.remove('following');  // (stays until closed: it needs you)
+        return;
+      }
+      if (s) sub.textContent = s.says;
+      if (Date.now() > end) { sub.textContent = 'Still on its way: the Live pill has it'; return settle(10000); }
+      el._tick = setTimeout(tick, 1500);
+    };
+    setTimeout(tick, 800);
   }
   // A message: its text, or {text, kind} from the server (web.notice); action: {label, run}, a button on the card
   function toast(message, action, kind) {
@@ -92,6 +145,11 @@
   }
   window.askdndToast = toast;
   window.askdndCard = card;
+  // A change's corner card: the one just shown, or the next one (web.changed sends the change before its message)
+  window.askdndFollow = d => {
+    if (lastCard && lastCard.el.isConnected && Date.now() - lastCard.at < 1500) followChange(lastCard.el, d);
+    else waitingFollow = { d, at: Date.now() };
+  };
 
   // Server can trigger a toast with the HX-Trigger header: {"toast": "Saved"}
   document.body.addEventListener('toast', e => toast(e.detail && ('value' in e.detail ? e.detail.value : e.detail)));
@@ -508,7 +566,21 @@
     const pill = document.getElementById('live-pill');
     if (!window.htmx || !pill) return;
     htmx.ajax('POST', '/live/sync' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' })
-      .then(() => { if (!live.up) showInPlace(); });
+      .then(() => { liveWindowAgain(); if (!live.up) showInPlace(); });
+  }
+  // The Live window, while it's open, says what the pill says (Bridge Review, Nov 3: an open window said "Not connected"
+  // under a pill saying Connected): it's fetched again whenever the pill is
+  function liveWindowAgain() {
+    const menu = document.getElementById('live-menu'), pill = document.getElementById('live-pill');
+    if (!window.htmx || !menu || menu.hidden || !pill) return;
+    htmx.ajax('GET', '/live' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-menu', swap: 'innerHTML' });
+  }
+  // ?live=1 opens it (the panel beside a D&D Beyond sheet links here: each change's Try again and Undo are in it)
+  if (new URLSearchParams(location.search).get('live')) {
+    const url = new URL(location.href);
+    url.searchParams.delete('live');
+    history.replaceState(history.state, '', url);
+    addEventListener('load', () => { const pill = document.getElementById('live-pill'); if (pill) pill.click(); });
   }
   if (document.body.classList.contains('at-table')) {
     const pill = document.getElementById('live-pill');
@@ -572,6 +644,8 @@
     const num = v => /^[−-]?\d+$/.test(v) ? parseInt(v.replace('−', '-'), 10) : null;
     const one = (el, was, now) => {
       if (was === undefined || was === now) return;
+      // (a number going back because askdnd's change didn't go through isn't a gain or a loss: Bridge Review, Nov 3)
+      if (el.closest('[data-sync="failed"]')) return;
       el.classList.remove('marked'); void el.offsetWidth; el.classList.add('marked');
       clearTimeout(el._marked); el._marked = setTimeout(() => el.classList.remove('marked'), 2600);
       const a = num(was), b = num(now);
@@ -595,7 +669,7 @@
     [...there.attributes].forEach(a => here.setAttribute(a.name, a.value));
     here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
     const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
-    if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); }
+    if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); liveWindowAgain(); }
     // Your character's conditions on its menu bar button, outside main
     const dots = doc.querySelectorAll('[data-cond-dots]');
     document.querySelectorAll('[data-cond-dots]').forEach((d, i) => { if (dots[i]) { d.innerHTML = dots[i].innerHTML; if (dots[i].title) d.title = dots[i].title; else d.removeAttribute('title'); } });
@@ -3174,7 +3248,7 @@
 })();
 
 // ---------------------------------------------------------------- the D&D Beyond bridge
-// Character › with D&D Beyond (bridge.html, app/ddb_bridge.py): every number comes from D&D Beyond; a change made here
+// The bridge (app/ddb_bridge.py): every number comes from D&D Beyond; a change made here
 // is an intent askdnd keeps until the extension (extension/askdnd-bridge/) has made it on D&D Beyond and askdnd has
 // read it back. Pages talk to the extension with window messages ({askdndBridge: ...}). The bridge's health shows on
 // Manage › askdnd › D&D Beyond bridge (admins); players see how their own sheet is kept in step in the Live pill.
@@ -3187,6 +3261,7 @@
     addEventListener('message', e => {
       if (e.source !== window || !e.data || e.data.askdndBridge !== 'hello') return;
       heard = true;
+      if (e.data.version) document.body.dataset.bridgeVersion = e.data.version;  // (0.9.9 on: which extension this browser has)
       document.body.classList.remove('no-bridge');
     });
     window.postMessage({ askdndBridge: 'ping' }, location.origin);
@@ -3275,18 +3350,8 @@
   document.body.addEventListener('bridgeDeliver', e => {
     const ddbId = e.detail && e.detail.ddbId;
     if (ddbId) window.postMessage({ askdndBridge: 'deliver', ddbId: String(ddbId) }, location.origin);
+    if (e.detail && e.detail.upto) window.askdndFollow(e.detail);  // its corner card follows it (app.js "following a change")
   });
-  // Character › with D&D Beyond (bridge.html): drawn on the server and updated like every page (showInPlace, through
-  // "characterChanged"). Here only what the browser knows: the extension answering (body.br-ext), telling it to make
-  // a change now, and its word that something changed.
-  const root = document.querySelector('[data-bridge]');
-  if (!root) return;
-  addEventListener('message', e => {
-    if (e.source !== window || !e.data || !e.data.askdndBridge) return;
-    if (e.data.askdndBridge === 'hello') document.body.classList.add('br-ext');
-    if (e.data.askdndBridge === 'update') document.body.dispatchEvent(new CustomEvent('characterChanged'));
-  });
-  window.postMessage({ askdndBridge: 'ping' }, location.origin);
 })();
 
 // ---------------------------------------------------------------- Manage counts
