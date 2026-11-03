@@ -6,6 +6,7 @@ been fetched. It never contains player notes.
 """
 
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from sqlalchemy import select, update
@@ -15,6 +16,7 @@ from app import config, ddb
 from app.models import NEW_CHARACTER, CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity, EntityKind
 
 Fetch = Callable[[str], dict]
+FETCH: Fetch = ddb.fetch_character  # how a sheet is read from D&D Beyond (tests put a stand-in here)
 
 
 def campaign_characters(db: Session, campaign_id: int) -> list[Character]:
@@ -117,25 +119,59 @@ def ddb_campaigns(db: Session) -> dict[str, str]:
     return out
 
 
-def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_character) -> CharacterSnapshot:
-    """Fetch and parse the character. On success the snapshot is replaced; on any
-    failure only its status and error change, so the last good copy stays."""
+@dataclass
+class Read:
+    """One read of a character's D&D Beyond sheet, parsed, made without the database (`read`): `at` when it started,
+    and either the sheet (`raw`, `summary`, its item `notes`) or why not (`error`)."""
+
+    at: datetime
+    raw: dict | None = None
+    summary: dict | None = None
+    notes: list = field(default_factory=list)
+    error: str = ""
+
+
+def read(ddb_id: str | None, fetch: Fetch | None = None) -> Read:
+    """Read and parse a sheet from D&D Beyond. Touches no database, so call it with none held (`read_released`)."""
+    at = datetime.now(UTC)
+    try:
+        if not ddb_id:
+            raise ddb.DdbError("No D&D Beyond link yet.")
+        data = (fetch or FETCH)(ddb_id)
+        notes = ddb.item_notes(data)
+        raw = ddb.sanitize(data)
+        return Read(at, raw, ddb.parse_character(raw), notes)
+    except ddb.DdbError as e:
+        return Read(at, error=str(e))
+
+
+def read_released(db: Session, character: Character, fetch: Fetch | None = None) -> Read:
+    """Read the sheet with this request's database let go: what it did so far is committed (its connection goes back to
+    the pool and its locks are released), then D&D Beyond is asked. D&D Beyond can take 15 seconds; holding a
+    connection and a character's lock through that ran beta out of connections (Sentry ASKDND-V2-7, architecture review
+    2026-11-02). A caller that held a lock takes it again before `store` and checks what changed meanwhile."""
+    ddb_id = character.ddb_id  # (before the commit: reading it after could load the row again, opening a transaction)
+    db.commit()
+    return read(ddb_id, fetch)
+
+
+def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
+    """Keep a read as the character's copy. On success the snapshot is replaced; on any failure only its status and
+    error change, so the last good copy stays. A read older than the copy already kept (another request stored a newer
+    one while this one waited for D&D Beyond) changes nothing."""
     snap = character.snapshot
     if snap is None:
         snap = CharacterSnapshot(character=character, status="ok", error="")
         db.add(snap)
-    now = datetime.now(UTC)
-    snap.attempted_at = now
-    try:
-        if not character.ddb_id:
-            raise ddb.DdbError("No D&D Beyond link yet.")
-        data = fetch(character.ddb_id)
-        notes = ddb.item_notes(data)
-        raw = ddb.sanitize(data)
-        summary = ddb.parse_character(raw)
-    except ddb.DdbError as e:
-        snap.status, snap.error = "error", str(e)
+    elif snap in db and not db.is_modified(snap):
+        db.refresh(snap)  # (as it is now: another request may have stored a newer copy)
+    if snap.fetched_at is not None and snap.fetched_at > got.at:
+        return snap
+    snap.attempted_at = got.at
+    if got.raw is None:
+        snap.status, snap.error = "error", got.error
     else:
+        raw, summary = got.raw, got.summary
         if config.DDB_BRIDGE:  # the bridge's log of what changed on D&D Beyond, whichever read saw it
             from app import ddb_bridge  # (it builds on this module)
             if ddb_bridge.on_for(db, character):
@@ -144,16 +180,22 @@ def refresh(db: Session, character: Character, fetch: Fetch = ddb.fetch_characte
 
         if (news := level_up.changes(snap.summary, summary)):
             character.level_up = level_up.merged(character.level_up, news)
-        snap.raw, snap.summary, snap.fetched_at = raw, summary, now
+        snap.raw, snap.summary, snap.fetched_at = raw, summary, got.at
         character.ddb_campaign_id = ddb.campaign_id(raw)
         snap.status, snap.error = "ok", ""
-        _store_item_notes(db, character, notes)
+        _store_item_notes(db, character, got.notes)
         if character.name == NEW_CHARACTER and summary.get("name"):  # only then: a table can name a character its own way
             character.name = summary["name"][:200]
             if character.membership is not None:
                 character.membership.entity.name = character.name
     db.flush()
     return snap
+
+
+def refresh(db: Session, character: Character, fetch: Fetch | None = None) -> CharacterSnapshot:
+    """Read the character from D&D Beyond and keep it, in this request's transaction (an admin's button, adding a
+    character). Anything that runs often or holds a lock reads with `read_released` and then `store`s."""
+    return store(db, character, read(character.ddb_id, fetch))
 
 
 def _store_item_notes(db: Session, character: Character, notes: list[dict]) -> None:
@@ -172,13 +214,13 @@ def item_notes(db: Session, character: Character) -> dict[str, str]:
     return {n.item_ref: n.note for n in db.scalars(select(CharacterItemNote).where(CharacterItemNote.character_id == character.id))}
 
 
-def refresh_all(db: Session, campaign_id: int, fetch: Fetch = ddb.fetch_character) -> tuple[int, list[str]]:
+def refresh_all(db: Session, campaign_id: int, fetch: Fetch | None = None) -> tuple[int, list[str]]:
     """Refresh every linked character. Returns (how many worked, names that failed)."""
     ok, failed = 0, []
     for ch in campaign_characters(db, campaign_id):
         if not ch.ddb_id:
             continue
-        if refresh(db, ch, fetch).status == "ok":
+        if store(db, ch, read_released(db, ch, fetch)).status == "ok":  # (one at a time, the database let go while each is read)
             ok += 1
         else:
             failed.append(ch.name)

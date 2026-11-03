@@ -204,7 +204,7 @@ def no_network(monkeypatch):
     from tests.table_setup import fake_fetch
 
     monkeypatch.setattr(ddb, "fetch_character_json", fake_fetch)
-    monkeypatch.setattr(characters.refresh, "__defaults__", (fake_fetch,))
+    monkeypatch.setattr(characters, "FETCH", fake_fetch)
     monkeypatch.setattr(characters.refresh_all, "__defaults__", (fake_fetch,))
 
 
@@ -247,7 +247,7 @@ def sheet(monkeypatch, db):
 
     data = copy.deepcopy(COLE)
     data["removedHitPoints"] = 14  # 37 of 51
-    monkeypatch.setattr(characters.refresh, "__defaults__", (lambda _id: copy.deepcopy(data),))
+    monkeypatch.setattr(characters, "FETCH", lambda _id: copy.deepcopy(data))
     monkeypatch.setattr(ddb_bridge.time, "sleep", lambda s: None)  # the read-back's waits
     monkeypatch.setattr(config, "DDB_BRIDGE", True)
     ddb_bridge._health.update(extension_at=0.0, sheets=[], heard_at=0.0, read_check=None, round_trip=None)
