@@ -716,6 +716,13 @@ def _settle(db: Session, b: BridgeBatch) -> None:
     _check_step(db, b, True)
 
 
+# What an extension says of a request it doesn't know (ddb-page.js `WRITES`): one older than the change, e.g. preparing
+# spells before 0.9.8 (Nov 3: Brett's own Chrome hadn't updated, and askdnd tried 3 times and said to make it by hand)
+TOO_OLD = "That isn't a change askdnd may make"
+OUT_OF_DATE = ("The askdnd extension in the browser making it is older than this change needs. Update it (chrome://extensions › "
+               "Developer mode › Update; Chrome also does it within a few hours), then Try again.")
+
+
 def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: list[str] | None = None) -> None:
     """The extension's answer for a batch, then the read-back that decides it, field by field."""
     b = db.get(BridgeBatch, batch_id)
@@ -737,6 +744,9 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
                 it.state, it.data = "waiting", {**it.data, "replans": it.data.get("replans", 0) + 1}
         else:
             _stop(db, b, f"D&D Beyond's {_say(conflicts, b)} changed while askdnd was writing it.")
+        return
+    if not ok and error.startswith(TOO_OLD):  # an older extension refuses a change it doesn't know: trying again can't help
+        _stop(db, b, OUT_OF_DATE)
         return
     if not ok:  # couldn't reach the sheet or D&D Beyond: try again later, on its own
         _again(db, b, error or "The change couldn't be made.")

@@ -1,0 +1,17 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-03T17:20:00Z"},
+  "title": "Your Creatures",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1360, "h": 640, "title": "Where creatures are today"},
+    "Option-A.dc.html": {"x": 1440, "y": 0, "w": 1360, "h": 760, "title": "Option A: a card under the columns", "is_interactive": true},
+    "Option-B.dc.html": {"x": 0, "y": 880, "w": 1360, "h": 760, "title": "Option B: switch who you're playing", "is_interactive": true},
+    "Option-C.dc.html": {"x": 1440, "y": 880, "w": 1360, "h": 760, "title": "Option C: a chip that opens the side panel", "is_interactive": true},
+    "Elsewhere.dc.html": {"x": 0, "y": 1760, "w": 1360, "h": 760, "title": "Everywhere else a creature shows"}
+  },
+  "order": ["Main.dc.html", "Option-A.dc.html", "Option-B.dc.html", "Option-C.dc.html", "Elsewhere.dc.html"],
+  "notes": {},
+  "designSystems": []
+}
