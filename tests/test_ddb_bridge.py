@@ -110,6 +110,20 @@ def test_a_recent_copy_of_the_sheet_is_built_on_without_reading_it_first(db, she
     assert len(reads) == 1 and batch["ops"][0]["body"]["removedHitPoints"] == 51  # down to 0: read fresh first
 
 
+def test_a_change_the_copy_says_is_made_already_is_read_fresh_first(db, sheet, monkeypatch):
+    """The live test, Nov 2: healing from 0 clears the death save marks, but askdnd's copy (under a minute old) didn't
+    have the mark D&D Beyond had just kept, so clearing looked made already, wasn't sent, and the extension's check
+    (only what's written) couldn't notice. A field left out because the copy has it already is read fresh first."""
+    reads, read = [], characters.read_released
+    monkeypatch.setattr(characters, "read_released", lambda db, ch, *a, **k: reads.append(ch.id) or read(db, ch, *a, **k))
+    cole = char(db, "Cole")
+    sheet["deathSaves"].update(failCount=1)  # on D&D Beyond, not yet in askdnd's copy
+    ddb_bridge.add(db, cole, "set", {"field": "death", "value": {"successCount": 0, "failCount": 0}}, "Cole: death saves cleared")
+    batch = ddb_bridge.outbox(db, cole)
+    assert reads == [cole.id] and [op["field"] for op in batch["ops"]] == ["death"]
+    assert batch["ops"][0]["to"] == {"successCount": 0, "failCount": 0}
+
+
 def test_several_changes_go_as_one_end_state(player, db, sheet):
     """Brett, 2026-10-27: not 12 → 10 → 15 → 45 → 34, just the end state."""
     cole = char(db, "Cole")

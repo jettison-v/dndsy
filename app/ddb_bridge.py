@@ -656,8 +656,10 @@ def outbox(db: Session, character: Character, by: str = "sheet", got: chars.Read
         return None
     dicts = [_as_dict(i) for i in waiting]
     target, _lines, impossible, extra = plan(dicts, n)
-    if got is None and (impossible or (target.get("hp") or {}).get("removedHitPoints", 0) >= n["max"]):
-        # what the extension's check doesn't cover: read fresh and work it out again
+    left_out = set(plan(dicts, n, every=True)[0]) - set(target)  # the copy has these already, so nothing checks them
+    if got is None and (impossible or left_out or (target.get("hp") or {}).get("removedHitPoints", 0) >= n["max"]):
+        # what the extension's check doesn't cover: read fresh and work it out again (Nov 2: a copy a moment behind
+        # D&D Beyond had no death save mark yet, so clearing the marks looked made already and was never sent)
         return outbox(db, character, by, chars.read_released(db, character))
     for d, why in impossible:  # (by identity: two drinks of the same potion are equal dicts)
         it = waiting[next(k for k, x in enumerate(dicts) if x is d)]
