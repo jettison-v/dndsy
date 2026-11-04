@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wild Companion</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">2 · Wild Companion · try it</div>
+    <h1>A familiar from a Wild Shape use</h1>
+    <p class="where"><b>Where:</b> Cole's Battle (a Druid). Wild Shape's pips on Resources open their window, as every count does; for a druid with Wild Companion it adds <b>Wild Companion</b>, which opens Find Familiar's Cast window already set to a Wild Shape use. The same window opens from Find Familiar in the Spell Book, with the Wild Shape use as one of its ways. Pick a way and press Cast; then look at the Long Rest window.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 380px minmax(0, 1fr) 380px; gap: 24px; align-items: start">
+    <div style="display: grid; gap: 12px">
+      <div class="lbl">Cole's Battle · Resources</div>
+      <div class="res"><b>Wild Shape</b><span class="pips"><sc-for list="{{ pips }}" as="p" hint-placeholder-count="2"><span class="{{ p }}"></span></sc-for></span><span class="note">{{ left }} of 2</span></div>
+      <div class="win">
+        <h3>Wild Shape</h3>
+        <span class="note">{{ left }} of 2 left · back on a Long Rest, one on a Short Rest</span>
+        <div class="row start wrap" style="gap: 8px"><button type="button" class="btn">Use one</button><button type="button" class="btn">Give one back</button></div>
+        <button type="button" class="btn main" onClick="{{ openWild }}">Wild Companion: a familiar</button>
+        <p class="note">Find Familiar with a Wild Shape use instead of a slot: no incense, and it's Fey.</p>
+      </div>
+    </div>
+    <div style="display: grid; gap: 12px">
+      <div class="lbl">Find Familiar's Cast window</div>
+      <div class="win">
+        <h3>Cast Find Familiar</h3>
+        <div class="lbl">Cast with</div>
+        <sc-for list="{{ ways }}" as="w" hint-placeholder-count="3">
+          <button type="button" class="{{ w.cls }}" onClick="{{ w.pick }}"><span class="ring"></span><span><b>{{ w.name }}</b><br><span class="note">{{ w.note }}</span></span><span class="note">{{ w.left }}</span></button>
+        </sc-for>
+        <div class="lbl">Your familiar</div>
+        <div class="opt on"><span class="ring"></span><span><b>Moss</b> <span class="note">Owl · on Extras</span></span><span class="note">Not here</span></div>
+        <div class="row start" style="gap: 10px"><span class="lbl" style="margin: 0">It's a</span>
+          <span class="seg"><button type="button" class="{{ kindCel }}" disabled="{{ wild }}">Celestial</button><button type="button" class="on">Fey</button><button type="button" class="{{ kindFiend }}" disabled="{{ wild }}">Fiend</button></span>
+          <sc-if value="{{ wild }}" hint-placeholder-val="{{ true }}"><span class="note">Always Fey from Wild Companion</span></sc-if>
+        </div>
+        <sc-if value="{{ wild }}" hint-placeholder-val="{{ true }}"><p class="note">It leaves at your next Long Rest (or at 0 Hit Points). Casting again brings one new familiar: the old one goes.</p></sc-if>
+        <div class="row start" style="gap: 8px"><button type="button" class="btn main" onClick="{{ cast }}">Cast</button><button type="button" class="btn quiet" onClick="{{ reset }}">Start again</button></div>
+      </div>
+      <sc-if value="{{ cast_done }}" hint-placeholder-val="{{ false }}">
+        <div class="cornercard"><span class="dot"></span><span style="flex: 1"><b>{{ said }}</b><br><span class="note">On D&amp;D Beyond: Moss switched on, as Fey; {{ spentNote }}</span></span><button type="button" class="btn mini" onClick="{{ reset }}">Undo</button></div>
+      </sc-if>
+    </div>
+    <div style="display: grid; gap: 12px">
+      <div class="lbl">Later: the Long Rest window</div>
+      <div class="win">
+        <h3>Long Rest</h3>
+        <span class="lbl">What changes</span>
+        <div class="row"><span>Hit Points, Hit Point Dice, spell slots</span><span class="note">all back</span></div>
+        <div class="row"><span>Wild Shape</span><span class="note">2 of 2 back</span></div>
+        <sc-if value="{{ leaves }}" hint-placeholder-val="{{ true }}">
+          <label class="check"><span class="box">✓</span><span><b style="color: var(--strong)">Moss leaves</b> <span class="note">(Wild Companion)</span></span></label>
+          <p class="note">Ticked: untick it on the DM's ruling. It's switched off on D&amp;D Beyond, never deleted.</p>
+        </sc-if>
+        <sc-if value="{{ stays }}" hint-placeholder-val="{{ false }}"><p class="note">Nothing about Moss: cast as a Ritual, it's an ordinary familiar and stays until dismissed or at 0 Hit Points.</p></sc-if>
+        <button type="button" class="btn main" style="justify-self: start">Take the Long Rest</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  state = { way: 'wild', done: false };
+  renderVals() {
+    const s = this.state, wild = s.way === 'wild';
+    const left = s.done && wild ? 1 : 2;
+    const W = [['wild', 'A Wild Shape use', 'Wild Companion · no incense · always Fey · leaves at a Long Rest', left + ' of 2'],
+               ['slot', 'A 1st-level slot', 'Wild Companion too · no incense · always Fey · leaves at a Long Rest', '3 of 4'],
+               ['ritual', 'As a Ritual', 'Only with Find Familiar prepared from another source (it isn’t a Druid spell) · an ordinary familiar: stays past a Long Rest', '']];
+    return {
+      wild, left,
+      pips: [0, 1].map((i) => (i < left ? 'pip full' : 'pip used')),
+      ways: W.map(([id, name, note, l]) => ({ name, note, left: l, cls: 'opt' + (s.way === id ? ' on' : ''), pick: () => this.setState({ way: id, done: false }) })),
+      kindCel: '', kindFiend: '',
+      openWild: () => this.setState({ way: 'wild', done: false }),
+      cast: () => this.setState({ done: true }),
+      reset: () => this.setState({ done: false }),
+      cast_done: s.done,
+      said: wild ? 'Moss (Fey) is here, from a Wild Shape use' : s.way === 'slot' ? 'Moss (Fey) is here, from a 1st-level slot' : 'Moss (Fey) is here · as a Ritual',
+      spentNote: wild ? 'one Wild Shape use spent' : s.way === 'slot' ? 'a 1st-level slot spent' : 'nothing spent',
+      leaves: !s.done || s.way !== 'ritual', stays: s.done && s.way === 'ritual',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -2637,6 +2637,8 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .ff-opt:has(input:checked) { border-color: var(--green); background: var(--green-soft); }
 .ff-kinds { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
 .ff-kinds legend { width: 100%; }
+.ff-new { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.ff-new-head { margin-top: var(--sp-1); }
 .ff-kind { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
 .pt-with { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); color: var(--text-strong); }
 .cr-fix { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); line-height: 1.9; }

@@ -452,3 +452,82 @@ def test_a_creatures_turn_is_a_corner_card_for_its_masters_player(db, labs, shee
         x["active"] = x["key"] == "t-pip"
     fight.heard(db, campaign, f)
     assert ("creature", "Pip", labs.id) in [(r["kind"], r["name"], r["character"]) for r in campaign.fight["reminders"]]
+
+
+def test_a_familiar_that_is_here_lends_its_master_its_eyes_and_its_touch(player, db, labs, sheet):
+    """Board 3 (Find Familiar): on the master's own Battle, See through its eyes (a Bonus Action) and Deliver a touch
+    spell (its Reaction) while it's here; greyed with the reason while it's away or gone; nothing before it's cast. Its
+    own Battle lists them too, as its master's."""
+    from app import companions
+
+    familiar_sheet(db, labs, sheet)
+    s = characters.character_summary(labs)
+    assert companions.master_options(labs, s) == []  # (not cast yet)
+    labs.companions = {str(OWL): {"state": "here", "kind": "Fey"}}
+    eyes, touch = companions.master_options(labs, s)
+    assert (eyes["name"], eyes["cost"], eyes["form_why"]) == ("See through Pip's eyes", "Bonus action", "")
+    assert (touch["name"], touch["cost"]) == ("Deliver a touch spell", "Reaction") and "100 ft" in touch["meta"]
+    db.flush()
+    battle = player.get(f"/characters/{labs.id}/battle").text
+    assert "See through Pip&#39;s eyes" in battle and "Deliver a touch spell" in battle
+    own = player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
+    assert "Cole&#39;s Bonus Action" in own
+    labs.companions = {str(OWL): {"state": "away", "kind": "Fey"}}
+    assert "pocket dimension" in companions.master_options(labs, s)[0]["form_why"]
+
+
+def test_find_familiar_as_a_new_form_adds_it_to_extras_and_ties_it_back(player, db, labs, sheet):
+    """Board 2, "or a new one" (Nov 4, recorded on Levi's seat: Manage Extras › Familiar › Add sends POST creature with
+    D&D Beyond's monster id): a form of the rules the sheet doesn't have is added to Extras through the bridge; askdnd
+    keeps the familiar by its monster id until a read finds the new creature, then puts D&D Beyond in step with it."""
+    from sqlalchemy import select
+
+    from app import ddb_fields
+    from app.models import BridgeIntent
+
+    e = familiar_sheet(db, labs, sheet)
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    win = player.get(url).text
+    assert "Or a new form" in win and 'value="new:4775808"' in win  # (the 2024 Cat, by its D&D Beyond id)
+    r = player.post(url, data={"way": "ritual", "familiar": "new:4775808", "kind": "Fiend", "familiar_name": "Smudge"})
+    assert r.status_code == 200 and "Smudge, a Cat (Fiend), added to D&D Beyond's Extras" in r.json()["text"]
+    db.refresh(labs)
+    assert labs.companions == {"new:4775808": {"state": "here", "kind": "Fiend", "name": "Smudge"}}
+    sets = lambda: {i.data["field"]: i.data["value"] for i in db.scalars(select(BridgeIntent).where(  # noqa: E731
+        BridgeIntent.character_id == labs.id, BridgeIntent.kind == "set"))}
+    assert sets()["familiar_add:4775808"] == 1
+    assert ddb_fields.write(75423618, "familiar_add:4775808", 1)["body"] == {"characterId": 75423618, "groupId": 2, "monsterId": 4775808, "names": [None]}
+    cat = made_up("Cat", 2, 990009)
+    cat["definition"]["id"] = 4775808
+    sheet["creatures"] = [*sheet["creatures"], cat]
+    characters.refresh(db, labs)  # (D&D Beyond has it now)
+    db.refresh(labs)
+    assert labs.companions == {"990009": {"state": "here", "kind": "Fiend"}}
+    got = sets()
+    assert (got["creature_active:990009"], got["creature_type:990009"], got["creature_name:990009"]) == (True, 9, "Smudge")
+
+
+def test_wild_companion_a_familiar_from_a_wild_shape_use_gone_at_a_long_rest(player, db, labs, sheet):
+    """Board 2 of Steeds, Summons and Wild Companion (Brett, Nov 4; the 2024 Druid's Wild Companion): Find Familiar's
+    ways start with a Wild Shape use (and a slot as Wild Companion); cast so, it's always Fey, spends the Wild Shape use
+    through the bridge, and the next Long Rest window lists it leaving, ticked."""
+    from sqlalchemy import select
+
+    from app import casting
+    from app.models import BridgeIntent
+
+    e = familiar_sheet(db, labs, sheet)
+    s = characters.character_summary(labs)
+    if not casting.wild_use(s):
+        pytest.skip("Cole's test sheet has no Wild Companion")  # (a Druid's, from level 2)
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    win = player.get(url).text
+    assert 'value="wild"' in win and "Wild Companion" in win and "always Fey" in win
+    r = player.post(url, data={"way": "wild", "familiar": str(OWL), "kind": "Celestial"})
+    assert r.status_code == 200 and "as Wild Companion, a Wild Shape use" in r.json()["text"] and "(Fey)" in r.json()["text"]
+    db.refresh(labs)
+    assert labs.companions[str(OWL)] == {"state": "here", "kind": "Fey", "wild": True}
+    spent = [i.data for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == labs.id, BridgeIntent.kind == "use"))]
+    assert {"field": casting.wild_use(s)["field"], "delta": 1} in spent
+    rest = player.get(f"/characters/{labs.id}/rest?kind=long").text
+    assert 'name="wild_leaves"' in rest and "Pip leaves (Wild Companion)" in rest

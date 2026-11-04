@@ -19,6 +19,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app import characters as chars
 from app import companions, ddb_bridge, ddb_sheet, web
 from app import spellbook as sb
 from app.character_views import ordinal
@@ -54,6 +55,31 @@ def ways(sheet: dict, e: dict) -> list[dict]:
         out.append({"way": RITUAL, "level": e["level"], "name": "a Ritual", "label": "As a Ritual (no slot, 10 minutes longer)"})
     if e["level"] and not (out and out[0]["way"] == FREE):
         out.append({"way": NO_SLOT, "level": e["level"], "name": "", "label": "No slot"})
+    return wild_ways(sheet, e, out) + out
+
+
+WILD = "wild"  # Wild Companion (a Druid's, 2024): Find Familiar from a Wild Shape use, or a slot, always Fey, gone at a Long Rest
+
+
+def wild_use(sheet: dict) -> dict | None:
+    """The Wild Shape uses Wild Companion spends: {"field", "left"}, or None (no Wild Companion, or none left)."""
+    if not any(f.get("name") == "Wild Companion" for f in sheet.get("features") or []):
+        return None
+    a = next((a for a in sheet.get("actions") or [] if a.get("name") == "Wild Shape" and a.get("uses") and a.get("id")), None)
+    return {"field": f"uses:{a['id']}", "left": a["uses"].get("left", 0)} if a else None
+
+
+def wild_ways(sheet: dict, e: dict, slots: list[dict]) -> list[dict]:
+    """Find Familiar as Wild Companion (Brett, Nov 4, docs/mockups/steeds-summons/ board 2): a Wild Shape use, or the
+    lowest slot left, first in the list; the familiar is always Fey and leaves at the next Long Rest."""
+    w = wild_use(sheet) if e.get("name") == companions.FIND_FAMILIAR else None
+    if not w:
+        return []
+    out = [{"way": WILD, "level": e["level"], "name": "a Wild Shape use", "label": f"A Wild Shape use · Wild Companion ({w['left']} left)",
+            "wild": True}] if w["left"] > 0 else []
+    low = next((s for s in slots if s["way"].startswith(("slot:", "pact:"))), None)
+    if low:
+        out.append({**low, "way": f"{WILD}-{low['way']}", "label": f"{low['label']} · Wild Companion", "wild": True})
     return out
 
 
@@ -72,6 +98,8 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     sheet, e = _spell(db, ch, key)
     # Find Familiar brings the familiar (Brett, 2026-11-04, Creatures as Characters board 2): its form and what it is
     forms = companions.familiars(ch, sheet) if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) else None
+    # A summon spell or Find Steed brings askdnd's own creature (app/summons.py; Brett chose A, Nov 4)
+    summon = companions.summon_entry(db, ch, e["name"]) if companions.on(db, ch) else None
     first, kind, named = companions.picked(forms or [])
     reachable = ddb_bridge.reachable(ch)
     # The familiar is askdnd's, like a Wild Shape form: with the sheet out of reach, still as a Ritual or without a slot
@@ -80,7 +108,9 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     return templates.TemplateResponse(request, "_cast_window.html", {"c": ch, "e": e, "ways": can, "reachable": reachable, "offline": offline,
                                                                      "ends": ch.concentration if e["conc"] and ch.concentration and ch.concentration.get("key") != key else None,
                                                                      "form_no": form_no(sheet, ch, e["name"]), "familiars": forms, "ff_first": first,
-                                                                     "ff_kind": kind, "ff_name": named, "kinds": companions.KINDS})
+                                                                     "ff_kind": kind, "ff_name": named, "kinds": companions.KINDS,
+                                                                     "ff_new": companions.new_forms(sheet) if forms is not None and reachable else [],
+                                                                     "summon": summon, "steed_before": companions.steed_before(ch, summon) if summon else None})
 
 
 def form_no(sheet: dict, ch: Character, name: str) -> str:
@@ -98,7 +128,8 @@ def form_no(sheet: dict, ch: Character, name: str) -> str:
 
 @router.post("/characters/{character_id:int}/cast")
 def cast(request: Request, character_id: int, key: str, way: str = Form(""), familiar: str = Form(""), kind: str = Form(""),
-         familiar_name: str = Form(""), db: Session = Depends(get_db)):
+         familiar_name: str = Form(""), choice: str = Form(""), again: str = Form(""), creature_name: str = Form(""),
+         look: str = Form(""), db: Session = Depends(get_db)):
     """Cast it: the slot on its way to D&D Beyond, Concentration begun."""
     ch, _ = _guard(db, request, character_id)
     sheet, e = _spell(db, ch, key)
@@ -110,12 +141,26 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
     said = f"Cast {e['name']}" + (f" as {chosen['name']}" if chosen and chosen["way"] == RITUAL else f" at {chosen['name']}" if chosen and chosen["name"] else "")
     if chosen and chosen["way"] == FREE:
         said += f": mark the use on D&D Beyond ({e['from']})"
-    if chosen and chosen["way"] not in (RITUAL, NO_SLOT, FREE):
+    wild = bool(chosen and chosen.get("wild"))
+    if wild:  # Wild Companion: always Fey, and gone at the next Long Rest
+        kind = "Fey"
+        said = f"Cast {e['name']} as Wild Companion" + (f", {chosen['name']} slot" if chosen["way"] != WILD else ", a Wild Shape use")
+    if chosen and chosen["way"] == WILD:
         ddb_bridge.reach(ch)
-        _spend(ch, db, chosen["way"], 1, f"{ch.name}: {e['name']}, {chosen['name']} slot")
-        undo["spent"] = chosen["way"]
-    if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and companions.familiars(ch, sheet):
-        back, brought = companions.cast(db, ch, sheet, familiar, kind, familiar_name)
+        ddb_bridge.add(db, ch, "use", {"field": wild_use(sheet)["field"], "delta": 1}, f"{ch.name}: Wild Shape used (Wild Companion)")
+        undo["spent"] = WILD
+    elif chosen and chosen["way"] not in (RITUAL, NO_SLOT, FREE):
+        way = chosen["way"].removeprefix(f"{WILD}-")
+        ddb_bridge.reach(ch)
+        _spend(ch, db, way, 1, f"{ch.name}: {e['name']}, {chosen['name']} slot")
+        undo["spent"] = way
+    if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and (familiar or companions.familiars(ch, sheet)):
+        back, brought = companions.cast(db, ch, sheet, familiar, kind, familiar_name, wild=wild)
+        undo |= back
+        said += f": {brought}"
+    if companions.on(db, ch) and (entry := companions.summon_entry(db, ch, e["name"])):
+        back, brought = companions.summon(ch, sheet, entry, chosen["level"] if chosen and chosen.get("level") else e["level"] or entry["spell_level"],
+                                          choice, creature_name, look, again=again == "1")
         undo |= back
         said += f": {brought}"
     if e["conc"]:
@@ -137,9 +182,14 @@ def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: 
     """The corner card's Undo: the slot back, Concentration as it was, and a familiar where it was."""
     ch, _ = _guard(db, request, character_id)
     _, e = _spell(db, ch, key)
-    if e["name"] == companions.FIND_FAMILIAR and (companions_were or healed):
+    if companions_were or healed:  # (a familiar where it was; a summon or steed as it was)
         companions.uncast(db, ch, companions_were, healed)
-    if spent:
+    if spent == WILD:
+        sheet = chars.character_summary(ch) or {}
+        if (w := wild_use(sheet)):
+            ddb_bridge.reach(ch)
+            ddb_bridge.add(db, ch, "use", {"field": w["field"], "delta": -1}, f"{ch.name}: Wild Shape use back ({e['name']} undone)")
+    elif spent:
         if spent.split(":", 1)[0] not in ("slot", "pact"):
             raise HTTPException(404)
         ddb_bridge.reach(ch)

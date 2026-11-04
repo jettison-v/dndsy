@@ -77,6 +77,9 @@ def pick(data, steps: list):
         elif "sum" in s:
             where, want, key = s["sum"]
             v = sum(x.get(key) or 0 for x in v if isinstance(x, dict) and str(pick(x, where)) == str(want)) if isinstance(v, list) else None
+        elif "count" in s:
+            where, want = s["count"]
+            v = sum(1 for x in v if isinstance(x, dict) and str(pick(x, where)) == str(want)) if isinstance(v, list) else None
         else:
             v = next((x for x in v if _matches(x, s)), None) if isinstance(v, list) else None
     return v
@@ -118,6 +121,8 @@ def steps(field: str) -> list:
         "creature_type": ["characterValues", {"typeId": CREATURE_TYPE, "valueId": arg}, "value"],
         "creature_active": ["creatures", {"id": arg}, "isActive", {"or": False}],
         "creature_name": ["creatures", {"id": arg}, "name"],
+        # A familiar form added to Extras (Your creatures; `arg` D&D Beyond's monster id): how many of it there are
+        "familiar_add": ["creatures", {"or": []}, {"count": [["definition", "id"], arg]}],
     }[kind]
 
 
@@ -230,6 +235,8 @@ def name(data: dict | None, field: str) -> str:
     if kind == "add":
         row = next((i for i in data.get("inventory") or [] if str((i.get("definition") or {}).get("id")) == arg), {})
         return (row.get("definition") or {}).get("name") or "an item"
+    if kind == "familiar_add":
+        return "a familiar form on Extras"
     if kind == "prep":
         entry = arg.partition(":")[2]
         lists = [s for g in data.get("classSpells") or [] for s in g.get("spells") or []]
@@ -273,6 +280,8 @@ def text(data: dict | None, field: str, v, max_hit_points: int = 0) -> str:
         return f"{v['successCount']} successes, {v['failCount']} failures"
     if kind in ("item", "add"):
         return f"×{v}"
+    if kind == "familiar_add":
+        return "added" if v else "not there"
     if kind == "container":
         return "carried" if str(v) == str((data or {}).get("id")) else f"in {item_name(data, v)}"
     if isinstance(v, bool):
@@ -357,6 +366,8 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
         cls, _, entry = arg.partition(":")
         return req("PUT", "spell/prepared", spellId=extra.get("spellId"), characterClassId=int(cls), entityTypeId=extra.get("entityTypeId"),
                    id=int(entry), prepared=bool(v))
+    if kind == "familiar_add":  # a familiar form onto Extras, as Manage Extras › Familiar › Add sends it (Nov 4, Levi's seat)
+        return req("POST", "creature", groupId=2, monsterId=int(arg), names=[None])
     if kind == "add":
         where = extra.get("container") or ddb_id
         box = pick(data, ["inventory", {"id": where}]) or {}

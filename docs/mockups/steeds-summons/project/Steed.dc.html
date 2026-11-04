@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Find Steed</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">4 · Find Steed · try it</div>
+    <h1>The steed that disappeared, or a different one</h1>
+    <p class="where"><b>Where:</b> a Paladin's Find Steed (Big C here, only for the mockup), from Battle or the Spell Book: the same chooser as Pip's. The steed that disappeared comes back with its kind and look; a different one gets its own. Its card is worked out from the level cast. Pick the level, then "a different one" and its kind.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 420px minmax(0, 1fr); gap: 28px; align-items: start">
+    <div class="win">
+      <h3>Cast Find Steed</h3>
+      <div class="lbl">At</div>
+      <span class="seg"><sc-for list="{{ levels }}" as="l" hint-placeholder-count="3"><button type="button" class="{{ l.cls }}" onClick="{{ l.pick }}">{{ l.name }}</button></sc-for></span>
+      <div class="lbl">Your steed</div>
+      <button type="button" class="{{ oldCls }}" onClick="{{ pickOld }}"><span class="ring"></span><span><b>Starlight</b> <span class="note">an elk · Celestial</span></span><span class="note">Disappeared (0 Hit Points)</span></button>
+      <button type="button" class="{{ newCls }}" onClick="{{ pickNew }}"><span class="ring"></span><span><b>A different one</b> <span class="note">Starlight is gone for good</span></span><span></span></button>
+      <sc-if value="{{ isNew }}" hint-placeholder-val="{{ false }}">
+        <div class="grid2" style="gap: 10px">
+          <label class="field">Its name<input type="text" value="Ember" aria-label="Its name"></label>
+          <label class="field">It looks like<input type="text" value="a warhorse" aria-label="It looks like"></label>
+        </div>
+        <div class="row start" style="gap: 10px"><span class="lbl" style="margin: 0">It's</span>
+          <span class="seg"><sc-for list="{{ types }}" as="k" hint-placeholder-count="3"><button type="button" class="{{ k.cls }}" onClick="{{ k.pick }}">{{ k.name }}</button></sc-for></span>
+        </div>
+      </sc-if>
+      <p class="note">One steed at a time. It shares Big C's Initiative; ridden, it's a controlled mount.</p>
+      <button type="button" class="btn main" style="justify-self: start">Cast</button>
+    </div>
+    <div class="ccard">
+      <div class="row start" style="gap: 12px"><span class="pic">{{ initial }}</span><div style="display: grid"><h3>{{ name }}</h3><span class="note">Big C's steed · Otherworldly Steed ({{ type }}), {{ look }} · Find Steed at {{ levelName }}</span></div></div>
+      <div class="tiles">
+        <div class="tile">Armor Class<b>{{ ac }}</b><i>10 + the spell's level</i></div>
+        <div class="tile">Hit Points<b>{{ hp }} / {{ hp }}</b><i>5 + 10 × the spell's level</i></div>
+        <div class="tile">Speed<b>60 ft</b><i>{{ fly }}</i></div>
+        <div class="tile">Size<b>Large</b><i>a mount for Big C</i></div>
+      </div>
+      <div class="facts">
+        <span>Otherworldly Slam</span><span><b style="color: var(--strong)">+6</b> to hit (Big C's spell attack) · <b style="color: var(--strong)">1d8 + {{ level }}</b> {{ dmgType }}</span>
+        <span>{{ bonusName }}</span><span>{{ bonusText }}</span>
+        <span>Life Bond</span><span>When Big C regains Hit Points from a spell of 1st level or higher, it regains as many (askdnd offers it on that healing's Apply to)</span>
+        <span>Its turn</span><span>On Big C's Initiative; acts on its own if Big C is Incapacitated</span>
+        <span>Goes</span><span>At 0 Hit Points, or if Big C dies. Kept in askdnd, nothing on D&amp;D Beyond (board 1, A)</span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  state = { level: 2, isNew: false, type: 'Fiend' };
+  renderVals() {
+    const s = this.state, L = s.level, type = s.isNew ? s.type : 'Celestial';
+    const ord = { 2: '2nd level', 3: '3rd level', 4: '4th level' };
+    const by = { Celestial: ['Radiant', 'Healing Touch', 'A Bonus Action: one creature within 5 ft regains 2d8 + the spell’s level Hit Points (once per Long Rest)'],
+                 Fey: ['Psychic', 'Fey Step', 'A Bonus Action: it teleports up to 60 ft with its rider (once per Long Rest)'],
+                 Fiend: ['Necrotic', 'Fell Glare', 'A Bonus Action: one creature within 60 ft makes a Wisdom save or is Frightened (once per Long Rest)'] };
+    return {
+      levels: [2, 3, 4].map((n) => ({ name: ord[n], cls: L === n ? 'on' : '', pick: () => this.setState({ level: n }) })),
+      types: ['Celestial', 'Fey', 'Fiend'].map((k) => ({ name: k, cls: s.type === k ? 'on' : '', pick: () => this.setState({ type: k }) })),
+      oldCls: 'opt' + (s.isNew ? '' : ' on'), newCls: 'opt' + (s.isNew ? ' on' : ''),
+      pickOld: () => this.setState({ isNew: false }), pickNew: () => this.setState({ isNew: true }), isNew: s.isNew,
+      name: s.isNew ? 'Ember' : 'Starlight', initial: s.isNew ? 'E' : 'S', look: s.isNew ? 'a warhorse' : 'an elk', type,
+      levelName: ord[L], level: L, ac: 10 + L, hp: 5 + 10 * L,
+      fly: L >= 4 ? 'and Fly 60 ft: cast at 4th level or higher' : 'Fly 60 ft only when cast at 4th level or higher',
+      dmgType: by[type][0], bonusName: by[type][1], bonusText: by[type][2],
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-04T23:10:00Z"
+  },
+  "title": "Steeds, Summons and Wild Companion",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 980,
+      "title": "1 · Where they live, and who keeps them"
+    },
+    "Wild.dc.html": {
+      "x": 1440,
+      "y": 0,
+      "w": 1360,
+      "h": 980,
+      "title": "2 · Wild Companion: a familiar from a Wild Shape use",
+      "is_interactive": true
+    },
+    "Summon.dc.html": {
+      "x": 0,
+      "y": 1100,
+      "w": 1360,
+      "h": 980,
+      "title": "3 · A summon spell: its numbers by the level cast",
+      "is_interactive": true
+    },
+    "Steed.dc.html": {
+      "x": 1440,
+      "y": 1100,
+      "w": 1360,
+      "h": 980,
+      "title": "4 · Find Steed: the one that disappeared, or another",
+      "is_interactive": true
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Wild.dc.html",
+    "Summon.dc.html",
+    "Steed.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

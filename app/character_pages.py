@@ -48,6 +48,8 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
     now = listed(db, ch, sheet)
     if sheet:
         sheet["_item_choices"] = ch.item_choices
+        if vtt.on(db.get(Campaign, ch.campaign_id) if ch.campaign_id else None, "creatures"):
+            sheet["_familiar_options"] = companions.master_options(ch, sheet)  # (Your creatures: See through its eyes, Deliver a touch spell)
         sheet["speed"] = cond.speed_now(sheet.get("speed"), now)  # (Exhaustion and Speed 0 conditions: slice 3 counts movement from it)
     mine = picks.picks(db, ch, user)
     druid = ws.druid(sheet)
@@ -143,7 +145,7 @@ def party_rows(db: Session, user: dict | None) -> list[dict]:
         cid = r["c"].campaign_id  # Your creatures (Labs): a line under its master's card, its Hit Points and AC
         if cid not in with_creatures:
             with_creatures[cid] = vtt.on(db.get(Campaign, cid) if cid else None, "creatures")
-        mine = [creatures.placed(r["c"], creatures.card(sheet, x), x) | _own_picture(db, r["c"], x)
+        mine = [creatures.placed(r["c"], creatures.card(sheet, x, r["c"].name), x) | _own_picture(db, r["c"], x)
                 for x in creatures.in_play(r["c"], sheet)] if sheet and with_creatures[cid] else []
         rows.append({**r, "sheet": sheet, "form": form, "creatures": mine, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
     return rows
@@ -208,7 +210,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     campaign = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
     ctx["my_creatures"] = creatures.in_play(ch, ctx["sheet"]) if vtt.on(campaign, "creatures") else []
     found = next((x for x in ctx["my_creatures"] if str(x["id"]) == str(creature)), None) if creature else None
-    ctx["creature"] = creatures.placed(ch, creatures.card(ctx["sheet"], found), found) | _own_picture(db, ch, found) if found else None
+    ctx["creature"] = creatures.placed(ch, creatures.card(ctx["sheet"], found, ch.name), found) | _own_picture(db, ch, found) if found else None
     ctx["can_picture"] = bool(found) and hit_points.can_apply(db, user, ch)  # (the one Picture window, app/picture_window.py)
     ctx["find_familiar"] = companions.spell_key(ctx["sheet"]) if ctx["creature"] and ctx["creature"]["cast"] else ""
     ctx["init_note"] = initiative.note(campaign, ch, ctx["my_creatures"], ctx["creature"])  # (Labs: Initiative from askdnd)

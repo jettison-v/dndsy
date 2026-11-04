@@ -187,7 +187,36 @@ class GlossaryEntry(_Shape):
 
 
 # What a campaign can add (models.CampaignContent.kind), and every kind's schema and file
-CAMPAIGN_KINDS = {"monster": Monster, "spell": Spell, "magic_item": MagicItem}
+class Summon(_Shape):
+    """A creature a spell brings (Summon Beast's Bestial Spirit, Find Steed's Otherworldly Steed): a stat block whose
+    numbers follow the level it's cast at, its master's spell attack and save DC, and a choice made when it's cast
+    ("Air", "Celestial"). Kept as printed ("11 + the spell's level"); app/summons.py works the numbers out. Only from a
+    private book (app/books.py: the 2024 Player's Handbook, scripts/summon_load.py), never in the repo."""
+
+    key: Key
+    name: Name  # the stat block's: "Bestial Spirit"
+    spell: Name  # "Summon Beast"
+    spell_level: int = Field(ge=1, le=9)
+    classes: list[Literal[CASTERS]] = []  # whose spell it is: their spell attack and save DC
+    choose: list[str] = []  # what's chosen when it's cast: ["Air", "Land", "Water"]
+    what: str  # "Small Beast, Neutral"
+    ac: str
+    hp: str
+    speed: str
+    abilities: dict[Ability, int]
+    senses: str = ""
+    languages: str = ""
+    traits: list[Entry] = []
+    actions: list[Entry] = []
+    bonus_actions: list[Entry] = []
+    reactions: list[Entry] = []
+    turn: str = ""  # how it acts in combat, from the spell
+    goes: str = ""  # when it disappears, from the spell
+    concentration: bool = False
+    source: str = ""  # "PHB 2024"
+
+
+CAMPAIGN_KINDS = {"monster": Monster, "spell": Spell, "magic_item": MagicItem, "summon": Summon}
 KINDS = {**CAMPAIGN_KINDS, "glossary": GlossaryEntry}
 FILES = {"monster": "monsters", "spell": "spells", "magic_item": "magic_items", "glossary": "rules_glossary"}
 
@@ -294,7 +323,7 @@ def catalog(kind: str, db=None, campaign_id: int | None = None) -> list[dict]:
     over: dict[str, dict] = {}
     for r in _layers(db, kind, campaign_id):
         over.setdefault(r["key"], r)
-    rows = [over.pop(r["key"], r) for r in srd(kind)] + list(over.values())
+    rows = [over.pop(r["key"], r) for r in (srd(kind) if kind in FILES else ())] + list(over.values())  # (a summon: books only)
     return sorted(rows, key=lambda r: r["name"].lower())
 
 
@@ -304,6 +333,8 @@ def find(kind: str, name_or_key: str, db=None, campaign_id: int | None = None) -
     for r in _layers(db, kind, campaign_id):
         if want in (r["key"], r["name"].lower()):
             return r
+    if kind not in FILES:  # (a summon: books only)
+        return None
     return _srd_by(kind).get(want) or _srd_by(kind).get(slug(want))
 
 

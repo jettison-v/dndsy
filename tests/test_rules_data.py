@@ -12,7 +12,7 @@ from app.models import Campaign, CampaignContent
 
 
 def test_every_srd_file_loads_and_fits_its_schema():
-    counts = {kind: len(rules_data.srd(kind)) for kind in rules_data.KINDS}
+    counts = {kind: len(rules_data.srd(kind)) for kind in rules_data.FILES}  # (a summon is in the books only)
     # as many as the SRD 5.2.1 prints: 330 monsters and animals plus the Figurine of Wondrous Power's Giant Fly
     assert counts == {"monster": 331, "spell": 339, "magic_item": 258, "glossary": 155}
     assert [c["name"] for c in rules_data.conditions()] == [

@@ -148,6 +148,8 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             # Smites are cast right after you hit, so they belong with the fight (tool correction built in, 2026-10-23)
             common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"]))
             or (cost == "Bonus action" and sp["name"].endswith(" Smite")))
+    for o in sheet.get("_familiar_options") or []:  # a familiar's, on its master's Battle (app/companions.py master_options)
+        add(**o)
     for a in sheet.get("actions") or []:
         cost = _cost(a["activation"])
         if _not_an_action(a, cost, rules, action_names):

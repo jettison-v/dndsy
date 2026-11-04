@@ -1,0 +1,78 @@
+/* askdnd's own tokens and the mock pieces these boards share. Colours match app/static/app.css. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #8b867d; --link: #f08a8a; --red: #d64545; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0;
+  --teal: #4fc7b0; --teal-soft: rgba(79, 199, 176, .13); --ddb: #e0573e; --conc: #7ea6e0;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sans: Inter, system-ui, -apple-system, sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; }
+* { box-sizing: border-box; }
+.board { background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); padding: 32px; display: grid; gap: 18px; align-content: start; }
+.board p { margin: 0; }
+.head { display: grid; gap: 4px; }
+.num { font: 700 13px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--link); }
+.head h1 { margin: 0; font: 600 30px/1.2 var(--serif); color: var(--strong); }
+.where { color: var(--muted); font-size: 15px; max-width: 1220px; }
+.where b { color: var(--text); font-weight: 600; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.row.start { justify-content: flex-start; }
+.wrap { flex-wrap: wrap; }
+.note { color: var(--muted); font-size: 13px; }
+.lbl { font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: 600 13px/1.2 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 12px; white-space: nowrap; cursor: pointer; min-height: 34px; }
+.btn.main { background: var(--red); border-color: var(--red); color: var(--strong); }
+.btn.quiet { background: none; }
+.btn.mini { font-size: 12px; padding: 3px 9px; border-radius: 6px; min-height: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+.card h3 { margin: 0; color: var(--strong); font-size: 15px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.rule { color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.tag { display: inline-flex; align-items: center; gap: 5px; font: 600 11px/1 var(--sans); border-radius: 999px; padding: 3px 8px; border: 1px solid var(--line-strong); color: var(--muted); white-space: nowrap; }
+.tag.ddb { border-color: var(--ddb); color: #ff8a73; }
+.tag.us { border-color: var(--teal); color: var(--teal); }
+.tag.conc { border-color: var(--conc); color: var(--conc); }
+.cornercard { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .4); font-size: 13px; }
+.cornercard b { color: var(--strong); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex: none; }
+/* The roll / Cast window */
+.win { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 12px; padding: 16px 18px; display: grid; gap: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, .45); align-content: start; }
+.win h3 { margin: 0; color: var(--strong); font-size: 18px; }
+.opt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: 14px/1.4 var(--sans); text-align: left; cursor: pointer; width: 100%; }
+.opt.on { border-color: var(--green); background: rgba(91, 191, 127, .12); }
+.opt b { color: var(--strong); }
+.opt .ring { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-strong); }
+.opt.on .ring { border-color: var(--green); background: var(--green); box-shadow: inset 0 0 0 3px var(--surface); }
+.opt.off { opacity: .45; cursor: default; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; color: var(--muted); font: 600 13px/1.2 var(--sans); padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.seg button.on { background: var(--surface-3); color: var(--strong); }
+.seg button:disabled { opacity: .45; cursor: default; }
+.field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.field input, .field select { background: var(--bg); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 10px; color: var(--text); font: 14px var(--sans); }
+/* Pips (Resources) and the creature's numbers */
+.pips { display: inline-flex; gap: 4px; }
+.pip { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--green); }
+.pip.used { border-color: var(--line-strong); background: none; }
+.pip.full { background: var(--green); }
+.res { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+.res b { color: var(--strong); }
+.ccard { background: var(--surface); border: 1px solid color-mix(in srgb, var(--teal) 45%, var(--line)); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; box-shadow: inset 4px 0 0 var(--teal); }
+.ccard h3 { margin: 0; color: var(--strong); font-size: 17px; }
+.pic { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: #3b4a46; color: var(--strong); font: 700 16px/1 var(--serif); box-shadow: 0 0 0 2px var(--teal); flex: none; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tile { background: var(--surface-2); border-radius: 8px; padding: 8px 12px; display: grid; gap: 2px; color: var(--muted); font-size: 12px; min-width: 0; }
+.tile b { color: var(--strong); font-size: 21px; line-height: 1.2; }
+.tile i { font-style: normal; color: var(--faint); font-size: 11px; }
+.facts { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 12px; font-size: 13px; }
+.facts > :nth-child(odd) { color: var(--faint); }
+.pill { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--conc); background: rgba(126, 166, 224, .14); border-radius: 999px; padding: 3px 12px; font-size: 13px; color: var(--text); }
+.pill b { color: var(--strong); }
+table.kept { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.kept th { text-align: left; font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 8px; border-bottom: 1px solid var(--line); }
+table.kept td { padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.kept td b { color: var(--strong); }
+.optbox { border: 1px solid var(--line-strong); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; background: var(--surface); }
+.optbox.rec { border-color: var(--teal); }
+.optbox h3 { margin: 0; color: var(--strong); font-size: 16px; }
+.optbox ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 13px; }
+.check { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.box { width: 16px; height: 16px; border-radius: 4px; border: 2px solid var(--green); background: var(--green); display: grid; place-items: center; color: var(--bg); font: 700 11px/1 var(--sans); flex: none; }
+.box.off { background: none; border-color: var(--line-strong); color: transparent; }
