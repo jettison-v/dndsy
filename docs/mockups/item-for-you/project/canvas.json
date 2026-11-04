@@ -1,0 +1,43 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-04T04:06:28Z"
+  },
+  "title": "Item For You",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 960,
+      "title": "1 · For Cole: in the item's details",
+      "is_interactive": true
+    },
+    "List.dc.html": {
+      "x": 1440,
+      "y": 0,
+      "w": 1360,
+      "h": 960,
+      "title": "2 · In the list too? Option A or B"
+    },
+    "Phone.dc.html": {
+      "x": 2880,
+      "y": 0,
+      "w": 520,
+      "h": 960,
+      "title": "3 · On a phone, and the DM's Give loot"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "List.dc.html",
+    "Phone.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

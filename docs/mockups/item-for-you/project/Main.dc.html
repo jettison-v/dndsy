@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>For Cole, in an item's details</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>
+body{margin:0}
+.fy{border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);padding:10px 12px;display:grid;gap:7px}
+.fy-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.fy-h b{color:var(--strong);font-size:14px}
+.fy-l{display:grid;grid-template-columns:22px minmax(0,1fr);gap:6px;align-items:start;font-size:13px;line-height:1.45}
+.fy-k{font:700 12px/1.45 var(--sans);text-align:center;border-radius:5px}
+.fy-k.ok{color:var(--green)}
+.fy-k.warn{color:var(--amber)}
+.fy-k.chg{color:var(--blue)}
+.fy-k.info{color:var(--muted)}
+.fy-l b{color:var(--strong);font-weight:600}
+.pick{display:grid;gap:2px;padding:8px}
+.pick button{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:8px 10px;color:var(--text);font:13px var(--sans);cursor:pointer}
+.pick button.on{background:var(--surface-3);border-color:var(--line-strong)}
+.pick button b{color:var(--strong);font-weight:600}
+</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 960px">
+  <div class="head">
+    <div class="num">1 · For Cole · in an item's details</div>
+    <h1>What an item would mean for the character, before adding it</h1>
+    <p class="where"><b>Where you'll find it:</b> the item browser (Sheet › Items › + Add item, and the DM's Give loot), in the details beside the list, under the item's own numbers. Worked out from the character's D&amp;D Beyond sheet and the item's 2024 rules; it says what changes and why, never which to pick. Try it: click Chain Mail, then Shield.</p>
+  </div>
+  <div class="ib" style="height: 760px">
+    <div class="ib-top"><h3>Add item</h3><span class="note">Cole · Druid 6 / Monk 2 · Strength 8 · Dexterity 15 · Wisdom 19 · AC 16 · attuned 2 of 3</span></div>
+    <div class="ib-body" style="grid-template-columns: 300px minmax(0, 1fr)">
+      <div class="ib-list" style="border-right: 1px solid var(--line)">
+        <div class="pick" role="list" aria-label="Items">
+          <sc-for list="{{ items }}" as="it" hint-placeholder-count="7">
+            <button type="button" class="{{ it.cls }}" onClick="{{ it.pick }}" aria-pressed="{{ it.pressed }}"><span><b>{{ it.name }}</b><br><span class="note">{{ it.kind }}</span></span><span class="{{ it.rarCls }}">{{ it.rarity }}</span></button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="ib-detail" style="border-left: 0; padding: 16px 22px; gap: 12px">
+        <div class="row start" style="gap: 10px"><h4>{{ sel.name }}</h4><span class="{{ sel.rarCls }}">{{ sel.rarity }}</span><span class="tagg">{{ sel.kind }}</span></div>
+        <div class="facts"><span>Cost</span><span>{{ sel.cost }}</span><span>Weight</span><span>{{ sel.weight }}</span><span>{{ sel.factLabel }}</span><span>{{ sel.fact }}</span><span>From</span><span>{{ sel.book }}</span></div>
+        <section class="fy" aria-label="For Cole">
+          <div class="fy-h"><b>For Cole</b><span class="note">from his sheet; the DM rules</span></div>
+          <sc-for list="{{ sel.lines }}" as="ln" hint-placeholder-count="4">
+            <div class="fy-l"><span class="{{ ln.cls }}" aria-label="{{ ln.say }}">{{ ln.mark }}</span><span>{{ ln.text }}</span></div>
+          </sc-for>
+        </section>
+        <p class="note">{{ sel.what }}</p>
+        <button type="button" class="btn main" style="justify-self: start">+ Add {{ sel.name }}</button>
+      </div>
+    </div>
+    <div class="ib-foot"><span class="lbl">Adding</span><span class="note">Nothing yet: + on an item puts it here</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { picked: 'Chain Mail' };
+  }
+  renderVals() {
+    const ok = t => ({ mark: '✓', say: 'Yes', cls: 'fy-k ok', text: t });
+    const warn = t => ({ mark: '!', say: 'Watch out', cls: 'fy-k warn', text: t });
+    const chg = t => ({ mark: '→', say: 'Changes', cls: 'fy-k chg', text: t });
+    const info = t => ({ mark: '·', say: 'Note', cls: 'fy-k info', text: t });
+    const ITEMS = [
+      { name: 'Rapier', kind: 'Martial weapon', rarity: 'Not magic', cost: '25 gp', weight: '2 lb', factLabel: 'Damage', fact: '1d8 Piercing · Finesse · Vex', book: "Free Rules (2024)",
+        what: 'A martial melee weapon; Finesse lets an attack use Strength or Dexterity.',
+        lines: [warn('Not proficient: martial weapons aren’t among his (simple weapons, Longbow, Longsword, Scimitar, Shortsword), so no Proficiency Bonus to hit.'),
+                chg('Attack +2 to hit (Dexterity +2, Finesse), 1d8 + 2 Piercing.'),
+                warn('Vex, its mastery, needs the Weapon Mastery feature: he doesn’t have it.'),
+                info('Not a Monk weapon (it isn’t Light): Martial Arts doesn’t use it.')] },
+      { name: 'Longsword', kind: 'Martial weapon', rarity: 'Not magic', cost: '15 gp', weight: '3 lb', factLabel: 'Damage', fact: '1d8 Slashing · Versatile (1d10) · Sap', book: "Free Rules (2024)",
+        what: 'A martial melee weapon; Versatile: two hands deal 1d10.',
+        lines: [ok('Proficient: Longsword is among his weapons.'),
+                chg('Attack +2 to hit (Strength −1, Proficiency +3), 1d8 − 1 Slashing; with two hands 1d10 − 1.'),
+                warn('Sap, its mastery, needs the Weapon Mastery feature: he doesn’t have it.'),
+                info('Not a Monk weapon: Martial Arts doesn’t use it.')] },
+      { name: 'Chain Mail', kind: 'Heavy armor', rarity: 'Not magic', cost: '75 gp', weight: '55 lb', factLabel: 'AC', fact: '16 · Strength 13 · Stealth Disadvantage', book: "Free Rules (2024)",
+        what: 'Heavy armor of interlocking rings; Dexterity doesn’t add to its AC.',
+        lines: [warn('No Heavy Armor training (his: Light Armor, Shields). Wearing it: Disadvantage on every D20 Test that uses Strength or Dexterity, and he can’t cast spells.'),
+                chg('AC 16 → 16: Chain Mail’s 16 replaces Unarmored Defense (10 + Dexterity 2 + Wisdom 4).'),
+                warn('Needs Strength 13; he has 8: Speed −10 ft.'),
+                chg('Speed 45 → 25 ft: Unarmored Movement (+10 ft) needs no armor, and −10 ft for Strength.'),
+                warn('Disadvantage on Dexterity (Stealth) checks.'),
+                info('Martial Arts and Unarmored Defense work only without armor.')] },
+      { name: 'Shield', kind: 'Shield', rarity: 'Not magic', cost: '10 gp', weight: '6 lb', factLabel: 'AC', fact: '+2', book: "Free Rules (2024)",
+        what: 'Held in one hand; it adds 2 to Armor Class.',
+        lines: [ok('Trained: Shields are among his armor training.'),
+                chg('AC 16 → 14: Unarmored Defense (Monk) doesn’t work with a Shield, so 10 + Dexterity 2 + Shield 2.'),
+                info('Martial Arts works only without a Shield.')] },
+      { name: 'Cloak of Protection', kind: 'Wondrous item', rarity: 'Uncommon', cost: 'Ask the DM', weight: '1 lb', factLabel: 'Attunement', fact: 'Required', book: "Dungeon Master’s Guide (2024)",
+        what: 'While you wear it, +1 to Armor Class and saving throws.',
+        lines: [chg('Attunement 2 → 3 of 3 (now: Ring of Invisibility, Stone of Good Luck).'),
+                chg('While attuned: AC 16 → 17, and +1 to every saving throw.')] },
+      { name: 'Gauntlets of Ogre Power', kind: 'Wondrous item', rarity: 'Uncommon', cost: 'Ask the DM', weight: '2 lb', factLabel: 'Attunement', fact: 'Required', book: "Dungeon Master’s Guide (2024)",
+        what: 'While you wear them, your Strength is 19 (no change if it’s already higher).',
+        lines: [chg('Attunement 2 → 3 of 3.'),
+                chg('While attuned: Strength 8 → 19. Strength checks and saves −1 → +4; Athletics −1 → +4.'),
+                info('Weapons that use Strength hit and deal +5 more (his unarmed strikes use Dexterity: no change).')] },
+      { name: 'Potion of Healing', kind: 'Potion', rarity: 'Common', cost: 'Ask the DM', weight: '½ lb', factLabel: 'Heals', fact: '2d4 + 2', book: "Dungeon Master’s Guide (2024)",
+        what: 'Drink it, or give it, as a Bonus Action, and regain Hit Points.',
+        lines: [ok('Anyone can use it.'),
+                chg('A Bonus Action to drink or give: 2d4 + 2 Hit Points (he has 51 of 51).')] },
+    ];
+    const rc = r => 'rar ' + ({ 'Not magic': 'mundane', 'Common': 'common', 'Uncommon': 'uncommon', 'Rare': 'rare' }[r] || 'veryrare');
+    const sel = ITEMS.find(i => i.name === this.state.picked) || ITEMS[0];
+    return {
+      items: ITEMS.map(i => ({ ...i, rarCls: rc(i.rarity), cls: i.name === sel.name ? 'on' : '', pressed: i.name === sel.name ? 'true' : 'false',
+        pick: () => this.setState({ picked: i.name }) })),
+      sel: { ...sel, rarCls: rc(sel.rarity) },
+    };
+  }
+}
+</script>
+</body>
+</html>

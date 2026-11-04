@@ -17,6 +17,10 @@ Brett chose Option B on [Your Creatures](https://claude.ai/artifact/MLSXxJLwP7Go
 3. **In the fight.** The fight's rows (Party's Rows, askdnd's table) and the fight band list a creature under its master, or by its own Initiative when D&D Beyond's VTT has it as its own fighter; the DM sees it like any fighter; a turn reminder when its turn comes.
 4. **Help, the tour, a live run per creature kind, and out of Labs** once the table has played with it.
 
+## To work out with Brett (Nov 4)
+
+- **A familiar or summon exists only once it's cast** (Brett, Nov 3: "They only exist when you cast them"): today every creature on the sheet's Extras gets a switch. The workflow for casting Find Familiar (or a Summon spell) bringing it into play, and dismissing it, is tomorrow's; D&D Beyond's `creature/status` (active) may be where it lives.
+
 ## Needs Brett
 
 - A familiar on a test seat, so a creature with its own Initiative is tested too: on Levi's sheet on D&D Beyond, **Extras › Manage Extras**, add an **Owl** to the **Familiar** group (slice 1).
