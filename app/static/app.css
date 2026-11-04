@@ -2567,6 +2567,13 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .pt-creature a { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--text-strong); text-decoration: none; }
 .pt-creature a:hover b { text-decoration: underline; text-underline-offset: 3px; }
 .pt-creature img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+.cr-fix { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); line-height: 1.9; }
+.cr-fix .btn { margin: 0 var(--sp-1); }
+.cr-hp-pop { position: relative; }
+.cr-hp-pop > summary { list-style: none; cursor: pointer; }
+.cr-hp-pop > summary::-webkit-details-marker { display: none; }
+.cr-hp-form { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; display: flex; gap: var(--sp-1); padding: var(--sp-2); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow); }
+.cr-hp-form input { width: 5em; }
 .cr-facts { gap: var(--sp-1) var(--sp-2); }
 .cr-facts .roll-chip { cursor: pointer; }
 .cr-text > summary { cursor: pointer; list-style: none; margin-top: 2px; }

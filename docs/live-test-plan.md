@@ -47,6 +47,7 @@ On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everythi
 | `cross-cast` | Two kinds of spellcasting (Nov 3, Levi): the Druid's Entangle on a Pact slot and the Warlock's Hex on a Druid slot, each spending only that kind; both undone | Every time |
 | `short-rest` | A Short Rest for a Druid / Warlock (Nov 3, Levi): the Pact slot and one Wild Shape use come back on D&D Beyond, a spent Druid slot doesn't; then given back | Every time (needs PR 194 on beta) |
 | `in-form` | In a form (Nov 3, Levi): Cast says the form can't cast spells; Leave ends it and keeps the Temporary Hit Points; then all put back | Every time |
+| `creature-hp` | Your creatures, slice 2 (Nov 3, Vi's seat): D&D Beyond's maximum for her Homunculus set to the rule's (14), 3 damage and 3 healing from askdnd land on its Extras; then all put back | Once the seats run extension 0.10.0 (`WAITING` in real_table.py until then) |
 | `dm-backup` | DM Backup (0.9.8): with Cathartic's sheet closed, the player's pill says Through the DM, and the DM's seat (a D&D Beyond page open) makes a hit and the healing; reopening the sheet says Connected | Every time |
 
 Part 1 starts by checking that both test sheets are clean (full Hit Points, nothing marked, spent or in force) and ends by checking each is back as it found it. A miss at the start means an earlier run didn't put something back: it's reported, and hit points, death saves and conditions are put right on D&D Beyond so the rest can run.

@@ -23,12 +23,23 @@ async function followed() {
 // address, and may stop this worker, so they're kept in session storage)
 async function opened(tabId, what) {
   const { tabsOpen = {} } = await chrome.storage.session.get('tabsOpen');
+  const was = tabsOpen[tabId];
   tabsOpen[tabId] = what;
   await chrome.storage.session.set({ tabsOpen });
+  // The tab making a batch was reloaded or moved on: its answer won't come, so the next one needn't wait half a minute
+  // (0.10.0; a sheet reloaded mid-write held every change for that character until then)
+  for (const [ddbId, tab] of busy) if (tab === tabId) busy.delete(ddbId);
+  // The tab went from one sheet to another page (another character of the same account, its campaign): the sheet it
+  // showed is closed once no other tab has it (0.10.0; Nov 3: two sheets of one account both said Connected for a while)
+  if (was && was.sheet && was.sheet !== what.sheet && !(await sheetTabs(was.sheet)).filter(t => t.id !== tabId).length) {
+    clearTimeout(quiet.get(was.sheet));
+    api('POST', '/bridge/closed/' + was.sheet).catch(() => {});
+  }
 }
 chrome.tabs.onRemoved.addListener(async tabId => {
   const { tabsOpen = {} } = await chrome.storage.session.get('tabsOpen');
   const was = tabsOpen[tabId];
+  for (const [ddbId, tab] of busy) if (tab === tabId) busy.delete(ddbId);  // (its answer won't come)
   if (!was) return;
   delete tabsOpen[tabId];
   await chrome.storage.session.set({ tabsOpen });
@@ -106,7 +117,7 @@ async function carryOnce(except) {  // how soon to ask again, or null when askdn
 }
 const carrying = async ddbId => ((await chrome.storage.session.get('carrying')).carrying || []).includes(String(ddbId));
 
-const busy = new Set();  // sheets with a batch out right now (one at a time per character)
+const busy = new Map();  // sheets with a batch out right now (one at a time per character), and the tab making it
 const awake = t => !t.discarded && !t.frozen;  // never a tab Chrome has put to sleep (it can't run the change)
 async function deliver(ddbId, tabId) {
   if (!ddbId || busy.has(ddbId)) return;
@@ -117,14 +128,14 @@ async function deliver(ddbId, tabId) {
   // Its sheet isn't open here: in the DM's browser, any D&D Beyond page makes it, for a sheet askdnd named
   if (!sheet && await carrying(ddbId)) tabs = (await chrome.tabs.query({ url: DDB_PAGES })).filter(awake).sort(order);
   if (!tabs.length) return;  // waits in askdnd until the sheet is open somewhere
-  busy.add(ddbId);
+  busy.set(ddbId, null);
   try {
     const { batch } = await api('POST', '/bridge/outbox/' + ddbId);
     if (!batch) { busy.delete(ddbId); if (sheet) await stillClosed(ddbId); return; }
     for (const t of tabs) {  // the first copy of the sheet that answers takes it (a tab left from before the extension
       try {                  // was reloaded, or one Chrome froze, doesn't)
         const r = await chrome.tabs.sendMessage(t.id, { type: 'apply', batch });
-        if (r && r.took) { setTimeout(() => busy.delete(ddbId), 30000); return; }  // its answer comes back as 'ddb-applied'
+        if (r && r.took) { busy.set(ddbId, t.id); setTimeout(() => busy.delete(ddbId), 30000); return; }  // its answer comes back as 'ddb-applied'
       } catch (err) { /* no one there: try the next */ }
     }
     await api('POST', '/bridge/delivered/' + batch.id, { ok: false, error: sheet ? "No open D&D Beyond sheet answered. Reload the character's sheet." : "No open D&D Beyond page answered. Reload it." });

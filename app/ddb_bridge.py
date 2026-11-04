@@ -386,6 +386,24 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
                 temp, removed = temp - soak, min(n["max"], removed + (-d["amount"] - soak))
             vals["hp"] = {"removedHitPoints": removed, "temporaryHitPoints": temp}
             touched.append("hp")
+        elif kind == "creature_hp":  # one of the character's creatures (app/creatures.py), as "hp": + heals, - damage
+            f = f"creature:{d['creature']}"
+            hp = get(f)
+            if hp is None:
+                no(it, f"{d.get('name') or 'That creature'} isn't on D&D Beyond any more.")
+                continue
+            removed, temp = hp["removedHitPoints"], hp["temporaryHitPoints"]
+            if d.get("temp") is not None:  # (its Temporary Hit Points set, as the hit points window does)
+                temp = max(0, int(d["temp"]))
+            elif d["amount"] >= 0:
+                removed = max(0, removed - d["amount"])
+            else:
+                soak = 0 if d.get("undo") else min(temp, -d["amount"])
+                temp, removed = temp - soak, removed + (-d["amount"] - soak)
+                if d.get("max"):  # (no more damage than its Hit Points: it's at 0)
+                    removed = min(int(d["max"]), removed)
+            vals[f] = {"removedHitPoints": removed, "temporaryHitPoints": temp}
+            touched.append(f)
         elif kind == "temp":  # Temporary Hit Points don't add up: the hit points window chose keep or take (app/hit_points.py)
             vals["hp"] = {**get("hp"), "temporaryHitPoints": max(0, int(d["value"]))}
             touched.append("hp")
@@ -398,7 +416,7 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
             touched.append(f)
         elif kind == "set":  # an absolute value: on or off, a level, where an item is, or back as it was
             f = d["field"]
-            if get(f) is None and not f.startswith("item:"):
+            if get(f) is None and not f.startswith(("item:", "creature_max:")):  # (a creature's maximum: none set yet)
                 no(it, f"{ddb_fields.name(n['raw'], f)} isn't on D&D Beyond any more.")
                 continue
             vals[f] = d["value"]
