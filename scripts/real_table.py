@@ -12,6 +12,7 @@ import sys
 import time
 
 from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import TimeoutError as PlaywrightTimeout
 
 BETA = "https://beta.askdnd.ai/c/vtt-test"
 SEATS = {"dm": 9231, "player2": 9232, "player3": 9233, "player4": 9234}
@@ -242,9 +243,12 @@ def record(sheet: Page) -> dict:
 
 
 def changes(before, after, path: str = "") -> list[tuple[str, object, object]]:
-    """Every value that differs between two records, leaving out what D&D Beyond works out or stamps by itself."""
+    """Every value that differs between two records, leaving out what D&D Beyond works out or stamps by itself (and the
+    lists of what a choice could be, which change when D&D Beyond adds content: Nov 4, a feat's spell list; what's
+    chosen is still compared)."""
     if isinstance(before, dict) and isinstance(after, dict):
-        return [c for k in sorted(set(before) | set(after)) if k not in ("dateModified", "providedFrom", "readonlyUrl", "definition")
+        return [c for k in sorted(set(before) | set(after))
+                if k not in ("dateModified", "providedFrom", "readonlyUrl", "definition", "choiceDefinitions", "optionIds")
                 for c in changes(before.get(k), after.get(k), f"{path}.{k}")]
     if isinstance(before, list) and isinstance(after, list) and len(before) == len(after):
         if all(isinstance(x, dict) for x in before + after):  # (D&D Beyond's lists come in any order, ids not always unique)
@@ -346,15 +350,25 @@ def coins(t: Table, seat: str = "player3") -> None:
         tab = page.locator('[data-tab="t-items"]:visible').first                                       # Undo's card is gone
         if tab.get_attribute("aria-selected") != "true":                                                # after a few seconds)
             tab.click(timeout=8000)
-        go(page, page.locator('[data-use-url$="/coins"]:visible').first)
-        page.locator('.roll-win input[name="amount"]').first.fill("1")
-        page.locator(f'[data-use-go][data-to="{to}"]').first.click()
+        for tries in (1, 2):  # (Nov 4: the window opened and was gone before Spend, with the page drawn again around it)
+            go(page, page.locator('[data-use-url$="/coins"]:visible').first)
+            try:
+                page.locator('.roll-win input[name="amount"]:visible').first.fill("1", timeout=5000)
+                page.locator(f'.roll-win [data-use-go][data-to="{to}"]:visible').first.click(timeout=5000)
+                break
+            except PlaywrightTimeout:
+                if tries == 2:
+                    raise
+                print("  the coins window closed before its button: opened again", flush=True)
+                page.wait_for_timeout(2000)
         if to == "gain":
             changed(t, sheet, before, what)
         else:
             undone(t, sheet, before, what)
         page.wait_for_timeout(1500)
         page.keyboard.press("Escape")
+        page.wait_for_selector(".roll-win", state="detached", timeout=8000)  # (Nov 4: the next window opened while this
+        page.wait_for_timeout(1000)                                         # one closed, and the page swapped under it)
 
 
 def spent(data: dict) -> int:
@@ -1011,7 +1025,7 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 # Runs left out of part 1 (and the nightly) until the seats have what they need: named, they run
-WAITING = {"creature-hp"}  # (extension 0.10.0, waiting for Google's review: Nov 3)
+WAITING: set[str] = set()  # (empty since Nov 4: creature-hp waited for extension 0.10.0)
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 
 
