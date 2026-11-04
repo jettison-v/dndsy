@@ -62,7 +62,7 @@
           <label class="check"><span class="box">✓</span><span><b style="color: var(--strong)">Moss leaves</b> <span class="note">(Wild Companion)</span></span></label>
           <p class="note">Ticked: untick it on the DM's ruling. It's switched off on D&amp;D Beyond, never deleted.</p>
         </sc-if>
-        <sc-if value="{{ stays }}" hint-placeholder-val="{{ false }}"><p class="note">Nothing about Moss: cast with a slot, it stays until dismissed.</p></sc-if>
+        <sc-if value="{{ stays }}" hint-placeholder-val="{{ false }}"><p class="note">Nothing about Moss: cast as a Ritual, it's an ordinary familiar and stays until dismissed or at 0 Hit Points.</p></sc-if>
         <button type="button" class="btn main" style="justify-self: start">Take the Long Rest</button>
       </div>
     </div>
@@ -75,9 +75,9 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state, wild = s.way === 'wild';
     const left = s.done && wild ? 1 : 2;
-    const W = [['wild', 'A Wild Shape use', 'Wild Companion · no incense · always Fey', left + ' of 2'],
-               ['slot', '1st-level slot', 'With its 10 gp of incense', '3 of 4'],
-               ['ritual', 'As a Ritual', '10 minutes longer · no slot', '']];
+    const W = [['wild', 'A Wild Shape use', 'Wild Companion · no incense · always Fey · leaves at a Long Rest', left + ' of 2'],
+               ['slot', 'A 1st-level slot', 'Wild Companion too · no incense · always Fey · leaves at a Long Rest', '3 of 4'],
+               ['ritual', 'As a Ritual', 'Only with Find Familiar prepared from another source (it isn’t a Druid spell) · an ordinary familiar: stays past a Long Rest', '']];
     return {
       wild, left,
       pips: [0, 1].map((i) => (i < left ? 'pip full' : 'pip used')),
@@ -87,9 +87,9 @@ class Component extends DCLogic {
       cast: () => this.setState({ done: true }),
       reset: () => this.setState({ done: false }),
       cast_done: s.done,
-      said: wild ? 'Moss (Fey) is here, from a Wild Shape use' : s.way === 'slot' ? 'Moss (Fey) is here · 1st-level slot' : 'Moss (Fey) is here · as a Ritual',
+      said: wild ? 'Moss (Fey) is here, from a Wild Shape use' : s.way === 'slot' ? 'Moss (Fey) is here, from a 1st-level slot' : 'Moss (Fey) is here · as a Ritual',
       spentNote: wild ? 'one Wild Shape use spent' : s.way === 'slot' ? 'a 1st-level slot spent' : 'nothing spent',
-      leaves: !s.done || wild, stays: s.done && !wild,
+      leaves: !s.done || s.way !== 'ritual', stays: s.done && s.way === 'ritual',
     };
   }
 }
