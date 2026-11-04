@@ -3775,3 +3775,38 @@
     logo.addEventListener('contextmenu', e => { if (fired) e.preventDefault(); });
   }
 })();
+
+// ---------------------------------------------------------------- the Picture window
+// (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2) Upload takes a picture chosen, dropped on
+// its box or pasted anywhere in the window, and shows it before it's sent; the form sends it as the file.
+(() => {
+  const win = () => document.querySelector('[data-picture-window]');
+  function take(box, file) {
+    if (!box || !file || !file.type.startsWith('image/')) return;
+    const input = box.querySelector('[data-pw-file]'), img = box.querySelector('[data-pw-preview]'), note = box.querySelector('[data-pw-drop-note]');
+    try { const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files; } catch (e) { /* (an older browser: choosing still works) */ }
+    if (img) { img.src = URL.createObjectURL(file); img.hidden = false; }
+    if (note) note.hidden = true;
+  }
+  document.addEventListener('change', e => {
+    const input = e.target.closest && e.target.closest('[data-pw-file]');
+    if (input && input.files[0]) take(input.closest('[data-pw-drop]'), input.files[0]);
+  });
+  document.addEventListener('dragover', e => { const box = e.target.closest && e.target.closest('[data-pw-drop]'); if (box) { e.preventDefault(); box.classList.add('over'); } });
+  document.addEventListener('dragleave', e => { const box = e.target.closest && e.target.closest('[data-pw-drop]'); if (box) box.classList.remove('over'); });
+  document.addEventListener('drop', e => {
+    const box = e.target.closest && e.target.closest('[data-pw-drop]');
+    if (!box) return;
+    e.preventDefault(); box.classList.remove('over'); take(box, e.dataTransfer.files[0]);
+  });
+  document.addEventListener('paste', e => {
+    const w = win();
+    if (!w || !w.closest('.peek.open')) return;  // (a closed window's contents stay in the page)
+    const f = [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
+    if (!f) return;
+    e.preventDefault();
+    const up = w.querySelector('[role=tab][data-tab="pw-up"]');
+    if (up && up.getAttribute('aria-selected') !== 'true') up.click();
+    take(w.querySelector('[data-pw-drop]'), f);
+  });
+})();

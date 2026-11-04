@@ -1,4 +1,5 @@
-"""Pictures on campaign pages (app/pictures.py): the DM and reviewers add them; everyone sees them."""
+"""Pictures on campaign pages (app/pictures.py), added in the one Picture window (app/picture_window.py): the DM and
+reviewers add them; everyone sees them."""
 
 import io
 
@@ -45,26 +46,30 @@ def test_process_resizes_and_rejects_non_pictures():
             pictures.process(bad)
 
 
-def test_the_dm_adds_a_picture_everyone_sees_it(people, db):
+def test_the_dm_adds_a_picture_in_the_picture_window_everyone_sees_it(people, db):
     import_bundle(db, BUNDLE)
     dm, player = people["dm"], people["player"]
     k = entity(db, "Kieran")
-    assert "Add a picture" in dm.get(f"/campaign/{k.id}/edit").text and "Add a picture" not in player.get(f"/campaign/{k.id}/peek").text
-    r = player.post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
-    assert "Only the DM and reviewers" in r.headers["HX-Trigger"] and db.scalar(select(EntityPicture)) is None
-    r = dm.post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
-    assert "Picture saved" in r.headers["HX-Trigger"] and "Change picture" in r.text
+    ref = {"for": f"entity:{k.id}"}
+    assert f'data-modal-url="/pictures?for=entity:{k.id}"' in dm.get(f"/campaign/{k.id}/edit").text
+    assert "Add a picture" not in player.get(f"/campaign/{k.id}/peek").text
+    assert "Describe it" in dm.get(f"/pictures?for=entity:{k.id}").text and player.get(f"/pictures?for=entity:{k.id}").status_code == 404
+    r = player.post("/pictures/upload", data=ref, files={"file": ("k.png", png(), "image/png")}, headers=HX)
+    assert r.status_code == 404 and db.scalar(select(EntityPicture)) is None
+    r = dm.post("/pictures/upload", data=ref, files={"file": ("k.png", png(), "image/png")}, headers=HX)
+    assert r.status_code == 204 and "Picture saved" in r.headers["HX-Trigger"] and r.headers["HX-Refresh"] == "true"
     url = pictures.urls(db, [k.id])[k.id]
-    assert url["uploaded"] and url["thumb"].startswith(f"/campaign/{k.id}/picture?size=thumb&v=")
+    assert url["uploaded"] and url["source"] == "upload" and url["thumb"].startswith(f"/campaign/{k.id}/picture?size=thumb&v=")
     got = player.get(url["thumb"])
     assert got.status_code == 200 and got.headers["content-type"] == "image/webp" and "immutable" in got.headers["cache-control"]
     assert url["full"] in player.get(f"/campaign/{k.id}/peek").text
     k.status = Status.PUBLISHED
     db.flush()
     assert url["full"].replace("&", "&amp;") in player.get(f"/c/main/campaign?open={k.id}").text  # in the Campaign page's Reader
-    r = dm.post(f"/campaign/{k.id}/picture", files={"file": ("x.txt", b"not a picture", "text/plain")}, headers=HX)
-    assert "isn't a picture" in r.headers["HX-Trigger"]
-    dm.post(f"/campaign/{k.id}/picture/delete", headers=HX)
+    r = dm.post("/pictures/upload", data=ref, files={"file": ("x.txt", b"not a picture", "text/plain")}, headers=HX)
+    assert r.status_code == 409 and "isn't a picture" in r.json()["detail"]
+    assert "Remove picture" in dm.get(f"/pictures?for=entity:{k.id}").text
+    dm.post("/pictures/remove", data=ref, headers=HX)
     assert db.scalar(select(EntityPicture)) is None and player.get(url["thumb"]).status_code == 404
 
 

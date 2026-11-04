@@ -7,7 +7,7 @@ entity body plus a toast; without HTMX they redirect back to the page.
 import json
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -212,7 +212,7 @@ def _fact_action(request: Request, db: Session, fact_id: int, fn: Callable[[Fact
     return _act(request, db, fact.entity_id, lambda entity, user: fn(fact), allowed=can_moderate)
 
 
-# --- Pictures (the DM, reviewers and admins) ------------------------------------------
+# --- Pictures: shown here; added, changed and removed in the one Picture window (app/picture_window.py) ---------
 
 
 @router.get("/{entity_id:int}/picture")
@@ -220,32 +220,9 @@ def picture(request: Request, entity_id: int, size: str = "full", db: Session = 
     user = current_user(request)
     entity = db.get(Entity, entity_id)
     pic = db.scalar(select(EntityPicture).where(EntityPicture.entity_id == entity_id)) if user and _visible(entity, user) else None
-    if pic is None:
+    if pic is None or not pic.file_key:
         return Response(status_code=404)
     return pictures.serve(db, pic, size)
-
-
-def _picture_action(request: Request, db: Session, entity_id: int, fn: Callable[[Entity, dict], str]):
-    def act(entity, user):  # refusals happen before anything is written, so there's nothing to roll back
-        if not pictures.can_manage(user):
-            return "Only the DM and reviewers can change pictures."
-        try:
-            return fn(entity, user)
-        except pictures.PictureError as e:
-            return str(e)
-
-    return _act(request, db, entity_id, act, reviewer_only=False)
-
-
-@router.post("/{entity_id:int}/picture")
-def upload_picture(request: Request, entity_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    raw = file.file.read(pictures.MAX_UPLOAD + 1)
-    return _picture_action(request, db, entity_id, lambda entity, user: pictures.save(db, entity, raw, user) and "Picture saved")
-
-
-@router.post("/{entity_id:int}/picture/delete")
-def delete_picture(request: Request, entity_id: int, db: Session = Depends(get_db)):
-    return _picture_action(request, db, entity_id, lambda entity, user: pictures.remove(db, entity) or "Picture removed")
 
 
 @router.post("/facts/{fact_id:int}/merge")

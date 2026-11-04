@@ -13,6 +13,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import access, books, vtt, web
+from app import drawing, picture_window
 from app import characters as chars
 from app.auth import can_edit_settings, is_admin
 from app.db import get_db
@@ -96,7 +97,8 @@ def settings_page(request: Request, db: Session = Depends(get_db)):
         return web.not_found(request, "Pick a campaign first.")
     return templates.TemplateResponse(request, "manage_settings.html", {
         "campaign": campaign, "ddb_name": chars.ddb_campaigns(db).get(campaign.ddb_campaign_id or "", ""),
-        "book_rows": books.rows(db, campaign), "vtt_rows": vtt.rows(campaign), "can_set_test": is_admin(user), "toast": request.session.pop("toast", None)})
+        "book_rows": books.rows(db, campaign), "vtt_rows": vtt.rows(campaign), "can_set_test": is_admin(user), "toast": request.session.pop("toast", None),
+        "art": drawing.style(campaign), "art_choices": picture_window.style_choices(db, campaign), "art_refs": drawing.REFS})
 
 
 @router.post("/manage/settings")

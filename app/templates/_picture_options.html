@@ -1,0 +1,8 @@
+{# Describe it's four (app/picture_window.py draw): pick one, then Use this picture. #}
+<form hx-post="/pictures/use" hx-swap="none" class="pw-form">
+  <input type="hidden" name="for" value="{{ o.ref }}"><input type="hidden" name="words" value="{{ words }}"><input type="hidden" name="style" value="{{ style }}">
+  <div class="pw-options" role="radiogroup" aria-label="Pick one">
+    {% for x in options %}<label class="pw-option"><input type="radio" name="pick" value="{{ x.full }}|{{ x.thumb }}"{{ ' checked' if loop.first }}><img src="{{ x.src }}" alt="Option {{ loop.index }}"></label>{% endfor %}
+  </div>
+  <div class="pw-foot"><button class="btn primary" type="submit">Use this picture</button><span class="note">Not quite? Change the words and draw again.</span></div>
+</form>

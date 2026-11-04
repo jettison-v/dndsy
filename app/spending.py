@@ -51,7 +51,7 @@ def reached(db: Session, now: datetime | None = None) -> str | None:
     spent = spent_this_month(db, now)
     if spent < cap:
         return None
-    return (f"This month's Claude spending (${spent:.2f}) has reached the ${cap:.2f} monthly limit. "
+    return (f"This month's spending on Claude and drawn pictures (${spent:.2f}) has reached the ${cap:.2f} monthly limit. "
             "An admin can raise it on Manage › Usage; it resets on the 1st.")
 
 

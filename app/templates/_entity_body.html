@@ -16,12 +16,8 @@
     <figure class="entity-pic">
     {% if picture %}<a href="{{ picture.full }}" target="_blank" rel="noopener" data-no-peek title="Open the full picture"><img src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer"></a>
     {% if not picture.uploaded %}<figcaption class="note">From D&amp;D Beyond</figcaption>{% endif %}{% endif %}
-    {% if can_picture %}
-    <form class="pic-form" hx-post="/campaign/{{ e.id }}/picture" hx-encoding="multipart/form-data" {{ hx | safe }} hx-indicator="#pic-wait">
-      <label class="btn small">{{ "Change picture" if picture and picture.uploaded else "Add a picture" }}<input type="file" name="file" accept="image/*" data-autosubmit hidden></label>
-      {% if picture and picture.uploaded %}<button class="btn link danger small" type="button" hx-post="/campaign/{{ e.id }}/picture/delete" {{ hx | safe }} hx-confirm="Remove the picture of {{ e.name }}?">Remove</button>{% endif %}
-      <span class="note htmx-indicator" id="pic-wait">Saving…</span>
-    </form>
+    {% if can_picture %}{# The one Picture window (app/picture_window.py; Brett, 2026-11-04) #}
+    <button type="button" class="btn small" data-modal-url="/pictures?for=entity:{{ e.id }}">{{ "Change picture" if picture and picture.uploaded else "Add a picture" }}</button>
     {% endif %}
   </figure>
   {% endif %}

@@ -1,0 +1,53 @@
+{# The one Picture window (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2): Upload, Describe it,
+   From D&D Beyond, for a World entry or one of a character's creatures. app.js "the Picture window" handles dropping and
+   pasting a picture into Upload and shows it before it's sent. #}
+<div class="peek-head">
+  <div><div class="note">Picture</div><h2 id="peek-title">{{ o.name }}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body pw" data-picture-window>
+  <div class="tabbar" role="tablist" aria-label="How to add it">
+    <button type="button" role="tab" aria-selected="true" data-tab="pw-up">Upload</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="pw-draw">Describe it</button>
+    {% if o.ddb_art %}<button type="button" role="tab" aria-selected="false" data-tab="pw-ddb">From D&amp;D Beyond</button>{% endif %}
+  </div>
+
+  <div id="pw-up">
+    <form hx-post="/pictures/upload" hx-encoding="multipart/form-data" hx-swap="none" class="pw-form">
+      <input type="hidden" name="for" value="{{ o.ref }}">
+      <label class="pw-drop" data-pw-drop>
+        <img data-pw-preview alt="The picture you chose" hidden>
+        <span data-pw-drop-note><b>Drop a picture here, or paste one</b><br><span class="note">PNG, JPEG, WebP or GIF, up to 15 MB. On a phone, choose from your photos.</span></span>
+        <input type="file" name="file" accept="image/*" required data-pw-file>
+      </label>
+      <p class="note">askdnd keeps it up to 1200 px, with a square version for round places.</p>
+      <div class="pw-foot"><button class="btn primary" type="submit">Use this picture</button></div>
+    </form>
+  </div>
+
+  <div id="pw-draw" hidden>
+    {% if no_drawing %}<p class="flash warn">{{ no_drawing }}</p>{% else %}
+    <form hx-post="/pictures/draw" hx-target="#pw-options" hx-swap="innerHTML" hx-indicator="#pw-drawing" class="pw-form">
+      <input type="hidden" name="for" value="{{ o.ref }}">
+      <label class="field">What it looks like<textarea name="words" rows="3" maxlength="1000" required>{{ words }}</textarea></label>
+      <p class="pw-style"><span class="tag">{{ "Campaign style" if styled else "A plain style" }}</span> <span class="note">{{ style }}</span></p>
+      <div class="pw-foot"><button class="btn primary" type="submit">Draw {{ how_many }}</button><span class="note">A few cents each, counted on Manage › Usage. <span id="pw-drawing" class="htmx-indicator">Drawing… this takes up to a minute.</span></span></div>
+    </form>
+    <div id="pw-options"></div>
+    {% endif %}
+  </div>
+
+  {% if o.ddb_art %}<div id="pw-ddb" hidden>
+    <form hx-post="/pictures/ddb" hx-swap="none" class="pw-form">
+      <input type="hidden" name="for" value="{{ o.ref }}">
+      <div class="pw-ddb"><img src="{{ o.ddb_art }}" alt="D&amp;D Beyond's art" referrerpolicy="no-referrer" onerror="this.remove()"><p class="note">Shown from D&amp;D Beyond: askdnd keeps a link, never a copy.</p></div>
+      <div class="pw-foot"><button class="btn primary" type="submit">Use D&amp;D Beyond's</button></div>
+    </form>
+  </div>{% endif %}
+
+  {% if shown %}<form hx-post="/pictures/remove" hx-swap="none" class="pw-now">
+    <input type="hidden" name="for" value="{{ o.ref }}">
+    <img src="{{ shown.thumb }}" alt="Its picture now" referrerpolicy="no-referrer"><span class="note">Its picture now{% if pic and pic.source == "drawn" %}, drawn from a description{% elif pic and pic.source == "ddb" %}, from D&amp;D Beyond{% endif %}</span>
+    <button class="btn small" type="submit">Remove picture</button>
+  </form>{% endif %}
+</div>
