@@ -28,6 +28,15 @@ def test_a_short_rest_brings_back_only_what_comes_back_on_one():
     assert [c["field"] for c in rests.counts(sheet_with(), "short")] == ["pact:2", "uses:1"]
 
 
+def test_wild_shape_and_channel_divinity_give_one_use_back_on_a_short_rest():
+    """2024 PHB: one expended use back on a Short Rest, all on a Long Rest, whatever D&D Beyond marks (Wild Shape as Long
+    Rest only, Channel Divinity as all back on a Short Rest; the live test's short-rest run on Levi, Nov 3)."""
+    sheet = sheet_with(actions=[{"id": 7, "name": "Wild Shape", "uses": {"used": 2, "reset": "Long Rest"}},
+                                {"id": 8, "name": "Channel Divinity", "uses": {"used": 2, "reset": "Short or Long Rest"}}])
+    assert [(c["name"], c["back"]) for c in rests.counts(sheet, "short") if c["field"].startswith("uses")] == [("Wild Shape", 1), ("Channel Divinity", 1)]
+    assert [(c["name"], c["back"]) for c in rests.counts(sheet, "long") if c["field"].startswith("uses")] == [("Wild Shape", 2), ("Channel Divinity", 2)]
+
+
 def test_a_long_rest_brings_back_slots_and_everything_else_but_not_what_comes_at_dawn():
     assert [c["field"] for c in rests.counts(sheet_with(), "long")] == ["slot:1", "pact:2", "uses:1", "uses:2", "charges:9"]
     assert rests.at_dawn(sheet_with()) == ["Sunrise"]
