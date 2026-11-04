@@ -12,11 +12,13 @@ Email addresses stay out of this file because the repo is treated as public. Eac
 | **Google and D&D Beyond login** | The Jettison Corp account | The Cupta Family account | The Trent Davis Lawson account |
 | **D&D Beyond username** | WeslockePlayer | CatharticPlayer | ViPlayer |
 | **D&D Beyond role** | Owner of the campaign | Player | Player |
-| **Character** | None at the table: Weslocke (172986973) is on the account but stays unlinked, as DMs at this table don't play one | Cathartic, called CatharticPlayer on D&D Beyond ([sheet](https://www.dndbeyond.com/characters/172986165)) | Vi ([sheet](https://www.dndbeyond.com/characters/172992073)) |
+| **Character** | None at the table: Weslocke (172986973) is on the account but stays unlinked, as DMs at this table don't play one | Cathartic, called CatharticPlayer on D&D Beyond ([sheet](https://www.dndbeyond.com/characters/172986165)). Roscoe Norell ([sheet](https://www.dndbeyond.com/characters/173133567), Druid 6 Land / Warlock 2) is on the same account, for two-class and Wild Shape testing | Vi ([sheet](https://www.dndbeyond.com/characters/172992073)) |
 | **Role in VTT test** | DM | Player | Player |
 | **Role across askdnd** | Member | Member | Member |
 
 The D&D Beyond campaign is [VTT test](https://www.dndbeyond.com/campaigns/8224496).
+
+**Player 2 plays Cathartic in askdnd** (VTT test › Manage › Table › Played by): the automated runs open that seat's own character and expect it to be Cathartic. To test Roscoe as his player, set Roscoe's Played by to the Cupta Family account and Cathartic's to no one, then set them back before the next run, including the nightly one at 4:00 (Nov 3: every run that needs a connected sheet missed while the seat played Roscoe).
 
 **Brett's personal D&D Beyond account is not a seat** (Brett, 2026-10-30): automation could get an account flagged. That account's characters, the first Vi (172836541) and Spurt, are in no testing at all, and Brett's own Chrome profile on the Mini is never copied or driven.
 
