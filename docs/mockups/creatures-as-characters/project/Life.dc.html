@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pip's Battle</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1040px">
+  <div class="head">
+    <div class="num">3 · Pip's Battle · try it</div>
+    <h1>Here, in the pocket dimension, or gone: the band says which</h1>
+    <p class="where"><b>Where you'll find it:</b> Trah's Battle, switched to Pip (the switch by his name, built). A band under the name says where Pip is, with what the rules let Trah do about it, each a Magic action of his. Press − until Pip is at 0, or send it away and bring it back.</p>
+  </div>
+  <div class="screen">
+    <div class="body" style="gap: 12px">
+      <div class="row">
+        <div class="row start" style="gap: 14px">
+          <div class="seg" role="group" aria-label="Who you're playing"><button type="button"><span class="pic sm master">T</span>Trah</button><button type="button" class="on"><span class="pic sm">P</span>Pip</button></div>
+          <span class="sub">Owl · Tiny Celestial · Find Familiar</span>
+        </div>
+        <div class="tabs"><b>Battle</b><span>Sheet</span><span>Plan</span></div>
+      </div>
+      <div class="cband">
+        <span class="pic lg">P</span>
+        <span style="display: grid; gap: 2px"><b style="font-size: 17px">Pip</b><span class="note">Trah's familiar since [session] · as an Owl since [session]</span></span>
+        <span class="{{ stateCls }}"><i></i>{{ stateWord }}</span>
+        <span class="sp"></span>
+        <sc-if value="{{ isHere }}" hint-placeholder-val="{{ true }}">
+          <div class="row start" style="gap: 8px">
+            <button type="button" class="btn" onClick="{{ away }}">Send to the pocket dimension</button>
+            <button type="button" class="btn quiet" onClick="{{ forever }}">Dismiss forever…</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isAway }}" hint-placeholder-val="{{ false }}">
+          <button type="button" class="btn main" onClick="{{ back }}">Bring Pip back · within 30 ft</button>
+        </sc-if>
+        <sc-if value="{{ isGone }}" hint-placeholder-val="{{ false }}">
+          <button type="button" class="btn main" onClick="{{ recast }}">Cast Find Familiar…</button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ isAway }}" hint-placeholder-val="{{ false }}">
+        <p class="note">In the pocket dimension: Pip takes no turns. Anything it was wearing or carrying stayed where it was. Bringing it back is a Magic action of Trah's.</p>
+      </sc-if>
+      <sc-if value="{{ isGone }}" hint-placeholder-val="{{ false }}">
+        <p class="note">Pip disappeared at 0 Hit Points: back only when Trah casts Find Familiar again (board 2). Anything it was wearing or carrying stayed where it was. Its name, picture and story stay.</p>
+      </sc-if>
+      <div class="{{ bodyCls }}" style="display: grid; gap: 12px">
+        <div class="numrow">
+          <div class="nums">
+            <span class="numtile"><small>Hit points <span class="pm"><button type="button" class="sq" aria-label="Damage" onClick="{{ hit }}">−</button><button type="button" class="sq" aria-label="Heal" onClick="{{ heal }}">+</button></span></small><span><b>{{ hp }}</b> / {{ hpMax }}</span></span>
+            <span class="numtile"><small>Armor class</small><b>11</b></span>
+            <span class="numtile"><small>Speed</small><span><b>60</b> ft fly · 5 walk</span></span>
+            <span class="numtile"><small>Initiative</small><b>+1</b></span>
+            <span class="numtile"><small>Perception</small><span><b>+5</b> · 15 passive</span></span>
+          </div>
+          <span class="numsep" aria-hidden="true"></span>
+          <div class="saves6"><span class="mini-tile">Str<b>−4</b></span><span class="mini-tile">Dex<b>+1</b></span><span class="mini-tile">Con<b>−1</b></span><span class="mini-tile">Int<b>−4</b></span><span class="mini-tile">Wis<b>+1</b></span><span class="mini-tile">Cha<b>−2</b></span></div>
+        </div>
+        <div class="row start wrap" style="gap: 8px"><span class="ctag">Its turn</span><span class="note">Its own Initiative, rolled when a fight starts. It can't attack, but it can take other actions.</span></div>
+        <div class="cols">
+          <div class="col"><h4 class="a">Action</h4><div class="ln"><b>Help</b><span class="note">an ally's next roll</span></div><div class="ln">Dash · Disengage · Dodge</div><div class="ln">Hide <span class="note">Stealth +3</span></div><div class="ln">Search <span class="note">Perception +5</span></div></div>
+          <div class="col"><h4 class="b">Bonus Action</h4><div class="note">None of its own</div><div class="ln" style="border-top: 1px solid var(--line); padding-top: 6px"><b>See through Pip's eyes</b><span class="tagg">Trah's</span></div><span class="note">Until the start of Trah's next turn, with Pip's Darkvision</span></div>
+          <div class="col"><h4 class="r">Reaction</h4><div class="ln"><b>Deliver a touch spell</b></div><span class="note">When Trah casts a spell with a range of touch, within 100 ft</span></div>
+        </div>
+        <div class="row start wrap" style="gap: 8px"><span class="cond">Flyby <span class="note">no Opportunity Attacks when it flies out of reach</span></span><span class="cond">Darkvision 120 ft</span><span class="cond">Telepathy with Trah <span class="note">100 ft</span></span></div>
+      </div>
+      <sc-if value="{{ askForever }}" hint-placeholder-val="{{ false }}">
+        <div class="win" style="max-width: 560px">
+          <h3>Dismiss Pip forever?</h3>
+          <p class="note">Pip leaves Trah's service. Its World entry stays, as Trah's familiar that was; casting Find Familiar again brings a new one. On D&amp;D Beyond the Owl stays on the Extras list, switched off.</p>
+          <div class="row start" style="gap: 8px"><button type="button" class="btn main" onClick="{{ goneForever }}">Dismiss forever</button><button type="button" class="btn quiet" onClick="{{ keep }}">Keep Pip</button></div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="card"><h3>On Trah's own Battle</h3><p class="note">Pip's card in his Bonus Action column, See through Pip's eyes, and Deliver a touch spell under Reaction while Pip is here. Gone or away: they're greyed with the reason, as Sheet does for a form.</p></div>
+    <div class="card"><h3>Undo, as everywhere</h3><p class="note">Each of these makes a corner card with Undo: sent away, back, dismissed, and 0 Hit Points (in case the damage was a mistake).</p></div>
+    <div class="card"><h3>Nothing ends by itself</h3><p class="note">askdnd moves Pip to Gone at 0 Hit Points because the rules say so outright. A ruling (Pip hid in Trah's hood) is the DM's: + and Bring back still work.</p></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1040}}'>
+class Component extends DCLogic {
+  state = { where: 'here', hp: 1, ask: false };
+  renderVals() {
+    const s = this.state, here = s.where === 'here';
+    return {
+      isHere: here && !s.ask, isAway: s.where === 'away', isGone: s.where === 'gone', askForever: s.ask,
+      stateCls: here ? 'state' : (s.where === 'away' ? 'state away' : 'state gone'),
+      stateWord: here ? 'Here' : (s.where === 'away' ? 'In the pocket dimension' : 'Gone'),
+      bodyCls: here ? '' : 'greyed', hp: s.hp, hpMax: 1,
+      away: () => this.setState({ where: 'away' }), back: () => this.setState({ where: 'here' }),
+      forever: () => this.setState({ ask: true }), keep: () => this.setState({ ask: false }),
+      goneForever: () => this.setState({ where: 'gone', ask: false, hp: 0 }),
+      recast: () => this.setState({ where: 'here', hp: 1 }),
+      hit: () => { if (here) { const hp = Math.max(0, s.hp - 1); this.setState(hp === 0 ? { hp, where: 'gone' } : { hp }); } },
+      heal: () => { if (here) this.setState({ hp: Math.min(1, s.hp + 1) }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

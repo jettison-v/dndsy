@@ -1,0 +1,86 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-04T16:20:00Z"
+  },
+  "title": "Creatures as Characters",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 1040,
+      "title": "1 · Where a creature shows, and the kinds"
+    },
+    "Cast.dc.html": {
+      "x": 1440,
+      "y": 0,
+      "w": 1360,
+      "h": 1040,
+      "title": "2 · Casting Find Familiar",
+      "is_interactive": true
+    },
+    "Life.dc.html": {
+      "x": 2880,
+      "y": 0,
+      "w": 1360,
+      "h": 1040,
+      "title": "3 · Pip's Battle: here, dismissed, gone",
+      "is_interactive": true
+    },
+    "Table.dc.html": {
+      "x": 0,
+      "y": 1160,
+      "w": 1360,
+      "h": 1040,
+      "title": "4 · Party, the fight, Table rolls, the World"
+    },
+    "Others.dc.html": {
+      "x": 1440,
+      "y": 1160,
+      "w": 1360,
+      "h": 1040,
+      "title": "5 · Steeds, summons, companions"
+    },
+    "Storage.dc.html": {
+      "x": 2880,
+      "y": 1160,
+      "w": 1360,
+      "h": 1040,
+      "title": "6 · What D&D Beyond keeps, what askdnd keeps"
+    },
+    "Party.dc.html": {
+      "x": 0,
+      "y": 2320,
+      "w": 1360,
+      "h": 1120,
+      "title": "7 · Party, more visible: A or B",
+      "is_interactive": true
+    },
+    "Linked.dc.html": {
+      "x": 1440,
+      "y": 2320,
+      "w": 1360,
+      "h": 1080,
+      "title": "8 · Vi and the Homunculus, linked: A, B or C",
+      "is_interactive": true
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Cast.dc.html",
+    "Life.dc.html",
+    "Table.dc.html",
+    "Others.dc.html",
+    "Storage.dc.html",
+    "Party.dc.html",
+    "Linked.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

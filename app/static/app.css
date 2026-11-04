@@ -2563,10 +2563,27 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
   font-size: var(--fs-sm); font-weight: 500; color: var(--muted); text-decoration: none; white-space: nowrap; }
 .who-switch a:hover { color: var(--text-strong); }
 .who-switch a[aria-current] { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 0 0 0 1px var(--blue); }
-.pt-creature { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-3); }
-.pt-creature a { display: inline-flex; align-items: center; gap: var(--sp-1); color: var(--text-strong); text-decoration: none; }
-.pt-creature a:hover b { text-decoration: underline; text-underline-offset: 3px; }
-.pt-creature img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+/* A character with creatures on Party: one card in parts on a row of its own, theirs then each creature's, a dashed line
+   between and the creature's half tinted (Brett, Nov 4, docs/mockups/creatures-as-characters/ board 8, C); the others fill in
+   around it. The master's portrait carries the creature's picture; the creature's whole half opens its Battle. */
+.pt-cards { grid-auto-flow: row dense; }
+.pt-pair { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(var(--parts, 2), minmax(0, 1fr)); border: 1px solid color-mix(in srgb, var(--green) 45%, var(--line)); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); }
+.pt-pair > .pt-card { margin: 0; border-radius: 0; }
+.pt-creature-card { position: relative; background: color-mix(in srgb, var(--green) 7%, var(--surface)); border-left: 1px dashed color-mix(in srgb, var(--green) 60%, var(--line)); }
+.pt-creature-card .pt-cr-av { box-shadow: 0 0 0 2px var(--green); background: var(--surface-3); color: var(--text-strong); }
+.pt-creature-card:hover { background: color-mix(in srgb, var(--green) 12%, var(--surface)); }
+.pt-av { position: relative; flex: none; display: inline-grid; }
+.pt-badge.roll-av { position: absolute; right: -6px; bottom: -6px; width: 24px; height: 24px; font-size: var(--fs-xs); background: var(--surface-3); color: var(--text-strong); box-shadow: 0 0 0 2px var(--green), 0 0 0 4px var(--surface); }
+.pt-whose { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--green); }
+.pt-cr-link { color: inherit; text-decoration: none; }
+.pt-cr-link::after { content: ""; position: absolute; inset: 0; }
+.pt-cr-link:focus-visible { outline: none; }
+.pt-creature-card:has(.pt-cr-link:focus-visible) { outline: 2px solid var(--red); outline-offset: -2px; }
+@media (max-width: 900px) {
+  .pt-pair { grid-template-columns: minmax(0, 1fr); }
+  .pt-creature-card { border-left: 0; border-top: 1px dashed color-mix(in srgb, var(--green) 60%, var(--line)); }
+}
+.pt-with { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); color: var(--text-strong); }
 .cr-fix { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); line-height: 1.9; }
 .cr-fix .btn { margin: 0 var(--sp-1); }
 .cr-hp-pop { position: relative; }

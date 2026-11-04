@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Party, the fight and the World</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1040px">
+  <div class="head">
+    <div class="num">4 · At the table and in the story</div>
+    <h1>Its own card, its own row, its own entry</h1>
+    <p class="where"><b>Where you'll find it:</b> Party (a card under its master's, today a line), the fight's rows and band (slice 3), Table rolls (built), and <b>Campaign › World</b>, where a companion gets an entry like any NPC, linked to its master. Everyone at the table sees them; the DM sees a companion like any fighter.</p>
+  </div>
+  <div class="grid2" style="grid-template-columns: 430px minmax(0, 1fr); gap: 24px">
+    <div style="display: grid; gap: 10px; align-content: start">
+      <h2 class="sec">Party</h2>
+      <div class="card" style="gap: 6px">
+        <div class="row start"><span class="av" style="width: 44px; height: 44px; font-size: 15px">T</span><span style="display: grid"><b style="color: var(--strong); font-size: 16px">Trah</b><span class="note">Wizard · 52 / 52 HP · AC 17</span></span></div>
+      </div>
+      <div class="ccard" style="margin-left: 28px; gap: 6px">
+        <div class="row"><div class="row start"><span class="pic">P</span><span style="display: grid"><b style="color: var(--strong)">Pip</b><span class="note">Trah's familiar · Owl · Celestial</span></span></div><span class="state"><i></i>Here</span></div>
+        <div class="row start wrap" style="gap: 6px"><span class="tagg">1 / 1 HP</span><span class="tagg">AC 11</span><span class="tagg">Fly 60 ft</span><span class="tagg">Its own turn</span></div>
+      </div>
+      <div class="ccard greyed" style="margin-left: 28px; gap: 6px">
+        <div class="row"><div class="row start"><span class="pic">P</span><span style="display: grid"><b style="color: var(--strong)">Pip</b><span class="note">Trah's familiar · Owl</span></span></div><span class="state away"><i></i>Pocket dimension</span></div>
+      </div>
+      <p class="note">Away or gone, the card stays, greyed, saying where it is: forgetting it is what we're avoiding. Pressing it opens Pip's Battle.</p>
+      <h2 class="sec" style="margin-top: 8px">Table rolls</h2>
+      <div class="rolls">
+        <div class="rollrow"><span class="pic sm">P</span><span><b>Pip</b> <span class="note">(Trah's familiar)</span><br><span class="note">Perception · d20 12 +5</span></span><span class="big">17</span></div>
+        <div class="rollrow"><span class="pic sm">P</span><span><b>Pip</b> <span class="note">(Trah's familiar)</span><br><span class="note">Initiative · d20 13 +1</span></span><span class="big">14</span></div>
+      </div>
+    </div>
+    <div style="display: grid; gap: 14px; align-content: start">
+      <h2 class="sec">The fight's rows (Party › Rows, askdnd's table)</h2>
+      <table class="track">
+        <thead><tr><th style="width: 60px">Init</th><th>Who</th><th style="width: 110px">HP</th><th style="width: 70px">AC</th><th>Its turn</th></tr></thead>
+        <tbody>
+          <tr><td><b>17</b></td><td><span class="who"><span class="av">T</span><b>Trah</b></span></td><td><span class="hpb">52 / 52</span></td><td>17</td><td class="note"></td></tr>
+          <tr class="now"><td><b>14</b></td><td><span class="who"><span class="pic sm">P</span><b>Pip</b> <span class="note">Trah's</span></span></td><td><span class="hpb">1 / 1</span></td><td>11</td><td class="note">Its own Initiative · can't attack</td></tr>
+          <tr><td><b>12</b></td><td><span class="who"><span class="av">E1</span><b>Enemy 1</b></span></td><td class="note">DM's</td><td></td><td></td></tr>
+          <tr><td><b>9</b></td><td><span class="who"><span class="av">BC</span><b>Big C</b></span></td><td><span class="hpb">61 / 64</span></td><td>16</td><td></td></tr>
+          <tr class="pet"><td></td><td><span class="who"><span class="pic sm">S</span><b>Big C's summon</b></span></td><td><span class="hpb">40 / 40</span></td><td>15</td><td class="note">Right after Big C, sharing the Initiative · ends with Concentration</td></tr>
+        </tbody>
+      </table>
+      <p class="note">A creature with its own Initiative gets its own row when D&amp;D Beyond's VTT has it as a fighter; one that shares its master's sits indented under them. Its turn starts with a corner card for its master's player ("Pip's turn"), so it isn't skipped. (Big C's summon is an example only.)</p>
+      <h2 class="sec" style="margin-top: 6px">Campaign › World · Pip's entry</h2>
+      <div class="card" style="grid-template-columns: auto minmax(0, 1fr); column-gap: 16px">
+        <span class="pic lg" style="grid-row: span 3">P</span>
+        <div class="row"><span style="display: grid"><b style="color: var(--strong); font-size: 18px">Pip</b><span class="note">Companion · Trah's familiar</span></span><span class="state"><i></i>Here, as an Owl</span></div>
+        <div class="facts" style="grid-template-columns: 140px minmax(0, 1fr)">
+          <span>Forms it has taken</span><span>Raven ([session]), Owl ([session]); Celestial</span>
+          <span>Disappeared</span><span>At 0 Hit Points in [session]; brought back in [session]</span>
+          <span>In the story</span><span>[What the recaps say about Pip, drafted and reviewed like every entry]</span>
+        </div>
+        <p class="note">Made the first time it's cast, by askdnd, from what the table did; the story lines come from session recaps, which you review as now. A companion that left (dismissed forever) keeps its entry.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -11,16 +11,14 @@
       <span class="note ws-form-note">{{ k.turn }}</span></div>
     <div class="ws-form-acts"><a class="btn small" href="/characters/{{ c.id }}/battle">Back to {{ c.name }}</a></div>
   </div>
-  {% if k.hp.fix %}{# D&D Beyond counts its Hit Points against another maximum: set it first (said, never by itself) #}
-  <p class="cr-fix">D&amp;D Beyond shows <b>{{ k.hp.ddb_max }}</b> for its maximum Hit Points; the rule works out <b>{{ k.hp.fix }}</b>.
-    {% if can_change_hp %}<button class="btn small" hx-post="/characters/{{ c.id }}/creatures/{{ k.id }}/max" hx-swap="none">Set D&amp;D Beyond to {{ k.hp.fix }}</button>
-    <span class="note">Then − and + keep both the same.</span>{% else %}<span class="note">Its player or the DM can set it.</span>{% endif %}</p>
+  {% if k.hp.waits %}{# askdnd sets D&D Beyond's maximum itself after the next read (app/creature_hp.py keep_max) #}
+  <p class="cr-fix">D&amp;D Beyond still counts its Hit Points against <b>{{ k.hp.ddb_max }}</b>; askdnd sets <b>{{ k.hp.rule }}</b> there, the rule's, the next time the sheet is read. − and + wait for it.</p>
   {% endif %}
   <div class="battle-head">
     <div class="strip compact">
       {% set hp_title = k.hp.parts | map("join", ": ") | join("; ") %}
-      {# − and + through the bridge (app/creature_hp.py), once D&D Beyond shows the same maximum #}
-      {%- set acts %}{% if can_change_hp and not k.hp.fix %}<details class="cr-hp-pop"><summary class="btn mini" aria-label="Damage or heal {{ k.name }}">−/+</summary>
+      {# − and + through the bridge (app/creature_hp.py), once D&D Beyond counts against the same maximum #}
+      {%- set acts %}{% if can_change_hp and not k.hp.waits %}<details class="cr-hp-pop"><summary class="btn mini" aria-label="Damage or heal {{ k.name }}">−/+</summary>
         <form class="cr-hp-form" hx-post="/characters/{{ c.id }}/creatures/{{ k.id }}/hp" hx-swap="none">
           <input type="number" name="amount" min="1" max="999" inputmode="numeric" aria-label="How many" placeholder="0" required>
           <button class="btn small" name="to" value="damage">Damage</button><button class="btn small" name="to" value="heal">Heal</button>

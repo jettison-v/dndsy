@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Master and creature, linked</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1080px">
+  <div class="head">
+    <div class="num">8 · Party: Vi and the Homunculus, linked · Brett chose C (Nov 4) · try it</div>
+    <h1>Its own card, and plainly Vi's</h1>
+    <p class="where"><b>Brett, Nov 4:</b> "make Vi and the Homunculus more visually linked". <b>Where you'll find it:</b> Party › At a glance › Cards. In all three, a character and their creatures always share one row (today the creature's card can wrap to the next row when its master sits on the right), the other characters fill in around them, and each card shows the other's picture: the creature's on its master's portrait, its master's beside "Vi's Homunculus".</p>
+  </div>
+  <div class="seg" role="group" aria-label="Which option" style="justify-self: start">
+    <button type="button" class="{{ aCls }}" aria-pressed="{{ isA }}" onClick="{{ pickA }}" style="padding: 5px 14px">A · One frame around the pair</button>
+    <button type="button" class="{{ bCls }}" aria-pressed="{{ isB }}" onClick="{{ pickB }}" style="padding: 5px 14px">B · A link between the cards</button>
+    <button type="button" class="{{ cCls }}" aria-pressed="{{ isC }}" onClick="{{ pickC }}" style="padding: 5px 14px">C · One card in two halves</button>
+  </div>
+  <div class="pgrid">
+    <div class="pcard">
+      <div class="phead"><span class="portrait">C</span><span class="pn"><b>Cathartic</b><span class="note">Cleric 9</span></span></div>
+      <div class="ptiles"><span class="ptile">Hit points<span><b>66</b> / 66</span></span><span class="ptile">Armor class<b>18</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+      <div class="pline">Best saves <b>Wis +8</b> · <b>Cha +6</b></div>
+    </div>
+    <div class="pcard">
+      <div class="phead"><span class="portrait">L</span><span class="pn"><b>Levi Shadowquick</b><span class="note">Druid 6 / Warlock 2</span></span></div>
+      <div class="ptiles"><span class="ptile">Hit points<span><b>59</b> / 59</span></span><span class="ptile">Armor class<b>13</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+      <div class="pline">Best saves <b>Wis +6</b> · <b>Int +5</b></div>
+    </div>
+
+    <sc-if value="{{ isA }}" hint-placeholder-val="{{ true }}">
+      <div class="pair">
+        <div class="pair-head"><span class="master-av">V</span><b>Vi</b> and <span class="pic sm">H</span><b>Homunculus Servant</b><span>· it takes its turn right after Vi's</span></div>
+        <div class="pcard">
+          <div class="phead"><span class="mini-portrait"><span class="portrait">V</span><span class="badge">H</span></span><span class="pn"><b>Vi</b><span class="note">Artificer 10 · with Homunculus Servant</span></span></div>
+          <div class="ptiles"><span class="ptile">Hit points<span><b>73</b> / 73</span></span><span class="ptile">Armor class<b>13</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+          <div class="pline">Best saves <b>Int +7</b> · <b>Con +6</b></div>
+          <div class="pline">Slots <span>1st ●●●●</span><span>2nd ●●●</span><span>3rd ●●●</span></div>
+        </div>
+        <div class="pcard creature">
+          <div class="phead"><span class="pic" style="width: 52px; height: 52px; font-size: 18px">H</span><span class="pn"><span class="row start" style="gap: 6px"><span class="master-av" style="width: 20px; height: 20px; font-size: 10px">V</span><span class="ctag">Vi's Homunculus</span></span><b>Homunculus Servant</b><span class="note">Infusion · Tiny</span></span></div>
+          <div class="ptiles"><span class="ptile">Hit points<span><b>14</b> / 14</span></span><span class="ptile">Armor class<b>13</b></span><span class="ptile">Speed<b>20 ft</b></span></div>
+          <div class="pline">Its turn <b>right after Vi's</b></div>
+          <div class="pline">Senses <b>Darkvision 60 ft</b> · Passive Perception <b>16</b></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isB }}" hint-placeholder-val="{{ false }}">
+      <div class="link-row">
+        <div class="pcard master">
+          <div class="phead"><span class="mini-portrait"><span class="portrait">V</span><span class="badge">H</span></span><span class="pn"><b>Vi</b><span class="note">Artificer 10 · with Homunculus Servant</span></span></div>
+          <div class="ptiles"><span class="ptile">Hit points<span><b>73</b> / 73</span></span><span class="ptile">Armor class<b>13</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+          <div class="pline">Best saves <b>Int +7</b> · <b>Con +6</b></div>
+          <div class="pline">Slots <span>1st ●●●●</span><span>2nd ●●●</span><span>3rd ●●●</span></div>
+        </div>
+        <div class="chain" aria-hidden="true"><i><svg width="14" height="14" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></i></div>
+        <div class="pcard creature">
+          <div class="phead"><span class="pic" style="width: 52px; height: 52px; font-size: 18px">H</span><span class="pn"><span class="row start" style="gap: 6px"><span class="master-av" style="width: 20px; height: 20px; font-size: 10px">V</span><span class="ctag">Vi's Homunculus</span></span><b>Homunculus Servant</b><span class="note">Infusion · Tiny</span></span></div>
+          <div class="ptiles"><span class="ptile">Hit points<span><b>14</b> / 14</span></span><span class="ptile">Armor class<b>13</b></span><span class="ptile">Speed<b>20 ft</b></span></div>
+          <div class="pline">Its turn <b>right after Vi's</b></div>
+          <div class="pline">Senses <b>Darkvision 60 ft</b> · Passive Perception <b>16</b></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isC }}" hint-placeholder-val="{{ false }}">
+      <div class="joined">
+        <div class="pcard">
+          <div class="phead"><span class="mini-portrait"><span class="portrait">V</span><span class="badge">H</span></span><span class="pn"><b>Vi</b><span class="note">Artificer 10 · with Homunculus Servant</span></span></div>
+          <div class="ptiles"><span class="ptile">Hit points<span><b>73</b> / 73</span></span><span class="ptile">Armor class<b>13</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+          <div class="pline">Best saves <b>Int +7</b> · <b>Con +6</b></div>
+          <div class="pline">Slots <span>1st ●●●●</span><span>2nd ●●●</span><span>3rd ●●●</span></div>
+        </div>
+        <div class="pcard creature">
+          <div class="phead"><span class="pic" style="width: 52px; height: 52px; font-size: 18px">H</span><span class="pn"><span class="ctag">Vi's Homunculus</span><b>Homunculus Servant</b><span class="note">Infusion · Tiny</span></span></div>
+          <div class="ptiles"><span class="ptile">Hit points<span><b>14</b> / 14</span></span><span class="ptile">Armor class<b>13</b></span><span class="ptile">Speed<b>20 ft</b></span></div>
+          <div class="pline">Its turn <b>right after Vi's</b></div>
+          <div class="pline">Senses <b>Darkvision 60 ft</b> · Passive Perception <b>16</b></div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+  <div class="grid3">
+    <div class="{{ aOpt }}"><h3>A · One frame around the pair</h3><ul><li>A tinted frame holds both cards, titled "Vi and Homunculus Servant", with when it acts</li><li>Clearest: reads as a group at a glance</li><li>On a phone the two cards stack inside the frame</li><li>The most chrome: a frame, a title, two cards</li></ul></div>
+    <div class="{{ bOpt }}"><h3>B · A link between the cards</h3><ul><li>The cards stay as they are, side by side, joined by a bar with a link mark; Vi's card edged on that side</li><li>Lightest change from what you tried</li><li>On a phone the bar turns vertical between them, which is fussier</li></ul></div>
+    <div class="{{ cOpt }}"><h3>C · One card in two halves</h3><ul><li>Vi's card and the Homunculus's join into one, a dashed line between, the creature's half tinted</li><li>Reads as one unit with no extra parts; still the creature's own card in full</li><li>On a phone: Vi on top, the Homunculus right under, one card</li><li>Two creatures: a third part (a full row of three, or a second line)</li></ul></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1080}}'>
+class Component extends DCLogic {
+  state = { opt: 'C' };
+  renderVals() {
+    const o = this.state.opt;
+    return {
+      isA: o === 'A', isB: o === 'B', isC: o === 'C',
+      aCls: o === 'A' ? 'on' : '', bCls: o === 'B' ? 'on' : '', cCls: o === 'C' ? 'on' : '',
+      pickA: () => this.setState({ opt: 'A' }), pickB: () => this.setState({ opt: 'B' }), pickC: () => this.setState({ opt: 'C' }),
+      aOpt: o === 'A' ? 'opt rec' : 'opt', bOpt: o === 'B' ? 'opt rec' : 'opt', cOpt: o === 'C' ? 'opt rec' : 'opt',
+    };
+  }
+}
+</script>
+</body>
+</html>

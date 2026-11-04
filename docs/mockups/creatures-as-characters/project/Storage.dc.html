@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>What D&amp;D Beyond keeps</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1040px">
+  <div class="head">
+    <div class="num">6 · Where it's kept · to decide</div>
+    <h1>D&amp;D Beyond keeps the creature; askdnd keeps the companion</h1>
+    <p class="where"><b>Checked Nov 4</b> on our table's sheets and in D&amp;D Beyond's own page: each creature on the Extras tab is one stat block in a group (Familiar, Infusion, Summoned…) with a name, notes, its Hit Points and an <b>Active</b> switch on the Extras list. D&amp;D Beyond's page can add, rename, remove and switch one, and change its size, creature type, alignment, AC, Hit Points and notes. It has <b>no picture of its own</b> (always the stat block's) and no idea of Pip as one familiar across forms. All 16 creatures at our table are switched off today.</p>
+  </div>
+  <div class="grid2" style="gap: 20px">
+    <div class="store ddb">
+      <h3>On D&amp;D Beyond (Extras)</h3>
+      <ul>
+        <li><b>The creature</b>: one entry per form, in its group (Pip as an Owl is an Owl named Pip under Familiar)</li>
+        <li><b>Its Hit Points</b>, taken and temporary <span class="syncs">· synced, built</span></li>
+        <li><b>Its maximum</b>, where it grows with its master: set by askdnd when it first reads the creature and whenever its master's level or Intelligence changes, listed in the Live window like every change; never over a number someone typed on D&amp;D Beyond <span class="syncs">· built Nov 4, no button</span></li>
+        <li><b>Its creature type</b>: Celestial, Fey or Fiend, D&amp;D Beyond's own override <span class="later">· new</span></li>
+        <li><b>Active</b>: switched on while it's here, off when it's away or gone <span class="later">· new</span></li>
+        <li><b>Its name and notes</b>, as the player types them there</li>
+      </ul>
+      <p class="note">So a player who opens D&amp;D Beyond sees the same: which familiar is here, its Hit Points and type. Its own rolls still work there.</p>
+    </div>
+    <div class="store ours">
+      <h3>In askdnd</h3>
+      <ul>
+        <li><b>The companion</b>: Pip, one being across its forms (the Raven entry and the Owl entry are both Pip)</li>
+        <li><b>Its picture</b>, added by its player, kept for the campaign</li>
+        <li><b>Where it is</b>: here, the pocket dimension, gone (D&amp;D Beyond's Active only says here or not)</li>
+        <li><b>What ends it</b>: a Long Rest, Concentration, 0 Hit Points; and its turn reminders</li>
+        <li><b>Numbers worked out</b> from the spell's level or its master's level, with the source</li>
+        <li><b>Its story</b>: the World entry, from session recaps you review</li>
+      </ul>
+      <p class="note">Like Wild Shape: D&amp;D Beyond keeps the list and the numbers it can; which one is in play, and why, is askdnd's.</p>
+    </div>
+  </div>
+  <div style="display: grid; gap: 8px">
+    <h2 class="sec">How askdnd uses D&amp;D Beyond when Pip is cast · Brett chose A (Nov 4)</h2>
+    <div class="grid2" style="gap: 20px">
+      <div class="opt rec">
+        <div class="row"><h3>A · askdnd keeps Extras in step</h3><span class="tagg" style="color: var(--teal); border-color: var(--teal)">Chosen</span></div>
+        <ul>
+          <li>Casting adds the form to Extras if it isn't there, named Pip, with its type; switches it Active and any other familiar off</li>
+          <li>Away or gone switches it off; back switches it on</li>
+          <li>Never deletes: an old form stays on the list, switched off, so D&amp;D Beyond's list is also Pip's forms</li>
+          <li>Needs: the add, rename, type and Active requests tried on a test sheet, and extension 0.11.0 (another Google review)</li>
+        </ul>
+      </div>
+      <div class="opt">
+        <h3>B · Extras is the player's list; askdnd reads it</h3>
+        <ul>
+          <li>The player adds each form on D&amp;D Beyond themselves (as you did for Levi); Find Familiar offers only forms already there, plus "Add it on D&amp;D Beyond first"</li>
+          <li>Here, away and gone live in askdnd only; D&amp;D Beyond's Active stays as it is</li>
+          <li>askdnd writes only Hit Points (built)</li>
+          <li>Nothing new for the extension, but D&amp;D Beyond's page won't show who's here</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note">Either way: the picture and the story are askdnd's, and a creature on Extras that was never cast through askdnd (Levi's Owl today) shows on its master's Battle as <b>Not here · Cast Find Familiar</b>, not as here.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
