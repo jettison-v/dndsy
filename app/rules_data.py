@@ -197,6 +197,7 @@ class Summon(_Shape):
     name: Name  # the stat block's: "Bestial Spirit"
     spell: Name  # "Summon Beast"
     spell_level: int = Field(ge=1, le=9)
+    classes: list[Literal[CASTERS]] = []  # whose spell it is: their spell attack and save DC
     choose: list[str] = []  # what's chosen when it's cast: ["Air", "Land", "Water"]
     what: str  # "Small Beast, Neutral"
     ac: str
@@ -322,7 +323,7 @@ def catalog(kind: str, db=None, campaign_id: int | None = None) -> list[dict]:
     over: dict[str, dict] = {}
     for r in _layers(db, kind, campaign_id):
         over.setdefault(r["key"], r)
-    rows = [over.pop(r["key"], r) for r in srd(kind)] + list(over.values())
+    rows = [over.pop(r["key"], r) for r in (srd(kind) if kind in FILES else ())] + list(over.values())  # (a summon: books only)
     return sorted(rows, key=lambda r: r["name"].lower())
 
 
@@ -332,6 +333,8 @@ def find(kind: str, name_or_key: str, db=None, campaign_id: int | None = None) -
     for r in _layers(db, kind, campaign_id):
         if want in (r["key"], r["name"].lower()):
             return r
+    if kind not in FILES:  # (a summon: books only)
+        return None
     return _srd_by(kind).get(want) or _srd_by(kind).get(slug(want))
 
 

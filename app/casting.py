@@ -72,6 +72,8 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     sheet, e = _spell(db, ch, key)
     # Find Familiar brings the familiar (Brett, 2026-11-04, Creatures as Characters board 2): its form and what it is
     forms = companions.familiars(ch, sheet) if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) else None
+    # A summon spell or Find Steed brings askdnd's own creature (app/summons.py; Brett chose A, Nov 4)
+    summon = companions.summon_entry(db, ch, e["name"]) if companions.on(db, ch) else None
     first, kind, named = companions.picked(forms or [])
     reachable = ddb_bridge.reachable(ch)
     # The familiar is askdnd's, like a Wild Shape form: with the sheet out of reach, still as a Ritual or without a slot
@@ -81,7 +83,8 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
                                                                      "ends": ch.concentration if e["conc"] and ch.concentration and ch.concentration.get("key") != key else None,
                                                                      "form_no": form_no(sheet, ch, e["name"]), "familiars": forms, "ff_first": first,
                                                                      "ff_kind": kind, "ff_name": named, "kinds": companions.KINDS,
-                                                                     "ff_new": companions.new_forms(sheet) if forms is not None and reachable else []})
+                                                                     "ff_new": companions.new_forms(sheet) if forms is not None and reachable else [],
+                                                                     "summon": summon, "steed_before": companions.steed_before(ch, summon) if summon else None})
 
 
 def form_no(sheet: dict, ch: Character, name: str) -> str:
@@ -99,7 +102,8 @@ def form_no(sheet: dict, ch: Character, name: str) -> str:
 
 @router.post("/characters/{character_id:int}/cast")
 def cast(request: Request, character_id: int, key: str, way: str = Form(""), familiar: str = Form(""), kind: str = Form(""),
-         familiar_name: str = Form(""), db: Session = Depends(get_db)):
+         familiar_name: str = Form(""), choice: str = Form(""), again: str = Form(""), creature_name: str = Form(""),
+         look: str = Form(""), db: Session = Depends(get_db)):
     """Cast it: the slot on its way to D&D Beyond, Concentration begun."""
     ch, _ = _guard(db, request, character_id)
     sheet, e = _spell(db, ch, key)
@@ -117,6 +121,11 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         undo["spent"] = chosen["way"]
     if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and (familiar or companions.familiars(ch, sheet)):
         back, brought = companions.cast(db, ch, sheet, familiar, kind, familiar_name)
+        undo |= back
+        said += f": {brought}"
+    if companions.on(db, ch) and (entry := companions.summon_entry(db, ch, e["name"])):
+        back, brought = companions.summon(ch, sheet, entry, chosen["level"] if chosen and chosen.get("level") else e["level"] or entry["spell_level"],
+                                          choice, creature_name, look, again=again == "1")
         undo |= back
         said += f": {brought}"
     if e["conc"]:

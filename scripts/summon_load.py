@@ -73,7 +73,9 @@ def entry(spell: str, lines: list[str]) -> dict | None:
         return None
     pre, block = lines[:at], [x for x in lines[at:] if x.strip()]
     name = block[0][5:].strip()
+    classes = re.search(r"Level \d \w+ \(([^)]+)\)", text)
     e = {"name": _clean(name), "spell": spell, "spell_level": int(level.group(1)), "what": _clean(block[1]),
+         "classes": [c.strip() for c in classes.group(1).split(",")] if classes else [],
          "ac": "", "hp": "", "speed": "", "abilities": {}, "senses": "", "languages": "",
          "concentration": "Duration: Concentration" in text}
     for p in pre:  # how it acts and when it goes, from the spell's own paragraphs

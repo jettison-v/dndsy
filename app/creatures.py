@@ -31,7 +31,7 @@ OTHER_TURN = "When its turn comes is the DM's to say."
 ROLE = {FAMILIAR: "familiar", INFUSION: "Homunculus", DEFENDER: "Steel Defender", SUMMONED: "summon", COMPANION: "companion",
         MOUNT: "mount", PET: "pet", SIDEKICK: "sidekick"}
 TURN_SHORT = {FAMILIAR: "Its own Initiative · can't attack", INFUSION: "Right after its master's turn", DEFENDER: "Right after its master's turn",
-              SUMMONED: "Right after its master's turn", COMPANION: "On its master's turn"}
+              SUMMONED: "Right after its master's turn", COMPANION: "On its master's turn", MOUNT: "On its master's Initiative"}
 
 # How a creature's Hit Points grow with its master, from its book (D&D Beyond keeps only the level-1 number): the class
 # whose level counts, and the number from that level and the master's Intelligence modifier
@@ -87,16 +87,29 @@ WHERE = {"here": "Here", "away": "In the pocket dimension", "gone": "Gone"}
 KINDS = ("Celestial", "Fey", "Fiend")
 
 
+def own(ch) -> list[dict]:
+    """askdnd's own creatures (app/summons.py: a summon, Find Steed's steed; Brett chose A, Nov 4): kept on the
+    character as cast (`Character.companions`, "own"), in the shape of one on a sheet's Extras, with its Hit Points."""
+    return [{**v["c"], "removed": v.get("removed") or 0, "temp": v.get("temp") or 0}
+            for v in (ch.companions or {}).values() if isinstance(v, dict) and v.get("own") and v.get("c")]
+
+
 def where(ch, c: dict) -> str | None:
-    """"here", "away" (the pocket dimension), "gone" (0 Hit Points, or dismissed), or None: a familiar not cast."""
+    """"here", "away" (the pocket dimension), "gone" (0 Hit Points, or dismissed), or None: a familiar not cast. A
+    summon held by Concentration is gone once its master isn't concentrating on that spell any more."""
+    if c.get("own"):
+        state = ((ch.companions or {}).get(str(c.get("id"))) or {}).get("state")
+        if state == "here" and c.get("concentration") and (ch.concentration or {}).get("spell") != c.get("spell"):
+            return "gone"
+        return state
     if c.get("group_id") not in CAST:
         return "here"
     return ((ch.companions or {}).get(str(c.get("id"))) or {}).get("state")
 
 
 def in_play(ch, sheet: dict | None) -> list[dict]:
-    """The character's creatures that exist now (here, away or gone): a familiar only once cast."""
-    return [c for c in yours(sheet) if where(ch, c)]
+    """The character's creatures that exist now (here, away or gone): a familiar only once cast; askdnd's own too."""
+    return [c for c in yours(sheet) + own(ch) if where(ch, c)]
 
 
 def placed(ch, k: dict, c: dict) -> dict:
@@ -104,12 +117,15 @@ def placed(ch, k: dict, c: dict) -> dict:
     brings it."""
     kept = (ch.companions or {}).get(str(k["id"])) or {}
     w = where(ch, c)
-    return {**k, "where": w, "where_word": WHERE.get(w or "", "Not here"), "made": kept.get("kind", ""), "why": kept.get("why", ""),
-            "spell": CAST.get(c.get("group_id"), ""), "cast": c.get("group_id") in CAST}
+    why = kept.get("why", "") or ("Concentration ended" if c.get("own") and w == "gone" and kept.get("state") == "here" else "")
+    return {**k, "where": w, "where_word": WHERE.get(w or "", "Not here"), "made": kept.get("kind", "") or c.get("choice", ""), "why": why,
+            "spell": c.get("spell") or CAST.get(c.get("group_id"), ""), "cast": c.get("group_id") in CAST and not c.get("own"),
+            "own": bool(c.get("own")), "level": c.get("level")}
 
 
-def find(sheet: dict | None, creature_id) -> dict | None:
-    return next((c for c in yours(sheet) if str(c["id"]) == str(creature_id)), None)
+def find(sheet: dict | None, creature_id, ch=None) -> dict | None:
+    """One of the character's creatures by its id: on the sheet's Extras, or askdnd's own (with `ch`)."""
+    return next((c for c in yours(sheet) + (own(ch) if ch is not None else []) if str(c["id"]) == str(creature_id)), None)
 
 
 def _level(sheet: dict, cls: str) -> int:
@@ -144,7 +160,7 @@ def card(sheet: dict, c: dict, master: str = "") -> dict:
     elif rule:
         hp_max, hp_parts = rule, [(f"{grows[1]} ({grows[3]})", rule)]
     else:
-        hp_max, hp_parts = block_hp, [("D&D Beyond's stat block", block_hp)]
+        hp_max, hp_parts = block_hp, [(f"{c['spell']} at level {c['level']}" if c.get("own") else "D&D Beyond's stat block", block_hp)]
     if might:
         notes.append(f"{MIGHT}: its skills, saving throws and attack's to-hit and damage are {_signed(might)} "
                      f"(the stat block's numbers are for a Proficiency Bonus of +2; yours is {_signed(pb)}).")
@@ -188,7 +204,7 @@ def card(sheet: dict, c: dict, master: str = "") -> dict:
         "immune": b.get("condition_immunities") or [], "size": b.get("size") or "", "cr": b.get("cr_label") or "",
         "traits": [t for t in b.get("traits") or [] if t["name"] != MIGHT], "might": might,
         "columns": {k: {"shown": v, "all": v, "count": len(v), "items": [], "item_count": 0} for k, v in cols.items()},
-        "turn": TURN.get(group, OTHER_TURN), "turn_short": TURN_SHORT.get(group, ""), "role": ROLE.get(group, "creature"),
+        "turn": c.get("turn_text") or TURN.get(group, OTHER_TURN), "turn_short": TURN_SHORT.get(group, ""), "role": ROLE.get(group, "creature"),
         "own_initiative": group == FAMILIAR, "notes": notes,
         "about": _first(c.get("about") or ""),
     }

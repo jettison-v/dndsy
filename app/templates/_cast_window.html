@@ -20,6 +20,17 @@
 <fieldset class="ff-pick ff-kinds"><legend class="rw-label">It's a</legend>{% for k in kinds %}<label class="ff-kind"><input type="radio" name="kind" value="{{ k }}"{% if k == ff_kind %} checked{% endif %}> {{ k }}</label>{% endfor %}</fieldset>
 <p class="use-what">One familiar at a time: one that's here takes the form you pick. One that disappeared comes back whole.</p>{% endif %}
 {% endif %}
+{% if summon and can_cast %}{# A summon spell or Find Steed: askdnd's own creature (app/summons.py; Brett chose A, Nov 4, docs/mockups/steeds-summons/) #}
+{% set steed = summon.spell == "Find Steed" %}
+{% if steed and steed_before %}<fieldset class="ff-pick"><legend class="rw-label">Your steed</legend>
+  <label class="ff-opt"><input type="radio" name="again" value="1" checked><span><b>{{ steed_before.name }}</b> <span class="note">{{ steed_before.look or steed_before.kind }} · {{ steed_before.choice }}</span></span><span class="cr-where">The one that disappeared</span></label>
+  <label class="ff-opt"><input type="radio" name="again" value=""><span><b>A different one</b></span><span></span></label>
+</fieldset>{% endif %}
+{% if summon.choose %}<fieldset class="ff-pick ff-kinds"><legend class="rw-label">{{ "It's" if steed else "Its kind" }}</legend>{% for k in summon.choose %}<label class="ff-kind"><input type="radio" name="choice" value="{{ k }}"{% if loop.first %} checked{% endif %}> {{ k }}</label>{% endfor %}</fieldset>{% endif %}
+{% if steed %}<div class="rw-row"><label class="rw-label" for="st-name">Its name</label><input id="st-name" class="rw-text" type="text" name="creature_name" maxlength="60" placeholder="Starlight" autocomplete="off"></div>
+<div class="rw-row"><label class="rw-label" for="st-look">It looks like</label><input id="st-look" class="rw-text" type="text" name="look" maxlength="60" placeholder="a horse, an elk, a dire wolf" autocomplete="off"></div>{% endif %}
+<p class="use-what">{{ summon.name }}: its numbers follow the level you cast it at{% if summon.concentration %}, and it goes when Concentration ends{% endif %}. askdnd keeps it: D&amp;D Beyond has no such creature.</p>
+{% endif %}
 {% if offline %}<p class="use-what">{{ c.name }}'s D&amp;D Beyond sheet can't be reached, so only as a Ritual or without a slot. One coming back after 0 Hit Points: give it its Hit Points on D&amp;D Beyond.</p>{% endif %}
 {% if can_cast %}
 <div class="rw-row use-foot" data-character="{{ c.id }}">{% if rolls %}<button type="button" class="btn primary small" data-use-go data-then-roll>Cast and roll</button>{{ spell_roll(c, e, "Roll without spending a slot", "btn link small cast-roll", 0) }}{% else %}<button type="button" class="btn primary small" data-use-go>Cast</button>{% endif %}<button type="button" class="btn link small" data-use-close>Cancel</button></div>

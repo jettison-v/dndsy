@@ -193,6 +193,77 @@ def _cast_new(db: Session, ch: Character, sheet: dict, forms: dict, chosen: str,
     return {"companions": json.dumps(was)}, f"Your familiar: {shown} ({kind}), added to D&D Beyond's Extras"
 
 
+# ---- askdnd's own: a summon, Find Steed's steed (app/summons.py; Brett chose A, Nov 4)
+
+def summon_entry(db: Session, ch: Character, spell: str) -> dict | None:
+    """The stat block a spell brings (the campaign's books: the Player's Handbook), or None."""
+    from app import rules_data
+
+    return next((e for e in rules_data.catalog("summon", db, ch.campaign_id) if e.get("spell") == spell), None)
+
+
+def _caster(sheet: dict, entry: dict) -> tuple[int, int]:
+    """The spell attack and save DC it uses: the class whose spell it is, else the first."""
+    rows = sheet.get("spellcasting") or []
+    row = next((r for r in rows if r.get("class") in (entry.get("classes") or [])), rows[0] if rows else {})
+    try:
+        return int(str(row.get("attack") or "+0").replace("−", "-")), int(row.get("save_dc") or 0)
+    except ValueError:
+        return 0, int(row.get("save_dc") or 0)
+
+
+def steed_before(ch: Character, entry: dict) -> dict | None:
+    """Find Steed's "the one that disappeared": the steed it had, as it was (its kind, name and look)."""
+    from app import summons
+
+    kept = (ch.companions or {}).get(str(summons.own_id(entry.get("key") or entry["name"]))) or {}
+    return kept.get("c") if kept.get("own") else None
+
+
+def summon(ch: Character, sheet: dict, entry: dict, level: int, choice: str, name: str = "", look: str = "",
+           again: bool = False) -> tuple[dict, str]:
+    """A summon spell or Find Steed cast at `level`: its creature is here, its numbers worked out for that level and
+    its master; a summon the same spell brought before goes (one at a time). Find Steed `again`: the steed that
+    disappeared, with its kind, name and look. Returns what Undo needs and what the corner card says."""
+    from app import summons
+
+    if again and (before := steed_before(ch, entry)):
+        choice, name, look = before.get("choice") or choice, before.get("name") if before.get("name") != entry["name"] else "", before.get("look") or look
+    if entry.get("choose") and choice not in entry["choose"]:
+        raise HTTPException(409, f"{entry['name']}: {', '.join(entry['choose'])}?")
+    attack, dc = _caster(sheet, entry)
+    c = summons.creature(entry, level, choice, attack, dc, name=name.strip()[:60], look=look.strip()[:60])
+    was = dict(ch.companions or {})
+    ch.companions = {**was, str(c["id"]): {"own": True, "state": "here", "c": {k: v for k, v in c.items() if k not in ("removed", "temp")},
+                                           "removed": 0, "temp": 0}}
+    what = f"{c['name']} ({choice})" if choice else c["name"]
+    return {"companions": json.dumps(was)}, f"{what} is here, at level {level}"
+
+
+def own_hp(ch: Character, c: dict, k: dict, change: int = 0, temp: int | None = None) -> str:
+    """Damage (negative) or healing for one of askdnd's own creatures, or its Temporary Hit Points: kept in askdnd
+    (nothing on D&D Beyond: it has no such creature). At 0 Hit Points it disappears, as its spell says."""
+    kept = dict((ch.companions or {}).get(str(c["id"])) or {})
+    who = f"{ch.name}'s {k['name']}"
+    if temp is not None:
+        kept["temp"] = temp
+        said = f"{who}: {temp} Temporary Hit Points"
+    else:
+        removed, t = kept.get("removed") or 0, kept.get("temp") or 0
+        if change < 0:
+            soak = min(t, -change)
+            t, removed = t - soak, min(k["hp"]["max"], removed + (-change - soak))
+        else:
+            removed = max(0, removed - change)
+        kept["removed"], kept["temp"] = removed, t
+        said = f"{who} {'took' if change < 0 else 'regained'} {abs(change)}"
+        if removed >= k["hp"]["max"]:
+            kept["state"], kept["why"] = "gone", "0 Hit Points"
+            said += ": at 0 Hit Points it disappears"
+    ch.companions = {**(ch.companions or {}), str(c["id"]): kept}
+    return said
+
+
 def uncast(db: Session, ch: Character, companions: str, healed: str) -> None:
     """Undo's half for the familiar: where each was, and the Hit Points taken again."""
     try:

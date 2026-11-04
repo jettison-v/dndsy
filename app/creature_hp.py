@@ -46,34 +46,41 @@ def keep_max(db: Session, ch: Character, summary: dict) -> None:
 def _guard(db: Session, request: Request, character_id: int, creature_id: int):
     user = current_user(request)
     ch = db.get(Character, character_id)
-    if not user or not ch or not ddb_bridge.on_for(db, ch) or not hit_points.can_apply(db, user, ch) \
+    if not user or not ch or not hit_points.can_apply(db, user, ch) \
             or not vtt.on(db.get(Campaign, ch.campaign_id) if ch.campaign_id else None, "creatures"):
         raise HTTPException(404)
     sheet = ddb_bridge.as_shown(db, ch, chars.character_summary(ch))  # (with what's on its way: a maximum being set counts)
-    found = find(sheet, creature_id)
-    if not found:
+    found = find(sheet, creature_id, ch)
+    if not found or (not found.get("own") and not ddb_bridge.on_for(db, ch)):  # (askdnd's own needs no bridge)
         raise HTTPException(404)
-    ddb_bridge.reach(ch)
-    return ch, card(sheet, found)
+    if not found.get("own"):
+        ddb_bridge.reach(ch)
+    return ch, card(sheet, found), found
 
 
 @router.post("/characters/{character_id:int}/creatures/{creature_id:int}/hp")
 def change_hp(request: Request, character_id: int, creature_id: int, form=web.FormBody, db: Session = Depends(get_db)):
-    """Damage (−) or healing (+) for one of the character's creatures, or its Temporary Hit Points, through the bridge."""
-    ch, k = _guard(db, request, character_id, creature_id)
+    """Damage (−) or healing (+) for one of the character's creatures, or its Temporary Hit Points: through the bridge,
+    or kept in askdnd for its own (a summon, a steed: app/summons.py)."""
+    ch, k, found = _guard(db, request, character_id, creature_id)
+    amount, temp = str(form.get("amount") or "").strip().lstrip("+"), str(form.get("temp") or "").strip()
+    if temp and not temp.isdigit():
+        raise HTTPException(409, "Temporary Hit Points are a number.")
+    if not temp and (not amount.isdigit() or not 0 < int(amount) <= 999):
+        raise HTTPException(409, "How many Hit Points?")
+    if found.get("own"):
+        said = companions.own_hp(ch, found, k, temp=int(temp)) if temp else \
+            companions.own_hp(ch, found, k, (-1 if form.get("to") == "damage" else 1) * int(amount))
+        db.commit()
+        return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, said)})
     if k["hp"]["waits"]:
         raise HTTPException(409, f"D&D Beyond still shows {k['hp']['ddb_max']} for its maximum: askdnd sets {k['hp']['rule']} there the next time the sheet is read.")
-    amount, temp = str(form.get("amount") or "").strip().lstrip("+"), str(form.get("temp") or "").strip()
     who = f"{ch.name}'s {k['name']}"
     if temp:
-        if not temp.isdigit():
-            raise HTTPException(409, "Temporary Hit Points are a number.")
         ddb_bridge.add(db, ch, "creature_hp", {"creature": k["id"], "name": who, "amount": 0, "temp": int(temp)}, f"{who}: {temp} Temporary Hit Points")
         said = f"{who}: {temp} Temporary Hit Points"
     else:
         sign = -1 if form.get("to") == "damage" else 1
-        if not amount.isdigit() or not 0 < int(amount) <= 999:
-            raise HTTPException(409, "How many Hit Points?")
         n = int(amount)
         ddb_bridge.add(db, ch, "creature_hp", {"creature": k["id"], "name": who, "amount": sign * n, "max": k["hp"]["max"]},
                        f"{who} {'took' if sign < 0 else 'regained'} {n}")
