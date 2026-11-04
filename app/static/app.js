@@ -422,7 +422,7 @@
 
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
-    if (!t || e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details')) return;  // (a pop-up in a row: the row stays put)
+    if (!t || e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details, a[data-no-peek]')) return;  // (a pop-up in a row: the row stays put; a link of its own goes where it says)
     e.preventDefault();
     if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));

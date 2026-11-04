@@ -104,3 +104,13 @@ def test_a_creatures_roll_says_whose_it_is(player, db, labs):
         assert r.status_code == 200
     rows = list(db.scalars(select(TableRoll).where(TableRoll.character_id == labs.id).order_by(TableRoll.id)))
     assert [r.who for r in rows[-2:]] == ["Homunculus Servant", ""]
+
+
+def test_party_shows_it_under_its_master(player, db, labs):
+    """Brett, Nov 3: on Party, under its master's card, its Hit Points and AC, opening its master's Battle as it."""
+    page = player.get("/party").text
+    assert 'class="pt-line pt-creature"' in page and f'href="/characters/{labs.id}/battle?creature={ZAP}" data-no-peek' in page
+    assert "<b>1</b><span class=\"note\"> / 1 HP" in page  # (Cole has no Artificer levels: D&D Beyond's 1)
+    db.get(Campaign, labs.campaign_id).vtt_pieces = ["sync"]
+    db.flush()
+    assert "pt-creature" not in player.get("/party").text

@@ -121,7 +121,7 @@ def _page(request: Request, name: str, ctx: dict):
 def party_rows(db: Session, user: dict | None) -> list[dict]:
     """The campaign's characters as Party shows them (also the middle of askdnd's table, app/table_page.py): each one's
     sheet as shown, with what it's under."""
-    overrides, rows, beasts = _overrides(db), [], None
+    overrides, rows, beasts, with_creatures = _overrides(db), [], None, {}
     for r in _party_rows(db, user):
         sheet, now = views.apply_overrides(r["sheet"], overrides), listed(db, r["c"], r["sheet"])
         if sheet:
@@ -134,7 +134,11 @@ def party_rows(db: Session, user: dict | None) -> list[dict]:
                 f = ws.shaped(sheet, beast, keep=ws.chosen_keep(sheet, r["c"].wild_shape_keep))
                 speed = cond.speed_now(f["speed_dict"], now)
                 form = {"name": beast["name"], "ac": f["ac"], "speed": speed.get("walk") or 0, "image": beast.get("image") or ""}
-        rows.append({**r, "sheet": sheet, "form": form, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
+        cid = r["c"].campaign_id  # Your creatures (Labs): a line under its master's card, its Hit Points and AC
+        if cid not in with_creatures:
+            with_creatures[cid] = vtt.on(db.get(Campaign, cid) if cid else None, "creatures")
+        mine = [creatures.card(sheet, x) for x in creatures.yours(sheet)] if sheet and with_creatures[cid] else []
+        rows.append({**r, "sheet": sheet, "form": form, "creatures": mine, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
     return rows
 
 
