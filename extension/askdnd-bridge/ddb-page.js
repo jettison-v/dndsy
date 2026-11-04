@@ -33,10 +33,12 @@
     // (0.10.0: one of the character's creatures' Hit Points, and its maximum: a character value of type 43 only, below)
     'PUT /character/v5/creature/hp', 'PUT /character/v5/custom/value', 'DELETE /character/v5/custom/value',
     // (0.11.0: a familiar kept in step: switched on or off on its Extras, what it is (type 44, below), its name)
-    'PUT /character/v5/creature/status', 'PUT /character/v5/creature']);
-  // The only character values askdnd may set: a creature's maximum and what it is (D&D Beyond's CREATURE_HIT_POINTS and
-  // CREATURE_TYPE_OVERRIDE)
-  const CREATURE_VALUES = new Set([43, 44]);
+    'PUT /character/v5/creature/status', 'PUT /character/v5/creature',
+    // (also 0.11.0, for what's next on the roadmap: adding and removing a creature, learning and unlearning a spell)
+    'POST /character/v5/creature', 'DELETE /character/v5/creature', 'POST /character/v5/spell', 'DELETE /character/v5/spell']);
+  // The only character values askdnd may set: a creature's Armor Class, maximum and what it is (D&D Beyond's CREATURE_AC,
+  // CREATURE_HIT_POINTS and CREATURE_TYPE_OVERRIDE)
+  const CREATURE_VALUES = new Set([42, 43, 44]);
   const sheetId = () => (location.pathname.match(/\/characters\/(\d+)/) || [])[1];
   const onSheet = !!sheetId();  // (elsewhere it only makes batches: nothing of the page is heard or changed)
   const post = m => window.postMessage({ askdndBridge: 'from-page', characterId: sheetId(), ...m }, location.origin);
