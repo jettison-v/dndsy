@@ -14,8 +14,8 @@ import time
 from playwright.sync_api import Page, sync_playwright
 
 BETA = "https://beta.askdnd.ai/c/vtt-test"
-SEATS = {"dm": 9231, "player2": 9232, "player3": 9233}
-SHEETS = {"player2": 172986165, "player3": 172992073}  # Cathartic and the new Vi, never the first Vi or Spurt
+SEATS = {"dm": 9231, "player2": 9232, "player3": 9233, "player4": 9234}
+SHEETS = {"player2": 172986165, "player3": 172992073, "player4": 173148163}  # Cathartic, the new Vi and Levi; never the first Vi or Spurt
 
 # How long a change may take to show in D&D Beyond's own record. Usually a few seconds; now and then much longer (Nov 2:
 # up to a minute, while D&D Beyond served an older copy for a moment), and a pass past 10 seconds is said as slow.
@@ -797,6 +797,165 @@ def add_item(t: Table, seat: str = "player2") -> None:
                                                                          for k, w in {"cp": "copper", "sp": "silver", "ep": "electrum", "gp": "gold", "pp": "platinum"}.items()]]), flush=True)
 
 
+def wild_shape(t: Table, seat: str = "player4") -> None:
+    """Wild Shape (Levi, Druid 6): Shift into a form on Battle spends a Wild Shape use and gives the form's Temporary Hit
+    Points on D&D Beyond, and Battle shows the form; Undo puts back the use, the Temporary Hit Points and the form."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    before = record(sheet)
+    form = page.locator('.ws-chip[data-use-url*="wild-shape?form="]:visible').first
+    name = form.inner_text().strip()
+    print("  form:", name, flush=True)
+    go(page, form)
+    page.locator('[data-use-go][data-to="shift"]').first.click(timeout=8000)
+    changed(t, sheet, before, "the use and the Temporary Hit Points land on D&D Beyond")
+    t.expect("both of them", lambda: len(changes(before, record(sheet))) >= 2, SLOW)
+    t.expect(f"Battle is drawn as the {name}", lambda: page.locator(".ws-form").count() > 0, 15)
+    if not undo(page):
+        page.goto(page.url, wait_until="domcontentloaded")
+        go(page, page.locator('.ws-chip[data-use-url$="/wild-shape"]:visible').first)  # (Normal: Leave)
+        page.locator('[data-use-go][data-to="leave"]').first.click(timeout=8000)
+        print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], [
+            ["PUT", "life/hp/damage-taken", {"removedHitPoints": before.get("removedHitPoints") or 0, "temporaryHitPoints": before.get("temporaryHitPoints") or 0}]]]), flush=True)
+        go(page, page.locator('.ws-label .pips-go:visible').first)
+        page.locator('[data-use-go][data-to="back"]').first.click(timeout=15000)
+    undone(t, sheet, before, "Undo puts the use and the Temporary Hit Points back on D&D Beyond")
+    page.goto(page.url, wait_until="domcontentloaded")
+    t.expect("and Battle is the druid again", lambda: page.locator(".ws-form").count() == 0, 15)
+
+
+def pact_used(d: dict) -> int:
+    return sum(x.get("used") or 0 for x in d.get("pactMagic") or [])
+
+
+def slots_used(d: dict) -> int:
+    return sum(x.get("used") or 0 for x in d.get("spellSlots") or [])
+
+
+def ws_used(d: dict) -> int:
+    """Wild Shape's uses spent, on D&D Beyond's sheet."""
+    return sum((a.get("limitedUse") or {}).get("numberUsed") or 0 for a in (d.get("actions") or {}).get("class") or [] if a.get("name") == "Wild Shape")
+
+
+def cast_as(page: Page, spell: str, kind: str) -> None:
+    """The Spell Book, then `spell` cast with a slot of this kind ("pact" or "slot"), the lowest one."""
+    page.locator(".spellbook-btn").first.click(timeout=8000)
+    go(page, page.locator(f'.ls-row[data-ref="spell:{spell}"] [data-use-url*="/cast?"]').first)
+    ways = page.locator('select[name="way"] option')
+    values = [ways.nth(i).get_attribute("value") for i in range(ways.count())]
+    print(f"  {spell} can be cast:", page.locator('select[name="way"] option').all_inner_texts(), flush=True)
+    page.locator('select[name="way"]').first.select_option(next(v for v in values if v.startswith(kind + ":")))
+    page.locator("[data-use-go]").first.click(timeout=8000)
+
+
+def give_back(page: Page, field: str) -> None:
+    """A slot or a use given back from its count window (Use one and Give one back): "pact", "slot", or "ws" for Wild
+    Shape's pips."""
+    page.goto(page.url, wait_until="domcontentloaded")
+    go(page, page.locator(".ws-label .pips-go:visible" if field == "ws" else f'[data-use-url*="field={field}"]:visible').first)
+    page.locator('[data-use-go][data-to="back"]').first.click(timeout=15000)
+    page.wait_for_timeout(1500)
+
+
+def pact_cast(t: Table, seat: str = "player4") -> None:
+    """Pact Magic (Levi, Warlock 2): Hex cast with a Pact slot spends the Pact slot on D&D Beyond, not a Druid slot; Undo
+    gives it back."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    before = record(sheet)
+    cast_as(page, "Hex", "pact")
+    t.expect("a Pact slot is spent on D&D Beyond", lambda: pact_used(record(sheet)) == pact_used(before) + 1, SLOW)
+    t.expect("and no Druid slot", lambda: slots_used(record(sheet)) == slots_used(before), 5)
+    if not undo(page):
+        give_back(page, "pact")
+    undone(t, sheet, before, "Undo gives the Pact slot back on D&D Beyond")
+
+
+def cross_cast(t: Table, seat: str = "player4") -> None:
+    """Two kinds of spellcasting (2024 multiclassing): Levi's Druid spell Entangle cast with a Pact slot spends the Pact
+    slot, and the Warlock's Hex cast with a Druid slot spends the Druid slot; both put back."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    before = record(sheet)
+    cast_as(page, "Entangle", "pact")
+    t.expect("Entangle spends a Pact slot on D&D Beyond", lambda: pact_used(record(sheet)) == pact_used(before) + 1, SLOW)
+    t.expect("and no Druid slot", lambda: slots_used(record(sheet)) == slots_used(before), 5)
+    if not undo(page):
+        give_back(page, "pact")
+    undone(t, sheet, before, "and Undo gives it back", SLOW)
+    page.goto(page.url, wait_until="domcontentloaded")
+    cast_as(page, "Hex", "slot")
+    t.expect("Hex spends a Druid slot on D&D Beyond", lambda: slots_used(record(sheet)) == slots_used(before) + 1, SLOW)
+    t.expect("and no Pact slot", lambda: pact_used(record(sheet)) == pact_used(before), 5)
+    if not undo(page):
+        give_back(page, "slot")
+    undone(t, sheet, before, "and Undo gives it back", SLOW)
+
+
+def short_rest(t: Table, seat: str = "player4") -> None:
+    """A Short Rest for a Druid / Warlock: the Pact slot and one Wild Shape use come back on D&D Beyond, a Druid slot
+    doesn't (2024 rules). The Druid slot is then given back by hand."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    before = record(sheet)
+    cast_as(page, "Hex", "pact")
+    t.expect("a Pact slot spent", lambda: pact_used(record(sheet)) == pact_used(before) + 1, SLOW)
+    page.wait_for_timeout(1500)
+    page.goto(page.url, wait_until="domcontentloaded")
+    cast_as(page, "Entangle", "slot")
+    t.expect("a Druid slot spent", lambda: slots_used(record(sheet)) == slots_used(before) + 1, SLOW)
+    page.wait_for_timeout(1500)
+    page.goto(page.url, wait_until="domcontentloaded")
+    go(page, page.locator(".ws-label .pips-go:visible").first)
+    page.locator('[data-use-go][data-to="use"]').first.click(timeout=8000)
+    t.expect("a Wild Shape use spent", lambda: ws_used(record(sheet)) == ws_used(before) + 1, SLOW)
+    page.wait_for_timeout(1500)
+    page.goto(page.url, wait_until="domcontentloaded")
+    rest_window(page, "short")
+    page.locator("[data-use-go]").first.click(timeout=8000)
+    t.expect("the Short Rest gives the Pact slot back on D&D Beyond", lambda: pact_used(record(sheet)) == pact_used(before), SLOW)
+    t.expect("and the Wild Shape use", lambda: ws_used(record(sheet)) == ws_used(before), 15)
+    t.expect("but not the Druid slot", lambda: slots_used(record(sheet)) == slots_used(before) + 1, 5)
+    page.wait_for_timeout(2500)
+    page.keyboard.press("Escape")
+    give_back(page, "slot")
+    undone(t, sheet, before, "the Druid slot given back: the sheet as it was", SLOW)
+
+
+def in_form(t: Table, seat: str = "player4") -> None:
+    """In a form (Levi, Druid 6, no Beast Spells): Cast says the form can't cast spells, and Leave ends the form and keeps
+    the leftover Temporary Hit Points on D&D Beyond. Then the use and the Temporary Hit Points are put back."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    before = record(sheet)
+    go(page, page.locator('.ws-chip[data-use-url*="wild-shape?form="]:visible').first)
+    page.locator('[data-use-go][data-to="shift"]').first.click(timeout=8000)
+    t.expect("the form's Temporary Hit Points on D&D Beyond", lambda: (record(sheet).get("temporaryHitPoints") or 0) > (before.get("temporaryHitPoints") or 0), SLOW)
+    page.wait_for_timeout(2500)
+    page.goto(page.url, wait_until="domcontentloaded")
+    temp = record(sheet).get("temporaryHitPoints")
+    page.locator(".spellbook-btn").first.click(timeout=8000)
+    go(page, page.locator('.ls-row[data-ref="spell:Entangle"] [data-use-url*="/cast?"]').first)
+    t.expect("Cast says the form can't cast spells", lambda: "can't cast spells" in page.locator(".roll-win .shift-warn").first.inner_text(), 10)
+    page.locator(".rp-x").first.click()
+    page.goto(page.url, wait_until="domcontentloaded")
+    go(page, page.locator('.ws-chip[data-use-url$="/wild-shape"]:visible').first)
+    page.locator('[data-use-go][data-to="leave"]').first.click(timeout=8000)
+    page.wait_for_timeout(2500)
+    page.goto(page.url, wait_until="domcontentloaded")
+    t.expect("Leave ends the form", lambda: page.locator(".ws-form").count() == 0, 15)
+    t.expect("and the Temporary Hit Points stay on D&D Beyond", lambda: record(sheet).get("temporaryHitPoints") == temp, 10)
+    print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], [
+        ["PUT", "life/hp/damage-taken", {"removedHitPoints": before.get("removedHitPoints") or 0, "temporaryHitPoints": before.get("temporaryHitPoints") or 0}]]]), flush=True)
+    give_back(page, "ws")
+    undone(t, sheet, before, "the use and the Temporary Hit Points put back", SLOW)
+
+
 def dm_backup(t: Table, seat: str = "player2") -> None:
     """DM Backup (extension 0.9.8): with a player's sheet closed, the DM's browser with a D&D Beyond page open makes
     askdnd's change on it; the pill says so, then Connected again once the sheet is back."""
@@ -818,7 +977,8 @@ def dm_backup(t: Table, seat: str = "player2") -> None:
 RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
         "cast": cast, "resource": resource, "coins": coins, "rests": rests, "temp-hp": temp_hp, "death-saves": death_saves,
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
-        "loot": loot, "add-item": add_item, "dm-backup": dm_backup}
+        "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
+        "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 

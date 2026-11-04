@@ -1,20 +1,20 @@
 # Testing with real accounts
 
-askdnd's real-environment test table (Brett, 2026-10-30): three seats, each its own person on D&D Beyond and in askdnd, in **VTT test** on [beta](https://beta.askdnd.ai/c/vtt-test/). The everyday automated tests never touch any of this: they run on your computer with made-up people and a fake D&D Beyond.
+askdnd's real-environment test table (Brett, 2026-10-30; a fourth seat, Levi, Nov 3): four seats, each its own person on D&D Beyond and in askdnd, in **VTT test** on [beta](https://beta.askdnd.ai/c/vtt-test/). The everyday automated tests never touch any of this: they run on your computer with made-up people and a fake D&D Beyond.
 
 Email addresses stay out of this file because the repo is treated as public. Each seat's Google login is the one named below.
 
 ## The seats
 
-| | DM | Player 2 | Player 3 |
-|---|---|---|---|
-| **Chrome profile on the Mac Mini** | Jettison | Cupta Family | Trent |
-| **Google and D&D Beyond login** | The Jettison Corp account | The Cupta Family account | The Trent Davis Lawson account |
-| **D&D Beyond username** | WeslockePlayer | CatharticPlayer | ViPlayer |
-| **D&D Beyond role** | Owner of the campaign | Player | Player |
-| **Character** | None at the table: Weslocke (172986973) is on the account but stays unlinked, as DMs at this table don't play one | Cathartic, called CatharticPlayer on D&D Beyond ([sheet](https://www.dndbeyond.com/characters/172986165)). Roscoe Norell ([sheet](https://www.dndbeyond.com/characters/173133567), Druid 6 Land / Warlock 2) is on the same account, for two-class and Wild Shape testing | Vi ([sheet](https://www.dndbeyond.com/characters/172992073)) |
-| **Role in VTT test** | DM | Player | Player |
-| **Role across askdnd** | Member | Member | Member |
+| | DM | Player 2 | Player 3 | Player 4 |
+|---|---|---|---|---|
+| **Chrome profile on the Mac Mini** | Jettison | Cupta Family | Trent | None: made in its own seat window (below) |
+| **Google and D&D Beyond login** | The Jettison Corp account | The Cupta Family account | The Trent Davis Lawson account | Levi's account (Brett, Nov 3) |
+| **D&D Beyond username** | WeslockePlayer | CatharticPlayer | ViPlayer | Levi's |
+| **D&D Beyond role** | Owner of the campaign | Player | Player | Player |
+| **Character** | None at the table: Weslocke (172986973) is on the account but stays unlinked, as DMs at this table don't play one | Cathartic, called CatharticPlayer on D&D Beyond ([sheet](https://www.dndbeyond.com/characters/172986165)). Roscoe Norell ([sheet](https://www.dndbeyond.com/characters/173133567), Druid 6 Land / Warlock 2) is on the same account; Levi has taken over his testing | Vi ([sheet](https://www.dndbeyond.com/characters/172992073)) | Levi Shadowquick, Druid 6 (Circle of the Land) / Warlock 2 ([sheet](https://www.dndbeyond.com/characters/173148163)), for Wild Shape |
+| **Role in VTT test** | DM | Player | Player | Player |
+| **Role across askdnd** | Member | Member | Member | Member |
 
 The D&D Beyond campaign is [VTT test](https://www.dndbeyond.com/campaigns/8224496).
 
@@ -48,11 +48,11 @@ Reload every askdnd and VTT tab after a deploy.
 
 Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the browser tests. It runs on the Mac Mini, which is always on and signed in, so nobody has to watch and the MacBook can stay closed.
 
-- **The seats.** `scripts/real_table_seats.sh` copies the three profiles above into `~/askdnd-tests/seats` on the Mini and opens them in real Chrome windows. Chrome refuses to let a script drive its normal profile folder, and sign-ins can't move between computers, so the copies stay on the Mini. Copy again after signing in afresh. The seats update the bridge from the store themselves: reopen them to run the new version. Claude never enters a password.
+- **The seats.** `scripts/real_table_seats.sh` copies the three profiles above into `~/askdnd-tests/seats` on the Mini and opens them, with Levi's, in real Chrome windows. Chrome refuses to let a script drive its normal profile folder, and sign-ins can't move between computers, so the copies stay on the Mini. Copy again after signing in afresh. Levi's seat (`seats/player4`) has no profile to copy: it was made in a seat window on Nov 3, so its sign-ins are made in its own window and copy leaves it alone. Every seat signs in to askdnd at **beta.askdnd.ai**, the address the runs use (a sign-in at askdnd.ai is a separate one). The seats update the bridge from the store themselves: reopen them to run the new version. Claude never enters a password.
 - **The runs.** `scripts/real_table.py` holds named runs: each does what a person would, watches the pages, and says what it expected and what happened. Run one on the Mini with `.venv/bin/python real_table.py <run>`.
 - **The plan.** [live-test-plan.md](live-test-plan.md) is what to run and when, with the checks that still need a person.
 - **Stays apart.** Never on GitHub, since it needs the signed-in seats and D&D Beyond itself. It tests what's on beta, not unmerged changes.
-- **Don't overlap.** While a run is going, stay off Cathartic and Vi: it opens and closes their sheets.
+- **Don't overlap.** While a run is going, stay off Cathartic, Vi and Levi: it opens and closes their sheets.
 
 | Run | What it shows |
 |---|---|
@@ -63,6 +63,8 @@ Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the b
 | `condition` | A condition started and ended in askdnd lands on and leaves the real sheet |
 | `cast`, `resource`, `coins`, `rests` | Slots, uses, coins and rests made in askdnd land on the real sheet and are put back |
 | `temp-hp`, `death-saves`, `inspiration`, `exhaustion`, `inventory` | Temporary Hit Points, death saves, Heroic Inspiration, Exhaustion and items made in askdnd land on the real sheet and are put back |
+| `wild-shape` | Levi shifts into a form: a Wild Shape use and the form's Temporary Hit Points land on the real sheet, Battle is the form's, and Undo puts all three back |
+| `pact-cast`, `cross-cast`, `short-rest`, `in-form` | Levi's two kinds of spellcasting: Hex on a Pact slot, Entangle on a Pact slot and Hex on a Druid slot (each spends only its own kind), a Short Rest bringing back the Pact slot and one Wild Shape use but not a Druid slot, and a form's Cast saying it can't cast, Leave keeping the Temporary Hit Points |
 
 The full list, and what each must do, is in [live-test-plan.md](live-test-plan.md). Part 1 also runs every night at 4:00 (live-test-plan.md › Every night).
 
