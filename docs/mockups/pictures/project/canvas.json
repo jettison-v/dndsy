@@ -1,0 +1,51 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-04T19:10:00Z"
+  },
+  "title": "Pictures in askdnd",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 980,
+      "title": "1 · One Picture window, wherever a picture goes"
+    },
+    "Picker.dc.html": {
+      "x": 1440,
+      "y": 0,
+      "w": 1360,
+      "h": 980,
+      "title": "2 · The Picture window: upload, describe it, D&D Beyond",
+      "is_interactive": true
+    },
+    "Style.dc.html": {
+      "x": 0,
+      "y": 1100,
+      "w": 1360,
+      "h": 980,
+      "title": "3 · The campaign's art style"
+    },
+    "Storage.dc.html": {
+      "x": 1440,
+      "y": 1100,
+      "w": 1360,
+      "h": 980,
+      "title": "4 · Where pictures are kept, who adds them, what it costs"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Picker.dc.html",
+    "Style.dc.html",
+    "Storage.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

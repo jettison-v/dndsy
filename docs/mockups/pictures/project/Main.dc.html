@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>One Picture window</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">1 · Pictures · where they go</div>
+    <h1>One Picture window, wherever a picture goes</h1>
+    <p class="where"><b>Brett, Nov 4:</b> describe a picture and have it drawn, in one style per campaign, as well as uploading one; and one way of adding pictures and one place to keep them, so askdnd stays simpler. <b>Today</b> there are two ways in: a World entry's <b>Add a picture</b> (the DM's, a file button) and the feedback window's pasted screenshot. Both already keep files the same way (resized, in askdnd's file storage). <b>Proposed:</b> every picture slot opens the same window (board 2), and every picture is kept as one kind of thing (board 4).</p>
+  </div>
+  <div class="grid2" style="gap: 24px">
+    <div class="card" style="gap: 14px">
+      <h3>Where a picture goes</h3>
+      <div class="row start" style="gap: 14px; align-items: center"><span class="art a1" style="width: 56px; height: 56px">P</span><span style="display: grid"><b style="color: var(--strong)">A familiar or companion</b><span class="note">Pip: its half of Trah's Party card, its Battle band, the fight band, Table rolls</span></span></div>
+      <div class="row start" style="gap: 14px; align-items: center"><span class="art a2 sq" style="width: 56px; height: 56px">M</span><span style="display: grid"><b style="color: var(--strong)">A World entry</b><span class="note">A person, place or faction (today's Add a picture), a map, a banner</span></span></div>
+      <div class="row start" style="gap: 14px; align-items: center"><span class="slot">+ Picture</span><span style="display: grid"><b style="color: var(--strong)">Any of them with none yet</b><span class="note">The same empty slot everywhere; pressing it opens the Picture window</span></span></div>
+      <p class="rule">A player character keeps its D&amp;D Beyond portrait, as now. A companion's picture is its World entry's picture (round 2's slice 9), so there's one picture, wherever it shows.</p>
+    </div>
+    <div class="card" style="gap: 12px">
+      <h3>Three ways to give it one, in one window</h3>
+      <div class="ln" style="justify-content: flex-start; gap: 12px"><span class="stylechip">Upload</span><span class="note">Drop, paste or choose a picture; on a phone, the camera roll</span></div>
+      <div class="ln" style="justify-content: flex-start; gap: 12px"><span class="stylechip">Describe it</span><span class="note">A few words, drawn in the campaign's art style (board 3); pick one of four</span></div>
+      <div class="ln" style="justify-content: flex-start; gap: 12px"><span class="stylechip">From D&amp;D Beyond</span><span class="note">Its stat block's art, shown from D&amp;D Beyond (a link, never copied)</span></div>
+      <p class="rule">Then the same last step for all three: a square crop for the round picture, and <b>Use this picture</b>. Changing or removing it is the same window.</p>
+    </div>
+  </div>
+  <div class="card" style="gap: 10px">
+    <h3>What stays the same everywhere</h3>
+    <div class="grid3" style="grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+      <div><b style="color: var(--strong)">One window</b><p class="note">The same buttons, words and steps for a familiar, an NPC or a map.</p></div>
+      <div><b style="color: var(--strong)">One kind of thing kept</b><p class="note">A picture: its file, its square version, where it came from (uploaded, drawn from a description, D&amp;D Beyond).</p></div>
+      <div><b style="color: var(--strong)">One place</b><p class="note">askdnd's file storage, as today: on beta, S3 under v2/files/, by campaign.</p></div>
+      <div><b style="color: var(--strong)">One rule for who</b><p class="note">Whoever can change the thing can change its picture: the DM for the World, a player for their own familiar.</p></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
