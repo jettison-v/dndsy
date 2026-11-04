@@ -542,9 +542,37 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     db.flush()
     death = death_mark(db, row)
     realtime.announce(db, campaign.id, "rolls", **_live(db, row))  # every page at the table (app/realtime.py)
+    also = _initiative(db, campaign, ch, me.id, row) if ch and kind == "check" and label == "Initiative" else []
     db.commit()
     db.refresh(row)
-    return _reply(request, db, row, me.id, is_dm(user), death=death)
+    out = reply_body(request, db, row, me.id, is_dm(user), death=death)
+    if also:
+        out["also"] = [reply_body(request, db, x, me.id, is_dm(user)) | {"who": x.who} for x in also]
+    return JSONResponse(out)
+
+
+def _initiative(db: Session, campaign, ch: Character, me_id: int, row: TableRoll) -> list[TableRoll]:
+    """An Initiative roll, with Initiative from askdnd on (app/initiative.py): before Start Combat its number goes to
+    the token in D&D Beyond's VTT, and a character's own also rolls for each of its familiars that are here (Brett,
+    Nov 4: one press; each its own roll, as the rules have a familiar roll its own). Those rolls, made here."""
+    from app import initiative
+
+    creature = row.who if row.who and row.who != (ch.wild_shape or "") else ""
+    initiative.rolled(db, campaign, ch, creature, row.total)
+    if creature:
+        return []
+    made = []
+    for name, mod in initiative.familiars(db, campaign, ch):
+        r = roll_d20(mod, "normal")
+        x = TableRoll(campaign_id=campaign.id, character_id=ch.id, user_id=me_id, label="Initiative", kind="check", mode="normal",
+                      visibility=row.visibility, damage="", spec=None, extras=[], who=name[:80], parts=[],
+                      **{k: r[k] for k in ("dice", "kept", "modifier", "total", "formula")})
+        db.add(x)
+        db.flush()
+        realtime.announce(db, campaign.id, "rolls", **_live(db, x))
+        initiative.rolled(db, campaign, ch, name, x.total)
+        made.append(x)
+    return made
 
 
 def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, extras, die_size):

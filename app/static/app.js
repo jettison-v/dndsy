@@ -422,7 +422,7 @@
 
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
-    if (!t || e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details, a[data-no-peek]')) return;  // (a pop-up in a row: the row stays put; a link of its own goes where it says)
+    if (!t || e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details, a[data-no-peek], .ft-init button, .ft-init input')) return;  // (a pop-up in a row: the row stays put; a link of its own goes where it says)
     e.preventDefault();
     if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
@@ -2163,6 +2163,8 @@
         addToLog(j.html, j.roll.id);
         showResult(w, j.roll, go.follow);
         deathMarked(j.death);
+        // A familiar's Initiative, rolled with its character's (app/initiative.py): its row too, and a word on it
+        (j.also || []).forEach(a => { addToLog(a.html, a.roll.id); toast(a.who + "'s Initiative: " + a.roll.total, null, 'info'); });
         // Into D&D Beyond's Game Log too, as askdnd's (app/gamelog.py): the extension sends it from this player's sheet
         if (j.gamelog) window.postMessage({ askdndBridge: 'gamelog', ddbId: j.gamelog.ddbId, messages: j.gamelog.messages }, location.origin);
       })
@@ -3812,4 +3814,107 @@
     if (up && up.getAttribute('aria-selected') !== 'true') up.click();
     take(w.querySelector('[data-pw-drop]'), f);
   });
+  // ---------------------------------------------------------------- the DM changes the fight's order
+  // Initiative from askdnd (app/initiative.py; Brett, Nov 4, docs/mockups/initiative/ board 5): on the DM's rows a row is
+  // dragged by its handle (a dashed line says the number it will get before you let go), or moved by ↑ ↓, or given a
+  // number by pressing it. The server works out the number, shows it at once and sends it to D&D Beyond's VTT through
+  // the DM's open VTT page; the corner card has Undo. Every page at the table swaps in the new order (realtime "game").
+  const toast = (...a) => window.askdndToast && window.askdndToast(...a);
+  const order = {
+    heads: tb => [...tb.querySelectorAll('tr[data-ft-key]')],
+    n: v => (v === '' || v === undefined ? null : Number(v)),
+    low(tr) {  // a fighter's lowest number, with the creatures that act right after it
+      let low = order.n(tr.dataset.ftIni);
+      for (let x = tr.nextElementSibling; x && x.hasAttribute('data-ft-follows'); x = x.nextElementSibling) {
+        const v = order.n(x.dataset.ftIni);
+        if (v !== null && (low === null || v < low)) low = v;
+      }
+      return low;
+    },
+    // The number at `slot` (as app/initiative.py plan works it out, to show before you let go)
+    plan(heads, from, slot) {
+      if (slot === from || slot === from + 1) return null;
+      const rest = heads.filter((_, i) => i !== from), k = slot > from ? slot - 1 : slot;
+      const hi = k > 0 ? order.low(rest[k - 1]) : null;
+      let lo = k < rest.length ? order.n(rest[k].dataset.ftIni) : null, below = null;
+      if (hi === null && lo === null) return null;
+      if (hi === null) return { ini: Math.floor(lo) + 1 };
+      if (lo === null) return { ini: Math.ceil(hi) - 1 };
+      if (hi === lo) { below = hi - 0.5; lo = below; }
+      const mid = (hi + lo) / 2;
+      return { ini: [Math.floor(mid), Math.ceil(mid), Math.round(mid * 2) / 2, mid].find(n => n > lo && n < hi), below };
+    },
+    send(data) {
+      fetch('/fight/initiative', { method: 'POST', body: new URLSearchParams(data), headers: { 'X-Requested-With': 'fetch' } })
+        .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.error || "askdnd couldn't change the order"); return j; }))
+        .then(j => {
+          if (!j.text) return;
+          window.postMessage({ askdndBridge: 'vtt-now' }, location.origin);  // (the DM's VTT, if open in this browser, asks at once)
+          toast(j.text, j.back && j.back.length ? { label: 'Undo', run: () => order.send({ back: JSON.stringify(j.back) }) } : null, 'ok');
+        })
+        .catch(err => toast(err.message, null, 'error'));
+    },
+    drop: null,
+    clear() { document.querySelectorAll('tr.ft-drop').forEach(x => x.remove()); document.querySelectorAll('tr.ft-lifted').forEach(x => x.classList.remove('ft-lifted')); },
+  };
+  let dragged = null;
+  document.addEventListener('dragstart', e => {
+    const tr = e.target.closest && e.target.closest('tr[data-ft-key]');
+    if (!tr) return;
+    dragged = tr;
+    tr.classList.add('ft-lifted');
+    try { e.dataTransfer.setData('text/plain', tr.dataset.ftKey); e.dataTransfer.effectAllowed = 'move'; } catch (err) { /* (some browsers) */ }
+  });
+  document.addEventListener('dragover', e => {
+    if (!dragged) return;
+    const tb = dragged.closest('tbody'), over = e.target.closest && e.target.closest('tr');
+    if (!over || over.closest('tbody') !== tb) return;
+    e.preventDefault();
+    if (over.classList.contains('ft-drop')) return;
+    const heads = order.heads(tb), from = heads.indexOf(dragged);
+    let head = over;  // (a creature's row counts as its master's)
+    while (head && !head.hasAttribute('data-ft-key')) head = head.previousElementSibling;
+    if (!head) return;
+    const r = over.getBoundingClientRect(), i = heads.indexOf(head);
+    const slot = over === head && e.clientY < r.top + r.height / 2 ? i : i + 1;
+    if (order.drop && order.drop.slot === slot) return;
+    order.clear(); dragged.classList.add('ft-lifted');
+    const p = order.plan(heads, from, slot);
+    order.drop = { slot, p };
+    if (!p) return;
+    const line = document.createElement('tr'), td = document.createElement('td');
+    line.className = 'ft-drop';
+    td.colSpan = 5;
+    td.textContent = dragged.dataset.ftName + ' here → ' + p.ini + (p.below !== null && p.below !== undefined ? ' · the one below → ' + p.below : '');
+    line.append(td);
+    let at = slot < heads.length ? heads[slot] : null;
+    if (at) tb.insertBefore(line, at);
+    else { let end = heads[heads.length - 1]; while (end.nextElementSibling && end.nextElementSibling.hasAttribute('data-ft-follows')) end = end.nextElementSibling; end.after(line); }
+  });
+  document.addEventListener('drop', e => {
+    if (!dragged) return;
+    e.preventDefault();
+    const d = order.drop, key = dragged.dataset.ftKey;
+    order.clear(); dragged = null; order.drop = null;
+    if (d && d.p) order.send({ key, slot: d.slot });
+  });
+  document.addEventListener('dragend', () => { if (dragged) { order.clear(); dragged = null; order.drop = null; } });
+  document.addEventListener('click', e => {
+    const mv = e.target.closest('[data-ft-move]'), ty = e.target.closest('[data-ft-type]');
+    if (mv) {
+      const tr = mv.closest('tr[data-ft-key]'), heads = order.heads(tr.closest('tbody')), i = heads.indexOf(tr);
+      const slot = mv.dataset.ftMove === 'up' ? i - 1 : i + 2;
+      if (slot >= 0 && slot <= heads.length) order.send({ key: tr.dataset.ftKey, slot });
+    } else if (ty) {  // its number, typed (as in the VTT's sidebar)
+      const tr = ty.closest('tr[data-ft-key]'), input = document.createElement('input');
+      Object.assign(input, { type: 'number', step: '0.5', value: tr.dataset.ftIni, className: 'ft-type' });
+      input.setAttribute('aria-label', tr.dataset.ftName + "'s initiative");
+      ty.replaceWith(input);
+      input.focus(); input.select();
+      const done = go => { if (!input.isConnected) return; input.replaceWith(ty); if (go && input.value !== '' && input.value !== tr.dataset.ftIni) order.send({ key: tr.dataset.ftKey, to: input.value }); };
+      input.addEventListener('keydown', k => { if (k.key === 'Enter') { k.preventDefault(); done(true); } if (k.key === 'Escape') done(false); });
+      input.addEventListener('blur', () => done(false));
+    }
+  });
+
 })();

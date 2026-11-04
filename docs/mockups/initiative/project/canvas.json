@@ -1,0 +1,60 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-04T21:30:00Z"
+  },
+  "title": "Initiative in askdnd",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 980,
+      "title": "1 · Your table's way, with askdnd"
+    },
+    "Before.dc.html": {
+      "x": 1440,
+      "y": 0,
+      "w": 1360,
+      "h": 980,
+      "title": "2 · Before Start Combat: everyone rolls their own",
+      "is_interactive": true
+    },
+    "GameLog.dc.html": {
+      "x": 0,
+      "y": 1100,
+      "w": 1360,
+      "h": 980,
+      "title": "3 · The Game Log: ⓐ after the name, every roll"
+    },
+    "After.dc.html": {
+      "x": 1440,
+      "y": 1100,
+      "w": 1360,
+      "h": 980,
+      "title": "4 · After Start Combat: the order is the DM's"
+    },
+    "Reorder.dc.html": {
+      "x": 0,
+      "y": 2200,
+      "w": 1360,
+      "h": 980,
+      "title": "5 · The DM drags to change the order",
+      "is_interactive": true
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Before.dc.html",
+    "GameLog.dc.html",
+    "After.dc.html",
+    "Reorder.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}

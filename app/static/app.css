@@ -249,6 +249,23 @@ body.pt-rows .pt-with-track { display: none; }
 .pt-track .ft-who .roll-av.enemy { box-shadow: 0 0 0 2px var(--red); }
 .pt-track .ft-who b { color: var(--text-strong); }
 .pt-track .ft-conds .ft-rem { display: block; font-size: var(--fs-xs); color: var(--muted); }
+/* The DM changes the order (Initiative from askdnd, app/initiative.py; docs/mockups/initiative/ board 5): a handle, the
+   number to press and type, ↑ ↓; a number on its way to D&D Beyond's VTT underlined amber; the dashed line where a
+   dragged row lands, with the number it gets */
+.ft-wait { margin: 0; padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line); color: var(--muted); font-size: var(--fs-sm); }
+.ft-wait b { color: var(--text-strong); }
+.pt-track.ft-order .ft-init { display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; }
+.pt-track .ft-grip { color: var(--faint); cursor: grab; display: inline-grid; place-items: center; }
+.pt-track .ft-num { background: none; border: 1px solid transparent; border-radius: var(--r-sm); padding: 2px 6px; color: var(--text-strong); font: inherit; font-weight: 700; cursor: pointer; min-width: 2.4em; }
+.pt-track .ft-num:hover { border-color: var(--line-strong); }
+.pt-track .ft-pending { text-decoration: underline dashed var(--amber); text-underline-offset: 4px; }
+.pt-track .ft-ud { display: inline-flex; gap: 2px; }
+.pt-track .ft-mv { width: 26px; height: 26px; display: inline-grid; place-items: center; padding: 0; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); color: var(--text); cursor: pointer; }
+.pt-track .ft-mv:hover { border-color: var(--line-strong); }
+.pt-track .ft-type { width: 4.5em; font: inherit; font-weight: 700; padding: 2px 6px; }
+.pt-track tr[draggable="true"] { cursor: grab; }
+.pt-track tr.ft-lifted { opacity: .45; }
+.pt-track tr.ft-drop td { padding: var(--sp-1) var(--sp-3); border: 2px dashed var(--green); color: var(--green); font-size: var(--fs-xs); font-weight: 600; }
 .table-page .tb-middle { display: grid; gap: var(--sp-3); }
 .live-row.here .live-name { font-weight: 600; }
 .live-say { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--line); border-radius: var(--r-md); padding: 8px 10px; }

@@ -140,10 +140,17 @@ def _markdown(text: str) -> str:
     return markdown_to_html(text or "", lambda name: None)
 
 
+def _ini_shown(n) -> str:
+    from app import initiative
+
+    return initiative.shown(n)
+
+
 templates.env.filters["md"] = _markdown
 templates.env.filters["res_groups"] = res_groups
 templates.env.filters["res_short"] = res_short
 templates.env.filters["creature_short"] = creature_short  # (Your creatures' switch by the name)
+templates.env.filters["ini"] = lambda n: _ini_shown(n)  # an initiative as the VTT keeps it: 14, 13.5 (app/initiative.py)
 
 
 def _entry_url(entity_id) -> str:

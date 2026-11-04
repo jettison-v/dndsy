@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Before Start Combat</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">2 · Before Start Combat · try it</div>
+    <h1>Everyone rolls their own, and the order fills in</h1>
+    <p class="where"><b>When:</b> the DM has pressed Add all tokens in the VTT and said "roll for initiative". <b>Here:</b> Trah's player on Trah's Battle. Press Trah's <b>Initiative</b>: one press rolls Trah's and, since Pip (Trah's familiar) is here, Pip's too: two rolls, as the rules have a familiar roll its own. Pip's own Initiative rerolls just Pip. Press again to roll again: before Start Combat, the newest roll is the number, as on D&amp;D Beyond.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 420px minmax(0, 1fr) 300px; gap: 20px; align-items: start">
+    <div style="display: grid; gap: 12px">
+      <div class="lbl">Trah's Battle</div>
+      <div class="row start" style="gap: 10px">
+        <span class="av lg">T</span>
+        <div style="display: grid"><b style="color: var(--strong); font-size: 20px">Trah</b><span class="note">Druid 5 · Battle</span></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <div class="tile">AC<b>14</b></div>
+        <button type="button" class="tile" onClick="{{ rollTrah }}" style="border-color: var(--teal)">Initiative<b>+2</b><span style="color: var(--teal); font-size: 12px">Roll · and Pip's</span></button>
+        <div class="tile">Speed<b>30</b></div>
+      </div>
+      <div class="lbl" style="margin-top: 6px">Pip's Battle (the switch by Trah's name)</div>
+      <div class="row start" style="gap: 10px">
+        <span class="av pet lg">P</span>
+        <div style="display: grid"><b style="color: var(--strong); font-size: 17px">Pip</b><span class="note">Owl · Trah's familiar · its own Initiative</span></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+        <div class="tile">AC<b>11</b></div>
+        <button type="button" class="tile" onClick="{{ rollPip }}" style="border-color: var(--teal)">Initiative<b>+3</b><span style="color: var(--teal); font-size: 12px">Roll just Pip</span></button>
+        <div class="tile">Fly<b>60</b></div>
+      </div>
+      <div class="lbl" style="margin-top: 6px">Table rolls</div>
+      <div class="rolls">
+        <sc-if value="{{ noRolls }}" hint-placeholder-val="{{ true }}"><span class="note">No rolls yet. Press Initiative.</span></sc-if>
+        <sc-for list="{{ rolls }}" as="r" hint-placeholder-count="2">
+          <div class="rollrow"><span class="{{ r.av }}">{{ r.initial }}</span><span><b>{{ r.who }}</b> · Initiative<br><span class="note">{{ r.how }}</span></span><span class="big">{{ r.total }}</span></div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: grid; gap: 10px">
+      <div class="row"><div class="lbl">Party · Rows · waiting for Start Combat</div><span class="tag us">askdnd</span></div>
+      <div class="olist">
+        <sc-for list="{{ order }}" as="o" hint-placeholder-count="8">
+          <div class="{{ o.cls }}">
+            <span class="{{ o.iniCls }}">{{ o.ini }}</span>
+            <span class="{{ o.av }}">{{ o.initial }}</span>
+            <span class="nm"><b>{{ o.name }}</b><span>{{ o.line }}</span></span>
+            <span class="note">{{ o.right }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p class="rule">Everyone sees the same list: who has rolled and their number (the dice were thrown on every screen anyway). Enemies show once the DM rolls them, as now. Vi's Homunculus Servant takes its turn right after Vi's, so askdnd sets its token just below Vi's number (13.5) by itself.</p>
+    </div>
+    <div style="display: grid; gap: 10px">
+      <div class="row"><div class="lbl">The DM's VTT sidebar</div><span class="tag ddb">D&amp;D Beyond</span></div>
+      <div class="vtt">
+        <h4>Combat Encounter</h4>
+        <span class="note">8 in the encounter · Start Combat</span>
+        <sc-for list="{{ vtt }}" as="v" hint-placeholder-count="8">
+          <div class="{{ v.cls }}"><span class="vn">{{ v.ini }}</span><span class="{{ v.av }}">{{ v.initial }}</span><span><b>{{ v.name }}</b>Initiative Bonus: {{ v.bonus }}</span></div>
+        </sc-for>
+      </div>
+      <p class="rule">The same numbers, put there by the DM's open VTT when it hears the roll in the Game Log (board 3), exactly as a roll from Trah's sheet would be. Outlined: changed just now.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  state = { trah: null, pip: null, rolls: [], fresh: [], t: 0, p: 0 };
+  renderVals() {
+    const s = this.state;
+    const TR = [17, 8, 14], PI = [12, 19, 5];
+    const one = (who) => {
+      const k = who === 'trah' ? s.t : s.p, seq = who === 'trah' ? TR : PI, total = seq[k % seq.length];
+      const bonus = who === 'trah' ? 2 : 3;
+      return { who: who === 'trah' ? 'Trah' : 'Pip (Trah)', initial: who === 'trah' ? 'T' : 'P', av: who === 'trah' ? 'av' : 'av pet',
+        total, how: (total - bonus) + ' + ' + bonus + ' · to the table · in the order' };
+    };
+    const roll = (whom) => () => {
+      const made = whom.map(one), next = { fresh: whom, rolls: [...made.slice().reverse(), ...s.rolls].slice(0, 4) };
+      whom.forEach((w, i) => { next[w] = made[i].total; });
+      if (whom.includes('trah')) next.t = s.t + 1;
+      if (whom.includes('pip')) next.p = s.p + 1;
+      this.setState(next);
+    };
+    const people = [
+      { id: 'bigc', name: 'Big C', initial: 'B', av: 'av', ini: 15, bonus: '+1', line: 'Rolled' },
+      { id: 'vi', name: 'Vi', initial: 'V', av: 'av', ini: 14, bonus: '+1', line: 'Rolled' },
+      { id: 'hom', name: 'Homunculus Servant', initial: 'H', av: 'av pet', ini: 13.5, bonus: '+2', line: "Vi's · right after Vi, set by askdnd", sub: true },
+      { id: 'e1', name: 'Enemy 1', initial: 'E', av: 'av foe', ini: 12, bonus: '+0', line: "The DM's" },
+      { id: 'cole', name: 'Cole', initial: 'C', av: 'av', ini: 11, bonus: '+2', line: 'Rolled' },
+      { id: 'trah', name: 'Trah', initial: 'T', av: 'av', ini: s.trah, bonus: '+2', line: s.trah == null ? 'Not rolled yet' : 'Rolled' },
+      { id: 'pip', name: 'Pip', initial: 'P', av: 'av pet', ini: s.pip, bonus: '+3', line: s.pip == null ? "Trah's familiar · not rolled yet" : "Trah's familiar · its own roll" },
+      { id: 'e2', name: 'Enemy 2', initial: 'E', av: 'av foe', ini: 10, bonus: '+0', line: "The DM's" },
+    ];
+    const sorted = people.slice().sort((a, b) => (b.ini ?? -99) - (a.ini ?? -99));
+    const order = sorted.map((x) => ({ ...x,
+      ini: x.ini == null ? '—' : String(x.ini), iniCls: x.ini == null ? 'ini none' : 'ini',
+      cls: 'orow' + (x.sub ? ' sub' : '') + (s.fresh.includes(x.id) ? ' fresh' : ''),
+      right: s.fresh.includes(x.id) ? 'just now' : '' }));
+    const vtt = sorted.map((x) => ({ ...x, ini: x.ini == null ? '' : String(x.ini), cls: 'vrow' + (s.fresh.includes(x.id) ? ' fresh' : '') }));
+    return { rollTrah: roll(['trah', 'pip']), rollPip: roll(['pip']), rolls: s.rolls, noRolls: s.rolls.length === 0, order, vtt };
+  }
+}
+</script>
+</body>
+</html>

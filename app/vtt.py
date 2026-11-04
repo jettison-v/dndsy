@@ -48,6 +48,14 @@ FEATURES: list[Feature] = [
             "Your creatures (docs/plans/2026-11-03-your-creatures.md): slice 1, Battle as the creature, being built; "
             "its Hit Points synced with D&D Beyond next.",
             labs=True, state="Being built"),
+    Feature("initiative", "Initiative from askdnd",
+            "Everyone rolls their own Initiative in askdnd before the DM presses Start Combat in D&D Beyond's VTT, a "
+            "character's familiar with it, and the number fills in the VTT's combat sidebar (a Homunculus right after "
+            "its master). After Start Combat the order is the DM's: drag a row on Party's Rows to move someone. Needs "
+            "Sync with D&D Beyond, and extension 0.12.0 with the DM's VTT open.",
+            "Initiative in askdnd (docs/mockups/initiative/), Nov 4: being built. Once askdnd's own VTT runs, nothing is "
+            "sent to D&D Beyond's.",
+            labs=True, state="Being built"),
 ]
 LABS = "labs"  # the campaign's Labs switch, kept with the features' keys
 

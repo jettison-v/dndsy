@@ -4,21 +4,29 @@
    for it. A character's row opens its short version in the side panel; its Hit Points open Hit points. `rows`: Party's
    rows (character_pages.party_rows), `always`: shown whatever Party's Cards or Rows choice is. #}
 {% from "_cond_icons.html" import cond_badges with context %}
+{# A row's initiative (Initiative from askdnd, app/initiative.py; docs/mockups/initiative/ board 5): 13.5 as the VTT keeps
+   it, marked while askdnd's number is on its way to the VTT; the DM's rows add a handle to drag, ↑ ↓ and the number to
+   press and type (not on a creature that acts right after its master: it moves with it). #}
+{% macro ini_cell(f, x) -%}
+<td class="ft-init">{% if x.moves %}<span class="ft-grip" aria-hidden="true"><svg viewBox="0 0 12 18" width="10" height="15" fill="currentColor"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></svg></span><button type="button" class="ft-num{{ ' ft-pending' if x.pending }}" data-ft-type title="{{ 'On its way to D&D Beyond · ' if x.pending }}Type a number">{{ x.initiative | ini }}</button><span class="ft-ud"><button type="button" class="ft-mv" data-ft-move="up" aria-label="Move {{ x.name }} up"><svg viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l4-4 4 4"/></svg></button><button type="button" class="ft-mv" data-ft-move="down" aria-label="Move {{ x.name }} down"><svg viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5l4 4 4-4"/></svg></button></span>
+{%- elif x.pending %}<span class="ft-pending" title="On its way to D&amp;D Beyond">{{ x.initiative | ini }}</span>{% elif x.initiative is not none %}{{ x.initiative | ini }}{% else %}<span class="note">—</span>{% endif %}{% if x.active %}<span class="ft-now">Now</span>{% endif %}</td>
+{%- endmacro %}
+{% macro row_ft(f, x) %}{% if f.can_order %} data-ft-ini="{{ x.initiative if x.initiative is not none else '' }}"{% if x.moves %} data-ft-key="{{ x.key }}" data-ft-name="{{ x.name }}" draggable="true"{% else %} data-ft-follows{% endif %}{% endif %}{% endmacro %}
 {% macro fight_rows(f, rows, always=false) %}
-<div class="table-scroll pt-track-wrap{{ ' always' if always }}"><table class="pt-track">
+<div class="pt-track-wrap{{ ' always' if always }}">{% if f.waiting %}<p class="ft-wait"><b>Roll for Initiative</b> · waiting for the DM's Start Combat in D&amp;D Beyond's VTT{% if f.can_order %} · drag a row to change the order{% endif %}</p>{% endif %}<div class="table-scroll"><table class="pt-track{{ ' ft-order' if f.can_order }}">
   <thead><tr><th>Init.</th><th>Fighter</th><th>Hit Points</th><th>AC</th><th>Conditions and reminders</th></tr></thead>
   <tbody>{% for x in f.order %}{% set r = rows | selectattr("c.id", "equalto", x.character) | first if x.character else none %}{% set hp = r.sheet.hit_points if r and r.sheet else none %}
     {% if x.creature %}{% set k = x.creature %}{# one of a character's creatures (app/fight.py with_creatures; Your creatures, slice 3) #}
-    <tr class="ft-creature{{ ' now' if x.active }}{{ ' pet' if x.sub }}">
-      <td class="ft-init">{% if x.initiative is not none %}{{ x.initiative | int }}{% else %}<span class="note">—</span>{% endif %}{% if x.active %}<span class="ft-now">Now</span>{% endif %}</td>
+    <tr class="ft-creature{{ ' now' if x.active }}{{ ' pet' if x.sub }}"{{ row_ft(f, x) }}>
+      {{ ini_cell(f, x) }}
       <td><a class="ft-who" href="/characters/{{ k.master }}/battle?creature={{ k.id }}" data-no-peek title="{{ x.whose }}: its Battle"><span class="roll-av pt-cr-av" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b> <span class="tag ft-whose">{{ x.whose }}</span></a></td>
       <td>{{ k.hp.current }} / {{ k.hp.max }}</td>
       <td>{{ k.ac }}</td>
       <td class="ft-conds"><span class="note">{% if x.missing %}Its own Initiative: not in D&amp;D Beyond's order yet{% else %}{{ k.turn }}{% endif %}</span></td>
     </tr>
     {% else %}
-    <tr class="{{ 'now' if x.active }}{{ ' enemy' if x.kind == 'monster' }}"{% if r %} data-panel-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ x.name }}: a short version"{% endif %}>
-      <td class="ft-init">{% if x.initiative is not none %}{{ x.initiative | int }}{% else %}<span class="note">—</span>{% endif %}{% if x.active %}<span class="ft-now">Now</span>{% endif %}</td>
+    <tr class="{{ 'now' if x.active }}{{ ' enemy' if x.kind == 'monster' }}"{{ row_ft(f, x) }}{% if r %} data-panel-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ x.name }}: a short version"{% endif %}>
+      {{ ini_cell(f, x) }}
       <td><span class="ft-who"><span class="roll-av hue{{ (x.character or loop.index) % 6 }}{{ ' enemy' if x.kind == 'monster' }}" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b>{% if x.form %} <span class="tag ft-form" title="In Wild Shape">{{ x.form }}</span>{% endif %}{% if r %}{{ cond_badges(r.conditions, r.c, true) }}{% endif %}{% if x.hidden %} <span class="tag draft" title="Hidden from the players on D&amp;D Beyond">Hidden</span>{% endif %}</span></td>
       <td>{% if hp %}<button type="button" class="pt-hp{{ ' low' if hp.max and hp.current * 2 <= hp.max }}" data-panel-url="/characters/{{ r.c.id }}/vital/hp" title="Open Hit points">{{ hp.current }} / {{ hp.max }}</button>{% else %}<span class="note">—</span>{% endif %}</td>
       <td>{% if r and r.form %}{{ r.form.ac }}{% elif r and r.sheet %}{{ r.sheet.armor_class }}{% else %}<span class="note">—</span>{% endif %}</td>
@@ -26,5 +34,5 @@
         {% for m in (f.reminders or []) | selectattr("character", "equalto", r.c.id) | list | reverse %}{% if loop.index <= 2 %}<span class="ft-rem">{{ m.name }}: {{ m.text }}</span>{% endif %}{% endfor %}
         {% if not r.conditions and not ((f.reminders or []) | selectattr("character", "equalto", r.c.id) | list) %}<span class="note">None</span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</td>
     </tr>{% endif %}{% endfor %}</tbody>
-</table></div>
+</table></div></div>
 {% endmacro %}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Game Log naming</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">3 · D&amp;D Beyond's Game Log · every askdnd roll</div>
+    <h1>ⓐ after the name, for every roll</h1>
+    <p class="where"><b>Brett, Nov 4:</b> be consistent: the ⓐ after the name, not after the roll, for all messages. <b>Why it matters for initiative:</b> D&amp;D Beyond's VTT only fills in a roll named plainly "Initiative". With the ⓐ after the roll's name it ignored askdnd's rolls; moved to the character's name, the same roll counted, and is still plainly askdnd's (tried on the Mac Mini's test table, Nov 4).</p>
+  </div>
+  <div class="grid2" style="gap: 28px">
+    <div style="display: grid; gap: 10px">
+      <div class="row"><div class="lbl">Today</div><span class="tag">ⓐ after the roll's name</span></div>
+      <div class="glog">
+        <div class="lbl" style="color: var(--muted)">Game Log</div>
+        <div class="gwho"><b>Trah</b></div>
+        <div class="gcard"><span class="gname">Initiative <span class="mark">ⓐ</span>: <span class="gtype">Check</span></span><span class="gtot">17</span></div>
+        <div class="gwho"><b>Trah</b></div>
+        <div class="gcard"><span class="gname">Produce Flame <span class="mark">ⓐ</span>: <span class="gtype">To Hit</span></span><span class="gtot">15</span></div>
+        <div class="gwho"><b>Trah</b></div>
+        <div class="gcard"><span class="gname">Produce Flame <span class="mark">ⓐ</span>: <span class="gtype">Fire</span></span><span class="gtot">6</span></div>
+        <div class="gwho"><b>Pip</b> <span class="note">(Trah)</span></div>
+        <div class="gcard"><span class="gname">Perception <span class="mark">ⓐ</span>: <span class="gtype">Check</span></span><span class="gtot">14</span></div>
+      </div>
+      <p class="nope">The VTT ignores the Initiative roll: the order doesn't fill in.</p>
+    </div>
+    <div style="display: grid; gap: 10px">
+      <div class="row"><div class="lbl">Proposed</div><span class="tag us">ⓐ after the character's name</span></div>
+      <div class="glog">
+        <div class="lbl" style="color: var(--muted)">Game Log</div>
+        <div class="gwho"><b>Trah</b> <span class="mark">ⓐ</span></div>
+        <div class="gcard"><span class="gname">Initiative: <span class="gtype">Roll</span></span><span class="gtot">17</span></div>
+        <div class="gwho"><b>Trah</b> <span class="mark">ⓐ</span></div>
+        <div class="gcard"><span class="gname">Produce Flame: <span class="gtype">To Hit</span></span><span class="gtot">15</span></div>
+        <div class="gwho"><b>Trah</b> <span class="mark">ⓐ</span></div>
+        <div class="gcard"><span class="gname">Produce Flame: <span class="gtype">Fire</span></span><span class="gtot">6</span></div>
+        <div class="gwho"><b>Pip</b> <span class="mark">ⓐ</span> <span class="note">(Trah)</span></div>
+        <div class="gcard"><span class="gname">Perception: <span class="gtype">Check</span></span><span class="gtot">14</span></div>
+      </div>
+      <p class="okay">Before Start Combat, the DM's VTT fills in Trah's 17, as for a roll from the sheet.</p>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="card"><h3>Still askdnd's, never D&amp;D Beyond's</h3><p class="note">The ⓐ is on every roll askdnd sends, and the message still says it comes from askdnd. Only where the mark sits changes. No dice set is named, as now.</p></div>
+    <div class="card"><h3>The roll's own name is D&amp;D Beyond's</h3><p class="note">"Initiative: Roll", the way the sheet names it. Every other roll keeps askdnd's name and type ("Produce Flame: To Hit"), just without the mark there.</p></div>
+    <div class="card"><h3>Table rolls is unchanged</h3><p class="note">askdnd still keeps each roll once: it doesn't hear its own rolls back from the Game Log. Rolls made on D&amp;D Beyond still arrive without the mark.</p></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

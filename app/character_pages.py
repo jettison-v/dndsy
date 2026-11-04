@@ -24,7 +24,7 @@ from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
 from app import ddb, ddb_bridge, hit_points, house_rules, picks
-from app import class_rules, companions, creatures, pictures, player_notes, vtt
+from app import class_rules, companions, creatures, initiative, pictures, player_notes, vtt
 from app import spellbook as sb
 from app.preparing import books_to_prepare
 from app import wild_shape as ws
@@ -211,6 +211,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     ctx["creature"] = creatures.placed(ch, creatures.card(ctx["sheet"], found), found) | _own_picture(db, ch, found) if found else None
     ctx["can_picture"] = bool(found) and hit_points.can_apply(db, user, ch)  # (the one Picture window, app/picture_window.py)
     ctx["find_familiar"] = companions.spell_key(ctx["sheet"]) if ctx["creature"] and ctx["creature"]["cast"] else ""
+    ctx["init_note"] = initiative.note(campaign, ch, ctx["my_creatures"], ctx["creature"])  # (Labs: Initiative from askdnd)
     ctx["previewing"] = shape is not None
     wild = shape if shape is not None else ch.wild_shape
     if ctx["sheet"]:

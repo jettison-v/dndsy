@@ -113,6 +113,9 @@ class Campaign(Timestamped, Base):
     # When a DM's browser with any D&D Beyond page open was last heard (app/ddb_bridge.py `carried`): while it's recent,
     # that browser makes the changes of a character whose own sheet is closed (DM Backup, Brett 2026-11-02)
     backup_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # When the DM's open D&D Beyond VTT page last asked for initiative numbers to set (app/initiative.py), kept apart
+    # from the fight so asking every few seconds doesn't redraw every page
+    vtt_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 

@@ -210,6 +210,14 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
     }, () => reply({ followed: false }));
     return true;  // (answers later)
   }
+  if (m.type === 'vtt-tick') {  // a VTT page asks for initiative numbers to set (0.12.0; askdnd gives the DM's page any)
+    const game = gameOf(sender.tab && sender.tab.url);
+    followed().then(async ids => {
+      if (!game || !ids.includes(game)) return reply({ sets: [], every: 60 });
+      reply(await api('POST', '/bridge/vtt/' + game).catch(() => ({ sets: [], every: 60 })));
+    }, () => reply({ sets: [], every: 60 }));
+    return true;
+  }
   if (m.type === 'carry-tick') {  // any D&D Beyond page (carry.js, or a sheet's ddb.js): how soon it asks again
     if (sender.tab && !ddbIdOf(sender.tab.url)) opened(sender.tab.id, { page: true });  // (a sheet is kept as a sheet)
     carry().then(every => reply({ every }), () => reply({ every: 0 }));
@@ -231,6 +239,10 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
       return;
     }
     if (m.type === 'wake') return hello();
+    if (m.type === 'vtt-now') {  // askdnd's own tab changed the order: the VTT pages here ask at once
+      for (const t of await chrome.tabs.query({ url: 'https://www.dndbeyond.com/games/*' })) chrome.tabs.sendMessage(t.id, { type: 'vtt-now' }).catch(() => {});
+      return;
+    }
     if (m.type === 'carry-applied' && m.ddb) return applied(String(m.ddb), m, sender.tab && sender.tab.id);
     // D&D Beyond's VTT open in this browser: the fight as it changes (vtt-page.js; askdnd only listens), for a game
     // askdnd follows only

@@ -32,7 +32,7 @@
         {% if can_pick and not previewing %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/wild-shape" aria-label="Leave the {{ fb.name }} form (Bonus Action)">Leave</button>{% endif %}</div>
     </div>
     {% endif %}
-    {% if s %}<div class="battle-head{{ ' in-form' if form }}">{{ battle_strip(s, c, can_change_hp, form) }}{{ save_tiles(form.saves if form else s.saves, form.save_adv_all if form else s.save_adv_all) }}</div>{% endif %}
+    {% if s %}<div class="battle-head{{ ' in-form' if form }}">{{ battle_strip(s, c, can_change_hp, form, init_note | default("")) }}{{ save_tiles(form.saves if form else s.saves, form.save_adv_all if form else s.save_adv_all) }}</div>{% endif %}
   </div>
   {% if s and known_forms %}
   <div class="ws-bar ws-row" aria-label="Wild Shape">

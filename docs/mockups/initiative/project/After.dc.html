@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>After Start Combat</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">4 · After Start Combat</div>
+    <h1>The order is the DM's</h1>
+    <p class="where"><b>When:</b> the DM has pressed Start Combat. <b>Here:</b> Trah's player presses Initiative again (by habit, or to check something). The roll is made and shown as any roll is, but the order stays where it is, as on D&amp;D Beyond (Brett tried it on the Mac Mini, Nov 4: a roll after Start Combat changes nothing).</p>
+  </div>
+  <div style="display: grid; grid-template-columns: 440px minmax(0, 1fr); gap: 28px; align-items: start">
+    <div style="display: grid; gap: 12px">
+      <div class="lbl">The roll window, opened from Trah's Initiative</div>
+      <div class="card" style="gap: 12px; background: var(--surface-2); border-color: var(--line-strong); box-shadow: 0 12px 30px rgba(0, 0, 0, .45)">
+        <div class="row"><h3 style="font-size: 18px">Trah · Initiative</h3><button type="button" class="btn mini" aria-label="Close">✕</button></div>
+        <div class="row start" style="gap: 10px"><span class="die">6</span><span class="note">d20 + 2</span><span class="big" style="margin-left: auto">8</span></div>
+        <p class="note" style="color: var(--text)">Combat has started, so this won't change the order. The DM changes it.</p>
+        <div class="row start" style="gap: 8px"><span class="tag">To the table</span><span class="note">as any roll</span></div>
+      </div>
+      <div class="lbl" style="margin-top: 6px">Table rolls</div>
+      <div class="rolls">
+        <div class="rollrow"><span class="av">T</span><span><b>Trah</b> · Initiative<br><span class="note">6 + 2 · the order stays: combat has started</span></span><span class="big">8</span></div>
+        <div class="rollrow"><span class="av foe">E</span><span><b>Enemy 1</b> · Club: To Hit<br><span class="note">The DM's</span></span><span class="big">14</span></div>
+      </div>
+      <p class="rule">In D&amp;D Beyond's Game Log it reads "Trah ⓐ · Initiative: Roll 8", the same naming as every roll (board 3); the VTT leaves the order alone.</p>
+    </div>
+    <div style="display: grid; gap: 12px">
+      <div class="row"><div class="lbl">Party · Rows · round 1</div><span class="tag us">askdnd</span></div>
+      <div class="olist">
+        <div class="orow"><span class="ini">17</span><span class="av">T</span><span class="nm"><b>Trah</b><span>Still 17</span></span><span></span></div>
+        <div class="orow now"><span class="ini">15</span><span class="av">B</span><span class="nm"><b>Big C</b><span>Their turn</span></span><span class="note">now</span></div>
+        <div class="orow"><span class="ini">14</span><span class="av">V</span><span class="nm"><b>Vi</b><span></span></span><span></span></div>
+        <div class="orow sub"><span class="ini">13.5</span><span class="av pet">H</span><span class="nm"><b>Homunculus Servant</b><span>Vi's · right after Vi</span></span><span></span></div>
+        <div class="orow"><span class="ini">12</span><span class="av pet">P</span><span class="nm"><b>Pip</b><span>Trah's familiar</span></span><span></span></div>
+        <div class="orow"><span class="ini">12</span><span class="av foe">E</span><span class="nm"><b>Enemy 1</b><span></span></span><span></span></div>
+        <div class="orow"><span class="ini">11</span><span class="av">C</span><span class="nm"><b>Cole</b><span></span></span><span></span></div>
+        <div class="orow"><span class="ini">10</span><span class="av foe">E</span><span class="nm"><b>Enemy 2</b><span></span></span><span></span></div>
+      </div>
+      <div class="grid2" style="gap: 14px">
+        <div class="card"><h3>Something went wrong?</h3><p class="note">The DM drags the row in askdnd (board 5), or types the number in the VTT's sidebar as now. Either way askdnd and the VTT show the same order, and the change is announced to every open page.</p></div>
+        <div class="card"><h3>Players see, the DM changes</h3><p class="note">Players see the order and whose turn it is, without handles. The DM (and an admin) gets the handles. A player who needs a change asks the DM, as at the table.</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

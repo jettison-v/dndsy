@@ -1,7 +1,8 @@
 // On D&D Beyond's VTT (/games/<campaign>): passes what vtt-page.js hears about the fight on to the extension
-// (background.js), which tells askdnd, for a game askdnd follows only. It only listens. (vtt-page.js runs in the page
-// itself from the very start, as manifest.json says: the VTT connects to its game server before a script this one
-// added would run.)
+// (background.js), which tells askdnd, for a game askdnd follows only. (vtt-page.js runs in the page itself from the very
+// start, as manifest.json says: the VTT connects to its game server before a script this one added would run.) It also
+// asks askdnd every few seconds for initiative numbers to set (0.12.0, app/initiative.py): askdnd gives some to the
+// DM's page only, and asks anyone else's to ask once a minute.
 //
 // A quiet badge at the top, under the VTT's own bar (clear of the Initiative Order's footer, bottom left), says askdnd is listening, and what it heard (Brett, 2026-10-29: open about it, and a
 // glance shows whether askdnd hears the fight). It only shows: no buttons over D&D Beyond's own controls, and clicks
@@ -35,17 +36,30 @@
       document.documentElement.appendChild(host);
     }
     const f = last, now = f && f.order.find(x => x.active);
-    const text = !f ? 'hearing this game · no fight now' : `hearing the fight · round ${esc(f.round)}${now ? ` · <b>${esc(now.name)}</b>’s turn` : ''}`;
-    root.innerHTML = `<style>${CSS}</style><div class="badge" role="status" title="askdnd hears this fight's order and turns, and never changes anything here"><span class="dot"></span><span class="logo">askdnd</span><span>${text}</span></div>`;
+    const text = !f ? 'hearing this game · no fight now' : f.waiting ? 'hearing the encounter · waiting for Start Combat'
+      : `hearing the fight · round ${esc(f.round)}${now ? ` · <b>${esc(now.name)}</b>’s turn` : ''}`;
+    root.innerHTML = `<style>${CSS}</style><div class="badge" role="status" title="askdnd hears this fight's order and turns; on the DM's page it sets the initiative numbers rolled or dragged in askdnd, and changes nothing else here"><span class="dot"></span><span class="logo">askdnd</span><span>${text}</span></div>`;
   }
   window.addEventListener('message', e => {
     if (e.source !== window || !e.data || e.data.askdndBridge !== 'from-vtt') return;
     if (e.data.type === 'fight') { last = e.data.fight; draw(); }
     send({ ...e.data, type: 'vtt-' + e.data.type, gameId: gameId() });
   });
+  // Initiative numbers askdnd wants set (the DM's page only gets any): handed to vtt-page.js, which sends them
+  let ticking = null;
+  const tick = () => {
+    clearTimeout(ticking);
+    send({ type: 'vtt-tick' }, answer => {
+      if (chrome.runtime.lastError || !answer) { ticking = setTimeout(tick, 60000); return; }
+      if (Array.isArray(answer.sets) && answer.sets.length) window.postMessage({ askdndBridge: 'to-vtt', type: 'set', sets: answer.sets }, location.origin);
+      ticking = setTimeout(tick, Math.max(2, answer.every || 60) * 1000);
+    });
+  };
+  try { chrome.runtime.onMessage.addListener(m => { if (m.type === 'vtt-now' && follows) tick(); }); } catch (e) { /* cut off */ }
   send({ type: 'vtt-hello', gameId: gameId() }, answer => {
     if (chrome.runtime.lastError) return;
     follows = !!(answer && answer.followed);
     draw();
+    if (follows) tick();
   });
 })();

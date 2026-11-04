@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Your table's way, with askdnd</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">1 · Initiative · where it lives</div>
+    <h1>Your table's way, with askdnd</h1>
+    <p class="where"><b>Brett, Nov 4:</b> keep the anticipation of rolling your own initiative, and let the DM change the order during the fight in case something goes wrong, by dragging it. <b>Where it lives:</b> the Initiative tile on each character's (and creature's) Battle, Table rolls, Party's rows, and D&amp;D Beyond's VTT, where the fight still runs. <b>Once askdnd's own VTT runs</b>, none of the D&amp;D Beyond part is needed.</p>
+  </div>
+  <div style="display: grid; gap: 8px">
+    <div class="lbl">How your table plays it today, and what askdnd changes</div>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><span class="whose dm">DM · VTT</span><b>Puts the tokens on the map</b><span class="note">As today.</span></div>
+      <div class="step"><span class="n">2</span><span class="whose dm">DM · VTT</span><b>Opens the combat sidebar</b><span class="note">As today.</span></div>
+      <div class="step"><span class="n">3</span><span class="whose dm">DM · VTT</span><b>Add all tokens</b><span class="note">As today. askdnd now hears the waiting list too, so Party shows who's rolled.</span></div>
+      <div class="step ours"><span class="n">4</span><span class="whose us">Players · askdnd</span><b>"Roll for initiative!"</b><span class="note">Each player rolls in askdnd, for their character and their creature (board 2). The dice are thrown on every screen.</span></div>
+      <div class="step ours"><span class="n">5</span><span class="whose us">askdnd → VTT</span><b>The number fills in</b><span class="note">In the VTT's sidebar and Party's rows, as a roll from the sheet does now. Rolling again replaces it.</span></div>
+      <div class="step"><span class="n">6</span><span class="whose dm">DM · VTT</span><b>Start Combat</b><span class="note">As today. From here the order is the DM's (boards 4 and 5).</span></div>
+    </div>
+  </div>
+  <div class="grid3">
+    <div class="card" style="gap: 10px">
+      <h3>What stays D&amp;D Beyond's</h3>
+      <p class="note">Adding tokens, Start Combat, Next turn, End Combat, and the DM typing a number in the sidebar: all as now, and askdnd follows them. A roll from the sheet still counts before Start Combat too.</p>
+      <p class="rule">askdnd's rolls reach the VTT the way D&amp;D Beyond's do: through the Game Log, where the DM's open VTT turns an Initiative roll into the number. Marked as askdnd's (board 3).</p>
+    </div>
+    <div class="card" style="gap: 10px">
+      <h3>What it needs</h3>
+      <div class="row start" style="gap: 8px; align-items: baseline"><span class="tag us">today's extension</span><span class="note">A player's roll for their own character: only how askdnd names the roll changes.</span></div>
+      <div class="row start" style="gap: 8px; align-items: baseline"><span class="tag later">extension 0.12.0</span><span class="note">The waiting list on Party, a creature's own token, and the DM's drags: set through the DM's open VTT page (one Chrome Web Store review).</span></div>
+      <p class="rule">Both need the DM's VTT open, as it always is when a fight runs. Tried on the Mac Mini's test table, Nov 4.</p>
+    </div>
+    <div class="card" style="gap: 10px">
+      <h3>Later: askdnd's own VTT</h3>
+      <p class="note">The same Initiative roll and the same dragging, straight into askdnd's own order. Nothing is sent to D&amp;D Beyond's VTT: no waiting list to hear, no sidebar to fill (Brett: "We do not need to sync combat at all" once it runs).</p>
+      <p class="rule">So everything built here is the part that stays: the roll, Party's rows and the DM's drag. Only the hand-off to D&amp;D Beyond goes.</p>
+    </div>
+  </div>
+  <div class="card" style="gap: 8px">
+    <h3>The rule askdnd keeps, as your table does</h3>
+    <div class="grid2" style="gap: 24px">
+      <p class="note"><b style="color: var(--strong)">Before Start Combat</b> each player sets their own number by rolling (their creatures' too). The DM can roll or type for anyone, as now.</p>
+      <p class="note"><b style="color: var(--strong)">After Start Combat</b> a player's Initiative roll still shows in Table rolls and the Game Log, but doesn't move the order. Only the DM changes it: dragging in askdnd (board 5) or typing in the VTT.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

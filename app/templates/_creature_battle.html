@@ -38,7 +38,7 @@
                foot=("%s temporary" | format(k.hp.temp)) if k.hp.temp else "", title=hp_title, acts=acts) }}
       {{ ntile(s, "", '<span class="ph-full">Armor class</span><span class="ph-short">AC</span>' | safe, ("<b>%s</b>" | format(k.ac)) | safe) }}
       {{ ntile(s, "", "Speed", ("<b>%s ft</b>" | format(k.walk)) | safe, foot=k.other_speeds) }}
-      {%- set init %}<button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", k.initiative) }} title="{{ 'Roll its Initiative' if k.own_initiative else 'It shares your Initiative; roll only if the DM asks' }}">{{ k.initiative }}</button>{% endset %}
+      {%- set init %}<button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", k.initiative, note=init_note | default("")) }} title="{{ 'Roll its Initiative' if k.own_initiative else 'It shares your Initiative; roll only if the DM asks' }}">{{ k.initiative }}</button>{% endset %}
       {{ ntile(s, "", '<span class="ph-full">Initiative</span><span class="ph-short">Init.</span>' | safe, init) }}
       {{ ntile(s, "", '<span class="ph-full">Passive Perception</span><span class="ph-short">PP</span>' | safe, ("<b>%s</b>" | format(k.passive)) | safe) }}
     </div>

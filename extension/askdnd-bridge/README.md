@@ -11,7 +11,10 @@ player changes in play:
   of an item, removing one, moving it into or out of a container;
 - rolls made on the sheet come into Table rolls marked "on D&D Beyond"; and the player's askdnd rolls go into D&D
   Beyond's game log from their open sheet (0.9.3, app/gamelog.py), as askdnd's own: source "askdnd" and ⓐ after the
-  name, never passed off as D&D Beyond's.
+  character's name, never passed off as D&D Beyond's;
+- initiative numbers in D&D Beyond's VTT (0.12.0, app/initiative.py): on the DM's open VTT page only, the numbers
+  askdnd hands it (a familiar's roll, a Homunculus right after its master, the DM's drag), each as the VTT's own
+  UPDATE_INITIATIVE on the page's game connection; and before Start Combat it tells askdnd who's waiting.
 Left out: experience points, custom names and custom items. Prepared spells come with casting (roadmap Phase 2).
 
 After askdnd changes the character, every open copy of the sheet shows D&D Beyond's numbers in place, through the
@@ -71,7 +74,8 @@ The listing (first upload: **+ New item**, then fill in each tab with these):
   askdnd until Chrome closes; *alarms*, a check every 30 seconds while someone is using askdnd or a sheet; *host
   permission dndbeyond.com*, to hear the player's sheet save and make askdnd's changes there with the sheet's own
   requests, to put the player's askdnd rolls into their game's Game Log (marked as askdnd's), and on D&D Beyond's VTT
-  only to listen to the fight's order and turns (it never changes the VTT); *host permission askdnd.ai and
+  to listen to the fight's order and turns and, on the DM's page only, to set the initiative numbers rolled or
+  dragged in askdnd (0.12.0; nothing else in the VTT); *host permission askdnd.ai and
   beta.askdnd.ai*, to talk to askdnd. Remote code: No. Data: website content (the character sheet's numbers and rolls,
   and a fight's order: names, initiative, whose turn), sent to askdnd only; not sold, not used for anything else, not
   used for credit. Privacy policy: https://beta.askdnd.ai/help?tab=about#bridge-privacy
