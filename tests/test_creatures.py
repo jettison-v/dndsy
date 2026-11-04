@@ -452,3 +452,25 @@ def test_a_creatures_turn_is_a_corner_card_for_its_masters_player(db, labs, shee
         x["active"] = x["key"] == "t-pip"
     fight.heard(db, campaign, f)
     assert ("creature", "Pip", labs.id) in [(r["kind"], r["name"], r["character"]) for r in campaign.fight["reminders"]]
+
+
+def test_a_familiar_that_is_here_lends_its_master_its_eyes_and_its_touch(player, db, labs, sheet):
+    """Board 3 (Find Familiar): on the master's own Battle, See through its eyes (a Bonus Action) and Deliver a touch
+    spell (its Reaction) while it's here; greyed with the reason while it's away or gone; nothing before it's cast. Its
+    own Battle lists them too, as its master's."""
+    from app import companions
+
+    familiar_sheet(db, labs, sheet)
+    s = characters.character_summary(labs)
+    assert companions.master_options(labs, s) == []  # (not cast yet)
+    labs.companions = {str(OWL): {"state": "here", "kind": "Fey"}}
+    eyes, touch = companions.master_options(labs, s)
+    assert (eyes["name"], eyes["cost"], eyes["form_why"]) == ("See through Pip's eyes", "Bonus action", "")
+    assert (touch["name"], touch["cost"]) == ("Deliver a touch spell", "Reaction") and "100 ft" in touch["meta"]
+    db.flush()
+    battle = player.get(f"/characters/{labs.id}/battle").text
+    assert "See through Pip&#39;s eyes" in battle and "Deliver a touch spell" in battle
+    own = player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
+    assert "Cole&#39;s Bonus Action" in own
+    labs.companions = {str(OWL): {"state": "away", "kind": "Fey"}}
+    assert "pocket dimension" in companions.master_options(labs, s)[0]["form_why"]

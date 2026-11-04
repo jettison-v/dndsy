@@ -79,6 +79,33 @@ def in_step(db: Session, ch: Character, named: dict | None = None) -> None:
                 ddb_bridge.add(db, ch, "set", {"field": field, "value": v}, f"{ch.name}'s {c['name']}: {ddb_fields.show(raw, field, v)}")
 
 
+def master_options(ch: Character, sheet: dict) -> list[dict]:
+    """On the master's own Battle (Creatures as Characters board 3; Find Familiar, 2024 PHB): a familiar that's been cast
+    adds See through its eyes (a Bonus Action, until the start of the master's next turn, with its senses) and Deliver a
+    touch spell (its Reaction, within 100 feet); greyed with the reason while it's in the pocket dimension or gone (as
+    Sheet greys what a form can't do: `form_why`). Rows of their own: pinned and ordered like any other."""
+    out = []
+    for c in yours(sheet):
+        w = where(ch, c)
+        if c.get("group_id") != FAMILIAR or not w:
+            continue
+        name = c["name"]
+        why = "" if w == "here" else (f"{name} is in the pocket dimension: bring it back first" if w == "away"
+                                      else f"{name} is gone: cast Find Familiar to bring it back")
+        senses = card(sheet, c).get("senses") or ""
+        out += [{"key": f"rule:familiar:{c['id']}:eyes", "kind": "feature", "cost": "Bonus action", "name": f"See through {name}'s eyes",
+                 "tags": [FIND_FAMILIAR], "common": True, "form_why": why,
+                 "meta": "Until the start of your next turn" + (f" · its senses: {senses}" if senses else ""),
+                 "text": f"You see what {name} sees and hear what it hears until the start of your next turn, with any special "
+                         f"senses it has (Find Familiar)."},
+                {"key": f"rule:familiar:{c['id']}:touch", "kind": "feature", "cost": "Reaction", "name": "Deliver a touch spell",
+                 "tags": [FIND_FAMILIAR], "common": True, "form_why": why,
+                 "meta": f"When you cast a spell with a range of touch: {name} delivers it, within 100 ft, with its Reaction",
+                 "text": f"When you cast a spell with a range of touch, {name} can deliver the touch instead of you, if it's within "
+                         f"100 feet of you; delivering it takes its Reaction (Find Familiar)."}]
+    return out
+
+
 def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: str = "") -> tuple[dict, str]:
     """Find Familiar cast with this form and kind: it's here, and any other form of it isn't (one familiar at a time).
     Returns what Undo needs and what the corner card says."""

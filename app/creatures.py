@@ -120,8 +120,9 @@ def _master_mod(sheet: dict, key: str) -> int:
     return next((_mod(a["score"]) for a in sheet.get("abilities") or [] if a.get("key", "")[:3] == key), 0)
 
 
-def card(sheet: dict, c: dict) -> dict:
-    """The creature as Battle draws it: each number with where it comes from."""
+def card(sheet: dict, c: dict, master: str = "") -> dict:
+    """The creature as Battle draws it: each number with where it comes from (`master`: its master's name as askdnd
+    shows it, else the sheet's)."""
     b = c["block"]
     pb = sheet.get("proficiency_bonus") or 2
     might = pb - 2 if any(t["name"] == MIGHT for t in b.get("traits") or []) else 0
@@ -162,6 +163,14 @@ def card(sheet: dict, c: dict) -> dict:
         cols["Action"].append({"key": f"creature:{c['id']}:dodge", "name": "Dodge", "cost": "Action", "hit": "", "tags": [], "uses": None,
                                "spends": [], "starred": False, "source": "rule", "text": "",
                                "meta": "What it does on its turn unless you command it (Bonus Action)"})
+    if group == FAMILIAR:  # (Find Familiar: its master's to use, through it; on the master's Battle too, app/companions.py)
+        whose = master or (sheet or {}).get("name") or "Your"
+        cols["Bonus action"].append({"key": f"creature:{c['id']}:eyes", "name": f"See through {c['name']}'s eyes", "cost": "Bonus action",
+                                     "hit": "", "tags": [f"{whose}'s"], "uses": None, "spends": [], "starred": False, "source": "rule", "text": "",
+                                     "meta": f"{whose}'s Bonus Action: until the start of {whose}'s next turn, with {c['name']}'s senses"})
+        cols["Reaction"].append({"key": f"creature:{c['id']}:touch", "name": "Deliver a touch spell", "cost": "Reaction", "hit": "", "tags": [],
+                                 "uses": None, "spends": [], "starred": False, "source": "rule", "text": "",
+                                 "meta": f"When {whose} casts a spell with a range of touch, within 100 ft"})
     speed = ws.speed_text(b.get("speed") or {}) or c.get("speed") or ""
     passive = b.get("passive_perception") or 10 + _mod(scores.get("wis", 10))
     if might and b.get("block_skills", {}).get("Perception") is not None:
