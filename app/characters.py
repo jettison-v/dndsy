@@ -179,6 +179,9 @@ def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
                 from app import creature_hp  # (its routes read characters)
 
                 creature_hp.keep_max(db, character, summary)
+                from app import companions  # (a familiar form askdnd added: tied to its new creature)
+
+                companions.adopt(db, character, summary, raw)
         from app import level_up  # (its route reads characters through item_use)
 
         if (news := level_up.changes(snap.summary, summary)):

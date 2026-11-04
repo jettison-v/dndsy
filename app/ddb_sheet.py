@@ -1190,6 +1190,7 @@ class _Sheet:
                 "block": _creature_block(df),
                 # Your creatures (app/creatures.py): which one it is on the sheet, and its Hit Points as D&D Beyond keeps them
                 "id": c.get("id"), "group_id": c.get("groupId"), "group_name": GROUP_NAMES.get(c.get("groupId"), "Creature"),
+                "monster_id": df.get("id"),  # (D&D Beyond's monster: a familiar form askdnd added is known by it)
                 "removed": c.get("removedHitPoints") or 0, "temp": c.get("temporaryHitPoints") or 0, "active": bool(c.get("isActive")),
                 "max_set": next((v.get("value") for v in self.d.get("characterValues") or [] if v.get("typeId") == 43
                                  and str(v.get("valueId")) == str(c.get("id")) and v.get("value")), None),  # (its maximum, set on D&D Beyond)

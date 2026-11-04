@@ -12,9 +12,11 @@
 {% if familiars is not none and can_cast %}{# Find Familiar brings the familiar (app/companions.py; Brett, 2026-11-04, Creatures as Characters board 2) #}
 <fieldset class="ff-pick"><legend class="rw-label">Your familiar</legend>
   {% for f in familiars %}<label class="ff-opt"><input type="radio" name="familiar" value="{{ f.id }}"{% if f.id | string == ff_first %} checked{% endif %}><span><b>{{ f.name }}</b>{% if f.kind != f.name %} <span class="note">{{ f.kind }}</span>{% endif %}</span>{% if f.where %}<span class="cr-where cr-where-{{ f.where }}">{{ f.where_word }}{% if f.where == "gone" and f.why %} · {{ f.why }}{% endif %}</span>{% endif %}</label>
-  {% else %}<p class="note">No familiar on {{ c.name }}'s D&amp;D Beyond sheet yet: add its form there first (Extras › Manage Extras › Familiar), then cast.</p>{% endfor %}
+  {% else %}{% if not ff_new %}<p class="note">No familiar on {{ c.name }}'s D&amp;D Beyond sheet yet, and its sheet can't be reached to add one: open it, or add the form there (Extras › Manage Extras › Familiar).</p>{% endif %}{% endfor %}
+  {% if ff_new %}<span class="note ff-new-head">{{ 'Or a new form' if familiars else 'Its form' }} (added to {{ c.name }}'s Extras on D&amp;D Beyond):</span>
+  <span class="ff-new">{% for n in ff_new %}<label class="ff-kind"><input type="radio" name="familiar" value="{{ n.id }}"{% if not familiars and loop.first %} checked{% endif %}> {{ n.name }}</label>{% endfor %}</span>{% endif %}
 </fieldset>
-{% if familiars %}<div class="rw-row"><label class="rw-label" for="ff-name">Its name</label><input id="ff-name" class="rw-text" type="text" name="familiar_name" value="{{ ff_name }}" maxlength="60" placeholder="Pip" autocomplete="off"></div>
+{% if familiars or ff_new %}<div class="rw-row"><label class="rw-label" for="ff-name">Its name</label><input id="ff-name" class="rw-text" type="text" name="familiar_name" value="{{ ff_name }}" maxlength="60" placeholder="Pip" autocomplete="off"></div>
 <fieldset class="ff-pick ff-kinds"><legend class="rw-label">It's a</legend>{% for k in kinds %}<label class="ff-kind"><input type="radio" name="kind" value="{{ k }}"{% if k == ff_kind %} checked{% endif %}> {{ k }}</label>{% endfor %}</fieldset>
 <p class="use-what">One familiar at a time: one that's here takes the form you pick. One that disappeared comes back whole.</p>{% endif %}
 {% endif %}

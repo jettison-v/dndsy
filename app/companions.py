@@ -50,6 +50,46 @@ def familiars(ch: Character, sheet: dict) -> list[dict]:
     return [placed(ch, card(sheet, c), c) for c in yours(sheet) if c.get("group_id") == FAMILIAR]
 
 
+# Find Familiar's forms (2024 Player's Handbook; the DM can allow another Beast of Challenge Rating 0): a new one is added to
+# Extras through the bridge by its D&D Beyond monster id (the 2024 Monster Manual's, rules_data.pictures)
+FORMS = ("Bat", "Cat", "Frog", "Hawk", "Lizard", "Octopus", "Owl", "Rat", "Raven", "Spider", "Weasel")
+NEW = "new:"  # a form askdnd is adding, kept by its monster id until D&D Beyond has it (`adopt`)
+
+
+def new_forms(sheet: dict) -> list[dict]:
+    """The rules' familiar forms not on the sheet's Extras yet: {"id": "new:<monster id>", "name"}."""
+    from app import rules_data
+
+    pics, have = rules_data.pictures(), {str(c.get("monster_id")) for c in yours(sheet) if c.get("group_id") == FAMILIAR}
+    out = []
+    for name in FORMS:
+        mid = str((pics.get(name.lower()) or {}).get("ddb_id") or "")
+        if mid and mid not in have:
+            out.append({"id": NEW + mid, "name": name})
+    return out
+
+
+def adopt(db: Session, ch: Character, summary: dict, raw: dict) -> None:
+    """A read that finds the form askdnd added: the familiar askdnd kept by its monster id is that creature now, and
+    D&D Beyond is put in step with it (Active, what it is, its name)."""
+    kept = dict(ch.companions or {})
+    new = [k for k in kept if k.startswith(NEW)]
+    if not new:
+        return
+    named = {}
+    for k in new:
+        found = next((c for c in yours(summary) if c.get("group_id") == FAMILIAR and str(c.get("monster_id")) == k[len(NEW):]
+                      and str(c["id"]) not in kept), None)
+        if found:
+            entry = kept.pop(k)
+            kept[str(found["id"])] = {x: v for x, v in entry.items() if x != "name"}
+            if entry.get("name"):
+                named[str(found["id"])] = entry["name"]
+    if kept != (ch.companions or {}):
+        ch.companions = kept
+        in_step(db, ch, named or None, raw, summary)
+
+
 def picked(forms: list[dict]) -> tuple[str, str, str]:
     """The Cast window's first choice: the one in play (here or away), else one that disappeared, else the first; what
     it was made last time; and the name it was given (its name on D&D Beyond, when that isn't its stat block's)."""
@@ -58,13 +98,13 @@ def picked(forms: list[dict]) -> tuple[str, str, str]:
     return (str(f["id"]), f["made"] or KINDS[0], f["name"] if f["name"] != f["kind"] else "") if f else ("", KINDS[0], "")
 
 
-def in_step(db: Session, ch: Character, named: dict | None = None) -> None:
+def in_step(db: Session, ch: Character, named: dict | None = None, raw: dict | None = None, sheet: dict | None = None) -> None:
     """D&D Beyond's Extras as askdnd has them (option A): the familiar that's here Active, with its creature type, and
     every other familiar form switched off; `named` ({id: name}) gives a form its name there. Where the sheet can be
-    reached; each only when D&D Beyond holds something else."""
-    if not ddb_bridge.on_for(db, ch) or not ddb_bridge.reachable(ch) or not ch.snapshot or not ch.snapshot.raw:
+    reached; each only when D&D Beyond holds something else. `raw`, `sheet`: a read not stored yet (characters.store)."""
+    if not ddb_bridge.on_for(db, ch) or not ddb_bridge.reachable(ch) or not (raw or (ch.snapshot and ch.snapshot.raw)):
         return
-    raw, sheet = ch.snapshot.raw, chars.character_summary(ch)
+    raw, sheet = raw or ch.snapshot.raw, sheet or chars.character_summary(ch)
     for c in yours(sheet):
         if c.get("group_id") != FAMILIAR:
             continue
@@ -110,11 +150,13 @@ def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: 
     """Find Familiar cast with this form and kind: it's here, and any other form of it isn't (one familiar at a time).
     Returns what Undo needs and what the corner card says."""
     forms = {str(c["id"]): c for c in yours(sheet) if c.get("group_id") == FAMILIAR}
-    c = forms.get(str(chosen))
-    if c is None:
-        raise HTTPException(409, "Which familiar? Add its form on D&D Beyond first (Extras › Manage Extras › Familiar).")
     if kind not in KINDS:
         raise HTTPException(409, "Celestial, Fey or Fiend?")
+    if str(chosen).startswith(NEW):
+        return _cast_new(db, ch, sheet, forms, str(chosen), kind, name)
+    c = forms.get(str(chosen))
+    if c is None:
+        raise HTTPException(409, "Which familiar? Pick its form.")
     was = dict(ch.companions or {})
     before = next((forms[i] for i, v in was.items() if i in forms and (v or {}).get("state") in ("here", "away")), None)
     ch.companions = {**{i: v for i, v in was.items() if i not in forms}, str(c["id"]): {"state": "here", "kind": kind}}
@@ -130,6 +172,25 @@ def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: 
         undo["healed"] = f"{k['id']}:{k['hp']['removed']}"
     in_step(db, ch, {str(c["id"]): name} if name and name != k["name"] else None)
     return undo, said
+
+
+def _cast_new(db: Session, ch: Character, sheet: dict, forms: dict, chosen: str, kind: str, name: str) -> tuple[dict, str]:
+    """Find Familiar cast as a form the sheet doesn't have yet (board 2, "or a new one"): added to Extras through the
+    bridge; until D&D Beyond has it, askdnd keeps the familiar by its monster id (`adopt` ties it to the new creature)."""
+    form = next((f for f in new_forms(sheet) if f["id"] == chosen), None)
+    if form is None:
+        raise HTTPException(409, "That isn't one of Find Familiar's forms, or it's on Extras already.")
+    if not ddb_bridge.on_for(db, ch) or not ddb_bridge.reachable(ch):
+        raise HTTPException(409, f"A new form is added on D&D Beyond: {ch.name}'s sheet needs to be open (or pick a form on Extras).")
+    was = dict(ch.companions or {})
+    name = name.strip()[:60]
+    ch.companions = {**{i: v for i, v in was.items() if i not in forms and not i.startswith(NEW)},
+                     chosen: {"state": "here", "kind": kind, **({"name": name} if name and name != form["name"] else {})}}
+    mid = chosen[len(NEW):]
+    ddb_bridge.add(db, ch, "set", {"field": f"familiar_add:{mid}", "value": 1}, f"{ch.name}'s familiar: a {form['name']} added to Extras")
+    in_step(db, ch)  # (any other form switched off)
+    shown = f"{name}, a {form['name']}" if name and name != form["name"] else f"a {form['name']}"
+    return {"companions": json.dumps(was)}, f"Your familiar: {shown} ({kind}), added to D&D Beyond's Extras"
 
 
 def uncast(db: Session, ch: Character, companions: str, healed: str) -> None:

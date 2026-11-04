@@ -80,7 +80,8 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     return templates.TemplateResponse(request, "_cast_window.html", {"c": ch, "e": e, "ways": can, "reachable": reachable, "offline": offline,
                                                                      "ends": ch.concentration if e["conc"] and ch.concentration and ch.concentration.get("key") != key else None,
                                                                      "form_no": form_no(sheet, ch, e["name"]), "familiars": forms, "ff_first": first,
-                                                                     "ff_kind": kind, "ff_name": named, "kinds": companions.KINDS})
+                                                                     "ff_kind": kind, "ff_name": named, "kinds": companions.KINDS,
+                                                                     "ff_new": companions.new_forms(sheet) if forms is not None and reachable else []})
 
 
 def form_no(sheet: dict, ch: Character, name: str) -> str:
@@ -114,7 +115,7 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         ddb_bridge.reach(ch)
         _spend(ch, db, chosen["way"], 1, f"{ch.name}: {e['name']}, {chosen['name']} slot")
         undo["spent"] = chosen["way"]
-    if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and companions.familiars(ch, sheet):
+    if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and (familiar or companions.familiars(ch, sheet)):
         back, brought = companions.cast(db, ch, sheet, familiar, kind, familiar_name)
         undo |= back
         said += f": {brought}"
