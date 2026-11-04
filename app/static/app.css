@@ -2943,3 +2943,11 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .art-ref input { position: absolute; top: 4px; left: 4px; }
 .art-ref img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--r-md); border: 2px solid var(--line); display: block; }
 .art-ref:has(input:checked) img { border-color: var(--green); }
+/* One of a character's creatures in the fight (app/fight.py with_creatures; Your creatures, slice 3): its row under its
+   master's when it shares their Initiative, its token ringed green in the band */
+.pt-track tr.ft-creature.pet td:nth-child(2) { padding-left: var(--sp-6); }
+.pt-track .ft-creature a.ft-who { color: inherit; text-decoration: none; }
+.pt-track .ft-creature a.ft-who:hover b { text-decoration: underline; text-underline-offset: 3px; }
+.ft-whose { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); }
+.fb-who.fb-creature .fb-pic { box-shadow: 0 0 0 2px var(--green); }
+.fb-who.sub { transform: scale(.85); }

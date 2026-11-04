@@ -14,7 +14,7 @@
     <strong class="fb-head">{% if f.yours %}Your turn{% elif f.now %}{{ f.now.name }}’s turn{% elif f.next_yours %}You’re next{% else %}In battle{% endif %}</strong>
     <span class="fb-sub">{% if f.now and f.next_yours %}<span class="fb-mine">You’re next</span> · {% elif f.next and not f.next_yours %}Next: {{ f.next }} · {% endif %}<span class="roll-to">on D&amp;D Beyond</span></span>
   </span>
-  <span class="fb-order">{% for x in f.order %}<span class="fb-who{{ ' enemy' if x.kind == 'monster' else ' party' }}{{ ' now' if x.active }}{{ ' hid' if x.hidden }}{{ ' down' if x.down }}" title="{{ x.name }}{{ ' · enemy' if x.kind == 'monster' }}{{ ' · 0 Hit Points' if x.down }}{% if x.initiative is not none %} · initiative {{ x.initiative }}{% endif %}{% if x.hidden %} · hidden from the players{% endif %}">
+  <span class="fb-order">{% for x in f.order %}<span class="fb-who{{ ' enemy' if x.kind == 'monster' and not x.creature else ' party' }}{{ ' now' if x.active }}{{ ' hid' if x.hidden }}{{ ' down' if x.down }}{{ ' fb-creature' if x.creature }}{{ ' sub' if x.sub }}" title="{{ x.name }}{{ ' · ' ~ x.whose if x.whose }}{{ ' · enemy' if x.kind == 'monster' and not x.creature }}{{ ' · 0 Hit Points' if x.down }}{% if x.initiative is not none %} · initiative {{ x.initiative }}{% endif %}{% if x.hidden %} · hidden from the players{% endif %}">
     <span class="fb-pic" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><span class="fb-name">{{ x.name }}{% if x.form %} <small>({{ x.form }})</small>{% endif %}</span>{% if x.down %}<span class="fb-zero">0 HP</span>{% endif %}</span>{% endfor %}</span>
 </div>
 {% endif %}

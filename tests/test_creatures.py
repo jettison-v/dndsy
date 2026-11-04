@@ -384,3 +384,71 @@ def test_a_creatures_picture_in_the_picture_window(player, dm, db, labs, sheet):
     labs.companions = {str(RAVEN): {"state": "here", "kind": "Fey"}}  # (a new form: the same familiar, the same picture)
     db.flush()
     assert f"/characters/{labs.id}/creatures/familiar/picture?size=thumb" in player.get(f"/characters/{labs.id}/battle?creature={RAVEN}").text.replace("&amp;", "&")
+
+
+# ------------------------------------------------------------------ in the fight (slice 3, Nov 4)
+
+
+def told(turn=1, extra=()):
+    from tests.test_fight import heard
+
+    f = heard(turn=turn)
+    f["order"] += [dict(x, active=False) for x in extra]
+    return f
+
+
+def test_a_creature_sharing_its_masters_initiative_is_listed_right_after_them(player, db, labs):
+    """Brett, 2026-11-04 (Creatures as Characters board 4: never forgotten): a Homunculus Servant (it shares its master's
+    Initiative) sits right after Cole in the fight's order, with its Hit Points, AC and turn; Party's Rows show it."""
+    from app import fight
+
+    campaign = db.get(Campaign, labs.campaign_id)
+    fight.heard(db, campaign, told())
+    order = fight.for_person(db, campaign, "player@example.com")["order"]
+    assert [x["name"] for x in order][:2] == ["Cole", "Homunculus Servant"]
+    hom = order[1]
+    assert hom["sub"] and hom["initiative"] == 18 and hom["whose"] == "Cole's Homunculus" and hom["creature"]["hp"]["max"] == 1
+    rows = player.get("/party").text
+    assert 'class="ft-creature pet"' in rows and f'href="/characters/{labs.id}/battle?creature={ZAP}" data-no-peek' in rows
+
+
+def test_a_familiar_is_the_vtts_own_token_or_listed_under_its_master(player, db, labs, sheet):
+    """A familiar has its own Initiative: the VTT's companion token for it (by its name) is it; a monster token is only
+    by a name its player gave it, so an enemy Owl stays an enemy; one the VTT hasn't got is listed under its master."""
+    from app import fight
+
+    familiar_sheet(db, labs, sheet)
+    labs.companions = {str(OWL): {"state": "here", "kind": "Fey"}}  # (Pip, an Owl)
+    db.flush()
+    campaign = db.get(Campaign, labs.campaign_id)
+    fight.heard(db, campaign, told(extra=[{"key": "t-owl", "name": "Owl", "kind": "monster", "initiative": 12}]))
+    order = fight.for_person(db, campaign, "player@example.com")["order"]
+    enemy = next(x for x in order if x["key"] == "t-owl")
+    assert "creature" not in enemy  # (an Owl monster isn't Pip)
+    pip = next(x for x in order if x.get("creature") and x["name"] == "Pip")
+    assert pip["sub"] and pip["missing"] and pip["initiative"] is None  # (not in the VTT's order yet)
+    fight.heard(db, campaign, told(extra=[{"key": "t-pip", "name": "Pip", "kind": "companion", "initiative": 14}]))
+    order = fight.for_person(db, campaign, "player@example.com")["order"]
+    pip = next(x for x in order if x["key"] == "t-pip")
+    assert pip["creature"]["id"] == OWL and not pip["sub"] and pip["whose"] == "Cole's familiar"
+    assert [x["key"] for x in order].count("t-pip") == 1 and not any(x["key"] == f"cr:{labs.id}:{OWL}" for x in order)
+
+
+def test_a_creatures_turn_is_a_corner_card_for_its_masters_player(db, labs, sheet):
+    """One sharing its master's Initiative: when its master's turn ends. A familiar: when its own token's turn begins."""
+    from app import fight
+
+    familiar_sheet(db, labs, sheet)
+    labs.companions = {str(OWL): {"state": "here", "kind": "Fey"}}
+    db.flush()
+    campaign = db.get(Campaign, labs.campaign_id)
+    pip = {"key": "t-pip", "name": "Pip", "kind": "companion", "initiative": 14}
+    fight.heard(db, campaign, told(turn=1, extra=[pip]))
+    fight.heard(db, campaign, told(turn=2, extra=[pip]))  # (Cole's turn ends: the Homunculus's begins)
+    said = [(r["kind"], r["name"], r["character"]) for r in campaign.fight["reminders"]]
+    assert ("creature", "Homunculus Servant", labs.id) in said
+    f = told(turn=1, extra=[pip])
+    for x in f["order"]:
+        x["active"] = x["key"] == "t-pip"
+    fight.heard(db, campaign, f)
+    assert ("creature", "Pip", labs.id) in [(r["kind"], r["name"], r["character"]) for r in campaign.fight["reminders"]]

@@ -119,6 +119,7 @@ def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
         ended, began = turn_begun(prev, now)
         if began:
             follow(db, campaign, ended, began, now)
+            creature_turns(db, campaign, ended, began, now)
     campaign.fight, campaign.fight_at = now, datetime.now(UTC)
     return True
 
@@ -221,6 +222,106 @@ def follow(db: Session, campaign: Campaign, ended: str | None, began: str | None
             ch.concentration = conc
 
 
+# ------------------------------------------------------------------ creatures in the fight (Your creatures, slice 3)
+# Brett, 2026-11-04 (Creatures as Characters board 4: "not forgotten"): each character's creatures that are here join
+# the fight. A familiar has its own Initiative: it's the VTT's own companion token when the DM added one (matched by its
+# name, since the VTT says nothing else of it; a monster token only by a name its player gave it, never an enemy Owl),
+# else it's listed under its master, saying so. One that shares its master's Initiative (a Homunculus, a summon) is
+# listed right after its master. Its turn is a corner card for its master's player (and the DM, to know).
+
+
+def creatures_here(db: Session, campaign: Campaign) -> list[dict]:
+    """The campaign's characters' creatures that are here: {"master" (Character), "k" (its card, placed, with its
+    picture)}, masters in id order."""
+    from app import characters as chars
+    from app import creatures, pictures, vtt
+
+    if not vtt.on(campaign, "creatures"):
+        return []
+    out = []
+    members = db.scalars(select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
+                         .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None)).order_by(Character.id))
+    for ch in members:
+        sheet = chars.character_summary(ch)
+        pics = pictures.creature_urls(db, [ch.id]) if sheet else {}
+        for c in creatures.in_play(ch, sheet):
+            if creatures.where(ch, c) != "here":
+                continue
+            k = creatures.placed(ch, creatures.card(sheet, c), c)
+            pic = pics.get((ch.id, pictures.creature_key(c)))
+            out.append({"master": ch, "k": {**k, "picture": pic["thumb"] if pic else k["picture"]}})
+    return out
+
+
+def _named(k: dict) -> bool:
+    return bool(k["name"]) and k["name"] != k["kind"]
+
+
+def matched(order: list[dict], here: list[dict]) -> dict[str, dict]:
+    """{VTT key: one of `here`}: the VTT's own token for a creature (a companion token by its name or form, a monster
+    token only by a name its player gave it)."""
+    out, taken = {}, set()
+    for x in order:
+        if x.get("kind") == "character" or x.get("character"):
+            continue
+        name = " ".join(str(x.get("name") or "").lower().split())
+        for i, h in enumerate(here):
+            k = h["k"]
+            if i in taken:
+                continue
+            names = {k["name"].lower()} | ({k["kind"].lower()} if x.get("kind") == "companion" else set())
+            if name in names and (x.get("kind") == "companion" or _named(k)):
+                out[x["key"]], taken = h, taken | {i}
+                break
+    return out
+
+
+def _entry(h: dict, sub: bool) -> dict:
+    k, m = h["k"], h["master"]
+    return {"creature": {"master": m.id, "master_name": m.name, "id": k["id"], "role": k["role"], "hp": k["hp"], "ac": k["ac"],
+                         "turn": k["turn_short"], "own": k["own_initiative"], "picture": k["picture"]},
+            "sub": sub, "whose": f"{m.name}'s {k['role']}"}
+
+
+def with_creatures(db: Session, campaign: Campaign, order: list[dict]) -> list[dict]:
+    """The order with the campaign's creatures in it: the VTT's own token for one marked as it, and each other one right
+    after its master (`sub`); a familiar the VTT hasn't got says it needs its own Initiative there."""
+    here = creatures_here(db, campaign)
+    if not here:
+        return order
+    found = matched(order, here)
+    placed_ids = {id(h) for h in found.values()}
+    out = []
+    for x in order:
+        out.append({**x, **_entry(found[x["key"]], False)} if x.get("key") in found else x)
+        if x.get("character"):
+            for h in here:
+                if h["master"].id == x["character"] and id(h) not in placed_ids:
+                    k = h["k"]
+                    out.append({"key": f"cr:{h['master'].id}:{k['id']}", "name": k["name"], "kind": "companion", "monster": None,
+                                "character": None, "initiative": None if k["own_initiative"] else x.get("initiative"),
+                                "hidden": False, "active": False, "image": None, **_entry(h, True),
+                                "missing": k["own_initiative"]})
+    return out
+
+
+def creature_turns(db: Session, campaign: Campaign, ended: str | None, began: str | None, now: dict) -> None:
+    """A creature's turn, as a corner card for its master's player (and the DM): one sharing its master's Initiative
+    when its master's turn ends; a familiar when the VTT's own token for it begins its turn."""
+    here = creatures_here(db, campaign)
+    if not here:
+        return
+    keys = {x["character"]: x["key"] for x in now["order"] if x.get("character")}
+    found = matched(now["order"], here)
+    for h in here:
+        k, m = h["k"], h["master"]
+        if not k["own_initiative"] and ended and keys.get(m.id) == ended:
+            remind(now, m, "creature", k["name"], f"{k['name']}'s turn, right after {m.name}'s: {k['turn']}", creature=k["id"])
+    if began in found:
+        h = found[began]
+        remind(now, h["master"], "creature", h["k"]["name"], f"{h['k']['name']}'s turn: {h['k']['turn']}", creature=h["k"]["id"])
+
+
 def shown(campaign: Campaign | None, dm: bool, mine: set[int] = frozenset()) -> dict | None:
     """The fight as this person sees it, or None (no fight, or not heard for STALE): {"round", "turn", "order",
     "now" (whose turn: the entry), "next" (the entry after it), "yours" (it's one of `mine`'s turn), "next_yours",
@@ -269,6 +370,8 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
                        # a character at 0 Hit Points (app/death_saves.py): its token striped, "0 HP"
                        "down": ((sheets.get(x.get("character")) or {}).get("hit_points") or {}).get("current") == 0}
                       for x in f["order"]]
+        f["order"] = [{**x, "picture": x["creature"]["picture"] or x.get("picture")} if x.get("creature") else x
+                      for x in with_creatures(db, campaign, f["order"])]
         now = next((i for i, x in enumerate(f["order"]) if x.get("active")), None)
         f["next"] = f["order"][(now + 1) % len(f["order"])]["name"] if now is not None and len(f["order"]) > 1 else ""  # (those this person sees)
     return f
