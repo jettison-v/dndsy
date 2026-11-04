@@ -416,7 +416,7 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
             touched.append(f)
         elif kind == "set":  # an absolute value: on or off, a level, where an item is, or back as it was
             f = d["field"]
-            if get(f) is None and not f.startswith(("item:", "creature_max:")):  # (a creature's maximum: none set yet)
+            if get(f) is None and not f.startswith(("item:", "creature_max:", "creature_type:", "creature_name:")):  # (none set yet)
                 no(it, f"{ddb_fields.name(n['raw'], f)} isn't on D&D Beyond any more.")
                 continue
             vals[f] = d["value"]
@@ -1815,6 +1815,7 @@ CONNECTIONS = [
     ("Adding an item (Add item, Give, Give loot)", ("add",), ("add-item", "give", "loot"), "yes"),
     ("Preparing spells", ("prep",), ("prepare",), "yes"),
     ("A creature's Hit Points and maximum", ("creature", "creature_max"), ("creature-hp",), "yes"),
+    ("A familiar: here or not, what it is, its name", ("creature_active", "creature_type", "creature_name"), ("familiar",), "yes"),
 ]
 
 

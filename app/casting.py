@@ -72,7 +72,7 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     sheet, e = _spell(db, ch, key)
     # Find Familiar brings the familiar (Brett, 2026-11-04, Creatures as Characters board 2): its form and what it is
     forms = companions.familiars(ch, sheet) if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) else None
-    first, kind = companions.picked(forms or [])
+    first, kind, named = companions.picked(forms or [])
     reachable = ddb_bridge.reachable(ch)
     # The familiar is askdnd's, like a Wild Shape form: with the sheet out of reach, still as a Ritual or without a slot
     offline = forms is not None and not reachable
@@ -80,7 +80,7 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     return templates.TemplateResponse(request, "_cast_window.html", {"c": ch, "e": e, "ways": can, "reachable": reachable, "offline": offline,
                                                                      "ends": ch.concentration if e["conc"] and ch.concentration and ch.concentration.get("key") != key else None,
                                                                      "form_no": form_no(sheet, ch, e["name"]), "familiars": forms, "ff_first": first,
-                                                                     "ff_kind": kind, "kinds": companions.KINDS})
+                                                                     "ff_kind": kind, "ff_name": named, "kinds": companions.KINDS})
 
 
 def form_no(sheet: dict, ch: Character, name: str) -> str:
@@ -98,7 +98,7 @@ def form_no(sheet: dict, ch: Character, name: str) -> str:
 
 @router.post("/characters/{character_id:int}/cast")
 def cast(request: Request, character_id: int, key: str, way: str = Form(""), familiar: str = Form(""), kind: str = Form(""),
-         db: Session = Depends(get_db)):
+         familiar_name: str = Form(""), db: Session = Depends(get_db)):
     """Cast it: the slot on its way to D&D Beyond, Concentration begun."""
     ch, _ = _guard(db, request, character_id)
     sheet, e = _spell(db, ch, key)
@@ -115,7 +115,7 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         _spend(ch, db, chosen["way"], 1, f"{ch.name}: {e['name']}, {chosen['name']} slot")
         undo["spent"] = chosen["way"]
     if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and companions.familiars(ch, sheet):
-        back, brought = companions.cast(db, ch, sheet, familiar, kind)
+        back, brought = companions.cast(db, ch, sheet, familiar, kind, familiar_name)
         undo |= back
         said += f": {brought}"
     if e["conc"]:

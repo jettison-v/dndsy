@@ -31,8 +31,12 @@
     'PUT /character/v5/inventory/currency/electrum', 'PUT /character/v5/inventory/currency/gold',
     'PUT /character/v5/inventory/currency/platinum',
     // (0.10.0: one of the character's creatures' Hit Points, and its maximum: a character value of type 43 only, below)
-    'PUT /character/v5/creature/hp', 'PUT /character/v5/custom/value', 'DELETE /character/v5/custom/value']);
-  const CREATURE_MAX = 43;  // the only character value askdnd may set (D&D Beyond's CREATURE_HIT_POINTS)
+    'PUT /character/v5/creature/hp', 'PUT /character/v5/custom/value', 'DELETE /character/v5/custom/value',
+    // (0.11.0: a familiar kept in step: switched on or off on its Extras, what it is (type 44, below), its name)
+    'PUT /character/v5/creature/status', 'PUT /character/v5/creature']);
+  // The only character values askdnd may set: a creature's maximum and what it is (D&D Beyond's CREATURE_HIT_POINTS and
+  // CREATURE_TYPE_OVERRIDE)
+  const CREATURE_VALUES = new Set([43, 44]);
   const sheetId = () => (location.pathname.match(/\/characters\/(\d+)/) || [])[1];
   const onSheet = !!sheetId();  // (elsewhere it only makes batches: nothing of the page is heard or changed)
   const post = m => window.postMessage({ askdndBridge: 'from-page', characterId: sheetId(), ...m }, location.origin);
@@ -249,7 +253,7 @@
       for (const op of batch.ops) {
         if (!WRITES.has(op.method + ' ' + op.path)) throw new Error("That isn't a change askdnd may make.");
         if (String(op.body && op.body.characterId) !== who) throw new Error("A request for a different character.");
-        if (op.path.endsWith('/custom/value') && Number(op.body.typeId) !== CREATURE_MAX) throw new Error("That isn't a change askdnd may make.");
+        if (op.path.endsWith('/custom/value') && !CREATURE_VALUES.has(Number(op.body.typeId))) throw new Error("That isn't a change askdnd may make.");
       }
       const d = await character(who);
       const todo = [], conflicts = [];
