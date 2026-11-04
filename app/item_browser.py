@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app import ddb_bridge, picks, realtime, web
+from app import ddb_bridge, item_fit, picks, realtime, web
 from app.auth import current_user, is_admin, is_dm
 from app.db import get_db
 from app.giving import COINS, catalog
@@ -96,8 +96,10 @@ def _have(sheet: dict) -> dict[int, int]:
     return have
 
 
-def _row(i: dict, have: dict[int, int]) -> dict:
-    return {**i, "have": have.get(i["id"], 0), "price": money(i["cost_cp"]) if i.get("cost_cp") else "",
+def _row(i: dict, have: dict[int, int], sheet: dict | None = None, who: str = "") -> dict:
+    """One item as the browser lists it, with what it would mean for the character (app/item_fit.py: the row's icon, the
+    details' For <character>)."""
+    return {**i, "have": have.get(i["id"], 0), "price": money(i["cost_cp"]) if i.get("cost_cp") else "", "fit": item_fit.fit(sheet, i, who),
             "weight_label": f"{i['weight']:g} lb" if i.get("weight") else "",
             "f": {"kind": i["kind"], "rarity": i["rarity"], "attune": "Needs attunement" if i["attune"] else "No attunement", "book": i["book"]}}
 
@@ -107,8 +109,8 @@ def browse(request: Request, character_id: int, db: Session = Depends(get_db)):
     """The browser, in a large window: Add item (the player's own) or Give loot (the DM's)."""
     ch, _, mode = _mode(db, request, character_id)
     sheet = _sheet(db, ch)
-    have = _have(sheet)
-    rows = [_row(i, have) for i in catalog()]
+    have, who = _have(sheet), ch.name.split()[0]
+    rows = [_row(i, have, sheet, who) for i in catalog()]
     groups = [{"key": "kind", "label": "Kind", "values": sorted({r["f"]["kind"] for r in rows})},
               {"key": "rarity", "label": "Rarity", "values": [v for v in RARITY_ORDER if any(r["f"]["rarity"] == v for r in rows)]},
               {"key": "attune", "label": "Attunement", "values": ["Needs attunement", "No attunement"]},
@@ -126,7 +128,8 @@ def detail(request: Request, character_id: int, definition_id: int, db: Session 
     item = next((i for i in catalog() if i["id"] == definition_id), None)
     if item is None:
         raise HTTPException(404)
-    return templates.TemplateResponse(request, "_item_browser_detail.html", {"c": ch, "mode": mode, "i": _row(item, _have(_sheet(db, ch)))})
+    sheet = _sheet(db, ch)
+    return templates.TemplateResponse(request, "_item_browser_detail.html", {"c": ch, "mode": mode, "i": _row(item, _have(sheet), sheet, ch.name.split()[0])})
 
 
 @router.post("/characters/{character_id:int}/items/add")

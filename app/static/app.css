@@ -2720,10 +2720,23 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
    the list and what the picked item is, side by side; Adding along the bottom. Narrower than 900px the item shows in
    place of the list, with Back to the list. */
 .ib-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; gap: var(--sp-4); align-items: start; }
-.ib-cols { display: grid; grid-template-columns: minmax(12rem, 1fr) max-content max-content max-content 32px; column-gap: 14px; }
+.ib-cols { display: grid; grid-template-columns: 20px minmax(12rem, 1fr) max-content max-content max-content 32px; column-gap: 14px; }
 .ib-cols > .ls-head, .ib-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
 .ib-cols > .ls-empty { grid-column: 1 / -1; }
 .ib-row.sel { background: var(--selected-bg); }
+/* Can the character use it (app/item_fit.py): a tick in a circle, or a triangle for a catch; the details say the rest */
+.ib-fit { display: grid; place-items: center; width: 20px; height: 20px; }
+.ib-fit.ok { color: var(--green); }
+.ib-fit.warn { color: var(--amber); }
+.ib-for { display: grid; gap: 6px; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); }
+.ib-for-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--sp-2); }
+.ib-for-h .note { font-size: var(--fs-xs); }
+.ib-for-h b { color: var(--text-strong); }
+.ib-for-l { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 6px; font-size: var(--fs-sm); line-height: 1.45; }
+.ib-for-k { font-weight: 700; text-align: center; color: var(--muted); }
+.ib-for-k.ok { color: var(--green); }
+.ib-for-k.warn { color: var(--amber); }
+.ib-for-k.change { color: var(--blue); }
 .ib-row.in-basket { box-shadow: inset 3px 0 0 var(--green); }
 .ib-cost { font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ib-plus { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border-radius: var(--r-sm); border: 1.5px solid var(--line-strong); background: var(--bg); color: var(--text-strong); font-weight: 700; cursor: pointer; }
@@ -2760,9 +2773,9 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .ib-foot input.ib-amount { width: 6em; }
 .ib-price-note, .ib-foot > .use-said { flex-basis: 100%; margin: 0; }
 @container list (max-width: 560px) {
-  .ib-cols { grid-template-columns: minmax(0, 1fr) max-content 44px; }
+  .ib-cols { grid-template-columns: 20px minmax(0, 1fr) max-content 44px; }
   .ib-cols > .ls-head, .ib-cols > .ls-row { grid-template-columns: subgrid; }
-  .ib-cols .ls-head > :nth-child(2), .ib-cols .ls-head > :nth-child(4), .ib-row > .ib-rar, .ib-row > .ib-cost + .note { display: none; }
+  .ib-cols .ls-head > :nth-child(3), .ib-cols .ls-head > :nth-child(5), .ib-row > .ib-rar, .ib-row > .ib-cost + .note { display: none; }
   .ib-plus { width: 40px; height: 40px; }
 }
 @media (max-width: 900px) {

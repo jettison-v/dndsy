@@ -15,6 +15,12 @@
     <dt>From</dt><dd>{{ i.book }}</dd>
     <dt>{{ c.name }} has</dt><dd>{{ i.have or "none" }}</dd>
   </dl>
+  {% if i.fit.lines %}{# For <character> (app/item_fit.py; Brett's feedback note 1): what it would mean for them, facts only #}
+  <section class="ib-for" aria-label="For {{ c.name.split()[0] }}">
+    <div class="ib-for-h"><b>For {{ c.name.split()[0] }}</b><span class="note">from the sheet; the DM rules</span></div>
+    {% for kind, text in i.fit.lines %}<div class="ib-for-l"><span class="ib-for-k {{ kind }}" aria-label="{{ {'ok': 'Yes', 'warn': 'A catch', 'change': 'Changes', 'note': 'Note'}[kind] }}">{{ {"ok": "✓", "warn": "!", "change": "→", "note": "·"}[kind] }}</span><span>{{ text }}</span></div>{% endfor %}
+  </section>
+  {% endif %}
   {% if i.text %}<div class="ib-text">{% for p in i.text.split("\n") if p.strip() %}<p>{{ p }}</p>{% endfor %}</div>{% endif %}
   <button type="button" class="btn primary small" data-ib-add>+ {{ "Give" if mode == "loot" else "Add" }} {{ i.name }}</button>
 </div>

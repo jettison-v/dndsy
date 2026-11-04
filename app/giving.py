@@ -145,7 +145,16 @@ def _item(i: dict, book: int) -> dict:
             "weight": float(i.get("weight") or 0) * float(i.get("weightMultiplier") or 1),
             "damage": f"{damage.get('diceString') or ''} {i.get('damageType') or ''}".strip() if damage.get("diceString") else "",
             "ac": i.get("armorClass"), "properties": [p["name"] + (f" ({p['notes']})" if p.get("notes") else "") for p in i.get("properties") or [] if p.get("name")],
-            "picture": picture, "book": ITEM_BOOKS.get(book, ""), "text": ddb.html_to_text(i.get("description"))[:6000], "container": bool(i.get("isContainer"))}
+            "picture": picture, "book": ITEM_BOOKS.get(book, ""), "text": ddb.html_to_text(i.get("description"))[:6000], "container": bool(i.get("isContainer")),
+            # What it would mean for a character (app/item_fit.py): its armor or weapon kind, Strength and Stealth, the
+            # mastery and other properties by name, and what it grants (D&D Beyond's modifiers: AC, saves, a score)
+            "armor_type": i.get("armorTypeId"), "str_req": i.get("strengthRequirement"), "stealth_dis": i.get("stealthCheck") == 2,
+            "weapon_cat": i.get("categoryId") if i.get("filterType") == "Weapon" else None, "attack_type": i.get("attackType"),
+            "base_name": i.get("type") if i.get("filterType") == "Weapon" else (i.get("baseArmorName") or ""),
+            "dice": damage.get("diceString") or "", "damage_type": i.get("damageType") or "",
+            "props": {p["name"]: p.get("notes") or "" for p in i.get("properties") or [] if p.get("name")},
+            "mods": [{"type": m.get("type"), "sub": m.get("subType"), "value": m.get("value"), "attuned": bool(m.get("requiresAttunement"))}
+                     for m in i.get("grantedModifiers") or [] if m.get("type") in ("bonus", "set") and m.get("subType")]}
 
 
 def catalog() -> list[dict]:
