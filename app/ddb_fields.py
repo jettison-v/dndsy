@@ -5,12 +5,15 @@ A field is a key: "hp", "death", "inspiration", "exhaustion", "condition:<id>", 
 "pact:<level>", "uses:<action id>", "item:<inventory id>" (its count; None once removed),
 "equipped:<id>", "attuned:<id>", "charges:<id>", "container:<id>", "coin:<cp|sp|ep|gp|pp>", "add:<definition id>" (how
 many of that item the character has, in all), "prep:<class row id>:<spell's id on the class list>" (whether it's prepared;
-D&D Beyond drops an unprepared spell from the sheet, which reads as not prepared). `steps(field)` says where D&D Beyond keeps it in a character's JSON, as
+D&D Beyond drops an unprepared spell from the sheet, which reads as not prepared), "creature:<creature id>" (one of the
+character's creatures' damage taken and temporary hit points, app/creatures.py) and "creature_max:<creature id>" (the
+maximum D&D Beyond shows for it, its character value 43 when someone set one; None for its stat block's). `steps(field)` says where D&D Beyond keeps it in a character's JSON, as
 steps the extension follows too (extension/askdnd-bridge/ddb-page.js `pick`), so askdnd's read-back, the extension's
 check before writing and its check of the open sheet always read a value the same way:
 
 - a string reads a dict's entry ("removedHitPoints"),
-- {key: value} picks the element of a list whose `key` is `value` ({"id": 7}, {"level": 1}; compared as text),
+- {key: value} picks the element of a list whose `key` is `value` ({"id": 7}, {"level": 1}; compared as text); with
+  several keys, the one matching them all (a character value: {"typeId": 43, "valueId": "25957677"}),
 - "*" joins the lists in a dict into one ("actions": its race, class and feat lists),
 - {"read": {name: steps}} reads several values at once, as a dict,
 - {"or": X} stands for a value D&D Beyond left out (no temporary hit points, no Exhaustion),
@@ -37,7 +40,10 @@ WRITES = {("PUT", HP_PATH), ("PUT", f"{CS}/life/death-saves"), ("PUT", f"{CS}/ch
           ("PUT", f"{CS}/inventory/item/attuned"), ("PUT", f"{CS}/inventory/item/charge"),
           ("PUT", f"{CS}/inventory/item/move"), ("POST", f"{CS}/inventory/item"), ("DELETE", f"{CS}/inventory/item"),
           ("PUT", f"{CS}/spell/prepared"),
-          *{("PUT", f"{CS}/inventory/currency/{name}") for name in COINS.values()}}
+          *{("PUT", f"{CS}/inventory/currency/{name}") for name in COINS.values()},
+          # (extension 0.10.0: a creature's Hit Points and its maximum, D&D Beyond's character value 43 only)
+          ("PUT", f"{CS}/creature/hp"), ("PUT", f"{CS}/custom/value"), ("DELETE", f"{CS}/custom/value")}
+CREATURE_MAX = 43  # D&D Beyond's AdjustmentTypeEnum.CREATURE_HIT_POINTS: a creature's maximum, set on its sheet
 
 
 def pick(data, steps: list):
@@ -60,9 +66,12 @@ def pick(data, steps: list):
             where, want, key = s["sum"]
             v = sum(x.get(key) or 0 for x in v if isinstance(x, dict) and str(pick(x, where)) == str(want)) if isinstance(v, list) else None
         else:
-            (key, want), = s.items()
-            v = next((x for x in v if isinstance(x, dict) and str(x.get(key)) == str(want)), None) if isinstance(v, list) else None
+            v = next((x for x in v if _matches(x, s)), None) if isinstance(v, list) else None
     return v
+
+
+def _matches(x, want: dict) -> bool:
+    return isinstance(x, dict) and all(str(x.get(k)) == str(w) for k, w in want.items())
 
 
 def _split(field: str) -> tuple[str, str]:
@@ -91,6 +100,9 @@ def steps(field: str) -> list:
         "coin": ["currencies", arg, {"or": 0}],
         "add": ["inventory", {"sum": [["definition", "id"], arg, "quantity"]}],
         "prep": ["classSpells", {"characterClassId": arg.partition(":")[0]}, "spells", {"id": arg.partition(":")[2]}, "prepared", {"or": False}],
+        "creature": ["creatures", {"id": arg}, {"read": {"removedHitPoints": ["removedHitPoints", {"or": 0}],
+                                                         "temporaryHitPoints": ["temporaryHitPoints", {"or": 0}]}}],
+        "creature_max": ["characterValues", {"typeId": CREATURE_MAX, "valueId": arg}, "value"],
     }[kind]
 
 
@@ -113,6 +125,10 @@ def put(data: dict, field: str, v) -> None:
             known = next((s for s in pool if str(s.get("id")) == entry), None)
             if known:
                 group.setdefault("spells", []).append({**known, "prepared": True})
+        return
+    if kind == "creature_max":  # a character value: added, changed, or gone (back to the stat block's)
+        rest = [x for x in data.get("characterValues") or [] if not _matches(x, {"typeId": CREATURE_MAX, "valueId": arg})]
+        data["characterValues"] = rest + ([{"typeId": CREATURE_MAX, "valueId": str(arg), "value": int(v)}] if v else [])
         return
     if kind in ("condition", "exhaustion"):  # a condition is there or not; Exhaustion is one with a level
         cid = EXHAUSTION if kind == "exhaustion" else int(arg)
@@ -143,9 +159,8 @@ def _put(here, path: list, v) -> None:
                 here[s] = v
                 return
             here = here.get(s)
-        elif isinstance(s, dict) and len(s) == 1:  # the one in a list with this id (or level)
-            (key, want), = s.items()
-            here = next((x for x in here if isinstance(x, dict) and str(x.get(key)) == str(want)), None) if isinstance(here, list) else None
+        elif isinstance(s, dict):  # the one in a list with this id (or level), or matching several keys
+            here = next((x for x in here if _matches(x, s)), None) if isinstance(here, list) else None
         if here is None:
             return
 
@@ -164,7 +179,19 @@ def tracked(data: dict | None) -> dict:
             fs += [f"{k}:{i['id']}" for k in ("item", "equipped", "container")]
             fs += [f"attuned:{i['id']}"] if (i.get("definition") or {}).get("canAttune") or i.get("isAttuned") else []
             fs += [f"charges:{i['id']}"] if i.get("limitedUse") else []
+    for c in data.get("creatures") or []:  # (a Wild Shape form's Hit Points are the druid's: not followed)
+        if isinstance(c, dict) and c.get("id") is not None and c.get("groupId") not in (1, 13):
+            fs += [f"creature:{c['id']}", f"creature_max:{c['id']}"]
     return {f: value(data, f) for f in fs}
+
+
+def creature(data: dict | None, creature_id) -> dict:
+    return pick(data or {}, ["creatures", {"id": creature_id}]) or {}
+
+
+def creature_max(data: dict | None, creature_id) -> int:
+    """The maximum D&D Beyond shows for one of the character's creatures: its set one, else its stat block's."""
+    return value(data or {}, f"creature_max:{creature_id}") or (creature(data, creature_id).get("definition") or {}).get("averageHitPoints") or 0
 
 
 # ------------------------------------------------------------------ saying it
@@ -197,6 +224,10 @@ def name(data: dict | None, field: str) -> str:
         return f"{((pick(data, ['classes', {'id': arg}]) or {}).get('definition') or {}).get('name') or 'Class'} Hit Dice"
     if kind == "uses":
         return (pick(data, ["actions", "*", {"id": arg}]) or {}).get("name") or "a use"
+    if kind in ("creature", "creature_max"):
+        c = creature(data, arg)
+        who = c.get("name") or (c.get("definition") or {}).get("name") or "a creature"
+        return f"{who}'s {'hit points' if kind == 'creature' else 'maximum hit points'}"
     if kind == "condition":
         return CONDITIONS.get(int(arg), "a condition")
     if kind == "slot":
@@ -208,11 +239,16 @@ def name(data: dict | None, field: str) -> str:
 def text(data: dict | None, field: str, v, max_hit_points: int = 0) -> str:
     """A value as the log and the make-by-hand list say it, after the name: "31 + 5 temporary", "×9", "2 used"."""
     kind, _ = _split(field)
+    if kind == "creature_max":
+        return str(v) if v else "its stat block's"
     if v is None:
         return "gone" if kind == "item" else "?"
     if kind == "hp":
         temp = v["temporaryHitPoints"]
         return f"{max_hit_points - v['removedHitPoints']}" + (f" + {temp} temporary" if temp else "")
+    if kind == "creature":
+        temp, most = v["temporaryHitPoints"], creature_max(data, _split(field)[1])
+        return f"{most - v['removedHitPoints']} of {most}" + (f" + {temp} temporary" if temp else "")
     if kind == "death":
         return f"{v['successCount']} successes, {v['failCount']} failures"
     if kind in ("item", "add"):
@@ -264,6 +300,12 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
         return req("PUT", "condition", id=EXHAUSTION, level=v, totalHp=max_hit_points) if v else req("DELETE", "condition", id=EXHAUSTION)
     if kind == "condition":
         return req("PUT", "condition", id=int(arg), level=None, totalHp=max_hit_points) if v else req("DELETE", "condition", id=int(arg))
+    if kind == "creature":
+        return req("PUT", "creature/hp", id=int(arg), **v)
+    if kind == "creature_max":  # its maximum as D&D Beyond shows it, or back to its stat block's
+        c = creature(data, arg)
+        key = {"typeId": CREATURE_MAX, "valueId": str(arg), "valueTypeId": str(c.get("entityTypeId")), "contextId": None, "contextTypeId": None}
+        return req("PUT", "custom/value", **key, value=int(v), notes=None) if v else req("DELETE", "custom/value", **key)
     if kind == "hitdice":  # D&D Beyond spends Hit Dice only as part of a Short Rest (it restores what a Short Rest restores)
         return req("POST", "character/rest/short", classHitDiceUsed={arg: v}, resetMaxHpModifier=False)
     if kind in ("slot", "pact"):

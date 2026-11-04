@@ -956,6 +956,36 @@ def in_form(t: Table, seat: str = "player4") -> None:
     undone(t, sheet, before, "the use and the Temporary Hit Points put back", SLOW)
 
 
+def creature_hp(t: Table, seat: str = "player3") -> None:
+    """Your creatures, slice 2 (extension 0.10.0): Vi's Homunculus. Set D&D Beyond's maximum to the rule's, then damage
+    and healing from askdnd land on its Extras; then its damage and maximum are put back as they were."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    before = record(sheet)
+    c = next(x for x in before["creatures"] if x.get("groupId") == 12)
+    mine = lambda d: next(x for x in d["creatures"] if x["id"] == c["id"])
+    most = lambda d: next((v["value"] for v in d.get("characterValues") or [] if v.get("typeId") == 43 and str(v.get("valueId")) == str(c["id"])), None)
+    page.goto(page.url.split("?")[0] + f"?creature={c['id']}", wait_until="domcontentloaded")
+    fix = page.locator('button[hx-post$="/max"]')
+    if fix.count():
+        fix.first.click(timeout=8000)
+        t.expect("D&D Beyond's maximum is set to the rule's", lambda: (most(record(sheet)) or 0) > 1, SLOW)
+        page.wait_for_timeout(1500)
+        page.goto(page.url, wait_until="domcontentloaded")
+    for to, want in (("damage", (c.get("removedHitPoints") or 0) + 3), ("heal", c.get("removedHitPoints") or 0)):
+        page.locator(".cr-hp-pop > summary").first.click(timeout=8000)
+        page.fill(".cr-hp-form input[name=amount]", "3")
+        page.locator(f'.cr-hp-form button[value="{to}"]').click(timeout=8000)
+        t.expect(f"its {to} lands on D&D Beyond", lambda w=want: (mine(record(sheet)).get("removedHitPoints") or 0) == w, SLOW)
+        page.wait_for_timeout(1500)
+        page.goto(page.url, wait_until="domcontentloaded")
+    if most(before) != most(record(sheet)):
+        key = {"typeId": 43, "valueId": str(c["id"]), "valueTypeId": str(c["entityTypeId"]), "contextId": None, "contextTypeId": None}
+        print("  its maximum put back:", sheet.evaluate(TIDYING, [SHEETS[seat], [["DELETE", "custom/value", key]] if not most(before)
+                                                                 else [["PUT", "custom/value", {**key, "value": most(before), "notes": None}]]]), flush=True)
+
+
 def dm_backup(t: Table, seat: str = "player2") -> None:
     """DM Backup (extension 0.9.8): with a player's sheet closed, the DM's browser with a D&D Beyond page open makes
     askdnd's change on it; the pill says so, then Connected again once the sheet is back."""
@@ -978,8 +1008,10 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
         "cast": cast, "resource": resource, "coins": coins, "rests": rests, "temp-hp": temp_hp, "death-saves": death_saves,
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
-        "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form}
+        "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
+# Runs left out of part 1 (and the nightly) until the seats have what they need: named, they run
+WAITING = {"creature-hp"}  # (extension 0.10.0, waiting for Google's review: Nov 3)
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 
 
@@ -1068,7 +1100,7 @@ def used(names: list[str]) -> set[str]:
 def main() -> int:
     args = sys.argv[1:]
     to_sentry = "--sentry" in args
-    names = [a for a in args if not a.startswith("--")] or list(RUNS)
+    names = [a for a in args if not a.startswith("--")] or [n for n in RUNS if n not in WAITING]
     sys.stdout = out = Kept(sys.stdout)
     with sync_playwright() as p:
         t = Table(p)

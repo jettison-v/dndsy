@@ -25,6 +25,7 @@ from app.inventory import router as inventory_router
 from app.preparing import router as preparing_router
 from app.giving import router as giving_router
 from app.item_browser import router as item_browser_router
+from app.creature_hp import router as creature_hp_router
 from app.item_use import router as item_use_router
 from app.level_up import router as level_up_router
 from app.resources import router as resources_router
@@ -154,6 +155,7 @@ app.include_router(inventory_router)  # (through the bridge: on_for)
 app.include_router(preparing_router)  # (through the bridge: on_for)
 app.include_router(giving_router)  # (through the bridge: on_for)
 app.include_router(item_browser_router)  # (through the bridge: plays)
+app.include_router(creature_hp_router)  # (Your creatures: its Hit Points through the bridge)
 app.include_router(admin_notes_router)
 app.include_router(manage_table_router)
 app.include_router(manage_accounts_router)

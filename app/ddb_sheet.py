@@ -1191,6 +1191,8 @@ class _Sheet:
                 # Your creatures (app/creatures.py): which one it is on the sheet, and its Hit Points as D&D Beyond keeps them
                 "id": c.get("id"), "group_id": c.get("groupId"), "group_name": GROUP_NAMES.get(c.get("groupId"), "Creature"),
                 "removed": c.get("removedHitPoints") or 0, "temp": c.get("temporaryHitPoints") or 0, "active": bool(c.get("isActive")),
+                "max_set": next((v.get("value") for v in self.d.get("characterValues") or [] if v.get("typeId") == 43
+                                 and str(v.get("valueId")) == str(c.get("id")) and v.get("value")), None),  # (its maximum, set on D&D Beyond)
                 "picture": next((u for u in (df.get("largeAvatarUrl"), df.get("avatarUrl")) if isinstance(u, str)
                                  and u.startswith(("https://www.dndbeyond.com/", "https://media.dndbeyond.com/"))), ""),
                 "about": html_to_text(df.get("characteristicsDescription")),

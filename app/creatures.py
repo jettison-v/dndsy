@@ -92,12 +92,21 @@ def card(sheet: dict, c: dict) -> dict:
     might = pb - 2 if any(t["name"] == MIGHT for t in b.get("traits") or []) else 0
     notes = []
     grows = GROWS.get(c["kind"])
-    hp_max, hp_parts = b.get("hp") or c.get("hit_points") or 1, [("D&D Beyond's stat block", b.get("hp") or 1)]
+    block_hp = b.get("hp") or c.get("hit_points") or 1
+    ddb_max = c.get("max_set") or block_hp  # (what D&D Beyond shows: its set maximum, else the stat block's)
+    rule = None
     if grows and _level(sheet, grows[0]):
         lv, intm = _level(sheet, grows[0]), _master_mod(sheet, "int")
-        hp_max = grows[2](lv, intm)
-        hp_parts = [(f"{grows[1]} ({grows[3]})", hp_max)]
-        notes.append(f"Hit Points: {grows[1]}, so {hp_max} at {grows[0]} {lv} ({grows[3]}).")
+        rule = grows[2](lv, intm)
+        notes.append(f"Hit Points: {grows[1]}, so {rule} at {grows[0]} {lv} ({grows[3]}).")
+    if c.get("max_set"):  # set on D&D Beyond (its player or DM): that's the one
+        hp_max, hp_parts = c["max_set"], [("Set on D&D Beyond", c["max_set"])]
+        if rule and rule != c["max_set"]:
+            notes.append(f"D&D Beyond's maximum is set to {c['max_set']}; the rule works out {rule}. The DM rules.")
+    elif rule:
+        hp_max, hp_parts = rule, [(f"{grows[1]} ({grows[3]})", rule)]
+    else:
+        hp_max, hp_parts = block_hp, [("D&D Beyond's stat block", block_hp)]
     if might:
         notes.append(f"{MIGHT}: its skills, saving throws and attack's to-hit and damage are {_signed(might)} "
                      f"(the stat block's numbers are for a Proficiency Bonus of +2; yours is {_signed(pb)}).")
@@ -123,7 +132,8 @@ def card(sheet: dict, c: dict) -> dict:
     return {
         "id": c["id"], "name": c["name"], "kind": c["kind"], "group": c.get("group_name") or "Creature", "picture": c.get("picture") or "",
         "active": c.get("active"),
-        "hp": {"max": hp_max, "current": max(0, hp_max - removed), "temp": temp, "removed": removed, "parts": hp_parts},
+        "hp": {"max": hp_max, "current": max(0, hp_max - removed), "temp": temp, "removed": removed, "parts": hp_parts,
+               "ddb_max": ddb_max, "rule": rule, "fix": rule if rule and rule != ddb_max else None},  # (fix: D&D Beyond shows another maximum)
         "ac": b.get("ac") or c.get("armor_class"), "speed": speed, "walk": (b.get("speed") or {}).get("walk", 0),
         "other_speeds": ", ".join(f"{k} {v} ft" for k, v in (b.get("speed") or {}).items() if k != "walk"), "initiative": _signed(_mod(scores.get("dex", 10))),
         "abilities": abilities, "saves": saves, "skills": skills, "senses": ws.senses_text(b), "passive": passive,
@@ -151,3 +161,4 @@ def _first(text: str, n: int = 320) -> str:
     """The creature's description, its first paragraph or so."""
     para = next((p.strip() for p in text.split("\n") if p.strip()), "")
     return para if len(para) <= n else re.sub(r"\s+\S*$", "", para[:n]) + "…"
+

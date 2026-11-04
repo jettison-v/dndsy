@@ -114,3 +114,54 @@ def test_party_shows_it_under_its_master(player, db, labs):
     db.get(Campaign, labs.campaign_id).vtt_pieces = ["sync"]
     db.flush()
     assert "pt-creature" not in player.get("/party").text
+
+
+# ------------------------------------------------------------------ its Hit Points on D&D Beyond (slice 2)
+
+
+def ops(db, ch):
+    from app import ddb_bridge
+
+    return ddb_bridge.outbox(db, ch)["ops"]
+
+
+def test_its_damage_and_healing_go_to_d_and_d_beyond_as_its_sheet_sends_them(player, db, labs):
+    """Brett, Nov 3 ("keep D&D Beyond up to date"): PUT creature/hp, as D&D Beyond's own sheet sends it (tried on Vi's test
+    sheet); temporary hit points take damage first, and it never takes more than its maximum."""
+    r = player.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "3", "to": "damage"})  # (Cole: its stat block's 1 HP)
+    assert r.status_code == 204 and "took 3" in r.headers["HX-Trigger"]
+    op, = ops(db, labs)
+    assert (op["method"], op["path"]) == ("PUT", "/character/v5/creature/hp")
+    assert op["body"] == {"characterId": 75423618, "id": ZAP, "removedHitPoints": 1, "temporaryHitPoints": 0}  # (1 HP: at 0)
+    assert "Cole's Homunculus Servant" in player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
+
+
+def test_the_maximum_is_set_first_when_d_and_d_beyond_shows_another(player, db, labs, sheet):
+    """D&D Beyond counts damage against the maximum it shows (its stat block's 1 for a Homunculus Servant): − and + wait
+    until it shows the rule's, and setting it is a press, never by itself (its character value 43)."""
+    sheet["classes"][0]["definition"]["name"] = "Artificer"  # (Cole as an artificer, for the rule)
+    characters.refresh(db, labs)
+    k = player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
+    assert "Set D&amp;D Beyond to" in k and "−/+" not in k
+    r = player.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "3", "to": "damage"})
+    assert r.status_code == 409 and "set it to" in r.json()["detail"]
+    assert player.post(f"/characters/{labs.id}/creatures/{ZAP}/max").status_code == 204
+    op, = ops(db, labs)
+    assert (op["method"], op["path"]) == ("PUT", "/character/v5/custom/value")
+    assert {k: op["body"][k] for k in ("typeId", "valueId", "contextId")} == {"typeId": 43, "valueId": str(ZAP), "contextId": None} and op["body"]["value"] > 1
+
+
+def test_a_creature_change_is_only_for_its_player_or_the_dm(dm, db, labs):
+    from tests.roles import set_role
+
+    assert dm.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "1", "to": "heal"}).status_code == 404  # (not the DM yet)
+    set_role(db, "dm@example.com", "dm")
+    assert dm.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "1", "to": "heal"}).status_code == 204
+
+
+def test_the_extension_sends_a_character_value_only_for_a_creatures_maximum():
+    """extension 0.10.0: custom/value is on its list, but only for type 43 (ddb-page.js)."""
+    import os
+
+    js = open(os.path.join(os.path.dirname(__file__), "..", "extension", "askdnd-bridge", "ddb-page.js")).read()
+    assert "const CREATURE_MAX = 43" in js and "op.body.typeId) !== CREATURE_MAX" in js

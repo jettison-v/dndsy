@@ -29,7 +29,10 @@
     'POST /character/v5/inventory/item', 'DELETE /character/v5/inventory/item', 'PUT /character/v5/spell/prepared',
     'PUT /character/v5/inventory/currency/copper', 'PUT /character/v5/inventory/currency/silver',
     'PUT /character/v5/inventory/currency/electrum', 'PUT /character/v5/inventory/currency/gold',
-    'PUT /character/v5/inventory/currency/platinum']);
+    'PUT /character/v5/inventory/currency/platinum',
+    // (0.10.0: one of the character's creatures' Hit Points, and its maximum: a character value of type 43 only, below)
+    'PUT /character/v5/creature/hp', 'PUT /character/v5/custom/value', 'DELETE /character/v5/custom/value']);
+  const CREATURE_MAX = 43;  // the only character value askdnd may set (D&D Beyond's CREATURE_HIT_POINTS)
   const sheetId = () => (location.pathname.match(/\/characters\/(\d+)/) || [])[1];
   const onSheet = !!sheetId();  // (elsewhere it only makes batches: nothing of the page is heard or changed)
   const post = m => window.postMessage({ askdndBridge: 'from-page', characterId: sheetId(), ...m }, location.origin);
@@ -143,9 +146,8 @@
       else if ('sum' in s) {
         const [where, want, key] = s.sum;
         v = Array.isArray(v) ? v.filter(x => isDict(x) && String(pick(x, where)) === String(want)).reduce((t, x) => t + (x[key] || 0), 0) : null;
-      } else {
-        const [key, want] = Object.entries(s)[0];
-        v = Array.isArray(v) ? (v.find(x => isDict(x) && String(x[key]) === String(want)) || null) : null;
+      } else {  // the one in a list matching every key given (an id; a character value's type and the creature it's for)
+        v = Array.isArray(v) ? (v.find(x => isDict(x) && Object.entries(s).every(([k, w]) => String(x[k]) === String(w))) || null) : null;
       }
       if (v === undefined) v = null;
     }
@@ -247,6 +249,7 @@
       for (const op of batch.ops) {
         if (!WRITES.has(op.method + ' ' + op.path)) throw new Error("That isn't a change askdnd may make.");
         if (String(op.body && op.body.characterId) !== who) throw new Error("A request for a different character.");
+        if (op.path.endsWith('/custom/value') && Number(op.body.typeId) !== CREATURE_MAX) throw new Error("That isn't a change askdnd may make.");
       }
       const d = await character(who);
       const todo = [], conflicts = [];
@@ -257,8 +260,15 @@
       }
       if (conflicts.length) return done({ ok: false, conflicts, data: d });
       for (const op of todo) await call(op.method, op.path, op.body);
-      // askdnd confirms from this read, made right after writing (5.)
-      done({ ok: true, wrote: todo.length > 0, data: todo.length ? await character(who).catch(() => null) : d });
+      // askdnd confirms from this read, made right after writing (5.); read again (signed in) while D&D Beyond doesn't show
+      // the change yet, a few times, so a slow save isn't taken for a lost one (0.10.0)
+      let after = d;
+      for (let i = 0; todo.length && i < 4; i++) {
+        if (i) await new Promise(r => setTimeout(r, 750));
+        after = await character(who).catch(() => null);
+        if (after && todo.every(op => same(pick(after, op.read), op.to))) break;
+      }
+      done({ ok: true, wrote: todo.length > 0, data: after });
       if (todo.length && who === sheetId()) show();  // the sheet shows what D&D Beyond has now, and can't save old numbers back
     } catch (err) {
       done({ ok: false, error: String((err && err.message) || err) });
