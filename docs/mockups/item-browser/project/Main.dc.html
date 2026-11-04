@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add item, a player's own</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 960px">
+  <div class="head">
+    <div class="num">1 · Add item · a player's own inventory</div>
+    <h1>Browse D&amp;D Beyond's items, see what each is, then add them</h1>
+    <p class="where"><b>Where you'll find it:</b> Cole's Sheet › Items, beside the coin purse: <b>+ Add item</b> (your own character; the DM's is Give loot, board 2). It opens a large window, like the Spell Book. Click an item to see what it is; <b>+</b> puts it in <b>Adding</b> at the bottom; <b>Add</b> makes them all on D&amp;D Beyond at once, with Undo. What you pay is yours to type: it starts at the book's price for ordinary gear (magic items have none: the DM sets it), for whatever the DM agrees. Try it: click Rope, then +.</p>
+  </div>
+  <div class="ib" style="height: 760px">
+    <div class="ib-top">
+      <h3>Add to Cole</h3>
+      <div class="tabs" style="width: auto; grid-template-columns: auto auto; flex: none" role="group" aria-label="Where from"><b style="padding: 5px 12px">All items</b><span style="padding: 5px 12px; opacity: .5" title="Later: a shop the DM opens">A shop</span></div>
+      <label class="sr" for="ib-search">Search items</label>
+      <input id="ib-search" class="search" type="search" value="" placeholder="Search D&amp;D Beyond's 2024 items: rope, healing, +1…">
+      <span class="note">{{ shown }} of 412 items · Player's Handbook and Dungeon Master's Guide (2024)</span>
+    </div>
+    <div class="ib-body">
+      <div class="ib-filters">
+        <div class="fgroup"><span class="lbl">Kind</span>
+          <span class="fopt on"><span>All</span><span>412</span></span><span class="fopt"><span>Adventuring gear</span><span>98</span></span><span class="fopt"><span>Weapons</span><span>38</span></span><span class="fopt"><span>Armor</span><span>13</span></span><span class="fopt"><span>Potions</span><span>27</span></span><span class="fopt"><span>Wondrous items</span><span>141</span></span><span class="fopt"><span>Rings, wands, rods</span><span>58</span></span><span class="fopt"><span>Ammunition</span><span>6</span></span></div>
+        <div class="fgroup"><span class="lbl">Rarity</span>
+          <span class="fopt"><span>Not magic</span></span><span class="fopt"><span>Common</span></span><span class="fopt"><span>Uncommon</span></span><span class="fopt"><span>Rare</span></span><span class="fopt"><span>Very rare and up</span></span></div>
+        <div class="fgroup"><span class="lbl">Attunement</span>
+          <span class="fopt"><span>Needs it</span></span><span class="fopt"><span>Doesn't</span></span></div>
+        <div class="fgroup"><span class="lbl">Homebrew</span>
+          <span class="fopt off"><span>The campaign's own (later)</span></span></div>
+      </div>
+      <div class="ib-list">
+        <div class="irow head"><span>Item</span><span>Kind</span><span>Rarity</span><span>Cost</span><span>Weight</span><span></span></div>
+        <sc-for list="{{ items }}" as="it" hint-placeholder-count="10">
+          <div class="{{ it.rowClass }}">
+            <button type="button" class="iname" onClick="{{ it.pick }}"><b>{{ it.name }}</b>{{ it.attuneMark }}</button><span class="note">{{ it.kind }}</span><span class="{{ it.rarClass }}">{{ it.rarity }}</span><span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{ it.cost }}</span><span class="note">{{ it.weight }}</span>
+            <button type="button" class="plus" aria-label="{{ it.addLabel }}" onClick="{{ it.add }}">+</button>
+          </div>
+        </sc-for>
+      </div>
+      <div class="ib-detail">
+        <div style="height: 150px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); display: grid; place-items: center; text-align: center; padding: 10px" class="note">{{ sel.pic }}</div>
+        <h4>{{ sel.name }}</h4>
+        <div class="row start" style="gap: 6px"><span class="{{ sel.rarClass }}">{{ sel.rarity }}</span><span class="tagg">{{ sel.kind }}</span><sc-if value="{{ sel.attune }}" hint-placeholder-val="{{ false }}"><span class="tagg" style="color: var(--amber); border-color: var(--amber)">Needs attunement</span></sc-if></div>
+        <div class="facts"><span>Cost</span><span>{{ sel.cost }}</span><span>Weight</span><span>{{ sel.weight }}</span><span>{{ sel.factLabel }}</span><span>{{ sel.fact }}</span><span>From</span><span>{{ sel.book }}</span></div>
+        <p style="color: var(--text)">{{ sel.what }}</p>
+        <p class="note">D&amp;D Beyond's full description shows here, as on the sheet. You have: {{ sel.have }}.</p>
+        <button type="button" class="btn main" style="justify-self: start" onClick="{{ sel.add }}">+ Add {{ sel.name }}</button>
+      </div>
+    </div>
+    <div class="ib-foot">
+      <span class="lbl">Adding</span>
+      <div class="basket">
+        <sc-for list="{{ basket }}" as="b" hint-placeholder-count="2"><span class="bchip">{{ b.name }} ×{{ b.n }} <button type="button" aria-label="{{ b.lessLabel }}" onClick="{{ b.less }}">−</button><button type="button" aria-label="{{ b.moreLabel }}" onClick="{{ b.more }}">+</button></span></sc-for>
+        <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}"><span class="note">Nothing yet: + on an item puts it here</span></sc-if>
+      </div>
+      <label class="note" for="ib-into">Into</label>
+      <select id="ib-into" class="sel-box"><option>Carried</option><option>Backpack</option><option>Bag of Holding</option></select>
+      <label class="check"><input type="checkbox" checked="{{ pay }}" onChange="{{ togglePay }}"> Pay from Cole's purse</label>
+      <label class="sr" for="ib-pay">Amount to pay</label>
+      <input id="ib-pay" class="sel-box" style="width: 120px" type="text" value="{{ total }}" title="What you pay: the book price where there is one; whatever the DM says">
+      <span class="note">{{ priceNote }}</span>
+      <span class="purse"><span class="coin"><i style="background: #d9a441"></i>654 gp</span><span class="coin"><i style="background: #c9ccd1"></i>68 sp</span></span>
+      <button type="button" class="btn main">Add {{ count }}</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { picked: 'Rope', basket: { 'Torch': 10 }, pay: true };
+  }
+  renderVals() {
+    const ITEMS = [
+      { name: 'Rope', kind: 'Gear', rarity: 'Not magic', cost: '1 gp', cp: 100, weight: '5 lb', factLabel: 'Length', fact: '50 feet', what: 'Fifty feet of rope. It can be burst with a hard Strength check, and a knot holds what it ties.', have: 'none' },
+      { name: 'Torch', kind: 'Gear', rarity: 'Not magic', cost: '1 cp', cp: 1, weight: '1 lb', factLabel: 'Light', fact: 'Bright 20 ft, dim 20 ft more', what: 'Burns for an hour. You can also swing it as a simple weapon that deals fire damage.', have: 'none' },
+      { name: 'Rations', kind: 'Gear', rarity: 'Not magic', cost: '5 sp', cp: 50, weight: '2 lb', factLabel: 'Lasts', fact: 'A day each', what: 'A day of travel food: dried meat, fruit and hard bread.', have: 'none' },
+      { name: "Healer's Kit", kind: 'Gear', rarity: 'Not magic', cost: '5 gp', cp: 500, weight: '3 lb', factLabel: 'Uses', fact: '10', what: 'Bandages and salves. Spend a use to stabilize a creature at 0 Hit Points without a check.', have: 'none' },
+      { name: 'Potion of Healing', kind: 'Potion', rarity: 'Common', cost: '—', cp: 0, weight: '½ lb', factLabel: 'Heals', fact: '2d4 + 2', what: 'Drink it, or give it, as a Bonus Action, and regain Hit Points.', have: '2' },
+      { name: 'Longsword', kind: 'Weapon', rarity: 'Not magic', cost: '15 gp', cp: 1500, weight: '3 lb', factLabel: 'Damage', fact: '1d8 slashing · Versatile (1d10) · Sap', what: 'A martial melee weapon; its mastery property is Sap.', have: 'none' },
+      { name: 'Chain Mail', kind: 'Armor', rarity: 'Not magic', cost: '75 gp', cp: 7500, weight: '55 lb', factLabel: 'AC', fact: '16 · Strength 13 · Disadvantage on Stealth', what: 'Heavy armor of interlocking rings.', have: 'none' },
+      { name: 'Bag of Holding', kind: 'Wondrous item', rarity: 'Uncommon', cost: '—', cp: 0, weight: '15 lb', factLabel: 'Holds', fact: '500 lb, 64 cubic ft', what: 'A bag far larger inside than out, always the same weight however full.', have: '1' },
+      { name: 'Cloak of Protection', kind: 'Wondrous item', rarity: 'Uncommon', attune: true, cost: '—', cp: 0, weight: '1 lb', factLabel: 'Bonus', fact: '+1 AC and saving throws', what: 'While you wear it, a +1 bonus to Armor Class and saving throws.', have: 'none' },
+      { name: 'Wand of Magic Missiles', kind: 'Wand', rarity: 'Uncommon', cost: '—', cp: 0, weight: '1 lb', factLabel: 'Charges', fact: '7, some back at dawn', what: 'Spend charges to cast Magic Missile, at a higher level for more charges.', have: 'none' },
+      { name: 'Ring of Protection', kind: 'Ring', rarity: 'Rare', attune: true, cost: '—', cp: 0, weight: '—', factLabel: 'Bonus', fact: '+1 AC and saving throws', what: 'While you wear it, a +1 bonus to Armor Class and saving throws.', have: 'none' },
+      { name: 'Immovable Rod', kind: 'Rod', rarity: 'Uncommon', cost: '—', cp: 0, weight: '2 lb', factLabel: 'Holds', fact: 'Up to 8,000 lb', what: 'Press its button and it stays fixed in place, defying gravity.', have: 'none' },
+    ];
+    const rc = r => 'rar ' + ({ 'Not magic': 'mundane', 'Common': 'common', 'Uncommon': 'uncommon', 'Rare': 'rare' }[r] || 'veryrare');
+    const add = name => () => this.setState({ basket: { ...this.state.basket, [name]: (this.state.basket[name] || 0) + 1 } });
+    const sel = ITEMS.find(i => i.name === this.state.picked) || ITEMS[0];
+    const basket = Object.entries(this.state.basket).filter(([, n]) => n > 0);
+    const cp = basket.reduce((t, [name, n]) => t + n * ((ITEMS.find(i => i.name === name) || {}).cp || 0), 0);
+    const money = c => [[Math.floor(c / 100), 'gp'], [Math.floor((c % 100) / 10), 'sp'], [c % 10, 'cp']].filter(([n]) => n).map(([n, u]) => n + ' ' + u).join(' ') || '0 gp';
+    const nItems = basket.reduce((t, [, n]) => t + n, 0);
+    return {
+      shown: ITEMS.length,
+      items: ITEMS.map(i => ({ ...i, rarClass: rc(i.rarity), attuneMark: i.attune ? ' · attune' : '', rowClass: 'irow' + (i.name === sel.name ? ' sel' : ''),
+        pick: () => this.setState({ picked: i.name }), add: add(i.name), addLabel: 'Add ' + i.name })),
+      sel: { ...sel, rarClass: rc(sel.rarity), book: "Player's Handbook (2024)", add: add(sel.name),
+        pic: sel.rarity === 'Not magic' ? 'A plain picture of its kind (D&D Beyond has none for ordinary gear)' : "D&D Beyond's picture of it, where it has one (456 of 1,059 magic items)" },
+      basket: basket.map(([name, n]) => ({ name, n, lessLabel: 'One fewer ' + name, moreLabel: 'One more ' + name,
+        less: () => this.setState({ basket: { ...this.state.basket, [name]: n - 1 } }), more: add(name) })),
+      empty: basket.length === 0, total: money(cp), pay: this.state.pay,
+      togglePay: () => this.setState({ pay: !this.state.pay }),
+      priceNote: basket.some(([name]) => !(ITEMS.find(i => i.name === name) || {}).cp) ? 'a magic item has no price: ask the DM' : 'the book price',
+      count: nItems === 1 ? '1 item' : nItems + ' items',
+    };
+  }
+}
+</script>
+</body>
+</html>

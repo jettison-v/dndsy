@@ -1,0 +1,51 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-03T22:50:00Z"
+  },
+  "title": "Item Browser",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 960,
+      "title": "1 \u00b7 Add item: a player's own",
+      "is_interactive": true
+    },
+    "Loot.dc.html": {
+      "x": 1440,
+      "y": 0,
+      "w": 1360,
+      "h": 960,
+      "title": "2 \u00b7 Give loot: the DM's"
+    },
+    "Phone.dc.html": {
+      "x": 2880,
+      "y": 0,
+      "w": 520,
+      "h": 960,
+      "title": "3 \u00b7 On a phone"
+    },
+    "Shop.dc.html": {
+      "x": 0,
+      "y": 1080,
+      "w": 1360,
+      "h": 960,
+      "title": "4 \u00b7 A shop the DM opens (later)"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Loot.dc.html",
+    "Phone.dc.html",
+    "Shop.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}
