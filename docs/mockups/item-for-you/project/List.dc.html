@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>For Cole in the list: A or B</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>
+body{margin:0}
+.opt{display:grid;gap:10px;align-content:start}
+.opt h2{margin:0;color:var(--strong);font:600 20px/1.2 var(--serif)}
+.lr{display:grid;grid-template-columns:minmax(0,1fr) 92px 78px 34px;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.lr.h{color:var(--faint);font:700 11px/1 var(--cond);letter-spacing:.08em;text-transform:uppercase}
+.lr b{color:var(--strong);font-weight:600}
+.fit{font-size:11px;font-weight:600;white-space:nowrap}
+.fit.ok{color:var(--green)}
+.fit.warn{color:var(--amber)}
+.fit.chg{color:var(--blue)}
+.chip{font-size:12px;border:1px solid var(--line-strong);border-radius:999px;padding:3px 10px;color:var(--text);background:var(--surface)}
+.chip.on{border-color:var(--blue);background:rgba(126,166,224,.15);color:var(--strong)}
+</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 960px">
+  <div class="head">
+    <div class="num">2 · In the list too? · your call</div>
+    <h1>Option A keeps the list as it is; Option B adds a word per row and a filter</h1>
+    <p class="where"><b>Both have</b> For Cole in the details (board 1). <b>A</b> leaves the list alone: you click an item to see what it means for Cole. <b>B</b> adds a short word on each row (Trained, Not trained, Attune 3 of 3) and a filter, <b>Cole can use it</b>, under Kind and Rarity. B is faster to scan; A keeps the list calmer and the same for everyone.</p>
+  </div>
+  <div class="grid2" style="gap: 28px">
+    <div class="opt">
+      <h2>A · The list as it is</h2>
+      <div class="ib" style="grid-template-rows: auto auto">
+        <div class="lr h"><span>Item</span><span>Rarity</span><span>Cost</span><span></span></div>
+        <div style="display: grid">
+          <div class="lr"><span><b>Chain Mail</b><br><span class="note">Heavy armor</span></span><span class="rar mundane">Not magic</span><span>75 gp</span><button type="button" class="plus" aria-label="Add Chain Mail">+</button></div>
+          <div class="lr"><span><b>Cloak of Protection</b><br><span class="note">Wondrous item · attunement</span></span><span class="rar uncommon">Uncommon</span><span class="note">—</span><button type="button" class="plus" aria-label="Add Cloak of Protection">+</button></div>
+          <div class="lr"><span><b>Leather Armor</b><br><span class="note">Light armor</span></span><span class="rar mundane">Not magic</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Leather Armor">+</button></div>
+          <div class="lr"><span><b>Longsword</b><br><span class="note">Martial weapon</span></span><span class="rar mundane">Not magic</span><span>15 gp</span><button type="button" class="plus" aria-label="Add Longsword">+</button></div>
+          <div class="lr"><span><b>Rapier</b><br><span class="note">Martial weapon</span></span><span class="rar mundane">Not magic</span><span>25 gp</span><button type="button" class="plus" aria-label="Add Rapier">+</button></div>
+          <div class="lr"><span><b>Shield</b><br><span class="note">Shield</span></span><span class="rar mundane">Not magic</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Shield">+</button></div>
+        </div>
+      </div>
+      <p class="note">What it means for Cole is one click away, in the details.</p>
+    </div>
+    <div class="opt">
+      <h2>B · A word per row, and a filter</h2>
+      <div class="row start" style="gap: 6px"><span class="note">For Cole</span><button type="button" class="chip" aria-pressed="false">Cole can use it</button><button type="button" class="chip" aria-pressed="false">Needs attunement</button></div>
+      <div class="ib" style="grid-template-rows: auto auto">
+        <div class="lr h"><span>Item</span><span>For Cole</span><span>Cost</span><span></span></div>
+        <div style="display: grid">
+          <div class="lr"><span><b>Chain Mail</b><br><span class="note">Heavy armor</span></span><span class="fit warn">! Not trained</span><span>75 gp</span><button type="button" class="plus" aria-label="Add Chain Mail">+</button></div>
+          <div class="lr"><span><b>Cloak of Protection</b><br><span class="note">Wondrous item · Uncommon</span></span><span class="fit chg">→ Attune 3 of 3</span><span class="note">—</span><button type="button" class="plus" aria-label="Add Cloak of Protection">+</button></div>
+          <div class="lr"><span><b>Leather Armor</b><br><span class="note">Light armor</span></span><span class="fit ok">✓ Trained</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Leather Armor">+</button></div>
+          <div class="lr"><span><b>Longsword</b><br><span class="note">Martial weapon</span></span><span class="fit ok">✓ Proficient</span><span>15 gp</span><button type="button" class="plus" aria-label="Add Longsword">+</button></div>
+          <div class="lr"><span><b>Rapier</b><br><span class="note">Martial weapon</span></span><span class="fit warn">! Not proficient</span><span>25 gp</span><button type="button" class="plus" aria-label="Add Rapier">+</button></div>
+          <div class="lr"><span><b>Shield</b><br><span class="note">Shield</span></span><span class="fit ok">✓ Trained</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Shield">+</button></div>
+        </div>
+      </div>
+      <p class="note">"Can use it" means trained or proficient, and attunement free if it needs it. With the filter on, Chain Mail and the Rapier would hide; the details still say why.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
