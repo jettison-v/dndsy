@@ -1125,7 +1125,7 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
 SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup"}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 # Runs left out of part 1 (and the nightly) until the seats have what they need: named, they run
-WAITING = {"familiar"}  # (extension 0.11.0, waiting for Google's review: Nov 4)
+WAITING: set[str] = set()  # (empty since Nov 4: familiar waited for extension 0.11.0)
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 
 
