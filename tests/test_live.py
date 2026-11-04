@@ -227,3 +227,15 @@ def test_someone_with_two_characters_rolls_to_the_table_on_either(player, db):
     side = player.get(f"/characters/{trah.id}/battle").text.split('id="table-rolls"')[1].split(">")[0]
     assert 'data-yours="' in side and {str(cole.id), str(trah.id)} == set(side.split('data-yours="')[1].split('"')[0].split(","))
 
+
+
+def test_the_pill_speaks_for_your_own_sheet_on_anyones_page(player, db):
+    """Brett, Nov 3: on Roscoe's page the pill said "Roscoe Norell: through the DM", read as his own connecting through
+    Roscoe. A player's pill answers for their own character wherever they are; the page's only when they have none."""
+    import_bundle(db, BUNDLE)
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    owned_by(db, cole, "player@example.com")
+    characters.refresh(db, cole)
+    characters.refresh(db, trah, fetch=down)  # (Trah's copy failed: his pill would say so)
+    pill = player.get(f"/characters/{trah.id}").text.split('id="live-pill"')[1].split("</button>")[0]
+    assert "Trah" not in pill and f'data-focus="{cole.id}"' in pill
