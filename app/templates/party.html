@@ -45,6 +45,10 @@
         {% if r.resources %}<div class="pt-res short">{% for g in r.resources | res_groups %}{% if g.name %}<span class="pt-group">{{ g.name }}: {% for x in g.rows %}<span>{{ res_name(x.name.split(": ", 1)[1]) }} {{ pips(x.uses) }}</span>{% endfor %}</span>{% else %}{% for x in g.rows %}<span title="{{ x.name }}">{{ res_name(x.name) }} {{ pips(x.uses) }}</span>{% endfor %}{% endif %}{% endfor %}</div>{% endif %}
         {% if r.slots %}<p class="pt-line"><span class="note">Slots</span> {% for x in r.slots %}<span class="nowrap">{{ x.label }} {{ pips(x.uses) }}</span> {% endfor %}</p>{% endif %}
         {% if s.currency %}<div class="pt-line pt-purse-foot">{{ purse(s) }}</div>{% endif %}
+        {% for k in r.creatures %}{# Your creatures (app/creatures.py): its Hit Points and AC; opens its master's Battle as it #}
+        <p class="pt-line pt-creature"><a href="/characters/{{ r.c.id }}/battle?creature={{ k.id }}" data-no-peek title="{{ r.c.name }}'s {{ k.name }} ({{ k.group }}): its Battle">{% if k.picture %}<img src="{{ k.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}<b>{{ k.name | creature_short }}</b></a>
+          <span class="nowrap"><b>{{ k.hp.current }}</b><span class="note"> / {{ k.hp.max }} HP{% if k.hp.temp %} · +{{ k.hp.temp }} temp{% endif %}</span></span> <span class="nowrap"><span class="note">AC</span> <b>{{ k.ac }}</b></span></p>
+        {% endfor %}
         {% else %}<p class="muted">{{ "Not fetched from D&D Beyond yet" if r.c.ddb_id else "Not linked to D&D Beyond yet" }}</p>{% endif %}
       </article>
       {% endfor %}

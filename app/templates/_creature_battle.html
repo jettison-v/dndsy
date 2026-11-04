@@ -1,0 +1,63 @@
+{# Battle as one of the character's creatures (Your creatures, app/creatures.py; Brett, 2026-11-03, docs/mockups/your-creatures/
+   Option B): the switch by the name picks it, and Battle is drawn as the creature's, the way Wild Shape draws a form. A band
+   says whose it is and when its turn comes; the top row is its own Hit Points, AC, Speed, Initiative and saves; its stat
+   block's actions are rows to roll, in the three columns. Its rolls say whose they are (the body's data-who). #}
+{% from "_char.html" import ntile, save_tiles, roll_attrs, hit %}
+{% set k = creature %}
+<div class="battlebar">
+  <div class="ws-form cr-band">
+    {% if k.picture %}<img class="ws-pic" src="{{ k.picture }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+    <div class="ws-form-main"><b>{{ c.name }}'s {{ k.name }}</b> <span class="note">{{ k.group }}{% if k.size %} · {{ k.size }}{% endif %}{% if k.cr %} · CR {{ k.cr }}{% endif %}</span>
+      <span class="note ws-form-note">{{ k.turn }}</span></div>
+    <div class="ws-form-acts"><a class="btn small" href="/characters/{{ c.id }}/battle">Back to {{ c.name }}</a></div>
+  </div>
+  <div class="battle-head">
+    <div class="strip compact">
+      {% set hp_title = k.hp.parts | map("join", ": ") | join("; ") %}
+      {{ ntile(s, "", '<span class="ph-full">Hit points</span><span class="ph-short">HP</span>' | safe, ("<b>%s</b><span class=\"note\"> / %s</span>" | format(k.hp.current, k.hp.max)) | safe,
+               foot=("%s temporary" | format(k.hp.temp)) if k.hp.temp else "", title=hp_title) }}
+      {{ ntile(s, "", '<span class="ph-full">Armor class</span><span class="ph-short">AC</span>' | safe, ("<b>%s</b>" | format(k.ac)) | safe) }}
+      {{ ntile(s, "", "Speed", ("<b>%s ft</b>" | format(k.walk)) | safe, foot=k.other_speeds) }}
+      {%- set init %}<button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", k.initiative) }} title="{{ 'Roll its Initiative' if k.own_initiative else 'It shares your Initiative; roll only if the DM asks' }}">{{ k.initiative }}</button>{% endset %}
+      {{ ntile(s, "", '<span class="ph-full">Initiative</span><span class="ph-short">Init.</span>' | safe, init) }}
+      {{ ntile(s, "", '<span class="ph-full">Passive Perception</span><span class="ph-short">PP</span>' | safe, ("<b>%s</b>" | format(k.passive)) | safe) }}
+    </div>
+    {{ save_tiles(k.saves) }}
+  </div>
+</div>
+
+<div class="cond-bar cr-facts" aria-label="Its senses and skills">
+  {% if k.senses %}<span class="tag">{{ k.senses }}</span>{% endif %}
+  {% for sk in k.skills %}<button type="button" class="tag roll-chip" {{ roll_attrs("check", sk.name, sk.label) }}>{{ sk.name }} {{ sk.label }}</button>{% endfor %}
+  {% if k.immune %}<span class="tag" title="It can't have these conditions">Immune: {{ k.immune | join(", ") }}</span>{% endif %}
+</div>
+
+{% set econ = [("Action", "On its turn", "action"), ("Bonus action", "On its turn", "bonus"), ("Reaction", "One per round", "reaction")] %}
+<div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
+  {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }} <span class="count">{{ k.columns[cost].shown | length }}</span></button>{% endfor %}
+</div>
+<div class="econ" data-econ-show="action">
+  {% for cost, sub, slug in econ %}{% set col = k.columns[cost] %}
+  <div class="section" data-econ-col="{{ slug }}">
+    <div class="econ-top"><h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ sub }}</small></h2></div>
+    <div class="moves">
+      {% for o in col.shown %}
+      <div class="move" data-key="{{ o.key }}">
+        {{ hit(o) }}<b>{{ o.name }}</b>
+        {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
+        {% if o.text and o.text != o.meta %}<details class="cr-text"><summary class="note">Its stat block</summary><p class="note">{{ o.text }}</p></details>{% endif %}
+      </div>
+      {% else %}<p class="muted pin-empty">Nothing here for it.</p>{% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% if k.traits or k.notes or k.about %}
+<div class="section riders">
+  <h2 class="econ-head k-hit">About it<small>Its traits, and how askdnd works out its numbers. The DM rules.</small></h2>
+  {% for t in k.traits %}<div class="move static"><b>{{ t.name }}</b><div class="meta">{{ t.text }}</div></div>{% endfor %}
+  {% for n in k.notes %}<p class="note">{{ n }}</p>{% endfor %}
+  {% if k.about %}<p class="note">{{ k.about }}</p>{% endif %}
+</div>
+{% endif %}

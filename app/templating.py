@@ -4,6 +4,7 @@ from fastapi import Request
 
 from app import access, config, rules_data, vtt
 from app import conditions as cond
+from app.creatures import short as creature_short
 from fastapi.templating import Jinja2Templates
 
 
@@ -142,6 +143,7 @@ def _markdown(text: str) -> str:
 templates.env.filters["md"] = _markdown
 templates.env.filters["res_groups"] = res_groups
 templates.env.filters["res_short"] = res_short
+templates.env.filters["creature_short"] = creature_short  # (Your creatures' switch by the name)
 
 
 def _entry_url(entity_id) -> str:

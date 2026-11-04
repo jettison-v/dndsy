@@ -92,6 +92,11 @@ RESET = {1: "Short or Long Rest", 2: "Long Rest", 3: "Dawn", 4: "Other"}
 COMPONENTS = {1: "V", 2: "S", 3: "M"}
 CR = {1: "0", 2: "1/8", 3: "1/4", 4: "1/2"}
 CREATURE_GROUPS = {13: "Wild Shape form"}
+# D&D Beyond's creature groups (its /api/config/json): every one but Wild Shape's is one of the player's creatures
+# (app/creatures.py, Your creatures)
+GROUP_NAMES = {1: "Wild Shape (2014)", 2: "Familiar", 3: "Beast Companion", 4: "Mount", 5: "Pet", 6: "Summoned", 7: "Misc",
+               10: "Battle Smith Defender", 11: "Sidekick", 12: "Infusion", 13: "Wild Shape"}
+WILD_SHAPE_GROUPS = {1, 13}
 SIMPLE_WEAPONS = {"Club", "Dagger", "Greatclub", "Handaxe", "Javelin", "Light Hammer", "Mace", "Quarterstaff",
                   "Sickle", "Spear", "Dart", "Crossbow, Light", "Shortbow", "Sling"}
 MARTIAL_WEAPONS = {"Battleaxe", "Flail", "Glaive", "Greataxe", "Greatsword", "Halberd", "Lance", "Longsword", "Maul",
@@ -1183,11 +1188,23 @@ class _Sheet:
                 "hit_points": df.get("averageHitPoints"),
                 "speed": moves,
                 "block": _creature_block(df),
+                # Your creatures (app/creatures.py): which one it is on the sheet, and its Hit Points as D&D Beyond keeps them
+                "id": c.get("id"), "group_id": c.get("groupId"), "group_name": GROUP_NAMES.get(c.get("groupId"), "Creature"),
+                "removed": c.get("removedHitPoints") or 0, "temp": c.get("temporaryHitPoints") or 0, "active": bool(c.get("isActive")),
+                "picture": next((u for u in (df.get("largeAvatarUrl"), df.get("avatarUrl")) if isinstance(u, str)
+                                 and u.startswith(("https://www.dndbeyond.com/", "https://media.dndbeyond.com/"))), ""),
+                "about": html_to_text(df.get("characteristicsDescription")),
             })
         return out
 
 
 MOVES = {1: "walk", 2: "burrow", 3: "climb", 4: "fly", 5: "swim"}
+DDB_SKILLS = {2: "Athletics", 3: "Acrobatics", 4: "Sleight of Hand", 5: "Stealth", 6: "Arcana", 7: "History", 8: "Investigation",
+              9: "Nature", 10: "Religion", 11: "Animal Handling", 12: "Insight", 13: "Medicine", 14: "Perception", 15: "Survival",
+              16: "Deception", 17: "Intimidation", 18: "Performance", 19: "Persuasion"}  # (D&D Beyond's skill ids)
+CONDITION_NAMES = {1: "Blinded", 2: "Charmed", 3: "Deafened", 4: "Exhaustion", 5: "Frightened", 6: "Grappled", 7: "Incapacitated",
+                   8: "Invisible", 9: "Paralyzed", 10: "Petrified", 11: "Poisoned", 12: "Prone", 13: "Restrained", 14: "Stunned",
+                   15: "Unconscious"}  # (D&D Beyond's ids, as app/ddb_fields.py CONDITIONS with Exhaustion)
 SENSE_NAMES = {1: "Blindsight", 2: "Darkvision", 3: "Tremorsense", 4: "Truesight"}
 
 
@@ -1221,6 +1238,11 @@ def _creature_block(df: dict) -> dict:
         "hit_dice": (df.get("hitPointDice") or {}).get("diceString", ""),
         "speed": {MOVES[m["movementId"]]: m["speed"] for m in df.get("movements") or [] if m.get("movementId") in MOVES and m.get("speed")},
         "abilities": abilities,
+        # (a stat block's own saves and skills: Your creatures shows them; Wild Shape keeps the druid's, app/wild_shape.py)
+        "block_saves": [ABILITY_KEY[x["statId"]][:3] for x in df.get("savingThrows") or [] if x.get("statId") in ABILITY_KEY],  # (proficient)
+        "block_skills": {DDB_SKILLS[x["skillId"]]: (x.get("value") or 0) + (x.get("additionalBonus") or 0)
+                         for x in df.get("skills") or [] if x.get("skillId") in DDB_SKILLS},
+        "condition_immunities": [CONDITION_NAMES.get(i, "") for i in df.get("conditionImmunities") or [] if CONDITION_NAMES.get(i)],
         "saves": {},
         "skills": {},
         "senses": {SENSE_NAMES[x["senseId"]].lower(): int(m.group(1)) for x in df.get("senses") or []

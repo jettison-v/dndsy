@@ -422,7 +422,7 @@
 
   document.addEventListener('click', e => {
     const t = e.target.closest('[data-panel-url], [data-modal-url]');
-    if (!t || e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details')) return;  // (a pop-up in a row: the row stays put)
+    if (!t || e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details, a[data-no-peek]')) return;  // (a pop-up in a row: the row stays put; a link of its own goes where it says)
     e.preventDefault();
     if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
@@ -2133,7 +2133,7 @@
       if (go.follow === 'bonus') { p.set('die', go.die); p.set('label', go.bonusLabel || 'Added die'); }
     } else {
       Object.entries({ character: go.cid || '', kind: go.kind, label: go.label, mod: go.mod || '', dmg: go.dmg || '', mode: go.mode, to,
-                       count: go.count || 1, each: go.each || '', once: go.once ? 1 : '' }).forEach(([k, v]) => p.set(k, v));
+                       count: go.count || 1, each: go.each || '', once: go.once ? 1 : '', who: go.who || '' }).forEach(([k, v]) => p.set(k, v));
       (go.parts || []).forEach(x => p.append('part', x));
       (go.dmgParts || []).forEach(x => p.append('dmg_part', x));
     }
@@ -2266,7 +2266,9 @@
     // A condition the character has now (Invisible…) offers Advantage with its reason, never forces it:
     // the roll window shows the reason and the player (and DM) decide (app/conditions.adv_reasons).
     let advWhy = el.dataset.advWhy || '';
-    const body = cid && document.querySelector('#battle-body[data-character="' + cid + '"]');
+    // On a creature's Battle (Your creatures) the roll is the creature's: it says so, and its master's conditions don't apply
+    const whoEl = el.closest('[data-who]'), who = whoEl ? whoEl.dataset.who : '';
+    const body = cid && !who && document.querySelector('#battle-body[data-character="' + cid + '"]');
     if (body) {
       let ca = {};
       try { ca = JSON.parse(body.dataset.condAdv || '{}'); } catch (err) { ca = {}; }
@@ -2279,7 +2281,7 @@
       if (lines.length) advWhy = [advWhy, ...lines].filter(Boolean).join('\n');
     }
     return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe, slot: +el.dataset.slot || 0,
-             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared };
+             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared, who };
   }
 
   document.addEventListener('click', e => {
