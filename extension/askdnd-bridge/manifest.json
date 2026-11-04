@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "askdnd bridge",
-  "version": "0.11.0",
-  "description": "Keeps your D&D Beyond sheet and askdnd in step, both ways, and hears the turns of a fight in D&D Beyond's VTT.",
+  "version": "0.12.0",
+  "description": "Keeps your D&D Beyond sheet and askdnd in step, both ways, and a fight's turns and initiative in D&D Beyond's VTT.",
   "permissions": [
     "storage",
     "alarms"

@@ -1459,6 +1459,28 @@ def bridge_fight(game_id: str, request: Request, body=web.JsonBody, db: Session 
     return _json({"ok": True, "changed": changed})
 
 
+@router.post("/bridge/vtt/{game_id}")
+def bridge_vtt(game_id: str, request: Request, db: Session = Depends(get_db)):
+    """The extension, on an open D&D Beyond VTT page, asks every few seconds (0.12.0): the initiative numbers askdnd
+    wants in that game's combat sidebar (app/initiative.py), which the page sets with D&D Beyond's own message. Only the
+    DM's page (or an admin's) is given any, as only the DM changes the order there; anyone else's asks once a minute."""
+    from app import fight, initiative
+
+    user = _signed_in(request, db)
+    sets: list[dict] = []
+    every = initiative.IDLE
+    for campaign in fight.campaigns_for(db, game_id[:40]):
+        if not _follows(user, campaign) or not initiative.on(campaign) or not (is_dm(user, campaign.id) or is_admin(user)):
+            continue
+        every = initiative.TICK
+        now = datetime.now(UTC)
+        if not campaign.vtt_heard_at or now - campaign.vtt_heard_at >= timedelta(seconds=10):
+            campaign.vtt_heard_at = now
+        sets += initiative.due(campaign.fight)
+    db.commit()
+    return _json({"sets": sets, "every": every})
+
+
 def _follows(user: dict, campaign) -> bool:
     from app import vtt
 

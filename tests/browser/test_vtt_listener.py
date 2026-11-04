@@ -31,7 +31,10 @@ def test_the_listener_follows_the_fight_as_the_vtt_does(people):
     page.evaluate("""() => {
         window.told = [];
         addEventListener('message', e => { if (e.data && e.data.askdndBridge === 'from-vtt') window.told.push(e.data.fight); });
+        window.sent = [];  // (what the page sends its game server: kept here, as the socket never connects)
+        WebSocket.prototype.send = function (d) { window.sent.push(String(d)); };
         window.vtt = new WebSocket('wss://games.dndbeyond.com.invalid/test');  // (never connects: only its messages matter)
+        Object.defineProperty(window.vtt, 'readyState', { value: 1 });
         window.vtt.addEventListener('error', () => {});
     }""")
 
@@ -63,6 +66,40 @@ def test_the_listener_follows_the_fight_as_the_vtt_does(people):
     assert send(act("UPDATE_INITIATIVE", [{"group": "Enemy", "key": "4904825", "initiative": 20}])) == (5, ["Ogre", "Cole*", "Vi", "Trah"])
     assert send(act("REMOVE_FROM_ENCOUNTER", {"entityKey": "t-trah", "group": "Party Member"})) == (5, ["Ogre", "Cole*", "Vi"])
     assert send(act("TOKEN_DELETE", "t-ogre")) == (5, ["Cole*", "Vi"])  # taken off the map
-    assert send(act("END_COMBAT")) is None
-    assert send(act("START_COMBAT")) == (1, ["Vi*"])  # from the groups, as the VTT starts one
+    assert send(act("END_COMBAT")) is None  # (the sidebar starts again from Add all tokens: captured on the Mac Mini, Nov 4)
+    # Before Start Combat (0.12.0, Initiative from askdnd): who the DM added is told as waiting, with where the sidebar
+    # keeps each, and their numbers as they're rolled
+    assert send(act("ADD_TO_ENCOUNTER", ["t-vi", "t-cole"])) == (0, ["Cole", "Vi"])  # (no numbers yet: by name, as the VTT ties)
+    assert send(act("UPDATE_INITIATIVE", [{"group": "Party Member", "key": "t-cole", "initiative": 15}])) == (0, ["Cole", "Vi"])
+    f = page.evaluate("window.told[window.told.length - 1]")
+    assert f["waiting"] is True and (f["order"][0]["group"], f["order"][0]["gkey"], f["order"][0]["initiative"]) == ("Party Member", "t-cole", 15)
+    assert send(act("START_COMBAT")) == (1, ["Cole*", "Vi"])  # from the groups, as the VTT starts one
     assert page.evaluate("window.__askdndVtt.log") == []  # every action known
+
+
+def test_on_the_dms_page_a_number_askdnd_hands_it_goes_out_as_the_pages_own(people):
+    """0.12.0 (captured on the Mac Mini, Nov 4): the VTT takes UPDATE_INITIATIVE only with the connection's own client id,
+    the one its CONNECT message carried; a number askdnd hands the page goes out so, and nothing goes before that."""
+    page = people("player").page
+    page.context.add_init_script(path=str(LISTENER))
+    page.reload()
+    page.evaluate("""() => {
+        window.sent = [];
+        WebSocket.prototype.send = function (d) { window.sent.push(String(d)); };
+        window.vtt = new WebSocket('wss://games.dndbeyond.com.invalid/test');
+        Object.defineProperty(window.vtt, 'readyState', { value: 1 });
+        window.vtt.addEventListener('error', () => {});
+    }""")
+    ask = "s => window.postMessage({askdndBridge: 'to-vtt', type: 'set', sets: s}, location.origin)"
+    page.evaluate(ask, [{"group": "Party Member", "key": "t-vi", "initiative": 14}])
+    page.wait_for_timeout(300)
+    assert page.evaluate("window.sent") == []  # (no CONNECT yet: it doesn't know who it is)
+    page.evaluate("""() => window.vtt.send(JSON.stringify({type: 'CONNECT', meta: {source: 'CLIENT', clientActionIndex: 0, clientId: 'c-1'}}))""")
+    page.evaluate(ask, [{"group": "Party Member", "key": "t-vi", "initiative": 14}, {"group": "x", "key": "y", "initiative": "no"}])
+    page.wait_for_function("window.sent.length >= 2")
+    page.wait_for_timeout(300)
+    sent = [json.loads(x) for x in page.evaluate("window.sent")]
+    assert len(sent) == 2  # (the CONNECT, then one: a set that isn't a number is left out)
+    m = sent[1]
+    assert (m["type"], m["meta"]["clientId"], m["meta"]["clientActionIndex"], m["payload"]) == \
+        ("UPDATE_INITIATIVE", "c-1", 1, [{"group": "Party Member", "key": "t-vi", "initiative": 14}])

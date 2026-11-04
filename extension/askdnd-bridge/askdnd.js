@@ -16,6 +16,7 @@ window.addEventListener('message', e => {
   if (e.data.askdndBridge === 'wake') send({ type: 'wake' });  // the bridge woke: pull now
   if (e.data.askdndBridge === 'deliver') send({ type: 'deliver', ddbId: e.data.ddbId });  // something was queued here
   if (e.data.askdndBridge === 'gamelog') send({ type: 'gamelog', ddbId: e.data.ddbId, messages: e.data.messages });  // a roll for the game log
+  if (e.data.askdndBridge === 'vtt-now') send({ type: 'vtt-now' });  // the fight's order changed here: D&D Beyond's VTT asks at once
 });
 chrome.runtime.onMessage.addListener(m => { if (m.type === 'bridge-update') window.postMessage({ askdndBridge: 'update' }, location.origin); });
 window.postMessage({ askdndBridge: 'hello', version }, location.origin);

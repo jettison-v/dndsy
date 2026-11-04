@@ -1,0 +1,111 @@
+/* askdnd's own tokens and the mock pieces these initiative boards share. Colours match app/static/app.css. */
+:root { --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --chrome: #0f1113; --line: #34383e; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #8b867d; --link: #f08a8a; --red: #d64545; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0;
+  --teal: #4fc7b0; --teal-soft: rgba(79, 199, 176, .13); --ddb: #e0573e; --ddb-soft: rgba(224, 87, 62, .12); --ddb-ink: #ff8a73;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; --sans: Inter, system-ui, -apple-system, sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; }
+* { box-sizing: border-box; }
+.board { background: var(--bg); color: var(--text); font: 14px/1.5 var(--sans); padding: 32px; display: grid; gap: 18px; align-content: start; }
+.board p { margin: 0; }
+.head { display: grid; gap: 4px; }
+.num { font: 700 13px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--link); }
+.head h1 { margin: 0; font: 600 30px/1.2 var(--serif); color: var(--strong); }
+.where { color: var(--muted); font-size: 15px; max-width: 1200px; }
+.where b { color: var(--text); font-weight: 600; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
+.row.start { justify-content: flex-start; }
+.wrap { flex-wrap: wrap; }
+.note { color: var(--muted); font-size: 13px; }
+.lbl { font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; font: 600 13px/1.2 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 12px; white-space: nowrap; cursor: pointer; min-height: 34px; }
+.btn.main { background: var(--red); border-color: var(--red); color: var(--strong); }
+.btn.quiet { background: none; }
+.btn.mini { font-size: 12px; padding: 3px 9px; border-radius: 6px; min-height: 0; }
+.btn:disabled { opacity: .45; cursor: default; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; min-width: 0; align-content: start; }
+.card h3 { margin: 0; color: var(--strong); font-size: 15px; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.rule { color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.cornercard { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .4); font-size: 13px; }
+.cornercard b { color: var(--strong); }
+.cornercard .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); flex: none; }
+.cornercard .dot.done { background: var(--green); }
+.cornercard .dot.info { background: var(--blue); }
+/* Who's who: a character's portrait, a creature ringed in teal, an enemy ringed in red */
+.av { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font: 700 12px/1 var(--serif); color: var(--strong); flex: none; }
+.av.pet { background: #3b4a46; box-shadow: 0 0 0 2px var(--teal); }
+.av.foe { background: #4a3030; box-shadow: 0 0 0 2px var(--red); }
+.av.lg { width: 40px; height: 40px; font-size: 15px; }
+/* The steps of the table's way (board 1) */
+.steps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.step { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.step .n { font: 700 22px/1 var(--serif); color: var(--faint); }
+.step b { color: var(--strong); }
+.step.ours { border-color: var(--teal); background: var(--teal-soft); }
+.step.ours .n { color: var(--teal); }
+.whose { font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.whose.dm { color: var(--link); }
+.whose.pl { color: var(--blue); }
+.whose.ddb { color: var(--ddb-ink); }
+.whose.us { color: var(--teal); }
+.tag { display: inline-flex; align-items: center; gap: 5px; font: 600 11px/1 var(--sans); border-radius: 999px; padding: 3px 8px; border: 1px solid var(--line-strong); color: var(--muted); white-space: nowrap; }
+.tag.ddb { border-color: var(--ddb); color: var(--ddb-ink); }
+.tag.us { border-color: var(--teal); color: var(--teal); }
+.tag.later { border-color: var(--amber); color: var(--amber); }
+/* askdnd's Battle tile and Table rolls */
+.tile { display: grid; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; color: var(--muted); font-size: 13px; min-width: 0; text-align: left; font-family: var(--sans); }
+.tile b { color: var(--strong); font-size: 26px; line-height: 1.1; }
+button.tile { cursor: pointer; }
+button.tile:hover { border-color: var(--line-strong); }
+.rolls { background: var(--chrome); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; }
+.rollrow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; font-size: 13px; }
+.rollrow b { color: var(--strong); }
+.big { font: 700 22px/1 var(--sans); color: var(--strong); }
+.die { width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; font: 700 20px/1 var(--sans); color: var(--strong); background: var(--surface-3); border: 1px solid var(--line-strong); flex: none; }
+/* Order lists: askdnd's (rows) and D&D Beyond's VTT sidebar */
+.olist { display: grid; gap: 6px; }
+.orow { display: grid; grid-template-columns: 54px auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; min-width: 0; }
+.orow .ini { font: 700 20px/1 var(--sans); color: var(--strong); text-align: center; }
+.orow .ini.none { font-size: 12px; font-weight: 600; color: var(--faint); }
+.orow .nm { display: grid; min-width: 0; }
+.orow .nm b { color: var(--strong); font-weight: 600; }
+.orow .nm span { color: var(--muted); font-size: 12px; }
+.orow.sub { margin-left: 28px; border-style: dashed; border-color: color-mix(in srgb, var(--teal) 50%, var(--line)); }
+.orow.fresh { border-color: var(--teal); background: var(--teal-soft); }
+.orow.now { box-shadow: inset 3px 0 0 var(--amber); }
+.vtt { background: #1b1c20; border: 1px solid #3a3b42; border-radius: 12px; padding: 12px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.vtt h4 { margin: 0; color: var(--strong); font: 700 17px/1.2 var(--sans); }
+.vrow { display: grid; grid-template-columns: 36px auto minmax(0, 1fr); gap: 10px; align-items: center; font-size: 13px; color: var(--muted); }
+.vrow .vn { width: 36px; height: 30px; border-radius: 6px; background: #2a2b31; display: grid; place-items: center; color: var(--strong); font-weight: 700; }
+.vrow b { color: var(--strong); font-weight: 600; display: block; }
+.vrow.fresh .vn { box-shadow: 0 0 0 2px var(--ddb); }
+/* D&D Beyond's Game Log, as it shows a roll */
+.glog { background: #1b1c20; border: 1px solid #3a3b42; border-radius: 12px; padding: 12px; display: grid; gap: 6px; align-content: start; }
+.gwho { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.gwho b { color: var(--text); font-weight: 600; }
+.gcard { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; background: #26272d; border: 1px solid #3a3b42; border-radius: 8px; padding: 8px 12px; }
+.gcard .gname { color: var(--strong); font-size: 14px; }
+.gcard .gtype { color: #e6b34e; font-weight: 600; }
+.gcard .gtot { font: 700 22px/1 var(--sans); color: var(--strong); padding-left: 12px; border-left: 1px solid #3a3b42; }
+.mark { color: var(--teal); font-weight: 700; }
+.okay { color: var(--green); font-size: 12px; font-weight: 600; }
+.nope { color: var(--amber); font-size: 12px; font-weight: 600; }
+/* Board 5: dragging */
+.drow { display: grid; grid-template-columns: 26px 64px auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; min-width: 0; }
+.drow[draggable="true"] { cursor: grab; }
+.drow .grip { color: var(--faint); display: grid; place-items: center; }
+.drow .ini { font: 700 20px/1 var(--sans); color: var(--strong); text-align: center; }
+.drow .ini small { display: block; font: 500 11px/1.3 var(--sans); color: var(--muted); }
+.drow .nm { display: grid; min-width: 0; }
+.drow .nm b { color: var(--strong); font-weight: 600; }
+.drow .nm span { color: var(--muted); font-size: 12px; }
+.drow.sub { margin-left: 28px; border-style: dashed; border-color: color-mix(in srgb, var(--teal) 50%, var(--line)); }
+.drow.moved { border-color: var(--teal); background: var(--teal-soft); }
+.drow.lifted { opacity: .4; }
+.drop { height: 0; position: relative; }
+.drop.on { height: 26px; border: 2px dashed var(--teal); border-radius: 8px; display: flex; align-items: center; padding: 0 10px; color: var(--teal); font-size: 12px; font-weight: 600; }
+.updn { display: inline-flex; gap: 4px; }
+.sqb { width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--strong); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.sqb:disabled { opacity: .35; cursor: default; }
+.facts { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 6px 12px; font-size: 13px; }
+.facts > :nth-child(odd) { color: var(--faint); }

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The DM drags to change the order</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">5 · The DM changes the order · try it</div>
+    <h1>Drag a row to where it should go</h1>
+    <p class="where"><b>Brett, Nov 4:</b> the DM can change the order by drag and drop, during the fight, in case something goes wrong. <b>Here:</b> the DM's Party › Rows (and askdnd's table page, the same rows). Drag a row by its handle, or use ↑ ↓. The dashed line says the number it will get before you let go. Vi's Homunculus moves with Vi.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 28px; align-items: start">
+    <div style="display: grid; gap: 10px">
+      <div class="row"><div class="lbl">Party · Rows · round 2 · the DM's view</div><span class="tag us">askdnd</span></div>
+      <div class="olist">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="7">
+          <div style="display: grid; gap: 6px" onDragOver="{{ g.over }}" onDrop="{{ g.drop }}">
+            <sc-if value="{{ g.dropBefore }}" hint-placeholder-val="{{ false }}"><div class="drop on">{{ g.dropText }}</div></sc-if>
+            <div class="{{ g.cls }}" draggable="true" onDragStart="{{ g.start }}" onDragEnd="{{ end }}">
+              <span class="grip" aria-hidden="true"><svg width="12" height="18" viewBox="0 0 12 18" fill="currentColor"><circle cx="3" cy="3" r="1.6"></circle><circle cx="9" cy="3" r="1.6"></circle><circle cx="3" cy="9" r="1.6"></circle><circle cx="9" cy="9" r="1.6"></circle><circle cx="3" cy="15" r="1.6"></circle><circle cx="9" cy="15" r="1.6"></circle></svg></span>
+              <span class="ini">{{ g.ini }}<small>{{ g.was }}</small></span>
+              <span class="{{ g.av }}">{{ g.initial }}</span>
+              <span class="nm"><b>{{ g.name }}</b><span>{{ g.line }}</span></span>
+              <span class="updn">
+                <button type="button" class="sqb" aria-label="Move {{ g.name }} up" onClick="{{ g.up }}" disabled="{{ g.first }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l4-4 4 4"></path></svg></button>
+                <button type="button" class="sqb" aria-label="Move {{ g.name }} down" onClick="{{ g.down }}" disabled="{{ g.last }}"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5l4 4 4-4"></path></svg></button>
+              </span>
+            </div>
+            <sc-for list="{{ g.subs }}" as="x" hint-placeholder-count="0">
+              <div class="{{ x.cls }}"><span></span><span class="ini">{{ x.ini }}<small>{{ x.was }}</small></span><span class="av pet">{{ x.initial }}</span><span class="nm"><b>{{ x.name }}</b><span>{{ x.line }}</span></span><span class="note">moves with Vi</span></div>
+            </sc-for>
+          </div>
+        </sc-for>
+        <div style="min-height: 34px; display: grid" onDragOver="{{ endOver }}" onDrop="{{ endDrop }}">
+          <sc-if value="{{ endOn }}" hint-placeholder-val="{{ false }}"><div class="drop on">{{ endText }}</div></sc-if>
+        </div>
+      </div>
+    </div>
+    <div style="display: grid; gap: 12px">
+      <sc-if value="{{ hasChange }}" hint-placeholder-val="{{ false }}">
+        <div class="cornercard"><span class="{{ dotCls }}"></span><span style="flex: 1"><b>{{ changeText }}</b><br><span class="note">{{ statusText }}</span></span><button type="button" class="btn mini" onClick="{{ undo }}">Undo</button></div>
+      </sc-if>
+      <div class="card" style="gap: 10px">
+        <h3>The number it gets</h3>
+        <div class="facts">
+          <span>Room between</span><span>A whole number between its new neighbours: between 15 and 12, 13.</span>
+          <span>No whole number</span><span>Half way: between 12 and 11, 11.5. D&amp;D Beyond keeps it and orders by it (tried on the Mac Mini, Nov 4).</span>
+          <span>Between a tie</span><span>Between two at 12, the one below drops by a half and it goes between (11.75). Shown on the line before you let go.</span>
+          <span>No one else</span><span>Moves only what you dragged, and its creature that takes its turn right after it.</span>
+        </div>
+      </div>
+      <div class="card"><h3>Where the change goes</h3><p class="note">Into the VTT's sidebar through the DM's open VTT (extension 0.12.0), and to every open askdnd page. The corner card says On its way, then On D&amp;D Beyond, with Undo. The VTT closed: "Made once the VTT is open", the bridge's own words.</p></div>
+      <div class="card"><h3>Also</h3><p class="note">Press a number to type one instead, as in the VTT. Whose turn it is stays theirs. Players see the same rows, without handles. On a phone, press and hold a row to drag, or use ↑ ↓.</p></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.start = [
+      { id: 'trah', name: 'Trah', initial: 'T', av: 'av', ini: 17, line: '' },
+      { id: 'bigc', name: 'Big C', initial: 'B', av: 'av', ini: 15, line: '' },
+      { id: 'vi', name: 'Vi', initial: 'V', av: 'av', ini: 14, line: 'Their turn now' },
+      { id: 'hom', name: 'Homunculus Servant', initial: 'H', av: 'av pet', ini: 13.5, line: "Vi's · right after Vi", sub: true },
+      { id: 'pip', name: 'Pip', initial: 'P', av: 'av pet', ini: 12, line: "Trah's familiar" },
+      { id: 'e1', name: 'Enemy 1', initial: 'E', av: 'av foe', ini: 12, line: '' },
+      { id: 'cole', name: 'Cole', initial: 'C', av: 'av', ini: 11, line: '' },
+      { id: 'e2', name: 'Enemy 2', initial: 'E', av: 'av foe', ini: 10, line: '' },
+    ];
+    this.state = { list: this.start, prev: null, changes: null, done: false, dragging: null, over: null };
+  }
+  groupsOf(list) {
+    const gs = [];
+    for (const x of list) { if (x.sub && gs.length) gs[gs.length - 1].subs.push(x); else gs.push({ head: x, subs: [] }); }
+    return gs;
+  }
+  low(g) { return Math.min(g.head.ini, ...g.subs.map((x) => x.ini)); }
+  plan(gs, from, slot) {
+    // Where group `from` lands at `slot` (a gap between groups, 0 = the top): its number, and anyone else who must move
+    if (slot === from || slot === from + 1) return null;
+    const rest = gs.filter((_, i) => i !== from), k = slot > from ? slot - 1 : slot;
+    const prev = rest[k - 1], next = rest[k];
+    const hi = prev ? this.low(prev) : null;
+    let lo = next ? next.head.ini : null;
+    const bumps = {};
+    let ini;
+    if (hi === null) ini = Math.floor(lo) + 1;
+    else if (lo === null) ini = Math.ceil(hi) - 1;
+    else {
+      if (hi === lo) {
+        for (let j = k; j < rest.length && rest[j].head.ini === hi; j++) for (const x of [rest[j].head, ...rest[j].subs]) bumps[x.id] = x.ini - 0.5;
+        lo = hi - 0.5;
+      }
+      const mid = (hi + lo) / 2;
+      ini = [Math.floor(mid), Math.ceil(mid), Math.round(mid * 2) / 2, mid].find((n) => n > lo && n < hi);
+    }
+    const g = gs[from], subs = {};
+    for (const x of g.subs) subs[x.id] = (lo === null || ini - 0.5 > lo) ? ini - 0.5 : (ini + lo) / 2;
+    return { k, ini, bumps, subs };
+  }
+  apply(from, slot) {
+    const s = this.state, gs = this.groupsOf(s.list), p = this.plan(gs, from, slot);
+    if (!p) { this.setState({ dragging: null, over: null }); return; }
+    const g = gs[from], rest = gs.filter((_, i) => i !== from);
+    rest.splice(p.k, 0, g);
+    const changes = [{ name: g.head.name, from: g.head.ini, to: p.ini }];
+    const list = [];
+    for (const r of rest) for (const x of [r.head, ...r.subs]) {
+      let to = x.ini;
+      if (x.id === g.head.id) to = p.ini;
+      else if (p.subs[x.id] !== undefined) to = p.subs[x.id];
+      else if (p.bumps[x.id] !== undefined) { to = p.bumps[x.id]; changes.push({ name: x.name, from: x.ini, to }); }
+      list.push({ ...x, ini: to, was: to !== x.ini ? x.ini : (x.was ?? null), moved: to !== x.ini });
+    }
+    this.setState({ list, prev: s.list, changes, done: false, dragging: null, over: null });
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.setState({ done: true }), 1400);
+  }
+  componentWillUnmount() { clearTimeout(this.timer); }
+  renderVals() {
+    const s = this.state, gs = this.groupsOf(s.list);
+    const from = s.dragging === null ? -1 : gs.findIndex((g) => g.head.id === s.dragging);
+    const fmt = (n) => String(n);
+    const preview = (slot) => {
+      if (from < 0) return null;
+      const p = this.plan(gs, from, slot);
+      if (!p) return null;
+      const others = Object.keys(p.bumps).length ? ' · the one below → ' + fmt(Object.values(p.bumps)[0]) : '';
+      return gs[from].head.name + ' here → ' + fmt(p.ini) + others;
+    };
+    const overAt = (i) => (e) => {
+      if (from < 0) return;
+      e.preventDefault();
+      const r = e.currentTarget.getBoundingClientRect(), slot = e.clientY < r.top + r.height / 2 ? i : i + 1;
+      if (slot !== s.over) this.setState({ over: slot });
+    };
+    const dropIt = (e) => { e.preventDefault(); if (from >= 0 && s.over !== null) this.apply(from, s.over); };
+    const groups = gs.map((g, i) => {
+      const text = s.over === i ? preview(i) : null;
+      return {
+        name: g.head.name, initial: g.head.initial, av: g.head.av, ini: fmt(g.head.ini),
+        was: g.head.was != null ? 'was ' + fmt(g.head.was) : '', line: g.head.line,
+        cls: 'drow' + (g.head.moved ? ' moved' : '') + (s.dragging === g.head.id ? ' lifted' : ''),
+        subs: g.subs.map((x) => ({ ...x, ini: fmt(x.ini), was: x.was != null ? 'was ' + fmt(x.was) : '', cls: 'drow sub' + (x.moved ? ' moved' : '') })),
+        first: i === 0, last: i === gs.length - 1,
+        up: () => this.apply(i, i - 1), down: () => this.apply(i, i + 2),
+        start: (e) => { try { e.dataTransfer.setData('text/plain', g.head.id); e.dataTransfer.effectAllowed = 'move'; } catch (err) {} this.setState({ dragging: g.head.id, over: null }); },
+        over: overAt(i), drop: dropIt, dropBefore: !!text, dropText: text || '',
+      };
+    });
+    const endText = s.over === gs.length ? preview(gs.length) : null;
+    const ch = s.changes || [];
+    return {
+      groups, end: () => this.setState({ dragging: null, over: null }),
+      endOver: (e) => { if (from < 0) return; e.preventDefault(); if (s.over !== gs.length) this.setState({ over: gs.length }); },
+      endDrop: dropIt, endOn: !!endText, endText: endText || '',
+      hasChange: ch.length > 0,
+      changeText: ch.map((c) => c.name + ': ' + fmt(c.from) + ' → ' + fmt(c.to)).join(' · '),
+      statusText: s.done ? 'On D&D Beyond' : 'On its way to D&D Beyond',
+      dotCls: s.done ? 'dot done' : 'dot',
+      undo: () => { clearTimeout(this.timer); this.setState({ list: s.prev || this.start, prev: null, changes: null }); },
+    };
+  }
+}
+</script>
+</body>
+</html>

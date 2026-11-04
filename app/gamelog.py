@@ -2,11 +2,17 @@
 
 A player's roll made in askdnd also goes into the D&D Beyond game their character is in, so the DM sees it where they
 play: the extension sends it from the player's own D&D Beyond tab (extension/askdnd-bridge/ddb-page.js), in the Game
-Log's own message shape, marked as askdnd's and never as D&D Beyond's: the message's source is "askdnd" and the roll's
-name ends in ⓐ ("Pistol ⓐ: To Hit"). Tested on Vi on Oct 29: D&D Beyond shows them live and keeps them in the Game
+Log's own message shape, marked as askdnd's and never as D&D Beyond's: the message's source is "askdnd" and the name of
+whoever rolled ends in ⓐ ("Cole ⓐ", "Pip ⓐ (Trah)"), the roll keeping its own plain name ("Pistol: To Hit"; Brett, Nov 4:
+the mark after the name, the same for every roll). Tested on Vi on Oct 29: D&D Beyond shows them live and keeps them in the Game
 Log's history, with advantage, a damage type in place of "Damage", private rolls and healing. No dice set is named, so
 D&D Beyond shows its basic dice rather than one the roll never used. askdnd's Table rolls stay the record: the extension
 doesn't pass these back (ddb_bridge.heard_in_game skips askdnd's own), and D&D Beyond may stop taking them.
+
+Initiative (DECISIONS, Nov 4): the DM's open VTT turns a roll named plainly "Initiative" for a character into its number in
+the order, as it does a roll from the sheet. So a character's own Initiative is sent so only before Start Combat (the
+table's way: after it the order is the DM's), and a creature's never is (it would be its master's number): those carry
+what they are in the name ("Initiative (combat started)", "Initiative (Pip)").
 
 `messages(db, row, character)` builds them here, so the extension only fills in what its tab knows (who is signed in,
 the message's id and time). They go only where the bridge works on the character and its sheet is in a D&D Beyond game.
@@ -24,13 +30,27 @@ KIND = {"adv": "advantage", "dis": "disadvantage"}
 
 
 def _name(row: TableRoll, kind: str) -> str:
-    """D&D Beyond's names: "Con" for a Con save (the type says Save), "Death" for a death save; then askdnd's mark."""
+    """D&D Beyond's names: "Con" for a Con save (the type says Save), "Death" for a death save."""
     label = row.label
     if kind in ("save", "check") and label.lower().endswith((" save", " check")):
         label = label.rsplit(" ", 1)[0]
     if kind == "death":
         label = "Death"
-    return f"{label[:60]} {MARK}" + (" crit" if row.crit else "")
+    return label[:60] + (" crit" if row.crit else "")
+
+
+def initiative(row: TableRoll, kind: str) -> bool:
+    """A roll of Initiative (the Initiative tile's)."""
+    return kind == "check" and row.label == "Initiative"
+
+
+def _fighting(db, campaign_id: int) -> bool:
+    """Combat has started in the campaign's fight (not only waiting for Start Combat)."""
+    from app import fight
+    from app.models import Campaign
+
+    f = fight.shown(db.get(Campaign, campaign_id), True)
+    return bool(f and not f.get("waiting"))
 
 
 def _set(sides: int, dice: list[int], op: int = 0) -> dict:
@@ -107,11 +127,22 @@ def messages(db, row: TableRoll, character: Character | None) -> list[dict]:
     if kind == "reroll":  # a d20 rolled again: its own roll, of the kind it rerolled
         root = db.get(TableRoll, row.parent_id)
         kind = root.kind if root else "check"
+    # One of the character's creatures rolled (Your creatures; not the Wild Shape form it's in): its own name, then whose
+    creature = row.who if row.who and row.who != (character.wild_shape or "") else ""
     rays = [x for x in row.parts or [] if x.get("kept") is not None] if kind in D20_KINDS else []
     rolls = [(f"{_name(row, kind)} {x.get('label', '')}".strip(), _roll(row, kind, x)) for x in rays] or [(_name(row, kind), _roll(row, kind))]
+    if initiative(row, kind):
+        roll = rolls[0][1]
+        if creature:
+            rolls = [(f"Initiative ({creature[:40]})", roll)]
+        elif _fighting(db, row.campaign_id):
+            rolls = [("Initiative (combat started)", roll)]
+        else:
+            rolls = [("Initiative", {**roll, "rollType": "roll"})]  # (as the sheet sends it: the VTT takes its number)
     scope, target = aim
+    who = f"{creature} {MARK} ({character.name})" if creature else f"{character.name} {MARK}"
     context = {"entityId": str(character.ddb_id), "entityType": "character", "messageScope": scope, "messageTarget": target,
-               "name": character.name}
+               "name": who[:120]}
     return [{"gameId": str(game), "source": SOURCE, "eventType": "dice/roll/fulfilled", "persist": True,
              "entityId": str(character.ddb_id), "entityType": "character", "messageScope": scope, "messageTarget": target,
              "data": {"action": name, "context": context, "rollId": f"askdnd-{row.id}-{i}", "rolls": [r]}}

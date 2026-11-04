@@ -1,8 +1,12 @@
 // Runs inside D&D Beyond's VTT page (/games/<campaign>; manifest.json, in the page's own world from the start), as the
-// signed-in person. Only listens (Brett, 2026-10-29: askdnd hears the initiative order, never writes it): the VTT's
-// game server sends this page the whole game when it connects (SYNC) and then each change as a named action
-// (docs/plans/2026-10-24-play-state.md). The fight's part is kept here, the way the VTT keeps it, and passed on to
-// askdnd whenever it changes: the order, the round, whose turn. Nothing is ever sent to D&D Beyond.
+// signed-in person. It listens (Brett, 2026-10-29: askdnd hears the initiative order): the VTT's game server sends this
+// page the whole game when it connects (SYNC) and then each change as a named action (docs/plans/2026-10-24-play-state.md).
+// The fight's part is kept here, the way the VTT keeps it, and passed on to askdnd whenever it changes: the order, the
+// round, whose turn, and before Start Combat who's waiting with what they rolled (0.12.0).
+//
+// It writes one thing, initiative numbers (0.12.0; Brett, Nov 4: docs/mockups/initiative/, DECISIONS): on the DM's page
+// only, the numbers askdnd hands it (a familiar's roll, a Homunculus put right after its master, the DM's drag in askdnd),
+// each as D&D Beyond's own UPDATE_INITIATIVE on this page's game connection, as the DM typing it in the sidebar sends.
 //
 // Who's in the fight comes in two steps, as in the VTT: someone added to the encounter waits in a group (mid-fight,
 // "Pending") with their initiative, and joins the order when the DM adds them to combat, the order sorted again
@@ -15,20 +19,33 @@
   const post = m => window.postMessage({ askdndBridge: 'from-vtt', ...m }, location.origin);
   const FIGHT = /COMBAT|INITIATIVE|ENCOUNTER|TURN|TOKEN|MULTI_SELECT_DELETE/;
 
-  // What askdnd is told: each in the order with its name, its picture, a character's D&D Beyond id, and whether the DM hid it
+  // What askdnd is told: each in the order with its name, its picture, a character's D&D Beyond id, whether the DM hid
+  // it, and where the combat sidebar keeps it (group, gkey: what an initiative number is set by); before Start Combat,
+  // everyone the DM added, as the sidebar lists them (`waiting`)
   function told() {
     const f = V.fight;
-    if (!f) return null;
+    let list = f ? f.combatants : [];
+    if (!f) {
+      for (const [group, entries] of Object.entries(V.groups)) {
+        if (group === 'Pending') continue;
+        for (const e of Object.values(entries || {})) for (const t of e.tokenIds || [])
+          if (V.tokens[t]) list.push({ tokenId: String(t), initiative: num(e.initiative), initiativeBonus: num(e.initiativeBonus) });
+      }
+      if (!list.length) return null;
+      list.sort(before);
+    }
     const counts = {};
-    f.combatants.forEach(x => { const t = V.tokens[x.tokenId] || {}; counts[t.entityId] = (counts[t.entityId] || 0) + 1; });
-    return { round: f.round, turn: f.turn, order: f.combatants.map(x => {
-      const t = V.tokens[x.tokenId] || {};
+    list.forEach(x => { const t = V.tokens[x.tokenId] || {}; counts[t.entityId] = (counts[t.entityId] || 0) + 1; });
+    const order = list.map(x => {
+      const t = V.tokens[x.tokenId] || {}, at = entryOf(x.tokenId);
       return { key: x.tokenId, name: (t.name || '?') + (counts[t.entityId] > 1 && t.nameSuffix ? ' ' + t.nameSuffix : ''),
         kind: t.type === 'CHARACTER' ? 'character' : t.type === 'MONSTER' ? 'monster' : 'companion',  // (the VTT's "Enemy" is its monsters)
         ddb_id: t.type === 'CHARACTER' ? String(t.entityId) : null, monster_id: t.type === 'MONSTER' && t.entityId ? String(t.entityId) : null,
-        initiative: x.initiative, hidden: !!t.hidden, active: x.tokenId === f.activeId,
-        image: t.customImageUrl || t.imageUrl || t.fallbackImageUrl || null };  // (the picture the VTT draws it with)
-    }) };
+        initiative: x.initiative, hidden: !!t.hidden, active: !!f && x.tokenId === f.activeId,
+        image: t.customImageUrl || t.imageUrl || t.fallbackImageUrl || null,  // (the picture the VTT draws it with)
+        group: at ? at.group : null, gkey: at ? at.key : null };
+    });
+    return f ? { round: f.round, turn: f.turn, order } : { waiting: true, round: 0, turn: 0, order };
   }
   let last = '';
   function tell() { const t = told(); const s = JSON.stringify(t); if (s === last) return; last = s; post({ type: 'fight', fight: t }); }
@@ -50,13 +67,16 @@
 
   // The VTT's order: higher initiative first, then the higher bonus, then monsters before characters, then by name;
   // whose turn it is stays theirs (its turn number follows them)
+  const before = (a, b) => {
+    const name = x => (V.tokens[x.tokenId] || {}).name || '', monster = x => (V.tokens[x.tokenId] || {}).type === 'MONSTER';
+    return a.initiative !== b.initiative ? (b.initiative || 0) - (a.initiative || 0)
+      : a.initiativeBonus !== b.initiativeBonus ? (b.initiativeBonus || 0) - (a.initiativeBonus || 0)
+      : monster(a) !== monster(b) ? (monster(a) ? -1 : 1) : name(a).localeCompare(name(b));
+  };
   function sort() {
     const f = V.fight;
     if (!f) return;
-    const name = x => (V.tokens[x.tokenId] || {}).name || '', monster = x => (V.tokens[x.tokenId] || {}).type === 'MONSTER';
-    f.combatants.sort((a, b) => a.initiative !== b.initiative ? (b.initiative || 0) - (a.initiative || 0)
-      : a.initiativeBonus !== b.initiativeBonus ? (b.initiativeBonus || 0) - (a.initiativeBonus || 0)
-      : monster(a) !== monster(b) ? (monster(a) ? -1 : 1) : name(a).localeCompare(name(b)));
+    f.combatants.sort(before);
     const i = f.combatants.findIndex(x => x.tokenId === f.activeId);
     if (i >= 0) f.turn = i + 1;
   }
@@ -107,7 +127,7 @@
         if (!f || !f.combatants.length) return true;
         if (f.turn <= 1) { f.round -= 1; f.turn = f.combatants.length; } else f.turn -= 1;
         f.activeId = f.combatants[f.turn - 1].tokenId; return true;
-      case 'END_COMBAT': V.fight = null; return true;
+      case 'END_COMBAT': V.fight = null; V.groups = {}; return true;  // (the sidebar starts again from Add all tokens)
       case 'CLEAR_ENCOUNTER': V.fight = null; V.groups = {}; return true;
       case 'START_COMBAT': {
         const combatants = [];
@@ -174,8 +194,34 @@
     }
     return false;
   }
+  // This page's game connection and who it is to the game server (its CONNECT message's clientId): an initiative number
+  // askdnd hands it goes out as this page's own (a made-up client id is ignored, Nov 4)
+  const own = ws => {
+    const send = ws.send;
+    ws.send = function (d) {
+      if (typeof d === 'string' && d[0] === '{') {
+        try {
+          const j = JSON.parse(d), meta = j.meta || {};
+          if (j.type === 'CONNECT' && meta.clientId) { V.ws = ws; V.client = meta.clientId; }
+          if (meta.clientId === V.client && meta.clientActionIndex > (V.n || 0)) V.n = meta.clientActionIndex;
+        } catch (err) { /* not one of the game's messages */ }
+      }
+      return send.apply(this, arguments);
+    };
+  };
+  window.addEventListener('message', e => {
+    if (e.source !== window || !e.data || e.data.askdndBridge !== 'to-vtt' || e.data.type !== 'set' || !Array.isArray(e.data.sets)) return;
+    if (!V.ws || V.ws.readyState !== 1 || !V.client) return;
+    for (const x of e.data.sets.slice(0, 20)) {
+      if (!x || typeof x.group !== 'string' || typeof x.key !== 'string' || typeof x.initiative !== 'number' || !isFinite(x.initiative)) continue;
+      V.n = (V.n || 0) + 1;
+      V.ws.send(JSON.stringify({ type: 'UPDATE_INITIATIVE', meta: { source: 'CLIENT', clientNow: Date.now(), clientActionIndex: V.n, clientId: V.client },
+                                 payload: [{ group: x.group, key: x.key, initiative: x.initiative }] }));
+    }
+  });
   const listen = ws => {
     if (!String(ws.url).includes('games.dndbeyond.com')) return;
+    own(ws);
     ws.addEventListener('message', e => {
       if (typeof e.data !== 'string' || e.data[0] !== '{') return;
       let a;

@@ -23,7 +23,7 @@ from urllib.parse import urlparse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import access
+from app import access, initiative
 from app.models import Campaign, CampaignCharacter, Character
 
 STALE = timedelta(hours=3)
@@ -66,7 +66,9 @@ def _picture(url) -> str | None:
 
 def _clean(heard: dict | None, characters: dict[str, int]) -> dict | None:
     """What the extension heard, kept as askdnd shows it: each entry's name, kind, askdnd character (by its D&D Beyond
-    id, in this campaign), initiative, hidden and whose turn; the round and the turn."""
+    id, in this campaign), initiative, hidden and whose turn, and where the VTT's combat sidebar keeps it (`group`,
+    `gkey`: extension 0.12.0, so askdnd can set its number, app/initiative.py); the round and the turn, or `waiting`:
+    the DM added the tokens and hasn't pressed Start Combat (0.12.0)."""
     if not heard or not isinstance(heard.get("order"), list):
         return None
     order = []
@@ -81,7 +83,10 @@ def _clean(heard: dict | None, characters: dict[str, int]) -> dict | None:
                       "monster": monster if monster.isdigit() else None,
                       "character": characters.get(ddb_id) if ddb_id else None,
                       "initiative": init if isinstance(init, (int, float)) else None,
-                      "hidden": bool(x.get("hidden")), "active": bool(x.get("active")), "image": _picture(x.get("image"))})
+                      "hidden": bool(x.get("hidden")), "active": bool(x.get("active")), "image": _picture(x.get("image")),
+                      "group": str(x.get("group") or "")[:40] or None, "gkey": str(x.get("gkey") or "")[:80] or None})
+    if heard.get("waiting"):
+        return {"round": 0, "turn": 0, "waiting": True, "order": [{**x, "active": False} for x in order]}
     return {"round": _int(heard.get("round")), "turn": _int(heard.get("turn")), "order": order}
 
 
@@ -110,8 +115,12 @@ def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
         select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
         .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None), Character.ddb_id.is_not(None)))}
     now, prev = _clean(fight, characters), campaign.fight
+    if now is not None:  # (numbers askdnd asked the VTT for and it doesn't show yet: app/initiative.py)
+        initiative.overlay(now, prev)
+        if initiative.on(campaign):
+            initiative.follow_masters(db, campaign, now)
     fresh = campaign.fight_at is None or datetime.now(UTC) - campaign.fight_at > timedelta(minutes=10)
-    if _order(now) == _order(prev) and not fresh:
+    if _order(now) == _order(prev) and (now or {}).get("sets") == (prev or {}).get("sets") and not fresh:
         return False
     if now is not None:  # (its reminders carry on through the fight; a new fight gets its own id)
         now["reminders"], now["seq"] = list((prev or {}).get("reminders") or []), (prev or {}).get("seq", 0)
@@ -325,21 +334,24 @@ def creature_turns(db: Session, campaign: Campaign, ended: str | None, began: st
 def shown(campaign: Campaign | None, dm: bool, mine: set[int] = frozenset()) -> dict | None:
     """The fight as this person sees it, or None (no fight, or not heard for STALE): {"round", "turn", "order",
     "now" (whose turn: the entry), "next" (the entry after it), "yours" (it's one of `mine`'s turn), "next_yours",
-    "reminders" (theirs: each says "mine" when it's one of their characters')}."""
+    "reminders" (theirs: each says "mine" when it's one of their characters'), "waiting" (the DM added the tokens and
+    combat hasn't started: whoever has rolled, and no one's turn yet; extension 0.12.0)}."""
     if campaign is None or not campaign.fight or not campaign.fight_at or datetime.now(UTC) - campaign.fight_at > STALE:
         return None
     f = campaign.fight
+    if f.get("waiting") and not initiative.on(campaign):  # (before Start Combat, only with Initiative from askdnd)
+        return None
     order = [x for x in f["order"] if dm or not x["hidden"]]
     if not order:
         return None
-    full = f["order"]
+    full, waiting = f["order"], bool(f.get("waiting"))
     i = next((n for n, x in enumerate(full) if x["active"]), 0)
-    now = full[i] if full else None
-    nxt = next((full[(i + k) % len(full)] for k in range(1, len(full) + 1) if dm or not full[(i + k) % len(full)]["hidden"]), None)
+    now = full[i] if full and not waiting else None
+    nxt = None if waiting else next((full[(i + k) % len(full)] for k in range(1, len(full) + 1) if dm or not full[(i + k) % len(full)]["hidden"]), None)
     seen_now = now if now and (dm or not now["hidden"]) else None
     # A reminder (follow) is for that character's player and the DM (Brett, 2026-10-29)
     reminders = [{**r, "mine": r["character"] in mine} for r in f.get("reminders") or [] if dm or r["character"] in mine]
-    return {"id": f.get("id", ""), "round": f["round"], "turn": f["turn"], "order": order, "now": seen_now, "next": nxt,
+    return {"id": f.get("id", ""), "round": f["round"], "turn": f["turn"], "waiting": waiting, "order": order, "now": seen_now, "next": nxt,
             "yours": bool(seen_now and seen_now.get("character") in mine),
             "next_yours": bool(nxt and nxt.get("character") in mine and nxt is not now), "reminders": reminders}
 
@@ -374,6 +386,11 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
                       for x in with_creatures(db, campaign, f["order"])]
         now = next((i for i, x in enumerate(f["order"]) if x.get("active")), None)
         f["next"] = f["order"][(now + 1) % len(f["order"])]["name"] if now is not None and len(f["order"]) > 1 else ""  # (those this person sees)
+        # The DM moves fighters in the order (Initiative from askdnd): a row's handle, ↑ ↓ and its number
+        f["can_order"] = initiative.on(campaign) and access.allows("fight_order", access.level(email), access.role(email, campaign.id))
+        # (not a creature that acts right after its master: it moves with it)
+        f["order"] = [{**x, "moves": f["can_order"] and not x.get("sub") and not (x.get("creature") and not x["creature"].get("own"))}
+                      for x in f["order"]]
     return f
 
 
