@@ -208,12 +208,12 @@ def test_a_creature_change_is_only_for_its_player_or_the_dm(dm, db, labs):
     assert dm.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "1", "to": "heal"}).status_code == 204
 
 
-def test_the_extension_sends_a_character_value_only_for_a_creatures_maximum():
-    """extension 0.10.0: custom/value is on its list, but only for type 43 (ddb-page.js)."""
+def test_the_extension_sends_a_character_value_only_for_a_creatures_maximum_or_type():
+    """extension 0.10.0 and 0.11.0: custom/value is on its list, but only for types 43 and 44 (ddb-page.js)."""
     import os
 
     js = open(os.path.join(os.path.dirname(__file__), "..", "extension", "askdnd-bridge", "ddb-page.js")).read()
-    assert "const CREATURE_MAX = 43" in js and "op.body.typeId) !== CREATURE_MAX" in js
+    assert "const CREATURE_VALUES = new Set([43, 44])" in js and "!CREATURE_VALUES.has(Number(op.body.typeId))" in js
 
 
 # ------------------------------------------------------------------ a familiar in play (round 2: app/companions.py)
@@ -317,3 +317,31 @@ def test_find_familiar_works_with_the_sheet_out_of_reach_as_a_ritual(player, db,
     db.refresh(labs)
     assert labs.companions[str(OWL)]["state"] == "here"
     assert player.post(url, data={"way": "slot:1", "familiar": str(OWL), "kind": "Fiend"}).status_code == 409
+
+
+def test_casting_keeps_d_and_d_beyonds_extras_in_step(player, db, labs, sheet):
+    """Brett, 2026-11-04, option A (extension 0.11.0): the familiar that's here is switched on on its Extras, with what it
+    is (D&D Beyond's creature type, 44) and the name it was given; every other form is switched off; sending it away
+    switches it off. As D&D Beyond's own sheet sends them (tried on Levi's test sheet, Nov 4)."""
+    from app.models import BridgeIntent
+
+    e = familiar_sheet(db, labs, sheet)
+    sheet["creatures"][-1]["isActive"] = True  # (the Raven switched on there by hand)
+    characters.refresh(db, labs)
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    assert 'name="familiar_name" value="Pip"' in player.get(url).text  # (the name it has on D&D Beyond)
+    r = player.post(url, data={"way": "ritual", "familiar": str(OWL), "kind": "Fey", "familiar_name": "Moss"})
+    assert "Moss (Fey) is here" in r.json()["text"]
+    got = {op["path"].rsplit("/v5/", 1)[1] + ("" if "typeId" not in op["body"] else f":{op['body']['typeId']}"): op["body"] for op in ops(db, labs)}
+    assert got["creature/status"] in ({"characterId": 75423618, "id": OWL, "isActive": True}, {"characterId": 75423618, "id": RAVEN, "isActive": False})
+    fields = sorted(i.data["field"] for i in db.scalars(select(BridgeIntent).where(BridgeIntent.kind == "set")))
+    assert fields == sorted([f"creature_active:{OWL}", f"creature_active:{RAVEN}", f"creature_type:{OWL}", f"creature_name:{OWL}"])
+    values = {i.data["field"]: i.data["value"] for i in db.scalars(select(BridgeIntent).where(BridgeIntent.kind == "set"))}
+    assert values == {f"creature_active:{OWL}": True, f"creature_active:{RAVEN}": False, f"creature_type:{OWL}": 8, f"creature_name:{OWL}": "Moss"}
+    assert got["custom/value:44"]["value"] == 8 and got["creature"] == {"characterId": 75423618, "id": OWL, "name": "Moss", "description": None, "groupId": 2}
+    for i in db.scalars(select(BridgeIntent)):
+        db.delete(i)
+    db.flush()
+    assert player.post(f"/characters/{labs.id}/creatures/{OWL}/where", data={"to": "away"}).status_code == 204
+    away = {i.data["field"]: i.data["value"] for i in db.scalars(select(BridgeIntent).where(BridgeIntent.kind == "set"))}
+    assert away == {f"creature_active:{RAVEN}": False}  # (the Owl is still off on D&D Beyond: the cast's changes weren't made here)

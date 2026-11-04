@@ -1054,6 +1054,49 @@ def creature_hp(t: Table, seat: str = "player3") -> None:
                                                                  else [["PUT", "custom/value", {**key, "value": most(before), "notes": None}]]]), flush=True)
 
 
+def creature_of(d: dict, cid: int) -> dict:
+    return next(c for c in d["creatures"] if c["id"] == cid)
+
+
+def familiar(t: Table, seat: str = "player4") -> None:
+    """A familiar kept in step (Nov 4, extension 0.11.0; Levi's Owl): Find Familiar cast in askdnd as a Ritual, named Pip
+    and made Fey, switches the Owl on on D&D Beyond with its creature type and name; sent to the pocket dimension it's
+    switched off, brought back it's on, dismissed it's off; then D&D Beyond is put back as found. askdnd keeps the Owl
+    as dismissed, which the next cast brings back."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    connects(t, page)
+    before = record(sheet)
+    owl = next(c for c in before["creatures"] if c["groupId"] == 2)
+    oid = owl["id"]
+    page.locator(".spellbook-btn").first.click(timeout=8000)
+    go(page, page.locator('.ls-row[data-ref="spell:Find Familiar"] [data-use-url*="/cast?"]').first)
+    page.locator('select[name="way"]').first.select_option("ritual")
+    page.locator(f'input[name="familiar"][value="{oid}"]').check()
+    page.locator('input[name="kind"][value="Fey"]').check()
+    page.locator('input[name="familiar_name"]').fill("Pip")
+    page.locator("[data-use-go]").first.click(timeout=8000)
+    t.expect("the Owl is switched on on D&D Beyond", lambda: creature_of(record(sheet), oid)["isActive"], SLOW)
+    t.expect("as Fey (its creature type)", lambda: any(v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) and v.get("value") == 8
+                                                        for v in record(sheet).get("characterValues") or []), SLOW)
+    t.expect("named Pip", lambda: creature_of(record(sheet), oid)["name"] == "Pip", SLOW)
+    page.wait_for_timeout(1500)
+    page.goto(f"{page.url.split('?')[0]}?creature={oid}", wait_until="domcontentloaded")
+    page.locator('button:has-text("Send to the pocket dimension")').first.click(timeout=8000)
+    t.expect("sent to the pocket dimension, it's switched off", lambda: not creature_of(record(sheet), oid)["isActive"], SLOW)
+    page.wait_for_timeout(1500)
+    page.locator('button:has-text("Bring it back")').first.click(timeout=8000)
+    t.expect("brought back, it's on again", lambda: creature_of(record(sheet), oid)["isActive"], SLOW)
+    page.wait_for_timeout(1500)
+    page.locator('.cr-forever > summary').first.click(timeout=8000)
+    page.locator('.cr-forever-pop button').first.click(timeout=8000)
+    t.expect("dismissed, it's switched off", lambda: not creature_of(record(sheet), oid)["isActive"], SLOW)
+    key = {"typeId": 44, "valueId": str(oid), "valueTypeId": str(owl["entityTypeId"]), "contextId": None, "contextTypeId": None}
+    print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], [
+        ["DELETE", "custom/value", key], ["PUT", "creature", {"id": oid, "name": owl["name"], "description": owl["description"], "groupId": owl["groupId"]}],
+        ["PUT", "creature/status", {"id": oid, "isActive": owl["isActive"]}]]]), flush=True)
+
+
 def dm_backup(t: Table, seat: str = "player2") -> None:
     """DM Backup (extension 0.9.8): with a player's sheet closed, the DM's browser with a D&D Beyond page open makes
     askdnd's change on it; the pill says so, then Connected again once the sheet is back."""
@@ -1076,12 +1119,13 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
         "cast": cast, "resource": resource, "coins": coins, "rests": rests, "temp-hp": temp_hp, "death-saves": death_saves,
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
-        "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp}
+        "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp,
+        "familiar": familiar}
 # Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out
 SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup"}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 # Runs left out of part 1 (and the nightly) until the seats have what they need: named, they run
-WAITING: set[str] = set()  # (empty since Nov 4: creature-hp waited for extension 0.10.0)
+WAITING = {"familiar"}  # (extension 0.11.0, waiting for Google's review: Nov 4)
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 
 

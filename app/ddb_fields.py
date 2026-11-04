@@ -42,8 +42,14 @@ WRITES = {("PUT", HP_PATH), ("PUT", f"{CS}/life/death-saves"), ("PUT", f"{CS}/ch
           ("PUT", f"{CS}/spell/prepared"),
           *{("PUT", f"{CS}/inventory/currency/{name}") for name in COINS.values()},
           # (extension 0.10.0: a creature's Hit Points and its maximum, D&D Beyond's character value 43 only)
-          ("PUT", f"{CS}/creature/hp"), ("PUT", f"{CS}/custom/value"), ("DELETE", f"{CS}/custom/value")}
+          ("PUT", f"{CS}/creature/hp"), ("PUT", f"{CS}/custom/value"), ("DELETE", f"{CS}/custom/value"),
+          # (extension 0.11.0: a familiar kept in step, Brett 2026-11-04 option A: here or not, what it is, its name;
+          # character values 43 and 44 only)
+          ("PUT", f"{CS}/creature/status"), ("PUT", f"{CS}/creature")}
 CREATURE_MAX = 43  # D&D Beyond's AdjustmentTypeEnum.CREATURE_HIT_POINTS: a creature's maximum, set on its sheet
+CREATURE_TYPE = 44  # D&D Beyond's AdjustmentTypeEnum.CREATURE_TYPE_OVERRIDE: what a creature is (a familiar's Celestial…)
+MONSTER_TYPES = {"Celestial": 3, "Fey": 8, "Fiend": 9}  # D&D Beyond's monsterTypes (its config), for CREATURE_TYPE
+VALUES = {"creature_max": CREATURE_MAX, "creature_type": CREATURE_TYPE}  # the character values askdnd may set, by field
 
 
 def pick(data, steps: list):
@@ -103,6 +109,9 @@ def steps(field: str) -> list:
         "creature": ["creatures", {"id": arg}, {"read": {"removedHitPoints": ["removedHitPoints", {"or": 0}],
                                                          "temporaryHitPoints": ["temporaryHitPoints", {"or": 0}]}}],
         "creature_max": ["characterValues", {"typeId": CREATURE_MAX, "valueId": arg}, "value"],
+        "creature_type": ["characterValues", {"typeId": CREATURE_TYPE, "valueId": arg}, "value"],
+        "creature_active": ["creatures", {"id": arg}, "isActive", {"or": False}],
+        "creature_name": ["creatures", {"id": arg}, "name"],
     }[kind]
 
 
@@ -126,9 +135,9 @@ def put(data: dict, field: str, v) -> None:
             if known:
                 group.setdefault("spells", []).append({**known, "prepared": True})
         return
-    if kind == "creature_max":  # a character value: added, changed, or gone (back to the stat block's)
-        rest = [x for x in data.get("characterValues") or [] if not _matches(x, {"typeId": CREATURE_MAX, "valueId": arg})]
-        data["characterValues"] = rest + ([{"typeId": CREATURE_MAX, "valueId": str(arg), "value": int(v)}] if v else [])
+    if kind in VALUES:  # a character value: added, changed, or gone (back to the stat block's)
+        rest = [x for x in data.get("characterValues") or [] if not _matches(x, {"typeId": VALUES[kind], "valueId": arg})]
+        data["characterValues"] = rest + ([{"typeId": VALUES[kind], "valueId": str(arg), "value": int(v)}] if v else [])
         return
     if kind in ("condition", "exhaustion"):  # a condition is there or not; Exhaustion is one with a level
         cid = EXHAUSTION if kind == "exhaustion" else int(arg)
@@ -224,10 +233,11 @@ def name(data: dict | None, field: str) -> str:
         return f"{((pick(data, ['classes', {'id': arg}]) or {}).get('definition') or {}).get('name') or 'Class'} Hit Dice"
     if kind == "uses":
         return (pick(data, ["actions", "*", {"id": arg}]) or {}).get("name") or "a use"
-    if kind in ("creature", "creature_max"):
+    if kind.startswith("creature"):
         c = creature(data, arg)
         who = c.get("name") or (c.get("definition") or {}).get("name") or "a creature"
-        return f"{who}'s {'hit points' if kind == 'creature' else 'maximum hit points'}"
+        return f"{who}'s " + {"creature": "hit points", "creature_max": "maximum hit points", "creature_type": "creature type",
+                              "creature_active": "Active", "creature_name": "name"}[kind]
     if kind == "condition":
         return CONDITIONS.get(int(arg), "a condition")
     if kind == "slot":
@@ -241,6 +251,10 @@ def text(data: dict | None, field: str, v, max_hit_points: int = 0) -> str:
     kind, _ = _split(field)
     if kind == "creature_max":
         return str(v) if v else "its stat block's"
+    if kind == "creature_type":
+        return next((t for t, i in MONSTER_TYPES.items() if i == v), str(v)) if v else "its stat block's"
+    if kind == "creature_name":
+        return v or "its stat block's"
     if v is None:
         return "gone" if kind == "item" else "?"
     if kind == "hp":
@@ -302,10 +316,15 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
         return req("PUT", "condition", id=int(arg), level=None, totalHp=max_hit_points) if v else req("DELETE", "condition", id=int(arg))
     if kind == "creature":
         return req("PUT", "creature/hp", id=int(arg), **v)
-    if kind == "creature_max":  # its maximum as D&D Beyond shows it, or back to its stat block's
+    if kind in VALUES:  # its maximum or what it is, as D&D Beyond shows it, or back to its stat block's
         c = creature(data, arg)
-        key = {"typeId": CREATURE_MAX, "valueId": str(arg), "valueTypeId": str(c.get("entityTypeId")), "contextId": None, "contextTypeId": None}
+        key = {"typeId": VALUES[kind], "valueId": str(arg), "valueTypeId": str(c.get("entityTypeId")), "contextId": None, "contextTypeId": None}
         return req("PUT", "custom/value", **key, value=int(v), notes=None) if v else req("DELETE", "custom/value", **key)
+    if kind == "creature_active":  # Active on its Extras (here), as D&D Beyond's own switch sends it
+        return req("PUT", "creature/status", id=int(arg), isActive=bool(v))
+    if kind == "creature_name":  # its name on its Extras (its notes and group as they are)
+        c = creature(data, arg)
+        return req("PUT", "creature", id=int(arg), name=v or None, description=c.get("description"), groupId=c.get("groupId"))
     if kind == "hitdice":  # D&D Beyond spends Hit Dice only as part of a Short Rest (it restores what a Short Rest restores)
         return req("POST", "character/rest/short", classHitDiceUsed={arg: v}, resetMaxHpModifier=False)
     if kind in ("slot", "pact"):

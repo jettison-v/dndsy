@@ -80,5 +80,6 @@ def change_hp(request: Request, character_id: int, creature_id: int, form=web.Fo
         said = f"{who} {'took' if sign < 0 else 'regained'} {n}"
         if sign < 0 and companions.at_zero(ch, find(chars.character_summary(ch), creature_id), k, n):
             said += ": at 0 Hit Points it disappears, until Find Familiar is cast again"
+            companions.in_step(db, ch)
     db.commit()
     return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, said + ": on its way to D&D Beyond", deliver=True)})
