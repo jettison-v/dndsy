@@ -7,7 +7,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app import characters as chars
-from app import ddb_bridge, hit_points, vtt, web
+from app import companions, ddb_bridge, hit_points, vtt, web
 from app.auth import current_user
 from sqlalchemy import select
 
@@ -78,5 +78,7 @@ def change_hp(request: Request, character_id: int, creature_id: int, form=web.Fo
         ddb_bridge.add(db, ch, "creature_hp", {"creature": k["id"], "name": who, "amount": sign * n, "max": k["hp"]["max"]},
                        f"{who} {'took' if sign < 0 else 'regained'} {n}")
         said = f"{who} {'took' if sign < 0 else 'regained'} {n}"
+        if sign < 0 and companions.at_zero(ch, find(chars.character_summary(ch), creature_id), k, n):
+            said += ": at 0 Hit Points it disappears, until Find Familiar is cast again"
     db.commit()
     return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, said + ": on its way to D&D Beyond", deliver=True)})

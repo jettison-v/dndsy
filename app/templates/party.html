@@ -52,10 +52,10 @@
       </article>
       {% for k in r.creatures %}{# Your creatures (app/creatures.py; Brett, Nov 4, docs/mockups/creatures-as-characters/ boards 7 and 8): its own
          card, the second half of its master's, as easy to see as a character; pressing it opens its Battle #}
-      <article class="section pt-card pt-creature-card">
+      <article class="section pt-card pt-creature-card{{ ' pt-not-here' if k.where != 'here' }}">
         <header class="pt-head"><span class="roll-av pt-cr-av">{% if k.picture %}<img src="{{ k.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ k.name[:1] }}</span>
-          <div class="pt-id"><span class="pt-whose">{{ r.c.name }}'s {{ k.role }}</span><div class="char-name"><h2 class="pt-name"><a class="pt-cr-link" href="/characters/{{ r.c.id }}/battle?creature={{ k.id }}" data-no-peek title="{{ r.c.name }}'s {{ k.name }}: its Battle">{{ k.name }}</a></h2></div>
-            <p class="note">{{ k.kind if k.kind != k.name else k.group }}{% if k.size %} · {{ k.size }}{% endif %}</p></div></header>
+          <div class="pt-id"><span class="pt-whose">{{ r.c.name }}'s {{ k.role }}</span>{% if k.cast %} <span class="cr-where cr-where-{{ k.where }}">{{ k.where_word }}</span>{% endif %}<div class="char-name"><h2 class="pt-name"><a class="pt-cr-link" href="/characters/{{ r.c.id }}/battle?creature={{ k.id }}" data-no-peek title="{{ r.c.name }}'s {{ k.name }}: its Battle">{{ k.name }}</a></h2></div>
+            <p class="note">{{ k.kind if k.kind != k.name else k.group }}{% if k.made %} · {{ k.made }}{% endif %}{% if k.size %} · {{ k.size }}{% endif %}</p></div></header>
         <div class="strip compact pt-tiles">{{ ntile(r.sheet, "", "Hit points", ("<b>%s</b><span class=\"note\"> / %s</span>" | format(k.hp.current, k.hp.max)) | safe, foot=("+%s temp" | format(k.hp.temp)) if k.hp.temp else "") }}{{ ntile(r.sheet, "", "Armor class", ("<b>%s</b>" | format(k.ac)) | safe) }}{{ ntile(r.sheet, "", "Speed", ("<b>%s ft</b>" | format(k.walk)) | safe, foot=k.other_speeds) }}</div>
         {% if k.turn_short %}<p class="pt-line"><span class="note">Its turn</span> {{ k.turn_short }}</p>{% endif %}
         {% if k.senses %}<p class="pt-line"><span class="note">Senses</span> {{ k.senses }} · Passive Perception <b>{{ k.passive }}</b></p>{% endif %}

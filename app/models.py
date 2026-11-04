@@ -290,6 +290,9 @@ class Character(Timestamped, Base):
     concentration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     level_up: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # what's new since it last leveled, until read (app/level_up.py)
     conditions: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{"name": "Invisible", "source": "Ring of Invisibility"}] (app/conditions.py)
+    # Where each of its familiars is, by its D&D Beyond creature id (app/creatures.py, Brett 2026-11-04: a familiar exists
+    # only once cast): {"<id>": {"state": "here" | "away" | "gone", "kind": "Celestial", "why": "0 Hit Points"}}
+    companions: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # When its player's askdnd extension last heard its D&D Beyond sheet (app/ddb_bridge.py): the sheet can be reached
     sheet_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     owner: Mapped[User | None] = relationship()

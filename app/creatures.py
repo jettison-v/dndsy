@@ -78,6 +78,36 @@ def yours(sheet: dict | None) -> list[dict]:
     return [c for c in (sheet or {}).get("creatures") or [] if c.get("id") and c.get("group") != "Wild Shape form" and c.get("group_id") not in (1, 13)]
 
 
+# A familiar exists only once it's cast (Brett, 2026-11-04, docs/mockups/creatures-as-characters/ boards 2 and 3): askdnd
+# keeps where each is (Character.companions, by its D&D Beyond id), and one on the sheet's Extras that was never cast
+# through askdnd isn't in play. Other creatures (a Homunculus Servant, a Steel Defender, a companion) are always here;
+# steeds and summons come with their spells next.
+CAST = {FAMILIAR: "Find Familiar"}
+WHERE = {"here": "Here", "away": "In the pocket dimension", "gone": "Gone"}
+KINDS = ("Celestial", "Fey", "Fiend")
+
+
+def where(ch, c: dict) -> str | None:
+    """"here", "away" (the pocket dimension), "gone" (0 Hit Points, or dismissed), or None: a familiar not cast."""
+    if c.get("group_id") not in CAST:
+        return "here"
+    return ((ch.companions or {}).get(str(c.get("id"))) or {}).get("state")
+
+
+def in_play(ch, sheet: dict | None) -> list[dict]:
+    """The character's creatures that exist now (here, away or gone): a familiar only once cast."""
+    return [c for c in yours(sheet) if where(ch, c)]
+
+
+def placed(ch, k: dict, c: dict) -> dict:
+    """A creature's card with where it is, what it was made (a familiar's Celestial, Fey or Fiend) and the spell that
+    brings it."""
+    kept = (ch.companions or {}).get(str(k["id"])) or {}
+    w = where(ch, c)
+    return {**k, "where": w, "where_word": WHERE.get(w or "", "Not here"), "made": kept.get("kind", ""), "why": kept.get("why", ""),
+            "spell": CAST.get(c.get("group_id"), ""), "cast": c.get("group_id") in CAST}
+
+
 def find(sheet: dict | None, creature_id) -> dict | None:
     return next((c for c in yours(sheet) if str(c["id"]) == str(creature_id)), None)
 

@@ -7,8 +7,18 @@
 <p class="use-cost">{{ e.time }}{% if e.range %} · {{ e.range }}{% endif %}{% if e.duration %} · {{ e.duration }}{% endif %}</p>
 {% if form_no %}<p class="use-cost shift-warn">{{ form_no }}</p>{% endif %}
 {% if ends %}<p class="use-what">Ends Concentration on {{ ends.spell }}.</p>{% endif %}
-{% if ways and reachable %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for w in ways %}<option value="{{ w.way }}" data-level="{{ w.level }}">{{ w.label }}</option>{% endfor %}</select></div>{% endif %}
-{% if reachable %}
+{% set can_cast = reachable or offline %}
+{% if ways and can_cast %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for w in ways %}<option value="{{ w.way }}" data-level="{{ w.level }}">{{ w.label }}</option>{% endfor %}</select></div>{% endif %}
+{% if familiars is not none and can_cast %}{# Find Familiar brings the familiar (app/companions.py; Brett, 2026-11-04, Creatures as Characters board 2) #}
+<fieldset class="ff-pick"><legend class="rw-label">Your familiar</legend>
+  {% for f in familiars %}<label class="ff-opt"><input type="radio" name="familiar" value="{{ f.id }}"{% if f.id | string == ff_first %} checked{% endif %}><span><b>{{ f.name }}</b>{% if f.kind != f.name %} <span class="note">{{ f.kind }}</span>{% endif %}</span>{% if f.where %}<span class="cr-where cr-where-{{ f.where }}">{{ f.where_word }}{% if f.where == "gone" and f.why %} · {{ f.why }}{% endif %}</span>{% endif %}</label>
+  {% else %}<p class="note">No familiar on {{ c.name }}'s D&amp;D Beyond sheet yet: add its form there first (Extras › Manage Extras › Familiar), then cast.</p>{% endfor %}
+</fieldset>
+{% if familiars %}<fieldset class="ff-pick ff-kinds"><legend class="rw-label">It's a</legend>{% for k in kinds %}<label class="ff-kind"><input type="radio" name="kind" value="{{ k }}"{% if k == ff_kind %} checked{% endif %}> {{ k }}</label>{% endfor %}</fieldset>
+<p class="use-what">One familiar at a time: one that's here takes the form you pick. One that disappeared comes back whole.</p>{% endif %}
+{% endif %}
+{% if offline %}<p class="use-what">{{ c.name }}'s D&amp;D Beyond sheet can't be reached, so only as a Ritual or without a slot. One coming back after 0 Hit Points: give it its Hit Points on D&amp;D Beyond.</p>{% endif %}
+{% if can_cast %}
 <div class="rw-row use-foot" data-character="{{ c.id }}">{% if rolls %}<button type="button" class="btn primary small" data-use-go data-then-roll>Cast and roll</button>{{ spell_roll(c, e, "Roll without spending a slot", "btn link small cast-roll", 0) }}{% else %}<button type="button" class="btn primary small" data-use-go>Cast</button>{% endif %}<button type="button" class="btn link small" data-use-close>Cancel</button></div>
 <p class="use-said" role="alert" hidden></p>
 {% else %}

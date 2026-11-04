@@ -19,7 +19,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app import ddb_bridge, ddb_sheet, web
+from app import companions, ddb_bridge, ddb_sheet, web
 from app import spellbook as sb
 from app.character_views import ordinal
 from app.db import get_db
@@ -70,9 +70,17 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     """What a spell's Cast opens, in the roll window."""
     ch, _ = _guard(db, request, character_id)
     sheet, e = _spell(db, ch, key)
-    return templates.TemplateResponse(request, "_cast_window.html", {"c": ch, "e": e, "ways": ways(sheet, e), "reachable": ddb_bridge.reachable(ch),
+    # Find Familiar brings the familiar (Brett, 2026-11-04, Creatures as Characters board 2): its form and what it is
+    forms = companions.familiars(ch, sheet) if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) else None
+    first, kind = companions.picked(forms or [])
+    reachable = ddb_bridge.reachable(ch)
+    # The familiar is askdnd's, like a Wild Shape form: with the sheet out of reach, still as a Ritual or without a slot
+    offline = forms is not None and not reachable
+    can = [w for w in ways(sheet, e) if not offline or w["way"] in (RITUAL, NO_SLOT, FREE)]
+    return templates.TemplateResponse(request, "_cast_window.html", {"c": ch, "e": e, "ways": can, "reachable": reachable, "offline": offline,
                                                                      "ends": ch.concentration if e["conc"] and ch.concentration and ch.concentration.get("key") != key else None,
-                                                                     "form_no": form_no(sheet, ch, e["name"])})
+                                                                     "form_no": form_no(sheet, ch, e["name"]), "familiars": forms, "ff_first": first,
+                                                                     "ff_kind": kind, "kinds": companions.KINDS})
 
 
 def form_no(sheet: dict, ch: Character, name: str) -> str:
@@ -89,7 +97,8 @@ def form_no(sheet: dict, ch: Character, name: str) -> str:
 
 
 @router.post("/characters/{character_id:int}/cast")
-def cast(request: Request, character_id: int, key: str, way: str = Form(""), db: Session = Depends(get_db)):
+def cast(request: Request, character_id: int, key: str, way: str = Form(""), familiar: str = Form(""), kind: str = Form(""),
+         db: Session = Depends(get_db)):
     """Cast it: the slot on its way to D&D Beyond, Concentration begun."""
     ch, _ = _guard(db, request, character_id)
     sheet, e = _spell(db, ch, key)
@@ -105,6 +114,10 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), db:
         ddb_bridge.reach(ch)
         _spend(ch, db, chosen["way"], 1, f"{ch.name}: {e['name']}, {chosen['name']} slot")
         undo["spent"] = chosen["way"]
+    if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and companions.familiars(ch, sheet):
+        back, brought = companions.cast(db, ch, sheet, familiar, kind)
+        undo |= back
+        said += f": {brought}"
     if e["conc"]:
         was = ch.concentration
         ch.concentration = sb.concentrating(e, chosen["level"] if chosen else e["level"]) | ({"was": {k: v for k, v in was.items() if k != "was"}} if was else {})
@@ -119,10 +132,13 @@ def _spend(ch: Character, db: Session, way: str, delta: int, label: str) -> None
 
 
 @router.post("/characters/{character_id:int}/cast/undo")
-def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: str = Form(""), db: Session = Depends(get_db)):
-    """The corner card's Undo: the slot back, and Concentration as it was."""
+def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: str = Form(""), companions_were: str = Form("", alias="companions"),
+              healed: str = Form(""), db: Session = Depends(get_db)):
+    """The corner card's Undo: the slot back, Concentration as it was, and a familiar where it was."""
     ch, _ = _guard(db, request, character_id)
     _, e = _spell(db, ch, key)
+    if e["name"] == companions.FIND_FAMILIAR and (companions_were or healed):
+        companions.uncast(db, ch, companions_were, healed)
     if spent:
         if spent.split(":", 1)[0] not in ("slot", "pact"):
             raise HTTPException(404)

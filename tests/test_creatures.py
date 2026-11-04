@@ -214,3 +214,106 @@ def test_the_extension_sends_a_character_value_only_for_a_creatures_maximum():
 
     js = open(os.path.join(os.path.dirname(__file__), "..", "extension", "askdnd-bridge", "ddb-page.js")).read()
     assert "const CREATURE_MAX = 43" in js and "op.body.typeId) !== CREATURE_MAX" in js
+
+
+# ------------------------------------------------------------------ a familiar in play (round 2: app/companions.py)
+OWL, RAVEN = 990002, 990003
+
+
+def familiar_sheet(db, labs, sheet):
+    """Cole with two familiar forms on his Extras (made-up stat blocks) and Find Familiar among his spells (one of his
+    1st-level spells renamed, its words his own)."""
+    sheet["creatures"] = [*sheet["creatures"], {**made_up("Owl", 2, OWL), "name": "Pip"}, made_up("Raven", 2, RAVEN, removed=1)]
+
+    def rename(x):
+        if isinstance(x, dict):
+            d = x.get("definition")
+            if isinstance(d, dict) and d.get("level") == 1 and "school" in d and not d.get("concentration"):
+                d["name"] = "Find Familiar"
+                return True
+            return any(rename(v) for v in x.values())
+        return isinstance(x, list) and any(rename(v) for v in x)
+    assert rename(sheet)
+    characters.refresh(db, labs)
+    db.flush()
+    from app import spellbook as sb
+
+    return next(e for e in sb.entries(characters.character_summary(labs)) if e["name"] == "Find Familiar")
+
+
+def test_a_familiar_exists_only_once_its_cast(player, db, labs, sheet):
+    """Brett, 2026-11-04 ("They only exist when you cast them"): a familiar on the sheet's Extras isn't on Battle's switch
+    or Party until Find Familiar brings it; a Homunculus Servant (not a familiar) always is."""
+    familiar_sheet(db, labs, sheet)
+    battle = player.get(f"/characters/{labs.id}/battle").text
+    assert f"creature={ZAP}" in battle and f"creature={OWL}" not in battle and f"creature={RAVEN}" not in battle
+    assert f"creature={OWL}" not in player.get("/party").text
+    assert "Cole's Pip" not in player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
+
+
+def test_casting_find_familiar_brings_the_one_you_pick_one_at_a_time(player, db, labs, sheet):
+    """Board 2: the Cast window lists the forms on Extras and Celestial, Fey or Fiend; the one picked is here, made what
+    was picked. Cast again with another form: the familiar takes it (one at a time). Undo puts it back as it was."""
+    e = familiar_sheet(db, labs, sheet)
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    win = player.get(url).text
+    assert 'name="familiar"' in win and f'value="{OWL}" checked' in win and 'value="Fey"' in win
+    r = player.post(url, data={"way": "ritual", "familiar": str(OWL), "kind": "Fey"})
+    assert r.status_code == 200 and "Pip (Fey) is here" in r.json()["text"]
+    db.refresh(labs)
+    assert labs.companions == {str(OWL): {"state": "here", "kind": "Fey"}}
+    assert f"creature={OWL}" in player.get("/party").text
+    r = player.post(url, data={"way": "ritual", "familiar": str(RAVEN), "kind": "Fiend"})
+    assert "takes a new form: Raven (Fiend)" in r.json()["text"]
+    db.refresh(labs)
+    assert labs.companions == {str(RAVEN): {"state": "here", "kind": "Fiend"}}
+    assert r.json()["undo"]["healed"] == f"{RAVEN}:1"  # (one that had taken damage comes back whole, through the bridge)
+    assert player.post(r.json()["undoUrl"], data=r.json()["undo"]).status_code == 200
+    db.refresh(labs)
+    assert labs.companions == {str(OWL): {"state": "here", "kind": "Fey"}}
+
+
+def test_the_pocket_dimension_dismissing_and_zero_hit_points(player, dm, db, labs, sheet):
+    """Board 3: sent to the pocket dimension and back (its player or the DM), dismissed forever, and gone at 0 Hit Points
+    until cast again; its Battle says where it is."""
+    from tests.roles import set_role
+
+    familiar_sheet(db, labs, sheet)
+    labs.companions = {str(OWL): {"state": "here", "kind": "Celestial"}}
+    db.flush()
+    where = f"/characters/{labs.id}/creatures/{OWL}/where"
+    assert "Send to the pocket dimension" in player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
+    assert player.post(where, data={"to": "away"}).status_code == 204
+    page = player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
+    assert "In the pocket dimension" in page and "Bring it back" in page
+    assert player.post(where, data={"to": "away"}).status_code == 409  # (already there)
+    assert dm.post(where, data={"to": "here"}).status_code == 404  # (not the DM yet)
+    set_role(db, "dm@example.com", "dm")
+    assert dm.post(where, data={"to": "here"}).status_code == 204
+    r = player.post(f"/characters/{labs.id}/creatures/{OWL}/hp", data={"amount": "5", "to": "damage"})
+    assert r.status_code == 204 and "disappears" in r.headers["HX-Trigger"]
+    db.refresh(labs)
+    assert labs.companions[str(OWL)] == {"state": "gone", "kind": "Celestial", "why": "0 Hit Points"}
+    assert "Cast Find Familiar" in player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
+    labs.companions = {str(OWL): {"state": "here", "kind": "Celestial"}}
+    db.flush()
+    assert player.post(where, data={"to": "gone"}).status_code == 204
+    db.refresh(labs)
+    assert labs.companions[str(OWL)]["why"] == "dismissed"
+
+
+def test_find_familiar_works_with_the_sheet_out_of_reach_as_a_ritual(player, db, labs, sheet):
+    """The familiar is askdnd's, like a Wild Shape form: with Cole's sheet closed, Find Familiar still casts as a Ritual
+    or without a slot (nothing for D&D Beyond), and a slot is refused as for any spell."""
+    from datetime import UTC, datetime, timedelta
+
+    e = familiar_sheet(db, labs, sheet)
+    labs.sheet_heard_at = datetime.now(UTC) - timedelta(minutes=10)
+    db.flush()
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    win = player.get(url).text
+    assert 'name="familiar"' in win and "so only as a Ritual" in win and 'value="slot:' not in win
+    assert player.post(url, data={"way": "ritual", "familiar": str(OWL), "kind": "Fiend"}).status_code == 200
+    db.refresh(labs)
+    assert labs.companions[str(OWL)]["state"] == "here"
+    assert player.post(url, data={"way": "slot:1", "familiar": str(OWL), "kind": "Fiend"}).status_code == 409
