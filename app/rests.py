@@ -3,7 +3,8 @@
 Hit points' panel has Short Rest and Long Rest. Each opens a small window listing what comes back, and Rest makes it all on
 D&D Beyond through the bridge. Nothing moves until the player confirms, and only while the sheet can be reached.
 
-- **Short Rest:** resources that come back on one, and Hit Point Dice the player chooses to spend: each rolls the die and
+- **Short Rest:** resources that come back on one (Wild Shape and Channel Divinity: one use, as the 2024 rules say), and
+  Hit Point Dice the player chooses to spend: each rolls the die and
   adds the Constitution modifier (at least 1), in Table rolls for all to see, and heals.
 - **Long Rest:** all lost Hit Points and all spent Hit Point Dice, Temporary Hit Points end, every spell slot and resource
   that comes back on one, Exhaustion down 1.
@@ -29,6 +30,10 @@ router = APIRouter()
 SHORT, LONG = "short", "long"
 TITLE = {SHORT: "Short Rest", LONG: "Long Rest"}
 RESETS = {SHORT: ("Short or Long Rest",), LONG: ("Short or Long Rest", "Long Rest")}
+# One use back on a Short Rest, all on a Long Rest (2024 PHB: the Druid's Wild Shape, the Cleric's and the Paladin's
+# Channel Divinity). D&D Beyond marks Wild Shape as Long Rest only and Channel Divinity as all back on a Short Rest; the
+# live test's short-rest run on Levi found the first (Nov 3).
+ONE_ON_SHORT = ("Wild Shape", "Channel Divinity")
 
 
 def _guard(db: Session, request: Request, character_id: int):
@@ -46,8 +51,13 @@ def counts(sheet: dict, kind: str) -> list[dict]:
         out += [{"field": f"slot:{s['level']}", "name": f"{ordinal(s['level'])}-level", "back": s["used"]} for s in ss.get("slots") or [] if s.get("used")]
     if ss.get("pact", {}).get("used"):
         out.append({"field": f"pact:{ss['pact']['level']}", "name": "Pact Magic", "back": ss["pact"]["used"]})
-    out += [{"field": f"uses:{a['id']}", "name": a["name"], "back": a["uses"]["used"]} for a in sheet.get("actions") or []
-            if a.get("id") and a.get("uses") and a["uses"]["used"] and a["uses"]["reset"] in RESETS[kind]]
+    for a in sheet.get("actions") or []:
+        if not (a.get("id") and a.get("uses") and a["uses"]["used"]):
+            continue
+        if kind == SHORT and a["name"] in ONE_ON_SHORT:
+            out.append({"field": f"uses:{a['id']}", "name": a["name"], "back": 1})
+        elif a["uses"]["reset"] in RESETS[kind]:
+            out.append({"field": f"uses:{a['id']}", "name": a["name"], "back": a["uses"]["used"]})
     out += [{"field": f"charges:{it['key'].split(':', 1)[1]}", "name": it["name"], "back": it["charges"]["used"]} for it in sheet.get("inventory") or []
             if it.get("charges") and it["charges"]["used"] and it["charges"]["reset"] in RESETS[kind]]
     return out
