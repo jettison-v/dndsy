@@ -1797,6 +1797,27 @@ def bridge_page(character_id: int, request: Request, db: Session = Depends(get_d
 
 
 # ------------------------------------------------------------------ Manage › askdnd › D&D Beyond bridge (admins)
+# What each way of reaching a sheet can change (Brett, 2026-11-04: to cover players' browser mistakes by putting it in the
+# DM's hands), for the page's matrix: (what, the ddb_fields kinds it covers, the live test runs that try it, through the
+# DM: "yes" or "no"). Both ways send the same requests (ddb_fields.WRITES, made in the page by ddb-page.js), and D&D
+# Beyond lets a campaign's DM change its players' sheets; the Mac Mini's live test tries every row both ways every night
+# (scripts/real_table.py, then again with --via-dm). Each ddb_fields kind is in one row (tests/test_ddb_bridge.py).
+CONNECTIONS = [
+    ("Hit Points and Temporary Hit Points", ("hp",), ("hit-points", "temp-hp"), "yes"),
+    ("Death Saving Throws", ("death",), ("death-saves",), "yes"),
+    ("Heroic Inspiration", ("inspiration",), ("inspiration",), "yes"),
+    ("Conditions and Exhaustion", ("condition", "exhaustion"), ("condition", "exhaustion"), "yes"),
+    ("Spell and Pact Magic slots (Cast)", ("slot", "pact"), ("cast", "pact-cast", "cross-cast"), "yes"),
+    ("Limited uses (Resources, Wild Shape)", ("uses",), ("resource", "wild-shape"), "yes"),
+    ("A Short Rest's Hit Point Dice", ("hitdice",), ("rests", "short-rest"), "yes"),
+    ("Items: count, equipped, attuned, charges, moved", ("item", "equipped", "attuned", "charges", "container"), ("inventory", "give"), "yes"),
+    ("Coins", ("coin",), ("coins", "add-item"), "yes"),
+    ("Adding an item (Add item, Give, Give loot)", ("add",), ("add-item", "give", "loot"), "yes"),
+    ("Preparing spells", ("prep",), ("prepare",), "yes"),
+    ("A creature's Hit Points and maximum", ("creature", "creature_max"), ("creature-hp",), "yes"),
+]
+
+
 @router.get("/manage/bridge")
 def manage_page(request: Request, db: Session = Depends(get_db)):
     """Whether the bridge is awake and why, and its timers."""
@@ -1809,7 +1830,7 @@ def manage_page(request: Request, db: Session = Depends(get_db)):
     db.commit()
     tm = timers(db)
     return templates.TemplateResponse(request, "manage_bridge.html", {
-        "health": h, "a": h["awake"], "last": _wake_row(db)[1].get("last"), "timers": TIMERS,
+        "health": h, "a": h["awake"], "last": _wake_row(db)[1].get("last"), "timers": TIMERS, "connections": CONNECTIONS,
         "now": {key: round(tm[key] / unit) for key, _, _, unit, *_ in TIMERS},
         "toast": request.session.pop("toast", None)})
 

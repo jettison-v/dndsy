@@ -2,6 +2,9 @@
 
 On the Mini, never on GitHub: `.venv/bin/python real_table.py [run …]` after `real_table_seats.sh open` (every run when
 none is named), and every night at 4:00 through real_table_nightly.sh, which adds `--sentry` (a miss goes to Sentry).
+`--via-dm` runs the same changes with each player's sheet closed and only the DM's seat on a D&D Beyond page (the
+campaign page), so the DM's browser makes them (Brett, 2026-11-04: Manage › askdnd › D&D Beyond bridge's table of what
+each connection can change); every run that changes a sheet takes part, read back from the DM's page.
 Each run does what a person would do, then says what happened and what it expected, and puts back what it changed;
 part 1 starts by checking the test sheets are clean. It only ever touches the test seats in VTT test on beta: Brett's
 primary account is not a seat here, and it never signs in to anything.
@@ -17,6 +20,7 @@ from playwright.sync_api import TimeoutError as PlaywrightTimeout
 BETA = "https://beta.askdnd.ai/c/vtt-test"
 SEATS = {"dm": 9231, "player2": 9232, "player3": 9233, "player4": 9234}
 SHEETS = {"player2": 172986165, "player3": 172992073, "player4": 173148163}  # Cathartic, the new Vi and Levi; never the first Vi or Spurt
+CAMPAIGN = "https://www.dndbeyond.com/campaigns/8224496"  # (VTT test on D&D Beyond: the DM's page for --via-dm)
 
 # How long a change may take to show in D&D Beyond's own record. Usually a few seconds; now and then much longer (Nov 2:
 # up to a minute, while D&D Beyond served an older copy for a moment), and a pass past 10 seconds is said as slow.
@@ -35,12 +39,24 @@ class Seats(dict):
         return self[seat]
 
 
+class Remote:
+    """A seat's sheet while it's closed (--via-dm): read and tidied from the DM's D&D Beyond page, whose browser makes
+    askdnd's changes on it. Only what runs do with a sheet that isn't looking at it: its url (which sheet) and evaluate."""
+
+    def __init__(self, page: Page, ddb_id: int):
+        self.page, self.url = page, f"https://www.dndbeyond.com/characters/{ddb_id}"
+
+    def evaluate(self, *args):
+        return self.page.evaluate(*args)
+
+
 class Table:
-    def __init__(self, p):
+    def __init__(self, p, via_dm: bool = False):
         self.contexts = Seats(p)
         self.results: list[tuple[bool, str]] = []
         self.run = ""
         self.last: Page | None = None
+        self.via_dm = via_dm
 
     def page(self, seat: str, url: str) -> Page:
         page = next((x for x in self.contexts[seat].pages if x.url.startswith(url)), None) or self.contexts[seat].new_page()
@@ -49,8 +65,14 @@ class Table:
         return page
 
     def sheet(self, seat: str, frames: list[str] | None = None) -> Page:
-        """A seat's sheet; `frames` collects what passes on its connections, so a run can see the Game Log itself."""
+        """A seat's sheet; `frames` collects what passes on its connections, so a run can see the Game Log itself. With
+        --via-dm, the sheet closed everywhere and the DM's D&D Beyond page standing in for it (`Remote`)."""
         url = f"https://www.dndbeyond.com/characters/{SHEETS[seat]}"
+        if self.via_dm:
+            for ctx in [self.contexts[x] for x in SEATS]:
+                for x in [x for x in ctx.pages if "dndbeyond.com/characters/" in x.url]:
+                    x.close()
+            return Remote(self.page("dm", CAMPAIGN), SHEETS[seat])
         page = next((x for x in self.contexts[seat].pages if x.url.startswith(url)), None) or self.contexts[seat].new_page()
         if frames is not None:
             def listen(ws):
@@ -89,6 +111,21 @@ class Table:
 
 def pill(page: Page) -> str:
     return " ".join(page.locator("#live-pill").inner_text(timeout=3000).split())
+
+
+def reached(t: Table, page: Page) -> bool:
+    """askdnd's page says the sheet can be reached: its own sheet (Connected), or through the DM with --via-dm."""
+    return ("Through the DM" if t.via_dm else "Connected") in pill(page)
+
+
+def connects(t: Table, *pages: Page) -> None:
+    """The run's sheets can be reached the way this pass means. Through the DM, a miss means a sheet is open in some
+    other browser (Nov 4: Brett testing on his MacBook), which then makes the changes: the run stops there rather than
+    passing changes the DM's browser didn't make."""
+    what = "both sheets connect" if len(pages) > 1 else "the sheet connects"
+    if not t.expect(what, lambda: all(reached(t, x) for x in pages), 40) and t.via_dm:
+        raise RuntimeError("not through the DM: the pill says " + " / ".join(repr(pill(x)) for x in pages)
+                           + " (a sheet open in another browser makes the changes; close it and run again)")
 
 
 def save(ability: str) -> str:
@@ -193,38 +230,55 @@ def settled(page: Page) -> bool:
     return page.locator('[data-panel-url$="/vital/hp"][data-sync]').count() == 0
 
 
+def on_sheet_hp(sheet, n: int, down: int) -> bool:
+    """The sheet shows n Hit Points (`down` taken): on its own page as a person sees it, or (--via-dm) in D&D Beyond's
+    record, which keeps what's taken."""
+    if isinstance(sheet, Remote):
+        return record(sheet)["removedHitPoints"] == down
+    return str(n) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000)
+
+
+CONDITION_IDS = {"Poisoned": 11, "Prone": 12, "Blinded": 1}
+
+
+def on_sheet_condition(sheet, name: str) -> bool:
+    if isinstance(sheet, Remote):
+        return any(c.get("id") == CONDITION_IDS[name] for c in record(sheet).get("conditions") or [])
+    return name in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000)
+
+
 def hit_points(t: Table, seat: str = "player2") -> None:
     """Damage made in askdnd lands on the real sheet and comes back confirmed; healing puts it back."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
-    start = hp(page)
+    connects(t, page)
+    start, down = hp(page), record(sheet)["removedHitPoints"]
     print("  hit points:", start, flush=True)
     change_hp(page, 0, 1)
     t.expect("the tile shows 1 less at once", lambda: hp(page) == start - 1, 10)
     t.expect("D&D Beyond confirms it", lambda: settled(page), SLOW)
-    t.expect("the real sheet shows it", lambda: str(start - 1) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), SLOW)
+    t.expect("the real sheet shows it", lambda: on_sheet_hp(sheet, start - 1, down + 1), SLOW)
     page.wait_for_timeout(1000)
     change_hp(page, 1, 1)
     t.expect("healing puts it back", lambda: hp(page) == start, 10)
     t.expect("D&D Beyond confirms the healing", lambda: settled(page), SLOW)
-    t.expect("the real sheet shows it back", lambda: str(start) in sheet.locator("[class*=hitPointsBox]").first.inner_text(timeout=2000), SLOW)
+    t.expect("the real sheet shows it back", lambda: on_sheet_hp(sheet, start, down), SLOW)
 
 
 def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     """A condition started in askdnd lands on the real sheet; ended in askdnd, it leaves it."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     page.locator("details.cond-add > summary").click(timeout=5000)
     page.locator(f'.ls-chip:has-text("{name}")').first.click(timeout=5000)
     t.expect("the condition shows on Battle", lambda: page.locator(f'.cond-pill:has-text("{name}")').count() > 0, 8)
-    t.expect("it reaches the real sheet", lambda: name in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), SLOW)
+    t.expect("it reaches the real sheet", lambda: on_sheet_condition(sheet, name), SLOW)
     page.wait_for_timeout(1500)
     page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") > summary').first.click(timeout=5000)
     page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}") button:has-text("End")').first.click(timeout=5000)
     t.expect("it ends on Battle", lambda: page.locator(f'details.cond-pill:not(.cond-add):has-text("{name}")').count() == 0, 15)
-    t.expect("it leaves the real sheet", lambda: name not in sheet.locator(".ct-conditions-summary").first.inner_text(timeout=3000), SLOW)
+    t.expect("it leaves the real sheet", lambda: not on_sheet_condition(sheet, name), SLOW)
 
 
 # D&D Beyond's record read as its own sheet reads it (and the extension: ddb-page.js `character`): signed in with a
@@ -307,7 +361,7 @@ def cast(t: Table, seat: str = "player3") -> None:
     """Cast spends a real slot, shown on D&D Beyond; Undo gives it back."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     spell_window(page)
     print("  spell:", page.locator(".rw-title").first.inner_text(), page.locator('select[name="way"] option').all_inner_texts(), flush=True)
@@ -325,7 +379,7 @@ def resource(t: Table, seat: str = "player3") -> None:
     """A resource counted down in askdnd counts down on D&D Beyond, and comes back."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     count = page.locator('.res-go[data-use-url*="/count"]').count()
     print("  resources:", count, flush=True)
@@ -343,7 +397,7 @@ def coins(t: Table, seat: str = "player3") -> None:
     """Coins gained in askdnd land on D&D Beyond; spending them takes them off."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     page.goto(page.url.replace("/battle", ""), wait_until="domcontentloaded")
     for to, what in (("gain", "the coin is on D&D Beyond"), ("spend", "spending it takes it off")):  # (the window both ways:
@@ -385,7 +439,7 @@ def rests(t: Table, seat: str = "player3") -> None:
     """A Short Rest spends a real Hit Point Die and heals; a Long Rest brings the die and the Hit Points back."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     change_hp(page, 0, 3)
     t.expect("D&D Beyond confirms the damage", lambda: settled(page), SLOW)
     page.wait_for_timeout(1500)
@@ -449,7 +503,7 @@ def temp_hp(t: Table, seat: str = "player2") -> None:
     """Temporary Hit Points given in askdnd land on the real sheet; damage takes them first and leaves Hit Points be."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     start = record(sheet)
     hp_window(page, "temp", 5)
     t.expect("D&D Beyond has 5 Temporary Hit Points", lambda: record(sheet)["temporaryHitPoints"] == 5, SLOW)
@@ -468,7 +522,7 @@ def death_saves(t: Table, seat: str = "player2") -> None:
     there, and healing clears the marks and ends Unconscious."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     start, now = record(sheet), hp(page)
     print("  hit points:", now, flush=True)
     hp_window(page, "damage", now)
@@ -494,7 +548,7 @@ def inspiration(t: Table, seat: str = "player2") -> None:
     """Heroic Inspiration given in askdnd lands on the real sheet; spending it takes it off."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     had = record(sheet)["inspiration"]
     for want in (not had, had):
         go(page, page.locator('[data-use-url$="/inspiration"]:visible').first)
@@ -508,7 +562,7 @@ def exhaustion(t: Table, seat: str = "player2") -> None:
     """Exhaustion started in askdnd lands on the real sheet at its level; a new level follows, and ending it leaves."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     level = lambda: next((c.get("level") for c in record(sheet).get("conditions") or [] if c["id"] == 4), None)
     page.locator("details.cond-add > summary").click(timeout=5000)
     page.locator('.ls-chip:has-text("Exhaustion")').first.click(timeout=5000)
@@ -583,7 +637,7 @@ def inventory(t: Table, seat: str = "player2") -> None:
     sheet = t.sheet(seat)
     have = stock(sheet)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     cid = page.url.split("/characters/")[1].split("/")[0]
     staff, potion = have["Staff of Healing"]["id"], have["Potion of Healing"]["id"]
     start = record(sheet)
@@ -679,7 +733,7 @@ def prepare(t: Table, seat: str = "player2") -> None:
     put back the same way."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     cid, start = cid_of(page), prepared(record(sheet))
     sheet_tab(page, cid, "t-spells")
     page.locator('[data-modal-url*="/spells/prepare"]:visible').first.click(timeout=8000)
@@ -726,7 +780,7 @@ def give(t: Table, seat: str = "player2", other: str = "player3") -> None:
     sheet, theirs = t.sheet(seat), t.sheet(other)
     have = stock(sheet)
     page, them = t.battle(seat), t.battle(other)
-    t.expect("both sheets connect", lambda: "Connected" in pill(page) and "Connected" in pill(them), 40)
+    connects(t, page, them)
     name, potion = "Potion of Healing", have["Potion of Healing"]["id"]
     mine0, theirs0 = how_many(record(sheet), name), how_many(record(theirs), name)
     name_of = lambda pg: pg.locator(".char-name h1").first.inner_text().split("\n")[0].strip()  # (askdnd's name, as the list says it)
@@ -772,7 +826,7 @@ def loot(t: Table, seat: str = "player2") -> None:
     then taken off."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     cid, start = cid_of(page), record(sheet)
     gp = lambda d: (d.get("currencies") or {}).get("gp") or 0
     dm = t.page("dm", f"https://beta.askdnd.ai/characters/{cid}")
@@ -797,7 +851,7 @@ def add_item(t: Table, seat: str = "player2") -> None:
     coins go down by 1 sp; then the Torch is taken off and the purse put back as it was."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     cid, start = cid_of(page), record(sheet)
     browse(page, cid, "Torch")
     page.fill("[data-ib-pay]", "1 sp")
@@ -816,7 +870,7 @@ def wild_shape(t: Table, seat: str = "player4") -> None:
     Points on D&D Beyond, and Battle shows the form; Undo puts back the use, the Temporary Hit Points and the form."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     form = page.locator('.ws-chip[data-use-url*="wild-shape?form="]:visible').first
     name = form.inner_text().strip()
@@ -877,7 +931,7 @@ def pact_cast(t: Table, seat: str = "player4") -> None:
     gives it back."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     cast_as(page, "Hex", "pact")
     t.expect("a Pact slot is spent on D&D Beyond", lambda: pact_used(record(sheet)) == pact_used(before) + 1, SLOW)
@@ -892,7 +946,7 @@ def cross_cast(t: Table, seat: str = "player4") -> None:
     slot, and the Warlock's Hex cast with a Druid slot spends the Druid slot; both put back."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     cast_as(page, "Entangle", "pact")
     t.expect("Entangle spends a Pact slot on D&D Beyond", lambda: pact_used(record(sheet)) == pact_used(before) + 1, SLOW)
@@ -914,7 +968,7 @@ def short_rest(t: Table, seat: str = "player4") -> None:
     doesn't (2024 rules). The Druid slot is then given back by hand."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     cast_as(page, "Hex", "pact")
     t.expect("a Pact slot spent", lambda: pact_used(record(sheet)) == pact_used(before) + 1, SLOW)
@@ -945,7 +999,7 @@ def in_form(t: Table, seat: str = "player4") -> None:
     the leftover Temporary Hit Points on D&D Beyond. Then the use and the Temporary Hit Points are put back."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     go(page, page.locator('.ws-chip[data-use-url*="wild-shape?form="]:visible').first)
     page.locator('[data-use-go][data-to="shift"]').first.click(timeout=8000)
@@ -975,7 +1029,7 @@ def creature_hp(t: Table, seat: str = "player3") -> None:
     and healing from askdnd land on its Extras; then its damage and maximum are put back as they were."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
-    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    connects(t, page)
     before = record(sheet)
     c = next(x for x in before["creatures"] if x.get("groupId") == 12)
     mine = lambda d: next(x for x in d["creatures"] if x["id"] == c["id"])
@@ -1023,6 +1077,8 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp}
+# Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out
+SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup"}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 # Runs left out of part 1 (and the nightly) until the seats have what they need: named, they run
 WAITING: set[str] = set()  # (empty since Nov 4: creature-hp waited for extension 0.10.0)
@@ -1038,7 +1094,7 @@ def as_found(t: Table, before: dict) -> None:
             print("  still changed:", show(left()), flush=True)
 
 
-def report(missed: list[str], ran: list[str], log: str) -> None:
+def report(missed: list[str], ran: list[str], log: str, via_dm: bool = False) -> None:
     """To Sentry (askdnd-v2), where the app's own errors go and alert Brett: one issue for the live test, whatever missed."""
     import os
 
@@ -1046,10 +1102,10 @@ def report(missed: list[str], ran: list[str], log: str) -> None:
 
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], environment="live-test", server_name="mac-mini", default_integrations=False)
     with sentry_sdk.new_scope() as scope:
-        scope.fingerprint = ["live-test", "part-1"]
+        scope.fingerprint = ["live-test", "part-1-via-dm" if via_dm else "part-1"]
         scope.set_tag("source", "live-test")
         scope.set_context("live test", {"runs": ", ".join(ran), "missed": missed[:40], "log": log[-6000:]})
-        sentry_sdk.capture_message(f"Live test part 1: {len(missed)} missed ({missed[0][:120]})", level="error")
+        sentry_sdk.capture_message(f"Live test part 1{' through the DM' if via_dm else ''}: {len(missed)} missed ({missed[0][:120]})", level="error")
     sentry_sdk.flush(10)
 
 
@@ -1114,10 +1170,16 @@ def used(names: list[str]) -> set[str]:
 def main() -> int:
     args = sys.argv[1:]
     to_sentry = "--sentry" in args
-    names = [a for a in args if not a.startswith("--")] or [n for n in RUNS if n not in WAITING]
+    via_dm = "--via-dm" in args
+    names = [a for a in args if not a.startswith("--")] or [n for n in RUNS if n not in WAITING and (not via_dm or n not in SHEET_ONLY)]
+    if via_dm and set(names) & SHEET_ONLY:
+        print("Not through the DM (they're about the player's own sheet):", ", ".join(sorted(set(names) & SHEET_ONLY)))
+        names = [n for n in names if n not in SHEET_ONLY]
     sys.stdout = out = Kept(sys.stdout)
     with sync_playwright() as p:
-        t = Table(p)
+        t = Table(p, via_dm=via_dm)
+        if via_dm:
+            print("== through the DM: every sheet closed, the DM's seat on the campaign page", flush=True)
         if "--try-alert" in args:  # (a deliberate miss: checks the way to Sentry, real_table_nightly.sh --try-alert)
             t.results.append((False, "a deliberate miss, to try the alert (--try-alert)"))
         try:
@@ -1151,7 +1213,7 @@ def main() -> int:
     missed = [what for ok, what in t.results if not ok]
     print(f"{len(t.results) - len(missed)} of {len(t.results)} as expected", flush=True)
     if missed and to_sentry:
-        report(missed, names, "".join(out.text))
+        report(missed, names, "".join(out.text), via_dm)
     return 1 if missed else 0
 
 

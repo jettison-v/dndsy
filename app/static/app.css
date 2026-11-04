@@ -2555,6 +2555,25 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .br-now { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 0; }
 .br-now dt { color: var(--muted); }
 .br-now dd { margin: 0; }
+/* What each connection can change (Manage › askdnd › D&D Beyond bridge; Brett, 2026-11-04): how each state comes about,
+   in the Live pill's colours, then a matrix of marks (a tick, a clock for partly, a dash for no) */
+.br-states { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.br-state { border: 1px solid var(--line); border-top-width: 3px; border-radius: var(--r-md); padding: var(--sp-3); display: grid; gap: var(--sp-2); align-content: start; }
+.br-state p { margin: 0; }
+.br-state h3 { margin: 0; font-size: var(--fs-md); color: var(--text-strong); }
+.br-state h3 .note { font-weight: 400; font-size: var(--fs-xs); margin-left: 4px; }
+.br-state-own { border-top-color: var(--green); } .br-state-dm { border-top-color: var(--amber); } .br-state-none { border-top-color: var(--red); }
+.br-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.br-dot-own { background: var(--green); } .br-dot-dm { background: var(--amber); } .br-dot-none { background: var(--red); }
+.br-mx th { white-space: nowrap; }
+.br-mx th:not(:first-child), .br-mx td:not(:first-child) { text-align: center; width: 22%; }
+.br-mx td { padding-top: 10px; padding-bottom: 10px; vertical-align: middle; }
+.br-mx td:first-child { color: var(--text-strong); }
+.br-mx td small { display: block; color: var(--muted); font-size: var(--fs-xs); }
+.br-mx-other td { border-top: 2px solid var(--line-strong); }
+.br-mk { display: inline-grid; width: 22px; height: 22px; }
+.br-mk svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.br-mk-yes { color: var(--green); } .br-mk-some { color: var(--amber); } .br-mk-no { color: var(--faint); }
 
 /* ---- Hit points window (app/hit_points.py, docs/mockups/hp-window.html): from Table rolls' Apply to … or Hit points */
 /* Your creatures (app/creatures.py; docs/mockups/your-creatures/ Option B): who Battle shows, by the name (Vi · Homunculus),

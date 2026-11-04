@@ -17,6 +17,40 @@
     </dl>
   </section>
 
+  {# What each way of reaching a sheet can change (Brett, 2026-11-04; ddb_bridge.CONNECTIONS, each tried both ways every
+     night by the Mac Mini's live test, docs/live-test-plan.md): how each state comes about, then a matrix. The Live pill's colours. #}
+  {% macro mark(v, cap="") -%}
+  {%- if v == "yes" %}<span class="br-mk br-mk-yes" role="img" aria-label="Yes{{ ': ' ~ cap if cap }}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span>
+  {%- elif v == "some" %}<span class="br-mk br-mk-some" role="img" aria-label="Partly{{ ': ' ~ cap if cap }}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+  {%- else %}<span class="br-mk br-mk-no" role="img" aria-label="No{{ ': ' ~ cap if cap }}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 12h10"/></svg></span>{% endif %}
+  {%- if cap %}<small>{{ cap }}</small>{% endif %}
+  {%- endmacro %}
+  <section class="section" id="connections">
+    <h2>What each connection can change</h2>
+    <div class="br-states">
+      <div class="br-state br-state-own"><h3><span class="br-dot br-dot-own" aria-hidden="true"></span>Own sheet <span class="note">green</span></h3>
+        <p>The player's sheet is open in their Chrome with the bridge (a background tab counts). It always goes first.</p>
+        <p class="note">For example: a laptop with the sheet in one tab and askdnd in another.</p></div>
+      <div class="br-state br-state-dm"><h3><span class="br-dot br-dot-dm" aria-hidden="true"></span>Through the DM <span class="note">yellow</span></h3>
+        <p>The player's sheet isn't open, and the DM has any D&amp;D Beyond page open in Chrome with the bridge. Only for characters in the campaign's D&amp;D Beyond game.</p>
+        <p class="note">For example: the player is on an iPhone or forgot their sheet, and the DM has the VTT open. The DM's copy of the player's sheet works the same; the changes show there as they land.</p></div>
+      <div class="br-state br-state-none"><h3><span class="br-dot br-dot-none" aria-hidden="true"></span>Neither <span class="note">red, or grey</span></h3>
+        <p>Neither is open: askdnd refuses a change and says how to reach the sheet. One already on its way waits (the wait timer below), then is listed to make by hand.</p>
+        <p class="note">For example: the player's sheet is closed and the DM is on an iPad; or a test copy.</p></div>
+    </div>
+    <div class="table-scroll"><table class="list br-mx">
+      <thead><tr><th>Change</th><th><span class="br-dot br-dot-own" aria-hidden="true"></span>Own sheet</th><th><span class="br-dot br-dot-dm" aria-hidden="true"></span>Through the DM</th><th><span class="br-dot br-dot-none" aria-hidden="true"></span>Neither</th></tr></thead>
+      <tbody>
+        {% for label, kinds, runs, dm in connections %}
+        <tr><td>{{ label }}</td><td>{{ mark("yes") }}</td><td>{{ mark(dm) }}</td><td>{{ mark("no") }}</td></tr>
+        {% endfor %}
+        <tr class="br-mx-other"><td>Rolls into D&amp;D Beyond's Game Log</td><td>{{ mark("yes") }}</td><td>{{ mark("no", "Table rolls only") }}</td><td>{{ mark("no", "Table rolls only") }}</td></tr>
+        <tr><td>Hears changes made on D&amp;D Beyond</td><td>{{ mark("yes", "as it saves") }}</td><td>{{ mark("some", "within a minute") }}</td><td>{{ mark("some", "when a page asks") }}</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Wild Shape's form itself is askdnd's own, so it changes with neither; its use and Temporary Hit Points need the sheet. Through the DM, D&amp;D Beyond hears a change as it saves when the DM has that sheet open.</p>
+  </section>
+
   <section class="section">
     <h2>Check everything</h2>
     <p class="hint">After D&amp;D Beyond changes its sheet: one of each change the bridge makes (hit points, Death Saving Throws, Heroic Inspiration, a condition, Exhaustion, a Short Rest's Hit Die, a spell slot, a limited use, equipped, attuned, an item's count, charges and container, gold) on the test character, each confirmed, then all put back. Open the test character's D&amp;D Beyond sheet first; the menu bar shows how it went.</p>
