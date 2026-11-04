@@ -71,7 +71,7 @@ def draw(request: Request, for_: str = Form("", alias="for"), words: str = Form(
     o, _ = _owner(db, request, for_)
     campaign = db.get(Campaign, o.campaign_id) if o.campaign_id else None
     try:
-        kept, look = drawing.draw(db, campaign, words)
+        kept, look = drawing.draw(db, campaign, words, o.frame)
     except pictures.PictureError as e:
         raise HTTPException(409, str(e)) from None
     options = [{"full": f, "thumb": t, "src": "data:image/webp;base64," + base64.b64encode(files.read(t) or b"").decode()} for f, t in kept]
