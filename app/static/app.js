@@ -3586,8 +3586,8 @@
 // (app/feedback.py; Brett, 2026-11-03, docs/mockups/feedback-queue/) A note for Claude from any page, for whoever the
 // page lets send one (body[data-feedback]: admins and the accounts switched on for it on Accounts). \ opens it (never
 // while typing), as do the account menu's item and More's (admins), and pressing and holding the askdnd logo (a phone,
-// as a test account). The page's picture is taken first, before the window covers anything (html-to-image, vendored),
-// and sent with the note, where it was pointed at, a pasted or chosen screenshot, the page as drawn, and where, when
+// as a test account). The window opens at once; the page's picture is drawn just after (html-to-image, vendored; the
+// window itself is left out of it), only what's on screen, one at a time, and sent with the note, where it was pointed at, a pasted or chosen screenshot, the page as drawn, and where, when
 // and how the page was.
 (function () {
   const win = document.getElementById('fb-win');
@@ -3595,7 +3595,7 @@
   const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
   const shotImg = win.querySelector('[data-fb-shot]'), shotNote = win.querySelector('[data-fb-shot-note]');
   const pastedImg = win.querySelector('[data-fb-pasted]'), dropNote = win.querySelector('[data-fb-drop-note]'), pointedNote = win.querySelector('[data-fb-pointed]');
-  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null;
+  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0;
   const typing = el => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   const say = text => { said.textContent = text; said.hidden = !text; };
   const loadLib = () => lib || (lib = new Promise((ok, no) => {
@@ -3604,6 +3604,11 @@
     s.onload = () => ok(window.htmlToImage); s.onerror = no;
     document.head.append(s);
   }));
+  const offscreen = n => {
+    if (n.nodeType !== 1 || !n.getBoundingClientRect) return false;
+    const r = n.getBoundingClientRect();
+    return (r.width || r.height) && (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth);
+  };
   const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
   async function picture() {  // what's on screen: the page drawn again as an image (the 3D dice and some fonts may differ)
     let h;
@@ -3612,18 +3617,33 @@
     const options = {
       quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK,
       backgroundColor: getComputedStyle(document.body).backgroundColor,
-      style: { transform: 'translate(' + -scrollX + 'px, ' + -scrollY + 'px)' },
-      // (not this window or the corner cards, no picture the page itself couldn't load, which would stop the drawing,
-      // and none from another site, such as a D&D Beyond portrait: it can't be read from here, and isn't fetched again)
-      // (and not Battle's condition edge: its border-image comes out as a wash over the whole picture)
-      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || (n.classList && n.classList.contains('cond-halo'))
-        || (n.tagName === 'IMG' && (!n.complete || !n.naturalWidth || !n.src.startsWith(location.origin + '/')))),
+      // (scrolled by a margin, not a transform: a transform would carry what's fixed on screen, a modal like the item
+      // browser, down the whole page's height and out of the picture)
+      style: { margin: '0', marginTop: -scrollY + 'px', marginLeft: -scrollX + 'px' },
+      // (not this window or the corner cards, and not Battle's condition edge: its border-image comes out as a wash over
+      // the whole picture)
+      // Only what's on screen: anything hidden or scrolled out of view is left out, so a long list (the item browser's
+      // 1,289 rows) costs what its visible rows cost (Brett, Nov 3: it was slow, and froze the tab once)
+      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || (n.classList && n.classList.contains('cond-halo')) || n.hidden || offscreen(n)),
     };
     // An attribute named with a colon (htmx's hx-on::after-request) is fine in a page but not in the picture's SVG, where
     // it stops the whole drawing: they're set aside while it's drawn, and put back
-    const aside = [];
+    const aside = [], blanked = [];
     document.querySelectorAll('*').forEach(el => { for (const at of [...el.attributes]) if (at.name.includes(':')) { aside.push([el, at.name, at.value]); el.removeAttribute(at.name); } });
-    try { return await h.toJpeg(document.body, options); } catch (e) { return null; } finally { aside.forEach(([el, name, value]) => el.setAttribute(name, value)); }
+    // A picture the page couldn't load would stop the drawing, and one from another site (a D&D Beyond portrait, an
+    // item's picture) can't be read from here: each is drawn blank at its own size, so what's around it stays in place
+    // (left out, the item browser's details ran into each other)
+    document.querySelectorAll('img').forEach(im => {
+      if (im.complete && im.naturalWidth && im.src.startsWith(location.origin + '/')) return;
+      const r = im.getBoundingClientRect();
+      blanked.push([im, im.getAttribute('src'), im.getAttribute('srcset'), im.style.width, im.style.height]);
+      Object.assign(im.style, { width: r.width + 'px', height: r.height + 'px' });
+      im.removeAttribute('srcset'); im.src = BLANK;
+    });
+    try { return await h.toJpeg(document.body, options); } catch (e) { return null; } finally {
+      aside.forEach(([el, name, value]) => el.setAttribute(name, value));
+      blanked.forEach(([im, src, srcset, w, hgt]) => { if (srcset !== null) im.setAttribute('srcset', srcset); if (src !== null) im.setAttribute('src', src); else im.removeAttribute('src'); im.style.width = w; im.style.height = hgt; });
+    }
   }
   function browser() {
     const ua = navigator.userAgent, d = navigator.userAgentData;
@@ -3660,16 +3680,22 @@
   function unmark() { if (outlined) outlined.classList.remove('fb-pointed'); outlined = null; }
   async function open() {
     if (win.open) return;
+    const mine = ++round;
     unmark(); pointed = null; pasted = null; shot = null;
     ctx = gather(); html = document.documentElement.outerHTML.slice(0, 3000000);
-    const pic = picture();  // (before the window covers anything)
     form.reset(); say(''); send.disabled = false;
     shotImg.hidden = true; shotNote.hidden = false; shotNote.textContent = "Taking the page's picture…";
     pastedImg.hidden = true; dropNote.hidden = false; pointedNote.textContent = 'Click the thing you mean, if it helps';
     drawCtx();
     win.showModal();
     form.text.focus();
-    shot = await pic;
+    // The picture once the window has shown (it's left out of the picture), and never two at once: pressing \ again
+    // while one is drawn waits for that one
+    await new Promise(r => { requestAnimationFrame(() => setTimeout(r, 0)); setTimeout(r, 100); });  // (a tab out of sight never paints)
+    taking = taking || picture().finally(() => { taking = null; });
+    const pic = await taking;
+    if (mine !== round) return;  // (closed and opened again meanwhile: the newer window draws its own)
+    shot = pic;
     if (shot) { shotImg.src = shot; shotImg.hidden = false; shotNote.hidden = true; } else shotNote.textContent = "No picture this time: paste one if it helps";
   }
   function describe(el) {
@@ -3722,6 +3748,7 @@
     const text = form.text.value.trim();
     if (!text) return say("Say what it's about first.");
     send.disabled = true; say('');
+    if (taking && !shot) { say("Finishing the page's picture…"); shot = await taking; say(''); }  // (Send pressed before it was drawn)
     try {
       const r = await fetch('/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ text, url: location.href, context: { ...ctx, pointed }, html, shot, pasted }) });
