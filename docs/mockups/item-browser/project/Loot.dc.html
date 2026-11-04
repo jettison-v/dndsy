@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Give loot, the DM's</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 960px">
+  <div class="head">
+    <div class="num">2 · Give loot · the DM</div>
+    <h1>The same browser, for loot: no cost, coins too, and who gets it</h1>
+    <p class="where"><b>Where you'll find it:</b> as the DM, a character's Sheet › Items › <b>Give loot</b> (today's small window becomes this one). The same list and filters; the bottom says who gets it and adds coins. Nothing is paid. The player sees it arrive, like any change from D&amp;D Beyond, and their page says it came from the DM.</p>
+  </div>
+  <div class="ib" style="height: 760px">
+    <div class="ib-top">
+      <h3>Give loot</h3>
+      <label class="note" for="loot-to">To</label>
+      <select id="loot-to" class="sel-box"><option>Cole</option><option>Big C</option><option>Trah</option><option>No Name</option></select>
+      <label class="sr" for="loot-search">Search items</label>
+      <input id="loot-search" class="search" type="search" value="wand" placeholder="Search D&amp;D Beyond's 2024 items">
+      <span class="note">3 of 412 items</span>
+    </div>
+    <div class="ib-body">
+      <div class="ib-filters">
+        <div class="fgroup"><span class="lbl">Kind</span>
+          <span class="fopt"><span>All</span><span>412</span></span><span class="fopt"><span>Adventuring gear</span><span>98</span></span><span class="fopt"><span>Weapons</span><span>38</span></span><span class="fopt"><span>Armor</span><span>13</span></span><span class="fopt"><span>Potions</span><span>27</span></span><span class="fopt"><span>Wondrous items</span><span>141</span></span><span class="fopt on"><span>Rings, wands, rods</span><span>58</span></span><span class="fopt"><span>Ammunition</span><span>6</span></span></div>
+        <div class="fgroup"><span class="lbl">Rarity</span>
+          <span class="fopt"><span>Not magic</span></span><span class="fopt"><span>Common</span></span><span class="fopt on"><span>Uncommon</span></span><span class="fopt"><span>Rare</span></span><span class="fopt"><span>Very rare and up</span></span></div>
+        <div class="fgroup"><span class="lbl">Attunement</span>
+          <span class="fopt"><span>Needs it</span></span><span class="fopt"><span>Doesn't</span></span></div>
+        <div class="fgroup"><span class="lbl">Homebrew</span>
+          <span class="fopt off"><span>The campaign's own (later)</span></span></div>
+      </div>
+      <div class="ib-list">
+        <div class="irow head"><span>Item</span><span>Kind</span><span>Rarity</span><span>Cost</span><span>Weight</span><span></span></div>
+        <div class="irow sel"><button type="button" class="iname"><b>Wand of Magic Missiles</b></button><span class="note">Wand</span><span class="rar uncommon">Uncommon</span><span>—</span><span class="note">1 lb</span><button type="button" class="plus" aria-label="Add Wand of Magic Missiles">+</button></div>
+        <div class="irow"><button type="button" class="iname"><b>Wand of Web</b> · attune</button><span class="note">Wand</span><span class="rar uncommon">Uncommon</span><span>—</span><span class="note">1 lb</span><button type="button" class="plus" aria-label="Add Wand of Web">+</button></div>
+        <div class="irow"><button type="button" class="iname"><b>Wand of Secrets</b></button><span class="note">Wand</span><span class="rar uncommon">Uncommon</span><span>—</span><span class="note">1 lb</span><button type="button" class="plus" aria-label="Add Wand of Secrets">+</button></div>
+      </div>
+      <div class="ib-detail">
+        <h4>Wand of Magic Missiles</h4>
+        <div class="row start" style="gap: 6px"><span class="rar uncommon">Uncommon</span><span class="tagg">Wand</span></div>
+        <div class="facts"><span>Cost</span><span>—</span><span>Weight</span><span>1 lb</span><span>Charges</span><span>7, some back at dawn</span><span>From</span><span>Dungeon Master's Guide (2024)</span></div>
+        <p style="color: var(--text)">Spend charges to cast Magic Missile, at a higher level for more charges.</p>
+        <p class="note">Cole has none. Trah has one.</p>
+      </div>
+    </div>
+    <div class="ib-foot">
+      <span class="lbl">Giving Cole</span>
+      <div class="basket"><span class="bchip">Wand of Magic Missiles ×1 <button type="button" aria-label="One fewer">−</button><button type="button" aria-label="One more">+</button></span><span class="bchip">Potion of Healing ×2 <button type="button" aria-label="One fewer">−</button><button type="button" aria-label="One more">+</button></span></div>
+      <label class="note" for="loot-coins">Coins</label>
+      <input id="loot-coins" class="sel-box" style="width: 80px" type="number" value="120">
+      <select class="sel-box" aria-label="Which coin"><option>gp</option><option>sp</option><option>cp</option><option>pp</option><option>ep</option></select>
+      <button type="button" class="btn main">Give to Cole</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
