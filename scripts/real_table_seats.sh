@@ -1,14 +1,15 @@
 #!/bin/bash
 # The Mac Mini's test seats for scripts/real_table.py (docs/testing-setup.md): real Chrome, reachable only from the Mini.
 #   real_table_seats.sh copy    copies each seat's Chrome profile (Brett's sign-ins and the bridge) into ~/askdnd-tests/seats
+#                               (player4, Levi's, was made in its own seat window: it has no profile to copy, and is signed in there)
 #   real_table_seats.sh open    opens every seat that isn't open, and waits until each answers
 #   real_table_seats.sh close   closes every seat
 # Chrome won't let a script drive its normal profile folder, hence the copies. Brett's own profile is never a seat.
 T=$HOME/askdnd-tests
 C="$HOME/Library/Application Support/Google/Chrome"
-PROFILES=("dm:Profile 1" "player2:Default" "player3:Profile 4")  # (the Mini's Jettison, Cupta Family and Trent profiles)
+PROFILES=("dm:Profile 1" "player2:Default" "player3:Profile 4" "player4:")  # (the Mini's Jettison, Cupta Family and Trent profiles; Levi's seat)
 
-port() { case "$1" in dm) echo 9231;; player2) echo 9232;; player3) echo 9233;; esac; }
+port() { case "$1" in dm) echo 9231;; player2) echo 9232;; player3) echo 9233;; player4) echo 9234;; esac; }
 up() { curl -s -m 2 "http://127.0.0.1:$(port "$1")/json/version" >/dev/null; }
 
 case "$1" in
@@ -16,6 +17,7 @@ case "$1" in
     pkill -TERM -f 'user-data-dir=.*/askdnd-tests/seats/'; sleep 2
     for p in "${PROFILES[@]}"; do
       seat=${p%%:*}; mkdir -p "$T/seats/$seat"
+      [ -n "${p#*:}" ] || continue  # (a seat signed in in its own window: nothing to copy)
       # (keep Service Worker: the bridge's own code runs from it. Only page caches are left out.)
       rsync -a --delete --exclude Cache --exclude 'Code Cache' --exclude GPUCache --exclude DawnGraphiteCache --exclude DawnWebGPUCache \
         "$C/${p#*:}/" "$T/seats/$seat/Default/"
