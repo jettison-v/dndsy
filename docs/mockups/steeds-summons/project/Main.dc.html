@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Where they live</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">1 · Your creatures, the rest · where they live</div>
+    <h1>Steeds, summons and Wild Companion: who keeps them</h1>
+    <p class="where"><b>Where you'll find them:</b> the same places as Pip and Vi's Homunculus today: the switch by the name on Battle (Cole · Bestial Spirit), its own half of its master's Party card, the fight's rows and band, Table rolls. What's new is what brings each one, what sends it away, and where its numbers come from. <b>Checked on Levi's test seat (Nov 4):</b> D&amp;D Beyond's Manage Extras has the familiar forms and ordinary monsters, but <b>no</b> 2024 summon spirit (Bestial Spirit, Draconic Spirit…) and no Otherworldly Steed.</p>
+  </div>
+  <table class="kept">
+    <thead><tr><th>Kind</th><th>Comes from</th><th>Goes when</th><th>Its numbers</th><th>D&amp;D Beyond keeps</th></tr></thead>
+    <tbody>
+      <tr><td><b>Wild Companion</b><br><span class="note">a Druid's, from level 2</span></td><td>A Wild Shape use casts Find Familiar (no slot, no incense); always Fey (board 2)</td><td>The druid's next Long Rest, or 0 Hit Points</td><td>Its form's stat block, as Pip's</td><td><span class="tag ddb">Yes</span> a familiar on Extras, kept in step as Pip is</td></tr>
+      <tr><td><b>A summon</b><br><span class="note">Summon Beast, Fey, Dragon…</span></td><td>The spell, cast at a level, with its choice (Air, Land or Water) (board 3)</td><td>Concentration ends (End, a failed save, another Concentration spell, a rest that outlasts it), 0 Hit Points, the hour is up</td><td>Worked out from the level cast and its master's spell attack and save DC, each with its source</td><td><span class="tag">Nothing</span> no such creature there</td></tr>
+      <tr><td><b>Find Steed</b><br><span class="note">a Paladin's</span></td><td>The spell: the steed that disappeared, or a different one (board 4)</td><td>0 Hit Points, or its master dies</td><td>Worked out from the level cast and its master's spell attack</td><td><span class="tag">Nothing</span> no such creature there</td></tr>
+    </tbody>
+  </table>
+  <div class="grid2" style="gap: 20px">
+    <div class="optbox rec">
+      <div class="row"><h3>A · askdnd keeps summons and steeds</h3><span class="tag us">Recommended</span></div>
+      <ul>
+        <li>Like a Wild Shape form: the creature is askdnd's, so it works whether or not the sheet is open.</li>
+        <li>Its Hit Points, damage and healing are kept in askdnd (− and + on its Battle, Apply to from Table rolls), and everyone at the table sees them.</li>
+        <li>Nothing is written to D&amp;D Beyond for it; the spell slot and Concentration still are, as today.</li>
+        <li>Its numbers change by themselves when it's cast at another level.</li>
+      </ul>
+    </div>
+    <div class="optbox">
+      <h3>B · A homebrew creature on D&amp;D Beyond for each</h3>
+      <ul>
+        <li>The DM makes each spirit and steed as homebrew on D&amp;D Beyond, at one fixed level; askdnd adds it to Extras when cast.</li>
+        <li>D&amp;D Beyond would hold its Hit Points, but not the numbers at another level: a new homebrew per level.</li>
+        <li>More work for the DM, for numbers askdnd already works out.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="grid2" style="gap: 20px">
+    <div class="card"><h3>Where the numbers come from</h3><p class="note">Each spirit's and steed's stat block is in the 2024 Player's Handbook, not the free rules. askdnd reads them like the Monster Manual: from the DM's own copy, kept only in askdnd's database, never in the code, listed as one of the campaign's books (Manage › Settings › Books, "PHB 2024"). Without it, a summon shows what the free rules give and says the rest is the DM's.</p></div>
+    <div class="card"><h3>The same everywhere else</h3><p class="note">One at a time where the spell says so. A corner card with Undo whenever one comes or goes. Nothing ends by itself except where the rules say so outright (0 Hit Points, Concentration ending, a Long Rest for Wild Companion), and each of those can be put back on the DM's ruling.</p></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
