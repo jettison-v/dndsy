@@ -132,3 +132,17 @@ table.track tr.now td { background: var(--surface-2); }
 .compband { border-top: 1px solid var(--line); margin: 2px -20px -18px; padding: 12px 20px 14px; background: var(--teal-soft); border-radius: 0 0 14px 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 14px; align-items: center; }
 .compband .ptiles { grid-column: 1 / -1; }
 .compband .ptile { background: var(--surface); }
+/* Board 8: linking a master and its creature on Party */
+.pair { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 10px; border: 1px solid color-mix(in srgb, var(--teal) 55%, var(--line)); border-radius: 18px; background: var(--teal-soft); }
+.pair-head { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 0 6px; font-size: 13px; color: var(--muted); }
+.pair-head b { color: var(--strong); }
+.link-row { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 36px minmax(0, 1fr); align-items: center; }
+.link-row .pcard.master { box-shadow: inset -4px 0 0 var(--teal); }
+.chain { height: 4px; background: var(--teal); position: relative; }
+.chain i { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 26px; height: 26px; border-radius: 50%; background: var(--bg); border: 2px solid var(--teal); display: grid; place-items: center; color: var(--teal); }
+.joined { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border: 1px solid color-mix(in srgb, var(--teal) 50%, var(--line)); border-radius: 14px; overflow: hidden; }
+.joined .pcard { border: 0; border-radius: 0; }
+.joined .pcard.creature { box-shadow: none; background: color-mix(in srgb, var(--teal) 7%, var(--surface)); border-left: 1px dashed color-mix(in srgb, var(--teal) 60%, var(--line)); }
+.mini-portrait { position: relative; }
+.mini-portrait .badge { position: absolute; right: -6px; bottom: -6px; width: 24px; height: 24px; border-radius: 50%; background: #3b4a46; color: var(--strong); display: grid; place-items: center; font: 700 11px/1 var(--serif); box-shadow: 0 0 0 2px var(--teal), 0 0 0 4px var(--surface); }
+.master-av { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font: 700 12px/1 var(--serif); color: var(--strong); flex: none; }

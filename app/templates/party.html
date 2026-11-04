@@ -34,9 +34,12 @@
     {% if rows %}<div class="pt-cards{{ ' pt-with-track' if f }}">
       {% for r in rows %}
       {% set edge = cond_edge(r.conditions | selectattr("counts") | list) %}
+      {# A character with creatures: one card in parts, theirs then each creature's, on a row of its own (Brett, Nov 4,
+         docs/mockups/creatures-as-characters/ board 8, C) #}
+      {% if r.creatures %}<div class="pt-pair" style="--parts: {{ 1 + r.creatures | length }}">{% endif %}
       <article class="section pt-card"{% if edge %} style="--h: var(--cond-{{ edge[0] }})" data-conds{% endif %}{% if not pick %} data-modal-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ r.c.name }}: a short version"{% endif %}>
-        <header class="pt-head"><span class="roll-av hue{{ r.c.id % 6 }}">{% set pic = r.form.image if r.form and r.form.image else (r.sheet.portrait if r.sheet else "") %}{% if pic %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ r.c.name[:1] }}</span>
-          <div class="pt-id"><div class="char-name"><h2 class="pt-name">{% if pick %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.name }}</a>{% else %}{{ r.c.name }}{% endif %}</h2>{% if r.form %}<span class="tag pt-form" title="In Wild Shape">{{ r.form.name }}</span>{% endif %}{{ cond_badges(r.conditions, r.c, true) }}{% for k in r.creatures %}<span class="tag pt-with" title="{{ r.c.name }}'s {{ k.name }}: its card is next">with {{ k.name | creature_short }}</span>{% endfor %}</div>{% if r.sheet %}<p class="note">{{ r.classes }}</p>{% endif %}</div>{% if r.sheet and r.sheet.currency %}<div class="pt-purse">{{ purse(r.sheet) }}</div>{% endif %}</header>
+        <header class="pt-head"><span class="pt-av"><span class="roll-av hue{{ r.c.id % 6 }}">{% set pic = r.form.image if r.form and r.form.image else (r.sheet.portrait if r.sheet else "") %}{% if pic %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ r.c.name[:1] }}</span>{% for k in r.creatures[:1] %}<span class="pt-badge roll-av" title="With {{ k.name }}">{% if k.picture %}<img src="{{ k.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ k.name[:1] }}</span>{% endfor %}</span>
+          <div class="pt-id"><div class="char-name"><h2 class="pt-name">{% if pick %}<a href="/characters/{{ r.c.id }}{{ '/battle' if pick == 'battle' }}">{{ r.c.name }}</a>{% else %}{{ r.c.name }}{% endif %}</h2>{% if r.form %}<span class="tag pt-form" title="In Wild Shape">{{ r.form.name }}</span>{% endif %}{{ cond_badges(r.conditions, r.c, true) }}{% for k in r.creatures %}<span class="tag pt-with" title="{{ r.c.name }}'s {{ k.name }}: the other half of this card">with {{ k.name | creature_short }}</span>{% endfor %}</div>{% if r.sheet %}<p class="note">{{ r.classes }}</p>{% endif %}</div>{% if r.sheet and r.sheet.currency %}<div class="pt-purse">{{ purse(r.sheet) }}</div>{% endif %}</header>
         {% if r.sheet %}{% set s = r.sheet %}
         {% set dy = dying_state(s) %}
         <div class="strip compact pt-tiles">{{ hp_tile(s, r.c, attrs=mark(r.c, "hp"), roll=false, max=true, short=false) }}{{ ntile(s, mark(r.c, "ac"), "Armor class", ("<b>%s</b>" | format(r.form.ac if r.form else s.armor_class)) | safe, cls="in-form" if r.form else "") }}{{ ntile(s, mark(r.c, "speed"), "Speed", ("<b>%s ft</b>" | format(r.form.speed if r.form else s.speed.walk)) | safe, cls="in-form" if r.form else "") }}</div>
@@ -47,10 +50,10 @@
         {% if s.currency %}<div class="pt-line pt-purse-foot">{{ purse(s) }}</div>{% endif %}
         {% else %}<p class="muted">{{ "Not fetched from D&D Beyond yet" if r.c.ddb_id else "Not linked to D&D Beyond yet" }}</p>{% endif %}
       </article>
-      {% for k in r.creatures %}{# Your creatures (app/creatures.py; Brett, Nov 4, docs/mockups/creatures-as-characters/ board 7, A):
-         its own card right after its master's, as easy to see as a character; pressing it opens its Battle #}
+      {% for k in r.creatures %}{# Your creatures (app/creatures.py; Brett, Nov 4, docs/mockups/creatures-as-characters/ boards 7 and 8): its own
+         card, the second half of its master's, as easy to see as a character; pressing it opens its Battle #}
       <article class="section pt-card pt-creature-card">
-        <header class="pt-head"><span class="roll-av hue{{ r.c.id % 6 }}">{% if k.picture %}<img src="{{ k.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ k.name[:1] }}</span>
+        <header class="pt-head"><span class="roll-av pt-cr-av">{% if k.picture %}<img src="{{ k.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ k.name[:1] }}</span>
           <div class="pt-id"><span class="pt-whose">{{ r.c.name }}'s {{ k.role }}</span><div class="char-name"><h2 class="pt-name"><a class="pt-cr-link" href="/characters/{{ r.c.id }}/battle?creature={{ k.id }}" data-no-peek title="{{ r.c.name }}'s {{ k.name }}: its Battle">{{ k.name }}</a></h2></div>
             <p class="note">{{ k.kind if k.kind != k.name else k.group }}{% if k.size %} · {{ k.size }}{% endif %}</p></div></header>
         <div class="strip compact pt-tiles">{{ ntile(r.sheet, "", "Hit points", ("<b>%s</b><span class=\"note\"> / %s</span>" | format(k.hp.current, k.hp.max)) | safe, foot=("+%s temp" | format(k.hp.temp)) if k.hp.temp else "") }}{{ ntile(r.sheet, "", "Armor class", ("<b>%s</b>" | format(k.ac)) | safe) }}{{ ntile(r.sheet, "", "Speed", ("<b>%s ft</b>" | format(k.walk)) | safe, foot=k.other_speeds) }}</div>
@@ -58,6 +61,7 @@
         {% if k.senses %}<p class="pt-line"><span class="note">Senses</span> {{ k.senses }} · Passive Perception <b>{{ k.passive }}</b></p>{% endif %}
       </article>
       {% endfor %}
+      {% if r.creatures %}</div>{% endif %}
       {% endfor %}
     </div>{% else %}<p class="muted">No characters in this campaign yet. An admin adds them, or moves one here, on Manage › Campaigns.</p>{% endif %}
   </div>

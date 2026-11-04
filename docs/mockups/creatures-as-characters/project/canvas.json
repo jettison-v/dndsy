@@ -61,6 +61,14 @@
       "h": 1120,
       "title": "7 · Party, more visible: A or B",
       "is_interactive": true
+    },
+    "Linked.dc.html": {
+      "x": 1440,
+      "y": 2320,
+      "w": 1360,
+      "h": 1080,
+      "title": "8 · Vi and the Homunculus, linked: A, B or C",
+      "is_interactive": true
     }
   },
   "order": [
@@ -70,7 +78,8 @@
     "Table.dc.html",
     "Others.dc.html",
     "Storage.dc.html",
-    "Party.dc.html"
+    "Party.dc.html",
+    "Linked.dc.html"
   ],
   "notes": {},
   "designSystems": []

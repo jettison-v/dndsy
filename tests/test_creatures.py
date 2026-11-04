@@ -107,11 +107,15 @@ def test_a_creatures_roll_says_whose_it_is(player, db, labs):
 
 
 def test_party_gives_it_its_own_card_after_its_masters(player, db, labs):
-    """Brett, Nov 4 (Creatures as Characters board 7, A): on Party a creature is as easy to see as a character, its own card
-    right after its master's (whose it is, its Hit Points, AC, Speed and turn), opening its Battle; its master's says "with"."""
+    """Brett, Nov 4 (Creatures as Characters boards 7 and 8, C): on Party a creature is as easy to see as a character, its own
+    card as the second half of its master's (whose it is, its Hit Points, AC, Speed and turn), opening its Battle; its
+    master's says "with" it and carries its picture."""
     page = player.get("/party").text
+    pair = page.index('<div class="pt-pair" style="--parts: 2">')
     master, mine = page.index('data-modal-url="/characters/%d/brief"' % labs.id), page.index('class="section pt-card pt-creature-card"')
-    assert master < mine and page.count("</article>", master, mine) == 1  # (the very next card)
+    assert pair < master < mine and page.count("</article>", master, mine) == 1
+    assert page.index("</article>", mine) < page.index("</div>", page.index("</article>", mine))  # (both halves in one card)
+    assert 'class="pt-badge roll-av" title="With Homunculus Servant"' in page[master:mine]
     card = page[mine:page.index("</article>", mine)]
     assert "Cole's Homunculus" in card and f'href="/characters/{labs.id}/battle?creature={ZAP}" data-no-peek' in card
     assert "<b>1</b><span class=\"note\"> / 1" in card and "Right after its master" in card  # (Cole has no Artificer levels: D&D Beyond's 1)
