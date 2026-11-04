@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Party with companions</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1120px">
+  <div class="head">
+    <div class="num">7 · Party, more visible · pick one · try it</div>
+    <h1>On Party, a companion is as easy to see as a character</h1>
+    <p class="where"><b>Where you'll find it:</b> Party › At a glance › Cards (today it's one small line at the bottom of its master's card: "Owl 1 / 1 HP AC 11"). Two ways to give it its proper place; both keep it next to its master, and Rows already gives it its own row (board 4). Switch between them, and between here and away.</p>
+  </div>
+  <div class="row start wrap" style="gap: 14px">
+    <div class="seg" role="group" aria-label="Which option">
+      <button type="button" class="{{ aCls }}" aria-pressed="{{ isA }}" onClick="{{ pickA }}" style="padding: 5px 14px">A · Its own card, right after its master's</button>
+      <button type="button" class="{{ bCls }}" aria-pressed="{{ isB }}" onClick="{{ pickB }}" style="padding: 5px 14px">B · A band across its master's card</button>
+    </div>
+    <div class="seg" role="group" aria-label="Where Pip is">
+      <button type="button" class="{{ hereCls }}" aria-pressed="{{ isHere }}" onClick="{{ pickHere }}" style="padding: 5px 14px">Pip is here</button>
+      <button type="button" class="{{ awayCls }}" aria-pressed="{{ isAway }}" onClick="{{ pickAway }}" style="padding: 5px 14px">In the pocket dimension</button>
+    </div>
+  </div>
+  <div class="tabbar" style="display: flex; gap: 18px; border-bottom: 1px solid var(--line); font-size: 15px; color: var(--muted)"><b style="color: var(--strong); padding: 6px 0; border-bottom: 2px solid var(--red)">At a glance</b><span style="padding: 6px 0">Spells</span><span style="padding: 6px 0">Items</span></div>
+  <sc-if value="{{ isA }}" hint-placeholder-val="{{ true }}">
+    <div class="pgrid">
+      <div class="pcard">
+        <div class="phead"><span class="portrait">T</span><span class="pn"><b>Trah</b><span class="note">Wizard 7</span></span><span class="withchip"><span class="pic sm">P</span>with Pip</span></div>
+        <div class="ptiles"><span class="ptile">Hit points<span><b>52</b> / 52</span></span><span class="ptile">Armor class<b>17</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+        <div class="pline">Best saves <b>Int +7</b> · <b>Wis +4</b></div>
+        <div class="pline">Slots <span>1st ●●●●</span><span>2nd ●●●</span><span>3rd ●●●</span><span>4th ●</span></div>
+      </div>
+      <div class="{{ pipCardCls }}">
+        <div class="phead"><span class="pic" style="width: 52px; height: 52px; font-size: 18px">P</span><span class="pn"><span class="ctag">Trah's familiar</span><b>Pip</b><span class="note">Owl · Tiny Celestial</span></span><span class="{{ stateCls }}"><i></i>{{ stateWord }}</span></div>
+        <div class="ptiles"><span class="ptile">Hit points<span><b>1</b> / 1</span></span><span class="ptile">Armor class<b>11</b></span><span class="ptile">Speed<b>Fly 60 ft</b></span></div>
+        <div class="pline">Its turn <b>its own Initiative (+1)</b> · can't attack</div>
+        <div class="pline">Senses <b>Darkvision 120 ft</b> · <b>Perception +5</b> · Flyby</div>
+      </div>
+      <div class="pcard">
+        <div class="phead"><span class="portrait">BC</span><span class="pn"><b>Big C</b><span class="note">[class and level]</span></span></div>
+        <div class="ptiles"><span class="ptile">Hit points<span><b>61</b> / 64</span></span><span class="ptile">Armor class<b>16</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+        <div class="pline">Best saves <b>Str +7</b> · <b>Con +6</b></div>
+      </div>
+      <div class="pcard">
+        <div class="phead"><span class="portrait">C</span><span class="pn"><b>Cole</b><span class="note">[class and level]</span></span></div>
+        <div class="ptiles"><span class="ptile">Hit points<span><b>44</b> / 44</span></span><span class="ptile">Armor class<b>17</b></span><span class="ptile">Speed<b>45 ft</b></span></div>
+        <div class="pline">Best saves <b>Dex +7</b> · <b>Wis +5</b></div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ isB }}" hint-placeholder-val="{{ false }}">
+    <div class="pgrid">
+      <div class="pcard">
+        <div class="phead"><span class="portrait">T</span><span class="pn"><b>Trah</b><span class="note">Wizard 7</span></span></div>
+        <div class="ptiles"><span class="ptile">Hit points<span><b>52</b> / 52</span></span><span class="ptile">Armor class<b>17</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+        <div class="pline">Best saves <b>Int +7</b> · <b>Wis +4</b></div>
+        <div class="pline">Slots <span>1st ●●●●</span><span>2nd ●●●</span><span>3rd ●●●</span><span>4th ●</span></div>
+        <div class="compband">
+          <span class="pic">P</span>
+          <span style="display: grid"><b style="color: var(--strong); font-size: 17px">Pip <span class="ctag" style="margin-left: 4px">familiar</span></b><span class="note">Owl · Celestial · its own turn, can't attack</span></span>
+          <span class="{{ stateCls }}"><i></i>{{ stateWord }}</span>
+          <div class="{{ bandTilesCls }}"><span class="ptile">Hit points<span><b>1</b> / 1</span></span><span class="ptile">Armor class<b>11</b></span><span class="ptile">Speed<b>Fly 60 ft</b></span></div>
+        </div>
+      </div>
+      <div class="pcard">
+        <div class="phead"><span class="portrait">BC</span><span class="pn"><b>Big C</b><span class="note">[class and level]</span></span></div>
+        <div class="ptiles"><span class="ptile">Hit points<span><b>61</b> / 64</span></span><span class="ptile">Armor class<b>16</b></span><span class="ptile">Speed<b>30 ft</b></span></div>
+        <div class="pline">Best saves <b>Str +7</b> · <b>Con +6</b></div>
+      </div>
+    </div>
+  </sc-if>
+  <div class="grid2" style="gap: 20px">
+    <div class="opt rec"><div class="row"><h3>A · Its own card</h3><span class="tagg" style="color: var(--teal); border-color: var(--teal)">Recommended</span></div><ul><li>The same card as a character: picture, Hit Points, AC, Speed, its turn, what it senses</li><li>Placed right after its master's, edged teal and titled "Trah's familiar"; its master's card says "with Pip"</li><li>Pressing it opens Pip's Battle; away or gone, it stays, greyed, saying where</li><li>Costs a grid cell per companion: with two, the party takes one more row</li></ul></div>
+    <div class="opt"><h3>B · A band across its master's card</h3><ul><li>Pip's picture, name, where it is and its three numbers across the bottom of Trah's card</li><li>Always beside its master, no extra cards</li><li>Smaller than a character: no room for its turn or senses, and a second companion makes the card tall</li></ul></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1120}}'>
+class Component extends DCLogic {
+  state = { opt: 'A', where: 'here' };
+  renderVals() {
+    const s = this.state, here = s.where === 'here';
+    return {
+      isA: s.opt === 'A', isB: s.opt === 'B', aCls: s.opt === 'A' ? 'on' : '', bCls: s.opt === 'B' ? 'on' : '',
+      pickA: () => this.setState({ opt: 'A' }), pickB: () => this.setState({ opt: 'B' }),
+      isHere: here, isAway: !here, hereCls: here ? 'on' : '', awayCls: here ? '' : 'on',
+      pickHere: () => this.setState({ where: 'here' }), pickAway: () => this.setState({ where: 'away' }),
+      pipCardCls: here ? 'pcard creature' : 'pcard creature greyed',
+      bandTilesCls: here ? 'ptiles' : 'ptiles greyed',
+      stateCls: here ? 'state' : 'state away', stateWord: here ? 'Here' : 'Pocket dimension',
+    };
+  }
+}
+</script>
+</body>
+</html>

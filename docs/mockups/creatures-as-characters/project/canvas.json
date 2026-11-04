@@ -53,6 +53,14 @@
       "w": 1360,
       "h": 1040,
       "title": "6 · What D&D Beyond keeps, what askdnd keeps"
+    },
+    "Party.dc.html": {
+      "x": 0,
+      "y": 2320,
+      "w": 1360,
+      "h": 1120,
+      "title": "7 · Party, more visible: A or B",
+      "is_interactive": true
     }
   },
   "order": [
@@ -61,7 +69,8 @@
     "Life.dc.html",
     "Table.dc.html",
     "Others.dc.html",
-    "Storage.dc.html"
+    "Storage.dc.html",
+    "Party.dc.html"
   ],
   "notes": {},
   "designSystems": []
