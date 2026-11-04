@@ -345,3 +345,42 @@ def test_casting_keeps_d_and_d_beyonds_extras_in_step(player, db, labs, sheet):
     assert player.post(f"/characters/{labs.id}/creatures/{OWL}/where", data={"to": "away"}).status_code == 204
     away = {i.data["field"]: i.data["value"] for i in db.scalars(select(BridgeIntent).where(BridgeIntent.kind == "set"))}
     assert away == {f"creature_active:{RAVEN}": False}  # (the Owl is still off on D&D Beyond: the cast's changes weren't made here)
+
+
+# ------------------------------------------------------------------ its picture (the one Picture window, Nov 4)
+
+
+def picture_png():
+    import io
+
+    from PIL import Image
+
+    out = io.BytesIO()
+    Image.new("RGB", (400, 300), (30, 120, 90)).save(out, "PNG")
+    return out.getvalue()
+
+
+def test_a_creatures_picture_in_the_picture_window(player, dm, db, labs, sheet):
+    """Brett, 2026-11-04 (Pictures in askdnd): pressing its picture on its Battle opens the one Picture window; its player
+    (or the DM) uploads one, and Battle and Party show it in place of D&D Beyond's art. A familiar keeps one picture
+    across its forms."""
+    from tests.roles import set_role
+
+    ref = {"for": f"creature:{labs.id}:{ZAP}"}
+    assert f'data-modal-url="/pictures?for=creature:{labs.id}:{ZAP}"' in player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
+    assert "Homunculus Servant&#39;s picture" in player.get(f"/pictures?for=creature:{labs.id}:{ZAP}").text
+    assert dm.post("/pictures/upload", data=ref, files={"file": ("h.png", picture_png(), "image/png")}).status_code == 404  # (not the DM yet)
+    r = player.post("/pictures/upload", data=ref, files={"file": ("h.png", picture_png(), "image/png")})
+    assert r.status_code == 204 and "Picture saved" in r.headers["HX-Trigger"]
+    url = f"/characters/{labs.id}/creatures/{ZAP}/picture?size=thumb"
+    assert url in player.get("/party").text.replace("&amp;", "&") and url in player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text.replace("&amp;", "&")
+    assert player.get(url).status_code == 200
+    set_role(db, "dm@example.com", "dm")
+    assert dm.get(url).status_code == 200  # (the table sees it)
+    familiar_sheet(db, labs, sheet)
+    labs.companions = {str(OWL): {"state": "here", "kind": "Fey"}}
+    db.flush()
+    player.post("/pictures/upload", data={"for": f"creature:{labs.id}:{OWL}"}, files={"file": ("p.png", picture_png(), "image/png")})
+    labs.companions = {str(RAVEN): {"state": "here", "kind": "Fey"}}  # (a new form: the same familiar, the same picture)
+    db.flush()
+    assert f"/characters/{labs.id}/creatures/familiar/picture?size=thumb" in player.get(f"/characters/{labs.id}/battle?creature={RAVEN}").text.replace("&amp;", "&")

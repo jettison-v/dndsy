@@ -24,7 +24,7 @@ from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
 from app import ddb, ddb_bridge, hit_points, house_rules, picks
-from app import class_rules, companions, creatures, player_notes, vtt
+from app import class_rules, companions, creatures, pictures, player_notes, vtt
 from app import spellbook as sb
 from app.preparing import books_to_prepare
 from app import wild_shape as ws
@@ -118,6 +118,12 @@ def _page(request: Request, name: str, ctx: dict):
 # ---------------------------------------------------------------- top-level
 
 
+def _own_picture(db: Session, ch: Character, c: dict) -> dict:
+    """A creature's own picture (the one Picture window; a familiar's across its forms) in place of D&D Beyond's art."""
+    got = pictures.creature_urls(db, [ch.id]).get((ch.id, pictures.creature_key(c)))
+    return {"picture": got["thumb"], "own_picture": True} if got else {"own_picture": False}
+
+
 def party_rows(db: Session, user: dict | None) -> list[dict]:
     """The campaign's characters as Party shows them (also the middle of askdnd's table, app/table_page.py): each one's
     sheet as shown, with what it's under."""
@@ -137,7 +143,8 @@ def party_rows(db: Session, user: dict | None) -> list[dict]:
         cid = r["c"].campaign_id  # Your creatures (Labs): a line under its master's card, its Hit Points and AC
         if cid not in with_creatures:
             with_creatures[cid] = vtt.on(db.get(Campaign, cid) if cid else None, "creatures")
-        mine = [creatures.placed(r["c"], creatures.card(sheet, x), x) for x in creatures.in_play(r["c"], sheet)] if sheet and with_creatures[cid] else []
+        mine = [creatures.placed(r["c"], creatures.card(sheet, x), x) | _own_picture(db, r["c"], x)
+                for x in creatures.in_play(r["c"], sheet)] if sheet and with_creatures[cid] else []
         rows.append({**r, "sheet": sheet, "form": form, "creatures": mine, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
     return rows
 
@@ -201,7 +208,8 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     campaign = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
     ctx["my_creatures"] = creatures.in_play(ch, ctx["sheet"]) if vtt.on(campaign, "creatures") else []
     found = next((x for x in ctx["my_creatures"] if str(x["id"]) == str(creature)), None) if creature else None
-    ctx["creature"] = creatures.placed(ch, creatures.card(ctx["sheet"], found), found) if found else None
+    ctx["creature"] = creatures.placed(ch, creatures.card(ctx["sheet"], found), found) | _own_picture(db, ch, found) if found else None
+    ctx["can_picture"] = bool(found) and hit_points.can_apply(db, user, ch)  # (the one Picture window, app/picture_window.py)
     ctx["find_familiar"] = companions.spell_key(ctx["sheet"]) if ctx["creature"] and ctx["creature"]["cast"] else ""
     ctx["previewing"] = shape is not None
     wild = shape if shape is not None else ch.wild_shape

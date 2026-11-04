@@ -49,7 +49,7 @@
       <tr>
         <td class="note">{{ r.created_at | clock(date=True) }}</td>
         <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
-        <td class="note">{{ {"entity": "description", "conversation": "Add Session check", "notes": "draft from notes", "transcript": "draft from a recording", "account": "draft from a written account"}.get(r.source, r.source) }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
+        <td class="note">{{ {"entity": "description", "conversation": "Add Session check", "notes": "draft from notes", "transcript": "draft from a recording", "account": "draft from a written account", "picture": "pictures drawn (OpenAI, estimated)"}.get(r.source, r.source) }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
         <td class="note num">{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}</td>
         <td class="num">{% if r.cost_usd and r.cost_usd < 0.005 %}&lt;1¢{% else %}${{ "%.2f" | format(r.cost_usd or 0) }}{% endif %}</td>
       </tr>

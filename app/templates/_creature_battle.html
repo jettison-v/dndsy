@@ -6,7 +6,9 @@
 {% set k = creature %}{% set sync_of = (s.sync or {}).get("creature:" ~ k.id) %}
 <div class="battlebar">
   <div class="ws-form cr-band">
-    {% if k.picture %}<img class="ws-pic" src="{{ k.picture }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+    {% if can_picture %}{# its picture: pressing it opens the one Picture window (app/picture_window.py) #}
+    <button type="button" class="ws-pic-btn" data-modal-url="/pictures?for=creature:{{ c.id }}:{{ k.id }}" aria-label="{{ 'Change' if k.own_picture else 'Add' }} {{ k.name }}'s picture" title="{{ 'Change' if k.own_picture else 'Add' }} its picture">{% if k.picture %}<img class="ws-pic" src="{{ k.picture }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% else %}<span class="pic-slot">+ Picture</span>{% endif %}</button>
+    {% elif k.picture %}<img class="ws-pic" src="{{ k.picture }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
     <div class="ws-form-main"><b>{{ c.name }}'s {{ k.name }}</b> <span class="note">{{ k.group }}{% if k.made %} · {{ k.made }}{% endif %}{% if k.size %} · {{ k.size }}{% endif %}{% if k.cr %} · CR {{ k.cr }}{% endif %}</span>
       <span class="note ws-form-note">{{ k.turn }}</span></div>
     <div class="ws-form-acts">{% if k.cast %}{# A familiar in play (app/companions.py; Creatures as Characters board 3): where it is, and what its master can do #}

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Where pictures are kept</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">4 · Where it's kept · Brett chose all three (Nov 4)</div>
+    <h1>One kind of picture, one place, one rule for who</h1>
+    <p class="where">Built on what askdnd already does for a World entry's picture (resized to WebP, with a square version; camera details like location removed), so nothing new to keep safe or back up.</p>
+  </div>
+  <div class="grid2" style="gap: 20px">
+    <div class="store ours">
+      <h3>What's kept for each picture</h3>
+      <ul>
+        <li><b>The file</b>: up to 1200 px, and a 320 px square for round places (Party, the fight band, Table rolls)</li>
+        <li><b>Where it lives</b>: askdnd's file storage, as today: S3 under v2/files/, by campaign; backed up nightly with the database's list of files</li>
+        <li><b>Where it came from</b>: uploaded, drawn from a description (with its words and the style it was drawn in), or a link to D&amp;D Beyond's art</li>
+        <li><b>Whose it is</b>: a World entry (a person, place, faction, map) or a creature on a character's sheet; a companion's is its World entry's</li>
+        <li><b>Who added it, and when</b>, in the campaign's History, with Restore</li>
+      </ul>
+    </div>
+    <div class="store ddb">
+      <h3>Who may change it</h3>
+      <ul>
+        <li><b>A World entry's</b>: the DM, reviewers and admins (as today)</li>
+        <li><b>A familiar's or companion's</b>: its master's player and the DM</li>
+        <li><b>The campaign's art style</b>: the DM and admins</li>
+        <li><b>Drawing from a description</b>: the same people, while the campaign has it on and the monthly limit (Manage › Usage) has room</li>
+      </ul>
+      <p class="note">Everyone at the table sees every picture, like the rest of the World.</p>
+    </div>
+  </div>
+  <div style="display: grid; gap: 8px">
+    <h2 class="sec">Decided</h2>
+    <div class="grid3" style="gap: 16px">
+      <div class="opt rec"><div class="row"><h3>Who draws them</h3><span class="tagg" style="color: var(--teal); border-color: var(--teal)">Chosen: OpenAI</span></div><ul><li><b>OpenAI's GPT Image</b>: follows a description closely and gives the most alike results run to run; takes up to 16 pictures to match</li><li><b>Google's Gemini image</b>: as good at keeping one character the same, up to 14 pictures to match</li><li>Either needs its own key (scripts/set-secret.sh), on the stack map; Claude doesn't draw pictures</li></ul></div>
+      <div class="opt rec"><div class="row"><h3>How many per press</h3><span class="tagg" style="color: var(--teal); border-color: var(--teal)">Chosen: four</span></div><ul><li>Four to pick from costs four times one, still a few cents</li><li>One is cheaper but more often needs another press</li></ul></div>
+      <div class="opt rec"><div class="row"><h3>Players drawing</h3><span class="tagg" style="color: var(--teal); border-color: var(--teal)">Chosen: yes</span></div><ul><li>A player draws their own familiar's picture; the DM can switch Describe it off for the campaign</li><li>Or the DM only, with players uploading</li></ul></div>
+    </div>
+  </div>
+  <p class="note">Order of work: the one window with Upload and From D&amp;D Beyond first (familiars and World entries; no new service), then Describe it and the art style once you've picked who draws them and added its key.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

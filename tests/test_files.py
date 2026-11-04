@@ -107,7 +107,7 @@ def test_an_uploaded_picture_is_stored_and_served_through_askdnd(people, db, fil
     import_bundle(db, BUNDLE)
     dm, player = people["dm"], people["player"]
     k = entity(db, "Kieran")
-    dm.post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
+    dm.post("/pictures/upload", data={"for": f"entity:{k.id}"}, files={"file": ("k.png", png(), "image/png")}, headers=HX)
     pic = db.scalar(select(EntityPicture))
     assert pic.file_key.startswith(f"{k.campaign_id}/") and pic.thumb_key.endswith(".webp")
     assert file_store.get(pic.file_key) and file_store.get(pic.thumb_key)
@@ -156,8 +156,8 @@ def test_without_storage_a_picture_is_refused_not_lost(people, db, monkeypatch):
     monkeypatch.setattr(files, "storage", lambda: None)
     import_bundle(db, BUNDLE)
     k = entity(db, "Kieran")
-    r = people["dm"].post(f"/campaign/{k.id}/picture", files={"file": ("k.png", png(), "image/png")}, headers=HX)
-    assert "file storage isn't set up" in r.headers["HX-Trigger"] and db.scalar(select(EntityPicture)) is None
+    r = people["dm"].post("/pictures/upload", data={"for": f"entity:{k.id}"}, files={"file": ("k.png", png(), "image/png")}, headers=HX)
+    assert r.status_code == 409 and "file storage isn't set up" in r.json()["detail"] and db.scalar(select(EntityPicture)) is None
 
 
 def test_note_images_go_to_storage_and_still_reach_claude(db, file_store):

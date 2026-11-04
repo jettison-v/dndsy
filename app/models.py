@@ -98,6 +98,9 @@ class Campaign(Timestamped, Base):
     slug: Mapped[str] = mapped_column(String(100), unique=True)
     dm_name: Mapped[str] = mapped_column(String(200), default="", server_default="")
     ddb_campaign_id: Mapped[str | None] = mapped_column(String(40))  # the matching campaign on D&D Beyond, if known
+    # Its art style for pictures drawn from a description (app/drawing.py; Brett, 2026-11-04): {"words": "...",
+    # "refs": [picture ids to match, up to 4], "off": true when its DM switched Describe it off}
+    art_style: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # Features and Labs switched on here (app/vtt.py: feature keys and "labs"); a test campaign switches nothing on by itself
     is_test: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     vtt_pieces: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
@@ -189,15 +192,24 @@ class StoredFile(Base):
 
 
 class EntityPicture(Timestamped, Base):
-    """A picture on an entity page (portrait, map, banner), added by the DM or a reviewer, resized by
-    app/pictures.py. The files are in file storage (app/files.py)."""
+    """A picture in askdnd (app/pictures.py; Brett, 2026-11-04, docs/mockups/pictures/: one kind of picture, one place):
+    a World entry's (portrait, map, banner) or one of a character's creatures' (`character_id` and `creature`: a
+    familiar's is "familiar", one picture across its forms; another creature's its D&D Beyond id). Uploaded or drawn
+    from a description, its files are in file storage (app/files.py), resized; D&D Beyond's art is only a `link`."""
 
     __tablename__ = "entity_pictures"
+    __table_args__ = (UniqueConstraint("character_id", "creature", name="uq_entity_pictures_creature"),)
     id: Mapped[int] = mapped_column(primary_key=True)
-    entity_id: Mapped[int] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True)
+    entity_id: Mapped[int | None] = mapped_column(ForeignKey("entities.id", ondelete="CASCADE"), unique=True, nullable=True)
+    character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True, nullable=True)
+    creature: Mapped[str | None] = mapped_column(String(40), nullable=True)
     content_type: Mapped[str] = mapped_column(String(100), default="image/webp", server_default="image/webp")
-    file_key: Mapped[str] = mapped_column(ForeignKey("stored_files.key"), index=True)  # up to 1200 px
-    thumb_key: Mapped[str] = mapped_column(ForeignKey("stored_files.key"), index=True)  # 320 px square crop
+    file_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # up to 1200 px
+    thumb_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), index=True, nullable=True)  # 320 px square crop
+    source: Mapped[str] = mapped_column(String(20), default="upload", server_default="upload")  # upload | drawn | ddb
+    words: Mapped[str] = mapped_column(Text, default="", server_default="")  # drawn: what it was asked to draw
+    style: Mapped[str] = mapped_column(Text, default="", server_default="")  # drawn: the campaign's art style then
+    link: Mapped[str] = mapped_column(String(500), default="", server_default="")  # ddb: D&D Beyond's art, never copied
     added_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
 
 

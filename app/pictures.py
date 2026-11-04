@@ -1,21 +1,24 @@
-"""Pictures for people, places, factions and everything else in the campaign record.
-
-The DM, reviewers and admins add them from an entity page. Uploads are checked,
-resized and re-encoded with Pillow (which also strips camera metadata such as
-GPS), then kept in file storage (app/files.py): one picture per entity, up to
-1200 px plus a square thumbnail. Player characters without an uploaded picture
-use their D&D Beyond portrait.
+"""Pictures in askdnd (Brett, 2026-11-04, docs/mockups/pictures/: one Picture window wherever a picture goes, one kind
+of picture, one place): a World entry's (a person, place, faction, map) and one of a character's creatures' (a familiar
+keeps one picture across its forms). Added in the one window (app/picture_window.py) by uploading, drawing from a
+description (app/drawing.py) or taking D&D Beyond's art (a link, never copied). Uploads and drawings are checked,
+resized and re-encoded with Pillow (which also strips camera metadata such as GPS), then kept in file storage
+(app/files.py): up to 1200 px plus a square thumbnail. Whoever can change the thing can change its picture: the DM,
+reviewers and admins for the World; a creature's master's player and the DM. Player characters keep their D&D Beyond
+portrait.
 """
 
 import io
 import warnings
 
 from PIL import Image, ImageOps, UnidentifiedImageError
+from dataclasses import dataclass
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
 
 from app import access, files
-from app.models import CampaignCharacter, Entity, EntityPicture
+from app.models import CampaignCharacter, Character, Entity, EntityPicture
 
 MAX_UPLOAD = 15 * 1024 * 1024
 FULL_SIZE, THUMB_SIZE = 1200, 320
@@ -58,18 +61,100 @@ def process(raw: bytes) -> tuple[bytes, bytes]:
     return webp(full), webp(thumb)
 
 
-def save(db: Session, entity: Entity, raw: bytes, user: dict) -> EntityPicture:
-    full, thumb = process(raw)
+@dataclass
+class Owner:
+    """What a picture belongs to, as the Picture window names it (`ref`): "entity:<id>" or "creature:<character>:<id>"."""
+    ref: str
+    campaign_id: int | None
+    name: str  # "Pip's picture"
+    words: str  # what Describe it starts from
+    ddb_art: str = ""  # D&D Beyond's art for it, if it has some
+    entity: Entity | None = None
+    character: Character | None = None
+    creature: str | None = None  # "familiar", or a creature's D&D Beyond id
+
+
+def owner(db: Session, ref: str, user: dict | None) -> Owner | None:
+    """The thing `ref` names, if it exists and this person may change its picture; else None."""
+    from app import characters as chars
+    from app import creatures, hit_points
+
+    kind, _, rest = (ref or "").partition(":")
+    if kind == "entity" and rest.isdigit():
+        e = db.get(Entity, int(rest))
+        email = (user or {}).get("email")
+        if e is None or not can_manage(user) or (access.level(email) != access.ADMIN and access.current_campaign_id(email) != e.campaign_id):
+            return None
+        return Owner(ref, e.campaign_id, e.name, (f"{e.name}: {e.summary}" if e.summary else e.name)[:600], entity=e)
+    if kind == "creature":
+        cid, _, crid = rest.partition(":")
+        ch = db.get(Character, int(cid)) if cid.isdigit() else None
+        if ch is None or not hit_points.can_apply(db, user, ch):
+            return None
+        c = next((x for x in creatures.yours(chars.character_summary(ch)) if str(x["id"]) == crid), None)
+        if c is None:
+            return None
+        k = creatures.placed(ch, creatures.card(chars.character_summary(ch), c), c)
+        what = f"a {k['made'].lower()} {k['kind'].lower()}" if k["made"] else f"a {k['kind'].lower()}"
+        return Owner(ref, ch.campaign_id, f"{k['name']}'s picture", f"{k['name']}, {ch.name}'s {k['role']}: {what}",
+                     ddb_art=c.get("picture") or "", character=ch, creature=creature_key(c))
+    return None
+
+
+def creature_key(c: dict) -> str:
+    """A familiar keeps one picture across its forms; another creature has its own."""
+    from app.creatures import FAMILIAR
+
+    return "familiar" if c.get("group_id") == FAMILIAR else str(c["id"])
+
+
+def find(db: Session, o: Owner) -> EntityPicture | None:
+    if o.entity is not None:
+        return db.scalar(select(EntityPicture).where(EntityPicture.entity_id == o.entity.id))
+    return db.scalar(select(EntityPicture).where(EntityPicture.character_id == o.character.id, EntityPicture.creature == o.creature))
+
+
+def _row(db: Session, o: Owner, user: dict) -> EntityPicture:
+    pic = find(db, o)
+    if pic is None:
+        pic = EntityPicture(entity_id=o.entity.id if o.entity is not None else None,
+                            character_id=o.character.id if o.character is not None else None, creature=o.creature)
+        db.add(pic)
+    pic.added_by = (user.get("email") or "")[:320]
+    return pic
+
+
+def keep(db: Session, campaign_id: int | None, full: bytes, thumb: bytes) -> tuple[str, str]:
+    """Both sizes into file storage: their keys."""
     try:
-        file_key = files.put(db, entity.campaign_id, full, "image/webp")
-        thumb_key = files.put(db, entity.campaign_id, thumb, "image/webp")
+        return files.put(db, campaign_id, full, "image/webp"), files.put(db, campaign_id, thumb, "image/webp")
     except files.StorageNotReady:
         raise PictureError("askdnd can't keep pictures right now (its file storage isn't set up).") from None
-    pic = db.scalar(select(EntityPicture).where(EntityPicture.entity_id == entity.id))
-    if pic is None:
-        pic = EntityPicture(entity_id=entity.id)
-        db.add(pic)
-    pic.file_key, pic.thumb_key, pic.content_type, pic.added_by = file_key, thumb_key, "image/webp", (user.get("email") or "")[:320]
+
+
+def save(db: Session, o: Owner, raw: bytes, user: dict) -> EntityPicture:
+    """An uploaded picture, checked and resized."""
+    full, thumb = process(raw)
+    file_key, thumb_key = keep(db, o.campaign_id, full, thumb)
+    pic = _row(db, o, user)
+    pic.file_key, pic.thumb_key, pic.content_type, pic.source, pic.words, pic.style, pic.link = file_key, thumb_key, "image/webp", "upload", "", "", ""
+    return pic
+
+
+def use_drawn(db: Session, o: Owner, file_key: str, thumb_key: str, words: str, style: str, user: dict) -> EntityPicture:
+    """One of the pictures drawn from a description (already in file storage, app/drawing.py)."""
+    pic = _row(db, o, user)
+    pic.file_key, pic.thumb_key, pic.content_type, pic.source, pic.words, pic.style, pic.link = file_key, thumb_key, "image/webp", "drawn", words[:2000], style[:2000], ""
+    return pic
+
+
+def use_link(db: Session, o: Owner, user: dict) -> EntityPicture:
+    """D&D Beyond's art for it: shown from D&D Beyond, never copied."""
+    if not o.ddb_art:
+        raise PictureError("D&D Beyond has no art for this.")
+    pic = _row(db, o, user)
+    pic.file_key = pic.thumb_key = None
+    pic.source, pic.link, pic.words, pic.style = "ddb", o.ddb_art[:500], "", ""
     return pic
 
 
@@ -81,10 +166,27 @@ def serve(db: Session, pic: EntityPicture, size: str = "full"):
     return files.serve(pic.file_key, pic.content_type, release=db)
 
 
-def remove(db: Session, entity: Entity) -> None:
-    pic = db.scalar(select(EntityPicture).where(EntityPicture.entity_id == entity.id))
+def remove(db: Session, o: Owner) -> None:
+    pic = find(db, o)
     if pic:
         db.delete(pic)
+
+
+def _urls(p: EntityPicture, base: str) -> dict:
+    if p.source == "ddb" or not p.file_key:
+        return {"thumb": p.link, "full": ddb_full(p.link), "uploaded": True, "source": "ddb"}
+    # ?v= changes with the picture, so the browser keeps each copy for good (files.CACHE_FOREVER)
+    return {"thumb": f"{base}?size=thumb&v={files.version(p.thumb_key)}", "full": f"{base}?v={files.version(p.file_key)}",
+            "uploaded": True, "source": p.source}
+
+
+def creature_urls(db: Session, character_ids) -> dict[tuple[int, str], dict]:
+    """{(character id, creature key): {"thumb", "full", "source"}} for the characters' creatures that have a picture."""
+    ids = set(character_ids)
+    if not ids:
+        return {}
+    return {(p.character_id, p.creature): _urls(p, f"/characters/{p.character_id}/creatures/{p.creature}/picture")
+            for p in db.scalars(select(EntityPicture).where(EntityPicture.character_id.in_(ids)))}
 
 
 def ddb_full(url: str) -> str:
@@ -104,10 +206,7 @@ def urls(db: Session, entity_ids) -> dict[int, dict]:
         if portrait:
             out[m.entity_id] = {"thumb": portrait, "full": ddb_full(portrait), "uploaded": False}
     pics = db.scalars(select(EntityPicture).where(EntityPicture.entity_id.in_(ids))
-                      .options(load_only(EntityPicture.entity_id, EntityPicture.file_key, EntityPicture.thumb_key)))
+                      .options(load_only(EntityPicture.entity_id, EntityPicture.file_key, EntityPicture.thumb_key, EntityPicture.source, EntityPicture.link)))
     for p in pics:
-        # ?v= changes with the picture, so the browser keeps each copy for good (files.CACHE_FOREVER)
-        base = f"/campaign/{p.entity_id}/picture"
-        out[p.entity_id] = {"thumb": f"{base}?size=thumb&v={files.version(p.thumb_key)}",
-                            "full": f"{base}?v={files.version(p.file_key)}", "uploaded": True}
+        out[p.entity_id] = _urls(p, f"/campaign/{p.entity_id}/picture")
     return out

@@ -114,7 +114,7 @@ td { min-width: 0; }
 
   <figure>
     <div class="frame">
-      <svg viewBox="0 0 1120 520" role="img" aria-label="askdnd's pieces and how they connect. Code goes from Claude Code on Brett's Mac to GitHub, where checks run and then Railway deploys the website. The table reaches the website through Cloudflare. The website uses Postgres, Sentry, Anthropic, Google, D&amp;D Beyond and S3. A nightly backup copies Postgres to S3, and the newest backup becomes the local test copy.">
+      <svg viewBox="0 0 1120 520" role="img" aria-label="askdnd's pieces and how they connect. Code goes from Claude Code on Brett's Mac to GitHub, where checks run and then Railway deploys the website. The table reaches the website through Cloudflare. The website uses Postgres, Sentry, Anthropic, OpenAI (drawn pictures), Google, D&amp;D Beyond and S3. A nightly backup copies Postgres to S3, and the newest backup becomes the local test copy.">
         <defs>
           <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path class="tip" d="M0 0 L10 5 L0 10 z"/>
@@ -217,7 +217,7 @@ td { min-width: 0; }
         <g class="bx both"><rect x="900" y="60" width="200" height="44" rx="6"/>
           <text class="bt" x="912" y="78">Sentry</text><text class="bs" x="912" y="94">emails Brett; Claude reads</text></g>
         <g class="bx brett"><rect x="900" y="124" width="200" height="44" rx="6"/>
-          <text class="bt" x="912" y="142">Anthropic</text><text class="bs" x="912" y="158">Claude: recaps, answers</text></g>
+          <text class="bt" x="912" y="142">Anthropic</text><text class="bs" x="912" y="158">Claude; OpenAI draws pictures</text></g>
         <g class="bx brett"><rect x="900" y="188" width="200" height="44" rx="6"/>
           <text class="bt" x="912" y="206">Google</text><text class="bs" x="912" y="222">sign-in, the campaign doc</text></g>
         <g class="bx out"><rect x="900" y="252" width="200" height="44" rx="6"/>
@@ -245,7 +245,7 @@ td { min-width: 0; }
     </div>
     <figure>
       <div class="frame">
-        <svg viewBox="0 0 1140 540" role="img" aria-label="Where askdnd's data lives. Raw transcripts stay on Brett's Mac; only filtered game text reaches the private Postgres database on Railway, which holds the story, characters, notes, rolls and history, with pictures in S3 and a nightly backup in S3. D&amp;D Beyond, Anthropic, Sentry and Google are outside services. The public GitHub repository holds code, docs and openly licensed SRD data, and test copies of character sheets that include rulebook text, which needs fixing.">
+        <svg viewBox="0 0 1140 540" role="img" aria-label="Where askdnd's data lives. Raw transcripts stay on Brett's Mac; only filtered game text reaches the private Postgres database on Railway, which holds the story, characters, notes, rolls and history, with pictures in S3 and a nightly backup in S3. D&amp;D Beyond, Anthropic, OpenAI (drawn pictures: only a picture's words and the campaign's art style), Sentry and Google are outside services. The public GitHub repository holds code, docs and openly licensed SRD data, and test copies of character sheets that include rulebook text, which needs fixing.">
           <rect class="reg" x="16" y="40" width="250" height="476" rx="10"/><text class="rl" x="30" y="58">ONLY ON BRETT'S MAC</text>
           <rect class="reg" x="300" y="40" width="300" height="476" rx="10"/><text class="rl" x="314" y="58">PRIVATE · RAILWAY AND S3</text>
           <rect class="reg" x="636" y="40" width="228" height="352" rx="10"/><text class="rl" x="650" y="58">OUTSIDE SERVICES</text>
@@ -369,6 +369,7 @@ td { min-width: 0; }
             <tr><td>AWS</td><td>Two narrow keys: <code>askdnd-v2-files</code> (website: read and write <code>v2/files/</code>) and <code>askdnd-v2-backups</code> (backup: <code>v2/backups/</code>, tidying <code>v2/files/</code>).</td><td>Rotating a key, or a new kind of storage.</td></tr>
             <tr><td>Google Cloud</td><td>The sign-in client and its secret; the test-user list (Testing mode until launch).</td><td>Adding a player: here <em>and</em> on Manage › Accounts.</td></tr>
             <tr><td>Anthropic Console</td><td>The API key and the prepaid balance (auto-reload off).</td><td>Topping up. askdnd's own limit is on Manage › Usage.</td></tr>
+            <tr><td>OpenAI Platform</td><td>The <code>askdnd-v2</code> API key (its own, not the legacy app's) for pictures drawn from a description, and OpenAI's own monthly budget.</td><td>Making or replacing the key; a budget; verifying the organization if image models ask for it. askdnd's own limit (Manage › Usage) counts drawn pictures too.</td></tr>
             <tr><td>GitHub, Railway</td><td>Your accounts and the CLI logins Claude borrows.</td><td>If a login expires.</td></tr>
             <tr><td>Chrome Web Store</td><td>The developer account (brett.cupta@gmail.com, publisher askdnd) and the askdnd bridge's listing, unlisted.</td><td>Publishing an update; sharing its link with the table.</td></tr>
             <tr><td>Mac Mini (test seats)</td><td>Copies of three test Chrome profiles in <code>~/askdnd-tests</code>, signed in to D&amp;D Beyond and beta. No keys in the repo; your personal account is never a seat. Every night at 4:00 a launchd job (<code>ai.askdnd.live-test</code>) runs part 1 of the live test there and sends any miss to Sentry.</td><td>Signing a seat in again if it expires. Claude runs the tests, writes the job and copies its scripts there.</td></tr>
@@ -393,6 +394,7 @@ td { min-width: 0; }
         <tr><td><code>AWS_ACCESS_KEY_ID</code>, <code>_SECRET_ACCESS_KEY</code></td><td>website and backup, each its own user</td><td>AWS › IAM › Users › Security credentials</td><td>Brett</td></tr>
         <tr><td><code>SENTRY_DSN</code></td><td>website and backup (Railway), and the Mac Mini's nightly live test (<code>~/askdnd-tests/.env</code>, through <code>scripts/set-secret.sh --mini</code>); never your Mac's <code>.env</code></td><td>Sentry › askdnd-v2 › Client Keys</td><td>Brett made it; Claude copied it to the Mini</td></tr>
         <tr><td><code>SESSION_SECRET</code>, <code>UPLOAD_TOKEN</code></td><td>website (the token also in your <code>.env</code> for the Processor)</td><td>Random, generated on the Mac</td><td>Either</td></tr>
+        <tr><td><code>OPENAI_API_KEY</code></td><td>website (Railway) and your <code>.env</code>: the Picture window's Describe it (app/drawing.py)</td><td>OpenAI Platform › API keys (<code>askdnd-v2</code>)</td><td>Brett, with <code>scripts/set-secret.sh --clipboard</code></td></tr>
         <tr><td><code>FEEDBACK_KEY</code></td><td>website, and your <code>.env</code> for Claude's <code>scripts/feedback.py</code> (the feedback queue)</td><td>Random, generated on the Mac</td><td>Brett, with <code>scripts/set-secret.sh</code></td></tr>
         <tr><td><code>DATABASE_URL</code></td><td>website and backup</td><td>A Railway reference to Postgres, never copied</td><td>Automatic</td></tr>
       </tbody>
@@ -418,5 +420,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-03 (FEEDBACK_KEY, Claude's key to the feedback queue).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-04 (OpenAI: OPENAI_API_KEY, for pictures drawn from a description).</p>
 </main>

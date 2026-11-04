@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Picture window</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">2 · The Picture window · try it</div>
+    <h1>Upload, describe it, or take D&amp;D Beyond's</h1>
+    <p class="where"><b>Where you'll find it:</b> pressing any picture, or an empty slot, wherever you can change that thing. Here: Pip, Trah's familiar, from its half of Trah's Party card. Switch between the three ways; Describe it draws four to pick from.</p>
+  </div>
+  <div class="grid2" style="grid-template-columns: 760px minmax(0, 1fr); gap: 28px">
+    <div class="modal" style="height: 690px">
+      <div class="mhead"><h3>Pip's picture</h3><button type="button" class="btn mini" aria-label="Close">✕</button></div>
+      <div class="mtabs" role="tablist" aria-label="How to add it">
+        <button type="button" role="tab" class="{{ upCls }}" aria-selected="{{ isUp }}" onClick="{{ pickUp }}">Upload</button>
+        <button type="button" role="tab" class="{{ descCls }}" aria-selected="{{ isDesc }}" onClick="{{ pickDesc }}">Describe it</button>
+        <button type="button" role="tab" class="{{ ddbCls }}" aria-selected="{{ isDdb }}" onClick="{{ pickDdb }}">From D&amp;D Beyond</button>
+      </div>
+      <div class="mbody">
+        <sc-if value="{{ isUp }}" hint-placeholder-val="{{ true }}">
+          <div style="display: grid; gap: 12px">
+            <div class="drop"><b>Drop a picture here, or paste one</b><span>PNG, JPEG, WebP or HEIC, up to 15 MB</span><button type="button" class="btn">Choose a file</button><span class="note">On a phone: the camera roll</span></div>
+            <div class="row start" style="gap: 18px; align-items: center">
+              <div class="crop"><span class="art a3 sq" style="position: absolute; inset: 0; font-size: 40px; border-radius: 0">P</span><span class="ring" aria-hidden="true"></span></div>
+              <div style="display: grid; gap: 6px"><b style="color: var(--strong)">The round version</b><span class="note">Drag to move it, pinch or scroll to size it. The full picture is kept too, for its World entry.</span></div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isDesc }}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; gap: 12px">
+            <label class="field">What it looks like<textarea class="ta" aria-label="What it looks like">A small owl with silver-tipped feathers and pale, starlit eyes; Trah's familiar, a Celestial spirit.</textarea></label>
+            <div class="row start wrap" style="gap: 8px"><span class="stylechip"><span class="art a2 sq" style="width: 18px; height: 18px; font-size: 0"></span>Campaign style: ink and muted watercolour</span><button type="button" class="btn mini">Change for this one</button></div>
+            <div class="row start" style="gap: 10px"><button type="button" class="btn main" onClick="{{ draw }}">Draw four</button><span class="note">A few cents each · counts toward Manage › Usage, under its monthly limit</span></div>
+            <sc-if value="{{ drawn }}" hint-placeholder-val="{{ false }}">
+              <div class="choices">
+                <sc-for list="{{ options }}" as="o" hint-placeholder-count="4">
+                  <button type="button" class="{{ o.cls }}" aria-pressed="{{ o.on }}" onClick="{{ o.pick }}"><span class="{{ o.art }}" style="width: 120px; height: 120px; font-size: 32px">P</span><span class="note">{{ o.label }}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isDdb }}" hint-placeholder-val="{{ false }}">
+          <div class="row start" style="gap: 18px; align-items: center">
+            <span class="art a4 sq" style="width: 180px; height: 180px; font-size: 40px">O</span>
+            <div style="display: grid; gap: 6px; max-width: 380px"><b style="color: var(--strong)">The Owl's art on D&amp;D Beyond</b><span class="note">Shown from D&amp;D Beyond, as a creature's token art is today: askdnd keeps a link, never a copy. Every Owl looks the same this way.</span></div>
+          </div>
+        </sc-if>
+      </div>
+      <div class="mfoot"><button type="button" class="btn quiet">Remove picture</button><span class="sp"></span><button type="button" class="btn quiet">Cancel</button><button type="button" class="btn main">Use this picture</button></div>
+    </div>
+    <div style="display: grid; gap: 14px; align-content: start">
+      <div class="card"><h3>The same for everything</h3><p class="note">A World entry's picture opens this window with its own name (The Black Tower's picture), a map's with a wider crop. Only who may change it differs (board 4).</p></div>
+      <div class="card"><h3>Describe it starts from what askdnd knows</h3><p class="note">The words are filled from the thing itself (a familiar's form and kind, an entry's description) and yours to change. The campaign's style is added by itself (board 3), so pictures look like one campaign.</p></div>
+      <div class="card"><h3>After it's chosen</h3><p class="note">A corner card says it's done, with Undo, and every page showing it updates at once. A drawn picture keeps its words, so it can be drawn again later, in a new style.</p></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  state = { tab: 'desc', drawn: false, picked: 1 };
+  renderVals() {
+    const s = this.state, t = (x) => () => this.setState({ tab: x });
+    const arts = ['art a1 sq', 'art a2 sq', 'art a3 sq', 'art a4 sq'];
+    return {
+      isUp: s.tab === 'up', isDesc: s.tab === 'desc', isDdb: s.tab === 'ddb',
+      upCls: s.tab === 'up' ? 'on' : '', descCls: s.tab === 'desc' ? 'on' : '', ddbCls: s.tab === 'ddb' ? 'on' : '',
+      pickUp: t('up'), pickDesc: t('desc'), pickDdb: t('ddb'),
+      draw: () => this.setState({ drawn: true }), drawn: s.drawn,
+      options: arts.map((a, i) => ({ art: a, label: i === s.picked ? 'Chosen' : 'Option ' + (i + 1), on: i === s.picked,
+        cls: i === s.picked ? 'choice on' : 'choice', pick: () => this.setState({ picked: i }) })),
+    };
+  }
+}
+</script>
+</body>
+</html>

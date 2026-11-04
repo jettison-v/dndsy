@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The campaign's art style</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">3 · The campaign's art style</div>
+    <h1>One style per campaign, so its pictures belong together</h1>
+    <p class="where"><b>Where you'll find it:</b> Manage › Settings › <b>Art style</b>, the DM's or an admin's. Every picture drawn from a description in this campaign gets it: a few words, plus up to four of the campaign's own pictures to match. Uploads stay as they are.</p>
+  </div>
+  <div class="grid2" style="grid-template-columns: 780px minmax(0, 1fr); gap: 28px">
+    <div class="card" style="gap: 14px; padding: 18px 20px">
+      <div class="row"><h3 style="font-size: 18px">Art style</h3><span class="tagg">VTT test</span></div>
+      <label class="field">In a few words<textarea class="ta" aria-label="The art style in a few words">Ink and muted watercolour, like an old field guide; soft light, plain backgrounds, no text in the picture.</textarea></label>
+      <div style="display: grid; gap: 8px">
+        <span class="lbl">Pictures to match · up to 4, from this campaign's own</span>
+        <div class="row start" style="gap: 10px">
+          <span class="art a2 sq" style="width: 84px; height: 84px">T</span>
+          <span class="art a1 sq" style="width: 84px; height: 84px">M</span>
+          <span class="slot sq" style="width: 84px; height: 84px">+ Pick one</span>
+          <span class="slot sq" style="width: 84px; height: 84px">+ Pick one</span>
+        </div>
+        <span class="note">Picked from the campaign's pictures (World entries, familiars), never uploaded just for this.</span>
+      </div>
+      <div style="display: grid; gap: 8px">
+        <span class="lbl">Try it</span>
+        <div class="row start" style="gap: 10px; align-items: center"><input class="ta" style="min-height: 0; height: 38px; flex: 1" value="An old dwarven bridge over a river at dusk" aria-label="Something to draw as a try"><button type="button" class="btn">Draw a try</button></div>
+        <div class="row start" style="gap: 10px"><span class="art a4 sq" style="width: 120px; height: 120px">B</span><span class="note" style="max-width: 300px">A try isn't kept. It counts toward Usage like any picture.</span></div>
+      </div>
+      <div class="row" style="border-top: 1px solid var(--line); padding-top: 12px"><span class="note">Saved for this campaign; pictures already drawn keep their look</span><button type="button" class="btn main">Save</button></div>
+    </div>
+    <div style="display: grid; gap: 14px; align-content: start">
+      <div class="card"><h3>What's sent to draw a picture</h3><p class="note">The words for that picture, the style's words and its pictures to match. Never a transcript, notes or anything else of the campaign.</p></div>
+      <div class="card"><h3>A new style later</h3><p class="note">Pictures drawn before keep their look. Each keeps its own words, so a DM who changes the style can redraw one (or all of them) in the new one, and pick again.</p></div>
+      <div class="card"><h3>Off for a campaign</h3><p class="note">With no style saved, Describe it still works with a plain default style; the DM can switch Describe it off for the campaign, leaving Upload and D&amp;D Beyond.</p></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
