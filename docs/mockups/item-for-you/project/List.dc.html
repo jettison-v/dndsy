@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>For Cole in the list: A or B</title>
+<title>For Cole in the list: an icon</title>
 <script src="./support.js"></script>
 <link rel="stylesheet" href="./askdnd.css">
 </head>
@@ -14,54 +14,49 @@
 body{margin:0}
 .opt{display:grid;gap:10px;align-content:start}
 .opt h2{margin:0;color:var(--strong);font:600 20px/1.2 var(--serif)}
-.lr{display:grid;grid-template-columns:minmax(0,1fr) 92px 78px 34px;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px}
+.lr{display:grid;grid-template-columns:22px minmax(0,1fr) 92px 78px 34px;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);font-size:13px}
 .lr.h{color:var(--faint);font:700 11px/1 var(--cond);letter-spacing:.08em;text-transform:uppercase}
 .lr b{color:var(--strong);font-weight:600}
-.fit{font-size:11px;font-weight:600;white-space:nowrap}
-.fit.ok{color:var(--green)}
-.fit.warn{color:var(--amber)}
-.fit.chg{color:var(--blue)}
-.chip{font-size:12px;border:1px solid var(--line-strong);border-radius:999px;padding:3px 10px;color:var(--text);background:var(--surface)}
-.chip.on{border-color:var(--blue);background:rgba(126,166,224,.15);color:var(--strong)}
+.use{width:20px;height:20px;display:grid;place-items:center;border-radius:50%}
+.use.ok{color:var(--green)}
+.use.warn{color:var(--amber)}
+.use.no{color:var(--muted)}
+.key{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--muted)}
+.key span{display:inline-flex;align-items:center;gap:6px}
+.tip{border:1px solid var(--line-strong);background:var(--surface);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text);max-width:300px;box-shadow:0 8px 20px rgba(0,0,0,.4)}
 </style>
 </helmet>
 <div class="board" style="width: 1360px; height: 960px">
   <div class="head">
-    <div class="num">2 · In the list too? · your call</div>
-    <h1>Option A keeps the list as it is; Option B adds a word per row and a filter</h1>
-    <p class="where"><b>Both have</b> For Cole in the details (board 1). <b>A</b> leaves the list alone: you click an item to see what it means for Cole. <b>B</b> adds a short word on each row (Trained, Not trained, Attune 3 of 3) and a filter, <b>Cole can use it</b>, under Kind and Rarity. B is faster to scan; A keeps the list calmer and the same for everyone.</p>
+    <div class="num">2 · In the list · chosen: A, with an icon (Brett)</div>
+    <h1>The list stays as it is, with one icon per row: can Cole use it?</h1>
+    <p class="where"><b>Brett, Nov 3:</b> "A, details only, but it should have some sort of iconography for the ability to use it or not." Each row starts with an icon; hovering it (or tapping, on a phone) says why in a few words; the details say it all (board 1). No filter, no words in the row. Items with nothing to say for Cole (rope, a potion) get no icon.</p>
   </div>
   <div class="grid2" style="gap: 28px">
     <div class="opt">
-      <h2>A · The list as it is</h2>
+      <h2>The list, for Cole</h2>
       <div class="ib" style="grid-template-rows: auto auto">
-        <div class="lr h"><span>Item</span><span>Rarity</span><span>Cost</span><span></span></div>
+        <div class="lr h"><span></span><span>Item</span><span>Rarity</span><span>Cost</span><span></span></div>
         <div style="display: grid">
-          <div class="lr"><span><b>Chain Mail</b><br><span class="note">Heavy armor</span></span><span class="rar mundane">Not magic</span><span>75 gp</span><button type="button" class="plus" aria-label="Add Chain Mail">+</button></div>
-          <div class="lr"><span><b>Cloak of Protection</b><br><span class="note">Wondrous item · attunement</span></span><span class="rar uncommon">Uncommon</span><span class="note">—</span><button type="button" class="plus" aria-label="Add Cloak of Protection">+</button></div>
-          <div class="lr"><span><b>Leather Armor</b><br><span class="note">Light armor</span></span><span class="rar mundane">Not magic</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Leather Armor">+</button></div>
-          <div class="lr"><span><b>Longsword</b><br><span class="note">Martial weapon</span></span><span class="rar mundane">Not magic</span><span>15 gp</span><button type="button" class="plus" aria-label="Add Longsword">+</button></div>
-          <div class="lr"><span><b>Rapier</b><br><span class="note">Martial weapon</span></span><span class="rar mundane">Not magic</span><span>25 gp</span><button type="button" class="plus" aria-label="Add Rapier">+</button></div>
-          <div class="lr"><span><b>Shield</b><br><span class="note">Shield</span></span><span class="rar mundane">Not magic</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Shield">+</button></div>
+          <div class="lr"><span class="use warn" title="Not trained: Heavy Armor" aria-label="Cole: not trained (Heavy Armor)"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span><b>Chain Mail</b><br><span class="note">Heavy armor</span></span><span class="rar mundane">Not magic</span><span>75 gp</span><button type="button" class="plus" aria-label="Add Chain Mail">+</button></div>
+          <div class="lr"><span class="use ok" title="Can use it: attunement 3 of 3" aria-label="Cole can use it"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Cloak of Protection</b><br><span class="note">Wondrous item · attunement</span></span><span class="rar uncommon">Uncommon</span><span class="note">—</span><button type="button" class="plus" aria-label="Add Cloak of Protection">+</button></div>
+          <div class="lr"><span class="use ok" title="Trained: Light Armor" aria-label="Cole can use it"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Leather Armor</b><br><span class="note">Light armor</span></span><span class="rar mundane">Not magic</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Leather Armor">+</button></div>
+          <div class="lr"><span class="use ok" title="Proficient: Longsword" aria-label="Cole can use it"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Longsword</b><br><span class="note">Martial weapon</span></span><span class="rar mundane">Not magic</span><span>15 gp</span><button type="button" class="plus" aria-label="Add Longsword">+</button></div>
+          <div class="lr"><span class="use warn" title="Not proficient: martial weapons" aria-label="Cole: not proficient (martial weapons)"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span><span><b>Rapier</b><br><span class="note">Martial weapon</span></span><span class="rar mundane">Not magic</span><span>25 gp</span><button type="button" class="plus" aria-label="Add Rapier">+</button></div>
+          <div class="lr"><span class="use no" aria-hidden="true"></span><span><b>Rope</b><br><span class="note">Adventuring gear</span></span><span class="rar mundane">Not magic</span><span>1 gp</span><button type="button" class="plus" aria-label="Add Rope">+</button></div>
+          <div class="lr"><span class="use ok" title="Trained: Shields" aria-label="Cole can use it"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span><b>Shield</b><br><span class="note">Shield</span></span><span class="rar mundane">Not magic</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Shield">+</button></div>
         </div>
       </div>
-      <p class="note">What it means for Cole is one click away, in the details.</p>
     </div>
     <div class="opt">
-      <h2>B · A word per row, and a filter</h2>
-      <div class="row start" style="gap: 6px"><span class="note">For Cole</span><button type="button" class="chip" aria-pressed="false">Cole can use it</button><button type="button" class="chip" aria-pressed="false">Needs attunement</button></div>
-      <div class="ib" style="grid-template-rows: auto auto">
-        <div class="lr h"><span>Item</span><span>For Cole</span><span>Cost</span><span></span></div>
-        <div style="display: grid">
-          <div class="lr"><span><b>Chain Mail</b><br><span class="note">Heavy armor</span></span><span class="fit warn">! Not trained</span><span>75 gp</span><button type="button" class="plus" aria-label="Add Chain Mail">+</button></div>
-          <div class="lr"><span><b>Cloak of Protection</b><br><span class="note">Wondrous item · Uncommon</span></span><span class="fit chg">→ Attune 3 of 3</span><span class="note">—</span><button type="button" class="plus" aria-label="Add Cloak of Protection">+</button></div>
-          <div class="lr"><span><b>Leather Armor</b><br><span class="note">Light armor</span></span><span class="fit ok">✓ Trained</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Leather Armor">+</button></div>
-          <div class="lr"><span><b>Longsword</b><br><span class="note">Martial weapon</span></span><span class="fit ok">✓ Proficient</span><span>15 gp</span><button type="button" class="plus" aria-label="Add Longsword">+</button></div>
-          <div class="lr"><span><b>Rapier</b><br><span class="note">Martial weapon</span></span><span class="fit warn">! Not proficient</span><span>25 gp</span><button type="button" class="plus" aria-label="Add Rapier">+</button></div>
-          <div class="lr"><span><b>Shield</b><br><span class="note">Shield</span></span><span class="fit ok">✓ Trained</span><span>10 gp</span><button type="button" class="plus" aria-label="Add Shield">+</button></div>
-        </div>
+      <h2>What the icons say</h2>
+      <div class="key">
+        <span><span class="use ok"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8 12 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Can use it: trained or proficient, and attunement free if it needs it</span>
+        <span><span class="use warn"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20L12 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>Can, with a catch: not trained or proficient, attunement full, or a class it's for</span>
+        <span><span class="use no" style="border: 1px dashed var(--line-strong)"></span>Nothing to say (gear, potions)</span>
       </div>
-      <p class="note">"Can use it" means trained or proficient, and attunement free if it needs it. With the filter on, Chain Mail and the Rapier would hide; the details still say why.</p>
+      <p class="note">Shape and colour both say it (a circle with a tick, a triangle), so it reads without colour. The rules let anyone pick up anything; "a catch" means a cost the rules attach, never "can't".</p>
+      <div class="tip">Hovering the triangle on Chain Mail: <b>Not trained: Heavy Armor</b>. The details say the rest (AC, Strength, Stealth, spellcasting).</div>
     </div>
   </div>
 </div>
