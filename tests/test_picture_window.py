@@ -38,12 +38,13 @@ def test_describe_it_draws_four_in_the_campaigns_style_and_one_is_kept(people, d
     campaign.art_style = {"words": "Ink and muted watercolour", "refs": []}
     db.flush()
     win = dm.get(f"/pictures?for=entity:{k.id}").text
-    assert "Kieran: Cole&#39;s father." in win and "Ink and muted watercolour" in win
+    assert "Kieran: Cole&#39;s father." in win and "Ink and muted watercolour" in win and "head-and-shoulders portrait" in win
     r = dm.post("/pictures/draw", data={**ref, "words": "Kieran, a tired farmer"}, headers=HX)
     assert r.status_code == 200 and r.text.count('name="pick"') == 4
     call, = openai
     assert call["path"] == "generations" and call["fields"]["n"] == 4 and call["fields"]["model"] == drawing.MODEL
     assert "Kieran, a tired farmer" in call["fields"]["prompt"] and "Ink and muted watercolour" in call["fields"]["prompt"]
+    assert "head-and-shoulders portrait" in call["fields"]["prompt"] and call["fields"]["size"] == "1024x1024"  # (an NPC: a portrait)
     run = db.scalar(select(ExtractionRun).where(ExtractionRun.source == "picture"))
     assert run.status == "done" and run.cost_usd == pytest.approx(4 * drawing.COST)
     pick = r.text.split('name="pick" value="')[1].split('"')[0]
@@ -77,6 +78,7 @@ def test_the_art_style_its_pictures_to_match_and_off(people, db, openai):
     dm.post("/pictures/draw", data={"for": f"entity:{w.id}", "words": "A village"}, headers=HX)
     call = openai[-1]
     assert call["path"] == "edits" and len(call["files"]) == 1 and "Match the style" in call["fields"]["prompt"]
+    assert "A wide view of the place" in call["fields"]["prompt"] and call["fields"]["size"] == "1536x1024"  # (a place: wide)
     dm.post("/c/main/manage/settings/art-style", data={"words": "Woodcut", "off": "1"}, headers=HX)
     assert "switched off" in dm.get(f"/pictures?for=entity:{w.id}").text
     r = dm.post("/pictures/draw", data={"for": f"entity:{w.id}", "words": "A village"}, headers=HX)

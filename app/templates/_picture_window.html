@@ -30,6 +30,7 @@
     <form hx-post="/pictures/draw" hx-target="#pw-options" hx-swap="innerHTML" hx-indicator="#pw-drawing" class="pw-form">
       <input type="hidden" name="for" value="{{ o.ref }}">
       <label class="field">What it looks like<textarea name="words" rows="3" maxlength="1000" required>{{ words }}</textarea></label>
+      <p class="pw-style"><span class="tag">Drawn as</span> <span class="note">{{ o.framing }}</span></p>
       <p class="pw-style"><span class="tag">{{ "Campaign style" if styled else "A plain style" }}</span> <span class="note">{{ style }}</span></p>
       <div class="pw-foot"><button class="btn primary" type="submit">Draw {{ how_many }}</button><span class="note">A few cents each, counted on Manage › Usage. <span id="pw-drawing" class="htmx-indicator">Drawing… this takes up to a minute.</span></span></div>
     </form>

@@ -90,9 +90,10 @@ def _png(raw: bytes) -> bytes:
     return out.getvalue()
 
 
-def draw(db: Session, campaign: Campaign | None, words: str) -> tuple[list[tuple[str, str]], str]:
-    """Four pictures of `words` in the campaign's style, each kept in file storage: ([(full key, thumb key)], the style's
-    words). The caller lets go of the database first (OpenAI takes up to a minute)."""
+def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene") -> tuple[list[tuple[str, str]], str]:
+    """Four pictures of `words` in the campaign's style, framed for what they're of (pictures.FRAMES: a portrait, the
+    whole item…), each kept in file storage: ([(full key, thumb key)], the style's words). The caller lets go of the
+    database first (OpenAI takes up to a minute)."""
     words = " ".join((words or "").split())[:1000]
     if not words:
         raise pictures.PictureError("Say what it looks like first.")
@@ -107,12 +108,13 @@ def draw(db: Session, campaign: Campaign | None, words: str) -> tuple[list[tuple
         data = pictures.files.read(p.file_key) if p and p.file_key else None
         if data:
             refs.append(("ref.png", _png(data)))
-    prompt = f"{words}\n\nArt style for every picture in this campaign: {look}" + (
+    framing, size, centering = pictures.FRAMES.get(frame, pictures.FRAMES["scene"])
+    prompt = f"{words}\n\n{framing}\n\nArt style for every picture in this campaign: {look}" + (
         "\nMatch the style (not the subjects) of the pictures given." if refs else "")
     run = ExtractionRun(source="picture", model=MODEL, status="running")
     db.add(run)
     db.commit()  # (counted before the call; the database isn't held while OpenAI draws)
-    fields = {"model": MODEL, "prompt": prompt, "n": HOW_MANY, "size": "1024x1024"}
+    fields = {"model": MODEL, "prompt": prompt, "n": HOW_MANY, "size": size}
     try:
         got = _post("edits" if refs else "generations", fields, refs)
         images = [base64.b64decode(d["b64_json"]) for d in got.get("data") or [] if d.get("b64_json")]
@@ -120,7 +122,7 @@ def draw(db: Session, campaign: Campaign | None, words: str) -> tuple[list[tuple
             raise pictures.PictureError("OpenAI sent no pictures back. Try again.")
         kept = []
         for raw in images:
-            full, thumb = pictures.process(raw)
+            full, thumb = pictures.process(raw, centering)
             kept.append(pictures.keep(db, campaign.id if campaign else None, full, thumb))
         run.status, run.cost_usd = "done", COST * len(images)
     except pictures.PictureError as e:

@@ -29,12 +29,28 @@ class PictureError(Exception):
     pass
 
 
+# What a picture is of decides how it's drawn and cut (Brett, 2026-11-04: "a weapon (showing the whole item) or a profile
+# image (just showing the head)"): the framing added to a description, OpenAI's size for it, and where the square version
+# is cut (faces sit high; anything else in the middle). One rule for every place a picture shows.
+FRAMES = {
+    "portrait": ("A head-and-shoulders portrait: the whole head and shoulders in frame, the face in the upper middle, "
+                 "looking toward the viewer.", "1024x1024", (0.5, 0.35)),
+    "creature": ("The whole creature, centred, seen from a little above eye level, nothing cut off.", "1024x1024", (0.5, 0.45)),
+    "item": ("The whole object, centred and complete with nothing cut off, on a plain background, evenly lit.", "1024x1024", (0.5, 0.5)),
+    "place": ("A wide view of the place at eye level, as a traveller first sees it; no people up close.", "1536x1024", (0.5, 0.5)),
+    "faction": ("The group's emblem or banner, centred on a plain background.", "1024x1024", (0.5, 0.5)),
+    "scene": ("A wide scene that shows what happens, with room around it.", "1536x1024", (0.5, 0.5)),
+}
+KIND_FRAMES = {"pc": "portrait", "npc": "portrait", "creature": "creature", "item": "item", "place": "place", "faction": "faction",
+               "quest": "scene", "other": "scene"}
+
+
 def can_manage(user: dict | None) -> bool:
     """The DM runs the story, so the DM adds pictures; so can reviewers and admins."""
     return bool(user) and access.allows("story_extras", access.level(user.get("email")), access.role(user.get("email")))
 
 
-def process(raw: bytes) -> tuple[bytes, bytes]:
+def process(raw: bytes, centering: tuple[float, float] = (0.5, 0.35)) -> tuple[bytes, bytes]:
     """(full, thumb) as WebP, or PictureError with a message for the person uploading."""
     if not raw:
         raise PictureError("Choose a picture first.")
@@ -51,7 +67,7 @@ def process(raw: bytes) -> tuple[bytes, bytes]:
     img = img.convert("RGBA" if img.mode in ("RGBA", "LA", "P") else "RGB")
     full = img.copy()
     full.thumbnail((FULL_SIZE, FULL_SIZE))
-    thumb = ImageOps.fit(img, (THUMB_SIZE, THUMB_SIZE), centering=(0.5, 0.35))  # faces sit high in most portraits
+    thumb = ImageOps.fit(img, (THUMB_SIZE, THUMB_SIZE), centering=centering)  # (FRAMES: faces sit high in portraits)
 
     def webp(im: Image.Image) -> bytes:
         out = io.BytesIO()
@@ -72,6 +88,19 @@ class Owner:
     entity: Entity | None = None
     character: Character | None = None
     creature: str | None = None  # "familiar", or a creature's D&D Beyond id
+    frame: str = "scene"  # what it's a picture of (FRAMES)
+
+    @property
+    def framing(self) -> str:
+        return FRAMES[self.frame][0]
+
+    @property
+    def size(self) -> str:
+        return FRAMES[self.frame][1]
+
+    @property
+    def centering(self) -> tuple[float, float]:
+        return FRAMES[self.frame][2]
 
 
 def owner(db: Session, ref: str, user: dict | None) -> Owner | None:
@@ -85,7 +114,8 @@ def owner(db: Session, ref: str, user: dict | None) -> Owner | None:
         email = (user or {}).get("email")
         if e is None or not can_manage(user) or (access.level(email) != access.ADMIN and access.current_campaign_id(email) != e.campaign_id):
             return None
-        return Owner(ref, e.campaign_id, e.name, (f"{e.name}: {e.summary}" if e.summary else e.name)[:600], entity=e)
+        return Owner(ref, e.campaign_id, e.name, (f"{e.name}: {e.summary}" if e.summary else e.name)[:600], entity=e,
+                     frame=KIND_FRAMES.get(str(e.kind), "scene"))
     if kind == "creature":
         cid, _, crid = rest.partition(":")
         ch = db.get(Character, int(cid)) if cid.isdigit() else None
@@ -97,7 +127,7 @@ def owner(db: Session, ref: str, user: dict | None) -> Owner | None:
         k = creatures.placed(ch, creatures.card(chars.character_summary(ch), c), c)
         what = f"a {k['made'].lower()} {k['kind'].lower()}" if k["made"] else f"a {k['kind'].lower()}"
         return Owner(ref, ch.campaign_id, f"{k['name']}'s picture", f"{k['name']}, {ch.name}'s {k['role']}: {what}",
-                     ddb_art=c.get("picture") or "", character=ch, creature=creature_key(c))
+                     ddb_art=c.get("picture") or "", character=ch, creature=creature_key(c), frame="creature")
     return None
 
 
@@ -134,7 +164,7 @@ def keep(db: Session, campaign_id: int | None, full: bytes, thumb: bytes) -> tup
 
 def save(db: Session, o: Owner, raw: bytes, user: dict) -> EntityPicture:
     """An uploaded picture, checked and resized."""
-    full, thumb = process(raw)
+    full, thumb = process(raw, o.centering)
     file_key, thumb_key = keep(db, o.campaign_id, full, thumb)
     pic = _row(db, o, user)
     pic.file_key, pic.thumb_key, pic.content_type, pic.source, pic.words, pic.style, pic.link = file_key, thumb_key, "image/webp", "upload", "", "", ""
