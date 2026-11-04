@@ -505,3 +505,29 @@ def test_find_familiar_as_a_new_form_adds_it_to_extras_and_ties_it_back(player, 
     assert labs.companions == {"990009": {"state": "here", "kind": "Fiend"}}
     got = sets()
     assert (got["creature_active:990009"], got["creature_type:990009"], got["creature_name:990009"]) == (True, 9, "Smudge")
+
+
+def test_wild_companion_a_familiar_from_a_wild_shape_use_gone_at_a_long_rest(player, db, labs, sheet):
+    """Board 2 of Steeds, Summons and Wild Companion (Brett, Nov 4; the 2024 Druid's Wild Companion): Find Familiar's
+    ways start with a Wild Shape use (and a slot as Wild Companion); cast so, it's always Fey, spends the Wild Shape use
+    through the bridge, and the next Long Rest window lists it leaving, ticked."""
+    from sqlalchemy import select
+
+    from app import casting
+    from app.models import BridgeIntent
+
+    e = familiar_sheet(db, labs, sheet)
+    s = characters.character_summary(labs)
+    if not casting.wild_use(s):
+        pytest.skip("Cole's test sheet has no Wild Companion")  # (a Druid's, from level 2)
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    win = player.get(url).text
+    assert 'value="wild"' in win and "Wild Companion" in win and "always Fey" in win
+    r = player.post(url, data={"way": "wild", "familiar": str(OWL), "kind": "Celestial"})
+    assert r.status_code == 200 and "as Wild Companion, a Wild Shape use" in r.json()["text"] and "(Fey)" in r.json()["text"]
+    db.refresh(labs)
+    assert labs.companions[str(OWL)] == {"state": "here", "kind": "Fey", "wild": True}
+    spent = [i.data for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == labs.id, BridgeIntent.kind == "use"))]
+    assert {"field": casting.wild_use(s)["field"], "delta": 1} in spent
+    rest = player.get(f"/characters/{labs.id}/rest?kind=long").text
+    assert 'name="wild_leaves"' in rest and "Pip leaves (Wild Companion)" in rest

@@ -134,8 +134,11 @@ def window(request: Request, character_id: int, kind: str, db: Session = Depends
     sheet = _sheet(db, ch)
     p = plan(sheet, _kind(kind), ch.concentration)
     prepare = [b["class"] for b in books_to_prepare(sheet)] if kind == "long" else []  # (a Long Rest is when most classes change them)
+    from app import companions
+
+    wild = companions.wild_leaving(ch, sheet) if kind == "long" else []  # (Wild Companion: gone at the Long Rest)
     return templates.TemplateResponse(request, "_rest_window.html", {"c": ch, "kind": kind, "title": TITLE[kind], "p": p, "lines": lines(p, kind),
-                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare})
+                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare, "wild": wild})
 
 
 @router.post("/characters/{character_id:int}/rest")
@@ -155,6 +158,10 @@ def _make(request: Request, db: Session, character_id: int, kind: str, form) -> 
     if p["conc"] and form.get("conc_ends"):
         ch.concentration = None  # (askdnd's own, as End does on Battle)
         said.append(f"Concentration on {p['conc']} ended")
+    if kind == LONG and form.get("wild_leaves"):  # Wild Companion's familiar leaves (ticked: the DM may rule it stays)
+        from app import companions
+
+        said += [f"{n} left (Wild Companion)" for n in companions.wild_leave(db, ch, sheet)]
     for c in p["counts"]:
         fk, arg = c["field"].split(":", 1)
         ddb_bridge.add(db, ch, "use", {"field": c["field"], "delta": -c["back"], "max": ddb_sheet.most(ch.snapshot.raw, fk, arg)}, f"{ch.name}: {c['name']} back")

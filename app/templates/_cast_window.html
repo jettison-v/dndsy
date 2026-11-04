@@ -18,7 +18,7 @@
 </fieldset>
 {% if familiars or ff_new %}<div class="rw-row"><label class="rw-label" for="ff-name">Its name</label><input id="ff-name" class="rw-text" type="text" name="familiar_name" value="{{ ff_name }}" maxlength="60" placeholder="Pip" autocomplete="off"></div>
 <fieldset class="ff-pick ff-kinds"><legend class="rw-label">It's a</legend>{% for k in kinds %}<label class="ff-kind"><input type="radio" name="kind" value="{{ k }}"{% if k == ff_kind %} checked{% endif %}> {{ k }}</label>{% endfor %}</fieldset>
-<p class="use-what">One familiar at a time: one that's here takes the form you pick. One that disappeared comes back whole.</p>{% endif %}
+<p class="use-what">One familiar at a time: one that's here takes the form you pick. One that disappeared comes back whole.{% if ways | selectattr("wild") | list %} With Wild Companion it's always Fey, and it leaves at your next Long Rest.{% endif %}</p>{% endif %}
 {% endif %}
 {% if summon and can_cast %}{# A summon spell or Find Steed: askdnd's own creature (app/summons.py; Brett chose A, Nov 4, docs/mockups/steeds-summons/) #}
 {% set steed = summon.spell == "Find Steed" %}

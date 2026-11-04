@@ -146,20 +146,20 @@ def master_options(ch: Character, sheet: dict) -> list[dict]:
     return out
 
 
-def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: str = "") -> tuple[dict, str]:
+def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: str = "", wild: bool = False) -> tuple[dict, str]:
     """Find Familiar cast with this form and kind: it's here, and any other form of it isn't (one familiar at a time).
     Returns what Undo needs and what the corner card says."""
     forms = {str(c["id"]): c for c in yours(sheet) if c.get("group_id") == FAMILIAR}
     if kind not in KINDS:
         raise HTTPException(409, "Celestial, Fey or Fiend?")
     if str(chosen).startswith(NEW):
-        return _cast_new(db, ch, sheet, forms, str(chosen), kind, name)
+        return _cast_new(db, ch, sheet, forms, str(chosen), kind, name, wild)
     c = forms.get(str(chosen))
     if c is None:
         raise HTTPException(409, "Which familiar? Pick its form.")
     was = dict(ch.companions or {})
     before = next((forms[i] for i, v in was.items() if i in forms and (v or {}).get("state") in ("here", "away")), None)
-    ch.companions = {**{i: v for i, v in was.items() if i not in forms}, str(c["id"]): {"state": "here", "kind": kind}}
+    ch.companions = {**{i: v for i, v in was.items() if i not in forms}, str(c["id"]): {"state": "here", "kind": kind, **({"wild": True} if wild else {})}}
     k = card(sheet, c)
     name = name.strip()[:60]
     shown = name or k["name"]
@@ -174,7 +174,7 @@ def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: 
     return undo, said
 
 
-def _cast_new(db: Session, ch: Character, sheet: dict, forms: dict, chosen: str, kind: str, name: str) -> tuple[dict, str]:
+def _cast_new(db: Session, ch: Character, sheet: dict, forms: dict, chosen: str, kind: str, name: str, wild: bool = False) -> tuple[dict, str]:
     """Find Familiar cast as a form the sheet doesn't have yet (board 2, "or a new one"): added to Extras through the
     bridge; until D&D Beyond has it, askdnd keeps the familiar by its monster id (`adopt` ties it to the new creature)."""
     form = next((f for f in new_forms(sheet) if f["id"] == chosen), None)
@@ -185,12 +185,34 @@ def _cast_new(db: Session, ch: Character, sheet: dict, forms: dict, chosen: str,
     was = dict(ch.companions or {})
     name = name.strip()[:60]
     ch.companions = {**{i: v for i, v in was.items() if i not in forms and not i.startswith(NEW)},
-                     chosen: {"state": "here", "kind": kind, **({"name": name} if name and name != form["name"] else {})}}
+                     chosen: {"state": "here", "kind": kind, **({"name": name} if name and name != form["name"] else {}), **({"wild": True} if wild else {})}}
     mid = chosen[len(NEW):]
     ddb_bridge.add(db, ch, "set", {"field": f"familiar_add:{mid}", "value": 1}, f"{ch.name}'s familiar: a {form['name']} added to Extras")
     in_step(db, ch)  # (any other form switched off)
     shown = f"{name}, a {form['name']}" if name and name != form["name"] else f"a {form['name']}"
     return {"companions": json.dumps(was)}, f"Your familiar: {shown} ({kind}), added to D&D Beyond's Extras"
+
+
+# ---- Wild Companion (a Druid's): a familiar from a Wild Shape use or a slot, always Fey, gone at the next Long Rest
+
+def wild_leaving(ch: Character, sheet: dict) -> list[str]:
+    """The familiars Wild Companion brought that are still around (here or in the pocket dimension), by name."""
+    return [c["name"] for c in yours(sheet) if c.get("group_id") == FAMILIAR and where(ch, c) in ("here", "away")
+            and ((ch.companions or {}).get(str(c["id"])) or {}).get("wild")]
+
+
+def wild_leave(db: Session, ch: Character, sheet: dict) -> list[str]:
+    """A Long Rest: Wild Companion's familiar leaves (switched off on D&D Beyond, never deleted). Its names."""
+    gone, kept = [], dict(ch.companions or {})
+    for c in yours(sheet):
+        v = kept.get(str(c["id"])) or {}
+        if c.get("group_id") == FAMILIAR and v.get("wild") and v.get("state") in ("here", "away"):
+            kept[str(c["id"])] = {**v, "state": "gone", "why": "Long Rest (Wild Companion)"}
+            gone.append(c["name"])
+    if gone:
+        ch.companions = kept
+        in_step(db, ch)
+    return gone
 
 
 # ---- askdnd's own: a summon, Find Steed's steed (app/summons.py; Brett chose A, Nov 4)

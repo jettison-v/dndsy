@@ -55,7 +55,21 @@ def window(request: Request, character_id: int, field: str, db: Session = Depend
     n = count(_sheet(db, ch), field)
     if not n:
         raise HTTPException(404)
-    return templates.TemplateResponse(request, "_count_window.html", {"c": ch, "n": n, "reachable": ddb_bridge.reachable(ch)})
+    return templates.TemplateResponse(request, "_count_window.html", {"c": ch, "n": n, "reachable": ddb_bridge.reachable(ch),
+                                                                      "wild_key": _wild_key(db, ch, field)})
+
+
+def _wild_key(db: Session, ch, field: str) -> str:
+    """Wild Shape's uses, for a Druid with Wild Companion (Your creatures, Brett chose it Nov 4): Find Familiar's key, so
+    the window offers Wild Companion: a familiar (its Cast window, a Wild Shape use first). "" otherwise."""
+    from app import casting, companions
+    from app import spellbook as sb
+
+    sheet = _sheet(db, ch)
+    w = casting.wild_use(sheet)
+    if not w or w["field"] != field or not companions.on(db, ch):
+        return ""
+    return next((e["key"] for e in sb.entries(sheet) if e["name"] == companions.FIND_FAMILIAR), "")
 
 
 @router.post("/characters/{character_id:int}/count")
