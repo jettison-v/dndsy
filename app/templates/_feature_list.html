@@ -3,8 +3,8 @@
    what it's used as, and `uses`). The Group sort keeps the old tab's order: features you use, by where they
    come from, then the ones that are always on. #}
 {% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
-{% from "_char.html" import pick_btn, pips %}
-{% macro feature_list(c, features, picks, can_pick, show_picks, key="sheet-features", views=()) -%}
+{% from "_char.html" import pick_btn, pips, count_pips %}
+{% macro feature_list(c, features, picks, can_pick, show_picks, key="sheet-features", views=(), play=false) -%}
 {%- set TURN = ["Action", "Bonus action", "Reaction", "Other", "Always on"] -%}
 {%- set sources = features | map(attribute="source") | unique | list -%}
 {%- set groups = [
@@ -40,7 +40,7 @@
           <span>{{ f.source }}</span>
           <span>{{ f.level or "—" }}</span>
           <span>{{ f.turn | reject("equalto", "Other") | join(", ") or "—" }}</span>
-          <span>{% if f.uses %}{{ pips(f.uses) }}{% else %}<span class="note">—</span>{% endif %}</span>
+          <span>{% if f.uses %}{{ count_pips(c if play else none, f.uses_field, f.uses, f.name) }}{% else %}<span class="note">—</span>{% endif %}</span>
           <span class="ls-marks two"><span>{{ pick_btn(c, "fav", f.key, f.key in picks.fav, can_pick) }}</span><span>{{ pick_btn(c, "remind", f.key, f.key in picks.remind, can_pick) }}</span></span>
         </div>
         {% endfor %}

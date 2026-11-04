@@ -11,7 +11,8 @@ import shutil
 import pytest
 from sqlalchemy import create_engine, text
 
-SERVER_ENV = {"DDB_BRIDGE": "1"}
+ITEMS = os.path.join(os.path.dirname(__file__), "..", "fixtures", "ddb", "items.json")
+SERVER_ENV = {"DDB_BRIDGE": "1", "DDB_ITEMS_URL": "file://" + os.path.abspath(ITEMS)}  # (the item browser's list: made up)
 SHEET = "https://www.dndbeyond.com/characters/75423618"
 SOURCE = os.path.join(os.path.dirname(__file__), "..", "..", "extension", "askdnd-bridge")
 PILL = "#live-pill .live-ago"
@@ -212,6 +213,42 @@ def test_prepare_spells_holds_together_at_every_width(people, server):
     page.locator("[data-prep-tick]").first.click()  # a change: the side's list and the foot's label grow
     found += problems(page, "prepare spells, one change ticked")
     assert page.locator("[data-prep-note]").inner_text() in ("Drop 1", "Prepare 1")  # (the sheet isn't open here: no Make)
+    assert not found, "\n".join(found)
+
+
+def test_the_item_browser_shows_an_item_and_fills_in_what_you_pay(people, server):
+    """The item browser (app/item_browser.py): a name shows what the item is (in place of the list on a phone), + puts
+    it in Adding, and what's paid starts at the book's price until the player types their own. Held together at every
+    width, as every main page (tests/browser/test_layout.py)."""
+    from tests.browser.test_layout import WIDTHS, problems
+
+    player = people("player")
+    page, found = player.page, []
+    for width in reversed(WIDTHS):  # (ending on a phone)
+        page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+        player.open(f"/characters/{server['cole']}")
+        page.click("[data-tab=t-items]")
+        page.click("button[data-modal-url*='/items/browse']")
+        page.locator(".peek.open [data-ib] [data-ls-row]").first.wait_for()
+        found += problems(page, f"item browser at {width}px")
+    page.fill("[data-ib] [data-ls-search]", "rope")
+    rope = page.locator("[data-ib] [data-ls-row]:visible")
+    assert rope.count() == 1  # (D&D Beyond's 2014 Rope isn't listed)
+    rope.locator("[data-ib-add]").click()
+    rope.locator("[data-ib-add]").click()
+    assert page.locator("[data-ib-pay]").input_value() == "2 gp" and "Rope" in page.locator("[data-ib-basket]").inner_text()
+    rope.locator("[data-ib-show]").click()
+    page.locator("[data-ib-card] h3", has_text="Rope").wait_for()
+    assert page.locator(".ib-main").is_hidden()  # (a phone: the item in place of the list)
+    found += problems(page, "item browser, an item shown")
+    page.click("[data-ib-hide]")
+    page.fill("[data-ib] [data-ls-search]", "healing")
+    page.locator("[data-ib] [data-ls-row]:visible [data-ib-add]").click()
+    assert page.locator("[data-ib-pay]").input_value() == "2 gp"  # (a magic item has no price)
+    assert "the DM's to say" in page.locator("[data-ib-price-note]").inner_text()
+    page.fill("[data-ib-pay]", "45 gp")
+    page.locator("[data-ib-basket] [aria-label='One more Rope']").click()
+    assert page.locator("[data-ib-pay]").input_value() == "45 gp"  # (once typed, it's the player's)
     assert not found, "\n".join(found)
 
 

@@ -906,6 +906,8 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .lu-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-1); }
 .res-go { background: none; border: 0; color: inherit; font: inherit; cursor: pointer; }
 .res-go:hover { color: var(--amber); }
+.pips-go { display: inline-flex; align-items: center; padding: 0; vertical-align: middle; border-radius: var(--r-xs); }  /* a count's pips that open Use one and Give one back (count_pips) */
+.pips-go:hover, .pips-go:focus-visible { outline: 1px solid var(--amber); outline-offset: 2px; }
 .tile-short { display: none; }
 .ph-short { display: none; }
 @media (max-width: 640px) { .tile-full, .ph-full { display: none; } .tile-short, .ph-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
@@ -2692,6 +2694,63 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .prep-change b { color: var(--text-strong); font-weight: 600; overflow-wrap: anywhere; }
 .prep-change small { color: var(--muted); font-size: var(--fs-xs); }
 .prep-fold > summary { display: none; }
+
+/* The item browser (_item_browser.html, app.js "Item browser"; Brett, 2026-11-03, docs/mockups/item-browser/): filters,
+   the list and what the picked item is, side by side; Adding along the bottom. Narrower than 900px the item shows in
+   place of the list, with Back to the list. */
+.ib-layout { display: grid; grid-template-columns: 200px minmax(0, 1fr) 300px; gap: var(--sp-4); align-items: start; }
+.ib-cols { display: grid; grid-template-columns: minmax(12rem, 1fr) max-content max-content max-content 32px; column-gap: 14px; }
+.ib-cols > .ls-head, .ib-cols > .ls-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+.ib-cols > .ls-empty { grid-column: 1 / -1; }
+.ib-row.sel { background: var(--selected-bg); }
+.ib-row.in-basket { box-shadow: inset 3px 0 0 var(--green); }
+.ib-cost { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ib-plus { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border-radius: var(--r-sm); border: 1.5px solid var(--line-strong); background: var(--bg); color: var(--text-strong); font-weight: 700; cursor: pointer; }
+.ib-plus:hover, .ib-plus:focus-visible { border-color: var(--green); color: var(--green); }
+/* Rarity in D&D Beyond's own order of colours, from the page's tokens */
+.ib-rar { font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; color: var(--muted); }
+.ib-rar[data-rarity="uncommon"] { color: var(--green); }
+.ib-rar[data-rarity="rare"] { color: var(--blue); }
+.ib-rar[data-rarity="very-rare"] { color: var(--violet); }
+.ib-rar[data-rarity="legendary"] { color: var(--amber); }
+.ib-rar[data-rarity="artifact"] { color: var(--red); }
+.ib-detail { position: sticky; top: 0; max-height: calc(90vh - 220px); overflow-y: auto; display: grid; gap: var(--sp-2); align-content: start; min-width: 0; }
+.ib-card { display: grid; gap: var(--sp-2); }
+.ib-card h3 { margin: 0; color: var(--text-strong); }
+.ib-card-x { justify-self: start; display: none; }
+.ib-pic { width: 100%; max-height: 180px; object-fit: contain; border-radius: var(--r-md); background: var(--surface-2); }
+.ib-tags { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); align-items: center; }
+.ib-attune { color: var(--amber); white-space: normal; }
+.ib-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 2px var(--sp-3); margin: 0; font-size: var(--fs-sm); }
+.ib-facts dt { color: var(--muted); }
+.ib-facts dd { margin: 0; color: var(--text); overflow-wrap: anywhere; }
+.ib-text { font-size: var(--fs-sm); color: var(--text); }
+.ib-text p { margin: 0 0 var(--sp-2); }
+.ib-card > .btn { justify-self: start; }
+.ib-foot { position: sticky; bottom: calc(-1 * var(--sp-4)); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-3); padding: var(--sp-3) 0; background: var(--surface); border-top: 1px solid var(--line); }
+.ib-basket { display: flex; flex-wrap: wrap; gap: var(--sp-1); min-width: 0; }
+.ib-basket:empty { display: none; }
+.ib-chip { display: inline-flex; align-items: center; gap: var(--sp-1); padding: 2px 4px 2px var(--sp-2); border-radius: var(--r-pill); background: var(--surface-2); font-size: var(--fs-sm); }
+.ib-chip b { color: var(--text-strong); font-weight: 600; }
+.ib-chip button { width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: var(--surface-3); color: var(--text-strong); font-weight: 700; cursor: pointer; }
+.ib-foot-end { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); justify-content: flex-end; }
+.ib-foot select { width: auto; max-width: 14em; }
+.ib-foot input.ib-pay { width: 8em; }
+.ib-foot input.ib-amount { width: 6em; }
+.ib-price-note, .ib-foot > .use-said { flex-basis: 100%; margin: 0; }
+@container list (max-width: 560px) {
+  .ib-cols { grid-template-columns: minmax(0, 1fr) max-content 44px; }
+  .ib-cols > .ls-head, .ib-cols > .ls-row { grid-template-columns: subgrid; }
+  .ib-cols .ls-head > :nth-child(2), .ib-cols .ls-head > :nth-child(4), .ib-row > .ib-rar, .ib-row > .ib-cost + .note { display: none; }
+  .ib-plus { width: 40px; height: 40px; }
+}
+@media (max-width: 900px) {
+  .ib-layout { grid-template-columns: minmax(0, 1fr); }
+  .ib-detail { position: static; max-height: none; }
+  .ib:not(.ib-showing) .ib-detail, .ib.ib-showing .ib-main, .ib.ib-showing .ls-fold { display: none; }
+  .ib-card-x { display: inline-flex; }
+  .ib-foot-end { margin-left: 0; justify-content: flex-start; }
+}
 
 /* Coins as a purse (_char.html purse(); Brett, 2026-11-02, the UI pass): each coin in its metal, the total in gold. Small:
    at the right end of Sheet › Items' toolbar, after Full notes, and across from the name on a Party card. */

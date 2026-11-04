@@ -961,7 +961,7 @@ class _Sheet:
                 ["Has a note from the player (below)"] if f"item:{item_id}" in noted else []) + (
                 ["Other details changed on D&D Beyond (such as cost or weight)"] if item_id in other_changes else [])
             out.append({
-                "key": f"item:{i.get('id')}",
+                "key": f"item:{i.get('id')}", "definition_id": df.get("id"),  # (You have N in the item browser, app/item_browser.py)
                 "name": renamed or df["name"],
                 "base_name": df["name"],
                 "custom": False,

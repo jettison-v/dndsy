@@ -1,0 +1,69 @@
+{# Large modal: the item browser (app/item_browser.py; Brett, 2026-11-03, docs/mockups/item-browser/), from Sheet › Items.
+   Add item for the character's own player, Give loot for its DM. The shared list pattern (_lists.html): filters on the
+   left, search, compact rows; a name shows what the item is on the right (over the list on narrow screens), + puts it in
+   Adding at the bottom, and one press there makes them all on D&D Beyond (app.js "Item browser"). Nothing is priced
+   that D&D Beyond doesn't price: a magic item says ask the DM. #}
+{% from "_lists.html" import filter_column, search_box, active_row %}
+{% from "_char.html" import purse %}
+{% set loot = mode == "loot" %}
+<div class="peek-head">
+  <div class="fm-title">
+    <div class="note">{{ c.name }} · D&amp;D Beyond's items from the 2024 books</div>
+    <h2 id="peek-title">{{ "Give loot to " ~ c.name if loot else "Add item" }}</h2>
+  </div>
+  <div class="fm-actions"><button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
+</div>
+<div class="peek-body ib" data-list="item-browser" data-noun="item" data-default-sort="name" data-ib data-mode="{{ mode }}"
+  data-detail-url="/characters/{{ c.id }}/items/browse/" data-url="/characters/{{ c.id }}/items/add" data-who="{{ c.name }}">
+  {% if not loaded %}
+  <p class="note">D&amp;D Beyond's item list didn't load just now. Try again in a moment{% if loot %}, or add the item on D&amp;D Beyond{% endif %}.</p>
+  {% endif %}
+  <div class="ib-layout">
+    {{ filter_column(groups) }}
+    <div class="ls-main ib-main">
+      {{ search_box("Search items: rope, healing, +1…") }}
+      {{ active_row() }}
+      <div class="ls-toolbar"><span class="note" data-ls-summary></span></div>
+      <div class="ls-rows ib-cols" data-ls-rows>
+        <div class="ls-head" aria-hidden="true"><span>Item</span><span>Rarity</span><span>Cost</span><span>Weight</span><span></span></div>
+        {% for i in rows %}
+        <div class="ls-row ib-row" data-ls-row data-id="{{ i.id }}" data-f='{{ i.f | tojson }}' data-name="{{ i.name | lower }}" data-label="{{ i.name }}" data-cp="{{ i.cost_cp or '' }}">
+          <span class="ls-name"><button type="button" class="link-plain" data-ib-show aria-label="{{ i.name }}: what it is"><b>{{ i.name }}</b></button>
+            <small class="ls-what">{{ i.type or i.kind }}{% if i.attune %} · attunement{% endif %}{% if i.have %} · you have {{ i.have }}{% endif %}</small></span>
+          <span class="ib-rar" data-rarity="{{ i.rarity | lower | replace(' ', '-') }}">{{ i.rarity }}</span>
+          <span class="ib-cost">{{ i.price or "—" }}</span>
+          <span class="note">{{ i.weight_label or "—" }}</span>
+          <button type="button" class="ib-plus" data-ib-add aria-label="Add {{ i.name }}">+</button>
+        </div>
+        {% endfor %}
+        <p class="note ls-empty" data-ls-empty hidden>No items match.</p>
+      </div>
+    </div>
+    <aside class="ib-detail" data-ib-detail aria-live="polite" aria-label="What it is">
+      <p class="note">Pick an item to see what it is: its picture where D&amp;D Beyond has one, its numbers and its book's own words.</p>
+    </aside>
+  </div>
+
+  <div class="ib-foot">
+    <span class="ls-label">{{ "Giving" if loot else "Adding" }}</span>
+    <div class="ib-basket" data-ib-basket></div>
+    <span class="note" data-ib-empty>Nothing yet: + on an item puts it here</span>
+    <div class="ib-foot-end">
+      <label class="ls-select"><span>Into</span>
+        <select data-ib-into aria-label="Into"><option value="">Carried</option>{% for b in bags %}<option value="{{ b.key[5:] }}">{{ b.name }}</option>{% endfor %}</select></label>
+      {% if loot %}
+      <label class="ls-select"><span>Coins</span>
+        <input class="ib-amount" type="number" min="1" max="100000" inputmode="numeric" data-ib-amount aria-label="How many coins" placeholder="0">
+        <select data-ib-coin aria-label="Which coin">{% for k in coins %}<option value="{{ k }}"{{ " selected" if k == "gp" }}>{{ k }}</option>{% endfor %}</select></label>
+      {% else %}
+      <label class="ls-check"><input type="checkbox" data-ib-paying checked> Pay from the purse</label>
+      <input class="ib-pay" type="text" data-ib-pay aria-label="What you pay" placeholder="0 gp" autocomplete="off" title="Starts at the book's price for ordinary gear; change it to whatever the DM agrees">
+      {{ purse(sheet, total=false) }}
+      {% endif %}
+      {% if reachable %}<button type="button" class="btn primary" data-ib-go disabled>{{ "Give" if loot else "Add" }}</button>{% endif %}
+    </div>
+    {% if not loot %}<p class="note ib-price-note" data-ib-price-note hidden></p>{% endif %}
+    {% if not reachable %}<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: {{ "its player opens" if loot else "open" }} it in Chrome with the askdnd bridge, or {{ "the loot is" if loot else "the item is" }} added on D&amp;D Beyond.</p>{% endif %}
+    <p class="use-said" role="alert" data-ib-said hidden></p>
+  </div>
+</div>

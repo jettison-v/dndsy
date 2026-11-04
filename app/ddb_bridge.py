@@ -18,8 +18,9 @@ It works like middleware between askdnd and D&D Beyond, and repairs itself:
    again from the new numbers. **Reads come from the sheet itself** where it's open (extension 0.9.9; Brett, Nov 3): the
    extension reads it signed in, as the sheet does, after the sheet saves, right after writing (the read-back) and on
    the regular pull, and askdnd keeps that read (`fresh_read`). D&D Beyond's public copy, read otherwise, can trail a
-   save by minutes, so a copy older than the one kept, by D&D Beyond's own `dateModified`, is never kept
-   (`characters.older`), and a field askdnd just wrote that D&D Beyond holds at anything else was changed there after.
+   save by minutes. A read-back that doesn't show the change yet is read again a few times: D&D Beyond's servers can
+   disagree for a few seconds, the signed-in read too, and its `dateModified` goes back and forth, so it's never used to
+   choose between copies (Nov 3). A field askdnd just wrote that D&D Beyond holds at anything else was changed there after.
 5. **Never a guess.** A field D&D Beyond holds at a value askdnd can't explain after writing to it isn't written over:
    the change stops as "not on D&D Beyond yet", with the end state to make by hand.
 6. **Awake whenever someone is using it, with no switch** (Brett, 2026-10-27: always active when it needs to be,
@@ -773,10 +774,13 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, error or "The change couldn't be made.")
         return
     now = {}
-    for attempt in range(1 if fresh else 4):  # D&D Beyond's public copy can take a moment to serve what it just saved
+    # The extension's own read right after writing first, then D&D Beyond again a few times, a second apart: its servers
+    # answer from copies that can disagree for a few seconds, the signed-in read too (Nov 3, the live runs: a read just
+    # after attuning still said not attuned, and its last-changed stamp went back and forth)
+    for attempt in range(4):
         if attempt:
             time.sleep(1)
-        if not _reread(db, b, character, fresh):
+        if not _reread(db, b, character, fresh if attempt == 0 else None):
             return
         n = numbers(character)
         now = {f: _value(n, f) for f in b.target} if n else {}
@@ -794,15 +798,27 @@ def delivered(db: Session, batch_id: int, ok: bool, error: str = "", conflicts: 
         _again(db, b, "D&D Beyond didn't keep it.", at_once=b.attempts == 1)
 
 
+def _classes(data: dict) -> list[tuple]:
+    """A sheet's classes, subclasses and levels: what its spell lists depend on."""
+    return sorted((str((c.get("definition") or {}).get("id")), str((c.get("subclassDefinition") or {}).get("id")), c.get("level"))
+                  for c in data.get("classes") or [] if isinstance(c, dict))
+
+
 def fresh_read(db: Session, user: dict, character: Character, data) -> chars.Read | None:
     """The sheet as the extension just read it, signed in as the sheet itself reads it: never D&D Beyond's public copy,
     which can trail a save by minutes (Nov 3: a Soul Coin's use given back on D&D Beyond stayed spent in askdnd, and the
-    bridge took it for its own write lost). Only this character's, only from its player or the DM (whose browser makes
+    bridge took it for its own write lost). It keeps the class spell lists askdnd's last read added (the sheet itself has
+    none); a new class or level waits for a public read, which fetches them. Only this character's, only from its player or the DM (whose browser makes
     a closed sheet's changes), and only a sheet that parses; anything else is None and askdnd reads the public copy."""
     if not isinstance(data, dict) or str(data.get("id")) != str(character.ddb_id) or not data.get("name"):
         return None
     if not (picks.can_edit(db, user, character) or is_dm(user) or is_admin(user)):
         return None
+    if "askdnd" not in data:  # (what askdnd adds to a public read: each class's spell lists, for Prepare spells)
+        kept = (character.snapshot.raw or {}) if character.snapshot else {}
+        if "askdnd" not in kept or _classes(kept) != _classes(data):
+            return None  # (a new class or level: the public read fetches its lists; Nov 3, Prepare spells lost them)
+        data = {**data, "askdnd": kept["askdnd"]}
     try:
         got = chars.read(character.ddb_id, fetch=lambda _id: data)
     except Exception:  # (a sheet D&D Beyond never sent: nothing of it is kept)

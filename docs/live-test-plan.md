@@ -40,7 +40,8 @@ On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everythi
 | `inventory` | On Cathartic's sheet: equip and attune the Staff of Healing, spend and give back a charge, use and give back a Crossbow Bolt, drink a Potion of Healing (one fewer, and it heals) and Undo it | Every time |
 | `prepare` | Prepare spells (0.9.8): one spell prepared and one dropped in askdnd's window land on the sheet, then both put back | Every time |
 | `give` | Give (0.9.8): Cathartic hands a Potion of Healing to Vi, one fewer and one more on D&D Beyond, and Vi gives it back; the giver's rows are folded back into one | Every time |
-| `loot` | Give loot (0.9.8, the DM's seat): a Torch and 1 gp reach Cathartic's sheet, then come off | Every time |
+| `loot` | Give loot (0.9.8, the DM's seat; in the item browser since Nov 3): a Torch and 1 gp reach Cathartic's sheet, then come off | Every time |
+| `add-item` | Add item (the item browser, Nov 3; player2's seat): a Torch bought for 1 sp from the purse reaches Cathartic's sheet and the purse goes down 1 sp; then the Torch comes off and the purse is put back | Every time |
 | `dm-backup` | DM Backup (0.9.8): with Cathartic's sheet closed, the player's pill says Through the DM, and the DM's seat (a D&D Beyond page open) makes a hit and the healing; reopening the sheet says Connected | Every time |
 
 Part 1 starts by checking that both test sheets are clean (full Hit Points, nothing marked, spent or in force) and ends by checking each is back as it found it. A miss at the start means an earlier run didn't put something back: it's reported, and hit points, death saves and conditions are put right on D&D Beyond so the rest can run.

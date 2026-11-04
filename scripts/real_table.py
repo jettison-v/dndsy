@@ -731,26 +731,44 @@ def give(t: Table, seat: str = "player2", other: str = "player3") -> None:
                                                                                     *[["DELETE", "inventory/item", {"id": x, "removeContainerContents": False}] for x in extra]]]), flush=True)
 
 
+def browse(page: Page, cid: str, search: str) -> None:
+    """The item browser on a character's Sheet › Items (Add item, or the DM's Give loot), with + pressed on the one item
+    the search finds."""
+    sheet_tab(page, cid, "t-items")
+    page.locator("button[data-modal-url*='/items/browse']:visible").first.click(timeout=8000)
+    page.locator(".peek.open [data-ib] [data-ls-row]").first.wait_for(timeout=15000)
+    page.fill("[data-ib] [data-ls-search]", search)
+    page.locator(f'[data-ib] [data-ls-row][data-label="{search}"]').first.locator("[data-ib-add]").click()
+
+
+def take_off(t: Table, seat: str, sheet: Page, start: dict, name: str) -> None:
+    added = [i["id"] for i in record(sheet)["inventory"] if i["definition"]["name"] == name and i["id"] not in {x["id"] for x in start["inventory"]}]
+    if added:
+        print(f"  taking the {name} off:", sheet.evaluate(TIDYING, [SHEETS[seat], [["DELETE", "inventory/item", {"id": x, "removeContainerContents": False}] for x in added]]), flush=True)
+
+
+def worth(d: dict) -> int:
+    """A sheet's coins, in copper."""
+    c = d.get("currencies") or {}
+    return sum((c.get(k) or 0) * v for k, v in {"cp": 1, "sp": 10, "ep": 50, "gp": 100, "pp": 1000}.items())
+
+
 def loot(t: Table, seat: str = "player2") -> None:
-    """Give loot (the DM): a Torch from D&D Beyond's 2024 items and 1 gp land on a player's sheet; then taken off."""
+    """Give loot (the DM, in the item browser): a Torch from D&D Beyond's 2024 items and 1 gp land on a player's sheet;
+    then taken off."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
     t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
     cid, start = cid_of(page), record(sheet)
     gp = lambda d: (d.get("currencies") or {}).get("gp") or 0
     dm = t.page("dm", f"https://beta.askdnd.ai/characters/{cid}")
-    sheet_tab(dm, cid, "t-items")
-    go(dm, dm.locator('[data-use-url$="/loot"]:visible').first)
-    dm.locator('input[name="item"]').first.fill("Torch")
-    dm.locator('.roll-win input[name="amount"]').first.fill("1")
-    dm.locator("[data-use-go]").first.click()
+    browse(dm, cid, "Torch")
+    dm.fill("[data-ib-amount]", "1")
+    dm.click("[data-ib-go]", timeout=8000)
     t.expect("a Torch reaches the sheet", lambda: how_many(record(sheet), "Torch") == how_many(start, "Torch") + 1, SLOW)
     t.expect("and 1 gp", lambda: gp(record(sheet)) == gp(start) + 1, SLOW)
     dm.wait_for_timeout(1500)
-    dm.keyboard.press("Escape")
-    added = [i["id"] for i in record(sheet)["inventory"] if i["definition"]["name"] == "Torch" and i["id"] not in {x["id"] for x in start["inventory"]}]
-    if added:
-        print("  taking the Torch off:", sheet.evaluate(TIDYING, [SHEETS[seat], [["DELETE", "inventory/item", {"id": x, "removeContainerContents": False}] for x in added]]), flush=True)
+    take_off(t, seat, sheet, start, "Torch")
     sheet_tab(page, cid, "t-items")
     go(page, page.locator('[data-use-url$="/coins"]:visible').first)
     page.locator('.roll-win input[name="amount"]').first.fill("1")
@@ -758,6 +776,25 @@ def loot(t: Table, seat: str = "player2") -> None:
     t.expect("the gp spent again", lambda: gp(record(sheet)) == gp(start), SLOW)
     page.wait_for_timeout(1500)
     page.keyboard.press("Escape")
+
+
+def add_item(t: Table, seat: str = "player2") -> None:
+    """Add item (the player, in the item browser): a Torch bought for 1 sp from the purse lands on the sheet and the
+    coins go down by 1 sp; then the Torch is taken off and the purse put back as it was."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    t.expect("the sheet connects", lambda: "Connected" in pill(page), 40)
+    cid, start = cid_of(page), record(sheet)
+    browse(page, cid, "Torch")
+    page.fill("[data-ib-pay]", "1 sp")
+    page.click("[data-ib-go]", timeout=8000)
+    t.expect("a Torch reaches the sheet", lambda: how_many(record(sheet), "Torch") == how_many(start, "Torch") + 1, SLOW)
+    t.expect("and 1 sp comes off the purse", lambda: worth(record(sheet)) == worth(start) - 10, SLOW)
+    page.wait_for_timeout(1500)
+    take_off(t, seat, sheet, start, "Torch")
+    coins0 = start.get("currencies") or {}
+    print("  the purse put back:", sheet.evaluate(TIDYING, [SHEETS[seat], [["PUT", f"inventory/currency/{w}", {"amount": coins0.get(k) or 0}]
+                                                                         for k, w in {"cp": "copper", "sp": "silver", "ep": "electrum", "gp": "gold", "pp": "platinum"}.items()]]), flush=True)
 
 
 def dm_backup(t: Table, seat: str = "player2") -> None:
@@ -781,7 +818,7 @@ def dm_backup(t: Table, seat: str = "player2") -> None:
 RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
         "cast": cast, "resource": resource, "coins": coins, "rests": rests, "temp-hp": temp_hp, "death-saves": death_saves,
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
-        "loot": loot, "dm-backup": dm_backup}
+        "loot": loot, "add-item": add_item, "dm-backup": dm_backup}
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 

@@ -639,8 +639,9 @@ def feature_rows(sheet: dict, opts: list[dict]) -> list[dict]:
             text = f"{f.get('summary') or ''} {f.get('text') or ''}"
             turn = [next((cost for cost, rx in TURN_WORDS if rx.search(text)), "Other")]
         turn = turn or ["Always on"]
-        uses = next((a["uses"] for a in sheet.get("actions") or [] if mine(a["name"], n) and a.get("uses")), None)
-        out.append({**f, "turn": turn, "uses": uses})
+        act = next((a for a in sheet.get("actions") or [] if mine(a["name"], n) and a.get("uses")), None)
+        # (and the count it opens: Use one and Give one back, app/resources.py)
+        out.append({**f, "turn": turn, "uses": act["uses"] if act else None, "uses_field": f"uses:{act['id']}" if act and act.get("id") else ""})
     return out
 
 

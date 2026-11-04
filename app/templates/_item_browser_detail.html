@@ -1,0 +1,20 @@
+{# What one item is, beside the item browser's list (app/item_browser.py detail): D&D Beyond's picture (only from its own
+   hosts), the numbers, the book and its own words. #}
+<div class="ib-card" data-ib-card data-id="{{ i.id }}">
+  <button type="button" class="btn link ib-card-x" data-ib-hide aria-label="Back to the list">← Back to the list</button>
+  {% if i.picture %}<img class="ib-pic" src="{{ i.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer">{% endif %}
+  <h3>{{ i.name }}</h3>
+  <div class="ib-tags"><span class="ib-rar" data-rarity="{{ i.rarity | lower | replace(' ', '-') }}">{{ i.rarity }}</span><span class="tag">{{ i.type or i.kind }}</span>
+    {% if i.attune %}<span class="tag ib-attune" title="{{ i.attune_note }}">Needs attunement{% if i.attune_note %} {{ i.attune_note }}{% endif %}</span>{% endif %}</div>
+  <dl class="ib-facts">
+    {% if mode != "loot" %}<dt>Cost</dt><dd>{{ i.price or ("Ask the DM" if i.magic else "—") }}</dd>{% endif %}
+    <dt>Weight</dt><dd>{{ i.weight_label or "—" }}</dd>
+    {% if i.damage %}<dt>Damage</dt><dd>{{ i.damage }}</dd>{% endif %}
+    {% if i.ac %}<dt>AC</dt><dd>{{ i.ac }}</dd>{% endif %}
+    {% if i.properties %}<dt>Properties</dt><dd>{{ i.properties | join(", ") }}</dd>{% endif %}
+    <dt>From</dt><dd>{{ i.book }}</dd>
+    <dt>{{ c.name }} has</dt><dd>{{ i.have or "none" }}</dd>
+  </dl>
+  {% if i.text %}<div class="ib-text">{% for p in i.text.split("\n") if p.strip() %}<p>{{ p }}</p>{% endfor %}</div>{% endif %}
+  <button type="button" class="btn primary small" data-ib-add>+ {{ "Give" if mode == "loot" else "Add" }} {{ i.name }}</button>
+</div>

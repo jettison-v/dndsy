@@ -284,6 +284,13 @@
 {%- else %}<span class="res" title="{{ says }}">{{ res_name(label) }} {{ pips(u) }}</span>{% endif -%}
 {%- endmacro %}
 
+{# Pips that open Use one and Give one back (app/resources.py) for the player who can play: wherever a count of theirs
+   shows, as on the Resources row (Brett, 2026-11-03: Wild Shape's, like slots). `c` none (or no field): just the pips. #}
+{% macro count_pips(c, field, u, label="", marks="", show="") -%}
+{%- if c and field %}<button type="button" class="res-go pips-go" data-use-url="/characters/{{ c.id }}/count?field={{ field | urlencode }}"{{ marks }} title="{{ label ~ ': ' if label }}use one, or give one back" aria-label="{{ label or 'Uses' }}: {{ u.left }} of {{ u.max }} left. Use one, or give one back">{{ show or pips(u) }}</button>
+{%- else %}{{ show or pips(u) }}{% endif -%}
+{%- endmacro %}
+
 {% macro resource_row(s, slots=True, skip=(), c=none) -%}
 {% set res_rows = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
 {% if res_rows %}<button type="button" class="res-more" data-res-more aria-expanded="false"><span>Resources</span><span class="count">{{ res_rows | length }}</span></button>
