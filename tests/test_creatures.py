@@ -208,12 +208,12 @@ def test_a_creature_change_is_only_for_its_player_or_the_dm(dm, db, labs):
     assert dm.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "1", "to": "heal"}).status_code == 204
 
 
-def test_the_extension_sends_a_character_value_only_for_a_creatures_maximum_or_type():
-    """extension 0.10.0 and 0.11.0: custom/value is on its list, but only for types 43 and 44 (ddb-page.js)."""
+def test_the_extension_sends_a_character_value_only_for_a_creature():
+    """extension 0.10.0 and 0.11.0: custom/value is on its list, but only for a creature's values 42, 43 and 44 (ddb-page.js)."""
     import os
 
     js = open(os.path.join(os.path.dirname(__file__), "..", "extension", "askdnd-bridge", "ddb-page.js")).read()
-    assert "const CREATURE_VALUES = new Set([43, 44])" in js and "!CREATURE_VALUES.has(Number(op.body.typeId))" in js
+    assert "const CREATURE_VALUES = new Set([42, 43, 44])" in js and "!CREATURE_VALUES.has(Number(op.body.typeId))" in js
 
 
 # ------------------------------------------------------------------ a familiar in play (round 2: app/companions.py)

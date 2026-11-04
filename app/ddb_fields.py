@@ -45,9 +45,15 @@ WRITES = {("PUT", HP_PATH), ("PUT", f"{CS}/life/death-saves"), ("PUT", f"{CS}/ch
           ("PUT", f"{CS}/creature/hp"), ("PUT", f"{CS}/custom/value"), ("DELETE", f"{CS}/custom/value"),
           # (extension 0.11.0: a familiar kept in step, Brett 2026-11-04 option A: here or not, what it is, its name;
           # character values 43 and 44 only)
-          ("PUT", f"{CS}/creature/status"), ("PUT", f"{CS}/creature")}
+          ("PUT", f"{CS}/creature/status"), ("PUT", f"{CS}/creature"),
+          # (also 0.11.0, ahead of the roadmap so one Google review covers them, Brett 2026-11-04: adding a creature,
+          # a familiar's form, a steed or summon, a Wild Shape form learned; removing one, only a Wild Shape form swapped
+          # out after a Long Rest; a spell learned or unlearned at a new level (Warlock, Sorcerer, Bard). Unused until
+          # their slices, each request tried on a test sheet first)
+          ("POST", f"{CS}/creature"), ("DELETE", f"{CS}/creature"), ("POST", f"{CS}/spell"), ("DELETE", f"{CS}/spell")}
 CREATURE_MAX = 43  # D&D Beyond's AdjustmentTypeEnum.CREATURE_HIT_POINTS: a creature's maximum, set on its sheet
 CREATURE_TYPE = 44  # D&D Beyond's AdjustmentTypeEnum.CREATURE_TYPE_OVERRIDE: what a creature is (a familiar's Celestial…)
+CREATURE_AC = 42  # D&D Beyond's AdjustmentTypeEnum.CREATURE_AC: a steed's or summon's Armor Class from its spell's level (0.11.0, unused yet)
 MONSTER_TYPES = {"Celestial": 3, "Fey": 8, "Fiend": 9}  # D&D Beyond's monsterTypes (its config), for CREATURE_TYPE
 VALUES = {"creature_max": CREATURE_MAX, "creature_type": CREATURE_TYPE}  # the character values askdnd may set, by field
 
