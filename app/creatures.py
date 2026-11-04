@@ -27,6 +27,11 @@ TURN = {
     COMPANION: "On its master's turn: it acts when they command it.",
 }
 OTHER_TURN = "When its turn comes is the DM's to say."
+# Party's card for it (Brett, Nov 4, Creatures as Characters board 7, A): whose it is and its turn, in a few words
+ROLE = {FAMILIAR: "familiar", INFUSION: "Homunculus", DEFENDER: "Steel Defender", SUMMONED: "summon", COMPANION: "companion",
+        MOUNT: "mount", PET: "pet", SIDEKICK: "sidekick"}
+TURN_SHORT = {FAMILIAR: "Its own Initiative · can't attack", INFUSION: "Right after its master's turn", DEFENDER: "Right after its master's turn",
+              SUMMONED: "Right after its master's turn", COMPANION: "On its master's turn"}
 
 # How a creature's Hit Points grow with its master, from its book (D&D Beyond keeps only the level-1 number): the class
 # whose level counts, and the number from that level and the master's Intelligence modifier
@@ -99,7 +104,9 @@ def card(sheet: dict, c: dict) -> dict:
         lv, intm = _level(sheet, grows[0]), _master_mod(sheet, "int")
         rule = grows[2](lv, intm)
         notes.append(f"Hit Points: {grows[1]}, so {rule} at {grows[0]} {lv} ({grows[3]}).")
-    if c.get("max_set"):  # set on D&D Beyond (its player or DM): that's the one
+    if c.get("max_set") and c["max_set"] == rule:  # (askdnd keeps it there: app/creature_hp.py keep_max)
+        hp_max, hp_parts = rule, [(f"{grows[1]} ({grows[3]}), set on D&D Beyond", rule)]
+    elif c.get("max_set"):  # set on D&D Beyond to another number (by its player or DM, or before a level-up): that's the one
         hp_max, hp_parts = c["max_set"], [("Set on D&D Beyond", c["max_set"])]
         if rule and rule != c["max_set"]:
             notes.append(f"D&D Beyond's maximum is set to {c['max_set']}; the rule works out {rule}. The DM rules.")
@@ -133,14 +140,17 @@ def card(sheet: dict, c: dict) -> dict:
         "id": c["id"], "name": c["name"], "kind": c["kind"], "group": c.get("group_name") or "Creature", "picture": c.get("picture") or "",
         "active": c.get("active"),
         "hp": {"max": hp_max, "current": max(0, hp_max - removed), "temp": temp, "removed": removed, "parts": hp_parts,
-               "ddb_max": ddb_max, "rule": rule, "fix": rule if rule and rule != ddb_max else None},  # (fix: D&D Beyond shows another maximum)
+               "ddb_max": ddb_max, "rule": rule, "fix": rule if rule and rule != ddb_max else None,  # (fix: D&D Beyond shows another maximum)
+               # (waits: D&D Beyond still counts against its stat block's, until askdnd's maximum is on its way there)
+               "waits": bool(rule and not c.get("max_set") and rule != block_hp)},
         "ac": b.get("ac") or c.get("armor_class"), "speed": speed, "walk": (b.get("speed") or {}).get("walk", 0),
         "other_speeds": ", ".join(f"{k} {v} ft" for k, v in (b.get("speed") or {}).items() if k != "walk"), "initiative": _signed(_mod(scores.get("dex", 10))),
         "abilities": abilities, "saves": saves, "skills": skills, "senses": ws.senses_text(b), "passive": passive,
         "immune": b.get("condition_immunities") or [], "size": b.get("size") or "", "cr": b.get("cr_label") or "",
         "traits": [t for t in b.get("traits") or [] if t["name"] != MIGHT], "might": might,
         "columns": {k: {"shown": v, "all": v, "count": len(v), "items": [], "item_count": 0} for k, v in cols.items()},
-        "turn": TURN.get(group, OTHER_TURN), "own_initiative": group == FAMILIAR, "notes": notes,
+        "turn": TURN.get(group, OTHER_TURN), "turn_short": TURN_SHORT.get(group, ""), "role": ROLE.get(group, "creature"),
+        "own_initiative": group == FAMILIAR, "notes": notes,
         "about": _first(c.get("about") or ""),
     }
 

@@ -176,6 +176,9 @@ def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
             from app import ddb_bridge  # (it builds on this module)
             if ddb_bridge.on_for(db, character):
                 ddb_bridge.seen(db, character, snap.raw, raw, summary)
+                from app import creature_hp  # (its routes read characters)
+
+                creature_hp.keep_max(db, character, summary)
         from app import level_up  # (its route reads characters through item_use)
 
         if (news := level_up.changes(snap.summary, summary)):

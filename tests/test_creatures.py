@@ -106,14 +106,19 @@ def test_a_creatures_roll_says_whose_it_is(player, db, labs):
     assert [r.who for r in rows[-2:]] == ["Homunculus Servant", ""]
 
 
-def test_party_shows_it_under_its_master(player, db, labs):
-    """Brett, Nov 3: on Party, under its master's card, its Hit Points and AC, opening its master's Battle as it."""
+def test_party_gives_it_its_own_card_after_its_masters(player, db, labs):
+    """Brett, Nov 4 (Creatures as Characters board 7, A): on Party a creature is as easy to see as a character, its own card
+    right after its master's (whose it is, its Hit Points, AC, Speed and turn), opening its Battle; its master's says "with"."""
     page = player.get("/party").text
-    assert 'class="pt-line pt-creature"' in page and f'href="/characters/{labs.id}/battle?creature={ZAP}" data-no-peek' in page
-    assert "<b>1</b><span class=\"note\"> / 1 HP" in page  # (Cole has no Artificer levels: D&D Beyond's 1)
+    master, mine = page.index('data-modal-url="/characters/%d/brief"' % labs.id), page.index('class="section pt-card pt-creature-card"')
+    assert master < mine and page.count("</article>", master, mine) == 1  # (the very next card)
+    card = page[mine:page.index("</article>", mine)]
+    assert "Cole's Homunculus" in card and f'href="/characters/{labs.id}/battle?creature={ZAP}" data-no-peek' in card
+    assert "<b>1</b><span class=\"note\"> / 1" in card and "Right after its master" in card  # (Cole has no Artificer levels: D&D Beyond's 1)
+    assert "with Homunculus" in page[master:mine]
     db.get(Campaign, labs.campaign_id).vtt_pieces = ["sync"]
     db.flush()
-    assert "pt-creature" not in player.get("/party").text
+    assert "pt-creature-card" not in player.get("/party").text
 
 
 # ------------------------------------------------------------------ its Hit Points on D&D Beyond (slice 2)
@@ -136,19 +141,59 @@ def test_its_damage_and_healing_go_to_d_and_d_beyond_as_its_sheet_sends_them(pla
     assert "Cole's Homunculus Servant" in player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
 
 
-def test_the_maximum_is_set_first_when_d_and_d_beyond_shows_another(player, db, labs, sheet):
-    """D&D Beyond counts damage against the maximum it shows (its stat block's 1 for a Homunculus Servant): − and + wait
-    until it shows the rule's, and setting it is a press, never by itself (its character value 43)."""
+def maxima(db, ch):
+    from app.models import BridgeIntent
+
+    return [(i.data["value"], i.state) for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == ch.id).order_by(BridgeIntent.id))
+            if str(i.data.get("field", "")).startswith("creature_max:")]
+
+
+def test_askdnd_sets_the_rules_maximum_on_d_and_d_beyond_by_itself(player, db, labs, sheet):
+    """Brett, Nov 4 (Creatures as Characters, A: askdnd keeps D&D Beyond's Extras in step): D&D Beyond counts damage against
+    the maximum it shows (its stat block's 1 for a Homunculus Servant), so a read sets the rule's there (its character value
+    43), with no button; − and + work at once, as it's on its way."""
     sheet["classes"][0]["definition"]["name"] = "Artificer"  # (Cole as an artificer, for the rule)
     characters.refresh(db, labs)
-    k = player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
-    assert "Set D&amp;D Beyond to" in k and "−/+" not in k
-    r = player.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "3", "to": "damage"})
-    assert r.status_code == 409 and "set it to" in r.json()["detail"]
-    assert player.post(f"/characters/{labs.id}/creatures/{ZAP}/max").status_code == 204
+    (value, _), = maxima(db, labs)
+    assert value > 1
     op, = ops(db, labs)
     assert (op["method"], op["path"]) == ("PUT", "/character/v5/custom/value")
-    assert {k: op["body"][k] for k in ("typeId", "valueId", "contextId")} == {"typeId": 43, "valueId": str(ZAP), "contextId": None} and op["body"]["value"] > 1
+    assert {k: op["body"][k] for k in ("typeId", "valueId", "contextId", "value")} == {"typeId": 43, "valueId": str(ZAP), "contextId": None, "value": value}
+    k = player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
+    assert "Set D&amp;D Beyond to" not in k and "askdnd sets" not in k and "−/+" in k
+    assert player.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "3", "to": "damage"}).status_code == 204
+    characters.refresh(db, labs)
+    assert len(maxima(db, labs)) == 1  # (on its way: not asked again)
+
+
+def test_the_maximum_is_set_once_per_number_and_never_over_a_typed_one(db, labs, sheet):
+    """One given up (or undone) isn't made again; one its player or DM typed on D&D Beyond stays theirs; after a level-up
+    askdnd's own number moves on."""
+    sheet["classes"][0]["definition"]["name"] = "Artificer"
+    characters.refresh(db, labs)
+    from app.models import BridgeIntent
+
+    it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == labs.id)).one()
+    first = it.data["value"]
+    it.state = "dismissed"
+    characters.refresh(db, labs)
+    assert maxima(db, labs) == [(first, "dismissed")]
+    it.state = "live"  # (made: D&D Beyond holds askdnd's number)
+    sheet["characterValues"] = [{"typeId": 43, "valueId": str(ZAP), "value": first}]
+    sheet["classes"][0]["level"] += 1  # (a level-up: the rule's number grows)
+    characters.refresh(db, labs)
+    assert maxima(db, labs) == [(first, "live"), (first + 1, "waiting")]
+    db.delete(db.scalars(select(BridgeIntent).where(BridgeIntent.state == "waiting")).one())
+    sheet["characterValues"] = [{"typeId": 43, "valueId": str(ZAP), "value": 9}]  # (typed on D&D Beyond)
+    characters.refresh(db, labs)
+    assert maxima(db, labs) == [(first, "live")]
+
+
+def test_without_your_creatures_on_nothing_is_set(db, labs, sheet):
+    db.get(Campaign, labs.campaign_id).vtt_pieces = ["sync"]
+    sheet["classes"][0]["definition"]["name"] = "Artificer"
+    characters.refresh(db, labs)
+    assert maxima(db, labs) == []
 
 
 def test_a_creature_change_is_only_for_its_player_or_the_dm(dm, db, labs):
