@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Where a creature shows</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1040px">
+  <div class="head">
+    <div class="num">1 · Your creatures, round 2 · where it lives</div>
+    <h1>A familiar, a steed, a Homunculus: a small character of its own</h1>
+    <p class="where"><b>Brett, Nov 4:</b> "a simplified character that the summoner or creator controls", in battle and in the story, never an afterthought. <b>Where you'll find it:</b> everywhere a character shows today, the creature shows too, as its master's: Battle (the switch by the name, built), Party, the fight's rows and band, Table rolls, and Campaign › World. It comes and goes as its rules say: casting brings it, and dismissing it, 0 Hit Points, a Long Rest or the end of Concentration send it away. The example is Trah's familiar, <b>Pip</b>.</p>
+  </div>
+  <div class="grid3" style="grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px">
+    <div class="place">
+      <span class="lbl">Battle · built (slice 1)</span>
+      <div class="card">
+        <div class="seg" role="group" aria-label="Who you're playing"><button type="button"><span class="pic sm master">T</span>Trah</button><button type="button" class="on"><span class="pic sm">P</span>Pip</button></div>
+        <span class="note">Battle drawn as Pip: its Hit Points, AC, actions, its turn</span>
+      </div>
+    </div>
+    <div class="place">
+      <span class="lbl">Party · new</span>
+      <div class="ccard" style="gap: 6px">
+        <div class="row start"><span class="pic sm">P</span><b style="color: var(--strong)">Pip</b><span class="state"><i></i>Here</span></div>
+        <span class="note">Trah's familiar · Owl · 1 / 1 HP · AC 11</span>
+      </div>
+    </div>
+    <div class="place">
+      <span class="lbl">The fight · slice 3</span>
+      <div class="card" style="gap: 4px; font-size: 13px">
+        <div class="ln"><span class="who"><span class="av">T</span>Trah</span><b>17</b></div>
+        <div class="ln"><span class="who"><span class="pic sm">P</span>Pip</span><b>14</b></div>
+        <div class="ln"><span class="who"><span class="av">E1</span>Enemy 1</span><b>12</b></div>
+      </div>
+    </div>
+    <div class="place">
+      <span class="lbl">Table rolls · built</span>
+      <div class="rolls"><div class="rollrow"><span class="pic sm">P</span><span><b>Pip</b> <span class="note">(Trah's familiar)</span><br><span class="note">Perception</span></span><span class="big">17</span></div></div>
+    </div>
+    <div class="place">
+      <span class="lbl">Campaign › World · new</span>
+      <div class="card" style="gap: 4px">
+        <div class="row start"><span class="pic sm">P</span><b style="color: var(--strong)">Pip</b></div>
+        <span class="note">Companion · Trah's familiar since [session]; a Raven, then an Owl</span>
+      </div>
+    </div>
+  </div>
+  <div class="grid2" style="grid-template-columns: 360px minmax(0, 1fr); gap: 24px">
+    <div class="card" style="gap: 10px">
+      <h3>What makes it a character</h3>
+      <ul style="margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px">
+        <li><b style="color: var(--strong)">Its own name and picture</b>, kept for the whole campaign, whatever form it takes</li>
+        <li><b style="color: var(--strong)">Its own Hit Points</b>, kept on D&amp;D Beyond (built)</li>
+        <li><b style="color: var(--strong)">Numbers worked out</b>: from its form, the spell's level or its master's level, with the source</li>
+        <li><b style="color: var(--strong)">Its turn by its rules</b>: its own Initiative, or right after its master</li>
+        <li><b style="color: var(--strong)">Here only while the rules say</b>: cast, dismissed, 0 Hit Points, a Long Rest, Concentration</li>
+        <li><b style="color: var(--strong)">Its story</b>: an entry in the World, linked to its master</li>
+      </ul>
+      <p class="note">Its master plays it: their player rolls for it and changes it; the DM can, as for any character.</p>
+    </div>
+    <div style="display: grid; gap: 8px; align-content: start">
+      <h2 class="sec">The kinds, by the 2024 rules</h2>
+      <table class="track">
+        <thead><tr><th style="width: 190px">Kind</th><th>Comes</th><th>Goes</th><th style="width: 200px">Its turn</th><th style="width: 170px">Its numbers</th></tr></thead>
+        <tbody>
+          <tr><td><b>Familiar</b><br><span class="note">Find Familiar</span></td><td>Cast (1 hour, or as a Ritual). One at a time: casting again gives it a new form</td><td>0 Hit Points (back when cast again); the pocket dimension (back as a Magic action); dismissed forever</td><td>Its own Initiative; it can't attack</td><td>Its form's stat block</td></tr>
+          <tr><td><b>Familiar</b><br><span class="note">Druid's Wild Companion</span></td><td>A Wild Shape use or a spell slot</td><td>As above, and at the druid's next Long Rest. Always Fey</td><td>Its own Initiative</td><td>Its form's stat block</td></tr>
+          <tr><td><b>Steed</b><br><span class="note">Find Steed</span></td><td>Cast; the steed that disappeared, or a different one</td><td>0 Hit Points, or its master dies</td><td>Shares its master's Initiative; a controlled mount when ridden</td><td>From the spell's level</td></tr>
+          <tr><td><b>Summon</b><br><span class="note">Summon Dragon and others</span></td><td>Cast</td><td>Concentration ends, 0 Hit Points, or its time is up</td><td>Right after its master, sharing the Initiative</td><td>From the spell's level</td></tr>
+          <tr><td><b>Class companion</b><br><span class="note">Homunculus Servant, Steel Defender, Primal Companion</span></td><td>Always, from its feature</td><td>0 Hit Points; back as its feature says</td><td>Right after its master, or within their turn (Primal Companion)</td><td>Grow with its master's level</td></tr>
+        </tbody>
+      </table>
+      <p class="note">Wild Shape forms stay Wild Shape's: they're the druid's own list, not companions. Pets and sidekicks are the DM's to say.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

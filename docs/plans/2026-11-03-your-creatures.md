@@ -19,7 +19,7 @@ Brett chose Option B on [Your Creatures](https://claude.ai/artifact/MLSXxJLwP7Go
 
 ## To work out with Brett (Nov 4)
 
-- **A familiar or summon exists only once it's cast** (Brett, Nov 3: "They only exist when you cast them"): today every creature on the sheet's Extras gets a switch. The workflow for casting Find Familiar (or a Summon spell) bringing it into play, and dismissing it, is tomorrow's; D&D Beyond's `creature/status` (active) may be where it lives.
+- **Round 2, Creatures as Characters** (Brett, Nov 4; `docs/mockups/creatures-as-characters/`): a creature is a small character of its own that comes and goes by its rules. A familiar or summon exists only once cast (Brett, Nov 3); casting Find Familiar brings one the character has had or a new one (one at a time: otherwise a new form), with its form, Celestial/Fey/Fiend, name and picture; the pocket dimension, 0 Hit Points, Concentration and a Long Rest send it away; Party, the fight's rows and Campaign › World show it. D&D Beyond (checked Nov 4): its own page adds (`POST creature`), renames (`PUT creature`), removes (`DELETE creature`) and switches (`PUT creature/status`) a creature and customizes its size, type, alignment, AC, Hit Points and notes; no picture; all 16 creatures at our table are switched off. Brett picks A (askdnd keeps Extras in step) or B (reads them only) on the mockup's last board.
 
 ## Needs Brett
 

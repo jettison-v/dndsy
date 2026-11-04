@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Casting Find Familiar</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1040px">
+  <div class="head">
+    <div class="num">2 · Casting Find Familiar · try it</div>
+    <h1>The spell brings the familiar: one you've had, or a new one</h1>
+    <p class="where"><b>Where you'll find it:</b> Trah's Find Familiar, wherever a spell has Cast (Battle, Sheet › Spells, the Spell Book): the Cast window gains a <b>Your familiar</b> part. Nothing appears because it's on D&amp;D Beyond's Extras; it appears when the spell is cast. Pick how things stand before casting, then cast.</p>
+  </div>
+  <div class="row start" style="gap: 10px">
+    <span class="lbl">Before casting</span>
+    <div class="seg" role="group" aria-label="How things stand before casting">
+      <button type="button" class="{{ goneCls }}" aria-pressed="{{ isGoneScene }}" onClick="{{ sceneGone }}" style="padding: 5px 14px">Pip disappeared at 0 Hit Points</button>
+      <button type="button" class="{{ hereCls }}" aria-pressed="{{ isHereScene }}" onClick="{{ sceneHere }}" style="padding: 5px 14px">Pip is here</button>
+      <button type="button" class="{{ noneCls }}" aria-pressed="{{ isNoneScene }}" onClick="{{ sceneNone }}" style="padding: 5px 14px">Trah's first familiar</button>
+    </div>
+  </div>
+  <div class="grid2" style="grid-template-columns: 700px minmax(0, 1fr); gap: 28px">
+    <div class="win">
+      <div class="row"><h3>Cast Find Familiar</h3><span class="note">Level 1 · Conjuration · Trah</span></div>
+      <div class="row start wrap" style="gap: 8px">
+        <span class="lbl" style="width: 80px">How</span>
+        <button type="button" class="{{ ritualCls }}" onClick="{{ pickRitual }}">As a Ritual · no slot · 1 hour 10 minutes</button>
+        <button type="button" class="{{ slotCls }}" onClick="{{ pickSlot }}">1st-level · 1 hour (3 left)</button>
+      </div>
+      <p class="note" style="margin-left: 88px">Uses up burning incense worth 10+ GP.</p>
+      <div style="display: grid; gap: 8px">
+        <span class="lbl">Your familiar</span>
+        <sc-if value="{{ isHereScene }}" hint-placeholder-val="{{ false }}">
+          <div class="pick on" style="cursor: default"><span class="pic">P</span><span><b>Pip</b> is here, as an Owl<br><span class="note">One familiar at a time: this casting gives Pip a new form.</span></span><span class="state"><i></i>Here</span></div>
+        </sc-if>
+        <sc-if value="{{ isGoneScene }}" hint-placeholder-val="{{ true }}">
+          <div style="display: grid; gap: 6px">
+            <button type="button" class="{{ pipPickCls }}" onClick="{{ pickPip }}"><span class="pic">P</span><span><b>Bring back Pip</b><br><span class="note">Disappeared at 0 Hit Points, last as an Owl. Its name, picture and story stay.</span></span><span class="state gone"><i></i>Gone</span></button>
+            <button type="button" class="{{ newPickCls }}" onClick="{{ pickNew }}"><span class="pic" style="background: var(--surface-3)">+</span><span><b>A new familiar</b><br><span class="note">Pip stays in the World's story, as Trah's familiar that was.</span></span><span></span></button>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isNoneScene }}" hint-placeholder-val="{{ false }}">
+          <div class="pick on" style="cursor: default"><span class="pic" style="background: var(--surface-3)">+</span><span><b>A new familiar</b><br><span class="note">Trah's first: name it and give it a picture.</span></span><span></span></div>
+        </sc-if>
+        <sc-if value="{{ showsName }}" hint-placeholder-val="{{ false }}">
+          <div class="row start" style="gap: 12px; align-items: end">
+            <label class="field" style="flex: 1">Its name<input type="text" value="Moss" aria-label="Its name"></label>
+            <button type="button" class="btn">Add a picture</button>
+            <span class="note" style="max-width: 190px">Kept by askdnd for the whole campaign, whatever form it takes</span>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display: grid; gap: 6px">
+        <span class="lbl">Its form <span style="text-transform: none; letter-spacing: 0; font-family: var(--sans); font-weight: 500">· any Beast of Challenge Rating 0</span></span>
+        <div class="forms">
+          <sc-for list="{{ forms }}" as="f" hint-placeholder-count="11">
+            <button type="button" class="{{ f.cls }}" aria-pressed="{{ f.on }}" onClick="{{ f.pick }}">{{ f.name }}</button>
+          </sc-for>
+          <button type="button" class="form" style="color: var(--muted)">Another…</button>
+        </div>
+        <div class="facts" style="background: var(--surface); border-radius: 8px; padding: 8px 12px">
+          <span>{{ form.name }}</span><span><b style="color: var(--strong)">AC {{ form.ac }} · {{ form.hp }} HP · {{ form.speed }}</b></span>
+          <span>Senses</span><span>{{ form.senses }}</span>
+          <span>Traits</span><span>{{ form.traits }}</span>
+        </div>
+      </div>
+      <div class="row start wrap" style="gap: 8px">
+        <span class="lbl" style="width: 80px">It's a</span>
+        <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="3">
+          <button type="button" class="{{ k.cls }}" aria-pressed="{{ k.on }}" onClick="{{ k.pick }}">{{ k.name }}</button>
+        </sc-for>
+        <span class="note">instead of a Beast, chosen each casting</span>
+      </div>
+      <div class="row" style="border-top: 1px solid var(--line); padding-top: 12px">
+        <span class="note">{{ castNote }}</span>
+        <button type="button" class="btn main" onClick="{{ cast }}">{{ castLabel }}</button>
+      </div>
+    </div>
+    <div style="display: grid; gap: 14px; align-content: start">
+      <sc-if value="{{ cast_done }}" hint-placeholder-val="{{ false }}">
+        <div style="display: grid; gap: 12px">
+          <div class="cornercard"><span class="pic">{{ initial }}</span><span><b style="color: var(--strong)">{{ doneTitle }}</b><br><span class="note">{{ doneSub }}</span></span><button type="button" class="btn mini" onClick="{{ undo }}">Undo</button></div>
+          <div class="card">
+            <h3>What changes</h3>
+            <div class="facts" style="grid-template-columns: 130px minmax(0, 1fr)">
+              <span>Trah's Battle</span><span>The switch by his name: Trah · {{ who }}</span>
+              <span>Party</span><span>{{ who }}'s card under Trah's, Here</span>
+              <span>The fight</span><span>{{ who }} rolls its own Initiative when one starts</span>
+              <span>The World</span><span>{{ worldLine }}</span>
+              <span>Spell slots</span><span>{{ slotLine }}</span>
+              <span>D&amp;D Beyond</span><span>{{ ddbLine }}</span>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ notDone }}" hint-placeholder-val="{{ true }}">
+        <div class="card" style="border-style: dashed">
+          <h3>Cast it to see what changes</h3>
+          <p class="note">A corner card says it's done, with Undo, as for every change; Battle, Party, the fight and the World follow.</p>
+        </div>
+      </sc-if>
+      <div class="card">
+        <h3>The rules it follows</h3>
+        <ul style="margin: 0; padding-left: 18px; display: grid; gap: 5px; font-size: 13px">
+          <li>One familiar at a time: casting while it's here gives it a new form</li>
+          <li>After 0 Hit Points it reappears only when the spell is cast again</li>
+          <li>Celestial, Fey or Fiend instead of a Beast, chosen when cast</li>
+          <li>A Ritual takes 10 minutes longer and spends no slot</li>
+          <li>The incense is said, never checked: the DM rules</li>
+        </ul>
+        <p class="rule">A Druid's Wild Companion opens the same window from Wild Shape's uses (Fey only, gone at the next Long Rest); a Warlock's Pact of the Chain adds its forms and needs no slot.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1040}}'>
+class Component extends DCLogic {
+  state = { scene: 'gone', who: 'pip', form: 'Owl', kind: 'Celestial', way: 'ritual', done: false };
+  renderVals() {
+    const FORMS = [
+      ['Bat', 12, 1, '5 ft · fly 30 ft', 'Blindsight 60 ft', 'none'], ['Cat', 12, 2, '40 ft · climb 40 ft', 'Darkvision 60 ft', 'Jumper'],
+      ['Frog', 11, 1, '20 ft · swim 20 ft', 'Darkvision 30 ft', 'Amphibious, Standing Leap'], ['Hawk', 13, 1, '10 ft · fly 60 ft', 'Passive Perception 16', 'none'],
+      ['Lizard', 10, 2, '20 ft · climb 20 ft', 'Darkvision 30 ft', 'Spider Climb'], ['Octopus', 12, 3, '5 ft · swim 30 ft', 'Darkvision 30 ft', 'Compression, Water Breathing'],
+      ['Owl', 11, 1, '5 ft · fly 60 ft', 'Darkvision 120 ft', 'Flyby'], ['Rat', 10, 1, '20 ft · climb 20 ft', 'Darkvision 30 ft', 'Agile'],
+      ['Raven', 12, 2, '10 ft · fly 50 ft', 'Passive Perception 13', 'Mimicry'], ['Spider', 12, 1, '20 ft · climb 20 ft', 'Darkvision 30 ft', 'Spider Climb, Web Walker'],
+      ['Weasel', 13, 1, '30 ft · climb 30 ft', 'Darkvision 60 ft', 'none'],
+    ];
+    const s = this.state, set = (o) => this.setState(Object.assign({ done: false }, o));
+    const f = FORMS.find((x) => x[0] === s.form);
+    const isNew = s.scene === 'none' || (s.scene === 'gone' && s.who === 'new');
+    const who = isNew ? 'Moss' : 'Pip';
+    const ritual = s.way === 'ritual', an = /^[AEIOU]/.test(f[0]) ? 'an ' : 'a ';
+    const verb = s.scene === 'here' ? 'Pip takes a new form' : (isNew ? who + ' appears' : 'Pip is back');
+    return {
+      isGoneScene: s.scene === 'gone', isHereScene: s.scene === 'here', isNoneScene: s.scene === 'none',
+      goneCls: s.scene === 'gone' ? 'on' : '', hereCls: s.scene === 'here' ? 'on' : '', noneCls: s.scene === 'none' ? 'on' : '',
+      sceneGone: () => set({ scene: 'gone', who: 'pip' }), sceneHere: () => set({ scene: 'here', form: 'Raven' }), sceneNone: () => set({ scene: 'none', form: 'Cat' }),
+      pipPickCls: s.who === 'pip' ? 'pick on' : 'pick', newPickCls: s.who === 'new' ? 'pick on' : 'pick',
+      pickPip: () => set({ who: 'pip' }), pickNew: () => set({ who: 'new' }), showsName: isNew,
+      ritualCls: ritual ? 'btn' : 'btn quiet', slotCls: ritual ? 'btn quiet' : 'btn',
+      pickRitual: () => set({ way: 'ritual' }), pickSlot: () => set({ way: 'slot' }),
+      forms: FORMS.map((x) => ({ name: x[0], on: x[0] === s.form, cls: x[0] === s.form ? 'form on' : 'form', pick: () => set({ form: x[0] }) })),
+      form: { name: f[0], ac: f[1], hp: f[2], speed: f[3], senses: f[4], traits: f[5] },
+      kinds: ['Celestial', 'Fey', 'Fiend'].map((k) => ({ name: k, on: k === s.kind, cls: k === s.kind ? 'form on' : 'form', pick: () => set({ kind: k }) })),
+      castLabel: ritual ? 'Cast as a Ritual' : 'Cast with a 1st-level slot',
+      castNote: who + ' · ' + f[0] + ' · ' + s.kind + (ritual ? ' · no slot' : ' · one 1st-level slot'),
+      cast: () => this.setState({ done: true }), undo: () => this.setState({ done: false }),
+      cast_done: s.done, notDone: !s.done, who: who, initial: who[0],
+      doneTitle: verb + ': ' + who + ' the ' + f[0],
+      doneSub: s.kind + ' · AC ' + f[1] + ' · ' + f[2] + ' / ' + f[2] + ' HP',
+      worldLine: isNew ? 'A new entry: ' + who + ', Trah’s familiar, ' + an + f[0] : 'Pip’s entry adds: ' + an + f[0] + ' from [this session]',
+      slotLine: ritual ? 'None spent (a Ritual)' : 'One 1st-level spent, through the bridge',
+      ddbLine: 'Extras › Familiar: the ' + f[0] + ' named ' + who + ', ' + s.kind + ', switched Active; any other familiar switched off (board 6, A)',
+    };
+  }
+}
+</script>
+</body>
+</html>

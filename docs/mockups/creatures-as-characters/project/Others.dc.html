@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Steeds, summons, companions</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 1040px">
+  <div class="head">
+    <div class="num">5 · The same model for every kind</div>
+    <h1>Each kind comes and goes by its own rule, with its numbers worked out</h1>
+    <p class="where"><b>Where you'll find it:</b> the same places as Pip (boards 1 to 4). What differs is what brings it, what sends it away and where its numbers come from. Every number below is worked out by askdnd, with its source, so nobody does the arithmetic at the table.</p>
+  </div>
+  <div class="grid2" style="gap: 20px">
+    <div class="ccard" style="gap: 10px">
+      <div class="row"><div class="row start"><span class="pic">S</span><span style="display: grid"><b style="color: var(--strong); font-size: 16px">Find Steed, cast at 3rd level</b><span class="note">Otherworldly Steed · Celestial · a horse, chosen when cast</span></span></div><span class="state"><i></i>Here</span></div>
+      <div class="facts" style="grid-template-columns: 150px minmax(0, 1fr)">
+        <span>Armor Class</span><span><b style="color: var(--strong)">13</b> · 10 + the spell's level</span>
+        <span>Hit Points</span><span><b style="color: var(--strong)">35</b> · 5 + 10 × the spell's level; 3 Hit Dice (d10)</span>
+        <span>Otherworldly Slam</span><span><b style="color: var(--strong)">+7, 1d8 + 3 Radiant</b> · its master's spell attack; + the spell's level; Radiant for a Celestial</span>
+        <span>Speed</span><span>60 ft · Fly 60 ft only at level 4+ (not this one)</span>
+        <span>Its turn</span><span>Shares its master's Initiative; a controlled mount when ridden; acts on its own right after them if they're Incapacitated</span>
+        <span>Goes</span><span>0 Hit Points, or its master dies. Casting again: <b style="color: var(--strong)">the steed that disappeared, or a different one</b> (the same chooser as Pip's, board 2)</span>
+      </div>
+    </div>
+    <div class="ccard" style="gap: 10px">
+      <div class="row"><div class="row start"><span class="pic">D</span><span style="display: grid"><b style="color: var(--strong); font-size: 16px">A summon spell (Summon Dragon at 5th level)</b><span class="note">Draconic Spirit · its numbers from the spell's level</span></span></div><span class="cond conc">Concentration · 1 hour</span></div>
+      <div class="facts" style="grid-template-columns: 150px minmax(0, 1fr)">
+        <span>Comes</span><span>Cast: its card appears with the Concentration pill, which names it ("Concentrating on Summon Dragon: the Draconic Spirit")</span>
+        <span>Its numbers</span><span>AC, Hit Points and attacks from the level cast at and its master's spell attack and DC, each with its source</span>
+        <span>Its turn</span><span>Right after its master, sharing the Initiative; it obeys their commands</span>
+        <span>Goes</span><span>When Concentration ends (End, a failed save, another Concentration spell, a rest that outlasts it), at 0 Hit Points, or when its hour is up. A corner card says so, with Undo</span>
+      </div>
+    </div>
+    <div class="ccard" style="gap: 10px">
+      <div class="row"><div class="row start"><span class="pic">H</span><span style="display: grid"><b style="color: var(--strong); font-size: 16px">A class companion (a Homunculus Servant, a Steel Defender)</b><span class="note">From its master's feature, not a spell</span></span></div><span class="state"><i></i>Always here</span></div>
+      <div class="facts" style="grid-template-columns: 150px minmax(0, 1fr)">
+        <span>Comes</span><span>With the feature: no casting, always listed</span>
+        <span>Its numbers</span><span>Grow with its master: Hit Points 1 + Intelligence + Artificer level (built, slice 1), Might of the Master (built)</span>
+        <span>Its turn</span><span>Right after its master; it takes the Dodge action unless they spend a Bonus Action to command it</span>
+        <span>At 0</span><span>Gone until it comes back as its feature says; the band offers what the feature names, the DM rules</span>
+      </div>
+      <p class="note">A Ranger's Primal Companion is the same kind, acting within its master's turn; at a Long Rest its master can choose a different beast.</p>
+    </div>
+    <div class="ccard" style="gap: 10px">
+      <div class="row"><div class="row start"><span class="pic">M</span><span style="display: grid"><b style="color: var(--strong); font-size: 16px">A Druid's Wild Companion</b><span class="note">Find Familiar from a Wild Shape use or a slot · always Fey</span></span></div><span class="state"><i></i>Here until a Long Rest</span></div>
+      <p class="note">The same window as board 2, opened from Wild Shape's uses on Resources: Fey already chosen, no incense. It leaves at the druid's next Long Rest, and the Long Rest window lists it with what comes back:</p>
+      <div class="win" style="box-shadow: none; padding: 12px 14px; gap: 6px">
+        <b style="color: var(--strong)">Long Rest · what changes</b>
+        <div class="ln"><span>Hit Points, Hit Point Dice, spell slots</span><span class="note">all back</span></div>
+        <div class="ln"><span>Wild Shape</span><span class="note">2 of 2 back</span></div>
+        <div class="ln"><span><b>Moss</b> (Wild Companion) leaves</span><span class="note">✓ ticked: untick on the DM's ruling</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
