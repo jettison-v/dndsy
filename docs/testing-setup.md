@@ -62,6 +62,7 @@ Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the b
 | `cast`, `resource`, `coins`, `rests` | Slots, uses, coins and rests made in askdnd land on the real sheet and are put back |
 | `temp-hp`, `death-saves`, `inspiration`, `exhaustion`, `inventory` | Temporary Hit Points, death saves, Heroic Inspiration, Exhaustion and items made in askdnd land on the real sheet and are put back |
 | `wild-shape` | Levi shifts into a form: a Wild Shape use and the form's Temporary Hit Points land on the real sheet, Battle is the form's, and Undo puts all three back |
+| `pact-cast`, `cross-cast`, `short-rest`, `in-form` | Levi's two kinds of spellcasting: Hex on a Pact slot, Entangle on a Pact slot and Hex on a Druid slot (each spends only its own kind), a Short Rest bringing back the Pact slot and one Wild Shape use but not a Druid slot, and a form's Cast saying it can't cast, Leave keeping the Temporary Hit Points |
 
 The full list, and what each must do, is in [live-test-plan.md](live-test-plan.md). Part 1 also runs every night at 4:00 (live-test-plan.md › Every night).
 

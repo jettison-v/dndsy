@@ -43,6 +43,10 @@ On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everythi
 | `loot` | Give loot (0.9.8, the DM's seat; in the item browser since Nov 3): a Torch and 1 gp reach Cathartic's sheet, then come off | Every time |
 | `add-item` | Add item (the item browser, Nov 3; player2's seat): a Torch bought for 1 sp from the purse reaches Cathartic's sheet and the purse goes down 1 sp; then the Torch comes off and the purse is put back | Every time |
 | `wild-shape` | Wild Shape (Nov 3, Levi's seat, player4): Shift into a form spends a use and gives its Temporary Hit Points on D&D Beyond, Battle draws the form; Undo puts the use, the Temporary Hit Points and the form back | Every time |
+| `pact-cast` | Pact Magic (Nov 3, Levi): Hex cast with a Pact slot spends the Pact slot on D&D Beyond, not a Druid slot; Undo gives it back | Every time |
+| `cross-cast` | Two kinds of spellcasting (Nov 3, Levi): the Druid's Entangle on a Pact slot and the Warlock's Hex on a Druid slot, each spending only that kind; both undone | Every time |
+| `short-rest` | A Short Rest for a Druid / Warlock (Nov 3, Levi): the Pact slot and one Wild Shape use come back on D&D Beyond, a spent Druid slot doesn't; then given back | Every time (needs PR 194 on beta) |
+| `in-form` | In a form (Nov 3, Levi): Cast says the form can't cast spells; Leave ends it and keeps the Temporary Hit Points; then all put back | Every time |
 | `dm-backup` | DM Backup (0.9.8): with Cathartic's sheet closed, the player's pill says Through the DM, and the DM's seat (a D&D Beyond page open) makes a hit and the healing; reopening the sheet says Connected | Every time |
 
 Part 1 starts by checking that both test sheets are clean (full Hit Points, nothing marked, spent or in force) and ends by checking each is back as it found it. A miss at the start means an earlier run didn't put something back: it's reported, and hit points, death saves and conditions are put right on D&D Beyond so the rest can run.
