@@ -1,5 +1,5 @@
 """Feedback for Claude in a real page (app/feedback.py, app.js "feedback for Claude"; Brett, 2026-11-03,
-docs/mockups/feedback-queue/): \\ opens the window with the page's picture already taken, Point at it marks a thing on
+docs/mockups/feedback-queue/): \\ opens the window at once and the page's picture follows, Point at it marks a thing on
 the page, and Send puts the note in the queue with where, when and how the page was."""
 
 from sqlalchemy import create_engine, text
@@ -32,4 +32,38 @@ def test_backslash_point_and_send(people, server, browser_db):
     win.wait_for(state="visible", timeout=5000)
     page.fill("#fb-win textarea[name=text]", "a \\ b")
     assert page.locator("#fb-win textarea[name=text]").input_value() == "a \\ b"
+    assert not admin.errors, admin.errors
+
+
+def test_a_long_page_opens_at_once_and_draws_one_picture_of_what_is_on_screen(people, server):
+    """Brett, Nov 3: with the item browser open the window was slow to come, and pressing fast froze the tab once. The
+    window opens before the picture is drawn, only what's on screen is drawn (thousands of rows off screen), a second
+    press while one is drawn waits for it, and a modal open on the page is in the picture where it is on screen."""
+    admin = people("admin")
+    page = admin.open(f"/characters/{server['cole']}/battle")
+    page.wait_for_load_state("networkidle")
+    page.evaluate("""() => {  // a long list in a modal, as the item browser is
+      const box = Object.assign(document.createElement('div'), { id: 'long' });
+      Object.assign(box.style, { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '400px',
+                                 height: '300px', overflow: 'auto', background: 'rgb(200, 30, 30)', zIndex: 50 });
+      for (let i = 0; i < 3000; i++) box.append(Object.assign(document.createElement('p'), { textContent: 'Row ' + i }));
+      document.body.append(box);
+      window.scrollTo(0, 400);
+    }""")
+    page.keyboard.press("\\")
+    page.locator("#fb-win").wait_for(state="visible", timeout=1000)  # (before the picture: it used to wait for it)
+    page.keyboard.press("Escape")
+    page.wait_for_timeout(100)  # (Chrome closes the window just after the key; a person is never quicker)
+    page.keyboard.press("\\")  # (again at once, while the first picture is drawn: one picture, not two)
+    page.locator("[data-fb-shot]").wait_for(state="visible", timeout=15000)
+    red = page.evaluate("""async () => {  // the modal's red at the picture's centre: it was drawn where it is on screen
+      const img = document.querySelector('[data-fb-shot]');
+      await img.decode();
+      const c = Object.assign(document.createElement('canvas'), { width: img.naturalWidth, height: img.naturalHeight });
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0);
+      const [r, gr, b] = g.getImageData(img.naturalWidth / 2 + 150, img.naturalHeight / 2 + 120, 1, 1).data;
+      return r > 150 && gr < 90 && b < 90;
+    }""")
+    assert red
     assert not admin.errors, admin.errors
