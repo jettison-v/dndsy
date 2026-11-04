@@ -566,6 +566,25 @@ def test_admins_set_the_timers(admin, player, db, sheet):
     assert ddb_bridge.timers(db)["idle"] == 30 * 60  # only admins
 
 
+def test_the_bridge_page_says_what_each_connection_can_change(admin, sheet):
+    """Brett, 2026-11-04: Manage › askdnd › D&D Beyond bridge has a matrix of what the player's own sheet and the DM can
+    each change, and how each comes about. Every kind of change the bridge makes (ddb_fields) is in one row, and every
+    run it names is a live test run (each run again --via-dm every night)."""
+    import os
+    import re
+
+    here = os.path.dirname(__file__)
+    fields = open(os.path.join(here, "..", "app", "ddb_fields.py")).read()
+    made = set(re.findall(r'kind == "(\w+)"', fields)) | {k for pair in re.findall(r'kind in \("(\w+)", "(\w+)"\)', fields) for k in pair}
+    rows = [k for _, kinds, *_ in ddb_bridge.CONNECTIONS for k in kinds]
+    assert sorted(rows) == sorted(set(rows)) and set(rows) == made
+    runs = set(re.findall(r'"([a-z-]+)": [a-z_]+', open(os.path.join(here, "..", "scripts", "real_table.py")).read().split("RUNS = {")[1].split("}")[0]))
+    assert {r for _, _, own, _ in ddb_bridge.CONNECTIONS for r in own} <= runs and "dm-backup" in runs
+    page = admin.get("/manage/bridge").text
+    assert "What each connection can change" in page and page.count("<tr><td>") >= len(ddb_bridge.CONNECTIONS)
+    assert "Rolls into D&amp;D Beyond's Game Log" in page and "Through the DM" in page and "Neither" in page
+
+
 def test_a_batch_no_sheet_ever_answers_for_stops_after_three_tries(player, db, sheet, monkeypatch):
     """A tab left from before the extension was reloaded takes nothing: the offer counts as a try, and after
     MAX_ATTEMPTS the change is listed to make by hand instead of being offered forever."""

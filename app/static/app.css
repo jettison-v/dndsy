@@ -2555,6 +2555,25 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .br-now { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 18px; margin: 0; }
 .br-now dt { color: var(--muted); }
 .br-now dd { margin: 0; }
+/* What each connection can change (Manage › askdnd › D&D Beyond bridge; Brett, 2026-11-04): how each state comes about,
+   in the Live pill's colours, then a matrix of marks (a tick, a clock for partly, a dash for no) */
+.br-states { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.br-state { border: 1px solid var(--line); border-top-width: 3px; border-radius: var(--r-md); padding: var(--sp-3); display: grid; gap: var(--sp-2); align-content: start; }
+.br-state p { margin: 0; }
+.br-state h3 { margin: 0; font-size: var(--fs-md); color: var(--text-strong); }
+.br-state h3 .note { font-weight: 400; font-size: var(--fs-xs); margin-left: 4px; }
+.br-state-own { border-top-color: var(--green); } .br-state-dm { border-top-color: var(--amber); } .br-state-none { border-top-color: var(--red); }
+.br-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.br-dot-own { background: var(--green); } .br-dot-dm { background: var(--amber); } .br-dot-none { background: var(--red); }
+.br-mx th { white-space: nowrap; }
+.br-mx th:not(:first-child), .br-mx td:not(:first-child) { text-align: center; width: 22%; }
+.br-mx td { padding-top: 10px; padding-bottom: 10px; vertical-align: middle; }
+.br-mx td:first-child { color: var(--text-strong); }
+.br-mx td small { display: block; color: var(--muted); font-size: var(--fs-xs); }
+.br-mx-other td { border-top: 2px solid var(--line-strong); }
+.br-mk { display: inline-grid; width: 22px; height: 22px; }
+.br-mk svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.br-mk-yes { color: var(--green); } .br-mk-some { color: var(--amber); } .br-mk-no { color: var(--faint); }
 
 /* ---- Hit points window (app/hit_points.py, docs/mockups/hp-window.html): from Table rolls' Apply to … or Hit points */
 /* Your creatures (app/creatures.py; docs/mockups/your-creatures/ Option B): who Battle shows, by the name (Vi · Homunculus),
@@ -2583,6 +2602,25 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
   .pt-pair { grid-template-columns: minmax(0, 1fr); }
   .pt-creature-card { border-left: 0; border-top: 1px dashed color-mix(in srgb, var(--green) 60%, var(--line)); }
 }
+/* A familiar in play (app/companions.py; Creatures as Characters boards 2 and 3): where it is, the same pill everywhere */
+.cr-where { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); border-radius: var(--r-pill); padding: 2px 10px; font-size: var(--fs-xs); font-weight: 600; color: var(--text); white-space: nowrap; }
+.cr-where::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.cr-where-away::before { background: var(--blue); } .cr-where-gone::before { background: var(--faint); }
+.cr-not-here, .pt-not-here .pt-tiles, .pt-not-here .pt-line { opacity: .5; }
+.cr-where-note { margin: var(--sp-1) 0 0; }
+/* A creature's band (Battle as one of the character's creatures): its buttons wrap under its name when there's no room */
+.cr-band { flex-wrap: wrap; }
+.cr-band .ws-form-main { flex: 1 1 260px; }
+.cr-band .ws-form-acts { flex: 0 1 auto; flex-wrap: wrap; align-items: center; justify-content: flex-end; margin-left: auto; }
+.cr-forever { position: relative; display: inline-block; }
+.cr-forever-pop { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: 280px; max-width: 80vw; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--r-md); padding: var(--sp-3); display: grid; gap: var(--sp-2); box-shadow: var(--lift); }
+.ff-pick { border: 0; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
+.ff-pick legend { margin-bottom: 4px; padding: 0; width: auto; }
+.ff-opt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; }
+.ff-opt:has(input:checked) { border-color: var(--green); background: var(--green-soft); }
+.ff-kinds { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.ff-kinds legend { width: 100%; }
+.ff-kind { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
 .pt-with { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); color: var(--text-strong); }
 .cr-fix { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); line-height: 1.9; }
 .cr-fix .btn { margin: 0 var(--sp-1); }
