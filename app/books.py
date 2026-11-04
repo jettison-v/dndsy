@@ -33,7 +33,8 @@ BOOKS = (
 BY_KEY = {b.key: b for b in BOOKS}
 DEFAULT = tuple(b.key for b in BOOKS)  # a new campaign's: the 2024 core books (the SRD is always on)
 DEFAULT_JSON = json.dumps(list(DEFAULT))
-KIND_NAMES = {"monster": ("monster", "monsters"), "spell": ("spell", "spells"), "magic_item": ("magic item", "magic items")}
+KIND_NAMES = {"monster": ("monster", "monsters"), "spell": ("spell", "spells"), "magic_item": ("magic item", "magic items"),
+              "summon": ("summoned creature", "summoned creatures")}
 
 
 def book(key: str) -> Book | None:

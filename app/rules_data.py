@@ -187,7 +187,35 @@ class GlossaryEntry(_Shape):
 
 
 # What a campaign can add (models.CampaignContent.kind), and every kind's schema and file
-CAMPAIGN_KINDS = {"monster": Monster, "spell": Spell, "magic_item": MagicItem}
+class Summon(_Shape):
+    """A creature a spell brings (Summon Beast's Bestial Spirit, Find Steed's Otherworldly Steed): a stat block whose
+    numbers follow the level it's cast at, its master's spell attack and save DC, and a choice made when it's cast
+    ("Air", "Celestial"). Kept as printed ("11 + the spell's level"); app/summons.py works the numbers out. Only from a
+    private book (app/books.py: the 2024 Player's Handbook, scripts/summon_load.py), never in the repo."""
+
+    key: Key
+    name: Name  # the stat block's: "Bestial Spirit"
+    spell: Name  # "Summon Beast"
+    spell_level: int = Field(ge=1, le=9)
+    choose: list[str] = []  # what's chosen when it's cast: ["Air", "Land", "Water"]
+    what: str  # "Small Beast, Neutral"
+    ac: str
+    hp: str
+    speed: str
+    abilities: dict[Ability, int]
+    senses: str = ""
+    languages: str = ""
+    traits: list[Entry] = []
+    actions: list[Entry] = []
+    bonus_actions: list[Entry] = []
+    reactions: list[Entry] = []
+    turn: str = ""  # how it acts in combat, from the spell
+    goes: str = ""  # when it disappears, from the spell
+    concentration: bool = False
+    source: str = ""  # "PHB 2024"
+
+
+CAMPAIGN_KINDS = {"monster": Monster, "spell": Spell, "magic_item": MagicItem, "summon": Summon}
 KINDS = {**CAMPAIGN_KINDS, "glossary": GlossaryEntry}
 FILES = {"monster": "monsters", "spell": "spells", "magic_item": "magic_items", "glossary": "rules_glossary"}
 
