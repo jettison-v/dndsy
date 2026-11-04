@@ -8,6 +8,15 @@
 <div class="table-scroll pt-track-wrap{{ ' always' if always }}"><table class="pt-track">
   <thead><tr><th>Init.</th><th>Fighter</th><th>Hit Points</th><th>AC</th><th>Conditions and reminders</th></tr></thead>
   <tbody>{% for x in f.order %}{% set r = rows | selectattr("c.id", "equalto", x.character) | first if x.character else none %}{% set hp = r.sheet.hit_points if r and r.sheet else none %}
+    {% if x.creature %}{% set k = x.creature %}{# one of a character's creatures (app/fight.py with_creatures; Your creatures, slice 3) #}
+    <tr class="ft-creature{{ ' now' if x.active }}{{ ' pet' if x.sub }}">
+      <td class="ft-init">{% if x.initiative is not none %}{{ x.initiative | int }}{% else %}<span class="note">—</span>{% endif %}{% if x.active %}<span class="ft-now">Now</span>{% endif %}</td>
+      <td><a class="ft-who" href="/characters/{{ k.master }}/battle?creature={{ k.id }}" data-no-peek title="{{ x.whose }}: its Battle"><span class="roll-av pt-cr-av" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b> <span class="tag ft-whose">{{ x.whose }}</span></a></td>
+      <td>{{ k.hp.current }} / {{ k.hp.max }}</td>
+      <td>{{ k.ac }}</td>
+      <td class="ft-conds"><span class="note">{% if x.missing %}Its own Initiative: not in D&amp;D Beyond's order yet{% else %}{{ k.turn }}{% endif %}</span></td>
+    </tr>
+    {% else %}
     <tr class="{{ 'now' if x.active }}{{ ' enemy' if x.kind == 'monster' }}"{% if r %} data-panel-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ x.name }}: a short version"{% endif %}>
       <td class="ft-init">{% if x.initiative is not none %}{{ x.initiative | int }}{% else %}<span class="note">—</span>{% endif %}{% if x.active %}<span class="ft-now">Now</span>{% endif %}</td>
       <td><span class="ft-who"><span class="roll-av hue{{ (x.character or loop.index) % 6 }}{{ ' enemy' if x.kind == 'monster' }}" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b>{% if x.form %} <span class="tag ft-form" title="In Wild Shape">{{ x.form }}</span>{% endif %}{% if r %}{{ cond_badges(r.conditions, r.c, true) }}{% endif %}{% if x.hidden %} <span class="tag draft" title="Hidden from the players on D&amp;D Beyond">Hidden</span>{% endif %}</span></td>
@@ -16,6 +25,6 @@
       <td class="ft-conds">{% if r %}{% for k in r.conditions %}<span class="nowrap">{{ k.name }}{% if k.name == "Concentration" and k.spell %} ({{ k.spell }}){% endif %}</span>{{ ", " if not loop.last }}{% endfor %}
         {% for m in (f.reminders or []) | selectattr("character", "equalto", r.c.id) | list | reverse %}{% if loop.index <= 2 %}<span class="ft-rem">{{ m.name }}: {{ m.text }}</span>{% endif %}{% endfor %}
         {% if not r.conditions and not ((f.reminders or []) | selectattr("character", "equalto", r.c.id) | list) %}<span class="note">None</span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</td>
-    </tr>{% endfor %}</tbody>
+    </tr>{% endif %}{% endfor %}</tbody>
 </table></div>
 {% endmacro %}

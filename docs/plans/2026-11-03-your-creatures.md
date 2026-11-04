@@ -26,7 +26,7 @@ Built in order, each tried locally first, in Labs › Your creatures:
 
 Then slice 3 (the fight) and slice 4 (Help, the tour, live runs, out of Labs) cover them all.
 
-3. **In the fight.** The fight's rows (Party's Rows, askdnd's table) and the fight band list a creature under its master, or by its own Initiative when D&D Beyond's VTT has it as its own fighter; the DM sees it like any fighter; a turn reminder when its turn comes.
+3. **In the fight** (built Nov 4: `fight.with_creatures`, `creature_turns`; matched to the VTT's tokens by name, since the extension sends no creature id). The fight's rows (Party's Rows, askdnd's table) and the fight band list a creature under its master, or by its own Initiative when D&D Beyond's VTT has it as its own fighter; the DM sees it like any fighter; a turn reminder when its turn comes.
 4. **Help, the tour, a live run per creature kind, and out of Labs** once the table has played with it.
 
 ## To work out with Brett (Nov 4)

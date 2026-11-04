@@ -842,6 +842,9 @@
         const roll = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act main', textContent: 'Roll the save' });
         Object.assign(roll.dataset, { roll: 'save', label: r.ability + ' save (' + r.name + '), DC ' + r.dc, mod: (r.mod || '+0').replace('−', '-'), rollChar: r.character });
         card(t, { kind: 'warn', stay: true, actions: [{ node: roll }, { label: 'Saved: end it', run: () => act(base + '/conditions/end', { name: r.name }) }] });
+      } else if (r.kind === 'creature') {  // one of your creatures' turn (app/fight.py creature_turns; Your creatures, slice 3)
+        t.innerHTML = '<b>' + escText(r.text) + '.</b>';
+        card(t, { kind: 'info', stay: true, actions: [{ label: 'Its Battle', run: () => { location.href = base + '/battle?creature=' + encodeURIComponent(r.creature); } }] });
       } else if (r.kind === 'conc') {
         t.innerHTML = '<b>' + escText(r.text) + '.</b>';
         card(t, { kind: 'warn', stay: true, actions: [{ label: 'End it', run: () => act(base + '/concentration/end', {}) },
