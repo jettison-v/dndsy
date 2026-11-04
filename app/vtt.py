@@ -40,6 +40,14 @@ FEATURES: list[Feature] = [
             "the middle lists the fight heard from D&D Beyond's VTT, and the map stays there.",
             "The VTT, slices 0 to 10 (docs/plans/2026-11-02-vtt-build-plan.md): 0 and 1 built; 2, askdnd runs the fight, next.",
             labs=True, state="Being built"),
+    Feature("creatures", "Your creatures",
+            "A familiar, an artificer's Homunculus Servant or Steel Defender, a ranger's companion or a summon on a "
+            "character's D&D Beyond sheet gets a switch by the character's name on Battle (Vi · Homunculus): Battle "
+            "becomes the creature's, with its own Hit Points, Armor Class, actions to roll and when its turn comes, and "
+            "the numbers that grow with its master worked out. Its rolls say whose they are.",
+            "Your creatures (docs/plans/2026-11-03-your-creatures.md): slice 1, Battle as the creature, being built; "
+            "its Hit Points synced with D&D Beyond next.",
+            labs=True, state="Being built"),
 ]
 LABS = "labs"  # the campaign's Labs switch, kept with the features' keys
 

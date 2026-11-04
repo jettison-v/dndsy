@@ -31,7 +31,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app import picks, realtime, web
+from app import characters as chars
+from app import creatures, picks, realtime, web
 from app import roll_recipes as rr
 from app.auth import current_user, is_dm
 from app.db import get_db
@@ -470,7 +471,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
               mod: str = Form(""), dmg: str = Form(""), adv: str = Form(""), mode: str = Form("normal"),
               to: str = Form("table"), extra: list[str] = Form([]), parent: int = Form(0), action: str = Form(""),
               die_size: int = Form(0, alias="die"), part: list[str] = Form([]), dmg_part: list[str] = Form([]),
-              count: int = Form(1), each: str = Form(""), once: str = Form(""), db: Session = Depends(get_db)):
+              count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -531,8 +532,10 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
         result["total"] = result["total"] + sum(x["total"] for x in rolled)
         result["total"] = max(result["total"], 0) if kind != "dice" else result["total"]
         mode = "normal"
-    # With a character, `who` is the Wild Shape form it rolled in, kept with the roll (Table rolls says "Cole (Polar Bear)")
-    who = (ch.wild_shape or "")[:80] if ch else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
+    # With a character, `who` is the Wild Shape form it rolled in, kept with the roll (Table rolls says "Cole (Polar Bear)"),
+    # or one of its creatures it rolled for (Your creatures: "Vi (Homunculus Servant)"), only a creature on its sheet
+    mine = {x["name"] for x in creatures.yours(chars.character_summary(ch))} if ch and who else set()
+    who = (who if who in mine else ch.wild_shape or "")[:80] if ch else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)
@@ -606,8 +609,6 @@ def checks(request: Request, db: Session = Depends(get_db)):
     user = current_user(request)
     if not user:
         return HTMLResponse("", status_code=401)
-    from app import characters as chars
-
     ch = picks.my_character(db, user)
     sheet = chars.character_summary(ch) if ch else None
     return templates.TemplateResponse(request, "_roll_checks.html", {"c": ch, "s": sheet, "ctx": roll_context(sheet)})

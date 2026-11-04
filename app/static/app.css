@@ -2557,6 +2557,16 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .br-now dd { margin: 0; }
 
 /* ---- Hit points window (app/hit_points.py, docs/mockups/hp-window.html): from Table rolls' Apply to … or Hit points */
+/* Your creatures (app/creatures.py; docs/mockups/your-creatures/ Option B): who Battle shows, by the name (Vi · Homunculus),
+   links styled as the segmented switch; the creature's band is Wild Shape's form band, in the creature's own words */
+.who-switch a { display: inline-flex; align-items: center; padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 6px); border-radius: var(--r-sm);
+  font-size: var(--fs-sm); font-weight: 500; color: var(--muted); text-decoration: none; white-space: nowrap; }
+.who-switch a:hover { color: var(--text-strong); }
+.who-switch a[aria-current] { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.cr-facts { gap: var(--sp-1) var(--sp-2); }
+.cr-facts .roll-chip { cursor: pointer; }
+.cr-text > summary { cursor: pointer; list-style: none; margin-top: 2px; }
+.cr-text > summary::-webkit-details-marker { display: none; }
 .seg label { display: inline-flex; }
 .seg label input { position: absolute; width: 1px; height: 1px; margin: 0; opacity: 0; clip-path: inset(50%); pointer-events: none; }
 .seg label span { display: inline-flex; align-items: center; padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 6px); border-radius: var(--r-sm); font-size: var(--fs-sm); font-weight: 500; color: var(--muted); cursor: pointer; }

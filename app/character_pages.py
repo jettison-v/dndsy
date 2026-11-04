@@ -24,7 +24,7 @@ from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
 from app import ddb, ddb_bridge, hit_points, house_rules, picks
-from app import class_rules, player_notes
+from app import class_rules, creatures, player_notes, vtt
 from app import spellbook as sb
 from app.preparing import books_to_prepare
 from app import wild_shape as ws
@@ -188,11 +188,16 @@ def _load(request: Request, db: Session, character_id: int):
     return user, ch, None
 
 
-def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None) -> dict:
+def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None, creature: int = 0) -> dict:
     """Battle mode's body (also swapped in by the Wild Shape switch). `shape` shows it in that form
-    instead of the character's own (the tour's preview: nothing is saved)."""
+    instead of the character's own (the tour's preview: nothing is saved); `creature` shows it as one of the character's
+    creatures (Your creatures, app/creatures.py: the switch by the name, `?creature=<its id>`)."""
     ctx = _view(db, ch, user)
     ctx["form"] = None
+    campaign = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
+    ctx["my_creatures"] = creatures.yours(ctx["sheet"]) if vtt.on(campaign, "creatures") else []
+    found = creatures.find(ctx["sheet"], creature) if creature and ctx["my_creatures"] else None
+    ctx["creature"] = creatures.card(ctx["sheet"], found) if found else None
     ctx["previewing"] = shape is not None
     wild = shape if shape is not None else ch.wild_shape
     if ctx["sheet"]:
@@ -312,14 +317,15 @@ def _plan_ctx(db: Session, ch: Character, user: dict) -> dict:
 MODE_CTX = {"battle": _battle_ctx, "sheet": _sheet_ctx, "plan": _plan_ctx}
 
 
-def _character(request: Request, db: Session, character_id: int, mode: str):
-    """One Character page in one mode; the header and the mode switch are the same in each."""
+def _character(request: Request, db: Session, character_id: int, mode: str, creature: int = 0):
+    """One Character page in one mode; the header and the mode switch are the same in each. On Battle, `creature` draws it
+    as one of the character's creatures (Your creatures)."""
     user, ch, stop = _load(request, db, character_id)
     if stop:
         return stop
     if mode == "plan" and not picks.can_see(user, ch):
         return RedirectResponse(f"/characters/{ch.id}", status_code=303)  # Plan is the players' (never the DM)
-    ctx = MODE_CTX[mode](db, ch, user)
+    ctx = _battle_ctx(db, ch, user, creature=creature) if mode == "battle" else MODE_CTX[mode](db, ch, user)
     if mode != "battle":
         ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return _page(request, "character.html", {**ctx, "mode": mode})
@@ -331,8 +337,8 @@ def character_page(request: Request, character_id: int, db: Session = Depends(ge
 
 
 @router.get("/characters/{character_id:int}/battle")
-def battle_page(request: Request, character_id: int, db: Session = Depends(get_db)):
-    return _character(request, db, character_id, "battle")
+def battle_page(request: Request, character_id: int, creature: int = 0, db: Session = Depends(get_db)):
+    return _character(request, db, character_id, "battle", creature=creature)
 
 
 @router.get("/characters/{character_id:int}/plan")
