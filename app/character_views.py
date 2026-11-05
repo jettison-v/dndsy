@@ -16,6 +16,19 @@ def _cost(activation: str) -> str:
     return activation if activation in ("Action", "Bonus action", "Reaction") else "Other"
 
 
+# What a feature's own text says it costs, first (feedback 15, Nov 5: D&D Beyond labels some actions "Special", such as
+# Oath of Conquest's Conquering Presence, "As an action…", which then showed in no column). scripts/battle_audit.py uses it
+STATED = {"Bonus action": r"\b(?:as|take|use|using|expend) (?:a|your) Bonus Action\b|\bBonus Action\b",
+          "Reaction": r"\b(?:take|use|as|using) (?:a|your) Reaction\b|\bReaction\b",
+          "Action": r"\b(?:take|as|use) (?:a|an|the) (?:Magic |Utilize |Attack |Study |Search |Influence )?[Aa]ction\b|\b[Aa]s an action\b|\bMagic action\b"}
+
+
+def stated_cost(text: str) -> str | None:
+    """The cost a text states first ("As an action…" is Action), or None."""
+    found = [(m.start(), cost) for cost, pat in STATED.items() for m in [re.search(pat, text or "")] if m]
+    return min(found)[1] if found else None
+
+
 ORDINAL = {1: "1st", 2: "2nd", 3: "3rd"}
 _NUMBERS = {"a": 1, "an": 1, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5}
 
@@ -148,10 +161,13 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             # Smites are cast right after you hit, so they belong with the fight (tool correction built in, 2026-10-23)
             common=cost == "Reaction" or (not sp["level"] and bool(sp["attack"] or sp["save"]) and bool(sp["damage"]))
             or (cost == "Bonus action" and sp["name"].endswith(" Smite")))
+    _magic_action_familiar(sheet, add)
     for o in sheet.get("_familiar_options") or []:  # a familiar's, on its master's Battle (app/companions.py master_options)
         add(**o)
     for a in sheet.get("actions") or []:
-        cost = _cost(a["activation"])
+        cost, from_text = _cost(a["activation"]), ""
+        if cost == "Other" and a["activation"] in ("Special", None, "") and (said := stated_cost(a.get("text") or "")):
+            cost, from_text = said, "text"  # (D&D Beyond's "Special": what its own text says)
         if _not_an_action(a, cost, rules, action_names):
             continue
         hit, meta, unarmed = "", "", a["name"].startswith("Unarmed Strike")
@@ -160,7 +176,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
                 continue  # the attack is listed once, from the attacks; "(Dex.)" variants are the same strike
             u = attacks.get("Unarmed Strike") or {}
             hit, meta = u.get("to_hit", ""), u.get("damage", "")
-        add(key=a["key"], kind="feature", cost=cost, name=a["name"], hit=hit, meta=meta, uses=a["uses"], text=a["text"],
+        add(key=a["key"], kind="feature", cost=cost, name=a["name"], hit=hit, meta=meta, uses=a["uses"], text=a["text"], cost_from=from_text or None,
             spends=[] if a["uses"] else resource_spends(sheet, a["name"], a["key"], a["text"] or ""),
             summary=a.get("summary", ""),
             common=not a.get("rule") and (unarmed or cost == "Reaction" or bool(a["uses"] and a["source"] in ("class", "feat", "race"))))
@@ -262,6 +278,21 @@ def _not_an_action(a: dict, cost: str, rules: dict, action_names: set[str]) -> b
     return name == "Channel Divinity" and any(n.startswith("Channel Divinity:") for n in action_names)
 
 
+def _magic_action_familiar(sheet: dict, add) -> None:
+    """Find Familiar as a Magic action (feedback 15, Nov 5): its own casting time is an hour, but Wild Companion (a
+    Druid's: a Wild Shape use or a slot) and Pact of the Chain (no slot) cast it as a Magic action, so it's on Battle's
+    Action column, opening its Cast window (app/casting.py ways, wild_ways)."""
+    sp = next((x for x in sheet.get("spells") or [] if x["name"] == "Find Familiar"), None)
+    have = {f.get("name") for f in sheet.get("features") or []} | {a.get("name") for a in sheet.get("actions") or []}
+    how = [w for name, w in (("Wild Companion", "a Wild Shape use or a slot (Wild Companion)"), ("Pact of the Chain", "no slot (Pact of the Chain)"))
+           if name in have]
+    if not sp or not how:
+        return
+    add(key=sp["key"], kind="spell", cost="Action", name="Find Familiar", tags=["Magic action"], level=sp["level"] or 1, cast=True,
+        meta="As a Magic action: " + " or ".join(how), text=sp.get("text") or sp.get("summary") or "", summary=sp.get("summary") or "",
+        cost_from="rule", common=False)
+
+
 def _general_options(sheet: dict, add, mastered: dict[str, str], have: set[str]) -> None:
     """Options every character has from the core rules: the Opportunity Attack and
     the Light weapon's extra attack."""
@@ -289,7 +320,7 @@ def _battle_override(sheet: dict, oref: str) -> str | None:
 
 COST_NAMES = {"Bonus action": "Bonus Action", "No action": "No action needed"}
 COST_FROM = {"campaign": "From this campaign's house rule", "askdnd": "From an askdnd correction", "rule": "From the rules",
-             "choice": "From the kind marked on this item", "text": "From the item's own description", "": "The item doesn't say"}
+             "choice": "From the kind marked on this item", "text": "From its own description", "": "The item doesn't say"}
 
 
 def battle_columns(sheet: dict, starred: set[str], order: dict[str, list[str]] | None = None, pinned_only: bool = False) -> dict:

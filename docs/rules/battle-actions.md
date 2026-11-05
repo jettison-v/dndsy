@@ -52,3 +52,26 @@ party's real sheets and made-up characters for the other classes.
 Not covered on purpose: features that only change numbers D&D Beyond already shows (Unarmored Defense, Fighting Style
 bonuses, Agonizing Blast), long-term features that aren't combat turns, and older-book subclasses (their D&D Beyond
 actions are shown as listed). The Wild Shape window has its own rules (`app/wild_shape.py`).
+
+## Second audit, against each feature's own text (Nov 5, feedback 15)
+
+`scripts/battle_audit.py` (run it with `uv run --env-file .env python scripts/battle_audit.py`, on the local copy of
+beta) compares where Battle puts each feature, action and item with the cost the feature's own text states first, and
+lists anything in the wrong column, in no column, or adding to a hit without being in On a hit. tests/test_battle_audit.py
+runs it on the party's saved sheets. Run it after a level-up or for a new character.
+
+The first run, on the four at the table and the three test characters, found six gaps, now fixed:
+
+| Character | What | Was | Now |
+|---|---|---|---|
+| Big C | Channel Divinity: Conquering Presence | In no column: D&D Beyond labels it "Special" | Action: an action labelled "Special" goes where its own text says (`character_views.stated_cost`) |
+| Cole, Levi | Wild Companion: Find Familiar as a Magic action | Only inside the Wild Shape window | Find Familiar in the Action column, opening its Cast window |
+| Levi | Pact of the Chain: Find Familiar as a Magic action, no slot | Not listed | The same |
+| Big C | Guided Strike (Oath of Conquest) | Not in On a hit | On a hit: +10 to an attack roll after seeing it |
+| Big C | Favored by the Gods (Divine Soul) | Not in On a hit | On a hit: +2d4 to a missed attack or failed save |
+| Vi | Arcane Firearm (Artillerist) | Not in On a hit | On a hit: +1d8 to one damage roll of a spell cast through it |
+
+The three On a hit additions are the first from older books, because the table plays them (Oath of Conquest and Divine
+Soul from Xanathar's, the Artillerist from Tasha's); only the extras added to a roll or a hit, written in askdnd's own
+words. Checked and right as listed: every other Action, Bonus Action and Reaction on the seven, including Lay On Hands,
+Martial Arts' Unarmed Strike, Deflect Attacks, War Caster (Reactive Spell), Telekinetic Shove and Pact of the Blade.
