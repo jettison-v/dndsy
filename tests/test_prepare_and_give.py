@@ -132,12 +132,16 @@ def test_a_given_item_leaves_the_giver_only_once_the_receiver_has_it(player, db,
     ddb_bridge.delivered(db, batch["id"], ok=False, error="That isn't a change askdnd may make.")  # (stopped at once)
     db.flush()
     assert got.state == "not_yet" and ddb_bridge.outbox(db, cole) is None  # stopped: still with Cole
+    f = ddb_bridge.follow(db, cole, took.id)  # (the giver's card says so, its buttons the other sheet's: review Nov 4)
+    assert (f["state"], f["failed"]) == ("failed", []) and "other sheet's change didn't go through" in f["says"]
     ddb_bridge.dismiss(db, got.id)  # the receiver's undone
     assert ddb_bridge.outbox(db, cole) is None
     assert took.state == "dismissed" and "stays here" in took.error
-    got.state = "live"  # (and had it arrived: the giver's goes)
     took.state = "waiting"
     db.flush()
+    got.state = "live"  # (and had it arrived: the giver's goes, and the giver's browser is told at once)
+    db.flush()
+    assert ("deliver", {"ddb": str(cole.ddb_id)}) in [(k, d) for _, k, d in db.info.get("announce", [])]
     assert [op["field"].split(":")[0] for op in ddb_bridge.outbox(db, cole)["ops"]] == ["item"]
 
 

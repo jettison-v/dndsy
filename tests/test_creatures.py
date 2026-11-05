@@ -531,3 +531,29 @@ def test_wild_companion_a_familiar_from_a_wild_shape_use_gone_at_a_long_rest(pla
     assert {"field": casting.wild_use(s)["field"], "delta": 1} in spent
     rest = player.get(f"/characters/{labs.id}/rest?kind=long").text
     assert 'name="wild_leaves"' in rest and "Pip leaves (Wild Companion)" in rest
+
+
+def test_undoing_a_new_form_stops_it_and_counts_only_familiars(player, db, labs, sheet):
+    """Review, Nov 4: Undo after a new form stops its waiting change (D&D Beyond never gets it), and puts back only what
+    the cast changed; the read-back counts the Familiar group alone (an Owl kept as a Pet isn't the new one)."""
+    from sqlalchemy import select
+
+    from app import ddb_fields
+    from app.models import BridgeIntent
+
+    e = familiar_sheet(db, labs, sheet)
+    labs.companions = {**(labs.companions or {}), "9000000000001": {"own": True, "state": "here", "c": {"id": 9000000000001}}}
+    db.flush()
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    undo = player.post(url, data={"way": "ritual", "familiar": "new:4775808", "kind": "Fey"}).json()["undo"]
+    assert undo["added"] == "4775808"
+    db.refresh(labs)
+    labs.companions = {**labs.companions, "9000000000001": {"own": True, "state": "gone", "c": {"id": 9000000000001}}}  # (changed since)
+    db.flush()
+    assert player.post(f"/characters/{labs.id}/cast/undo", data={"key": e["key"], **undo}).status_code < 300
+    db.refresh(labs)
+    add = db.scalar(select(BridgeIntent).where(BridgeIntent.character_id == labs.id, BridgeIntent.kind == "set").order_by(BridgeIntent.id))
+    assert add.data["field"] == "familiar_add:4775808" and add.state == "dismissed"
+    assert "new:4775808" not in labs.companions and labs.companions["9000000000001"]["state"] == "gone"  # (left as it was changed)
+    raw = {"creatures": [{"groupId": 5, "definition": {"id": 4775808}}, {"groupId": 2, "definition": {"id": 4775808}}]}
+    assert ddb_fields.pick(raw, ddb_fields.steps("familiar_add:4775808")) == 1

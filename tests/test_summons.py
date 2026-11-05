@@ -100,6 +100,7 @@ def test_find_steed_brings_the_one_that_disappeared_or_another(player, db, summo
     assert r.status_code == 200 and "Ember (Fiend) is here" in r.json()["text"]
     db.refresh(summoner)
     steed = creatures.own(summoner)[0]
+    assert "The one that disappeared" not in player.get(url).text  # (it's here: casting again brings a new one, review Nov 4)
     assert player.post(f"/characters/{summoner.id}/creatures/{steed['id']}/hp", data={"amount": "99", "to": "damage"}).status_code == 204
     db.refresh(summoner)
     assert creatures.where(summoner, steed) == "gone"

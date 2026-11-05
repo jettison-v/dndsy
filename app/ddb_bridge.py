@@ -73,7 +73,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import event, inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
@@ -722,6 +722,23 @@ def _due(db: Session, waiting: list[BridgeIntent]) -> list[BridgeIntent]:
     return out
 
 
+@event.listens_for(Session, "before_flush")
+def _release(db: Session, flush_context, instances) -> None:
+    """A change that went live releases the ones waiting for it (Give: the giver's copy once the receiver's sheet has it,
+    `_due`): every page in the giver's campaign is told ("deliver", its D&D Beyond id), and the browser with that sheet
+    open makes it at once, not at its next check every 30 seconds (review, Nov 4: the giver's card was the only nudge)."""
+    went = [str(o.id) for o in db.dirty if isinstance(o, BridgeIntent) and o.id and o.state == "live"
+            and inspect(o).attrs.state.history.has_changes()]
+    if not went:
+        return
+    with db.no_autoflush:
+        whose = db.scalars(select(Character).join(BridgeIntent, BridgeIntent.character_id == Character.id)
+                           .where(BridgeIntent.state == "waiting", BridgeIntent.data["after"].astext.in_(went))).unique().all()
+        for ch in whose:
+            if ch.ddb_id:
+                realtime.announce(db, ch.campaign_id, "deliver", ddb=str(ch.ddb_id))
+
+
 def _intents_of(db: Session, b: BridgeBatch) -> list[BridgeIntent]:
     return list(db.scalars(select(BridgeIntent).where(BridgeIntent.id.in_(b.intents)).order_by(BridgeIntent.id)))
 
@@ -1100,7 +1117,9 @@ def progress(db: Session, character: Character, intents: list[BridgeIntent]) -> 
             continue
         b = next((b for b in batches if it.id in b.intents), None)
         first = db.get(BridgeIntent, it.data["after"]) if not b and (it.data or {}).get("after") else None
-        if first is not None and first.state != "live":  # (Give: the giver's copy goes once the receiver's sheet has it)
+        if first is not None and first.state == "not_yet":  # (the receiver's didn't go through: the Live window has it)
+            out[it.id] = {"state": "other_failed"}
+        elif first is not None and first.state != "live":  # (Give: the giver's copy goes once the receiver's sheet has it)
             out[it.id] = {"state": "other"}
         elif b and b.attempts > 1:
             out[it.id] = {"state": TRYING, "try": b.attempts, "of": MAX_ATTEMPTS}
@@ -1109,7 +1128,8 @@ def progress(db: Session, character: Character, intents: list[BridgeIntent]) -> 
     return out
 
 
-SAYS = {"on": "On its way", TRYING: "Trying again", "behind": "Waits for the change before it", "other": "Waits for the other sheet", "sheet": "Made once the sheet is open",
+SAYS = {"on": "On its way", TRYING: "Trying again", "behind": "Waits for the change before it", "other": "Waits for the other sheet",
+        "other_failed": "The other sheet's change didn't go through (the Live window has it)", "sheet": "Made once the sheet is open",
         "failed": "Didn't go through"}
 
 
@@ -1126,6 +1146,8 @@ def follow(db: Session, character: Character, upto: int) -> dict:
         return {"state": "done", "says": "On D&D Beyond"}
     ps = progress(db, character, its)
     failed = [it for it in its if ps[it.id]["state"] == "failed"]
+    if not failed and any(p["state"] == "other_failed" for p in ps.values()):  # (its Try again and Undo are the other sheet's)
+        return {"state": "failed", "says": SAYS["other_failed"], "error": "", "failed": []}
     if failed:
         return {"state": "failed", "says": "Didn't go through", "error": failed[-1].error,
                 "failed": [{"id": it.id, "label": it.label} for it in failed]}

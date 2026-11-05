@@ -178,12 +178,12 @@ def _spend(ch: Character, db: Session, way: str, delta: int, label: str) -> None
 
 @router.post("/characters/{character_id:int}/cast/undo")
 def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: str = Form(""), companions_were: str = Form("", alias="companions"),
-              healed: str = Form(""), db: Session = Depends(get_db)):
+              healed: str = Form(""), added: str = Form(""), db: Session = Depends(get_db)):
     """The corner card's Undo: the slot back, Concentration as it was, and a familiar where it was."""
     ch, _ = _guard(db, request, character_id)
     _, e = _spell(db, ch, key)
-    if companions_were or healed:  # (a familiar where it was; a summon or steed as it was)
-        companions.uncast(db, ch, companions_were, healed)
+    if companions_were or healed or added:  # (a familiar where it was; a summon or steed as it was; a new form not added)
+        companions.uncast(db, ch, companions_were, healed, added)
     if spent == WILD:
         sheet = chars.character_summary(ch) or {}
         if (w := wild_use(sheet)):

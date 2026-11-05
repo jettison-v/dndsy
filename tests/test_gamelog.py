@@ -56,6 +56,8 @@ def test_saves_damage_types_criticals_bless_and_private_rolls(db, sheet):
     assert hit["data"]["action"] == "Pistol crit" and (r["rollType"], r["rollKind"]) == ("piercing", "critical hit")
     assert r["diceNotation"]["set"][0]["count"] == 2 and r["diceNotation"]["constant"] == 1
     assert hit["messageTarget"] == "self"  # (the sheet puts in whoever is signed in there)
+    flat = row(cole, kind="damage", formula="3", dice=[], kept=None, modifier=3, total=3, mode="normal")  # (an Unarmed Strike's 3)
+    assert gamelog.messages(db, flat, cole) == []  # no dice: it stays in Table rolls (review, Nov 4)
 
 
 def test_only_where_the_bridge_works_and_the_sheet_is_in_a_game(db, sheet, monkeypatch):

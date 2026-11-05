@@ -190,6 +190,7 @@ def test_flat_damage_rolls_after_its_attack(table, db, monkeypatch):
 
     assert rollable({"name": "Unarmed Strike", "hit": "+5", "meta": "5 ft · 3 bludgeoning"})["dice"] == "3"
     assert rollable({"name": "Lore", "hit": "", "meta": "a note · 3 bludgeoning"})["dice"] == ""  # (no attack, no roll)
+    assert rollable({"name": "Unarmed Strike", "hit": "+2", "meta": "5 ft · 0 bludgeoning"})["dice"] == ""  # (Strength −1: nothing to roll)
     monkeypatch.setattr(tr, "die", lambda sides: 20)
     attack = post(table["player"], character=char(db, "Cole").id, kind="attack", label="Unarmed Strike", mod="5", dmg="3").json()["roll"]
     assert attack["can"]["damage"] == "3"
