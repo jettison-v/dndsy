@@ -1139,6 +1139,7 @@ def dm_backup(t: Table, seat: str = "player2") -> None:
 
 
 VTT = "https://www.dndbeyond.com/games/8224496"
+EXTENSION = "obpgemimnhngpcckodjkcihiahoaefpl"  # (the askdnd bridge from the Chrome Web Store, in every seat)
 
 
 def open_tracker(vtt: Page) -> None:
@@ -1174,11 +1175,17 @@ def initiative(t: Table, seat: str = "player4") -> None:
     """Initiative from askdnd (Nov 4, extension 0.12.0; Levi, VTT test with the Labs switch on): the DM's Add all
     tokens, then Levi's Initiative rolled in askdnd fills in his number in the VTT's sidebar (through the Game Log, as a
     roll from the sheet does); the DM's change in askdnd reaches the VTT through the DM's open VTT page; after Start
-    Combat a roll changes nothing. The encounter is left as found (in combat or not)."""
-    party = t.page("dm", f"{BETA}/party")  # (askdnd first: the extension learns where askdnd is from an open askdnd page,
-    party.wait_for_timeout(3000)            # and a VTT page asks only as it opens whether askdnd follows its game)
+    Combat a roll changes nothing. The encounter is left as found (in combat or not).
+    It starts as after Chrome restarts (extension 0.12.1, Nov 5): the extension's memory of askdnd cleared and the VTT
+    opened before askdnd, which 0.12.0 never heard until the VTT was reloaded."""
+    ctx = t.contexts["dm"]
+    for page in [x for x in ctx.pages if x.url.startswith(("https://beta.askdnd.ai", VTT))]:
+        page.close()
+    for worker in [w for w in ctx.service_workers if EXTENSION in w.url]:
+        worker.evaluate("chrome.storage.session.clear()")  # (where askdnd is and its key: kept only until Chrome restarts)
     vtt = t.page("dm", VTT)
     vtt.wait_for_timeout(15000)
+    party = t.page("dm", f"{BETA}/party")  # (askdnd second: once it connects, the extension tells the open VTT)
     for sel in ('[aria-label="Close"]', 'button:has-text("Hide until next update")'):
         try:
             vtt.locator(sel).first.click(timeout=2000)
