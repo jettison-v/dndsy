@@ -172,6 +172,15 @@ RULES: list[Rule] = [
       rider=("First round of combat", "Advantage against creatures that haven't acted; a Sneak Attack hit adds +{lv} damage")),
     # ------------------------------------------------------------------ Sorcerer
     R("Sorcerer", 2, "Metamagic", note=("Action", "Metamagic: spend Sorcery Points to change a spell as you cast it")),
+    # ------------------------------------------------------------------ played at this table, from 2014 books
+    # (feedback 15, Nov 5: Big C's Oath of Conquest and Divine Soul, Xanathar's; Vi's Artillerist, Tasha's). Not in the
+    # 2024 Player's Handbook, so only what Battle needs: the extras added to a roll or a hit
+    R("Paladin", 3, "Guided Strike", sub="Oath of Conquest", cost="1 Channel Divinity",
+      rider=("An attack roll you make, after you see it and before you know if it hits", "+10 to the roll")),
+    R("Sorcerer", 1, "Favored by the Gods", sub="Divine Soul", cost="once per Short or Long Rest",
+      rider=("A saving throw you fail or an attack roll you miss", "+2d4 to the total, which can change the outcome")),
+    R("Artificer", 5, "Arcane Firearm", sub="Artillerist",
+      rider=("An artificer spell you cast through your arcane firearm (a wand, staff or rod)", "+1d8 to one of the spell's damage rolls")),
     # ------------------------------------------------------------------ Warlock
     R("Warlock", 5, "Thirsting Blade", needs="Thirsting Blade", attacks=2, attacks_with="your pact weapon"),
     R("Warlock", 12, "Devouring Blade", needs="Devouring Blade", attacks=3, attacks_with="your pact weapon"),
