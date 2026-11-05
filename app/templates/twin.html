@@ -12,6 +12,13 @@
   </div>
 </li>
 {% endmacro %}
+{# A D&D Beyond card drawn plainly (not a picture of D&D Beyond): the name, and its buttons with the one to press lit #}
+{% macro ddb_card(name, sub, buttons, press) %}
+<div class="tw-card" role="img" aria-label="{{ name }}'s card on D&amp;D Beyond: press {{ press }}">
+  <b>{{ name }}</b>{% if sub %}<small>{{ sub }}</small>{% endif %}
+  <span class="tw-card-btns">{% for x in buttons %}<span{% if x == press %} class="press"{% endif %}>{{ x }}</span>{% endfor %}</span>
+</div>
+{% endmacro %}
 {% block content %}
 <main class="page twin-page">
   <div class="title-row"><h1>A test copy of {{ mine[0].c.name if mine | length == 1 else "your character" }}</h1></div>
@@ -39,22 +46,20 @@
         <p class="tw-actions"><a class="btn" href="https://www.dndbeyond.com/characters" target="_blank" rel="noopener">Open My Characters ↗</a> <a class="btn link" href="{{ m.sheet }}" target="_blank" rel="noopener">Your sheet ↗</a></p>
       {% endcall %}
       {% call step(3, "Copy " ~ m.ddb_name, done=at.joined) %}
-        <p>On {{ m.ddb_name }}'s card in My Characters, press <b>Copy</b>, then <b>Copy</b> again to confirm. A second {{ m.ddb_name }} appears: that's the copy. A free D&amp;D Beyond account holds six characters; if yours is full, tell Brett.</p>
+        <p>On {{ m.ddb_name }}'s card in My Characters, press <b>Copy</b>, then <b>Copy</b> again to confirm. The copy appears as <b>Copy of {{ m.ddb_name }}</b>. Your own stays as it is. A free D&amp;D Beyond account holds six characters; if yours is full, tell Brett.</p>
+        {{ ddb_card(m.ddb_name, "", ["View", "Edit", "Copy", "Delete"], "Copy") }}
       {% endcall %}
-      {% call step(4, "Join VTT test with the copy", done=at.joined) %}
+      {% call step(4, "Join VTT test with the copy, then unassign it", done=at.unassigned) %}
         {% if invite %}
-        <p>Open VTT test's invite and pick <b>the copy</b>: the {{ m.ddb_name }} that isn't in a campaign. Never the one at your table.</p>
-        <p class="tw-actions"><a class="btn primary" href="{{ invite }}" target="_blank" rel="noopener">Open VTT test's invite ↗</a></p>
+        <p>Open VTT test's invite and pick <b>Copy of {{ m.ddb_name }}</b>, never the one at your table. D&amp;D Beyond then opens VTT test's page: on the copy's card, press <b>Unassign</b>. It moves to Unassigned Characters, where Brett claims it. That's all from you.</p>
+        <p class="tw-actions"><a class="btn primary" href="{{ invite }}" target="_blank" rel="noopener">Open VTT test's invite ↗</a> <a class="btn link" href="{{ campaign_url }}" target="_blank" rel="noopener">Already joined? Open VTT test ↗</a></p>
         {% else %}
-        <p>Ask Brett for VTT test's invite link, open it, and pick <b>the copy</b>: the {{ m.ddb_name }} that isn't in a campaign.</p>
+        <p>Ask Brett for VTT test's invite link, open it, and pick <b>Copy of {{ m.ddb_name }}</b>. D&amp;D Beyond then opens VTT test's page: on the copy's card, press <b>Unassign</b>. That's all from you.</p>
         {% endif %}
-        {% if at.joined and not at.claimed %}<p class="note">askdnd sees it in VTT test{% if at.joined.characterName %} as {{ at.joined.characterName }}{% endif %}.</p>{% endif %}
+        {{ ddb_card("Copy of " ~ m.ddb_name, "Player: " ~ m.account if m.account else "", ["View", "Edit", "Unassign", "Leave"], "Unassign") }}
+        {% if at.joined and not at.unassigned %}<p class="note">askdnd sees {{ at.joined.characterName or "it" }} in VTT test: press <b>Unassign</b> on it.</p>{% endif %}
       {% endcall %}
-      {% call step(5, "Unassign the copy", done=at.unassigned) %}
-        <p>On VTT test's page on D&amp;D Beyond, find the copy's card and press <b>Unassign</b>. It moves to Unassigned Characters, where Brett can claim it for a test account. That's all from you.</p>
-        <p class="tw-actions"><a class="btn" href="{{ campaign_url }}" target="_blank" rel="noopener">Open VTT test ↗</a></p>
-      {% endcall %}
-      {% call step(6, "Brett claims it", done=at.claimed) %}
+      {% call step(5, "Brett claims it", done=at.claimed) %}
         <p>Brett claims it for a test account and names it <b>{{ m.c.name }} (twin)</b>. Nothing more for you{% if at.claimed %}: done, thank you{% endif %}.</p>
       {% endcall %}
     </ol>
@@ -62,13 +67,13 @@
   {% endfor %}
 
   <section class="section"><ol class="tw-steps">
-    {% call step(7, "Optional: take askdnd's tour") %}
+    {% call step(6, "Optional: take askdnd's tour") %}
       <p>A few minutes on your own pages: what askdnd adds at the table, from Battle and rolling to how it keeps your D&amp;D Beyond sheet in step. It only shows; it changes nothing. Take it again any time from <b>?</b> › Take the tour.</p>
       <p class="tw-actions"><button type="button" class="btn" data-tour-start>Take the tour</button></p>
     {% endcall %}
   </ol></section>
 
-  <p class="note tw-read">Done shows what askdnd sees in VTT test on D&amp;D Beyond{% if read_at %} (looked {{ read_at | ago }}){% endif %}. After an unassign it may not see the copy again until Brett claims it. <a href="/twin">Look again</a></p>
+  <p class="note tw-read">Done shows what askdnd sees in VTT test on D&amp;D Beyond{% if read_at %} (looked {{ read_at | ago }}){% endif %}. After you unassign it, askdnd may not see the copy again until Brett claims it. <a href="/twin">Look again</a></p>
   {% endif %}
 
   {% if everyone %}

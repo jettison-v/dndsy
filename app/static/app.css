@@ -3019,3 +3019,9 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 @media (max-width: 900px) { .tw-phone { display: block; } }
 .tw-read { margin: 0 0 var(--sp-5); }
 .tw-all { width: 100%; }
+/* (the twin page's D&D Beyond cards: drawn plainly, the button to press lit) */
+.tw-card { display: inline-grid; gap: var(--sp-1); margin-top: var(--sp-3); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); max-width: 100%; }
+.tw-card b { color: var(--text-strong); }
+.tw-card small { color: var(--muted); }
+.tw-card-btns { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); margin-top: var(--sp-1); font: 600 var(--fs-xs) var(--cond); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tw-card-btns .press { color: var(--text-strong); outline: 2px solid var(--amber); outline-offset: 3px; border-radius: var(--r-xs); }

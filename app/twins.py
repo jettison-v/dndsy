@@ -50,14 +50,23 @@ def listed(db: Session, test: Campaign, refresh: bool = False) -> tuple[list[dic
     return list(((snap.raw or {}).get("campaign") or {}).get("characters") or []), snap.fetched_at
 
 
+COPY = "Copy of "  # (D&D Beyond names a copy "Copy of Cole Lockhard": Brett, Nov 5)
+
+
+def bare(name: str | None) -> str:
+    """A character's name as D&D Beyond lists it, without the "Copy of " a copy starts with, for comparing."""
+    name = (name or "").strip()
+    return (name[len(COPY):] if name.lower().startswith(COPY.lower()) else name).strip().lower()
+
+
 def where(real: Character, entries: list[dict]) -> dict:
     """Where a character's copy stands in VTT test: {"joined", "unassigned", "claimed"} (each the D&D Beyond entry, or
-    None). A copy carries its character's name and, until claimed, its player's account."""
+    None). A copy carries its character's name ("Copy of …" until Brett renames it) and, until claimed, its player's
+    account."""
     raw = (real.snapshot.raw if real.snapshot else None) or {}
     owner = raw.get("userId")
     names = tuple(n.strip().lower() for n in (raw.get("name"), real.name) if n and n.strip())  # (D&D Beyond's, askdnd's: "Cole (twin)")
-    copies = [e for e in entries if names and str(e.get("characterId")) != str(real.ddb_id)
-              and (e.get("characterName") or "").strip().lower().startswith(names)]
+    copies = [e for e in entries if names and str(e.get("characterId")) != str(real.ddb_id) and bare(e.get("characterName")).startswith(names)]
     mine = next((e for e in copies if e.get("userId") == owner), None)
     claimed = next((e for e in copies if e.get("userId") != owner), None)
     return {"joined": mine or claimed, "unassigned": claimed or (mine if mine and mine.get("isAssigned") is False else None), "claimed": claimed}
