@@ -3284,6 +3284,14 @@
     }, 1500);
   }
 
+  // A test copy of your character (app/twins.py, temporary): its first step ticks itself once the extension answers
+  const twinExt = document.querySelector('[data-twin-ext]');
+  if (twinExt) {
+    const tick = () => twinExt.classList.toggle('done', !!document.body.dataset.bridgeVersion);
+    tick();
+    new MutationObserver(tick).observe(document.body, { attributes: true, attributeFilter: ['data-bridge-version'] });
+  }
+
   // The pill on every page
   const pill = document.querySelector('[data-bridge-health]');
   let health = null, healthTimer = null;

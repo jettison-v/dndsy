@@ -69,3 +69,4 @@ screenshots of real pages (they show the campaign).
 
 The design canvases are folders: one `.dc.html` file per board and `canvas.json` for their titles and layout. Each
 board is plain HTML with inline styles; it opens in a browser without the canvas around it.
+| How askdnd Is Tested | [Mwscumi8DvfFvTkL5CzPJG](https://claude.ai/artifact/Mwscumi8DvfFvTkL5CzPJG) | `testing.html` | The four kinds of test side by side, and the live test in depth: where it runs on the Mac Mini, its seats, when it runs, one run step by step, all 27 runs by area, how it looks after itself, what it doesn't cover, where results go (Nov 5; keep current as runs are added) |

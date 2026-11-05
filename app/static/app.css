@@ -3001,3 +3001,21 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .ft-whose { border-color: color-mix(in srgb, var(--green) 55%, var(--line)); }
 .fb-who.fb-creature .fb-pic { box-shadow: 0 0 0 2px var(--green); }
 .fb-who.sub { transform: scale(.85); }
+
+/* A test copy of your character (app/twins.py, twin.html; temporary until the twins are claimed): numbered steps, each
+   green with Done once askdnd sees it; on a phone, a note to do it on a computer */
+.tw-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-5); }
+.tw-step { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: var(--sp-3); align-items: start; }
+.tw-n { width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--line-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-sm); color: var(--muted); }
+.tw-step.done .tw-n { background: var(--green-soft); border-color: transparent; color: var(--green); }
+.tw-head { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; min-height: 28px; }
+.tw-head h3 { margin: 0; font-size: var(--fs-md); }
+.tw-body p { margin: var(--sp-1) 0 0; max-width: 70ch; }
+.tw-body .tw-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; margin-top: var(--sp-3); }
+.tw-done, .tw-ext-ok { display: none; }
+.tw-step.done .tw-done { display: inline-block; }
+.tw-step.done .tw-ext-ok { display: inline; }
+.tw-phone { display: none; margin: 0 0 var(--sp-5); }
+@media (max-width: 900px) { .tw-phone { display: block; } }
+.tw-read { margin: 0 0 var(--sp-5); }
+.tw-all { width: 100%; }
