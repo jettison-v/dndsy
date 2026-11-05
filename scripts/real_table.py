@@ -2,6 +2,8 @@
 
 On the Mini, never on GitHub: `.venv/bin/python real_table.py [run …]` after `real_table_seats.sh open` (every run when
 none is named), and every night at 4:00 through real_table_nightly.sh, which adds `--sentry` (a miss goes to Sentry).
+A run that misses is tried once more on tidied sheets (`--once`: not); passing then, its first misses are reported as
+passed only on a second try, not as misses. Each night's checks are added to logs/results.jsonl (scripts/live_results.py).
 `--via-dm` runs the same changes with each player's sheet closed and only the DM's seat on a D&D Beyond page (the
 campaign page), so the DM's browser makes them (Brett, 2026-11-04: Manage › askdnd › D&D Beyond bridge's table of what
 each connection can change); every run that changes a sheet takes part, read back from the DM's page.
@@ -53,7 +55,8 @@ class Remote:
 class Table:
     def __init__(self, p, via_dm: bool = False):
         self.contexts = Seats(p)
-        self.results: list[tuple[bool, str]] = []
+        self.results: list[tuple[bool | None, str]] = []  # (True passed, False missed, None passed only on a second try)
+        self.checks: list[dict] = []  # every check with its run and how long it took: the night's line in logs/results.jsonl
         self.run = ""
         self.last: Page | None = None
         self.via_dm = via_dm
@@ -97,16 +100,21 @@ class Table:
         for _ in range(int(seconds * 2)):
             try:
                 if check():
-                    self.results.append((True, f"{self.run}: {what}"))
                     took = time.time() - start
+                    self.note(True, what, took)
                     print("PASS", what, f"(slow: {took:.0f} seconds)" if took > 10 else "", flush=True)
                     return True
             except Exception:
                 pass
             page.wait_for_timeout(500)
-        self.results.append((False, f"{self.run}: {what}"))
+        self.note(False, what, time.time() - start)
         print("FAIL", what, flush=True)
         return False
+
+    def note(self, ok: bool, what: str, seconds: float | None = None) -> None:
+        """One result: kept for the summary and Sentry, and for the history (scripts/live_results.py)."""
+        self.results.append((ok, f"{self.run}: {what}" if self.run else what))
+        self.checks.append({"run": self.run, "what": what, "ok": ok, "seconds": None if seconds is None else round(seconds, 1)})
 
 
 def pill(page: Page) -> str:
@@ -1230,18 +1238,23 @@ def as_found(t: Table, before: dict) -> None:
             print("  still changed:", show(left()), flush=True)
 
 
-def report(missed: list[str], ran: list[str], log: str, via_dm: bool = False) -> None:
-    """To Sentry (askdnd-v2), where the app's own errors go and alert Brett: one issue for the live test, whatever missed."""
+def report(missed: list[str], ran: list[str], log: str, via_dm: bool = False, flaky: list[str] = ()) -> None:
+    """To Sentry (askdnd-v2), where the app's own errors go and alert Brett: one issue for the live test's misses (an
+    error), and one for checks that passed only on a second try (a warning: its count of events says how often)."""
     import os
 
     import sentry_sdk
 
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], environment="live-test", server_name="mac-mini", default_integrations=False)
-    with sentry_sdk.new_scope() as scope:
-        scope.fingerprint = ["live-test", "part-1-via-dm" if via_dm else "part-1"]
-        scope.set_tag("source", "live-test")
-        scope.set_context("live test", {"runs": ", ".join(ran), "missed": missed[:40], "log": log[-6000:]})
-        sentry_sdk.capture_message(f"Live test part 1{' through the DM' if via_dm else ''}: {len(missed)} missed ({missed[0][:120]})", level="error")
+    part = f"Live test part 1{' through the DM' if via_dm else ''}"
+    for whats, kind, level, title in ((missed, "", "error", "missed"), (flaky, "-second-try", "warning", "passed only on a second try")):
+        if not whats:
+            continue
+        with sentry_sdk.new_scope() as scope:
+            scope.fingerprint = ["live-test", ("part-1-via-dm" if via_dm else "part-1") + kind]
+            scope.set_tag("source", "live-test")
+            scope.set_context("live test", {"runs": ", ".join(ran), title: list(whats)[:40], "log": log[-6000:]})
+            sentry_sdk.capture_message(f"{part}: {len(whats)} {title} ({whats[0][:120]})", level=level)
     sentry_sdk.flush(10)
 
 
@@ -1282,16 +1295,13 @@ def left_over(d: dict) -> list[str]:
         ["limited uses spent"] if spent(d) else [])
 
 
-def clean_start(t: Table, seat: str) -> None:
-    """Part 1 starts on clean sheets. Anything left over (a run before this one that didn't put it back) is a miss, and
-    is put right on D&D Beyond, as the seat's player could on the sheet: hit points, death saves, conditions, and (Nov 5:
-    a night's misses spent Levi's Pact slots and Wild Shape uses, and the next night's runs failed on them) slots and
-    limited uses."""
+def tidy(t: Table, seat: str) -> list[str]:
+    """What's left over on a seat's sheet, put right on D&D Beyond as the seat's player could on the sheet: hit points,
+    death saves, conditions, and (Nov 5: a night's misses spent Levi's Pact slots and Wild Shape uses, and the next
+    night's runs failed on them) slots and limited uses. Returns what was left over."""
     sheet = t.sheet(seat)
     d = record(sheet)
     found = left_over(d)
-    t.results.append((not found, f"{seat}'s sheet starts clean"))
-    print("PASS" if not found else "FAIL", f"{seat}'s sheet starts clean", "; ".join(found), flush=True)
     ops = ([["PUT", "life/hp/damage-taken", {"removedHitPoints": 0, "temporaryHitPoints": 0}]] if d.get("removedHitPoints") or d.get("temporaryHitPoints") else []) + (
         [["PUT", "life/death-saves", {"failCount": 0, "successCount": 0}]] if (d.get("deathSaves") or {}).get("failCount") or (d.get("deathSaves") or {}).get("successCount") else []) + [
         ["DELETE", "condition", {"id": c["id"]}] for c in d.get("conditions") or []] + [
@@ -1300,7 +1310,86 @@ def clean_start(t: Table, seat: str) -> None:
         ["PUT", "action/limited-use", {"id": str(x["id"]), "entityTypeId": str(x.get("entityTypeId")), "uses": 0}]
         for g in d["actions"].values() for x in g or [] if (x.get("limitedUse") or {}).get("numberUsed")]
     if ops:
-        print("  put right on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], ops]), flush=True)
+        print("  put right on D&D Beyond:", "; ".join(found), sheet.evaluate(TIDYING, [SHEETS[seat], ops]), flush=True)
+    return found
+
+
+def clean_start(t: Table, seat: str) -> None:
+    """Part 1 starts on clean sheets. Anything left over (a run before this one that didn't put it back) is a miss, and
+    is put right so the runs can start."""
+    found = tidy(t, seat)
+    t.note(not found, f"{seat}'s sheet starts clean")
+    print("PASS" if not found else "FAIL", f"{seat}'s sheet starts clean", "; ".join(found), flush=True)
+
+
+def seated(t: Table, seats: set[str]) -> tuple[set[str], dict[str, str]]:
+    """Setup, before any run (Nov 3: player2's seat had been changed to play another character, and every run on it
+    missed): each player's seat plays its test sheet on beta, and every seat has the same extension. A seat that isn't
+    set up is a setup miss, said once, and the runs on it are left out instead of each missing for the same reason.
+    Returns (the seats that are set up, each seat's extension version)."""
+    ready, versions = set(), {}
+    for seat in sorted(seats):
+        try:
+            page = t.battle(seat)
+            href = page.get_attribute(".char-name .sheet-open", "href", timeout=10000) or ""
+            page.wait_for_function("document.body.dataset.bridgeVersion", timeout=10000)
+            versions[seat] = page.evaluate("document.body.dataset.bridgeVersion")
+        except Exception as e:
+            t.note(False, f"setup: {seat}'s seat opens its character on beta ({type(e).__name__})")
+            continue
+        if str(SHEETS[seat]) not in href:
+            t.note(False, f"setup: {seat}'s seat plays its test sheet {SHEETS[seat]} (it plays {href.rsplit('/', 1)[-1] or 'none'})")
+            continue
+        ready.add(seat)
+    try:  # (the DM's seat makes changes too: through the DM, the loot and the VTT)
+        page = t.page("dm", f"{BETA}/party")
+        page.wait_for_function("document.body.dataset.bridgeVersion", timeout=10000)
+        versions["dm"] = page.evaluate("document.body.dataset.bridgeVersion")
+    except Exception as e:
+        t.note(False, f"setup: the DM's seat has the extension ({type(e).__name__})")
+    if len(set(versions.values())) > 1:
+        t.note(False, f"setup: every seat has the same extension ({', '.join(f'{k} {v}' for k, v in sorted(versions.items()))})")
+    print("  seats ready:", ", ".join(sorted(ready)) or "none", "· extension", ", ".join(sorted(set(versions.values()))) or "unknown", flush=True)
+    return ready, versions
+
+
+def attempt(t: Table, name: str) -> list[str]:
+    """One run, then its sheets tidied: a run that left something behind misses here, and the next run starts clean
+    whatever this one did (Nov 5: one run's leftovers made four more miss). Returns its misses."""
+    start = len(t.results)
+    try:
+        RUNS[name](t)
+    except Exception as e:  # one run going wrong is a result, and the rest still run
+        lines = str(e).splitlines()
+        at = next((x.strip() for x in lines if "waiting for" in x), "")  # (what it was waiting for)
+        t.note(False, f"stopped with {type(e).__name__}: {lines[0][:120] if lines else ''} {at[:160]}")
+        print("FAIL", t.results[-1][1], flush=True)
+        try:
+            shot = f"logs/stopped-{time.strftime('%Y-%m-%d-%H%M')}-{name}.png"
+            t.last.screenshot(path=shot)
+            print("  what it was looking at:", shot, flush=True)
+        except Exception:
+            pass
+    for seat in sorted(used([name])):
+        try:
+            left = tidy(t, seat)
+        except Exception as e:
+            left = [f"couldn't be read ({type(e).__name__})"]
+        if left:
+            t.note(False, f"put back {seat}'s sheet ({'; '.join(left)})")
+    return [what for ok, what in t.results[start:] if ok is False]
+
+
+def history(t: Table, names: list[str], versions: dict, via_dm: bool) -> None:
+    """The night's results, one line in logs/results.jsonl on the Mini (scripts/live_results.py reads them): which
+    checks pass every night, which only sometimes, and which are getting slower."""
+    import os
+    from datetime import datetime
+
+    os.makedirs("logs", exist_ok=True)
+    with open("logs/results.jsonl", "a") as f:
+        f.write(json.dumps({"at": datetime.now().isoformat(timespec="seconds"), "via_dm": via_dm, "runs": names,
+                            "extension": versions, "checks": t.checks}) + "\n")
 
 
 def used(names: list[str]) -> set[str]:
@@ -1324,39 +1413,42 @@ def main() -> int:
         if via_dm:
             print("== through the DM: every sheet closed, the DM's seat on the campaign page", flush=True)
         if "--try-alert" in args:  # (a deliberate miss: checks the way to Sentry, real_table_nightly.sh --try-alert)
-            t.results.append((False, "a deliberate miss, to try the alert (--try-alert)"))
+            t.note(False, "a deliberate miss, to try the alert (--try-alert)")
+        versions: dict = {}
         try:
+            ready, versions = seated(t, used(names))
+            names = [n for n in names if used([n]) <= ready] if ready else []
             if "inventory" in names:
                 stock(t.sheet("player2"))  # (before the sheets are noted: stocking is setting up, not a run's change)
             for seat in sorted(used(names)):
                 clean_start(t, seat)
             before = {seat: record(t.sheet(seat)) for seat in SHEETS if seat in used(names)}
         except Exception as e:  # (the seats aren't open, or D&D Beyond can't be reached)
-            t.results.append((False, f"the seats open: {type(e).__name__}: {str(e)[:200]}"))
+            t.note(False, f"the seats open: {type(e).__name__}: {str(e)[:200]}")
             before = {}
         for name in names if before else []:
             print("==", name, flush=True)
             t.run = name
-            try:
-                RUNS[name](t)
-            except Exception as e:  # one run going wrong is a result, and the rest still run
-                lines = str(e).splitlines()
-                at = next((x.strip() for x in lines if "waiting for" in x), "")  # (what it was waiting for)
-                t.results.append((False, f"{name}: stopped with {type(e).__name__}: {lines[0][:120] if lines else ''} {at[:160]}"))
-                print("FAIL", t.results[-1][1], flush=True)
-                try:
-                    shot = f"logs/stopped-{time.strftime('%Y-%m-%d-%H%M')}-{name}.png"
-                    t.last.screenshot(path=shot)
-                    print("  what it was looking at:", shot, flush=True)
-                except Exception:
-                    pass
+            first = attempt(t, name)
+            if first and "--once" not in args:
+                # A second try, on tidied sheets: missed twice is askdnd's (or D&D Beyond changed); passed the second
+                # time, the first try's misses are kept as passed only on a second try, which is still worth knowing
+                # (timing bugs so far only showed in some runs), but isn't an alarm
+                print("  missed: trying it once more", flush=True)
+                t.run = f"{name} (again)"
+                if not attempt(t, name):
+                    t.results = [(None if ok is False and what.startswith(f"{name}: ") else ok, what) for ok, what in t.results]
         if before:
             t.run = "after"
             as_found(t, before)
-    missed = [what for ok, what in t.results if not ok]
-    print(f"{len(t.results) - len(missed)} of {len(t.results)} as expected", flush=True)
-    if missed and to_sentry:
-        report(missed, names, "".join(out.text), via_dm)
+        history(t, names, versions, via_dm)
+    missed = [what for ok, what in t.results if ok is False]
+    flaky = [what for ok, what in t.results if ok is None]
+    print(f"{sum(1 for ok, _ in t.results if ok)} of {len(t.results)} as expected", flush=True)
+    if flaky:
+        print("Passed only on a second try:", *flaky, sep="\n  ", flush=True)
+    if (missed or flaky) and to_sentry:
+        report(missed, names, "".join(out.text), via_dm, flaky)
     return 1 if missed else 0
 
 

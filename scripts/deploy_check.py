@@ -3,6 +3,7 @@
     uv run python scripts/deploy_check.py            # the newest commit on main
     uv run python scripts/deploy_check.py --sha abc1234
     uv run python scripts/deploy_check.py --set-backup-watch   # after changing BACKUP_WATCH below
+    uv run python scripts/deploy_check.py --set-app-watch      # after changing APP_WATCH below
 
 1. Waits for GitHub's tests on that commit (Railway waits for them too).
 2. Waits for each Railway service to deploy it. The backup service only rebuilds when a file it runs changed
@@ -32,6 +33,12 @@ SERVICES = ["askdnd-v2", "askdnd-backup"]
 # deprecated, and its replacement manages the whole project, the legacy service included, so we set just this.)
 BACKUP_WATCH = ["scripts/backup_db.py", "app/__init__.py", "app/backup.py", "app/books.py", "app/config.py", "app/db.py", "app/errors.py",
                 "app/files.py", "app/history.py", "app/models.py", "pyproject.toml", "uv.lock", ".python-version"]
+# The app's watch paths: what beta runs. A merge that changes only what's left out (docs, tests, the workflow, notes)
+# doesn't rebuild beta (Brett, Nov 4: each deploy costs). tests/test_deploy.py checks every file in git is in one list
+# or the other, so something new the app needs can't be left out by accident. --set-app-watch copies it to Railway.
+APP_WATCH = ["app/**", "migrations/**", "scripts/**", "extension/**", "transcript_filter/**", "pyproject.toml", "uv.lock",
+             ".python-version", "Procfile", "alembic.ini"]
+NOT_RUN = ["docs/", "tests/", ".github/", ".claude/", "CLAUDE.md", "README.md", ".gitignore", ".env.example"]
 BETA = "https://beta.askdnd.ai/login"
 DONE = {"SUCCESS", "SLEEPING", "FAILED", "CRASHED", "REMOVED", "SKIPPED"}
 # Railway's build machines failing, not our code: worth building again
@@ -129,11 +136,11 @@ def follow(service: str, sha: str, appear: int) -> bool:
     return False
 
 
-def set_backup_watch() -> None:
-    """Copy BACKUP_WATCH to the backup service's settings on Railway (signed in with the Railway CLI's login)."""
+def set_watch(name: str, patterns: list[str]) -> None:
+    """Copy a watch list to a service's settings on Railway (signed in with the Railway CLI's login)."""
     status = json.loads(run("railway", "status", "--json"))
     env = next(e["node"]["id"] for e in status["environments"]["edges"] if e["node"]["name"] == "production")
-    service = next(e["node"]["id"] for e in status["services"]["edges"] if e["node"]["name"] == SERVICES[1])
+    service = next(e["node"]["id"] for e in status["services"]["edges"] if e["node"]["name"] == name)
     user = json.load(open(os.path.expanduser("~/.railway/config.json")))["user"]
 
     def gql(query: str, variables: dict) -> dict:
@@ -144,11 +151,11 @@ def set_backup_watch() -> None:
 
     ids = {"s": service, "e": env}
     out = gql("mutation($s:String!,$e:String!,$i:ServiceInstanceUpdateInput!){serviceInstanceUpdate(serviceId:$s,environmentId:$e,input:$i)}",
-              {**ids, "i": {"watchPatterns": BACKUP_WATCH}})
+              {**ids, "i": {"watchPatterns": patterns}})
     if out.get("errors"):
         sys.exit(f"Railway refused: {out['errors'][0]['message']}")
     now = gql("query($s:String!,$e:String!){serviceInstance(serviceId:$s,environmentId:$e){watchPatterns}}", ids)
-    say(f"{SERVICES[1]} rebuilds only when these change: {', '.join(now['data']['serviceInstance']['watchPatterns'])}")
+    say(f"{name} rebuilds only when these change: {', '.join(now['data']['serviceInstance']['watchPatterns'])}")
 
 
 def beta_answers(tries: int = 6, wait: float = 15) -> bool:
@@ -173,9 +180,12 @@ def main() -> None:
     p.add_argument("--sha", help="the commit to follow (default: the newest on main)")
     p.add_argument("--no-ci", action="store_true", help="don't wait for GitHub's tests")
     p.add_argument("--set-backup-watch", action="store_true", help="copy BACKUP_WATCH to the backup service on Railway, then stop")
+    p.add_argument("--set-app-watch", action="store_true", help="copy APP_WATCH to the app's service on Railway, then stop")
     args = p.parse_args()
     if args.set_backup_watch:
-        return set_backup_watch()
+        return set_watch(SERVICES[1], BACKUP_WATCH)
+    if args.set_app_watch:
+        return set_watch(SERVICES[0], APP_WATCH)
     run("git", "fetch", "-q", "origin", "main")
     sha = args.sha or run("git", "rev-parse", "origin/main").strip()
     if not args.no_ci:

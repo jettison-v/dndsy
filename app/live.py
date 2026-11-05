@@ -257,6 +257,8 @@ def live_refresh_one(request: Request, character_id: int, db: Session = Depends(
     ch = db.get(Character, character_id)
     if ch is None or not ch.ddb_id:
         return HTMLResponse("", status_code=404)
+    if all(c["id"] != ch.campaign_id for c in access.campaigns_for(user.get("email"))):  # (its table's: tests/test_refusals.py)
+        return HTMLResponse("", status_code=403)
     name = ch.name
     if not maybe_refresh(db, ch, MANUAL_MIN_AGE):
         msg = f"{name} was updated a moment ago"

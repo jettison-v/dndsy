@@ -105,3 +105,14 @@ def test_the_browser_tests_image_matches_playwright():
     lock = re.search(r'name = "playwright"\nversion = "([\d.]+)"', (root / "uv.lock").read_text()).group(1)
     image = re.search(r"mcr\.microsoft\.com/playwright/python:v([\d.]+)-", (root / ".github/workflows/tests.yml").read_text()).group(1)
     assert image == lock, f"tests.yml uses Playwright's v{image} image but uv.lock has Playwright {lock}"
+
+
+def test_every_file_is_either_run_by_beta_or_never_needs_a_deploy():
+    """beta rebuilds only when something it runs changes (deploy_check.APP_WATCH, its Railway watch paths): every file in
+    git is either watched or in NOT_RUN, so a new folder the app needs can't be left out by accident."""
+    check = _deploy_check()
+    watched = [p.removesuffix("**") for p in check.APP_WATCH]
+    files = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
+    loose = [f for f in files if not any(f == w or (w.endswith("/") and f.startswith(w)) for w in watched + check.NOT_RUN)]
+    assert not loose, f"Add each to APP_WATCH (then --set-app-watch) or NOT_RUN in scripts/deploy_check.py: {loose[:10]}"
+    assert not set(check.BACKUP_WATCH) - {f for f in files if any(f == w or f.startswith(w) for w in watched)}  # (the backup builds from the same files)
