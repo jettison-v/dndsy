@@ -193,9 +193,15 @@ def bring_person_back(request: Request, email: str = Form(""), role: str = Form(
     return _back()
 
 
+def one_each(campaign: Campaign) -> bool:
+    """One character per person at a real table. In a test campaign a test account plays several (its seat's own and
+    the twins on its D&D Beyond account; Brett, Nov 5), and its menu bar opens the first of them."""
+    return not campaign.is_test
+
+
 @router.post("/plays")
 def save_plays(request: Request, email: str = Form(""), character_id: str = Form(""), db: Session = Depends(get_db)):
-    """What someone plays here, from their row: one character per person in a campaign."""
+    """What someone plays here, from their row: one character per person in a campaign (`one_each`)."""
     user, denied = web.require(request, can_run_table, DENIED)
     if denied:
         return denied
@@ -205,7 +211,7 @@ def save_plays(request: Request, email: str = Form(""), character_id: str = Form
         return _back()
     here = chars.campaign_characters(db, campaign.id)
     ch = next((c for c in here if str(c.id) == character_id), None)
-    for other in here:
+    for other in here if one_each(campaign) or ch is None else []:  # (nothing picked: none, anywhere)
         if other.owner_id == u.id and other is not ch:
             other.owner_id = None
     if ch is not None:
@@ -246,7 +252,7 @@ def add(request: Request, email: str = Form(""), new_email: str = Form(""), name
         db.add(ch)
         db.flush()
         chars.move(db, ch, campaign.id)
-        if u is not None:
+        if u is not None and one_each(campaign):
             for other in chars.campaign_characters(db, campaign.id):
                 if other.owner_id == u.id and other.id != ch.id:
                     other.owner_id = None
@@ -299,7 +305,7 @@ def bring_character_back(request: Request, character_id: int, db: Session = Depe
 @router.post("/characters/{character_id:int}")
 def save_player(request: Request, character_id: int, user_id: str = Form(""), db: Session = Depends(get_db)):
     """Who plays this character (their notes, pins and reminders are theirs to set). One character per person in a
-    campaign; their characters in other campaigns stay theirs."""
+    campaign (`one_each`); their characters in other campaigns stay theirs."""
     user, denied = web.require(request, can_run_table, DENIED)
     if denied:
         return denied
@@ -308,7 +314,7 @@ def save_player(request: Request, character_id: int, user_id: str = Form(""), db
     if campaign is None or ch is None or ch.campaign_id != campaign.id:
         return _back()
     player = db.get(User, int(user_id)) if user_id.isdigit() else None
-    if player is not None:
+    if player is not None and one_each(campaign):
         for other in chars.campaign_characters(db, campaign.id):
             if other.owner_id == player.id and other.id != ch.id:
                 other.owner_id = None

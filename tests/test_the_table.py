@@ -142,3 +142,28 @@ def test_campaign_lists_skip_who_left(admin, db):
     admin.post(f"{TABLE}/characters/{cole.id}/remove")
     db.expire_all()
     assert cole not in characters.campaign_characters(db, campaign)
+
+
+def test_in_a_test_campaign_a_test_account_plays_several(admin, db):
+    """Brett, Nov 5: a seat of the live test plays its own character and the twins on its D&D Beyond account, so a test
+    campaign keeps each one it's given (a real table stays one per person, above); its menu bar opens the first."""
+    from app import picks
+    from app.models import Campaign
+
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    db.get(Campaign, cole.campaign_id).is_test = True
+    set_role(db, "player@example.com", "player")
+    me = db.scalar(select(User).where(User.email == "player@example.com"))
+    admin.post(f"{TABLE}/plays", data={"email": me.email, "character_id": cole.id})
+    admin.post(f"{TABLE}/characters/{trah.id}", data={"user_id": str(me.id)})
+    admin.post(f"{TABLE}/add", data={"email": me.email, "char_name": "Test Bard"})
+    db.expire_all()
+    bard = db.scalar(select(Character).where(Character.name == "Test Bard"))
+    assert cole.owner_id == trah.owner_id == bard.owner_id == me.id
+    first = min((cole, trah, bard), key=lambda c: c.id)
+    assert picks.my_character(db, {"email": me.email}).id == first.id
+    page = admin.get(TABLE).text
+    assert sum("player@example.com" in x for x in page.split('<details class="seat">')[1:]) == 3  # (a row each)
+    admin.post(f"{TABLE}/plays", data={"email": me.email, "character_id": ""})
+    db.expire_all()
+    assert cole.owner_id is None and trah.owner_id is None and bard.owner_id is None
