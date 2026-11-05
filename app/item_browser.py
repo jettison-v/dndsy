@@ -87,6 +87,11 @@ def pay_from(purse: dict, cp: int) -> dict | None:
     return have
 
 
+# For the character (feedback 13, Brett, Nov 4: "filter by whether you are proficient and can use the item"): the row's
+# icon as a filter. A catch is a cost the rules attach (not proficient, Strength, attunement…), never "can't" (item_fit)
+NO_CATCH, CATCH = "No catch", "Has a catch"
+
+
 def _have(sheet: dict) -> dict[int, int]:
     """How many of each D&D Beyond item the character has, by its definition."""
     have: dict[int, int] = {}
@@ -99,9 +104,11 @@ def _have(sheet: dict) -> dict[int, int]:
 def _row(i: dict, have: dict[int, int], sheet: dict | None = None, who: str = "") -> dict:
     """One item as the browser lists it, with what it would mean for the character (app/item_fit.py: the row's icon, the
     details' For <character>)."""
-    return {**i, "have": have.get(i["id"], 0), "price": money(i["cost_cp"]) if i.get("cost_cp") else "", "fit": item_fit.fit(sheet, i, who),
+    fit = item_fit.fit(sheet, i, who)
+    return {**i, "have": have.get(i["id"], 0), "price": money(i["cost_cp"]) if i.get("cost_cp") else "", "fit": fit,
             "weight_label": f"{i['weight']:g} lb" if i.get("weight") else "",
-            "f": {"kind": i["kind"], "rarity": i["rarity"], "attune": "Needs attunement" if i["attune"] else "No attunement", "book": i["book"]}}
+            "f": {"kind": i["kind"], "rarity": i["rarity"], "attune": "Needs attunement" if i["attune"] else "No attunement", "book": i["book"],
+                  "fit": CATCH if fit["icon"] == "warn" else NO_CATCH}}
 
 
 @router.get("/characters/{character_id:int}/items/browse")
@@ -112,6 +119,7 @@ def browse(request: Request, character_id: int, db: Session = Depends(get_db)):
     have, who = _have(sheet), ch.name.split()[0]
     rows = [_row(i, have, sheet, who) for i in catalog()]
     groups = [{"key": "kind", "label": "Kind", "values": sorted({r["f"]["kind"] for r in rows})},
+              {"key": "fit", "label": f"For {who}", "values": [NO_CATCH, CATCH]},  # (feedback 13: what the character can use)
               {"key": "rarity", "label": "Rarity", "values": [v for v in RARITY_ORDER if any(r["f"]["rarity"] == v for r in rows)]},
               {"key": "attune", "label": "Attunement", "values": ["Needs attunement", "No attunement"]},
               {"key": "book", "label": "Book", "values": sorted({r["f"]["book"] for r in rows if r["f"]["book"]}), "more": True}]
