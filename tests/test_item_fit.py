@@ -80,7 +80,7 @@ def test_the_browser_shows_the_icon_and_the_section(player, db, sheet, monkeypat
     assert 'class="ib-fit ok" title="Attunement 3 of 3"' in page and 'class="ib-fit"' in page  # (the Cloak; Rope: nothing)
     detail = player.get(f"/characters/{cole.id}/items/browse/9002").text
     assert "For Cole: now and with it" in detail and '<td class="k">Attuned</td><td>2 of 3</td><td class="then">3 of 3' in detail
-    assert '<span class="ib-d same">Same</span>' in detail  # (the made-up Cloak grants nothing here: only attunement)
+    assert '<span class="tag ib-d same">Same</span>' in detail  # (the made-up Cloak grants nothing here: only attunement)
     assert "For Cole" not in player.get(f"/characters/{cole.id}/items/browse/415").text  # (Rope)
 
 
