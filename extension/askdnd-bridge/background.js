@@ -227,7 +227,11 @@ chrome.runtime.onMessage.addListener((m, sender, reply) => {
     if (m.type === 'key') {  // from an askdnd page (Chrome says which site sent it, not the page)
       const askdnd = sender.origin || (sender.tab && new URL(sender.tab.url).origin);
       if (!SITES.includes(askdnd)) return;
-      await chrome.storage.session.set({ key: m.key, askdnd }); hello(); for (const t of await sheetTabs()) refreshPanels(ddbIdOf(t.url)); return;
+      await chrome.storage.session.set({ key: m.key, askdnd }); hello(); for (const t of await sheetTabs()) refreshPanels(ddbIdOf(t.url));
+      // A VTT page opened before askdnd (after Chrome restarted, say) asked whether askdnd follows its game when the
+      // extension couldn't reach askdnd yet: it asks again now (0.12.1; found by the live test, Nov 4)
+      for (const t of await chrome.tabs.query({ url: 'https://www.dndbeyond.com/games/*' })) chrome.tabs.sendMessage(t.id, { type: 'vtt-again' }).catch(() => {});
+      return;
     }
     if (m.type === 'deliver') return (await sheetTabs(String(m.ddbId))).length ? deliver(String(m.ddbId)) : carry(undefined, true);  // askdnd's own tab queued something (no sheet here: the DM's browser may make it)
     if (m.type === 'gamelog') {  // a roll made in askdnd, for the game log: from one open copy of the sheet only

@@ -415,3 +415,47 @@ def test_try_again_in_the_panel_beside_the_sheet(chrome, server, browser_db):
             break
         sheet.wait_for_timeout(500)
     assert held["removedHitPoints"] == before + 3
+
+
+def test_a_vtt_opened_before_askdnd_is_heard_once_askdnd_connects(chromium, server, tmp_path, browser_db):
+    """Extension 0.12.1 (found by the live test, Nov 4): after Chrome restarts, the extension can't reach askdnd until an
+    askdnd page connects it. A VTT page opened first asked then whether askdnd follows its game, was told no, and its
+    fight was never heard until the page was reloaded. It asks again when askdnd connects, and tells the fight it heard."""
+    from tests.browser.test_vtt_listener import sync
+
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        conn.execute(text("UPDATE campaigns SET ddb_campaign_id = '1', fight = NULL WHERE id = :c"), {"c": server["campaign"]})
+        conn.commit()
+    dm = with_extension(chromium.browser_type, server, tmp_path, "dm")
+    try:
+        askdnd = dm.pages[0]
+        askdnd.wait_for_timeout(1500)
+        worker = dm.service_workers[0] if dm.service_workers else dm.wait_for_event("serviceworker")
+        askdnd.goto("about:blank")
+        worker.evaluate("chrome.storage.session.clear()")  # (as after Chrome restarts: no askdnd connected yet)
+        vtt = dm.new_page()
+        vtt.goto("https://www.dndbeyond.com/games/1")
+        vtt.evaluate("""m => {
+            const ws = new WebSocket('wss://games.dndbeyond.com.invalid/test');
+            ws.addEventListener('error', () => {});
+            ws.dispatchEvent(new MessageEvent('message', {data: m}));
+        }""", json.dumps(sync()))
+        vtt.wait_for_timeout(1500)
+        assert not vtt.evaluate("!!document.getElementById('askdnd-vtt')")  # (not followed: askdnd can't be reached)
+        askdnd.goto(f"{server['base']}/characters/{server['cole']}/battle")  # (askdnd connects the extension)
+        vtt.wait_for_function("!!document.getElementById('askdnd-vtt')", timeout=15000)
+        fight = None
+        for _ in range(30):
+            with engine.connect() as conn:
+                fight = conn.execute(text("SELECT fight FROM campaigns WHERE id = :c"), {"c": server["campaign"]}).scalar()
+            if fight:
+                break
+            vtt.wait_for_timeout(500)
+        assert fight and fight["round"] == 4 and [x["name"] for x in fight["order"]] == ["Vi", "Ogre"]
+    finally:
+        dm.close()
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE campaigns SET ddb_campaign_id = NULL, fight = NULL WHERE id = :c"), {"c": server["campaign"]})
+            conn.commit()
+        engine.dispose()

@@ -40,9 +40,10 @@
       : `hearing the fight · round ${esc(f.round)}${now ? ` · <b>${esc(now.name)}</b>’s turn` : ''}`;
     root.innerHTML = `<style>${CSS}</style><div class="badge" role="status" title="askdnd hears this fight's order and turns; on the DM's page it sets the initiative numbers rolled or dragged in askdnd, and changes nothing else here"><span class="dot"></span><span class="logo">askdnd</span><span>${text}</span></div>`;
   }
+  let heard = false;  // (a fight told while askdnd couldn't be reached is told again once it can)
   window.addEventListener('message', e => {
     if (e.source !== window || !e.data || e.data.askdndBridge !== 'from-vtt') return;
-    if (e.data.type === 'fight') { last = e.data.fight; draw(); }
+    if (e.data.type === 'fight') { last = e.data.fight; heard = true; draw(); }
     send({ ...e.data, type: 'vtt-' + e.data.type, gameId: gameId() });
   });
   // Initiative numbers askdnd wants set (the DM's page only gets any): handed to vtt-page.js, which sends them
@@ -55,11 +56,22 @@
       ticking = setTimeout(tick, Math.max(2, answer.every || 60) * 1000);
     });
   };
-  try { chrome.runtime.onMessage.addListener(m => { if (m.type === 'vtt-now' && follows) tick(); }); } catch (e) { /* cut off */ }
-  send({ type: 'vtt-hello', gameId: gameId() }, answer => {
+  // Does askdnd follow this game? Asked as the page opens, and again when an askdnd page connects the extension (0.12.1:
+  // opened first, the VTT page asked before the extension could reach askdnd, and was never heard until reloaded)
+  const hello = () => send({ type: 'vtt-hello', gameId: gameId() }, answer => {
     if (chrome.runtime.lastError) return;
+    const was = follows;
     follows = !!(answer && answer.followed);
     draw();
-    if (follows) tick();
+    if (!follows || was) return;
+    tick();
+    if (heard) send({ type: 'vtt-fight', fight: last, gameId: gameId() });
   });
+  try {
+    chrome.runtime.onMessage.addListener(m => {
+      if (m.type === 'vtt-now' && follows) tick();
+      if (m.type === 'vtt-again' && !follows) hello();
+    });
+  } catch (e) { /* cut off */ }
+  hello();
 })();
