@@ -46,7 +46,8 @@ def test_a_player_gets_their_own_steps_and_links_and_never_anothers(player, tabl
     assert config.BRIDGE_EXTENSION_URL in page and "https://www.dndbeyond.com/characters\"" in page
     assert "https://www.dndbeyond.com/characters/75423618" in page  # their own sheet
     assert INVITE in page and "https://www.dndbeyond.com/campaigns/8224496" in page
-    assert "Cole Lockhard" in page and "Cole (twin)" in page
+    assert "Copy of Cole Lockhard" in page and "Cole (twin)" in page
+    assert '<span class="press">Copy</span>' in page and '<span class="press">Unassign</span>' in page  # (the cards drawn)
     main = page.split('<main class="page twin-page">')[1].split("</main>")[0]
     assert "Trah" not in main and "135831636" not in page  # another player's character (Party's menu names everyone)
     assert "Everyone's copy" not in page and "data-tour-start" in page  # (the optional last step: the tour)
@@ -54,16 +55,17 @@ def test_a_player_gets_their_own_steps_and_links_and_never_anothers(player, tabl
 
 
 def test_each_step_ticks_itself_from_what_vtt_test_lists(player, tables):
-    tables({"characterId": 999, "characterName": "Cole Lockhard", "userId": 501, "username": "PatPlayer", "isAssigned": True})
+    """D&D Beyond names a copy "Copy of Cole Lockhard" (Brett, Nov 5)."""
+    tables({"characterId": 999, "characterName": "Copy of Cole Lockhard", "userId": 501, "username": "PatPlayer", "isAssigned": True})
     page = player.get("/twin").text
-    assert done(page) == 2 and "askdnd sees it in VTT test as Cole Lockhard" in page  # copied and joined
+    assert done(page) == 1 and "askdnd sees Copy of Cole Lockhard in VTT test" in page  # copied and joined
 
-    tables({"characterId": 999, "characterName": "Cole Lockhard", "userId": 501, "username": "PatPlayer", "isAssigned": False})
-    assert done(player.get("/twin").text) == 3  # unassigned
+    tables({"characterId": 999, "characterName": "Copy of Cole Lockhard", "userId": 501, "username": "PatPlayer", "isAssigned": False})
+    assert done(player.get("/twin").text) == 2  # unassigned
 
     tables({"characterId": 999, "characterName": "Cole (twin)", "userId": 900, "username": "CatharticPlayer", "isAssigned": True})
     page = player.get("/twin").text
-    assert done(page) == 4 and "done, thank you" in page  # claimed by a test account
+    assert done(page) == 3 and "done, thank you" in page  # claimed by a test account
 
     tables({"characterId": 75423618, "characterName": "Cole Lockhard", "userId": 501, "username": "PatPlayer", "isAssigned": True})
     assert done(player.get("/twin").text) == 0  # the real Cole in VTT test is no copy
