@@ -20,6 +20,16 @@ The D&D Beyond campaign is [VTT test](https://www.dndbeyond.com/campaigns/822449
 
 **Player 2 plays Cathartic in askdnd** (VTT test › Manage › Table › Played by): the automated runs open that seat's own character and expect it to be Cathartic (Nov 3: every run that needs a connected sheet missed while the seat played another character). The live test's setup check now says so before any run.
 
+**The twins and the classes nobody plays** (Brett, Nov 5; the Test Table Setup page, `docs/artifacts/test-roster-setup.html`): each seat's D&D Beyond account also holds copies of the party and one character per class the party doesn't play, all in VTT test and public. In a test campaign a person plays several (Manage › Table keeps each one given); the menu bar still opens the seat's own, the first by id, so the runs find it as before.
+
+| Seat | Its own | Twins | Classes |
+|---|---|---|---|
+| Player 2 (CatharticPlayer) | Cathartic | Cole (twin), 173216268 | Test Ranger (Hunter 5), 173222995 |
+| Player 3 (ViPlayer) | Vi | | Test Bard (Lore 5), 173222716; Test Rogue (Assassin 9), 173222824 |
+| Player 4 (Levi's account) | Levi Shadowquick | Big C (twin), 173220725 | Test Barbarian (Berserker 5), 173222366; Test Fighter (Champion 5), 173222510 |
+
+No Name's and Trah's twins are still to come.
+
 **Brett's personal D&D Beyond account is not a seat** (Brett, 2026-10-30): automation could get an account flagged. That account's characters are in no testing at all (its first Vi and Spurt were taken out of askdnd's VTT test on Nov 5), and Brett's own Chrome profile on the Mini is never copied or driven.
 
 ## Setting up a seat
