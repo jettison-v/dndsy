@@ -152,3 +152,39 @@ def test_www_goes_to_askdnd_ai():
     r = TestClient(app, base_url="https://www.askdnd.ai").get("/c/main/campaign?tab=map", follow_redirects=False)
     assert (r.status_code, r.headers["location"]) == (308, "https://askdnd.ai/c/main/campaign?tab=map")
     assert TestClient(app, base_url="https://askdnd.ai").get("/login", follow_redirects=False).status_code == 200
+
+
+def test_a_page_opened_signed_out_opens_again_after_signing_in(monkeypatch, db):
+    """Brett, 2026-11-05: askdnd.ai/twin, opened signed out, landed on the Story page after signing in."""
+    from fastapi.testclient import TestClient
+
+    from app import auth, config
+    from app.config import parse_allowlist
+    from app.db import get_db
+    from app.main import app
+
+    monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("player@example.com"))
+    app.dependency_overrides[get_db] = lambda: db
+    c = TestClient(app)
+    page = {"accept": "text/html,application/xhtml+xml"}
+    r = c.get("/twin?x=1", headers=page, follow_redirects=False)
+    assert r.headers["location"] == "/login?next=%2Ftwin%3Fx%3D1"
+    assert 'href="/auth/google?next=/twin%3Fx%3D1"' in c.get(r.headers["location"]).text
+    assert c.get("/twin", headers={**page, "HX-Request": "true"}, follow_redirects=False).headers["location"] == "/login"  # (not a page visit)
+
+    c.get("/auth/google?next=/twin%3Fx%3D1", follow_redirects=False)
+
+    async def token(request):
+        return {"userinfo": {"email": "player@example.com", "email_verified": True, "name": "Pat"}}
+
+    monkeypatch.setattr(auth.oauth.google, "authorize_access_token", token)
+    assert c.get("/auth/callback", follow_redirects=False).headers["location"] == "/twin?x=1"
+    assert c.get("/login?next=/party", follow_redirects=False).headers["location"] == "/party"  # (signed in already)
+    app.dependency_overrides.clear()
+
+
+def test_after_signing_in_askdnd_goes_only_to_its_own_pages():
+    from app.auth import back_to
+
+    assert back_to("https://evil.example/") == "/" and back_to("//evil.example/") == "/" and back_to("/\\evil.example") == "/"
+    assert back_to("/login?next=/x") == "/" and back_to("") == "/" and back_to("/c/main/campaign?tab=map") == "/c/main/campaign?tab=map"

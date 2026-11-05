@@ -49,7 +49,7 @@ def test_a_player_gets_their_own_steps_and_links_and_never_anothers(player, tabl
     assert "Cole Lockhard" in page and "Cole (twin)" in page
     main = page.split('<main class="page twin-page">')[1].split("</main>")[0]
     assert "Trah" not in main and "135831636" not in page  # another player's character (Party's menu names everyone)
-    assert "Everyone's copy" not in page
+    assert "Everyone's copy" not in page and "data-tour-start" in page  # (the optional last step: the tour)
     assert done(page) == 0
 
 

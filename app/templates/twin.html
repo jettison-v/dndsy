@@ -61,6 +61,13 @@
   </section>
   {% endfor %}
 
+  <section class="section"><ol class="tw-steps">
+    {% call step(7, "Optional: take askdnd's tour") %}
+      <p>A few minutes on your own pages: what askdnd adds at the table, from Battle and rolling to how it keeps your D&amp;D Beyond sheet in step. It only shows; it changes nothing. Take it again any time from <b>?</b> › Take the tour.</p>
+      <p class="tw-actions"><button type="button" class="btn" data-tour-start>Take the tour</button></p>
+    {% endcall %}
+  </ol></section>
+
   <p class="note tw-read">Done shows what askdnd sees in VTT test on D&amp;D Beyond{% if read_at %} (looked {{ read_at | ago }}){% endif %}. After an unassign it may not see the copy again until Brett claims it. <a href="/twin">Look again</a></p>
   {% endif %}
 
