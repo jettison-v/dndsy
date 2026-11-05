@@ -1405,6 +1405,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rw-notes { list-style: none; margin: 6px 0; padding: 8px 10px; background: var(--bg); border-radius: var(--r-md); font-size: var(--fs-xs); color: var(--muted); display: flex; flex-direction: column; gap: 4px; }
 .rw-notes b { color: var(--amber); font-weight: 600; margin-right: 4px; }
 .rw-note { font-size: var(--fs-xs); color: var(--muted); margin: 6px 0; }
+.rw-note.rw-warn { color: var(--amber); background: var(--amber-soft); border-radius: 6px; padding: 6px 8px; }
 .rw-house b { color: var(--violet); font-weight: 600; margin-right: 4px; }
 .rw-go { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .rw-go .note { font-size: var(--fs-xs); }
@@ -2980,6 +2981,20 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .pw-option:has(input:checked) { border-color: var(--green); background: var(--green-soft); }
 .pw-option input { position: absolute; opacity: 0; pointer-events: none; }
 .pw-option img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--r-md); }
+/* Drawing (feedback 22): shown only while the Describe it form is out; the last pictures stand aside meanwhile */
+.pw-drawing { display: none; gap: var(--sp-2); }
+.pw-draw-form.htmx-request ~ .pw-drawing { display: grid; }
+.pw-draw-form.htmx-request ~ #pw-options { display: none; }
+.pw-ghost { aspect-ratio: 1; border-radius: var(--r-md); border: 2px solid var(--line);
+  background: linear-gradient(110deg, var(--surface-2, rgba(255,255,255,.04)) 30%, var(--amber-soft) 50%, var(--surface-2, rgba(255,255,255,.04)) 70%) 0 0 / 300% 100%;
+  animation: pw-shimmer 1.6s linear infinite; }
+.pw-ghost:nth-child(2) { animation-delay: .2s; } .pw-ghost:nth-child(3) { animation-delay: .4s; } .pw-ghost:nth-child(4) { animation-delay: .6s; }
+.pw-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.pw-bar span { display: block; height: 100%; width: 0; background: var(--amber); border-radius: 3px; }
+.pw-draw-form.htmx-request ~ .pw-drawing .pw-bar span { animation: pw-fill 60s cubic-bezier(.2, .6, .4, 1) forwards; }
+@keyframes pw-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@keyframes pw-fill { from { width: 0; } to { width: 95%; } }
+@media (prefers-reduced-motion: reduce) { .pw-ghost { animation: none; } }
 .pw-ddb { display: flex; gap: var(--sp-3); align-items: center; flex-wrap: wrap; }
 .pw-ddb img { width: 180px; max-width: 100%; border-radius: var(--r-md); }
 .pw-now { display: flex; align-items: center; gap: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--line); flex-wrap: wrap; }

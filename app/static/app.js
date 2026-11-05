@@ -1436,6 +1436,7 @@
       (p.extras || []).forEach(x => { s += '<br>' + esc(x.label) + ' ' + signed(x.total); });
       return s;
     }
+    if (!d20 && !p.dice.length && !(p.extras || []).length) return 'flat, no dice to roll';  // (an Unarmed Strike's 3: feedback 25)
     let s = d20 ? 'd20 ' + p.dice.map((d, i) => (i === p.kept_at ? '<u>' + d + '</u>' : d)).join(' / ') + ' ' + signed(p.modifier) + (p.mode === 'adv' ? ' · Adv' : p.mode === 'dis' ? ' · Dis' : '')
                 : esc(p.formula) + ': ' + p.dice.join(' ') + (p.modifier ? ' ' + signed(p.modifier) : '');
     (p.extras || []).forEach(x => { s += ' · ' + esc(x.label) + ' ' + signed(x.total) + (x.dice.length ? ' <span class="roll-x">(' + esc(x.formula.replace('-', '\u2212')) + ')</span>' : ''); });
@@ -1443,6 +1444,8 @@
   }
   const KIND_WORDS = { attack: ' to hit', damage: ' damage', heal: ' healing' };
   function resultHTML(e, focus) {
+    if (e.kind === 'dc') return '<div class="rp-label">' + esc(e.label) + ' · ' + TO_WORDS[e.to] + '</div><div class="rp-res"><b>DC ' + e.total + '</b> <span class="roll-sub">'
+      + esc(e.main.formula) + '</span></div><div class="rp-line">The target picks Strength or Dexterity; the DM rolls its save.</div>';
     const d20 = D20.includes(e.kind), dmgFirst = focus === 'damage' && e.damage;
     const big = dmgFirst ? e.damage.total : e.total;
     const what = dmgFirst ? ' ' + (e.damage.crit ? 'critical damage' : 'damage') : (KIND_WORDS[e.kind] || '');
@@ -1561,7 +1564,7 @@
   // spec: what to roll. {kind, label, mod, dmg, adv, advWhy, note, cid, shared, follow, parent, entry}
   function chooser(anchor, spec) {
     const w = openWin(anchor), d20 = D20.includes(spec.kind) && !spec.follow, ctx = ctxFor(spec.cid);
-    let mode = spec.adv ? 'adv' : 'normal';
+    let mode = spec.adv ? 'adv' : 'normal', way = '';
     const title = spec.follow === 'damage' ? esc(spec.label) + ' · ' + (spec.crit ? 'critical damage' : 'damage') + ' <span class="roll-sub">' + esc(spec.dmg) + (spec.crit ? ', dice doubled' : '') + '</span>'
       : spec.follow === 'bonus' ? 'Add a die to ' + esc(spec.label)
       : esc(spec.label || 'Dice') + ' <span class="roll-sub">' + (d20 ? 'd20' + (spec.kind === 'death' ? '' : ' ' + signed(num(spec.mod))) : esc(spec.dmg)) + '</span>';
@@ -1580,7 +1583,16 @@
       if (spec.label === 'Initiative') notes.push('<b>Initiative</b> Disadvantage if you\'re Surprised, Advantage if you\'re Invisible');
       if (notes.length) h += '<ul class="rw-notes">' + notes.map(n => '<li>' + n + '</li>').join('') + '</ul>';
     }
+    // An Unarmed Strike: Damage (the attack roll), Grapple or Shove (the DC, to Table rolls for the DM; feedback 26)
+    const unarmed = spec.kind === 'attack' && !spec.follow && spec.shared && /^Unarmed Strike\b/.test(spec.label || '');
+    if (unarmed) h += '<div class="rw-row rw-ways"><span class="rw-label">Which</span><span class="rw-ev-list">' + [['', 'Damage'], ['Grapple', 'Grapple'], ['Shove', 'Shove']]
+      .map(([k, t], i) => '<button type="button" class="chip" data-way="' + k + '" aria-pressed="' + (i === 0) + '">' + t + '</button>').join('') + '</span></div>'
+      + '<p class="rw-note" data-way-note hidden>No roll: the target makes a Strength or Dexterity save (its choice) against your DC, and the DM rolls it. Table rolls shows the DC.</p>';
     if (spec.note) h += '<p class="rw-note">' + esc(spec.note) + '</p>';
+    // Flat damage comes with the attack roll; one that can only be 0 says so first (feedback 25, 26)
+    const flat = spec.kind === 'attack' && !spec.follow && /^[+]?\d+$/.test((spec.dmg || '').replace(/\s/g, '')) ? num(spec.dmg) : null;
+    if (flat === 0) h += '<p class="rw-note rw-warn"><b>0 damage</b> on a hit: 1 + your Strength modifier comes to 0. The DM rules.</p>';
+    else if (flat != null) h += '<p class="rw-note" data-flat-note>On a hit: <b>' + flat + ' damage</b>, flat, with the roll (no dice to roll).</p>';
     if (spec.endsHidden && !spec.follow) h += '<label class="rw-row rw-hidden"><input type="checkbox" data-ends-hidden checked> This attack ends Hidden</label>';
     if (spec.follow === 'damage' && spec.crit) h += '<p class="rw-note">Critical hit: every damage die is rolled twice, extra dice too.</p>';
     // A recipe: the slot level (when it changes the dice), the choice between its effects, what it rolls
@@ -1648,6 +1660,15 @@
       }
       if (b.dataset.die) w.querySelectorAll('[data-die]').forEach(x => x.setAttribute('aria-pressed', x === b));
       if (b.dataset.extra) b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
+      if (b.dataset.way != null) {
+        way = b.dataset.way;
+        w.querySelectorAll('[data-way]').forEach(x => x.setAttribute('aria-pressed', x === b));
+        w.querySelectorAll('.rw-mode, .rw-notes, .rw-add, .rw-warn, [data-flat-note], .rw-hidden').forEach(x => { x.hidden = !!way; });
+        const logLine = w.querySelector('[data-log-note]'); if (logLine) logLine.hidden = !!way || to === 'self' || !logNote();
+        w.querySelector('[data-way-note]').hidden = !way;
+        w.querySelector('[data-go]').textContent = way ? 'Send to the table' : 'Roll';
+        place(w, anchor);
+      }
       if (b.dataset.ev) { evi = +b.dataset.ev; w.querySelectorAll('[data-ev]').forEach(x => x.setAttribute('aria-pressed', x === b)); summarize(); }
       if (b.hasAttribute('data-go')) {
         const extras = pick ? pick.extras('Bonus') : [];
@@ -1656,6 +1677,7 @@
         if (rec && !ev) return;
         const fromRecipe = ev ? (spec.kind === 'attack' ? { dmgParts: ev.parts, count: ev.count, each: ev.count_label || '' }
           : { kind: kindOf(evs[evi]), parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '', label: spec.label + (evs.length > 1 ? ' · ' + evs[evi].name : '') }) : {};
+        if (way) return roll(w, { ...spec, kind: 'dc', label: way, mod: '', dmg: '', mode: 'normal', extras: [], ctx });
         const go = { ...spec, ...fromRecipe, mode, extras, label: spec.kind === 'dice' ? (forText || 'Dice') : (fromRecipe.label || spec.label), ctx,
                      die: +((w.querySelector('[data-die][aria-pressed=true]') || {}).dataset || {}).die || 6,
                      bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim(),

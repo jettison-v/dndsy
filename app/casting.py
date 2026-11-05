@@ -39,25 +39,32 @@ def _guard(db: Session, request: Request, character_id: int):
 
 
 RITUAL, NO_SLOT, FREE = "ritual", "none", "free"
+HIGHER = "A higher slot: nothing more for this spell"
 
 
 def ways(sheet: dict, e: dict) -> list[dict]:
     """How this spell can be cast now, the lowest slot first: {"way", "label", "level"}, with what a higher slot rolls."""
     uses = e.get("uses")
     out = [{"way": FREE, "level": e["level"], "name": "", "label": f"Free: {e['from']} ({uses['left']} left)"}] if uses and uses.get("left") and e.get("from") else []
+    lowest = {}  # the lowest slot of each kind left: a higher one does nothing more for a spell that doesn't grow
     for s in sb.slot_levels(sheet):
         if e["level"] and s["level"] >= e["level"] and s["left"] > 0:
             a = e["avgs"].get(s["level"])
             kind = "pact" if s.get("pact") else "slot"
+            low = lowest.setdefault(kind, s["level"]) == s["level"]
             out.append({"way": f"{kind}:{s['level']}", "level": s["level"], "name": f"{ordinal(s['level'])}-level",
-                        "label": f"{ordinal(s['level'])}-level{' Pact' if s.get('pact') else ''} ({s['left']} left)" + (f" · {a['dice']}" if a else "")})
+                        "label": f"{ordinal(s['level'])}-level{' Pact' if s.get('pact') else ''} ({s['left']} left)" + (f" · {a['dice']}" if a else ""),
+                        "group": "" if low or e.get("higher", True) else HIGHER})
     if e["ritual"]:
         out.append({"way": RITUAL, "level": e["level"], "name": "a Ritual", "label": "As a Ritual (no slot, 10 minutes longer)"})
     if e["level"] and not (out and out[0]["way"] == FREE):
         out.append({"way": NO_SLOT, "level": e["level"], "name": "", "label": "No slot"})
-    return wild_ways(sheet, e, out) + out
+    # Grouped in the window (feedback 24): Wild Companion's first, then the usual ways, then the higher slots that do
+    # nothing more for this spell (still yours to spend: saving a lower slot for something else is a choice)
+    return wild_ways(sheet, e, out) + [w for w in out if not w.get("group")] + [w for w in out if w.get("group")]
 
 
+WILD_GROUP = "Wild Companion: a Magic action, no components; always Fey, it leaves at your next Long Rest"
 WILD = "wild"  # Wild Companion (a Druid's, 2024): Find Familiar from a Wild Shape use, or a slot, always Fey, gone at a Long Rest
 
 
@@ -80,6 +87,8 @@ def wild_ways(sheet: dict, e: dict, slots: list[dict]) -> list[dict]:
     low = next((s for s in slots if s["way"].startswith(("slot:", "pact:"))), None)
     if low:
         out.append({**low, "way": f"{WILD}-{low['way']}", "label": f"{low['label']} · Wild Companion", "wild": True})
+    for w in out:
+        w["group"] = WILD_GROUP
     return out
 
 
@@ -105,12 +114,24 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     # The familiar is askdnd's, like a Wild Shape form: with the sheet out of reach, still as a Ritual or without a slot
     offline = forms is not None and not reachable
     can = [w for w in ways(sheet, e) if not offline or w["way"] in (RITUAL, NO_SLOT, FREE)]
-    return templates.TemplateResponse(request, "_cast_window.html", {"c": ch, "e": e, "ways": can, "reachable": reachable, "offline": offline,
+    return templates.TemplateResponse(request, "_cast_window.html", {"c": ch, "e": e, "ways": can, "way_groups": way_groups(can, e),
+                                                                     "reachable": reachable, "offline": offline,
                                                                      "ends": ch.concentration if e["conc"] and ch.concentration and ch.concentration.get("key") != key else None,
                                                                      "form_no": form_no(sheet, ch, e["name"]), "familiars": forms, "ff_first": first,
                                                                      "ff_kind": kind, "ff_name": named, "kinds": companions.KINDS,
                                                                      "ff_new": companions.new_forms(sheet) if forms is not None and reachable else [],
                                                                      "summon": summon, "steed_before": companions.steed_before(ch, summon) if summon else None})
+
+
+def way_groups(can: list[dict], e: dict) -> list[tuple[str, list[dict]]]:
+    """The Cast at list in its groups, in order (feedback 24): with only the usual ways, one group with no heading."""
+    groups: list[tuple[str, list[dict]]] = []
+    for w in can:
+        g = w.get("group") or ""
+        if not groups or groups[-1][0] != g:
+            groups.append((g, []))
+        groups[-1][1].append(w)
+    return [(g or (e["name"] if len(groups) > 1 else ""), ws) for g, ws in groups]
 
 
 def form_no(sheet: dict, ch: Character, name: str) -> str:

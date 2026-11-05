@@ -11,6 +11,7 @@
 {%- if p.parts and p.parts | length > 1 -%}
 {%- for x in p.parts %}<span class="roll-pl">{{ pline(x) }}</span>{% endfor -%}
 {%- for x in p.extras %}<span class="roll-pl">{{ x.label }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}</span>{% endfor -%}
+{%- elif not d20 and not p.dice and not p.extras -%}flat, no dice
 {%- elif d20 -%}d20 {% for d in p.dice %}{% if loop.index0 == p.kept_at %}<u>{{ d }}</u>{% else %}{{ d }}{% endif %}{{ " / " if not loop.last }}{% endfor %} {{ "+" if p.modifier >= 0 else "−" }}{{ p.modifier | abs }}{{ " · Adv" if p.mode == "adv" }}{{ " · Dis" if p.mode == "dis" }}
 {%- else -%}{{ p.formula }}: {{ p.dice | join(" ") }}{% if p.modifier %} {{ "+" if p.modifier > 0 else "−" }}{{ p.modifier | abs }}{% endif %}{%- endif -%}
 {%- for x in p.extras %} · {{ x.label }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}{% if x.dice %} <span class="roll-x">({{ x.formula | replace("-", "−") }})</span>{% endif %}{% endfor -%}
@@ -23,8 +24,8 @@
     <span class="roll-who"><b>{{ r.name }}</b> <time datetime="{{ r.at }}" data-at="{{ r.at }}">{{ r.ago }}</time>{% if r.to == "dm" and not r.hidden %} <span class="roll-to">DM only</span>{% elif r.to == "self" %} <span class="roll-to">just you</span>{% endif %}{% if r.by_dm %} <span class="roll-to">the DM</span>{% endif %}{% if r.ddb %} <span class="roll-to">on D&amp;D Beyond</span>{% endif %}</span>
     {% if r.hidden %}<span class="roll-what">{{ r.hidden_text }}</span>
     {% else %}
-    <span class="roll-what">{{ r.label }}{% if r.kind == "attack" %} <span class="roll-sub">to hit</span>{% elif r.kind == "damage" %} <span class="roll-sub">damage{% if r.main.parts | length == 1 and r.main.parts[0].kind %} · {{ r.main.parts[0].kind }}{% if r.main.parts[0].kind_from %} <span class="roll-from" title="D&amp;D Beyond's roll doesn't say the type: askdnd looked up the attack">({{ r.main.parts[0].kind_from }})</span>{% endif %}{% endif %}</span>{% elif r.kind == "heal" %} <span class="roll-sub">healing</span>{% elif r.kind == "death" %} <span class="roll-sub">{{ r.outcome }}</span>{% endif %}</span>
-    <span class="roll-dice">{{ dline(r.main, r.kind in D20) }}</span>
+    <span class="roll-what">{{ r.label }}{% if r.kind == "attack" %} <span class="roll-sub">to hit</span>{% elif r.kind == "damage" %} <span class="roll-sub">damage{% if r.main.parts | length == 1 and r.main.parts[0].kind %} · {{ r.main.parts[0].kind }}{% if r.main.parts[0].kind_from %} <span class="roll-from" title="D&amp;D Beyond's roll doesn't say the type: askdnd looked up the attack">({{ r.main.parts[0].kind_from }})</span>{% endif %}{% endif %}</span>{% elif r.kind == "heal" %} <span class="roll-sub">healing</span>{% elif r.kind == "dc" %} <span class="roll-sub">the target saves, DC</span>{% elif r.kind == "death" %} <span class="roll-sub">{{ r.outcome }}</span>{% endif %}</span>
+    <span class="roll-dice">{% if r.kind == "dc" %}{{ r.main.formula }}{% else %}{{ dline(r.main, r.kind in D20) }}{% endif %}</span>
     {% if r.rerolled %}<span class="roll-dice roll-old">Rerolled ({{ r.rerolled.reason }}): was <s>{{ r.rerolled.total }}</s> · {{ dline(r.rerolled, True) }}</span>{% endif %}
     {% if r.bonus %}<span class="roll-dice">+ {{ r.bonus.label }} {{ r.bonus.total }} <span class="roll-x">({{ r.bonus.formula }})</span></span>{% endif %}
     {% if r.nat and r.kind != "death" %}<span class="roll-flag">natural {{ r.nat }}{% if r.kind == "attack" %}{{ ": critical hit" if r.nat == 20 else ": miss" }}{% endif %}</span>{% endif %}

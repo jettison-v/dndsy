@@ -15,8 +15,9 @@
       <span class="cr-where cr-where-{{ k.where }}">{{ k.where_word }}{% if k.where == "gone" and k.why %} · {{ k.why }}{% endif %}</span>
       {% if can_change_hp %}{% set to = "/characters/" ~ c.id ~ "/creatures/" ~ k.id ~ "/where" %}
       {% if k.where == "here" %}<button class="btn small" hx-post="{{ to }}" hx-vals='{"to": "away"}' hx-swap="none" title="A Magic action of {{ c.name }}'s">Send to the pocket dimension</button>
+      {% elif k.where == "away" %}<button class="btn small primary" hx-post="{{ to }}" hx-vals='{"to": "here"}' hx-swap="none" title="A Magic action of {{ c.name }}'s">Bring it back · within 30 ft</button>{% endif %}
+      {% if k.where in ("here", "away") %}{# here or in the pocket dimension: either way it can be dismissed for good (feedback 23) #}
         <details class="cr-forever"><summary class="btn small link">Dismiss forever…</summary><div class="cr-forever-pop"><p class="note">{{ k.name }} leaves {{ c.name }}'s service; casting Find Familiar again brings it, or another form.</p><button class="btn small" hx-post="{{ to }}" hx-vals='{"to": "gone"}' hx-swap="none">Dismiss forever</button></div></details>
-      {% elif k.where == "away" %}<button class="btn small primary" hx-post="{{ to }}" hx-vals='{"to": "here"}' hx-swap="none" title="A Magic action of {{ c.name }}'s">Bring it back · within 30 ft</button>
       {% elif find_familiar and can_play %}<button type="button" class="btn small primary item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ find_familiar | urlencode }}">Cast {{ k.spell }}…</button>{% endif %}{% endif %}
       {% endif %}<a class="btn small" href="/characters/{{ c.id }}/battle">Back to {{ c.name }}</a></div>
   </div>

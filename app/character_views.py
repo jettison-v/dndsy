@@ -220,7 +220,7 @@ DICE = r"(\d+d\d+(?:\s*[+\u2212-]\s*\d+(?!d))?)"
 HEALS = re.compile(r"\b(?:regains?|restores?|heals?)\s+" + DICE + r"(?!\s*(?:[+\u2212-]\s*\d+\s*)?(?:expended\s+)?charges)", re.I)
 DEALS = re.compile(DICE + r"\s+(?:[a-z]+\s+){0,2}damage\b", re.I)
 # a flat damage with no dice, an Unarmed Strike's "5 ft · 3 bludgeoning" (feedback, Nov 4: it never rolled)
-FLAT = re.compile(r"(?:^|·)\s*([1-9]\d?)\s+(?:acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|"
+FLAT = re.compile(r"(?:^|·)\s*(0|[1-9]\d?)\s+(?:acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|"
                   r"slashing|thunder)\b", re.I)
 MAKES_UNARMED = re.compile(r"\bmake (?:one|two|three|an?) Unarmed Strikes?\b", re.I)
 

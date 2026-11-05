@@ -110,3 +110,21 @@ def test_a_spell_in_the_side_panels_list_has_cast_as_on_battle(player, db, sheet
     cole = char(db, "Cole")
     every = player.get(f"/characters/{cole.id}/all/action").text
     assert f'data-use-url="/characters/{cole.id}/cast?key=spell' in every
+
+
+def test_find_familiars_ways_are_grouped_and_a_higher_slot_says_it_does_nothing_more():
+    """Feedback 24 (Nov 5): Levi's eight ways to cast Find Familiar stay (a higher slot is still the player's to spend),
+    in groups: Wild Companion's, the spell's usual ways, then the higher slots that do nothing more for it."""
+    sheet = {"spell_slots": {"slots": [{"level": 1, "max": 4, "used": 0}, {"level": 2, "max": 3, "used": 0}, {"level": 3, "max": 3, "used": 0}],
+                             "pact": {"level": 1, "max": 2, "used": 0}},
+             "features": [{"name": "Wild Companion"}], "actions": [{"name": "Wild Shape", "id": 7, "uses": {"left": 1, "max": 2}}]}
+    e = {"name": "Find Familiar", "level": 1, "avgs": {}, "ritual": True, "higher": False}
+    groups = casting.way_groups(casting.ways(sheet, e), e)
+    assert [(g, [w["way"] for w in ws]) for g, ws in groups] == [
+        (casting.WILD_GROUP, ["wild", "wild-slot:1"]),
+        ("Find Familiar", ["slot:1", "pact:1", "ritual", "none"]),
+        (casting.HIGHER, ["slot:2", "slot:3"])]
+    cure = {"name": "Cure Wounds", "level": 1, "avgs": {}, "ritual": False, "higher": True}
+    assert [g for g, _ in casting.way_groups(casting.ways(sheet, cure), cure)] == [""]  # (one list, no headings)
+    from app import spellbook as sb
+    assert sb.HIGHER.search("Using a Higher-Level Spell Slot. The healing increases by 2d8") and not sb.HIGHER.search("You gain the service of a familiar")
