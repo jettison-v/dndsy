@@ -1763,7 +1763,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .char-about::after { content: ""; position: absolute; inset: -10px 0; }  /* (a finger-sized target) */
 .char-about[aria-expanded=true] { color: var(--text-strong); border-color: var(--muted); }
 .modes { display: inline-flex; flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 3px; gap: 2px; }
-.modes a { color: var(--muted); text-decoration: none; padding: 6px 16px; border-radius: var(--r-md); font-weight: 500; }
+.modes a { color: var(--muted); text-decoration: none; padding: 6px 16px; border-radius: var(--r-md); font-weight: 500; white-space: nowrap; }  /* (feedback 20: "Battl/e" in a tight header) */
 .modes a:hover { color: var(--text); }
 .modes a[aria-current=page] { background: var(--red); color: var(--text-strong); font-weight: 600; }
 .forget-tab .sec-head h2 { display: none; }  /* Plan's tab already says Reminders */
@@ -2654,6 +2654,7 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .ff-pick { border: 0; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
 .ff-pick legend { margin-bottom: 4px; padding: 0; width: auto; }
 .ff-opt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; }
+.ff-opt .cr-where { grid-column: 2; justify-self: start; }  /* where it is, under its name: a long one never squeezes the name (feedback 20) */
 .ff-opt:has(input:checked) { border-color: var(--green); background: var(--green-soft); }
 .ff-kinds { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
 .ff-kinds legend { width: 100%; }

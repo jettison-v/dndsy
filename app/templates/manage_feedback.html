@@ -10,7 +10,7 @@
   <p class="subtitle">Notes sent from any page with <kbd>\</kbd> or your account menu (and by the accounts you let send it, on Accounts). Claude reads them when you say "review the feedback": a question it asks shows here for your answer, and a note it fixed says which change did it.</p>
 
   <nav class="sub-tabs" aria-label="Where each stands">
-    {% for key, label, n in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}">{{ label }}{% if n %} <span class="mcount">{{ n }}</span>{% endif %}</a>{% endfor %}
+    {% for key, label, n in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}">{{ label }}{% if n and key in ("new", "question", "planned") %} <span class="mcount">{{ n }}</span>{% elif n %} <span class="note">{{ n }}</span>{% endif %}</a>{% endfor %}
   </nav>
 
   <ul class="fb-list">
