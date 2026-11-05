@@ -4,7 +4,8 @@ On the Mini, never on GitHub: `.venv/bin/python real_table.py [run …]` after `
 none is named), and every night at 4:00 through real_table_nightly.sh, which adds `--sentry` (a miss goes to Sentry).
 A run that misses is tried once more on tidied sheets (`--once`: not); passing then, its first misses are reported as
 passed only on a second try, not as misses. Each night's checks are added to logs/results.jsonl (scripts/live_results.py).
-`--via-dm` runs the same changes with each player's sheet closed and only the DM's seat on a D&D Beyond page (the
+`--after-deploy=<version>` is the quick check real_table_after_deploy.sh runs when beta's version changes (its own
+Sentry issue). `--via-dm` runs the same changes with each player's sheet closed and only the DM's seat on a D&D Beyond page (the
 campaign page), so the DM's browser makes them (Brett, 2026-11-04: Manage › askdnd › D&D Beyond bridge's table of what
 each connection can change); every run that changes a sheet takes part, read back from the DM's page.
 Each run does what a person would do, then says what happened and what it expected, and puts back what it changed;
@@ -1238,7 +1239,7 @@ def as_found(t: Table, before: dict) -> None:
             print("  still changed:", show(left()), flush=True)
 
 
-def report(missed: list[str], ran: list[str], log: str, via_dm: bool = False, flaky: list[str] = ()) -> None:
+def report(missed: list[str], ran: list[str], log: str, via_dm: bool = False, flaky: list[str] = (), deployed: str = "") -> None:
     """To Sentry (askdnd-v2), where the app's own errors go and alert Brett: one issue for the live test's misses (an
     error), and one for checks that passed only on a second try (a warning: its count of events says how often)."""
     import os
@@ -1246,12 +1247,12 @@ def report(missed: list[str], ran: list[str], log: str, via_dm: bool = False, fl
     import sentry_sdk
 
     sentry_sdk.init(dsn=os.environ["SENTRY_DSN"], environment="live-test", server_name="mac-mini", default_integrations=False)
-    part = f"Live test part 1{' through the DM' if via_dm else ''}"
+    part = f"Live test after deploying {deployed}" if deployed else f"Live test part 1{' through the DM' if via_dm else ''}"
     for whats, kind, level, title in ((missed, "", "error", "missed"), (flaky, "-second-try", "warning", "passed only on a second try")):
         if not whats:
             continue
         with sentry_sdk.new_scope() as scope:
-            scope.fingerprint = ["live-test", ("part-1-via-dm" if via_dm else "part-1") + kind]
+            scope.fingerprint = ["live-test", ("after-deploy" if deployed else "part-1-via-dm" if via_dm else "part-1") + kind]
             scope.set_tag("source", "live-test")
             scope.set_context("live test", {"runs": ", ".join(ran), title: list(whats)[:40], "log": log[-6000:]})
             sentry_sdk.capture_message(f"{part}: {len(whats)} {title} ({whats[0][:120]})", level=level)
@@ -1380,7 +1381,7 @@ def attempt(t: Table, name: str) -> list[str]:
     return [what for ok, what in t.results[start:] if ok is False]
 
 
-def history(t: Table, names: list[str], versions: dict, via_dm: bool) -> None:
+def history(t: Table, names: list[str], versions: dict, via_dm: bool, deployed: str = "") -> None:
     """The night's results, one line in logs/results.jsonl on the Mini (scripts/live_results.py reads them): which
     checks pass every night, which only sometimes, and which are getting slower."""
     import os
@@ -1388,7 +1389,7 @@ def history(t: Table, names: list[str], versions: dict, via_dm: bool) -> None:
 
     os.makedirs("logs", exist_ok=True)
     with open("logs/results.jsonl", "a") as f:
-        f.write(json.dumps({"at": datetime.now().isoformat(timespec="seconds"), "via_dm": via_dm, "runs": names,
+        f.write(json.dumps({"at": datetime.now().isoformat(timespec="seconds"), "via_dm": via_dm, "after_deploy": deployed or None, "runs": names,
                             "extension": versions, "checks": t.checks}) + "\n")
 
 
@@ -1403,6 +1404,7 @@ def main() -> int:
     args = sys.argv[1:]
     to_sentry = "--sentry" in args
     via_dm = "--via-dm" in args
+    deployed = next((a.split("=", 1)[1] for a in args if a.startswith("--after-deploy=")), "")  # (real_table_after_deploy.sh)
     names = [a for a in args if not a.startswith("--")] or [n for n in RUNS if n not in WAITING and (not via_dm or n not in SHEET_ONLY)]
     if via_dm and set(names) & SHEET_ONLY:
         print("Not through the DM (they're about the player's own sheet):", ", ".join(sorted(set(names) & SHEET_ONLY)))
@@ -1441,14 +1443,14 @@ def main() -> int:
         if before:
             t.run = "after"
             as_found(t, before)
-        history(t, names, versions, via_dm)
+        history(t, names, versions, via_dm, deployed)
     missed = [what for ok, what in t.results if ok is False]
     flaky = [what for ok, what in t.results if ok is None]
     print(f"{sum(1 for ok, _ in t.results if ok)} of {len(t.results)} as expected", flush=True)
     if flaky:
         print("Passed only on a second try:", *flaky, sep="\n  ", flush=True)
     if (missed or flaky) and to_sentry:
-        report(missed, names, "".join(out.text), via_dm, flaky)
+        report(missed, names, "".join(out.text), via_dm, flaky, deployed)
     return 1 if missed else 0
 
 

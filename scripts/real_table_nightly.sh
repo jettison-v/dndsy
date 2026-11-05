@@ -11,6 +11,10 @@ cd "$T" || exit 1
 set -a; [ -f "$T/.env" ] && . "$T/.env"; set +a
 mkdir -p "$T/logs"
 log="$T/logs/nightly-$(date +%F).log"
+# The seats are the after-deploy check's too (real_table_after_deploy.sh): wait for it, up to 20 minutes (a lock left by
+# a run that died over two hours ago is dropped)
+find "$T/logs" -maxdepth 1 -name .seats-busy -mmin +120 -exec rmdir {} \; 2>/dev/null
+for _ in $(seq 240); do mkdir "$T/logs/.seats-busy" 2>/dev/null && { trap 'rmdir "$T/logs/.seats-busy" 2>/dev/null' EXIT; break; }; sleep 5; done
 {
   echo "#### $(date)"
   ./real_table_seats.sh close; sleep 3

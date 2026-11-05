@@ -72,6 +72,18 @@ A canary is a small check that runs on its own and warns you before anyone else 
 - **After changing the scripts:** the Mini runs its own copies. Copy them again: `scp scripts/real_table.py scripts/real_table_seats.sh scripts/real_table_nightly.sh mac-mini-server:askdnd-tests/`.
 - **Turn it off:** `launchctl bootout gui/$(id -u)/ai.askdnd.live-test` on the Mini.
 
+## After each deploy: the quick check
+
+Since Nov 5, a deploy that breaks the table is known within minutes, not at 4:00. Every 5 minutes launchd on the Mini runs `real_table_after_deploy.sh`: it asks beta which commit it runs (`/health`'s version), and when that has changed it opens the seats, runs closed-sheet, hit-points, condition and cast (about 3 minutes) and closes them. A miss goes to Sentry as "Live test after deploying …", with its own issue. It and the nightly share the seats through `logs/.seats-busy`: the nightly waits for it, and it tries again 5 minutes later if the nightly or another run has them. Its output is in `~/askdnd-tests/logs/after-deploy-<date>.log`.
+
+- **The job:** `~/Library/LaunchAgents/ai.askdnd.after-deploy.plist` (its source is `scripts/ai.askdnd.after-deploy.plist`), installed like the nightly's.
+- **Turn it off:** `launchctl bootout gui/$(id -u)/ai.askdnd.after-deploy` on the Mini.
+- **Running part 1 by hand on the Mini:** check the after-deploy check isn't running first (`ls ~/askdnd-tests/logs/.seats-busy`: no such folder means the seats are free).
+
+## Every morning: D&D Beyond drift
+
+The other tests read D&D Beyond through copies in `tests/fixtures/ddb`. At 12:30 UTC GitHub runs `scripts/ddb_drift.py` (the workflow "D&D Beyond drift"): it reads today's three test sheets as askdnd does, says if a field the copies have is gone or has changed kind, and runs askdnd's parser on each to check what every character has comes out (a name, level, Hit Points, AC, abilities, saves, skills, a class, actions, items, spells). A miss fails the run and GitHub emails Brett: refresh the copies (`scripts/ddb_fixture.py`) and fix the parser.
+
 ## Part 2: by hand, about 15 minutes
 
 These need a person, or D&D Beyond's VTT, which is a game canvas a script can't read reliably.

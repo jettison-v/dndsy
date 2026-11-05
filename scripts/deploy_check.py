@@ -11,7 +11,9 @@
 3. If a build failed because of Railway itself ("build daemon returned an error", the build machine dropping the
    connection), builds it again from source, up to twice. Any other failure is ours: it prints the end of the log
    and stops. Beta keeps running the previous version either way.
-4. Checks beta answers (a miss right after a switchover is tried again for about a minute and a half).
+4. Checks beta answers (a miss right after a switchover is tried again for about a minute and a half), and, when the
+   app was deployed, that beta runs this commit (/health's version): Railway calls a deploy done a moment before the new
+   copy takes over, and the Mac Mini's after-deploy check starts when the version changes.
 
 Needs the GitHub (`gh`) and Railway (`railway`) CLIs, signed in. Prints no secrets.
 """
@@ -175,6 +177,23 @@ def beta_answers(tries: int = 6, wait: float = 15) -> bool:
     return False
 
 
+def version(tries: int = 12, wait: float = 10, want: str = "") -> str:
+    """The commit beta runs (its /health), waiting up to two minutes for `want`."""
+    got = ""
+    for attempt in range(tries):
+        try:
+            req = urllib.request.Request(f"{BETA.removesuffix('/login')}/health?check={int(time.time())}", headers={"User-Agent": "askdnd-deploy-check"})
+            with urllib.request.urlopen(req, timeout=20) as r:
+                got = json.load(r).get("version", "")
+        except Exception:
+            pass
+        if not want or (got and want.startswith(got)):
+            return got
+        if attempt < tries - 1:
+            time.sleep(wait)
+    return got
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--sha", help="the commit to follow (default: the newest on main)")
@@ -194,6 +213,11 @@ def main() -> None:
     ok = follow(SERVICES[1], sha, appear=120) and ok  # it starts with the app's deploy, or not at all
     up = beta_answers()
     say(f"Beta {'answers' if up else 'does NOT answer'}.")
+    d = for_commit(SERVICES[0], sha)
+    if up and d and d["status"] in ("SUCCESS", "SLEEPING"):
+        now = version(want=sha)
+        up = bool(now) and sha.startswith(now)
+        say(f"Beta runs {sha[:7]}." if up else f"Beta still runs {now or 'an unknown version'}, not {sha[:7]}.")
     sys.exit(0 if ok and up else 1)
 
 

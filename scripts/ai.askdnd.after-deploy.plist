@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- The quick check after each deploy on the Mac Mini (docs/live-test-plan.md › After each deploy): every 5 minutes,
+     real_table_after_deploy.sh asks beta its version and runs four short live runs when it has changed. Installed with
+       cp scripts/ai.askdnd.after-deploy.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.askdnd.after-deploy.plist -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.askdnd.after-deploy</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/bash</string><string>/Users/brettcupta/askdnd-tests/real_table_after_deploy.sh</string>
+  </array>
+  <key>StartInterval</key><integer>300</integer>
+  <key>StandardInPath</key><string>/dev/null</string>
+  <key>StandardOutPath</key><string>/Users/brettcupta/askdnd-tests/logs/launchd-after-deploy.log</string>
+  <key>StandardErrorPath</key><string>/Users/brettcupta/askdnd-tests/logs/launchd-after-deploy.log</string>
+</dict></plist>

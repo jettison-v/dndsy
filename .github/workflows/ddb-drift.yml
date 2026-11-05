@@ -1,0 +1,24 @@
+# Every morning: has D&D Beyond's sheet changed shape under our tests? (scripts/ddb_drift.py; Brett, 2026-11-05)
+# The tests read D&D Beyond through copies in tests/fixtures/ddb; this reads today's test sheets and compares. A miss
+# fails the run, and GitHub emails Brett. It never deploys or blocks a merge. Run it by hand from the Actions tab
+# (D&D Beyond drift › Run workflow).
+name: D&D Beyond drift
+
+on:
+  schedule:
+    - cron: "30 12 * * *"  # 12:30 UTC, early morning on the West Coast, after the Mini's 4:00 nightly
+  workflow_dispatch:
+
+jobs:
+  drift:
+    name: D&D Beyond drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync --frozen
+      - run: uv run python scripts/ddb_drift.py
