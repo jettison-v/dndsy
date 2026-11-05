@@ -24,6 +24,10 @@
   {% elif k.cast and k.where == "gone" %}<p class="note cr-where-note">{% if k.why == "0 Hit Points" %}{{ k.name }} disappeared at 0 Hit Points, and anything it was wearing or carrying stayed where it was. {% endif %}It's back only when {{ c.name }} casts {{ k.spell }} again.</p>{% endif %}
   {% if k.hp.waits %}{# askdnd sets D&D Beyond's maximum itself after the next read (app/creature_hp.py keep_max) #}
   <p class="cr-fix">D&amp;D Beyond still counts its Hit Points against <b>{{ k.hp.ddb_max }}</b>; askdnd sets <b>{{ k.hp.rule }}</b> there, the rule's, the next time the sheet is read. − and + wait for it.</p>
+  {% elif k.hp.held == "undone" %}{# askdnd holds back (creature_hp.holds): − and + count against D&D Beyond's #}
+  <p class="cr-fix">D&amp;D Beyond counts its Hit Points against <b>{{ k.hp.ddb_max }}</b>: askdnd's <b>{{ k.hp.rule }}</b>, the rule's, was undone. To count against the rule's, type {{ k.hp.rule }} for its maximum on D&amp;D Beyond's Extras.</p>
+  {% elif k.hp.held == "lately" %}
+  <p class="cr-fix">D&amp;D Beyond counts its Hit Points against <b>{{ k.hp.ddb_max }}</b>: askdnd's <b>{{ k.hp.rule }}</b>, the rule's, was taken off there. askdnd puts it back within the hour.</p>
   {% endif %}
   <div class="battle-head{{ ' cr-not-here' if k.cast and k.where != 'here' }}">
     <div class="strip compact">

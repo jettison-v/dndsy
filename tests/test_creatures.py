@@ -170,9 +170,9 @@ def test_askdnd_sets_the_rules_maximum_on_d_and_d_beyond_by_itself(player, db, l
     assert len(maxima(db, labs)) == 1  # (on its way: not asked again)
 
 
-def test_the_maximum_is_set_once_per_number_and_never_over_a_typed_one(db, labs, sheet):
-    """One given up (or undone) isn't made again; one its player or DM typed on D&D Beyond stays theirs; after a level-up
-    askdnd's own number moves on."""
+def test_the_maximum_is_never_made_again_once_undone_nor_over_a_typed_one(db, labs, sheet):
+    """One undone isn't made again; one its player or DM typed on D&D Beyond stays theirs; after a level-up askdnd's own
+    number moves on."""
     sheet["classes"][0]["definition"]["name"] = "Artificer"
     characters.refresh(db, labs)
     from app.models import BridgeIntent
@@ -557,3 +557,37 @@ def test_undoing_a_new_form_stops_it_and_counts_only_familiars(player, db, labs,
     assert "new:4775808" not in labs.companions and labs.companions["9000000000001"]["state"] == "gone"  # (left as it was changed)
     raw = {"creatures": [{"groupId": 5, "definition": {"id": 4775808}}, {"groupId": 2, "definition": {"id": 4775808}}]}
     assert ddb_fields.pick(raw, ddb_fields.steps("familiar_add:4775808")) == 1
+
+
+def test_askdnds_own_maximum_taken_off_d_and_d_beyond_is_put_back_and_minus_plus_never_wait_for_good(player, db, labs, sheet):
+    """Brett, Nov 5 (option B): askdnd's own number gone from D&D Beyond (taken off by hand, or by a reset: the live test
+    did it, and − and + waited for good) is put back at the next read, at most once an hour. While askdnd holds back (put
+    back lately, or undone), − and + count against D&D Beyond's maximum and the page says why; never waiting for good."""
+    from datetime import UTC, datetime, timedelta
+
+    from app.models import BridgeIntent
+
+    sheet["classes"][0]["definition"]["name"] = "Artificer"
+    characters.refresh(db, labs)
+    it = db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == labs.id)).one()
+    rule = it.data["value"]
+    it.state = "live"  # (made, and then taken off D&D Beyond: its read shows no maximum there)
+    db.flush()
+    characters.refresh(db, labs)
+    assert maxima(db, labs) == [(rule, "live")]  # (put back lately: not again within the hour)
+    page = player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
+    assert "was taken off there. askdnd puts it back within the hour" in page and "−/+" in page
+    assert player.post(f"/characters/{labs.id}/creatures/{ZAP}/hp", data={"amount": "1", "to": "damage"}).status_code == 204
+    for x in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == labs.id)):
+        db.delete(x) if x.kind == "creature_hp" else None
+    it.created_at = datetime.now(UTC) - timedelta(hours=2)
+    db.flush()
+    characters.refresh(db, labs)
+    assert maxima(db, labs) == [(rule, "live"), (rule, "waiting")]  # (an hour on: put back)
+    again = db.scalars(select(BridgeIntent).where(BridgeIntent.state == "waiting", BridgeIntent.character_id == labs.id)).one()
+    again.state = "dismissed"  # (Undo on its corner card)
+    db.flush()
+    characters.refresh(db, labs)
+    assert maxima(db, labs) == [(rule, "live"), (rule, "dismissed")]  # (undone: never made again)
+    page = player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
+    assert f"askdnd's <b>{rule}</b>, the rule's, was undone" in page and "−/+" in page and "askdnd sets" not in page
