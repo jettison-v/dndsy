@@ -1,0 +1,177 @@
+<title>Hide and Ready</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* A mockup for feedback 14 (Trent, Nov 5; Brett chose a: the result shown on Battle). Where it lives first, then Hide
+   and Ready each as three steps drawn in askdnd's own look, then the two choices. Dark first, like askdnd. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --violet: #b99be8;
+  --green-soft: rgba(91,191,127,.15); --amber-soft: rgba(232,179,75,.15); --blue-soft: rgba(126,166,224,.15); --violet-soft: rgba(185,155,232,.16);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --violet-soft: rgba(107,75,176,.12); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --violet-soft: rgba(107,75,176,.12); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1100px; margin: 0 auto; padding-block: 36px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font-size: 2rem; line-height: 1.15; } h2 { font-size: 1.35rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 72ch; }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+section, header { display: grid; gap: 14px; }
+.note { color: var(--muted); font-size: .88rem; }
+b { color: var(--strong); }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .steps { grid-template-columns: minmax(0, 1fr); } }
+.step { display: grid; gap: 10px; min-width: 0; }
+.step > .k { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+/* askdnd's pieces, drawn */
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; }
+.win-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.win-h small { color: var(--muted); font-size: .78rem; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: .88rem; }
+.check i { flex: none; width: 16px; height: 16px; border: 1.5px solid var(--line); border-radius: 4px; margin-top: 3px; }
+.check i.on { background: var(--green); border-color: var(--green); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 8px; padding: 6px 12px; font-size: .86rem; font-weight: 500; white-space: nowrap; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+.btn.link { background: none; border: 0; color: var(--muted); padding-inline: 4px; }
+.field { display: grid; gap: 4px; font-size: .84rem; color: var(--muted); }
+.input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; color: var(--text); font-size: .88rem; }
+.opts { display: grid; gap: 6px; }
+.opt { display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: .88rem; }
+.opt.on { border-color: var(--blue); background: var(--blue-soft); }
+.opt small { color: var(--muted); }
+.status { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 3px 10px; font-size: .82rem; font-weight: 600; white-space: nowrap; }
+.pill.hidden { background: var(--violet-soft); color: var(--violet); border: 1px solid var(--violet); }
+.pill.conc { background: var(--blue-soft); color: var(--blue); }
+.pill.plain { background: var(--surface-2); color: var(--muted); }
+.panel { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .88rem; }
+.panel ul { margin: 0; padding-left: 1.1em; display: grid; gap: 2px; }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; }
+.col-h { font: 700 .8rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+.row { border-top: 1px solid var(--line); padding-top: 8px; display: grid; gap: 4px; font-size: .88rem; }
+.ready { border: 1.5px solid var(--amber); background: var(--amber-soft); border-radius: 10px; padding: 10px; display: grid; gap: 6px; }
+.ready .k { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.card { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; font-size: .88rem; box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+.roll { display: grid; gap: 8px; }
+.adv { display: inline-flex; gap: 6px; align-items: center; font-size: .82rem; }
+.tag { font-size: .74rem; font-weight: 600; border-radius: 999px; padding: 1px 8px; }
+.tag.adv-t { background: var(--amber-soft); color: var(--amber); }
+.basics { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: .92rem; display: grid; gap: 6px; }
+.basics span u { text-decoration-style: dotted; text-underline-offset: 3px; }
+.basics .hl { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 3px; }
+.qs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 10px; align-content: start; }
+.q ol { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; font-size: .9rem; }
+.rec { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--green); margin-left: 6px; }
+footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · mockup · feedback 14 · Nov 5, 2026</div>
+    <h1>Hide and Ready, kept on Battle</h1>
+    <p>Trent's note: <i>"Can Hide and Ready have Effects? Ready would ideally show what action you are Readying."</i> You chose to show the result on Battle: once you've hidden, Battle says so until it ends, and once you've readied something, Battle shows what and when. Drawn here with Trah. askdnd informs and keeps track; the DM still rules on whether you can hide and when a trigger happens.</p>
+  </header>
+
+  <section>
+    <div class="eyebrow">Where it lives</div>
+    <h2>Battle's Action column, "What anyone can do"</h2>
+    <div class="basics"><span><u>Dash</u>, <u>Disengage</u>, <u>Dodge</u>, <u>Help</u>, <span class="hl"><u>Hide</u></span>, <u>Influence</u>, <u>Magic</u>, <span class="hl"><u>Ready</u></span>, <u>Search</u>, <u>Study</u>, <u>Utilize</u></span><span class="note">Today each opens its rule in the side panel, with the checks it rolls (Hide's DC 15 Stealth). Nothing stays on Battle afterwards.</span></div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Hide</div>
+    <h2>Roll it, and Battle says you're hidden until it ends</h2>
+    <div class="steps">
+      <div class="step"><div class="k">1 · Press Hide</div>
+        <div class="win"><div class="win-h"><h3>Hide</h3><small>Action</small></div>
+          <p class="note">You need all of these; the DM rules.</p>
+          <div class="check"><i></i><span>Heavily Obscured, or behind Three-Quarters or Total Cover</span></div>
+          <div class="check"><i></i><span>Out of every enemy's line of sight</span></div>
+          <div class="btns"><span class="btn primary">Roll Stealth +7 · DC 15</span><span class="btn link">Cancel</span></div>
+          <p class="note">The checklist only reminds you; it never stops the roll.</p>
+        </div>
+      </div>
+      <div class="step"><div class="k">2 · Rolled 17: hidden</div>
+        <div class="status"><span class="pill hidden">◐ Hidden · find DC 17</span><span class="pill plain">+ Condition</span></div>
+        <div class="panel"><b>Hidden: you're Invisible while hidden</b>
+          <ul><li>Your attack rolls have Advantage; attacks against you have Disadvantage</li><li>Someone finds you with Wisdom (Perception) against 17</li></ul>
+          <b>It ends when you</b>
+          <ul><li>make a sound louder than a whisper</li><li>make an attack roll</li><li>cast a spell with a Verbal component</li><li>are found</li></ul>
+          <div class="btns"><span class="btn">End Hidden</span></div>
+        </div>
+        <p class="note">A badge after Trah's name too, like any condition, and Party shows it. Below 15: "Not hidden (14 of 15)" in Table rolls, nothing kept.</p>
+      </div>
+      <div class="step"><div class="k">3 · Attacking while hidden</div>
+        <div class="win roll"><div class="win-h"><h3>Longsword</h3><small>Attack · +6</small></div>
+          <span class="adv"><span class="tag adv-t">Adv</span> Hidden: Invisible gives Advantage</span>
+          <div class="check"><i class="on"></i><span>This attack ends Hidden</span></div>
+          <div class="btns"><span class="btn primary">Roll</span></div>
+        </div>
+        <p class="note">Casting a spell with a Verbal component offers the same tick. Untick it if the DM rules otherwise.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Ready</div>
+    <h2>Say what and when, and it waits at the top of Reactions</h2>
+    <div class="steps">
+      <div class="step"><div class="k">1 · Press Ready</div>
+        <div class="win"><div class="win-h"><h3>Ready</h3><small>Action · then your Reaction</small></div>
+          <div class="field">What you'll do
+            <div class="opts"><div class="opt"><span>Longsword</span><small>Attack</small></div><div class="opt on"><span>Fire Bolt</span><small>Spell · cantrip</small></div><div class="opt"><span>Shatter</span><small>Spell · 2nd-level</small></div><div class="opt"><span>Move up to your Speed</span><small>30 ft</small></div></div>
+          </div>
+          <label class="field">When<span class="input">Enemy 1 steps through the doorway</span></label>
+          <div class="btns"><span class="btn primary">Ready it</span><span class="btn link">Cancel</span></div>
+          <p class="note">A spell: its slot is spent now, held with Concentration until your next turn starts (Shatter would say so here).</p>
+        </div>
+      </div>
+      <div class="step"><div class="k">2 · Waiting on Battle</div>
+        <div class="col"><div class="col-h">↻ Reaction</div>
+          <div class="ready"><div class="k">Readied</div><b>Fire Bolt</b><span>When Enemy 1 steps through the doorway</span>
+            <div class="btns"><span class="btn primary">Use it · Reaction</span><span class="btn link">Let it go</span></div>
+          </div>
+          <div class="row"><b>Shield</b><span class="note">1st-level · when you're hit</span></div>
+          <div class="row"><b>Opportunity Attack</b><span class="note">when a creature leaves your reach</span></div>
+        </div>
+        <p class="note">A readied spell also shows <span class="pill conc">Concentration · Shatter</span> in the Status row. Use it rolls Fire Bolt and spends the Reaction.</p>
+      </div>
+      <div class="step"><div class="k">3 · Your next turn starts</div>
+        <div class="card"><b>Fire Bolt wasn't used</b><span>A readied action lasts until your turn starts. It's gone now.</span><div class="btns"><span class="btn">OK</span></div></div>
+        <p class="note">In a fight askdnd hears from D&amp;D Beyond's VTT, the corner card comes when Trah's turn starts. Outside a fight, Readied stays until you use it or let it go.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">Your choices</div>
+    <h2>Two things to decide</h2>
+    <div class="qs">
+      <div class="q"><h3>1. Hidden on D&amp;D Beyond</h3>
+        <ol>
+          <li><b>Start Invisible on the sheet</b> while hidden, and end it with Hidden. The DM's view and the VTT show it.<span class="rec">Recommended</span></li>
+          <li><b>Hidden in askdnd only</b>: the sheet doesn't change, since D&amp;D Beyond has no "hidden".</li>
+        </ol>
+      </div>
+      <div class="q"><h3>2. Where Readied waits</h3>
+        <ol>
+          <li><b>Top of the Reaction column</b>, as drawn: it's taken with your Reaction.<span class="rec">Recommended</span></li>
+          <li><b>A pill in the Status row</b> beside conditions, opening the same card.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <footer>Mockup source: docs/mockups/hide-ready.html. Rules as in the 2024 Player's Handbook's Rules Glossary (Hide, Ready, Invisible), in askdnd's own words.</footer>
+</div>

@@ -39,12 +39,12 @@
      this campaign gets it. #}
   <section class="section" id="art-style">
     <h2>Art style</h2>
-    <p class="hint">Every picture drawn from a description in this campaign gets this style, so its pictures belong together. A few words, and up to {{ art_refs }} of the campaign's own pictures to match. Uploads stay as they are, and pictures already drawn keep their look.</p>
+    <p class="hint">Every picture drawn from a description in this campaign gets this style, so its pictures belong together. A few words, and up to {{ art_refs }} pictures to match: the campaign's own, or its characters' portraits from D&amp;D Beyond. Uploads stay as they are, and pictures already drawn keep their look.</p>
     <form hx-post="{{ cbase }}/manage/settings/art-style" hx-swap="none" class="form-narrow">
       <label class="field">In a few words<textarea name="words" rows="3" maxlength="600" placeholder="Ink and muted watercolour, like an old field guide; soft light, plain backgrounds, no text in the picture.">{{ art.words }}</textarea></label>
       <fieldset class="art-refs"><legend>Pictures to match</legend>
         {% for x in art_choices %}<label class="art-ref" title="{{ x.name }}"><input type="checkbox" name="refs" value="{{ x.id }}"{{ ' checked' if x.on }}><img src="{{ x.thumb }}" alt="{{ x.name }}"></label>
-        {% else %}<p class="note">None yet: pictures added to this campaign's World entries or familiars show here to pick from.</p>{% endfor %}
+        {% else %}<p class="note">None yet: pictures added to this campaign's World entries or familiars, and its characters' D&amp;D Beyond portraits, show here to pick from.</p>{% endfor %}
       </fieldset>
       <label class="check"><input type="checkbox" name="off" value="1"{{ ' checked' if art.off }}> Switch Describe it off for this campaign (Upload and D&amp;D Beyond's art stay)</label>
       <div class="row"><button class="btn primary" type="submit">Save</button></div>

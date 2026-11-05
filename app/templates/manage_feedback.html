@@ -32,9 +32,9 @@
             <p class="fb-text">{{ f.text }}</p>
             {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else "You" }}</small>{{ m.text }}</div>{% endfor %}
             {% if f.pr %}<p class="note">Fixed in <a href="{{ f.pr }}" target="_blank" rel="noopener">{{ f.pr }}</a></p>{% endif %}
-            {% if f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
-              <label class="field"><span>Your answer</span><textarea name="answer" rows="2" required></textarea></label>
-              <input type="hidden" name="to" value="answer"><button class="btn primary small" type="submit">Answer</button></form>{% endif %}
+            {% if f.status != "deleted" %}{% set asked = f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
+              <label class="field"><span>{{ "Your answer" if asked else "Add to this note" }}</span><textarea name="answer" rows="2" required{% if not asked %} placeholder="Something you forgot, or what happened next"{% endif %}></textarea></label>
+              <input type="hidden" name="to" value="answer"><button class="btn {{ 'primary' if asked }} small" type="submit">{{ "Answer" if asked else "Add" }}</button></form>{% endif %}
             <div class="row tight">
               {% for to, label in (("planned", "Mark planned"), ("done", "Done"), ("new", "Back to new"), ("deleted", "Delete")) if to != f.status %}
               <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="inline"><input type="hidden" name="to" value="{{ to }}"><button class="btn small{{ ' link danger' if to == 'deleted' }}" type="submit">{{ label }}</button></form>{% endfor %}

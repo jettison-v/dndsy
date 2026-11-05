@@ -26,6 +26,7 @@ MODEL = os.getenv("OPENAI_IMAGE_MODEL", "gpt-image-2.5-flare")
 COST = float(os.getenv("OPENAI_IMAGE_COST_USD", "0.04"))  # an estimate per picture, for Usage and the monthly limit
 HOW_MANY = 4  # (Brett, Nov 4: four to pick from)
 REFS = 4  # pictures to match, at most
+PORTRAIT = "portrait:"  # a picture to match that's a character's D&D Beyond portrait ("portrait:<character id>"; feedback 16)
 PLAIN = "A clean fantasy illustration, soft light, a plain background, no text or lettering in the picture."
 FETCH = None  # tests replace it: (path, fields, files) -> OpenAI's JSON answer
 
@@ -79,6 +80,31 @@ def _post(path: str, fields: dict, files: list[tuple[str, bytes]]) -> dict:
         raise pictures.PictureError("OpenAI couldn't be reached. Try again in a moment.") from None
 
 
+def _portrait(db: Session, character_id: str) -> bytes | None:
+    """A character's portrait from D&D Beyond's image server, read when it's drawn and never kept (D&D Beyond's art stays
+    a link). None when it can't be had: drawing goes on without it."""
+    from app import characters
+    from app.models import Character
+
+    c = db.get(Character, int(character_id)) if character_id.isdigit() else None
+    url = (characters.character_summary(c) or {}).get("portrait") if c else ""
+    if not url:
+        return None
+    try:
+        return READ_PORTRAIT(url)
+    except Exception:
+        return None
+
+
+def _read(url: str) -> bytes:
+    req = urllib.request.Request(url, headers={"User-Agent": "askdnd"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return r.read(8_000_000)
+
+
+READ_PORTRAIT = _read  # tests replace it
+
+
 def _png(raw: bytes) -> bytes:
     """A picture to match, as PNG (what the edits endpoint takes)."""
     import io
@@ -104,8 +130,11 @@ def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene
     look = st["words"].strip() or PLAIN
     refs = []
     for pid in st["refs"][:REFS]:
-        p = db.get(EntityPicture, pid)
-        data = pictures.files.read(p.file_key) if p and p.file_key else None
+        if isinstance(pid, str) and pid.startswith(PORTRAIT):
+            data = _portrait(db, pid[len(PORTRAIT):])
+        else:
+            p = db.get(EntityPicture, pid)
+            data = pictures.files.read(p.file_key) if p and p.file_key else None
         if data:
             refs.append(("ref.png", _png(data)))
     framing, size, centering = pictures.FRAMES.get(frame, pictures.FRAMES["scene"])

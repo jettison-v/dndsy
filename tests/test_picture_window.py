@@ -91,3 +91,30 @@ def test_without_a_key_describe_it_says_so(people, db, monkeypatch):
     k = entity(db, "Kieran")
     assert "isn&#39;t set up yet" in people["dm"].get(f"/pictures?for=entity:{k.id}").text
     assert pictures.PictureError  # (the draw route refuses with the same words)
+
+
+def test_a_characters_d_and_d_beyond_portrait_can_be_a_picture_to_match(people, db, openai, monkeypatch):
+    """Feedback 16 (Brett, Nov 5): the characters' D&D Beyond portraits are offered too. One picked is read from D&D
+    Beyond's image server when something is drawn, and never kept; another site's address is never offered or read."""
+    from app import characters
+    from tests.table_setup import COLE
+
+    import_bundle(db, {**BUNDLE, "entities": BUNDLE["entities"] + [{"kind": "pc", "name": "Cole", "character": {"ddb_id": "75423618"}}]})
+    cole = db.scalar(select(characters.Character).where(characters.Character.name == "Cole"))
+    face = "https://www.dndbeyond.com/avatars/1/2/cole.jpeg"
+    characters.refresh(db, cole, fetch=lambda i: {**COLE, "decorations": {"avatarUrl": face}})
+    read = []
+    monkeypatch.setattr(drawing, "READ_PORTRAIT", lambda url: read.append(url) or png(64, 64))
+    dm = people["dm"]
+    page = dm.get("/c/main/manage/settings").text
+    assert f'value="portrait:{cole.id}"' in page and f'src="{face}"' in page and "Cole, from D&amp;D Beyond" in page
+    dm.post("/c/main/manage/settings/art-style", data={"words": "Oil", "refs": [f"portrait:{cole.id}", "portrait:999"]}, headers=HX)
+    campaign = db.get(Campaign, cole.campaign_id)
+    db.refresh(campaign)
+    assert campaign.art_style["refs"] == [f"portrait:{cole.id}"]  # (not a character of this campaign: dropped)
+    dm.post("/pictures/draw", data={"for": f"entity:{entity(db, 'Womford').id}", "words": "A village"}, headers=HX)
+    assert read == [face] and len(openai[-1]["files"]) == 1 and openai[-1]["path"] == "edits"
+    assert not db.scalars(select(EntityPicture).where(EntityPicture.character_id == cole.id)).all()  # (never kept)
+
+    characters.refresh(db, cole, fetch=lambda i: {**COLE, "decorations": {"avatarUrl": "https://evil.example/x.jpg"}})
+    assert "portrait:" not in dm.get("/c/main/manage/settings").text.split('id="art-style"')[1].split("</section>")[0]

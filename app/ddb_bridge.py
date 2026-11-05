@@ -572,8 +572,11 @@ def _ops(character: Character, target: dict, n: dict, extra: dict | None = None)
     Rest restores, and the rest is built on top of it."""
     did = int(character.ddb_id)
     order = sorted(target, key=lambda f: not f.startswith("hitdice:"))
-    return [{"field": f, **ddb_fields.write(did, f, target[f], n["raw"], (extra or {}).get(f), n["max"]),
-             "read": ddb_fields.steps(f), "from": _value(n, f), "to": target[f]} for f in order]
+    out = []
+    for f in order:
+        read, frm, to = ddb_fields.wire(f, n["raw"], _value(n, f), target[f])
+        out.append({"field": f, **ddb_fields.write(did, f, target[f], n["raw"], (extra or {}).get(f), n["max"]), "read": read, "from": frm, "to": to})
+    return out
 
 
 # ------------------------------------------------------------------ the outbox

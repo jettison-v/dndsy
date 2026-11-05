@@ -145,7 +145,8 @@ def queue(request: Request, tab: str = "new", open: int = 0, db: Session = Depen
 
 @router.post("/manage/feedback/{feedback_id:int}")
 def change(request: Request, feedback_id: int, to: str = Form(...), answer: str = Form(""), db: Session = Depends(get_db)):
-    """Answer Claude's question (it's new again for Claude), or move a note: planned, done, back to new, deleted."""
+    """Answer Claude's question, or add to a note any time (feedback 18, Brett, Nov 5: something forgotten): it's new
+    again for Claude, unless it's planned. Or move a note: planned, done, back to new, deleted."""
     _, denied = web.require(request, is_admin, "Feedback is for admins.")
     if denied:
         return denied
@@ -153,8 +154,11 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
     if to == "answer":
         if not answer.strip():
             raise HTTPException(400, "Write your answer first.")
+        asked = fb.status == "question"
         fb.thread = [*(fb.thread or []), {"who": "you", "text": answer.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat()}]
-        fb.status, said = "new", "Answered: it's back with Claude"
+        if fb.status != "planned":
+            fb.status = "new"
+        said = "Answered: it's back with Claude" if asked else "Added to the note" + ("" if fb.status == "planned" else ": it's back with Claude")
     elif to in ("new", "planned", "done", "deleted"):
         fb.status, said = to, {"new": "Back to new", "planned": "Planned", "done": "Done", "deleted": "Deleted"}[to]
     else:

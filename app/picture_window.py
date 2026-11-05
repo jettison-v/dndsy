@@ -141,7 +141,8 @@ def save_style(request: Request, words: str = Form(""), refs: list[str] = Form([
     mine = {p.id for p in db.scalars(select(EntityPicture).where(EntityPicture.file_key.is_not(None)))
             if (p.entity_id and _campaign_of_entity(db, p.entity_id) == campaign.id)
             or (p.character_id and (c := db.get(Character, p.character_id)) and c.campaign_id == campaign.id)}
-    picked = [int(r) for r in refs if r.isdigit() and int(r) in mine][: drawing.REFS]
+    faces = {f"{drawing.PORTRAIT}{c.id}" for c, _ in _portraits(db, campaign)}
+    picked = [int(r) if r.isdigit() else r for r in refs if (r.isdigit() and int(r) in mine) or r in faces][: drawing.REFS]
     campaign.art_style = {"words": " ".join(words.split())[:600], "refs": picked, "off": bool(off)}
     db.commit()
     return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": "Art style saved"})})
@@ -154,8 +155,21 @@ def _campaign_of_entity(db: Session, entity_id: int) -> int | None:
     return e.campaign_id if e else None
 
 
+def _portraits(db: Session, campaign: Campaign) -> list[tuple[Character, str]]:
+    """The campaign's characters with a portrait on D&D Beyond (its image server only), as (character, its address)."""
+    from app import characters
+
+    out = []
+    for c in characters.campaign_characters(db, campaign.id):
+        url = ((characters.character_summary(c) or {}).get("portrait") or "") if c.copy_of_id is None else ""
+        if url:
+            out.append((c, url))
+    return out
+
+
 def style_choices(db: Session, campaign: Campaign) -> list[dict]:
-    """The campaign's own pictures, for Art style's pictures to match: {"id", "thumb", "name", "on"}."""
+    """The campaign's own pictures, for Art style's pictures to match: {"id", "thumb", "name", "on"}; then each character's
+    D&D Beyond portrait (feedback 16, Brett, Nov 5), a link to D&D Beyond's picture, fetched only when something is drawn."""
     from app.models import Entity
 
     on = set(drawing.style(campaign)["refs"])
@@ -172,4 +186,7 @@ def style_choices(db: Session, campaign: Campaign) -> list[dict]:
                 continue
             out.append({"id": p.id, "thumb": f"/characters/{c.id}/creatures/{p.creature}/picture?size=thumb&v={files.version(p.thumb_key)}",
                         "name": f"{c.name}'s {p.creature}", "on": p.id in on})
+    for c, url in _portraits(db, campaign):
+        key = f"{drawing.PORTRAIT}{c.id}"
+        out.append({"id": key, "thumb": url, "name": f"{c.name}, from D&D Beyond", "on": key in on})
     return out
