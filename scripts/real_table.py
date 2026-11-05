@@ -871,6 +871,11 @@ def wild_shape(t: Table, seat: str = "player4") -> None:
     sheet = t.sheet(seat)
     page = t.battle(seat)
     connects(t, page)
+    if page.locator(".ws-form").count():  # (left in a form by something earlier, Nov 5: the run's Undo then put that form
+        go(page, page.locator('.ws-chip[data-use-url$="/wild-shape"]:visible').first)  # back, and the runs after it failed;
+        page.locator('[data-use-go][data-to="leave"]').first.click(timeout=8000)  # Leave is askdnd's alone)
+        page.goto(page.url, wait_until="domcontentloaded")
+        print("  was in a form: left it first", flush=True)
     before = record(sheet)
     form = page.locator('.ws-chip[data-use-url*="wild-shape?form="]:visible').first
     name = form.inner_text().strip()
@@ -1041,6 +1046,15 @@ def creature_hp(t: Table, seat: str = "player3") -> None:
         t.expect("D&D Beyond's maximum is set to the rule's", lambda: (most(record(sheet)) or 0) > 1, SLOW)
         page.wait_for_timeout(1500)
         page.goto(page.url, wait_until="domcontentloaded")
+    waiting = page.locator(".cr-fix b")
+    if waiting.count() >= 2:  # (Nov 5: askdnd sets the rule's maximum on D&D Beyond once; one taken off since, it leaves,
+        rule = int(waiting.nth(1).inner_text())  # and − and + wait: the run starts with it there, as askdnd keeps it)
+        key = {"typeId": 43, "valueId": str(c["id"]), "valueTypeId": str(c["entityTypeId"]), "contextId": None, "contextTypeId": None}
+        print("  its maximum set to the rule's first:", sheet.evaluate(TIDYING, [SHEETS[seat], [["PUT", "custom/value", {**key, "value": rule, "notes": None}]]]), flush=True)
+        t.expect("D&D Beyond's maximum is the rule's", lambda: most(record(sheet)) == rule, SLOW)
+        sheet.reload(wait_until="domcontentloaded")  # (askdnd reads the sheet as it opens: its copy has the maximum then)
+        t.expect("askdnd's copy has it: − and + are back", lambda: page.goto(page.url, wait_until="domcontentloaded") and page.locator(".cr-fix").count() == 0, SLOW)
+        before = record(sheet)
     for to, want in (("damage", (c.get("removedHitPoints") or 0) + 3), ("heal", c.get("removedHitPoints") or 0)):
         page.locator(".cr-hp-pop > summary").first.click(timeout=8000)
         page.fill(".cr-hp-form input[name=amount]", "3")
@@ -1203,7 +1217,7 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
 SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup", "initiative"}  # (initiative: a roll reaches the VTT through the sheet's own Game Log)
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 # Runs left out of part 1 (and the nightly) until the seats have what they need: named, they run
-WAITING: set[str] = set()  # (initiative ran from Nov 4: 0.12.0 side-loaded on the seats until Google approves it)
+WAITING: set[str] = set()
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 
 
@@ -1264,12 +1278,15 @@ def left_over(d: dict) -> list[str]:
         [f"conditions {[c['id'] for c in d['conditions']]}"] if d.get("conditions") else []) + (
         ["Hit Point Dice spent"] if any(c.get("hitDiceUsed") for c in d["classes"]) else []) + (
         ["spell slots spent"] if any(x.get("used") for x in d.get("spellSlots") or []) else []) + (
+        ["Pact slots spent"] if any(x.get("used") for x in d.get("pactMagic") or []) else []) + (
         ["limited uses spent"] if spent(d) else [])
 
 
 def clean_start(t: Table, seat: str) -> None:
     """Part 1 starts on clean sheets. Anything left over (a run before this one that didn't put it back) is a miss, and
-    hit points, death saves and conditions are put right on D&D Beyond, as the seat's player could on the sheet."""
+    is put right on D&D Beyond, as the seat's player could on the sheet: hit points, death saves, conditions, and (Nov 5:
+    a night's misses spent Levi's Pact slots and Wild Shape uses, and the next night's runs failed on them) slots and
+    limited uses."""
     sheet = t.sheet(seat)
     d = record(sheet)
     found = left_over(d)
@@ -1277,7 +1294,11 @@ def clean_start(t: Table, seat: str) -> None:
     print("PASS" if not found else "FAIL", f"{seat}'s sheet starts clean", "; ".join(found), flush=True)
     ops = ([["PUT", "life/hp/damage-taken", {"removedHitPoints": 0, "temporaryHitPoints": 0}]] if d.get("removedHitPoints") or d.get("temporaryHitPoints") else []) + (
         [["PUT", "life/death-saves", {"failCount": 0, "successCount": 0}]] if (d.get("deathSaves") or {}).get("failCount") or (d.get("deathSaves") or {}).get("successCount") else []) + [
-        ["DELETE", "condition", {"id": c["id"]}] for c in d.get("conditions") or []]
+        ["DELETE", "condition", {"id": c["id"]}] for c in d.get("conditions") or []] + [
+        ["PUT", "spell/slots", {f"level{x['level']}": 0}] for x in d.get("spellSlots") or [] if x.get("used")] + [
+        ["PUT", "spell/pact-magic", {f"level{x['level']}": 0}] for x in d.get("pactMagic") or [] if x.get("used")] + [
+        ["PUT", "action/limited-use", {"id": str(x["id"]), "entityTypeId": str(x.get("entityTypeId")), "uses": 0}]
+        for g in d["actions"].values() for x in g or [] if (x.get("limitedUse") or {}).get("numberUsed")]
     if ops:
         print("  put right on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], ops]), flush=True)
 
