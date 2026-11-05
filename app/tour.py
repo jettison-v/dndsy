@@ -22,24 +22,27 @@ SECTIONS = [
         ("battle", "Battle", "Your plan for a fight by Action, Bonus action and Reaction: what you chose to put there, with See all "
                              "for everything else. + Add and the pin put things on it; open one for Pin, Remind me and "
                              "your note."),
+        ("rolling", "Rolling and Table rolls", "Click any number to roll it. Rolls go to Table rolls for everyone; DM only and Only me "
+                                               "keep a roll private. Apply to on the DM's damage changes your Hit Points."),
+        ("dice", "Your dice", "Thrown 3D dice in the set you choose (account menu › Your dice); the table sees your rolls in them."),
+        ("conditions", "Conditions and effects", "Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in "
+                                                 "the roll window with its reason, and a reminder when one is due to end. The DM rules."),
+    ]),
+    ("With your D&D Beyond sheet", [
+        ("live", "Live", "The Live pill says whether your D&D Beyond sheet is connected. Nothing to turn on."),
+        ("sync", "Playing on your D&D Beyond sheet", "Hit points, Cast, resources and rests changed in askdnd change your D&D Beyond "
+                                                     "sheet too, within seconds (where your campaign syncs with D&D Beyond)."),
+    ]),
+    ("Spells and shapes", [
         ("spellbook", "Spell Book", "Your prepared spells with filters, each one's average damage or healing, and Cast at for a higher "
                              "slot. An average informs; it doesn't decide."),
         ("wildshape", "Wild Shape", "You as the beast: your numbers and actions worked out for the form, its full page, and Normal to "
                              "come back (druids)."),
-        ("conditions", "Conditions and effects", "Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in "
-                                                 "the roll window with its reason, and a reminder when one is due to end. The DM rules."),
-        ("sync", "Playing on your D&D Beyond sheet", "Hit points, Cast, resources, rests and items changed in askdnd change your D&D "
-                                                     "Beyond sheet too, within seconds (where your campaign syncs with D&D Beyond)."),
-    ]),
-    ("Rolling", [
-        ("rolling", "Rolling and Table rolls", "Click any number to roll it. Rolls go to Table rolls for everyone; DM only and Only me "
-                                               "keep a roll private."),
-        ("live", "Live", "The Live pill says whether your D&D Beyond sheet is connected. Nothing to turn on."),
-        (None, "Your dice", "Thrown 3D dice in the set you choose (account menu › Your dice); the table sees your rolls in them."),
     ]),
     ("Your character", [
-        ("character", "Sheet and Reminders", "Your whole character from D&D Beyond in one view, laid out for play; the bell puts "
-                                             "anything in your Reminders on Battle."),
+        ("character", "Reminders, Sheet and Inventory", "The bell puts anything you tend to forget in your Reminders on Battle; Sheet is "
+                                                        "your whole character from D&D Beyond, laid out for play; Inventory has your purse "
+                                                        "and + Add item."),
         ("plan", "Plan", "Battle combos, leveling strategy, personal quests, notes and shortlists. Nothing is lost when you unprepare. "
                          "The DM never sees your notes."),
         ("party", "Party", "Everyone's numbers at a glance, and the party's spells and items pooled, filtered by what they do and who has them."),
@@ -97,6 +100,38 @@ STOPS = [
      "at": '[data-tour="battle"] [data-econ-col="action"]',
      "what": "With a note, a row shows it right under its name. (An example again.)",
      "why": "The why and when stay next to the thing itself, where you'll see them mid-fight."},
+    {"group": "rolling", "page": "battle", "needs": "character", "at": '[data-tour="roll"]',
+     "what": "Click any number to roll it. One window offers Advantage and extra dice; <b>Enter</b> rolls, <b>Esc</b> "
+             "closes, and <b>Shift-click</b> rolls without the window.",
+     "why": "Your rolls land in <b>Table rolls</b> for everyone, thrown in your own 3D dice. Pick <b>DM only</b> or "
+            "<b>Only me</b> for a private roll."},
+    {"group": "rolling", "title": "Table rolls", "page": None, "at": "#table-rolls .rs-head, .rs-edge",
+     "what": "<b>Table rolls</b> is everyone's rolls, the DM's too, newest first, on every page. This opens it.",
+     "why": "When the DM rolls damage or someone heals you, <b>Apply to</b> on that roll changes your Hit Points in one step."},
+    {"group": "dice", "page": None, "at": ".avatar",
+     "what": "<b>Your dice</b>, in your account menu here, picks the set your rolls are thrown in, and how others' rolls show "
+             "for you.",
+     "why": "The table sees your rolls in your dice."},
+    {"group": "conditions", "page": "battle", "needs": "character", "at": "#battle-body .cond-add",
+     "what": "<b>+ Condition</b> starts one, with how long it lasts. Each shows as a badge after your name, and the roll "
+             "window offers what it changes, with the reason.",
+     "why": "Nothing ends by itself: a corner card reminds you and the DM when one is due. The DM rules."},
+    {"group": "live", "page": None, "at": '[data-tour="live"]',
+     "what": "<b>Live</b> says whether your D&D Beyond sheet is connected: open it in Chrome with the askdnd bridge, and "
+             "changes go both ways within seconds. There's nothing to turn on when the game starts.",
+     "why": "Build and level up on D&D Beyond as always. <b>Refresh now</b> picks up a change made there at once."},
+    {"group": "sync", "title": "Hit points", "page": "battle", "needs": "sync", "at": "#battle-body .nt:has(.hp-btns)",
+     "what": "<b>−</b> and <b>+</b> on Hit Points open a small window: type the damage or healing and press <b>Enter</b>. "
+             "Temporary Hit Points go first, and Concentration's save is worked out for you.",
+     "why": "Your D&D Beyond sheet changes too, within seconds. No more doing the sums twice."},
+    {"group": "sync", "title": "Cast", "page": "battle", "needs": "sync+caster", "at": '[data-tour="battle"] [data-use-url*="/cast?"]',
+     "what": "<b>Cast</b> on a spell asks how: which slot, Pact Magic, as a Ritual. It spends that on your sheet, and "
+             "<b>Cast and roll</b> rolls it too.",
+     "why": "Slots stay right on D&D Beyond without ticking boxes there. Undo puts it back."},
+    {"group": "sync", "title": "Resources and rests", "page": "battle", "needs": "sync", "at": "#battle-body .cond-rest",
+     "what": "Press a resource (Wild Shape, Channel Divinity, a slot) to use one or give one back. <b>Rest</b> lists what a "
+             "Short or Long Rest brings back, by the 2024 rules.",
+     "why": "The DM says when you rest; askdnd does the bookkeeping on your sheet."},
     {"group": "spellbook", "title": "Spell Book", "page": "battle", "needs": "caster", "at": SPELLBOOK,
      "what": "<b>Spell Book</b>, above your columns, opens every spell you have prepared in a large window.", "why": "Battle shows the spells you pinned; the Spell Book has all the rest, one click away, with a pin on each row."},
     {"group": "spellbook", "title": "Spell Book: filters", "page": "battle", "needs": "caster", "panel": True,
@@ -129,45 +164,21 @@ STOPS = [
      "what": "<b>Normal</b> opens Leave, a Bonus Action: your own numbers and columns return, and leftover Temporary Hit "
              "Points stay.",
      "why": "Each way is one window, with Undo."},
-    {"group": "rolling", "page": "battle", "needs": "character", "at": '[data-tour="roll"]',
-     "what": "Click any number to roll it. One window offers Advantage and extra dice; <b>Enter</b> rolls, <b>Esc</b> "
-             "closes, and <b>Shift-click</b> rolls without the window.",
-     "why": "Your rolls land in <b>Table rolls</b> for everyone, thrown in your own 3D dice. Pick <b>DM only</b> or "
-            "<b>Only me</b> for a private roll."},
-    {"group": "conditions", "page": "battle", "needs": "character", "at": "#battle-body .cond-add",
-     "what": "<b>+ Condition</b> starts one, with how long it lasts. Each shows as a badge after your name, and the roll "
-             "window offers what it changes, with the reason.",
-     "why": "Nothing ends by itself: a corner card reminds you and the DM when one is due. The DM rules."},
-    {"group": "sync", "title": "Hit points", "page": "battle", "needs": "sync", "at": "#battle-body .nt:has(.hp-btns)",
-     "what": "<b>−</b> and <b>+</b> on Hit Points open a small window: type the damage or healing and press <b>Enter</b>. "
-             "Temporary Hit Points go first, and Concentration's save is worked out for you.",
-     "why": "Your D&D Beyond sheet changes too, within seconds. No more doing the sums twice."},
-    {"group": "sync", "title": "Cast", "page": "battle", "needs": "sync+caster", "at": '[data-tour="battle"] [data-use-url*="/cast?"]',
-     "what": "<b>Cast</b> on a spell asks how: which slot, Pact Magic, as a Ritual. It spends that on your sheet, and "
-             "<b>Cast and roll</b> rolls it too.",
-     "why": "Slots stay right on D&D Beyond without ticking boxes there. Undo puts it back."},
-    {"group": "sync", "title": "Resources and rests", "page": "battle", "needs": "sync", "at": "#battle-body .cond-rest",
-     "what": "Press a resource (Wild Shape, Channel Divinity, a slot) to use one or give one back. <b>Rest</b> lists what a "
-             "Short or Long Rest brings back, by the 2024 rules.",
-     "why": "The DM says when you rest; askdnd does the bookkeeping on your sheet."},
-    {"group": "sync", "title": "Inventory", "page": "sheet", "needs": "sync", "open": '[data-tab="t-items"]', "at": "#t-items .purse",
-     "what": "Inventory starts with your coin purse: press it to change coins. <b>+ Add item</b> browses D&D Beyond's items, "
-             "says what one would mean for you, and can pay from the purse. Open an item to equip, attune, use or give it.",
-     "why": "All of it lands on your D&D Beyond sheet. A magic item's price is the DM's call."},
-    {"group": "live", "page": None, "at": '[data-tour="live"]',
-     "what": "<b>Live</b> says whether your D&D Beyond sheet is connected: open it in Chrome with the askdnd bridge, and "
-             "changes go both ways within seconds. There's nothing to turn on when the game starts.",
-     "why": "Build and level up on D&D Beyond as always. <b>Refresh now</b> picks up a change made there at once."},
+    {"group": "character", "title": "Reminders", "page": "battle", "needs": "character", "at": '[data-tour="reminders"]',
+     "what": "<b>Reminders</b> keeps what you tend to forget beside your turn: anything you ring the bell for on Sheet "
+             "(next), and your own (\"Ask the DM about the map\").",
+     "why": "They're in front of you when they matter, mid-fight."},
     {"group": "character", "title": "Sheet: your whole character", "page": "sheet", "needs": "character",
      "at": '[data-tour="sheet"]',
      "what": "Everything from D&D Beyond in one view, laid out for play. Click any row for its rules and your note.",
      "why": "Actions, spells, forms, items and features in one place, next to your plans."},
     {"group": "character", "title": "The bell", "page": "sheet", "needs": "character",
      "at": '[data-tour="sheet"] button.pick.remind',
-     "what": "The <b>bell</b> on a row adds it to your Reminders.", "why": "For the things that are easy to miss mid-fight: an Advantage, a resistance, a feature you rarely use."},
-    {"group": "character", "title": "Reminders", "page": "battle", "needs": "character", "at": '[data-tour="reminders"]',
-     "what": "Everything you rang the bell for waits here on Battle. Write your own below (\"Ask the DM about the map\").",
-     "why": "Your Reminders sit beside your turn, so they're in front of you when they matter."},
+     "what": "The <b>bell</b> on a row adds it to the Reminders you just saw on Battle.", "why": "For the things that are easy to miss mid-fight: an Advantage, a resistance, a feature you rarely use."},
+    {"group": "character", "title": "Inventory", "page": "sheet", "needs": "sync", "open": '[data-tab="t-items"]', "at": "#t-items .purse",
+     "what": "Inventory starts with your coin purse: press it to change coins. <b>+ Add item</b> browses D&D Beyond's items, "
+             "says what one would mean for you, and can pay from the purse. Open an item to equip, attune, use or give it.",
+     "why": "All of it lands on your D&D Beyond sheet. A magic item's price is the DM's call."},
     {"group": "plan", "title": "Battle combos", "page": "plan", "needs": "character", "open": '[data-tab="t-combo"]',
      "at": '[data-tour="plan"]',
      "what": "<b>Combos</b> are your plans for a few turns together: the setup, then the payoff. <b>+ Battle combo</b> "

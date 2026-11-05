@@ -2993,7 +2993,8 @@
   const KEY = 'askdnd-tour';
   let tour = null, spot = null, card = null, lit = null, lits = [], asking = false;
   const keep = () => { try { if (tour) sessionStorage.setItem(KEY, JSON.stringify(tour)); else sessionStorage.removeItem(KEY); } catch (e) { /* private window: the tour still works page by page */ } };
-  const visible = sel => [...document.querySelectorAll(sel)].find(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+  // (on screen across: a panel slid off to the side, like closed Table rolls on a computer, isn't there to light)
+  const visible = sel => [...document.querySelectorAll(sel)].find(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.right > 0 && r.left < innerWidth; });
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   async function start(group) {

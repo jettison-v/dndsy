@@ -32,7 +32,7 @@ def test_a_player_tours_their_own_character(table, db):  # noqa: F811
 
 def test_without_a_character_the_tour_leaves_out_character_pages(table):  # noqa: F811
     groups = [s["group"] for s in table["dm"].get("/tour").json()["stops"]]
-    assert groups == ["previously", "memory", "live", "party", "help"]
+    assert groups == ["previously", "memory", "rolling", "dice", "live", "party", "help"]  # (Table rolls and Your dice: anyone)
 
 
 def test_every_stop_has_a_target_in_the_templates():

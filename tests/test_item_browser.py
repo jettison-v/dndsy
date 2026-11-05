@@ -134,3 +134,18 @@ def test_without_the_bridge_there_is_no_browser(player, db):
     db.flush()
     assert player.get(f"/characters/{cole.id}/items/browse").status_code == 404
     assert "+ Add item" not in player.get(f"/characters/{cole.id}").text
+
+
+def test_a_filter_for_what_the_character_can_use_as_is(player, db, monkeypatch):
+    """Feedback 13 (Brett, Nov 4): filter by whether the character can use an item, from the row's own icon (app/item_fit.py):
+    a catch the rules attach, never "can't". (Cole is proficient with every weapon here, so the Longsword's catch is set.)"""
+    import html
+    import re
+
+    real = item_browser.item_fit.fit
+    monkeypatch.setattr(item_browser.item_fit, "fit", lambda sheet, i, who="": {**real(sheet, i, who), "icon": "warn"} if i["name"] == "Longsword" else real(sheet, i, who))
+    cole = char(db, "Cole")
+    w = player.get(f"/characters/{cole.id}/items/browse").text
+    assert "For Cole" in w and "No catch" in w and "Has a catch" in w
+    rows = {m[1]: json.loads(html.unescape(m[0]))["fit"] for m in re.findall(r"data-f='([^']*)' data-name=\"([^\"]*)\"", w)}
+    assert rows["longsword"] == "Has a catch" and rows["rope"] == "No catch"
