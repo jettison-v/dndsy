@@ -67,3 +67,16 @@ def test_a_long_page_opens_at_once_and_draws_one_picture_of_what_is_on_screen(pe
     }""")
     assert red
     assert not admin.errors, admin.errors
+
+
+def test_a_page_holding_a_nul_character_still_gets_its_picture(people, server):
+    """Brett, Nov 4: on beta the picture never came ("No picture this time"), and the note itself answered 500. A NUL
+    character in the page (another extension's text; Postgres refuses it too) makes the picture's SVG invalid XML, which
+    stopped the whole drawing: characters XML can't hold are taken out before it's painted."""
+    admin = people("admin")
+    page = admin.open(f"/characters/{server['cole']}/battle")
+    page.wait_for_load_state("networkidle")
+    page.evaluate("() => document.querySelector('main').append(Object.assign(document.createElement('span'), { textContent: 'x\\u0000\\u0007y' }))")
+    page.keyboard.press("\\")
+    page.locator("[data-fb-shot]").wait_for(state="visible", timeout=15000)
+    assert not admin.errors, admin.errors

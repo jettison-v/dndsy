@@ -1118,13 +1118,29 @@ def dm_backup(t: Table, seat: str = "player2") -> None:
 VTT = "https://www.dndbeyond.com/games/8224496"
 
 
-def sidebar(vtt: Page) -> dict[str, float]:
-    """The DM's VTT combat sidebar: each one's first name and its initiative number."""
+def open_tracker(vtt: Page) -> None:
+    """The DM's VTT combat sidebar, opened by the button at the top left when it's closed."""
     if not vtt.locator("[data-testid=initiative-input]").count() or not vtt.locator("[data-testid=initiative-input]").first.is_visible():
         i = vtt.evaluate("""[...document.querySelectorAll('button')].findIndex(b => { const r = b.getBoundingClientRect(); return r.y < 60 && r.x < 120; })""")
         if i >= 0 and "Close Sidebar" not in (vtt.locator("button").nth(i).get_attribute("aria-label") or ""):
             vtt.locator("button").nth(i).click()
             vtt.wait_for_timeout(1200)
+
+
+def end_combat(vtt: Page) -> None:
+    """The tracker's ^ shows End Combat; a Confirm, where D&D Beyond asks one, is pressed too."""
+    vtt.get_by_test_id("show-end-combat-button").click()
+    vtt.get_by_role("button", name="End Combat", exact=False).last.click()
+    try:
+        vtt.get_by_role("button", name="Confirm").click(timeout=3000)
+    except Exception:
+        pass
+    vtt.wait_for_timeout(2000)
+
+
+def sidebar(vtt: Page) -> dict[str, float]:
+    """The DM's VTT combat sidebar: each one's first name and its initiative number."""
+    open_tracker(vtt)
     rows = vtt.evaluate("""[...document.querySelectorAll('[data-testid=initiative-input]')].map(e => {
         let r = e; for (let k = 0; k < 10 && r; k++) { r = r.parentElement; if (r.querySelector('img[alt]')) break; }
         const a = r && r.querySelector('img[alt]'); return [a ? a.alt.split(' ')[0] : '?', e.value]; })""")
@@ -1136,6 +1152,8 @@ def initiative(t: Table, seat: str = "player4") -> None:
     tokens, then Levi's Initiative rolled in askdnd fills in his number in the VTT's sidebar (through the Game Log, as a
     roll from the sheet does); the DM's change in askdnd reaches the VTT through the DM's open VTT page; after Start
     Combat a roll changes nothing. The encounter is left as found (in combat or not)."""
+    party = t.page("dm", f"{BETA}/party")  # (askdnd first: the extension learns where askdnd is from an open askdnd page,
+    party.wait_for_timeout(3000)            # and a VTT page asks only as it opens whether askdnd follows its game)
     vtt = t.page("dm", VTT)
     vtt.wait_for_timeout(15000)
     for sel in ('[aria-label="Close"]', 'button:has-text("Hide until next update")'):
@@ -1143,15 +1161,17 @@ def initiative(t: Table, seat: str = "player4") -> None:
             vtt.locator(sel).first.click(timeout=2000)
         except Exception:
             pass
-    fighting = vtt.get_by_test_id("show-end-combat-button").count() > 0
+    open_tracker(vtt)  # (End Combat is on the page while the tracker is closed, but can't be pressed)
+    end = vtt.get_by_test_id("show-end-combat-button")
+    fighting = end.count() > 0 and end.first.is_visible()
     if fighting:
-        vtt.get_by_test_id("show-end-combat-button").click()
-        vtt.get_by_role("button", name="Confirm").click()
-        vtt.wait_for_timeout(2000)
-    vtt.get_by_role("button", name="Add all tokens").click()
+        end_combat(vtt)
+    add = vtt.get_by_role("button", name="Add all tokens")
+    if add.count():  # (gone once every token is in the encounter)
+        add.click()
     t.expect("the DM's VTT lists Levi waiting", lambda: "Levi" in sidebar(vtt), 20)
-    party = t.page("dm", f"{BETA}/party")
-    t.expect("askdnd hears who's waiting: Roll for Initiative", lambda: "Roll for Initiative" in (party.locator(".fight-band").first.text_content() or ""), 30)
+    party.reload()
+    t.expect("askdnd hears who's waiting: Roll for Initiative", lambda: "Roll for Initiative" in " ".join(party.locator(".fight-band").all_text_contents()), 30)
     page = t.battle(seat)
     connects(t, page)
     page.click('[data-roll="check"][data-label="Initiative"]', modifiers=["Shift"])
@@ -1170,8 +1190,7 @@ def initiative(t: Table, seat: str = "player4") -> None:
     page.keyboard.press("Escape")
     t.expect("after Start Combat a roll changes nothing", lambda: sidebar(vtt).get("Levi") == 17.5, 1)
     if not fighting:  # (as found)
-        vtt.get_by_test_id("show-end-combat-button").click()
-        vtt.get_by_role("button", name="Confirm").click()
+        end_combat(vtt)
 
 
 RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
@@ -1181,10 +1200,10 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp,
         "familiar": familiar, "initiative": initiative}
 # Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out
-SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup"}
+SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup", "initiative"}  # (initiative: a roll reaches the VTT through the sheet's own Game Log)
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 # Runs left out of part 1 (and the nightly) until the seats have what they need: named, they run
-WAITING: set[str] = {"initiative"}  # (needs extension 0.12.0 on the seats and Labs › Initiative from askdnd on VTT test)
+WAITING: set[str] = set()  # (initiative ran from Nov 4: 0.12.0 side-loaded on the seats until Google approves it)
 KEPT = ("dateModified", "providedFrom", "readonlyUrl", "definition", "inventory", "campaign", "decorations")
 
 
