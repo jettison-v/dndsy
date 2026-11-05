@@ -115,11 +115,24 @@ def deliver_now(character, also=()) -> dict:
     return out
 
 
+def _no_nul(value):
+    """Postgres can't keep a NUL character in text or JSON (Sentry ASKDND-V2-F: a page's text carried one into a feedback
+    note), so a body never brings one in."""
+    if isinstance(value, str):
+        return value.replace("\x00", "")
+    if isinstance(value, dict):
+        return {_no_nul(k): _no_nul(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_no_nul(v) for v in value]
+    return value
+
+
 async def _body_json(request: Request):
     try:
-        return await request.json()
+        body = await request.json()
     except ValueError:
         return None  # (not JSON: the route's own check turns it away)
+    return _no_nul(body) if b"\\u0000" in await request.body() else body
 
 
 async def _body_form(request: Request):

@@ -39,7 +39,7 @@
           {{ fit_icon(i.fit, c.name.split()[0]) }}
           <span class="ls-name"><button type="button" class="link-plain" data-ib-show aria-label="{{ i.name }}: what it is"><b>{{ i.name }}</b></button>
             <small class="ls-what">{{ i.type or i.kind }}{% if i.attune %} · attunement{% endif %}{% if i.have %} · you have {{ i.have }}{% endif %}</small>
-            {%- if i.fit.chips %}<span class="ib-chips" aria-label="For {{ c.name.split()[0] }}: {{ i.fit.chips | join(', ') }}">{% for x in i.fit.chips %}<span class="ib-d {{ 'up' if '▲' in x else 'down' }}">{{ x }}</span>{% endfor %}</span>{% endif %}</span>
+            {%- if i.fit.chips %}<span class="ib-chips" aria-label="For {{ c.name.split()[0] }}: {{ i.fit.chips | join(', ') }}">{% for x in i.fit.chips %}<span class="tag ib-d {{ 'up' if '▲' in x else 'down' }}">{{ x }}</span>{% endfor %}</span>{% endif %}</span>
           <span class="ib-rar" data-rarity="{{ i.rarity | lower | replace(' ', '-') }}">{{ i.rarity }}</span>
           <span class="ib-cost">{{ i.price or "—" }}</span>
           <span class="note">{{ i.weight_label or "—" }}</span>

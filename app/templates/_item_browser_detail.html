@@ -21,13 +21,13 @@
   {% set who = c.name.split()[0] %}{% set cmp = i.fit.compare %}
   <section class="ib-for" aria-label="For {{ who }}" data-ib-compare>
     <div class="ib-for-h"><b>For {{ who }}: now and with it</b>
-      {% if cmp | length > 1 %}<label class="ib-place">In place of <select data-ib-place aria-label="What it takes the place of">{% for p in cmp %}<option value="{{ loop.index0 }}">{{ p.place }}</option>{% endfor %}</select></label>
+      {% if cmp | length > 1 %}<label class="ls-select ib-place">In place of <select data-ib-place aria-label="What it takes the place of">{% for p in cmp %}<option value="{{ loop.index0 }}">{{ p.place }}</option>{% endfor %}</select></label>
       {% elif cmp and cmp[0].place %}<span class="note">{{ "In place of " ~ cmp[0].place if cmp[0].place != "In your other hand" else cmp[0].place }}</span>
       {% else %}<span class="note">from the sheet; the DM rules</span>{% endif %}</div>
     {% for p in cmp %}
     <div class="table-scroll" data-ib-place-rows="{{ loop.index0 }}"{% if not loop.first %} hidden{% endif %}><table class="ib-cmp">
       <thead><tr><th scope="col">Number</th><th scope="col">Now</th><th scope="col">With it</th><th scope="col">Change</th></tr></thead>
-      <tbody>{% for r in p.rows %}<tr><td class="k">{{ r.k }}</td><td>{{ r.now }}</td><td class="then">{{ r.then }}{% if r.why %}<small>{{ r.why }}</small>{% endif %}</td><td><span class="ib-d {{ r.dir }}">{{ r.d }}</span></td></tr>{% endfor %}</tbody>
+      <tbody>{% for r in p.rows %}<tr><td class="k">{{ r.k }}</td><td>{{ r.now }}</td><td class="then">{{ r.then }}</td><td><span class="tag ib-d {{ r.dir }}">{{ r.d }}</span></td></tr>{% if r.why %}<tr class="why"><td colspan="4">{{ r.why }}</td></tr>{% endif %}{% endfor %}</tbody>
     </table></div>
     {% endfor %}
     {% for kind, text in i.fit.lines if kind != "change" or not cmp %}<div class="ib-for-l"><span class="ib-for-k {{ kind }}" aria-label="{{ {'ok': 'Yes', 'warn': 'A catch', 'change': 'Changes', 'note': 'Note'}[kind] }}">{{ {"ok": "✓", "warn": "!", "change": "→", "note": "·"}[kind] }}</span><span>{{ text }}</span></div>{% endfor %}

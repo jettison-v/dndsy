@@ -67,6 +67,14 @@ def test_only_admins_and_switched_on_accounts_send_and_only_admins_read(admin, p
     assert player.get(f"/manage/feedback/{db.scalar(select(Feedback)).id}/page", follow_redirects=False).status_code in (303, 403)
 
 
+def test_a_page_with_a_nul_character_still_sends(admin, db):
+    """Sentry ASKDND-V2-F (Nov 4): a page's text carried a NUL character, which Postgres refuses: every JSON body drops it."""
+    r = note(admin, html="<html><body>Bag\u0000 of Holding</body></html>", context={"page": "Cole\u0000"})
+    assert r.status_code == 200
+    fb = db.scalar(select(Feedback))
+    assert fb.html == "<html><body>Bag of Holding</body></html>" and fb.context["page"] == "Cole"
+
+
 def test_a_note_needs_words(admin):
     assert note(admin, text="  ").status_code == 400
 
