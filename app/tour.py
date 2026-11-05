@@ -26,8 +26,10 @@ SECTIONS = [
                              "slot. An average informs; it doesn't decide."),
         ("wildshape", "Wild Shape", "You as the beast: your numbers and actions worked out for the form, its full page, and Normal to "
                              "come back (druids)."),
-        (None, "Conditions and effects", "Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in the roll "
-                                         "window with its reason. The DM rules."),
+        ("conditions", "Conditions and effects", "Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in "
+                                                 "the roll window with its reason, and a reminder when one is due to end. The DM rules."),
+        ("sync", "Playing on your D&D Beyond sheet", "Hit points, Cast, resources, rests and items changed in askdnd change your D&D "
+                                                     "Beyond sheet too, within seconds (where your campaign syncs with D&D Beyond)."),
     ]),
     ("Rolling", [
         ("rolling", "Rolling and Table rolls", "Click any number to roll it. Rolls go to Table rolls for everyone; DM only and Only me "
@@ -55,7 +57,8 @@ SPELLBOOK = "#spell-bar .spellbook-btn"  # opens the Spell Book, full window (it
 # opened (other stops close it). example: an example row on Battle, only on the page ("pin", or "note" with a note).
 # swap: Battle shown in a Wild Shape form ("form", the first the druid knows) or as it really is ("own"), from
 # /characters/<id>/battle/preview: nothing is saved or announced, and the tour puts the real Battle back.
-# needs: "character", "caster" (has the Spell Book) or "druid" (knows a form); without it, the stop is left out.
+# needs: "character", "caster" (has the Spell Book), "druid" (knows a form) or "sync" (the character plays on its D&D Beyond
+# sheet: ddb_bridge.plays); without it, the stop is left out. "sync+caster" needs both.
 # all: light every match of `at` together (a column: its heading and each row's cell).
 STOPS = [
     {"group": "previously", "page": "story", "open": '[data-tab="t-previously"]', "at": '[data-tour="previously"]',
@@ -131,6 +134,26 @@ STOPS = [
              "closes, and <b>Shift-click</b> rolls without the window.",
      "why": "Your rolls land in <b>Table rolls</b> for everyone, thrown in your own 3D dice. Pick <b>DM only</b> or "
             "<b>Only me</b> for a private roll."},
+    {"group": "conditions", "page": "battle", "needs": "character", "at": "#battle-body .cond-add",
+     "what": "<b>+ Condition</b> starts one, with how long it lasts. Each shows as a badge after your name, and the roll "
+             "window offers what it changes, with the reason.",
+     "why": "Nothing ends by itself: a corner card reminds you and the DM when one is due. The DM rules."},
+    {"group": "sync", "title": "Hit points", "page": "battle", "needs": "sync", "at": "#battle-body .nt:has(.hp-btns)",
+     "what": "<b>−</b> and <b>+</b> on Hit Points open a small window: type the damage or healing and press <b>Enter</b>. "
+             "Temporary Hit Points go first, and Concentration's save is worked out for you.",
+     "why": "Your D&D Beyond sheet changes too, within seconds. No more doing the sums twice."},
+    {"group": "sync", "title": "Cast", "page": "battle", "needs": "sync+caster", "at": '[data-tour="battle"] [data-use-url*="/cast?"]',
+     "what": "<b>Cast</b> on a spell asks how: which slot, Pact Magic, as a Ritual. It spends that on your sheet, and "
+             "<b>Cast and roll</b> rolls it too.",
+     "why": "Slots stay right on D&D Beyond without ticking boxes there. Undo puts it back."},
+    {"group": "sync", "title": "Resources and rests", "page": "battle", "needs": "sync", "at": "#battle-body .cond-rest",
+     "what": "Press a resource (Wild Shape, Channel Divinity, a slot) to use one or give one back. <b>Rest</b> lists what a "
+             "Short or Long Rest brings back, by the 2024 rules.",
+     "why": "The DM says when you rest; askdnd does the bookkeeping on your sheet."},
+    {"group": "sync", "title": "Inventory", "page": "sheet", "needs": "sync", "open": '[data-tab="t-items"]', "at": "#t-items .purse",
+     "what": "Inventory starts with your coin purse: press it to change coins. <b>+ Add item</b> browses D&D Beyond's items, "
+             "says what one would mean for you, and can pay from the purse. Open an item to equip, attune, use or give it.",
+     "why": "All of it lands on your D&D Beyond sheet. A magic item's price is the DM's call."},
     {"group": "live", "page": None, "at": '[data-tour="live"]',
      "what": "<b>Live</b> says whether your D&D Beyond sheet is connected: open it in Chrome with the askdnd bridge, and "
              "changes go both ways within seconds. There's nothing to turn on when the game starts.",
@@ -210,6 +233,10 @@ def stops_for(db: Session, user: dict | None) -> list[dict]:
         sheet = characters.character_summary(ch) if ch else None
         if sheet and sheet.get("spells"):  # Battle shows the Spell Book (character_pages._spellbar)
             has.add("caster")
+        from app import ddb_bridge
+
+        if ch and ddb_bridge.plays(db, ch):  # (Battle's − and +, Cast, Rest; Sheet's purse and + Add item)
+            has.add("sync")
         forms = wild_shape.known_forms(sheet)
         if forms:
             has.add("druid")
@@ -217,7 +244,7 @@ def stops_for(db: Session, user: dict | None) -> list[dict]:
                      "own": f"/characters/{cid}/battle/preview"}
     out = []
     for s in STOPS:
-        if s.get("needs") and s["needs"] not in has:
+        if s.get("needs") and not set(s["needs"].split("+")) <= has:
             continue
         opens = [s["open"]] if isinstance(s.get("open"), str) else s.get("open") or []
         out.append({"group": s["group"], "name": GROUP_NAMES[s["group"]], "title": s.get("title") or GROUP_NAMES[s["group"]],

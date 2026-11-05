@@ -7,7 +7,7 @@
     <h1>askdnd</h1>
     <p class="muted tagline">A companion for our table.</p>
     {% if error %}<div class="flash bad">{{ error }}</div>{% endif %}
-    <a class="btn primary block" href="/auth/google">Sign in with Google</a>
+    <a class="btn primary block" href="/auth/google{% if back and back != '/' %}?next={{ back | urlencode }}{% endif %}">Sign in with Google</a>
   </section>
 </main>
 {% endblock %}

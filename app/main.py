@@ -5,7 +5,7 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Query, Request
 from fastapi.exception_handlers import http_exception_handler
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.responses import RedirectResponse
@@ -42,7 +42,7 @@ from app.admin_sessions import router as admin_sessions_router
 from app.admin_usage import router as admin_usage_router
 from app.api import router as api_router
 from app.atlas import router as atlas_router
-from app.auth import current_user
+from app.auth import ReturnAfterSignIn, back_to, current_user
 from app.auth import router as auth_router
 from app.view_as import ViewAs
 from app.view_as import router as view_as_router
@@ -129,6 +129,7 @@ async def not_found_page(request: Request, exc: StarletteHTTPException):
     return await http_exception_handler(request, exc)
 app.add_middleware(CampaignPaths)  # inside the session middleware (added last), so it knows who's asking
 app.add_middleware(ViewAs)  # between the two: an admin viewing as someone else (app/view_as.py)
+app.add_middleware(ReturnAfterSignIn)  # outside both, so it sees the address as asked (app/auth.py)
 app.add_middleware(
     SessionMiddleware,
     secret_key=config.SESSION_SECRET,
@@ -210,7 +211,9 @@ def health() -> dict:
 
 
 @app.get("/login")
-def login(request: Request, error: str | None = None):
+def login(request: Request, error: str | None = None, next_: str = Query("", alias="next")):
+    """`next`: the page to open after signing in (app/auth.py ReturnAfterSignIn)."""
+    back = back_to(next_)
     if current_user(request):
-        return RedirectResponse("/", status_code=303)
-    return templates.TemplateResponse(request, "login.html", {"error": LOGIN_ERRORS.get(error or "")})
+        return RedirectResponse(back, status_code=303)
+    return templates.TemplateResponse(request, "login.html", {"error": LOGIN_ERRORS.get(error or ""), "back": back})
