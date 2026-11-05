@@ -183,19 +183,31 @@ def test_damage_belongs_to_its_attack_and_doubles_on_a_natural_20(table, db, mon
     assert log.count('class="roll-item') == 1 and "Critical damage" in log and "roll-follow" not in log
 
 
-def test_flat_damage_rolls_after_its_attack(table, db, monkeypatch):
-    """Feedback, Nov 4: an Unarmed Strike's "3 bludgeoning" has no dice, so its attack never offered damage. The
-    Battle row picks the number up, and a critical hit doubles only dice, so it stays 3."""
+def test_flat_damage_comes_with_its_attack(table, db, monkeypatch):
+    """Feedback 25 (Nov 5): an Unarmed Strike's "3 bludgeoning" has no dice, so its attack roll carries the 3 at once,
+    with no damage step; a reroll or an added die on the attack is still offered. A critical hit doubles only dice, so
+    it stays 3. Feedback 26: Vi's "0 bludgeoning" comes too (the roll window warns of it), and a natural 1 has none."""
     from app.character_views import rollable
 
     assert rollable({"name": "Unarmed Strike", "hit": "+5", "meta": "5 ft · 3 bludgeoning"})["dice"] == "3"
     assert rollable({"name": "Lore", "hit": "", "meta": "a note · 3 bludgeoning"})["dice"] == ""  # (no attack, no roll)
-    assert rollable({"name": "Unarmed Strike", "hit": "+2", "meta": "5 ft · 0 bludgeoning"})["dice"] == ""  # (Strength −1: nothing to roll)
+    assert rollable({"name": "Unarmed Strike", "hit": "+2", "meta": "5 ft · 0 bludgeoning"})["dice"] == "0"
     monkeypatch.setattr(tr, "die", lambda sides: 20)
-    attack = post(table["player"], character=char(db, "Cole").id, kind="attack", label="Unarmed Strike", mod="5", dmg="3").json()["roll"]
-    assert attack["can"]["damage"] == "3"
-    d = post(table["player"], parent=attack["id"], action="damage").json()["roll"]["damage"]
-    assert (d["total"], d["dice"], d["formula"]) == (3, [], "3")
+    cole = char(db, "Cole").id
+    with_inspiration = {"inspiration": True}
+    monkeypatch.setattr(tr, "_ctx", lambda db, viewer: with_inspiration)
+    attack = post(table["player"], character=cole, kind="attack", label="Unarmed Strike", mod="5", dmg="3").json()["roll"]
+    d = attack["damage"]
+    assert (d["total"], d["dice"], d["formula"], d["crit"]) == (3, [], "3", True)
+    assert attack["can"]["damage"] == "" and attack["can"]["bonus"] and attack["can"]["reroll"] == "Heroic Inspiration"
+    assert post(table["player"], parent=attack["id"], action="damage").status_code == 409  # (it's already there)
+    assert post(table["player"], parent=attack["id"], action="bonus", label="Bless", die="4").status_code == 200
+    zero = post(table["player"], character=cole, kind="attack", label="Unarmed Strike", mod="2", dmg="0").json()["roll"]
+    assert zero["damage"]["total"] == 0
+    monkeypatch.setattr(tr, "die", lambda sides: 1)
+    assert post(table["player"], character=cole, kind="attack", label="Unarmed Strike", mod="5", dmg="3").json()["roll"]["damage"] is None
+    dice = post(table["player"], character=cole, kind="attack", label="Rend", mod="6", dmg="2d6+4").json()["roll"]
+    assert dice["damage"] is None  # (dice still wait for Roll damage)
 
 
 def test_no_damage_after_a_natural_1(table, db, monkeypatch):
@@ -437,3 +449,20 @@ def test_a_table_roll_carries_its_dice_in_the_live_message_and_a_private_one_doe
     assert sent[-1] == ("rolls", {})
     post(table["player"], character=cole.id, kind="check", label="Stealth", mod="3", to="self")
     assert sent[-1] == ("rolls", {})
+
+
+def test_grapple_and_shove_send_their_dc_to_the_table(table, db, sheet):
+    """Feedback 26 (Nov 5): an Unarmed Strike's Grapple or Shove rolls nothing; it puts the DC the target saves against
+    in Table rolls for the DM (8 + Strength modifier + Proficiency Bonus, worked out by askdnd, never sent by the page)."""
+    from app import characters as chars
+    from app import gamelog
+    from app.character_views import unarmed_choices
+
+    cole = char(db, "Cole")
+    dc = unarmed_choices(chars.character_summary(cole), {"name": "Unarmed Strike"})["dc"]
+    r = post(table["player"], character=cole.id, kind="dc", label="Grapple", mod="30").json()
+    assert r["roll"]["total"] == dc and r["roll"]["main"]["dice"] == [] and r["roll"]["main"]["formula"] == "Str or Dex save, or Grappled"
+    assert "the target saves, DC" in r["html"] and "gamelog" not in r  # (D&D Beyond's Game Log has no such roll)
+    assert gamelog.messages(db, db.get(TableRoll, r["roll"]["id"]), cole) == []
+    assert "Prone" in post(table["player"], character=cole.id, kind="dc", label="Shove").json()["roll"]["main"]["formula"]
+    assert post(table["player"], character=cole.id, kind="dc", label="Fireball").status_code == 400

@@ -286,6 +286,7 @@ def test_the_pocket_dimension_dismissing_and_zero_hit_points(player, dm, db, lab
     assert player.post(where, data={"to": "away"}).status_code == 204
     page = player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
     assert "In the pocket dimension" in page and "Bring it back" in page
+    assert "Dismiss forever" in page  # (from the pocket dimension too: feedback 23)
     assert player.post(where, data={"to": "away"}).status_code == 409  # (already there)
     assert dm.post(where, data={"to": "here"}).status_code == 404  # (not the DM yet)
     set_role(db, "dm@example.com", "dm")

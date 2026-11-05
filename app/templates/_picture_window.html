@@ -27,13 +27,19 @@
 
   <div id="pw-draw" hidden>
     {% if no_drawing %}<p class="flash warn">{{ no_drawing }}</p>{% else %}
-    <form hx-post="/pictures/draw" hx-target="#pw-options" hx-swap="innerHTML" hx-indicator="#pw-drawing" class="pw-form">
+    <form hx-post="/pictures/draw" hx-target="#pw-options" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]" class="pw-form pw-draw-form">
       <input type="hidden" name="for" value="{{ o.ref }}">
       <label class="field">What it looks like<textarea name="words" rows="3" maxlength="1000" required>{{ words }}</textarea></label>
       <p class="pw-style"><span class="tag">Drawn as</span> <span class="note">{{ o.framing }}</span></p>
       <p class="pw-style"><span class="tag">{{ "Campaign style" if styled else "A plain style" }}</span> <span class="note">{{ style }}</span></p>
-      <div class="pw-foot"><button class="btn primary" type="submit">Draw {{ how_many }}</button><span class="note">A few cents each, counted on Manage › Usage. <span id="pw-drawing" class="htmx-indicator">Drawing… this takes up to a minute.</span></span></div>
+      <div class="pw-foot"><button class="btn primary" type="submit">Draw {{ how_many }}</button><span class="note">A few cents each, counted on Manage › Usage.</span></div>
     </form>
+    {# While it draws (feedback 22): a place for each picture, filling, and a bar for the minute it can take #}
+    <div class="pw-drawing" role="status" aria-live="polite">
+      <div class="pw-options" aria-hidden="true">{% for _ in range(how_many) %}<span class="pw-ghost"></span>{% endfor %}</div>
+      <div class="pw-bar" aria-hidden="true"><span></span></div>
+      <p class="note">Drawing {{ how_many }}… this takes up to a minute. You can leave this window open and keep reading.</p>
+    </div>
     <div id="pw-options"></div>
     {% endif %}
   </div>

@@ -157,10 +157,15 @@ def _entry(sp: dict, char_level: int, mod: int, top: int, castable_in_form: set[
         "recipe": recipe if recipe and recipe.get("events") else None, "avgs": avgs,
         "ws": bool(castable_in_form and sp["name"] in castable_in_form),
         "rounds": rounds(sp.get("duration") or ""),
+        # A higher slot does more (its text says so, or its dice grow): else the Cast window says it changes nothing
+        "higher": bool(HIGHER.search(sp.get("text") or "")) or len({str(v) for v in avgs.values()}) > 1,
     }
     e |= _facts(e, _main_event(e["recipe"]))
     e["f"] = facets(e)
     return e
+
+
+HIGHER = re.compile(r"Higher-Level Spell Slot|At Higher Levels|(?:spell )?slot level above", re.I)
 
 
 def concentrating(e: dict, level: int) -> dict:

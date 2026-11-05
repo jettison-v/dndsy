@@ -42,7 +42,9 @@ from app.templating import templates
 router = APIRouter()
 
 D20_KINDS = ("save", "check", "attack", "death")
-ROOT_KINDS = (*D20_KINDS, "damage", "heal", "temp", "dice")
+ROOT_KINDS = (*D20_KINDS, "damage", "heal", "temp", "dice", "dc")
+# An Unarmed Strike's Grapple or Shove (feedback 26): no dice, the DC the target saves against, for the DM
+UNARMED_WAYS = {"Grapple": "Grappled", "Shove": "pushed 5 ft or Prone"}  # (what a failed save means, in the row's 40 characters)
 MAX_COUNT = 12  # darts, rays, beams
 MODES = ("normal", "adv", "dis")
 VISIBILITY = ("table", "dm", "self")
@@ -315,15 +317,27 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
                 ctx = mine_ctx or {}
                 e["can"] = {
                     "damage": _damage_label(r) if r.kind == "attack" and (r.damage or r.spec) and not dmg and (nat != 1 or r.parts) else "",
-                    "reroll": "" if rr or dmg or r.kind not in D20_KINDS else
+                    "reroll": "" if rr or damage_rolled(dmg) or r.kind not in D20_KINDS else
                               "Luck" if ctx.get("halfling") and eff.kept == 1 else
                               "Heroic Inspiration" if ctx.get("inspiration") else "",
-                    "bonus": r.kind in D20_KINDS and not bonus and not dmg,
+                    "bonus": r.kind in D20_KINDS and not bonus and not damage_rolled(dmg),
                 }
         if mine:
             newest_mine = False
         out.append(e)
     return out
+
+
+def damage_rolled(damage: TableRoll | None) -> bool:
+    """Damage with dice was rolled: the attack's done. Flat damage (an Unarmed Strike's 3) comes with the attack roll
+    itself (feedback 25), so a reroll or an added die on the attack is still yours to make."""
+    return bool(damage and damage.dice)
+
+
+def flat_damage(expr: str) -> dict | None:
+    """'3' or '0' (Vi's Unarmed Strike: 1 + Strength −1): damage with no dice, as its roll; None for dice."""
+    parsed = parse_formula(expr) if expr != "0" else ([], 0)
+    return {"dice": [], "kept": None, "modifier": parsed[1], "total": parsed[1], "formula": str(parsed[1])} if parsed and not parsed[0] else None
 
 
 def _damage_label(r: TableRoll) -> str:
@@ -505,7 +519,16 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     damage, spec, each = "", None, " ".join(each.split())[:20].lower()
     if (part and not check_parts(part, count)) or (dmg_part and not check_parts(dmg_part, count)) or not 1 <= count <= MAX_COUNT:
         return _error("Those dice don't look right.")
-    if kind in D20_KINDS:
+    if kind == "dc":
+        from app.character_views import unarmed_choices
+
+        u = unarmed_choices(chars.character_summary(ch) or {}, {"name": "Unarmed Strike"})
+        if label not in UNARMED_WAYS or not u:
+            return _error("That roll is missing something.")
+        result = {"dice": [], "kept": None, "modifier": 0, "total": u["dc"], "parts": [],
+                  "formula": f"Str or Dex save, or {UNARMED_WAYS[label]}"}
+        rolled, mode = [], "normal"
+    elif kind in D20_KINDS:
         m = 0 if kind == "death" else _int(mod)
         if m is None or abs(m) > MAX_MOD:
             return _error("That bonus doesn't look right.")
@@ -522,7 +545,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
         result["parts"] = rays if count > 1 else []
         if kind == "attack" and dmg_part:
             spec = {"parts": dmg_part, "each": each}
-        elif kind == "attack" and parse_formula(dmg):
+        elif kind == "attack" and (parse_formula(dmg) or dmg.strip() == "0"):
             damage = dmg.replace(" ", "").replace("−", "-")
     else:
         if part:
@@ -543,6 +566,10 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)
     db.flush()
+    if kind == "attack" and (flat := flat_damage(damage)) and row.kept != 1:  # (flat: on a hit it's just this, feedback 25)
+        db.add(TableRoll(campaign_id=campaign.id, character_id=row.character_id, user_id=me.id, parent_id=row.id, kind="damage",
+                         label=label, mode="normal", visibility=to, who=who, crit=row.kept == 20, extras=[], **flat))
+        db.flush()
     from app import hiding
 
     death = death_mark(db, row) or hiding.mark(db, row)  # (a death save marks itself; a Hide roll of 15+ starts Hidden)
@@ -610,7 +637,7 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
         result["total"] = max(result["total"] + sum(x["total"] for x in rolled), 0)
         row = TableRoll(**base, kind="damage", label=root.label, mode="normal", crit=crit, extras=rolled, **result)
     elif action == "reroll":
-        if root.kind not in D20_KINDS or "reroll" in kids or "damage" in kids or label not in REROLLS or root.parts:
+        if root.kind not in D20_KINDS or "reroll" in kids or damage_rolled(kids.get("damage")) or label not in REROLLS or root.parts:
             return _error("That roll can't be rerolled now.", 409)
         dice = list(root.dice)
         dice[dice.index(root.kept)] = die(20)  # the die that counted
@@ -619,7 +646,7 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
         row = TableRoll(**base, kind="reroll", label=label, mode=root.mode, dice=dice, kept=kept, modifier=root.modifier,
                         total=total, formula=root.formula, extras=list(root.extras or []))
     elif action == "bonus":
-        if root.kind not in D20_KINDS or "bonus" in kids or "damage" in kids or die_size not in BONUS_DICE:
+        if root.kind not in D20_KINDS or "bonus" in kids or damage_rolled(kids.get("damage")) or die_size not in BONUS_DICE:
             return _error("That die can't be added now.", 409)
         n = die(die_size)
         row = TableRoll(**base, kind="bonus", label=(" ".join(label.split())[:40] or "Added die"), mode="normal",
