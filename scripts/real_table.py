@@ -1138,6 +1138,62 @@ def dm_backup(t: Table, seat: str = "player2") -> None:
     t.expect("the sheet open again: Connected", lambda: "Connected" in pill(page), 40)
 
 
+CANT = "can't be reached"
+
+
+def unreachable(t: Table, seat: str = "player2") -> None:
+    """What you shouldn't be able to do (Brett, Nov 5): with no browser able to reach the sheet (its own closed, the DM's
+    D&D Beyond pages closed), each change for D&D Beyond says so where it starts and offers no button that would be
+    refused; one sent anyway is refused, and nothing reaches D&D Beyond. askdnd's own parts (effects) still work."""
+    page = t.battle(seat)
+    for ctx in (t.contexts[seat], t.contexts["dm"]):
+        for x in [x for x in ctx.pages if "dndbeyond.com/" in x.url]:
+            x.close()
+    ddb = t.page(seat, "https://www.dndbeyond.com/my-characters")  # (reads the record; a player's page carries nothing)
+    start = record_of(ddb, SHEETS[seat])
+    cid = cid_of(page)
+    if not t.expect("nothing can reach the sheet", lambda: not any(x in pill(page) for x in ("Connected", "Through the DM")), 150):
+        raise RuntimeError("the sheet can still be reached: the pill says " + repr(pill(page)) + " (a sheet or the DM's D&D Beyond open in another browser?)")
+    print("  pill:", pill(page), flush=True)
+    page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
+    page.locator("details.cond-add > summary").click(timeout=8000)
+    t.expect("+ Condition says so at the top", lambda: CANT in page.locator("details.cond-add .unreached").first.inner_text(timeout=3000), 8)
+    chips = page.locator("details.cond-add .ls-chip")
+    t.expect("D&D Beyond's conditions can't be pressed, askdnd's effects can",
+             lambda: chips.first.is_disabled() and page.locator("details.cond-add .ls-chip:not([disabled])").count() > 0, 5)
+    page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
+    mode(page, "damage")
+    t.expect("the Damage window says so, and its button is off",
+             lambda: CANT in page.locator(".peek.open .hp-blocked").first.inner_text(timeout=3000)
+             and page.locator('.peek.open .hp-form button[type="submit"]').first.is_disabled(), 10)
+    page.keyboard.press("Escape")
+    page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
+    rest_window(page, "short")
+    t.expect("the Rest window says so, with no Take a Short Rest",
+             lambda: CANT in page.locator(".use-said:visible").first.inner_text(timeout=3000) and page.locator("[data-use-go]:visible").count() == 0, 10)
+    page.keyboard.press("Escape")
+    sheet_tab(page, cid, "t-items")
+    page.locator('[data-panel-url*="ref=item%3A"]:visible').first.click(timeout=8000)
+    t.expect("an item's panel says so instead of Equip and the rest",
+             lambda: CANT in page.locator(".peek.open .unreached").first.inner_text(timeout=3000)
+             and page.locator('.peek.open button:text-is("Equip"), .peek.open button:text-is("Unequip")').count() == 0, 10)
+    page.keyboard.press("Escape")
+    for what, url, top in (("the item browser", "items/browse", "data-ib-said"), ("Prepare spells", "spells/prepare", 'class="use-said"')):
+        html = page.evaluate("u => fetch(u).then(r => r.text())", f"/characters/{cid}/{url}")
+        t.expect(f"{what} says so at the top", lambda: CANT in html and html.index('class="unreached"') < html.index(top), 1)
+    status = page.evaluate("""cid => fetch(`/characters/${cid}/conditions`, {method: 'POST', headers: {'HX-Request': 'true'},
+        body: new URLSearchParams({name: 'Poisoned', level: '1'})}).then(r => r.status)""", cid)
+    t.expect("a condition sent anyway is refused", lambda: status == 409, 1)
+    page.wait_for_timeout(5000)
+    after = record_of(ddb, SHEETS[seat])
+    t.expect("and nothing reached D&D Beyond", lambda: after["conditions"] == start["conditions"] and after["removedHitPoints"] == start["removedHitPoints"], 1)
+    t.sheet(seat)
+    t.expect("the sheet open again: Connected", lambda: "Connected" in pill(page), 40)
+    page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
+    page.locator("details.cond-add > summary").click(timeout=8000)
+    t.expect("and + Condition offers them again", lambda: page.locator("details.cond-add .unreached").count() == 0 and not chips.first.is_disabled(), 10)
+
+
 VTT = "https://www.dndbeyond.com/games/8224496"
 EXTENSION = "obpgemimnhngpcckodjkcihiahoaefpl"  # (the askdnd bridge from the Chrome Web Store, in every seat)
 
@@ -1228,9 +1284,9 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp,
-        "familiar": familiar, "initiative": initiative}
+        "familiar": familiar, "initiative": initiative, "unreachable": unreachable}
 # Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out
-SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup", "initiative"}  # (initiative: a roll reaches the VTT through the sheet's own Game Log)
+SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup", "initiative", "unreachable"}  # (unreachable closes every way in; initiative: a roll reaches the VTT through the sheet's own Game Log)
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
 # Runs left out of part 1 (and the nightly) until the seats have what they need: named, they run
 WAITING: set[str] = set()

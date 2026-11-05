@@ -149,7 +149,8 @@ def party_rows(db: Session, user: dict | None) -> list[dict]:
         if cid not in with_creatures:
             with_creatures[cid] = vtt.on(db.get(Campaign, cid) if cid else None, "creatures")
         mine = [creatures.placed(r["c"], creatures.card(sheet, x, r["c"].name), x) | _own_picture(db, r["c"], x)
-                for x in creatures.in_play(r["c"], sheet)] if sheet and with_creatures[cid] else []
+                for x in creatures.in_play(r["c"], sheet) if creatures.where(r["c"], x) == "here"] if sheet and with_creatures[cid] else []
+        # (only the creatures that are here: gone or in the pocket dimension isn't at the table; feedback 19, Nov 5)
         rows.append({**r, "sheet": sheet, "form": form, "creatures": mine, "conditions": [{**x, "rules": cond.rules_text(x["name"])} for x in now]})
     return rows
 

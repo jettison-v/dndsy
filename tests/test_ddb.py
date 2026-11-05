@@ -252,12 +252,14 @@ def test_fetch_errors_are_friendly(monkeypatch):
     seen = {}
 
     def ok(req, timeout):
-        seen["ua"], seen["timeout"] = req.get_header("User-agent"), timeout
+        seen["ua"], seen["timeout"], seen["url"] = req.get_header("User-agent"), timeout, req.full_url
         return Resp(json.dumps({"success": True, "data": {"id": 1, "name": "Pat"}}).encode())
 
     monkeypatch.setattr(ddb.urllib.request, "urlopen", ok)
     assert ddb.fetch_character_json("1")["name"] == "Pat"
     assert seen["ua"].startswith("askdnd/") and seen["timeout"] == ddb.TIMEOUT_SECONDS
+    # (custom items, as the extension's read has them: otherwise reads alternating with it log them removed, then added)
+    assert seen["url"].endswith("/character/1?includeCustomItems=true")
     monkeypatch.setattr(ddb.urllib.request, "urlopen", lambda req, timeout: Resp(b"<html>maintenance</html>"))
     with pytest.raises(ddb.DdbError, match="isn't character data"):
         ddb.fetch_character_json("1")

@@ -133,3 +133,13 @@ def test_a_note_can_be_added_to_any_time(admin, db):
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "answer", "answer": "It's back."})
     db.refresh(fb)
     assert fb.status == "new" and len(fb.thread) == 2
+
+
+def test_only_the_tabs_that_need_you_have_a_badge(admin, db):
+    """Feedback 21 (Brett, Nov 5): Done has nothing to act on, so its count is plain, not a badge."""
+    note(admin)
+    fb = db.scalar(select(Feedback))
+    admin.post(f"/manage/feedback/{fb.id}", data={"to": "done"})
+    page = admin.get("/manage/feedback?tab=new").text
+    done = page.split('href="?tab=done"')[1].split("</a>")[0]
+    assert "mcount" not in done and ">1<" in done

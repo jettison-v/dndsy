@@ -19,7 +19,9 @@ import urllib.error
 import urllib.request
 from html.parser import HTMLParser
 
-CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/{id}"
+# With the player's custom items, as the sheet itself and the extension read it (Nov 5: without them, every read that
+# alternated with the extension's logged Cole's seven custom items as removed on D&D Beyond, then added, all evening)
+CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/{id}?includeCustomItems=true"
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://askdnd.ai)"
 TIMEOUT_SECONDS = 15

@@ -593,3 +593,13 @@ def test_askdnds_own_maximum_taken_off_d_and_d_beyond_is_put_back_and_minus_plus
     assert maxima(db, labs) == [(rule, "live"), (rule, "dismissed")]  # (undone: never made again)
     page = player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text
     assert f"askdnd's <b>{rule}</b>, the rule's, was undone" in page and "−/+" in page and "askdnd sets" not in page
+
+
+def test_party_shows_only_the_creatures_that_are_here(player, db, labs, sheet):
+    """Feedback 19 (Brett, Nov 5): a familiar gone or in the pocket dimension isn't at the table, so Party leaves it out."""
+    familiar_sheet(db, labs, sheet)
+    for state, shown in (("here", True), ("away", False), ("gone", False)):
+        labs.companions = {str(OWL): {"state": state, "kind": "Fey"}}
+        db.flush()
+        page = player.get("/party").text
+        assert (f"creature={OWL}" in page) is shown, state
