@@ -34,10 +34,11 @@
       {% set hp_title = k.hp.parts | map("join", ": ") | join("; ") %}
       {# − and + through the bridge (app/creature_hp.py), once D&D Beyond counts against the same maximum #}
       {%- set acts %}{% if can_change_hp and not k.hp.waits %}<details class="cr-hp-pop"><summary class="btn mini" aria-label="Damage or heal {{ k.name }}">−/+</summary>
+        {% if unreached and not k.own %}<p class="unreached">{{ unreached_says(c, "change its Hit Points") }}</p>{% else %}
         <form class="cr-hp-form" hx-post="/characters/{{ c.id }}/creatures/{{ k.id }}/hp" hx-swap="none">
           <input type="number" name="amount" min="1" max="999" inputmode="numeric" aria-label="How many" placeholder="0" required>
           <button class="btn small" name="to" value="damage">Damage</button><button class="btn small" name="to" value="heal">Heal</button>
-        </form></details>{% endif %}{% endset %}
+        </form>{% endif %}</details>{% endif %}{% endset %}
       {{ ntile(s, sync_attrs(sync_of), '<span class="ph-full">Hit points</span><span class="ph-short">HP</span>' | safe, ("<b>%s</b><span class=\"note\"> / %s</span>" | format(k.hp.current, k.hp.max)) | safe,
                foot=("%s temporary" | format(k.hp.temp)) if k.hp.temp else "", title=hp_title, acts=acts) }}
       {{ ntile(s, "", '<span class="ph-full">Armor class</span><span class="ph-short">AC</span>' | safe, ("<b>%s</b>" | format(k.ac)) | safe) }}

@@ -321,6 +321,15 @@ templates.env.globals["bridge_on"] = config.DDB_BRIDGE
 templates.env.globals["bridge_extension_url"] = config.BRIDGE_EXTENSION_URL
 templates.env.globals["lasts_times"], templates.env.globals["lasts_abilities"] = cond.TIMES, cond.ABILITIES  # + Condition's Lasts
 templates.env.globals["basic_names"] = BASIC_ACTIONS  # Battle's "What anyone can do"
+def _unreached_says(c, what: str):
+    """The one way askdnd says a change can't reach a D&D Beyond sheet, where the change starts (Brett, Nov 5)."""
+    from markupsafe import escape
+
+    return escape(f"{c.name}'s D&D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to {what} here, "
+                  "or do it on D&D Beyond (askdnd shows it within seconds).")
+
+
+templates.env.globals["unreached_says"] = _unreached_says
 templates.env.globals["hide_label"] = "Hide (Stealth)"  # (app/hiding.py LABEL: the roll that starts Hidden)
 templates.env.globals["SRD_ATTRIBUTION"] = rules_data.ATTRIBUTION  # Help › About; the SRD's license asks for it word for word
 # Conditions' look on Battle, Party and the menu bar (app/conditions.py, _cond_icons.html)

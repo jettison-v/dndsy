@@ -23,6 +23,7 @@
 </div>
 <div class="peek-body ib" data-list="item-browser" data-noun="item" data-default-sort="name" data-ib data-mode="{{ mode }}"
   data-detail-url="/characters/{{ c.id }}/items/browse/" data-url="/characters/{{ c.id }}/items/add" data-who="{{ c.name }}">
+  {% if not reachable %}<p class="unreached">{{ unreached_says(c, "give loot" if loot else "add items") }} You can still look.</p>{% endif %}
   {% if not loaded %}
   <p class="note">D&amp;D Beyond's item list didn't load just now. Try again in a moment{% if loot %}, or add the item on D&amp;D Beyond{% endif %}.</p>
   {% endif %}
@@ -73,7 +74,6 @@
       {% if reachable %}<button type="button" class="btn primary" data-ib-go disabled>{{ "Give" if loot else "Add" }}</button>{% endif %}
     </div>
     {% if not loot %}<p class="note ib-price-note" data-ib-price-note hidden></p>{% endif %}
-    {% if not reachable %}<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: {{ "its player opens" if loot else "open" }} it in Chrome with the askdnd bridge, or {{ "the loot is" if loot else "the item is" }} added on D&amp;D Beyond.</p>{% endif %}
     <p class="use-said" role="alert" data-ib-said hidden></p>
   </div>
 </div>

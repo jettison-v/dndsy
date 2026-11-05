@@ -31,9 +31,8 @@ def start(db: Session, ch: Character, total: int) -> bool:
     went to D&D Beyond too."""
     own = cond.add(ch.conditions, "Invisible", "Hidden", f"Your Stealth total, {total}, is the DC to find you. {ENDS}")
     own[-1]["find"] = total
-    synced = ddb_bridge.on_for(db, ch)
+    synced = ddb_bridge.on_for(db, ch) and ddb_bridge.reachable(ch)  # (can't be reached: Hidden in askdnd, the roll still made)
     if synced:
-        ddb_bridge.reach(ch)
         ddb_bridge.add(db, ch, "set", {"field": cond.ddb_field("Invisible"), "value": True}, f"{ch.name}: hidden (Invisible)")
     ch.conditions = own
     return synced
@@ -48,5 +47,7 @@ def mark(db: Session, row) -> dict | None:
     if row.total < DC:
         return {"text": f"Not hidden: {row.total} against DC {DC}", "character": ch.id}
     synced = start(db, ch, row.total)
-    return {"text": f"Hidden: {row.total} is the DC to find you" + (": Invisible on its way to D&D Beyond" if synced else ""),
+    unreached = ddb_bridge.on_for(db, ch) and not synced
+    return {"text": f"Hidden: {row.total} is the DC to find you" + (": Invisible on its way to D&D Beyond" if synced else
+                                                                    ". Mark Invisible on D&D Beyond: the sheet can't be reached" if unreached else ""),
             "character": ch.id, **({"deliver": web.deliver_now(ch)} if synced else {})}

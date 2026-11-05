@@ -3045,3 +3045,6 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .ready-what { display: grid; gap: var(--sp-1); max-height: 240px; overflow-y: auto; }
 .ready-opt { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); }
 .ready-opt small { color: var(--muted); margin-left: auto; }
+/* A change for D&D Beyond that can't reach the sheet now (Brett, Nov 5): said where it starts (templating unreached_says) */
+.unreached { margin: 0 0 var(--sp-2); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--amber-soft); color: var(--text); font-size: var(--fs-sm); }
+.ls-chip:disabled { opacity: .45; cursor: not-allowed; }
