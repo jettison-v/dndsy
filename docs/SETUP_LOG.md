@@ -930,3 +930,19 @@ Earlier that day a pull request was merged four minutes after its last change, w
 1. Protect the main branch from the first day: require the test jobs by name, require the branch to be up to date, and don't let admins skip it.
 2. Turn on auto-merge, so approving a change and waiting for its tests are one step.
 3. Have the host deploy only from green commits (Railway's "wait for CI"), so a red main never reaches people.
+
+## 2026-11-05: a testing round
+
+**What we set up**
+- **Browser tests in three parts at once** on GitHub (the layout at every width, the real extension, every other flow). One after another they took 6–7 minutes, the longest wait before a merge; side by side, about 4. A small job still called "Browser tests" passes only when all three do, so `main`'s protection and Railway's wait didn't change.
+- **Coverage**: the server tests now measure how much of the app they reach, counting both sides of every `if` (92%), show the least-covered files on each run's summary page, and fail if it drops under 90%.
+- **A refusal sweep**: one test asks every route that changes something as the wrong person (signed out, another player, another campaign's DM) and checks the database didn't change. It reads the routes from the app itself, so a new one is tested the day it's added. It found two gaps on its first run.
+- **The live test looks after itself**: it checks the seats are set up before starting, tidies the sheets after every run, tries a miss once more, and keeps every night's results so a check that fails now and then shows up.
+- **Watch paths for the app** (written, waiting on Brett's yes): beta rebuilds only when something it runs changes, so a docs change doesn't cost a deploy.
+
+**Reuse this on a new project**
+1. Split slow test jobs across machines and gather them into one named check, so your branch protection names one thing.
+2. Measure coverage from the start and set a floor just under where you are: it only stops things getting worse.
+3. Write one test that walks every route as the wrong person and checks nothing changed. It's cheap, and it covers routes nobody remembers to test.
+4. Make end-to-end runs clean up after each step and retry once, and keep their history. A test that fails one night in five is a finding, not noise.
+5. Tell the host which folders it runs, so documentation changes don't redeploy.

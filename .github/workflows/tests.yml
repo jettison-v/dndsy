@@ -9,6 +9,9 @@
 #   already installed; its tag matches uv.lock's Playwright, tests/test_deploy.py).
 #   Installing those libraries on GitHub's machine usually took seconds but sometimes 8-12 minutes (2026-10-26),
 #   holding up every deploy.
+#   They run in three parts side by side (Nov 5: one after another they took 6-7 minutes, the longest wait for a merge):
+#   the layout at every width, the real extension, and every other flow. "Browser tests", the check main's protection
+#   asks for, passes only when all three do.
 # Together they run every test. On GitHub a skip fails the run (tests/conftest.py): missing tooling must fail here.
 name: Tests
 
@@ -47,10 +50,24 @@ jobs:
       - run: uv sync --frozen
       - name: Lint (unused imports, undefined names)
         run: uv run ruff check app scripts tests
-      - run: uv run pytest -q --durations=15 --ignore=tests/browser
+      - name: Tests, with how much of the app they reach
+        run: uv run pytest -q --durations=15 --ignore=tests/browser --cov=app --cov-branch --cov-report= --cov-fail-under=90
+      - name: Coverage on the run's summary page
+        if: always()
+        run: uv run coverage report --format=markdown --skip-covered --sort=cover >> "$GITHUB_STEP_SUMMARY" || true
 
-  browser:
-    name: Browser tests
+  browser-part:
+    name: Browser tests (${{ matrix.part }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - part: layout
+            files: tests/browser/test_layout.py
+          - part: extension
+            files: tests/browser/test_extension.py
+          - part: flows
+            files: tests/browser --ignore=tests/browser/test_layout.py --ignore=tests/browser/test_extension.py
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -69,4 +86,13 @@ jobs:
       - run: uv python install
       - run: uv sync --frozen
       # One server per file: these run one after another (-n 0), in the order they're written
-      - run: uv run pytest -q --durations=5 -n 0 tests/browser
+      - run: uv run pytest -q --durations=5 -n 0 ${{ matrix.files }}
+
+  browser:
+    name: Browser tests
+    needs: browser-part
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: All three parts passed
+        run: test "${{ needs.browser-part.result }}" = success

@@ -44,7 +44,7 @@ def char(db, name) -> Character:
 
 def sign_in(monkeypatch, db, email) -> TestClient:
     """A client signed in as `email` (admin@, dm@ or player@example.com), the app reading the test's database."""
-    monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("admin@example.com,dm@example.com,player@example.com"))
+    monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("admin@example.com,dm@example.com,player@example.com,other@example.com,elsewhere@example.com"))
     monkeypatch.setattr(config, "ADMIN_EMAILS", parse_allowlist("admin@example.com"))
     monkeypatch.setattr(config, "REVIEWER_EMAILS", parse_allowlist("dm@example.com"))
     app.dependency_overrides[get_db] = lambda: db

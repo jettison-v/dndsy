@@ -807,11 +807,9 @@ def refresh_all(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/characters/{character_id:int}/refresh")
 def refresh_one(request: Request, character_id: int, db: Session = Depends(get_db)):
-    if not is_reviewer(current_user(request)):
-        return _forbidden(request)
     ch = db.get(Character, character_id)
-    if ch is None:
-        return RedirectResponse("/party", status_code=303)
+    if ch is None or not is_reviewer(current_user(request), ch.campaign_id):  # (its own campaign's: tests/test_refusals.py)
+        return _forbidden(request)
     snap = chars.refresh(db, ch)
     db.commit()
     request.session["toast"] = "Updated from D&D Beyond" if snap.status == "ok" else web.notice("Couldn't update; showing the last good copy", "warn")

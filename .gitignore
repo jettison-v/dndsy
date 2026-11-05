@@ -44,3 +44,6 @@ htmlcov/
 .vscode/
 *.log
 logs/
+
+# Screenshots made while reproducing a bug (Oct 26: seven were committed by mistake). Real pages never go in git.
+/repro_*.png
