@@ -24,7 +24,7 @@ from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
 from app import ddb, ddb_bridge, hit_points, house_rules, picks
-from app import class_rules, companions, creatures, initiative, pictures, player_notes, vtt
+from app import class_rules, companions, creature_hp, creatures, initiative, pictures, player_notes, vtt
 from app import spellbook as sb
 from app.preparing import books_to_prepare
 from app import wild_shape as ws
@@ -210,7 +210,8 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     campaign = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
     ctx["my_creatures"] = creatures.in_play(ch, ctx["sheet"]) if vtt.on(campaign, "creatures") else []
     found = next((x for x in ctx["my_creatures"] if str(x["id"]) == str(creature)), None) if creature else None
-    ctx["creature"] = creatures.placed(ch, creatures.card(ctx["sheet"], found, ch.name), found) | _own_picture(db, ch, found) if found else None
+    ctx["creature"] = creatures.placed(ch, creature_hp.shown(db, ch, found, creatures.card(ctx["sheet"], found, ch.name)), found) \
+        | _own_picture(db, ch, found) if found else None
     ctx["can_picture"] = bool(found) and hit_points.can_apply(db, user, ch)  # (the one Picture window, app/picture_window.py)
     ctx["find_familiar"] = companions.spell_key(ctx["sheet"]) if ctx["creature"] and ctx["creature"]["cast"] else ""
     ctx["init_note"] = initiative.note(campaign, ch, ctx["my_creatures"], ctx["creature"])  # (Labs: Initiative from askdnd)

@@ -2,6 +2,8 @@
 Beyond up to date"): − and + for one of the character's creatures through the bridge, and its maximum kept there to the one
 the rule works out (app/creatures.py) by askdnd itself (Brett, Nov 4: askdnd keeps D&D Beyond's Extras in step)."""
 
+from datetime import UTC, datetime, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
@@ -22,25 +24,58 @@ router = APIRouter()
 # there itself (its character value 43, `keep_max`), and − and + wait until that's on its way.
 
 
+AGAIN = timedelta(hours=1)  # (askdnd's own number put back at most once an hour: never a loop with D&D Beyond)
+
+
+def _asked(db: Session, ch: Character, creature_id) -> list[BridgeIntent]:
+    """askdnd's maximums for this creature on D&D Beyond, oldest first."""
+    field = f"creature_max:{creature_id}"
+    return [i for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == ch.id, BridgeIntent.kind == "set")
+                                  .order_by(BridgeIntent.id)) if (i.data or {}).get("field") == field]
+
+
+def holds(c: dict, k: dict, ours: list[BridgeIntent]) -> str:
+    """Why askdnd doesn't set the rule's maximum on D&D Beyond at the next read, or "" when it does. It sets it the first
+    time, after its master levels up, and again when its own number has gone from D&D Beyond (Brett, Nov 5, option B:
+    taken off by hand, or by a reset); never over a number someone else typed there ("typed"), never one undone
+    ("undone"), and its own at most once an hour ("lately")."""
+    fix = k["hp"]["fix"]
+    if not fix:
+        return "same"
+    if any(i.state in ddb_bridge.OPEN for i in ours):
+        return "on its way"
+    if c.get("max_set") and c["max_set"] not in [i.data.get("value") for i in ours if i.state == "live"]:
+        return "typed"  # (by its player or DM: theirs)
+    same = [i for i in ours if i.data.get("value") == fix]
+    if same and same[-1].state == "dismissed":
+        return "undone"
+    if same and same[-1].created_at and same[-1].created_at > datetime.now(UTC) - AGAIN:
+        return "lately"
+    return ""
+
+
+def shown(db: Session, ch: Character, c: dict, k: dict) -> dict:
+    """The creature's card as Battle and − and + use it: they wait for the rule's maximum only while askdnd will set it;
+    when askdnd holds back (undone, or put back lately), they count against D&D Beyond's, and the page says why (`held`)."""
+    if k["hp"]["waits"] and not c.get("own"):
+        why = holds(c, k, _asked(db, ch, k["id"]))
+        if why in ("undone", "lately"):
+            k["hp"] |= {"waits": False, "held": why}
+    return k
+
+
 def keep_max(db: Session, ch: Character, summary: dict) -> None:
     """After a read of the sheet (characters.store): each of its creatures whose maximum grows with its master gets the
-    rule's number on D&D Beyond, the first time and after its master levels up (Brett, Nov 4, Creatures as Characters:
-    no button). Never over a number someone else typed there, and once per number: one given up or undone isn't made again."""
+    rule's number on D&D Beyond (Brett, Nov 4, Creatures as Characters: no button), when `holds` says so."""
     camp = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
     if not ch.id or not vtt.on(camp, "creatures"):
         return
-    asked = [i for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == ch.id, BridgeIntent.kind == "set"))
-             if str((i.data or {}).get("field", "")).startswith("creature_max:")]
     for c in yours(summary):
         k = card(summary, c)
-        if not k["hp"]["fix"]:
+        if holds(c, k, _asked(db, ch, k["id"])):
             continue
-        field, ours = f"creature_max:{k['id']}", [i for i in asked if i.data.get("field") == f"creature_max:{k['id']}"]
-        if any(i.data.get("value") == k["hp"]["fix"] or i.state in ddb_bridge.OPEN for i in ours):
-            continue
-        if c.get("max_set") and c["max_set"] not in [i.data.get("value") for i in ours if i.state == "live"]:
-            continue  # (typed on D&D Beyond by its player or DM: theirs)
-        ddb_bridge.add(db, ch, "set", {"field": field, "value": k["hp"]["fix"]}, f"{ch.name}'s {k['name']}: maximum {k['hp']['fix']} on D&D Beyond")
+        ddb_bridge.add(db, ch, "set", {"field": f"creature_max:{k['id']}", "value": k["hp"]["fix"]},
+                       f"{ch.name}'s {k['name']}: maximum {k['hp']['fix']} on D&D Beyond")
 
 
 def _guard(db: Session, request: Request, character_id: int, creature_id: int):
@@ -55,7 +90,7 @@ def _guard(db: Session, request: Request, character_id: int, creature_id: int):
         raise HTTPException(404)
     if not found.get("own"):
         ddb_bridge.reach(ch)
-    return ch, card(sheet, found), found
+    return ch, shown(db, ch, found, card(sheet, found)), found
 
 
 @router.post("/characters/{character_id:int}/creatures/{creature_id:int}/hp")
