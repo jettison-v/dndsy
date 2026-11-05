@@ -48,6 +48,7 @@ from app.view_as import ViewAs
 from app.view_as import router as view_as_router
 from app.character_pages import router as character_router
 from app.help_pages import router as help_router
+from app.twins import router as twins_router
 from app.live import router as live_router
 from app.table_rolls import router as table_rolls_router
 from app.manage import router as manage_router
@@ -176,6 +177,7 @@ app.include_router(entity_router)
 app.include_router(api_router)
 app.include_router(admin_usage_router)
 app.include_router(help_router)
+app.include_router(twins_router)  # (A test copy of your character: temporary, app/twins.py)
 app.include_router(atlas_router)
 app.include_router(manage_router)
 app.include_router(notes_router)

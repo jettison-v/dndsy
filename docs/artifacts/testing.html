@@ -1,0 +1,412 @@
+<title>How askdnd Is Tested</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* One reading column. The four kinds of test as one comparison table, then the live test in depth: where it runs (a
+   picture), its seats, when it runs, one run step by step (its real log), all 27 runs by area, how it looks after
+   itself (a picture), and what it doesn't cover. askdnd's explainer colors, dark first, light mirrored. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --sunk: #191b1e; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #f08a8a; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0;
+  --green-soft: rgba(91,191,127,.14); --amber-soft: rgba(232,179,75,.14); --blue-soft: rgba(126,166,224,.14); --red-soft: rgba(240,138,138,.14);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Iowan Old Style", Palatino, Georgia, serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif; --mono: "JetBrains Mono", ui-monospace, Menlo, monospace; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #ffffff; --sunk: #efece5; --line: #cfc9be; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.10); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #ffffff; --sunk: #efece5; --line: #cfc9be; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.10); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1000px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 48px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; }
+h1 { font: 600 2.3rem/1.15 var(--serif); }
+h2 { font: 600 1.45rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; max-width: 72ch; }
+ul { margin: 0; padding-left: 1.2em; display: grid; gap: 4px; max-width: 72ch; }
+code { font: .86em var(--mono); background: var(--sunk); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.eyebrow { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+header, section { display: grid; gap: 14px; }
+.lead { font-size: 1.05rem; }
+.jump { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .9rem; }
+.jump a { color: var(--blue); text-decoration: none; }
+.jump a:hover, .jump a:focus-visible { text-decoration: underline; }
+a { color: var(--blue); }
+a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* The figures strip: what one night is */
+.nums { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.num { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
+.num b { color: var(--strong); font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.num span { color: var(--muted); font-size: .86rem; line-height: 1.4; }
+
+/* Tables: each in its own scroller */
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+thead th { font: 700 .74rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); background: var(--sunk); }
+tbody th { color: var(--strong); font-weight: 600; white-space: nowrap; }
+.layers { min-width: 760px; }
+.layers td { width: 20%; }
+.chip { display: inline-block; font-size: .78rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.fake { background: var(--sunk); color: var(--muted); border: 1px dashed var(--line); }
+.stand { background: var(--amber-soft); color: var(--amber); }
+.real { background: var(--green-soft); color: var(--green); }
+.small { color: var(--muted); font-size: .84rem; display: block; margin-top: 3px; line-height: 1.4; }
+tr.live th, tr.live td { background: var(--green-soft); }
+
+/* Figures */
+figure { margin: 0; display: grid; gap: 10px; }
+.fig { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.fig svg { display: block; width: 100%; min-width: 760px; height: auto; color: var(--text); font-family: var(--sans); }
+figcaption { color: var(--muted); font-size: .9rem; max-width: 80ch; }
+.box { fill: var(--bg); stroke: currentColor; stroke-width: 1.4; }
+.boxs { fill: var(--surface); stroke: var(--line); stroke-width: 1.2; }
+.zone { fill: none; stroke: var(--line); stroke-width: 1.4; stroke-dasharray: 6 5; }
+.t { fill: currentColor; font-size: 13px; }
+.tb { fill: var(--strong); font-size: 14px; font-weight: 600; }
+.ts { fill: var(--muted); font-size: 11.5px; }
+.tz { fill: var(--muted); font: 700 11px var(--cond); letter-spacing: .1em; }
+.ln { stroke: currentColor; stroke-width: 1.5; fill: none; }
+.ok { stroke: var(--green); } .okf { fill: var(--green); }
+.no { stroke: var(--red); } .nof { fill: var(--red); }
+.wt { stroke: var(--amber); } .wtf { fill: var(--amber); }
+.bl { stroke: var(--blue); } .blf { fill: var(--blue); }
+.dash { stroke-dasharray: 5 4; }
+
+/* Seats and triggers as cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.card .k { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.card p { font-size: .92rem; }
+.card .when { color: var(--strong); font-size: 1.15rem; font-weight: 600; }
+.card.hl { border-color: var(--green); }
+
+/* One run, step by step: the steps beside its real log */
+.anatomy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .anatomy { grid-template-columns: minmax(0, 1fr); } }
+ol.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; counter-reset: s; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; font-size: .93rem; }
+ol.steps li::before { content: counter(s); width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; font-size: .78rem; font-weight: 600; color: var(--muted); }
+ol.steps b { color: var(--strong); }
+pre.log { margin: 0; overflow-x: auto; background: var(--sunk); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font: 12.5px/1.65 var(--mono); color: var(--text); }
+.pass { color: var(--green); font-weight: 500; } .miss { color: var(--red); font-weight: 500; } .note { color: var(--muted); }
+
+/* The 27 runs, by area */
+.areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
+.area { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.area dl { margin: 0; display: grid; gap: 7px; }
+.area dt { font: 500 .82rem var(--mono); color: var(--strong); display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.area dd { margin: 0; font-size: .88rem; color: var(--text); }
+.who { font: 600 .72rem var(--sans); color: var(--muted); }
+.dm { font: 600 .72rem var(--sans); color: var(--blue); background: var(--blue-soft); padding: 0 6px; border-radius: 999px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: .85rem; align-items: center; }
+
+/* Covered and not */
+.split { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.panel { border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; border: 1px solid var(--line); background: var(--surface); }
+.panel.out { border-color: var(--amber); }
+.panel h3 { display: flex; gap: 8px; align-items: center; }
+.panel li { font-size: .92rem; }
+
+footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 4px; }
+@media (max-width: 520px) { h1 { font-size: 1.8rem; } .num:last-child:nth-child(odd) { grid-column: 1 / -1; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · testing · Nov 5, 2026</div>
+    <h1>How askdnd is tested, and what the live test covers</h1>
+    <p class="lead">askdnd has four kinds of test. Three run on GitHub and only stand in for D&amp;D Beyond. The fourth, the <b>live test</b>, is the only one that uses the real thing: real Chrome windows on the Mac Mini, signed in as test players, playing real D&amp;D Beyond sheets through askdnd on beta, the way your table does. It runs every night, after every deploy, and whenever you say "run the live tests".</p>
+    <nav class="jump" aria-label="On this page">
+      <a href="#kinds">The four kinds</a><a href="#where">Where the live test runs</a><a href="#seats">The seats</a><a href="#when">When it runs</a><a href="#one-run">One run, step by step</a><a href="#runs">All 27 runs</a><a href="#itself">How it looks after itself</a><a href="#scope">What it doesn't cover</a><a href="#results">Where results go</a>
+    </nav>
+  </header>
+
+  <div class="nums" aria-label="One night of the live test">
+    <div class="num"><b>27 runs</b><span>each one thing a player or the DM does, start to finish</span></div>
+    <div class="num"><b>~250 checks</b><span>a night: 143 in part 1, 111 more through the DM (Nov 5)</span></div>
+    <div class="num"><b>20 minutes</b><span>the whole nightly, at 4:00 on the Mini</span></div>
+    <div class="num"><b>4 seats</b><span>the DM and three players, each a separate D&amp;D Beyond account</span></div>
+    <div class="num"><b>3 sheets</b><span>Cathartic, Vi (test) and Levi: test characters only</span></div>
+  </div>
+
+  <section id="kinds">
+    <div class="eyebrow">The four kinds</div>
+    <h2>From the fastest and most made-up to the slowest and most real</h2>
+    <p>Each kind trades speed for realism. The first two run on every change before it can merge. The last two run on a schedule, because they depend on D&amp;D Beyond, which can change without notice.</p>
+    <div class="scroll">
+      <table class="layers">
+        <thead><tr><th scope="col"></th><th scope="col">Server tests</th><th scope="col">Browser tests</th><th scope="col">D&amp;D Beyond drift</th><th scope="col">Live test</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">How many</th><td>884</td><td>61</td><td>1 check, 3 sheets</td><td>27 runs, ~250 checks</td></tr>
+          <tr><th scope="row">When</th><td>Every change, before it can merge</td><td>Every change, before it can merge</td><td>Every morning</td><td>Every night at 4:00, after every deploy, and on request</td></tr>
+          <tr><th scope="row">Where</th><td>GitHub</td><td>GitHub</td><td>GitHub</td><td>The Mac Mini</td></tr>
+          <tr><th scope="row">Takes</th><td>About 2 minutes</td><td>About 3½ minutes (three parts at once)</td><td>Under a minute</td><td>About 20 minutes (2 after a deploy)</td></tr>
+          <tr><th scope="row">askdnd</th><td><span class="chip stand">its code, called directly</span></td><td><span class="chip stand">a real server, made-up campaign</span></td><td><span class="chip stand">its parser only</span></td><td><span class="chip real">beta, the VTT test campaign</span></td></tr>
+          <tr><th scope="row">Browser</th><td><span class="chip fake">none</span></td><td><span class="chip stand">Chromium and Safari's engine</span></td><td><span class="chip fake">none</span></td><td><span class="chip real">real Chrome, signed in</span></td></tr>
+          <tr><th scope="row">Extension</th><td><span class="chip fake">none</span></td><td><span class="chip stand">the real code, loaded unpacked</span></td><td><span class="chip fake">none</span></td><td><span class="chip real">from the Chrome Web Store</span></td></tr>
+          <tr><th scope="row">D&amp;D Beyond</th><td><span class="chip fake">saved copies of sheets</span></td><td><span class="chip stand">a stand-in page at its address</span></td><td><span class="chip real">today's sheets, read only</span></td><td><span class="chip real">real sheets and the real VTT</span></td></tr>
+          <tr class="live"><th scope="row">Catches</th><td>Rules worked out wrong, who may see or change what, every route asked as the wrong person</td><td>Clicks, keys, two people seeing each other's changes live, layout at every width</td><td>D&amp;D Beyond renaming or changing a field the saved copies still have</td><td>Anything between askdnd, the extension and D&amp;D Beyond that only shows with the real ones: timing, sign-ins, D&amp;D Beyond's own behaviour</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small">Green: the real thing. Amber: a stand-in for it. Dashed grey: not part of that test.</p>
+  </section>
+
+  <section id="where">
+    <div class="eyebrow">The live test · where it runs</div>
+    <h2>Four Chrome windows on the Mac Mini, driven like four people</h2>
+    <p>The Mini stays on and signed in, so nobody has to watch and your MacBook can stay closed. A script, <code>real_table.py</code>, drives four copies of Chrome (the seats). It clicks and reads askdnd's pages on beta the way a person would, while each seat's askdnd bridge extension makes the changes on D&amp;D Beyond. To decide whether a change really landed, the script never trusts askdnd's word: it reads the sheet's own record from D&amp;D Beyond itself.</p>
+    <figure>
+      <div class="fig">
+        <svg viewBox="0 0 960 384" role="img" aria-label="The Mac Mini runs a script that drives four Chrome seats. The seats open askdnd on beta and real sheets on D&amp;D Beyond; the extension in each seat makes askdnd's changes on D&amp;D Beyond. The script checks D&amp;D Beyond's own record, and a miss goes to Sentry.">
+          <defs>
+            <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+            <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="okf"/></marker>
+            <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="nof"/></marker>
+            <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="blf"/></marker>
+          </defs>
+          <!-- The Mini -->
+          <rect class="zone" x="14" y="14" width="330" height="352" rx="14"/>
+          <text class="tz" x="30" y="38">THE MAC MINI</text>
+          <rect class="box" x="34" y="52" width="290" height="54" rx="8"/>
+          <text class="tb" x="50" y="75">real_table.py: the runs</text>
+          <text class="ts" x="50" y="94">clicks, waits, reads, says PASS or FAIL</text>
+          <line class="ln" x1="179" y1="106" x2="179" y2="132" marker-end="url(#a)"/>
+          <text class="ts" x="188" y="124">drives each seat</text>
+          <g>
+            <rect class="boxs" x="34" y="138" width="140" height="62" rx="8"/><text class="tb" x="46" y="160">DM seat</text><text class="ts" x="46" y="178">WeslockePlayer</text><text class="ts" x="46" y="193">no character</text>
+            <rect class="boxs" x="184" y="138" width="140" height="62" rx="8"/><text class="tb" x="196" y="160">Player 2</text><text class="ts" x="196" y="178">Cathartic</text><text class="ts" x="196" y="193">Cleric 9</text>
+            <rect class="boxs" x="34" y="210" width="140" height="62" rx="8"/><text class="tb" x="46" y="232">Player 3</text><text class="ts" x="46" y="250">Vi (test)</text><text class="ts" x="46" y="265">Artificer 10</text>
+            <rect class="boxs" x="184" y="210" width="140" height="62" rx="8"/><text class="tb" x="196" y="232">Player 4</text><text class="ts" x="196" y="250">Levi</text><text class="ts" x="196" y="265">Druid 6 / Warlock 2</text>
+          </g>
+          <text class="ts" x="34" y="294">Each seat: real Chrome, signed in to its own</text>
+          <text class="ts" x="34" y="309">Google, askdnd and D&amp;D Beyond account,</text>
+          <text class="ts" x="34" y="324">with the askdnd bridge from the store.</text>
+          <rect class="boxs" x="34" y="334" width="290" height="24" rx="6"/>
+          <text class="ts" x="46" y="350">logs/results.jsonl: every night's checks, kept</text>
+
+          <!-- beta -->
+          <rect class="box" x="470" y="60" width="210" height="84" rx="10"/>
+          <text class="tb" x="486" y="84">askdnd on beta</text>
+          <text class="ts" x="486" y="103">beta.askdnd.ai</text>
+          <text class="ts" x="486" y="119">the VTT test campaign</text>
+          <text class="ts" x="486" y="135">(never your table's)</text>
+          <!-- D&D Beyond -->
+          <rect class="box" x="470" y="222" width="210" height="100" rx="10"/>
+          <text class="tb" x="486" y="246">D&amp;D Beyond</text>
+          <text class="ts" x="486" y="265">the three test sheets</text>
+          <text class="ts" x="486" y="281">the VTT test game (its VTT)</text>
+          <text class="ts" x="486" y="297">test accounts only,</text>
+          <text class="ts" x="486" y="313">never your own</text>
+          <!-- Sentry -->
+          <rect class="box" x="776" y="60" width="164" height="84" rx="10"/>
+          <text class="tb" x="792" y="84">Sentry</text>
+          <text class="ts" x="792" y="103">an issue for a miss,</text>
+          <text class="ts" x="792" y="119">which alerts you</text>
+
+          <!-- arrows -->
+          <path class="ln" d="M324 169 L 466 112" marker-end="url(#a)"/>
+          <text class="t" x="352" y="104">askdnd's pages</text>
+          <path class="ln ok" d="M324 241 L 466 266" marker-end="url(#ag)" style="color:var(--green)"/>
+          <text class="t" x="352" y="290" style="fill:var(--green)">the extension makes</text>
+          <text class="t" x="352" y="306" style="fill:var(--green)">askdnd's changes</text>
+          <line class="ln" x1="575" y1="144" x2="575" y2="218" marker-end="url(#a)"/>
+          <text class="ts" x="586" y="176">askdnd reads the</text>
+          <text class="ts" x="586" y="191">sheet back</text>
+          <path class="ln bl dash" d="M324 346 L 575 346 L 575 326" marker-end="url(#ab)" style="color:var(--blue)"/>
+          <text class="t" x="352" y="372" style="fill:var(--blue)">checks D&amp;D Beyond's own record: did the change really land?</text>
+          <path class="ln no" d="M300 52 L 300 26 L 858 26 L 858 56" marker-end="url(#ar)" style="color:var(--red)"/>
+          <text class="t" x="700" y="18" style="fill:var(--red)">a miss</text>
+        </svg>
+      </div>
+      <figcaption>The script plays four people at once. Each change goes through the same path your players' changes do (askdnd, then the extension, then D&amp;D Beyond), and is checked at the far end, on D&amp;D Beyond itself.</figcaption>
+    </figure>
+  </section>
+
+  <section id="seats">
+    <div class="eyebrow">The live test · the seats</div>
+    <h2>Test accounts and test characters, nothing of your table's</h2>
+    <p>Each seat is its own person on D&amp;D Beyond and in askdnd, all in the <b>VTT test</b> campaign on beta. Your personal D&amp;D Beyond account is never a seat (automation could get an account flagged), and your table's real characters are never touched. Each sheet is chosen for what it exercises:</p>
+    <div class="cards">
+      <div class="card"><div class="k">DM seat</div><h3>WeslockePlayer</h3><p>The DM of VTT test on D&amp;D Beyond. Gives loot, opens the VTT for initiative, and makes every change itself when the players' sheets are closed ("through the DM").</p></div>
+      <div class="card"><div class="k">Player 2</div><h3>Cathartic, Cleric 9</h3><p>The everyday sheet: hit points, conditions, death saves, Exhaustion, Heroic Inspiration, items and potions, prepared spells, giving and loot.</p></div>
+      <div class="card"><div class="k">Player 3</div><h3>Vi (test), Artificer 10</h3><p>Slots, resources, coins and rests; the other end of a Give and of the Game Log; her Homunculus Servant for a creature's hit points. Not your own Vi.</p></div>
+      <div class="card"><div class="k">Player 4</div><h3>Levi, Druid 6 / Warlock 2</h3><p>The hard cases: Wild Shape, two kinds of spellcasting (Druid slots and Pact Magic), a familiar, and initiative in the real VTT.</p></div>
+    </div>
+    <p class="small">Your party's own builds (Cole, Trah, No Name, Big C) and the classes nobody plays aren't on a test sheet yet: that's the "twins" step on the roadmap.</p>
+  </section>
+
+  <section id="when">
+    <div class="eyebrow">The live test · when it runs</div>
+    <h2>Three times it runs, two of them on their own</h2>
+    <div class="cards">
+      <div class="card hl"><div class="k">Every night</div><div class="when">4:00, Mini time</div><p>All 27 runs (part 1), then the 22 that change a sheet again through the DM, with every player's sheet closed. About 20 minutes. Catches what changed during the day on either side: an askdnd change, or D&amp;D Beyond changing something.</p></div>
+      <div class="card hl"><div class="k">After every deploy</div><div class="when">Within 5 minutes</div><p>The Mini notices beta's version changed and runs four quick runs: closed-sheet, hit-points, condition and cast (22 checks, under 2 minutes). A deploy that breaks the table is known before anyone plays. First ran today at 10:46: 22 of 22.</p></div>
+      <div class="card"><div class="k">When you ask</div><div class="when">"Run the live tests"</div><p>Claude runs part 1 and gives you the steps that still need a person (part 2). Worth asking after an extension update, after a change to the bridge or the fight, and the day before a session.</p></div>
+    </div>
+    <p class="small">Each run tests what's on beta, never unmerged work. The nightly and the after-deploy check take turns with the seats, so they never collide.</p>
+  </section>
+
+  <section id="one-run">
+    <div class="eyebrow">The live test · one run</div>
+    <h2>One run, step by step: hit-points</h2>
+    <p>Every run follows the same pattern: do what a person would, then check in three places that it happened (askdnd's page at once, askdnd's confirmation, and D&amp;D Beyond's own record), then put it back. Each check is one line of the result. This is a real run from today.</p>
+    <div class="anatomy">
+      <ol class="steps">
+        <li><span><b>Open the sheet.</b> Player 2's seat opens Cathartic's D&amp;D Beyond sheet, and askdnd's Live pill must say Connected.</span></li>
+        <li><span><b>Take a hit in askdnd.</b> On Cathartic's Battle page on beta, the seat presses − and takes 1 damage, as a player would.</span></li>
+        <li><span><b>askdnd shows it at once.</b> The Hit Points tile goes from 66 to 65 straight away, before D&amp;D Beyond answers.</span></li>
+        <li><span><b>askdnd confirms it.</b> The extension made the change on the sheet and askdnd read it back: the tile stops saying it's on its way.</span></li>
+        <li><span><b>D&amp;D Beyond has it.</b> The script reads the sheet's own record from D&amp;D Beyond: 1 point of damage taken.</span></li>
+        <li><span><b>Put it back.</b> Healing in askdnd brings it back to 66, checked the same three ways.</span></li>
+      </ol>
+      <pre class="log" aria-label="The run's own output"><span class="note">== hit-points</span>
+<span class="pass">PASS</span> the sheet connects
+<span class="note">  hit points: 66</span>
+<span class="pass">PASS</span> the tile shows 1 less at once
+<span class="pass">PASS</span> D&amp;D Beyond confirms it
+<span class="pass">PASS</span> the real sheet shows it
+<span class="pass">PASS</span> healing puts it back
+<span class="pass">PASS</span> D&amp;D Beyond confirms the healing
+<span class="pass">PASS</span> the real sheet shows it back
+
+<span class="note">and a miss reads like this (Nov 5, 4:00):</span>
+<span class="miss">FAIL</span> cross-cast: stopped with TimeoutError:
+<span class="note">  waiting for spell:Entangle's Cast button</span></pre>
+    </div>
+  </section>
+
+  <section id="runs">
+    <div class="eyebrow">The live test · what it covers</div>
+    <h2>All 27 runs, by what they exercise</h2>
+    <div class="legend"><span><span class="dm">also through the DM</span> runs again at night with the players' sheets closed, the DM's browser making the change</span><span class="who">Cathartic · Vi · Levi · DM</span> which seat it plays</div>
+    <div class="areas">
+      <div class="area"><h3>The connection itself</h3><dl>
+        <dt>closed-sheet <span class="who">Cathartic</span></dt><dd>Open a sheet and the Live pill says Connected; close it and the pill changes at once.</dd>
+        <dt>game-log <span class="who">Cathartic, Vi</span></dt><dd>A roll in askdnd reaches another player's D&amp;D Beyond Game Log; with the sheet closed the table still sees it, and the roll window says why it isn't in the log.</dd>
+        <dt>close-after-roll <span class="who">Cathartic</span></dt><dd>Closing a sheet right after a roll, five times at different moments: nothing gets stuck.</dd>
+        <dt>dm-backup <span class="who">Cathartic, DM</span></dt><dd>With the player's sheet closed, the pill says Through the DM and the DM's browser makes a hit and the healing.</dd>
+      </dl></div>
+      <div class="area"><h3>Hit points and conditions</h3><dl>
+        <dt>hit-points <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>Damage and healing land on the real sheet and are put back.</dd>
+        <dt>temp-hp <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>Temporary Hit Points land; damage takes them first and leaves Hit Points alone.</dd>
+        <dt>death-saves <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>Down to 0: Unconscious and the marks start; a death save marks itself; healing clears both.</dd>
+        <dt>condition <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>Poisoned started in askdnd lands; ending it on D&amp;D Beyond takes it off.</dd>
+        <dt>exhaustion <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>Exhaustion lands at its level, a second level follows, ending it takes it off.</dd>
+        <dt>inspiration <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>Heroic Inspiration given and spent in askdnd follows on the sheet.</dd>
+      </dl></div>
+      <div class="area"><h3>Spells, slots and rests</h3><dl>
+        <dt>cast <span class="dm">DM</span> <span class="who">Vi</span></dt><dd>Cast spends a real slot; Undo gives it back.</dd>
+        <dt>pact-cast <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>Hex on a Pact slot spends the Pact slot, not a Druid slot.</dd>
+        <dt>cross-cast <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>Entangle on a Pact slot and Hex on a Druid slot each spend only that kind.</dd>
+        <dt>prepare <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>One spell prepared and one dropped in askdnd land on the sheet, then both put back.</dd>
+        <dt>resource <span class="dm">DM</span> <span class="who">Vi</span></dt><dd>A limited use counts down on D&amp;D Beyond and comes back.</dd>
+        <dt>rests <span class="dm">DM</span> <span class="who">Vi</span></dt><dd>A Short Rest spends a real Hit Point Die and heals; a Long Rest brings everything back.</dd>
+        <dt>short-rest <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>A Short Rest brings back the Pact slot and one Wild Shape use, not a Druid slot.</dd>
+      </dl></div>
+      <div class="area"><h3>Items and coins</h3><dl>
+        <dt>coins <span class="dm">DM</span> <span class="who">Vi</span></dt><dd>Coins gained land on D&amp;D Beyond; Undo takes them off.</dd>
+        <dt>inventory <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>Equip and attune a staff, spend a charge, use a bolt, drink a potion (one fewer, and it heals), Undo.</dd>
+        <dt>give <span class="dm">DM</span> <span class="who">Cathartic, Vi</span></dt><dd>A Potion of Healing handed from one sheet to the other, and back.</dd>
+        <dt>loot <span class="dm">DM</span> <span class="who">DM, Cathartic</span></dt><dd>The DM's Give loot: a Torch and 1 gp reach the sheet, then come off.</dd>
+        <dt>add-item <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>A Torch bought for 1 sp from the purse in the item browser; then put back.</dd>
+      </dl></div>
+      <div class="area"><h3>Wild Shape and creatures</h3><dl>
+        <dt>wild-shape <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>Shifting spends a use and gives the form's Temporary Hit Points; Battle becomes the form; Undo puts all three back.</dd>
+        <dt>in-form <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>In a form, Cast says it can't; Leave ends it and keeps the Temporary Hit Points.</dd>
+        <dt>creature-hp <span class="dm">DM</span> <span class="who">Vi</span></dt><dd>Her Homunculus's maximum set to the rule's, damage and healing on its Extras entry.</dd>
+        <dt>familiar <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>Find Familiar cast as a Ritual: the Owl switched on as Fey and named Pip; pocket dimension off, back on, dismissed off.</dd>
+      </dl></div>
+      <div class="area"><h3>The fight</h3><dl>
+        <dt>initiative <span class="who">Levi, DM</span></dt><dd>In D&amp;D Beyond's real VTT: the DM adds the tokens, Levi rolls Initiative in askdnd and it fills in the VTT's sidebar; the DM's change in askdnd reaches it too; after Start Combat a roll changes nothing. Starts as after Chrome restarts, the VTT opened before askdnd (extension 0.12.1).</dd>
+      </dl></div>
+    </div>
+  </section>
+
+  <section id="itself">
+    <div class="eyebrow">The live test · how it looks after itself</div>
+    <h2>A miss should mean askdnd, not the test</h2>
+    <p>Real sheets keep state between runs: a spent slot or a Wild Shape form left behind makes the next run fail for the wrong reason. On Nov 5 one leftover made four later runs miss. So since today, the test checks and tidies around every run, and a miss gets one more try before it counts.</p>
+    <figure>
+      <div class="fig">
+        <svg viewBox="0 0 900 250" role="img" aria-label="Before the runs: the setup check and a clean start. For each run: the run, then its sheets are tidied; a miss is tried once more on the tidied sheets. After the runs: every sheet must be back as found, then the results are kept and any miss reported.">
+          <defs>
+            <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+            <marker id="bw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="wtf"/></marker>
+          </defs>
+          <text class="tz" x="20" y="24">BEFORE</text>
+          <rect class="box" x="20" y="36" width="150" height="74" rx="8"/><text class="tb" x="34" y="58">Setup check</text><text class="ts" x="34" y="76">each seat plays its</text><text class="ts" x="34" y="91">sheet; one extension</text><text class="ts" x="34" y="104">version everywhere</text>
+          <line class="ln" x1="170" y1="73" x2="196" y2="73" marker-end="url(#b)"/>
+          <rect class="box" x="200" y="36" width="140" height="74" rx="8"/><text class="tb" x="214" y="58">Clean start</text><text class="ts" x="214" y="76">anything left from</text><text class="ts" x="214" y="91">before is a miss, and</text><text class="ts" x="214" y="104">is put right</text>
+          <line class="ln" x1="340" y1="73" x2="370" y2="73" marker-end="url(#b)"/>
+
+          <rect class="zone" x="372" y="14" width="330" height="224" rx="12"/>
+          <text class="tz" x="388" y="34">FOR EACH OF THE 27 RUNS</text>
+          <rect class="box" x="392" y="46" width="120" height="54" rx="8"/><text class="tb" x="406" y="70">The run</text><text class="ts" x="406" y="88">its checks</text>
+          <line class="ln" x1="512" y1="73" x2="552" y2="73" marker-end="url(#b)"/>
+          <rect class="box" x="556" y="46" width="128" height="54" rx="8"/><text class="tb" x="570" y="70">Tidy its sheets</text><text class="ts" x="570" y="88">leftovers: a miss</text>
+          <path class="ln wt" d="M620 100 L620 150 L452 150 L452 104" marker-end="url(#bw)" style="color:var(--amber)"/>
+          <text class="t" x="466" y="140" style="fill:var(--amber)">missed? try once more</text>
+          <text class="ts" x="392" y="180">Missed twice: a miss (an error in Sentry).</text>
+          <text class="ts" x="392" y="196">Passed the second time: "passed only on a</text>
+          <text class="ts" x="392" y="212">second try" (a warning), still counted, since</text>
+          <text class="ts" x="392" y="228">timing bugs so far only showed in some runs.</text>
+          <line class="ln" x1="702" y1="73" x2="732" y2="73" marker-end="url(#b)"/>
+
+          <text class="tz" x="736" y="24">AFTER</text>
+          <rect class="box" x="736" y="36" width="150" height="74" rx="8"/><text class="tb" x="750" y="58">Back as found</text><text class="ts" x="750" y="76">each sheet compared</text><text class="ts" x="750" y="91">with how the night</text><text class="ts" x="750" y="104">found it</text>
+          <line class="ln" x1="811" y1="110" x2="811" y2="140" marker-end="url(#b)"/>
+          <rect class="box" x="736" y="144" width="150" height="74" rx="8"/><text class="tb" x="750" y="166">Keep and report</text><text class="ts" x="750" y="184">every check kept;</text><text class="ts" x="750" y="199">a miss to Sentry</text>
+        </svg>
+      </div>
+      <figcaption>A seat that isn't set up (the wrong character, an old extension) is one setup miss, and its runs are left out, rather than every check on it failing for the same reason. On Nov 3 a seat changed to play another character made every run on it miss.</figcaption>
+    </figure>
+  </section>
+
+  <section id="scope">
+    <div class="eyebrow">The live test · its limits</div>
+    <h2>What it covers, and what it doesn't</h2>
+    <div class="split">
+      <div class="panel"><h3><span class="chip real">covered</span> every night</h3><ul>
+        <li>Every kind of change askdnd makes on a sheet through the bridge, both from the player's own sheet and through the DM</li>
+        <li>That each change really lands on D&amp;D Beyond, checked in D&amp;D Beyond's own record, and is put back</li>
+        <li>The Live pill, the Game Log, and closing a sheet at awkward moments</li>
+        <li>Initiative in D&amp;D Beyond's real VTT</li>
+        <li>The extension version actually in the store, as your players have it</li>
+        <li>D&amp;D Beyond changing something overnight: it shows as a miss the next morning</li>
+      </ul></div>
+      <div class="panel out"><h3><span class="chip stand">not covered</span> by the live test</h3><ul>
+        <li><b>Your table's characters and builds.</b> Only Cleric, Artificer and Druid/Warlock are on test sheets. Cole's, Trah's, No Name's and Big C's builds, and the other classes, wait for the twins.</li>
+        <li><b>The rest of a fight.</b> Turns, conditions that end on a turn, a monster's damage with Apply to: D&amp;D Beyond's VTT is a game canvas a script can't read reliably, so these are in part 2, by hand (about 15 minutes).</li>
+        <li><b>How things look.</b> The run sees that a Game Log message passed, not how it reads; whether the 3D dice land right. Also part 2.</li>
+        <li><b>Phones and Safari.</b> The seats are Chrome on a computer. Layout on an iPhone is checked by the browser tests (Safari's engine), not with real D&amp;D Beyond.</li>
+        <li><b>Unmerged changes.</b> It tests what's on beta. Changes are tried locally and by the faster tests first.</li>
+        <li><b>A real session.</b> Five people, Zoom, an evening's worth of changes, with D&amp;D Beyond busy. The nightly runs at 4:00, when D&amp;D Beyond is quiet.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section id="results">
+    <div class="eyebrow">Results</div>
+    <h2>Where results go, and what you'd see</h2>
+    <div class="cards">
+      <div class="card"><div class="k">A miss</div><h3>A Sentry issue that alerts you</h3><p>"Live test part 1: 3 missed (…)", or "… through the DM", or "Live test after deploying 98cb286". Say "check Sentry" and Claude reads it, finds the cause, and fixes askdnd or the test.</p></div>
+      <div class="card"><div class="k">A flaky check</div><h3>A Sentry warning</h3><p>"… passed only on a second try": one issue that collects every time it happens, so its count shows how often.</p></div>
+      <div class="card"><div class="k">The history</div><h3>Every check, every night</h3><p>Kept on the Mini. <code>scripts/live_results.py</code> lists the checks that didn't pass every time over two weeks, worst first, and the ones getting slower.</p></div>
+      <div class="card"><div class="k">D&amp;D Beyond drift</div><h3>An email from GitHub</h3><p>If a field the saved sheet copies have is gone or changed kind, the morning "D&amp;D Beyond drift" run fails and GitHub emails you.</p></div>
+    </div>
+  </section>
+
+  <footer>
+    <span>As of Nov 5, 2026: extension 0.12.1 on every seat, 27 runs, last night 137 of 143 checks plus 103 of 111 through the DM (the misses were leftovers, fixed that morning; their reruns passed).</span>
+    <span>The detail: <code>docs/live-test-plan.md</code> (what each run must do, every result), <code>docs/testing-setup.md</code> (the seats), <code>scripts/real_table.py</code> (the runs). Source of this page: <code>docs/artifacts/testing.html</code>.</span>
+  </footer>
+</div>
