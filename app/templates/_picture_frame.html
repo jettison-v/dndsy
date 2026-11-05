@@ -1,0 +1,21 @@
+{# Frame it (app/picture_window.py `_framing`; feedback 12, Brett, Nov 5, docs/mockups/picture-framing.html option A):
+   drag the picture under the square and zoom, like a profile photo. The square's middle is the picture's middle
+   everywhere: the square version is cut around it, a wide band shows around it. app.js "Frame it" moves it. #}
+<div class="peek-body pw" data-picture-window>
+  <div class="pw-frame" data-pw-frame data-x="{{ f.x }}" data-y="{{ f.y }}" data-zoom="{{ f.zoom }}">
+    <p>{% if new %}<b>Last step: frame it.</b> {% endif %}Drag the picture so what matters sits in the square, and zoom in if you like. Every place shows the part around the square's middle.</p>
+    <div class="pw-frame-row">
+      <div class="pw-stage" data-pw-stage tabindex="0" aria-label="The square: drag the picture, or use the arrow keys"><img src="{{ shown.full }}" alt="{{ o.name }}" draggable="false" data-pw-img></div>
+      <div class="pw-frame-side">
+        <label class="field">Zoom<input type="range" min="1" max="{{ most }}" step="0.05" value="{{ f.zoom }}" data-pw-zoom></label>
+        <div class="field"><span>Wide, as on its page</span><img class="pw-band" src="{{ shown.full }}" alt="" data-pw-band></div>
+      </div>
+    </div>
+    <form hx-post="/pictures/frame" hx-swap="none" class="pw-foot">
+      <input type="hidden" name="for" value="{{ o.ref }}">
+      <input type="hidden" name="x" value="{{ f.x }}" data-pw-x><input type="hidden" name="y" value="{{ f.y }}" data-pw-y><input type="hidden" name="zoom" value="{{ f.zoom }}" data-pw-z>
+      <button class="btn primary" type="submit">Save</button>
+      {% if new %}<button class="btn" type="submit" name="skip" value="1">Skip: askdnd's guess</button>{% else %}<button class="btn link" type="button" data-modal-url="/pictures?for={{ o.ref }}">Back</button>{% endif %}
+    </form>
+  </div>
+</div>

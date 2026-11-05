@@ -3025,3 +3025,14 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .tw-card small { color: var(--muted); }
 .tw-card-btns { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); margin-top: var(--sp-1); font: 600 var(--fs-xs) var(--cond); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .tw-card-btns .press { color: var(--text-strong); outline: 2px solid var(--amber); outline-offset: 3px; border-radius: var(--r-xs); }
+
+/* Frame it (app/templates/_picture_frame.html; feedback 12): the picture under a fixed square, a wide band beside it */
+.pw-frame { display: grid; gap: var(--sp-4); }
+.pw-frame-row { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+@media (max-width: 640px) { .pw-frame-row { grid-template-columns: minmax(0, 1fr); } }
+.pw-stage { position: relative; width: 100%; max-width: 320px; aspect-ratio: 1; overflow: hidden; border-radius: var(--r-lg); border: 2px solid var(--line-strong); background: var(--surface-2); cursor: grab; touch-action: none; }
+.pw-stage:active { cursor: grabbing; }
+.pw-stage img { position: absolute; max-width: none; user-select: none; -webkit-user-drag: none; }
+.pw-frame-side { display: grid; gap: var(--sp-4); min-width: 0; }
+.pw-frame-side input[type=range] { width: 100%; }
+.pw-band { width: 100%; max-width: 360px; aspect-ratio: 360 / 206; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); display: block; }

@@ -371,6 +371,8 @@ def test_a_creatures_picture_in_the_picture_window(player, dm, db, labs, sheet):
     assert "Homunculus Servant&#39;s picture" in player.get(f"/pictures?for=creature:{labs.id}:{ZAP}").text
     assert dm.post("/pictures/upload", data=ref, files={"file": ("h.png", picture_png(), "image/png")}).status_code == 404  # (not the DM yet)
     r = player.post("/pictures/upload", data=ref, files={"file": ("h.png", picture_png(), "image/png")})
+    assert r.status_code == 200 and "Last step: frame it" in r.text  # (Frame it, then)
+    r = player.post("/pictures/frame", data={**ref, "skip": "1"})
     assert r.status_code == 204 and "Picture saved" in r.headers["HX-Trigger"]
     url = f"/characters/{labs.id}/creatures/{ZAP}/picture?size=thumb"
     assert url in player.get("/party").text.replace("&amp;", "&") and url in player.get(f"/characters/{labs.id}/battle?creature={ZAP}").text.replace("&amp;", "&")

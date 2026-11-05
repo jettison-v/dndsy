@@ -14,7 +14,7 @@
     </div>
     {% if picture or can_picture %}
     <figure class="entity-pic">
-    {% if picture %}<a href="{{ picture.full }}" target="_blank" rel="noopener" data-no-peek title="Open the full picture"><img src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer"></a>
+    {% if picture %}<a href="{{ picture.full }}" target="_blank" rel="noopener" data-no-peek title="Open the full picture"><img src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer"{% if picture.pos %} style="object-position: {{ picture.pos }}"{% endif %}></a>
     {% if not picture.uploaded %}<figcaption class="note">From D&amp;D Beyond</figcaption>{% endif %}{% endif %}
     {% if can_picture %}{# The one Picture window (app/picture_window.py; Brett, 2026-11-04) #}
     <button type="button" class="btn small" data-modal-url="/pictures?for=entity:{{ e.id }}">{{ "Change picture" if picture and picture.uploaded else "Add a picture" }}</button>

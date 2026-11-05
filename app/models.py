@@ -214,6 +214,9 @@ class EntityPicture(Timestamped, Base):
     style: Mapped[str] = mapped_column(Text, default="", server_default="")  # drawn: the campaign's art style then
     link: Mapped[str] = mapped_column(String(500), default="", server_default="")  # ddb: D&D Beyond's art, never copied
     added_by: Mapped[str] = mapped_column(String(320), default="", server_default="")
+    # Framed (feedback 12, docs/mockups/picture-framing.html A): {"x", "y"} its middle as fractions of the picture, "zoom"
+    # (1 = the square as big as the picture's short side). None: askdnd's guess by what it's of (pictures.FRAMES)
+    frame: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 
 class EntityAlias(Base):
