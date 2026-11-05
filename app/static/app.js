@@ -3622,7 +3622,7 @@
   const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
   const shotImg = win.querySelector('[data-fb-shot]'), shotNote = win.querySelector('[data-fb-shot-note]');
   const pastedImg = win.querySelector('[data-fb-pasted]'), dropNote = win.querySelector('[data-fb-drop-note]'), pointedNote = win.querySelector('[data-fb-pointed]');
-  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0;
+  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0, why = '';
   const typing = el => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   const say = text => { said.textContent = text; said.hidden = !text; };
   const loadLib = () => lib || (lib = new Promise((ok, no) => {
@@ -3639,7 +3639,7 @@
   const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
   async function picture() {  // what's on screen: the page drawn again as an image (the 3D dice and some fonts may differ)
     let h;
-    try { h = await loadLib(); } catch (e) { return null; }
+    try { h = await loadLib(); } catch (e) { why = "the picture's code didn't load"; return null; }
     // (fonts aren't embedded: Google's stylesheet can't be read from here, so the picture uses the browser's own font)
     const options = {
       quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK,
@@ -3681,7 +3681,16 @@
       c.parentElement.append(im);
       stills.push(im);
     });
-    try { return await h.toJpeg(document.body, options); } catch (e) { return null; } finally {
+    try {
+      // Drawn as an SVG first: a character XML can't hold (a NUL, another control character; another extension's text
+      // carried one on Nov 4) stopped the whole picture, so they're taken out before it's painted
+      const svg = (await h.toSvg(document.body, options)).replace(/%(?:0[0-8BbCcEeFf]|1[0-9A-Fa-f])/g, '');
+      const im = new Image();
+      await new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error("the page's drawing wouldn't load")); im.src = svg; });
+      const c = Object.assign(document.createElement('canvas'), { width: innerWidth, height: innerHeight }), g = c.getContext('2d');
+      g.fillStyle = options.backgroundColor; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      return c.toDataURL('image/jpeg', 0.8);
+    } catch (e) { why = (e && (e.message || e.type)) || 'unknown'; return null; } finally {
       stills.forEach(im => im.remove());
       aside.forEach(([el, name, value]) => el.setAttribute(name, value));
       blanked.forEach(([im, src, srcset, w, hgt]) => { if (srcset !== null) im.setAttribute('srcset', srcset); if (src !== null) im.setAttribute('src', src); else im.removeAttribute('src'); im.style.width = w; im.style.height = hgt; });
@@ -3738,6 +3747,7 @@
     const pic = await taking;
     if (mine !== round) return;  // (closed and opened again meanwhile: the newer window draws its own)
     shot = pic;
+    if (!shot) ctx.picture = 'Not taken: ' + why;  // (so a note says why it came without one)
     if (shot) { shotImg.src = shot; shotImg.hidden = false; shotNote.hidden = true; } else shotNote.textContent = "No picture this time: paste one if it helps";
   }
   function describe(el) {
