@@ -139,6 +139,8 @@ def messages(db, row: TableRoll, character: Character | None) -> list[dict]:
             rolls = [("Initiative (combat started)", roll)]
         else:
             rolls = [("Initiative", {**roll, "rollType": "roll"})]  # (as the sheet sends it: the VTT takes its number)
+    rolls = [(n, r) for n, r in rolls if r["diceNotation"]["set"]]  # (a flat damage, an Unarmed Strike's 3, rolls no dice: D&D
+    # Beyond's Game Log never carries a roll without any, so it stays in Table rolls; review Nov 4)
     scope, target = aim
     who = f"{creature} {MARK} ({character.name})" if creature else f"{character.name} {MARK}"
     context = {"entityId": str(character.ddb_id), "entityType": "character", "messageScope": scope, "messageTarget": target,

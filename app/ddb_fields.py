@@ -77,9 +77,9 @@ def pick(data, steps: list):
         elif "sum" in s:
             where, want, key = s["sum"]
             v = sum(x.get(key) or 0 for x in v if isinstance(x, dict) and str(pick(x, where)) == str(want)) if isinstance(v, list) else None
-        elif "count" in s:
-            where, want = s["count"]
-            v = sum(1 for x in v if isinstance(x, dict) and str(pick(x, where)) == str(want)) if isinstance(v, list) else None
+        elif "count" in s:  # [where, want, where, want…]: how many match them all
+            pairs = list(zip(s["count"][::2], s["count"][1::2]))
+            v = sum(1 for x in v if isinstance(x, dict) and all(str(pick(x, w)) == str(want) for w, want in pairs)) if isinstance(v, list) else None
         else:
             v = next((x for x in v if _matches(x, s)), None) if isinstance(v, list) else None
     return v
@@ -122,7 +122,8 @@ def steps(field: str) -> list:
         "creature_active": ["creatures", {"id": arg}, "isActive", {"or": False}],
         "creature_name": ["creatures", {"id": arg}, "name"],
         # A familiar form added to Extras (Your creatures; `arg` D&D Beyond's monster id): how many of it there are
-        "familiar_add": ["creatures", {"or": []}, {"count": [["definition", "id"], arg]}],
+        # (only the Familiar group's: the same monster as a Pet or Mount isn't this one, review Nov 4)
+        "familiar_add": ["creatures", {"or": []}, {"count": [["definition", "id"], arg, ["groupId"], 2]}],
     }[kind]
 
 

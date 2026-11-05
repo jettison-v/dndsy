@@ -90,6 +90,12 @@ def adopt(db: Session, ch: Character, summary: dict, raw: dict) -> None:
         in_step(db, ch, named or None, raw, summary)
 
 
+def _was(was: dict, keys) -> str:
+    """What Undo puts back: only these entries as they were (None: there was none), so a creature changed since (another
+    summon, a steed's damage) is left as it is (review, Nov 4)."""
+    return json.dumps({k: was.get(k) for k in keys})
+
+
 def picked(forms: list[dict]) -> tuple[str, str, str]:
     """The Cast window's first choice: the one in play (here or away), else one that disappeared, else the first; what
     it was made last time; and the name it was given (its name on D&D Beyond, when that isn't its stat block's)."""
@@ -165,7 +171,7 @@ def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: 
     shown = name or k["name"]
     form = shown if shown == k["kind"] else f"{shown}, a {k['kind']}"
     said = f"{shown} ({kind}) is here" if before is None or str(before["id"]) == str(c["id"]) else f"Your familiar takes a new form: {form} ({kind})"
-    undo = {"companions": json.dumps(was)}
+    undo = {"companions": _was(was, set(forms) | {str(c["id"])})}
     if k["hp"]["removed"] and not k["hp"]["waits"] and ddb_bridge.on_for(db, ch) and ddb_bridge.reachable(ch):  # (back whole)
         ddb_bridge.add(db, ch, "creature_hp", {"creature": k["id"], "name": f"{ch.name}'s {k['name']}", "amount": k["hp"]["removed"], "max": k["hp"]["max"]},
                        f"{ch.name}'s {k['name']} back, whole")
@@ -190,7 +196,8 @@ def _cast_new(db: Session, ch: Character, sheet: dict, forms: dict, chosen: str,
     ddb_bridge.add(db, ch, "set", {"field": f"familiar_add:{mid}", "value": 1}, f"{ch.name}'s familiar: a {form['name']} added to Extras")
     in_step(db, ch)  # (any other form switched off)
     shown = f"{name}, a {form['name']}" if name and name != form["name"] else f"a {form['name']}"
-    return {"companions": json.dumps(was)}, f"Your familiar: {shown} ({kind}), added to D&D Beyond's Extras"
+    touched = set(forms) | {k for k in was if k.startswith(NEW)} | {chosen}
+    return {"companions": _was(was, touched), "added": mid}, f"Your familiar: {shown} ({kind}), added to D&D Beyond's Extras"
 
 
 # ---- Wild Companion (a Druid's): a familiar from a Wild Shape use or a slot, always Fey, gone at the next Long Rest
@@ -235,11 +242,13 @@ def _caster(sheet: dict, entry: dict) -> tuple[int, int]:
 
 
 def steed_before(ch: Character, entry: dict) -> dict | None:
-    """Find Steed's "the one that disappeared": the steed it had, as it was (its kind, name and look)."""
+    """Find Steed's "the one that disappeared": the steed it had, as it was (its kind, name and look), once it's gone."""
     from app import summons
 
     kept = (ch.companions or {}).get(str(summons.own_id(entry.get("key") or entry["name"]))) or {}
-    return kept.get("c") if kept.get("own") else None
+    if not kept.get("own") or kept.get("state") == "here":  # (one that's here is replaced by the new one: the spell's rule)
+        return None
+    return kept.get("c")
 
 
 def summon(ch: Character, sheet: dict, entry: dict, level: int, choice: str, name: str = "", look: str = "",
@@ -259,7 +268,7 @@ def summon(ch: Character, sheet: dict, entry: dict, level: int, choice: str, nam
     ch.companions = {**was, str(c["id"]): {"own": True, "state": "here", "c": {k: v for k, v in c.items() if k not in ("removed", "temp")},
                                            "removed": 0, "temp": 0}}
     what = f"{c['name']} ({choice})" if choice else c["name"]
-    return {"companions": json.dumps(was)}, f"{what} is here, at level {level}"
+    return {"companions": _was(was, {str(c["id"])})}, f"{what} is here, at level {level}"
 
 
 def own_hp(ch: Character, c: dict, k: dict, change: int = 0, temp: int | None = None) -> str:
@@ -286,14 +295,29 @@ def own_hp(ch: Character, c: dict, k: dict, change: int = 0, temp: int | None = 
     return said
 
 
-def uncast(db: Session, ch: Character, companions: str, healed: str) -> None:
-    """Undo's half for the familiar: where each was, and the Hit Points taken again."""
+def uncast(db: Session, ch: Character, companions: str, healed: str, added: str = "") -> None:
+    """Undo's half for the creature: the entries the cast changed as they were, the Hit Points taken again, and a new
+    familiar form not added after all (while its change is still waiting)."""
     try:
         was = json.loads(companions) if companions else None
     except ValueError:
         was = None
     if isinstance(was, dict):
-        ch.companions = was
+        now = dict(ch.companions or {})
+        for k, v in was.items():
+            if v is None:
+                now.pop(k, None)
+            else:
+                now[k] = v
+        ch.companions = now
+    if added.isdigit():
+        from sqlalchemy import select
+
+        from app.models import BridgeIntent
+
+        for it in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == ch.id, BridgeIntent.state.in_(("waiting", "not_yet")))):
+            if (it.data or {}).get("field") == f"familiar_add:{added}":
+                ddb_bridge.dismiss(db, it.id)
     if healed and ":" in healed:
         cid, n = healed.split(":", 1)
         if cid.isdigit() and n.isdigit():

@@ -119,7 +119,7 @@
       }
       if (s && s.state === 'failed') {
         el.className = 'card k-warn'; el.setAttribute('role', 'alert'); if (ic) ic.textContent = '!';
-        sub.textContent = "Didn't go through" + (s.error ? ': ' + s.error : '');
+        sub.textContent = (s.failed || []).length ? "Didn't go through" + (s.error ? ': ' + s.error : '') : s.says;
         const ids = (s.failed || []).map(f => f.id), act = (path, then) => () => Promise.all(ids.map(id => fetch(path + id, { method: 'POST', headers: { Accept: 'application/json' } }))).then(then);
         const row = Object.assign(document.createElement('span'), { className: 'card-acts card-follow-acts' });
         [['Try again', act('/bridge/retry/', () => { row.remove(); el.className = 'card k-ok following'; if (ic) ic.textContent = '↻'; sub.textContent = 'Trying again'; el._following = true; clearTimeout(el._hide); told(); setTimeout(tick, 1500); })],
@@ -129,7 +129,7 @@
           row.append(b);
         });
         el.querySelector('.card-follow-acts')?.remove();
-        el.append(row);
+        if (ids.length) el.append(row);  // (none: it waits on another sheet's change, whose buttons are in the Live window)
         el._following = false; el.classList.remove('following');  // (stays until closed: it needs you)
         return;
       }
@@ -750,7 +750,8 @@
   let liveTick = null, liveIds = new Set();
   document.addEventListener('askdnd:live', e => {
     const t = e.detail.type;
-    if (t === 'game') { showInPlace(); return; }  // the fight moved on: every page, once it isn't in the way of a pop-up
+    if (t === 'game') { showInPlace(); return; }
+    if (t === 'deliver') { window.postMessage({ askdndBridge: 'deliver', ddbId: String(e.detail.ddb) }, location.origin); return; }  // (a change another one waited for may go now: ddb_bridge._release)  // the fight moved on: every page, once it isn't in the way of a pop-up
     if (t !== 'character' && t !== 'resync') return;
     liveIds.add(t === 'resync' ? '*' : String(e.detail.id));
     clearTimeout(liveTick);
@@ -1875,7 +1876,7 @@
         // The library draws at one pixel per screen point, so on a Retina screen (2 pixels per point) the dice were
         // drawn at half resolution and stretched, looking soft (Brett, 2026-10-26). Draw at the screen's own
         // resolution, up to 2x: sharper, without the cost of 3x phones or very large screens.
-        return box.initialize().then(() => { if (box.renderer) box.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); sound(); (window.askdndDice = window.askdndDice || new Set()).add(box); }); });
+        return box.initialize().then(() => { if (box.renderer) box.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); sound(); (window.askdndDice = window.askdndDice || new Map()).set(host, box); }); });  // (one per place: a rebuilt box replaces its old one, which can then be freed)
       return ready;
     }
     // Sounds (Your dice › Dice sounds, per device). The library loads its sound files only if sound is on when it

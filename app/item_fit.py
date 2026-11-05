@@ -35,21 +35,18 @@ def _with(dice: str, n: int) -> str:
     return f"{dice} {'+' if n >= 0 else '−'} {abs(n)}" if n else dice
 
 
-DICE = re.compile(r"(\d+)d(\d+)")
-
-
 def _avg(text: str) -> float | None:
-    """The average of a damage like "1d6+3 bludgeoning", "1d8 − 1" or "8": dice and flat numbers before the words."""
-    t = (text or "").replace("−", "-").replace(" ", "")
-    t = re.match(r"[\dd+-]+", t)
-    if not t:
+    """The average of a damage like "1d6+3 bludgeoning", "1d8 − 1" or "8": the formula before the words, as Table rolls
+    reads it (table_rolls.parse_formula)."""
+    from app.table_rolls import parse_formula
+
+    m = re.match(r"[\dd+−-]+", (text or "").replace(" ", ""))
+    if not m:
         return None
-    total, found = 0.0, False
-    for sign, n, sides, flat in re.findall(r"([+-]?)(?:(\d+)d(\d+)|(\d+))", t.group(0)):
-        v = int(n) * (int(sides) + 1) / 2 if sides else int(flat)
-        total += -v if sign == "-" else v
-        found = True
-    return total if found else None
+    if m.group(0) == "0":
+        return 0.0
+    parsed = parse_formula(m.group(0))
+    return sum(c * (sides + 1) / 2 for c, sides in parsed[0]) + parsed[1] if parsed else None
 
 
 def _num(n: float) -> str:
