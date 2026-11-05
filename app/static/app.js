@@ -1581,6 +1581,7 @@
       if (notes.length) h += '<ul class="rw-notes">' + notes.map(n => '<li>' + n + '</li>').join('') + '</ul>';
     }
     if (spec.note) h += '<p class="rw-note">' + esc(spec.note) + '</p>';
+    if (spec.endsHidden && !spec.follow) h += '<label class="rw-row rw-hidden"><input type="checkbox" data-ends-hidden checked> This attack ends Hidden</label>';
     if (spec.follow === 'damage' && spec.crit) h += '<p class="rw-note">Critical hit: every damage die is rolled twice, extra dice too.</p>';
     // A recipe: the slot level (when it changes the dice), the choice between its effects, what it rolls
     const rec = spec.recipe && !spec.follow ? spec.recipe : null;
@@ -1657,8 +1658,12 @@
           : { kind: kindOf(evs[evi]), parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '', label: spec.label + (evs.length > 1 ? ' · ' + evs[evi].name : '') }) : {};
         const go = { ...spec, ...fromRecipe, mode, extras, label: spec.kind === 'dice' ? (forText || 'Dice') : (fromRecipe.label || spec.label), ctx,
                      die: +((w.querySelector('[data-die][aria-pressed=true]') || {}).dataset || {}).die || 6,
-                     bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim() };
+                     bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim(),
+                     endsHidden: !!(w.querySelector('[data-ends-hidden]') || {}).checked };
         roll(w, go);
+        if (go.endsHidden && go.cid && window.htmx && document.getElementById('battle-body')) {  // (Hidden ends with the attack)
+          htmx.ajax('POST', '/characters/' + go.cid + '/conditions/end', { values: { name: 'Invisible' }, target: '#battle-body', swap: 'outerHTML' });
+        }
       }
     });
     (w.querySelector('[data-go]') || w).focus();
@@ -2180,10 +2185,10 @@
   // A death save marks itself on the sheet (app/death_saves.py; Brett, 2026-10-29): a roll at the table is marked by
   // the server, which answers with what it marked; a private one says its result here. A reroll or an added die moves
   // the mark (`before`: what the roll counted as).
-  function deathMarked(d) {
+  function deathMarked(d) {  // (and a Hide roll's Hidden, or not: app/hiding.py)
     if (!d) return;
     toast(d.text);
-    document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: d.deliver }));
+    if (d.deliver) document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: d.deliver }));
     document.body.dispatchEvent(new CustomEvent('characterChanged'));
   }
   function deathPrivate(cid, e, before) {
@@ -2289,8 +2294,10 @@
       const lines = keys.flatMap(k => ca[k] || []).map(e => (e.mode === 'dis' ? '!dis ' : e.mode === 'note' ? '!note ' : '') + e.text);
       if (lines.length) advWhy = [advWhy, ...lines].filter(Boolean).join('\n');
     }
+    // Hidden (app/hiding.py): an attack roll ends it, so its window offers that, ticked (the DM may rule otherwise)
+    const endsHidden = !!(body && body.dataset.hidden && kind === 'attack');
     return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe, slot: +el.dataset.slot || 0,
-             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared, who };
+             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared, who, endsHidden };
   }
 
   document.addEventListener('click', e => {

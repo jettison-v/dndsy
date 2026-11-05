@@ -218,6 +218,10 @@ def follow(db: Session, campaign: Campaign, ended: str | None, began: str | None
                         remind(now, ch, "ends", c["name"], f"{c['name']} ends now" + (f": its {la['n']} rounds are up" if kind == "rounds" else ""))
                 out.append(c)
             ch.conditions = out
+        if mine and began == mine and ch.readied:  # Ready lasts until your turn starts (app/readying.py)
+            remind(now, ch, "readied", ch.readied.get("name") or "Readied",
+                   f"{ch.readied.get('name') or 'your readied action'} wasn't used: a readied action lasts until your turn starts")
+            ch.readied = None
         if mine and began == mine:  # dying: a death save starts the turn (app/death_saves.py)
             st = death_saves.state(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)))
             if death_saves.rolling(st):

@@ -15,7 +15,7 @@
       </div>
 {% endmacro %}
 
-<div id="battle-body"{% if "Invisible" in active_conditions %} class="cond-ghost"{% endif %} data-character="{{ c.id }}" data-name="{{ c.name }}"{% if creature %} data-who="{{ creature.name }}"{% endif %} data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
+{% set hid = (conditions or []) | selectattr("find") | list %}<div id="battle-body"{% if "Invisible" in active_conditions %} class="cond-ghost"{% endif %}{% if hid and not creature %} data-hidden="{{ hid[0].find }}"{% endif %} data-character="{{ c.id }}" data-name="{{ c.name }}"{% if creature %} data-who="{{ creature.name }}"{% endif %} data-fetched="{{ fetched_at.isoformat() if fetched_at else '' }}" data-cond-adv='{{ cond_adv | tojson }}'>
   {% include "_level_up.html" %}
   {% if creature %}{% include "_creature_battle.html" %}{% else %}
   <div class="battlebar" data-tour="roll">
@@ -52,7 +52,7 @@
     {% if conc %}{% include "_conc_pill.html" %}<span class="cond-sep" aria-hidden="true"></span>{% endif %}
     {% for x in conditions if x.name != "Concentration" %}
     <details class="cond-pill" data-cond="{{ cond_slug(x.name) }}" data-mark="{{ c.id }}:cond:{{ x.name }}"{{ sync_attrs(x.sync) }}>
-      <summary>{{ cond_icon(x.name) }}<b>{{ x.name }}{% if x.level %} {{ x.level }}{% endif %}</b>{% if x.time and x.time.short %}<span class="conc-k cond-time{{ ' soon' if x.time.soon }}">{{ x.time.short }}</span>{% elif x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
+      <summary>{{ cond_icon(x.name) }}<b>{{ "Hidden" if x.find else x.name }}{% if x.level %} {{ x.level }}{% endif %}</b>{% if x.find %}<span class="conc-k">find DC {{ x.find }}</span>{% elif x.time and x.time.short %}<span class="conc-k cond-time{{ ' soon' if x.time.soon }}">{{ x.time.short }}</span>{% elif x.source %}<span class="conc-k">{{ x.source }}</span>{% endif %}</summary>
       <div class="cond-box">
         {% if x.time %}<p class="cond-lasts{{ ' soon' if x.time.soon }}"><b>{{ x.time.long }}</b>{% if x.source %} <span class="note">From {{ x.source }}.</span>{% endif %}</p>{% endif %}
         <p>{{ x.rules }}</p>
@@ -60,7 +60,7 @@
         <p class="note">askdnd lists what it changes in the roll window; the DM makes the call.</p>
         {% if can_pick and x.sync != "ending" %}<div class="row">
           {% if x.name == "Exhaustion" %}{% for lv in range(1, 7) %}<button class="btn small{{ ' primary' if lv == x.level }}" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": "Exhaustion", "level": lv, "source": x.source or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Exhaustion level {{ lv }}">{{ lv }}</button>{% endfor %}{% endif %}
-          <button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ x.name }}</button>
+          <button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ "Hidden" if x.find else x.name }}</button>
           {% if x.due %}<button class="btn small link" hx-post="/characters/{{ c.id }}/conditions/keep" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="The DM says it lasts: until it's ended">Keep</button>{% endif %}</div>{% endif %}
       </div>
     </details>
@@ -125,6 +125,14 @@
         {% if can_pick and not form %}<a class="head-add" href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?add=1" title="Pin more {{ cost | lower }}s">+ Add</a>{% endif %}
       </div>{% endif %}
       </div>
+      {% if slug == "reaction" and readied and not form %}{# Ready (app/readying.py; feedback 14): what you'll do and when, until used or your turn starts #}
+      <div class="readied" aria-label="Readied">
+        <div class="readied-k">Readied</div>
+        {% if readied.option %}{{ move(readied.option) }}{% else %}<b>{{ readied.name }}</b>{% endif %}
+        <p class="readied-when">When {{ readied.trigger }}</p>
+        {% if can_pick %}<div class="row tight"><button type="button" class="btn small" hx-post="/characters/{{ c.id }}/ready/clear" hx-vals='{"to": "used"}' hx-swap="none">Used it</button><button type="button" class="btn link small" hx-post="/characters/{{ c.id }}/ready/clear" hx-vals='{"to": "drop"}' hx-swap="none">Let it go</button></div>{% endif %}
+      </div>
+      {% endif %}
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
       {{ move(o) }}

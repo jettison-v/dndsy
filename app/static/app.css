@@ -3036,3 +3036,12 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .pw-frame-side { display: grid; gap: var(--sp-4); min-width: 0; }
 .pw-frame-side input[type=range] { width: 100%; }
 .pw-band { width: 100%; max-width: 360px; aspect-ratio: 360 / 206; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); display: block; }
+/* Hide (app/hiding.py): an attack while hidden offers to end it */
+.rw-hidden { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); }
+/* Readied (app/readying.py; feedback 14): the top of Battle's Reaction column, in the Readied colour */
+.readied { border: 1.5px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); display: grid; gap: var(--sp-1); margin-bottom: var(--sp-3); }
+.readied-k { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.readied-when { margin: 0; font-size: var(--fs-sm); }
+.ready-what { display: grid; gap: var(--sp-1); max-height: 240px; overflow-y: auto; }
+.ready-opt { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); }
+.ready-opt small { color: var(--muted); margin-left: auto; }

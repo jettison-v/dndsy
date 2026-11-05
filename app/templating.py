@@ -321,6 +321,7 @@ templates.env.globals["bridge_on"] = config.DDB_BRIDGE
 templates.env.globals["bridge_extension_url"] = config.BRIDGE_EXTENSION_URL
 templates.env.globals["lasts_times"], templates.env.globals["lasts_abilities"] = cond.TIMES, cond.ABILITIES  # + Condition's Lasts
 templates.env.globals["basic_names"] = BASIC_ACTIONS  # Battle's "What anyone can do"
+templates.env.globals["hide_label"] = "Hide (Stealth)"  # (app/hiding.py LABEL: the roll that starts Hidden)
 templates.env.globals["SRD_ATTRIBUTION"] = rules_data.ATTRIBUTION  # Help › About; the SRD's license asks for it word for word
 # Conditions' look on Battle, Party and the menu bar (app/conditions.py, _cond_icons.html)
 templates.env.globals["cond_slug"] = cond.slug

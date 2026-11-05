@@ -306,6 +306,9 @@ class Character(Timestamped, Base):
     wild_shape: Mapped[str | None] = mapped_column(String(200), nullable=True)  # the form they're in on Battle (app/wild_shape.py), set by their player
     # What they're concentrating on (app/spellbook.py), set by their player: {"spell", "key", "level", "round", "rounds"}
     concentration: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Readied (app/readying.py; feedback 14, docs/mockups/hide-ready.html): {"key", "name", "kind", "trigger", "level"}, what
+    # the character will do with its Reaction and when, from the Ready action until it's used or its next turn starts
+    readied: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     level_up: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # what's new since it last leveled, until read (app/level_up.py)
     conditions: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{"name": "Invisible", "source": "Ring of Invisibility"}] (app/conditions.py)
     # Where each of its familiars is, by its D&D Beyond creature id (app/creatures.py, Brett 2026-11-04: a familiar exists
