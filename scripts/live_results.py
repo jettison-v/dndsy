@@ -36,7 +36,7 @@ def main() -> None:
     print(f"{len(nights)} runs of part 1 over {len(days)} days ({days[0] if days else '-'} to {days[-1] if days else '-'})")
     seen = defaultdict(lambda: {"ok": 0, "missed": 0, "again": 0, "seconds": []})
     for n in nights:
-        how = " (through the DM)" if n.get("via_dm") else ""
+        how = " (through the DM)" if n.get("via_dm") else " (after a deploy)" if n.get("after_deploy") else ""
         for c in n["checks"]:
             run = c["run"].removesuffix(" (again)")
             key = f"{run}: {c['what']}{how}" if run else c["what"] + how

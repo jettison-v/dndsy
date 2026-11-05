@@ -1,6 +1,7 @@
 """askdnd v2 web app."""
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -201,7 +202,9 @@ LOGIN_ERRORS = {
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok", "env": config.APP_ENV}
+    """Up, and which commit it runs (Railway's, on beta): scripts/deploy_check.py waits for the new one, and the Mac
+    Mini's after-deploy check runs when it changes."""
+    return {"status": "ok", "env": config.APP_ENV, "version": (os.getenv("RAILWAY_GIT_COMMIT_SHA") or "local")[:12]}
 
 
 @app.get("/login")

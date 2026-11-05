@@ -946,3 +946,15 @@ Earlier that day a pull request was merged four minutes after its last change, w
 3. Write one test that walks every route as the wrong person and checks nothing changed. It's cheap, and it covers routes nobody remembers to test.
 4. Make end-to-end runs clean up after each step and retry once, and keep their history. A test that fails one night in five is a finding, not noise.
 5. Tell the host which folders it runs, so documentation changes don't redeploy.
+
+**Later the same day**
+- **Watch paths switched on** for the app's Railway service: a merge that changes only docs or tests doesn't rebuild beta. The first merge's checks took 3½ minutes, down from about 7.
+- **Beta says which version it runs** (`/health`), and the deploy check waits until it's the new one. A deploy "succeeding" and the new code actually answering are two different moments.
+- **A quick live check after each deploy**, on the Mac Mini: it watches beta's version and runs four short real-D&D-Beyond runs when it changes. It shares the test seats with the nightly through a lock (a folder only one of them can make at a time).
+- **A morning drift check** on GitHub: today's real D&D Beyond sheets against the copies the tests use.
+
+**Reuse this on a new project**
+1. Have your app say its version on a health address. Deploy checks, monitors and support all need "which code is running right now?".
+2. Run a short end-to-end test right after every deploy, not only nightly. Trigger it off the version changing, so it doesn't care how the deploy happened.
+3. When your tests use saved copies of an outside service's data, check the live data against those copies on a schedule, or the tests will keep passing on a world that's gone.
+
