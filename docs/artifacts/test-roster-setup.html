@@ -1,0 +1,193 @@
+<title>Test Table Setup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* A checklist for Brett (Nov 4): every test character's steps, ticked as they're done; askdnd's own colours. */
+:root {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cc; --line-strong: #bfb8aa;
+  --text: #24221e; --strong: #111; --muted: #6b665d; --red: #b8322f; --red-soft: rgba(184, 50, 47, .09);
+  --green: #2e7d4f; --green-soft: rgba(46, 125, 79, .1); --amber: #9a6a0d; --amber-soft: rgba(154, 106, 13, .1); --blue: #2f5f9e;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #fff; --muted: #a29d93; --red: #f08a8a; --red-soft: rgba(240, 138, 138, .12);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .13); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .13); --blue: #7ea6e0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #fff; --muted: #a29d93; --red: #f08a8a; --red-soft: rgba(240, 138, 138, .12);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .13); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .13); --blue: #7ea6e0; color-scheme: dark }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 980px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+.eyebrow { font: 700 12px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+h1 { margin: 6px 0 8px; font-size: 30px; line-height: 1.2; color: var(--strong); text-wrap: balance; }
+h2 { margin: 0; font-size: 20px; color: var(--strong); text-wrap: balance; }
+h3 { margin: 0; font-size: 17px; color: var(--strong); }
+p { margin: 0; }
+.lead { color: var(--muted); max-width: 70ch; }
+.note { color: var(--muted); font-size: 13.5px; }
+b, strong { color: var(--strong); font-weight: 600; }
+a { color: var(--blue); }
+code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+section { display: grid; gap: 14px; }
+.sec-head { display: grid; gap: 4px; }
+.progress { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bar { flex: 1 1 220px; height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; min-width: 0; }
+.bar i { display: block; height: 100%; width: 0; background: var(--green); transition: width .2s; }
+.count { font: 600 14px var(--sans); font-variant-numeric: tabular-nums; }
+.btn { font: 600 13px var(--sans); color: var(--text); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 8px; padding: 6px 12px; cursor: pointer; min-height: 34px; }
+.btn:hover { border-color: var(--muted); }
+.rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.rule { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; min-width: 0; }
+.rule.warn { border-color: var(--amber); background: var(--amber-soft); }
+.table-box { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
+th { text-align: left; font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+.add { color: var(--green); font-weight: 600; }
+.cards { display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 12px; min-width: 0; }
+.card.done { border-color: var(--green); }
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.card-head .tag { font: 600 12px var(--sans); border: 1px solid var(--line-strong); border-radius: 999px; padding: 2px 10px; color: var(--muted); white-space: nowrap; }
+.card.done .card-head .tag { border-color: var(--green); color: var(--green); }
+.end { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 4px 12px; font-size: 14px; background: var(--surface-2); border-radius: 8px; padding: 10px 12px; }
+.end > :nth-child(odd) { color: var(--muted); }
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+ol.steps li label { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; padding: 6px 8px; border-radius: 8px; cursor: pointer; }
+ol.steps li label:hover { background: var(--surface-2); }
+ol.steps input { width: 18px; height: 18px; margin: 2px 0 0; accent-color: var(--green); }
+ol.steps .who { font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+ol.steps input:checked + span { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.flag { border-left: 3px solid var(--amber); background: var(--amber-soft); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: 14px; }
+.final { background: var(--green-soft); border: 1px solid var(--green); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; }
+footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+@media (max-width: 640px) { .rules { grid-template-columns: minmax(0, 1fr); } .end { grid-template-columns: minmax(0, 1fr); } h1 { font-size: 25px; } }
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · the test table</div>
+    <h1>Test Table Setup</h1>
+    <p class="lead">Nine characters to add to VTT test: twins of your party's four, and five for the classes nobody at the table plays. Tick each step as you go (the ticks stay in this browser). When every card is green, tell Claude <b>"the copies are claimed"</b>.</p>
+  </header>
+
+  <div class="progress" aria-live="polite"><div class="bar" aria-hidden="true"><i id="fill"></i></div><span class="count" id="count">0 of 0 steps</span><button type="button" class="btn" id="reset">Clear the ticks</button></div>
+
+  <section>
+    <div class="sec-head"><h2>Before you start</h2></div>
+    <div class="rules">
+      <div class="rule"><b>Everything goes into VTT test</b><p class="note">The D&amp;D Beyond campaign <a href="https://www.dndbeyond.com/campaigns/8224496">VTT test (8224496)</a>. Never the party's own campaign.</p></div>
+      <div class="rule"><b>Six characters per account at most</b><p class="note">D&amp;D Beyond's limit. The accounts below stay at five or fewer.</p></div>
+      <div class="rule"><b>A twin is named "(twin)"</b><p class="note">Rename each copy, for example <code>Cole (twin)</code>, so it's never mistaken for the real one on Party, in the VTT or in Table rolls.</p></div>
+      <div class="rule warn"><b>Never your personal account</b><p class="note">Your own Vi and Spurt stay out of testing, and nothing is claimed on that account.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Which account gets what</h2><p class="note">Sign in to D&amp;D Beyond as the account in the first column to claim or create its characters.</p></div>
+    <div class="table-box"><table>
+      <thead><tr><th>Account (Google and D&amp;D Beyond)</th><th>Has now</th><th>Adds</th><th>Total</th></tr></thead>
+      <tbody>
+        <tr><td><b>Cupta Family</b><br><span class="note">D&amp;D Beyond: CatharticPlayer</span></td><td>Cathartic, Roscoe Norell</td><td class="add">Cole (twin), Test Ranger</td><td>4</td></tr>
+        <tr><td><b>Trent Davis Lawson</b><br><span class="note">D&amp;D Beyond: ViPlayer</span></td><td>Vi</td><td class="add">Trah (twin), Test Bard, Test Rogue</td><td>4</td></tr>
+        <tr><td><b>Levi's account</b></td><td>Levi Shadowquick</td><td class="add">No Name (twin), Big C (twin), Test Barbarian, Test Fighter</td><td>5</td></tr>
+        <tr><td><b>Jettison</b><br><span class="note">D&amp;D Beyond: WeslockePlayer, the DM</span></td><td>Weslocke (unlinked)</td><td>Nothing: the DM plays no character</td><td>1</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>The party's twins</h2><p class="note">Exact copies of the four characters your table plays, through D&amp;D Beyond's copy and claim (or your easier way: what counts is the end state on each card).</p></div>
+    <div class="cards" id="twins"></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><h2>Five for the classes nobody plays</h2><p class="note">Any sensible build at level 5 or higher; the subclass named is the point. Each is made on its account and joins VTT test directly.</p></div>
+    <div class="cards" id="others"></div>
+  </section>
+
+  <section class="final">
+    <h2>When every card is green</h2>
+    <p>Tell Claude <b>"the copies are claimed"</b>. Claude then adds them to VTT test in askdnd (each played by its account's seat), checks each twin against its real character, lets each seat play several characters, and writes the live runs for each, the nightly check that tells you when a twin needs a level-up, and the coverage table in <code>docs/testing-setup.md</code>.</p>
+  </section>
+
+  <footer>askdnd · the test table · kept in the repo as <code>docs/artifacts/test-roster-setup.html</code> · Nov 4, 2026</footer>
+</div>
+
+<script>
+const TWINS = [
+  { key: "cole", name: "Cole (twin)", real: "Cole", account: "Cupta Family", build: "Wood Elf · Druid 6 (Circle of the Moon) / Monk 2", extra: "His Owl familiar comes with the copy (Extras)." },
+  { key: "trah", name: "Trah (twin)", real: "Trah", account: "Trent Davis Lawson", build: "Gnome · Wizard 7 (Evoker) / Fighter 1", extra: "Check his spellbook's spells came across." },
+  { key: "noname", name: "No Name (twin)", real: "No Name", account: "Levi's account", build: "Human · Monk 6 (Warrior of Shadow) / Warlock 2", extra: "" },
+  { key: "bigc", name: "Big C (twin)", real: "Big C", account: "Levi's account", build: "Tiefling · Paladin 6 (Oath of Conquest) / Sorcerer 2 (Divine Soul)",
+    extra: "", flag: "Oath of Conquest is from Xanathar's and Divine Soul from the 2014 rules. After claiming, open the sheet: if either subclass shows as missing or locked, VTT test doesn't share that book. Tell Claude what it shows." },
+];
+const OTHERS = [
+  { key: "ranger", name: "Test Ranger", account: "Cupta Family", build: "Ranger 5 (Beast Master), any species", extra: "Pick its Primal Companion (Beast of the Land) so it's on Extras, and prepare Hunter's Mark." },
+  { key: "bard", name: "Test Bard", account: "Trent Davis Lawson", build: "Bard 5 (College of Lore), any species", extra: "Bardic Inspiration is what's being tested: give it its full uses." },
+  { key: "rogue", name: "Test Rogue", account: "Trent Davis Lawson", build: "Rogue 5 (any subclass), any species", extra: "Sneak Attack and Cunning Action; give it Thieves' Tools." },
+  { key: "barbarian", name: "Test Barbarian", account: "Levi's account", build: "Barbarian 5 (any subclass), any species", extra: "Rage and Reckless Attack; a Greataxe." },
+  { key: "fighter", name: "Test Fighter", account: "Levi's account", build: "Fighter 5 (Battle Master), any species", extra: "Choose three maneuvers; Action Surge and Second Wind come with the class." },
+];
+const twinSteps = t => [
+  ["Its player", `copies the real ${t.real} on D&D Beyond: My Characters › the arrow by ${t.real} › Copy.`],
+  ["Its player", "joins VTT test with the copy, from VTT test's invite link (on its campaign page, signed in as the DM), choosing the Copy."],
+  ["Its player", "presses Unassign on the copy on VTT test's campaign page. It moves to Unassigned Characters."],
+  ["You", `sign in to D&D Beyond as ${t.account}, open VTT test, and press Claim on the copy.`],
+  ["You", `rename it ${t.name} (its sheet › the name).`],
+  ["You", `check it: ${t.build}. Level, subclass and items as the real one.`],
+];
+const otherSteps = o => [
+  ["You", `sign in to D&D Beyond as ${o.account} and make ${o.name}: ${o.build}.`],
+  ["You", o.extra],
+  ["You", "join it to VTT test from the campaign's invite link."],
+  ["You", `check it's on VTT test's campaign page, owned by ${o.account}.`],
+];
+let ticks = {};
+try { ticks = JSON.parse(localStorage.getItem("roster-ticks") || "{}"); } catch (e) { ticks = {}; }
+const save = () => { try { localStorage.setItem("roster-ticks", JSON.stringify(ticks)); } catch (e) {} };
+function card(c, steps, end) {
+  const el = document.createElement("article");
+  el.className = "card";
+  const head = document.createElement("div");
+  head.className = "card-head";
+  const h = document.createElement("h3"); h.textContent = c.name;
+  const tag = document.createElement("span"); tag.className = "tag"; tag.textContent = c.account;
+  head.append(h, tag);
+  const endBox = document.createElement("div"); endBox.className = "end";
+  for (const [k, v] of end) { const a = document.createElement("span"); a.textContent = k; const b = document.createElement("span"); b.textContent = v; endBox.append(a, b); }
+  const ol = document.createElement("ol"); ol.className = "steps";
+  steps.forEach(([who, what], i) => {
+    const id = `${c.key}-${i}`;
+    const li = document.createElement("li");
+    const lab = document.createElement("label"); lab.htmlFor = id;
+    const box = document.createElement("input"); box.type = "checkbox"; box.id = id; box.checked = !!ticks[id];
+    const span = document.createElement("span");
+    const w = document.createElement("span"); w.className = "who"; w.textContent = who;
+    span.append(w, document.createTextNode(what));
+    box.addEventListener("change", () => { ticks[id] = box.checked; save(); tally(); });
+    lab.append(box, span); li.append(lab); ol.append(li);
+  });
+  el.append(head, endBox);
+  if (c.flag) { const f = document.createElement("p"); f.className = "flag"; f.textContent = c.flag; el.append(f); }
+  el.append(ol);
+  el.dataset.key = c.key;
+  return el;
+}
+const twins = document.getElementById("twins"), others = document.getElementById("others");
+TWINS.forEach(t => twins.append(card(t, twinSteps(t), [["When done", `${t.name}, owned by ${t.account}, in VTT test`], ["Build", t.build], ...(t.extra ? [["Also", t.extra]] : [])])));
+OTHERS.forEach(o => others.append(card(o, otherSteps(o), [["When done", `${o.name}, owned by ${o.account}, in VTT test`], ["Build", o.build]])));
+function tally() {
+  const boxes = [...document.querySelectorAll("ol.steps input")];
+  const done = boxes.filter(b => b.checked).length;
+  document.getElementById("count").textContent = `${done} of ${boxes.length} steps`;
+  document.getElementById("fill").style.width = `${boxes.length ? (100 * done / boxes.length) : 0}%`;
+  document.querySelectorAll(".card").forEach(c => c.classList.toggle("done", [...c.querySelectorAll("input")].every(b => b.checked)));
+}
+document.getElementById("reset").addEventListener("click", () => { ticks = {}; save(); document.querySelectorAll("ol.steps input").forEach(b => { b.checked = false; }); tally(); });
+tally();
+</script>

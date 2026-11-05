@@ -1,0 +1,43 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-04T23:55:00Z"
+  },
+  "title": "Gear Compare and Phone Battle",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1360,
+      "h": 960,
+      "title": "1 · Compared with what you have (feedback 2) · try it",
+      "is_interactive": true
+    },
+    "List.dc.html": {
+      "x": 1440,
+      "y": 0,
+      "w": 1360,
+      "h": 960,
+      "title": "2 · Option B: the change on each row of the list"
+    },
+    "Phone.dc.html": {
+      "x": 0,
+      "y": 1080,
+      "w": 1360,
+      "h": 980,
+      "title": "3 · Battle's top on a phone (feedback 11)"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "List.dc.html",
+    "Phone.dc.html"
+  ],
+  "notes": {},
+  "designSystems": []
+}
