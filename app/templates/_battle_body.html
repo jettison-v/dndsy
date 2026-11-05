@@ -58,7 +58,8 @@
         <p>{{ x.rules }}</p>
         {% if x.note %}<p class="note">{{ x.note }}</p>{% endif %}
         <p class="note">askdnd lists what it changes in the roll window; the DM makes the call.</p>
-        {% if can_pick and x.sync != "ending" %}<div class="row">
+        {% if can_pick and x.sync != "ending" and unreached and x.on_ddb %}<p class="unreached">{{ unreached_says(c, "end or change it") }}</p>
+        {% elif can_pick and x.sync != "ending" %}<div class="row">
           {% if x.name == "Exhaustion" %}{% for lv in range(1, 7) %}<button class="btn small{{ ' primary' if lv == x.level }}" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": "Exhaustion", "level": lv, "source": x.source or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Exhaustion level {{ lv }}">{{ lv }}</button>{% endfor %}{% endif %}
           <button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ "Hidden" if x.find else x.name }}</button>
           {% if x.due %}<button class="btn small link" hx-post="/characters/{{ c.id }}/conditions/keep" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="The DM says it lasts: until it's ended">Keep</button>{% endif %}</div>{% endif %}
@@ -70,6 +71,7 @@
     <details class="cond-pill cond-add">
       <summary>+ Condition</summary>
       <div class="cond-box">
+        {% if unreached %}<p class="unreached">{{ unreached_says(c, "start a condition") }} Effects below are askdnd's own and still work.</p>{% endif %}
         {# How long it lasts (Brett, 2026-10-29: docs/mockups/turn-conditions.html), sent with the chip picked below #}
         {% set ff = fight_now() %}
         <div class="cond-lasts-form" data-lasts-form>
@@ -91,7 +93,7 @@
           {% if not ff %}<p class="note" data-lasts-for="endnext startnext rounds save" hidden>Counted by the turns of a fight in D&amp;D Beyond's VTT; none is heard now.</p>{% endif %}
         </div>
         <div class="ls-label">Conditions</div>
-        <div class="ls-chips">{% for n in all_conditions if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n, "level": 1} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
+        <div class="ls-chips">{% for n in all_conditions if n not in active_conditions %}<button class="ls-chip"{% if unreached %} disabled title="The D&amp;D Beyond sheet can't be reached"{% endif %} hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n, "level": 1} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
         <div class="ls-label mt-2">Effects</div>
         <div class="ls-chips">{% for n in all_effects if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
       </div>

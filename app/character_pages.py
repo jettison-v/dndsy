@@ -64,6 +64,9 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "can_use": picks.can_edit(db, user, ch) and ddb_bridge.on_for(db, ch),  # an item's button (app/item_use.py)
         "can_change_hp": ddb_bridge.on_for(db, ch) and hit_points.can_apply(db, user, ch),  # − and + on Battle's Hit points tile, and its Inspiration star
         "can_play": picks.can_edit(db, user, ch) and ddb_bridge.plays(db, ch),  # Cast, resources, rests (the VTT piece live_state)
+        # Synced with D&D Beyond, but its sheet can't be reached now (no open sheet, no DM's browser): a change for D&D
+        # Beyond says so where it starts, never only after it's filled in (Brett, Nov 5)
+        "unreached": ddb_bridge.on_for(db, ch) and not ddb_bridge.reachable(ch),
         "can_loot": ddb_bridge.plays(db, ch) and (is_admin(user) or is_dm(user, ch.campaign_id)),  # Give loot (app/giving.py)
         "show_picks": picks.can_see(user, ch),
         "reminders": views.reminders(sheet, mine["remind"], mine["order"].get("forget"), mine["notes"]) if sheet else [],
