@@ -1,5 +1,5 @@
 {# Large modal: a Wild Shape form with this druid's stats carried over (app/wild_shape.py), as battle cards. #}
-{% from "_char.html" import pips, detail_marks, spends, adv, saves_block, hit %}
+{% from "_char.html" import pips, detail_marks, spends, adv, saves_block, hit, basic_actions %}
 {% set b = f.beast %}
 {% macro card(o) %}<div class="move static{{ ' yours' if o.source == 'yours' }}">
   {{ hit(o) }}<b>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag{{ ' faint' if t == 'Yours' }}">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
@@ -78,7 +78,7 @@
              (its attacks, Multiattack, its own bonus actions and reactions), so choosing between forms isn't cluttered by
              your Unarmed Strike, Circle spells and rules that work in any form (Brett, 2026-10-22). #}
           {% for o in (f.columns[cost].shown if known else f.columns[cost].shown | selectattr("source", "equalto", "form")) %}{{ card(o) }}{% else %}<p class="muted">{{ "None." if known else "Nothing of its own." }}</p>{% endfor %}
-          {% if cost == "Action" and known %}<div class="move static"><b class="muted">Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b>
+          {% if cost == "Action" and known %}<div class="move static"><b class="muted">{{ basic_actions(c, basic_names | reject("equalto", "Ready")) }}</b>
             <div class="meta">What anyone can do{% if not f.castable %}; no spells in this form{% endif %}</div></div>{% endif %}
         </section>
         {% endfor %}

@@ -104,6 +104,7 @@ def test_the_dm_gives_loot_with_coins_and_never_pays(dm, db):
     item, coins = intents(db)
     assert item[2] == "Cole got Potion of Healing ×2 from the DM" and (coins[1]["field"], coins[1]["delta"]) == ("coin:gp", 50)
     assert "Give loot" in dm.get(f"/characters/{cole.id}").text
+    assert "Give loot" in dm.get(f"/characters/{cole.id}/brief").text  # Party's window too (feedback 6)
 
 
 def test_an_item_shows_what_it_is_and_a_magic_one_has_no_price(player, dm, db):

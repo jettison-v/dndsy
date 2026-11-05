@@ -1090,8 +1090,8 @@ TRYING = "trying"  # (a change's progress, `progress`: on, trying, behind, sheet
 
 def progress(db: Session, character: Character, intents: list[BridgeIntent]) -> dict[int, dict]:
     """How each open change stands, in the words every place uses (Bridge Review, Nov 3): on its way, trying again (2 of
-    3), behind the change before it (one batch at a time per character), waiting for the sheet to open, or didn't go
-    through. {intent id: {"state", "try", "of"}}."""
+    3), behind the change before it (one batch at a time per character), waiting for another sheet's (Give), waiting
+    for the sheet to open, or didn't go through. {intent id: {"state", "try", "of"}}."""
     batches = list(db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.state.in_(("sending", "ready")))))
     out = {}
     for it in intents:
@@ -1099,14 +1099,17 @@ def progress(db: Session, character: Character, intents: list[BridgeIntent]) -> 
             out[it.id] = {"state": "sheet" if _for_sheet(it) else "failed"}
             continue
         b = next((b for b in batches if it.id in b.intents), None)
-        if b and b.attempts > 1:
+        first = db.get(BridgeIntent, it.data["after"]) if not b and (it.data or {}).get("after") else None
+        if first is not None and first.state != "live":  # (Give: the giver's copy goes once the receiver's sheet has it)
+            out[it.id] = {"state": "other"}
+        elif b and b.attempts > 1:
             out[it.id] = {"state": TRYING, "try": b.attempts, "of": MAX_ATTEMPTS}
         else:
             out[it.id] = {"state": "behind" if not b and batches else "on"}
     return out
 
 
-SAYS = {"on": "On its way", TRYING: "Trying again", "behind": "Waits for the change before it", "sheet": "Made once the sheet is open",
+SAYS = {"on": "On its way", TRYING: "Trying again", "behind": "Waits for the change before it", "other": "Waits for the other sheet", "sheet": "Made once the sheet is open",
         "failed": "Didn't go through"}
 
 
@@ -1126,7 +1129,7 @@ def follow(db: Session, character: Character, upto: int) -> dict:
     if failed:
         return {"state": "failed", "says": "Didn't go through", "error": failed[-1].error,
                 "failed": [{"id": it.id, "label": it.label} for it in failed]}
-    order = ("sheet", TRYING, "behind", "on")
+    order = ("sheet", TRYING, "other", "behind", "on")
     p = min(ps.values(), key=lambda p: order.index(p["state"]))
     return {**p, "says": says(p)}
 

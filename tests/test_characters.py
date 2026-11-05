@@ -282,3 +282,38 @@ def test_smites_are_on_battle_and_ammunition_is_a_weapon():
     assert smite["common"] and smite["cost"] == "Bonus action"
     cole = views.apply_overrides(ddb.parse_character(COLE), {})
     assert next(i for i in cole["inventory"] if i["name"] == "Arrows")["group"] == "Weapons"
+
+
+def test_what_anyone_can_do_opens_each_rule_with_its_rolls(player, db):
+    """Feedback 8 (Nov 4): Battle's Dash, Dodge, Hide… each open their rule in the side panel, with the checks they roll;
+    Attack isn't listed (the attacks are the column's rows)."""
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    battle = player.get(f"/characters/{cole.id}/battle").text
+    assert 'class="basic-act" data-panel-url="/characters/%d/detail?ref=rule%%3Abasic%%3AHide">Hide</button>' % cole.id in battle
+    assert ">Attack</button>" not in battle and "Attack, Dash" not in battle
+    hide = player.get(f"/characters/{cole.id}/detail?ref=rule:basic:Hide").text
+    assert "What anyone can do" in hide and 'data-label="Stealth check"' in hide and "Invisible condition while hidden" in hide
+    search = player.get(f"/characters/{cole.id}/detail?ref=rule:basic:Search").text
+    assert all(f'data-label="{k} check"' in search for k in ("Insight", "Medicine", "Perception", "Survival"))
+    assert "more this turn" in player.get(f"/characters/{cole.id}/detail?ref=rule:basic:Dash").text
+    assert player.get(f"/characters/{cole.id}/detail?ref=rule:basic:Attack").status_code == 404
+
+
+def test_an_unarmed_strike_lists_damage_grapple_and_shove_with_its_dc(player, db):
+    """Feedback 5 (Nov 4): its three ways, with the DC worked out (8 + Strength, or Dexterity for a Monk, + Proficiency
+    Bonus), in place of D&D Beyond's text, whose numbers aren't filled in."""
+    from app import character_views as v
+
+    s = {"abilities": [{"key": "strength", "modifier": 3}, {"key": "dexterity", "modifier": 4}], "proficiency_bonus": 3,
+         "attacks": [{"name": "Unarmed Strike", "martial_arts": False}]}
+    assert v.unarmed_choices(s, {"name": "Unarmed Strike"})["dc"] == 14
+    s["attacks"][0]["martial_arts"] = True
+    assert v.unarmed_choices(s, {"name": "Unarmed Strike"})["dc"] == 15 and v.unarmed_choices(s, {"name": "Longsword"}) is None
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    key = next(o["key"] for o in v.options(characters.character_summary(cole), set()) if o["name"] == "Unarmed Strike")
+    panel = player.get(f"/characters/{cole.id}/detail", params={"ref": key}).text
+    assert "Choose one each time" in panel and "<dt>Grapple</dt>" in panel and "<dt>Shove</dt>" in panel and "<b>DC " in panel

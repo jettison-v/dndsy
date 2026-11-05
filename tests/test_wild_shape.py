@@ -362,11 +362,11 @@ def test_the_form_window_shows_your_options_only_for_known_forms(db, cole, playe
     panel = player.get(f"/characters/{cole.id}/form", params={"name": "Hippopotamus"}).text  # not known
     cards = panel.split("Battle cards")[1].split("<h3>Traits</h3>")[0]
     assert "Bite" in cards and "Multiattack" in cards
-    for theirs in ("Starry Wisp", "Moonbeam", "Unarmed Strike", "Leave the form", "Dash, Disengage"):
+    for theirs in ("Starry Wisp", "Moonbeam", "Unarmed Strike", "Leave the form", ">Dash</button>"):
         assert theirs not in cards.split("show once you know it")[1], theirs  # the same in every form: not here
     known = player.get(f"/characters/{cole.id}/form", params={"name": "Polar Bear"}).text  # known: everything you can do
     cards = known.split("Battle cards")[1].split("<h3>Traits</h3>")[0]
-    assert "Rend" in cards and "Unarmed Strike" in cards and "Dash, Disengage" in cards
+    assert "Rend" in cards and "Unarmed Strike" in cards and ">Dash</button>, <button" in cards
 
 
 def test_the_tours_preview_shows_a_form_and_saves_nothing(db, cole, player):

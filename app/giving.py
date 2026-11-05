@@ -119,7 +119,7 @@ def give(request: Request, character_id: int, item_id: int, receiver: str = Form
         ddb_bridge.add(db, ch, "item", {"item": item_id, "delta": -n, "name": name, **after}, f"{ch.name} gave {other.name} {what}")
     realtime.announce(db, other.campaign_id, "character", id=other.id)
     db.commit()
-    return JSONResponse({"text": f"{what} to {other.name}: it leaves {ch.name}'s sheet once {other.name}'s has it", "deliver": web.deliver_now(ch)})
+    return JSONResponse({"text": f"{what} to {other.name}: it leaves {ch.name}'s sheet once {other.name}'s has it", "deliver": web.deliver_now(ch, also=[other])})
 
 
 # ------------------------------------------------------------------ D&D Beyond's items (the item browser: app/item_browser.py)

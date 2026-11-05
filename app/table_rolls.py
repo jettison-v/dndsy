@@ -64,7 +64,8 @@ def signed(n: int) -> str:
 
 
 def parse_formula(expr: str) -> tuple[list[tuple[int, int]], int] | None:
-    """'2d6+1d8+3' -> ([(2, 6), (1, 8)], 3). At least one die; at most 40 dice of 2–100 sides."""
+    """'2d6+1d8+3' -> ([(2, 6), (1, 8)], 3); a plain '3' -> ([], 3), an Unarmed Strike's damage. At most 40 dice of
+    2–100 sides."""
     s = (expr or "").replace(" ", "").replace("−", "-").lower()
     if not s:
         return None
@@ -81,12 +82,14 @@ def parse_formula(expr: str) -> tuple[list[tuple[int, int]], int] | None:
             terms.append((count, sides))
         else:
             flat += (-1 if m.group(1) == "-" else 1) * int(m.group(4))
-    if pos != len(s) or not terms or sum(c for c, _ in terms) > 40 or abs(flat) > 60:
+    if pos != len(s) or (not terms and flat < 1) or sum(c for c, _ in terms) > 40 or abs(flat) > 60:
         return None
     return terms, flat
 
 
 def formula_text(terms: list[tuple[int, int]], flat: int) -> str:
+    if not terms:
+        return str(flat)
     return "+".join(f"{c}d{s}" for c, s in terms) + (signed(flat) if flat else "")
 
 

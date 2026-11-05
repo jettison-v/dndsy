@@ -122,9 +122,11 @@ def test_a_given_item_leaves_the_giver_only_once_the_receiver_has_it(player, db,
     and the receiver's didn't, so for 3 minutes no one had it. Now the receiver's change is made first and the giver's
     waits for D&D Beyond to have it; if the receiver's is undone, the giver's is too and the item stays."""
     cole, trah = char(db, "Cole"), trah_too(db)
-    player.post(f"/characters/{cole.id}/items/758020411/give", data={"receiver": str(trah.id)})
+    r = player.post(f"/characters/{cole.id}/items/758020411/give", data={"receiver": str(trah.id)}).json()
+    assert r["deliver"]["also"] == [str(trah.ddb_id)]  # both sheets' extensions are asked at once (feedback 3: a Give took a minute)
     got, took = intents(db)
     assert ddb_bridge.outbox(db, cole) is None  # the giver's waits
+    assert ddb_bridge.follow(db, cole, took.id)["says"] == "Waits for the other sheet"  # (when it moves on, the card asks again)
     batch = ddb_bridge.outbox(db, trah)
     assert [op["field"].split(":")[0] for op in batch["ops"]] == ["add"]
     ddb_bridge.delivered(db, batch["id"], ok=False, error="That isn't a change askdnd may make.")  # (stopped at once)

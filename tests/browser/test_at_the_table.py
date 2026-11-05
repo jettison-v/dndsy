@@ -170,4 +170,6 @@ def test_others_rolls_are_full_screen_unless_you_chose_the_dice_tray(people, ser
     page.click(dex, modifiers=["Shift"])
     watching.wait_for_selector(".dice-tray.up", timeout=15000)
     assert "Dex save" in watching.locator(".dice-tray").inner_text()
+    box = watching.locator(".dice-tray").bounding_box()  # grows with the window, twice as wide as tall (feedback 7)
+    assert box["width"] >= 300 and abs(box["height"] - box["width"] / 2) < 2
     assert player.errors == [] and dm.errors == []

@@ -61,7 +61,7 @@ def test_attunement_counts_and_what_a_magic_item_grants():
 
 
 def test_gear_has_nothing_to_say():
-    assert item_fit.fit(SHEET, item("Rope"), "Cole") == {"icon": None, "why": "", "lines": []}
+    assert item_fit.fit(SHEET, item("Rope"), "Cole") == {"icon": None, "why": "", "lines": [], "compare": [], "chips": []}
 
 
 def test_the_browser_shows_the_icon_and_the_section(player, db, sheet, monkeypatch):
@@ -79,5 +79,28 @@ def test_the_browser_shows_the_icon_and_the_section(player, db, sheet, monkeypat
     page = player.get(f"/characters/{cole.id}/items/browse").text
     assert 'class="ib-fit ok" title="Attunement 3 of 3"' in page and 'class="ib-fit"' in page  # (the Cloak; Rope: nothing)
     detail = player.get(f"/characters/{cole.id}/items/browse/9002").text
-    assert "For Cole" in detail and "Attunement 2 → 3 of 3" in detail
+    assert "For Cole: now and with it" in detail and '<td class="k">Attuned</td><td>2 of 3</td><td class="then">3 of 3' in detail
+    assert '<span class="ib-d same">Same</span>' in detail  # (the made-up Cloak grants nothing here: only attunement)
     assert "For Cole" not in player.get(f"/characters/{cole.id}/items/browse/415").text  # (Rope)
+
+
+def test_an_item_is_compared_with_what_it_would_take_the_place_of():
+    """Brett chose both (Nov 4, docs/mockups/gear-compare/): now and with it, number by number, against each attack it could
+    replace (A), and the list's chips from the first (B). Facts, never "best"."""
+    staff = item("Quarterstaff, +1", weapon_cat=1, attack_type=1, base_name="Quarterstaff", dice="1d6", damage_type="Bludgeoning",
+                 mods=[{"type": "bonus", "sub": "magic", "value": 1, "attuned": False}])
+    f = item_fit.fit(SHEET, staff, "Cole")
+    unarmed = next(c for c in f["compare"] if c["place"] == "Unarmed Strike")
+    hit, dmg = unarmed["rows"]
+    assert (hit["now"], hit["then"]) == ("+6", "+6") and hit["dir"] == "same" and hit["d"] == "Same"  # (Martial Arts: Dex +2, +3, +1)
+    assert (dmg["now"], dmg["then"], dmg["why"]) == ("1d6+3", "1d6 + 3", "average 6.5 → 6.5") and dmg["chip"] == ""
+    assert "Martial Arts" in hit["why"] and f["chips"] == []  # (nothing changes against his Unarmed Strike: no chips)
+    shield = item_fit.fit(SHEET, item("Shield", armor_type=4, ac=2), "Cole")["compare"][0]
+    assert shield["place"] == "In your other hand"
+    assert [(r["k"], r["now"], r["then"], r["dir"]) for r in shield["rows"]][:2] == [("Armor Class", "16", "14", "down"), ("Martial Arts", "yes", "no", "lost")]
+    chain = item_fit.fit(SHEET, item("Chain Mail", armor_type=3, ac=16, str_req=13, stealth_dis=True), "Cole")
+    assert chain["compare"][0]["place"] == "Unarmored Defense" and chain["chips"] == ["Speed ▼20", "No spells"]
+    cloak = item("Cloak of Protection", attune=True, mods=[{"type": "bonus", "sub": "armor-class", "value": 1, "attuned": True},
+                                                            {"type": "bonus", "sub": "saving-throws", "value": 1, "attuned": True}])
+    assert item_fit.fit(SHEET, cloak, "Cole")["chips"] == ["AC ▲1", "Saves ▲1"]
+    assert item_fit._avg("1d8 − 1") == 3.5 and item_fit._avg("8 bludgeoning") == 8 and item_fit._avg("") is None

@@ -340,3 +340,9 @@
 {% macro portrait(s, cls="") -%}
 {% if s and s.portrait %}<img class="portrait {{ cls }}" src="{{ s.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
 {%- endmacro %}
+
+{# What anyone can do as an Action, each name opening its rule and its rolls in the side panel (feedback 8, Nov 4;
+   character_views.BASIC_ACTIONS; Attack is the column's own rows) #}
+{% macro basic_actions(c, names) -%}
+{% for n in names %}<button type="button" class="basic-act" data-panel-url="/characters/{{ c.id }}/detail?ref={{ ('rule:basic:' ~ n) | urlencode }}">{{ n }}</button>{{ ", " if not loop.last }}{% endfor %}
+{%- endmacro %}
