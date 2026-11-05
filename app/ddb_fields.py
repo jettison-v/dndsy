@@ -53,6 +53,7 @@ WRITES = {("PUT", HP_PATH), ("PUT", f"{CS}/life/death-saves"), ("PUT", f"{CS}/ch
           ("POST", f"{CS}/creature"), ("DELETE", f"{CS}/creature"), ("POST", f"{CS}/spell"), ("DELETE", f"{CS}/spell")}
 CREATURE_MAX = 43  # D&D Beyond's AdjustmentTypeEnum.CREATURE_HIT_POINTS: a creature's maximum, set on its sheet
 CREATURE_TYPE = 44  # D&D Beyond's AdjustmentTypeEnum.CREATURE_TYPE_OVERRIDE: what a creature is (a familiar's Celestial…)
+FAMILIAR_GROUP = 2  # D&D Beyond's group for familiars on Extras (Manage Extras › Familiar)
 CREATURE_AC = 42  # D&D Beyond's AdjustmentTypeEnum.CREATURE_AC: a steed's or summon's Armor Class from its spell's level (0.11.0, unused yet)
 MONSTER_TYPES = {"Celestial": 3, "Fey": 8, "Fiend": 9}  # D&D Beyond's monsterTypes (its config), for CREATURE_TYPE
 VALUES = {"creature_max": CREATURE_MAX, "creature_type": CREATURE_TYPE}  # the character values askdnd may set, by field
@@ -123,8 +124,26 @@ def steps(field: str) -> list:
         "creature_name": ["creatures", {"id": arg}, "name"],
         # A familiar form added to Extras (Your creatures; `arg` D&D Beyond's monster id): how many of it there are
         # (only the Familiar group's: the same monster as a Pet or Mount isn't this one, review Nov 4)
-        "familiar_add": ["creatures", {"or": []}, {"count": [["definition", "id"], arg, ["groupId"], 2]}],
+        "familiar_add": ["creatures", {"or": []}, {"count": [["definition", "id"], arg, ["groupId"], FAMILIAR_GROUP]}],
     }[kind]
+
+
+# The steps the extension's own `pick` reads (extension/askdnd-bridge/ddb-page.js: keep the two the same). A field whose
+# steps use one it lacks is sent to the extension as `wire` says (tests/test_ddb_fields.py checks every kind)
+EXTENSION_READS = ("or", "present", "read", "sum")
+
+
+def wire(field: str, data: dict, before, after) -> tuple[list, object, object]:
+    """How the extension checks a field just before writing it: (its steps, the value before, the value after), in steps
+    its `pick` reads. Most fields are as they are. A new familiar form (`count`, which extensions up to 0.12.1 don't read,
+    Nov 5: every Find Familiar with a new form was refused as changed) is checked as the sum of the matching creatures'
+    group ids: adding one to the Familiar group adds 2, whatever else of that monster is on Extras."""
+    kind, arg = _split(field)
+    if kind == "familiar_add":
+        read = ["creatures", {"or": []}, {"sum": [["definition", "id"], arg, "groupId"]}]
+        now = pick(data, read) or 0
+        return read, now, now + FAMILIAR_GROUP * ((after or 0) - (before or 0))
+    return steps(field), before, after
 
 
 def value(data: dict, field: str):
@@ -237,7 +256,7 @@ def name(data: dict | None, field: str) -> str:
         row = next((i for i in data.get("inventory") or [] if str((i.get("definition") or {}).get("id")) == arg), {})
         return (row.get("definition") or {}).get("name") or "an item"
     if kind == "familiar_add":
-        return "a familiar form on Extras"
+        return "familiar forms on Extras"  # ("D&D Beyond's familiar forms on Extras changed…")
     if kind == "prep":
         entry = arg.partition(":")[2]
         lists = [s for g in data.get("classSpells") or [] for s in g.get("spells") or []]
@@ -368,7 +387,7 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
         return req("PUT", "spell/prepared", spellId=extra.get("spellId"), characterClassId=int(cls), entityTypeId=extra.get("entityTypeId"),
                    id=int(entry), prepared=bool(v))
     if kind == "familiar_add":  # a familiar form onto Extras, as Manage Extras › Familiar › Add sends it (Nov 4, Levi's seat)
-        return req("POST", "creature", groupId=2, monsterId=int(arg), names=[None])
+        return req("POST", "creature", groupId=FAMILIAR_GROUP, monsterId=int(arg), names=[None])
     if kind == "add":
         where = extra.get("container") or ddb_id
         box = pick(data, ["inventory", {"id": where}]) or {}

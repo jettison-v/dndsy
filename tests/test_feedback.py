@@ -117,3 +117,19 @@ def test_the_admin_menu_counts_whats_new(admin, db):
     note(admin)
     slug = db.scalar(select(__import__("app.models", fromlist=["Campaign"]).Campaign.slug))
     assert admin.get(f"/c/{slug}/manage/counts").json()["feedback"] == 1
+
+
+def test_a_note_can_be_added_to_any_time(admin, db):
+    """Feedback 18 (Brett, Nov 5): something forgotten goes on the note itself, which goes back to Claude (a planned one
+    stays planned)."""
+    note(admin)
+    fb = db.scalar(select(Feedback))
+    assert "Add to this note" in admin.get("/manage/feedback?tab=new").text
+    admin.post(f"/manage/feedback/{fb.id}", data={"to": "planned"})
+    admin.post(f"/manage/feedback/{fb.id}", data={"to": "answer", "answer": "I retried from the extension too."})
+    db.refresh(fb)
+    assert fb.status == "planned" and fb.thread[-1]["text"] == "I retried from the extension too."
+    admin.post(f"/manage/feedback/{fb.id}", data={"to": "done"})
+    admin.post(f"/manage/feedback/{fb.id}", data={"to": "answer", "answer": "It's back."})
+    db.refresh(fb)
+    assert fb.status == "new" and len(fb.thread) == 2

@@ -786,6 +786,45 @@ def test_askdnd_and_the_extension_read_every_kind_of_field_the_same_way():
         == [2, True, False, 0, 1, 5, 0]
 
 
+def test_every_check_askdnd_sends_the_extension_is_one_it_can_read():
+    """Nov 5 (feedback 17): the server's reader learned `count` for a new familiar form, the extension's never did, and
+    every Find Familiar with a new form was refused as "changed". Every field's check is sent in steps the extension's
+    `pick` follows (ddb_fields.wire), and the extension still follows each of those."""
+    import os
+    import re
+
+    here = os.path.dirname(__file__)
+    src = open(os.path.join(here, "..", "app", "ddb_fields.py")).read()
+    kinds = set(re.findall(r'^        "(\w+)": \[', src.split("def steps")[1].split("}[kind]")[0], re.M))
+    page = open(os.path.join(here, "..", "extension", "askdnd-bridge", "ddb-page.js")).read().split("function pick")[1].split("const same")[0]
+    assert all(f"'{k}' in s" in page for k in ddb_fields.EXTENSION_READS)
+    special = {"or", "present", "read", "sum", "count"}  # (every step app/ddb_fields.py `pick` treats specially)
+
+    def unread(st):
+        for x in st:
+            if isinstance(x, dict):
+                if "read" in x:
+                    yield from (y for v in x["read"].values() for y in unread(v))
+                elif set(x) & special - set(ddb_fields.EXTENSION_READS):
+                    yield x
+
+    for k in sorted(kinds):
+        field = k if k in ("hp", "death", "inspiration", "exhaustion") else f"{k}:1" if k != "prep" else "prep:1:2"
+        read, _, _ = ddb_fields.wire(field, {}, 0, 1)
+        assert not list(unread(read)), (k, read)
+
+
+def test_a_new_familiar_form_is_checked_so_the_extension_can_tell():
+    """Adding one to the Familiar group (2) adds 2 to the sum of that monster's group ids, whatever else of it is there
+    (here: a Wild Shape form, group 13)."""
+    before = {"creatures": [{"groupId": 13, "definition": {"id": 99}}, {"groupId": 2, "definition": {"id": 5}}]}
+    after = {"creatures": before["creatures"] + [{"groupId": 2, "definition": {"id": 99}}]}
+    read, frm, to = ddb_fields.wire("familiar_add:99", before, 0, 1)
+    assert (frm, to) == (13, 15) and ddb_fields.pick(before, read) == frm and ddb_fields.pick(after, read) == to
+    assert ddb_fields.value(after, "familiar_add:99") == 1  # (askdnd's own reading, as before)
+    assert ddb_fields.name({}, "familiar_add:99") == "familiar forms on Extras"
+
+
 def ddb_roll(rid="r-1", scope="gameId", kind="check", how="", values=(14,), constant=5, total=19, action="Stealth", target=None):
     """A finished roll as the sheet sends it to D&D Beyond's game log (seen on Vi's sheet, 2026-10-27). D&D Beyond's
     user 101 is the roller; rolled to one person, `target` is who."""
