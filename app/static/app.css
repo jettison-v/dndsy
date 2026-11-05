@@ -2986,7 +2986,7 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .pw-draw-form.htmx-request ~ .pw-drawing { display: grid; }
 .pw-draw-form.htmx-request ~ #pw-options { display: none; }
 .pw-ghost { aspect-ratio: 1; border-radius: var(--r-md); border: 2px solid var(--line);
-  background: linear-gradient(110deg, var(--surface-2, rgba(255,255,255,.04)) 30%, var(--amber-soft) 50%, var(--surface-2, rgba(255,255,255,.04)) 70%) 0 0 / 300% 100%;
+  background: linear-gradient(110deg, var(--surface-2) 30%, var(--amber-soft) 50%, var(--surface-2) 70%) 0 0 / 300% 100%;
   animation: pw-shimmer 1.6s linear infinite; }
 .pw-ghost:nth-child(2) { animation-delay: .2s; } .pw-ghost:nth-child(3) { animation-delay: .4s; } .pw-ghost:nth-child(4) { animation-delay: .6s; }
 .pw-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
