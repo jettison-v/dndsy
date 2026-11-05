@@ -49,6 +49,7 @@
   {% if shown %}<form hx-post="/pictures/remove" hx-swap="none" class="pw-now">
     <input type="hidden" name="for" value="{{ o.ref }}">
     <img src="{{ shown.thumb }}" alt="Its picture now" referrerpolicy="no-referrer"><span class="note">Its picture now{% if pic and pic.source == "drawn" %}, drawn from a description{% elif pic and pic.source == "ddb" %}, from D&amp;D Beyond{% endif %}</span>
+    {% if pic and pic.file_key %}<button class="btn small" type="button" hx-get="/pictures/frame?for={{ o.ref }}" hx-swap="none">Frame it</button>{% endif %}
     <button class="btn small" type="submit">Remove picture</button>
   </form>{% endif %}
 </div>

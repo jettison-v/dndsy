@@ -49,7 +49,7 @@ def test_describe_it_draws_four_in_the_campaigns_style_and_one_is_kept(people, d
     assert run.status == "done" and run.cost_usd == pytest.approx(4 * drawing.COST)
     pick = r.text.split('name="pick" value="')[1].split('"')[0]
     r = dm.post("/pictures/use", data={**ref, "pick": pick, "words": "Kieran, a tired farmer", "style": "Ink and muted watercolour"}, headers=HX)
-    assert r.status_code == 204
+    assert r.status_code == 200 and "Last step: frame it" in r.text  # (then Frame it)
     pic = db.scalar(select(EntityPicture))
     assert (pic.source, pic.words, pic.style) == ("drawn", "Kieran, a tired farmer", "Ink and muted watercolour")
     assert dm.post("/pictures/use", data={**ref, "pick": "1/x.webp|1/y.webp"}, headers=HX).status_code == 409  # (only files askdnd drew)

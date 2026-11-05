@@ -543,7 +543,9 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)
     db.flush()
-    death = death_mark(db, row)
+    from app import hiding
+
+    death = death_mark(db, row) or hiding.mark(db, row)  # (a death save marks itself; a Hide roll of 15+ starts Hidden)
     realtime.announce(db, campaign.id, "rolls", **_live(db, row))  # every page at the table (app/realtime.py)
     also = _initiative(db, campaign, ch, me.id, row) if ch and kind == "check" and label == "Initiative" else []
     db.commit()

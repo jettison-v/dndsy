@@ -22,6 +22,7 @@ from app.models import CampaignCharacter, Character, Entity, EntityPicture
 
 MAX_UPLOAD = 15 * 1024 * 1024
 FULL_SIZE, THUMB_SIZE = 1200, 320
+ZOOM_MAX = 3.0  # (Frame it: up to three times in)
 Image.MAX_IMAGE_PIXELS = 60_000_000  # bigger than any phone photo; refuses "decompression bombs"
 
 
@@ -162,12 +163,44 @@ def keep(db: Session, campaign_id: int | None, full: bytes, thumb: bytes) -> tup
         raise PictureError("askdnd can't keep pictures right now (its file storage isn't set up).") from None
 
 
+def square(full: bytes, x: float, y: float, zoom: float) -> bytes:
+    """The square version cut around a picture's middle (`x`, `y` as fractions) at `zoom`, as WebP: the Frame it step."""
+    img = Image.open(io.BytesIO(full))
+    img.load()
+    w, h = img.size
+    side = max(1, round(min(w, h) / max(1.0, zoom)))
+    left = min(max(0, round(x * w - side / 2)), w - side)
+    top = min(max(0, round(y * h - side / 2)), h - side)
+    out = io.BytesIO()
+    img.crop((left, top, left + side, top + side)).resize((THUMB_SIZE, THUMB_SIZE), Image.LANCZOS).save(out, "WEBP", quality=82, method=4)
+    return out.getvalue()
+
+
+def frame(db: Session, o: Owner, x: float, y: float, zoom: float) -> EntityPicture:
+    """Its middle and how far in, kept with the picture; the square version cut again around it. Only a picture askdnd
+    keeps (D&D Beyond's art is a link: D&D Beyond frames it)."""
+    pic = find(db, o)
+    full = files.read(pic.file_key) if pic is not None and pic.file_key else None
+    if full is None:
+        raise PictureError("Only a picture askdnd keeps can be framed.")
+    x, y = (min(1.0, max(0.0, float(v))) for v in (x, y))
+    zoom = min(ZOOM_MAX, max(1.0, float(zoom)))
+    thumb = square(full, x, y, zoom)
+    try:
+        pic.thumb_key = files.put(db, o.campaign_id, thumb, "image/webp")
+    except files.StorageNotReady:
+        raise PictureError("askdnd can't keep pictures right now (its file storage isn't set up).") from None
+    pic.frame = {"x": round(x, 4), "y": round(y, 4), "zoom": round(zoom, 3)}
+    return pic
+
+
 def save(db: Session, o: Owner, raw: bytes, user: dict) -> EntityPicture:
     """An uploaded picture, checked and resized."""
     full, thumb = process(raw, o.centering)
     file_key, thumb_key = keep(db, o.campaign_id, full, thumb)
     pic = _row(db, o, user)
     pic.file_key, pic.thumb_key, pic.content_type, pic.source, pic.words, pic.style, pic.link = file_key, thumb_key, "image/webp", "upload", "", "", ""
+    pic.frame = None
     return pic
 
 
@@ -175,6 +208,7 @@ def use_drawn(db: Session, o: Owner, file_key: str, thumb_key: str, words: str, 
     """One of the pictures drawn from a description (already in file storage, app/drawing.py)."""
     pic = _row(db, o, user)
     pic.file_key, pic.thumb_key, pic.content_type, pic.source, pic.words, pic.style, pic.link = file_key, thumb_key, "image/webp", "drawn", words[:2000], style[:2000], ""
+    pic.frame = None
     return pic
 
 
@@ -183,7 +217,7 @@ def use_link(db: Session, o: Owner, user: dict) -> EntityPicture:
     if not o.ddb_art:
         raise PictureError("D&D Beyond has no art for this.")
     pic = _row(db, o, user)
-    pic.file_key = pic.thumb_key = None
+    pic.file_key = pic.thumb_key = pic.frame = None
     pic.source, pic.link, pic.words, pic.style = "ddb", o.ddb_art[:500], "", ""
     return pic
 
@@ -206,8 +240,11 @@ def _urls(p: EntityPicture, base: str) -> dict:
     if p.source == "ddb" or not p.file_key:
         return {"thumb": p.link, "full": ddb_full(p.link), "uploaded": True, "source": "ddb"}
     # ?v= changes with the picture, so the browser keeps each copy for good (files.CACHE_FOREVER)
+    f = p.frame or {}
     return {"thumb": f"{base}?size=thumb&v={files.version(p.thumb_key)}", "full": f"{base}?v={files.version(p.file_key)}",
-            "uploaded": True, "source": p.source}
+            "uploaded": True, "source": p.source,
+            # where a wide band shows it from (object-position): its middle, once framed
+            "pos": f"{f['x'] * 100:.1f}% {f['y'] * 100:.1f}%" if f else ""}
 
 
 def creature_urls(db: Session, character_ids) -> dict[tuple[int, str], dict]:

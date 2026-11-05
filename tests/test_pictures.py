@@ -57,6 +57,8 @@ def test_the_dm_adds_a_picture_in_the_picture_window_everyone_sees_it(people, db
     r = player.post("/pictures/upload", data=ref, files={"file": ("k.png", png(), "image/png")}, headers=HX)
     assert r.status_code == 404 and db.scalar(select(EntityPicture)) is None
     r = dm.post("/pictures/upload", data=ref, files={"file": ("k.png", png(), "image/png")}, headers=HX)
+    assert r.status_code == 200 and r.headers["HX-Retarget"] == "[data-picture-window]" and "Last step: frame it" in r.text  # (Frame it)
+    r = dm.post("/pictures/frame", data={**ref, "skip": "1"}, headers=HX)
     assert r.status_code == 204 and "Picture saved" in r.headers["HX-Trigger"] and r.headers["HX-Refresh"] == "true"
     url = pictures.urls(db, [k.id])[k.id]
     assert url["uploaded"] and url["source"] == "upload" and url["thumb"].startswith(f"/campaign/{k.id}/picture?size=thumb&v=")
@@ -88,3 +90,29 @@ def test_player_characters_use_their_d_and_d_beyond_portrait(people, db, monkeyp
     assert portrait.replace("&", "&amp;") in player.get(f"/characters/{cole.id}").text
     assert "From D&amp;D Beyond" in player.get(f"/campaign/{cole.entity.id}/peek").text
     assert ddb.parse_character  # parser keeps only dndbeyond.com portraits (see test_ddb)
+
+
+def test_framing_a_picture_cuts_its_square_and_moves_its_wide_band(people, db):
+    """Feedback 12 (Brett, Nov 5, docs/mockups/picture-framing.html option A): the middle and the zoom picked in Frame it
+    are kept with the picture; the square version is cut around them, the wide band on its page shows around them."""
+    import_bundle(db, BUNDLE)
+    dm, player = people["dm"], people["player"]
+    k = entity(db, "Kieran")
+    ref = {"for": f"entity:{k.id}"}
+    two = Image.new("RGB", (1600, 800), (200, 30, 30))
+    two.paste((30, 30, 200), (800, 0, 1600, 800))  # (red on the left, blue on the right)
+    buf = io.BytesIO()
+    two.save(buf, "PNG")
+    dm.post("/pictures/upload", data=ref, files={"file": ("k.png", buf.getvalue(), "image/png")}, headers=HX)
+    assert player.post("/pictures/frame", data={**ref, "x": "0.2", "y": "0.5", "zoom": "2"}, headers=HX).status_code == 404
+    r = dm.post("/pictures/frame", data={**ref, "x": "0.2", "y": "0.5", "zoom": "2"}, headers=HX)
+    assert r.status_code == 204 and "Picture framed" in r.headers["HX-Trigger"]
+    pic = db.scalar(select(EntityPicture))
+    assert pic.frame == {"x": 0.2, "y": 0.5, "zoom": 2.0}
+    thumb = Image.open(io.BytesIO(player.get(pictures.urls(db, [k.id])[k.id]["thumb"]).content)).convert("RGB")
+    assert thumb.getpixel((160, 160))[0] > 150 and thumb.getpixel((300, 160))[0] > 150  # (all red: cut around the left)
+    assert "object-position: 20.0% 50.0%" in player.get(f"/campaign/{k.id}/peek").text
+    assert "Frame it" in dm.get(f"/pictures?for=entity:{k.id}").text and "Drag the picture" in dm.get(f"/pictures/frame?for=entity:{k.id}").text
+    dm.post("/pictures/upload", data=ref, files={"file": ("k.png", png(), "image/png")}, headers=HX)
+    db.refresh(pic)
+    assert pic.frame is None  # (a new picture starts with askdnd's guess)

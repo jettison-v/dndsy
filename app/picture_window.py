@@ -62,7 +62,7 @@ def upload(request: Request, for_: str = Form("", alias="for"), file: UploadFile
     except pictures.PictureError as e:
         raise HTTPException(409, str(e)) from None
     db.commit()
-    return _done(o, "Picture saved")
+    return _framing(request, db, o, new=True)
 
 
 @router.post("/pictures/draw")
@@ -89,7 +89,42 @@ def use(request: Request, for_: str = Form("", alias="for"), pick: str = Form(""
         raise HTTPException(409, "Pick one of the four first.")
     pictures.use_drawn(db, o, full, thumb, words, style, user)
     db.commit()
-    return _done(o, "Picture saved")
+    return _framing(request, db, o, new=True)
+
+
+def _framing(request: Request, db: Session, o: pictures.Owner, new: bool = False) -> Response:
+    """The Frame it step (feedback 12, docs/mockups/picture-framing.html A), in place of the window: the last step after
+    Upload or a drawn one, and Frame it on a picture already there."""
+    pic = pictures.find(db, o)
+    shown = _shown(db, o)
+    if pic is None or not pic.file_key or not shown:
+        return _done(o, "Picture saved")
+    x, y = o.centering
+    f = pic.frame or {"x": x, "y": y, "zoom": 1.0}
+    out = templates.TemplateResponse(request, "_picture_frame.html", {"o": o, "shown": shown, "f": f, "new": new, "most": pictures.ZOOM_MAX})
+    out.headers["HX-Retarget"], out.headers["HX-Reswap"] = "[data-picture-window]", "outerHTML"
+    return out
+
+
+@router.get("/pictures/frame")
+def framing(request: Request, db: Session = Depends(get_db)):
+    o, _ = _owner(db, request, request.query_params.get("for", ""))
+    return _framing(request, db, o)
+
+
+@router.post("/pictures/frame")
+def save_frame(request: Request, for_: str = Form("", alias="for"), x: float = Form(0.5), y: float = Form(0.5), zoom: float = Form(1.0),
+               skip: str = Form(""), db: Session = Depends(get_db)):
+    """Its middle and how far in (Save), or askdnd's own guess kept (Skip, after a new picture)."""
+    o, _ = _owner(db, request, for_)
+    if skip:
+        return _done(o, "Picture saved")
+    try:
+        pictures.frame(db, o, x, y, zoom)
+    except pictures.PictureError as e:
+        raise HTTPException(409, str(e)) from None
+    db.commit()
+    return _done(o, "Picture framed")
 
 
 @router.post("/pictures/ddb")

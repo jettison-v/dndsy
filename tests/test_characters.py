@@ -294,7 +294,7 @@ def test_what_anyone_can_do_opens_each_rule_with_its_rolls(player, db):
     assert 'class="basic-act" data-panel-url="/characters/%d/detail?ref=rule%%3Abasic%%3AHide">Hide</button>' % cole.id in battle
     assert ">Attack</button>" not in battle and "Attack, Dash" not in battle
     hide = player.get(f"/characters/{cole.id}/detail?ref=rule:basic:Hide").text
-    assert "What anyone can do" in hide and 'data-label="Stealth check"' in hide and "Invisible condition while hidden" in hide
+    assert "What anyone can do" in hide and 'data-label="Hide (Stealth)"' in hide and "the Invisible condition, on your D&amp;D Beyond sheet too" in hide
     search = player.get(f"/characters/{cole.id}/detail?ref=rule:basic:Search").text
     assert all(f'data-label="{k} check"' in search for k in ("Insight", "Medicine", "Perception", "Survival"))
     assert "more this turn" in player.get(f"/characters/{cole.id}/detail?ref=rule:basic:Dash").text

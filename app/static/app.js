@@ -1581,6 +1581,7 @@
       if (notes.length) h += '<ul class="rw-notes">' + notes.map(n => '<li>' + n + '</li>').join('') + '</ul>';
     }
     if (spec.note) h += '<p class="rw-note">' + esc(spec.note) + '</p>';
+    if (spec.endsHidden && !spec.follow) h += '<label class="rw-row rw-hidden"><input type="checkbox" data-ends-hidden checked> This attack ends Hidden</label>';
     if (spec.follow === 'damage' && spec.crit) h += '<p class="rw-note">Critical hit: every damage die is rolled twice, extra dice too.</p>';
     // A recipe: the slot level (when it changes the dice), the choice between its effects, what it rolls
     const rec = spec.recipe && !spec.follow ? spec.recipe : null;
@@ -1657,8 +1658,12 @@
           : { kind: kindOf(evs[evi]), parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '', label: spec.label + (evs.length > 1 ? ' · ' + evs[evi].name : '') }) : {};
         const go = { ...spec, ...fromRecipe, mode, extras, label: spec.kind === 'dice' ? (forText || 'Dice') : (fromRecipe.label || spec.label), ctx,
                      die: +((w.querySelector('[data-die][aria-pressed=true]') || {}).dataset || {}).die || 6,
-                     bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim() };
+                     bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim(),
+                     endsHidden: !!(w.querySelector('[data-ends-hidden]') || {}).checked };
         roll(w, go);
+        if (go.endsHidden && go.cid && window.htmx && document.getElementById('battle-body')) {  // (Hidden ends with the attack)
+          htmx.ajax('POST', '/characters/' + go.cid + '/conditions/end', { values: { name: 'Invisible' }, target: '#battle-body', swap: 'outerHTML' });
+        }
       }
     });
     (w.querySelector('[data-go]') || w).focus();
@@ -2180,10 +2185,10 @@
   // A death save marks itself on the sheet (app/death_saves.py; Brett, 2026-10-29): a roll at the table is marked by
   // the server, which answers with what it marked; a private one says its result here. A reroll or an added die moves
   // the mark (`before`: what the roll counted as).
-  function deathMarked(d) {
+  function deathMarked(d) {  // (and a Hide roll's Hidden, or not: app/hiding.py)
     if (!d) return;
     toast(d.text);
-    document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: d.deliver }));
+    if (d.deliver) document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: d.deliver }));
     document.body.dispatchEvent(new CustomEvent('characterChanged'));
   }
   function deathPrivate(cid, e, before) {
@@ -2289,8 +2294,10 @@
       const lines = keys.flatMap(k => ca[k] || []).map(e => (e.mode === 'dis' ? '!dis ' : e.mode === 'note' ? '!note ' : '') + e.text);
       if (lines.length) advWhy = [advWhy, ...lines].filter(Boolean).join('\n');
     }
+    // Hidden (app/hiding.py): an attack roll ends it, so its window offers that, ticked (the DM may rule otherwise)
+    const endsHidden = !!(body && body.dataset.hidden && kind === 'attack');
     return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe, slot: +el.dataset.slot || 0,
-             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared, who };
+             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared, who, endsHidden };
   }
 
   document.addEventListener('click', e => {
@@ -3868,6 +3875,45 @@
     if (up && up.getAttribute('aria-selected') !== 'true') up.click();
     take(w.querySelector('[data-pw-drop]'), f);
   });
+  // Frame it (app/templates/_picture_frame.html; feedback 12, Nov 5): the picture moves under a fixed square and zooms;
+  // the square's middle, as fractions of the picture, and the zoom go with Save. The wide band beside it shows the same
+  // middle. The square always stays covered.
+  function framer(box) {
+    if (!box || box.dataset.ready) return;
+    const stage = box.querySelector('[data-pw-stage]'), img = box.querySelector('[data-pw-img]'), band = box.querySelector('[data-pw-band]');
+    const zoomIn = box.querySelector('[data-pw-zoom]'), fx = box.querySelector('[data-pw-x]'), fy = box.querySelector('[data-pw-y]'), fz = box.querySelector('[data-pw-z]');
+    let x = Number(box.dataset.x) || 0.5, y = Number(box.dataset.y) || 0.5, zoom = Number(box.dataset.zoom) || 1;
+    const draw = () => {
+      const W = img.naturalWidth, H = img.naturalHeight, S = stage.clientWidth;
+      if (!W || !H || !S) return;
+      const k = S * zoom / Math.min(W, H), w = W * k, h = H * k;
+      const left = Math.min(0, Math.max(S - w, S / 2 - x * w)), top = Math.min(0, Math.max(S - h, S / 2 - y * h));
+      x = (S / 2 - left) / w; y = (S / 2 - top) / h;  // (held inside the picture)
+      Object.assign(img.style, { width: w + 'px', height: h + 'px', left: left + 'px', top: top + 'px' });
+      if (band) band.style.objectPosition = (x * 100).toFixed(1) + '% ' + (y * 100).toFixed(1) + '%';
+      fx.value = x.toFixed(4); fy.value = y.toFixed(4); fz.value = zoom.toFixed(3);
+    };
+    box.dataset.ready = '1';
+    if (img.complete) draw(); else img.addEventListener('load', draw);
+    zoomIn.addEventListener('input', () => { zoom = Number(zoomIn.value) || 1; draw(); });
+    stage.addEventListener('pointerdown', e => {
+      e.preventDefault(); stage.setPointerCapture(e.pointerId);
+      const W = img.naturalWidth, H = img.naturalHeight, k = stage.clientWidth * zoom / Math.min(W, H);
+      const start = { px: e.clientX, py: e.clientY, x, y };
+      const move = ev => { x = start.x - (ev.clientX - start.px) / (W * k); y = start.y - (ev.clientY - start.py) / (H * k); draw(); };
+      const up = () => { stage.removeEventListener('pointermove', move); stage.removeEventListener('pointerup', up); stage.removeEventListener('pointercancel', up); };
+      stage.addEventListener('pointermove', move); stage.addEventListener('pointerup', up); stage.addEventListener('pointercancel', up);
+    });
+    stage.addEventListener('keydown', e => {  // (arrow keys move it too)
+      const d = { ArrowLeft: [-0.02, 0], ArrowRight: [0.02, 0], ArrowUp: [0, -0.02], ArrowDown: [0, 0.02] }[e.key];
+      if (d) { e.preventDefault(); x += d[0]; y += d[1]; draw(); }
+    });
+  }
+  const frameAll = () => document.querySelectorAll('[data-pw-frame]').forEach(framer);
+  document.addEventListener('htmx:afterSettle', frameAll);
+  document.addEventListener('panel:loaded', frameAll);
+  frameAll();
+
   // ---------------------------------------------------------------- the DM changes the fight's order
   // Initiative from askdnd (app/initiative.py; Brett, Nov 4, docs/mockups/initiative/ board 5): on the DM's rows a row is
   // dragged by its handle (a dashed line says the number it will get before you let go), or moved by ↑ ↓, or given a

@@ -234,6 +234,9 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     ctx["spellbar"] = _spellbar(db, ch, ctx)
     now = ctx["conditions"]
     ctx["cond_adv"] = cond.roll_effects([x for x in now if x["counts"]])  # listed in the roll window (app.js specFrom)
+    from app import readying
+
+    ctx["readied"] = readying.shown(ctx["sheet"], ch)  # (Ready: the top of the Reaction column)
     ctx["all_conditions"], ctx["all_effects"] = list(cond.CONDITIONS), list(cond.EFFECTS)
     ctx["active_conditions"] = {x["name"] for x in now if x["sync"] != "ending"}
     ctx["cond_synced"] = ddb_bridge.on_for(db, ch)
