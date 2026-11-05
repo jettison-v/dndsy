@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Battle's top on a phone</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>
+body{margin:0}
+.ph{width:390px;height:760px;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden}
+.appbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;background:var(--chrome);border-bottom:2px solid var(--red)}
+.appbar b{color:var(--strong);font-size:15px}
+.pill{font-size:12px;color:var(--text);border:1px solid var(--line-strong);border-radius:999px;padding:4px 10px;display:inline-flex;gap:6px;align-items:center}
+.pill i{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block}
+.pbody{padding:12px 14px;display:grid;gap:10px;align-content:start;overflow:hidden}
+.nm{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0}
+.nm h2{margin:0;color:var(--strong);font-size:22px}
+.sw{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;padding:2px;font-size:13px}
+.sw span{padding:3px 9px;color:var(--muted)}
+.sw b{padding:3px 9px;background:var(--surface-3);border-radius:6px;color:var(--strong);font-weight:600}
+.desc{color:var(--muted);font-size:13px;line-height:1.4}
+.desc.one{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line);border-radius:9px;padding:3px;text-align:center;font-size:14px;color:var(--muted)}
+.seg b{background:var(--red);color:var(--strong);border-radius:7px;padding:7px 0}
+.seg span{padding:7px 0}
+.seg.small{width:186px;flex:none;font-size:13px}
+.seg.small b,.seg.small span{padding:5px 0}
+.topseg{padding:8px 14px;background:var(--bg);border-bottom:1px solid var(--line)}
+.n5{display:grid;grid-template-columns:1.4fr repeat(4,minmax(0,1fr));gap:6px}
+.t{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:11px;color:var(--muted);display:grid;gap:2px}
+.t b{color:var(--strong);font-size:18px}
+.sv{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.s{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+.s b{color:var(--strong);font-size:14px}
+.res{border:1px solid var(--line);border-radius:8px;padding:9px 12px;display:flex;justify-content:space-between;color:var(--text);font-size:14px}
+.ws{display:flex;flex-wrap:wrap;gap:6px}
+.ws span{border:1px solid var(--line-strong);border-radius:999px;padding:5px 11px;font-size:13px;color:var(--text)}
+.ws span.on{background:var(--surface-3);border-color:var(--blue)}
+.info{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:1px solid var(--line-strong);color:var(--muted);font:600 13px var(--serif);background:none;flex:none}
+.bnav{display:grid;grid-template-columns:repeat(5,1fr);text-align:center;font-size:11px;color:var(--muted);border-top:1px solid var(--line);background:var(--chrome);padding:10px 0 14px}
+.bnav b{color:var(--strong)}
+.cap{display:grid;gap:4px}
+.cap h3{margin:0;color:var(--strong);font-size:17px}
+.saved{color:var(--green);font-weight:600}
+.go{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;border:1px solid var(--line-strong);color:var(--muted);text-decoration:none;font-size:13px;flex:none}
+</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 980px">
+  <div class="head">
+    <div class="num">3 · Feedback 11 · Battle's top on a phone</div>
+    <h1>Tabs first, and the line about the character kept short</h1>
+    <p class="where"><b>Where you'll find it:</b> every character page on a phone (Battle, Sheet, Plan), above Hit Points. Today the name, a two-line description and then the tabs take about a third of an iPhone's screen before the first number. Both options keep everything; they move it.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, 390px); gap: 40px; justify-content: center; align-items: start">
+    <div class="cap"><h3>Today</h3><span class="note">Hit Points start 250 px down</span></div>
+    <div class="cap"><h3>A · Tabs at the very top</h3><span class="note">Under the menu bar, staying there as you scroll; one line about the character, tap for the rest · <span class="saved">first number 70 px higher</span></span></div>
+    <div class="cap"><h3>B · Name and tabs on one row</h3><span class="note">↗ (the D&amp;D Beyond sheet) stays right after the name, then ⓘ for the description; the switch for Owlie under the name · <span class="saved">first number 95 px higher</span></span></div>
+
+    <div class="screen ph">
+      <div class="appbar"><b>The Adventure Begins</b><span class="pill"><i></i>Connected</span></div>
+      <div class="pbody">
+        <div class="nm"><h2>Cole</h2><a class="go" href="https://www.dndbeyond.com/" aria-label="Open Cole’s D&amp;D Beyond sheet">↗</a><span class="sw"><b>Cole</b><span>Owlie</span></span></div>
+        <p class="desc">Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8 · Wayfarer · played by Brett</p>
+        <div class="seg"><b>Battle</b><span>Sheet</span><span>Plan</span></div>
+        <div class="n5"><div class="t">HP<b>51</b></div><div class="t">AC<b>16</b></div><div class="t">Speed<b>45</b></div><div class="t">Init.<b>+3</b></div><div class="t">Spell<b>15</b></div></div>
+        <div class="sv"><span class="s">Str<b>+0</b></span><span class="s">Dex<b>+3</b></span><span class="s">Con<b>+2</b></span><span class="s">Int<b>+4</b></span><span class="s">Wis<b>+8</b></span><span class="s">Cha<b>+3</b></span></div>
+        <div class="res"><span>Resources</span><span class="note">4</span></div>
+        <div class="ws"><span class="on">Normal</span><span>Spider</span><span>Giant Toad</span><span>Polar Bear</span></div>
+      </div>
+      <div class="bnav"><span>Story</span><span>Campaign</span><b>Cole</b><span>Party</span><span>More</span></div>
+    </div>
+
+    <div class="screen ph">
+      <div class="appbar"><b>The Adventure Begins</b><span class="pill"><i></i>Connected</span></div>
+      <div style="display: grid; grid-template-rows: auto minmax(0, 1fr); overflow: hidden">
+        <div class="topseg"><div class="seg"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+        <div class="pbody">
+          <div class="nm"><h2>Cole</h2><a class="go" href="https://www.dndbeyond.com/" aria-label="Open Cole’s D&amp;D Beyond sheet">↗</a><span class="sw"><b>Cole</b><span>Owlie</span></span></div>
+          <button type="button" class="desc one" style="all: unset; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; cursor: pointer" aria-expanded="false">Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8 · Wayfarer · played by Brett</button>
+          <div class="n5"><div class="t">HP<b>51</b></div><div class="t">AC<b>16</b></div><div class="t">Speed<b>45</b></div><div class="t">Init.<b>+3</b></div><div class="t">Spell<b>15</b></div></div>
+          <div class="sv"><span class="s">Str<b>+0</b></span><span class="s">Dex<b>+3</b></span><span class="s">Con<b>+2</b></span><span class="s">Int<b>+4</b></span><span class="s">Wis<b>+8</b></span><span class="s">Cha<b>+3</b></span></div>
+          <div class="res"><span>Resources</span><span class="note">4</span></div>
+          <div class="ws"><span class="on">Normal</span><span>Spider</span><span>Giant Toad</span><span>Polar Bear</span></div>
+          <div class="ws"><span>Giant Octopus</span><span>Hunter Shark</span></div>
+        </div>
+      </div>
+      <div class="bnav"><span>Story</span><span>Campaign</span><b>Cole</b><span>Party</span><span>More</span></div>
+    </div>
+
+    <div class="screen ph">
+      <div class="appbar"><b>The Adventure Begins</b><span class="pill"><i></i>Connected</span></div>
+      <div class="pbody">
+        <div class="nm" style="justify-content: space-between"><span class="nm"><h2>Cole</h2><a class="go" href="https://www.dndbeyond.com/" aria-label="Open Cole’s D&amp;D Beyond sheet">↗</a><button type="button" class="info" aria-label="About Cole">i</button></span><div class="seg small"><b>Battle</b><span>Sheet</span><span>Plan</span></div></div>
+        <span class="sw" style="justify-self: start"><b>Cole</b><span>Owlie</span></span>
+        <div class="n5"><div class="t">HP<b>51</b></div><div class="t">AC<b>16</b></div><div class="t">Speed<b>45</b></div><div class="t">Init.<b>+3</b></div><div class="t">Spell<b>15</b></div></div>
+        <div class="sv"><span class="s">Str<b>+0</b></span><span class="s">Dex<b>+3</b></span><span class="s">Con<b>+2</b></span><span class="s">Int<b>+4</b></span><span class="s">Wis<b>+8</b></span><span class="s">Cha<b>+3</b></span></div>
+        <div class="res"><span>Resources</span><span class="note">4</span></div>
+        <div class="ws"><span class="on">Normal</span><span>Spider</span><span>Giant Toad</span><span>Polar Bear</span></div>
+        <div class="ws"><span>Giant Octopus</span><span>Hunter Shark</span><span>Giant Constrictor Snake</span></div>
+      </div>
+      <div class="bnav"><span>Story</span><span>Campaign</span><b>Cole</b><span>Party</span><span>More</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":980}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

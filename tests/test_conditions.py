@@ -102,7 +102,7 @@ def test_a_condition_shows_on_battle_party_and_your_menu_bar_button(player, dm, 
     page = dm.get(f"/characters/{cole.id}/battle").text
     assert "--edge: var(--cond-exhaustion), var(--cond-prone), var(--cond-poisoned), var(--cond-exhaustion)" in page
     for mode in ("/battle", ""):  # Brett, 2026-10-29: after the name on every character page
-        badges = dm.get(f"/characters/{cole.id}{mode}").text.split('class="char-name"')[1].split('<div class="muted char-sub">')[0]
+        badges = dm.get(f"/characters/{cole.id}{mode}").text.split('class="char-name"')[1].split('<div class="muted char-sub"')[0]
         assert [x.split('"')[0] for x in badges.split('data-name="')[1:]] == ["Poisoned", "Prone", "Exhaustion"]  # in the order they started
         assert 'class="cond-lv">2<' in badges and "Disadvantage on attack rolls" in badges
     party = dm.get("/c/main/party").text

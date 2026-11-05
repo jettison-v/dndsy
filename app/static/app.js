@@ -133,6 +133,7 @@
         el._following = false; el.classList.remove('following');  // (stays until closed: it needs you)
         return;
       }
+      if (s && s.says !== sub.textContent && sub.textContent !== 'On its way to D&D Beyond') window.postMessage({ askdndBridge: 'deliver', ddbId: String(d.ddbId) }, location.origin);  // (moved on: one that waited for another may go now)
       if (s) sub.textContent = s.says;
       if (Date.now() > end) { sub.textContent = 'Still on its way: the Live pill has it'; return settle(10000); }
       el._tick = setTimeout(tick, 1500);
@@ -1256,10 +1257,10 @@
       if (m[2]) { if (m[1] === '-' || +m[2] < 1 || +m[2] > 20 || +m[3] < 2 || +m[3] > 100) return null; terms.push([+m[2], +m[3]]); }
       else flat += (m[1] === '-' ? -1 : 1) * +m[4];
     }
-    if (pos !== s.length || !terms.length || terms.reduce((a, t) => a + t[0], 0) > 40) return null;
+    if (pos !== s.length || (!terms.length && flat < 1) || terms.reduce((a, t) => a + t[0], 0) > 40) return null;  // (a plain "3": an Unarmed Strike's damage)
     return { terms, flat };
   }
-  const formulaText = (terms, flat) => terms.map(t => t[0] + 'd' + t[1]).join('+') + (flat ? signed(flat).replace('−', '-') : '');
+  const formulaText = (terms, flat) => !terms.length ? String(flat) : terms.map(t => t[0] + 'd' + t[1]).join('+') + (flat ? signed(flat).replace('−', '-') : '');
   function keptOf(dice, mode) { return mode === 'adv' ? Math.max(...dice) : mode === 'dis' ? Math.min(...dice) : dice[0]; }
   function part(p) { return { extras: [], crit: false, ...p, kept_at: p.kept != null && p.dice.length > 1 ? p.dice.indexOf(p.kept) : -1 }; }
   function rollD20(mod, mode) {
@@ -1854,7 +1855,9 @@
     if (!host.id) host.id = 'dice-box-' + Math.random().toString(36).slice(2);
     let box = null, built = null, ready = null, queue = Promise.resolve();
     function make(t) {
-      const room = relative ? roomFor(host) : 1;
+      // (relative: true, the room the page gives the dice; a number, the width the tuning was made for, so the corner
+      // tray's dice grow with it)
+      const room = relative === true ? roomFor(host) : relative ? Math.round(Math.min(2, Math.max(1, host.clientWidth / relative)) * 20) / 20 : 1;
       const sig = t ? [t.gravity, t.size, t.shadows, t.light, room].join() : '';
       if (ready && sig === built) return ready;
       built = sig;
@@ -1872,7 +1875,7 @@
         // The library draws at one pixel per screen point, so on a Retina screen (2 pixels per point) the dice were
         // drawn at half resolution and stretched, looking soft (Brett, 2026-10-26). Draw at the screen's own
         // resolution, up to 2x: sharper, without the cost of 3x phones or very large screens.
-        return box.initialize().then(() => { if (box.renderer) box.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); sound(); }); });
+        return box.initialize().then(() => { if (box.renderer) box.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); sound(); (window.askdndDice = window.askdndDice || new Set()).add(box); }); });
       return ready;
     }
     // Sounds (Your dice › Dice sounds, per device). The library loads its sound files only if sound is on when it
@@ -1950,7 +1953,7 @@
     trayEl.setAttribute('aria-hidden', 'true');
     trayEl.innerHTML = '<div class="dtr-felt"><div class="dtr-box"></div></div><div class="dtr-foot"></div>';
     document.body.append(trayEl);
-    trayBox = diceBox(trayEl.querySelector('.dtr-box'), {}, tuning('tray'));
+    trayBox = diceBox(trayEl.querySelector('.dtr-box'), {}, tuning('tray'), 300);  // (Dice tuning's tray is 300 wide)
     return trayBox;
   }
   function throwOthers(li) {
@@ -3353,11 +3356,20 @@
     window.addEventListener('scroll', () => { if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4) light(); }, { passive: true });
     dsJump.querySelector('[data-ds-top]').addEventListener('click', e => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
   }
+  // ⓘ by the character's name on a phone: the line about them (Brett chose B, Nov 4, feedback 11)
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.char-about');
+    if (!b) return;
+    const sub = document.getElementById(b.getAttribute('aria-controls'));
+    const open = b.getAttribute('aria-expanded') !== 'true';
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (sub) sub.classList.toggle('open', open);
+  });
   // A change for D&D Beyond was just made on this page, whichever it is (web.deliver_now): the extension makes it now,
   // not at its next check every 30 seconds (Brett, 2026-10-29: Battle's changes waited up to half a minute)
   document.body.addEventListener('bridgeDeliver', e => {
     const ddbId = e.detail && e.detail.ddbId;
-    if (ddbId) window.postMessage({ askdndBridge: 'deliver', ddbId: String(ddbId) }, location.origin);
+    for (const id of [...((e.detail && e.detail.also) || []), ddbId]) if (id) window.postMessage({ askdndBridge: 'deliver', ddbId: String(id) }, location.origin);
     if (e.detail && e.detail.upto) window.askdndFollow(e.detail);  // its corner card follows it (app.js "following a change")
   });
 })();
@@ -3583,7 +3595,14 @@
       if (e.target === pay) { typed = pay.value.trim() !== ''; draw(); }
       if (e.target === amount) draw();
     });
-    root.addEventListener('change', e => { if (e.target === paying || e.target.matches('[data-ib-coin]')) draw(); });
+    root.addEventListener('change', e => {
+      if (e.target.matches('[data-ib-place]')) {  // For <character>: what it takes the place of (docs/mockups/gear-compare/)
+        const box = e.target.closest('[data-ib-compare]');
+        box.querySelectorAll('[data-ib-place-rows]').forEach(t => { t.hidden = t.dataset.ibPlaceRows !== e.target.value; });
+        return;
+      }
+      if (e.target === paying || e.target.matches('[data-ib-coin]')) draw();
+    });
     draw();
   }
   document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-ib]'); if (root) start(root); });
@@ -3647,7 +3666,22 @@
       Object.assign(im.style, { width: r.width + 'px', height: r.height + 'px' });
       im.removeAttribute('srcset'); im.src = BLANK;
     });
+    // The 3D dice are drawn in WebGL, which keeps no copy of its last frame, so a copy of the page drew them blank
+    // (feedback 7): each box on screen draws once more and is copied at once into a picture over its canvas
+    const stills = [];
+    (window.askdndDice || []).forEach(b => {
+      const c = b.renderer && b.renderer.domElement, r = c && c.getBoundingClientRect();
+      if (!c || !c.isConnected || !r.width || !r.height || offscreen(c)) return;
+      try { b.renderer.render(b.scene, b.camera); } catch (e) { return; }
+      const im = document.createElement('img');
+      im.src = c.toDataURL();
+      Object.assign(im.style, { position: 'absolute', left: c.offsetLeft + 'px', top: c.offsetTop + 'px', width: c.offsetWidth + 'px', height: c.offsetHeight + 'px', pointerEvents: 'none' });
+      im.className = 'fb-still';
+      c.parentElement.append(im);
+      stills.push(im);
+    });
     try { return await h.toJpeg(document.body, options); } catch (e) { return null; } finally {
+      stills.forEach(im => im.remove());
       aside.forEach(([el, name, value]) => el.setAttribute(name, value));
       blanked.forEach(([im, src, srcset, w, hgt]) => { if (srcset !== null) im.setAttribute('srcset', srcset); if (src !== null) im.setAttribute('src', src); else im.removeAttribute('src'); im.style.width = w; im.style.height = hgt; });
     }

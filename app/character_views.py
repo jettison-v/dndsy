@@ -203,6 +203,9 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
 DICE = r"(\d+d\d+(?:\s*[+\u2212-]\s*\d+(?!d))?)"
 HEALS = re.compile(r"\b(?:regains?|restores?|heals?)\s+" + DICE + r"(?!\s*(?:[+\u2212-]\s*\d+\s*)?(?:expended\s+)?charges)", re.I)
 DEALS = re.compile(DICE + r"\s+(?:[a-z]+\s+){0,2}damage\b", re.I)
+# a flat damage with no dice, an Unarmed Strike's "5 ft · 3 bludgeoning" (feedback, Nov 4: it never rolled)
+FLAT = re.compile(r"(?:^|·)\s*(\d{1,2})\s+(?:acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|"
+                  r"slashing|thunder)\b", re.I)
 MAKES_UNARMED = re.compile(r"\bmake (?:one|two|three|an?) Unarmed Strikes?\b", re.I)
 
 
@@ -231,6 +234,8 @@ def rollable(o: dict, unarmed: dict | None = None) -> dict:
         m = HEALS.search(text)
         d = None if m else DEALS.search(text)
         o["dice"], o["heal"] = (_dice(m.group(1)), True) if m else (_dice(d.group(1)), False) if d else ("", o["heal"])
+    if not o["dice"] and str(o.get("hit") or "")[:1] in "+-\u2212" and o.get("hit") and (f := FLAT.search(meta)):
+        o["dice"] = f.group(1)
     return o
 
 
@@ -342,9 +347,47 @@ def find(sheet: dict, ref: str) -> dict | None:
     return None
 
 
+# What anyone can do as an Action (2024 PHB), on Battle under the Action column; each opens its rule in the side panel
+# with the rolls it calls for (feedback 8, Nov 4). Attack isn't listed: the attacks are the column's own rows.
+BASIC_ACTIONS = ("Dash", "Disengage", "Dodge", "Help", "Hide", "Influence", "Magic", "Ready", "Search", "Study", "Utilize")
+BASIC_SKILLS = {"Hide": ("Stealth",), "Search": ("Insight", "Medicine", "Perception", "Survival"),
+                "Study": ("Arcana", "History", "Investigation", "Nature", "Religion"),
+                "Influence": ("Deception", "Intimidation", "Performance", "Persuasion", "Animal Handling")}
+
+
+def basic_action(sheet: dict, name: str) -> dict | None:
+    """One of the actions anyone can take, for the side panel: its rule (rules_terms' summary), the checks it rolls,
+    and for Dash the movement it gives."""
+    from app import rules_terms
+
+    if name not in BASIC_ACTIONS:
+        return None
+    t = next((t for t in rules_terms.TERMS if t.name in (name, f"{name} action")), None)
+    skills = [k for want in BASIC_SKILLS.get(name, ()) for k in sheet.get("skills") or [] if k["name"] == want]
+    speed = (sheet.get("speed") or {}).get("walk") if name == "Dash" else None
+    return {"name": name, "key": f"rule:basic:{name}", "section": "basic", "summary": t.text if t else "", "where": t.where if t else "",
+            "skills": skills, "speed": speed}
+
+
+def unarmed_choices(sheet: dict, x: dict) -> dict | None:
+    """An Unarmed Strike's three ways (2024 PHB: Damage, Grapple, Shove; feedback 5, Nov 4), with the DC askdnd works
+    out: 8 + Strength modifier + Proficiency Bonus, or Dexterity for a Monk's Martial Arts."""
+    if not (x.get("name") or "").startswith("Unarmed Strike"):
+        return None
+    mods = {a["key"]: a.get("modifier") or 0 for a in sheet.get("abilities") or []}
+    pb = sheet.get("proficiency_bonus") or 2
+    monk = any(a.get("martial_arts") for a in sheet.get("attacks") or [] if a["name"] == "Unarmed Strike")
+    use = "dexterity" if monk and mods.get("dexterity", 0) > mods.get("strength", 0) else "strength"
+    return {"dc": 8 + mods.get(use, 0) + pb, "from": f"8 + {use.title()} modifier ({mods.get(use, 0):+d}) + Proficiency Bonus ({pb:+d})"
+            + (" · Martial Arts lets you use Dexterity" if use == "dexterity" else "")}
+
+
 def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | None:
     """Everything the side panel shows for one thing: the thing itself, how it
     works on a turn (if it's an option), and where it comes from."""
+    if ref.startswith("rule:basic:"):
+        b = basic_action(sheet, ref.removeprefix("rule:basic:"))
+        return {"x": b, "opt": None, "section": "basic", "roll": None} if b else None
     x = find(sheet, ref)
     if x is None and not ref.startswith(("attack:", "rule:")):
         return None
@@ -372,7 +415,7 @@ def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | Non
                          "summary": x.get("summary") or "", "text": x.get("text") or "", "adv": []})
     if roll is not None and not (roll.get("dice") or (roll.get("hit") or "")[:1] in ("+", "-", "\u2212")):
         roll = None
-    return {"x": x, "opt": opt, "section": x["section"], "roll": roll}
+    return {"x": x, "opt": opt, "section": x["section"], "roll": roll, "unarmed": unarmed_choices(sheet, x)}
 
 
 def label_for(sheet: dict, ref: str) -> str:

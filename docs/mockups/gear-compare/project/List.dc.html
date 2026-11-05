@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The change on each row</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>
+body{margin:0}
+.lrow{display:grid;grid-template-columns:minmax(0,1fr) 92px minmax(0,1.1fr) 44px;gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);font-size:14px}
+.lrow.head{border-top:0;font:700 11px/1 var(--cond);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);padding-top:12px}
+.lrow b{color:var(--strong);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.d{display:inline-flex;align-items:center;gap:3px;font:700 12px/1.2 var(--sans);border-radius:6px;padding:2px 7px;white-space:nowrap}
+.d.up{color:#7fd6a0;background:rgba(91,191,127,.14)}
+.d.down{color:#f0a868;background:rgba(240,168,104,.14)}
+.d.same{color:var(--muted);background:var(--surface-2)}
+.plus{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--text);font:600 16px var(--sans)}
+.side{display:grid;gap:12px;align-content:start}
+.side .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px}
+.side h3{margin:0;color:var(--strong);font-size:16px}
+</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 960px">
+  <div class="head">
+    <div class="num">2 · Option B · with A, or instead of it</div>
+    <h1>The change on each row, so the list compares too</h1>
+    <p class="where"><b>Where you'll find it:</b> the item browser's list, a column "For Cole" in place of today's tick or triangle: the two or three numbers that change most, the way an RPG's shop marks gear. The details (board 1) still give every number and the catches. Off for a DM's Give loot list until a character is picked.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start">
+    <div class="ib" style="height: 700px">
+      <div class="ib-top"><h3>Add item</h3><span class="note">Cole · compared with what he has equipped</span></div>
+      <div style="overflow: hidden">
+        <div class="lrow head"><span>Item</span><span>Cost</span><span>For Cole</span><span></span></div>
+        <div class="lrow"><span><b>+1 Quarterstaff</b><br><span class="note">Simple weapon · Uncommon</span></span><span class="note">Ask the DM</span><span class="chips"><span class="d up" aria-label="To hit up 1">Hit ▲1</span><span class="d up" aria-label="Damage up 1">Dmg ▲1</span></span><button type="button" class="plus" aria-label="Add +1 Quarterstaff">+</button></div>
+        <div class="lrow"><span><b>Longsword</b><br><span class="note">Martial weapon</span></span><span>15 gp</span><span class="chips"><span class="d down" aria-label="To hit down 3">Hit ▼3</span><span class="d down" aria-label="Damage down">Dmg ▼</span></span><button type="button" class="plus" aria-label="Add Longsword">+</button></div>
+        <div class="lrow"><span><b>Shield</b><br><span class="note">Shield</span></span><span>10 gp</span><span class="chips"><span class="d down" aria-label="Armor Class down 2">AC ▼2</span><span class="d down" aria-label="Speed down 10 feet">Speed ▼10</span></span><button type="button" class="plus" aria-label="Add Shield">+</button></div>
+        <div class="lrow"><span><b>Chain Mail</b><br><span class="note">Heavy armor</span></span><span>75 gp</span><span class="chips"><span class="d same" aria-label="Armor Class the same">AC =</span><span class="d down" aria-label="Speed down 20 feet">Speed ▼20</span><span class="d down" aria-label="No spellcasting">No spells</span></span><button type="button" class="plus" aria-label="Add Chain Mail">+</button></div>
+        <div class="lrow"><span><b>Cloak of Protection</b><br><span class="note">Wondrous item · Uncommon</span></span><span class="note">Ask the DM</span><span class="chips"><span class="d up" aria-label="Armor Class up 1">AC ▲1</span><span class="d up" aria-label="Every save up 1">Saves ▲1</span></span><button type="button" class="plus" aria-label="Add Cloak of Protection">+</button></div>
+        <div class="lrow"><span><b>Gauntlets of Ogre Power</b><br><span class="note">Wondrous item · Uncommon</span></span><span class="note">Ask the DM</span><span class="chips"><span class="d up" aria-label="Strength up 11">Str ▲11</span><span class="d up" aria-label="Athletics up 5">Athletics ▲5</span></span><button type="button" class="plus" aria-label="Add Gauntlets of Ogre Power">+</button></div>
+        <div class="lrow"><span><b>Rope, Hempen (50 feet)</b><br><span class="note">Adventuring gear</span></span><span>1 gp</span><span class="note">Nothing to compare</span><button type="button" class="plus" aria-label="Add Rope">+</button></div>
+        <div class="lrow"><span><b>Potion of Healing</b><br><span class="note">Potion · Common</span></span><span class="note">Ask the DM</span><span class="note">Heals 2d4 + 2</span><button type="button" class="plus" aria-label="Add Potion of Healing">+</button></div>
+      </div>
+      <div class="ib-foot"><span class="lbl">Adding</span><span class="note">Nothing yet</span></div>
+    </div>
+    <div class="side">
+      <div class="card"><h3>How a row is worked out</h3><p class="note">Weapons against the one in hand (Quarterstaff here), armor against what gives his AC now (Unarmored Defense), a magic item that's worn against nothing: what it adds. The same sums as board 1, cut to what changes most.</p></div>
+      <div class="card"><h3>What it never does</h3><p class="note">Sort or mark a "best" item, or hide one that's worse. A ▼ is a fact, like the triangle for a catch today; the player and the DM decide.</p></div>
+      <div class="card"><h3>On a phone</h3><p class="note">The chips go under the item's name on its row; the details open over the list as they do now.</p></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

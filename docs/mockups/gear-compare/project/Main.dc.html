@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Compared with what you have</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./askdnd.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap">
+<style>
+body{margin:0}
+.pick{display:grid;gap:2px;padding:8px}
+.pick button{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;text-align:left;background:none;border:1px solid transparent;border-radius:8px;padding:8px 10px;color:var(--text);font:13px var(--sans);cursor:pointer}
+.pick button.on{background:var(--surface-3);border-color:var(--line-strong)}
+.pick button b{color:var(--strong);font-weight:600}
+.cmp{border:1px solid var(--line-strong);border-radius:10px;background:var(--surface);overflow:hidden}
+.cmp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.cmp-h b{color:var(--strong);font-size:14px}
+.in-place{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.in-place select{font:13px var(--sans);color:var(--text);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:6px;padding:3px 8px}
+.cmp table{width:100%;border-collapse:collapse;font-size:14px}
+.cmp th{font:700 11px/1 var(--cond);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);text-align:left;padding:9px 14px 7px}
+.cmp td{padding:8px 14px;border-top:1px solid var(--line);vertical-align:top}
+.cmp td.k{color:var(--muted)}
+.cmp td.now{color:var(--text)}
+.cmp td.then{color:var(--strong);font-weight:600}
+.d{display:inline-flex;align-items:center;gap:4px;font:700 13px/1.2 var(--sans);border-radius:6px;padding:2px 7px;white-space:nowrap}
+.d.up{color:#7fd6a0;background:rgba(91,191,127,.14)}
+.d.down{color:#f0a868;background:rgba(240,168,104,.14)}
+.d.same{color:var(--muted);background:var(--surface-2)}
+.d.lost{color:#f0a868;background:rgba(240,168,104,.14)}
+.why{display:block;color:var(--faint);font-size:12px;font-weight:400;margin-top:2px}
+.catch{display:grid;grid-template-columns:20px minmax(0,1fr);gap:6px;font-size:13px;line-height:1.45;padding:0 14px 10px}
+.catch:first-of-type{padding-top:10px}
+.catch .m{color:var(--amber);font-weight:700;text-align:center}
+</style>
+</helmet>
+<div class="board" style="width: 1360px; height: 960px">
+  <div class="head">
+    <div class="num">1 · Feedback 2 · Compared with what you have · try it</div>
+    <h1>The item against what you have now, number by number</h1>
+    <p class="where"><b>Where you'll find it:</b> the item browser (Sheet › Items › + Add item, and the DM's Give loot), in the details beside the list, where "For Cole" is today. Each number the item would change, now and with it, and by how much: ▲ and ▼ in two colours that differ in lightness too. A weapon or armor is compared with the one it would take the place of, which you pick; the catches the rules attach stay listed under it. Facts from the sheet and the 2024 rules; never which to pick. Try it: click each item, and for the +1 Quarterstaff and Longsword change what it takes the place of.</p>
+  </div>
+  <div class="ib" style="height: 750px">
+    <div class="ib-top"><h3>Add item</h3><span class="note">Cole · Druid 6 / Monk 2 · AC 16 · Speed 45 ft · attuned 2 of 3</span></div>
+    <div class="ib-body" style="grid-template-columns: 300px minmax(0, 1fr)">
+      <div class="ib-list" style="border-right: 1px solid var(--line)">
+        <div class="pick" role="list" aria-label="Items">
+          <sc-for list="{{ items }}" as="it" hint-placeholder-count="6">
+            <button type="button" class="{{ it.cls }}" onClick="{{ it.pick }}" aria-pressed="{{ it.pressed }}"><span><b>{{ it.name }}</b><br><span class="note">{{ it.kind }}</span></span><span class="{{ it.rarCls }}">{{ it.rarity }}</span></button>
+          </sc-for>
+        </div>
+      </div>
+      <div class="ib-detail" style="border-left: 0; padding: 16px 22px; gap: 12px; overflow: auto">
+        <div class="row start" style="gap: 10px"><h4>{{ sel.name }}</h4><span class="{{ sel.rarCls }}">{{ sel.rarity }}</span><span class="tagg">{{ sel.kind }}</span></div>
+        <div class="facts"><span>Cost</span><span>{{ sel.cost }}</span><span>{{ sel.factLabel }}</span><span>{{ sel.fact }}</span></div>
+        <section class="cmp" aria-label="Compared with Cole now">
+          <div class="cmp-h">
+            <b>For Cole: now and with it</b>
+            <sc-if value="{{ sel.hasPlace }}" hint-placeholder-val="{{ true }}">
+              <label class="in-place">In place of
+                <select onChange="{{ sel.setPlace }}" aria-label="What it takes the place of">
+                  <sc-for list="{{ sel.places }}" as="p" hint-placeholder-count="2"><option value="{{ p.id }}" selected="{{ p.sel }}">{{ p.name }}</option></sc-for>
+                </select>
+              </label>
+            </sc-if>
+            <sc-if value="{{ sel.noPlace }}" hint-placeholder-val="{{ false }}"><span class="note">{{ sel.placeNote }}</span></sc-if>
+          </div>
+          <table>
+            <thead><tr><th scope="col">Number</th><th scope="col">Now</th><th scope="col">With it</th><th scope="col">Change</th></tr></thead>
+            <tbody>
+              <sc-for list="{{ rows }}" as="r" hint-placeholder-count="4">
+                <tr><td class="k">{{ r.k }}</td><td class="now">{{ r.now }}</td><td class="then">{{ r.then }}<span class="why">{{ r.why }}</span></td><td><span class="{{ r.dCls }}" aria-label="{{ r.say }}">{{ r.d }}</span></td></tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <sc-for list="{{ catches }}" as="c" hint-placeholder-count="2">
+            <div class="catch"><span class="m" aria-label="Catch">!</span><span>{{ c }}</span></div>
+          </sc-for>
+        </section>
+        <p class="note">{{ sel.what }}</p>
+        <button type="button" class="btn main" style="justify-self: start">+ Add {{ sel.name }}</button>
+      </div>
+    </div>
+    <div class="ib-foot"><span class="lbl">Adding</span><span class="note">Nothing yet: + on an item puts it here</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { picked: '+1 Quarterstaff', place: {} };
+  }
+  renderVals() {
+    const up = (k, now, then, d, why) => ({ k, now, then, d: '▲ ' + d, dCls: 'd up', say: 'Up ' + d, why: why || '' });
+    const down = (k, now, then, d, why) => ({ k, now, then, d: '▼ ' + d, dCls: 'd down', say: 'Down ' + d, why: why || '' });
+    const same = (k, now, then, why) => ({ k, now, then, d: 'Same', dCls: 'd same', say: 'No change', why: why || '' });
+    const lost = (k, now, then, why) => ({ k, now, then, d: 'Lost', dCls: 'd lost', say: 'Lost', why: why || '' });
+    const ITEMS = {
+      '+1 Quarterstaff': { kind: 'Simple weapon', rarity: 'Uncommon', cost: 'Ask the DM', factLabel: 'Damage', fact: '1d6 Bludgeoning, +1 · Versatile (1d8) · Topple',
+        what: 'A magic weapon: +1 to attack and damage rolls made with it.',
+        places: [['qs', 'Quarterstaff (in hand)'], ['un', 'Unarmed Strike']],
+        by: {
+          qs: { rows: [up('To hit', '+5', '+6', '1', 'Martial Arts: Dexterity +2, Proficiency +3, the weapon +1'), up('Damage', '1d6 + 2', '1d6 + 3', '1'), same('Two hands', '1d8 + 2', '1d8 + 3 (▲ 1)')], catches: [] },
+          un: { rows: [same('To hit', '+6', '+6'), same('Damage', '1d6 + 3', '1d6 + 3', 'the Martial Arts die is 1d6 either way')], catches: ['Holding it, you can still make Unarmed Strikes: it takes a hand, not your Martial Arts.'] },
+        } },
+      'Longsword': { kind: 'Martial weapon', rarity: 'Not magic', cost: '15 gp', factLabel: 'Damage', fact: '1d8 Slashing · Versatile (1d10) · Sap',
+        what: 'A martial melee weapon; Versatile: two hands deal 1d10.',
+        places: [['qs', 'Quarterstaff (in hand)'], ['un', 'Unarmed Strike']],
+        by: {
+          qs: { rows: [down('To hit', '+5', '+2', '3', 'Strength −1, Proficiency +3: not a Monk weapon, so no Dexterity'), down('Damage', '1d6 + 2', '1d8 − 1', 'about 1.5 a hit', 'average 5.5 → 3.5'), same('Mastery', 'none', 'none', 'Sap needs Weapon Mastery')], catches: ['Not a Monk weapon: Martial Arts doesn’t use it.'] },
+          un: { rows: [down('To hit', '+6', '+2', '4'), down('Damage', '1d6 + 3', '1d8 − 1', 'about 3 a hit', 'average 6.5 → 3.5')], catches: ['Not a Monk weapon: Martial Arts doesn’t use it.'] },
+        } },
+      'Shield': { kind: 'Shield', rarity: 'Not magic', cost: '10 gp', factLabel: 'AC', fact: '+2', what: 'Held in one hand; it adds 2 to Armor Class.',
+        placeNote: 'In your other hand',
+        rows: [down('Armor Class', '16', '14', '2', 'Unarmored Defense (Monk) stops with a Shield: 10 + Dexterity 2 + Shield 2'), lost('Martial Arts', 'yes', 'no', 'only without armor or a Shield'), lost('Speed', '45 ft', '35 ft', 'Unarmored Movement needs no Shield')],
+        catches: [] },
+      'Chain Mail': { kind: 'Heavy armor', rarity: 'Not magic', cost: '75 gp', factLabel: 'AC', fact: '16 · Strength 13 · Stealth Disadvantage', what: 'Heavy armor of interlocking rings; Dexterity doesn’t add to its AC.',
+        placeNote: 'In place of Unarmored Defense',
+        rows: [same('Armor Class', '16', '16', '16 from the armor, in place of 10 + Dexterity 2 + Wisdom 4'), down('Speed', '45 ft', '25 ft', '20 ft', 'no Unarmored Movement, and −10 ft for Strength 8 under 13'), lost('Stealth', '+2', 'Disadvantage'), lost('Spellcasting', 'yes', 'no', 'no Heavy Armor training')],
+        catches: ['No Heavy Armor training: Disadvantage on every D20 Test that uses Strength or Dexterity.', 'Martial Arts works only without armor.'] },
+      'Cloak of Protection': { kind: 'Wondrous item', rarity: 'Uncommon', cost: 'Ask the DM', factLabel: 'Attunement', fact: 'Required', what: 'While you wear it, +1 to Armor Class and saving throws.',
+        placeNote: 'Worn with what you have',
+        rows: [up('Armor Class', '16', '17', '1'), up('Every save', 'Str −1 · Dex +2 · Con +2 · Int +4 · Wis +8 · Cha +3', 'Str +0 · Dex +3 · Con +3 · Int +5 · Wis +9 · Cha +4', '1 each'), same('Attuned', '2 of 3', '3 of 3', 'Ring of Invisibility, Stone of Good Luck')],
+        catches: [] },
+      'Gauntlets of Ogre Power': { kind: 'Wondrous item', rarity: 'Uncommon', cost: 'Ask the DM', factLabel: 'Attunement', fact: 'Required', what: 'While you wear them, your Strength is 19 (no change if it’s already higher).',
+        placeNote: 'Worn with what you have',
+        rows: [up('Strength', '8', '19', '11'), up('Athletics', '−1', '+4', '5'), up('Strength save', '−1', '+4', '5'), same('Your attacks', '+6 · 1d6 + 3', '+6 · 1d6 + 3', 'they use Dexterity (Martial Arts)'), same('Attuned', '2 of 3', '3 of 3')],
+        catches: [] },
+    };
+    const NAMES = Object.keys(ITEMS);
+    const KIND = { 'Not magic': 'mundane', 'Common': 'common', 'Uncommon': 'uncommon', 'Rare': 'rare' };
+    const rc = r => 'rar ' + (KIND[r] || 'veryrare');
+    const name = this.state.picked, it = ITEMS[name];
+    const placeId = it.places ? (this.state.place[name] || it.places[0][0]) : null;
+    const view = it.places ? it.by[placeId] : it;
+    return {
+      items: NAMES.map(n => ({ name: n, kind: ITEMS[n].kind, rarity: ITEMS[n].rarity, rarCls: rc(ITEMS[n].rarity), cls: n === name ? 'on' : '', pressed: n === name ? 'true' : 'false',
+        pick: () => this.setState({ picked: n }) })),
+      sel: { name, kind: it.kind, rarity: it.rarity, rarCls: rc(it.rarity), cost: it.cost, factLabel: it.factLabel, fact: it.fact, what: it.what,
+        hasPlace: !!it.places, noPlace: !it.places, placeNote: it.placeNote || '',
+        places: (it.places || []).map(([id, n]) => ({ id, name: n, sel: id === placeId })),
+        setPlace: e => this.setState({ place: { ...this.state.place, [name]: e.target.value } }) },
+      rows: view.rows,
+      catches: view.catches,
+    };
+  }
+}
+</script>
+</body>
+</html>

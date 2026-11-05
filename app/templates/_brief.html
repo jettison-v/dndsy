@@ -35,4 +35,5 @@
   {% endif %}
   {% else %}<p class="muted">Not fetched from D&amp;D Beyond yet.</p>{% endif %}
 </div>
-<div class="peek-foot row"><a class="btn" href="/characters/{{ c.id }}/battle" data-no-peek>Battle</a><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Sheet</a></div>
+{# Give loot here too: Party is where the DM hands it out (feedback 6, Nov 4) #}
+<div class="peek-foot row"><a class="btn" href="/characters/{{ c.id }}/battle" data-no-peek>Battle</a><a class="btn" href="/characters/{{ c.id }}" data-no-peek>Sheet</a>{% if can_loot and not can_play %}<button type="button" class="btn" data-modal-url="/characters/{{ c.id }}/items/browse" data-modal-size="large">Give loot</button>{% endif %}</div>

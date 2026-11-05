@@ -1,4 +1,4 @@
-{% from "_char.html" import pips, count_pips, sync, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, insp_mark, portrait, spends, adv, hit, roll_attrs, sync_attrs, rest_btn %}
+{% from "_char.html" import pips, count_pips, sync, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, insp_mark, portrait, spends, adv, hit, roll_attrs, sync_attrs, rest_btn, basic_actions %}
 {% from "_notes_macros.html" import combo_body %}
 {% from "_cond_icons.html" import cond_icon, cond_halo with context %}
 {% set s = sheet %}
@@ -135,8 +135,8 @@
       {% if col["items"] %}<div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }} items" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>{% for o in col["items"] %}{{ move(o) }}{% endfor %}</div>{% endif %}
       <div class="seeall items-all"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?items=1">All items ({{ col.item_count }}) →</a></div>
       {% endif %}
-      {% if cost == "Action" and form %}<div class="move static"><b>Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Search, Study, Utilize</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
-      {% elif cost == "Action" %}<div class="move static"><b>Attack, Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</b><div class="meta">What anyone can do</div></div>{% endif %}
+      {% if cost == "Action" and form %}<div class="move static"><b>{{ basic_actions(c, basic_names | reject("equalto", "Ready")) }}</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
+      {% elif cost == "Action" %}<div class="move static"><b>{{ basic_actions(c, basic_names) }}</b><div class="meta">What anyone can do</div></div>{% endif %}
       {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s ({{ col.count }}) →</a></div>{% endif %}
     </div>
     {% endfor %}

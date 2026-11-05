@@ -40,7 +40,8 @@ def test_damage_doubles_the_dice_on_a_critical_hit_but_not_the_bonus():
 
 def test_formulas_mix_dice():
     assert tr.parse_formula("2d6 + 1d8 - 1") == ([(2, 6), (1, 8)], -1)
-    assert tr.parse_formula("d6") is None and tr.parse_formula("5") is None and tr.parse_formula("1d6-1d4") is None
+    assert tr.parse_formula("d6") is None and tr.parse_formula("0") is None and tr.parse_formula("1d6-1d4") is None
+    assert tr.parse_formula("3") == ([], 3)  # an Unarmed Strike's damage: no dice
     assert tr.parse_extras(["Bless:+1d4", "Other: -2"]) == [("Bless", 1, 1, 4), ("Other", -1, 2, 0)]
     assert tr.parse_extras(["Bless:1d4"]) is None
 
@@ -180,6 +181,20 @@ def test_damage_belongs_to_its_attack_and_doubles_on_a_natural_20(table, db, mon
     assert post(table["other"], parent=attack["id"], action="damage").status_code == 403  # nobody else's
     log = table["player"].get("/rolls").text
     assert log.count('class="roll-item') == 1 and "Critical damage" in log and "roll-follow" not in log
+
+
+def test_flat_damage_rolls_after_its_attack(table, db, monkeypatch):
+    """Feedback, Nov 4: an Unarmed Strike's "3 bludgeoning" has no dice, so its attack never offered damage. The
+    Battle row picks the number up, and a critical hit doubles only dice, so it stays 3."""
+    from app.character_views import rollable
+
+    assert rollable({"name": "Unarmed Strike", "hit": "+5", "meta": "5 ft · 3 bludgeoning"})["dice"] == "3"
+    assert rollable({"name": "Lore", "hit": "", "meta": "a note · 3 bludgeoning"})["dice"] == ""  # (no attack, no roll)
+    monkeypatch.setattr(tr, "die", lambda sides: 20)
+    attack = post(table["player"], character=char(db, "Cole").id, kind="attack", label="Unarmed Strike", mod="5", dmg="3").json()["roll"]
+    assert attack["can"]["damage"] == "3"
+    d = post(table["player"], parent=attack["id"], action="damage").json()["roll"]["damage"]
+    assert (d["total"], d["dice"], d["formula"]) == (3, [], "3")
 
 
 def test_no_damage_after_a_natural_1(table, db, monkeypatch):
