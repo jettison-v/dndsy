@@ -58,6 +58,7 @@ from app.history_pages import router as history_router
 from app.house_rules_pages import router as house_rules_router
 from app.campaigns_admin import router as campaigns_router
 from app.dice import router as dice_router
+from app.narration import router as narration_router
 from app import characters, errors, realtime
 from app.errors import router as errors_router
 from app.realtime import router as realtime_router
@@ -188,6 +189,7 @@ app.include_router(history_router)
 app.include_router(house_rules_router)
 app.include_router(campaigns_router)
 app.include_router(dice_router)
+app.include_router(narration_router)  # Listen to the recap (Labs): the narration and the motion comic
 app.include_router(realtime_router)
 app.include_router(errors_router)
 app.include_router(ddb_bridge_router)  # only where DDB_BRIDGE=1, per campaign (app/ddb_bridge.py)
