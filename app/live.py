@@ -128,10 +128,12 @@ def table(user: dict | None, path: str = "", rows: list[dict] | None = None, foc
     m = CHARACTER_PAGE.match(path or "")
     here = by_id.get(int(m.group(1))) if m else None
     mode = MODES[m.group(2)] if here else None
-    mine = next((r for r in rows if r["mine"]), None)
+    # Your character: in a test campaign a test account plays several (manage_table.one_each), and its own is its first
+    # (picks.my_character, by id), never the first by name (Nov 5: a seat opened Test Bard, not Vi)
+    mine = min((r for r in rows if r["mine"]), key=lambda r: r["id"], default=None)
     # The pill answers for your own sheet wherever you are (Brett, Nov 3: on Roscoe's page it said "Roscoe Norell: through
     # the DM", read as Cathartic connecting through Roscoe); others' are in the Live window. Without one: the page's
-    focus = by_id.get(focus_id) if focus_id else (mine or here)
+    focus = by_id.get(focus_id) if focus_id else (here if here and here["mine"] else mine or here)  # (another of yours: its sheet)
     linked = [r for r in rows if r["linked"]]
     oldest = min(linked, key=lambda r: r["fetched_at"] or datetime.min.replace(tzinfo=UTC)) if linked else None
     pill = focus if focus and focus["linked"] else oldest

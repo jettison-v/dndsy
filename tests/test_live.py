@@ -239,3 +239,24 @@ def test_the_pill_speaks_for_your_own_sheet_on_anyones_page(player, db):
     characters.refresh(db, trah, fetch=down)  # (Trah's copy failed: his pill would say so)
     pill = player.get(f"/characters/{trah.id}").text.split('id="live-pill"')[1].split("</button>")[0]
     assert "Trah" not in pill and f'data-focus="{cole.id}"' in pill
+
+
+def test_a_test_account_playing_several_opens_its_first_and_each_pill_is_its_own(player, db):
+    """Nov 5: in a test campaign a seat plays its own character and the twins on its account. Its menu bar opens its
+    first (by id: the seat's own, which the live test expects), not the first by name, and on another of its own
+    characters' pages the pill answers for that character's sheet."""
+    from app import live
+    from app.models import Campaign
+
+    import_bundle(db, BUNDLE)
+    trah, cole = char(db, "Trah"), char(db, "Cole")  # (Cole sorts first by name; the first by id is the seat's own)
+    first, second = sorted((cole, trah), key=lambda c: c.id)
+    second.name = "Aaron (twin)"  # (so the first by name is the other one)
+    db.get(Campaign, cole.campaign_id).is_test = True
+    owned_by(db, cole, "player@example.com")
+    owned_by(db, trah, "player@example.com")
+    db.flush()
+    t = live.table({"email": "player@example.com"})
+    assert t["mine"]["id"] == first.id
+    pill = player.get(f"/characters/{second.id}").text.split('id="live-pill"')[1].split("</button>")[0]
+    assert f'data-focus="{second.id}"' in pill
