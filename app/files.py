@@ -120,11 +120,16 @@ class S3:
                            ServerSideEncryption="AES256")
 
     def get(self, key: str) -> bytes:
+        from botocore.exceptions import ClientError
+
         for prefix in (self.prefix, self.read_also) if self.read_also else (self.prefix,):
             try:
                 return self.s3.get_object(Bucket=self.bucket, Key=prefix + key)["Body"].read()
             except self.s3.exceptions.NoSuchKey:
                 continue
+            except ClientError as e:  # (staging's key can't list its folder, so S3 says "denied" for a file it hasn't got)
+                if not (self.read_also and prefix == self.prefix and e.response.get("Error", {}).get("Code") in ("AccessDenied", "403")):
+                    raise
         raise FileNotFoundError(key)
 
     def delete(self, key: str) -> None:

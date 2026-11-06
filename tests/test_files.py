@@ -108,8 +108,11 @@ def test_staging_keeps_its_own_files_and_reads_betas(monkeypatch):
 
         def get_object(self, **kw):
             calls.append(("get", kw["Key"]))
-            if kw["Key"].startswith("v2/staging/"):
+            if kw["Key"].startswith("v2/staging/files/2/"):
                 raise KeyError(kw["Key"])
+            if kw["Key"].startswith("v2/staging/"):  # (S3's answer when the key may not list the folder)
+                from botocore.exceptions import ClientError
+                raise ClientError({"Error": {"Code": "AccessDenied"}}, "GetObject")
             return {"Body": type("B", (), {"read": lambda self: b"beta's"})()}
 
     import boto3
@@ -120,8 +123,9 @@ def test_staging_keeps_its_own_files_and_reads_betas(monkeypatch):
     monkeypatch.setenv("AWS_ACCESS_KEY_ID", "x")
     s3 = files.from_config()
     s3.put("1/a.png", b"x", "image/png")
-    assert s3.get("2/b.png") == b"beta's"
-    assert calls == [("put", "v2/staging/files/1/a.png"), ("get", "v2/staging/files/2/b.png"), ("get", "v2/files/2/b.png")]
+    assert s3.get("2/b.png") == b"beta's" and s3.get("3/c.png") == b"beta's"
+    assert calls == [("put", "v2/staging/files/1/a.png"), ("get", "v2/staging/files/2/b.png"), ("get", "v2/files/2/b.png"),
+                     ("get", "v2/staging/files/3/c.png"), ("get", "v2/files/3/c.png")]
 
 
 def test_storage_is_s3_on_beta_once_its_key_is_set(monkeypatch):

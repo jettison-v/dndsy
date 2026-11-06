@@ -981,11 +981,14 @@ game. To try a branch there, Claude pushes it to `staging`; to start fresh, `sta
   copied from your `.env` unseen (`--from-env`); Sentry's address copied from the Mac Mini.
 - The database has no public address, so the backup was copied into staging's own server over `railway ssh` and
   loaded there (`restore_db.py --into-staging`, which refuses to run anywhere else).
-- `staging.askdnd.ai`: a CNAME and a TXT record in Cloudflare (Brett), and staging's return address in Google's
-  sign-in settings (Brett).
+- `staging.askdnd.ai`: Brett recreated staging's public networking in Railway so it syncs with Cloudflare itself (its
+  CNAME and TXT records appeared on their own), and added staging's return addresses in Google's sign-in settings.
 
-**Still to do.** Pictures: staging can't read beta's from S3 until it has a files key of its own (a key that can read
-`v2/files/` and write a staging folder). The bridge: an extension build that points at staging, used only with test
+**Pictures.** Staging keeps its own under `v2/staging/files/` in the same bucket and reads beta's from `v2/files/`
+when it hasn't one (`FILE_STORAGE=s3-staging`), with its own AWS user (`askdnd-staging-files`) that can only read
+beta's folder and read and write its own: staging can show beta's pictures but never change them.
+
+**Still to do.** The bridge: an extension build that points at staging, used only with test
 sheets beta isn't using at the same time.
 
 **For a new project:**

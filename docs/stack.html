@@ -343,7 +343,7 @@ td { min-width: 0; }
             <tr><td>Postgres</td><td>Railway</td><td>Its shape changes through migrations that ship with the code. Claude can look inside beta (<code>railway ssh</code>), and changes data there only with your OK.</td></tr>
             <tr><td>askdnd-backup</td><td>Railway (cron)</td><td>Same code as the website; rebuilt when a file it runs changes.</td></tr>
             <tr><td>Local askdnd</td><td>Your Mac</td><td>A copy of beta's data for testing. Nothing here reaches beta.</td></tr>
-            <tr><td>Staging (askdnd-staging and its own Postgres)</td><td>Railway, environment <code>staging</code></td><td>A second askdnd at <code>staging.askdnd.ai</code> (Nov 6), deploying the <code>staging</code> branch, its database a copy of a nightly backup (loaded from inside its own server with <code>railway ssh</code> and <code>restore_db.py --into-staging</code>). Claude puts a branch there to try what needs the cloud or several people before it reaches the table; the D&amp;D Beyond bridge and drafting are off there, and its pictures are kept on its own server until it has a files key.</td></tr>
+            <tr><td>Staging (askdnd-staging and its own Postgres)</td><td>Railway, environment <code>staging</code></td><td>A second askdnd at <code>staging.askdnd.ai</code> (Nov 6), deploying the <code>staging</code> branch, its database a copy of a nightly backup (loaded from inside its own server with <code>railway ssh</code> and <code>restore_db.py --into-staging</code>). Claude puts a branch there to try what needs the cloud or several people before it reaches the table; the D&amp;D Beyond bridge and drafting are off there; its pictures go to <code>v2/staging/files/</code> and beta's are read, never changed.</td></tr>
           </tbody>
         </table></div>
       </div>
@@ -387,8 +387,8 @@ td { min-width: 0; }
       <p>Every key is a Railway variable; the full list of names is in <code>.env.example</code>. Values are never
         shown on screen, in chat or in git. Staging has its own copies on its own service (<code>scripts/set-secret.sh NAME
         --staging</code>, or <code>--from-env</code> to copy your <code>.env</code>'s unseen): its own sign-in secret; the same
-        Google, Anthropic and OpenAI keys and Sentry address (its errors tagged <code>staging</code>); no bridge, upload,
-        feedback or files keys.</p>
+        Google, Anthropic and OpenAI keys and Sentry address (its errors tagged <code>staging</code>); its own files key (<code>askdnd-staging-files</code>: read <code>v2/files/</code>, read and write
+        <code>v2/staging/files/</code>); no bridge, upload or feedback keys.</p>
     </div>
     <div class="tw"><table>
       <thead><tr><th>Key</th><th>Used by</th><th>Made in</th><th>Who</th></tr></thead>
