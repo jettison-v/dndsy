@@ -30,7 +30,7 @@ def test_features_and_labs():
     assert vtt.switch(table, "nothing", True) == "There's no such feature." and not vtt.on(None, "ddb_bridge")
     r = vtt.rows(table)
     assert [x["f"].key for x in r["features"]] == ["sync", "creatures"] and [x["f"].key for x in r["labs"]] == ["vtt", "initiative"] and not r["labs_on"]
-    assert all(f.roadmap and f.about for f in vtt.FEATURES + vtt.PERSONAL)  # each says what it does and where it is
+    assert all(f.roadmap and f.about for f in vtt.FEATURES)  # each says what it does and where it is
 
 
 def test_the_switches_on_settings(two, db, monkeypatch):  # noqa: F811
@@ -49,7 +49,7 @@ def test_the_switches_on_settings(two, db, monkeypatch):  # noqa: F811
     db.refresh(main)
     assert main.vtt_pieces == ["sync", "labs"]
     page = dm.get("/c/main/manage/settings").text
-    assert "askdnd&#39;s VTT" in page and "Dice tray: less intrusive dice" in page and 'data-modal-url="/dice"' in page
+    assert "askdnd&#39;s VTT" in page and "Dice tray: less intrusive dice" not in page  # (out of Labs: an option in Your dice, Nov 5)
     assert dm.post("/c/main/manage/settings/test", data={"is_test": "1"}).status_code == 403
     db.refresh(main)
     assert not main.is_test

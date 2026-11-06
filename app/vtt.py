@@ -8,8 +8,7 @@ forgetting them. Pages ask `on(campaign, piece)` (templates: `vtt_on(piece)`) wi
 says which feature each piece comes with.
 
 A test campaign (`Campaign.is_test`) only says it holds test data (test copies of characters, app/manage_table.py); it
-switches nothing on by itself. Some Labs features are each person's own instead: the dice tray, in Your dice
-(app/dice.py `prefs`), listed on Settings for the DM to see.
+switches nothing on by itself. The dice tray, each person's own, left Labs on Nov 5: it's an option in Your dice (app/dice.py).
 """
 
 from dataclasses import dataclass
@@ -63,16 +62,6 @@ LABS = "labs"  # the campaign's Labs switch, kept with the features' keys
 # Which feature each piece of code comes with
 PIECES = {"ddb_bridge": "sync", "live_state": "sync", "dm_backup": "sync", "vtt_table": "vtt"}
 
-# Labs features that are each person's own (app/dice.py): listed on Settings so the DM knows they're there
-PERSONAL = [
-    Feature("dice_tray", "Dice tray: less intrusive dice",
-            "Your own rolls are still thrown across the whole screen wherever you roll. Others' rolls tumble in a small "
-            "tray in the bottom-left corner instead, so they don't cover the page you're planning on; on askdnd's table "
-            "every roll is thrown across the screen. Each person chooses it in Your dice.",
-            "Dice (decided Oct 23, docs/mockups/dice-two-ways.html); in Labs since Nov 3.", labs=True, state="Ready to try"),
-]
-
-
 def feature(key: str) -> Feature | None:
     return next((f for f in FEATURES if f.key == key), None)
 
@@ -92,8 +81,7 @@ def rows(campaign: Campaign) -> dict:
     kept = campaign.vtt_pieces or []
     return {"features": [{"f": f, "on": f.key in kept} for f in FEATURES if not f.labs],
             "labs_on": LABS in kept,
-            "labs": [{"f": f, "on": f.key in kept} for f in FEATURES if f.labs],
-            "personal": PERSONAL}
+            "labs": [{"f": f, "on": f.key in kept} for f in FEATURES if f.labs]}
 
 
 def switch(campaign: Campaign, key: str, turn_on: bool) -> str:

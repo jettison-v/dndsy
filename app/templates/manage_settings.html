@@ -81,7 +81,6 @@
     <ul class="records">
       <li class="records-head" aria-hidden="true"><span>Feature</span><span>Here</span></li>
       {% for r in vtt_rows.labs %}{{ feature_row(r.f, r.on) }}{% endfor %}
-      {% for f in vtt_rows.personal %}{{ feature_row(f, false, can=false) }}{% endfor %}
     </ul>
     {% endif %}
   </section>

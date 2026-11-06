@@ -5,7 +5,7 @@ numbers still come from askdnd (the server for table rolls, the browser for priv
 on them. Where they're thrown:
 - your own roll: across the whole page, which dims behind them;
 - someone else's roll: across the whole page too (Brett, 2026-11-03), with a tag saying who rolled;
-- the dice tray (Labs, each person's own choice: `tray`): someone else's roll tumbles in a small tray in the
+- the dice tray (each person's own choice in Your dice, off unless chosen; out of Labs Nov 5: `tray`): someone else's roll tumbles in a small tray in the
   bottom-left corner instead, except on askdnd's table, where every roll is thrown across the screen.
 Everyone sees your rolls in your set; damage dice can take their damage type's look instead (`by_type`).
 
@@ -57,7 +57,7 @@ _PAGE = [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "
 PLACES = [
     ("mine", "Your roll", "You rolled, on any page: your dice are thrown across the whole page, the page behind them goes dark, "
      "and the total shows at the top, clear of the roll window.", _PAGE),
-    ("tray", "Others' rolls in the tray", "Someone else rolled, for a person who chose the dice tray (Labs, Your dice): a small "
+    ("tray", "Others' rolls in the tray", "Someone else rolled, for a person who chose the dice tray (Your dice): a small "
      "tray slides up in the corner, their dice tumble in it, and it shows who and the total.",
      [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "light"]), ("Timing", ["slide", "stay"])]),
     ("vtt", "Others' rolls, full screen", "Someone else rolled (everyone without the dice tray, and everyone on askdnd's table): "
