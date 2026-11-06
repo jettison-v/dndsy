@@ -31,10 +31,11 @@ def test_choose_your_dice(two, db):  # noqa: F811
 
 
 def test_the_dice_tray_is_each_persons_own(two, db):  # noqa: F811
-    """Brett, 2026-11-03: others' rolls are thrown across the whole screen; the dice tray (Labs, in Your dice) is each
+    """Brett, 2026-11-03: others' rolls are thrown across the whole screen; the dice tray (in Your dice; out of Labs Nov 5) is each
     person's choice to have them tumble in the corner instead (app.js reads `tray` from the page's data-dice)."""
     pat, sam = two["pat"], two["sam"]
-    assert '"tray": false' in pat.get("/c/main/").text and "Dice tray: less intrusive dice" in pat.get("/dice").text
+    picker = pat.get("/dice").text
+    assert '"tray": false' in pat.get("/c/main/").text and "Dice tray: less intrusive dice" in picker and "<h3>Labs" not in picker  # (an option, off unless chosen)
     r = pat.post("/dice", data={"set": "bloodmoon", "material": "glass", "by_type": "1", "tray": "1"})
     assert json.loads(r.headers["HX-Trigger"])["diceChanged"]["tray"] is True
     access.invalidate()
