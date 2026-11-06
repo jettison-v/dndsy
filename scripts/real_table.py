@@ -1354,6 +1354,55 @@ def every_count(t: Table, key: str) -> None:
         page.keyboard.press("Escape")
 
 
+def party_fixes(t: Table, seat: str = "player4") -> None:
+    """PR 240's three fixes on the twins (Nov 5, before a game): No Name's Darkness for a Focus Point (Shadow Arts),
+    spent on D&D Beyond and given back by Undo; Big C's Lay On Hands, 3 in one press and 3 given back; and the free
+    casts offered: Big C's Hellish Rebuke (Tiefling), No Name's Misty Step (Fey Touched)."""
+    from urllib.parse import quote
+
+    for key in ("no-name-twin", "big-c-twin"):
+        seat, ddb, name, _ = TWINS[key]
+        sheet = t.sheet(seat, ddb=ddb)
+        page = t.battle_of(seat, name)
+        connects(t, page)
+        cid = page.url.split("/characters/")[1].split("/")[0]
+        def window(path):
+            return page.evaluate("u => fetch(u).then(r => r.text())", f"/characters/{cid}/{path}")
+        if key == "no-name-twin":
+            if (record(sheet).get("spells") or {}).get("feat"):  # (the twin's copy has Fey Touched with no spells chosen, Nov 5)
+                t.expect("Misty Step offers its free cast (Fey Touched)", lambda: "Free: Fey Touched" in window("cast?key=" + quote("spell:Misty Step")), 8)
+            else:
+                print("   (Fey Touched has no spells chosen on this sheet: its free cast is checked on No Name's own sheet, tests/test_party_sheets.py)", flush=True)
+            t.expect("Darkness offers 1 Focus Point · Shadow Arts", lambda: "1 Focus Point · Shadow Arts" in window("cast?key=" + quote("spell:Darkness")), 8)
+            before = record(sheet)
+            page.locator(".spellbook-btn").first.click(timeout=8000)
+            go(page, page.locator('.ls-row[data-ref="spell:Darkness"] [data-use-url*="/cast?"]').first)
+            ways = page.locator('select[name="way"]:visible option')
+            spend = next(ways.nth(i).get_attribute("value") for i in range(ways.count()) if (ways.nth(i).get_attribute("value") or "").startswith("spend:"))
+            page.locator('select[name="way"]:visible').first.select_option(spend)
+            page.locator("[data-use-go]:visible").first.click(timeout=8000)
+            changed(t, sheet, before, "Darkness: the Focus Point is spent on D&D Beyond")
+            if undo(page):
+                undone(t, sheet, before, "Undo gives the Focus Point back on D&D Beyond")
+        else:
+            t.expect("Hellish Rebuke offers its free cast (Tiefling)", lambda: "Free: Tiefling" in window("cast?key=" + quote("spell:Hellish Rebuke")), 8)
+            before = record(sheet)
+            button = page.locator('.res-go[data-use-url*="/count"]:has-text("Lay On Hands"):visible').first
+            go(page, button)
+            page.locator('input[name="n"]:visible').first.fill("3")
+            page.locator('[data-use-go][data-to="use"]:visible').first.click()
+            def loh(d: dict) -> int:  # Lay On Hands' points used, on D&D Beyond's sheet
+                return sum((x.get("limitedUse") or {}).get("numberUsed") or 0 for x in (d.get("actions") or {}).get("class") or [] if "Lay On Hands" in (x.get("name") or ""))
+            changed(t, sheet, before, "Lay On Hands: 3 spent on D&D Beyond in one press")
+            t.expect("3 at once", lambda: loh(record(sheet)) == loh(before) + 3, SLOW)
+            page.wait_for_timeout(1500)
+            page.keyboard.press("Escape")
+            go(page, button)
+            page.locator('input[name="n"]:visible').first.fill("3")
+            page.locator('[data-use-go][data-to="back"]:visible').first.click()
+            undone(t, sheet, before, "Lay On Hands: the 3 given back on D&D Beyond")
+
+
 VTT = "https://www.dndbeyond.com/games/8224496"
 EXTENSION = "obpgemimnhngpcckodjkcihiahoaefpl"  # (the askdnd bridge from the Chrome Web Store, in every seat)
 
@@ -1468,6 +1517,7 @@ def _every_run(key: str):
 
 
 TWIN_OF = {f"{k}-every": k for k in PARTY_TWINS} | {"cole-twin-wild-shape": "cole-twin"}  # (each run's twin, for tidying)
+RUNS["party-fixes"] = party_fixes
 RUNS |= {f"{k}-every": _every_run(k) for k in PARTY_TWINS}
 RUNS["cole-twin-wild-shape"] = lambda t, seat="player2": wild_shape(t, seat, "cole-twin")
 # Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out

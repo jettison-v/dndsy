@@ -187,7 +187,7 @@ def version(tries: int = 12, wait: float = 10, want: str = "") -> str:
                 got = json.load(r).get("version", "")
         except Exception:
             pass
-        if not want or (got and want.startswith(got)):
+        if not want or (got and (want.startswith(got) or got.startswith(want))):  # (either may be the short form)
             return got
         if attempt < tries - 1:
             time.sleep(wait)
@@ -216,7 +216,7 @@ def main() -> None:
     d = for_commit(SERVICES[0], sha)
     if up and d and d["status"] in ("SUCCESS", "SLEEPING"):
         now = version(want=sha)
-        up = bool(now) and sha.startswith(now)
+        up = bool(now) and (sha.startswith(now) or now.startswith(sha))
         say(f"Beta runs {sha[:7]}." if up else f"Beta still runs {now or 'an unknown version'}, not {sha[:7]}.")
     sys.exit(0 if ok and up else 1)
 
