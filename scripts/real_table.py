@@ -1337,8 +1337,8 @@ def every_count(t: Table, key: str) -> None:
             return page.locator(f'[data-use-url="{url}"]:visible').first
         before = record(sheet)
         go(page, button())
-        what = page.locator(".rw-title").first.inner_text().strip()
-        use = page.locator('[data-use-go][data-to="use"]').first
+        what = page.locator(".rw-title:visible").first.inner_text().strip()
+        use = page.locator('[data-use-go][data-to="use"]:visible').first
         if use.is_disabled():
             print(f"   {what}: none left to try", flush=True)
             page.keyboard.press("Escape")
@@ -1348,7 +1348,7 @@ def every_count(t: Table, key: str) -> None:
         page.wait_for_timeout(1500)
         page.keyboard.press("Escape")
         go(page, button())
-        page.locator('[data-use-go][data-to="back"]').first.click()
+        page.locator('[data-use-go][data-to="back"]:visible').first.click()
         undone(t, sheet, before, f"{what}: given back on D&D Beyond")
         page.wait_for_timeout(1500)
         page.keyboard.press("Escape")
