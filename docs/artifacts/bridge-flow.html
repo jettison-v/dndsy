@@ -51,7 +51,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">askdnd · the D&amp;D Beyond bridge · Oct 28, 2026</div>
+    <div class="eyebrow">askdnd · the D&amp;D Beyond bridge · updated Nov 6, 2026</div>
     <h1>How the bridge keeps your sheet and askdnd in step</h1>
     <p>Two ways, always: a change you make on your D&amp;D Beyond sheet reaches askdnd within seconds, and a change you make in askdnd is made on your sheet, as you, and counts only once askdnd reads it back. These four pictures show the parts, the path a change takes, and the timings everything runs on.</p>
   </header>
@@ -60,7 +60,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="time"><b>30 s</b><span>The extension checks in from each open sheet, while the bridge is awake</span></div>
     <div class="time"><b>90 s</b><span>A sheet heard this recently can be reached: askdnd takes a change for it</span></div>
     <div class="time"><b>3 min</b><span>A waiting change whose sheet went quiet this long waits for the sheet</span></div>
-    <div class="time"><b>3 tries</b><span>A change D&amp;D Beyond doesn't take is sent again, then listed to make by hand</span></div>
+    <div class="time"><b>3 tries</b><span>A change D&amp;D Beyond doesn't take is sent again, then says Didn't go through, with Try again and Undo</span></div>
     <div class="time"><b>30 min · 6 h</b><span>Awake after anyone uses askdnd or a sheet · during a fight</span></div>
   </div>
 
@@ -83,7 +83,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
           <text class="ts" x="56" y="193">in that same tab; listens, and acts as you</text>
           <rect class="box" x="40" y="330" width="280" height="56" rx="8"/>
           <text class="tb" x="56" y="354">askdnd pages</text>
-          <text class="ts" x="56" y="373">Battle, Sheet, Party, the bridge page</text>
+          <text class="ts" x="56" y="373">Battle, Sheet, Party, the Live window</text>
 
           <rect class="box" x="620" y="40" width="320" height="76" rx="8"/>
           <text class="tb" x="636" y="66">D&amp;D Beyond's servers</text>
@@ -118,7 +118,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
           <text class="t" x="336" y="396">a change you press (sheet open)</text>
         </svg>
       </div>
-      <figcaption>Only the extension, in your own signed-in D&amp;D Beyond tab, writes to D&amp;D Beyond, using the same requests the sheet itself makes. askdnd never writes there: it reads your character to see what D&amp;D Beyond holds, and tells every open askdnd page when a number changed, so each shows its new copy.</figcaption>
+      <figcaption>Only the extension, in your own signed-in D&amp;D Beyond tab, writes to D&amp;D Beyond, using the same requests the sheet itself makes. When your sheet is closed, the DM's Chrome, with any D&amp;D Beyond page open, can make the change instead (the DM as a backup: only for characters in the campaign's own D&amp;D Beyond game, and your own open sheet always goes first). askdnd itself never writes there: it reads your character to see what D&amp;D Beyond holds, and tells every open askdnd page when a number changed, so each shows its new copy.</figcaption>
     </figure>
   </section>
 
@@ -126,7 +126,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
     <h2>2. A change you make in askdnd</h2>
     <figure>
       <div class="fig">
-        <svg viewBox="0 0 960 430" role="img" aria-label="A change pressed in askdnd is taken only while your sheet can be reached, waits, is sent, and counts once read back; if the sheet goes quiet it waits for the sheet, and when the sheet is back it's made by itself, ticked off, or listed to make by hand.">
+        <svg viewBox="0 0 960 430" role="img" aria-label="A change pressed in askdnd is taken only while your sheet (or the DM's browser) can be reached, is on its way, and counts once read back; if the sheet goes quiet it's made once the sheet is open, and when the sheet is back it's made by itself, ticked off, or says Didn't go through with Try again and Undo.">
           <defs>
             <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
             <marker id="a2g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="okf"/></marker>
@@ -143,32 +143,32 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
           <line class="ln" x1="180" y1="65" x2="222" y2="65" marker-end="url(#a2)"/>
 
           <rect class="box no" x="200" y="170" width="200" height="60" rx="8"/>
-          <text class="tb" x="216" y="194">Refused, saying how</text>
-          <text class="ts" x="216" y="213">open your sheet, or make it there</text>
+          <text class="tb" x="216" y="194">Said before you press</text>
+          <text class="ts" x="216" y="213">its window says the sheet can't be reached</text>
           <line class="ln no" x1="300" y1="102" x2="300" y2="168" marker-end="url(#a2r)"/>
           <text class="t" x="310" y="140">no</text>
 
           <rect class="box" x="430" y="40" width="130" height="50" rx="8"/>
-          <text class="tb" x="446" y="62">Waiting</text>
-          <text class="ts" x="446" y="80">kept in askdnd</text>
+          <text class="tb" x="446" y="62">On its way</text>
+          <text class="ts" x="446" y="80">shown as made, marked</text>
           <line class="ln" x1="376" y1="65" x2="428" y2="65" marker-end="url(#a2)"/>
           <text class="t" x="386" y="56">yes</text>
 
           <rect class="box" x="620" y="40" width="130" height="50" rx="8"/>
-          <text class="tb" x="636" y="62">Sending</text>
+          <text class="tb" x="636" y="62">On its way</text>
           <text class="ts" x="636" y="80">the extension has it</text>
           <line class="ln" x1="560" y1="65" x2="618" y2="65" marker-end="url(#a2)"/>
           <text class="ts" x="566" y="56">check-in</text>
 
           <rect class="box ok" x="810" y="40" width="130" height="50" rx="8"/>
-          <text class="tb" x="826" y="62">Counted</text>
+          <text class="tb" x="826" y="62">On D&amp;D Beyond</text>
           <text class="ts" x="826" y="80">D&amp;D Beyond has it</text>
           <line class="ln ok" x1="750" y1="65" x2="808" y2="65" marker-end="url(#a2g)"/>
           <text class="ts" x="752" y="56">read back</text>
 
           <rect class="box wt" x="420" y="170" width="160" height="60" rx="8"/>
-          <text class="tb" x="436" y="194">Waits for your sheet</text>
-          <text class="ts" x="436" y="213">not one to make by hand</text>
+          <text class="tb" x="436" y="194">Made once the sheet is open</text>
+          <text class="ts" x="436" y="213">kept, not lost</text>
           <line class="ln wt" x1="470" y1="90" x2="470" y2="168" marker-end="url(#a2a)"/>
           <text class="ts" x="380" y="134">sheet quiet</text>
           <text class="ts" x="380" y="149">3 min</text>
@@ -181,10 +181,10 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
           <text class="ts" x="736" y="236">has the result: ticked off</text>
 
           <rect class="box no" x="620" y="320" width="190" height="60" rx="8"/>
-          <text class="tb" x="636" y="344">Make it by hand</text>
-          <text class="ts" x="636" y="363">listed with its end result</text>
+          <text class="tb" x="636" y="344">Didn't go through</text>
+          <text class="ts" x="636" y="363">Try again or Undo, on its card</text>
           <line class="ln no" x1="720" y1="90" x2="720" y2="318" marker-end="url(#a2r)"/>
-          <text class="ts" x="730" y="282">3 tries fail, or it</text>
+          <text class="ts" x="730" y="282">after 3 tries, or when it</text>
           <text class="ts" x="730" y="297">can't happen any more</text>
           <path class="ln no" d="M500,230 L500,350 L618,350" marker-end="url(#a2r)"/>
           <text class="ts" x="420" y="372">sheet back, D&amp;D Beyond</text>
@@ -194,7 +194,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
           <text class="ts" x="822" y="419">D&amp;D Beyond has it</text>
         </svg>
       </div>
-      <figcaption>A change counts only once askdnd reads it back from D&amp;D Beyond. If your sheet closes before it's made, it waits for the sheet (amber) and is made by itself when the sheet is back, unless you made it there by hand (ticked off) or D&amp;D Beyond changed meanwhile (listed for you to check). "Make it by hand" always shows the end result it wanted, so it never asks twice; Try again and Undo are on askdnd's bridge page.</figcaption>
+      <figcaption>A change counts only once askdnd reads it back from D&amp;D Beyond. Until then it shows as made, marked On its way, and a corner card follows it to On D&amp;D Beyond. If no sheet can be reached, the change's window says so the moment it opens, before you press anything. If your sheet closes while one is on its way, it says Made once the sheet is open and is made by itself when the sheet is back, unless you made it there yourself (it ticks itself off) or D&amp;D Beyond changed meanwhile. One that doesn't go through after three tries says Didn't go through, with Try again and Undo on its card and in the Live window.</figcaption>
     </figure>
   </section>
 
@@ -249,11 +249,11 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
           <text class="t" x="840" y="172" text-anchor="middle">sheet open again:</text>
           <text class="ts" x="840" y="188" text-anchor="middle">it catches up</text>
           <path class="ln idea" d="M320,110 C320,50 470,40 470,40" marker-end="url(#a4b)"/>
-          <text class="t" x="480" y="44" fill="var(--blue)">next extension (0.9.2): tell askdnd at once when the tab closes</text>
+          <text class="t" x="480" y="44" fill="var(--blue)">the extension tells askdnd the moment the tab closes</text>
           <text class="ts" x="480" y="62">silence stays as the fallback, for a laptop asleep or Wi-Fi dropping</text>
         </svg>
       </div>
-      <figcaption>The extension lives inside the D&amp;D Beyond tab, and a closing tab gets no reliable moment to say goodbye, so today askdnd learns from silence. A change pressed in the gap still isn't lost: it waits and is made when the sheet is back. The blue dashed line is the improvement for the next extension version: the extension's background part is told by Chrome when the tab closes, and can tell askdnd at once.</figcaption>
+      <figcaption>The extension lives inside the D&amp;D Beyond tab, and a closing tab gets no reliable moment to say goodbye, so the extension's background part, which Chrome tells when a tab closes, tells askdnd at once (the blue dashed line). Silence stays as the fallback, for a laptop going to sleep or Wi-Fi dropping. A change pressed in the gap still isn't lost: it waits and is made when the sheet is back.</figcaption>
     </figure>
   </section>
 

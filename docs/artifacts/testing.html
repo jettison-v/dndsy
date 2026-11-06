@@ -3,7 +3,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* One reading column. The four kinds of test as one comparison table, then the live test in depth: where it runs (a
-   picture), its seats, when it runs, one run step by step (its real log), all 27 runs by area, how it looks after
+   picture), its seats, when it runs, one run step by step (its real log), all 45 runs by area, how it looks after
    itself (a picture), and what it doesn't cover. askdnd's explainer colors, dark first, light mirrored. */
 :root {
   --bg: #15171a; --surface: #1f2226; --sunk: #191b1e; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
@@ -98,7 +98,7 @@ ol.steps b { color: var(--strong); }
 pre.log { margin: 0; overflow-x: auto; background: var(--sunk); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font: 12.5px/1.65 var(--mono); color: var(--text); }
 .pass { color: var(--green); font-weight: 500; } .miss { color: var(--red); font-weight: 500; } .note { color: var(--muted); }
 
-/* The 27 runs, by area */
+/* The 45 runs, by area */
 .areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
 .area { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
 .area dl { margin: 0; display: grid; gap: 7px; }
@@ -121,20 +121,20 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">askdnd · testing · Nov 5, 2026</div>
+    <div class="eyebrow">askdnd · testing · Nov 6, 2026</div>
     <h1>How askdnd is tested, and what the live test covers</h1>
     <p class="lead">askdnd has four kinds of test. Three run on GitHub and only stand in for D&amp;D Beyond. The fourth, the <b>live test</b>, is the only one that uses the real thing: real Chrome windows on the Mac Mini, signed in as test players, playing real D&amp;D Beyond sheets through askdnd on beta, the way your table does. It runs every night, after every deploy, and whenever you say "run the live tests".</p>
     <nav class="jump" aria-label="On this page">
-      <a href="#kinds">The four kinds</a><a href="#where">Where the live test runs</a><a href="#seats">The seats</a><a href="#when">When it runs</a><a href="#one-run">One run, step by step</a><a href="#runs">All 27 runs</a><a href="#itself">How it looks after itself</a><a href="#scope">What it doesn't cover</a><a href="#results">Where results go</a>
+      <a href="#kinds">The four kinds</a><a href="#where">Where the live test runs</a><a href="#seats">The seats</a><a href="#when">When it runs</a><a href="#one-run">One run, step by step</a><a href="#runs">All 45 runs</a><a href="#itself">How it looks after itself</a><a href="#scope">What it doesn't cover</a><a href="#results">Where results go</a>
     </nav>
   </header>
 
   <div class="nums" aria-label="One night of the live test">
-    <div class="num"><b>27 runs</b><span>each one thing a player or the DM does, start to finish</span></div>
-    <div class="num"><b>~250 checks</b><span>a night: 143 in part 1, 111 more through the DM (Nov 5)</span></div>
-    <div class="num"><b>20 minutes</b><span>the whole nightly, at 4:00 on the Mini</span></div>
+    <div class="num"><b>45 runs</b><span>each one thing a player or the DM does, start to finish</span></div>
+    <div class="num"><b>~600 checks</b><span>a night: 318 in part 1, 283 more through the DM (Nov 6)</span></div>
+    <div class="num"><b>About 90 minutes</b><span>the whole nightly, from 4:00 on the Mini</span></div>
     <div class="num"><b>4 seats</b><span>the DM and three players, each a separate D&amp;D Beyond account</span></div>
-    <div class="num"><b>3 sheets</b><span>Cathartic, Vi (test) and Levi: test characters only</span></div>
+    <div class="num"><b>12 sheets</b><span>Cathartic, Vi (test), Levi, your party's four twins and five more classes: test characters only</span></div>
   </div>
 
   <section id="kinds">
@@ -145,10 +145,10 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
       <table class="layers">
         <thead><tr><th scope="col"></th><th scope="col">Server tests</th><th scope="col">Browser tests</th><th scope="col">D&amp;D Beyond drift</th><th scope="col">Live test</th></tr></thead>
         <tbody>
-          <tr><th scope="row">How many</th><td>884</td><td>61</td><td>1 check, 3 sheets</td><td>27 runs, ~250 checks</td></tr>
+          <tr><th scope="row">How many</th><td>955</td><td>61</td><td>1 check, 12 sheets</td><td>45 runs, ~600 checks</td></tr>
           <tr><th scope="row">When</th><td>Every change, before it can merge</td><td>Every change, before it can merge</td><td>Every morning</td><td>Every night at 4:00, after every deploy, and on request</td></tr>
           <tr><th scope="row">Where</th><td>GitHub</td><td>GitHub</td><td>GitHub</td><td>The Mac Mini</td></tr>
-          <tr><th scope="row">Takes</th><td>About 2 minutes</td><td>About 3½ minutes (three parts at once)</td><td>Under a minute</td><td>About 20 minutes (2 after a deploy)</td></tr>
+          <tr><th scope="row">Takes</th><td>About 2 minutes</td><td>About 3½ minutes (three parts at once)</td><td>Under a minute</td><td>About 90 minutes (2 after a deploy)</td></tr>
           <tr><th scope="row">askdnd</th><td><span class="chip stand">its code, called directly</span></td><td><span class="chip stand">a real server, made-up campaign</span></td><td><span class="chip stand">its parser only</span></td><td><span class="chip real">beta, the VTT test campaign</span></td></tr>
           <tr><th scope="row">Browser</th><td><span class="chip fake">none</span></td><td><span class="chip stand">Chromium and Safari's engine</span></td><td><span class="chip fake">none</span></td><td><span class="chip real">real Chrome, signed in</span></td></tr>
           <tr><th scope="row">Extension</th><td><span class="chip fake">none</span></td><td><span class="chip stand">the real code, loaded unpacked</span></td><td><span class="chip fake">none</span></td><td><span class="chip real">from the Chrome Web Store</span></td></tr>
@@ -241,15 +241,15 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="card"><div class="k">Player 3</div><h3>Vi (test), Artificer 10</h3><p>Slots, resources, coins and rests; the other end of a Give and of the Game Log; her Homunculus Servant for a creature's hit points. Not your own Vi.</p></div>
       <div class="card"><div class="k">Player 4</div><h3>Levi, Druid 6 / Warlock 2</h3><p>The hard cases: Wild Shape, two kinds of spellcasting (Druid slots and Pact Magic), a familiar, and initiative in the real VTT.</p></div>
     </div>
-    <p class="small">Your party's own builds (Cole, Trah, No Name, Big C) and the classes nobody plays aren't on a test sheet yet: that's the "twins" step on the roadmap.</p>
+    <p class="small">The seats also play <b>twins</b>: exact copies of your party's four characters (Cole, Trah, No Name and Big C, each named "(twin)") and one character for each class nobody at the table plays (Ranger, Bard, Rogue, Barbarian, Fighter), so every build at your table is tested without touching the real ones. Who plays which: <code>docs/testing-setup.md</code>.</p>
   </section>
 
   <section id="when">
     <div class="eyebrow">The live test · when it runs</div>
     <h2>Three times it runs, two of them on their own</h2>
     <div class="cards">
-      <div class="card hl"><div class="k">Every night</div><div class="when">4:00, Mini time</div><p>All 27 runs (part 1), then the 22 that change a sheet again through the DM, with every player's sheet closed. About 20 minutes. Catches what changed during the day on either side: an askdnd change, or D&amp;D Beyond changing something.</p></div>
-      <div class="card hl"><div class="k">After every deploy</div><div class="when">Within 5 minutes</div><p>The Mini notices beta's version changed and runs four quick runs: closed-sheet, hit-points, condition and cast (22 checks, under 2 minutes). A deploy that breaks the table is known before anyone plays. First ran today at 10:46: 22 of 22.</p></div>
+      <div class="card hl"><div class="k">Every night</div><div class="when">4:00, Mini time</div><p>All 45 runs (part 1), then every run that changes a sheet again through the DM, with every player's sheet closed. About 90 minutes. Catches what changed during the day on either side: an askdnd change, or D&amp;D Beyond changing something.</p></div>
+      <div class="card hl"><div class="k">After every deploy</div><div class="when">Within 5 minutes</div><p>The Mini notices beta's version changed and runs four quick runs: closed-sheet, hit-points, condition and cast (22 checks, under 2 minutes). A deploy that breaks the table is known before anyone plays.</p></div>
       <div class="card"><div class="k">When you ask</div><div class="when">"Run the live tests"</div><p>Claude runs part 1 and gives you the steps that still need a person (part 2). Worth asking after an extension update, after a change to the bridge or the fight, and the day before a session.</p></div>
     </div>
     <p class="small">Each run tests what's on beta, never unmerged work. The nightly and the after-deploy check take turns with the seats, so they never collide.</p>
@@ -258,7 +258,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
   <section id="one-run">
     <div class="eyebrow">The live test · one run</div>
     <h2>One run, step by step: hit-points</h2>
-    <p>Every run follows the same pattern: do what a person would, then check in three places that it happened (askdnd's page at once, askdnd's confirmation, and D&amp;D Beyond's own record), then put it back. Each check is one line of the result. This is a real run from today.</p>
+    <p>Every run follows the same pattern: do what a person would, then check in three places that it happened (askdnd's page at once, askdnd's confirmation, and D&amp;D Beyond's own record), then put it back. Each check is one line of the result. This is a real run (Nov 5).</p>
     <div class="anatomy">
       <ol class="steps">
         <li><span><b>Open the sheet.</b> Player 2's seat opens Cathartic's D&amp;D Beyond sheet, and askdnd's Live pill must say Connected.</span></li>
@@ -286,7 +286,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 
   <section id="runs">
     <div class="eyebrow">The live test · what it covers</div>
-    <h2>All 27 runs, by what they exercise</h2>
+    <h2>All 45 runs, by what they exercise</h2>
     <div class="legend"><span><span class="dm">also through the DM</span> runs again at night with the players' sheets closed, the DM's browser making the change</span><span class="who">Cathartic · Vi · Levi · DM</span> which seat it plays</div>
     <div class="areas">
       <div class="area"><h3>The connection itself</h3><dl>
@@ -294,6 +294,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
         <dt>game-log <span class="who">Cathartic, Vi</span></dt><dd>A roll in askdnd reaches another player's D&amp;D Beyond Game Log; with the sheet closed the table still sees it, and the roll window says why it isn't in the log.</dd>
         <dt>close-after-roll <span class="who">Cathartic</span></dt><dd>Closing a sheet right after a roll, five times at different moments: nothing gets stuck.</dd>
         <dt>dm-backup <span class="who">Cathartic, DM</span></dt><dd>With the player's sheet closed, the pill says Through the DM and the DM's browser makes a hit and the healing.</dd>
+              <dt>unreachable <span class="who">Levi</span></dt><dd>With no sheet open and no DM's browser, a change's window says so the moment it opens and offers no button that would be refused.</dd>
       </dl></div>
       <div class="area"><h3>Hit points and conditions</h3><dl>
         <dt>hit-points <span class="dm">DM</span> <span class="who">Cathartic</span></dt><dd>Damage and healing land on the real sheet and are put back.</dd>
@@ -324,6 +325,15 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
         <dt>in-form <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>In a form, Cast says it can't; Leave ends it and keeps the Temporary Hit Points.</dd>
         <dt>creature-hp <span class="dm">DM</span> <span class="who">Vi</span></dt><dd>Her Homunculus's maximum set to the rule's, damage and healing on its Extras entry.</dd>
         <dt>familiar <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>Find Familiar cast as a Ritual: the Owl switched on as Fey and named Pip; pocket dimension off, back on, dismissed off.</dd>
+        <dt>wild-companion <span class="dm">DM</span> <span class="who">Levi</span></dt><dd>Find Familiar from a Wild Shape use: the use spent, the Owl switched on as Fey; Undo gives both back.</dd>
+      </dl></div>
+      <div class="area"><h3>Your party's builds and the other classes</h3><dl>
+        <dt>cole-twin · big-c-twin · no-name-twin · trah-twin <span class="dm">DM</span></dt><dd>Each twin connects, Battle names its classes as D&amp;D Beyond does, and its own features spend and come back on D&amp;D Beyond (Wild Shape, Channel Divinity, Focus, Second Wind), a slot cast and undone.</dd>
+        <dt>…-every, for each twin <span class="dm">DM</span></dt><dd>Every count on the twin's Battle, each resource, pool and slot level, spent once and given back.</dd>
+        <dt>cole-twin-wild-shape <span class="dm">DM</span></dt><dd>Cole's twin shifts: the use and the form's Temporary Hit Points land, Battle is the form, Undo puts all three back.</dd>
+        <dt>party-fixes <span class="dm">DM</span></dt><dd>A species' or feat's free cast offered first, Shadow Arts' Darkness for a Focus Point, Lay On Hands several points in one press.</dd>
+        <dt>test-ranger · test-bard · test-rogue · test-barbarian · test-fighter <span class="dm">DM</span></dt><dd>Each class nobody at the table plays: the sheet connects, Battle names it, and its own feature (Hunter's, Bardic Inspiration, Rage, Second Wind) spends and comes back.</dd>
+        <dt>twins-level</dt><dd>Each twin is at its real character's level, so a level-up on the real sheet is noticed.</dd>
       </dl></div>
       <div class="area"><h3>The fight</h3><dl>
         <dt>initiative <span class="who">Levi, DM</span></dt><dd>In D&amp;D Beyond's real VTT: the DM adds the tokens, Levi rolls Initiative in askdnd and it fills in the VTT's sidebar; the DM's change in askdnd reaches it too; after Start Combat a roll changes nothing. Starts as after Chrome restarts, the VTT opened before askdnd (extension 0.12.1).</dd>
@@ -334,7 +344,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
   <section id="itself">
     <div class="eyebrow">The live test · how it looks after itself</div>
     <h2>A miss should mean askdnd, not the test</h2>
-    <p>Real sheets keep state between runs: a spent slot or a Wild Shape form left behind makes the next run fail for the wrong reason. On Nov 5 one leftover made four later runs miss. So since today, the test checks and tidies around every run, and a miss gets one more try before it counts.</p>
+    <p>Real sheets keep state between runs: a spent slot or a Wild Shape form left behind makes the next run fail for the wrong reason. On Nov 5 one leftover made four later runs miss, so since then the test checks and tidies around every run, and a miss gets one more try before it counts.</p>
     <figure>
       <div class="fig">
         <svg viewBox="0 0 900 250" role="img" aria-label="Before the runs: the setup check and a clean start. For each run: the run, then its sheets are tidied; a miss is tried once more on the tidied sheets. After the runs: every sheet must be back as found, then the results are kept and any miss reported.">
@@ -349,7 +359,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
           <line class="ln" x1="340" y1="73" x2="370" y2="73" marker-end="url(#b)"/>
 
           <rect class="zone" x="372" y="14" width="330" height="224" rx="12"/>
-          <text class="tz" x="388" y="34">FOR EACH OF THE 27 RUNS</text>
+          <text class="tz" x="388" y="34">FOR EACH OF THE 45 RUNS</text>
           <rect class="box" x="392" y="46" width="120" height="54" rx="8"/><text class="tb" x="406" y="70">The run</text><text class="ts" x="406" y="88">its checks</text>
           <line class="ln" x1="512" y1="73" x2="552" y2="73" marker-end="url(#b)"/>
           <rect class="box" x="556" y="46" width="128" height="54" rx="8"/><text class="tb" x="570" y="70">Tidy its sheets</text><text class="ts" x="570" y="88">leftovers: a miss</text>
@@ -384,7 +394,6 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
         <li>D&amp;D Beyond changing something overnight: it shows as a miss the next morning</li>
       </ul></div>
       <div class="panel out"><h3><span class="chip stand">not covered</span> by the live test</h3><ul>
-        <li><b>Your table's characters and builds.</b> Only Cleric, Artificer and Druid/Warlock are on test sheets. Cole's, Trah's, No Name's and Big C's builds, and the other classes, wait for the twins.</li>
         <li><b>The rest of a fight.</b> Turns, conditions that end on a turn, a monster's damage with Apply to: D&amp;D Beyond's VTT is a game canvas a script can't read reliably, so these are in part 2, by hand (about 15 minutes).</li>
         <li><b>How things look.</b> The run sees that a Game Log message passed, not how it reads; whether the 3D dice land right. Also part 2.</li>
         <li><b>Phones and Safari.</b> The seats are Chrome on a computer. Layout on an iPhone is checked by the browser tests (Safari's engine), not with real D&amp;D Beyond.</li>
@@ -406,7 +415,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
   </section>
 
   <footer>
-    <span>As of Nov 5, 2026: extension 0.12.1 on every seat, 27 runs, last night 137 of 143 checks plus 103 of 111 through the DM (the misses were leftovers, fixed that morning; their reruns passed).</span>
+    <span>As of Nov 6, 2026: extension 0.12.1 on every seat, 45 runs. Last night 292 of 318 checks, plus 260 of 283 through the DM: nearly every miss was askdnd running out of database connections under the test's load, fixed that morning (PR 242). One run, Wild Companion through the DM, still misses and is on the roadmap.</span>
     <span>The detail: <code>docs/live-test-plan.md</code> (what each run must do, every result), <code>docs/testing-setup.md</code> (the seats), <code>scripts/real_table.py</code> (the runs). Source of this page: <code>docs/artifacts/testing.html</code>.</span>
   </footer>
 </div>

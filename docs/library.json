@@ -181,10 +181,10 @@
  },
  {
   "title": "Test Table Setup",
-  "kind": "guide",
-  "status": "For you to follow",
+  "kind": "earlier",
+  "status": "Done, Nov 5",
   "date": "Nov 4",
-  "what": "The checklist for the test table's nine new characters, by account.",
+  "what": "The checklist for adding the test table's nine characters (all added Nov 5). Where the test table stands now: docs/testing-setup.md.",
   "source": "docs/artifacts/test-roster-setup.html",
   "link": "https://claude.ai/artifact/Eg48EcP8BumvEqyCz4z9bW"
  },
