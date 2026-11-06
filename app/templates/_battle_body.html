@@ -118,7 +118,7 @@
     {% set col = columns[cost] %}
     <div class="section" data-econ-col="{{ slug }}">
       <div class="econ-top">
-      <h2 class="econ-head k-{{ slug }}">{{ cost }}<small>{{ col.sub or sub }}</small></h2>
+      <h2 class="econ-head k-{{ slug }}"><span class="econ-word">{{ cost }}</span><small>{{ col.sub or sub }}</small></h2>
       {# Top right: rules that change this column (Brett, 2026-10-22: out of the way of the options; hover or tap), then + Add.
          Beside the heading, not over it, so a narrow column wraps the heading instead of hiding it (2026-10-26) #}
       {% if col.notes or (can_pick and not form) %}<div class="econ-tools k-{{ slug }}">

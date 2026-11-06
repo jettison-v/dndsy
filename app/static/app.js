@@ -1683,9 +1683,6 @@
                      bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim(),
                      endsHidden: !!(w.querySelector('[data-ends-hidden]') || {}).checked };
         roll(w, go);
-        if (go.endsHidden && go.cid && window.htmx && document.getElementById('battle-body')) {  // (Hidden ends with the attack)
-          htmx.ajax('POST', '/characters/' + go.cid + '/conditions/end', { values: { name: 'Invisible' }, target: '#battle-body', swap: 'outerHTML' });
-        }
       }
     });
     (w.querySelector('[data-go]') || w).focus();
@@ -2183,6 +2180,7 @@
                           : privateRoll(go);
       if (!e) return showFailure(w, "Those dice don't look right.", () => chooser(w._anchor, go));
       if (e.kind === 'death' && go.follow !== 'damage') deathPrivate(go.cid, e, before);
+      endHidden(go);
       return showResult(w, e, go.follow);
     }
     const pending = !go.follow && logShown() && log ? placeholder(go.label) : null;
@@ -2193,6 +2191,7 @@
         if (animate()) window.askdndThrowing.throwing(j.roll.id);
         addToLog(j.html, j.roll.id);
         showResult(w, j.roll, go.follow);
+        endHidden(go);
         deathMarked(j.death);
         // A familiar's Initiative, rolled with its character's (app/initiative.py): its row too, and a word on it
         (j.also || []).forEach(a => { addToLog(a.html, a.roll.id); toast(a.who + "'s Initiative: " + a.roll.total, null, 'info'); });
@@ -2203,6 +2202,12 @@
         if (pending) pending.remove();
         showFailure(w, (err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.', () => roll(w, go));
       });
+  }
+  // Hidden ends with the attack (app/hiding.py), once it's rolled: the window's tick, which the DM may overrule
+  function endHidden(go) {
+    if (go.endsHidden && !go.follow && go.cid && window.htmx && document.getElementById('battle-body')) {
+      htmx.ajax('POST', '/characters/' + go.cid + '/conditions/end', { values: { name: 'Invisible' }, target: '#battle-body', swap: 'outerHTML' });
+    }
   }
   // A death save marks itself on the sheet (app/death_saves.py; Brett, 2026-10-29): a roll at the table is marked by
   // the server, which answers with what it marked; a private one says its result here. A reroll or an added die moves
@@ -3917,6 +3922,7 @@
     };
     box.dataset.ready = '1';
     if (img.complete) draw(); else img.addEventListener('load', draw);
+    if (window.ResizeObserver) new ResizeObserver(draw).observe(stage);  // (laid out after the picture loaded: drawn then)
     zoomIn.addEventListener('input', () => { zoom = Number(zoomIn.value) || 1; draw(); });
     stage.addEventListener('pointerdown', e => {
       e.preventDefault(); stage.setPointerCapture(e.pointerId);

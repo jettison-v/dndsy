@@ -39,3 +39,16 @@ def test_ending_invisible_ends_hidden(player, db, sheet):
     player.post(f"/characters/{cole.id}/conditions/end", data={"name": "Invisible"})
     db.refresh(cole)
     assert hiding.hidden(cole) is None and 'data-hidden' not in player.get(f"/characters/{cole.id}/battle").text
+
+
+def test_hide_leaves_an_invisible_from_a_spell_as_it_is(player, db, sheet, monkeypatch):
+    """Code review, Nov 5: Hide never replaces an Invisible something else gave (Greater Invisibility, with its own
+    end): it says the DC to find you and changes nothing, so an attack's "ends Hidden" can't end the spell."""
+    cole = char(db, "Cole")
+    cole.conditions = [{"name": "Invisible", "source": "Greater Invisibility", "lasts": {"kind": "rounds", "left": 10}}]
+    db.flush()
+    monkeypatch.setattr(table_rolls, "die", lambda n: 18 if n == 20 else 1)
+    r = player.post("/rolls", data={"character": cole.id, "kind": "check", "label": hiding.LABEL, "mod": "+5"})
+    assert r.json()["death"]["text"] == "Already Invisible (Greater Invisibility): 23 is the DC to find you"
+    db.refresh(cole)
+    assert cole.conditions[0]["source"] == "Greater Invisibility" and hiding.hidden(cole) is None

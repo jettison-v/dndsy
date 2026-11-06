@@ -1119,10 +1119,10 @@ def familiar(t: Table, seat: str = "player4") -> None:
     t.expect("named Pip", lambda: creature_of(record(sheet), oid)["name"] == "Pip", SLOW)
     page.wait_for_timeout(1500)
     page.goto(f"{page.url.split('?')[0]}?creature={oid}", wait_until="domcontentloaded")
-    page.locator('button:has-text("Send to the pocket dimension")').first.click(timeout=8000)
+    page.locator('button:has-text("Pocket dimension")').first.click(timeout=8000)
     t.expect("sent to the pocket dimension, it's switched off", lambda: not creature_of(record(sheet), oid)["isActive"], SLOW)
     page.wait_for_timeout(1500)
-    page.locator('button:has-text("Bring it back")').first.click(timeout=8000)
+    page.locator('button:has-text("Bring back")').first.click(timeout=8000)
     t.expect("brought back, it's on again", lambda: creature_of(record(sheet), oid)["isActive"], SLOW)
     page.wait_for_timeout(1500)
     page.locator('.cr-forever > summary').first.click(timeout=8000)
@@ -1244,7 +1244,7 @@ def unreachable(t: Table, seat: str = "player2") -> None:
 # what it spends: a resource on Battle's Resources row, "" for none). No Name's and Trah's twins are one line each.
 TWINS = {
     "cole-twin": ("player2", 173216268, "Cole (twin)", "Focus"),
-    "test-ranger": ("player2", 173222995, "Test Ranger", "Favored Enemy"),
+    "test-ranger": ("player2", 173222995, "Test Ranger", "Hunter"),  # (Favored Enemy's free casts: "Hunter's Mark" on Battle)
     "test-bard": ("player3", 173222716, "Test Bard", "Bardic Inspiration"),
     "test-rogue": ("player3", 173222824, "Test Rogue", ""),
     "big-c-twin": ("player4", 173220725, "Big C (twin)", "Channel Divinity"),

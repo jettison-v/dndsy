@@ -97,6 +97,8 @@ def can_see_character_notes(user: dict | None, character=None) -> bool:
 def back_to(path: str | None) -> str:
     """Where to go after signing in: a page on this site only (never another site's address, nor the sign-in itself)."""
     path = path or "/"
+    if any(ord(c) < 32 or c == "\x7f" for c in path):  # (a browser drops tabs and newlines: "/\t/evil" would be "//evil")
+        return "/"
     return path if path.startswith("/") and not path.startswith(("//", "/\\", "/login", "/auth/")) else "/"
 
 

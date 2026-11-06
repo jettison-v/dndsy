@@ -188,3 +188,5 @@ def test_after_signing_in_askdnd_goes_only_to_its_own_pages():
 
     assert back_to("https://evil.example/") == "/" and back_to("//evil.example/") == "/" and back_to("/\\evil.example") == "/"
     assert back_to("/login?next=/x") == "/" and back_to("") == "/" and back_to("/c/main/campaign?tab=map") == "/c/main/campaign?tab=map"
+    # (code review, Nov 5: a browser drops tabs and newlines, so "/\t/evil" would open //evil)
+    assert back_to("/\t/evil.example") == "/" and back_to("/\n/evil.example") == "/" and back_to("/x\r") == "/"

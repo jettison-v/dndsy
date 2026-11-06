@@ -46,6 +46,9 @@ def mark(db: Session, row) -> dict | None:
         return None
     if row.total < DC:
         return {"text": f"Not hidden: {row.total} against DC {DC}", "character": ch.id}
+    other = next((c for c in ch.conditions or [] if c.get("name") == "Invisible" and c.get("source") != "Hidden"), None)
+    if other is not None:  # (Invisibility, Greater Invisibility: kept as it is, with its own end; never replaced by Hidden)
+        return {"text": f"Already Invisible ({other.get('source') or 'its own'}): {row.total} is the DC to find you", "character": ch.id}
     synced = start(db, ch, row.total)
     unreached = ddb_bridge.on_for(db, ch) and not synced
     return {"text": f"Hidden: {row.total} is the DC to find you" + (": Invisible on its way to D&D Beyond" if synced else
