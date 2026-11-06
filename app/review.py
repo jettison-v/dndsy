@@ -5,7 +5,7 @@ Routes live in admin_sessions.py; this module holds the behavior so it can be
 tested on its own.
 """
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from app.characters import campaign_characters
@@ -271,10 +271,30 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None, by: st
                 added.append(alias)
         entity.status = Status.PUBLISHED
         undo["added_aliases"] = added
+        if entity.kind != EntityKind.QUEST:
+            undo["linked_events"] = link_moments(db, session, entity)
         data["undo"] = undo
         data["applied_entity_id"] = entity.id
     p.payload = data
     p.status = "accepted"
+
+
+def link_moments(db: Session, session: GameSession, entity: Entity) -> list[int]:
+    """Link the session's key moments that name an entry accepted from its draft (Brett, Nov 6: Captain Barrel, new in
+    a draft, got no dot from Last session: a draft links its moments only to entries that existed when it was drafted).
+    By its proper names (app/mentions.py); returns the moments it linked, for Undo."""
+    from app import mentions
+    from app.models import EventEntity, StoryEvent
+
+    find = mentions.finder((n, entity.id) for n in [entity.name] + [a.alias for a in entity.aliases])
+    have = set(db.scalars(select(EventEntity.event_id).where(EventEntity.entity_id == entity.id)))
+    linked = []
+    for ev in db.scalars(select(StoryEvent).where(StoryEvent.session_id == session.id).order_by(StoryEvent.position)):
+        if ev.id not in have and find(ev.text):
+            db.add(EventEntity(event_id=ev.id, entity_id=entity.id))
+            linked.append(ev.id)
+    db.flush()
+    return linked
 
 
 def session_label_short(session: GameSession) -> str:
@@ -325,6 +345,10 @@ def undo_proposal(db: Session, p: Proposal) -> None:
             fact = db.get(Fact, undo["created_fact_id"])
             if fact:
                 db.delete(fact)
+        if undo.get("linked_events"):
+            from app.models import EventEntity
+
+            db.execute(delete(EventEntity).where(EventEntity.entity_id == undo["entity_id"], EventEntity.event_id.in_(undo["linked_events"])))
         if entity:
             entity.summary = undo.get("summary", entity.summary)
             entity.summary_by = undo.get("summary_by", "")

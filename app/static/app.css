@@ -3130,6 +3130,7 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .pw-drop input[type=file] { max-width: 100%; }
 .pw-foot { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
 .pw-style { margin: 0; display: flex; gap: var(--sp-2); align-items: baseline; flex-wrap: wrap; }
+.pw-match { display: flex; gap: var(--sp-2); align-items: baseline; flex-wrap: wrap; font-size: var(--fs-sm); }
 .pw-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--sp-3); }
 .pw-option { display: grid; gap: 4px; padding: 6px; border: 2px solid var(--line); border-radius: var(--r-lg); cursor: pointer; }
 .pw-option:has(input:checked) { border-color: var(--green); background: var(--green-soft); }

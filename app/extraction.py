@@ -80,8 +80,11 @@ people, places, factions, items and quests each event involves.
 Entities: only ones this session adds information about. Use the existing \
 name when it is already known (match aliases and misspellings); give a full \
 updated summary of 1-3 sentences that merges what was known with what's new. \
-For new ones, pick the kind and write a summary. Add aliases only for real \
-alternative names or spellings. A summary marked "written by" a person is their \
+For new ones, pick the kind and write a summary. For a person or creature, \
+the summary also says what they look like whenever the source says or shows \
+it: race or species, rough age, and visible features (build, hair, clothing, \
+marks); pictures of them are drawn from it. Never invent a look. Add aliases \
+only for real alternative names or spellings. A summary marked "written by" a person is their \
 words: keep its wording and order, and change only what this session adds or \
 corrects (add a sentence, fix a detail); never rephrase what's still true, and \
 it may stay longer than 3 sentences.

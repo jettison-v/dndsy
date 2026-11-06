@@ -47,7 +47,7 @@ def test_listen_reads_the_recap_once_and_keeps_it(player, db, told):
     assert f'data-listen="/c/main/sessions/{s.id}"' in player.get("/c/main/").text  # (▶ Listen on Previously on…)
     tale = player.get(f"/c/main/sessions/{s.id}/tale").json()
     assert tale["audio"] == "" and tale["title"] == "Journey to Star Mount" and tale["intro"] == "Previously, on Main…"
-    assert not tale["can_redo"]  # (Read it again is an admin's)
+    assert not tale["can_redo"]  # (Re-record the voice is an admin's)
     words = [x["text"] for x in tale["slides"]]
     assert words[1].startswith("The party reached Star Mount") and "**" not in words[1]  # (plain words, read and shown)
     first = player.post(f"/c/main/sessions/{s.id}/narrate").json()
@@ -107,5 +107,9 @@ def test_a_long_recap_is_read_in_parts_openai_takes_in_order():
 
 
 def test_a_description_is_not_a_name():
-    assert narration._proper("Lillippi") and narration._proper("Pirate Captain") and narration._proper("the Lich Queen")
-    assert not narration._proper("the captain") and not narration._proper("a bard") and not narration._proper("Al")
+    from app import mentions
+
+    assert mentions.proper("Lillippi") and mentions.proper("Pirate Captain") and mentions.proper("the Lich Queen")
+    assert not mentions.proper("the captain") and not mentions.proper("a bard") and not mentions.proper("Al")
+    find = mentions.finder([("Captain Captain", 1), ("the captain", 1), ("Captain Trager Grill", 2), ("Trah", 3)])
+    assert find("Trah met Captain Trager Grill, then the captain.") == [3, 2]  # (the longer name claims its words)

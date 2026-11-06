@@ -32,6 +32,8 @@
       <label class="field">What it looks like<textarea name="words" rows="3" maxlength="1000" required>{{ words }}</textarea></label>
       <p class="pw-style"><span class="tag">Drawn as</span> <span class="note">{{ o.framing }}</span></p>
       <p class="pw-style"><span class="tag">{{ "Campaign style" if styled else "A plain style" }}</span> <span class="note">{{ style }}</span></p>
+      {# The Art style's pictures only when asked (Brett, Nov 6: matched every time, everyone looked alike): off for a person or creature, whose look is their own #}
+      {% if style_refs %}<label class="pw-match"><input type="checkbox" name="match" value="1"{% if o.frame not in ("portrait", "creature") %} checked{% endif %}> Match the campaign's {{ style_refs }} style picture{{ "s" if style_refs > 1 }} <span class="note">their painting style only; leave it off for a face of its own</span></label>{% endif %}
       <div class="pw-foot"><button class="btn primary" type="submit">Draw {{ how_many }}</button><span class="note">A few cents each, counted on Manage › Usage.</span></div>
     </form>
     {# While it draws (feedback 22): a place for each picture, filling, and a bar for the minute it can take #}
