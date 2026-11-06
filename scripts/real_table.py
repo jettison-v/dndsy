@@ -1250,11 +1250,13 @@ TWINS = {
     "big-c-twin": ("player4", 173220725, "Big C (twin)", "Channel Divinity"),
     "test-barbarian": ("player4", 173222366, "Test Barbarian", "Rage"),
     "test-fighter": ("player4", 173222510, "Test Fighter", "Second Wind"),
+    "no-name-twin": ("player4", 173230905, "No Name (twin)", "Focus"),
+    "trah-twin": ("player3", 173231727, "Trah (twin)", "Second Wind"),
 }
 
 
 # Each twin's real character at Brett's table (its public D&D Beyond copy, read as askdnd reads it; never driven)
-REAL = {"cole-twin": 75423618, "big-c-twin": 76415207}
+REAL = {"cole-twin": 75423618, "big-c-twin": 76415207, "no-name-twin": 77663730, "trah-twin": 135831636}
 
 
 def build(ddb: int) -> list[str]:
