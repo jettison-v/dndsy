@@ -570,6 +570,14 @@
     htmx.ajax('POST', '/live/sync' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' })
       .then(() => { liveWindowAgain(); if (!live.up) showInPlace(); });
   }
+  // Someone else's character changed (a read found it): only the pill catches up, reading nothing from D&D Beyond
+  // (Sentry ASKDND-V2-7, Nov 6: asking /live/sync here had every open page re-read the party on every change)
+  function pillAgain() {
+    const pill = document.getElementById('live-pill');
+    if (!window.htmx || !pill) return;
+    htmx.ajax('GET', '/live/pill' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' })
+      .then(liveWindowAgain);
+  }
   // The Live window, while it's open, says what the pill says (Bridge Review, Nov 3: an open window said "Not connected"
   // under a pill saying Connected): it's fetched again whenever the pill is
   function liveWindowAgain() {
@@ -759,7 +767,7 @@
       const ids = [...liveIds];
       liveIds = new Set();
       if (showsAny(ids)) showInPlace();
-      else freshen();
+      else pillAgain();
     }, 400);
   });
   // You changed something of a character's (a pin, bookmark, reminder or note: character_pages, player_notes):
