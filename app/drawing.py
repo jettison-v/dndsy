@@ -116,7 +116,7 @@ def _png(raw: bytes) -> bytes:
     return out.getvalue()
 
 
-def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene") -> tuple[list[tuple[str, str]], str]:
+def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene", match: bool = False) -> tuple[list[tuple[str, str]], str]:
     """Four pictures of `words` in the campaign's style, framed for what they're of (pictures.FRAMES: a portrait, the
     whole item…), each kept in file storage: ([(full key, thumb key)], the style's words). The caller lets go of the
     database first (OpenAI takes up to a minute)."""
@@ -128,8 +128,8 @@ def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene
         raise pictures.PictureError(stop)
     st = style(campaign)
     look = st["words"].strip() or PLAIN
-    refs = []
-    for pid in st["refs"][:REFS]:
+    refs = []  # the Art style's pictures, only when asked to match them (Brett, Nov 6: matched every time, everyone looked alike)
+    for pid in (st["refs"][:REFS] if match else []):
         if isinstance(pid, str) and pid.startswith(PORTRAIT):
             data = _portrait(db, pid[len(PORTRAIT):])
         else:
@@ -139,7 +139,8 @@ def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene
             refs.append(("ref.png", _png(data)))
     framing, size, centering = pictures.FRAMES.get(frame, pictures.FRAMES["scene"])
     prompt = f"{words}\n\n{framing}\n\nArt style for every picture in this campaign: {look}" + (
-        "\nMatch the style (not the subjects) of the pictures given." if refs else "")
+        "\nUse the pictures given only for their painting style: palette, brushwork and light. Don't copy any face, hair, "
+        "body, clothing, pose or composition from them: this subject looks only as described above." if refs else "")
     run = ExtractionRun(source="picture", model=MODEL, status="running")
     db.add(run)
     db.commit()  # (counted before the call; the database isn't held while OpenAI draws)

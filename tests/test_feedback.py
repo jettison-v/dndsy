@@ -113,10 +113,48 @@ def test_viewing_as_someone_a_note_is_still_the_admins(admin, db):
     assert fb.sender.endswith("(admin)") and fb.context.get("viewing_as")
 
 
-def test_the_admin_menu_counts_whats_new(admin, db):
+def test_the_admin_menu_counts_whats_waiting_for_you(admin, db):
+    """The Admin menu's count is what needs an admin: the table's notes to approve and Claude's questions (an
+    admin's own note goes straight to Claude)."""
     note(admin)
     slug = db.scalar(select(__import__("app.models", fromlist=["Campaign"]).Campaign.slug))
+    assert admin.get(f"/c/{slug}/manage/counts").json()["feedback"] == 0
+    db.scalar(select(Feedback)).status = "question"
+    db.flush()
     assert admin.get(f"/c/{slug}/manage/counts").json()["feedback"] == 1
+
+
+def test_a_note_from_the_table_waits_for_an_admins_approval(admin, player, db, monkeypatch):
+    """Brett, Nov 6: his table sends notes too, and each waits for him before Claude sees it. Approve sends it to
+    Claude, Delete drops it, adding to it approves it; Claude's queue never holds one waiting."""
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    r = note(player, text="The Rest button wraps.")
+    assert r.status_code == 200 and r.json()["review"]
+    fb = db.scalar(select(Feedback))
+    assert fb.status == "review"
+    monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 40)
+    claude = {"X-Feedback-Key": "k" * 40}
+    assert admin.get("/api/feedback", headers=claude).json()["items"] == []  # (not Claude's yet)
+    page = admin.get("/manage/feedback").text  # (opens on Waiting for you while there's one)
+    assert 'href="?tab=review" class="on"' in page and "Approve: send to Claude" in page
+    slug = db.scalar(select(__import__("app.models", fromlist=["Campaign"]).Campaign.slug))
+    assert "from the table to approve" in admin.get(f"/c/{slug}/manage").text
+    admin.post(f"/manage/feedback/{fb.id}", data={"to": "new"})
+    db.expire_all()
+    assert db.get(Feedback, fb.id).status == "new" and [i["id"] for i in admin.get("/api/feedback", headers=claude).json()["items"]] == [fb.id]
+    second = Feedback(text="Delete me", sender="x (player)", status="review")
+    third = Feedback(text="Add to me", sender="x (player)", status="review")
+    db.add_all([second, third])
+    db.flush()
+    admin.post(f"/manage/feedback/{second.id}", data={"to": "deleted"})
+    admin.post(f"/manage/feedback/{third.id}", data={"to": "answer", "answer": "It's on Battle too."})
+    db.expire_all()
+    assert db.get(Feedback, second.id).status == "deleted" and db.get(Feedback, third.id).status == "new"
+    assert note(admin).json()["review"] is False and db.scalar(select(Feedback).order_by(Feedback.id.desc())).status == "new"
 
 
 def test_a_note_can_be_added_to_any_time(admin, db):

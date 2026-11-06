@@ -14,7 +14,7 @@
   </div>
 </div>
 {% endmacro %}
-{% macro moment(e) %}<li class="ev {{ e.kind.value }}"><span class="note kind {{ e.kind.value }}">{{ e.kind.value | capitalize }}</span><div class="ev-text">{{ ln.text(e.text) }}{% if e.entities %}<small>{% for x in e.entities %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endmacro %}
+{% macro moment(e) %}<li class="ev {{ e.kind.value }}"><span class="note kind {{ e.kind.value }}">{{ e.kind.value | capitalize }}</span><div class="ev-text">{{ ln.text(e.text) }}{% set shown = e.entities | selectattr("status.value", "equalto", "published") | list %}{% if shown %}<small>{% for x in shown %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endmacro %}
 {% macro after(events, quests, threads, few=0) %}{# What came of it: key moments (on All sessions the first `few`, the rest behind Show all; Brett, Nov 5), and (the latest session) open threads #}
 {% if events or quests or threads %}
 <div class="tale-after">

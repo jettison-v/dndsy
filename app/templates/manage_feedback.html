@@ -10,7 +10,7 @@
   <p class="subtitle">Notes sent from any page with <kbd>\</kbd> or your account menu (and by the accounts you let send it, on Accounts). Claude reads them when you say "review the feedback": a question it asks shows here for your answer, and a note it fixed says which change did it.</p>
 
   <nav class="sub-tabs" aria-label="Where each stands">
-    {% for key, label, n in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}">{{ label }}{% if n and key in ("new", "question", "planned") %} <span class="mcount">{{ n }}</span>{% elif n %} <span class="note">{{ n }}</span>{% endif %}</a>{% endfor %}
+    {% for key, label, n in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}">{{ label }}{% if n and key in ("review", "new", "question", "planned") %} <span class="mcount">{{ n }}</span>{% elif n %} <span class="note">{{ n }}</span>{% endif %}</a>{% endfor %}
   </nav>
 
   <ul class="fb-list">
@@ -33,11 +33,12 @@
             {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else "You" }}</small>{{ m.text }}</div>{% endfor %}
             {% if f.pr %}<p class="note">Fixed in <a href="{{ f.pr }}" target="_blank" rel="noopener">{{ f.pr }}</a></p>{% endif %}
             {% if f.status != "deleted" %}{% set asked = f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
-              <label class="field"><span>{{ "Your answer" if asked else "Add to this note" }}</span><textarea name="answer" rows="2" required{% if not asked %} placeholder="Something you forgot, or what happened next"{% endif %}></textarea></label>
+              <label class="field"><span>{{ "Your answer" if asked else "Add to it and send it to Claude" if f.status == "review" else "Add to this note" }}</span><textarea name="answer" rows="2" required{% if not asked %} placeholder="Something you forgot, or what happened next"{% endif %}></textarea></label>
               <input type="hidden" name="to" value="answer"><button class="btn {{ 'primary' if asked }} small" type="submit">{{ "Answer" if asked else "Add" }}</button></form>{% endif %}
             <div class="row tight">
-              {% for to, label in (("planned", "Mark planned"), ("done", "Done"), ("new", "Back to new"), ("deleted", "Delete")) if to != f.status %}
-              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="inline"><input type="hidden" name="to" value="{{ to }}"><button class="btn small{{ ' link danger' if to == 'deleted' }}" type="submit">{{ label }}</button></form>{% endfor %}
+              {% set moves = (("new", "Approve: send to Claude"), ("deleted", "Delete")) if f.status == "review" else (("planned", "Mark planned"), ("done", "Done"), ("new", "Back to new"), ("deleted", "Delete")) %}
+              {% for to, label in moves if to != f.status %}
+              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="inline"><input type="hidden" name="to" value="{{ to }}"><button class="btn small{{ ' link danger' if to == 'deleted' }}{{ ' primary' if f.status == 'review' and to == 'new' }}" type="submit">{{ label }}</button></form>{% endfor %}
             </div>
             <details class="fold"><summary>Sent with it</summary>
               <dl class="fb-ctx">
