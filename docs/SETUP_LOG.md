@@ -968,7 +968,14 @@ Earlier that day a pull request was merged four minutes after its last change, w
 the table. Your Mac's local copy covers most changes, but not the ones that need the cloud: several people at once,
 phones, Google sign-in, the extension. Staging is where those get tried first. Not every change goes there (that
 would slow everything down): VTT slices, the bridge and the extension, risky groundwork, and anything merged near a
-game. To try a branch there, Claude pushes it to `staging`; to start fresh, `staging` is reset to `main`.
+game.
+
+**How work moves through it, with nothing lost.** Staging is a place, not a branch anyone works on. Every change lives
+on its own branch with a pull request into main; `scripts/staging.sh <branch>` copies that branch onto staging, and
+`scripts/staging.sh main` puts it back to what the table runs. The script refuses when staging holds a commit no
+other branch has, when the branch has changes not pushed, or when it has no open pull request, so whatever is tried
+on staging reaches main through its pull request, checked by the same tests as always. Staging's data is
+throwaway: what's typed there never goes to beta.
 
 **How it was done.**
 - `railway environment new staging` made an empty environment. Not a duplicate of production: that would have copied
