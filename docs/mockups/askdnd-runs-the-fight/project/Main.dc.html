@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The DM runs the fight</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#f3b9a8}a:hover{color:#ffd2c4}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; background: #15171a; color: #e6e4e0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; display: flex; flex-direction: column">
+  <div style="height: 52px; display: flex; align-items: center; gap: 22px; padding: 0 20px; background: #0f1113; border-bottom: 2px solid #c24545">
+    <b style="font-size: 16px">askdnd</b><span style="color: #c9c5bf">VTT test</span><span style="color: #8f959c">Story</span><span style="color: #8f959c">Campaign</span><span style="color: #e6e4e0; font-weight: 600">Table</span><span style="color: #8f959c">Party ▾</span>
+    <span style="margin-left: auto; color: #8f959c">Manage ▾</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 20px; background: #1f2226; border-bottom: 1px solid #34383e">
+    <div style="display: flex; align-items: center; gap: 14px">
+      <span style="font-size: 12px; font-weight: 800; letter-spacing: .12em; color: #e8b34b">ROUND 2</span>
+      <span style="font-weight: 600">Enemy 1's turn</span>
+      <span style="color: #8f959c">next: Trah</span>
+      <div style="margin-left: auto; display: flex; gap: 8px; align-items: center">
+        <button style="background: #272b30; color: #e6e4e0; border: 1px solid #4a4f57; border-radius: 8px; padding: 8px 14px; font: inherit">+ Add</button>
+        <button style="background: #c24545; color: #fff; border: 0; border-radius: 8px; padding: 9px 16px; font: inherit; font-weight: 600">Next turn ▸</button>
+        <button aria-label="The fight's menu" style="background: #272b30; color: #e6e4e0; border: 1px solid #4a4f57; border-radius: 8px; padding: 8px 12px; font: inherit">⋯</button>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center">
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 8px; color: #8f959c"><span style="width: 36px; height: 36px; border-radius: 50%; background: #3a3f46; display: grid; place-items: center">C</span><span style="font-size: 11px">Cole 19</span></span>
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 8px; background: #3a2a24; outline: 2px solid #e8b34b"><span style="width: 36px; height: 36px; border-radius: 50%; background: #6b3b2e; display: grid; place-items: center">E1</span><span style="font-size: 11px">Enemy 1 16</span></span>
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 8px"><span style="width: 36px; height: 36px; border-radius: 50%; background: #3a3f46; display: grid; place-items: center">T</span><span style="font-size: 11px">Trah 14</span></span>
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 8px; opacity: .55; outline: 1px dashed #8f959c"><span style="width: 36px; height: 36px; border-radius: 50%; background: #6b3b2e; display: grid; place-items: center">E2</span><span style="font-size: 11px">Enemy 2 12 · hidden</span></span>
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 8px"><span style="width: 36px; height: 36px; border-radius: 50%; background: #3a3f46; display: grid; place-items: center">BC</span><span style="font-size: 11px">Big C 9</span></span>
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px; border-radius: 8px"><span style="width: 36px; height: 36px; border-radius: 50%; background: #3a3f46; display: grid; place-items: center">NN</span><span style="font-size: 11px">No Name 5</span></span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex: 1; min-height: 0">
+    <div style="width: 270px; border-right: 1px solid #34383e; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+      <span style="font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #e8b34b">TABLE ROLLS</span>
+      <div style="background: #1f2226; border-radius: 10px; padding: 10px; display: flex; justify-content: space-between"><span>Enemy 1 · Greatclub<br><span style="color: #8f959c; font-size: 12px">only the DM</span></span><b style="font-size: 22px">17</b></div>
+      <div style="background: #1f2226; border-radius: 10px; padding: 10px; display: flex; justify-content: space-between"><span>Trah · Initiative</span><b style="font-size: 22px">14</b></div>
+    </div>
+    <div style="flex: 1; padding: 18px 22px; display: flex; flex-direction: column; gap: 6px">
+      <div style="display: grid; grid-template-columns: 60px 1fr 140px 60px 1fr; gap: 12px; color: #8f959c; font-size: 12px; padding: 0 12px"><span>Init.</span><span>Fighter</span><span>Hit Points</span><span>AC</span><span>Conditions</span></div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 140px 60px 1fr; gap: 12px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px"><b>19</b><span>Cole</span><span>51 / 75</span><span>16</span><span style="color: #8f959c">Moonbeam</span></div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 140px 60px 1fr; gap: 12px; align-items: center; background: #2c2420; border-radius: 10px; padding: 10px 12px; outline: 1px solid #e8b34b"><b>16</b><span>Enemy 1 <span style="color: #8f959c; font-size: 12px">Ogre · MM 2024</span></span><span>27 / 59 <span style="color: #e8b34b; font-size: 12px">Bloodied</span></span><span>11</span><span style="color: #8f959c">—</span></div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 140px 60px 1fr; gap: 12px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px"><b>14</b><span>Trah</span><span>22 / 40</span><span>18</span><span style="color: #8f959c">Blessed</span></div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 140px 60px 1fr; gap: 12px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px; opacity: .6; outline: 1px dashed #8f959c"><b>12</b><span>Enemy 2 <span style="color: #8f959c; font-size: 12px">hidden from players</span></span><span>13 / 13</span><span>13</span><span style="color: #8f959c">—</span></div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 140px 60px 1fr; gap: 12px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px"><b>9</b><span>Big C</span><span>44 / 44</span><span>17</span><span style="color: #8f959c">—</span></div>
+      <div style="display: grid; grid-template-columns: 60px 1fr 140px 60px 1fr; gap: 12px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px"><b>5</b><span>No Name</span><span>30 / 38</span><span>15</span><span style="color: #8f959c">Hex on Enemy 1</span></div>
+    </div>
+    <div style="width: 300px; border-left: 1px solid #34383e; padding: 16px; display: flex; flex-direction: column; gap: 10px; background: #1b1d21">
+      <span style="font-size: 12px; color: #8f959c">The fight's menu (⋯), the DM's</span>
+      <div style="background: #272b30; border: 1px solid #34383e; border-radius: 10px; padding: 6px; display: flex; flex-direction: column">
+        <span style="padding: 9px 10px">Undo: Next turn</span>
+        <span style="padding: 9px 10px">Battle settings…</span>
+        <span style="padding: 9px 10px">Show a hidden creature…</span>
+        <span style="padding: 9px 10px; color: #f08a8a">End the fight</span>
+      </div>
+      <span style="font-size: 12px; color: #8f959c; margin-top: 10px">Before a fight, the same place says:</span>
+      <button style="background: #c24545; color: #fff; border: 0; border-radius: 8px; padding: 10px 14px; font: inherit; font-weight: 600; align-self: flex-start">Start a fight</button>
+      <span style="font-size: 12px; color: #8f959c">It takes the party in, waiting for initiative, and opens + Add.</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 14px 20px 18px; border-top: 1px solid #34383e; background: #101214; font-size: 13px; color: #c9c5bf">
+    <span><b style="color: #e8b34b">1 · The turn bar is askdnd's.</b> Round, whose turn, the order. Only the DM has + Add, Next turn and ⋯. D&amp;D Beyond's VTT is set aside while it runs here.</span>
+    <span><b style="color: #e8b34b">2 · Hidden creatures.</b> Faded and dashed for the DM; players' pages never receive them. Show one from ⋯ when it appears.</span>
+    <span><b style="color: #e8b34b">3 · One step, one Undo.</b> Next turn, + Add, a creature's Hit Points: each can be undone from ⋯. Rounds, reminders and Concentration count from these turns.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

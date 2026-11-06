@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add creatures to the fight</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#f3b9a8}a:hover{color:#ffd2c4}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; background: #101214; color: #e6e4e0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; padding: 40px 60px; display: flex; flex-direction: column; gap: 20px">
+  <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; flex: 1">
+    <div style="display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid #34383e">
+      <b style="font-size: 18px">Add to the fight</b>
+      <span style="margin-left: 12px; color: #8f959c">from your books (MM 2024) and the SRD</span>
+      <button aria-label="Close" style="margin-left: auto; background: none; border: 0; color: #8f959c; font-size: 18px">×</button>
+    </div>
+    <div style="display: flex; flex: 1; min-height: 0">
+      <div style="flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; border-right: 1px solid #34383e">
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="color: #8f959c; font-size: 12px">Search</span><input value="gob" style="background: #15171a; border: 1px solid #4a4f57; border-radius: 8px; padding: 10px 12px; color: #e6e4e0; font: inherit"></label>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap"><span style="background: #272b30; border-radius: 999px; padding: 4px 10px; font-size: 12px">CR 0–2</span><span style="background: #272b30; border-radius: 999px; padding: 4px 10px; font-size: 12px">Humanoid</span><span style="background: #272b30; border-radius: 999px; padding: 4px 10px; font-size: 12px">This campaign's own</span></div>
+        <div style="display: grid; grid-template-columns: 1fr 70px 70px 60px 80px; gap: 10px; color: #8f959c; font-size: 12px; padding: 0 10px"><span>Creature</span><span>CR</span><span>HP</span><span>AC</span><span></span></div>
+        <div style="display: grid; grid-template-columns: 1fr 70px 70px 60px 80px; gap: 10px; align-items: center; background: #272b30; border-radius: 10px; padding: 10px"><span>Goblin Warrior <span style="color: #8f959c; font-size: 12px">MM 2024</span></span><span>1/4</span><span>10</span><span>15</span><button style="background: #c24545; color: #fff; border: 0; border-radius: 8px; padding: 6px 10px; font: inherit">+ Add</button></div>
+        <div style="display: grid; grid-template-columns: 1fr 70px 70px 60px 80px; gap: 10px; align-items: center; background: #1b1d21; border-radius: 10px; padding: 10px"><span>Goblin Boss <span style="color: #8f959c; font-size: 12px">MM 2024</span></span><span>1</span><span>21</span><span>17</span><button style="background: #272b30; color: #e6e4e0; border: 1px solid #4a4f57; border-radius: 8px; padding: 6px 10px; font: inherit">+ Add</button></div>
+        <div style="display: grid; grid-template-columns: 1fr 70px 70px 60px 80px; gap: 10px; align-items: center; background: #1b1d21; border-radius: 10px; padding: 10px"><span>Goblin Minion <span style="color: #8f959c; font-size: 12px">MM 2024</span></span><span>1/8</span><span>7</span><span>12</span><button style="background: #272b30; color: #e6e4e0; border: 1px solid #4a4f57; border-radius: 8px; padding: 6px 10px; font: inherit">+ Add</button></div>
+        <div style="display: grid; grid-template-columns: 1fr 70px 70px 60px 80px; gap: 10px; align-items: center; background: #1b1d21; border-radius: 10px; padding: 10px"><span>Hobgoblin Warrior <span style="color: #8f959c; font-size: 12px">MM 2024</span></span><span>1/2</span><span>11</span><span>18</span><button style="background: #272b30; color: #e6e4e0; border: 1px solid #4a4f57; border-radius: 8px; padding: 6px 10px; font: inherit">+ Add</button></div>
+        <span style="color: #8f959c; font-size: 12px">Pressing a name opens its stat block beside the list, as in the item browser.</span>
+      </div>
+      <div style="width: 440px; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; background: #1b1d21">
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #e8b34b">ADDING</span>
+        <div style="background: #272b30; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; gap: 10px"><b>Goblin Warrior</b>
+            <span style="margin-left: auto; display: flex; align-items: center; gap: 6px"><button aria-label="One fewer" style="background: #15171a; color: #e6e4e0; border: 1px solid #4a4f57; border-radius: 6px; width: 30px; height: 30px">−</button><b>4</b><button aria-label="One more" style="background: #15171a; color: #e6e4e0; border: 1px solid #4a4f57; border-radius: 6px; width: 30px; height: 30px">+</button></span></div>
+          <span style="color: #8f959c; font-size: 13px">Named Goblin Warrior 1 to 4 (players see the names; rename any later)</span>
+          <label style="display: flex; gap: 8px; align-items: center"><input type="checkbox"> Hidden from players for now</label>
+        </div>
+        <span style="font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #e8b34b">THEIR INITIATIVE</span>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <label style="display: flex; gap: 8px; align-items: flex-start; background: #272b30; border-radius: 10px; padding: 10px; outline: 1px solid #e8b34b"><input type="radio" name="init" checked> <span><b>One roll for the four</b> <span style="color: #8f959c; font-size: 13px">(Option A, the DMG's way for a group of the same kind: they act together)</span></span></label>
+          <label style="display: flex; gap: 8px; align-items: flex-start; background: #272b30; border-radius: 10px; padding: 10px"><input type="radio" name="init"> <span><b>A roll each</b> <span style="color: #8f959c; font-size: 13px">(Option B: four places in the order)</span></span></label>
+          <label style="display: flex; gap: 8px; align-items: center; background: #272b30; border-radius: 10px; padding: 10px"><input type="radio" name="init"> <span><b>Type it</b></span> <input value="" placeholder="12" style="width: 60px; background: #15171a; border: 1px solid #4a4f57; border-radius: 6px; padding: 6px; color: #e6e4e0; font: inherit"></label>
+          <span style="color: #8f959c; font-size: 12px">askdnd rolls it with their Dexterity and shows the roll in Table rolls, only to you. Your battle settings keep which one starts picked.</span>
+        </div>
+        <button style="margin-top: auto; background: #c24545; color: #fff; border: 0; border-radius: 8px; padding: 12px; font: inherit; font-weight: 600">Add 4 to the fight</button>
+      </div>
+    </div>
+  </div>
+  <span style="color: #c9c5bf; font-size: 13px"><b style="color: #e8b34b">The question for you:</b> one Initiative roll per group of the same creature (Option A), or one each (Option B)? Either way, the DM can type a number. Players always roll their own, from Battle, as with Initiative from askdnd today.</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
