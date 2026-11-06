@@ -958,3 +958,40 @@ Earlier that day a pull request was merged four minutes after its last change, w
 2. Run a short end-to-end test right after every deploy, not only nightly. Trigger it off the version changing, so it doesn't care how the deploy happened.
 3. When your tests use saved copies of an outside service's data, check the live data against those copies on a schedule, or the tests will keep passing on a world that's gone.
 
+## 2026-11-06: A staging copy of askdnd
+
+**What was set up.** A second askdnd at `staging.askdnd.ai`, in its own Railway environment (`staging`, beside
+`production`), with its own service (`askdnd-staging`) and its own Postgres. It deploys the `staging` branch, not
+`main`, and its database started as a copy of this morning's nightly backup of beta. Beta and the table never see it.
+
+**Why.** `beta.askdnd.ai` isn't a test copy: it's the same app and database as askdnd.ai, so a merge goes straight to
+the table. Your Mac's local copy covers most changes, but not the ones that need the cloud: several people at once,
+phones, Google sign-in, the extension. Staging is where those get tried first. Not every change goes there (that
+would slow everything down): VTT slices, the bridge and the extension, risky groundwork, and anything merged near a
+game. To try a branch there, Claude pushes it to `staging`; to start fresh, `staging` is reset to `main`.
+
+**How it was done.**
+- `railway environment new staging` made an empty environment. Not a duplicate of production: that would have copied
+  the legacy app and the nightly backup job too, and a second backup job could overwrite beta's backups.
+- `railway add --database postgres` and `railway add --service askdnd-staging` inside it, then
+  `railway service source connect --repo … --branch staging`. Production's four services were checked unchanged.
+- Settings: `APP_ENV=production` (so the dev login is off), `SENTRY_ENVIRONMENT=staging`, `AUTO_DRAFT=0`, files in a
+  folder on its own server, and no `DDB_BRIDGE` (the bridge would write to the same test sheets beta uses).
+- Secrets with `scripts/set-secret.sh NAME --staging`: a new sign-in secret; the Google, Anthropic and OpenAI keys
+  copied from your `.env` unseen (`--from-env`); Sentry's address copied from the Mac Mini.
+- The database has no public address, so the backup was copied into staging's own server over `railway ssh` and
+  loaded there (`restore_db.py --into-staging`, which refuses to run anywhere else).
+- `staging.askdnd.ai`: a CNAME and a TXT record in Cloudflare (Brett), and staging's return address in Google's
+  sign-in settings (Brett).
+
+**Still to do.** Pictures: staging can't read beta's from S3 until it has a files key of its own (a key that can read
+`v2/files/` and write a staging folder). The bridge: an extension build that points at staging, used only with test
+sheets beta isn't using at the same time.
+
+**For a new project:**
+1. Have three places from the start: your computer, staging, production. Staging runs the same code and settings
+   as production, with its own database and keys.
+2. Make the staging environment empty and add only what it needs; copying production copies its scheduled jobs too.
+3. Fill staging from a production backup; it doubles as a check that your backups restore.
+4. Use staging for what your computer can't show you, not for every change.
+
