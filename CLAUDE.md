@@ -10,7 +10,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - `docs/artifacts/next-steps.html`: Brett's Next Steps page (Nov 2), folded into the Roadmap the same evening (Brett: "We are getting spread out again"); its link now points to the Roadmap. Don't add steps there.
 - `docs/testing-setup.md`: the real-accounts test table on beta (three seats in VTT test). **Keep it current** when a seat, sheet or campaign changes; no email addresses.
 - `docs/live-test-plan.md`: the end-to-end test on the real D&D Beyond (`scripts/real_table.py` on the Mac Mini, plus what needs a person). When Brett says "run the live tests", follow it and add a line to its Results. A new bridge feature gets a run. Part 1 also runs every night at 4:00 on the Mini and reports a miss to Sentry (environment `live-test`); after changing its scripts, copy them to the Mini (live-test-plan.md › Every night).
-- `docs/recording-to-recap.md`: Brett's steps after a game night, from MacWhisper through the Processor to a published recap, and where the files are. Keep it current when the Processor or drafting changes.
+- `docs/artifacts/recording-to-recap.html`: **Recording to Recap**, Brett's steps after a game night, from MacWhisper through the Processor to a published recap, and where the files are (link in `docs/artifacts/README.md`). Keep it current and republish it when the Processor or drafting changes.
 - `docs/DECISIONS.md`: running decision log. **Append to it** whenever a meaningful decision is made in a session (one line: date, decision, why).
 
 ## Working with Brett

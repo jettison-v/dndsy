@@ -1,0 +1,134 @@
+<title>Recording to Recap</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Brett's steps after a game night, from MacWhisper through the askdnd Processor to a published recap (Nov 6). Kept
+   in the repo as docs/artifacts/recording-to-recap.html, the one copy, and republished to the same link when the
+   Processor or drafting changes. One column of numbered steps (the order is real), grouped by where they happen.
+   Colors and faces are askdnd's own, dark first, as on the roadmap. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93;
+  --red: #d64545; --red-text: #f08a8a;
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c;
+  --red: #b83232; --red-text: #a62a2a;
+  --amber: #9a6a07; --amber-soft: rgba(201, 145, 30, .14);
+  --green: #2f7d4c; --green-soft: rgba(47, 125, 76, .12);
+  color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c;
+  --red: #b83232; --red-text: #a62a2a;
+  --amber: #9a6a07; --amber-soft: rgba(201, 145, 30, .14);
+  --green: #2f7d4c; --green-soft: rgba(47, 125, 76, .12);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93;
+  --red: #d64545; --red-text: #f08a8a;
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  color-scheme: dark;
+}
+body { background: var(--bg); color: var(--text); font: 15px/1.65 var(--sans); }
+main { max-width: 760px; margin: 0 auto; padding-block: 40px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { border-bottom: 2px solid var(--red); padding-bottom: 20px; margin-bottom: 28px; }
+.eyebrow { font: 700 12px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--red-text); }
+h1 { font: 700 34px/1.15 var(--cond); color: var(--strong); margin: 10px 0 12px; text-wrap: balance; }
+.lead { color: var(--muted); margin: 0; max-width: 62ch; }
+h2 { font: 700 20px/1.2 var(--cond); color: var(--strong); margin: 36px 0 4px; text-wrap: balance; }
+h2 small { font: 500 13px var(--sans); color: var(--muted); margin-left: 8px; }
+ol.steps { list-style: none; counter-reset: step var(--start, 0); padding: 0; margin: 14px 0 0; display: grid; gap: 12px; }
+ol.steps > li { counter-increment: step; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+ol.steps > li::before { content: counter(step); font: 700 16px/30px var(--cond); text-align: center; width: 30px; height: 30px;
+  border-radius: 50%; background: var(--surface-2); color: var(--strong); font-variant-numeric: tabular-nums; }
+li b.name { color: var(--strong); }
+li p { margin: 2px 0 0; }
+.pstep { font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber);
+  background: var(--amber-soft); border-radius: 999px; padding: 3px 8px; margin-right: 6px; vertical-align: 2px; }
+.btn { font: 600 13px/1 var(--sans); color: var(--strong); background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+code { font: 13px var(--mono); background: var(--surface-2); border-radius: 4px; padding: 1px 5px; overflow-wrap: anywhere; }
+.note { color: var(--muted); font-size: 14px; }
+.privacy { margin-top: 28px; border-left: 3px solid var(--green); border-radius: 0; background: var(--green-soft); padding: 12px 16px; }
+.tw { overflow-x: auto; margin-top: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+th { font: 700 12px var(--cond); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+ul.fixes { padding-left: 18px; margin: 10px 0 0; display: grid; gap: 8px; }
+.aside { margin-top: 36px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+.aside h2 { margin-top: 0; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
+a { color: var(--red-text); }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">askdnd · after a game night</div>
+    <h1>From recording to recap</h1>
+    <p class="lead">Your steps, start to finish. The recording and its transcript never leave your Mac: the askdnd Processor removes the table talk, and only the game goes to askdnd, which drafts the recap and keeps nothing else. You review the draft and publish it, and the table sees it on Story › Previously on….</p>
+  </header>
+
+  <h2>Before the game</h2>
+  <ol class="steps">
+    <li><div><b class="name">Wear headphones.</b><p>Without them Zoom's audio leaks back into your mic and every line is heard twice.</p></div></li>
+    <li><div><b class="name">Record the session in MacWhisper,</b><p>which transcribes it and labels who's speaking.</p></div></li>
+  </ol>
+
+  <h2>After the game, on your Mac <small>about 25 minutes, mostly waiting</small></h2>
+  <ol class="steps" style="--start: 2">
+    <li><div><b class="name">Export from MacWhisper.</b><p>Export <b>Segments</b> as <b>.json</b>, with <b>speaker names</b>, <b>timestamps</b> and <b>milliseconds</b> on. Save it anywhere; Downloads is fine.</p></div></li>
+    <li><div><b class="name">Open askdnd Processor</b> from Applications or the Dock.<p>It opens a page in your browser (<code>127.0.0.1:8765</code>) that only your Mac can reach. If it says Ollama isn't running, press <span class="btn">Start Ollama</span>.</p></div></li>
+    <li><div><b class="name">Add the session.</b><p>Drop the .json file on the page, set <b>Session date</b> to the day you played, and press <span class="btn">Add session</span>. Tick <i>Replace if this date already exists</i> only to start a date over.</p></div></li>
+    <li><div><span class="pstep">Step 1</span><b class="name">Filter.</b><p>Press <span class="btn">Filter this session</span>. It removes Zoom's echo, then the model on your Mac marks the table talk. A full session takes about 15–20 minutes; leave the page open.</p></div></li>
+    <li><div><span class="pstep">Step 2</span><b class="name">Review the cuts.</b><p>Each box is a stretch marked as table talk. Open any you're unsure of and press <span class="btn">Keep</span> if it has game in it: a rules call, a plan, something that happened. You're the judge; a quick skim is enough.</p></div></li>
+    <li><div><span class="pstep">Step 3</span><b class="name">Save.</b><p>Press <span class="btn">Save final transcript</span>. It's kept on your Mac with your Keep choices applied.</p></div></li>
+    <li><div><span class="pstep">Step 4</span><b class="name">Send to askdnd.</b><p>Press <span class="btn">Send to askdnd</span>. Only the filtered transcript goes. askdnd finds the session by its date (or makes it), drafts the recap with Claude in about a minute, and doesn't keep the transcript. The page then says when it was sent and links to the draft.</p></div></li>
+  </ol>
+
+  <h2>After the game, on askdnd</h2>
+  <ol class="steps" style="--start: 9">
+    <li><div><b class="name">Review the draft and publish it.</b><p>Manage › Sessions, or the Processor's link. Read it, fix anything wrong (your fixes teach later drafts), and press <span class="btn">Publish</span>. Before the next game is ideal, so the table's Previously on… is ready.</p></div></li>
+    <li><div><b class="name">Go in order.</b><p>Each draft builds on the recaps published before it, so a session drafted ahead of earlier ones knows less of the story. Publishing a session starts the next one's draft by itself.</p></div></li>
+  </ol>
+
+  <p class="privacy">Only step 9's filtered text leaves your Mac. The recording, MacWhisper's export and the Processor's files stay in <code>~/Code/dndsy/transcripts/</code>, which is never committed to git or uploaded.</p>
+
+  <h2>Where things are</h2>
+  <div class="tw"><table>
+    <thead><tr><th>What</th><th>Where</th></tr></thead>
+    <tbody>
+      <tr><td>The Processor app</td><td>Applications › askdnd Processor (if it's ever missing, Claude rebuilds it with <code>scripts/install-processor-app.sh</code>)</td></tr>
+      <tr><td>A session's cleaned-up transcript</td><td><code>~/Code/dndsy/transcripts/work/&lt;date&gt;/final.txt</code>, or the Processor's <span class="btn">Show in Finder</span></td></tr>
+      <tr><td>The MacWhisper export it started from</td><td><code>~/Code/dndsy/transcripts/raw/&lt;date&gt;.json</code></td></tr>
+      <tr><td>Its log, if something goes wrong</td><td><code>~/Library/Logs/askdnd-processor.log</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>If something goes wrong</h2>
+  <ul class="fixes">
+    <li><b>"No UPLOAD_TOKEN in your local .env yet"</b>: the key the Processor sends with is missing. Ask Claude; it's set with <code>scripts/set-secret.sh UPLOAD_TOKEN</code>, the same value on askdnd and your Mac.</li>
+    <li><b>"Couldn't reach askdnd"</b>: check the internet, then press <span class="btn">Send to askdnd</span> again. Nothing was lost.</li>
+    <li><b>The filter seems stuck</b>: its progress is in the log above. If it has stopped, open the session and press <span class="btn">Filter again</span>.</li>
+  </ul>
+
+  <section class="aside">
+    <h2>Aug 29, 2026: "The brig of the Leviathan"</h2>
+    <p class="note">Filtered, reviewed and saved on Oct 15, while the Processor was being built, but never sent, so askdnd shows it as <b>Not drafted · Send from the Processor</b>. To draft it: open the Processor, click <b>2026-08-29</b>, and press <span class="btn">Send to askdnd</span> (step 9). Its draft knows the story as far as it's published by then, so it reads best once the sessions before it are published.</p>
+  </section>
+
+  <footer>Kept in the repo at <code>docs/artifacts/recording-to-recap.html</code> and updated when the Processor or drafting changes. Last updated Nov 6, 2026.</footer>
+</main>

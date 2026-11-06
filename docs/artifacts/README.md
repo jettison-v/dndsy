@@ -11,6 +11,7 @@ screenshots of real pages (they show the campaign).
 
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
+| Recording to Recap | [NpPqj4ifE2zKdXAJgZQBaM](https://claude.ai/artifact/NpPqj4ifE2zKdXAJgZQBaM) | `recording-to-recap.html` | Brett's steps after a game night: MacWhisper, the Processor's four steps, publishing the recap, where the files are (Nov 6; kept current) |
 | How the Bridge Works | [VhKW45Ec3mYoQsksGnQZ1T](https://claude.ai/artifact/VhKW45Ec3mYoQsksGnQZ1T) | `bridge-flow.html` | The D&D Beyond bridge as four pictures: who talks to whom, a change made in askdnd (and catching up), a change made on D&D Beyond, how askdnd notices a sheet closed (Oct 28; keep current as the bridge changes) |
 | One Table List | [7e1exa6YDp5ndFeFN5p5PF](https://claude.ai/artifact/7e1exa6YDp5ndFeFN5p5PF) | `../mockups/the-table.html` | Manage › Table as one list, with one Add and a Remove that says what it does (decided and built, Oct 30) |
 | Table Without Modes | [2sEJ9btUudhWzZG6RbHEjx](https://claude.ai/artifact/2sEJ9btUudhWzZG6RbHEjx) | `../mockups/table-without-modes.html` | Game Mode designed again: no switch, a roll goes to the table by default, ready for askdnd's own encounters (decided and built, Oct 30) |
