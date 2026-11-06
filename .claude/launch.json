@@ -67,6 +67,15 @@
         "docs/mockups"
       ],
       "port": 8020
+    },
+    {
+      "name": "web-feedback",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "cd ../dndsy-feedback && uv run --env-file ../dndsy/.env uvicorn app.main:app --port 8003"
+      ],
+      "port": 8003
     }
   ]
 }

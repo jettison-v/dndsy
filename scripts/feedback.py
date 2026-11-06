@@ -67,12 +67,15 @@ def note_md(item: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+DEFAULT_BASE, STAGING_BASE = "https://askdnd.ai", "https://staging.askdnd.ai"
+
+
 def pull(base: str, status: str) -> None:
     items = json.loads(call(base, f"/api/feedback?status={status}"))["items"]
     OUT.mkdir(parents=True, exist_ok=True)
     for item in items:
         full = json.loads(call(base, f"/api/feedback/{item['id']}"))
-        d = OUT / str(item["id"])
+        d = OUT / (f"staging-{item['id']}" if "staging." in base else str(item["id"]))  # (staging's ids overlap beta's)
         d.mkdir(exist_ok=True)
         (d / "note.md").write_text(note_md(full))
         (d / "context.json").write_text(json.dumps(full.get("context") or {}, indent=1))
@@ -88,7 +91,9 @@ def pull(base: str, status: str) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    p.add_argument("--base", default=os.getenv("ASKDND_BASE", "https://askdnd.ai"))
+    p.add_argument("--base", default=os.getenv("ASKDND_BASE", DEFAULT_BASE))
+    p.add_argument("--staging", action="store_const", const=STAGING_BASE, dest="base",
+                   help="staging's own queue (staging.askdnd.ai), filed as private/feedback/staging-<id>")
     sub = p.add_subparsers(dest="cmd", required=True)
     pl = sub.add_parser("pull")
     pl.add_argument("--status", default="new,question,planned")
@@ -103,6 +108,9 @@ def main() -> None:
     a = p.parse_args()
     if a.cmd == "pull":
         pull(a.base, a.status)
+        if a.base == DEFAULT_BASE:  # (and staging's own queue: notes sent from staging.askdnd.ai, filed as staging-<id>)
+            print("Staging:")
+            pull(STAGING_BASE, a.status)
     elif a.cmd == "ask":
         print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"note": a.question, "status": "question"}))["status"])
     else:

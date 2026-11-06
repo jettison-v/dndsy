@@ -20,6 +20,13 @@ on:
     branches: [main]
   pull_request:
 
+# A newer push to the same pull request cancels the run still going for the older one: only the newest is checked
+# (Nov 6: the account's Actions minutes ran low; every run is about 14 minutes across its five jobs). main's own runs
+# are never cancelled, so each merge is checked before Railway deploys it.
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   CI: "1"
   TEST_DATABASE_URL: postgresql+psycopg://askdnd:askdnd@localhost:5432/askdnd_test

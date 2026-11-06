@@ -3109,6 +3109,8 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .fb-answer .field, .fb-answer textarea { width: 100%; }
 /* The one Picture window (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2) */
 .pw { display: grid; gap: var(--sp-3); }
+.pw > .tabbar { min-height: 41px; flex: none; }  /* (staging feedback 31: a full window squeezed the tabs to a sliver) */
+.pw-drawing, #pw-options:not(:empty) { margin-top: var(--sp-3); }  /* room between Draw and the pictures (staging feedback 31) */
 .pw-form { display: grid; gap: var(--sp-3); }
 .pw-drop { display: grid; place-items: center; gap: var(--sp-2); text-align: center; min-height: 160px; padding: var(--sp-3); border: 2px dashed var(--line-strong); border-radius: var(--r-lg); color: var(--muted); cursor: pointer; }
 .pw-drop.over { border-color: var(--amber); background: var(--amber-soft); }
@@ -3193,6 +3195,11 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .pw-frame-side { display: grid; gap: var(--sp-4); min-width: 0; }
 .pw-frame-side input[type=range] { width: 100%; }
 .pw-band { width: 100%; max-width: 360px; aspect-ratio: 360 / 206; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); display: block; }
+/* Each preview in the shape it's shown in (staging feedback 32): its page's by kind (entity_pages.SHAPES), the side panel's band */
+.pw-band[data-shape=portrait] { aspect-ratio: 3 / 4; max-width: 180px; }
+.pw-band[data-shape=square], .pw-band[data-shape=item], .pw-band[data-shape=emblem] { aspect-ratio: 1; max-width: 200px; }
+.pw-band[data-shape=banner] { aspect-ratio: 16 / 5; }
+.pw-previews { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: flex-start; }
 /* Hide (app/hiding.py): an attack while hidden offers to end it */
 .rw-hidden { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); }
 /* Readied (app/readying.py; feedback 14): the top of Battle's Reaction column, in the Readied colour */
