@@ -336,6 +336,12 @@ h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
 .tag.draft { background: var(--amber-soft); color: var(--amber); }
 .tag.published, .tag.done { background: var(--green-soft); color: var(--green); }
 .tag.edited, .tag.new, .tag.working { background: var(--blue-soft); color: var(--blue); }
+/* Drafting… (feedback 32): a bar sweeping under the word while Claude works; the page updates by itself when it's done */
+.tag.working { position: relative; overflow: hidden; }
+.tag.working::after { content: ""; position: absolute; left: 0; bottom: 0; height: 2px; width: 40%; background: var(--blue); border-radius: var(--r-pill); animation: working-sweep 1.4s ease-in-out infinite; }
+@keyframes working-sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .tag.working::after { animation: none; width: 100%; opacity: .5; } }
+.ls-which { margin: 0; font-size: var(--fs-xs); }
 .tag.error { background: var(--red-soft); color: var(--link); }
 
 /* Buttons and forms */
@@ -1229,10 +1235,10 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Which half of Manage you're in: a band in its colour, red for this campaign, blue for askdnd admin */
 .manage-band { position: relative; height: 3px; margin: 0 0 var(--sp-5); border-radius: var(--r-xs); background: var(--red); }  /* the half's colour, as a line (Brett, 2026-10-31) */
 .manage-band.tool { background: var(--blue); }
-.manage-band a { display: block; position: absolute; right: 0; top: calc(var(--sp-5) + var(--control-h) + var(--sp-4) + 9px); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* beside the page's title, under the "All pages" control (feedback 10: it covered it); a block, since a flex button centres its text and cuts both ends (feedback 10) */
-.manage-band.camp ~ .title-row { padding-right: 96px; }  /* ⚙ Admin */
+.manage-band a { display: block; position: absolute; right: 0; top: calc(var(--sp-5) + var(--control-h) + var(--sp-4) + 6px); line-height: calc(var(--control-h) - 2px); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* beside the page's title, under the "All pages" control (feedback 10: it covered it); a block, since a flex button centres its text and cuts both ends (feedback 10) */
+.manage-band.camp ~ .title-row { padding-right: 116px; }  /* ⚙ Admin, a full-size button (feedback 31) */
 .manage-band.tool ~ .title-row { padding-right: 216px; }  /* a campaign's name */
-@media (max-width: 640px) { .manage-band a { max-width: 140px; top: calc(var(--sp-5) + var(--control-h) + var(--sp-4) - 7px); } .manage-band.tool ~ .title-row { padding-right: 152px; } }
+@media (max-width: 640px) { .manage-band a { max-width: 140px; top: calc(var(--sp-5) + var(--control-h) + var(--sp-4) - 5px); } .manage-band.tool ~ .title-row { padding-right: 152px; } }
 .menu .menu-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin: -6px -6px var(--sp-1); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--red-line); border-radius: var(--r-md) var(--r-md) 0 0; background: var(--red-soft); font-size: var(--fs-sm); }
 .menu .menu-head.tool { border-bottom-color: var(--blue-line); background: var(--blue-soft); }
 .menu .menu-head b { color: var(--text-strong); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1241,7 +1247,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (min-width: 1240px) {
   .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }
   .page.manage-page > .manage-band { margin-left: -228px; }
-  .manage-band a { top: calc(var(--sp-5) + 9px); }  /* (no "All pages" control here: the list is down the left) */  /* the page's own band, across the list's column too (not a sample in a section) */
+  .manage-band a { top: calc(var(--sp-5) + 3px); }  /* (no "All pages" control here: the list is down the left) */  /* the page's own band, across the list's column too (not a sample in a section) */
   .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: calc(32px + 3px + var(--sp-5)); width: 200px; }  /* under the line */
   .manage-jump { display: none; }
 }
@@ -1794,7 +1800,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 @media (max-width: 900px) {
   body.at-table { padding-left: 0; --rolls-w: 0px; }
   body.at-table .topbar { margin-left: 0; }
-  body.at-table .rolls-side, body.at-table.rolls-closed .rolls-side { transform: none; visibility: visible; top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -10px 30px var(--shadow); }
+  body.at-table .rolls-side, body.at-table.rolls-closed .rolls-side { z-index: 5; transform: none; visibility: visible; top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -10px 30px var(--shadow); }
   body.at-table.rolls-full .rolls-side { max-height: 80vh; }
   body.at-table.rolls-open { padding-bottom: calc(270px + env(safe-area-inset-bottom)); }
   body.at-table.rolls-closed { padding-bottom: calc(108px + env(safe-area-inset-bottom)); }

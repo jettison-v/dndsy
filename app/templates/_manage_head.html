@@ -11,8 +11,8 @@
   {% for p in mine %}{% if p.section and loop.changed(p.section) %}<span class="manage-sec">{{ p.section }}</span>{% endif %}<a href="{{ p.href }}" class="{{ 'on' if p.here }}"{% if p.here %} aria-current="page"{% endif %}>{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
 {% endmacro %}
 <div class="manage-band {{ 'camp' if grp == 'campaign' else 'tool' }}">
-  {% if grp == "campaign" %}<span class="sr">{{ camp }}: this campaign's Manage</span>{% if admin_home %}<a class="manage-cross btn small" href="{{ admin_home.href }}">⚙ Admin</a>{% endif %}
-  {% else %}<span class="sr">askdnd admin: the same in every campaign</span>{% if camp_home %}<a class="manage-cross btn small" href="{{ camp_home.href }}">{{ camp }}'s Manage</a>{% endif %}{% endif %}
+  {% if grp == "campaign" %}<span class="sr">{{ camp }}: this campaign's Manage</span>{% if admin_home %}<a class="manage-cross btn" href="{{ admin_home.href }}">⚙ Admin</a>{% endif %}
+  {% else %}<span class="sr">askdnd admin: the same in every campaign</span>{% if camp_home %}<a class="manage-cross btn" href="{{ camp_home.href }}">{{ camp }}'s Manage</a>{% endif %}{% endif %}
 </div>
 <nav class="manage-side" aria-label="{{ (camp + ' · Manage') if grp == 'campaign' else 'askdnd admin' }}"{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
   {{ manage_list() }}
