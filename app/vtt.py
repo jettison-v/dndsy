@@ -56,6 +56,12 @@ FEATURES: list[Feature] = [
             "Initiative in askdnd (docs/mockups/initiative/), Nov 4: being built. Once askdnd's own VTT runs, nothing is "
             "sent to D&D Beyond's.",
             labs=True, state="Being built"),
+    Feature("recap_listen", "Listen to the recap",
+            "On Story › Previously on…, ▶ Listen plays the recap read aloud by a narrator, over the pictures of who and "
+            "what each paragraph names, panning slowly, with the words on screen: a \"previously on\" to start the night. "
+            "The first Listen on a recap has OpenAI read it (a few cents, counted on Manage › Usage); after that it's kept.",
+            "Nice to have, Nov 6 (Brett): tried at the table first.",
+            labs=True, state="Ready to try"),
 ]
 LABS = "labs"  # the campaign's Labs switch, kept with the features' keys
 
