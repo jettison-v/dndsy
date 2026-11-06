@@ -26,6 +26,7 @@
           <input type="search" placeholder="Search people, places and things" aria-label="Search people, places and things" data-ls-search>
         </div>
         {{ view_switch([("all", "All"), ("recent", "Last session")], "Which ones") }}
+        {% if latest_label %}<p class="note ls-which">Last session: <b>{{ latest_label }}</b>, the newest with a published recap. Its key moments' names get the dot.</p>{% endif %}
         {# Filters (Brett, 2026-10-23, docs/mockups/campaign-v2.html): kinds, and Hidden for the DM; they combine with the view #}
         <div class="reader-filters">
           <div class="reader-filters-head"><span>Kind</span><button type="button" class="btn link small" data-ls-clear>Clear</button></div>

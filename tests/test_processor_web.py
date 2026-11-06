@@ -127,3 +127,23 @@ def test_send_error_is_shown(client, monkeypatch):
     monkeypatch.setattr(web, "send_transcript", fail)
     page = client.post("/sessions/2026-08-29/send").text  # follows the redirect to the session page
     assert "Claude is busy" in page and "Review on askdnd" not in page
+
+
+def test_the_processor_names_itself_so_cloudflare_lets_it_through(monkeypatch):
+    """Nov 6: Cloudflare, in front of askdnd since Nov 2, refuses Python's default name (error 1010, a 403), so a send
+    from the Processor failed; it sends its own name, with its key."""
+    import io
+    import urllib.request
+
+    from transcript_filter import web as processor
+
+    seen = []
+
+    def urlopen(req, timeout):
+        seen.append(req)
+        return io.BytesIO(b'{"label": "Aug 29, 2026"}')
+
+    monkeypatch.setattr(processor, "upload_settings", lambda: ("https://beta.example", "key"))
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    assert processor.send_transcript("2026-08-29", "text") == {"label": "Aug 29, 2026"}
+    assert seen[0].get_header("User-agent") == "askdnd-processor/1.0" and seen[0].get_header("Authorization") == "Bearer key"
