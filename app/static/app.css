@@ -6,7 +6,7 @@
   --story-bg: #221f1a; --story-line: #3b3428; --story-text: #e2dccf;
   /* The faint scroll behind story text (Brett, 2026-11-05: Umber, Inter, Faint): its parchment, the rods of a recap's, the first letter and the fleuron */
   --parch-1: #211e19; --parch-2: #1f1c18; --parch-3: #1a1916; --rod-1: #2f2920; --rod-2: #221e18; --rod-3: #1a1714;
-  --story-cap: #a99070; --story-fleuron: #5c5040;
+  --story-cap: #a99070; --story-fleuron: #5c5040; --rod-cap: #57462f; --rod-hi: #4a3c2c; --story-head: #f1e9da;
   --red: #d64545; --red-hover: #e35a5a; --red-soft: rgba(214, 69, 69, .14);
   --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
   --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
@@ -416,9 +416,47 @@ details.conversation[open] > summary { margin-bottom: 12px; }
    rods (.scroll around it), a first letter and a fleuron where the tale ends; an entry's story is the parchment alone. */
 .story { position: relative; isolation: isolate; font-family: var(--sans); font-size: var(--fs-md); line-height: 1.7; color: var(--story-text); padding: 22px 34px; }
 .story::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse 120% 160% at 50% 50%, var(--parch-1) 0%, var(--parch-2) 70%, var(--parch-3) 100%); opacity: .45; filter: saturate(.7); mask-image: linear-gradient(90deg, transparent 0, var(--bg) 5%, var(--bg) 95%, transparent 100%); }
-.scroll::before, .scroll::after { content: ""; display: block; height: 9px; margin: 0 -10px; border-radius: var(--r-pill); background: linear-gradient(180deg, var(--rod-1) 0%, var(--rod-2) 55%, var(--rod-3) 100%); opacity: .4; mask-image: linear-gradient(90deg, transparent, var(--bg) 12%, var(--bg) 88%, transparent); }
-.scroll > .story > p:first-child::first-letter { float: left; font-family: var(--tale-cap); font-weight: 500; font-size: 3.2em; line-height: .82; padding: 6px 9px 0 0; color: var(--story-cap); }
-.scroll > .story::after { content: "❦"; display: block; text-align: center; color: var(--story-fleuron); margin-top: var(--sp-3); }
+.scroll::before, .scroll::after { content: ""; display: block; height: clamp(12px, 1.25vw, 18px); margin: 0 -22px; border-radius: var(--r-pill);
+  background: radial-gradient(circle at 7px 50%, var(--rod-cap) 0 6px, transparent 6.5px), radial-gradient(circle at calc(100% - 7px) 50%, var(--rod-cap) 0 6px, transparent 6.5px),
+              linear-gradient(180deg, var(--rod-hi) 0%, var(--rod-2) 50%, var(--rod-3) 100%); }
+.scroll .story { font-size: 1.0625em; line-height: 1.75; padding: 40px 64px 34px; }
+.scroll .story::before { opacity: .7; filter: saturate(.8); mask-image: linear-gradient(90deg, transparent 0, var(--bg) 4%, var(--bg) 96%, transparent 100%); }
+.scroll .tale-text > p:first-of-type::first-letter { float: left; font-family: var(--tale-cap); font-weight: 500; font-size: 3.4em; line-height: .8; padding: 6px 10px 0 0; color: var(--story-cap); }
+.tale-text > :last-child { margin-bottom: 0; }
+.tale-end { text-align: center; color: var(--story-fleuron); margin-top: var(--sp-4); }
+/* The Story page, option A (Brett, 2026-11-05; docs/mockups/story-page/): one reading column, the tale on its scroll,
+   then what came of it; All sessions the same column, each session a rolled scroll, the newest open */
+.tale { max-width: 820px; margin: var(--sp-5) auto 0; display: flex; flex-direction: column; gap: var(--sp-6); }
+.tale > .subtitle { margin: 0; }
+.tale-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; margin-bottom: var(--sp-5); }
+.tale-head h2 { flex: none; margin: 0; font-size: var(--fs-xl); font-weight: 600; color: var(--story-head); text-wrap: balance; }
+.tale-kicker { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--story-cap); }
+.tale-dm { border-top: 1px solid var(--story-line); margin-top: var(--sp-4); padding-top: var(--sp-4); font-size: var(--fs-sm); line-height: 1.6; }
+.tale-dm b { display: block; font-size: var(--fs-xs); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.tale-dm p { margin: var(--sp-1) 0 0; color: var(--story-text); }
+.tale-after { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-6); padding: 0 var(--sp-2); }
+.tale-after:has(> section:only-child) { grid-template-columns: minmax(0, 1fr); }
+.tale-label { margin: 0 0 var(--sp-3); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.tale-moments .ev, .tale-moments .ev + .ev { display: block; padding: 0 0 var(--sp-3) var(--sp-4); border: 0; }
+.tale-moments .kind { display: block; font-size: var(--fs-xs); }
+.tale-threads li { display: flex; flex-wrap: wrap; gap: 0 var(--sp-1); padding: var(--sp-1) 0; }
+.tale-threads li > .muted { flex-basis: 100%; font-size: var(--fs-sm); }
+.tale-theory i { color: var(--muted); }
+.tale-foot { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--sp-4); padding: 0 var(--sp-2); }
+details.tale-roll { background: none; border: 0; padding: 0; margin: 0; }
+details.tale-roll > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 11em minmax(0, 1fr) auto; gap: var(--sp-4); align-items: baseline; padding: 22px var(--sp-6);
+  border-radius: var(--r-sm); background: linear-gradient(180deg, var(--rod-hi), var(--rod-3)) top / 100% 9px no-repeat, linear-gradient(180deg, var(--rod-hi), var(--rod-3)) bottom / 100% 9px no-repeat, var(--parch-2); }
+details.tale-roll > summary::-webkit-details-marker { display: none; }
+details.tale-roll > summary:hover { background-color: var(--parch-1); }
+details.tale-roll[open] > summary { background: none; padding: 0 var(--sp-2); margin-bottom: var(--sp-3); }  /* open: its row is the scroll's title */
+details.tale-roll[open] .tale-roll-text .note { display: none; }
+details.tale-roll[open] .tale-roll-text b { font-size: var(--fs-lg); }
+.tale-roll-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tale-roll-text b { color: var(--story-head); font-weight: 600; }
+.tale-roll-text .note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tale-roll-count { white-space: nowrap; }
+details.tale-roll .session-body { display: flex; flex-direction: column; gap: var(--sp-5); }
+#t-sessions .tale { gap: var(--sp-4); }
 .story p, .story li { max-width: 66ch; }
 .story p { margin: 0 0 1em; }
 .story > :last-child { margin-bottom: 0; }
@@ -580,6 +618,9 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .section { padding: 22px 18px; }
   .story { padding: 18px 20px; }
   .scroll::before, .scroll::after { margin: 0 -4px; }
+  .scroll .story { padding: 24px 18px 20px; }
+  .tale-after { grid-template-columns: minmax(0, 1fr); }
+  details.tale-roll > summary { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); padding: var(--sp-3) var(--sp-4); }
   .compare { grid-template-columns: 1fr; }
 }
 

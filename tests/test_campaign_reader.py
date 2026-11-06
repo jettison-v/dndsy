@@ -239,5 +239,8 @@ def test_story_text_sits_on_a_faint_scroll(player, db):  # noqa: F811
     parchment alone."""
     import_bundle(db, BUNDLE)
     published_events(db)
-    assert '<div class="scroll"><div class="story">' in player.get("/c/main/").text
+    home = player.get("/c/main/").text
+    assert '<div class="scroll">' in home and '<div class="tale-text">' in home and 'class="tale-end"' in home
+    sessions = player.get("/c/main/?tab=sessions").text  # All sessions: each a rolled scroll, the newest open
+    assert '<details class="section tale-roll"' in sessions and 'class="tale-roll-text"' in sessions
     assert '<div class="story">' in player.get(f"/campaign/{entry(db, 'Saltmarsh').id}/read").text
