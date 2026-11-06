@@ -188,7 +188,7 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         undo |= back
         said += f": {brought}"
     if (ch.creature_story or {}) != story_was:
-        made = [s.get("entity") for s in (ch.creature_story or {}).values() if s.get("entity") not in {x.get("entity") for x in story_was.values()}]
+        made = [s.get("made") for s in (ch.creature_story or {}).values() if s.get("made") and s.get("made") not in {x.get("made") for x in story_was.values()}]
         undo |= {"story": json.dumps(story_was), **({"made": str(made[0])} if made and made[0] else {})}
     if e["conc"]:
         was = ch.concentration

@@ -178,7 +178,7 @@ def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: 
                        f"{ch.name}'s {k['name']} back, whole")
         undo["healed"] = f"{k['id']}:{k['hp']['removed']}"
     in_step(db, ch, {str(c["id"]): name} if name and name != k["name"] else None)
-    story.note(db, ch, story.FAMILIAR, "cast", name=name or (k["name"] if k["name"] != k["kind"] else ""), form=k["kind"], kind=kind)
+    story.note(db, ch, story.FAMILIAR, "cast", name=name or (k["name"] if k["name"] != k["kind"] else ""), form=k["kind"], kind=kind, creature="familiar")
     return undo, said
 
 
@@ -197,7 +197,7 @@ def _cast_new(db: Session, ch: Character, sheet: dict, forms: dict, chosen: str,
     mid = chosen[len(NEW):]
     ddb_bridge.add(db, ch, "set", {"field": f"familiar_add:{mid}", "value": 1}, f"{ch.name}'s familiar: a {form['name']} added to Extras")
     in_step(db, ch)  # (any other form switched off)
-    story.note(db, ch, story.FAMILIAR, "cast", name=name if name != form["name"] else "", form=form["name"], kind=kind)
+    story.note(db, ch, story.FAMILIAR, "cast", name=name if name != form["name"] else "", form=form["name"], kind=kind, creature="familiar")
     shown = f"{name}, a {form['name']}" if name and name != form["name"] else f"a {form['name']}"
     touched = set(forms) | {k for k in was if k.startswith(NEW)} | {chosen}
     return {"companions": _was(was, touched), "added": mid}, f"Your familiar: {shown} ({kind}), added to D&D Beyond's Extras"
@@ -273,7 +273,7 @@ def summon(ch: Character, sheet: dict, entry: dict, level: int, choice: str, nam
                                            "removed": 0, "temp": 0}}
     what = f"{c['name']} ({choice})" if choice else c["name"]
     if db is not None and entry.get("spell") == summons.STEED:
-        story.note(db, ch, story.STEED, "cast", name=name.strip()[:60] if name.strip() else "", form=entry["name"], kind=choice)
+        story.note(db, ch, story.STEED, "cast", name=name.strip()[:60] if name.strip() else "", form=entry["name"], kind=choice, creature=str(c["id"]))
     return {"companions": _was(was, {str(c["id"])})}, f"{what} is here, at level {level}"
 
 
@@ -360,5 +360,5 @@ def move(request: Request, character_id: int, creature_id: int, form=web.FormBod
     in_step(db, ch)
     story.note(db, ch, story.FAMILIAR, {"away": "away", "here": "back", "gone": "dismissed"}[to])
     db.commit()
-    said = {"away": f"{c['name']} is in the pocket dimension", "here": f"{c['name']} is back", "gone": f"{c['name']} is dismissed for good"}[to]
+    said = {"away": f"{c['name']} is in the pocket dimension", "here": f"{c['name']} is back", "gone": f"{c['name']} is dismissed: casting Find Familiar brings it back"}[to]
     return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, said, deliver=True)})

@@ -35,7 +35,15 @@ def _not_found(request: Request):
     return web.not_found(request, "That page isn't in the campaign record.")
 
 
+def _creature_picture(db: Session, companion: dict | None) -> dict | None:
+    """A companion's entry shows its creature's picture (the Picture window's, on its Battle) until it has its own."""
+    if not companion or not companion.get("creature"):
+        return None
+    return pictures.creature_urls(db, [companion["master"].id]).get((companion["master"].id, companion["creature"]))
+
+
 def entity_context(db: Session, entity: Entity, user: dict) -> dict:
+    companion = companion_story.view(db, entity)
     reviewer = is_reviewer(user)
     moderator = can_moderate(user)  # decides on facts from the table
     facts = list(db.scalars(select(Fact).where(Fact.entity_id == entity.id).order_by(Fact.id)))
@@ -49,7 +57,7 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "e": entity,
         "can_edit": can_edit_entries(user),
         "kind_label": entities.KIND_LABELS.get(entity.kind, entity.kind.value),
-        "companion": companion_story.view(db, entity),  # a familiar's or steed's: whose, where, its forms (board 4)
+        "companion": companion,  # a familiar's or steed's: whose, where, its forms (board 4)
         "merged": [f for f in facts if f.status == "merged"],
         "pending": [f for f in facts if f.status == "pending"] if moderator else [],
         # A player's own suggestions here, with what happened to each (Waiting, Added, Used, Not used)
@@ -64,7 +72,7 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "others": others,
         "moments": entities.moments(db, entity),
         "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
-        "picture": pictures.urls(db, [entity.id]).get(entity.id),
+        "picture": pictures.urls(db, [entity.id]).get(entity.id) or _creature_picture(db, companion),
         "can_picture": pictures.can_manage(user),
         "map_marker": (marker := atlas.entity_marker(entity)),
         "map_href": atlas.show_on_map(marker) if marker else "", "map_src": atlas.atlas_url(marker) if marker else "",

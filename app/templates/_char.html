@@ -344,5 +344,5 @@
 {# What anyone can do as an Action, each name opening its rule and its rolls in the side panel (feedback 8, Nov 4;
    character_views.BASIC_ACTIONS; Attack is the column's own rows) #}
 {% macro basic_actions(c, names) -%}
-{% for n in names %}<button type="button" class="basic-act" data-panel-url="/characters/{{ c.id }}/detail?ref={{ ('rule:basic:' ~ n) | urlencode }}">{{ n }}</button>{{ ", " if not loop.last }}{% endfor %}
+{% for n in names %}<span class="basic-one"><button type="button" class="basic-act" data-panel-url="/characters/{{ c.id }}/detail?ref={{ ('rule:basic:' ~ n) | urlencode }}">{{ n }}</button>{{ "," if not loop.last }}</span>{{ " " if not loop.last }}{% endfor %}
 {%- endmacro %}

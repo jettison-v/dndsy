@@ -24,7 +24,7 @@
 <section class="section abilities-row">
   <div class="abil6">
     {% for a in s.abilities %}{% set sv = s.saves[loop.index0] %}
-    <div class="ab"><div class="top"><small>{{ a.name }} {{ a.score }}</small><b>{{ a.label }}</b></div>
+    <div class="ab"><div class="top"><small><span class="tile-full">{{ a.name }}</span><span class="tile-short">{{ a.name[:3] }}</span>&nbsp;{{ a.score }}</small><b>{{ a.label }}</b></div>
       <div class="sv{{ ' prof' if sv.proficient }}">Save {{ sv.label }} {{ adv(sv.adv) }}</div></div>
     {% endfor %}
   </div>

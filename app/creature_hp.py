@@ -28,11 +28,19 @@ router = APIRouter()
 AGAIN = timedelta(hours=1)  # (askdnd's own number put back at most once an hour: never a loop with D&D Beyond)
 
 
+def _asked_all(db: Session, ch: Character) -> dict[str, list[BridgeIntent]]:
+    """askdnd's maximums on D&D Beyond for each of the character's creatures, by field, oldest first (one read)."""
+    out: dict[str, list[BridgeIntent]] = {}
+    for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == ch.id, BridgeIntent.kind == "set").order_by(BridgeIntent.id)):
+        f = str((i.data or {}).get("field", ""))
+        if f.startswith("creature_max:"):
+            out.setdefault(f, []).append(i)
+    return out
+
+
 def _asked(db: Session, ch: Character, creature_id) -> list[BridgeIntent]:
     """askdnd's maximums for this creature on D&D Beyond, oldest first."""
-    field = f"creature_max:{creature_id}"
-    return [i for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == ch.id, BridgeIntent.kind == "set")
-                                  .order_by(BridgeIntent.id)) if (i.data or {}).get("field") == field]
+    return _asked_all(db, ch).get(f"creature_max:{creature_id}", [])
 
 
 def holds(c: dict, k: dict, ours: list[BridgeIntent]) -> str:
@@ -71,9 +79,10 @@ def keep_max(db: Session, ch: Character, summary: dict) -> None:
     camp = db.get(Campaign, ch.campaign_id) if ch.campaign_id else None
     if not ch.id or not vtt.on(camp, "creatures"):
         return
+    asked = _asked_all(db, ch)
     for c in yours(summary):
         k = card(summary, c)
-        if holds(c, k, _asked(db, ch, k["id"])):
+        if holds(c, k, asked.get(f"creature_max:{k['id']}", [])):
             continue
         ddb_bridge.add(db, ch, "set", {"field": f"creature_max:{k['id']}", "value": k["hp"]["fix"]},
                        f"{ch.name}'s {k['name']}: maximum {k['hp']['fix']} on D&D Beyond")

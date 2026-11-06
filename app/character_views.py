@@ -18,8 +18,8 @@ def _cost(activation: str) -> str:
 
 # What a feature's own text says it costs, first (feedback 15, Nov 5: D&D Beyond labels some actions "Special", such as
 # Oath of Conquest's Conquering Presence, "As an action…", which then showed in no column). scripts/battle_audit.py uses it
-STATED = {"Bonus action": r"\b(?:as|take|use|using|expend) (?:a|your) Bonus Action\b|\bBonus Action\b",
-          "Reaction": r"\b(?:take|use|as|using) (?:a|your) Reaction\b|\bReaction\b",
+STATED = {"Bonus action": r"\b(?:[Aa]s|[Tt]ake|[Uu]se|[Uu]sing|[Ee]xpend) (?:a|your) Bonus Action\b",  # (the 2024 books' term, capitalized)
+          "Reaction": r"\b(?:[Tt]ake|[Uu]se|[Aa]s|[Uu]sing) (?:a|your) Reaction\b",
           "Action": r"\b(?:take|as|use) (?:a|an|the) (?:Magic |Utilize |Attack |Study |Search |Influence )?[Aa]ction\b|\b[Aa]s an action\b|\bMagic action\b"}
 
 

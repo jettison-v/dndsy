@@ -282,11 +282,11 @@ def test_the_pocket_dimension_dismissing_and_zero_hit_points(player, dm, db, lab
     labs.companions = {str(OWL): {"state": "here", "kind": "Celestial"}}
     db.flush()
     where = f"/characters/{labs.id}/creatures/{OWL}/where"
-    assert "Send to the pocket dimension" in player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
+    assert ">Pocket dimension</button>" in player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
     assert player.post(where, data={"to": "away"}).status_code == 204
     page = player.get(f"/characters/{labs.id}/battle?creature={OWL}").text
-    assert "In the pocket dimension" in page and "Bring it back" in page
-    assert "Dismiss forever" in page  # (from the pocket dimension too: feedback 23)
+    assert "In the pocket dimension" in page and ">Bring back</button>" in page
+    assert ">Dismiss…</summary>" in page  # (from the pocket dimension too: feedback 23; not "forever", feedback 27)
     assert player.post(where, data={"to": "away"}).status_code == 409  # (already there)
     assert dm.post(where, data={"to": "here"}).status_code == 404  # (not the DM yet)
     set_role(db, "dm@example.com", "dm")
@@ -639,4 +639,24 @@ def test_a_familiar_gets_a_world_entry_that_keeps_its_story(player, dm, db, labs
     assert [x["what"] for x in labs.creature_story["familiar"]["log"]] == ["cast", "form", "away", "back"]
     player.post(where, data={"to": "gone"})
     db.expire_all()
-    assert db.get(Entity, pip.id) is not None and "Dismissed for good" in dm.get(f"/campaign/{pip.id}/peek").text
+    assert db.get(Entity, pip.id) is not None and "<dd>Dismissed</dd>" in dm.get(f"/campaign/{pip.id}/peek").text  # (feedback 27: not "for good")
+
+
+def test_undo_never_deletes_an_entry_the_dm_wrote_or_one_with_a_picture(player, db, labs, sheet):
+    """Code review, Nov 5: a familiar named like an entry the DM already wrote uses that entry, and the cast's Undo leaves
+    it; and the entry shows the familiar's picture until it has its own (feedback 28: Owlie's picture)."""
+    from app import entities
+    from app.models import Entity, EntityPicture
+
+    e = familiar_sheet(db, labs, sheet)
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    mine = entities.create(db, labs.campaign_id, "creature", "Pip", "")  # (the DM's, no description yet)
+    db.add(EntityPicture(character_id=labs.id, creature="familiar", source="ddb", link="https://www.dndbeyond.com/avatars/1/owl.png"))
+    db.flush()
+    first = player.post(url, data={"way": "ritual", "familiar": str(OWL), "kind": "Fey"}).json()
+    db.refresh(labs)
+    assert labs.creature_story["familiar"]["entity"] == mine.id and "made" not in first["undo"]
+    assert "owl.png" in player.get(f"/campaign/{mine.id}/peek").text
+    player.post(first["undoUrl"], data=first["undo"])
+    db.expire_all()
+    assert db.get(Entity, mine.id) is not None

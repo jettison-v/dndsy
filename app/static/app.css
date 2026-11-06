@@ -646,6 +646,7 @@ details.feat > summary:hover { color: var(--text-strong); }
 .strip small { display: block; color: var(--muted); font-size: var(--fs-xs); } .strip b { font-size: var(--fs-lg); }
 .abilities-row { padding: 16px 18px; }
 .abil6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.basic-one { white-space: nowrap; }  /* (a name and its comma stay together: never ", Utilize" at a line's start) */
 .ab { background: var(--surface-2); border-radius: var(--r-md); padding: 8px 10px; }
 .ab .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 0 6px; }  /* a long name (Intelligence) puts the number under it, not past the tile's edge */
 .ab small { color: var(--muted); font-size: var(--fs-xs); } .ab b { font-size: var(--fs-lg); }
@@ -932,7 +933,7 @@ details.faq[open] > summary::before { transform: rotate(90deg); }
 .tile-short { display: none; }
 .ph-short { display: none; }
 @media (max-width: 640px) { .tile-full, .ph-full { display: none; } .tile-short, .ph-short { display: inline; } }  /* Battle's tiles are narrow on a phone: the whole label would be cut off */
-@container battle-head (max-width: 1000px) { .tile-full { display: none; } .tile-short { display: inline; } }
+@container battle-head (max-width: 1000px) { .tile-full, .ph-full { display: none; } .tile-short, .ph-short { display: inline; } }  /* (Nov 5: "Hit…" beside − and +) */
 @media (max-width: 640px) { .res-row { flex-direction: column; align-items: flex-start; } .res-row .res { padding: 0; border-left: none; } }  /* each on its own line: a divider there only marks the wrap */
 .res-label { color: var(--faint); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .05em; margin-right: 12px; }
 /* What an option uses up, next to it */
@@ -2136,8 +2137,9 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
    columns and on Battle combos. Muted until hovered, so the headings stay the loudest thing. */
 .head-add { font-size: var(--fs-sm); font-weight: 500; color: var(--muted); text-decoration: none; }
 .head-add:hover, .head-add:focus-visible { color: var(--text); text-decoration: underline; }
-.econ-top { display: flex; align-items: flex-start; gap: var(--sp-3); }
-.econ-top > .econ-head { flex: 1; min-width: 0; }
+.econ-top { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px var(--sp-3); }
+.econ-word { white-space: nowrap; }  /* (Nov 5: "Bonus / action" split beside Rules and + Add) */
+.econ-top > .econ-head { flex: 1; min-width: min-content; }  /* (its name never squeezed: Rules and + Add wrap under it instead) */
 .econ-tools { flex: none; display: flex; align-items: center; gap: var(--sp-3); }
 /* "Rules (n)" on a Battle column: rules from classes and feats that change it (app/class_rules.py), on hover or tap */
 .rules-pop { position: relative; display: inline-flex; outline: none; }
