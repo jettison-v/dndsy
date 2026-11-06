@@ -110,6 +110,9 @@ class Campaign(Timestamped, Base):
     # The fight running in its D&D Beyond VTT, as askdnd last heard it (app/fight.py): the order, the round, whose turn
     fight: Mapped[dict | None] = mapped_column(JSONB(none_as_null=True))  # (no fight: NULL, not JSON null)
     fight_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The DM's battle settings for askdnd's own fights (app/own_fight.py SETTINGS): what players see of an enemy's Hit
+    # Points, whether a group rolls one Initiative, whether new creatures start hidden
+    battle: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # When a DM's browser with any D&D Beyond page open was last heard (app/ddb_bridge.py `carried`): while it's recent,
     # that browser makes the changes of a character whose own sheet is closed (DM Backup, Brett 2026-11-02)
     backup_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
@@ -876,6 +879,57 @@ class Feedback(Timestamped, Base):
     pasted_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
     thread: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"who": "claude"|"you", "text", "at"}]
     pr: Mapped[str] = mapped_column(String(300), default="", server_default="")
+
+
+
+class Fight(Timestamped, Base):
+    """askdnd running a fight itself (VTT slice 2, docs/plans/2026-11-02-vtt-build-plan.md; app/own_fight.py): one per
+    campaign at a time. Its fighters are rows of their own, changed one step at a time under the campaign's fight lock,
+    each step kept (FightStep) for the DM's Undo; what every page shows is published to `Campaign.fight` as the fight
+    heard from D&D Beyond's VTT is, so the band, reminders and Concentration follow it unchanged."""
+
+    __tablename__ = "fights"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    state: Mapped[str] = mapped_column(String(10), default="waiting")  # waiting (rolling Initiative), running, ended
+    round: Mapped[int] = mapped_column(Integer, default=0)
+    turn: Mapped[int | None] = mapped_column(Integer, nullable=True)  # the fighter whose turn it is (Fighter.id)
+    fighters: Mapped[list["Fighter"]] = relationship(back_populates="fight", order_by="Fighter.id", cascade="all, delete-orphan",
+                                                     passive_deletes=True)
+
+
+class Fighter(Base):
+    """One in an askdnd fight: a character at the table (its numbers are its sheet's) or a creature the DM added from
+    the campaign's books or the SRD (its numbers are kept here: it has no D&D Beyond sheet)."""
+
+    __tablename__ = "fighters"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fight_id: Mapped[int] = mapped_column(ForeignKey("fights.id", ondelete="CASCADE"), index=True)
+    fight: Mapped[Fight] = relationship(back_populates="fighters")
+    character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), nullable=True)
+    name: Mapped[str] = mapped_column(String(80))
+    monster: Mapped[str] = mapped_column(String(120), default="", server_default="")  # rules_data's key ("goblin-warrior")
+    group: Mapped[str] = mapped_column(String(40), default="", server_default="")  # creatures added together: one Initiative
+    initiative: Mapped[float | None] = mapped_column(Float, nullable=True)
+    bonus: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # its Initiative bonus (ties: higher first)
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    hp: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # a creature's, kept here
+    hp_max: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    temp: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    ac: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    conditions: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+
+
+class FightStep(Base):
+    """One step in an askdnd fight (Next turn, + Add, a creature's Hit Points…), with the fight as it was before it,
+    for the DM's Undo."""
+
+    __tablename__ = "fight_steps"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    fight_id: Mapped[int] = mapped_column(ForeignKey("fights.id", ondelete="CASCADE"), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    what: Mapped[str] = mapped_column(String(120))
+    before: Mapped[dict] = mapped_column(JSONB)
 
 
 from app import history  # noqa: E402,F401

@@ -114,11 +114,20 @@ def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
     characters = {c.ddb_id: c.id for c in db.scalars(
         select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
         .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None), Character.ddb_id.is_not(None)))}
+    if (campaign.fight or {}).get("own"):  # (askdnd runs this fight itself: app/own_fight.py; D&D Beyond's VTT is set aside)
+        return False
     now, prev = _clean(fight, characters), campaign.fight
     if now is not None:  # (numbers askdnd asked the VTT for and it doesn't show yet: app/initiative.py)
         initiative.overlay(now, prev)
         if initiative.on(campaign):
             initiative.follow_masters(db, campaign, now)
+    return take(db, campaign, now)
+
+
+def take(db: Session, campaign: Campaign, now: dict | None) -> bool:
+    """The fight now, as pages show it, from D&D Beyond's VTT (heard) or askdnd's own (app/own_fight.py publish): turns
+    that begin make their reminders and count conditions and Concentration. True when it changed."""
+    prev = campaign.fight
     fresh = campaign.fight_at is None or datetime.now(UTC) - campaign.fight_at > timedelta(minutes=10)
     if _order(now) == _order(prev) and (now or {}).get("sets") == (prev or {}).get("sets") and not fresh:
         return False
@@ -340,7 +349,7 @@ def shown(campaign: Campaign | None, dm: bool, mine: set[int] = frozenset()) -> 
     "now" (whose turn: the entry), "next" (the entry after it), "yours" (it's one of `mine`'s turn), "next_yours",
     "reminders" (theirs: each says "mine" when it's one of their characters'), "waiting" (the DM added the tokens and
     combat hasn't started: whoever has rolled, and no one's turn yet; extension 0.12.0)}."""
-    if campaign is None or not campaign.fight or not campaign.fight_at or datetime.now(UTC) - campaign.fight_at > STALE:
+    if campaign is None or not campaign.fight or not campaign.fight_at or (datetime.now(UTC) - campaign.fight_at > STALE and not campaign.fight.get("own")):
         return None
     f = campaign.fight
     if f.get("waiting") and not initiative.on(campaign):  # (before Start Combat, only with Initiative from askdnd)
