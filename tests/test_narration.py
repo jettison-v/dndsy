@@ -11,7 +11,7 @@ from tests.table_setup import BUNDLE
 
 pytestmark = pytest.mark.usefixtures("file_store")
 
-BODY = ("The party reached **Star Mount** at dusk, and Cole led them up the old path past the captain's camp.\n\n"
+BODY = ("The party reached **Star Mount** at dusk, and [Cole](/c/main/campaign?open=1), led them up the old path past the captain's camp.\n\n"
         "Trah lit the way with a flicker of fire; nobody spoke of the bard.\n\n"
         "At the top, an empty shrine waited.")
 
@@ -49,7 +49,7 @@ def test_listen_reads_the_recap_once_and_keeps_it(player, db, told):
     assert tale["audio"] == "" and tale["title"] == "Journey to Star Mount" and tale["intro"] == "Previously, on Main…"
     assert not tale["can_redo"]  # (Re-record the voice is an admin's)
     words = [x["text"] for x in tale["slides"]]
-    assert words[1].startswith("The party reached Star Mount") and "**" not in words[1]  # (plain words, read and shown)
+    assert words[1].startswith("The party reached Star Mount") and "**" not in words[1] and "Cole, led" in words[1]  # (plain words, read and shown)
     first = player.post(f"/c/main/sessions/{s.id}/narrate").json()
     assert first["audio"].startswith(f"/c/main/sessions/{s.id}/narration?v=") and len(calls) == 1
     assert calls[0].startswith("Previously, on Main…") and "Star Mount" in calls[0]

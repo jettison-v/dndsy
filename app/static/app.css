@@ -466,7 +466,18 @@ body.tale-playing { overflow: hidden; }
 .tp-bar { left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--line) 60%, transparent); }
 .tp-bar span { display: block; height: 100%; width: 0; background: var(--amber); transition: width .25s linear; }
 .tp-controls { right: var(--sp-4); bottom: var(--sp-4); display: flex; gap: var(--sp-2); }
-@media (max-width: 640px) { .tp-words { bottom: 104px; font-size: var(--fs-md); } .tp-title { font-size: var(--fs-xl); } .tp-people { top: 14%; } .tp-person { width: 38vw; } }
+/* A phone (Brett, Nov 6: the words covered the pictures): the portraits in a band under the title, the words in their
+   own box below them that scrolls with the voice, never over the pictures */
+@media (max-width: 640px) {
+  .tp-head { top: var(--sp-3); }
+  .tp-title { font-size: var(--fs-xl); }
+  .tp-people { top: 88px; gap: var(--sp-3); }
+  .tp-person { width: 30vw; }
+  .tp-person figcaption { font-size: var(--fs-xs); }
+  .tp-words { top: calc(88px + 40vw + 40px); bottom: 116px; max-height: none; transform: none; left: var(--sp-4); width: auto; right: var(--sp-4);
+    font-size: var(--fs-md); line-height: 1.55; text-align: left; overflow-y: auto; scroll-behavior: smooth; }
+  .tp-say { bottom: 92px; }
+}
 @media (prefers-reduced-motion: reduce) { .tp-place, .tp-person { animation: none; } .tp-layer, .tp-words { transition: none; } }
 .tale-kicker { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--story-cap); }
 .tale-dm { border-top: 1px solid var(--story-line); margin-top: var(--sp-4); padding-top: var(--sp-4); font-size: var(--fs-sm); line-height: 1.6; }
