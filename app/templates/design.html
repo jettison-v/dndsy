@@ -34,7 +34,7 @@
 
   <section class="section" id="type">
     <h2>Text sizes</h2>
-    <p class="hint">Six sizes (Brett, 2026-10-22). Inter for the interface, the serif for story text.</p>
+    <p class="hint">Six sizes (Brett, 2026-10-22). Inter for everything, story text too (on its faint scroll); the serif only in quoted answers.</p>
     <div class="ds-type">{% for name, px, use in sizes %}
       <div><span style="font-size:var({{ name }}); font-weight:{{ 700 if px in ('26', '30') else 600 if px == '19' else 400 }}">The party rests at the Yawning Portal</span>
         <span class="muted"><code>{{ name }}</code> {{ px }}px · {{ use }}</span></div>{% endfor %}
@@ -217,8 +217,10 @@
 
   <section class="section" id="story">
     <h2>Story text</h2>
-    {{ ds("Story block", ".story", "Recaps, descriptions and answers: warm parchment at night, in the serif.") }}
+    {{ ds("Story block", ".story", "An entry's description: a faint parchment a shade warmer than the page, fading into it at the sides.") }}
     <div class="story"><p>The party left Waterdeep at dawn, the dragon's map rolled tight in a waxed case. By dusk the road had turned to mud and the hired guide had quietly vanished.</p></div>
+    {{ ds("A recap's scroll", ".scroll", "A session's recap: the same parchment between two faint rods, a first letter and a fleuron where it ends.") }}
+    <div class="scroll"><div class="story"><p>The party left Waterdeep at dawn, the dragon's map rolled tight in a waxed case. By dusk the road had turned to mud and the hired guide had quietly vanished.</p></div></div>
   </section>
   <section class="section" id="manage">
     <h2>Manage pages</h2>

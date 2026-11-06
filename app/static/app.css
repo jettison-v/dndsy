@@ -3,7 +3,10 @@
   /* Colors. Pages use these names only; a test fails on a color typed anywhere else (tests/test_design_system.py). */
   --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-strong: #4a4f57; --chrome: #0f1113;
   --text: #ebe7df; --text-strong: #fff; --muted: #a29d93; --faint: #6f6b64; --link: #f08a8a;
-  --story-bg: #221f1a; --story-line: #3b3428; --story-text: #f0e7d4;
+  --story-bg: #221f1a; --story-line: #3b3428; --story-text: #e2dccf;
+  /* The faint scroll behind story text (Brett, 2026-11-05: Umber, Inter, Faint): its parchment, the rods of a recap's, the first letter and the fleuron */
+  --parch-1: #211e19; --parch-2: #1f1c18; --parch-3: #1a1916; --rod-1: #2f2920; --rod-2: #221e18; --rod-3: #1a1714;
+  --story-cap: #a99070; --story-fleuron: #5c5040;
   --red: #d64545; --red-hover: #e35a5a; --red-soft: rgba(214, 69, 69, .14);
   --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
   --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
@@ -33,6 +36,7 @@
   --k-action: #ef6b6b; --k-bonus: var(--amber); --k-reaction: #6fa8ff; --k-other: #b48ae8;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: Inter, system-ui, -apple-system, sans-serif;
+  --tale-cap: "Cormorant Garamond", Georgia, serif;  /* a recap's first letter only */
   --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
   /* Text sizes, 12 · 14 · 16 · 19 plus titles 26 · 30 (Brett, 2026-10-22). Use these, not one-off sizes. */
   --fs-xs: .75rem; --fs-sm: .875rem; --fs-md: 1rem; --fs-lg: 1.2rem; --fs-xl: 1.625rem; --fs-2xl: 1.875rem;
@@ -405,8 +409,14 @@ details.done[open] > summary::before { transform: rotate(90deg); }
 details.conversation > summary { list-style: none; }
 details.conversation[open] > summary { margin-bottom: 12px; }
 
-/* Story text */
-.story { font-family: var(--serif); font-size: var(--fs-lg); line-height: 1.75; color: var(--story-text); background: var(--story-bg); border: 1px solid var(--story-line); border-radius: var(--r-md); padding: 24px 28px; }
+/* Story text on a faint scroll (Brett, 2026-11-05; docs/mockups/world-entries/ board 5: Umber, Inter, Faint): askdnd's own
+   type on a parchment a shade warmer than the page that fades into it at the sides, never a box. A session's recap adds the
+   rods (.scroll around it), a first letter and a fleuron where the tale ends; an entry's story is the parchment alone. */
+.story { position: relative; isolation: isolate; font-family: var(--sans); font-size: var(--fs-md); line-height: 1.7; color: var(--story-text); padding: 22px 34px; }
+.story::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(ellipse 120% 160% at 50% 50%, var(--parch-1) 0%, var(--parch-2) 70%, var(--parch-3) 100%); opacity: .45; filter: saturate(.7); mask-image: linear-gradient(90deg, transparent 0, var(--bg) 5%, var(--bg) 95%, transparent 100%); }
+.scroll::before, .scroll::after { content: ""; display: block; height: 9px; margin: 0 -10px; border-radius: var(--r-pill); background: linear-gradient(180deg, var(--rod-1) 0%, var(--rod-2) 55%, var(--rod-3) 100%); opacity: .4; mask-image: linear-gradient(90deg, transparent, var(--bg) 12%, var(--bg) 88%, transparent); }
+.scroll > .story > p:first-child::first-letter { float: left; font-family: var(--tale-cap); font-weight: 500; font-size: 3.2em; line-height: .82; padding: 6px 9px 0 0; color: var(--story-cap); }
+.scroll > .story::after { content: "❦"; display: block; text-align: center; color: var(--story-fleuron); margin-top: var(--sp-3); }
 .story p, .story li { max-width: 66ch; }
 .story p { margin: 0 0 1em; }
 .story > :last-child { margin-bottom: 0; }
@@ -566,7 +576,8 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .topbar-inner { gap: 10px; padding: 0 16px; }
   .page { padding: 24px 16px 120px; }
   .section { padding: 22px 18px; }
-  .story { padding: 18px; }
+  .story { padding: 18px 20px; }
+  .scroll::before, .scroll::after { margin: 0 -4px; }
   .compare { grid-template-columns: 1fr; }
 }
 
@@ -579,7 +590,7 @@ a.ent:hover { text-decoration-color: var(--red); color: var(--text-strong); }
 .peek-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 20px 22px 8px; }
 .peek-head h2 { font-size: var(--fs-lg); margin: 2px 0; }
 .peek-body { padding: 8px 22px 16px; overflow-y: auto; flex: 1; }
-.peek-body .story { font-size: var(--fs-md); padding: 14px 16px; }
+.peek-body .story { padding: 14px 18px; }
 .peek-body h3 { font-size: var(--fs-md); margin: 18px 0 6px; }
 .peek-foot { padding: 14px 22px; border-top: 1px solid var(--line); }
 ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
@@ -2326,10 +2337,61 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .rd-dot { width: 7px; height: 7px; flex: none; border-radius: var(--r-pill); background: var(--blue); }
 .rd-item:not(:has(.rd-dot)) { padding-left: calc(var(--sp-2) + 7px + var(--sp-2)); }
 .reader-article { background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-6) 40px; min-height: 60vh; scroll-margin-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); }
-.reader-head h2 { font-size: var(--fs-xl); margin: 2px 0; }
-.reader-body .story { margin: var(--sp-4) 0; }
-.reader-body .peek-pic { max-width: 420px; }
-.reader-body h3:not(.divider) { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 24px 0 8px; }
+/* One entry on the Reader (_entry_reader.html; World Entries by Kind, layout A, Brett 2026-11-05): the picture in its
+   kind's shape beside the name and story, an at-a-glance panel, then key moments and what the table knows beside the
+   connections. Its own width decides how it stacks (a container), since the list beside it takes room. */
+.ep { container-type: inline-size; }
+.ep h3:not(.divider) { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 24px 0 8px; }
+.ep-top { display: grid; grid-template-columns: minmax(0, 1fr) 260px; grid-template-areas: "head glance"; gap: var(--sp-5) var(--sp-6); align-items: start; }
+.ep-top.has-pic { grid-template-columns: 200px minmax(0, 1fr) 260px; grid-template-areas: "pic head glance"; }
+.ep-side { grid-area: pic; }
+.ep-head { grid-area: head; min-width: 0; }
+.ep-glance { grid-area: glance; }
+.ep-title { display: flex; gap: var(--sp-3); align-items: center; }
+.ep-title h2 { font-size: var(--fs-xl); margin: 2px 0; }
+.ep-head .story { margin: var(--sp-4) 0 0 -22px; padding: 16px 22px; }  /* its words line up with the name; the parchment reaches into the gap */
+.ep-head > .muted { margin-top: var(--sp-4); }
+.ep-pic { position: relative; margin: 0; }
+.ep-pic img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface-2); }
+.ep[data-shape=portrait] .ep-side { aspect-ratio: 3 / 4; }
+.ep[data-shape=square] .ep-side, .ep[data-shape=item] .ep-side { aspect-ratio: 1; }
+.ep[data-shape=item] .ep-pic img { object-fit: contain; }
+.ep-pic.ep-banner, .ep-slot.ep-banner { aspect-ratio: 16 / 5; min-height: 150px; margin-bottom: var(--sp-5); }
+.ep-pic figcaption { margin-top: var(--sp-1); }
+.ep-change { position: absolute; right: var(--sp-2); bottom: var(--sp-2); opacity: 0; transition: opacity .15s; }
+.ep-pic:hover .ep-change, .ep-change:focus-visible { opacity: 1; }
+@media (hover: none) { .ep-change { opacity: 1; } }
+.ep-pic:has(figcaption) .ep-change { bottom: calc(var(--sp-2) + 1.6em); }
+/* No picture yet: its place asks whoever can change the entry for one; everyone else gets a badge with its initials */
+.ep-slot { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-2); padding: var(--sp-3); text-align: center; border: 1.5px dashed var(--line-strong); border-radius: var(--r-md); background: repeating-linear-gradient(135deg, var(--surface) 0 10px, var(--surface-2) 10px 20px); }
+.ep-slot .note { margin: 0; }
+.ep-slot-btns { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); }
+.ep-outline { width: 48px; height: 48px; fill: none; stroke: var(--faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ep-initials { flex: none; width: 52px; height: 52px; display: grid; place-items: center; border-radius: var(--r-pill); font-weight: 700; font-size: var(--fs-md); color: var(--blue); background: var(--blue-soft); border: 1px solid var(--blue-line); }
+.ep-initials[data-kind=place] { color: var(--green); background: var(--green-soft); border-color: var(--green-line); }
+.ep-initials[data-kind=item], .ep-initials[data-kind=quest] { color: var(--amber); background: var(--amber-soft); border-color: var(--amber-soft); }
+.ep-initials[data-kind=faction] { color: var(--red); background: var(--red-soft); border-color: var(--red-line); }
+.ep-initials[data-kind=creature] { color: var(--violet); background: var(--violet-soft); border-color: var(--violet-soft); }
+.ep-mark { flex: none; width: 72px; height: 72px; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); }
+.ep-mark-empty { display: grid; place-items: center; padding: 0; background: none; border: 1.5px dashed var(--line-strong); cursor: pointer; }
+.ep-mark-empty .ep-outline { width: 36px; height: 36px; }
+.ep-glance { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); font-size: var(--fs-sm); }
+.ep-glance dt { color: var(--muted); }
+.ep-glance dd { margin: 0; min-width: 0; }
+.ep-cols { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-6); margin-top: var(--sp-3); }
+.ep-links { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); }
+.ep-links ul { margin: 0; }
+.ep-links li + li { margin-top: var(--sp-1); }
+.ep-map-link { font-size: var(--fs-sm); }
+@container (max-width: 820px) {
+  .ep-top { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "glance"; }
+  .ep-top.has-pic { grid-template-columns: 160px minmax(0, 1fr); grid-template-areas: "pic head" "glance glance"; }
+  .ep-cols { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+@container (max-width: 520px) {
+  .ep-top.has-pic { grid-template-columns: minmax(0, 1fr); grid-template-areas: "pic" "head" "glance"; }
+  .ep-side { width: min(100%, 220px); }
+}
 .reader-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-6); }
 .moment-line { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--story-line); }
 .moment-line li { position: relative; padding: 0 0 var(--sp-3) var(--sp-4); }

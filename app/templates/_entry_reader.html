@@ -1,0 +1,92 @@
+{# One entry on the Campaign page's Reader: layout A of World Entries by Kind (Brett, 2026-11-05;
+   docs/mockups/world-entries/). The picture beside the name in its kind's shape (`shape`: a portrait, a square, an item, a
+   wide banner for a place or a scene, an emblem for a faction), the description, and an at-a-glance panel of what askdnd
+   already knows; key moments and what the table knows below, beside the connections as a list (the diagram opens from a
+   link). With no picture yet, whoever can change the entry sees its place asking for one (Draw one, Upload: the one
+   Picture window), so the World gets finished; everyone else sees no empty box, just a badge with its initials. #}
+{% macro outline(kind) -%}{# a quiet drawing of what the picture will be, by its frame #}
+<svg class="ep-outline" viewBox="0 0 56 56" aria-hidden="true">
+  {%- if kind in ("portrait",) %}<circle cx="28" cy="20" r="10"/><path d="M8 50c2-11 10-17 20-17s18 6 20 17"/>
+  {%- elif kind == "item" %}<rect x="9" y="22" width="38" height="24" rx="3"/><path d="M9 30h38M12 22c0-8 8-12 16-12s16 4 16 12M25 30v6h6v-6"/>
+  {%- elif kind == "emblem" %}<path d="M28 7l18 7v13c0 11-8 19-18 23-10-4-18-12-18-23V14z"/><path d="M28 18v20M20 26h16"/>
+  {%- elif kind == "square" %}<path d="M14 38c0-9 6-16 14-16s14 7 14 16"/><circle cx="21" cy="17" r="4"/><circle cx="35" cy="17" r="4"/><circle cx="12" cy="26" r="3.5"/><circle cx="44" cy="26" r="3.5"/>
+  {%- else %}<path d="M4 44l14-16 10 10 8-8 16 14"/><circle cx="40" cy="16" r="5"/>{% endif -%}
+</svg>
+{%- endmacro %}
+{% macro slot(cls) %}{# where the picture goes, for someone who can add it #}
+<div class="ep-slot {{ cls }}">
+  {{ outline(shape) }}
+  <span class="note">No picture yet</span>
+  <div class="ep-slot-btns">
+    {% if can_draw %}<button type="button" class="btn primary small" data-modal-url="/pictures?for=entity:{{ e.id }}&amp;tab=draw">✦ Draw one</button>{% endif %}
+    <button type="button" class="btn small" data-modal-url="/pictures?for=entity:{{ e.id }}">Upload</button>
+  </div>
+</div>
+{% endmacro %}
+{% macro pic(cls) %}
+<figure class="ep-pic {{ cls }}">
+  <img src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer"{% if picture.pos %} style="object-position: {{ picture.pos }}"{% endif %}>
+  {% if can_picture %}<button type="button" class="btn small ep-change" data-modal-url="/pictures?for=entity:{{ e.id }}">{{ "Change" if picture.uploaded else "Add a picture" }}</button>{% endif %}
+  {% if not picture.uploaded %}<figcaption class="note">From D&amp;D Beyond</figcaption>{% endif %}
+</figure>
+{% endmacro %}
+{% set beside = shape in ("portrait", "square", "item") %}
+<article class="reader-article ep" data-shape="{{ shape }}" id="reader-article" data-reader-id="{{ e.id }}" aria-labelledby="reader-title">
+{% if shape == "banner" %}{% if picture %}{{ pic("ep-banner") }}{% elif can_picture %}{{ slot("ep-banner") }}{% endif %}{% endif %}
+<div class="ep-top{{ ' has-pic' if beside and (picture or can_picture) }}">
+  {% if beside %}{% if picture %}{{ pic("ep-side") }}{% elif can_picture %}{{ slot("ep-side") }}{% endif %}{% endif %}
+  <div class="ep-head">
+    <div class="ep-title">
+      {% if shape == "emblem" %}{% if picture %}<img class="ep-mark" src="{{ picture.full }}" alt="" referrerpolicy="no-referrer"{% if picture.pos %} style="object-position: {{ picture.pos }}"{% endif %}>{% elif can_picture %}<button type="button" class="ep-mark ep-mark-empty" data-modal-url="/pictures?for=entity:{{ e.id }}{{ '&tab=draw' if can_draw }}" title="No emblem yet: add one">{{ outline("emblem") }}</button>{% else %}<span class="ep-initials" data-kind="{{ e.kind.value }}" aria-hidden="true">{{ initials }}</span>{% endif %}
+      {% elif not picture and not can_picture %}<span class="ep-initials" data-kind="{{ e.kind.value }}" aria-hidden="true">{{ initials }}</span>{% endif %}
+      <div>
+        <div class="note">{% if companion %}Companion · {{ companion.master.name }}'s {{ companion.role }}{% else %}{{ kind_label }}{% endif %}{% if e.status.value != "published" %} · not published{% endif %}</div>
+        <h2 id="reader-title">{{ e.name }}{% if e.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}</h2>
+        {% if e.display_aliases %}<div class="note">Also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}
+      </div>
+    </div>
+    {% if shape == "emblem" and picture and can_picture %}<button type="button" class="btn link small" data-modal-url="/pictures?for=entity:{{ e.id }}">Change the emblem</button>{% endif %}
+    {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% elif not companion %}<p class="muted">No description yet.{% if can_edit %} Use <b>Edit</b> to write one.{% endif %}</p>{% endif %}
+  </div>
+  <dl class="ep-glance">{# always there, so the layout stays the same from the first session on #}
+    {% if companion %}
+    {% if companion.now %}<dt>Now</dt><dd>{{ companion.now }}</dd>{% endif %}
+    {% if companion.kind %}<dt>It's</dt><dd>{{ companion.kind }}</dd>{% endif %}
+    {% if companion.forms %}<dt>{{ "Forms" if companion.forms | length > 1 else "Its form" }}</dt><dd>{% for f in companion.forms %}{{ f.form }} <span class="note">({{ f.when }})</span>{{ " · " if not loop.last }}{% endfor %}</dd>{% endif %}
+    {% if companion.times %}<dt>Away and back</dt><dd>{% for t in companion.times %}{{ t.what[:1] | upper }}{{ t.what[1:] }} <span class="note">{{ t.when }}</span>{{ "<br>" | safe if not loop.last }}{% endfor %}</dd>{% endif %}
+    {% endif %}
+    {% if e.kind.value == "quest" and e.quest_open is not none %}<dt>Status</dt><dd><span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span></dd>{% endif %}
+    {% if moments %}
+    <dt>{{ "First met" if e.kind.value in ("npc", "pc", "creature") else "First" }}</dt><dd>{{ moments[0].label }}</dd>
+    {% if moments | length > 1 %}<dt>{{ "Last seen" if e.kind.value in ("npc", "pc", "creature") else "Latest" }}</dt><dd>{{ moments[-1].label }}</dd>{% endif %}
+    {% endif %}
+    <dt>Key moments</dt><dd>{{ moments | length if moments else "None yet" }}</dd>
+    {% if part_of %}<dt>Part of</dt><dd class="part-of">{% for q in part_of %}<a class="chip-link" href="{{ cbase }}/campaign?tab=quests&amp;open={{ q.id }}" data-goto-quest="{{ q.id }}" data-no-peek>{{ q.name }} <span class="tag {{ 'done' if q.quest_open == false else 'draft' }}">{{ "Done" if q.quest_open == false else "Open" }}</span></a>{% endfor %}</dd>{% endif %}
+    {% if map_marker %}<dt>On the map</dt><dd><a href="{{ map_href }}" data-map-src="{{ map_src }}" data-map-at="{{ map_marker }}" data-no-peek>Show it ↗</a></dd>{% endif %}
+    {% if sheet %}<dt>Its sheet</dt><dd><a href="/characters/{{ sheet }}" data-no-peek>Open ↗</a></dd>{% endif %}
+  </dl>
+</div>
+<div class="ep-cols">
+  <div>
+    <h3>Key moments</h3>
+    {% if moments %}<ol class="moment-line">{% for m in moments | reverse %}<li><span class="note">{{ m.label }}</span>{{ ln.text(m.e.text) }}</li>{% endfor %}</ol>
+    {% else %}<p class="muted">No key moments mention {{ e.name }} yet.</p>{% endif %}
+{% include "_entry_facts.html" %}
+  </div>
+  {% if relations or cx.nodes %}
+  <div>
+    <h3>Connections</h3>
+    <div class="ep-links">
+      {% if relations %}<ul class="plain">{% for r in relations %}<li><span class="muted">{{ r.label | capitalize }}</span> <a class="ent" href="{{ entry_url(r.other.id) }}" data-entity="{{ r.other.id }}">{{ r.other.name }}</a>{% if r.note %} <span class="note">· {{ r.note }}</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
+      {% if cx.nodes %}<a class="ep-map-link" href="#" data-modal-url="{{ cbase }}/campaign/{{ e.id }}/connections">See the connections map →</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+<div class="reader-foot row">
+  {% if can_edit %}<a class="btn primary" href="#" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Edit</a>{% endif %}
+  {% if can_edit and e.kind.value == "quest" %}{# A whole-page post: the quest moves between Open and Done at the top of the page #}
+  <form method="post" action="/campaign/{{ e.id }}/quest"><input type="hidden" name="open" value="{{ '1' if e.quest_open == false else '0' }}"><button class="btn">{{ "Reopen" if e.quest_open == false else "Mark done" }}</button></form>{% endif %}
+  <span class="note reader-keys">↑ ↓ move through the list</span>
+</div>
+</article>

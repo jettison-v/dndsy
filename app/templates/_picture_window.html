@@ -7,12 +7,12 @@
 </div>
 <div class="peek-body pw" data-picture-window>
   <div class="tabbar" role="tablist" aria-label="How to add it">
-    <button type="button" role="tab" aria-selected="true" data-tab="pw-up">Upload</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="pw-draw">Describe it</button>
+    <button type="button" role="tab" aria-selected="{{ 'false' if start == 'draw' else 'true' }}" data-tab="pw-up">Upload</button>
+    <button type="button" role="tab" aria-selected="{{ 'true' if start == 'draw' else 'false' }}" data-tab="pw-draw">Describe it</button>
     {% if o.ddb_art %}<button type="button" role="tab" aria-selected="false" data-tab="pw-ddb">From D&amp;D Beyond</button>{% endif %}
   </div>
 
-  <div id="pw-up">
+  <div id="pw-up"{% if start == "draw" %} hidden{% endif %}>
     <form hx-post="/pictures/upload" hx-encoding="multipart/form-data" hx-swap="none" class="pw-form">
       <input type="hidden" name="for" value="{{ o.ref }}">
       <label class="pw-drop" data-pw-drop>
@@ -25,7 +25,7 @@
     </form>
   </div>
 
-  <div id="pw-draw" hidden>
+  <div id="pw-draw"{% if start != "draw" %} hidden{% endif %}>
     {% if no_drawing %}<p class="flash warn">{{ no_drawing }}</p>{% else %}
     <form hx-post="/pictures/draw" hx-target="#pw-options" hx-swap="innerHTML" hx-disabled-elt="find button[type=submit]" class="pw-form pw-draw-form">
       <input type="hidden" name="for" value="{{ o.ref }}">

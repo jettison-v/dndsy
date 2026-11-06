@@ -53,7 +53,9 @@ def test_world_is_the_reader_without_quests(player, db):  # noqa: F811
     assert f'data-rd-id="{lillippi(db).id}" data-views="recent all"' in names
     assert f'data-rd-id="{entry(db, "Saltmarsh").id}" data-views="all"' in names
     # Nothing asked for: the Reader opens on something from the last session, with its key moments as a timeline
-    assert f'data-reader-id="{lillippi(db).id}"' in page and 'class="moment-line"' in page and "Last seen Session 2" in page
+    assert f'data-reader-id="{lillippi(db).id}"' in page and 'class="moment-line"' in page and "<dt>Last seen</dt><dd>Session 2" in page
+    # Layout A (Brett, Nov 5): a person's picture is a portrait beside the name; the panel counts the key moments
+    assert 'class="reader-article ep" data-shape="portrait"' in page and "<dt>Key moments</dt>" in page
 
 
 def test_the_quest_board(player, db):  # noqa: F811
@@ -109,7 +111,7 @@ def test_player_characters_are_people_in_world(player, db):  # noqa: F811
     assert f'data-rd-id="{cole.id}"' in page and '"kind": "People"' in page[page.index(f'data-rd-id="{cole.id}"'):][:2000]
     assert f'data-reader-id="{cole.id}"' in page and "Player character" in page  # its World entry, not the side panel
     sheet = db.scalar(select(CampaignCharacter.character_id).where(CampaignCharacter.entity_id == cole.id))
-    assert f'href="/characters/{sheet}" data-no-peek>Character sheet</a>' in page
+    assert f'<dt>Its sheet</dt><dd><a href="/characters/{sheet}" data-no-peek>Open ↗</a>' in page
     assert 'data-noun="entry" data-nouns="entries"' in page  # "43 entries shown", not names
 
 
@@ -125,9 +127,10 @@ def test_relationships_and_connections(player, db):  # noqa: F811
     cx = player.get(f"/campaign/{lil.id}/connections").text
     assert 'class="cx-node cx-hub"' in cx and "Child of" in cx and "Member of" in cx
     assert f'hx-get="/c/main/campaign/{mo.id}/connections"' in cx  # a name moves it to the middle
-    # The Reader draws them too, its names opening that entry
+    # The Reader lists them, its names opening that entry, and opens the diagram from a link (layout A, Brett Nov 5)
     reader = player.get(f"/c/main/campaign?open={lil.id}").text
-    assert '<div class="cx-diagram"' in reader and 'class="cx-node npc"' in reader and f'href="/c/main/campaign?open={mo.id}" title="Child of Mo"' in reader
+    assert f'Child of</span> <a class="ent" href="/c/main/campaign?open={mo.id}"' in reader
+    assert f'data-modal-url="/c/main/campaign/{lil.id}/connections">See the connections map' in reader and 'class="cx-diagram"' not in reader
 
 
 def test_an_entry_has_its_own_address_and_swaps_in(player, db):  # noqa: F811
@@ -136,11 +139,11 @@ def test_an_entry_has_its_own_address_and_swaps_in(player, db):  # noqa: F811
     page = player.get(f"/c/main/campaign?open={salt.id}").text
     assert f'data-reader-id="{salt.id}"' in page and f'class="rd-item sel" data-ls-row data-rd-id="{salt.id}"' in page
     part = player.get(f"/campaign/{salt.id}/read").text
-    assert '<article class="reader-article" id="reader-article"' in part
+    assert '<article class="reader-article ep" data-shape="banner" id="reader-article"' in part  # a place: a wide banner
     assert "Fishing town." in part and "peek-close" not in part
     # Adding what the party learned from the Reader answers with the Reader
     r = player.post(f"/campaign/{salt.id}/facts?in=reader", data={"text": "Smells of fish."}, headers=HX)
-    assert '<article class="reader-article"' in r.text and "Smells of fish." in r.text
+    assert '<article class="reader-article ep' in r.text and "Smells of fish." in r.text
     assert db.scalar(select(Fact).where(Fact.entity_id == salt.id)).status == "pending"
     # The side panel elsewhere offers the Reader
     assert f'href="/c/main/campaign?open={salt.id}">Open in Campaign' in player.get(f"/campaign/{salt.id}/peek").text
@@ -205,3 +208,36 @@ def test_more_entries_dont_mean_more_queries(player, db):  # noqa: F811
     page = player.get("/c/main/campaign").text
     assert "enemy 9 the 9th" in page  # the name and its other name, in what the search box matches
     assert _alias_queries(db, player, "/c/main/campaign") == before
+
+
+def test_an_entry_without_a_picture_asks_whoever_can_add_one(admin, player, db, monkeypatch):  # noqa: F811
+    """World Entries by Kind (Brett, Nov 5): the DM's side sees the picture's place, in its kind's shape, with Draw one
+    (when Describe it can draw) and Upload; a player sees no empty box, only a badge with the initials."""
+    from app import drawing
+
+    import_bundle(db, BUNDLE)
+    lil, salt = lillippi(db), entry(db, "Saltmarsh")
+    monkeypatch.setattr(drawing, "why_not", lambda db, campaign: "")
+    page = admin.get(f"/c/main/campaign?open={lil.id}").text
+    assert 'class="ep-slot ep-side"' in page and "No picture yet" in page
+    assert f'data-modal-url="/pictures?for=entity:{lil.id}&amp;tab=draw">✦ Draw one' in page
+    assert f'data-modal-url="/pictures?for=entity:{lil.id}">Upload' in page
+    assert 'class="ep-slot ep-banner"' in admin.get(f"/campaign/{salt.id}/read").text  # a place: a wide banner
+    # Draw one opens the window on Describe it, the entry's own words filled in
+    window = admin.get(f"/pictures?for=entity:{lil.id}&tab=draw").text
+    assert 'aria-selected="true" data-tab="pw-draw"' in window and '<div id="pw-up" hidden>' in window and "Lillippi" in window
+    # Describe it can't draw (no key, or the month's limit): Upload alone
+    monkeypatch.setattr(drawing, "why_not", lambda db, campaign: "No key")
+    assert "Draw one" not in admin.get(f"/campaign/{lil.id}/read").text
+    # A player: no empty place, a badge with the initials
+    mine = player.get(f"/c/main/campaign?open={lil.id}").text
+    assert "ep-slot" not in mine and "No picture yet" not in mine and 'class="ep-initials" data-kind="npc"' in mine
+
+
+def test_story_text_sits_on_a_faint_scroll(player, db):  # noqa: F811
+    """Brett, Nov 5 (board 5: Umber, Inter, Faint): a session's recap on the scroll with its rods; an entry's story the
+    parchment alone."""
+    import_bundle(db, BUNDLE)
+    published_events(db)
+    assert '<div class="scroll"><div class="story">' in player.get("/c/main/").text
+    assert '<div class="story">' in player.get(f"/campaign/{entry(db, 'Saltmarsh').id}/read").text

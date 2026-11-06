@@ -50,7 +50,9 @@ def window(request: Request, for_: str = "", db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "_picture_window.html", {
         "o": o, "shown": _shown(db, o), "pic": pic, "style": drawing.style(campaign)["words"] or drawing.PLAIN,
         "styled": bool(drawing.style(campaign)["words"]), "no_drawing": drawing.why_not(db, campaign), "how_many": drawing.HOW_MANY,
-        "words": pic.words if pic is not None and pic.source == "drawn" and pic.words else o.words})
+        "words": pic.words if pic is not None and pic.source == "drawn" and pic.words else o.words,
+        # ?tab=draw opens it on Describe it (an empty picture's Draw one on the Reader)
+        "start": "draw" if request.query_params.get("tab") == "draw" else "up"})
 
 
 @router.post("/pictures/upload")

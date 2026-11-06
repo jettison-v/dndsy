@@ -1,21 +1,18 @@
-{# A campaign entry: everything about it, in the side panel (Brett, 2026-10-22: no full page) or, with
-   where="reader", on the Campaign page's Reader (roadmap step 11, option E: two columns, key moments as a
-   timeline, Mark done for quests). The DM, reviewers and admins get Edit, which opens the large edit window.
-   Forms here answer with whichever one is showing (?in=panel or ?in=reader). The Reader also draws the entry's
-   connections (_connections.html). Both say which quests it's part of. #}
-{% from "_connections.html" import connections_diagram with context %}
+{# A campaign entry: everything about it, in the side panel (Brett, 2026-10-22: no full page), or with where="reader" on the
+   Campaign page's Reader (_entry_reader.html: layout A of World Entries by Kind, Brett 2026-11-05). The DM, reviewers and
+   admins get Edit, which opens the large edit window. Forms here answer with whichever one is showing (?in=panel or
+   ?in=reader). Both say which quests it's part of. #}
 {% set reader = where == "reader" %}
 {% set w = "reader" if reader else "panel" %}
 {% set px = 'hx-target="closest .reader-article" hx-swap="outerHTML"' if reader else 'hx-target="closest .peek" hx-swap="innerHTML"' %}
-{% if reader %}<article class="reader-article" id="reader-article" data-reader-id="{{ e.id }}" aria-labelledby="reader-title">{% endif %}
-<div class="{{ 'reader-head' if reader else 'peek-head' }}">
-  <div><div class="note">{% if companion %}Companion · {{ companion.master.name }}'s {{ companion.role }}{% else %}{{ kind_label }}{% endif %}{% if e.kind.value == "quest" and e.quest_open is not none %} · {{ "Open" if e.quest_open else "Done" }}{% endif %}{% if e.status.value != "published" %} · not published{% endif %}
-    {%- if reader %} · {% if moments %}Last seen {{ moments[-1].label }} · {{ moments | length }} key moment{{ "s" if moments | length != 1 }}{% else %}No key moments yet{% endif %}{% endif %}</div>
-    <h2 id="{{ 'reader-title' if reader else 'peek-title' }}">{{ e.name }}{% if reader and e.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}</h2>
+{% if reader %}{% include "_entry_reader.html" %}{% else %}
+<div class="peek-head">
+  <div><div class="note">{% if companion %}Companion · {{ companion.master.name }}'s {{ companion.role }}{% else %}{{ kind_label }}{% endif %}{% if e.kind.value == "quest" and e.quest_open is not none %} · {{ "Open" if e.quest_open else "Done" }}{% endif %}{% if e.status.value != "published" %} · not published{% endif %}</div>
+    <h2 id="peek-title">{{ e.name }}</h2>
     {% if e.display_aliases %}<div class="note">Also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}</div>
-  {% if not reader %}<button class="btn link peek-close" type="button" aria-label="Close">✕</button>{% endif %}
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="{{ 'reader-body' if reader else 'peek-body' }}">
+<div class="peek-body">
   {% if picture %}<img class="peek-pic" src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer"{% if picture.pos %} style="object-position: {{ picture.pos }}"{% endif %}>{% if not picture.uploaded %}<p class="note byline">From D&amp;D Beyond</p>{% endif %}{% endif %}
   {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% elif not companion %}<p class="muted">No description yet.{% if can_edit %} Use <b>Edit</b> to write one.{% endif %}</p>{% endif %}
   {% if companion %}{# A familiar's or steed's (app/companion_story.py; Creatures as Characters board 4), from what the table did #}
@@ -31,66 +28,22 @@
   <h3>Part of</h3>
   <div class="part-of">{% for q in part_of %}<a class="chip-link" href="{{ cbase }}/campaign?tab=quests&amp;open={{ q.id }}" data-goto-quest="{{ q.id }}" data-no-peek>{{ q.name }} <span class="tag {{ 'done' if q.quest_open == false else 'draft' }}">{{ "Done" if q.quest_open == false else "Open" }}</span></a>{% endfor %}</div>
   {% endif %}
-  {% if reader and cx.nodes %}
-  <h3>Connections</h3>
-  {{ connections_diagram(cx) }}
-  {% endif %}
-  {% if reader %}<div class="reader-cols"><div>{% endif %}
-
-  {% if relations and not reader %}
+  {% if relations %}
   <h3>Relationships{% if e.kind.value != "quest" %} <a class="head-link" href="{{ cbase }}/campaign?open={{ e.id }}">See connections</a>{% endif %}</h3>
   <ul class="plain">{% for r in relations %}<li><span class="muted">{{ r.label | capitalize }}</span> <a class="ent" href="{{ entry_url(r.other.id) }}" data-entity="{{ r.other.id }}">{{ r.other.name }}</a>{% if r.note %} <span class="note">· {{ r.note }}</span>{% endif %}</li>{% endfor %}</ul>
   {% endif %}
 
-  <h3>What the table knows</h3>
-  {% if merged %}<ul class="plain peek-facts">{% for f in merged %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(f.text) }}
-    {% if can_moderate %}<button class="btn link small" hx-post="/campaign/facts/{{ f.id }}/done?in={{ w }}" {{ px | safe }} title="Take it off this list (it stays under Done)">Done</button>{% endif %}</li>{% endfor %}</ul>
-  {% else %}<p class="muted">Nothing yet. Add what the party learned below.</p>{% endif %}
-  {% for f in pending %}
-  <div class="item peek-pending"><p class="item-title">{{ f.text }}</p>
-    <p class="note byline">{{ f.author_name or f.author_email or "Someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>
-    <div class="row"><button class="btn primary small" hx-post="/campaign/facts/{{ f.id }}/merge?in={{ w }}" {{ px | safe }}>Accept</button>
-      <button class="btn link small" hx-post="/campaign/facts/{{ f.id }}/reject?in={{ w }}" {{ px | safe }}>Dismiss</button>
-      <a class="btn link small" href="{{ cbase }}/manage/inbox#fact-{{ f.id }}" data-no-peek>Edit or ask Claude in the Inbox</a></div></div>
-  {% endfor %}
-  {% if mine %}
-  <h3>Your suggestions here</h3>
-  <ul class="plain peek-mine">{% for f in mine | reverse %}{% set o = f.status | outcome %}<li><span class="tag {{ o.tag }}">{{ o.label }}</span> {{ f.text }}</li>{% endfor %}</ul>
-  <p class="note"><a href="/your-suggestions">All your suggestions</a></p>
-  {% endif %}
+{% include "_entry_facts.html" %}
 
-  <form class="stack add-fact" hx-post="/campaign/{{ e.id }}/facts?in={{ w }}" {{ px | safe }} hx-disabled-elt="find button">
-    <div class="row">
-      <label class="check"><input type="radio" name="kind" value="addition" checked> Add something</label>
-      <label class="check"><input type="radio" name="kind" value="correction"> Something here is wrong</label>
-    </div>
-    <textarea name="text" rows="2" required aria-label="What the party learned" placeholder="Something the party learned about {{ e.name }}, or what's wrong (type @ for a name)"></textarea>
-    <div class="row"><button class="btn small">{{ "Add" if is_dm else "Send" }}</button><span class="note">{{ "You're the DM, so it goes straight on." if is_dm else ("Merge it above to show it." if can_moderate else "The DM or a reviewer adds it.") }}</span></div>
-  </form>
-
-  {% if finished %}
-  <details class="done"><summary>Done ({{ finished | length }})</summary>
-    <ul class="plain">{% for f in finished %}<li class="muted">{{ f.text }}{% if can_moderate %} <button class="btn link small" hx-post="/campaign/facts/{{ f.id }}/undo?in={{ w }}" {{ px | safe }}>Undo</button>{% endif %}</li>{% endfor %}</ul>
-  </details>
-  {% endif %}
-
-  {% if reader %}</div><div>
-  <h3>Key moments</h3>
-  {% if moments %}<ol class="moment-line">{% for m in moments %}<li>{{ ln.text(m.e.text) }}<span class="note">{{ m.label }}</span></li>{% endfor %}</ol>
-  {% else %}<p class="muted">No key moments mention {{ e.name }} yet.</p>{% endif %}
-  </div></div>
-  {% elif moments %}
+  {% if moments %}
   <h3>Key moments</h3>
   <ul class="plain">{% for m in moments %}<li>{{ ln.text(m.e.text) }} <span class="note">· {{ m.label }}</span></li>{% endfor %}</ul>
   {% endif %}
 </div>
-<div class="{{ 'reader-foot' if reader else 'peek-foot' }} row">
+<div class="peek-foot row">
   {% if can_edit %}<a class="btn primary" href="#" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Edit</a>{% endif %}
-  {% if reader and can_edit and e.kind.value == "quest" %}{# A whole-page post: the quest moves between Open and Done at the top of the page #}
-  <form method="post" action="/campaign/{{ e.id }}/quest"><input type="hidden" name="open" value="{{ '1' if e.quest_open == false else '0' }}"><button class="btn">{{ "Reopen" if e.quest_open == false else "Mark done" }}</button></form>{% endif %}
   {% if map_marker %}<a class="btn" href="{{ map_href }}" data-map-src="{{ map_src }}" data-map-at="{{ map_marker }}" data-no-peek>Show on map</a>{% endif %}
   {% if sheet %}<a class="btn" href="/characters/{{ sheet }}" data-no-peek>Character sheet</a>{% endif %}
-  {% if not reader %}<a class="btn link" href="{{ cbase }}/campaign?open={{ e.id }}">Open in Campaign</a>{% endif %}
-  {% if reader %}<span class="note reader-keys">↑ ↓ move through the list</span>{% endif %}
+  <a class="btn link" href="{{ cbase }}/campaign?open={{ e.id }}">Open in Campaign</a>
 </div>
-{% if reader %}</article>{% endif %}
+{% endif %}

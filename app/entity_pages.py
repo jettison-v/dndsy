@@ -5,6 +5,7 @@ entity body plus a toast; without HTMX they redirect back to the page.
 """
 
 import json
+import re
 from collections.abc import Callable
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -13,12 +14,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import web
-from app import access, atlas, campaign_views, companion_story, entities, pictures, relations
+from app import access, atlas, campaign_views, companion_story, drawing, entities, pictures, relations
 from app.auth import can_edit_entries, can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
 from app.linking import entity_linker
-from app.models import CampaignCharacter, Entity, EntityAlias, EntityKind, EntityPicture, Fact, Status
+from app.models import Campaign, CampaignCharacter, Entity, EntityAlias, EntityKind, EntityPicture, Fact, Status
 from app.templating import templates
 
 router = APIRouter(prefix="/campaign")
@@ -42,8 +43,22 @@ def _creature_picture(db: Session, companion: dict | None) -> dict | None:
     return pictures.creature_urls(db, [companion["master"].id]).get((companion["master"].id, companion["creature"]))
 
 
+# The picture's shape on the Reader, by kind (World Entries by Kind, layout A; Brett, 2026-11-05): a portrait beside a
+# person, a square beside a creature or an item, a wide banner over a place or a scene, an emblem by a faction's name
+SHAPES = {EntityKind.PC: "portrait", EntityKind.NPC: "portrait", EntityKind.CREATURE: "square", EntityKind.ITEM: "item",
+          EntityKind.FACTION: "emblem", EntityKind.PLACE: "banner", EntityKind.QUEST: "banner", EntityKind.OTHER: "banner"}
+
+
+def initials(name: str) -> str:
+    """The badge by an entry with no picture: the first letters of its first two words ("NPC 1" is "N1")."""
+    words = [w for w in re.split(r"[\s\-]+", name or "") if w[:1].isalnum()]
+    words = [w for w in words if w.lower() not in ("the", "a", "an", "of")] or words  # "The Lich Queen" is LQ
+    return "".join(w[0] for w in words[:2]).upper() or "?"
+
+
 def entity_context(db: Session, entity: Entity, user: dict) -> dict:
     companion = companion_story.view(db, entity)
+    can_picture = pictures.can_manage(user)
     reviewer = is_reviewer(user)
     moderator = can_moderate(user)  # decides on facts from the table
     facts = list(db.scalars(select(Fact).where(Fact.entity_id == entity.id).order_by(Fact.id)))
@@ -73,7 +88,11 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "moments": entities.moments(db, entity),
         "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
         "picture": pictures.urls(db, [entity.id]).get(entity.id) or _creature_picture(db, companion),
-        "can_picture": pictures.can_manage(user),
+        "can_picture": can_picture,
+        # Draw one on an empty picture's place, only when Describe it can draw now
+        "can_draw": can_picture and not drawing.why_not(db, db.get(Campaign, entity.campaign_id)),
+        "shape": SHAPES.get(entity.kind, "banner"),
+        "initials": initials(entity.name),
         "map_marker": (marker := atlas.entity_marker(entity)),
         "map_href": atlas.show_on_map(marker) if marker else "", "map_src": atlas.atlas_url(marker) if marker else "",
         "kinds": [(k.value, label) for k, label in entities.KIND_LABELS.items() if k.value != "pc"],

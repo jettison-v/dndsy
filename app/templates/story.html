@@ -51,7 +51,7 @@
   <p class="subtitle">{{ latest.label }}{% if latest.s.title %}: {{ latest.s.title }}{% endif %}</p>
   <div class="session-body">
   <div class="session-main">
-  <div class="story">{{ ln.html(latest.html) }}</div>
+  <div class="scroll"><div class="story">{{ ln.html(latest.html) }}</div></div>
   {% if latest.dm_notes %}
   <div class="dm-notes" role="note"><b>From the DM</b>{% for x in latest.dm_notes %}<p>{% if x.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(x.text) }}</p>{% endfor %}</div>
   {% endif %}
@@ -85,7 +85,7 @@
     <summary><b>{{ item.label }}</b>{% if item.s.title %} · {{ item.s.title }}{% endif %}</summary>
     <div class="session-body">
     <div class="session-main">
-    <div class="story mt-4">{{ ln.html(item.html) }}</div>
+    <div class="scroll mt-4"><div class="story">{{ ln.html(item.html) }}</div></div>
     {{ suggest("/sessions/" ~ item.s.id ~ "/suggest", "this session") }}
     </div>
     <aside class="session-side">
