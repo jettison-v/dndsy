@@ -107,5 +107,9 @@ def test_a_long_recap_is_read_in_parts_openai_takes_in_order():
 
 
 def test_a_description_is_not_a_name():
-    assert narration._proper("Lillippi") and narration._proper("Pirate Captain") and narration._proper("the Lich Queen")
-    assert not narration._proper("the captain") and not narration._proper("a bard") and not narration._proper("Al")
+    from app import mentions
+
+    assert mentions.proper("Lillippi") and mentions.proper("Pirate Captain") and mentions.proper("the Lich Queen")
+    assert not mentions.proper("the captain") and not mentions.proper("a bard") and not mentions.proper("Al")
+    find = mentions.finder([("Captain Captain", 1), ("the captain", 1), ("Captain Trager Grill", 2), ("Trah", 3)])
+    assert find("Trah met Captain Trager Grill, then the captain.") == [3, 2]  # (the longer name claims its words)
