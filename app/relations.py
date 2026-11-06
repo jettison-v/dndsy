@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.models import Entity, EntityRelation
+from app.models import Entity, EntityRelation, Status
 
 
 @dataclass(frozen=True)
@@ -96,8 +96,9 @@ def lines_for(db: Session, entity: Entity) -> list[Line]:
     return sorted(out, key=lambda l: (order.get(l.label, 99), l.other.name.casefold()))
 
 
-def describe(db: Session, campaign_id: int) -> list[str]:
-    """Every relationship as a sentence, for Claude's known-world context."""
+def describe(db: Session, campaign_id: int, shown_only: bool = False) -> list[str]:
+    """Every relationship as a sentence, for Claude's known-world context; `shown_only` leaves out any with a hidden
+    entry at either end (Brett, Nov 6: hidden is as if it didn't exist until shown)."""
     q = (
         select(EntityRelation)
         .join(Entity, Entity.id == EntityRelation.from_entity_id)
@@ -107,5 +108,5 @@ def describe(db: Session, campaign_id: int) -> list[str]:
     return [
         f"{r.from_entity.name} {TYPES[r.type].forward} {r.to_entity.name}" + (f" ({r.note})" if r.note else "")
         for r in db.scalars(q)
-        if r.type in TYPES
+        if r.type in TYPES and (not shown_only or (r.from_entity.status == Status.PUBLISHED and r.to_entity.status == Status.PUBLISHED))
     ]

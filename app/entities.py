@@ -161,7 +161,7 @@ def build_describe_messages(db: Session, entity: Entity) -> list[dict]:
     facts = merged_facts(db, entity.id)
     if facts:
         parts.append("\nFacts from the table (corrections override the summary):\n" + "\n".join(f"- [fact {f.id}] {f.labeled_text}" for f in facts))
-    rels = lines_for(db, entity)
+    rels = [l for l in lines_for(db, entity) if l.other.status == Status.PUBLISHED]  # (a hidden entry: as if not there)
     if rels:
         parts.append("\nRelationships:\n" + "\n".join(f"- {l.label} {l.other.name}" + (f" ({l.note})" if l.note else "") for l in rels))
     ms = moments(db, entity)

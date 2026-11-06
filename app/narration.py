@@ -54,7 +54,7 @@ def published(db: Session, session: GameSession) -> Recap | None:
 
 def paragraphs(body: str) -> list[str]:
     """The recap's paragraphs as plain words: what's read aloud and what's on screen."""
-    text = re.sub(r"<[^>]+>", " ", markdown_to_html(body or "", lambda _n: None).replace("</p>", "\n\n").replace("<br>", "\n"))
+    text = re.sub(r"<[^>]+>", "", markdown_to_html(body or "", lambda _n: None).replace("</p>", "\n\n").replace("<br>", "\n"))  # (no space where a link was: "Oakhurst,")
     return [p for p in (" ".join(html.unescape(x).split()) for x in text.split("\n\n")) if p]
 
 

@@ -4118,7 +4118,7 @@
       stage.append(layer);
       requestAnimationFrame(() => layer.classList.add('on'));
       [...stage.children].slice(0, -2).forEach(old => old.remove());  // (the last one fades out under the new)
-      words.classList.remove('on'); words.textContent = s.intro ? tale.intro : s.text;
+      words.classList.remove('on'); words.textContent = s.intro ? tale.intro : s.text; words.scrollTop = 0;
       requestAnimationFrame(() => words.classList.add('on'));
     };
     show(0);
@@ -4149,7 +4149,11 @@
       if (!audio.duration) return;
       const at = audio.currentTime / audio.duration;
       fill.style.width = (at * 100).toFixed(1) + '%';
-      show(Math.max(0, ends.findIndex(e => at < e)));
+      const i = Math.max(0, ends.findIndex(e => at < e));
+      show(i);
+      // A paragraph longer than its box scrolls with the voice (a phone, Brett, Nov 6), so it's read through, not cut off
+      const from = i ? ends[i - 1] : 0, part = Math.min(1, Math.max(0, (at - from) / ((ends[i] - from) || 1)));
+      if (words.scrollHeight > words.clientHeight) words.scrollTop = part * (words.scrollHeight - words.clientHeight);
     });
     audio.addEventListener('ended', () => { fill.style.width = '100%'; toggle.textContent = '▶ Play again'; shown = -1; });
     audio.play().catch(() => { toggle.textContent = '▶ Play'; });
