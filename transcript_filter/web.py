@@ -86,7 +86,8 @@ def send_transcript(stem: str, text: str) -> dict:
     req = urllib.request.Request(
         f"{url}/api/transcripts",
         data=json.dumps({"played_on": stem, "text": text}).encode(),
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+        # Its own name: Cloudflare, in front of askdnd since Nov 2, refuses Python's default one (error 1010, a 403)
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}", "User-Agent": "askdnd-processor/1.0"},
         method="POST",
     )
     try:
