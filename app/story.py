@@ -93,18 +93,24 @@ def _linker(db: Session) -> Linker:
 
 
 @router.get("/")
-def story(request: Request, tab: str = "", db: Session = Depends(get_db)):
+def story(request: Request, tab: str = "", order: str = "", db: Session = Depends(get_db)):
     """Story (menu bar Option B, Brett 2026-10-22): tabs Previously on… (questions for you, then the latest session's
-    recap, key moments and open threads) and All sessions (every published session, newest first). ?tab=sessions."""
+    recap, key moments and open threads) and All sessions (every published session, newest first). ?tab=sessions;
+    &order=start reads every recap in order, the first session first, all of them open (Brett, Nov 5)."""
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    story = published_story(db)
+    from_start = tab == "sessions" and order == "start"
+    if from_start:
+        story["items"] = list(reversed(story.get("items") or []))
     return templates.TemplateResponse(
         request,
         "story.html",
         {
-            **published_story(db),
+            **story,
             "tab": "sessions" if tab == "sessions" else "previously",
+            "from_start": from_start,
             "questions": questions_card(db, user),
             "waiting": waiting_count(db) if can_moderate(user) else 0,
             "toast": request.session.pop("toast", None),

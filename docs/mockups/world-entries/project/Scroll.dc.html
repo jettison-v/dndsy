@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A bard's scroll</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;family=EB+Garamond:wght@400;500&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;family=Cormorant+Garamond:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#d9b48e}a:hover{color:#f0cfa8}
+.fadeX{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 5%,#000 95%,transparent 100%)}
+.rodFade{-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.curl{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.16),transparent 8px,transparent calc(100% - 8px),rgba(0,0,0,.16))}
+.tale p{margin:0 0 1em}
+.lead{font-variant:small-caps;letter-spacing:.03em}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border-radius:999px;font-size:13px;cursor:pointer;user-select:none}
+.k{font-size:12px;font-weight:700;letter-spacing:.1em;color:#a29d93;width:74px;flex:none}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; padding: 32px; display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 36px">
+
+  <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0">
+    <span style="font-size: 13px; font-weight: 700; color: #e8b34b">D1 · The scroll: Story › Previously on…</span>
+    <div style="padding: 0 16px">
+      <div class="rodFade" style="height: 9px; margin: 0 -10px; border-radius: 5px; background: {{rodBg}}; opacity: {{rodOpacity}}"></div>
+      <div style="position: relative; padding: 30px 48px 26px">
+        <div class="fadeX" style="position: absolute; inset: 0; background: {{sheetBg}}; opacity: {{sheetOpacity}}; filter: {{sheetFilter}}"></div>
+        <div class="curl" style="opacity: {{sheetOpacity}}"></div>
+        <div style="position: relative; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; align-items: center; gap: 14px; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 19px; font-weight: 500; letter-spacing: .06em; color: {{accent}}">
+            <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, {{rule}})"></div>
+            <span>Session 19 · The sealed letter</span>
+            <div style="flex: 1; height: 1px; background: linear-gradient(90deg, {{rule}}, transparent)"></div>
+          </div>
+          <div class="tale" style="max-width: 60ch; margin: 0 auto; font-family: {{font}}; font-size: {{size}}; line-height: {{leading}}; color: {{ink}}">
+            <p><span style="float: left; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 54px; line-height: .82; padding: 6px 9px 0 0; color: {{accent}}">T</span><span class="lead">he party left the Saltgate</span> at first light, the harbourmaster's sealed letter wrapped in oilcloth and tucked inside Cole's coat. The northern road was quiet until the bridge, where the river had risen in the night.</p>
+            <p>They crossed by the old ford instead, and on the far bank found a camp abandoned in a hurry: the fire still warm, a map pinned under a stone, and tracks leading up into the hills.</p>
+            <p style="margin: 0">Big C kept the map. No Name kept watch. Nobody slept well.</p>
+          </div>
+          <div style="text-align: center; font-size: 16px; color: {{fleuron}}">❦</div>
+        </div>
+      </div>
+      <div class="rodFade" style="height: 9px; margin: 0 -10px; border-radius: 5px; background: {{rodBg}}; opacity: {{rodOpacity}}"></div>
+    </div>
+    <span style="font-size: 12px; color: #8f8a82">[Example text: your DM's recap goes here, word for word]</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 22px; min-width: 0">
+    <div style="background: #1b1d21; border: 1px solid #34383e; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 13px; font-weight: 700; color: #e8b34b">Dial it in (press Play, then click)</span>
+      <div style="display: flex; gap: 10px; align-items: flex-start">
+        <span class="k" style="padding-top: 8px">COLOUR</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-for list="{{colours}}" as="c" hint-placeholder-count="4">
+            <span class="pill" onClick="{{c.pick}}" style="border: 1px solid {{c.border}}; background: {{c.bg}}; color: {{c.fg}}"><span style="width: 12px; height: 12px; border-radius: 50%; background: {{c.swatch}}; border: 1px solid #4a4f57"></span>{{c.label}}</span>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: flex-start">
+        <span class="k" style="padding-top: 8px">TEXT</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-for list="{{texts}}" as="t" hint-placeholder-count="4">
+            <span class="pill" onClick="{{t.pick}}" style="border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.fg}}; font-family: {{t.font}}">{{t.label}}</span>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; gap: 10px; align-items: flex-start">
+        <span class="k" style="padding-top: 8px">STRENGTH</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-for list="{{strengths}}" as="s" hint-placeholder-count="4">
+            <span class="pill" onClick="{{s.pick}}" style="border: 1px solid {{s.border}}; background: {{s.bg}}; color: {{s.fg}}">{{s.label}}</span>
+          </sc-for>
+        </div>
+      </div>
+      <span style="font-size: 13px; color: #c9c4ba; border-top: 1px solid #2a2e34; padding-top: 12px">Showing: <b style="color: #fff">{{summary}}</b></span>
+      <span style="font-size: 12px; color: #8f8a82; line-height: 1.5">Strength is how much parchment shows: Faint and Light let more of the page through, Deeper adds warmth and colour. The same three choices are in the board's Tweaks.</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 13px; font-weight: 700; color: #e8b34b">D2 · Quieter: the parchment without the rods</span>
+      <div style="position: relative; padding: 22px 34px">
+        <div class="fadeX" style="position: absolute; inset: 0; background: {{sheetBg}}; opacity: {{sheetOpacity}}; filter: {{sheetFilter}}"></div>
+        <div class="tale" style="position: relative; font-family: {{font}}; font-size: {{sizeSmall}}; line-height: {{leading}}; color: {{ink}}">
+          <p style="margin: 0"><span style="float: left; font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 50px; line-height: .82; padding: 6px 9px 0 0; color: {{accent}}">K</span><span class="lead">eeps the harbour's books</span> and remembers every favour owed. Met the party at the gate when they arrived by sea, and traded news of the northern road for a debt still unpaid.</p>
+        </div>
+      </div>
+      <span style="font-size: 13px; color: #a29d93">For a World entry's story, where a whole scroll would be too much.</span>
+    </div>
+
+    <div style="background: #1b1d21; border: 1px solid #34383e; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 1.55">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #e8b34b">AN OPTION, NOT THE ONLY LOOK</span>
+      <span>The campaign's choice (Manage › Settings, beside the Art style) or each person's own: <b>Plain</b> or <b>Scroll</b>. The words stay the DM's; the scroll only frames them.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000},"colour":{"editor":"enum","options":["Umber","Sepia","Vellum","Midnight"],"default":"Umber","section":"Scroll"},"text":{"editor":"enum","options":["Literata","EB Garamond","Source Serif","Inter"],"default":"Literata","section":"Scroll"},"strength":{"editor":"enum","options":["Faint","Light","Current","Deeper"],"default":"Current","section":"Scroll"}}'>
+class Component extends DCLogic {
+constructor(props) {
+super(props);
+this.state = {};
+}
+componentDidUpdate(prev) {
+var clear = {};
+["colour", "text", "strength"].forEach((k) => { if (prev[k] !== this.props[k] && this.state[k] !== undefined) clear[k] = undefined; });
+if (Object.keys(clear).length) this.setState(clear);
+}
+renderVals() {
+var COLOURS = {
+Umber:    { swatch: "#3a3226", sheet: ["#211e19", "#1f1c18", "#1a1916"], rod: ["#2f2920", "#221e18", "#1a1714"], accent: "#a99070", rule: "#3d3529", fleuron: "#5c5040", ink: "#e2dccf" },
+Sepia:    { swatch: "#4a3122", sheet: ["#261d17", "#221a15", "#1c1714"], rod: ["#3b2a1e", "#2a1f17", "#1d1611"], accent: "#b78c6a", rule: "#4a3727", fleuron: "#6b4f3b", ink: "#e6dbcd" },
+Vellum:   { swatch: "#3a3b30", sheet: ["#20211c", "#1e1f1b", "#1a1b18"], rod: ["#2d2e27", "#22231e", "#1a1b17"], accent: "#a3a086", rule: "#3a3b31", fleuron: "#5a5a48", ink: "#e1e0d4" },
+Midnight: { swatch: "#2c3446", sheet: ["#1c1f26", "#1a1d23", "#17191e"], rod: ["#272c37", "#1e222a", "#16191f"], accent: "#93a0b9", rule: "#323a48", fleuron: "#4f5a6e", ink: "#dfe2e8" }
+};
+var TEXTS = {
+"Literata":     { font: "Literata, Georgia, serif", size: 17, leading: 1.72 },
+"EB Garamond":  { font: "'EB Garamond', Garamond, Georgia, serif", size: 19, leading: 1.6 },
+"Source Serif": { font: "'Source Serif 4', Georgia, serif", size: 16.5, leading: 1.68 },
+"Inter":        { font: "Inter, system-ui, sans-serif", size: 16, leading: 1.7 }
+};
+var STRENGTHS = {
+Faint:   { opacity: 0.45, sat: 0.7, bright: 1 },
+Light:   { opacity: 0.72, sat: 0.85, bright: 1 },
+Current: { opacity: 1, sat: 1, bright: 1 },
+Deeper:  { opacity: 1, sat: 1.6, bright: 1.14 }
+};
+var pickOf = (k, def, table) => { var v = this.state[k] !== undefined ? this.state[k] : this.props[k]; return table[v] ? v : def; };
+var colour = pickOf("colour", "Umber", COLOURS);
+var text = pickOf("text", "Literata", TEXTS);
+var strength = pickOf("strength", "Current", STRENGTHS);
+var c = COLOURS[colour], t = TEXTS[text], s = STRENGTHS[strength];
+var pill = (on) => on ? { border: "#8a7a5c", bg: "#2b261e", fg: "#fff" } : { border: "#34383e", bg: "#1f2226", fg: "#c9c4ba" };
+var list = (table, key, current, extra) => Object.keys(table).map((name) => Object.assign({ label: name, pick: () => { var o = {}; o[key] = name; this.setState(o); } }, pill(name === current), extra ? extra(table[name]) : {}));
+return {
+colours: list(COLOURS, "colour", colour, (v) => ({ swatch: v.swatch })),
+texts: list(TEXTS, "text", text, (v) => ({ font: v.font })),
+strengths: list(STRENGTHS, "strength", strength),
+summary: colour + " · " + text + " · " + strength,
+sheetBg: "radial-gradient(ellipse 120% 160% at 50% 50%, " + c.sheet[0] + " 0%, " + c.sheet[1] + " 70%, " + c.sheet[2] + " 100%)",
+sheetOpacity: s.opacity,
+sheetFilter: "saturate(" + s.sat + ") brightness(" + s.bright + ")",
+rodBg: "linear-gradient(180deg, " + c.rod[0] + " 0%, " + c.rod[1] + " 55%, " + c.rod[2] + " 100%)",
+rodOpacity: Math.min(0.9, s.opacity * 0.9 + (s.sat > 1 ? 0.1 : 0)),
+accent: c.accent, rule: c.rule, fleuron: c.fleuron, ink: c.ink,
+font: t.font, size: t.size + "px", sizeSmall: (t.size - 0.5) + "px", leading: t.leading
+};
+}
+}
+</script>
+</body>
+</html>

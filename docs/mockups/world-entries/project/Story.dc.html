@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Story text styles</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Literata:opsz,wght@7..72,400;7..72,600&amp;family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#f3b9a8}a:hover{color:#ffd2c4}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; padding: 32px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 28px">
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 13px; font-weight: 700; color: #a29d93">Today · Iowan Old Style, 19px, cream on a brown box</span>
+    <div style="font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif; font-size: 19px; line-height: 1.75; color: #f0e7d4; background: #221f1a; border: 1px solid #3b3428; border-radius: 10px; padding: 22px 26px">
+      <p style="margin: 0 0 1em">Keeps the harbour's books and remembers every favour owed. Met the party at the gate when they arrived by sea, and traded news of the northern road for a debt still unpaid.</p>
+      <p style="margin: 0">She calls it in at the worst moments, and is usually right to. Sister of <a href="#">NPC 2</a>.</p>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 13px; font-weight: 700; color: #e8b34b">A · The page's own type (Inter), 16px, no box</span>
+    <div style="font-size: 16px; line-height: 1.65; color: #ebe7df; max-width: 62ch">
+      <p style="margin: 0 0 1em">Keeps the harbour's books and remembers every favour owed. Met the party at the gate when they arrived by sea, and traded news of the northern road for a debt still unpaid.</p>
+      <p style="margin: 0">She calls it in at the worst moments, and is usually right to. Sister of <a href="#">NPC 2</a>.</p>
+    </div>
+    <span style="font-size: 13px; color: #a29d93">Calm and of a piece with everything else; the story reads like the rest of askdnd.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 13px; font-weight: 700; color: #e8b34b">B · Literata (a book face made for screens), 17px, no box</span>
+    <div style="font-family: Literata, Georgia, serif; font-size: 17px; line-height: 1.65; color: #ebe7df; max-width: 62ch">
+      <p style="margin: 0 0 1em">Keeps the harbour's books and remembers every favour owed. Met the party at the gate when they arrived by sea, and traded news of the northern road for a debt still unpaid.</p>
+      <p style="margin: 0">She calls it in at the worst moments, and is usually right to. Sister of <a href="#">NPC 2</a>.</p>
+    </div>
+    <span style="font-size: 13px; color: #a29d93">Still a storybook feel, in the page's colours: no cream, no brown.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 13px; font-weight: 700; color: #e8b34b">C · Source Serif 4, 16.5px, on a quiet grey card</span>
+    <div style="font-family: 'Source Serif 4', Georgia, serif; font-size: 16.5px; line-height: 1.6; color: #ebe7df; background: #1f2226; border: 1px solid #34383e; border-radius: 12px; padding: 18px 22px; max-width: 62ch">
+      <p style="margin: 0 0 1em">Keeps the harbour's books and remembers every favour owed. Met the party at the gate when they arrived by sea, and traded news of the northern road for a debt still unpaid.</p>
+      <p style="margin: 0">She calls it in at the worst moments, and is usually right to. Sister of <a href="#">NPC 2</a>.</p>
+    </div>
+    <span style="font-size: 13px; color: #a29d93">Keeps the story set apart as a card, in the same greys as the rest.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
