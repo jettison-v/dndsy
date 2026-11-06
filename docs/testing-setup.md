@@ -25,10 +25,24 @@ The D&D Beyond campaign is [VTT test](https://www.dndbeyond.com/campaigns/822449
 | Seat | Its own | Twins | Classes |
 |---|---|---|---|
 | Player 2 (CatharticPlayer) | Cathartic | Cole (twin), 173216268 | Test Ranger (Hunter 5), 173222995 |
-| Player 3 (ViPlayer) | Vi | | Test Bard (Lore 5), 173222716; Test Rogue (Assassin 9), 173222824 |
-| Player 4 (Levi's account) | Levi Shadowquick | Big C (twin), 173220725 | Test Barbarian (Berserker 5), 173222366; Test Fighter (Champion 5), 173222510 |
+| Player 3 (ViPlayer) | Vi | Trah (twin), 173231727 | Test Bard (Lore 5), 173222716; Test Rogue (Assassin 9), 173222824 |
+| Player 4 (Levi's account) | Levi Shadowquick | Big C (twin), 173220725; No Name (twin), 173230905 | Test Barbarian (Berserker 5), 173222366; Test Fighter (Champion 5), 173222510 |
 
-No Name's and Trah's twins are still to come.
+All four twins are in (No Name's and Trah's on Nov 5, evening); `twins-level` checks each still matches its real character.
+
+What each one's live run reaches (`TWINS` in scripts/real_table.py; docs/live-test-plan.md):
+
+| Character | Classes | Resource spent and given back | Cast and Undo |
+|---|---|---|---|
+| Cole (twin) | Druid 6 (Moon) / Monk 2 | Focus | A spell slot |
+| No Name (twin) | Monk 6 (Shadow) / Warlock 2 | Focus | Pact Magic |
+| Big C (twin) | Paladin 6 / Sorcerer 2 | Channel Divinity | A spell slot |
+| Trah (twin) | Wizard 7 (Evoker) / Fighter 1 | Second Wind | A spell slot |
+| Test Ranger | Ranger 5 (Hunter) | Hunter's Mark (Favored Enemy) | A spell slot |
+| Test Bard | Bard 5 (Lore) | Bardic Inspiration | A spell slot |
+| Test Rogue | Rogue 9 (Assassin) | None | None |
+| Test Barbarian | Barbarian 5 (Berserker) | Rage | None |
+| Test Fighter | Fighter 5 (Champion) | Second Wind | None |
 
 **Brett's personal D&D Beyond account is not a seat** (Brett, 2026-10-30): automation could get an account flagged. That account's characters are in no testing at all (its first Vi and Spurt were taken out of askdnd's VTT test on Nov 5), and Brett's own Chrome profile on the Mini is never copied or driven.
 
