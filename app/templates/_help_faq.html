@@ -274,3 +274,11 @@
       <p>Yes, to check what the DM or a player sees: <b>View as</b> on Manage › Accounts or a campaign's Table. A banner says who you're viewing as, and nothing can be changed until <b>Stop viewing</b>, so nothing happens in their name. An admin who is a campaign's DM can't view as its players, because that would show them their players' notes.</p>
     {% endcall %}
   </section>
+
+  <section class="section">
+    <h2>askdnd's table (being built)</h2>
+    {% call q("What is askdnd's table, and who sees what on it?", "table") %}
+      <p>askdnd's own VTT, in Labs while it's built (the table plays on D&amp;D Beyond's VTT until it's done). The DM shows a place: its map, with a token for each character and the creatures the DM put there. You drag your own token; on your turn it counts toward your movement in <b>your turn's bar</b> under the map, which also shows what you've used of your Action, Bonus Action and Reaction and your Battle pins. askdnd counts, it never stops you.</p>
+      <p>A creature the DM hid never reaches your screen. Of a creature's Hit Points you see what the DM's battle settings say (Healthy, Bloodied or Down unless she changes it). The DM's scene notes are hers alone: no player, reviewer or admin sees them, and they're never sent to Claude.</p>
+    {% endcall %}
+  </section>

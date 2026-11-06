@@ -4213,7 +4213,10 @@
     const z = Math.min(r.width / w, r.height / h) || 1;
     return { x: (r.width - w * z) / 2, y: (r.height - h * z) / 2, z };
   }
-  function apply(m) { const w = world(m); if (w && view) w.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`; }
+  function apply(m) {  // (--inv keeps a pin's and a name's words the same size at any zoom)
+    const w = world(m);
+    if (w && view) { w.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`; w.style.setProperty('--inv', String(1 / view.z)); }
+  }
   function setup() {
     const m = map();
     if (!m) { view = null; return; }

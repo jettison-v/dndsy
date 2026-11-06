@@ -34,10 +34,12 @@ FEATURES: list[Feature] = [
             "closed. Tell the table first: D&D Beyond's terms don't allow tools like this.",
             "Live character state (Phase 1) and the D&D Beyond bridge; finished Nov 3."),
     Feature("vtt", "askdnd's VTT",
-            "The menu bar's Table button opens askdnd's own table instead of D&D Beyond's VTT: the turn order across the "
-            "top, Table rolls and the side panel around the middle, and everyone's dice thrown across the screen. For now "
-            "the middle lists the fight heard from D&D Beyond's VTT, and the map stays there.",
-            "The VTT, slices 0 to 10 (docs/plans/2026-11-02-vtt-build-plan.md): 0 and 1 built; 2, askdnd runs the fight, next.",
+            "The menu bar's Table button opens askdnd's own table instead of D&D Beyond's VTT: places with their maps (a "
+            "picture or a Dungeon Alchemist file), the party's and the DM's creatures as tokens, the DM's scene notes "
+            "pinned on the map (hers alone), a creature's stat block and rolls in the side panel, the fight run here "
+            "(Start a fight, Initiative, Next turn, Undo) and your turn's bar under the map. Being built: moving and "
+            "measuring, fog and spell areas come next; the table moves from D&D Beyond's VTT once it's all here.",
+            "askdnd's table (docs/plans/2026-11-06-table-build-plan.md): built to the fight, Nov 7; then moving, fog, areas.",
             labs=True, state="Being built"),
     Feature("creatures", "Your creatures",
             "A familiar, an artificer's Homunculus Servant or Steel Defender, a ranger's companion, a summon or a steed "
