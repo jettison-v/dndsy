@@ -2583,6 +2583,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .br-st::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
 .br-st.br-live { background: var(--green-soft); color: var(--green); }
 .br-st.br-wait { background: var(--amber-soft); color: var(--amber); }
+.br-st.title-action { white-space: normal; max-width: 100%; text-align: left; }  /* (a long status wraps on a phone instead of pushing the page wider: sweep, Nov 5) */
 .br-st.br-off { background: var(--red-soft); color: var(--link); }
 .br-st.br-seen { background: var(--blue-soft); color: var(--blue); }
 .br-st.br-asleep { background: var(--surface-2); color: var(--muted); }  /* between games: no calls to D&D Beyond */
