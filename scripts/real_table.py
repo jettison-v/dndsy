@@ -69,15 +69,17 @@ class Table:
         self.last = page  # (what a run that stops was looking at)
         return page
 
-    def sheet(self, seat: str, frames: list[str] | None = None) -> Page:
-        """A seat's sheet; `frames` collects what passes on its connections, so a run can see the Game Log itself. With
-        --via-dm, the sheet closed everywhere and the DM's D&D Beyond page standing in for it (`Remote`)."""
-        url = f"https://www.dndbeyond.com/characters/{SHEETS[seat]}"
+    def sheet(self, seat: str, frames: list[str] | None = None, ddb: int | None = None) -> Page:
+        """A seat's sheet (or `ddb`, another character on its account: the twins); `frames` collects what passes on its
+        connections, so a run can see the Game Log itself. With --via-dm, the sheet closed everywhere and the DM's D&D
+        Beyond page standing in for it (`Remote`)."""
+        ddb = ddb or SHEETS[seat]
+        url = f"https://www.dndbeyond.com/characters/{ddb}"
         if self.via_dm:
             for ctx in [self.contexts[x] for x in SEATS]:
                 for x in [x for x in ctx.pages if "dndbeyond.com/characters/" in x.url]:
                     x.close()
-            return Remote(self.page("dm", CAMPAIGN), SHEETS[seat])
+            return Remote(self.page("dm", CAMPAIGN), ddb)
         page = next((x for x in self.contexts[seat].pages if x.url.startswith(url)), None) or self.contexts[seat].new_page()
         if frames is not None:
             def listen(ws):
@@ -85,6 +87,17 @@ class Table:
                 ws.on("framereceived", lambda text: frames.append(str(text)))
             page.on("websocket", listen)
         page.goto(url, wait_until="domcontentloaded", timeout=45000)
+        return page
+
+    def battle_of(self, seat: str, name: str) -> Page:
+        """Another character the seat's account plays (a twin), found by its name in the menu bar's Party list, on Battle."""
+        home = self.page(seat, f"{BETA}/party")
+        cid = home.evaluate("""n => { const a = [...document.querySelectorAll('a[href^="/characters/"]')].find(x => x.textContent.includes(n));
+                                      return a && a.getAttribute('href').match(/\\d+/)[0]; }""", name)
+        if not cid:
+            raise RuntimeError(f"{name} isn't on Party for {seat}'s account (is it in VTT test, played by it?)")
+        page = self.page(seat, f"https://beta.askdnd.ai/characters/{cid}/battle")
+        page.wait_for_selector(save("Dex"), timeout=20000)
         return page
 
     def battle(self, seat: str) -> Page:
@@ -1226,6 +1239,85 @@ def unreachable(t: Table, seat: str = "player2") -> None:
     t.expect("and + Condition offers them again", lambda: page.locator("details.cond-add .unreached").count() == 0 and not chips.first.is_disabled(), 10)
 
 
+# The twins and the classes nobody at the table plays (Brett, Nov 5; docs/testing-setup.md): each on its seat's D&D
+# Beyond account, in VTT test, played there by its seat's account. run name: (seat, D&D Beyond id, its name in askdnd,
+# what it spends: a resource on Battle's Resources row, "" for none). No Name's and Trah's twins are one line each.
+TWINS = {
+    "cole-twin": ("player2", 173216268, "Cole (twin)", "Focus"),
+    "test-ranger": ("player2", 173222995, "Test Ranger", "Favored Enemy"),
+    "test-bard": ("player3", 173222716, "Test Bard", "Bardic Inspiration"),
+    "test-rogue": ("player3", 173222824, "Test Rogue", ""),
+    "big-c-twin": ("player4", 173220725, "Big C (twin)", "Channel Divinity"),
+    "test-barbarian": ("player4", 173222366, "Test Barbarian", "Rage"),
+    "test-fighter": ("player4", 173222510, "Test Fighter", "Second Wind"),
+}
+
+
+# Each twin's real character at Brett's table (its public D&D Beyond copy, read as askdnd reads it; never driven)
+REAL = {"cole-twin": 75423618, "big-c-twin": 76415207}
+
+
+def build(ddb: int) -> list[str]:
+    """A character's classes, levels and subclasses from D&D Beyond's public copy: ["Druid 6 (Circle of the Moon)", …]."""
+    import urllib.request
+
+    req = urllib.request.Request(f"https://character-service.dndbeyond.com/character/v5/character/{ddb}", headers={"User-Agent": "askdnd-live-test"})
+    with urllib.request.urlopen(req, timeout=20) as r:
+        d = json.load(r)["data"]
+    return sorted(f"{c['definition']['name']} {c['level']}" + (f" ({c['subclassDefinition']['name']})" if c.get("subclassDefinition") else "")
+                  for c in d.get("classes") or [])
+
+
+def twins_level(t: Table) -> None:
+    """Each twin still matches its real character's classes and levels (Brett, Nov 5: a nightly check that says when a
+    twin needs a level-up). A miss names what to change on the twin's D&D Beyond sheet."""
+    for key, real in REAL.items():
+        name = TWINS[key][2]
+        mine, theirs = build(TWINS[key][1]), build(real)
+        if not t.expect(f"{name} matches its real character", lambda: mine == theirs, 1):
+            print(f"   {name} is {', '.join(mine)}; the real one is {', '.join(theirs)}: level up the twin on D&D Beyond", flush=True)
+
+
+def twin(t: Table, key: str) -> None:
+    """One of the twins or class sheets, as its player plays it: Battle names its classes as D&D Beyond does; its own
+    resource (Rage, Second Wind, Bardic Inspiration…) spent in askdnd is spent on D&D Beyond and given back; and a
+    spellcaster's slot is spent by Cast and given back by Undo."""
+    seat, ddb, name, res = TWINS[key]
+    sheet = t.sheet(seat, ddb=ddb)
+    page = t.battle_of(seat, name)
+    connects(t, page)
+    before = record(sheet)
+    classes = [c["definition"]["name"] for c in before.get("classes") or []]
+    print("  ", name, "·", ", ".join(f"{c['definition']['name']} {c['level']}" for c in before.get("classes") or []), flush=True)
+    t.expect("Battle names its classes as D&D Beyond does", lambda: all(c in page.locator("#char-sub").inner_text() for c in classes), 8)
+    if res:
+        button = page.locator(f'.res-go[data-use-url*="/count"]:has-text("{res}")')
+        if not t.expect(f"{res} is on Battle's Resources row", lambda: button.count() > 0, 8):
+            print("   resources:", page.locator('.res-go[data-use-url*="/count"]').all_inner_texts(), flush=True)
+        else:
+            go(page, button.first)
+            page.locator('[data-use-go][data-to="use"]').first.click()
+            changed(t, sheet, before, f"{res}: one is spent on D&D Beyond")
+            page.wait_for_timeout(1500)
+            page.keyboard.press("Escape")
+            go(page, button.first)
+            page.locator('[data-use-go][data-to="back"]').first.click()
+            undone(t, sheet, before, f"{res}: given back on D&D Beyond")
+            page.wait_for_timeout(1500)
+            page.keyboard.press("Escape")
+    page.goto(page.url, wait_until="domcontentloaded")
+    if page.locator(".spellbook-btn").count():  # (a spellcaster: the first spell with a slot to spend)
+        spell_window(page)
+        if not page.locator('select[name="way"] option').count():
+            print("   no spell with a slot to spend", flush=True)
+            return
+        print("   spell:", page.locator(".rw-title").first.inner_text(), flush=True)
+        page.locator("[data-use-go]").first.click()
+        changed(t, sheet, before, "Cast: the slot is spent on D&D Beyond")
+        if undo(page):
+            undone(t, sheet, before, "Undo gives the slot back on D&D Beyond")
+
+
 VTT = "https://www.dndbeyond.com/games/8224496"
 EXTENSION = "obpgemimnhngpcckodjkcihiahoaefpl"  # (the askdnd bridge from the Chrome Web Store, in every seat)
 
@@ -1318,6 +1410,16 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp,
         "familiar": familiar, "initiative": initiative, "unreachable": unreachable,
         "wild-companion": wild_companion}
+
+
+def _twin_run(key: str):
+    def run(t: Table, seat: str = TWINS[key][0]) -> None:  # (its seat, for the setup check and tidying)
+        twin(t, key)
+    run.__doc__ = f"{TWINS[key][2]}: " + (twin.__doc__ or "")
+    return run
+
+
+RUNS |= {key: _twin_run(key) for key in TWINS} | {"twins-level": twins_level}
 # Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out
 SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup", "initiative", "unreachable"}  # (unreachable closes every way in; initiative: a roll reaches the VTT through the sheet's own Game Log)
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
@@ -1392,11 +1494,11 @@ def left_over(d: dict) -> list[str]:
         ["limited uses spent"] if spent(d) else [])
 
 
-def tidy(t: Table, seat: str) -> list[str]:
+def tidy(t: Table, seat: str, ddb: int | None = None) -> list[str]:
     """What's left over on a seat's sheet, put right on D&D Beyond as the seat's player could on the sheet: hit points,
     death saves, conditions, and (Nov 5: a night's misses spent Levi's Pact slots and Wild Shape uses, and the next
     night's runs failed on them) slots and limited uses. Returns what was left over."""
-    sheet = t.sheet(seat)
+    sheet = t.sheet(seat, ddb=ddb)
     d = record(sheet)
     found = left_over(d)
     ops = ([["PUT", "life/hp/damage-taken", {"removedHitPoints": 0, "temporaryHitPoints": 0}]] if d.get("removedHitPoints") or d.get("temporaryHitPoints") else []) + (
@@ -1407,7 +1509,7 @@ def tidy(t: Table, seat: str) -> list[str]:
         ["PUT", "action/limited-use", {"id": str(x["id"]), "entityTypeId": str(x.get("entityTypeId")), "uses": 0}]
         for g in d["actions"].values() for x in g or [] if (x.get("limitedUse") or {}).get("numberUsed")]
     if ops:
-        print("  put right on D&D Beyond:", "; ".join(found), sheet.evaluate(TIDYING, [SHEETS[seat], ops]), flush=True)
+        print("  put right on D&D Beyond:", "; ".join(found), sheet.evaluate(TIDYING, [ddb or SHEETS[seat], ops]), flush=True)
     return found
 
 
@@ -1467,13 +1569,13 @@ def attempt(t: Table, name: str) -> list[str]:
             print("  what it was looking at:", shot, flush=True)
         except Exception:
             pass
-    for seat in sorted(used([name])):
+    for seat, ddb in [(s, None) for s in sorted(used([name]))] + ([(TWINS[name][0], TWINS[name][1])] if name in TWINS else []):
         try:
-            left = tidy(t, seat)
+            left = tidy(t, seat, ddb)
         except Exception as e:
             left = [f"couldn't be read ({type(e).__name__})"]
         if left:
-            t.note(False, f"put back {seat}'s sheet ({'; '.join(left)})")
+            t.note(False, f"put back {TWINS[name][2] if ddb else seat}'s sheet ({'; '.join(left)})")
     return [what for ok, what in t.results[start:] if ok is False]
 
 
@@ -1513,9 +1615,10 @@ def main() -> int:
         if "--try-alert" in args:  # (a deliberate miss: checks the way to Sentry, real_table_nightly.sh --try-alert)
             t.note(False, "a deliberate miss, to try the alert (--try-alert)")
         versions: dict = {}
+        opened = True
         try:
-            ready, versions = seated(t, used(names))
-            names = [n for n in names if used([n]) <= ready] if ready else []
+            ready, versions = seated(t, used(names)) if used(names) else (set(), {})
+            names = [n for n in names if used([n]) <= ready]  # (a run on no seat, twins-level, always runs)
             if "inventory" in names:
                 stock(t.sheet("player2"))  # (before the sheets are noted: stocking is setting up, not a run's change)
             for seat in sorted(used(names)):
@@ -1523,8 +1626,8 @@ def main() -> int:
             before = {seat: record(t.sheet(seat)) for seat in SHEETS if seat in used(names)}
         except Exception as e:  # (the seats aren't open, or D&D Beyond can't be reached)
             t.note(False, f"the seats open: {type(e).__name__}: {str(e)[:200]}")
-            before = {}
-        for name in names if before else []:
+            before, opened = {}, False
+        for name in names if opened else []:
             print("==", name, flush=True)
             t.run = name
             first = attempt(t, name)
