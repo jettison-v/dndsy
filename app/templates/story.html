@@ -13,13 +13,20 @@
   </div>
 </div>
 {% endmacro %}
-{% macro after(events, quests, threads) %}{# What came of it: key moments, and (the latest session) open threads #}
+{% macro moment(e) %}<li class="ev {{ e.kind.value }}"><span class="note kind {{ e.kind.value }}">{{ e.kind.value | capitalize }}</span><div class="ev-text">{{ ln.text(e.text) }}{% if e.entities %}<small>{% for x in e.entities %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endmacro %}
+{% macro after(events, quests, threads, few=0) %}{# What came of it: key moments (on All sessions the first `few`, the rest behind Show all; Brett, Nov 5), and (the latest session) open threads #}
 {% if events or quests or threads %}
 <div class="tale-after">
   {% if events %}
   <section>
     <h3 class="tale-label">Key moments</h3>
-    <ol class="moment-line tale-moments">{% for e in events %}<li class="ev {{ e.kind.value }}"><span class="note kind {{ e.kind.value }}">{{ e.kind.value | capitalize }}</span><div class="ev-text">{{ ln.text(e.text) }}{% if e.entities %}<small>{% for x in e.entities %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endfor %}</ol>
+    {% set shown = events[:few] if few and events | length > few + 1 else events %}
+    <ol class="moment-line tale-moments">{% for e in shown %}{{ moment(e) }}{% endfor %}</ol>
+    {% if shown | length < events | length %}
+    <details class="tale-more"><summary>Show all {{ events | length }} key moments</summary>
+      <ol class="moment-line tale-moments">{% for e in events[shown | length:] %}{{ moment(e) }}{% endfor %}</ol>
+    </details>
+    {% endif %}
   </section>
   {% endif %}
   {% if quests or threads %}
@@ -96,11 +103,17 @@
 
   <div id="t-sessions"{% if tab != "sessions" %} hidden{% endif %}>
   <div class="tale">
-  <p class="subtitle" data-story-sub>Every session the DM has published, newest first. Each opens into its scroll.</p>
+  <div class="tale-order" data-story-sub>
+    <p class="subtitle">{{ "Every recap in order, from the first session." if from_start else "Every session the DM has published, newest first. Each opens into its scroll." }}</p>
+    <nav class="seg" aria-label="Order">{# read them all, the first first and every scroll open (Brett, Nov 5) #}
+      <a href="{{ cbase }}/?tab=sessions"{% if not from_start %} aria-current="true"{% endif %}>Newest first</a>
+      <a href="{{ cbase }}/?tab=sessions&amp;order=start"{% if from_start %} aria-current="true"{% endif %}>From the start</a>
+    </nav>
+  </div>
   <p class="subtitle" data-story-found hidden></p>
   {# Each session a rolled scroll, the newest open (the mockup's All sessions board) #}
   {% for item in items %}
-  <details class="section tale-roll" id="s{{ item.s.id }}" {% if loop.first %}open{% endif %}>
+  <details class="section tale-roll" id="s{{ item.s.id }}" {% if loop.first or from_start %}open{% endif %}>
     <summary>
       <span class="tale-kicker">{{ item.label }}</span>
       <span class="tale-roll-text"><b>{{ item.s.title or item.label }}</b><span class="note">{{ item.html | striptags | truncate(140, True, "…") }}</span></span>
@@ -108,7 +121,7 @@
     </summary>
     <div class="session-body">
       {{ scroll(item, head=False) }}
-      {{ after(item.events, [], []) }}
+      {{ after(item.events, [], [], few=3) }}
       {% if not item.events and not item.dm_notes %}<p class="note">No key moments recorded for this session.</p>{% endif %}
       {{ suggest("/sessions/" ~ item.s.id ~ "/suggest", "this session") }}
     </div>

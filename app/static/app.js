@@ -2862,7 +2862,7 @@
     unmark();
     const words = box.value.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
     if (!words.length) {
-      sessions.forEach(d => { d.hidden = false; d.open = wasOpen.get(d); });
+      sessions.forEach(d => { d.hidden = false; d.open = wasOpen.get(d); d.querySelectorAll('details.tale-more').forEach(x => { x.open = false; }); });
       found.hidden = true; sub.hidden = false;
       return;
     }
@@ -2873,6 +2873,7 @@
       const text = d.querySelector('.session-body').textContent.toLowerCase() + ' ' + d.querySelector('summary').textContent.toLowerCase();
       const hit = words.every(w => text.includes(w));
       d.hidden = !hit; d.open = hit;
+      d.querySelectorAll('details.tale-more').forEach(x => { x.open = hit; });  // (a key moment past the first few)
       if (hit) { n++; mark(d.querySelector('.session-body'), words); }
     });
     sub.hidden = true; found.hidden = false;
