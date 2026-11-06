@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>What players see, and the DM's battle settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#f3b9a8}a:hover{color:#ffd2c4}
+</style>
+</helmet>
+<div style="width: 1280px; height: 900px; box-sizing: border-box; background: #15171a; color: #e6e4e0; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 14px; padding: 32px 40px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #e8b34b">A PLAYER'S TABLE (TRAH'S)</span>
+    <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; gap: 10px; align-items: center"><span style="font-size: 12px; font-weight: 800; letter-spacing: .12em; color: #e8b34b">ROUND 2</span><span>Enemy 1's turn</span><span style="margin-left: auto; color: #e8b34b">you're next</span></div>
+      <span style="color: #8f959c; font-size: 13px">No + Add, Next turn or ⋯: those are the DM's. Enemy 2 isn't here at all.</span>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div style="display: grid; grid-template-columns: 50px 1fr 150px 50px; gap: 10px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px"><b>19</b><span>Cole</span><span>51 / 75</span><span>16</span></div>
+      <div style="display: grid; grid-template-columns: 50px 1fr 150px 50px; gap: 10px; align-items: center; background: #2c2420; border-radius: 10px; padding: 10px 12px; outline: 1px solid #e8b34b"><b>16</b><span>Enemy 1</span><span style="color: #e8b34b">Bloodied</span><span>—</span></div>
+      <div style="display: grid; grid-template-columns: 50px 1fr 150px 50px; gap: 10px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px"><b>14</b><span>Trah (you)</span><span>22 / 40</span><span>18</span></div>
+      <div style="display: grid; grid-template-columns: 50px 1fr 150px 50px; gap: 10px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px"><b>9</b><span>Big C</span><span>44 / 44</span><span>17</span></div>
+      <div style="display: grid; grid-template-columns: 50px 1fr 150px 50px; gap: 10px; align-items: center; background: #1f2226; border-radius: 10px; padding: 10px 12px"><b>5</b><span>No Name</span><span>30 / 38</span><span>15</span></div>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; font-size: 13px">
+      <span style="background: #1d3326; color: #7fd49b; border-radius: 999px; padding: 4px 10px">Healthy: more than half</span>
+      <span style="background: #3a2f17; color: #e8b34b; border-radius: 999px; padding: 4px 10px">Bloodied: half or less</span>
+      <span style="background: #3a1d1d; color: #f08a8a; border-radius: 999px; padding: 4px 10px">Down: 0</span>
+    </div>
+    <span style="color: #c9c5bf; font-size: 13px">An enemy's numbers (Hit Points, AC, its stat block) never reach a player's browser: askdnd sends each person only what they may see, as it does for hidden tokens today.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <span style="font-size: 11px; font-weight: 800; letter-spacing: .12em; color: #e8b34b">THE DM'S BATTLE SETTINGS (⋯ › BATTLE SETTINGS)</span>
+    <div style="background: #1f2226; border: 1px solid #34383e; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 18px">
+      <fieldset style="border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px">
+        <legend style="font-weight: 600; margin-bottom: 8px">What players see of an enemy's Hit Points</legend>
+        <label style="display: flex; gap: 8px"><input type="radio" name="hp" checked> Healthy, Bloodied or Down</label>
+        <label style="display: flex; gap: 8px"><input type="radio" name="hp"> The numbers</label>
+        <label style="display: flex; gap: 8px"><input type="radio" name="hp"> Nothing</label>
+      </fieldset>
+      <fieldset style="border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px">
+        <legend style="font-weight: 600; margin-bottom: 8px">A group of the same creature rolls Initiative</legend>
+        <label style="display: flex; gap: 8px"><input type="radio" name="grp" checked> Once for the group</label>
+        <label style="display: flex; gap: 8px"><input type="radio" name="grp"> Each its own</label>
+      </fieldset>
+      <fieldset style="border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px">
+        <legend style="font-weight: 600; margin-bottom: 8px">New creatures start</legend>
+        <label style="display: flex; gap: 8px"><input type="radio" name="vis" checked> Seen by players</label>
+        <label style="display: flex; gap: 8px"><input type="radio" name="vis"> Hidden until you show them</label>
+      </fieldset>
+      <span style="color: #8f959c; font-size: 13px">Kept for this campaign: every fight starts with them. Changing one mid-fight changes what players see at once.</span>
+    </div>
+    <div style="background: #1b1d21; border: 1px dashed #4a4f57; border-radius: 12px; padding: 14px; color: #c9c5bf; font-size: 13px; display: flex; flex-direction: column; gap: 6px">
+      <b style="color: #e8b34b">What carries on unchanged</b>
+      <span>The fight band on every character page and Party, its corner cards (your turn, a reminder, a familiar's turn), conditions that end on a turn, Concentration's rounds, and Initiative rolled from Battle: all of it follows askdnd's turns here just as it follows D&amp;D Beyond's VTT today.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

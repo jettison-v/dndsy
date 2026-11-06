@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Entry, magazine style</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#f3b9a8}a:hover{color:#ffd2c4}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 15px; display: flex">
+  <div style="width: 300px; border-right: 1px solid #34383e; padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; color: #a29d93">
+    <span style="font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #e8b34b">PEOPLE</span>
+    <span style="padding: 8px 10px">Big C</span><span style="padding: 8px 10px">Cole</span>
+    <span style="padding: 8px 10px; background: #263045; color: #fff; border-radius: 8px">NPC 1</span>
+    <span style="padding: 8px 10px">NPC 2</span><span style="padding: 8px 10px">No Name</span><span style="padding: 8px 10px">Trah</span>
+  </div>
+  <div style="flex: 1; display: flex; flex-direction: column; min-width: 0">
+    <div style="height: 240px; background: #2a2e34; border-bottom: 1px solid #3a3f46; display: flex; align-items: flex-end; padding: 0 40px 22px; position: relative">
+      <span style="position: absolute; top: 16px; right: 20px; color: #8f8a82; font-size: 13px">Picture band (its framed middle; a portrait sits to the left for a person)</span>
+      <div style="display: flex; align-items: flex-end; gap: 20px">
+        <div style="width: 120px; height: 120px; border-radius: 50%; background: #3a3f46; border: 3px solid #15171a; display: grid; place-items: center; color: #8f8a82; font-size: 12px">Portrait</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding-bottom: 6px">
+          <span style="font-size: 13px; color: #c9c4ba">Person · Harbourmaster at the Saltgate · First met Session 3 · Last seen Session 19</span>
+          <h1 style="margin: 0; font-size: 36px; font-weight: 700; color: #fff">NPC 1</h1>
+        </div>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 36px; padding: 28px 40px; flex: 1; min-height: 0">
+      <div style="display: flex; flex-direction: column; gap: 16px; max-width: 62ch">
+        <p style="margin: 0; font-size: 17px; line-height: 1.65">Keeps the harbour's books and remembers every favour owed. Met the party at the gate when they arrived by sea, and traded news of the northern road for a debt still unpaid.</p>
+        <span style="font-size: 12px; color: #8f8a82">[Example text: your DM's words go here]</span>
+        <span style="font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #e8b34b; margin-top: 8px">KEY MOMENTS</span>
+        <div style="border-left: 2px solid #34383e; padding-left: 16px; display: flex; flex-direction: column; gap: 14px">
+          <span><span style="color: #a29d93; font-size: 13px">Session 19</span><br>Called in the party's debt: passage on the next ship, for a sealed letter delivered north.</span>
+          <span><span style="color: #a29d93; font-size: 13px">Session 11</span><br>Warned the party that the guild's ledgers had been altered.</span>
+          <span><span style="color: #a29d93; font-size: 13px">Session 3</span><br>Let the party through the gate on credit.</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+          <span style="font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #e8b34b">CONNECTIONS</span>
+          <span><span style="color: #a29d93">Sister of</span> <a href="#">NPC 2</a></span>
+          <span><span style="color: #a29d93">Member of</span> <a href="#">The Harbour Guild</a></span>
+          <span><span style="color: #a29d93">Ally of</span> <a href="#">Cole</a></span>
+          <a href="#" style="font-size: 13px">See the connections map →</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+          <span style="font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #e8b34b">WHAT THE TABLE KNOWS</span>
+          <span>Never carries a weapon.</span><span>Owes money to someone in the capital.</span>
+          <a href="#" style="font-size: 13px">+ Suggest one</a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+          <span style="font-size: 12px; font-weight: 700; letter-spacing: .1em; color: #e8b34b">WHERE</span>
+          <a href="#">The Saltgate ↗ map</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
