@@ -4075,7 +4075,8 @@
     const head = el('div', 'tp-head'), kicker = el('span', 'tp-kicker'), title = el('h2', 'tp-title');
     const bar = el('div', 'tp-bar'), fill = el('span'), controls = el('div', 'tp-controls');
     const toggle = el('button', 'btn tp-toggle', '❚❚ Pause'), shut = el('button', 'btn link tp-close', '✕ Close');
-    toggle.type = shut.type = 'button'; bar.append(fill); head.append(kicker, title); controls.append(toggle, shut);
+    const redo = el('button', 'btn link tp-redo', 'Read it again'); redo.hidden = true;
+    toggle.type = shut.type = redo.type = 'button'; bar.append(fill); head.append(kicker, title); controls.append(redo, toggle, shut);
     box.append(stage, head, words, say, bar, controls);
     document.body.append(box); document.body.classList.add('tale-playing');
     const audio = new Audio();
@@ -4099,12 +4100,21 @@
       if (i === shown || !slides[i]) return;
       shown = i;
       const s = slides[i], layer = el('div', 'tp-layer');
-      s.pictures.forEach((p, k) => {
-        const img = el('img'); img.src = p.src; img.alt = ''; img.style.objectPosition = p.pos; img.referrerPolicy = 'no-referrer';
-        img.style.setProperty('--tp-drift', (k % 2 ? -1 : 1) * (i % 2 ? 1 : -1));
-        layer.append(img);
-      });
-      layer.dataset.n = String(s.pictures.length || 0);
+      // The place behind (Brett, Nov 6: the location as the backdrop), the people the paragraph names in front
+      if (s.place) {
+        const back = el('img', 'tp-place'); back.src = s.place.src; back.alt = ''; back.style.objectPosition = s.place.pos; back.referrerPolicy = 'no-referrer';
+        back.style.setProperty('--tp-drift', i % 2 ? 1 : -1);
+        layer.append(back);
+      } else layer.classList.add('bare');
+      if (s.people.length) {
+        const row = el('div', 'tp-people');
+        s.people.forEach(p => {
+          const card = el('figure', 'tp-person'), img = el('img'), cap = el('figcaption', '', p.name);
+          img.src = p.src; img.alt = ''; img.style.objectPosition = p.pos; img.referrerPolicy = 'no-referrer';
+          card.append(img, cap); row.append(card);
+        });
+        layer.append(row);
+      }
       stage.append(layer);
       requestAnimationFrame(() => layer.classList.add('on'));
       [...stage.children].slice(0, -2).forEach(old => old.remove());  // (the last one fades out under the new)
@@ -4122,6 +4132,17 @@
       if (!open || open.box !== box) return;
     }
     say.textContent = '';
+    // An admin's Read it again (Brett, Nov 6): a new narration in its place, played from the start
+    redo.hidden = !tale.can_redo;
+    redo.addEventListener('click', async () => {
+      audio.pause(); redo.disabled = true; say.textContent = 'The narrator is reading it again… (about half a minute)';
+      try {
+        const got = await (await fetch(base + '/narrate?again=1', { method: 'POST', headers: { Accept: 'application/json' } })).json();
+        if (got.audio) { audio.src = got.audio; shown = -1; audio.play().catch(() => {}); say.textContent = ''; }
+        else say.textContent = got.error || "It couldn't be read again. Try later.";
+      } catch (e) { say.textContent = "It couldn't be read again. Try later."; }
+      redo.disabled = false;
+    });
     audio.src = src;
     audio.addEventListener('timeupdate', () => {
       if (!audio.duration) return;
