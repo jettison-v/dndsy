@@ -29,7 +29,7 @@ def test_features_and_labs():
     assert sorted(table.vtt_pieces) == ["sync", "vtt"]
     assert vtt.switch(table, "nothing", True) == "There's no such feature." and not vtt.on(None, "ddb_bridge")
     r = vtt.rows(table)
-    assert [x["f"].key for x in r["features"]] == ["sync"] and [x["f"].key for x in r["labs"]] == ["vtt", "creatures", "initiative"] and not r["labs_on"]
+    assert [x["f"].key for x in r["features"]] == ["sync", "creatures"] and [x["f"].key for x in r["labs"]] == ["vtt", "initiative"] and not r["labs_on"]
     assert all(f.roadmap and f.about for f in vtt.FEATURES + vtt.PERSONAL)  # each says what it does and where it is
 
 

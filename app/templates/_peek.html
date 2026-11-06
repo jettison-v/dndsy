@@ -9,7 +9,7 @@
 {% set px = 'hx-target="closest .reader-article" hx-swap="outerHTML"' if reader else 'hx-target="closest .peek" hx-swap="innerHTML"' %}
 {% if reader %}<article class="reader-article" id="reader-article" data-reader-id="{{ e.id }}" aria-labelledby="reader-title">{% endif %}
 <div class="{{ 'reader-head' if reader else 'peek-head' }}">
-  <div><div class="note">{{ kind_label }}{% if e.kind.value == "quest" and e.quest_open is not none %} · {{ "Open" if e.quest_open else "Done" }}{% endif %}{% if e.status.value != "published" %} · not published{% endif %}
+  <div><div class="note">{% if companion %}Companion · {{ companion.master.name }}'s {{ companion.role }}{% else %}{{ kind_label }}{% endif %}{% if e.kind.value == "quest" and e.quest_open is not none %} · {{ "Open" if e.quest_open else "Done" }}{% endif %}{% if e.status.value != "published" %} · not published{% endif %}
     {%- if reader %} · {% if moments %}Last seen {{ moments[-1].label }} · {{ moments | length }} key moment{{ "s" if moments | length != 1 }}{% else %}No key moments yet{% endif %}{% endif %}</div>
     <h2 id="{{ 'reader-title' if reader else 'peek-title' }}">{{ e.name }}{% if reader and e.status.value != "published" %} <span class="tag faint" title="Only the DM, reviewers and admins see it">Hidden</span>{% endif %}</h2>
     {% if e.display_aliases %}<div class="note">Also: {{ e.display_aliases | map(attribute="alias") | join(", ") }}</div>{% endif %}</div>
@@ -17,7 +17,16 @@
 </div>
 <div class="{{ 'reader-body' if reader else 'peek-body' }}">
   {% if picture %}<img class="peek-pic" src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer"{% if picture.pos %} style="object-position: {{ picture.pos }}"{% endif %}>{% if not picture.uploaded %}<p class="note byline">From D&amp;D Beyond</p>{% endif %}{% endif %}
-  {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% else %}<p class="muted">No description yet.{% if can_edit %} Use <b>Edit</b> to write one.{% endif %}</p>{% endif %}
+  {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% elif not companion %}<p class="muted">No description yet.{% if can_edit %} Use <b>Edit</b> to write one.{% endif %}</p>{% endif %}
+  {% if companion %}{# A familiar's or steed's (app/companion_story.py; Creatures as Characters board 4), from what the table did #}
+  <dl class="mech companion-facts">
+    {% if companion.now %}<dt>Now</dt><dd>{{ companion.now }}</dd>{% endif %}
+    {% if companion.kind %}<dt>It's</dt><dd>{{ companion.kind }}</dd>{% endif %}
+    {% if companion.forms %}<dt>{{ "Forms it has taken" if companion.forms | length > 1 else "Its form" }}</dt><dd>{% for f in companion.forms %}{{ f.form }} <span class="note">({{ f.when }})</span>{{ " · " if not loop.last }}{% endfor %}</dd>{% endif %}
+    {% if companion.times %}<dt>Away and back</dt><dd>{% for t in companion.times %}{{ t.what[:1] | upper }}{{ t.what[1:] }} <span class="note">{{ t.when }}</span>{{ "<br>" | safe if not loop.last }}{% endfor %}</dd>{% endif %}
+  </dl>
+  <p class="note">askdnd keeps these from what the table does (casting it, the pocket dimension, 0 Hit Points). What the recaps say about it shows under Key moments.</p>
+  {% endif %}
   {% if part_of %}
   <h3>Part of</h3>
   <div class="part-of">{% for q in part_of %}<a class="chip-link" href="{{ cbase }}/campaign?tab=quests&amp;open={{ q.id }}" data-goto-quest="{{ q.id }}" data-no-peek>{{ q.name }} <span class="tag {{ 'done' if q.quest_open == false else 'draft' }}">{{ "Done" if q.quest_open == false else "Open" }}</span></a>{% endfor %}</div>

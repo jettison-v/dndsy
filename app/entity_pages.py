@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import web
-from app import access, atlas, campaign_views, entities, pictures, relations
+from app import access, atlas, campaign_views, companion_story, entities, pictures, relations
 from app.auth import can_edit_entries, can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError
@@ -49,6 +49,7 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "e": entity,
         "can_edit": can_edit_entries(user),
         "kind_label": entities.KIND_LABELS.get(entity.kind, entity.kind.value),
+        "companion": companion_story.view(db, entity),  # a familiar's or steed's: whose, where, its forms (board 4)
         "merged": [f for f in facts if f.status == "merged"],
         "pending": [f for f in facts if f.status == "pending"] if moderator else [],
         # A player's own suggestions here, with what happened to each (Waiting, Added, Used, Not used)

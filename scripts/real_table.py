@@ -16,6 +16,7 @@ primary account is not a seat here, and it never signs in to anything.
 import json
 import sys
 import time
+from html import unescape
 
 from playwright.sync_api import Page, sync_playwright
 from playwright.sync_api import TimeoutError as PlaywrightTimeout
@@ -1120,6 +1121,35 @@ def familiar(t: Table, seat: str = "player4") -> None:
         ["PUT", "creature/status", {"id": oid, "isActive": owl["isActive"]}]]]), flush=True)
 
 
+def wild_companion(t: Table, seat: str = "player4") -> None:
+    """Wild Companion (Nov 5, Your creatures' last live run; Levi is a Druid): Find Familiar cast from a Wild Shape use
+    spends the use on D&D Beyond and switches the Owl on, always Fey; Undo gives the use back and switches it off; then
+    D&D Beyond is put back as found."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    connects(t, page)
+    before = record(sheet)
+    owl = next(c for c in before["creatures"] if c["groupId"] == 2)
+    oid, used = owl["id"], ws_used(before)
+    page.locator(".spellbook-btn").first.click(timeout=8000)
+    go(page, page.locator('.ls-row[data-ref="spell:Find Familiar"] [data-use-url*="/cast?"]').first)
+    page.locator('select[name="way"]').first.select_option("wild")
+    page.locator(f'input[name="familiar"][value="{oid}"]').check()
+    page.locator("[data-use-go]").first.click(timeout=8000)
+    t.expect("a Wild Shape use is spent on D&D Beyond", lambda: ws_used(record(sheet)) == used + 1, SLOW)
+    t.expect("and the Owl is switched on, as Fey", lambda: creature_of(record(sheet), oid)["isActive"] and any(
+        v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) and v.get("value") == 8 for v in record(sheet).get("characterValues") or []), SLOW)
+    page.wait_for_timeout(1500)
+    if undo(page):
+        t.expect("Undo gives the Wild Shape use back", lambda: ws_used(record(sheet)) == used, SLOW)
+    key = {"typeId": 44, "valueId": str(oid), "valueTypeId": str(owl["entityTypeId"]), "contextId": None, "contextTypeId": None}
+    tidy = [["PUT", "creature", {"id": oid, "name": owl["name"], "description": owl["description"], "groupId": owl["groupId"]}],
+            ["PUT", "creature/status", {"id": oid, "isActive": owl["isActive"]}]]  # (the familiar's name goes with it to a new form)
+    if not any(v.get("typeId") == 44 and str(v.get("valueId")) == str(oid) for v in before.get("characterValues") or []):
+        tidy.append(["DELETE", "custom/value", key])
+    print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], tidy]), flush=True)
+
+
 def dm_backup(t: Table, seat: str = "player2") -> None:
     """DM Backup (extension 0.9.8): with a player's sheet closed, the DM's browser with a D&D Beyond page open makes
     askdnd's change on it; the pill says so, then Connected again once the sheet is back."""
@@ -1168,7 +1198,9 @@ def unreachable(t: Table, seat: str = "player2") -> None:
              and page.locator('.peek.open .hp-form button[type="submit"]').first.is_disabled(), 10)
     page.keyboard.press("Escape")
     page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
-    rest_window(page, "short")
+    page.locator('[data-panel-url$="/vital/hp"]').first.click()
+    page.locator('[data-use-url$="/rest?kind=short"]').first.click(timeout=8000)  # (no Take a Short Rest to wait for: that's the point)
+    page.wait_for_selector(".use-said:visible", timeout=8000)
     t.expect("the Rest window says so, with no Take a Short Rest",
              lambda: CANT in page.locator(".use-said:visible").first.inner_text(timeout=3000) and page.locator("[data-use-go]:visible").count() == 0, 10)
     page.keyboard.press("Escape")
@@ -1179,7 +1211,7 @@ def unreachable(t: Table, seat: str = "player2") -> None:
              and page.locator('.peek.open button:text-is("Equip"), .peek.open button:text-is("Unequip")').count() == 0, 10)
     page.keyboard.press("Escape")
     for what, url, top in (("the item browser", "items/browse", "data-ib-said"), ("Prepare spells", "spells/prepare", 'class="use-said"')):
-        html = page.evaluate("u => fetch(u).then(r => r.text())", f"/characters/{cid}/{url}")
+        html = unescape(page.evaluate("u => fetch(u).then(r => r.text())", f"/characters/{cid}/{url}"))  # (its "can&#39;t")
         t.expect(f"{what} says so at the top", lambda: CANT in html and html.index('class="unreached"') < html.index(top), 1)
     status = page.evaluate("""cid => fetch(`/characters/${cid}/conditions`, {method: 'POST', headers: {'HX-Request': 'true'},
         body: new URLSearchParams({name: 'Poisoned', level: '1'})}).then(r => r.status)""", cid)
@@ -1284,7 +1316,8 @@ RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": 
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp,
-        "familiar": familiar, "initiative": initiative, "unreachable": unreachable}
+        "familiar": familiar, "initiative": initiative, "unreachable": unreachable,
+        "wild-companion": wild_companion}
 # Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out
 SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup", "initiative", "unreachable"}  # (unreachable closes every way in; initiative: a roll reaches the VTT through the sheet's own Game Log)
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there

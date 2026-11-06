@@ -36,6 +36,8 @@ SECTIONS = [
     ("Spells and shapes", [
         ("spellbook", "Spell Book", "Your prepared spells with filters, each one's average damage or healing, and Cast at for a higher "
                              "slot. An average informs; it doesn't decide."),
+        ("creatures", "Your creatures", "A familiar, Homunculus, steed or summon: Battle as the creature, its own card on Party and, "
+                                        "for a familiar or steed, its own World entry."),
         ("wildshape", "Wild Shape", "You as the beast: your numbers and actions worked out for the form, its full page, and Normal to "
                              "come back (druids)."),
     ]),
@@ -60,7 +62,8 @@ SPELLBOOK = "#spell-bar .spellbook-btn"  # opens the Spell Book, full window (it
 # opened (other stops close it). example: an example row on Battle, only on the page ("pin", or "note" with a note).
 # swap: Battle shown in a Wild Shape form ("form", the first the druid knows) or as it really is ("own"), from
 # /characters/<id>/battle/preview: nothing is saved or announced, and the tour puts the real Battle back.
-# needs: "character", "caster" (has the Spell Book), "druid" (knows a form) or "sync" (the character plays on its D&D Beyond
+# needs: "character", "caster" (has the Spell Book), "druid" (knows a form), "creatures" (one in play, with Your creatures on)
+# or "sync" (the character plays on its D&D Beyond
 # sheet: ddb_bridge.plays); without it, the stop is left out. "sync+caster" needs both.
 # all: light every match of `at` together (a column: its heading and each row's cell).
 STOPS = [
@@ -145,6 +148,10 @@ STOPS = [
     {"group": "spellbook", "title": "Cast at", "page": "battle", "needs": "caster", "panel": True,
      "open": [SPELLBOOK], "at": ".peek.open [data-spellbook] .ls-select:has([data-ls-lens])",
      "what": "<b>Cast at</b> works out every average again as if cast with a higher slot.", "why": "See what a higher slot adds before you spend it."},
+    {"group": "creatures", "title": "Your creatures", "page": "battle", "needs": "creatures", "at": '[data-tour="creatures"]',
+     "what": "The switch by your name shows Battle as one of your creatures: its Hit Points, Armor Class, actions to roll and "
+             "when its turn comes, worked out with you. A familiar's Battle also sends it to the pocket dimension or brings it back.",
+     "why": "It's a small character of its own, so it isn't forgotten in a fight."},
     {"group": "wildshape", "title": "Wild Shape: pick a form", "page": "battle", "needs": "druid",
      "at": '#battle-body [data-tour="ws-form"]',
      "what": "On the <b>Wild Shape</b> bar, a form's pill opens <b>Shift</b>: it spends a use and gives the Temporary Hit "
@@ -248,6 +255,11 @@ def stops_for(db: Session, user: dict | None) -> list[dict]:
 
         if ch and ddb_bridge.plays(db, ch):  # (Battle's − and +, Cast, Rest; Sheet's purse and + Add item)
             has.add("sync")
+        from app import creatures, vtt
+        from app.models import Campaign
+
+        if ch and ch.campaign_id and vtt.on(db.get(Campaign, ch.campaign_id), "creatures") and creatures.in_play(ch, sheet):
+            has.add("creatures")  # (the switch by the name on Battle)
         forms = wild_shape.known_forms(sheet)
         if forms:
             has.add("druid")

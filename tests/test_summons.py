@@ -110,3 +110,10 @@ def test_find_steed_brings_the_one_that_disappeared_or_another(player, db, summo
     db.refresh(summoner)
     back = creatures.own(summoner)[0]
     assert (back["name"], back["choice"], back["look"], creatures.where(summoner, back)) == ("Ember", "Fiend", "a warhorse", "here")
+    # Its World entry (slice 9, board 4): made the first time, and it remembers disappearing
+    from app.models import Entity
+
+    story = summoner.creature_story["steed"]
+    assert db.get(Entity, story["entity"]).name == "Ember" and [x["what"] for x in story["log"]] == ["cast", "gone", "cast"]
+    page = player.get(f"/campaign/{story['entity']}/peek").text
+    assert "Companion · Cole's steed" in page and "Disappeared at 0 Hit Points" in page and "Fiend" in page
