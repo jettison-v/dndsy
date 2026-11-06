@@ -13,7 +13,7 @@
 {%- endmacro %}
 {% macro row_ft(f, x) %}{% if f.can_order %} data-ft-ini="{{ x.initiative if x.initiative is not none else '' }}"{% if x.moves %} data-ft-key="{{ x.key }}" data-ft-name="{{ x.name }}" draggable="true"{% else %} data-ft-follows{% endif %}{% endif %}{% endmacro %}
 {% macro fight_rows(f, rows, always=false) %}
-<div class="pt-track-wrap{{ ' always' if always }}">{% if f.waiting %}<p class="ft-wait"><b>Roll for Initiative</b> · waiting for the DM's Start Combat in D&amp;D Beyond's VTT{% if f.can_order %} · drag a row to change the order{% endif %}</p>{% endif %}<div class="table-scroll"><table class="pt-track{{ ' ft-order' if f.can_order }}">
+<div class="pt-track-wrap{{ ' always' if always }}">{% if f.waiting %}<p class="ft-wait"><b>Roll for Initiative</b> · waiting for the DM's {{ 'Begin' if f.source == 'askdnd' else "Start Combat in D&amp;D Beyond's VTT" }}{% if f.can_order %} · drag a row to change the order{% endif %}</p>{% endif %}<div class="table-scroll"><table class="pt-track{{ ' ft-order' if f.can_order }}">
   <thead><tr><th>Init.</th><th>Fighter</th><th>Hit Points</th><th>AC</th><th>Conditions and reminders</th></tr></thead>
   <tbody>{% for x in f.order %}{% set r = rows | selectattr("c.id", "equalto", x.character) | first if x.character else none %}{% set hp = r.sheet.hit_points if r and r.sheet else none %}
     {% if x.creature %}{% set k = x.creature %}{# one of a character's creatures (app/fight.py with_creatures; Your creatures, slice 3) #}

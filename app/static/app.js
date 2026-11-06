@@ -608,7 +608,7 @@
   // roll, the tour); your own (`now`) doesn't. Lists set themselves up as they appear; the rest is set up again here
   // (a panel as when it opened: panel:loaded). A button's own answer, such as a pin's or Wild Shape's, still swaps
   // just the box it changed.
-  const PARTY = /^(\/c\/[^/]+)?\/party$/;
+  const PARTY = /^(\/c\/[^/]+)?\/(party|table)$/;  // (and askdnd's table: everyone on it)
   let showWait = null, showing = false, again = false;
   function showsAny(ids) {  // ids: character ids as text, or '*' for any
     const page = document.querySelector('main[data-character]');
@@ -618,7 +618,9 @@
   }
   function busyHere() {
     const a = document.activeElement;
-    return !!(document.querySelector('.peek.open, .roll-win, .tour-card, dialog[open], details.conc-pop[open], details.cond-pill[open]') ||
+    // (on askdnd's table a side panel stays open through a fight, so the map keeps moving beside it)
+    const table = /^(\/c\/[^/]+)?\/table$/.test(location.pathname);
+    return !!(document.querySelector((table ? '' : '.peek.open, ') + '.roll-win, .tour-card, dialog[open], details.conc-pop[open], details.cond-pill[open], #tmap.dragging') ||
               (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))));
   }
   // A field that saves as you type (a note in a side panel): the box holding it isn't swapped while you're in it
@@ -677,7 +679,10 @@
     const restore = keepState(here), before = marksIn(here);
     [...here.attributes].forEach(a => { if (!there.hasAttribute(a.name)) here.removeAttribute(a.name); });
     [...there.attributes].forEach(a => here.setAttribute(a.name, a.value));
+    // What's the same in both stays as it is ([data-keep]: askdnd's table map's picture, so it never flashes)
+    const keep = new Map([...here.querySelectorAll('[data-keep]')].map(n => [n.dataset.keep, n]));
     here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
+    here.querySelectorAll('[data-keep]').forEach(n => { const old = keep.get(n.dataset.keep); if (old) n.replaceWith(old); });
     const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
     if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); liveWindowAgain(); }
     // Your character's conditions on its menu bar button, outside main
@@ -759,6 +764,7 @@
   document.addEventListener('askdnd:live', e => {
     const t = e.detail.type;
     if (t === 'game') { showInPlace(); return; }
+    if (t === 'table') { if (/^(\/c\/[^/]+)?\/table$/.test(location.pathname)) showInPlace(); return; }  // (askdnd's table: a place, a token, a scene)
     if (t === 'deliver') { window.postMessage({ askdndBridge: 'deliver', ddbId: String(e.detail.ddb) }, location.origin); return; }  // (a change another one waited for may go now: ddb_bridge._release)  // the fight moved on: every page, once it isn't in the way of a pop-up
     if (t !== 'character' && t !== 'resync') return;
     liveIds.add(t === 'resync' ? '*' : String(e.detail.id));
@@ -773,6 +779,10 @@
   // You changed something of a character's (a pin, bookmark, reminder or note: character_pages, player_notes):
   // the page and its open panels show their new copy at once. A form that's done with its window closes it first.
   document.body.addEventListener('closePanel', () => closePeek());
+  // A scene of the DM's to read or write in (app/scene_notes.py: a new one opens to write in, a saved one to read)
+  document.body.addEventListener('openScene', e => { const url = e.detail && (e.detail.value || e.detail); if (typeof url === 'string') openPanel(url, null, null); });
+  // Something on askdnd's table changed (a place, a token, the fight): this page shows its new copy at once
+  document.body.addEventListener('tableChanged', () => showInPlace(true));
   document.body.addEventListener('characterChanged', () => showInPlace(true));
   // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
   document.addEventListener('click', e => {
@@ -2172,7 +2182,7 @@
       if (go.follow === 'bonus') { p.set('die', go.die); p.set('label', go.bonusLabel || 'Added die'); }
     } else {
       Object.entries({ character: go.cid || '', kind: go.kind, label: go.label, mod: go.mod || '', dmg: go.dmg || '', mode: go.mode, to,
-                       count: go.count || 1, each: go.each || '', once: go.once ? 1 : '', who: go.who || '' }).forEach(([k, v]) => p.set(k, v));
+                       count: go.count || 1, each: go.each || '', once: go.once ? 1 : '', who: go.who || '', token: go.token || '' }).forEach(([k, v]) => p.set(k, v));
       (go.parts || []).forEach(x => p.append('part', x));
       (go.dmgParts || []).forEach(x => p.append('dmg_part', x));
     }
@@ -2189,6 +2199,7 @@
       if (!e) return showFailure(w, "Those dice don't look right.", () => chooser(w._anchor, go));
       if (e.kind === 'death' && go.follow !== 'damage') deathPrivate(go.cid, e, before);
       endHidden(go);
+      if (!go.follow) turnUsed(w._anchor);
       return showResult(w, e, go.follow);
     }
     const pending = !go.follow && logShown() && log ? placeholder(go.label) : null;
@@ -2200,6 +2211,7 @@
         addToLog(j.html, j.roll.id);
         showResult(w, j.roll, go.follow);
         endHidden(go);
+        if (!go.follow) turnUsed(w._anchor);
         deathMarked(j.death);
         // A familiar's Initiative, rolled with its character's (app/initiative.py): its row too, and a word on it
         (j.also || []).forEach(a => { addToLog(a.html, a.roll.id); toast(a.who + "'s Initiative: " + a.roll.total, null, 'info'); });
@@ -2260,6 +2272,14 @@
     return fetch(url, { method: 'POST', body: new URLSearchParams(fields), headers: { 'X-Requested-With': 'fetch' } })
       .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || j.error || "askdnd couldn't do that"); return j; }));
   }
+  // Your turn's bar on askdnd's table (app/turn_bar.py): a roll, Cast or Use made from one of its rows marks that row's
+  // Action, Bonus Action or Reaction used (pressing the mark unticks it); askdnd counts, never stops you
+  function turnUsed(anchor) {
+    const it = anchor && anchor.closest && anchor.closest('[data-turn-cost]'), bar = it && it.closest('#turn-bar');
+    if (!bar) return;
+    fetch('/characters/' + bar.dataset.character + '/turn', { method: 'POST', body: new URLSearchParams({ what: 'use', cost: it.dataset.turnCost, n: '1' }), headers: { 'X-Requested-With': 'fetch' } })
+      .then(r => { if (r.ok) document.body.dispatchEvent(new CustomEvent('characterChanged')); });
+  }
   function itemChanged(j) {
     document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver }));
     document.body.dispatchEvent(new CustomEvent('characterChanged'));
@@ -2276,6 +2296,7 @@
         if (level) roller.dataset.slot = level;
         chooser(roller, specFrom(roller));
       } else closeWin();
+      turnUsed(w._anchor);
       if (j.roll) {
         if (animate()) window.askdndThrowing.throwing(j.roll.id);
         addToLog(j.html, j.roll.id);
@@ -2309,14 +2330,16 @@
   }
   function specFrom(el) {
     const cid = characterOf(el), kind = el.dataset.roll;
-    const shared = atTable() && !!side && (kind === 'dice' || (!!cid && (side.dataset.yours || '').split(',').includes(String(cid))));
+    // A creature on askdnd's table, rolled by the DM as it (app/table_creatures.py): its token's id goes with the roll
+    const tokEl = el.closest('[data-token]'), token = tokEl ? tokEl.dataset.token : '';
+    const shared = atTable() && !!side && (kind === 'dice' || !!token || (!!cid && (side.dataset.yours || '').split(',').includes(String(cid))));
     let recipe = null;
     try { recipe = el.dataset.recipe ? JSON.parse(el.dataset.recipe) : null; } catch (err) { recipe = null; }
     // A condition the character has now (Invisible…) offers Advantage with its reason, never forces it:
     // the roll window shows the reason and the player (and DM) decide (app/conditions.adv_reasons).
     let advWhy = el.dataset.advWhy || '';
     // On a creature's Battle (Your creatures) the roll is the creature's: it says so, and its master's conditions don't apply
-    const whoEl = el.closest('[data-who]'), who = whoEl ? whoEl.dataset.who : '';
+    const whoEl = el.closest('[data-who]'), who = whoEl ? whoEl.dataset.who : (tokEl ? tokEl.dataset.name : '');
     const body = cid && !who && document.querySelector('#battle-body[data-character="' + cid + '"]');
     if (body) {
       let ca = {};
@@ -2332,7 +2355,7 @@
     // Hidden (app/hiding.py): an attack roll ends it, so its window offers that, ticked (the DM may rule otherwise)
     const endsHidden = !!(body && body.dataset.hidden && kind === 'attack');
     return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe, slot: +el.dataset.slot || 0,
-             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared, who, endsHidden };
+             advWhy, note: el.dataset.note || '', cid: token ? '' : kind === 'dice' && side ? side.dataset.mine : cid, shared, who, endsHidden, token };
   }
 
   document.addEventListener('click', e => {
@@ -4162,4 +4185,150 @@
     const btn = e.target.closest('[data-listen]');
     if (btn) { e.preventDefault(); play(btn); }
   });
+})();
+
+// Your turn's bar on a phone (askdnd's table, slice 4): one line at the bottom until pulled up; it stays as you left it
+// while the page shows a new copy
+(function () {
+  let open = false;
+  const apply = () => { const bar = document.getElementById('turn-bar'); if (!bar) return; bar.classList.toggle('open', open); const b = bar.querySelector('[data-tbar-toggle]'); if (b) b.setAttribute('aria-expanded', String(open)); };
+  document.addEventListener('click', e => { if (e.target.closest('[data-tbar-toggle]')) { open = !open; apply(); } });
+  document.addEventListener('askdnd:swapped', apply);
+})();
+
+// askdnd's table map (app/table_page.py, table.html; docs/plans/2026-11-06-table-build-plan.md): the picture, its grid
+// and the tokens in one world, moved and zoomed together (a drag on the map pans, the wheel or a pinch zooms, + − Fit).
+// A token you may move is dragged to a square (POST …/move; the page then shows its new copy, as every page at the
+// table does). The DM's + Scene pin: a click on the map pins a new scene there. The view (where you look, how close)
+// is kept per place while the page shows new copies, and per tab.
+(function () {
+  const VIEW = 'askdnd:tmap:';
+  let view = null, drag = null, pinning = false;
+  const map = () => document.getElementById('tmap');
+  const world = m => m.querySelector('.tmap-world');
+  const store = (m, v) => { try { sessionStorage.setItem(VIEW + m.dataset.place, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const kept = m => { try { return JSON.parse(sessionStorage.getItem(VIEW + m.dataset.place) || 'null'); } catch (e) { return null; } };
+  function fit(m) {
+    const w = +m.dataset.w, h = +m.dataset.h, r = m.getBoundingClientRect();
+    const z = Math.min(r.width / w, r.height / h) || 1;
+    return { x: (r.width - w * z) / 2, y: (r.height - h * z) / 2, z };
+  }
+  function apply(m) { const w = world(m); if (w && view) w.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`; }
+  function setup() {
+    const m = map();
+    if (!m) { view = null; return; }
+    if (!view || view.place !== m.dataset.place) view = { ...(kept(m) || fit(m)), place: m.dataset.place };
+    apply(m);
+  }
+  function zoomAt(m, factor, cx, cy) {
+    const r = m.getBoundingClientRect(), px = cx - r.left, py = cy - r.top;
+    const z = Math.min(4, Math.max(0.05, view.z * factor)), k = z / view.z;
+    view = { ...view, x: px - (px - view.x) * k, y: py - (py - view.y) * k, z };
+    apply(m); store(m, view);
+  }
+  const toWorld = (m, cx, cy) => { const r = m.getBoundingClientRect(); return { x: (cx - r.left - view.x) / view.z, y: (cy - r.top - view.y) / view.z }; };
+  const squares = (m, p) => ({ x: (p.x - +m.dataset.gx) / +m.dataset.size, y: (p.y - +m.dataset.gy) / +m.dataset.size });
+  function post(url, fields) {
+    return fetch(url, { method: 'POST', body: new URLSearchParams(fields), headers: { 'X-Requested-With': 'fetch', 'HX-Request': 'true' } })
+      .then(r => { const t = r.headers.get('HX-Trigger'); if (t && window.htmx) { try { Object.entries(JSON.parse(t)).forEach(([k, v]) => document.body.dispatchEvent(new CustomEvent(k, { detail: v }))); } catch (e) { /* plain */ } }
+        if (!r.ok) r.json().then(j => window.askdndToast && window.askdndToast(j.detail || "That didn't work.", null, 'warn')).catch(() => {}); return r; });
+  }
+  // Pointers: one on a token you may move drags it; one elsewhere pans; two pinch
+  const pts = new Map();
+  document.addEventListener('pointerdown', e => {
+    const m = e.target.closest && e.target.closest('#tmap');
+    if (!m || e.button > 0 || e.target.closest('.tmap-zoom, .tmap-pin')) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pinning) return;
+    const tok = e.target.closest('.tok-m[data-moves]');
+    if (pts.size === 1) drag = tok ? { kind: 'tok', el: tok, sx: e.clientX, sy: e.clientY, moved: false, left: parseFloat(tok.style.left), top: parseFloat(tok.style.top) }
+                                   : { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false };
+    else if (pts.size === 2) { const [a, b] = [...pts.values()]; drag = { kind: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), z: view.z, moved: true }; }
+    m.setPointerCapture(e.pointerId);
+  });
+  document.addEventListener('pointermove', e => {
+    const m = map();
+    if (!m || !drag || !pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (drag.kind === 'pinch' && pts.size === 2) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      zoomAt(m, (drag.z * d / drag.d) / view.z, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      return;
+    }
+    const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+    drag.moved = true;
+    m.classList.add('dragging');
+    if (drag.kind === 'pan') { view = { ...view, x: drag.vx + dx, y: drag.vy + dy }; apply(m); }
+    else if (drag.kind === 'tok') { drag.el.style.left = (drag.left + dx / view.z) + 'px'; drag.el.style.top = (drag.top + dy / view.z) + 'px'; drag.el.classList.add('lifted'); }
+  });
+  function end(e) {
+    const m = map();
+    pts.delete(e.pointerId);
+    if (!m || !drag || pts.size) return;
+    const was = drag;
+    drag = null;
+    m.classList.remove('dragging');
+    if (was.kind === 'pan' && was.moved) store(m, view);
+    if (was.kind === 'pinch') store(m, view);
+    if (was.kind === 'tok' && was.moved) {
+      const size = +m.dataset.size, el = was.el;
+      const sq = { x: (parseFloat(el.style.left) - +m.dataset.gx) / size, y: (parseFloat(el.style.top) - +m.dataset.gy) / size };
+      const step = +el.dataset.sq < 1 ? 0.5 : 1;
+      const x = Math.max(0, Math.round(sq.x / step) * step), y = Math.max(0, Math.round(sq.y / step) * step);
+      el.style.left = (+m.dataset.gx + x * size) + 'px'; el.style.top = (+m.dataset.gy + y * size) + 'px';
+      el.classList.remove('lifted');
+      post(m.dataset.base + '/table/tokens/' + el.dataset.token + '/move', { x, y });
+    }
+    if (was.moved) { const stop = ev => { ev.stopPropagation(); ev.preventDefault(); }; document.addEventListener('click', stop, { capture: true, once: true }); setTimeout(() => document.removeEventListener('click', stop, true), 50); }
+  }
+  document.addEventListener('pointerup', end);
+  document.addEventListener('pointercancel', end);
+  document.addEventListener('wheel', e => {
+    const m = e.target.closest && e.target.closest('#tmap');
+    if (!m || !view) return;
+    e.preventDefault();
+    zoomAt(m, Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
+  }, { passive: false });
+  document.addEventListener('click', e => {
+    const z = e.target.closest('[data-zoom]');
+    const m = map();
+    if (z && m) {
+      if (z.dataset.zoom === 'fit') { view = { ...fit(m), place: m.dataset.place }; apply(m); store(m, view); }
+      else { const r = m.getBoundingClientRect(); zoomAt(m, +z.dataset.zoom, r.left + r.width / 2, r.top + r.height / 2); }
+      return;
+    }
+    const tool = e.target.closest('[data-tool="pin"]');
+    if (tool && m) { pinning = !pinning; tool.setAttribute('aria-pressed', String(pinning)); m.classList.toggle('pinning', pinning); m.querySelector('[data-pin-help]').hidden = !pinning; return; }
+    if (pinning && m && e.target.closest('#tmap') && !e.target.closest('.tmap-zoom')) {
+      e.preventDefault(); e.stopPropagation();
+      const s = squares(m, toWorld(m, e.clientX, e.clientY));
+      pinning = false; m.classList.remove('pinning'); m.querySelector('[data-pin-help]').hidden = true;
+      document.querySelectorAll('[data-tool="pin"]').forEach(b => b.setAttribute('aria-pressed', 'false'));
+      post(m.dataset.base + '/table/scenes', { place: m.dataset.place, x: Math.max(0, s.x.toFixed(2)), y: Math.max(0, s.y.toFixed(2)) });
+    }
+  }, true);
+  document.addEventListener('keydown', e => {
+    const m = map();
+    if (e.key === 'Escape' && pinning && m) { pinning = false; m.classList.remove('pinning'); m.querySelector('[data-pin-help]').hidden = true; }
+  });
+  // The DM's place picker, and the page's windows (<dialog>): opened by data-open-dialog, closed by data-close-dialog or
+  // when the form in them is done
+  document.addEventListener('change', e => {
+    const s = e.target.closest('[data-tbl-place]');
+    if (s && s.value) location.href = location.pathname + '?place=' + s.value;
+  });
+  document.addEventListener('click', e => {
+    const o = e.target.closest('[data-open-dialog]');
+    if (o) { const d = document.getElementById(o.dataset.openDialog); if (d) { o.closest('details')?.removeAttribute('open'); d.showModal(); d.querySelector('[autofocus], input:not([type=hidden])')?.focus(); } }
+    const c = e.target.closest('[data-close-dialog]');
+    if (c) c.closest('dialog')?.close();
+  });
+  document.body.addEventListener('htmx:afterRequest', e => {
+    const d = e.target.closest && e.target.closest('dialog.win-dialog');
+    if (d && e.detail.successful && d.id !== 'tbl-creatures') d.close();
+  });
+  addEventListener('resize', () => { const m = map(); if (m && view && !kept(m)) { view = { ...fit(m), place: m.dataset.place }; apply(m); } });
+  document.addEventListener('askdnd:swapped', setup);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();

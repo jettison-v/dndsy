@@ -1,0 +1,39 @@
+{# One of the DM's scenes in the side panel (app/scene_notes.py; her request, Nov 6). The DM's alone. Reading: the
+   read-aloud boxed like a scroll, then each section that has words; @ names of other scenes open them. Edit: a box per
+   section with its prompts as faint hints. #}
+{% macro runs(rs) %}{% for r in rs %}{% if r.scene %}<button type="button" class="link-plain at" data-panel-url="{{ cbase }}/table/scenes/{{ r.scene }}">@{{ r.text }}</button>{% else %}{{ r.text }}{% endif %}{% endfor %}{% endmacro %}
+<div class="peek-head">
+  <div class="grow"><h2 id="peek-title">{{ s.name }}</h2>
+    <div class="note">{% if place %}{{ place.name }}{% if s.x is not none %} · pinned on its map{% endif %}{% else %}Not on a map{% endif %} · <span class="secret-tag">Only you</span></div></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body scene-panel">
+{% if editing %}
+  <form class="scene-form" hx-post="{{ cbase }}/table/scenes/{{ s.id }}" hx-swap="none">
+    <label class="field"><span>Name</span><input name="name" value="{{ s.name }}" maxlength="200" required></label>
+    {% for x in sections %}
+    <label class="field"><span>{{ x.label }}</span><textarea name="{{ x.key }}" rows="{{ 5 if x.key == 'intro' else 3 }}" placeholder="{{ x.hint }}">{{ x.text }}</textarea></label>
+    {% endfor %}
+    <p class="note">Type @ and a scene's name to link it. Only you see these notes: not the players, not admins, never Claude.</p>
+    <div class="row"><button type="submit" class="btn primary">Save</button><button type="button" class="btn link" data-panel-url="{{ cbase }}/table/scenes/{{ s.id }}">Cancel</button></div>
+  </form>
+{% else %}
+  {% set filled = sections | selectattr("text") | list %}
+  {% if not filled %}<p class="note">Nothing written yet. Edit shows what goes in each part.</p>{% endif %}
+  {% for x in sections if x.text %}
+  {% if x.key == "intro" %}
+    {% if x.aloud %}<div class="readaloud">{{ runs(x.aloud) }}</div>{% endif %}
+    {% if x.rest %}<div class="scene-sect"><h3>Intro</h3><p>{{ runs(x.rest) }}</p></div>{% endif %}
+  {% else %}
+    <div class="scene-sect"><h3>{{ x.label }}</h3><p>{{ runs(x.runs) }}</p></div>
+  {% endif %}
+  {% endfor %}
+  <div class="row scene-acts">
+    <button type="button" class="btn small" data-panel-url="{{ cbase }}/table/scenes/{{ s.id }}?edit=1">Edit</button>
+    {% if s.x is not none %}<button type="button" class="btn small link" hx-post="{{ cbase }}/table/scenes/{{ s.id }}/pin" hx-vals='{"x": -1, "y": -1}' hx-swap="none">Take its pin off the map</button>{% endif %}
+    <button type="button" class="btn small link danger" hx-post="{{ cbase }}/table/scenes/{{ s.id }}/delete" hx-swap="none" hx-confirm="Delete {{ s.name }} and its notes? There's no undo.">Delete</button>
+  </div>
+  {% if all | length > 1 %}<h3 class="divider">Your other scenes</h3>
+  <ul class="scene-list">{% for o in all if o.id != s.id %}<li><button type="button" class="link-plain" data-panel-url="{{ cbase }}/table/scenes/{{ o.id }}">{{ o.name }}</button></li>{% endfor %}</ul>{% endif %}
+{% endif %}
+</div>

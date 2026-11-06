@@ -28,7 +28,7 @@ def test_the_table_page_is_only_where_askdnds_vtt_is_on(player, db, sheet):
     page = player.get("/c/main/").text
     assert 'class="nav-table" href="/c/main/table"' in page and f"dndbeyond.com/games/{GAME}\" target=\"_blank\" rel=\"noopener\" title" not in page
     table = player.get("/c/main/table")
-    assert table.status_code == 200 and "No fight yet" in table.text
+    assert table.status_code == 200 and "Nothing on the table yet" in table.text
     assert player.get("/table", follow_redirects=False).status_code == 404  # one address: /c/<campaign>/table
 
 

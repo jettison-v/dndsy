@@ -210,6 +210,9 @@ def allows(rule: str, tool: str | None, campaign_role: str | None = None) -> boo
         "settings": campaign_role == DM or tool == ADMIN,   # the campaign's name, DM's name, D&D Beyond id (Brett, 2026-10-23)
         "fight_hidden": campaign_role == DM or tool == ADMIN,  # a token the DM hid in D&D Beyond's VTT, in the fight band (app/fight.py)
         "fight_order": campaign_role == DM or tool == ADMIN,  # change the fight's order (app/initiative.py; in D&D Beyond only the DM does)
+        "run_table": campaign_role == DM or tool == ADMIN,  # askdnd's table: places, maps, creatures, fog, the fight (app/places.py)
+        # The DM's scene notes (app/scene_notes.py; Brett, Nov 6): the campaign's DM alone, never an admin as such
+        "scene_notes": campaign_role == DM,
         "admin": tool == ADMIN,             # accounts, roles, characters, Usage, backups, campaign doc, tool corrections
     }[rule]
 
@@ -232,6 +235,8 @@ CHART = [
     ("Run the table", "Settings: the campaign's name, the DM's name, which finished VTT pieces the table gets", "settings"),
     ("Run the table", "See tokens the DM hid in D&D Beyond's VTT in the fight's order", "fight_hidden"),
     ("Run the table", "Change the fight's order (drag a row; Labs: Initiative from askdnd)", "fight_order"),
+    ("Run the table", "askdnd's table: places and maps, creatures, fog and the fight", "run_table"),
+    ("Run the table", "The DM's scene notes (the DM alone: not reviewers or admins)", "scene_notes"),
     ("Set up askdnd", "Table: roles, who plays which character, adding characters and D&D Beyond links", "admin"),
     ("Set up askdnd", "Accounts (who can sign in, admins), Campaigns, test campaigns, tool corrections", "admin"),
     ("Set up askdnd", "Usage (Claude spending), backups and imports, the campaign doc", "admin"),

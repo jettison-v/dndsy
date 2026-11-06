@@ -116,6 +116,11 @@ class Campaign(Timestamped, Base):
     # When the DM's open D&D Beyond VTT page last asked for initiative numbers to set (app/initiative.py), kept apart
     # from the fight so asking every few seconds doesn't redraw every page
     vtt_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # askdnd's table (docs/plans/2026-11-06-table-build-plan.md): the place the players see (its map, tokens and fog),
+    # and the DM's battle settings ({"enemy_hp": "status" | "numbers" | "none", "group": "once" | "each", "new": "seen" |
+    # "hidden"}; app/table_fight.py SETTINGS)
+    shown_place_id: Mapped[int | None] = mapped_column(ForeignKey("places.id", ondelete="SET NULL", use_alter=True, name="campaigns_shown_place_id_fkey"), nullable=True)
+    table_settings: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 
@@ -309,6 +314,9 @@ class Character(Timestamped, Base):
     # Readied (app/readying.py; feedback 14, docs/mockups/hide-ready.html): {"key", "name", "kind", "trigger", "level"}, what
     # the character will do with its Reaction and when, from the Ready action until it's used or its next turn starts
     readied: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # Your turn's bar on askdnd's table (app/turn_bar.py): {"moved": feet, "dash": n, "used": ["action", "bonus",
+    # "reaction"]}, cleared when its next turn begins (app/fight.py heard)
+    turn: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     level_up: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # what's new since it last leveled, until read (app/level_up.py)
     conditions: Mapped[list | None] = mapped_column(JSONB, nullable=True)  # [{"name": "Invisible", "source": "Ring of Invisibility"}] (app/conditions.py)
     # Where each of its familiars is, by its D&D Beyond creature id (app/creatures.py, Brett 2026-11-04: a familiar exists
@@ -879,5 +887,65 @@ class Feedback(Timestamped, Base):
     thread: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"who": "claude"|"you", "text", "at"}]
     pr: Mapped[str] = mapped_column(String(300), default="", server_default="")
 
+
+
+class Place(Timestamped, Base):
+    """A place on askdnd's table (app/places.py; docs/plans/2026-11-06-table-build-plan.md, D&D Beyond's Location): one map
+    or none, its tokens, its own fog, and the DM's scenes pinned on it. A place can be a World place's (`entity_id`)."""
+
+    __tablename__ = "places"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    entity_id: Mapped[int | None] = mapped_column(ForeignKey("entities.id", ondelete="SET NULL"), nullable=True)
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    # Its map: the picture in file storage, its size in pixels, and its grid ({"size": pixels per 5-ft square, "x", "y":
+    # where the first square starts}); walls and doors from a Universal VTT file, in squares ([[x1, y1, x2, y2], …])
+    map_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
+    map_w: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    map_h: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    grid: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    walls: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    # Its fog (app/fog.py): {"on": bool, "shown": ["x,y", …] squares the DM showed}; off, the whole map shows
+    fog: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+
+
+class ScenePin(Timestamped, Base):
+    """One of the DM's scenes (app/scene_notes.py; her request, docs/plans/2026-11-06-dm-scene-notes.md): her notes in
+    sections, pinned on a place's map or not. Only the campaign's DM reads them: not players, reviewers or admins, not
+    View as, never sent to Claude."""
+
+    __tablename__ = "scene_pins"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    place_id: Mapped[int | None] = mapped_column(ForeignKey("places.id", ondelete="CASCADE"), index=True, nullable=True)
+    name: Mapped[str] = mapped_column(String(200))
+    position: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    x: Mapped[float | None] = mapped_column(Float, nullable=True)  # where on the map, in squares
+    y: Mapped[float | None] = mapped_column(Float, nullable=True)
+    notes: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")  # {section key: text}
+
+
+class Token(Timestamped, Base):
+    """A token on a place's map (app/tokens.py): a character's, one of a character's creatures, or a creature the DM put
+    there from the books or the SRD (`monster`: {"name", "source"}), with its own Hit Points and conditions. Hidden
+    ones reach only the DM's page. Where it is is in squares, its top-left corner; `size` squares across."""
+
+    __tablename__ = "tokens"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
+    place_id: Mapped[int] = mapped_column(ForeignKey("places.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(20))  # "character" | "creature" | "monster"
+    character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), nullable=True)
+    creature: Mapped[str | None] = mapped_column(String(80), nullable=True)  # one of the character's creatures, by its id
+    monster: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    name: Mapped[str] = mapped_column(String(200))
+    x: Mapped[float] = mapped_column(Float, default=0)
+    y: Mapped[float] = mapped_column(Float, default=0)
+    size: Mapped[float] = mapped_column(Float, default=1)
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    hp: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # a monster's: {"current", "max", "temp"}
+    conditions: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # a monster's: [{"name", "source"}]
+    group: Mapped[str | None] = mapped_column(String(80), nullable=True)  # creatures added together roll one Initiative
 
 from app import history  # noqa: E402,F401

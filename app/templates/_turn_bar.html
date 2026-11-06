@@ -1,0 +1,49 @@
+{# Your turn's bar (app/turn_bar.py; askdnd's table, slice 2, docs/mockups/table-slices/ Turn-bar): under the middle of
+   the table page. Movement left this turn, what you've used of your Action, Bonus Action and Reaction (press one to
+   untick it), and your Battle pins by cost, each with its own Roll, Cast or Use. Off your turn in a fight, only your
+   Reactions and a readied action. `tb`: turn_bar.context. On a phone it's one line until pulled up (slice 4). #}
+{% from "_char.html" import hit, pips %}
+{% macro bar_item(o, cost) -%}
+<div class="tbar-it" data-turn-cost="{{ cost }}" data-panel-url="/characters/{{ tb.c.id }}/detail?ref={{ o.key | urlencode }}" tabindex="0" role="button">
+  <b>{{ o.name }}</b>{% if o.uses %} {{ pips(o.uses) }}{% endif %}
+  {% if o.meta %}<small>{{ o.meta }}</small>{% endif %}
+  <span class="tbar-go">{% if tb.can_use and o.use %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ tb.c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button>{% endif %}{% if tb.can_play and o.cast %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ tb.c.id }}/cast?key={{ o.key | urlencode }}">Cast</button>{% elif not (tb.can_use and o.use) %}{{ hit(o) }}{% endif %}</span>
+</div>
+{%- endmacro %}
+{% if tb %}{% set t = tb.turn %}
+<section class="tbar{{ ' off-turn' if tb.in_fight and not tb.on_turn }}" id="turn-bar" data-character="{{ tb.c.id }}" data-name="{{ tb.c.name }}" aria-label="Your turn: {{ tb.c.name }}" data-tour="turn-bar">
+  <button type="button" class="tbar-line" data-tbar-toggle aria-expanded="false">
+    <b>{% if tb.on_turn %}Your turn{% elif tb.in_fight %}Off your turn{% else %}{{ tb.c.name }}{% endif %}</b>
+    {% if t.speed %}<span class="note">· {{ t.left }} of {{ t.total }} ft left</span>{% endif %}
+    <span class="tbar-pips">{% for _, key, label in [("", "action", "A"), ("", "bonus", "B"), ("", "reaction", "R")] %}<span class="tbar-pip k-{{ key }}{{ ' used' if key in t.used }}" aria-hidden="true">{{ label }}</span>{% endfor %}</span>
+  </button>
+  <div class="tbar-body">
+    {% if not tb.in_fight or tb.on_turn %}
+    <div class="tbar-move" data-mark="{{ tb.c.id }}:moved">
+      <div class="tbar-row"><span>Movement</span><span{% if t.over %} class="tbar-over"{% endif %}><b>{{ t.left }}</b> of {{ t.total }} ft left{% if t.over %} · {{ t.over }} ft past your Speed{% endif %}</span></div>
+      <div class="tbar-meter" aria-hidden="true"><i class="u" style="width: {{ t.pct_used }}%"></i><i class="l" style="width: {{ t.pct_left }}%"></i>{% if t.over %}<i class="o" style="width: {{ t.pct_over }}%"></i>{% endif %}</div>
+      <div class="tbar-row">
+        <span><button type="button" class="btn small" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{"what": "move", "n": -5}' hx-swap="none" aria-label="Moved 5 feet less">− 5 ft</button>
+        <button type="button" class="btn small" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{"what": "move", "n": 5}' hx-swap="none" aria-label="Moved 5 feet more">+ 5 ft</button></span>
+        <button type="button" class="btn small{{ ' on' if t.dash }}" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{"what": "dash", "n": 1}' hx-swap="none" title="Dash: your Speed again this turn">Dash{% if t.dash > 1 %} × {{ t.dash }}{% endif %}</button>
+      </div>
+    </div>
+    <div class="tbar-econ" role="group" aria-label="What you've used this turn">
+      {% for _, key, label in [("", "action", "Action"), ("", "bonus", "Bonus"), ("", "reaction", "Reaction")] %}
+      <button type="button" class="tbar-use k-{{ key }}{{ ' used' if key in t.used }}" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{"what": "use", "cost": "{{ key }}", "n": -1}' hx-swap="none" aria-pressed="{{ 'true' if key in t.used else 'false' }}" title="{{ 'Used: press to untick' if key in t.used else 'Mark it used' }}"><i></i>{{ label }}</button>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="tbar-slots">
+      {% if tb.readied and tb.readied.option %}<div class="tbar-grp"><span class="lbl k-reaction">Readied · {{ tb.readied.trigger }}</span><div class="tbar-items">{{ bar_item(tb.readied.option, "reaction") }}</div></div>{% endif %}
+      {% for g in tb.groups %}
+      <div class="tbar-grp{{ ' used' if g.key in t.used }}">
+        <span class="lbl k-{{ g.key }}">{{ g.label }}{% if g.key in t.used %} · used{% endif %}</span>
+        <div class="tbar-items">{% for o in g.rows %}{{ bar_item(o, g.key) }}{% else %}<span class="note">Nothing pinned. <a href="/characters/{{ tb.c.id }}/battle">Pin on Battle</a></span>{% endfor %}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% if tb.on_turn %}<div class="tbar-end">{% if tb.ends_here %}<button type="button" class="btn primary" hx-post="{{ cbase }}/table/fight/next" hx-swap="none">End turn</button>{% else %}<span class="note">End your turn on D&amp;D Beyond's VTT; this bar starts over when your next turn begins.</span>{% endif %}<button type="button" class="btn small link" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{"what": "start"}' hx-swap="none">Start over</button></div>{% endif %}
+  </div>
+</section>
+{% endif %}

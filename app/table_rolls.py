@@ -488,7 +488,8 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
               mod: str = Form(""), dmg: str = Form(""), adv: str = Form(""), mode: str = Form("normal"),
               to: str = Form("table"), extra: list[str] = Form([]), parent: int = Form(0), action: str = Form(""),
               die_size: int = Form(0, alias="die"), part: list[str] = Form([]), dmg_part: list[str] = Form([]),
-              count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), db: Session = Depends(get_db)):
+              count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), token: int = Form(0),
+              db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -509,7 +510,15 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     ch = db.get(Character, character) if character else None
     if character and (not ch or ch.campaign_id != campaign.id):
         return _error("That character isn't in the campaign.", 404)
-    if kind != "dice" and not ch:
+    tok = None
+    if token and not ch:  # a creature on askdnd's table, rolled by the DM as it (app/table_creatures.py)
+        from app import places
+        from app.models import Token
+
+        tok = db.get(Token, token)
+        if tok is None or tok.campaign_id != campaign.id or not places.runs(user, campaign):
+            return _error("Only the DM rolls for the creatures on the map.", 403)
+    if kind != "dice" and not ch and not tok:
         return _error("That character isn't in the campaign.", 404)
     if ch and not picks.can_edit(db, user, ch):
         return _error(f"Only {ch.name}'s player rolls for {ch.name} at the table.", 403)
@@ -561,7 +570,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     # With a character, `who` is the Wild Shape form it rolled in, kept with the roll (Table rolls says "Cole (Polar Bear)"),
     # or one of its creatures it rolled for (Your creatures: "Vi (Homunculus Servant)"), only a creature on its sheet
     mine = {x["name"] for x in creatures.yours(chars.character_summary(ch))} if ch and who else set()
-    who = (who if who in mine else ch.wild_shape or "")[:80] if ch else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
+    who = (who if who in mine else ch.wild_shape or "")[:80] if ch else tok.name[:80] if tok else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
     db.add(row)
@@ -574,6 +583,10 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
 
     death = death_mark(db, row) or hiding.mark(db, row)  # (a death save marks itself; a Hide roll of 15+ starts Hidden)
     realtime.announce(db, campaign.id, "rolls", **_live(db, row))  # every page at the table (app/realtime.py)
+    if ch and kind == "check" and label == "Initiative":  # (askdnd runs the fight: the number lands in it, app/table_fight.py)
+        from app import table_fight
+
+        table_fight.rolled(db, campaign, ch, row.who if row.who and row.who != (ch.wild_shape or "") else "", row.total)
     also = _initiative(db, campaign, ch, me.id, row) if ch and kind == "check" and label == "Initiative" else []
     db.commit()
     db.refresh(row)
