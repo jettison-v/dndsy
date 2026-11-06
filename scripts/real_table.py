@@ -1244,7 +1244,7 @@ def unreachable(t: Table, seat: str = "player2") -> None:
 # what it spends: a resource on Battle's Resources row, "" for none). No Name's and Trah's twins are one line each.
 TWINS = {
     "cole-twin": ("player2", 173216268, "Cole (twin)", "Focus"),
-    "test-ranger": ("player2", 173222995, "Test Ranger", "Favored Enemy"),
+    "test-ranger": ("player2", 173222995, "Test Ranger", "Hunter"),  # (Favored Enemy's free casts: "Hunter's Mark" on Battle)
     "test-bard": ("player3", 173222716, "Test Bard", "Bardic Inspiration"),
     "test-rogue": ("player3", 173222824, "Test Rogue", ""),
     "big-c-twin": ("player4", 173220725, "Big C (twin)", "Channel Divinity"),
