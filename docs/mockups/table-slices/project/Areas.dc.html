@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 10: spell areas</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.inlist { display: grid; gap: 4px; font-size: 12px; }
+.inlist span { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); }
+.inlist b { color: var(--text); font-weight: 600; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 10 · M · Milestone B · Cole's player, then the DM</div>
+    <h1>Spell areas: Cast places the area, and who's in it carries to the save</h1>
+    <p class="where"><b>Where you'll find it:</b> Cast for a spell with an area (Thunderwave here) starts the area tool on the map with its shape and size; the area tool on the strip does the same for anything else. askdnd lists who's in it and their save; the roll carries them to the DM's saves and Apply to. Cole casts Thunderwave at 2nd level.</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="done">2 Your turn's bar</span><span class="done">3 Creatures</span><span class="done">4 Phones</span><span class="ms">◆ A</span><span class="done">Scene notes</span><span class="done">5 Map</span><span class="done">6 Tokens</span><span class="done">7 Run the fight</span><span class="done">8 Moving</span><span class="done">9 Fog</span><span class="here">10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="app" style="height: 820px">
+    <div class="mb dim"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Cole</span><span>Party ▾</span><span class="pill"><i></i>Connected</span><span>?</span></div>
+    <div class="turn dim">
+      <div class="pennant">Round<b>4</b></div>
+      <div class="whose">Cole's turn</div>
+      <div class="order"><span class="tok now">C</span><span class="tok pet">P</span><span class="tok foe">G</span><span class="tok foe">E1</span><span class="tok">T</span><span class="tok foe">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+    </div>
+    <div class="rail">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll new"><b>Cole · Thunderwave</b><span>thunder · Con save DC 15</span><span class="n">14</span><span>In it: Goblin Warrior 1, Goblin Warrior 2, Pip</span><button type="button" class="btn mini apply">Their saves (the DM)</button></div>
+        <div class="roll new"><b>Goblin Warriors · Con save</b><span>only the DM · 1 fails, 2 saves</span><span class="n">9 · 16</span><button type="button" class="btn mini apply">Apply: 14 and 7</button></div>
+        <div class="roll dim"><b>Trah · Fire Bolt</b><span>to hit Enemy 1</span><span class="n">21</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="floor dim" style="left: 108px; top: 72px; width: 504px; height: 432px"></div>
+      <div class="cell area new" style="left: 396px; top: 216px"></div>
+      <div class="cell area new" style="left: 432px; top: 216px"></div>
+      <div class="cell area new" style="left: 468px; top: 216px"></div>
+      <div class="cell area new" style="left: 396px; top: 252px"></div>
+      <div class="cell area new" style="left: 432px; top: 252px"></div>
+      <div class="cell area new" style="left: 468px; top: 252px"></div>
+      <div class="cell area new" style="left: 396px; top: 288px"></div>
+      <div class="cell area new" style="left: 432px; top: 288px"></div>
+      <div class="cell area new" style="left: 468px; top: 288px"></div>
+      <div style="position: absolute; left: 396px; top: 216px; width: 108px; height: 108px; border: 2px solid var(--area-line); z-index: 2"></div>
+      <div class="aura dim" style="left: 144px; top: 144px; width: 72px; height: 72px"></div>
+      <div class="mtok me" style="left: 360px; top: 252px; width: 36px; height: 36px">C</div>
+      <div class="mtok foe" style="left: 396px; top: 252px; width: 36px; height: 36px">G1</div>
+      <div class="mtok foe" style="left: 432px; top: 216px; width: 36px; height: 36px">G2</div>
+      <div class="mtok foe" style="left: 468px; top: 324px; width: 36px; height: 36px">G3</div>
+      <div class="mtok pet" style="left: 402px; top: 294px; width: 24px; height: 24px; font-size: 9px">P</div>
+      <div class="mtok foe" style="left: 144px; top: 144px; width: 72px; height: 72px; font-size: 14px">E1</div>
+      <div class="win new" style="left: 530px; top: 140px; width: 320px; background-color: var(--surface-2)">
+        <h3>Thunderwave · 15-ft Cube from you</h3>
+        <div class="seg"><button type="button">↺</button><button type="button">↻</button><button type="button" class="on">East</button></div>
+        <span class="lbl">In it · Constitution save, DC 15</span>
+        <div class="inlist">
+          <span><b>Goblin Warrior 1</b><span>Con +0</span></span>
+          <span><b>Goblin Warrior 2</b><span>Con +0</span></span>
+          <span><b>Pip</b> <span style="color: var(--amber)">yours · Con +0</span></span>
+        </div>
+        <span class="note">Goblin Warrior 3 is under half a square in: out. Who's in is the DM's ruling.</span>
+        <div style="display: flex; gap: 8px; justify-content: flex-end"><button type="button" class="btn">Back</button><button type="button" class="btn main">Cast and roll</button></div>
+      </div>
+    </div>
+    <div class="pane dim">
+      <div class="pane-h"><span class="pic">C</span><span><b>Cole</b><small>you · Druid 6 / Monk 2</small></span></div>
+      <div class="nums"><div><small>HP</small><b>51</b> <span class="of">/ 75</span></div><div><small>AC</small><b>16</b></div><div><small>Speed</small><b>45</b></div></div>
+      <div class="badges"><span class="badge conc">◎ Moonbeam · round 3</span></div>
+      <div class="note">Moonbeam's area stays on the map while Concentration lasts; the Magic action moves it.</div>
+    </div>
+    <div class="abar dim">
+      <div class="move"><div class="row"><span>Movement</span><span><b>45</b> of 45 ft left</span></div><div class="meter"><i class="left" style="width: 100%"></i></div></div>
+      <div class="econ"><span class="pip a"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+      <div class="slots"><div class="grp"><span class="lbl a">Action</span><div class="items"><span class="it">Thunderwave<small>casting · 2nd level</small></span><span class="it">Unarmed Strike<small>+5 · 1d6+3</small></span></div></div></div>
+      <button type="button" class="btn main endturn">End turn</button>
+    </div>
+    <span class="nt" style="left: 780px; top: 228px">New in slice 10</span>
+    <span class="co s" style="left: 762px; top: 312px">1</span>
+    <span class="co s" style="left: 640px; top: 326px">2</span>
+    <span class="co s" style="left: 762px; top: 420px">3</span>
+    <span class="co s" style="left: 236px; top: 140px">4</span>
+    <span class="co s" style="left: 236px; top: 300px">5</span>
+    <span class="co s" style="left: 380px; top: 250px">6</span>
+  </div>
+  <div class="foot">
+    <div class="legend">
+      <div><span class="co s">1</span><span><b>Cast starts the area</b> with the spell's shape, size and where it starts (from you for Thunderwave); turn it, then Cast and roll as today.</span></div>
+      <div><span class="co s">2</span><span><b>A square counts</b> when the area covers at least half of it (the DMG's grid rule).</span></div>
+      <div><span class="co s">3</span><span><b>Who's in it</b> and each one's save, your own creatures marked: Pip is in this one.</span></div>
+      <div><span class="co s">4</span><span><b>The roll carries them</b> to Table rolls: the DM rolls their saves there (a group in one press).</span></div>
+      <div><span class="co s">5</span><span><b>Apply to each</b>: full damage on a failed save, half on a success, as the hit points window works it out.</span></div>
+      <div><span class="co s">6</span><span><b>A lasting area</b> (Moonbeam) stays drawn while its Concentration lasts.</span></div>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>Inform, the DM rules who's in (VTT Layout › Areas).</li>
+        <li>Emanations move with their creature; a Large one's grows with its space.</li>
+      </ul>
+      <h3 class="ask">For you</h3>
+      <ul><li>Nothing new. After this: Milestone B, a session on askdnd's maps.</li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

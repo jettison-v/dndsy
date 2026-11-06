@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 2: your turn's bar</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 2 · M · Milestone A</div>
+    <h1>Your turn's bar: what you can still do this turn, under the fight</h1>
+    <p class="where"><b>Where you'll find it:</b> Table ↗ in a campaign with askdnd's VTT on, under the fight's rows. The map is still D&amp;D Beyond's (its link sits in the turn bar), and the turn bar follows D&amp;D Beyond's fight as it does today. Cole's player, Round 2, Cole's turn, after Starry Wisp.</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="here">2 Your turn's bar</span><span>3 Creatures</span><span>4 Phones</span><span class="ms">◆ A</span><span>Scene notes</span><span>5 Map</span><span>6 Tokens</span><span>7 Run the fight</span><span>8 Moving</span><span>9 Fog</span><span>10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="app" style="height: 820px">
+    <div class="mb dim"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Cole</span><span>Party ▾</span><span class="pill"><i></i>Connected</span><span>?</span></div>
+    <div class="turn">
+      <div class="pennant dim">Round<b>2</b></div>
+      <div class="whose dim">Cole's turn</div>
+      <div class="order dim"><span class="tok now">C</span><span class="tok pet">P</span><span class="tok foe">E1</span><span class="tok">T<i class="bd"></i></span><span class="tok foe">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+      <span class="follow">Following <b>D&amp;D Beyond's VTT</b></span>
+      <button type="button" class="btn">D&amp;D Beyond's map ↗</button>
+    </div>
+    <div class="rail dim">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll"><b>Cole · Starry Wisp</b><span>to hit Enemy 1</span><span class="n">26</span></div>
+        <div class="roll"><b>Cole · damage</b><span>radiant</span><span class="n">11</span></div>
+        <div class="roll"><b>Enemy 1 · Greatclub</b><span>to hit Trah</span><span class="n">17</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="bd-list dim">
+        <div class="bd-head lbl"><span>Init.</span><span></span><span>Fighter</span><span>Hit Points</span><span>AC</span><span>Conditions and reminders</span></div>
+        <div class="bd-row now"><span class="init">19</span><span class="tok now">C</span><span><b>Cole</b><br><span class="note">your turn</span></span><span class="hp">51 / 75<span class="bar"><i style="width: 68%"></i></span></span><span>16</span><span><span class="badge conc">◎ Moonbeam</span></span></div>
+        <div class="bd-row sub"><span class="init"></span><span class="tok pet" style="margin: 0">P</span><span><b>Pip</b> <span class="note">Cole's familiar</span></span><span class="hp">1 / 1</span><span>13</span><span class="note">acts after Cole</span></div>
+        <div class="bd-row"><span class="init">16</span><span class="tok foe">E1</span><span><b>Enemy 1</b><br><span class="note">Large</span></span><span style="color: var(--link)">Bloodied</span><span>11</span><span class="note">—</span></div>
+        <div class="bd-row"><span class="init">14</span><span class="tok">T</span><span><b>Trah</b></span><span class="hp">22 / 40<span class="bar"><i style="width: 55%"></i></span></span><span>18</span><span><span class="badge">Readied</span> <span class="note">an attack, when Enemy 1 comes in reach</span></span></div>
+        <div class="bd-row"><span class="init">12</span><span class="tok foe">E3</span><span><b>Enemy 3</b></span><span>Healthy</span><span>13</span><span class="note">—</span></div>
+        <div class="bd-row"><span class="init">9</span><span class="tok">BC</span><span><b>Big C</b></span><span class="hp">44 / 44<span class="bar"><i style="width: 100%"></i></span></span><span>17</span><span class="note">—</span></div>
+        <div class="bd-row"><span class="init">5</span><span class="tok">NN</span><span><b>No Name</b></span><span class="hp">30 / 38<span class="bar"><i style="width: 80%"></i></span></span><span>15</span><span><span class="badge">Hidden · find DC 17</span></span></div>
+      </div>
+      <div class="win new" style="left: 470px; top: 440px; width: 390px; background-color: var(--surface-2)">
+        <span class="lbl">Off your turn, the same bar holds only this</span>
+        <div style="display: flex; gap: 6px; align-items: stretch">
+          <span class="pip r" style="align-self: center"><i></i>Reaction</span>
+          <span class="it">Deflect Attacks<small>when you're hit</small></span>
+          <span class="it">Opportunity Attack<small>Unarmed Strike</small></span>
+        </div>
+        <span class="note">and a readied action, with Used it and Let it go, as Battle's Reaction column has it.</span>
+      </div>
+    </div>
+    <div class="pane dim">
+      <div class="pane-h"><span class="pic">C</span><span><b>Cole</b><small>you · Druid 6 / Monk 2</small></span></div>
+      <div class="nums"><div><small>HP <span style="float: right">− +</span></small><b>51</b> <span class="of">/ 75</span></div><div><small>AC</small><b>16</b></div><div><small>Speed</small><b>45</b></div></div>
+      <div class="saves"><span>Str<b>+0</b></span><span>Dex<b>+3</b></span><span>Con<b>+2</b></span><span>Int<b>+4</b></span><span>Wis<b>+8</b></span><span>Cha<b>+3</b></span></div>
+      <div class="lbl">What you clicked last</div>
+      <div class="note">Click a row for its character here.</div>
+    </div>
+    <div class="abar new">
+      <div class="move"><div class="row"><span>Movement</span><span><b>25</b> of 45 ft left</span></div><div class="meter"><i style="width: 44%"></i><i class="left" style="width: 56%"></i></div><div class="row"><span><button type="button" class="btn mini">− 5 ft</button> <button type="button" class="btn mini">+ 5 ft</button></span><button type="button" class="btn mini">Dash</button></div></div>
+      <div class="econ"><span class="pip a used"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+      <div class="slots">
+        <div class="grp dim"><span class="lbl a">Action · used</span><div class="items"><span class="it">Starry Wisp<small>rolled 26</small></span><span class="it">Unarmed Strike<small>+5 · 1d6+3</small></span></div></div>
+        <div class="grp"><span class="lbl b">Bonus</span><div class="items"><span class="it">Wild Shape<small>3 left</small></span><span class="it">Flurry of Blows<small>1 Focus</small></span></div></div>
+        <div class="grp"><span class="lbl r">Reaction</span><div class="items"><span class="it">Deflect Attacks<small>on a hit</small></span></div></div>
+      </div>
+      <span class="note" style="align-self: center; width: 150px">End your turn on D&amp;D Beyond's VTT; this bar starts over when askdnd hears the next turn.</span>
+    </div>
+    <span class="nt" style="left: 262px; top: 698px">New in slice 2</span>
+    <span class="co s" style="left: 262px; top: 760px">1</span>
+    <span class="co s" style="left: 444px; top: 724px">2</span>
+    <span class="co s" style="left: 610px; top: 724px">3</span>
+    <span class="co s" style="left: 1100px; top: 724px">4</span>
+    <span class="co s" style="left: 712px; top: 540px">5</span>
+  </div>
+  <div class="foot">
+    <div class="legend">
+      <div><span class="co s">1</span><span><b>Movement left</b>, counted with − and + 5 ft until there's a map. Moving, then acting, then moving again keeps the rest. Dash adds your Speed again.</span></div>
+      <div><span class="co s">2</span><span><b>What you've used.</b> Rolling from the bar marks its Action, Bonus Action or Reaction; press one to untick it. askdnd counts, never stops you.</span></div>
+      <div><span class="co s">3</span><span><b>Your Battle pins</b> in three columns, each opening the roll window, Cast or the item window it opens on Battle.</span></div>
+      <div><span class="co s">4</span><span><b>A turn starts over</b> when askdnd hears the next one, as Concentration's rounds and reminders already do.</span></div>
+      <div><span class="co s">5</span><span><b>Off your turn</b> the bar keeps only your Reactions and a readied action.</span></div>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>The bar sits under the middle (VTT Layout, Nov 2).</li>
+        <li>Inform, never stop: going past your Speed turns red for the DM.</li>
+        <li>Readied actions as Battle has them (Nov 5).</li>
+      </ul>
+      <h3 class="ask">For you</h3>
+      <ul><li>Nothing new to decide here.</li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

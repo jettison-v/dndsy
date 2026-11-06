@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 6: tokens</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.crit { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font-size: 12px; color: var(--muted); }
+.crit b { color: var(--strong); font-weight: 600; display: block; font-size: 13px; }
+.crit .tok { width: 28px; height: 28px; font-size: 10px; }
+.crit.hid { border-style: dashed; }
+.inset { position: absolute; right: 14px; bottom: 14px; width: 300px; height: 200px; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; z-index: 7; background-color: var(--map); background-image: linear-gradient(var(--map-line) 1px, transparent 1px), linear-gradient(90deg, var(--map-line) 1px, transparent 1px); background-size: 18px 18px; }
+.inset .lbl { position: absolute; left: 8px; top: 8px; z-index: 2; color: var(--text); background: rgba(15, 17, 19, .85); padding: 4px 6px; border-radius: 5px; }
+.inset .mtok { font-size: 8px; border-width: 1.5px; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 6 · L · Milestone B · the DM</div>
+    <h1>Tokens: the party and the creatures she places, each tied to its sheet</h1>
+    <p class="where"><b>Where you'll find it:</b> on the map. Each character's token comes with them (their picture, their Hit Points, what's on them); the DM drags the scene's creatures onto the map from its list. Players drag their own tokens; counting the feet comes in slice 8. Still exploring: no fight yet.</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="done">2 Your turn's bar</span><span class="done">3 Creatures</span><span class="done">4 Phones</span><span class="ms">◆ A</span><span class="done">Scene notes</span><span class="done">5 Map</span><span class="here">6 Tokens</span><span>7 Run the fight</span><span>8 Moving</span><span>9 Fog</span><span>10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="app" style="height: 820px">
+    <div class="mb dim"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Party ▾</span><span class="pill"><i></i>4 of 4 connected</span><span>Manage ▾</span><span>?</span></div>
+    <div class="turn dim">
+      <div class="whose" style="color: var(--muted); font-size: 16px">No fight</div>
+      <span class="note">The party is exploring</span>
+      <span class="sp" style="flex: 1"></span>
+      <span class="follow">Players see <b>The ruined chapel</b></span>
+    </div>
+    <div class="rail dim">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll"><b>Trah · Perception</b><span>to the table</span><span class="n">18</span></div>
+        <div class="roll"><b>Enemy 2 · Stealth</b><span>only the DM</span><span class="n">19</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="floor dim" style="left: 108px; top: 72px; width: 504px; height: 432px"></div>
+      <div class="floor dim" style="left: 612px; top: 252px; width: 216px; height: 108px; border-left: 0"></div>
+      <div class="door" style="left: 606px; top: 288px; width: 6px; height: 36px"></div>
+      <div class="scene-tag dim">Scene <b>The ruined chapel</b></div>
+      <div class="mtok new" style="left: 180px; top: 360px; width: 36px; height: 36px; background-color: #3b5a7a">C<span class="hpbar"><i style="width: 100%"></i></span></div>
+      <div class="mtok pet" style="left: 222px; top: 402px; width: 24px; height: 24px; font-size: 9px">P</div>
+      <div class="mtok" style="left: 144px; top: 324px; width: 36px; height: 36px">T<span class="hpbar"><i style="width: 100%"></i></span></div>
+      <div class="mtok" style="left: 144px; top: 396px; width: 36px; height: 36px">BC<span class="cnd" style="background: var(--blue)"></span><span class="hpbar"><i style="width: 100%"></i></span></div>
+      <div class="mtok" style="left: 216px; top: 324px; width: 36px; height: 36px">NN<span class="hpbar"><i style="width: 80%"></i></span></div>
+      <div class="mtok foe new" style="left: 396px; top: 144px; width: 72px; height: 72px; font-size: 14px; background-color: #6b2f2f">E1</div>
+      <div class="mtok foe" style="left: 288px; top: 108px; width: 36px; height: 36px">E3</div>
+      <div class="mtok foe hid" style="left: 756px; top: 288px; width: 36px; height: 36px">E2</div>
+      <div class="mtok foe" style="left: 504px; top: 252px; width: 36px; height: 36px; opacity: .8; box-shadow: 0 0 0 3px var(--amber)">G</div>
+      <div class="tag" style="left: 546px; top: 222px">Dropping <b>Goblin Warrior</b> · Medium</div>
+      <div class="tag" style="left: 488px; top: 116px"><b>Ogre</b> · Large, 2 by 2</div>
+      <div class="inset new" style="background-color: var(--map)">
+        <span class="lbl">Trah's player sees</span>
+        <div class="mtok" style="left: 90px; top: 180px; width: 18px; height: 18px; top: 162px">C</div>
+        <div class="mtok" style="left: 72px; top: 144px; width: 18px; height: 18px">T</div>
+        <div class="mtok foe" style="left: 198px; top: 72px; width: 36px; height: 36px">E1</div>
+        <div class="mtok foe" style="left: 144px; top: 54px; width: 18px; height: 18px">E3</div>
+        <span class="note" style="position: absolute; left: 8px; bottom: 6px">No Enemy 2: it never reaches this page.</span>
+      </div>
+    </div>
+    <div class="pane" style="gap: 8px">
+      <div class="ptabs"><span class="on">Scene</span><span>Clicked</span></div>
+      <b style="color: var(--strong); font-size: 16px">The ruined chapel</b>
+      <div class="lbl">Its creatures · drag one onto the map</div>
+      <div class="crit new"><span class="tok foe">E1</span><span><b>Enemy 1</b>Ogre · MM 2024</span><span class="note">placed</span></div>
+      <div class="crit hid"><span class="tok foe hidden">E2</span><span><b>Enemy 2</b>Bandit · hidden</span><span class="note">placed</span></div>
+      <div class="crit"><span class="tok foe">E3</span><span><b>Enemy 3</b>Goblin Boss</span><span class="note">placed</span></div>
+      <div class="crit new"><span class="tok foe">G</span><span><b>Goblin Warrior</b> × 3</span><span><button type="button" class="btn mini">Place</button></span></div>
+      <button type="button" class="btn">+ Add from your books</button>
+      <div class="lbl" style="margin-top: 6px">The party</div>
+      <div class="note">Their tokens come with them, Pip with Cole. A summon's token appears when it's cast.</div>
+    </div>
+    <div class="abar dim">
+      <div class="scenes" style="display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--muted)"><span>Scenes:</span><span class="follow">The road in</span><span class="follow" style="border-color: var(--green)"><b>The ruined chapel</b> · shown</span><span class="follow">The crypt</span></div>
+    </div>
+    <span class="nt" style="left: 262px; top: 128px">New in slice 6</span>
+    <span class="co s" style="left: 420px; top: 470px">1</span>
+    <span class="co s" style="left: 1116px; top: 270px">2</span>
+    <span class="co s" style="left: 990px; top: 400px">3</span>
+    <span class="co s" style="left: 470px; top: 520px">4</span>
+    <span class="co s" style="left: 1050px; top: 600px">5</span>
+    <span class="co s" style="left: 730px; top: 250px">6</span>
+  </div>
+  <div class="foot">
+    <div class="legend">
+      <div><span class="co s">1</span><span><b>Each character's token</b> wears their picture (Pictures), a Hit Points bar, a condition's colour and a reminder's mark. Players drag their own.</span></div>
+      <div><span class="co s">2</span><span><b>Its creatures</b>, prepared with her notes or added from the books and the SRD, dragged onto the map.</span></div>
+      <div><span class="co s">3</span><span><b>Hidden creatures</b> are dashed on her map; one press shows one to the players.</span></div>
+      <div><span class="co s">4</span><span><b>Your creatures</b>: Pip's token goes with Cole; a summon or steed appears on the map when it's cast.</span></div>
+      <div><span class="co s">5</span><span><b>Players' pages</b> get only what they may see: never a hidden creature, never its numbers.</span></div>
+      <div><span class="co s">6</span><span><b>Size from the stat block:</b> Large takes 2 by 2 squares, Tiny shares a square.</span></div>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>A token per fighter, tied to its character or creature (Nov 2).</li>
+        <li>Hidden creatures only on the DM's map (Oct 28).</li>
+        <li>Pictures: one per character and creature (Nov 4).</li>
+      </ul>
+      <h3 class="ask">For you</h3>
+      <ul><li>Nothing new. Several people dragging at once makes this a staging slice.</li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

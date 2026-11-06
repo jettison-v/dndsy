@@ -1,0 +1,28 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-06T21:45:18Z"},
+  "title": "askdnd's Table, slice by slice",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1600, "h": 1300, "title": "The road: every slice, in the order I recommend"},
+    "End-Player.dc.html": {"x": 1680, "y": 0, "w": 1600, "h": 1300, "title": "Where it ends up: Cole's player, mid-fight"},
+    "End-DM.dc.html": {"x": 3360, "y": 0, "w": 1600, "h": 1300, "title": "The same moment, as the DM"},
+    "Turn-bar.dc.html": {"x": 0, "y": 1680, "w": 1600, "h": 1300, "title": "Slice 2 · Your turn's bar"},
+    "Creatures.dc.html": {"x": 1680, "y": 1680, "w": 1600, "h": 1300, "title": "Slice 3 · Creatures in the side panel"},
+    "Phones.dc.html": {"x": 3360, "y": 1680, "w": 1600, "h": 1300, "title": "Slice 4 · Phones"},
+    "Map.dc.html": {"x": 0, "y": 3360, "w": 1600, "h": 1300, "title": "Slice 5 · The map and its scenes"},
+    "Tokens.dc.html": {"x": 1680, "y": 3360, "w": 1600, "h": 1300, "title": "Slice 6 · Tokens"},
+    "Fight.dc.html": {"x": 3360, "y": 3360, "w": 1600, "h": 1300, "title": "Slice 7 · askdnd runs the fight"},
+    "Moving.dc.html": {"x": 0, "y": 4780, "w": 1600, "h": 1300, "title": "Slice 8 · Moving and measuring"},
+    "Fog.dc.html": {"x": 1680, "y": 4780, "w": 1600, "h": 1300, "title": "Slice 9 · Fog"},
+    "Areas.dc.html": {"x": 3360, "y": 4780, "w": 1600, "h": 1300, "title": "Slice 10 · Spell areas"}
+  },
+  "order": ["Main.dc.html", "End-Player.dc.html", "End-DM.dc.html", "Turn-bar.dc.html", "Creatures.dc.html", "Phones.dc.html", "Map.dc.html", "Tokens.dc.html", "Fight.dc.html", "Moving.dc.html", "Fog.dc.html", "Areas.dc.html"],
+  "notes": {
+    "t_top": {"x": 0, "y": -300, "text": "askdnd's table: the road, and where it ends up", "kind": "title1", "maxW": 4960},
+    "t_a": {"x": 0, "y": 1400, "text": "Milestone A: askdnd's table beside D&D Beyond's map", "kind": "title1", "maxW": 4960},
+    "t_b": {"x": 0, "y": 3080, "text": "Milestone B: a session on askdnd's maps", "kind": "title1", "maxW": 4960}
+  },
+  "designSystems": []
+}

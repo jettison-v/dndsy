@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 8: moving and measuring</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.reach { position: absolute; border: 1.5px dashed rgba(214, 69, 69, .7); border-radius: 4px; z-index: 2; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 8 · M · Milestone B · Cole's player</div>
+    <h1>Moving and measuring: the feet counted as you drag, never a move stopped</h1>
+    <p class="where"><b>Where you'll find it:</b> on the map, dragging your own token on your turn; movement left in your turn's bar. Each square shows the feet so far; rubble the DM painted costs double; leaving a creature's reach says so. Round 3, Cole mid-drag. (VTT Layout › Movement has a version to try.)</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="done">2 Your turn's bar</span><span class="done">3 Creatures</span><span class="done">4 Phones</span><span class="ms">◆ A</span><span class="done">Scene notes</span><span class="done">5 Map</span><span class="done">6 Tokens</span><span class="done">7 Run the fight</span><span class="here">8 Moving</span><span>9 Fog</span><span>10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="app" style="height: 820px">
+    <div class="mb dim"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Cole</span><span>Party ▾</span><span class="pill"><i></i>Connected</span><span>?</span></div>
+    <div class="turn dim">
+      <div class="pennant">Round<b>3</b></div>
+      <div class="whose">Cole's turn</div>
+      <div class="order"><span class="tok now">C</span><span class="tok pet">P</span><span class="tok foe">G</span><span class="tok foe">E1</span><span class="tok">T</span><span class="tok foe">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+    </div>
+    <div class="rail dim">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll"><b>Enemy 3 · Scimitar</b><span>to hit Big C</span><span class="n">12</span></div>
+        <div class="roll"><b>Trah · Fire Bolt</b><span>to hit Enemy 1</span><span class="n">21</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="floor dim" style="left: 108px; top: 72px; width: 504px; height: 432px"></div>
+      <div class="door" style="left: 606px; top: 288px; width: 6px; height: 36px"></div>
+      <div class="cell rough" style="left: 288px; top: 288px"></div>
+      <div class="cell rough" style="left: 324px; top: 288px"></div>
+      <div class="cell rough" style="left: 288px; top: 324px"></div>
+      <div class="cell rough" style="left: 324px; top: 324px"></div>
+      <div class="reach" style="left: 252px; top: 180px; width: 108px; height: 108px"></div>
+      <div class="mtok" style="left: 180px; top: 360px; width: 36px; height: 36px; opacity: .35; border-style: dashed">C</div>
+      <div class="cell path new" style="left: 216px; top: 324px">5</div>
+      <div class="cell path new" style="left: 252px; top: 288px">10</div>
+      <div class="cell path new" style="left: 288px; top: 288px; background-image: repeating-linear-gradient(45deg, rgba(160, 130, 90, .5) 0 4px, transparent 4px 9px)">20</div>
+      <div class="cell path new" style="left: 324px; top: 252px">25</div>
+      <div class="cell path new" style="left: 360px; top: 252px">30</div>
+      <div class="cell path new" style="left: 396px; top: 216px">35</div>
+      <div class="mtok me" style="left: 396px; top: 216px; width: 36px; height: 36px; z-index: 5">C</div>
+      <div class="mtok foe" style="left: 288px; top: 216px; width: 36px; height: 36px">E3</div>
+      <div class="mtok foe" style="left: 468px; top: 108px; width: 72px; height: 72px; font-size: 14px">E1</div>
+      <div class="mtok" style="left: 144px; top: 324px; width: 36px; height: 36px">T</div>
+      <div class="mtok" style="left: 144px; top: 396px; width: 36px; height: 36px">BC</div>
+      <div class="tag" style="left: 440px; top: 220px; z-index: 7"><b>35 ft</b> · 10 left</div>
+      <div class="tag" style="left: 380px; top: 300px; z-index: 7; border-color: var(--red)">Leaving <b>Enemy 3's</b> reach: it may make an Opportunity Attack</div>
+      <div class="tag" style="left: 120px; top: 470px; z-index: 7">Rubble is Difficult Terrain: each square costs 10 ft</div>
+    </div>
+    <div class="pane dim">
+      <div class="pane-h"><span class="pic">C</span><span><b>Cole</b><small>you · Druid 6 / Monk 2</small></span></div>
+      <div class="nums"><div><small>HP</small><b>51</b> <span class="of">/ 75</span></div><div><small>AC</small><b>16</b></div><div><small>Speed</small><b>45</b></div></div>
+      <div class="badges"><span class="badge conc">◎ Moonbeam · round 2</span></div>
+    </div>
+    <div class="abar">
+      <div class="move new" style="width: 230px; padding: 4px 8px; border-radius: 8px"><div class="row"><span>Movement</span><span><b>10</b> of 45 ft left</span></div><div class="meter"><i style="width: 78%"></i><i class="left" style="width: 22%"></i></div><div class="row"><button type="button" class="btn mini">Undo a square</button><button type="button" class="btn mini">Dash</button></div></div>
+      <div class="econ dim"><span class="pip a"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+      <div class="slots dim">
+        <div class="grp"><span class="lbl a">Action</span><div class="items"><span class="it">Unarmed Strike<small>+5 · 1d6+3</small></span><span class="it">Starry Wisp<small>+7 · 2d8</small></span></div></div>
+        <div class="grp"><span class="lbl b">Bonus</span><div class="items"><span class="it">Wild Shape<small>3 left</small></span></div></div>
+      </div>
+      <button type="button" class="btn main endturn dim">End turn</button>
+    </div>
+    <span class="nt" style="left: 470px; top: 128px">New in slice 8</span>
+    <span class="co s" style="left: 470px; top: 400px">1</span>
+    <span class="co s" style="left: 880px; top: 418px">2</span>
+    <span class="co s" style="left: 762px; top: 336px">3</span>
+    <span class="co s" style="left: 262px; top: 724px">4</span>
+    <span class="co s" style="left: 640px; top: 586px">5</span>
+  </div>
+  <div class="foot">
+    <div class="legend">
+      <div><span class="co s">1</span><span><b>Drag your token:</b> each square shows the feet so far, from where your turn started. Undo a square steps back.</span></div>
+      <div><span class="co s">2</span><span><b>Leaving a creature's reach</b> says it may make an Opportunity Attack. The DM decides; askdnd only says.</span></div>
+      <div><span class="co s">3</span><span><b>Past your Speed</b> the squares turn red. askdnd counts, never stops a move.</span></div>
+      <div><span class="co s">4</span><span><b>Movement left</b> in your bar, kept around an action; Dash adds your Speed, a Bonus Action Dash too.</span></div>
+      <div><span class="co s">5</span><span><b>Difficult Terrain</b> the DM paints with a tool on her strip; each square in it costs 10 ft.</span></div>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>Count and show, never stop; the DM rules (VTT Layout › Movement).</li>
+        <li>Diagonals are the table's choice in Manage › House rules; the 2024 default is 5 ft each.</li>
+        <li>On a phone, drag with one finger; pinch moves the map.</li>
+      </ul>
+      <h3 class="ask">For you</h3>
+      <ul><li>Nothing new.</li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

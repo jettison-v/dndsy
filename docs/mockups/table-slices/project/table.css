@@ -1,0 +1,93 @@
+/* askdnd's Table, slice by slice: what this canvas adds to the VTT Layout's frame (vtt.css) */
+:root { --new: #46c2b4; --new-ink: #0d1f1d; --new-bg: rgba(70, 194, 180, .10); --fog: rgba(6, 7, 8, .94); --fog-dm: rgba(6, 7, 8, .55); --conc: #c7aaff; }
+
+/* what this slice adds, and what's already there */
+.new { box-shadow: inset 0 0 0 2px var(--new); background-color: var(--new-bg); }
+.nt { position: absolute; z-index: 9; background: var(--new); color: var(--new-ink); font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 5px 8px; border-radius: 6px; white-space: nowrap; }
+.dim { opacity: .55; }
+.co.s { background: var(--new); }
+
+/* the strip of slices along each board's head */
+.strip { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.strip span { font: 600 12px/1 var(--sans); padding: 6px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--faint); white-space: nowrap; }
+.strip .done { color: var(--muted); border-color: var(--line-strong); }
+.strip .here { color: var(--new-ink); background: var(--new); border-color: var(--new); }
+.strip .ms { border-style: dashed; color: var(--gold); border-color: var(--gold); }
+
+/* the foot of each slice board: what it adds (legend) and what's decided */
+.foot { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.foot .legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.decide { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
+.decide h3 { margin: 0; font: 700 12px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.decide h3.ask { color: var(--new); }
+.decide ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.decide b { color: var(--text); font-weight: 600; }
+
+/* the fight's rows in the middle (Party's Rows, as slice 1 built it) */
+.bd-list { position: absolute; inset: 0; padding: 18px 22px; display: grid; gap: 8px; align-content: start; background: var(--bg); }
+.bd-row, .bd-head { display: grid; grid-template-columns: 30px 44px minmax(0, 1.4fr) 1fr 60px 1.5fr; gap: 12px; align-items: center; }
+.bd-row { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 13px; }
+.bd-head { padding: 0 13px; }
+.bd-row.now { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.bd-row.sub { margin-left: 44px; padding-top: 6px; padding-bottom: 6px; }
+.bd-row.hid { opacity: .55; border-style: dashed; }
+.bd-row.sel { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); }
+.bd-row .init { font: 700 16px/1 var(--sans); color: var(--muted); text-align: center; }
+.bd-row b { color: var(--strong); font-size: 14px; }
+.bd-row .hp { display: flex; align-items: center; gap: 8px; }
+.bd-row .bar { flex: 1; height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.bd-row .bar i { display: block; height: 100%; background: var(--green); }
+.bd-row .tok { width: 36px; height: 36px; font-size: 11px; }
+
+/* the turn bar: whose fight it follows */
+.follow { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; white-space: nowrap; background: var(--surface); }
+.follow b { color: var(--text); }
+.tok.pet { width: 28px; height: 28px; font-size: 10px; margin-left: -14px; box-shadow: 0 0 0 2px var(--bg); }
+
+/* the map as askdnd draws it: rooms, a scene's label, fog, tokens with what's on them */
+.scene-tag { position: absolute; left: 60px; top: 12px; z-index: 5; background: rgba(15, 17, 19, .85); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 12px; color: var(--muted); }
+.scene-tag b { color: var(--strong); }
+.floor { position: absolute; background: rgba(120, 100, 72, .22); border: 3px solid #5a4b3a; }
+.door { position: absolute; background: #8a6a3e; }
+.fogp { position: absolute; background: var(--fog); z-index: 4; }
+.fogp.dm { background: var(--fog-dm); background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .05) 0 6px, transparent 6px 14px); }
+.mtok.hid { opacity: .5; border-style: dashed; }
+.mtok.pet { background: #3e5a4a; border-color: var(--green); }
+.mtok .cnd { position: absolute; top: -6px; right: -6px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--bg); }
+.mtok .rem { position: absolute; top: -8px; left: -8px; width: 16px; height: 16px; border-radius: 50%; background: var(--amber); color: #15171a; font: 800 10px/16px var(--sans); text-align: center; border: 2px solid var(--bg); }
+.aura { position: absolute; border-radius: 4px; background: rgba(199, 170, 255, .16); border: 1.5px solid var(--conc); z-index: 2; }
+
+/* the side panel's tabs (the DM: Scene and Clicked) */
+.ptabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.ptabs span { padding: 7px 10px; font-size: 12px; color: var(--muted); border-bottom: 2px solid transparent; }
+.ptabs .on { color: var(--strong); border-bottom-color: var(--red); }
+.secret { font-size: 11px; color: var(--conc); border: 1px solid var(--conc); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.readaloud { background: #2b2620; border: 1px solid #5a4b3a; border-radius: 8px; padding: 9px 11px; font: italic 13px/1.45 var(--serif); color: #e9dcc4; }
+.sect { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.sect b { font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.at { color: var(--link); }
+
+/* the road on the first board */
+.road { display: grid; gap: 14px; }
+.lane { display: grid; gap: 10px; }
+.lane-h { display: flex; align-items: baseline; gap: 12px; }
+.lane-h b { font: 600 18px/1.2 var(--serif); color: var(--strong); }
+.stops { display: grid; gap: 8px; }
+.stop { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; font-size: 12px; color: var(--muted); min-width: 0; }
+.stop .n { font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.stop b { color: var(--strong); font-size: 14px; font-weight: 600; }
+.stop.built { opacity: .6; }
+.stop.built .n { color: var(--green); }
+.stop.moved { border-color: var(--new); box-shadow: inset 0 0 0 1px var(--new); }
+.stop.moved .n { color: var(--new); }
+.stop.ms { border-style: dashed; border-color: var(--gold); background: none; }
+.stop.ms .n { color: var(--gold); }
+.stop.prep { border-style: dashed; }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start; }
+.order-line { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; font-size: 12px; }
+.order-line span { padding: 4px 8px; border-radius: 6px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.order-line .mv { background: var(--new); color: var(--new-ink); font-weight: 700; }
+.order-line .m { background: none; border: 1px dashed var(--gold); color: var(--gold); }
+.qs { margin: 0; padding-left: 20px; display: grid; gap: 10px; font-size: 13px; color: var(--muted); }
+.qs b { color: var(--text); font-weight: 600; }
+.rec { color: var(--new); font-weight: 600; }

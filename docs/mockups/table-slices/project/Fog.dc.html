@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 9: fog</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.fogmenu { position: absolute; left: 58px; top: 150px; z-index: 8; width: 230px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px; display: grid; gap: 8px; box-shadow: 0 10px 26px rgba(0, 0, 0, .45); font-size: 12px; color: var(--muted); }
+.brush { position: absolute; width: 108px; height: 108px; border: 2px solid var(--new); background: rgba(70, 194, 180, .12); z-index: 6; border-radius: 4px; }
+.inset { position: absolute; right: 14px; bottom: 14px; width: 300px; height: 210px; border: 1px solid var(--line-strong); border-radius: 10px; overflow: hidden; z-index: 7; background-color: var(--map); background-image: linear-gradient(var(--map-line) 1px, transparent 1px), linear-gradient(90deg, var(--map-line) 1px, transparent 1px); background-size: 18px 18px; }
+.inset .lbl { position: absolute; left: 8px; top: 8px; z-index: 6; color: var(--text); background: rgba(15, 17, 19, .85); padding: 4px 6px; border-radius: 5px; }
+.inset .mtok { font-size: 8px; border-width: 1.5px; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 9 · M · Milestone B · the DM</div>
+    <h1>Fog: the DM hides the map and shows it as the party explores</h1>
+    <p class="where"><b>Where you'll find it:</b> the fog tool on the DM's strip on the map. She drags over squares to show or hide them, or clicks a room to show it whole when her map came from a file with walls. She sees through the fog, hatched; players see black. The party has just opened the east door.</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="done">2 Your turn's bar</span><span class="done">3 Creatures</span><span class="done">4 Phones</span><span class="ms">◆ A</span><span class="done">Scene notes</span><span class="done">5 Map</span><span class="done">6 Tokens</span><span class="done">7 Run the fight</span><span class="done">8 Moving</span><span class="here">9 Fog</span><span>10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="app" style="height: 820px">
+    <div class="mb dim"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Party ▾</span><span class="pill"><i></i>4 of 4 connected</span><span>Manage ▾</span><span>?</span></div>
+    <div class="turn dim">
+      <div class="pennant">Round<b>4</b></div>
+      <div class="whose">Trah's turn</div>
+      <div class="order"><span class="tok">C</span><span class="tok pet">P</span><span class="tok foe">G</span><span class="tok foe">E1</span><span class="tok now">T</span><span class="tok foe hidden">E2</span><span class="tok foe">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+      <button type="button" class="btn">+ Add</button>
+      <button type="button" class="btn main">Next turn</button>
+    </div>
+    <div class="rail dim">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll"><b>Trah · Athletics</b><span>the door gives</span><span class="n">16</span></div>
+        <div class="roll"><b>Enemy 2 · Stealth</b><span>only the DM</span><span class="n">19</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="floor" style="left: 108px; top: 72px; width: 504px; height: 432px"></div>
+      <div class="floor" style="left: 612px; top: 252px; width: 216px; height: 108px; border-left: 0"></div>
+      <div class="door" style="left: 606px; top: 288px; width: 6px; height: 36px; background: var(--amber)"></div>
+      <div class="fogp dm" style="left: 0; top: 0; width: 880px; height: 72px"></div>
+      <div class="fogp dm" style="left: 0; top: 72px; width: 108px; height: 588px"></div>
+      <div class="fogp dm" style="left: 108px; top: 504px; width: 772px; height: 156px"></div>
+      <div class="fogp dm" style="left: 612px; top: 72px; width: 268px; height: 180px"></div>
+      <div class="fogp dm" style="left: 720px; top: 252px; width: 160px; height: 252px"></div>
+      <div class="fogp dm" style="left: 612px; top: 360px; width: 108px; height: 144px"></div>
+      <div class="brush" style="left: 612px; top: 252px"></div>
+      <div class="tools" style="top: 56px">
+        <button type="button" aria-label="Select"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 2l9 5-4 1-2 4z"/></svg></button>
+        <button type="button" aria-label="Measure"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12L12 2l2 2L4 14z"/></svg></button>
+        <hr>
+        <button type="button" class="on new" aria-label="Fog"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 6h12M2 10h12M4 14h8M4 2h8"/></svg></button>
+        <button type="button" aria-label="Add a creature"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="4"/><path d="M13 10v5M10.5 12.5h5"/></svg></button>
+      </div>
+      <div class="fogmenu new" style="background-color: var(--surface-2)">
+        <span class="lbl">Fog</span>
+        <div class="seg"><button type="button" class="on">Show</button><button type="button">Hide</button></div>
+        <div class="seg"><button type="button" class="on">Squares</button><button type="button">A room</button><button type="button">All</button></div>
+        <span>Drag over squares, or click a room. Players see the change at once.</span>
+        <button type="button" class="btn mini" style="justify-self: start">Undo</button>
+      </div>
+      <div class="mtok" style="left: 540px; top: 288px; width: 36px; height: 36px; box-shadow: 0 0 0 3px var(--gold)">T</div>
+      <div class="mtok" style="left: 504px; top: 252px; width: 36px; height: 36px">C</div>
+      <div class="mtok foe hid" style="left: 756px; top: 288px; width: 36px; height: 36px; z-index: 5">E2</div>
+      <div class="mtok foe" style="left: 396px; top: 144px; width: 72px; height: 72px; font-size: 14px">E1</div>
+      <div class="tag" style="left: 612px; top: 210px; z-index: 7">Showing the corridor: <b>3 by 3</b></div>
+      <div class="inset new" style="background-color: var(--map)">
+        <span class="lbl">Trah's player sees</span>
+        <div class="fogp" style="left: 0; top: 0; width: 300px; height: 50px"></div>
+        <div class="fogp" style="left: 210px; top: 50px; width: 90px; height: 160px"></div>
+        <div class="fogp" style="left: 0; top: 160px; width: 210px; height: 50px"></div>
+        <div class="mtok" style="left: 160px; top: 100px; width: 18px; height: 18px">T</div>
+        <div class="mtok" style="left: 142px; top: 82px; width: 18px; height: 18px">C</div>
+        <div class="mtok foe" style="left: 80px; top: 60px; width: 36px; height: 36px">E1</div>
+      </div>
+    </div>
+    <div class="pane dim" style="gap: 8px">
+      <div class="ptabs"><span class="on">Scene</span><span>Clicked</span><span>The fight</span></div>
+      <b style="color: var(--strong); font-size: 16px">The ruined chapel</b>
+      <div class="sect"><b>Location info</b><span>The east corridor floods at round 5.</span></div>
+      <div class="sect new" style="padding: 8px; border-radius: 8px"><b>Fog for this scene</b><span>Starts all fog · 2 rooms shown</span><span><button type="button" class="btn mini">Show all</button> <button type="button" class="btn mini">Hide all</button></span></div>
+    </div>
+    <div class="abar dim">
+      <div class="slots"><div class="grp"><span class="lbl r">Creatures' Reactions</span><div class="items"><span class="it">Enemy 1 · Opportunity Attack<small>reach 10 ft</small></span></div></div></div>
+      <button type="button" class="btn main endturn">Next turn</button>
+    </div>
+    <span class="nt" style="left: 262px; top: 128px">New in slice 9</span>
+    <span class="co s" style="left: 500px; top: 270px">1</span>
+    <span class="co s" style="left: 862px; top: 360px">2</span>
+    <span class="co s" style="left: 1026px; top: 520px">3</span>
+    <span class="co s" style="left: 1116px; top: 210px">4</span>
+    <span class="co s" style="left: 1020px; top: 400px">5</span>
+  </div>
+  <div class="foot">
+    <div class="legend">
+      <div><span class="co s">1</span><span><b>The fog tool:</b> show or hide by dragging over squares, a whole room in one click (with a file's walls), or all; Undo.</span></div>
+      <div><span class="co s">2</span><span><b>She sees through it</b>, hatched, with what's behind it: Enemy 2 waits in the corridor.</span></div>
+      <div><span class="co s">3</span><span><b>Players see black</b>, and their pages never receive what's under it, tokens included.</span></div>
+      <div><span class="co s">4</span><span><b>Each scene keeps its fog</b>, starting all fog or all clear as she sets it.</span></div>
+      <div><span class="co s">5</span><span><b>A shown square stays shown</b> until she hides it again; nothing is lifted by itself.</span></div>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>The DM hides and reveals by hand (Nov 2, roadmap 3.4).</li>
+        <li>Vision from walls and lights comes later (3.7), with Dungeon Alchemist's files.</li>
+      </ul>
+      <h3 class="ask">For you</h3>
+      <ul><li>Nothing new.</li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

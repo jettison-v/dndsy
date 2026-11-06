@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 4: phones</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.phones { display: grid; grid-template-columns: repeat(3, 390px) minmax(0, 1fr); gap: 36px; align-items: start; }
+.ph { display: grid; gap: 10px; }
+.scr { position: relative; width: 390px; height: 844px; border: 1px solid var(--line-strong); border-radius: 30px; overflow: hidden; background: var(--bg); display: grid; grid-template-rows: 52px 54px minmax(0, 1fr) 44px 60px; }
+.p-top { display: flex; align-items: center; gap: 10px; padding: 0 14px; background: var(--chrome); border-bottom: 2px solid var(--red); font-size: 13px; color: var(--muted); }
+.p-top b { color: var(--strong); flex: 1; }
+.p-turn { display: flex; align-items: center; gap: 7px; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--surface); overflow: hidden; }
+.p-turn .tok { width: 30px; height: 30px; font-size: 10px; }
+.p-turn .tok.now { width: 38px; height: 38px; }
+.p-rolls { display: flex; align-items: center; gap: 8px; padding: 0 14px; border-top: 1px solid var(--line); background: var(--surface); font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.p-rolls b { color: var(--gold); font: 700 11px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.p-nav { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; text-align: center; font-size: 11px; color: var(--muted); background: var(--chrome); border-top: 1px solid var(--line); }
+.p-nav .on { color: var(--strong); }
+.p-mid { position: relative; overflow: hidden; display: grid; gap: 6px; align-content: start; padding: 10px; }
+.prow { display: grid; grid-template-columns: 26px 32px minmax(0, 1fr) auto; gap: 8px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; font-size: 12px; color: var(--muted); }
+.prow b { color: var(--strong); font-size: 13px; display: block; }
+.prow .tok { width: 30px; height: 30px; font-size: 10px; }
+.prow .i { font: 700 14px/1 var(--sans); text-align: center; }
+.prow.now { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.prow.sub { margin-left: 34px; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 104px; background: var(--surface); border-top: 1px solid var(--line-strong); border-radius: 18px 18px 0 0; box-shadow: 0 -10px 30px rgba(0, 0, 0, .45); padding: 8px 14px 14px; display: grid; gap: 10px; z-index: 6; }
+.sheet .grab { justify-self: center; width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); }
+.list { display: grid; gap: 6px; }
+.list .it { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; white-space: normal; }
+.caption { color: var(--muted); font-size: 13px; }
+.caption b { color: var(--text); }
+.yourline { position: absolute; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line-strong); border-radius: 14px 14px 0 0; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 4 · M · Milestone A · on a phone</div>
+    <h1>Phones: the same page, the turn bar on top and the rest as sheets</h1>
+    <p class="where"><b>Where you'll find it:</b> Table in More on a phone. The turn bar stays on top, Table rolls is the thin line it is on every page, and your turn's bar and the side panel slide up from the bottom. Before maps, the middle is the fight's rows; with slice 5 it becomes the map (VTT Layout › On a phone).</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="done">2 Your turn's bar</span><span class="done">3 Creatures</span><span class="here">4 Phones</span><span class="ms">◆ A</span><span>Scene notes</span><span>5 Map</span><span>6 Tokens</span><span>7 Run the fight</span><span>8 Moving</span><span>9 Fog</span><span>10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="phones">
+    <div class="ph">
+      <div class="scr">
+        <div class="p-top"><b>The Adventure Begins</b><span class="pill"><i></i>Live</span><span>?</span></div>
+        <div class="p-turn"><span class="pennant" style="padding: 3px 6px">R<b style="font-size: 14px">2</b></span><span class="tok now">C</span><span class="tok foe">E1</span><span class="tok">T</span><span class="tok foe">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+        <div class="p-mid">
+          <div class="prow now"><span class="i">19</span><span class="tok now" style="width: 30px; height: 30px">C</span><span><b>Cole</b>51 / 75 · ◎ Moonbeam</span><span style="color: var(--gold)">you</span></div>
+          <div class="prow sub" style="grid-template-columns: 32px minmax(0, 1fr)"><span class="tok pet" style="margin: 0">P</span><span><b>Pip</b>after Cole</span></div>
+          <div class="prow"><span class="i">16</span><span class="tok foe">E1</span><span><b>Enemy 1</b>Large</span><span style="color: var(--link)">Bloodied</span></div>
+          <div class="prow"><span class="i">14</span><span class="tok">T</span><span><b>Trah</b>22 / 40 · Readied</span><span></span></div>
+          <div class="prow"><span class="i">12</span><span class="tok foe">E3</span><span><b>Enemy 3</b></span><span>Healthy</span></div>
+          <div class="prow"><span class="i">9</span><span class="tok">BC</span><span><b>Big C</b>44 / 44</span><span></span></div>
+          <div class="prow"><span class="i">5</span><span class="tok">NN</span><span><b>No Name</b>30 / 38 · Hidden</span><span></span></div>
+          <div class="yourline new"><span><b style="color: var(--gold)">Your turn</b> <span class="note">· 25 of 45 ft left</span></span><span style="display: flex; gap: 10px"><span class="pip a used"><i></i>A</span><span class="pip b"><i></i>B</span><span class="pip r"><i></i>R</span></span></div>
+        </div>
+        <div class="p-rolls"><b>Table rolls</b><span>Cole: Starry Wisp 26 to hit</span></div>
+        <div class="p-nav"><span>Story</span><span>Campaign</span><span class="on">Cole</span><span>Party</span><span>More</span></div>
+      </div>
+      <p class="caption"><b>Following.</b> The fight's rows, short; your turn waits as one line at the bottom. Tap it to pull your bar up.</p>
+    </div>
+    <div class="ph">
+      <div class="scr">
+        <div class="p-top"><b>The Adventure Begins</b><span class="pill"><i></i>Live</span><span>?</span></div>
+        <div class="p-turn"><span class="pennant" style="padding: 3px 6px">R<b style="font-size: 14px">2</b></span><span class="tok now">C</span><span class="tok foe">E1</span><span class="tok">T</span><span class="tok foe">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+        <div class="p-mid dim">
+          <div class="prow now"><span class="i">19</span><span class="tok now" style="width: 30px; height: 30px">C</span><span><b>Cole</b>51 / 75</span><span></span></div>
+        </div>
+        <div class="p-rolls"><b>Table rolls</b><span>Cole: Starry Wisp 26 to hit</span></div>
+        <div class="p-nav"><span>Story</span><span>Campaign</span><span class="on">Cole</span><span>Party</span><span>More</span></div>
+        <div class="sheet new" style="background-color: var(--surface)">
+          <span class="grab"></span>
+          <div class="move" style="width: auto"><div class="row"><span>Movement</span><span><b>25</b> of 45 ft left</span></div><div class="meter"><i style="width: 44%"></i><i class="left" style="width: 56%"></i></div><div class="row"><span><button type="button" class="btn mini">− 5 ft</button> <button type="button" class="btn mini">+ 5 ft</button></span><button type="button" class="btn mini">Dash</button></div></div>
+          <div style="display: flex; gap: 14px"><span class="pip a used"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+          <div class="lbl" style="color: var(--k-action)">Action · used</div>
+          <div class="list dim"><span class="it">Starry Wisp<small>rolled 26</small></span><span class="it">Unarmed Strike<small>+5 · 1d6+3</small></span></div>
+          <div class="lbl" style="color: var(--k-bonus)">Bonus</div>
+          <div class="list"><span class="it">Wild Shape<small>3 left</small></span><span class="it">Flurry of Blows<small>1 Focus</small></span></div>
+          <div class="lbl" style="color: var(--k-reaction)">Reaction</div>
+          <div class="list"><span class="it">Deflect Attacks<small>on a hit</small></span></div>
+        </div>
+      </div>
+      <p class="caption"><b>Your turn's bar, pulled up.</b> The same pieces as on a computer, one column under another, as Battle stacks them on a phone.</p>
+    </div>
+    <div class="ph">
+      <div class="scr">
+        <div class="p-top"><b>The Adventure Begins</b><span class="pill"><i></i>Live</span><span>?</span></div>
+        <div class="p-turn"><span class="pennant" style="padding: 3px 6px">R<b style="font-size: 14px">2</b></span><span class="tok">C</span><span class="tok foe now">E1</span><span class="tok">T</span><span class="tok foe">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+        <div class="p-mid dim">
+          <div class="prow"><span class="i">19</span><span class="tok">C</span><span><b>Cole</b>51 / 75</span><span></span></div>
+          <div class="prow now"><span class="i">16</span><span class="tok foe now" style="width: 30px; height: 30px">E1</span><span><b>Enemy 1</b>Large</span><span style="color: var(--link)">Bloodied</span></div>
+        </div>
+        <div class="p-rolls"><b>Table rolls</b><span>Enemy 1: damage 13 to Trah</span></div>
+        <div class="p-nav"><span>Story</span><span>Campaign</span><span class="on">Cole</span><span>Party</span><span>More</span></div>
+        <div class="sheet new" style="background-color: var(--surface)">
+          <span class="grab"></span>
+          <div class="pane-h"><span class="pic foe">E1</span><span><b>Enemy 1</b><small>Large Giant · Bloodied</small></span></div>
+          <div class="note">Its numbers are the DM's. Its attacks reach Table rolls when she rolls them.</div>
+          <div class="lbl">On it</div>
+          <div class="badges"><span class="badge" style="border-color: var(--conc); color: var(--conc)">In Cole's Moonbeam</span></div>
+        </div>
+      </div>
+      <p class="caption"><b>The side panel, as a sheet.</b> Tap a row (later, a token) for what the side panel shows on a computer.</p>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>The phone layout (VTT Layout › On a phone, Nov 2).</li>
+        <li>Table rolls' thin line and the bottom bar, as on every page (Oct 31).</li>
+        <li>Tested at iPhone size in WebKit, as every page is.</li>
+      </ul>
+      <h3>With the map (slice 5 on)</h3>
+      <p>The map fills the middle; pinch and drag it. The rows' details move into the turn bar and the side panel, and your turn stays one line at the bottom of the map.</p>
+      <h3 class="ask">For you</h3>
+      <ul><li>Nothing new. This slice goes to staging so the test seats can try it on phones at once.</li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
