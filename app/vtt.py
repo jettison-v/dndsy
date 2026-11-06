@@ -41,13 +41,14 @@ FEATURES: list[Feature] = [
             "The VTT, slices 0 to 10 (docs/plans/2026-11-02-vtt-build-plan.md): 0 and 1 built; 2, askdnd runs the fight, next.",
             labs=True, state="Being built"),
     Feature("creatures", "Your creatures",
-            "A familiar, an artificer's Homunculus Servant or Steel Defender, a ranger's companion or a summon on a "
-            "character's D&D Beyond sheet gets a switch by the character's name on Battle (Vi · Homunculus): Battle "
-            "becomes the creature's, with its own Hit Points, Armor Class, actions to roll and when its turn comes, and "
-            "the numbers that grow with its master worked out. Its rolls say whose they are.",
-            "Your creatures (docs/plans/2026-11-03-your-creatures.md): slice 1, Battle as the creature, being built; "
-            "its Hit Points synced with D&D Beyond next.",
-            labs=True, state="Being built"),
+            "A familiar, an artificer's Homunculus Servant or Steel Defender, a ranger's companion, a summon or a steed "
+            "is a small character of its own: a switch by its master's name on Battle (Vi · Homunculus) shows its Hit "
+            "Points, Armor Class, actions to roll and when its turn comes, with what grows with its master worked out. A "
+            "familiar exists once Find Familiar is cast, goes to the pocket dimension and back, and disappears at 0 Hit "
+            "Points; summons and steeds are worked out for the level cast. Each has its own card on Party and its place "
+            "in the fight, and a familiar or steed its own World entry. With Sync with D&D Beyond, its Hit Points and a "
+            "familiar's form are kept in step on the sheet's Extras.",
+            "Your creatures (docs/plans/2026-11-03-your-creatures.md): finished Nov 5, out of Labs."),
     Feature("initiative", "Initiative from askdnd",
             "Everyone rolls their own Initiative in askdnd before the DM presses Start Combat in D&D Beyond's VTT, a "
             "character's familiar with it, and the number fills in the VTT's combat sidebar (a Homunculus right after "

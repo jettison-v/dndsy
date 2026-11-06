@@ -604,3 +604,39 @@ def test_party_shows_only_the_creatures_that_are_here(player, db, labs, sheet):
         db.flush()
         page = player.get("/party").text
         assert (f"creature={OWL}" in page) is shown, state
+
+
+def test_a_familiar_gets_a_world_entry_that_keeps_its_story(player, dm, db, labs, sheet):
+    """Board 4 (Creatures as Characters; slice 9): the first time Find Familiar brings it, askdnd makes the familiar a
+    published Campaign › World entry that serves its master; its page says whose it is, where it is, what it is, the
+    forms it has taken and when it went away and came back. Undo of the first cast takes the entry away again; one that's
+    dismissed keeps it."""
+    from sqlalchemy import select
+
+    from app.models import Entity, EntityRelation, Status
+
+    e = familiar_sheet(db, labs, sheet)
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    first = player.post(url, data={"way": "ritual", "familiar": str(OWL), "kind": "Fey"}).json()
+    db.refresh(labs)
+    pip = db.get(Entity, labs.creature_story["familiar"]["entity"])
+    assert pip.name == "Pip" and pip.status == Status.PUBLISHED and first["undo"]["made"] == str(pip.id)
+    assert db.scalar(select(EntityRelation).where(EntityRelation.from_entity_id == pip.id, EntityRelation.type == "serves",
+                                                  EntityRelation.to_entity_id == labs.membership.entity_id))
+    assert player.post(first["undoUrl"], data=first["undo"]).status_code == 200  # (Undo: no familiar, no entry)
+    db.expire_all()
+    assert db.get(Entity, pip.id) is None and not labs.creature_story
+    player.post(url, data={"way": "ritual", "familiar": str(OWL), "kind": "Fey"})
+    player.post(url, data={"way": "ritual", "familiar": str(RAVEN), "kind": "Fiend"})  # (a new form: the same familiar)
+    where = f"/characters/{labs.id}/creatures/{RAVEN}/where"
+    player.post(where, data={"to": "away"})
+    player.post(where, data={"to": "here"})
+    db.expire_all()
+    pip = db.get(Entity, labs.creature_story["familiar"]["entity"])
+    page = dm.get(f"/campaign/{pip.id}/peek").text  # (everyone at the table sees it, the DM too)
+    assert "Companion · Cole's familiar" in page and "Here, as a Raven" in page and "Fiend" in page
+    assert "Owl" in page and "Raven" in page and "Went to the pocket dimension" in page and "Came back" in page
+    assert [x["what"] for x in labs.creature_story["familiar"]["log"]] == ["cast", "form", "away", "back"]
+    player.post(where, data={"to": "gone"})
+    db.expire_all()
+    assert db.get(Entity, pip.id) is not None and "Dismissed for good" in dm.get(f"/campaign/{pip.id}/peek").text

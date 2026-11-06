@@ -9,7 +9,8 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app import characters as chars
-from app import companions, ddb_bridge, hit_points, vtt, web
+from app import companion_story as story
+from app import companions, ddb_bridge, hit_points, summons, vtt, web
 from app.auth import current_user
 from sqlalchemy import select
 
@@ -104,8 +105,11 @@ def change_hp(request: Request, character_id: int, creature_id: int, form=web.Fo
     if not temp and (not amount.isdigit() or not 0 < int(amount) <= 999):
         raise HTTPException(409, "How many Hit Points?")
     if found.get("own"):
+        was = ((ch.companions or {}).get(str(found["id"])) or {}).get("state")
         said = companions.own_hp(ch, found, k, temp=int(temp)) if temp else \
             companions.own_hp(ch, found, k, (-1 if form.get("to") == "damage" else 1) * int(amount))
+        if was == "here" and ((ch.companions or {}).get(str(found["id"])) or {}).get("state") == "gone" and found.get("spell") == summons.STEED:
+            story.note(db, ch, story.STEED, "gone")
         db.commit()
         return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, said)})
     if k["hp"]["waits"]:
@@ -123,5 +127,6 @@ def change_hp(request: Request, character_id: int, creature_id: int, form=web.Fo
         if sign < 0 and companions.at_zero(ch, find(chars.character_summary(ch), creature_id), k, n):
             said += ": at 0 Hit Points it disappears, until Find Familiar is cast again"
             companions.in_step(db, ch)
+            story.note(db, ch, story.FAMILIAR, "gone")
     db.commit()
     return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, said + ": on its way to D&D Beyond", deliver=True)})

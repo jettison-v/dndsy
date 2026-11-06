@@ -314,6 +314,9 @@ class Character(Timestamped, Base):
     # Where each of its familiars is, by its D&D Beyond creature id (app/creatures.py, Brett 2026-11-04: a familiar exists
     # only once cast): {"<id>": {"state": "here" | "away" | "gone", "kind": "Celestial", "why": "0 Hit Points"}}
     companions: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Its familiar's and steed's stories, for their World entries (app/companion_story.py): {"familiar": {"entity": 12,
+    # "log": [{"on": "2026-11-05", "what": "cast", "form": "Owl", "kind": "Celestial"}]}}
+    creature_story: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # When its player's askdnd extension last heard its D&D Beyond sheet (app/ddb_bridge.py): the sheet can be reached
     sheet_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     owner: Mapped[User | None] = relationship()

@@ -15,12 +15,14 @@ Casting isn't always a roll, and a roll isn't always a cast: a spell with someth
 level picked (Brett, 2026-10-31), and Roll without spending a slot.
 """
 
+import json
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app import characters as chars
-from app import companions, ddb_bridge, ddb_sheet, web
+from app import companion_story, companions, ddb_bridge, ddb_sheet, web
 from app import spellbook as sb
 from app.character_views import ordinal
 from app.db import get_db
@@ -175,15 +177,19 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         ddb_bridge.reach(ch)
         _spend(ch, db, way, 1, f"{ch.name}: {e['name']}, {chosen['name']} slot")
         undo["spent"] = way
+    story_was = dict(ch.creature_story or {})  # (a familiar's or steed's World entry: Undo puts its story back)
     if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and (familiar or companions.familiars(ch, sheet)):
         back, brought = companions.cast(db, ch, sheet, familiar, kind, familiar_name, wild=wild)
         undo |= back
         said += f": {brought}"
     if companions.on(db, ch) and (entry := companions.summon_entry(db, ch, e["name"])):
         back, brought = companions.summon(ch, sheet, entry, chosen["level"] if chosen and chosen.get("level") else e["level"] or entry["spell_level"],
-                                          choice, creature_name, look, again=again == "1")
+                                          choice, creature_name, look, again=again == "1", db=db)
         undo |= back
         said += f": {brought}"
+    if (ch.creature_story or {}) != story_was:
+        made = [s.get("entity") for s in (ch.creature_story or {}).values() if s.get("entity") not in {x.get("entity") for x in story_was.values()}]
+        undo |= {"story": json.dumps(story_was), **({"made": str(made[0])} if made and made[0] else {})}
     if e["conc"]:
         was = ch.concentration
         ch.concentration = sb.concentrating(e, chosen["level"] if chosen else e["level"]) | ({"was": {k: v for k, v in was.items() if k != "was"}} if was else {})
@@ -199,12 +205,19 @@ def _spend(ch: Character, db: Session, way: str, delta: int, label: str) -> None
 
 @router.post("/characters/{character_id:int}/cast/undo")
 def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: str = Form(""), companions_were: str = Form("", alias="companions"),
-              healed: str = Form(""), added: str = Form(""), db: Session = Depends(get_db)):
+              healed: str = Form(""), added: str = Form(""), story: str = Form(""), made: str = Form(""), db: Session = Depends(get_db)):
     """The corner card's Undo: the slot back, Concentration as it was, and a familiar where it was."""
     ch, _ = _guard(db, request, character_id)
     _, e = _spell(db, ch, key)
     if companions_were or healed or added:  # (a familiar where it was; a summon or steed as it was; a new form not added)
         companions.uncast(db, ch, companions_were, healed, added)
+    if story:  # (the familiar's or steed's story as it was, and the World entry this cast made, gone again)
+        try:
+            was = json.loads(story)
+        except ValueError:
+            was = None
+        if isinstance(was, dict):
+            companion_story.restore(db, ch, was, int(made) if made.isdigit() else None)
     if spent == WILD:
         sheet = chars.character_summary(ch) or {}
         if (w := wild_use(sheet)):

@@ -24,6 +24,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app import characters as chars
+from app import companion_story as story
 from app import ddb_bridge, ddb_fields, hit_points, vtt, web
 from app import spellbook as sb
 from app.auth import current_user
@@ -177,6 +178,7 @@ def cast(db: Session, ch: Character, sheet: dict, chosen: str, kind: str, name: 
                        f"{ch.name}'s {k['name']} back, whole")
         undo["healed"] = f"{k['id']}:{k['hp']['removed']}"
     in_step(db, ch, {str(c["id"]): name} if name and name != k["name"] else None)
+    story.note(db, ch, story.FAMILIAR, "cast", name=name or (k["name"] if k["name"] != k["kind"] else ""), form=k["kind"], kind=kind)
     return undo, said
 
 
@@ -195,6 +197,7 @@ def _cast_new(db: Session, ch: Character, sheet: dict, forms: dict, chosen: str,
     mid = chosen[len(NEW):]
     ddb_bridge.add(db, ch, "set", {"field": f"familiar_add:{mid}", "value": 1}, f"{ch.name}'s familiar: a {form['name']} added to Extras")
     in_step(db, ch)  # (any other form switched off)
+    story.note(db, ch, story.FAMILIAR, "cast", name=name if name != form["name"] else "", form=form["name"], kind=kind)
     shown = f"{name}, a {form['name']}" if name and name != form["name"] else f"a {form['name']}"
     touched = set(forms) | {k for k in was if k.startswith(NEW)} | {chosen}
     return {"companions": _was(was, touched), "added": mid}, f"Your familiar: {shown} ({kind}), added to D&D Beyond's Extras"
@@ -219,6 +222,7 @@ def wild_leave(db: Session, ch: Character, sheet: dict) -> list[str]:
     if gone:
         ch.companions = kept
         in_step(db, ch)
+        story.note(db, ch, story.FAMILIAR, "left")
     return gone
 
 
@@ -252,7 +256,7 @@ def steed_before(ch: Character, entry: dict) -> dict | None:
 
 
 def summon(ch: Character, sheet: dict, entry: dict, level: int, choice: str, name: str = "", look: str = "",
-           again: bool = False) -> tuple[dict, str]:
+           again: bool = False, db: Session | None = None) -> tuple[dict, str]:
     """A summon spell or Find Steed cast at `level`: its creature is here, its numbers worked out for that level and
     its master; a summon the same spell brought before goes (one at a time). Find Steed `again`: the steed that
     disappeared, with its kind, name and look. Returns what Undo needs and what the corner card says."""
@@ -268,6 +272,8 @@ def summon(ch: Character, sheet: dict, entry: dict, level: int, choice: str, nam
     ch.companions = {**was, str(c["id"]): {"own": True, "state": "here", "c": {k: v for k, v in c.items() if k not in ("removed", "temp")},
                                            "removed": 0, "temp": 0}}
     what = f"{c['name']} ({choice})" if choice else c["name"]
+    if db is not None and entry.get("spell") == summons.STEED:
+        story.note(db, ch, story.STEED, "cast", name=name.strip()[:60] if name.strip() else "", form=entry["name"], kind=choice)
     return {"companions": _was(was, {str(c["id"])})}, f"{what} is here, at level {level}"
 
 
@@ -352,6 +358,7 @@ def move(request: Request, character_id: int, creature_id: int, form=web.FormBod
     kept = (ch.companions or {}).get(str(c["id"])) or {}
     ch.companions = {**(ch.companions or {}), str(c["id"]): {**kept, "state": to, "why": "dismissed" if to == "gone" else ""}}
     in_step(db, ch)
+    story.note(db, ch, story.FAMILIAR, {"away": "away", "here": "back", "gone": "dismissed"}[to])
     db.commit()
     said = {"away": f"{c['name']} is in the pocket dimension", "here": f"{c['name']} is back", "gone": f"{c['name']} is dismissed for good"}[to]
     return Response(status_code=204, headers={"HX-Trigger": web.changed(ch, said, deliver=True)})
