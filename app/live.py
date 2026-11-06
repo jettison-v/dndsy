@@ -250,6 +250,18 @@ def live_sync(request: Request, c: int = 0, db: Session = Depends(get_db)):
     return HTMLResponse(pill(db, user, c or None))
 
 
+@router.get("/live/pill")
+def live_pill(request: Request, c: int = 0, db: Session = Depends(get_db)):
+    """The Live pill again, reading nothing from D&D Beyond: what a page asks for when it hears that a character it
+    isn't showing changed (that change came from a read already). Asking /live/sync there had every open page re-read
+    the party on every change at the table, and beta ran out of database connections (Sentry ASKDND-V2-7, Nov 6: the
+    nightly live test, 2.5 party reads a second)."""
+    user = current_user(request)
+    if not user:
+        return HTMLResponse("", status_code=401)
+    return HTMLResponse(pill(db, user, c or None))
+
+
 @router.post("/live/refresh/{character_id:int}")
 def live_refresh_one(request: Request, character_id: int, db: Session = Depends(get_db)):
     """"Refresh <character> now": anyone at the table, at most every MANUAL_MIN_AGE."""

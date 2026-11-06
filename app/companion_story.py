@@ -56,8 +56,13 @@ def note(db: Session, ch: Character, role: str, what: str, name: str = "", form:
             relations.add(db, entity, "serves", master)
         s["entity"] = entity.id
     elif entity is not None and called and called.lower() != entity.name.lower():  # (named, or renamed: the old name stays an alias)
-        if not entity.name.endswith(f"'s {ROLES[role]}"):
+        # (each name once: renamed back and forth, Pip → Mote → Pip → Mote, the old name may be an alias already, and the
+        # new one stops being one; Sentry ASKDND-V2-M, Nov 6: the second "Pip" alias failed the cast)
+        have = {a.alias.lower(): a for a in entity.aliases}
+        if not entity.name.endswith(f"'s {ROLES[role]}") and entity.name.lower() not in have:
             entity.aliases.append(EntityAlias(alias=entity.name))
+        if (same := have.get(called.lower())) is not None:
+            entity.aliases.remove(same)
         entity.name = called
     log = list(s.get("log") or [])
     before = next((x["form"] for x in reversed(log) if x.get("form")), "")

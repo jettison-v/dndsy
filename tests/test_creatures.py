@@ -642,6 +642,21 @@ def test_a_familiar_gets_a_world_entry_that_keeps_its_story(player, dm, db, labs
     assert db.get(Entity, pip.id) is not None and "<dd>Dismissed</dd>" in dm.get(f"/campaign/{pip.id}/peek").text  # (feedback 27: not "for good")
 
 
+def test_a_familiar_renamed_back_and_forth_keeps_each_old_name_once(player, db, labs, sheet):
+    """Sentry ASKDND-V2-M (Nov 6, the live test's familiar run): renaming a familiar back to an earlier name, then away
+    again, added that name as an alias a second time and the cast failed. Each old name is an alias once, and the name it
+    has now is never one."""
+    from app.models import Entity
+
+    e = familiar_sheet(db, labs, sheet)
+    url = f"/characters/{labs.id}/cast?key={e['key']}"
+    for name in ("Pip", "Moss", "Pip", "Moss"):
+        assert player.post(url, data={"way": "ritual", "familiar": str(OWL), "kind": "Fey", "familiar_name": name}).status_code == 200
+    db.expire_all()
+    pip = db.get(Entity, db.get(type(labs), labs.id).creature_story["familiar"]["entity"])
+    assert pip.name == "Moss" and [a.alias for a in pip.aliases] == ["Pip"]
+
+
 def test_undo_never_deletes_an_entry_the_dm_wrote_or_one_with_a_picture(player, db, labs, sheet):
     """Code review, Nov 5: a familiar named like an entry the DM already wrote uses that entry, and the cast's Undo leaves
     it; and the entry shows the familiar's picture until it has its own (feedback 28: Owlie's picture)."""

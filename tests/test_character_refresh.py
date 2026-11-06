@@ -120,6 +120,19 @@ def test_the_sync_reads_the_character_on_screen_first_and_is_throttled(player, d
     assert calls.count(cole.ddb_id) == 2
 
 
+def test_the_pill_alone_reads_nothing_from_dnd_beyond(player, db, monkeypatch):
+    """Sentry ASKDND-V2-7 (Nov 6): a page that hears another character changed asks for its pill only. Asking
+    /live/sync there re-read the party on every change at the table, and beta ran out of database connections."""
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    calls = []
+    monkeypatch.setattr(characters, "FETCH", lambda ddb_id: calls.append(ddb_id) or fake_fetch(ddb_id))
+    pill = player.get(f"/live/pill?c={cole.id}")
+    assert pill.status_code == 200 and 'id="live-pill"' in pill.text and "<html" not in pill.text and calls == []
+    player.cookies.clear()
+    assert player.get("/live/pill").status_code == 401
+
+
 def test_only_reviewers_can_refresh_or_link(player, db):
     import_bundle(db, BUNDLE)
     cole = char(db, "Cole")
