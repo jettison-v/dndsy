@@ -4075,7 +4075,7 @@
     const head = el('div', 'tp-head'), kicker = el('span', 'tp-kicker'), title = el('h2', 'tp-title');
     const bar = el('div', 'tp-bar'), fill = el('span'), controls = el('div', 'tp-controls');
     const toggle = el('button', 'btn tp-toggle', '❚❚ Pause'), shut = el('button', 'btn link tp-close', '✕ Close');
-    const redo = el('button', 'btn link tp-redo', 'Read it again'); redo.hidden = true;
+    const redo = el('button', 'btn link tp-redo', 'Re-record the voice'); redo.title = 'A new narration of the same recap (the pictures are picked fresh every time)'; redo.hidden = true;
     toggle.type = shut.type = redo.type = 'button'; bar.append(fill); head.append(kicker, title); controls.append(redo, toggle, shut);
     box.append(stage, head, words, say, bar, controls);
     document.body.append(box); document.body.classList.add('tale-playing');
@@ -4132,15 +4132,16 @@
       if (!open || open.box !== box) return;
     }
     say.textContent = '';
-    // An admin's Read it again (Brett, Nov 6): a new narration in its place, played from the start
+    // An admin's Re-record the voice (Brett, Nov 6): a new narration in its place, played from the start; the pictures
+    // aren't made, they're picked from the World each time
     redo.hidden = !tale.can_redo;
     redo.addEventListener('click', async () => {
-      audio.pause(); redo.disabled = true; say.textContent = 'The narrator is reading it again… (about half a minute)';
+      audio.pause(); redo.disabled = true; say.textContent = 'Recording the voice again… (about half a minute)';
       try {
         const got = await (await fetch(base + '/narrate?again=1', { method: 'POST', headers: { Accept: 'application/json' } })).json();
         if (got.audio) { audio.src = got.audio; shown = -1; audio.play().catch(() => {}); say.textContent = ''; }
-        else say.textContent = got.error || "It couldn't be read again. Try later.";
-      } catch (e) { say.textContent = "It couldn't be read again. Try later."; }
+        else say.textContent = got.error || "The voice couldn't be recorded again. Try later.";
+      } catch (e) { say.textContent = "The voice couldn't be recorded again. Try later."; }
       redo.disabled = false;
     });
     audio.src = src;

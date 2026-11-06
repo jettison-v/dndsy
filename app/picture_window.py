@@ -49,7 +49,7 @@ def window(request: Request, for_: str = "", db: Session = Depends(get_db)):
     pic = pictures.find(db, o)
     return templates.TemplateResponse(request, "_picture_window.html", {
         "o": o, "shown": _shown(db, o), "pic": pic, "style": drawing.style(campaign)["words"] or drawing.PLAIN,
-        "styled": bool(drawing.style(campaign)["words"]), "no_drawing": drawing.why_not(db, campaign), "how_many": drawing.HOW_MANY,
+        "styled": bool(drawing.style(campaign)["words"]), "style_refs": len(drawing.style(campaign)["refs"][:drawing.REFS]), "no_drawing": drawing.why_not(db, campaign), "how_many": drawing.HOW_MANY,
         "words": pic.words if pic is not None and pic.source == "drawn" and pic.words else o.words,
         # ?tab=draw opens it on Describe it (an empty picture's Draw one on the Reader)
         "start": "draw" if request.query_params.get("tab") == "draw" else "up"})
@@ -68,12 +68,12 @@ def upload(request: Request, for_: str = Form("", alias="for"), file: UploadFile
 
 
 @router.post("/pictures/draw")
-def draw(request: Request, for_: str = Form("", alias="for"), words: str = Form(""), db: Session = Depends(get_db)):
+def draw(request: Request, for_: str = Form("", alias="for"), words: str = Form(""), match: str = Form(""), db: Session = Depends(get_db)):
     """Describe it: four to pick from, drawn in the campaign's style (app/drawing.py)."""
     o, _ = _owner(db, request, for_)
     campaign = db.get(Campaign, o.campaign_id) if o.campaign_id else None
     try:
-        kept, look = drawing.draw(db, campaign, words, o.frame)
+        kept, look = drawing.draw(db, campaign, words, o.frame, match=bool(match))
     except pictures.PictureError as e:
         raise HTTPException(409, str(e)) from None
     options = [{"full": f, "thumb": t, "src": "data:image/webp;base64," + base64.b64encode(files.read(t) or b"").decode()} for f, t in kept]

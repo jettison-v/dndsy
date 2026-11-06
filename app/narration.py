@@ -102,7 +102,7 @@ def _parts(lines: list[str]) -> list[str]:
 
 def narrate(db: Session, session: GameSession, recap: Recap, campaign_name: str, again: bool = False) -> str:
     """The recap's narration, made now if it hasn't been: its key in file storage. The caller lets go of the database
-    first (reading takes OpenAI a little while). `again`: an admin's Read it again, a new narration in its place."""
+    first (reading takes OpenAI a little while). `again`: an admin's Re-record the voice, a new narration in its place."""
     if recap.narration_key and not again:
         return recap.narration_key
     if not os.getenv("OPENAI_API_KEY") and FETCH is None:
@@ -190,20 +190,20 @@ def tale_route(request: Request, session_id: int, db: Session = Depends(get_db))
     if stop:
         return stop
     out = tale(db, s, recap, web.campaign(db).name)
-    out["can_redo"] = is_admin(user)  # (Read it again, in the player)
+    out["can_redo"] = is_admin(user)  # (Re-record the voice, in the player)
     out["audio"] = f"{web.base()}/sessions/{s.id}/narration?v={files.version(recap.narration_key)}" if recap.narration_key else ""
     return JSONResponse(out)
 
 
 @router.post("/sessions/{session_id:int}/narrate")
 def narrate_route(request: Request, session_id: int, again: int = 0, db: Session = Depends(get_db)):
-    """Make the narration if it hasn't been made (the first Listen), and say where it is; `again=1`, an admin's Read
-    it again, makes a new one in its place (Brett, Nov 6)."""
+    """Make the narration if it hasn't been made (the first Listen), and say where it is; `again=1`, an admin's
+    Re-record the voice, makes a new one in its place (Brett, Nov 6)."""
     user, s, recap, stop = _here(request, db, session_id)
     if stop:
         return stop
     if again and not is_admin(user):
-        return JSONResponse({"error": "Only an admin can have it read again."}, status_code=403)
+        return JSONResponse({"error": "Only an admin can have the voice recorded again."}, status_code=403)
     try:
         key = narrate(db, s, recap, web.campaign(db).name, again=bool(again))
     except NarrationError as e:

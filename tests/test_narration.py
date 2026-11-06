@@ -47,7 +47,7 @@ def test_listen_reads_the_recap_once_and_keeps_it(player, db, told):
     assert f'data-listen="/c/main/sessions/{s.id}"' in player.get("/c/main/").text  # (▶ Listen on Previously on…)
     tale = player.get(f"/c/main/sessions/{s.id}/tale").json()
     assert tale["audio"] == "" and tale["title"] == "Journey to Star Mount" and tale["intro"] == "Previously, on Main…"
-    assert not tale["can_redo"]  # (Read it again is an admin's)
+    assert not tale["can_redo"]  # (Re-record the voice is an admin's)
     words = [x["text"] for x in tale["slides"]]
     assert words[1].startswith("The party reached Star Mount") and "**" not in words[1]  # (plain words, read and shown)
     first = player.post(f"/c/main/sessions/{s.id}/narrate").json()
