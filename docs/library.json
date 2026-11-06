@@ -781,5 +781,14 @@
   "what": "The slices behind Your creatures: a creature's Battle, its Hit Points on D&D Beyond, familiars, summons, its World entry.",
   "source": "docs/plans/2026-11-03-your-creatures.md",
   "link": ""
+ },
+ {
+  "title": "The DM's scene notes",
+  "kind": "plan",
+  "status": "Captured, to design",
+  "date": "Nov 6",
+  "what": "The DM's request: a page of prep notes per scene (read-aloud text, purpose, outcomes, location info, activities, scenes, links), seen by the DM alone, not even admins.",
+  "source": "docs/plans/2026-11-06-dm-scene-notes.md",
+  "link": ""
  }
 ]
