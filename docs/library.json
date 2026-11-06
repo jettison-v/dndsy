@@ -1,0 +1,785 @@
+[
+ {
+  "title": "askdnd Roadmap",
+  "kind": "guide",
+  "status": "Current",
+  "date": "Nov 2",
+  "what": "The one page to read: one list of what's left, then what's done.",
+  "source": "docs/roadmap.html",
+  "link": ""
+ },
+ {
+  "title": "Recording to Recap",
+  "kind": "guide",
+  "status": "Current",
+  "date": "Nov 6",
+  "what": "Your steps after a game night: MacWhisper, the Processor's four steps, publishing the recap, and where every file lives.",
+  "source": "docs/artifacts/recording-to-recap.html",
+  "link": "https://claude.ai/artifact/NpPqj4ifE2zKdXAJgZQBaM"
+ },
+ {
+  "title": "The Story Page",
+  "kind": "design",
+  "status": "Chose A · on beta",
+  "date": "Nov 5",
+  "what": "Previously on… as a whole page (A one reading column, B a margin, C the page as the scroll), All sessions as rolled scrolls, phones.",
+  "source": "docs/mockups/story-page/",
+  "link": "https://claude.ai/artifact/FwcFMWurp2xS5EgQEQoxDK"
+ },
+ {
+  "title": "World Entries by Kind",
+  "kind": "design",
+  "status": "Chose A · on beta",
+  "date": "Nov 5",
+  "what": "An entry's layout by kind (A wiki, B magazine), the empty picture slot, and the story text's styles (the bard's scroll, dialled to Umber, Inter, Faint).",
+  "source": "docs/mockups/world-entries/",
+  "link": "https://claude.ai/artifact/BG5vchbpgKhAoLAeQj28RW"
+ },
+ {
+  "title": "askdnd Runs the Fight",
+  "kind": "design",
+  "status": "Paused",
+  "date": "Nov 5",
+  "what": "Slice 2: the DM's turn bar, + Add from your books, Initiative for a group. Waits for the whole table's mockup, so it's judged beside the map and tokens.",
+  "source": "docs/mockups/askdnd-runs-the-fight/",
+  "link": "https://claude.ai/artifact/Jj7ALRf62hdgkGUNoeMhm2"
+ },
+ {
+  "title": "Action widgets",
+  "kind": "plan",
+  "status": "Current",
+  "date": "Nov 5",
+  "what": "The component library: every combat workflow as one spec (Spend, Choose, Enter, Roll, Convert, Apply) drawn by one Use window, and the shared pieces outside combat",
+  "source": "docs/plans/2026-11-05-action-widgets.md",
+  "link": ""
+ },
+ {
+  "title": "Hide and Ready",
+  "kind": "design",
+  "status": "Chosen, built",
+  "date": "Nov 5",
+  "what": "Feedback 14: Hide kept on Battle as Hidden, Ready waiting at the top of Reactions; two choices.",
+  "source": "docs/mockups/hide-ready.html",
+  "link": "https://claude.ai/artifact/QTARTDsQktCKyKy82DRMbi"
+ },
+ {
+  "title": "Framing Pictures",
+  "kind": "design",
+  "status": "Chose A, built",
+  "date": "Nov 5",
+  "what": "Feedback 12: frame a picture once so every place shows the right part (A, B or C).",
+  "source": "docs/mockups/picture-framing.html",
+  "link": "https://claude.ai/artifact/YQMnBLTC8q2zdjNHzd1H4X"
+ },
+ {
+  "title": "How askdnd Is Tested",
+  "kind": "guide",
+  "status": "Current",
+  "date": "Nov 5",
+  "what": "The four kinds of test, and the live test on the real D&D Beyond in depth: where and when it runs, its seats, all 27 runs, how it looks after itself, what it doesn't cover.",
+  "source": "docs/artifacts/testing.html",
+  "link": "https://claude.ai/artifact/Mwscumi8DvfFvTkL5CzPJG"
+ },
+ {
+  "title": "Architecture review",
+  "kind": "plan",
+  "status": "Current",
+  "date": "Nov 2",
+  "what": "What the VTT will lean on: the live connection, who owns which state, the database under load, the page code",
+  "source": "docs/plans/2026-11-02-architecture-review.md",
+  "link": ""
+ },
+ {
+  "title": "VTT build plan",
+  "kind": "plan",
+  "status": "Current",
+  "date": "Nov 2",
+  "what": "The VTT's slices 0 to 10 and two milestones, with what's decided behind each",
+  "source": "docs/plans/2026-11-02-vtt-build-plan.md",
+  "link": ""
+ },
+ {
+  "title": "Next Steps",
+  "kind": "earlier",
+  "status": "Superseded",
+  "date": "Nov 2",
+  "what": "By this page: your steps are the Yours items above.",
+  "source": "docs/artifacts/next-steps.html",
+  "link": "https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW"
+ },
+ {
+  "title": "UI and UX Pass",
+  "kind": "design",
+  "status": "Answered, built",
+  "date": "Nov 2",
+  "what": "The full scan before the VTT: what it found, the fixes, seven choices (all A).",
+  "source": "docs/artifacts/ui-ux-pass.html",
+  "link": "https://claude.ai/artifact/2abF1Z1bAFQPGauYFvRZwR"
+ },
+ {
+  "title": "VTT Layout",
+  "kind": "design",
+  "status": "Current · chosen: the frame",
+  "date": "Nov 2",
+  "what": "The VTT's final layout: the frame around the map for a player and the DM, step 1 in the same frame, phones, movement and spell areas, two layouts set aside.",
+  "source": "docs/mockups/vtt-layout/",
+  "link": "https://claude.ai/artifact/VkPT5mfWdLTaPrzJwmeV7W"
+ },
+ {
+  "title": "Prepare Spells",
+  "kind": "design",
+  "status": "Built · on beta, test campaigns",
+  "date": "Nov 2",
+  "what": "Preparing spells as its own screen, with the count against your class's number and one Make for all the changes.",
+  "source": "docs/mockups/prepare-spells/",
+  "link": "https://claude.ai/artifact/MEKgzxQxRqrCm1emjHu9VY"
+ },
+ {
+  "title": "Live Window",
+  "kind": "design",
+  "status": "Built · on beta",
+  "date": "Nov 2",
+  "what": "The Live window's list of sheets, Option B built.",
+  "source": "docs/mockups/live-window/",
+  "link": "https://claude.ai/artifact/PeV3Ki4NPzRcq5qmDTbbha"
+ },
+ {
+  "title": "DM Backup",
+  "kind": "design",
+  "status": "Built · on beta, test campaigns",
+  "date": "Nov 2",
+  "what": "The DM's D&D Beyond page makes a change when a player's sheet is closed; Option A built.",
+  "source": "docs/mockups/dm-backup/",
+  "link": "https://claude.ai/artifact/AddqtVULn7Cfx9xNCgoghk"
+ },
+ {
+  "title": "Wild Shape Play",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Nov 3",
+  "what": "The Wild Shape recommendations mocked up.",
+  "source": "docs/mockups/wild-shape-play/",
+  "link": "https://claude.ai/artifact/Vb2ThsvGX1eMcak59D3J3z"
+ },
+ {
+  "title": "Pictures in askdnd",
+  "kind": "design",
+  "status": "Chosen · built, on beta",
+  "date": "Nov 4",
+  "what": "One Picture window wherever a picture goes: upload, describe it (drawn in the campaign's art style) or D&D Beyond's art; one kind of picture, one place; three choices for you on board 4.",
+  "source": "docs/mockups/pictures/",
+  "link": "https://claude.ai/artifact/3n6dvytvKKxDz4x5n5aXqx"
+ },
+ {
+  "title": "Gear Compare and Phone Battle",
+  "kind": "design",
+  "status": "Chose both, and B · built",
+  "date": "Nov 4",
+  "what": "Feedback notes 2 and 11: an item against what you have, number by number (board 1), or the change on each row of the list (B), and Battle's top on a phone, tabs first (A) or name and tabs on one row (B).",
+  "source": "docs/mockups/gear-compare/",
+  "link": "https://claude.ai/artifact/RwRxeMuGBsnSYYJrbrRnK5"
+ },
+ {
+  "title": "Test Table Setup",
+  "kind": "guide",
+  "status": "For you to follow",
+  "date": "Nov 4",
+  "what": "The checklist for the test table's nine new characters, by account.",
+  "source": "docs/artifacts/test-roster-setup.html",
+  "link": "https://claude.ai/artifact/Eg48EcP8BumvEqyCz4z9bW"
+ },
+ {
+  "title": "Steeds, Summons and Wild Companion",
+  "kind": "design",
+  "status": "Chose A · on beta",
+  "date": "Nov 4",
+  "what": "The rest of Your creatures: who keeps summons and steeds (D&D Beyond has neither), Wild Companion from a Wild Shape use, a summon's numbers by the level cast, Find Steed.",
+  "source": "docs/mockups/steeds-summons/",
+  "link": "https://claude.ai/artifact/CkfXBgX32iT5Gm6esgNJ5H"
+ },
+ {
+  "title": "Initiative in askdnd",
+  "kind": "design",
+  "status": "Approved · on beta",
+  "date": "Nov 4",
+  "what": "Your table's way with askdnd: everyone rolls their own before Start Combat and the number fills D&D Beyond's VTT; ⓐ after the name for every roll; after Start Combat the order is the DM's, changed by dragging a row.",
+  "source": "docs/mockups/initiative/",
+  "link": "https://claude.ai/artifact/6tKSWCJGcWc5wsYGLCZTkC"
+ },
+ {
+  "title": "Creatures as Characters",
+  "kind": "design",
+  "status": "Chosen · A and A",
+  "date": "Nov 4",
+  "what": "Your creatures, round 2: a familiar, steed, summon or class companion as a small character of its own, coming and going by its rules (casting Find Familiar, the pocket dimension, 0 Hit Points, Concentration, a Long Rest), on Party, the fight and the World; what D&D Beyond keeps and what askdnd keeps (A or B).",
+  "source": "docs/mockups/creatures-as-characters/",
+  "link": "https://claude.ai/artifact/L2LZE4PEhPKFwgpsw5TdHk"
+ },
+ {
+  "title": "Item For You",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Nov 3",
+  "what": "Your feedback note: what an item would mean for the character, in the item browser (Option A with an icon).",
+  "source": "docs/mockups/item-for-you/",
+  "link": "https://claude.ai/artifact/HYXBhZueByMCmMEdSqFFQV"
+ },
+ {
+  "title": "Item Browser",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Nov 3",
+  "what": "Add item and Give loot, one browser of the 2024 items.",
+  "source": "docs/mockups/item-browser/",
+  "link": "https://claude.ai/artifact/MMQKQd6ubxBZeDkv8wCe9c"
+ },
+ {
+  "title": "Feedback Queue",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Nov 3",
+  "what": "Notes for Claude from any page, and the queue.",
+  "source": "docs/mockups/feedback-queue/",
+  "link": "https://claude.ai/artifact/CARW63ox8GRYdz2vsSMAwe"
+ },
+ {
+  "title": "Bridge Review",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Nov 3",
+  "what": "Seeing what the bridge is doing: findings and four choices.",
+  "source": "docs/artifacts/bridge-review.html",
+  "link": "https://claude.ai/artifact/WwWZvF1s4EDsqcpJ3EjPcH"
+ },
+ {
+  "title": "Wild Shape Review",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Nov 3",
+  "what": "Playing in Wild Shape: findings and five choices.",
+  "source": "docs/artifacts/wild-shape-review.html",
+  "link": "https://claude.ai/artifact/TgxyvmFHcSkThNSJ72dVNL"
+ },
+ {
+  "title": "Your Creatures",
+  "kind": "design",
+  "status": "Chosen · Option B",
+  "date": "Nov 3",
+  "what": "Familiars, Vi's Homunculus and other creatures a player controls: three options for Battle (built; round 2 is Creatures as Characters).",
+  "source": "docs/mockups/your-creatures/",
+  "link": "https://claude.ai/artifact/MLSXxJLwP7Go3vuNrqZChS"
+ },
+ {
+  "title": "Battle Band",
+  "kind": "design",
+  "status": "Built · Option E",
+  "date": "Oct 31",
+  "what": "Fewer rows above Battle's columns.",
+  "source": "docs/mockups/battle-band/",
+  "link": "https://claude.ai/artifact/1SHdzwsmtnwfBYVRL5bwM1"
+ },
+ {
+  "title": "Hit Points Flow",
+  "kind": "design",
+  "status": "Built · Option B",
+  "date": "Nov 1",
+  "what": "Shorter ways to change Hit Points: − and + on the tile.",
+  "source": "docs/mockups/hp-flow/",
+  "link": "https://claude.ai/artifact/QzNtDwYURngJFvb4gFC4Cn"
+ },
+ {
+  "title": "VTT Feature Map",
+  "kind": "design",
+  "status": "Done · led to VTT Layout",
+  "date": "Oct 31",
+  "what": "D&D Beyond's VTT against the others, what people love, the MVP and the final product.",
+  "source": "docs/artifacts/vtt-feature-map.html",
+  "link": "https://claude.ai/artifact/DYL6vpaq3Q1hS37SfuiYbB"
+ },
+ {
+  "title": "Usability Mockups",
+  "kind": "design",
+  "status": "Built",
+  "date": "Oct 31",
+  "what": "Today and proposed for every Usability Review suggestion; the band was built from Battle Band.",
+  "source": "docs/mockups/usability/",
+  "link": "https://claude.ai/artifact/Bt4d1DHjadCiRvXBA1PquB"
+ },
+ {
+  "title": "Usability Review",
+  "kind": "design",
+  "status": "Done · built Oct 31",
+  "date": "Oct 30",
+  "what": "A walk through askdnd as a player and DM, with suggestions by priority.",
+  "source": "docs/artifacts/usability-review.html",
+  "link": "https://claude.ai/artifact/NMPVH1DC8fivDNtMTEPKjG"
+ },
+ {
+  "title": "Simple VTT",
+  "kind": "earlier",
+  "status": "Superseded",
+  "date": "Oct 30",
+  "what": "By VTT Layout and the build plan.",
+  "source": "docs/mockups/simple-vtt.html",
+  "link": "https://claude.ai/artifact/6oTb8pSFzhhUakYsYHEw5x"
+ },
+ {
+  "title": "While You Were Gone",
+  "kind": "earlier",
+  "status": "Superseded",
+  "date": "Oct 30",
+  "what": "What happened while Brett was away on Oct 30; by this page.",
+  "source": "docs/artifacts/while-you-were-gone.html",
+  "link": "https://claude.ai/artifact/1iM2wt4wMRafW2sbMXVo1B"
+ },
+ {
+  "title": "One Table List",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 30",
+  "what": "Manage › Table as one list, with one Add and a Remove that says what it does.",
+  "source": "docs/mockups/the-table.html",
+  "link": "https://claude.ai/artifact/7e1exa6YDp5ndFeFN5p5PF"
+ },
+ {
+  "title": "Table Without Modes",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 30",
+  "what": "No Game Mode switch: a roll goes to the table by default.",
+  "source": "docs/mockups/table-without-modes.html",
+  "link": "https://claude.ai/artifact/2sEJ9btUudhWzZG6RbHEjx"
+ },
+ {
+  "title": "Correction Ladder",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 30",
+  "what": "Five steps for one thing about an item, the campaign's own correction first.",
+  "source": "docs/mockups/correction-flow.html",
+  "link": "https://claude.ai/artifact/UJfj2TbWeb1fniZYF17wBT"
+ },
+ {
+  "title": "Potions and Charges",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 30",
+  "what": "Items in Battle's columns, a window like a roll to use a potion, scroll or charge through the bridge.",
+  "source": "docs/mockups/potions-and-charges.html",
+  "link": "https://claude.ai/artifact/2ktqN2zZWrpX7VAQDDhLSb"
+ },
+ {
+  "title": "Death Saves",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 29",
+  "what": "The Dying tile with D&D Beyond's marks, turn reminders, the hit points window at 0, massive damage for the DM.",
+  "source": "docs/mockups/death-saves.html",
+  "link": "https://claude.ai/artifact/3G9zyNa8vkk7WUAzjXrqD9"
+ },
+ {
+  "title": "Conditions That End",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 29",
+  "what": "Conditions timed by the turns heard from D&D Beyond's VTT, with reminders.",
+  "source": "docs/mockups/turn-conditions.html",
+  "link": "https://claude.ai/artifact/EpMNHYfHg3Un6uso2cEjxF"
+ },
+ {
+  "title": "Corner Cards and Badges",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 29",
+  "what": "One place for what pops up, conditions as badges by the name.",
+  "source": "docs/mockups/temporary-items.html",
+  "link": "https://claude.ai/artifact/XjqFnhYFvcGYL4ZRB9wF39"
+ },
+ {
+  "title": "Conditions on Battle",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 28",
+  "what": "The edge, the colours and icons (its corner emblems became badges).",
+  "source": "docs/mockups/conditions-on-battle.html",
+  "link": "https://claude.ai/artifact/N7AyqQy3nrsQbwLpVRHX5T"
+ },
+ {
+  "title": "Wild Shape Hit Points",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 28",
+  "what": "The hit points window, Cole as a Polar Bear.",
+  "source": "docs/mockups/hp-window.html",
+  "link": "https://claude.ai/artifact/7dWbuf3hDwR5V9JFrrDT9H"
+ },
+ {
+  "title": "Game Mode and Bridge",
+  "kind": "earlier",
+  "status": "Superseded",
+  "date": "Oct 28",
+  "what": "By Table Without Modes (Game Mode removed Oct 30); its change rule still holds",
+  "source": "docs/mockups/game-mode-and-bridge.html",
+  "link": "https://claude.ai/artifact/VfmC2TvFmSUf9ruQGWUAjk"
+ },
+ {
+  "title": "Play state and the fight screen",
+  "kind": "plan",
+  "status": "Done",
+  "date": "Oct 28",
+  "what": "The design behind steps 5 and 6, all built; its parked fight screen is slice 2 of the build plan",
+  "source": "docs/plans/2026-10-24-play-state.md",
+  "link": ""
+ },
+ {
+  "title": "How the Bridge Works",
+  "kind": "guide",
+  "status": "Current",
+  "date": "Oct 28",
+  "what": "The bridge as four pictures: who talks to whom, the life of a change, catching up, how a closed sheet is noticed",
+  "source": "docs/artifacts/bridge-flow.html",
+  "link": "https://claude.ai/artifact/VhKW45Ec3mYoQsksGnQZ1T"
+ },
+ {
+  "title": "askdnd D&D Beyond Bridge",
+  "kind": "guide",
+  "status": "Current",
+  "date": "Nov 2",
+  "what": "What the bridge changes, when it's on, the DM as a backup, the risk; for the table.",
+  "source": "docs/artifacts/ddb-bridge.html",
+  "link": "https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G"
+ },
+ {
+  "title": "askdnd Stack Map",
+  "kind": "guide",
+  "status": "Current",
+  "date": "Nov 2",
+  "what": "How the services connect, who changes each, where the keys live.",
+  "source": "docs/stack.html",
+  "link": "https://claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr"
+ },
+ {
+  "title": "askdnd Data Strategy",
+  "kind": "design",
+  "status": "Decided",
+  "date": "Oct 27",
+  "what": "Where data lives: four buckets, books checked once",
+  "source": "docs/artifacts/data-strategy.html",
+  "link": "https://claude.ai/artifact/PWXtaunHcp3MEEJyJpLWoe"
+ },
+ {
+  "title": "askdnd Manage Menu",
+  "kind": "design",
+  "status": "Done",
+  "date": "Oct 27",
+  "what": "Manage for the campaign and ⚙ Admin for askdnd",
+  "source": "docs/mockups/manage-menu.html",
+  "link": "https://claude.ai/artifact/Y3ZKdQHFykyR9ywm3sV7at"
+ },
+ {
+  "title": "Battle Slim Header",
+  "kind": "earlier",
+  "status": "Not built",
+  "date": "Oct 27",
+  "what": "You chose to let Battle's header scroll with the page instead",
+  "source": "docs/mockups/battle-header.html",
+  "link": "https://claude.ai/artifact/CXkXguKnGmrPMnPXDYjwP2"
+ },
+ {
+  "title": "Party Redesign",
+  "kind": "design",
+  "status": "Done",
+  "date": "Oct 26",
+  "what": "The Party page built from askdnd's pieces",
+  "source": "docs/mockups/party.html",
+  "link": "https://claude.ai/artifact/EJmFmzbXoV15HKjpJiJ18a"
+ },
+ {
+  "title": "Play state mockup",
+  "kind": "earlier",
+  "status": "Superseded",
+  "date": "Oct 26",
+  "what": "By Wild Shape Hit Points and Game Mode and Bridge",
+  "source": "docs/mockups/play-state.html",
+  "link": ""
+ },
+ {
+  "title": "Content sources",
+  "kind": "earlier",
+  "status": "Superseded",
+  "date": "Oct 26",
+  "what": "By the data strategy (Oct 27)",
+  "source": "docs/plans/2026-10-26-content-sources.md",
+  "link": ""
+ },
+ {
+  "title": "Next steps, Oct 27",
+  "kind": "earlier",
+  "status": "Superseded",
+  "date": "Oct 27",
+  "what": "By this page",
+  "source": "docs/plans/2026-10-27-next-steps.md",
+  "link": ""
+ },
+ {
+  "title": "Roadmap, Oct 21",
+  "kind": "earlier",
+  "status": "Superseded",
+  "date": "Oct 21",
+  "what": "The steps before the VTT plan (lists, design system); all done",
+  "source": "docs/plans/2026-10-21-roadmap.md",
+  "link": ""
+ },
+ {
+  "title": "The tour",
+  "kind": "plan",
+  "status": "Done",
+  "date": "Oct 26",
+  "what": "The new-player tour and Help › What askdnd adds",
+  "source": "docs/plans/2026-10-26-tour.md",
+  "link": ""
+ },
+ {
+  "title": "Content workflows",
+  "kind": "design",
+  "status": "Done",
+  "date": "Oct 22",
+  "what": "Recaps, entries and suggestions, start to finish",
+  "source": "docs/artifacts/content-workflows.html",
+  "link": "https://claude.ai/artifact/MPiEDh3KMNmB2NoCtuq52U"
+ },
+ {
+  "title": "Campaigns and roles",
+  "kind": "design",
+  "status": "Done",
+  "date": "Oct 22",
+  "what": "Campaigns and roles per campaign",
+  "source": "docs/artifacts/campaigns-and-roles.html",
+  "link": "https://claude.ai/artifact/LLRsdZLY7wf5W7vTp4SEZR"
+ },
+ {
+  "title": "Design system",
+  "kind": "design",
+  "status": "Done",
+  "date": "Oct 22",
+  "what": "The plan; the living version is Manage › Design system",
+  "source": "docs/artifacts/design-system-plan.html",
+  "link": "https://claude.ai/artifact/TJBLGJti8JCkUfN2BXph8K"
+ },
+ {
+  "title": "Earlier explorations: lists and filters, spellcasting, table rolls, navigation, lists questions, step 3 and 4 before and after",
+  "kind": "design",
+  "status": "Done",
+  "date": "Oct 21–22",
+  "what": "Built; kept for the record",
+  "source": "docs/artifacts/lists-and-filters",
+  "link": "https://claude.ai/artifact/DsaXefMSwqfssr9Nr9CX6G"
+ },
+ {
+  "title": "Lists: open questions",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 26",
+  "what": "Questions answered before the list pattern was built (Oct 21)",
+  "source": "docs/artifacts/lists-open-questions.html",
+  "link": "https://claude.ai/artifact/SkZpGVy97JqLcxyi3zyUE4"
+ },
+ {
+  "title": "Navigation ideas",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 26",
+  "what": "Menu bar and character page explorations (a design canvas)",
+  "source": "docs/artifacts/navigation-ideas",
+  "link": "https://claude.ai/artifact/4NJKfKE7uyTEKu6y4vVgn2"
+ },
+ {
+  "title": "Spellcasting ideas",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 26",
+  "what": "The Spell Book explorations (a design canvas)",
+  "source": "docs/artifacts/spellcasting-ideas",
+  "link": "https://claude.ai/artifact/MugmGvRMCLnPotQWf2fzFc"
+ },
+ {
+  "title": "Step 3 before and after",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 26",
+  "what": "Character pages on the design system (screenshots stay on claude.ai)",
+  "source": "docs/artifacts/step-3-before-after.html",
+  "link": "https://claude.ai/artifact/8wDE5Mes9sjAqUbfmosakD"
+ },
+ {
+  "title": "Step 4 before and after",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 26",
+  "what": "Story and Manage pages on the design system (screenshots stay on claude.ai)",
+  "source": "docs/artifacts/step-4-before-after.html",
+  "link": "https://claude.ai/artifact/PqQRvc1cyx52vWrsdUKwDQ"
+ },
+ {
+  "title": "Table rolls ideas",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 26",
+  "what": "Table rolls explorations (a design canvas)",
+  "source": "docs/artifacts/table-rolls-ideas",
+  "link": "https://claude.ai/artifact/4hB75v84hYmrJwYUoTADfr"
+ },
+ {
+  "title": "Mockup v2: Battle, Character, Party",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 22",
+  "what": "An early exploration, kept for the record.",
+  "source": "docs/mockups/archive",
+  "link": ""
+ },
+ {
+  "title": "Campaign page options",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 22",
+  "what": "An early exploration, kept for the record.",
+  "source": "docs/mockups/campaign-reading.html",
+  "link": ""
+ },
+ {
+  "title": "Campaign tabs",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 22",
+  "what": "An early exploration, kept for the record.",
+  "source": "docs/mockups/campaign-tabs.html",
+  "link": ""
+ },
+ {
+  "title": "Campaign page v2",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 23",
+  "what": "An early exploration, kept for the record.",
+  "source": "docs/mockups/campaign-v2.html",
+  "link": ""
+ },
+ {
+  "title": "D&D Beyond Overlay",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 29",
+  "what": "askdnd beside the D&D Beyond sheet through an extension, every change confirmed by D&D Beyond (mockup with questions, Oct 27). Superseded: it became the D&D Beyond bridge (askdnd D&D Beyond Bridge, How the Bridge Works).",
+  "source": "docs/mockups/ddb-overlay.html",
+  "link": "https://claude.ai/artifact/DAPegrjfmiVYe5Kg8isAXb"
+ },
+ {
+  "title": "Dice you can see",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 23",
+  "what": "An early exploration, kept for the record.",
+  "source": "docs/mockups/dice-on-screen.html",
+  "link": ""
+ },
+ {
+  "title": "Dice tuning",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 24",
+  "what": "Manage › askdnd › Dice tuning (built).",
+  "source": "docs/mockups/dice-tuning.html",
+  "link": ""
+ },
+ {
+  "title": "Dice in three situations",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 23",
+  "what": "Thrown 3D dice landing on askdnd's numbers (built).",
+  "source": "docs/mockups/dice-two-ways.html",
+  "link": ""
+ },
+ {
+  "title": "Manage layout",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 22",
+  "what": "Manage pages in sections, most often opened first (approved Oct 23).",
+  "source": "docs/mockups/manage-layout.html",
+  "link": ""
+ },
+ {
+  "title": "Menu bar",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 22",
+  "what": "The menu bar, Option B (built).",
+  "source": "docs/mockups/menu-bar.html",
+  "link": ""
+ },
+ {
+  "title": "The tour and What askdnd adds",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Oct 24",
+  "what": "The tour and Help › What askdnd adds (built).",
+  "source": "docs/mockups/tour.html",
+  "link": ""
+ },
+ {
+  "title": "VTT switch and test campaign",
+  "kind": "earlier",
+  "status": "Earlier",
+  "date": "Oct 23",
+  "what": "An early exploration, kept for the record.",
+  "source": "docs/mockups/vtt-switch.html",
+  "link": ""
+ },
+ {
+  "title": "How askdnd organizes its data",
+  "kind": "plan",
+  "status": "Done",
+  "date": "Oct 20",
+  "what": "Campaigns, roles per campaign, story pages under /c/<campaign>/.",
+  "source": "docs/plans/2026-10-21-data-organization.md",
+  "link": ""
+ },
+ {
+  "title": "Who writes the campaign: content workflows",
+  "kind": "plan",
+  "status": "Decided",
+  "date": "Oct 22",
+  "what": "The DM writes the canon and everything else proposes; one inbox for every suggestion.",
+  "source": "docs/plans/2026-10-22-content-workflows.md",
+  "link": ""
+ },
+ {
+  "title": "From table companion to virtual tabletop",
+  "kind": "plan",
+  "status": "Current",
+  "date": "Oct 22",
+  "what": "The detail behind the roadmap: every phase and step of the VTT, with statuses.",
+  "source": "docs/plans/2026-10-22-vtt-roadmap.md",
+  "link": ""
+ },
+ {
+  "title": "Data strategy: four buckets",
+  "kind": "plan",
+  "status": "Decided",
+  "date": "Oct 27",
+  "what": "Where askdnd's data lives; private books checked once per campaign.",
+  "source": "docs/plans/2026-10-27-data-strategy.md",
+  "link": ""
+ },
+ {
+  "title": "Your creatures: build plan",
+  "kind": "plan",
+  "status": "Built",
+  "date": "Nov 3",
+  "what": "The slices behind Your creatures: a creature's Battle, its Hit Points on D&D Beyond, familiars, summons, its World entry.",
+  "source": "docs/plans/2026-11-03-your-creatures.md",
+  "link": ""
+ }
+]

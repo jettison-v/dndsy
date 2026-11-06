@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, config, review, web
+from app import access, config, documents, review, web
 from app.auth import (
     can_edit_settings,
     can_moderate,
@@ -48,6 +48,7 @@ PAGES = (
     ("accounts", "Accounts", "/manage/accounts", "Who can sign in, who's an admin, their campaigns", ASKDND, PEOPLE, is_admin, ()),
     ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign; start one, move a character", ASKDND, PEOPLE, is_admin, ()),
     ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, RUNNING, is_admin, ()),
+    ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, RUNNING, is_admin, ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, RUNNING, is_admin, ()),
     ("backups", "Backups and imports", "/manage/backups", "Nightly backups, then imports", ASKDND, RUNNING, is_admin, ()),
     ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, RUNNING, is_admin, ()),
@@ -59,7 +60,7 @@ PAGES = (
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, is_admin, ()),
 )
 IN_MENU = ("needs", "inbox", "sessions", "table",  # each menu's own items (Manage, then Admin); the rest are on one line
-           "overview", "feedback", "accounts", "campaigns", "usage", "backups")
+           "overview", "feedback", "documents", "accounts", "campaigns", "usage", "backups")
 COUNTED = ("needs", "inbox", "feedback")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
 
 
@@ -236,6 +237,7 @@ def overview(request: Request, db: Session = Depends(get_db)):
                      f"{_plural(sum(1 for p in people if p == access.ADMIN), 'admin')}", ""),
         "campaigns": (f"{_plural(len(camps), 'campaign')}" + (f", {sum(1 for c in camps if c.is_test)} test" if any(c.is_test for c in camps) else ""), ""),
         "corrections": (f"{fixes} to build into askdnd" if fixes else "Nothing to build in", "warn" if fixes else "ok"),
+        "documents": (_plural(len(documents.library()), "document"), ""),
     }
     if config.DDB_BRIDGE:
         from app import ddb_bridge

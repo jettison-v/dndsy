@@ -1250,6 +1250,24 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .ov-card { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); text-decoration: none; }
 .ov-card:hover { border-color: var(--line-strong); background: var(--row-hover); }
 .ov-card b { color: var(--text-strong); }
+/* Manage › askdnd › Documents (app/documents.py): the library's rows, and one document in its sealed frame */
+.doc-search { display: flex; gap: var(--sp-2); align-items: center; margin: 0 0 var(--sp-4); max-width: 520px; }
+.doc-search input { flex: 1; min-width: 0; }
+.doc-list { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; }
+.doc-row { display: grid; grid-template-columns: minmax(0, 15rem) auto 4.5rem minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); align-items: baseline;
+  padding: var(--sp-2) 0; border-top: 1px solid var(--line); }
+.doc-row .tag { justify-self: start; }
+.doc-title { font-weight: 600; color: var(--text-strong); }
+.doc-date { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.doc-what { color: var(--muted); font-size: var(--fs-sm); min-width: 0; }
+@media (max-width: 900px) { .doc-row { grid-template-columns: minmax(0, 1fr) auto; } .doc-date { grid-column: 2; grid-row: 2; justify-self: end; } .doc-what { grid-column: 1 / -1; } }
+.doc-back { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
+.doc-meta { margin: var(--sp-1) 0 var(--sp-3); overflow-wrap: anywhere; }
+.doc-boards { margin-bottom: var(--sp-3); overflow-x: auto; }
+.doc-text { max-width: 860px; overflow-x: auto; }
+.doc-text table { border-collapse: collapse; }
+.doc-text th, .doc-text td { border: 1px solid var(--line); padding: var(--sp-1) var(--sp-2); text-align: left; vertical-align: top; }
+.doc-frame { display: block; width: 100%; height: calc(100vh - 220px); min-height: 480px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
 .ov-state { font-size: var(--fs-sm); }
 .ov-state.ok { color: var(--green); } .ov-state.warn { color: var(--amber); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */

@@ -9,6 +9,9 @@ live where they belong (`docs/roadmap.html`, `docs/stack.html`, `docs/mockups/`)
 Treat the repo as public (it's private for now, and may open again), so nothing goes here that couldn't be: no book text, campaign story or players' notes, and no
 screenshots of real pages (they show the campaign).
 
+Every page is also in `docs/library.json`, the list behind **Manage › askdnd › Documents** in askdnd (admins only),
+where each opens from its copy here; `scripts/library.py` writes the roadmap's table of documents from it.
+
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
 | Recording to Recap | [NpPqj4ifE2zKdXAJgZQBaM](https://claude.ai/artifact/NpPqj4ifE2zKdXAJgZQBaM) | `recording-to-recap.html` | Brett's steps after a game night: MacWhisper, the Processor's four steps, publishing the recap, where the files are (Nov 6; kept current) |
