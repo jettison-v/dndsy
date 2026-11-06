@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>No picture yet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#f3b9a8}a:hover{color:#ffd2c4}
+.panel{background:#1f2226;border:1px solid #34383e;border-radius:14px;padding:16px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 14px;font-size:14px}
+.k{color:#a29d93}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid #3a3f46;background:#262a30;color:#ebe7df}
+.btn.main{background:#2f3d5a;border-color:#45577d;color:#fff}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1000px; box-sizing: border-box; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; font-size: 15px; padding: 32px; display: flex; flex-direction: column; gap: 30px">
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 13px; font-weight: 700; color: #e8b34b">What the DM sees (or anyone who can change the entry): the slot stays, and asks for one</span>
+    <div style="display: grid; grid-template-columns: 220px minmax(0, 1fr) 280px; gap: 28px; align-items: start; background: #17191c; border: 1px solid #2a2e34; border-radius: 16px; padding: 24px">
+      <div style="width: 220px; height: 280px; box-sizing: border-box; border-radius: 14px; border: 1.5px dashed #4a505a; background: repeating-linear-gradient(135deg, #1b1e22 0 10px, #1d2024 10px 20px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 16px; text-align: center">
+        <svg width="56" height="56" viewBox="0 0 56 56" fill="none" stroke="#6b717b" stroke-width="2"><circle cx="28" cy="20" r="10"/><path d="M8 50c2-11 10-17 20-17s18 6 20 17"/></svg>
+        <span style="font-size: 13px; color: #a29d93">No picture yet</span>
+        <span class="btn main">✦ Draw one</span>
+        <span class="btn">Upload</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 13px; color: #a29d93">Person · Harbourmaster at the Saltgate</span>
+        <h1 style="margin: 0; font-size: 34px; font-weight: 700; color: #fff">NPC 1</h1>
+        <p style="margin: 6px 0 0; font-size: 16px; line-height: 1.6; max-width: 60ch">Keeps the harbour's books and remembers every favour owed. Met the party at the gate when they arrived by sea, and traded news of the northern road for a debt still unpaid.</p>
+        <span style="font-size: 12px; color: #8f8a82">[Example text]</span>
+      </div>
+      <div class="panel">
+        <span class="k">First met</span><span>Session 3</span>
+        <span class="k">Last seen</span><span>Session 19</span>
+        <span class="k">Member of</span><a href="#">The Harbour Guild</a>
+        <span class="k">Where</span><a href="#">The Saltgate ↗ map</a>
+      </div>
+    </div>
+    <span style="font-size: 13px; color: #a29d93; max-width: 110ch; line-height: 1.55">Both buttons open the one Picture window. <b style="color: #ebe7df">Draw one</b> opens it on Describe it, with the entry's own description already filled in and the campaign's Art style, so a picture is two clicks away. The outline in the slot follows the kind: a figure for a person, a creature, a chest for an item, hills for a place, a shield for a faction.</span>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <span style="font-size: 13px; font-weight: 700; color: #e8b34b">What a player sees: no empty box; the words take the room</span>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 28px; align-items: start; background: #17191c; border: 1px solid #2a2e34; border-radius: 16px; padding: 24px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 14px">
+          <div style="width: 52px; height: 52px; border-radius: 50%; background: #2a3243; border: 1px solid #3d4a63; display: grid; place-items: center; color: #b9c6e4; font-size: 17px; font-weight: 700">N1</div>
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 13px; color: #a29d93">Person · Harbourmaster at the Saltgate</span>
+            <h1 style="margin: 0; font-size: 34px; font-weight: 700; color: #fff; line-height: 1.1">NPC 1</h1>
+          </div>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 16px; line-height: 1.6; max-width: 70ch">Keeps the harbour's books and remembers every favour owed. Met the party at the gate when they arrived by sea, and traded news of the northern road for a debt still unpaid.</p>
+      </div>
+      <div class="panel">
+        <span class="k">First met</span><span>Session 3</span>
+        <span class="k">Last seen</span><span>Session 19</span>
+        <span class="k">Member of</span><a href="#">The Harbour Guild</a>
+        <span class="k">Where</span><a href="#">The Saltgate ↗ map</a>
+      </div>
+    </div>
+    <span style="font-size: 13px; color: #a29d93; max-width: 110ch; line-height: 1.55">The portrait column closes and a small badge with the entry's initials sits by the name, in a colour for its kind, so the page still looks finished. When a picture arrives, the column opens again.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
