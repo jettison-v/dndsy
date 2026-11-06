@@ -3117,6 +3117,7 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .fb-st { border-radius: var(--r-pill); padding: 2px var(--sp-2); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
 .fb-st.new { background: var(--red-soft); color: var(--link); }
 .fb-st.question { background: var(--amber-soft); color: var(--amber); }
+.fb-st.review { background: var(--amber-soft); color: var(--amber); }  /* the table's note, waiting for an admin */
 .fb-st.planned { background: var(--blue-soft); color: var(--blue); }
 .fb-st.done { background: var(--green-soft); color: var(--green); }
 .fb-st.deleted { background: var(--surface-3); color: var(--muted); }

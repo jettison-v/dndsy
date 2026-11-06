@@ -3859,7 +3859,7 @@
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
       win.close(); unmark();
-      if (window.askdndToast) window.askdndToast('In the queue · ' + j.waiting + ' new');
+      if (window.askdndToast) window.askdndToast(j.review ? 'Sent · an admin reads it before it goes to Claude' : 'In the queue · ' + j.waiting + ' new');
     } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
   });
   // \ anywhere but a field; the menus' item; pressing and holding the logo
