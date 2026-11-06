@@ -73,8 +73,9 @@ def _wild_key(db: Session, ch, field: str) -> str:
 
 
 @router.post("/characters/{character_id:int}/count")
-def change(request: Request, character_id: int, field: str, to: str = Form("use"), db: Session = Depends(get_db)):
-    """Use one, or give one back (Undo is the other of the two)."""
+def change(request: Request, character_id: int, field: str, to: str = Form("use"), how_many: str = Form("1", alias="n"),
+           db: Session = Depends(get_db)):
+    """Use one, or give one back (Undo is the other of the two); a pool (Lay On Hands) takes how many."""
     ch, _ = _guard(db, request, character_id)
     ddb_bridge.reach(ch)
     n = count(_sheet(db, ch), field)
@@ -82,7 +83,9 @@ def change(request: Request, character_id: int, field: str, to: str = Form("use"
         raise HTTPException(404)
     if (to == "use" and n["left"] <= 0) or (to == "back" and n["max"] is not None and n["left"] >= n["max"]):
         raise HTTPException(409, f"{n['name']}: none left." if to == "use" else f"{n['name']}: none to give back.")
-    delta = 1 if to == "use" else -1
+    k = int(how_many) if how_many.strip().isdigit() and int(how_many) > 0 else 1
+    k = min(k, n["left"]) if to == "use" else min(k, n["max"] - n["left"]) if n["max"] is not None else k
+    delta = k if to == "use" else -k
     numbers = ddb_bridge.numbers(ch)
     if field.startswith("item:"):  # (an item's count goes down as it's used, where the others count what's used)
         made = "item", {"item": int(field.split(":", 1)[1]), "delta": -delta, "name": n["name"]}
@@ -90,10 +93,10 @@ def change(request: Request, character_id: int, field: str, to: str = Form("use"
         made = ddb_bridge._change(numbers, {"kind": "use", "field": field, "delta": delta})
     if not made:
         raise HTTPException(409, "That isn't a change askdnd can make on D&D Beyond.")
-    ddb_bridge.add(db, ch, *made, f"{ch.name}: {n['name']} {'used' if to == 'use' else 'back'}")
+    ddb_bridge.add(db, ch, *made, f"{ch.name}: {n['name']} {(str(k) + ' ') if k > 1 else ''}{'used' if to == 'use' else 'back'}")
     db.commit()
     left = n["left"] - delta
-    return JSONResponse({"text": f"{n['name']}: {left}" + (f" of {n['max']}" if n["max"] else "") + " left", "undo": {"to": "back" if to == "use" else "use"},
+    return JSONResponse({"text": f"{n['name']}: {left}" + (f" of {n['max']}" if n["max"] else "") + " left", "undo": {"to": "back" if to == "use" else "use", "n": str(k)},
                          "undoUrl": f"/characters/{ch.id}/count?field={field}", "deliver": web.deliver_now(ch)})
 
 

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Story, the page is the scroll</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Cormorant+Garamond:wght@500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#f3b9a8}a:hover{color:#ffd2c4}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1240px; box-sizing: border-box; background: #15171a; color: #ebe7df; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <div style="height: 60px; flex: none; display: flex; align-items: center; gap: 20px; padding: 0 28px; background: #0f1113; border-bottom: 2px solid #8a2b2b; font-size: 15px">
+    <b style="font-size: 17px; color: #fff">askdnd</b>
+    <span style="color: #fff; font-weight: 600">The Adventure Begins</span>
+    <span style="width: 1px; height: 22px; background: #34383e"></span>
+    <span style="color: #fff; font-weight: 600">Story</span><span style="color: #a29d93">Campaign</span><span style="color: #a29d93">Table ↗</span>
+    <span style="flex: 1"></span>
+    <span style="color: #a29d93">Cole</span><span style="color: #a29d93">Party ▾</span><span style="color: #a29d93">Manage ▾</span>
+  </div>
+
+  <div style="flex: 1; padding: 36px 48px 48px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; align-items: center; gap: 24px">
+      <h1 style="margin: 0; font-size: 30px; font-weight: 700; color: #fff">Story</h1>
+      <span style="flex: 1"></span>
+      <label style="display: flex; align-items: center; gap: 8px; width: 300px; height: 38px; padding: 0 12px; border: 1px solid #34383e; border-radius: 8px; color: #6f6b64; font-size: 14px">⌕ <input type="search" placeholder="Search the story" aria-label="Search the story" style="flex: 1; border: 0; background: transparent; color: #ebe7df; font: inherit"></label>
+    </div>
+    <div style="display: flex; gap: 28px; border-bottom: 1px solid #34383e; font-size: 15px">
+      <span style="padding: 0 2px 12px; color: #fff; font-weight: 600; border-bottom: 2px solid #d64545">Previously on…</span>
+      <span style="padding: 0 2px 12px; color: #a29d93">All sessions <span style="font-size: 12px">19</span></span>
+    </div>
+
+    <div style="margin: 10px 24px 0">
+      <div style="position: relative; height: 22px; margin: 0 -24px; border-radius: 11px; background: linear-gradient(180deg, #4a3c2c 0%, #2e251c 50%, #1b1611 100%); box-shadow: 0 4px 12px rgba(0,0,0,.5)">
+        <span style="position: absolute; left: -12px; top: -6px; width: 17px; height: 34px; border-radius: 8px; background: linear-gradient(180deg, #57462f, #241c14)"></span>
+        <span style="position: absolute; right: -12px; top: -6px; width: 17px; height: 34px; border-radius: 8px; background: linear-gradient(180deg, #57462f, #241c14)"></span>
+      </div>
+      <div style="position: relative; padding: 44px 64px 40px">
+        <div style="position: absolute; inset: 0; background: radial-gradient(ellipse 110% 140% at 50% 45%, #221e19 0%, #1f1c18 65%, #1a1916 100%); opacity: .75; filter: saturate(.8); -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 3%, #000 97%, transparent 100%); mask-image: linear-gradient(90deg, transparent 0, #000 3%, #000 97%, transparent 100%)"></div>
+        <div style="position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 56px">
+          <div style="display: flex; flex-direction: column; gap: 22px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 12px; font-weight: 700; letter-spacing: .14em; color: #a99070">SESSION 19 · NOV 2</span>
+              <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #f1e9da">The road to Star Mount</h2>
+            </div>
+            <div style="font-size: 17px; line-height: 1.75; color: #e2dccf; max-width: 66ch">
+              <p style="margin: 0 0 1em"><span style="float: left; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 58px; line-height: .8; padding: 6px 10px 0 0; color: #a99070">O</span>n the road to <a href="#">Star Mount</a>, the party met a group led by <a href="#">NPC 1</a> and <a href="#">NPC 2</a>. Each bore a mark on the forehead, showed no fear of the dark, and urged the party to turn back.</p>
+              <p style="margin: 0 0 1em"><a href="#">Trah</a> answered with fire. When the smoke cleared only <a href="#">NPC 2</a> was left standing, dazed, and remembering nothing of the weeks before. <a href="#">Big C</a> tended her burns while <a href="#">No Name</a> kept watch on the hills.</p>
+              <p style="margin: 0"><a href="#">Cole</a> found a red stone in the ashes. It flickered when he held it, and the party carried on toward the monastery with more questions than answers.</p>
+            </div>
+            <div style="color: #5c5040; font-size: 18px">❦</div>
+            <div style="display: flex; align-items: center; gap: 16px; font-size: 14px">
+              <button type="button" style="height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #3a3226; background: transparent; color: #ebe7df; font: inherit">Earlier sessions</button>
+              <a href="#">Something wrong here? Tell the DM</a>
+            </div>
+          </div>
+          <aside style="display: flex; flex-direction: column; gap: 28px; border-left: 1px solid #3a3226; padding-left: 28px; font-size: 14px; line-height: 1.55; color: #c9c4ba">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 11px; font-weight: 700; letter-spacing: .14em; color: #a99070">FROM THE DM</span>
+              <span style="font-style: italic">The stone is still warm. [Example text]</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <span style="font-size: 11px; font-weight: 700; letter-spacing: .14em; color: #a99070">KEY MOMENTS</span>
+              <span><span style="color: #8f8a82">Fight ·</span> The party fought the marked group on the road.</span>
+              <span><span style="color: #8f8a82">Discovery ·</span> <a href="#">Cole</a> found a red stone that flickers when held.</span>
+              <span><span style="color: #8f8a82">Character ·</span> <a href="#">NPC 2</a> remembers nothing of the weeks before.</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <span style="font-size: 11px; font-weight: 700; letter-spacing: .14em; color: #a99070">OPEN THREADS</span>
+              <span>Reach the monastery <span style="color: #8f8a82">· Quest</span></span>
+              <span>Who marked the group? <span style="color: #8f8a82">· Quest</span></span>
+              <span style="font-style: italic">The stone can be tracked. <span style="font-style: normal; color: #8f8a82">· Theory</span></span>
+            </div>
+          </aside>
+        </div>
+      </div>
+      <div style="position: relative; height: 22px; margin: 0 -24px; border-radius: 11px; background: linear-gradient(180deg, #4a3c2c 0%, #2e251c 50%, #1b1611 100%); box-shadow: 0 -2px 10px rgba(0,0,0,.4)">
+        <span style="position: absolute; left: -12px; top: -6px; width: 17px; height: 34px; border-radius: 8px; background: linear-gradient(180deg, #57462f, #241c14)"></span>
+        <span style="position: absolute; right: -12px; top: -6px; width: 17px; height: 34px; border-radius: 8px; background: linear-gradient(180deg, #57462f, #241c14)"></span>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

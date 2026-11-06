@@ -213,6 +213,8 @@ a.live-row:hover .live-go { color: var(--text); }
 /* A small window's buttons (DESIGN.md › Where a window's actions go; the UI pass, 2026-11-02): the main action first, then
    others, then Cancel as a quiet link */
 .use-foot { justify-content: flex-start; }
+.count-n { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }  /* a pool's How many (Lay On Hands) */
+.count-n input { width: 5.5em; }
 .cond-rest { display: inline-flex; align-items: center; min-height: var(--chip-h); padding: 0 var(--sp-3); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--r-pill); color: var(--muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
 .cond-rest:hover { color: var(--text-strong); border-color: var(--muted); }
 .cond-rest { gap: var(--sp-1); border-style: solid; color: var(--text); }
