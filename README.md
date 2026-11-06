@@ -63,6 +63,8 @@ Then open **askdnd Processor** from Applications (or the Dock): drop in a MacWhi
 http://127.0.0.1:8765 only; raw transcripts never leave the Mac. Logs:
 `~/Library/Logs/askdnd-processor.log`.
 
+The whole round, from recording to the table's recap, step by step: [docs/recording-to-recap.md](docs/recording-to-recap.md).
+
 ## Database changes
 
 Edit `app/models.py`, then generate and apply a migration:
