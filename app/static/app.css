@@ -9,6 +9,7 @@
   --story-cap: #a99070; --story-fleuron: #5c5040; --rod-cap: #57462f; --rod-hi: #4a3c2c; --story-head: #f1e9da;
   --red: #d64545; --red-hover: #e35a5a; --red-soft: rgba(214, 69, 69, .14);
   --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --staging-bar: #3a2a08; --staging-edge: var(--amber); --staging-ink: #1a1204;  /* staging's menu bar and label */
   --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
   --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
   --surface-3: #30353b; --line-soft: #2c3036; --row-hover: #20242a; --bg-glass: rgba(21, 23, 26, .97);
@@ -78,6 +79,12 @@ img { max-width: 100%; }
 
 /* Top bar */
 .topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 5; }
+/* Staging (docs/SETUP_LOG.md › A staging copy): an amber menu bar and a Staging label, so it's never taken for the table's askdnd */
+body[data-staging] .topbar { background: var(--staging-bar); border-bottom-color: var(--staging-edge); }
+body[data-staging] .bottom-nav { background: var(--staging-bar); border-top: 2px solid var(--staging-edge); }
+body[data-staging] .brand-word { display: none; }  /* (the label takes the word's place, so the bar keeps its room) */
+.staging-mark { font-family: var(--cond); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--staging-ink); background: var(--amber); border-radius: var(--r-pill); padding: 1px 8px; line-height: 1.6; }
 .topbar-inner { max-width: 1360px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 14px; }
 .brand { font-family: var(--cond); font-weight: 700; font-size: var(--fs-lg); color: var(--text-strong); text-decoration: none; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .brand img { width: 34px; height: 34px; border-radius: var(--r-md); }

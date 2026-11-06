@@ -28,6 +28,15 @@
       "port": 8000
     },
     {
+      "name": "web-staging",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "STAGING=1 uv run --env-file .env uvicorn app.main:app --port 8002"
+      ],
+      "port": 8002
+    },
+    {
       "name": "web-new",
       "runtimeExecutable": "sh",
       "runtimeArgs": [

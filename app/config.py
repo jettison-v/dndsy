@@ -17,6 +17,9 @@ def is_allowed(email: str | None, allowlist: frozenset[str]) -> bool:
 
 APP_ENV = os.getenv("APP_ENV", "development")
 IS_PRODUCTION = APP_ENV == "production"
+# Staging (docs/SETUP_LOG.md › A staging copy): Railway names the environment; STAGING=1 shows its look locally. Every
+# page says so (the Staging label and an amber menu bar), so no one mistakes it for the table's askdnd.
+STAGING = os.getenv("RAILWAY_ENVIRONMENT_NAME") == "staging" or os.getenv("STAGING", "").strip() == "1"
 # Publishing a session drafts the next one with Claude (real cost). On in production; off locally unless
 # AUTO_DRAFT=1, so testing with a copy of beta's data (scripts/pull_beta.sh) doesn't spend money by surprise.
 AUTO_DRAFT = os.getenv("AUTO_DRAFT", "1" if IS_PRODUCTION else "0").strip().lower() in ("1", "true", "yes", "on")
