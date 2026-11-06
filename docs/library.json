@@ -75,8 +75,8 @@
   "title": "How askdnd Is Tested",
   "kind": "guide",
   "status": "Current",
-  "date": "Nov 5",
-  "what": "The four kinds of test, and the live test on the real D&D Beyond in depth: where and when it runs, its seats, all 27 runs, how it looks after itself, what it doesn't cover.",
+  "date": "Nov 6",
+  "what": "The four kinds of test, and the live test on the real D&D Beyond: where and when it runs, its seats, every run by what it exercises, how it looks after itself, what it doesn't cover.",
   "source": "docs/artifacts/testing.html",
   "link": "https://claude.ai/artifact/Mwscumi8DvfFvTkL5CzPJG"
  },
@@ -433,10 +433,10 @@
  },
  {
   "title": "How the Bridge Works",
-  "kind": "guide",
-  "status": "Current",
+  "kind": "earlier",
+  "status": "Merged into askdnd D&D Beyond Bridge",
   "date": "Oct 28",
-  "what": "The bridge as four pictures: who talks to whom, the life of a change, catching up, how a closed sheet is noticed",
+  "what": "Its four diagrams are now How it works on the D&D Beyond Bridge guide.",
   "source": "docs/artifacts/bridge-flow.html",
   "link": "https://claude.ai/artifact/VhKW45Ec3mYoQsksGnQZ1T"
  },
@@ -444,8 +444,8 @@
   "title": "askdnd D&D Beyond Bridge",
   "kind": "guide",
   "status": "Current",
-  "date": "Nov 2",
-  "what": "What the bridge changes, when it's on, the DM as a backup, the risk; for the table.",
+  "date": "Nov 6",
+  "what": "The bridge in one guide: what it changes on D&D Beyond, the DM as a backup, when it's on, when something goes wrong, and how it works in four diagrams.",
   "source": "docs/artifacts/ddb-bridge.html",
   "link": "https://claude.ai/artifact/9H59RDNi99gVa7bNwmjp6G"
  },
@@ -453,7 +453,7 @@
   "title": "askdnd Stack Map",
   "kind": "guide",
   "status": "Current",
-  "date": "Nov 2",
+  "date": "Nov 6",
   "what": "How the services connect, who changes each, where the keys live.",
   "source": "docs/stack.html",
   "link": "https://claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr"

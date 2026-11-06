@@ -565,6 +565,8 @@ class Recap(Timestamped, Base):
     author: Mapped[str] = mapped_column(String(20))  # "ai" (Claude) or "brett" (a person: see author_name)
     author_name: Mapped[str] = mapped_column(String(200), default="", server_default="")  # who, when a person wrote it
     status: Mapped[Status] = mapped_column(_enum(Status), default=Status.DRAFT)
+    # Its narration (Listen, app/narration.py): the voice reading it, in file storage, made the first time it's asked for
+    narration_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
     session: Mapped[GameSession] = relationship(back_populates="recaps")
 
 
@@ -670,7 +672,7 @@ class NoteImage(Base):
 
 
 # ExtractionRun sources that are not session drafts (they never hold Claude's questions).
-NON_DRAFTING_SOURCES = ("conversation", "entity")
+NON_DRAFTING_SOURCES = ("conversation", "entity", "narration")  # (narration: Listen, app/narration.py)
 
 
 class ExtractionRun(Timestamped, Base):

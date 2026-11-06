@@ -3,7 +3,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 /* One reading column. The four kinds of test as one comparison table, then the live test in depth: where it runs (a
-   picture), its seats, when it runs, one run step by step (its real log), all 45 runs by area, how it looks after
+   picture), its seats, when it runs, one run step by step (its real log), every run by area, how it looks after
    itself (a picture), and what it doesn't cover. askdnd's explainer colors, dark first, light mirrored. */
 :root {
   --bg: #15171a; --surface: #1f2226; --sunk: #191b1e; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
@@ -98,7 +98,7 @@ ol.steps b { color: var(--strong); }
 pre.log { margin: 0; overflow-x: auto; background: var(--sunk); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font: 12.5px/1.65 var(--mono); color: var(--text); }
 .pass { color: var(--green); font-weight: 500; } .miss { color: var(--red); font-weight: 500; } .note { color: var(--muted); }
 
-/* The 45 runs, by area */
+/* The runs, by area */
 .areas { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
 .area { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; align-content: start; min-width: 0; }
 .area dl { margin: 0; display: grid; gap: 7px; }
@@ -125,16 +125,14 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
     <h1>How askdnd is tested, and what the live test covers</h1>
     <p class="lead">askdnd has four kinds of test. Three run on GitHub and only stand in for D&amp;D Beyond. The fourth, the <b>live test</b>, is the only one that uses the real thing: real Chrome windows on the Mac Mini, signed in as test players, playing real D&amp;D Beyond sheets through askdnd on beta, the way your table does. It runs every night, after every deploy, and whenever you say "run the live tests".</p>
     <nav class="jump" aria-label="On this page">
-      <a href="#kinds">The four kinds</a><a href="#where">Where the live test runs</a><a href="#seats">The seats</a><a href="#when">When it runs</a><a href="#one-run">One run, step by step</a><a href="#runs">All 45 runs</a><a href="#itself">How it looks after itself</a><a href="#scope">What it doesn't cover</a><a href="#results">Where results go</a>
+      <a href="#kinds">The four kinds</a><a href="#where">Where the live test runs</a><a href="#seats">The seats</a><a href="#when">When it runs</a><a href="#one-run">One run, step by step</a><a href="#runs">Every run</a><a href="#itself">How it looks after itself</a><a href="#scope">What it doesn't cover</a><a href="#results">Where results go</a>
     </nav>
   </header>
 
   <div class="nums" aria-label="One night of the live test">
-    <div class="num"><b>45 runs</b><span>each one thing a player or the DM does, start to finish</span></div>
-    <div class="num"><b>~600 checks</b><span>a night: 318 in part 1, 283 more through the DM (Nov 6)</span></div>
     <div class="num"><b>About 90 minutes</b><span>the whole nightly, from 4:00 on the Mini</span></div>
     <div class="num"><b>4 seats</b><span>the DM and three players, each a separate D&amp;D Beyond account</span></div>
-    <div class="num"><b>12 sheets</b><span>Cathartic, Vi (test), Levi, your party's four twins and five more classes: test characters only</span></div>
+    <div class="num"><b>Test sheets only</b><span>Cathartic, Vi (test), Levi, your party's twins and the other classes; never a table character</span></div>
   </div>
 
   <section id="kinds">
@@ -145,7 +143,6 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
       <table class="layers">
         <thead><tr><th scope="col"></th><th scope="col">Server tests</th><th scope="col">Browser tests</th><th scope="col">D&amp;D Beyond drift</th><th scope="col">Live test</th></tr></thead>
         <tbody>
-          <tr><th scope="row">How many</th><td>955</td><td>61</td><td>1 check, 12 sheets</td><td>45 runs, ~600 checks</td></tr>
           <tr><th scope="row">When</th><td>Every change, before it can merge</td><td>Every change, before it can merge</td><td>Every morning</td><td>Every night at 4:00, after every deploy, and on request</td></tr>
           <tr><th scope="row">Where</th><td>GitHub</td><td>GitHub</td><td>GitHub</td><td>The Mac Mini</td></tr>
           <tr><th scope="row">Takes</th><td>About 2 minutes</td><td>About 3½ minutes (three parts at once)</td><td>Under a minute</td><td>About 90 minutes (2 after a deploy)</td></tr>
@@ -248,7 +245,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="eyebrow">The live test · when it runs</div>
     <h2>Three times it runs, two of them on their own</h2>
     <div class="cards">
-      <div class="card hl"><div class="k">Every night</div><div class="when">4:00, Mini time</div><p>All 45 runs (part 1), then every run that changes a sheet again through the DM, with every player's sheet closed. About 90 minutes. Catches what changed during the day on either side: an askdnd change, or D&amp;D Beyond changing something.</p></div>
+      <div class="card hl"><div class="k">Every night</div><div class="when">4:00, Mini time</div><p>Every run (part 1), then every run that changes a sheet again through the DM, with every player's sheet closed. About 90 minutes. Catches what changed during the day on either side: an askdnd change, or D&amp;D Beyond changing something.</p></div>
       <div class="card hl"><div class="k">After every deploy</div><div class="when">Within 5 minutes</div><p>The Mini notices beta's version changed and runs four quick runs: closed-sheet, hit-points, condition and cast (22 checks, under 2 minutes). A deploy that breaks the table is known before anyone plays.</p></div>
       <div class="card"><div class="k">When you ask</div><div class="when">"Run the live tests"</div><p>Claude runs part 1 and gives you the steps that still need a person (part 2). Worth asking after an extension update, after a change to the bridge or the fight, and the day before a session.</p></div>
     </div>
@@ -286,7 +283,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
 
   <section id="runs">
     <div class="eyebrow">The live test · what it covers</div>
-    <h2>All 45 runs, by what they exercise</h2>
+    <h2>Every run, by what they exercise</h2>
     <div class="legend"><span><span class="dm">also through the DM</span> runs again at night with the players' sheets closed, the DM's browser making the change</span><span class="who">Cathartic · Vi · Levi · DM</span> which seat it plays</div>
     <div class="areas">
       <div class="area"><h3>The connection itself</h3><dl>
@@ -359,7 +356,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
           <line class="ln" x1="340" y1="73" x2="370" y2="73" marker-end="url(#b)"/>
 
           <rect class="zone" x="372" y="14" width="330" height="224" rx="12"/>
-          <text class="tz" x="388" y="34">FOR EACH OF THE 45 RUNS</text>
+          <text class="tz" x="388" y="34">FOR EACH RUN</text>
           <rect class="box" x="392" y="46" width="120" height="54" rx="8"/><text class="tb" x="406" y="70">The run</text><text class="ts" x="406" y="88">its checks</text>
           <line class="ln" x1="512" y1="73" x2="552" y2="73" marker-end="url(#b)"/>
           <rect class="box" x="556" y="46" width="128" height="54" rx="8"/><text class="tb" x="570" y="70">Tidy its sheets</text><text class="ts" x="570" y="88">leftovers: a miss</text>
@@ -415,7 +412,7 @@ footer { color: var(--muted); font-size: .82rem; border-top: 1px solid var(--lin
   </section>
 
   <footer>
-    <span>As of Nov 6, 2026: extension 0.12.1 on every seat, 45 runs. Last night 292 of 318 checks, plus 260 of 283 through the DM: nearly every miss was askdnd running out of database connections under the test's load, fixed that morning (PR 242). One run, Wild Companion through the DM, still misses and is on the roadmap.</span>
+    <span>Extension 0.12.1 on every seat. One run, Wild Companion through the DM, misses and is on the roadmap.</span>
     <span>The detail: <code>docs/live-test-plan.md</code> (what each run must do, every result), <code>docs/testing-setup.md</code> (the seats), <code>scripts/real_table.py</code> (the runs). Source of this page: <code>docs/artifacts/testing.html</code>.</span>
   </footer>
 </div>

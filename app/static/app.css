@@ -443,6 +443,32 @@ details.conversation[open] > summary { margin-bottom: 12px; }
 .tale > .subtitle { margin: 0; }
 .tale-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; margin-bottom: var(--sp-5); }
 .tale-head h2 { flex: none; margin: 0; font-size: var(--fs-xl); font-weight: 600; color: var(--story-head); text-wrap: balance; }
+.tale-listen { margin-top: var(--sp-2); }
+/* Listen to the recap (Labs, app/narration.py; app.js "Listen to the recap"): the narration over the pictures of each
+   paragraph, panning slowly (Ken Burns), its words below; a new paragraph fades in over the last */
+.tale-player { position: fixed; inset: 0; z-index: 70; background: var(--chrome); color: var(--story-text); overflow: hidden; }
+body.tale-playing { overflow: hidden; }
+.tp-stage { position: absolute; inset: 0; }
+.tp-layer { position: absolute; inset: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 2px; opacity: 0; transition: opacity 1.6s ease; }
+.tp-layer.on { opacity: 1; }
+.tp-layer img { width: 100%; height: 100%; object-fit: cover; min-width: 0; animation: tp-drift 18s linear forwards; }
+.tp-layer[data-n="0"] { background: radial-gradient(ellipse at 50% 40%, var(--surface-2), var(--chrome) 70%); }
+@keyframes tp-drift { from { transform: scale(1.04) translateX(0); } to { transform: scale(1.16) translateX(calc(var(--tp-drift, 1) * 2.5%)); } }
+.tale-player::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--chrome) 70%, transparent), transparent 22%, transparent 45%, color-mix(in srgb, var(--chrome) 92%, transparent) 78%); }
+.tp-head, .tp-words, .tp-say, .tp-bar, .tp-controls { position: absolute; z-index: 1; }
+.tp-head { top: var(--sp-5); left: 0; right: 0; display: grid; justify-items: center; gap: var(--sp-1); text-align: center; padding: 0 var(--sp-4); }
+.tp-kicker { font-size: var(--fs-xs); letter-spacing: .14em; text-transform: uppercase; color: var(--amber); }
+.tp-title { margin: 0; font-size: var(--fs-2xl); color: var(--story-head); text-wrap: balance; }
+.tp-words { left: 50%; bottom: 96px; transform: translateX(-50%); width: min(62ch, calc(100% - 2 * var(--sp-5))); margin: 0; font-size: var(--fs-lg); line-height: 1.6;
+  text-align: center; text-wrap: pretty; opacity: 0; transition: opacity 1.2s ease; max-height: 42vh; overflow-y: auto; }
+.tp-words.on { opacity: 1; }
+.tp-say { left: 0; right: 0; bottom: 64px; margin: 0; text-align: center; color: var(--muted); font-size: var(--fs-sm); }
+.tp-bar { left: 0; right: 0; bottom: 0; height: 3px; background: color-mix(in srgb, var(--line) 60%, transparent); }
+.tp-bar span { display: block; height: 100%; width: 0; background: var(--amber); transition: width .25s linear; }
+.tp-controls { right: var(--sp-4); bottom: var(--sp-4); display: flex; gap: var(--sp-2); }
+@media (max-width: 640px) { .tp-words { bottom: 104px; font-size: var(--fs-md); } .tp-title { font-size: var(--fs-xl); } .tp-layer { grid-auto-flow: row; grid-auto-rows: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .tp-layer img { animation: none; } .tp-layer, .tp-words { transition: none; } }
 .tale-kicker { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--story-cap); }
 .tale-dm { border-top: 1px solid var(--story-line); margin-top: var(--sp-4); padding-top: var(--sp-4); font-size: var(--fs-sm); line-height: 1.6; }
 .tale-dm b { display: block; font-size: var(--fs-xs); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
