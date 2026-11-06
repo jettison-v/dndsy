@@ -888,11 +888,13 @@ def add_item(t: Table, seat: str = "player2") -> None:
                                                                          for k, w in {"cp": "copper", "sp": "silver", "ep": "electrum", "gp": "gold", "pp": "platinum"}.items()]]), flush=True)
 
 
-def wild_shape(t: Table, seat: str = "player4") -> None:
-    """Wild Shape (Levi, Druid 6): Shift into a form on Battle spends a Wild Shape use and gives the form's Temporary Hit
-    Points on D&D Beyond, and Battle shows the form; Undo puts back the use, the Temporary Hit Points and the form."""
-    sheet = t.sheet(seat)
-    page = t.battle(seat)
+def wild_shape(t: Table, seat: str = "player4", twin_key: str = "") -> None:
+    """Wild Shape (Levi, Druid 6; or a twin's, Cole's Moon forms): Shift into a form on Battle spends a Wild Shape use and
+    gives the form's Temporary Hit Points on D&D Beyond, and Battle shows the form; Undo puts back the use, the Temporary
+    Hit Points and the form."""
+    ddb = TWINS[twin_key][1] if twin_key else None
+    sheet = t.sheet(seat, ddb=ddb)
+    page = t.battle_of(seat, TWINS[twin_key][2]) if twin_key else t.battle(seat)
     connects(t, page)
     if page.locator(".ws-form").count():  # (left in a form by something earlier, Nov 5: the run's Undo then put that form
         go(page, page.locator('.ws-chip[data-use-url$="/wild-shape"]:visible').first)  # back, and the runs after it failed;
@@ -912,7 +914,7 @@ def wild_shape(t: Table, seat: str = "player4") -> None:
         page.goto(page.url, wait_until="domcontentloaded")
         go(page, page.locator('.ws-chip[data-use-url$="/wild-shape"]:visible').first)  # (Normal: Leave)
         page.locator('[data-use-go][data-to="leave"]').first.click(timeout=8000)
-        print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], [
+        print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [ddb or SHEETS[seat], [
             ["PUT", "life/hp/damage-taken", {"removedHitPoints": before.get("removedHitPoints") or 0, "temporaryHitPoints": before.get("temporaryHitPoints") or 0}]]]), flush=True)
         go(page, page.locator('.ws-label .pips-go:visible').first)
         page.locator('[data-use-go][data-to="back"]').first.click(timeout=15000)
@@ -1318,6 +1320,38 @@ def twin(t: Table, key: str) -> None:
             undone(t, sheet, before, "Undo gives the slot back on D&D Beyond")
 
 
+def every_count(t: Table, key: str) -> None:
+    """Every count on a twin's Battle (Brett, Nov 5: nothing character-specific may break at the table): each resource on
+    the Resources row and each slot level or Pact Magic, Use one spent on D&D Beyond and Give one back putting it back."""
+    seat, ddb, name, _ = TWINS[key]
+    sheet = t.sheet(seat, ddb=ddb)
+    page = t.battle_of(seat, name)
+    connects(t, page)
+    sel = '.res-go[data-use-url*="/count"], [data-use-url*="/count?field=slot:"], [data-use-url*="/count?field=pact:"]'
+    urls = list(dict.fromkeys(page.eval_on_selector_all(sel, "els => els.filter(e => e.offsetParent).map(e => e.dataset.useUrl)")))
+    print("  ", name, "·", len(urls), "counts", flush=True)
+    for url in urls:
+        def button():
+            return page.locator(f'[data-use-url="{url}"]:visible').first
+        before = record(sheet)
+        go(page, button())
+        what = page.locator(".rw-title").first.inner_text().strip()
+        use = page.locator('[data-use-go][data-to="use"]').first
+        if use.is_disabled():
+            print(f"   {what}: none left to try", flush=True)
+            page.keyboard.press("Escape")
+            continue
+        use.click()
+        changed(t, sheet, before, f"{what}: one is spent on D&D Beyond")
+        page.wait_for_timeout(1500)
+        page.keyboard.press("Escape")
+        go(page, button())
+        page.locator('[data-use-go][data-to="back"]').first.click()
+        undone(t, sheet, before, f"{what}: given back on D&D Beyond")
+        page.wait_for_timeout(1500)
+        page.keyboard.press("Escape")
+
+
 VTT = "https://www.dndbeyond.com/games/8224496"
 EXTENSION = "obpgemimnhngpcckodjkcihiahoaefpl"  # (the askdnd bridge from the Chrome Web Store, in every seat)
 
@@ -1420,6 +1454,20 @@ def _twin_run(key: str):
 
 
 RUNS |= {key: _twin_run(key) for key in TWINS} | {"twins-level": twins_level}
+# The party's twins, deeper (Nov 5, the night before a game): every count on Battle, and Cole's Wild Shape (Moon forms)
+PARTY_TWINS = ("cole-twin", "big-c-twin", "no-name-twin", "trah-twin")
+
+
+def _every_run(key: str):
+    def run(t: Table, seat: str = TWINS[key][0]) -> None:
+        every_count(t, key)
+    run.__doc__ = f"{TWINS[key][2]}: " + (every_count.__doc__ or "")
+    return run
+
+
+TWIN_OF = {f"{k}-every": k for k in PARTY_TWINS} | {"cole-twin-wild-shape": "cole-twin"}  # (each run's twin, for tidying)
+RUNS |= {f"{k}-every": _every_run(k) for k in PARTY_TWINS}
+RUNS["cole-twin-wild-shape"] = lambda t, seat="player2": wild_shape(t, seat, "cole-twin")
 # Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out
 SHEET_ONLY = {"closed-sheet", "game-log", "close-after-roll", "dm-backup", "initiative", "unreachable"}  # (unreachable closes every way in; initiative: a roll reaches the VTT through the sheet's own Game Log)
 # What a run may leave changed on a sheet: D&D Beyond's own bookkeeping, and the inventory run's stock once it's there
@@ -1569,13 +1617,14 @@ def attempt(t: Table, name: str) -> list[str]:
             print("  what it was looking at:", shot, flush=True)
         except Exception:
             pass
-    for seat, ddb in [(s, None) for s in sorted(used([name]))] + ([(TWINS[name][0], TWINS[name][1])] if name in TWINS else []):
+    twin = TWINS.get(name) or TWINS.get(TWIN_OF.get(name, ""))
+    for seat, ddb in [(s, None) for s in sorted(used([name]))] + ([(twin[0], twin[1])] if twin else []):
         try:
             left = tidy(t, seat, ddb)
         except Exception as e:
             left = [f"couldn't be read ({type(e).__name__})"]
         if left:
-            t.note(False, f"put back {TWINS[name][2] if ddb else seat}'s sheet ({'; '.join(left)})")
+            t.note(False, f"put back {twin[2] if ddb else seat}'s sheet ({'; '.join(left)})")
     return [what for ok, what in t.results[start:] if ok is False]
 
 

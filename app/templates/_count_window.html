@@ -3,9 +3,11 @@
 <div class="rw-title">{{ n.name }}</div>
 <p class="use-cost">{{ n.left }}{% if n.max %} of {{ n.max }}{% endif %} left{% if n.back %} · {{ n.back }}{% endif %}</p>
 {% if reachable %}
+{% set pool = n.max and n.max > 10 %}{# a pool (Lay On Hands' 30): how many, in one press (Nov 5) #}
 <div class="rw-row use-foot">
-  <button type="button" class="btn primary small" data-use-go data-to="use"{% if not n.left %} disabled{% endif %}>Use one</button>
-  <button type="button" class="btn small" data-use-go data-to="back"{% if n.max and n.left >= n.max %} disabled{% endif %}>{{ "Give one back" if n.max else "Add one" }}</button>
+  {% if pool %}<label class="count-n">How many <input type="number" name="n" value="1" min="1" max="{{ n.max }}" inputmode="numeric"></label>{% endif %}
+  <button type="button" class="btn primary small" data-use-go data-to="use"{% if not n.left %} disabled{% endif %}>{{ "Use" if pool else "Use one" }}</button>
+  <button type="button" class="btn small" data-use-go data-to="back"{% if n.max and n.left >= n.max %} disabled{% endif %}>{{ "Give back" if pool else "Give one back" if n.max else "Add one" }}</button>
   <button type="button" class="btn link small" data-use-close>Cancel</button>
 </div>
 {% if wild_key and n.left %}{# Wild Companion (app/casting.py wild_ways; docs/mockups/steeds-summons/ board 2) #}

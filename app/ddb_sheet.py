@@ -848,9 +848,14 @@ class _Sheet:
         for class_id, spells in (_d(self.d, "askdnd", "alwaysPreparedSpells", default={}) or {}).items():
             lists.append((by_class_id.get(class_id, "Class"), [{**s, "alwaysPrepared": True} for s in spells or []]))
         labels = {"race": _d(self.d, "race", "fullName", default="Species"), "class": "Class feature", "item": "Item", "feat": "Feat", "background": "Background"}
+        feats = {_d(f, "definition", "id"): _d(f, "definition", "name") for f in self.d.get("feats") or []}
         for k, v in (self.d.get("spells") or {}).items():
             if k == "item":  # an item's spells only while it's equipped (and attuned if it needs it)
                 v = [s for s in v or [] if s.get("componentId") in self.active_item_defs]
+            if k == "feat":  # each by its feat's own name ("Fey Touched"), so a free use says where it's from
+                for s in v or []:
+                    lists.append((feats.get(s.get("componentId")) or "Feat", [s]))
+                continue
             lists.append((labels.get(k, k.title()), v or []))
         for source, spells in lists:
             for s in spells:
@@ -862,12 +867,13 @@ class _Sheet:
                     prev = out[key]
                     if source not in prev["sources"]:
                         prev["sources"].append(source)
-                    prev["uses"] = prev["uses"] or sp["uses"]
+                    if sp["uses"] and not prev["uses"]:
+                        prev["uses"], prev["free_from"] = sp["uses"], source
                     prev["uses_slot"] = prev["uses_slot"] or sp["uses_slot"]
                     prev["prepared"] |= sp["prepared"]
                     prev["always_prepared"] |= sp["always_prepared"]
                 else:
-                    out[key] = sp
+                    out[key] = sp | ({"free_from": source} if sp["uses"] else {})
         return sorted(out.values(), key=lambda s: (s["level"], s["name"]))
 
     def spellbook(self) -> list[dict]:

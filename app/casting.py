@@ -63,7 +63,32 @@ def ways(sheet: dict, e: dict) -> list[dict]:
         out.append({"way": NO_SLOT, "level": e["level"], "name": "", "label": "No slot"})
     # Grouped in the window (feedback 24): Wild Companion's first, then the usual ways, then the higher slots that do
     # nothing more for this spell (still yours to spend: saving a lower slot for something else is a choice)
-    return wild_ways(sheet, e, out) + [w for w in out if not w.get("group")] + [w for w in out if w.get("group")]
+    return wild_ways(sheet, e, out) + feature_ways(sheet, e) + [w for w in out if not w.get("group")] + [w for w in out if w.get("group")]
+
+
+# A spell a class feature lets you cast for one of its resources (2024 PHB), which D&D Beyond lists with no cost:
+# {spell: (the feature, the resource it spends, how many)}. Brett, Nov 5: No Name's Darkness costs a Focus Point.
+FEATURE_SPELLS = {"Darkness": ("Shadow Arts", "Focus Points", 1)}
+SPEND = "spend"  # a way that spends a resource: "spend:<its field>"
+
+
+def uses_field(sheet: dict, name: str) -> dict | None:
+    """A counted use on the sheet by its name: {"field", "left"}, or None."""
+    a = next((a for a in sheet.get("actions") or [] if a.get("name") == name and a.get("uses") and a.get("id")), None)
+    return {"field": f"uses:{a['id']}", "left": a["uses"].get("left", 0)} if a else None
+
+
+def feature_ways(sheet: dict, e: dict) -> list[dict]:
+    """The spell cast through a class feature for its resource (FEATURE_SPELLS), first in the list."""
+    feature, resource, n = FEATURE_SPELLS.get(e.get("name"), (None, None, 0))
+    if not feature or not any(f.get("name") == feature for f in sheet.get("features") or []):
+        return []
+    u = uses_field(sheet, resource)
+    if not u or u["left"] < n:
+        return []
+    word = resource.removesuffix("s") if n == 1 else resource
+    return [{"way": f"{SPEND}:{u['field']}", "level": e["level"], "name": f"{n} {word}", "spend": n,
+             "label": f"{n} {word} · {feature} ({u['left']} left)"}]
 
 
 WILD_GROUP = "Wild Companion: a Magic action, no components; always Fey, it leaves at your next Long Rest"
@@ -168,7 +193,12 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
     if wild:  # Wild Companion: always Fey, and gone at the next Long Rest
         kind = "Fey"
         said = f"Cast {e['name']} as Wild Companion" + (f", {chosen['name']} slot" if chosen["way"] != WILD else ", a Wild Shape use")
-    if chosen and chosen["way"] == WILD:
+    if chosen and chosen["way"].startswith(f"{SPEND}:"):  # a class feature's resource (Shadow Arts: a Focus Point)
+        ddb_bridge.reach(ch)
+        ddb_bridge.add(db, ch, "use", {"field": chosen["way"].removeprefix(f"{SPEND}:"), "delta": chosen["spend"]}, f"{ch.name}: {said.removeprefix('Cast ')}")
+        undo["spent"] = chosen["way"]
+        undo["n"] = str(chosen["spend"])
+    elif chosen and chosen["way"] == WILD:
         ddb_bridge.reach(ch)
         ddb_bridge.add(db, ch, "use", {"field": wild_use(sheet)["field"], "delta": 1}, f"{ch.name}: Wild Shape used (Wild Companion)")
         undo["spent"] = WILD
@@ -205,7 +235,8 @@ def _spend(ch: Character, db: Session, way: str, delta: int, label: str) -> None
 
 @router.post("/characters/{character_id:int}/cast/undo")
 def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: str = Form(""), companions_were: str = Form("", alias="companions"),
-              healed: str = Form(""), added: str = Form(""), story: str = Form(""), made: str = Form(""), db: Session = Depends(get_db)):
+              healed: str = Form(""), added: str = Form(""), story: str = Form(""), made: str = Form(""), n: str = Form("1"),
+              db: Session = Depends(get_db)):
     """The corner card's Undo: the slot back, Concentration as it was, and a familiar where it was."""
     ch, _ = _guard(db, request, character_id)
     _, e = _spell(db, ch, key)
@@ -223,6 +254,10 @@ def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: 
         if (w := wild_use(sheet)):
             ddb_bridge.reach(ch)
             ddb_bridge.add(db, ch, "use", {"field": w["field"], "delta": -1}, f"{ch.name}: Wild Shape use back ({e['name']} undone)")
+    elif spent.startswith(f"{SPEND}:uses:"):  # the class feature's resource back (Shadow Arts: the Focus Point)
+        ddb_bridge.reach(ch)
+        ddb_bridge.add(db, ch, "use", {"field": spent.removeprefix(f"{SPEND}:"), "delta": -max(1, min(int(n) if n.isdigit() else 1, 9))},
+                       f"{ch.name}: {e['name']} undone")
     elif spent:
         if spent.split(":", 1)[0] not in ("slot", "pact"):
             raise HTTPException(404)
