@@ -127,6 +127,14 @@ def test_key_moments_edit_add_delete(client, db):
     client.post(f"/manage/sessions/{s.id}/events/{events[0].id}/delete", headers=HX)
     db.expire_all()
     assert [e.text for e in db.scalars(select(StoryEvent))] == ["They rested."]
+    # ★ marks one major (Story shows those first; feedback 40), and again takes it off
+    ev = db.scalar(select(StoryEvent))
+    assert client.post(f"/manage/sessions/{s.id}/events/{ev.id}/major", headers=HX).status_code in (200, 204)
+    db.expire_all()
+    assert db.get(StoryEvent, ev.id).major is True
+    client.post(f"/manage/sessions/{s.id}/events/{ev.id}/major", headers=HX)
+    db.expire_all()
+    assert db.get(StoryEvent, ev.id).major is False
 
 
 def test_accept_edit_and_undo_existing_entity(client, db):

@@ -590,6 +590,9 @@ details.tale-more[open] > summary { display: none; }  /* opened, its moments sim
 .ev .btn.link { opacity: 0; }
 .ev:hover .btn.link, .ev:focus-within .btn.link { opacity: 1; }
 @media (hover: none) { .ev .btn.link { opacity: 1; } }
+.ev-major { flex: none; margin: 0; }
+.ev .ev-major .btn.link { opacity: 1; padding: 0; color: var(--faint); font-size: var(--fs-md); }  /* (always shown: it says which Story shows first) */
+.ev .ev-major .btn.link.on { color: var(--amber); }
 .kind { flex: none; width: 76px; font-size: var(--fs-xs); font-weight: 600; text-transform: capitalize; }
 .kind.event { color: var(--muted); }
 .kind.reveal { color: var(--violet); }

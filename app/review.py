@@ -476,6 +476,15 @@ def save_event(db: Session, session: GameSession, event_id: int | None, kind: st
     ev.kind, ev.text = EventKind(kind), text
 
 
+def toggle_major(db: Session, session: GameSession, event_id: int) -> bool:
+    """A key moment major or not (Story shows the major ones first); returns what it is now."""
+    ev = db.get(StoryEvent, event_id)
+    if ev is None or ev.session_id != session.id:
+        raise ReviewError("That key moment no longer exists.")
+    ev.major = not ev.major
+    return ev.major
+
+
 def delete_event(db: Session, session: GameSession, event_id: int) -> None:
     ev = db.get(StoryEvent, event_id)
     if ev is not None and ev.session_id == session.id:

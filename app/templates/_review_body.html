@@ -167,10 +167,11 @@
       {# 3. Key moments #}
       <section class="section" id="events">
         <div class="section-head"><h2><span class="num">3</span>Key moments</h2><button type="button" class="btn link" data-show="ev-new" data-hide="">+ Add</button></div>
-        <p class="hint">Shown under the recap. Theories appear as open threads, never as facts.</p>
+        <p class="hint">Shown under the recap. Theories appear as open threads, never as facts. ★ marks the major ones, which Story shows first (a draft marks up to 8); the rest are behind <b>Show the other</b>.</p>
         <ul class="events">
           {% for ev in events %}
           <li class="ev {{ 'theory' if ev.kind.value == 'theory' }}" id="ev{{ ev.id }}-view">
+            <form class="ev-major" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/events/{{ ev.id }}/major" {{ hx | safe }}><button class="btn link{{ ' on' if ev.major }}" aria-pressed="{{ 'true' if ev.major else 'false' }}" title="{{ 'Major: Story shows it first' if ev.major else 'Mark major: Story shows it first' }}">{{ "★" if ev.major else "☆" }}</button></form>
             <span class="kind {{ ev.kind.value }}">{{ ev.kind.value }}</span>
             <div class="ev-text">{{ ln.text(ev.text) }}{% if ev.entities %}<small>{% for x in ev.entities %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div>
             <button type="button" class="btn link" data-show="ev{{ ev.id }}-form" data-hide="ev{{ ev.id }}-view">Edit</button>

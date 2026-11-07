@@ -270,13 +270,27 @@ def test_all_sessions_reads_from_the_start_and_shows_a_few_key_moments(player, d
     # A session's key moments past the first three sit behind Show all
     real = story_mod.published_story
 
-    def many(db):
+    from types import SimpleNamespace
+
+    def like(e, n, major=None):  # (a copy of a moment, its own)
+        return SimpleNamespace(kind=e.kind, text=f"{e.text} ({n})", entities=e.entities, major=major)
+
+    def many(db, majors=()):
         out = real(db)
         for item in out.get("items") or []:
-            item["events"] = (item.get("events") or []) * 5 or item.get("events")
+            evs = item.get("events") or []
+            item["events"] = [like(e, n, major=(n, i) in majors) for n in range(5) for i, e in enumerate(evs)] or evs
+        if out.get("latest"):
+            out["latest"]["events"] = (out["items"] or [{}])[-1].get("events") or out["latest"]["events"]
         return out
     monkeypatch.setattr(story_mod, "published_story", many)
     most = max(len(i.get("events") or []) for i in many(db)["items"])
     assert most > 4  # (the test's sessions, each moment five times)
     page = player.get("/c/main/?tab=sessions").text
-    assert f'<details class="tale-more"><summary>Show all {most} key moments</summary>' in page
+    assert f'<details class="tale-more"><summary>Show the other {most - 3} key moments</summary>' in page
+    # Feedback 40 (Brett, Nov 7): too many to scroll. The major ones show (here two), the rest behind the fold
+    monkeypatch.setattr(story_mod, "published_story", lambda db: many(db, majors={(1, 0), (3, 0)}))
+    page = player.get("/c/main/?tab=sessions").text
+    shown = page.split('<ol class="moment-line tale-moments">', 1)[1].split("</ol>", 1)[0]
+    assert shown.count('class="ev ') == 2 and "(1)" in shown and "(3)" in shown
+    assert f"Show the other {most - 2} key moments" in page

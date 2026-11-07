@@ -15,17 +15,20 @@
 </div>
 {% endmacro %}
 {% macro moment(e) %}<li class="ev {{ e.kind.value }}"><span class="note kind {{ e.kind.value }}">{{ e.kind.value | capitalize }}</span><div class="ev-text">{{ ln.text(e.text) }}{% set shown = e.entities | selectattr("status.value", "equalto", "published") | list %}{% if shown %}<small>{% for x in shown %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endmacro %}
-{% macro after(events, quests, threads, few=0) %}{# What came of it: key moments (on All sessions the first `few`, the rest behind Show all; Brett, Nov 5), and (the latest session) open threads #}
+{% macro after(events, quests, threads, few=8) %}{# What came of it: key moments, the major ones (or, drafted before they were marked, the first `few`: 8 on Previously on…, 3 on All sessions) with the rest behind Show all (Brett, Nov 5; feedback 40, Nov 7), and (the latest session) open threads #}
 {% if events or quests or threads %}
 <div class="tale-after">
   {% if events %}
   <section>
     <h3 class="tale-label">Key moments</h3>
-    {% set shown = events[:few] if few and events | length > few + 1 else events %}
+    {% set ranked = events | selectattr("major") | list %}
+    {% set top = (ranked if ranked else events)[:few] %}
+    {% set shown = top if events | length > top | length + 1 else events %}
+    {% set rest = events | reject("in", shown) | list %}
     <ol class="moment-line tale-moments">{% for e in shown %}{{ moment(e) }}{% endfor %}</ol>
-    {% if shown | length < events | length %}
-    <details class="tale-more"><summary>Show all {{ events | length }} key moments</summary>
-      <ol class="moment-line tale-moments">{% for e in events[shown | length:] %}{{ moment(e) }}{% endfor %}</ol>
+    {% if rest %}
+    <details class="tale-more"><summary>Show the other {{ rest | length }} key moments</summary>
+      <ol class="moment-line tale-moments">{% for e in rest %}{{ moment(e) }}{% endfor %}</ol>
     </details>
     {% endif %}
   </section>
