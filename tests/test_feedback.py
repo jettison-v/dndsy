@@ -198,20 +198,20 @@ def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, pla
     assert 'href="/your-notes"' in player.get("/help").text  # (the account menu and More)
     page = player.get("/your-notes?tab=askdnd").text
     assert "The Rest button wraps." in page and "Waiting for an admin" in page and "Battle</body>" not in page
-    assert [c["text"] for c in player.post("/your-notes/news").json()["cards"]] == []  # (seen on the page: nothing to tell)
+    assert [c["text"] for c in player.get("/your-notes/news").json()["cards"]] == []  # (seen on the page: nothing to tell)
     # Approved, then Claude's question to the admin (not for the player) and a reply meant for the player
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "new"})
     monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 40)
     claude = {"X-Feedback-Key": "k" * 40}
     admin.post(f"/api/feedback/{fb.id}", json={"note": "Which page, Brett?", "status": "planned"}, headers=claude)
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "tell", "answer": "Thanks: it's planned."})
-    assert [c["text"] for c in player.post("/your-notes/news").json()["cards"]] == ["Planned: “The Rest button wraps.”"]
-    assert [c["text"] for c in player.post("/your-notes/news").json()["cards"]] == []  # (once)
+    assert [c["text"] for c in player.get("/your-notes/news").json()["cards"]] == ["Planned: “The Rest button wraps.”"]
+    assert [c["text"] for c in player.get("/your-notes/news").json()["cards"]] == []  # (once)
     page = player.get("/your-notes?tab=askdnd").text
     assert "Thanks: it&#39;s planned." in page and "Which page, Brett?" not in page and ">Planned<" in page
     # Claude tells them it's fixed
     admin.post(f"/api/feedback/{fb.id}", json={"tell": "Fixed: Rest stays on one line now.", "status": "done"}, headers=claude)
-    assert [c["text"] for c in player.post("/your-notes/news").json()["cards"]] == ["Fixed: “The Rest button wraps.”"]
+    assert [c["text"] for c in player.get("/your-notes/news").json()["cards"]] == ["Fixed: “The Rest button wraps.”"]
     assert "Fixed: Rest stays on one line now." in player.get("/your-notes?tab=askdnd").text
     # Adding to it: back to an admin first; the queue says who wrote it
     player.post(f"/your-notes/feedback/{fb.id}", data={"text": "It wraps on Sheet too."})

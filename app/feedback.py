@@ -288,14 +288,6 @@ def marker(fb: Feedback) -> str:
     return f"{'new' if fb.status == 'question' else fb.status}:{to_them}"
 
 
-def _mine(db: Session, request: Request) -> tuple[dict | None, list[Feedback]]:
-    user = _real(request)
-    me = picks.user_row(db, user) if user else None
-    if me is None:
-        return user, []
-    return user, list(db.scalars(select(Feedback).where(Feedback.user_id == me.id).order_by(Feedback.id.desc()).limit(200)))
-
-
 def for_sender(fb: Feedback) -> dict:
     """A note as its sender sees it: never the admin's or Claude's notes to each other, nor the page as drawn."""
     label, says = SENDER_SAYS.get(fb.status, ("", ""))
