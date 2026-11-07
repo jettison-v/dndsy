@@ -97,5 +97,6 @@ def test_viewing_as_a_player_shows_their_notes_only_and_marks_nothing_seen(setup
     assert "Mark&#39;s note" in page and "Brett&#39;s own note" not in page
     news = admin.get("/your-notes/news").json()
     assert news["count"] == 1 and news["cards"] == []  # (his count; his cards stay his)
+    assert admin.get("/your-notes/seen?tab=askdnd").json()["count"] == 1  # (opening his tab clears nothing for him)
     db.expire_all()
     assert db.scalar(select(Feedback).where(Feedback.user_id == mark.id)).seen == ""  # (nothing marked seen for him)

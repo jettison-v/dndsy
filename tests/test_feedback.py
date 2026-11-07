@@ -207,8 +207,12 @@ def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, pla
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "tell", "answer": "Thanks: it's planned."})
     assert [c["text"] for c in player.get("/your-notes/news").json()["cards"]] == ["Planned: “The Rest button wraps.”"]
     assert [c["text"] for c in player.get("/your-notes/news").json()["cards"]] == []  # (once)
+    # Opening About askdnd from the other tab clears its badge (the page cleared the tab it opened on)
+    player.get("/your-notes?tab=story")
+    assert player.get("/your-notes/news").json()["tabs"]["askdnd"] == 1
+    assert player.get("/your-notes/seen?tab=askdnd").json()["count"] == 0
     page = player.get("/your-notes?tab=askdnd").text
-    assert "Thanks: it&#39;s planned." in page and "Which page, Brett?" not in page and ">Planned<" in page
+    assert "Thanks: it&#39;s planned." in page and 'class="page wide notes-page"' in page and 'data-tab="t-askdnd"' in page and "Which page, Brett?" not in page and ">Planned<" in page
     # Claude tells them it's fixed
     admin.post(f"/api/feedback/{fb.id}", json={"tell": "Fixed: Rest stays on one line now.", "status": "done"}, headers=claude)
     assert [c["text"] for c in player.get("/your-notes/news").json()["cards"]] == ["Fixed: “The Rest button wraps.”"]

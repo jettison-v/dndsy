@@ -354,7 +354,6 @@ body.pt-rows .pt-with-track { display: none; }
 
 /* Page */
 .page { max-width: 1120px; margin: 0 auto; padding: 32px 24px 120px; }
-.page.narrow { max-width: 760px; }
 /* Manage pages share one width so the tab bar never jumps; reading pages too (Brett, 2026-10-23) */
 .crumbs { color: var(--muted); font-size: var(--fs-sm); }
 .crumbs a { color: var(--muted); text-decoration: none; }
@@ -833,8 +832,8 @@ details.feat > summary:hover { color: var(--text-strong); }
 .tabbar.cut-r { mask-image: linear-gradient(to right, var(--bg) calc(100% - 36px), transparent); }
 .tabbar.cut-l { mask-image: linear-gradient(to left, var(--bg) calc(100% - 36px), transparent); }
 .tabbar.cut-l.cut-r { mask-image: linear-gradient(to right, transparent, var(--bg) 36px, var(--bg) calc(100% - 36px), transparent); }
-.tabbar button, .tabbar > a { background: none; border: none; padding: 9px 13px; color: var(--muted); font-weight: 500; white-space: nowrap; min-height: 40px; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }  /* (a tab can be a link: Your notes) */
-.tabbar button[aria-selected=true], .tabbar > a[aria-selected=true] { color: var(--text-strong); box-shadow: inset 0 -2px 0 var(--red); }
+.tabbar button { background: none; border: none; padding: 9px 13px; color: var(--muted); font-weight: 500; white-space: nowrap; min-height: 40px; }
+.tabbar button[aria-selected=true] { color: var(--text-strong); box-shadow: inset 0 -2px 0 var(--red); }
 .tabbar .count { font-size: var(--fs-xs); }
 details.opt { border-top: 1px solid var(--line); }
 details.opt > summary { list-style: none; cursor: pointer; padding: 9px 0; display: flex; gap: 8px; align-items: baseline; }
@@ -2071,7 +2070,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ls-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
 .ls-select select { background: var(--surface-2); }
 .ls-head { font-size: var(--fs-xs); color: var(--muted); letter-spacing: .04em; padding: 6px 4px; border-bottom: 1px solid var(--line); }
-.ls-grouphead { padding: 12px 4px 4px; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.ls-grouphead { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); padding: 12px 4px 4px; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.ls-group-note { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }  /* (a heading's note: a container's coins, feedback 49) */
 .ls-row { font-size: var(--fs-sm); align-items: center; padding: 7px 4px; border-top: 1px solid var(--line-soft); cursor: pointer; border-radius: var(--r-sm); }
 .ls-row:hover, .ls-row:focus-visible { background: var(--row-hover); }
 .ls-pk { display: inline-flex; }
@@ -3170,7 +3170,6 @@ button.purse:hover .coin, button.purse:focus-visible .coin { background: var(--s
 .coin small { color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; }
 .coin-pp { background: var(--coin-pp); } .coin-gp { background: var(--coin-gp); } .coin-ep { background: var(--coin-ep); } .coin-sp { background: var(--coin-sp); } .coin-cp { background: var(--coin-cp); }
 .purse-sum { white-space: nowrap; }
-.purse-bag { flex-basis: 100%; font-size: var(--fs-xs); }  /* a bag's coins, counted in the purse (feedback 47) */
 .prep-foot { position: sticky; bottom: calc(-1 * var(--sp-4)); display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) 0; background: var(--surface); border-top: 1px solid var(--line); }
 .prep-foot-note { flex: none; white-space: nowrap; }  /* ("Prepare 2, drop 1" on one line; a longer sentence beside it wraps instead) */
 .prep-foot > .use-said { flex: 1 1 16em; min-width: 0; margin: 0; }
@@ -3497,7 +3496,7 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .notes-dot-badge { position: absolute; top: -4px; right: -6px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: var(--r-pill); background: var(--red); color: var(--text-strong); font-size: var(--fs-xs); font-weight: 700; line-height: 17px; text-align: center; border: 2px solid var(--chrome); }
 .bottom-nav .notes-dot-badge { top: 2px; right: 8px; }
 .notes-count { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: var(--r-pill); background: var(--red); color: var(--text-strong); font-size: var(--fs-xs); font-weight: 700; text-align: center; }
-.notes-tabs .count.new { color: var(--red); font-weight: 700; }
+.tabbar .count.notes-tab-new { color: var(--red); font-weight: 700; }
 .notes-who { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3); margin: var(--sp-3) 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); font-size: var(--fs-sm); }
 .notes-who p { margin: 0; }
 .notes-ico { flex: none; width: 30px; height: 30px; border-radius: var(--r-sm); display: grid; place-items: center; font-weight: 700; font-size: var(--fs-xs); }

@@ -149,21 +149,28 @@
    gold beside them. On Sheet › Items, where the bridge works, pressing it opens Change coins; on a Party card it only
    shows. A coin on its way to D&D Beyond has its ↻. `total` says the gold it's all worth beside it (else on hover). #}
 {% macro purse(s, c=none, change=false, total=true, bags=true) -%}
-{#- Every coin the character has: carried and in bags (feedback 47: Cole's gold in his Bag of Holding wasn't counted),
-    each bag's said under it; `bags=false` for paying, which takes carried coins only (item_browser.pay_from) -#}
+{#- Every coin the character has, carried and in bags, as one total (feedback 47); one line wherever it shows, as D&D
+    Beyond's top line (feedback 49: a line per bag under it wrapped the toolbar and Party's cards). What each bag holds is
+    on its heading in Sheet › Items' Container grouping and on the bag's own row, and in the hover text here. `bags=false`
+    for paying, which takes carried coins only (item_browser.pay_from). -#}
 {%- set held = s.bag_coins if bags else [] -%}
 {%- set ns = namespace(cur=dict(s.currency or {})) -%}
 {%- for b in held %}{% for k, v in b.coins.items() %}{% set _ = ns.cur.update({k: ns.cur.get(k, 0) + v}) %}{% endfor %}{% endfor -%}
 {%- set cur = ns.cur -%}
 {%- set worth = cur.get("pp", 0) * 10 + cur.get("gp", 0) + cur.get("ep", 0) * 0.5 + cur.get("sp", 0) * 0.1 + cur.get("cp", 0) * 0.01 -%}
 {%- set sum = "{:,.2f}".format(worth).rstrip("0").rstrip(".") ~ " gp in all" -%}
+{%- set where %}{% for b in held %} · {{ b.name }}: {{ coins_text(b.coins) }}{% endfor %}{% endset -%}
 {%- set inner -%}
 {%- for k in ("pp", "gp", "ep", "sp", "cp") if cur.get(k) %}<span class="coin"{{ sync(s, "coin:" ~ k) }}><i class="coin-{{ k }}" aria-hidden="true"></i><b>{{ "{:,}".format(cur[k]) }}</b><small>{{ k }}</small></span>{% else %}<span class="note">No coins</span>{% endfor -%}
 {%- if total and cur | length > 1 %}<span class="purse-sum note">{{ sum }}</span>{% endif -%}
-{%- for b in held %}<span class="purse-bag note">In {{ b.name }}: {% for k in ("pp", "gp", "ep", "sp", "cp") if b.coins.get(k) %}{{ "{:,}".format(b.coins[k]) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</span>{% endfor -%}
 {%- endset -%}
-{%- if change %}<button type="button" class="purse" data-use-url="/characters/{{ c.id }}/coins" title="{{ sum ~ ': ' if cur | length > 1 }}Change coins">{{ inner }}</button>
-{%- else %}<div class="purse"{% if not total and cur | length > 1 %} title="{{ sum }}"{% endif %}>{{ inner }}</div>{% endif -%}
+{%- if change %}<button type="button" class="purse" data-use-url="/characters/{{ c.id }}/coins" title="{{ sum ~ where ~ ': ' if cur | length > 1 or held }}Change coins">{{ inner }}</button>
+{%- else %}<div class="purse"{% if (not total and cur | length > 1) or held %} title="{{ sum ~ where }}"{% endif %}>{{ inner }}</div>{% endif -%}
+{%- endmacro %}
+
+{# "7,000 gp" or "654 gp, 68 sp, 92 cp": a few coins in words (a bag's, a container's heading) #}
+{% macro coins_text(coins) -%}
+{%- for k in ("pp", "gp", "ep", "sp", "cp") if coins.get(k) %}{{ "{:,}".format(coins[k]) }} {{ k }}{{ ", " if not loop.last }}{% endfor -%}
 {%- endmacro %}
 
 {# Hit Points as a tile (ntile), the Dying tile at 0: `change` adds − and + to its label row (Battle); `attrs` is its
