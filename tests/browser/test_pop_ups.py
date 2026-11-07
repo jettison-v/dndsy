@@ -85,3 +85,24 @@ def test_a_long_button_stays_inside_its_window(people, server):
     }""", label)
     assert out <= 0, out
 
+
+
+def test_a_picture_opens_large_and_a_tap_closes_it(people, server):
+    """Feedback 44 (Mark, Nov 7): tapping a picture shows it large over the page; a picture that is a button keeps
+    opening what it opens."""
+    player = people("player")
+    page = battle(player, server)
+    dot = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    page.evaluate("""src => {
+      const a = document.createElement('img'); a.className = 'ws-pic'; a.id = 'pic-plain'; a.src = src; a.width = 40; a.height = 40;
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'pic-button';
+      const c = document.createElement('img'); c.className = 'ws-pic'; c.src = src; c.width = 40; c.height = 40; b.append(c);
+      document.querySelector('h1').after(a, b);
+    }""", dot)
+    page.click("#pic-plain")
+    assert page.locator("dialog.pic-big[open] img").is_visible()
+    page.mouse.click(5, 5)
+    page.wait_for_function("!document.querySelector('dialog.pic-big')")
+    page.click("#pic-button img")
+    assert page.locator("dialog.pic-big").count() == 0
+    assert player.errors == []

@@ -3452,3 +3452,9 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 /* A change for D&D Beyond that can't reach the sheet now (Brett, Nov 5): said where it starts (templating unreached_says) */
 .unreached { margin: 0 0 var(--sp-2); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--amber-soft); color: var(--text); font-size: var(--fs-sm); }
 .ls-chip:disabled { opacity: .45; cursor: not-allowed; }
+
+/* A picture, large (app.js "a picture, large"; feedback 44) */
+img.pic-can-big { cursor: zoom-in; }
+dialog.pic-big { padding: 0; border: 0; background: transparent; max-width: 94vw; max-height: 90vh; cursor: zoom-out; }
+dialog.pic-big::backdrop { background: rgb(0 0 0 / .78); }
+dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: auto; height: auto; object-fit: contain; border-radius: var(--r-md); }

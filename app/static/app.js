@@ -4631,3 +4631,31 @@
   document.addEventListener('askdnd:swapped', setup);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();
+
+// ---------------------------------------------------------------- a picture, large
+// Tapping a picture shows it large over the page (feedback 44, Nov 7: Mark wanted to see a familiar's picture); a tap
+// or Esc closes it. A picture that is itself a button or link (your creature's, which opens the Picture window; a
+// party card) keeps doing that.
+(() => {
+  const PICS = '.ws-pic, .ep-pic img, .ep-mark, .peek-pic, img.portrait, .ib-pic, .fm-pic';
+  const big = pic => pic.matches(PICS) && !pic.closest('a, button, [data-panel-url], [data-modal-url], [data-use-url], label');
+  document.addEventListener('click', e => {
+    const pic = e.target.closest && e.target.closest('img');
+    if (!pic || !big(pic) || !pic.currentSrc) return;
+    e.preventDefault();
+    const d = document.createElement('dialog');
+    d.className = 'pic-big';
+    d.setAttribute('aria-label', pic.alt || 'Picture');
+    const img = document.createElement('img');
+    img.src = pic.dataset.full || pic.currentSrc; img.alt = pic.alt || ''; img.referrerPolicy = 'no-referrer';
+    d.append(img);
+    d.addEventListener('click', () => d.close());
+    d.addEventListener('close', () => d.remove());
+    document.body.append(d);
+    d.showModal();
+  });
+  document.addEventListener('mouseover', e => {
+    const pic = e.target.closest && e.target.closest('img');
+    if (pic && !pic.dataset.bigChecked) { pic.dataset.bigChecked = '1'; if (big(pic)) pic.classList.add('pic-can-big'); }
+  });
+})();
