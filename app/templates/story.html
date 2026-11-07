@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% from "_suggest_form.html" import suggest with context %}
 {% block title %}Story · askdnd{% endblock %}
-{% macro scroll(item, head=True) %}{# A session's recap on its scroll: the rods, the parchment, its title, the DM's note #}
+{% macro scroll(item, head=True, listen=False) %}{# A session's recap on its scroll: the rods, the parchment, its title, the DM's note #}
 <div class="scroll">
   <div class="story">
-    {% if head %}<header class="tale-head"><span class="tale-kicker">{{ item.label }}</span>{% if item.s.title %}<h2>{{ item.s.title }}</h2>{% endif %}</header>{% endif %}
+    {% if head %}<header class="tale-head"><span class="tale-kicker">{{ item.label }}</span>{% if item.s.title %}<h2>{{ item.s.title }}</h2>{% endif %}
+      {% if listen %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen</button>{% endif %}</header>{% endif %}
     <div class="tale-text">{{ ln.html(item.html) }}</div>
     <div class="tale-end" aria-hidden="true">❦</div>
     {% if item.dm_notes %}
@@ -13,7 +14,7 @@
   </div>
 </div>
 {% endmacro %}
-{% macro moment(e) %}<li class="ev {{ e.kind.value }}"><span class="note kind {{ e.kind.value }}">{{ e.kind.value | capitalize }}</span><div class="ev-text">{{ ln.text(e.text) }}{% if e.entities %}<small>{% for x in e.entities %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endmacro %}
+{% macro moment(e) %}<li class="ev {{ e.kind.value }}"><span class="note kind {{ e.kind.value }}">{{ e.kind.value | capitalize }}</span><div class="ev-text">{{ ln.text(e.text) }}{% set shown = e.entities | selectattr("status.value", "equalto", "published") | list %}{% if shown %}<small>{% for x in shown %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endmacro %}
 {% macro after(events, quests, threads, few=0) %}{# What came of it: key moments (on All sessions the first `few`, the rest behind Show all; Brett, Nov 5), and (the latest session) open threads #}
 {% if events or quests or threads %}
 <div class="tale-after">
@@ -91,7 +92,7 @@
   {# Option A of The Story Page (Brett, 2026-11-05; docs/mockups/story-page/): one reading column, the tale on its
      scroll (the session and its title at its head, the DM's note inside), then what came of it #}
   <div class="tale">
-    {{ scroll(latest) }}
+    {{ scroll(latest, listen=vtt_on("recap_listen")) }}
     {{ after(latest.events, quests, threads) }}
     <div class="tale-foot">
       {% if earlier %}<a class="btn" href="{{ cbase }}/?tab=sessions" data-goto-tab="t-sessions">Earlier sessions</a>{% endif %}

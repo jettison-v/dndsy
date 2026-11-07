@@ -168,6 +168,12 @@ def needs(db: Session, user: dict) -> list[dict]:
         if n:
             out.append({"text": f"{n} tool correction{'s' if n != 1 else ''} to build into askdnd", "admin": True,
                         "sub": "Ask Claude to build them in; each is a patch until then", "href": "/manage/tool-corrections", "go": "Tool corrections"})
+        from app import feedback
+
+        notes = db.scalar(select(func.count()).select_from(feedback.Feedback).where(feedback.Feedback.status == "review")) or 0
+        if notes:  # (the table's notes for Claude wait for an admin's approval, Brett, Nov 6)
+            out.append({"text": f"{notes} note{'s' if notes != 1 else ''} from the table to approve", "admin": True,
+                        "sub": "Approve sends one to Claude; Delete drops it", "href": "/manage/feedback?tab=review", "go": "Feedback"})
         b = backup_status(db)
         if b["attention"]:
             out.append({"text": b["text"], "sub": "Only admins see askdnd-wide items like this", "href": "/manage/backups",
@@ -207,7 +213,7 @@ def counts(request: Request, db: Session = Depends(get_db)):
     from app import feedback
 
     user = current_user(request)
-    mine = {"feedback": feedback.waiting(db)} if is_admin(user) else {}  # (notes for Claude: admins)
+    mine = {"feedback": feedback.for_you(db)} if is_admin(user) else {}  # (notes waiting for an admin: to approve, or Claude's questions)
     if not user or not can_moderate(user) or web.campaign(db) is None:
         return JSONResponse(mine, headers={"Cache-Control": "no-store"})
     return JSONResponse({"needs": len(needs(db, user)), "inbox": waiting_count(db), **mine}, headers={"Cache-Control": "no-store"})

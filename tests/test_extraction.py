@@ -152,3 +152,35 @@ def test_timeline_orders_undated_numbered_and_added_sessions(db):
     campaign_id = db.scalar(select(GameSession)).campaign_id
     labels = [s.title or str(s.number) for s in timeline(db, campaign_id)]
     assert labels == ["17", "18", "21", "29", "added gap", "transcript"]
+
+
+def test_a_standing_rule_a_hidden_entry_is_as_if_it_did_not_exist(db, player):
+    """A standing rule (Brett, Nov 6: hidden content can't be used in recaps, World updates or questions; it's as if it
+    doesn't exist until shown): a hidden entry, its facts and its relationships never reach Claude, whether drafting a
+    session or describing another entry; a draft's key moments never link to it; and its name never shows on a key
+    moment to the table."""
+    from app import entities, relations
+    from app.models import Campaign, EventEntity, EventKind, Fact, Status
+
+    s = setup(db)
+    campaign = db.get(Campaign, s.campaign_id)
+    shown = Entity(campaign_id=campaign.id, kind=extraction.EntityKind.NPC, name="Mara Quill", summary="A harbour clerk.", status=Status.PUBLISHED)
+    hidden = Entity(campaign_id=campaign.id, kind=extraction.EntityKind.NPC, name="The Veiled Duke", summary="Secretly runs the cult.", status=Status.DRAFT)
+    db.add_all([shown, hidden])
+    db.flush()
+    db.add(Fact(entity_id=hidden.id, kind="addition", text="He owns the brig.", status="merged", author_name="DM", author_email=""))
+    relations.add(db, hidden, "ally_of", shown)
+    db.flush()
+    world = extraction._known_world(db, campaign)
+    assert "Mara Quill" in world and "Veiled Duke" not in world and "owns the brig" not in world and "runs the cult" not in world
+    assert "Veiled Duke" not in json.dumps(entities.build_describe_messages(db, shown))
+    assert "the veiled duke" not in extraction._entity_index(db, campaign.id)
+    ev = StoryEvent(session_id=s.id, position=1, kind=EventKind.EVENT, text="Mara Quill met the Veiled Duke.", status=Status.PUBLISHED)
+    db.add(ev)
+    db.flush()
+    db.add_all([EventEntity(event_id=ev.id, entity_id=shown.id), EventEntity(event_id=ev.id, entity_id=hidden.id)])
+    db.add(Recap(session_id=s.id, version=1, body="They met.", author="ai", status=Status.PUBLISHED))
+    db.flush()
+    db.expire_all()
+    page = player.get("/c/main/").text
+    assert "Mara Quill</a>" in page and "Veiled Duke</a>" not in page

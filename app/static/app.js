@@ -3859,7 +3859,7 @@
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
       win.close(); unmark();
-      if (window.askdndToast) window.askdndToast('In the queue · ' + j.waiting + ' new');
+      if (window.askdndToast) window.askdndToast(j.review ? 'Sent · an admin reads it before it goes to Claude' : 'In the queue · ' + j.waiting + ' new');
     } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
   });
   // \ anywhere but a field; the menus' item; pressing and holding the logo
@@ -4054,4 +4054,112 @@
     }
   });
 
+})();
+
+// Listen to the recap (a Labs feature, app/narration.py; Brett, Nov 6): ▶ Listen on Previously on… opens a full-screen
+// "previously on": the narrator reads the recap while each paragraph's pictures pan slowly behind its words. The first
+// Listen on a recap has the narration made (the button says so while it waits); a paragraph is on screen for its share
+// of the narration's length. Space plays and pauses, Escape closes.
+(function () {
+  let open = null;
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; };
+  function close() {
+    if (!open) return;
+    open.audio.pause(); open.box.remove(); document.removeEventListener('keydown', open.keys); document.body.classList.remove('tale-playing');
+    open.back?.focus(); open = null;
+  }
+  async function play(btn) {
+    const base = btn.dataset.listen;
+    const box = el('div', 'tale-player'), stage = el('div', 'tp-stage'), words = el('p', 'tp-words'), say = el('p', 'tp-say');
+    box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Previously on');
+    const head = el('div', 'tp-head'), kicker = el('span', 'tp-kicker'), title = el('h2', 'tp-title');
+    const bar = el('div', 'tp-bar'), fill = el('span'), controls = el('div', 'tp-controls');
+    const toggle = el('button', 'btn tp-toggle', '❚❚ Pause'), shut = el('button', 'btn link tp-close', '✕ Close');
+    const redo = el('button', 'btn link tp-redo', 'Re-record the voice'); redo.title = 'A new narration of the same recap (the pictures are picked fresh every time)'; redo.hidden = true;
+    toggle.type = shut.type = redo.type = 'button'; bar.append(fill); head.append(kicker, title); controls.append(redo, toggle, shut);
+    box.append(stage, head, words, say, bar, controls);
+    document.body.append(box); document.body.classList.add('tale-playing');
+    const audio = new Audio();
+    open = { box, audio, back: btn, keys: e => { if (e.key === 'Escape') close(); else if (e.key === ' ' && e.target === document.body) { e.preventDefault(); toggle.click(); } } };
+    document.addEventListener('keydown', open.keys);
+    shut.addEventListener('click', close);
+    toggle.addEventListener('click', () => { if (audio.paused) audio.play(); else audio.pause(); });
+    audio.addEventListener('play', () => { toggle.textContent = '❚❚ Pause'; });
+    audio.addEventListener('pause', () => { toggle.textContent = '▶ Play'; });
+    shut.focus();
+    say.textContent = 'Opening the tale…';
+    let tale;
+    try { tale = await (await fetch(base + '/tale', { headers: { Accept: 'application/json' } })).json(); } catch (e) { tale = null; }
+    if (!open || open.box !== box) return;
+    if (!tale || tale.error) { say.textContent = (tale && tale.error) || "The tale couldn't be opened. Try again."; return; }
+    kicker.textContent = tale.label; title.textContent = tale.title || '';
+    const slides = tale.slides, total = slides.reduce((n, s) => n + s.weight, 0) || 1;
+    const ends = []; slides.reduce((n, s) => { ends.push((n + s.weight) / total); return n + s.weight; }, 0);
+    let shown = -1;
+    const show = i => {
+      if (i === shown || !slides[i]) return;
+      shown = i;
+      const s = slides[i], layer = el('div', 'tp-layer');
+      // The place behind (Brett, Nov 6: the location as the backdrop), the people the paragraph names in front
+      if (s.place) {
+        const back = el('img', 'tp-place'); back.src = s.place.src; back.alt = ''; back.style.objectPosition = s.place.pos; back.referrerPolicy = 'no-referrer';
+        back.style.setProperty('--tp-drift', i % 2 ? 1 : -1);
+        layer.append(back);
+      } else layer.classList.add('bare');
+      if (s.people.length) {
+        const row = el('div', 'tp-people');
+        s.people.forEach(p => {
+          const card = el('figure', 'tp-person'), img = el('img'), cap = el('figcaption', '', p.name);
+          img.src = p.src; img.alt = ''; img.style.objectPosition = p.pos; img.referrerPolicy = 'no-referrer';
+          card.append(img, cap); row.append(card);
+        });
+        layer.append(row);
+      }
+      stage.append(layer);
+      requestAnimationFrame(() => layer.classList.add('on'));
+      [...stage.children].slice(0, -2).forEach(old => old.remove());  // (the last one fades out under the new)
+      words.classList.remove('on'); words.textContent = s.intro ? tale.intro : s.text; words.scrollTop = 0;
+      requestAnimationFrame(() => words.classList.add('on'));
+    };
+    show(0);
+    let src = tale.audio;
+    if (!src) {
+      say.textContent = 'The narrator is reading it for the first time… (about half a minute)';
+      try {
+        const got = await (await fetch(base + '/narrate', { method: 'POST', headers: { Accept: 'application/json' } })).json();
+        src = got.audio; if (!src) { say.textContent = got.error || "The narration couldn't be made. Try again later."; return; }
+      } catch (e) { say.textContent = "The narration couldn't be made. Try again later."; return; }
+      if (!open || open.box !== box) return;
+    }
+    say.textContent = '';
+    // An admin's Re-record the voice (Brett, Nov 6): a new narration in its place, played from the start; the pictures
+    // aren't made, they're picked from the World each time
+    redo.hidden = !tale.can_redo;
+    redo.addEventListener('click', async () => {
+      audio.pause(); redo.disabled = true; say.textContent = 'Recording the voice again… (about half a minute)';
+      try {
+        const got = await (await fetch(base + '/narrate?again=1', { method: 'POST', headers: { Accept: 'application/json' } })).json();
+        if (got.audio) { audio.src = got.audio; shown = -1; audio.play().catch(() => {}); say.textContent = ''; }
+        else say.textContent = got.error || "The voice couldn't be recorded again. Try later.";
+      } catch (e) { say.textContent = "The voice couldn't be recorded again. Try later."; }
+      redo.disabled = false;
+    });
+    audio.src = src;
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      const at = audio.currentTime / audio.duration;
+      fill.style.width = (at * 100).toFixed(1) + '%';
+      const i = Math.max(0, ends.findIndex(e => at < e));
+      show(i);
+      // A paragraph longer than its box scrolls with the voice (a phone, Brett, Nov 6), so it's read through, not cut off
+      const from = i ? ends[i - 1] : 0, part = Math.min(1, Math.max(0, (at - from) / ((ends[i] - from) || 1)));
+      if (words.scrollHeight > words.clientHeight) words.scrollTop = part * (words.scrollHeight - words.clientHeight);
+    });
+    audio.addEventListener('ended', () => { fill.style.width = '100%'; toggle.textContent = '▶ Play again'; shown = -1; });
+    audio.play().catch(() => { toggle.textContent = '▶ Play'; });
+  }
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('[data-listen]');
+    if (btn) { e.preventDefault(); play(btn); }
+  });
 })();

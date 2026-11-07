@@ -80,8 +80,11 @@ people, places, factions, items and quests each event involves.
 Entities: only ones this session adds information about. Use the existing \
 name when it is already known (match aliases and misspellings); give a full \
 updated summary of 1-3 sentences that merges what was known with what's new. \
-For new ones, pick the kind and write a summary. Add aliases only for real \
-alternative names or spellings. A summary marked "written by" a person is their \
+For new ones, pick the kind and write a summary. For a person or creature, \
+the summary also says what they look like whenever the source says or shows \
+it: race or species, rough age, and visible features (build, hair, clothing, \
+marks); pictures of them are drawn from it. Never invent a look. Add aliases \
+only for real alternative names or spellings. A summary marked "written by" a person is their \
 words: keep its wording and order, and change only what this session adds or \
 corrects (add a sentence, fix a detail); never rephrase what's still true, and \
 it may stay longer than 3 sentences.
@@ -261,15 +264,19 @@ def _known_world(db: Session, campaign: Campaign) -> str:
         player = ch.player_name or (ch.owner.name if ch.owner else "unknown")
         lines.append(f"- {ch.name} — {player}{_alias_text(ch.entity)}")
     lines.append("\nKnown people, places and things (name [kind]: summary; aliases):")
+    # A hidden entry is as if it didn't exist until the DM shows it (Brett, Nov 6): never in what Claude is given, nor
+    # its facts or relationships, so no recap, question or suggestion can come from it
     for e in db.scalars(
-        select(Entity).where(Entity.campaign_id == campaign.id, Entity.kind != EntityKind.PC).order_by(Entity.kind, Entity.name)
+        select(Entity).where(Entity.campaign_id == campaign.id, Entity.kind != EntityKind.PC, Entity.status == Status.PUBLISHED)
+        .order_by(Entity.kind, Entity.name)
     ):
         quest = "" if e.quest_open is None else (" (open)" if e.quest_open else " (done)")
         who = f" (written by {e.written_by_person}: keep their wording)" if e.written_by_person else ""
         lines.append(f"- {e.name} [{e.kind.value}]{quest}{who}: {e.summary}{_alias_text(e)}")
     facts: dict[int, list[str]] = {}
     for f in db.scalars(
-        select(Fact).join(Entity).where(Entity.campaign_id == campaign.id, Fact.status == "merged").order_by(Fact.id)
+        select(Fact).join(Entity).where(Entity.campaign_id == campaign.id, Entity.status == Status.PUBLISHED, Fact.status == "merged")
+        .order_by(Fact.id)
     ):
         facts.setdefault(f.entity_id, []).append(f.labeled_text)
     if facts:
@@ -279,7 +286,7 @@ def _known_world(db: Session, campaign: Campaign) -> str:
             lines.extend(f"- {names[eid]}: {t}" for t in texts)
     from app.relations import describe
 
-    rels = describe(db, campaign.id)
+    rels = describe(db, campaign.id, shown_only=True)
     if rels:
         lines.append("\nKnown relationships:")
         lines.extend(f"- {r}" for r in rels)
@@ -466,7 +473,7 @@ def _entity_index(db: Session, campaign_id: int) -> dict[str, Entity]:
     when exactly one multi-word name starts with it."""
     index: dict[str, Entity] = {}
     first_words: dict[str, set[int]] = {}
-    entities = list(db.scalars(select(Entity).where(Entity.campaign_id == campaign_id)))
+    entities = list(db.scalars(select(Entity).where(Entity.campaign_id == campaign_id, Entity.status == Status.PUBLISHED)))  # (hidden: as if not there)
     for e in entities:
         index[_norm(e.name)] = e
         for a in e.aliases:

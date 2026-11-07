@@ -8,7 +8,7 @@ from app.db import get_db
 from app.extraction import Source, build_messages, store_result
 from app.importer import import_bundle
 from app.main import app
-from app.models import Correction, Entity, ExtractionRun, GameSession, GlossaryTerm, Proposal, Recap, StoryEvent
+from app.models import Correction, Entity, EventKind, ExtractionRun, GameSession, GlossaryTerm, Proposal, Recap, StoryEvent
 
 RESULT = {
     "title": "Devils",
@@ -318,3 +318,25 @@ def test_the_dms_words_are_kept(client, db):
     s = db.get(GameSession, s.id)
     assert s.recaps[-1].body == "We fought **devils** at the gate." and s.recaps[-1].author == "brett"
     assert "Claude redrafted" not in client.get(f"/c/main/manage/sessions/{s.id}").text
+
+
+def test_a_new_entry_accepted_from_a_draft_is_linked_to_the_moments_that_name_it(client, db):
+    """Brett, Nov 6: Captain Barrel, new in a draft, got no dot from Last session (a draft links its key moments only to
+    entries that already exist). Accepting it links the session's moments that name it; Undo takes them off again."""
+    from app.models import EventEntity
+
+    s = drafted_session(db)
+    db.add(StoryEvent(session_id=s.id, position=2, kind=EventKind.EVENT, text="The Horn Devil fled from Lillippi Lemon."))
+    db.flush()
+    devil, lil = proposal(db, "Horn Devil"), proposal(db, "Lillippi Lemon")
+    client.post(f"/manage/proposals/{devil.id}/accept", headers=HX)
+    client.post(f"/manage/proposals/{lil.id}/accept", headers=HX)
+    db.expire_all()
+    fled = db.scalar(select(StoryEvent).where(StoryEvent.text.like("The Horn Devil%")))
+    names = {e.name for e in fled.entities}
+    assert names == {"Horn Devil", "Lillippi Lemon"}
+    assert [e.name for e in db.scalar(select(StoryEvent).where(StoryEvent.text == "Big fight.")).entities] == []
+    client.post(f"/manage/proposals/{lil.id}/undo", headers=HX)
+    db.expire_all()
+    assert {e.name for e in db.get(StoryEvent, fled.id).entities} == {"Horn Devil"}
+    assert db.scalar(select(EventEntity).where(EventEntity.entity_id == db.scalar(select(Entity).where(Entity.name == "Lillippi Lemon")).id)) is None

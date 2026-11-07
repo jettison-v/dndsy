@@ -75,14 +75,19 @@ def test_the_art_style_its_pictures_to_match_and_off(people, db, openai):
     campaign = db.get(Campaign, k.campaign_id)
     db.refresh(campaign)
     assert campaign.art_style == {"words": "Woodcut, bold lines", "refs": [ids[0]], "off": False}
-    dm.post("/pictures/draw", data={"for": f"entity:{w.id}", "words": "A village"}, headers=HX)
+    # Brett, Nov 6: matched every time, everyone looked alike. Only when asked: ticked for a place, off for a person
+    assert 'name="match" value="1" checked' in dm.get(f"/pictures?for=entity:{w.id}").text
+    assert 'name="match" value="1" checked' not in dm.get(f"/pictures?for=entity:{k.id}").text
+    dm.post("/pictures/draw", data={"for": f"entity:{k.id}", "words": "A half-elf sailor"}, headers=HX)
+    assert openai[-1]["path"] == "generations" and not openai[-1]["files"] and "painting style" not in openai[-1]["fields"]["prompt"]
+    dm.post("/pictures/draw", data={"for": f"entity:{w.id}", "words": "A village", "match": "1"}, headers=HX)
     call = openai[-1]
-    assert call["path"] == "edits" and len(call["files"]) == 1 and "Match the style" in call["fields"]["prompt"]
+    assert call["path"] == "edits" and len(call["files"]) == 1 and "only for their painting style" in call["fields"]["prompt"]
     assert "A wide view of the place" in call["fields"]["prompt"] and call["fields"]["size"] == "1536x1024"  # (a place: wide)
     dm.post("/c/main/manage/settings/art-style", data={"words": "Woodcut", "off": "1"}, headers=HX)
     assert "switched off" in dm.get(f"/pictures?for=entity:{w.id}").text
     r = dm.post("/pictures/draw", data={"for": f"entity:{w.id}", "words": "A village"}, headers=HX)
-    assert r.status_code == 409 and len(openai) == 1
+    assert r.status_code == 409 and len(openai) == 2
 
 
 def test_without_a_key_describe_it_says_so(people, db, monkeypatch):
@@ -112,7 +117,7 @@ def test_a_characters_d_and_d_beyond_portrait_can_be_a_picture_to_match(people, 
     campaign = db.get(Campaign, cole.campaign_id)
     db.refresh(campaign)
     assert campaign.art_style["refs"] == [f"portrait:{cole.id}"]  # (not a character of this campaign: dropped)
-    dm.post("/pictures/draw", data={"for": f"entity:{entity(db, 'Womford').id}", "words": "A village"}, headers=HX)
+    dm.post("/pictures/draw", data={"for": f"entity:{entity(db, 'Womford').id}", "words": "A village", "match": "1"}, headers=HX)
     assert read == [face] and len(openai[-1]["files"]) == 1 and openai[-1]["path"] == "edits"
     assert not db.scalars(select(EntityPicture).where(EntityPicture.character_id == cole.id)).all()  # (never kept)
 
