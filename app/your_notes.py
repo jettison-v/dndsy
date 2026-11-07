@@ -13,6 +13,8 @@ one card per change, which doesn't clear the badge). News is a change only: a su
 used), a note sent to Claude, planned, fixed or closed, or a reply.
 """
 
+import re
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import func, select
@@ -33,6 +35,85 @@ MOST_CARDS = 3  # (more at once: one card that says how many)
 
 def _short(text: str) -> str:
     return text if len(text) <= 60 else text[:57].rstrip() + "…"
+
+
+# ------------------------------------------------------------------ one shape for every note (round 2, feedback 54)
+# Brett chose Layout B, Nov 7 (docs/mockups/your-notes-2/): a list beside the note, the same in both tabs. Every note has
+# three parts: what you asked (a title, its first sentence), what happened (the answer: Claude's, an admin's or the
+# DM's words, else what its status means) and where it stands (a track of steps, the one it's at lit).
+
+TITLE_MOST = 90
+
+
+def title_of(text: str) -> str:
+    """A note's title: its first sentence (or line), cut at a word to about one line, so a list of notes is a list of
+    different things (the row clips it further to its width; the note beside it shows it whole)."""
+    first = re.split(r"(?<=[.!?])\s|\n", (text or "").strip(), maxsplit=1)[0].strip() or "A note"
+    if len(first) <= TITLE_MOST:
+        return first
+    cut = first[:TITLE_MOST].rsplit(" ", 1)[0] if " " in first[:TITLE_MOST] else first[:TITLE_MOST - 1]
+    return cut.rstrip(" ,;:") + "…"
+
+
+ASKDND_STEPS = ("Sent", "Approved", "Planned", "Fixed")
+ASKDND_REACHED = {"review": 0, "new": 1, "question": 1, "planned": 2, "done": 3}
+ASKDND_DOT = {"review": "wait", "new": "claude", "question": "claude", "planned": "planned", "done": "done", "deleted": "closed"}
+STORY_DOT = {"Waiting": "wait", "Added": "done", "Used": "used", "Not used": "closed"}
+
+
+def track(steps: tuple, reached: int, stop: str = "") -> list[dict]:
+    """The steps with where the note is: each done up to `reached`, the next one under way; with `stop`, it ended there
+    instead (turned down) and the rest are struck through."""
+    if stop:
+        return [{"label": steps[0], "state": "done"}, *([{"label": steps[1], "state": "done"}] if reached >= 1 else []),
+                {"label": stop, "state": "stop"}, *({"label": x, "state": "skip"} for x in steps[reached + 2:] if x != stop)]
+    return [{"label": x, "state": "done" if i <= reached else "now" if i == reached + 1 else "todo"} for i, x in enumerate(steps)]
+
+
+def _when(at) -> float:
+    return at.timestamp() if at else 0.0
+
+
+def askdnd_note(fb) -> dict:
+    """A note about askdnd as its sender sees it, in the shape both tabs share."""
+    n = {**feedback.for_sender(fb), "new": _feedback_new(fb, "seen")}
+    replies = [m for m in n["thread"] if not m["mine"]]
+    answer = replies[-1] if replies else None
+    page = n["page"] or ""
+    closed = fb.status == "deleted"
+    return {"key": f"f{fb.id}", "id": fb.id, "kind": "askdnd", "title": title_of(fb.text), "text": fb.text, "at": fb.created_at,
+            "where": page, "href": n["url"], "from": page.rsplit(" · ", 1)[-1] if page else "Another page",
+            "label": n["label"], "dot": ASKDND_DOT.get(fb.status, "claude"), "open": fb.status not in ("done", "deleted"),
+            "answer": answer, "says": n["says"], "landed": None, "earlier": [m for m in n["thread"] if m is not answer],
+            "track": track(ASKDND_STEPS, ASKDND_REACHED.get(fb.status, 0), "Closed" if closed else ""),
+            "new": n["new"], "can_add": n["can_add"]}
+
+
+def story_note(r: dict) -> dict:
+    """A correction or addition about the story, in the shape both tabs share."""
+    x, o = r["x"], outcome(r["x"].status)["label"]
+    fact = isinstance(x, Fact)
+    about = "An entry" if fact else "A recap" if x.target_type == "session" else "The glossary"
+    landed = {"Added": f"On {r['label']}'s page" if fact else "In the glossary",
+              "Used": f"Worked into {r['label']}" if not fact else f"On {r['label']}'s page"}.get(o)
+    says = {"Waiting": "The DM hasn't decided yet.", "Added": "The DM added it as you wrote it.",
+            "Used": "The DM worked it in.", "Not used": "The DM decided not to use it."}[o]
+    answer = {"who": "The DM", "text": x.reply, "mine": False} if getattr(x, "reply", "") else None
+    steps = ("Sent", "With the DM", o if o in ("Added", "Used") else "Added or used")
+    return {"key": f"{'x' if fact else 's'}{x.id}", "id": x.id, "kind": "story", "title": title_of(x.text), "text": x.text,
+            "at": x.created_at, "where": r["label"], "href": r["href"], "from": about,
+            "label": o, "dot": STORY_DOT[o], "open": o == "Waiting", "answer": answer, "says": says,
+            "landed": {"text": landed, "href": r["href"]} if landed else None, "earlier": [],
+            "track": track(steps, 1, "Not used") if o == "Not used" else track(steps, 0 if o == "Waiting" else 2),
+            "new": r["new"], "can_add": False}
+
+
+def ranked(notes: list[dict]) -> list[dict]:
+    """Open first, then done; each note's place for Newest first and Oldest first (app.js "Lists" sorts by it)."""
+    for order, key in (("newest", lambda n: (not n["open"], -_when(n["at"]))), ("oldest", lambda n: (not n["open"], _when(n["at"])))):
+        for i, n in enumerate(sorted(notes, key=key)):
+            n[f"rank_{order}"] = i
+    return sorted(notes, key=lambda n: n["rank_newest"])
 
 
 # ------------------------------------------------------------------ about the story (the DM reads them)
@@ -91,7 +172,7 @@ def _looking(request: Request) -> bool:
 
 
 @router.get("/your-notes")
-def page(request: Request, tab: str = "", db: Session = Depends(get_db)):
+def page(request: Request, tab: str = "", note: str = "", db: Session = Depends(get_db)):
     """Your notes: About the story and About askdnd, the tab with news first."""
     user = current_user(request)
     if not user:
@@ -102,13 +183,13 @@ def page(request: Request, tab: str = "", db: Session = Depends(get_db)):
     news = {"story": sum(r["new"] for r in rows), "askdnd": sum(_feedback_new(fb, "seen") for fb in notes)}
     if tab not in TABS or (tab == "askdnd" and not askdnd):
         tab = "askdnd" if askdnd and news["askdnd"] and not news["story"] else "story" if rows or not askdnd else "askdnd"
-    shown = [{**feedback.for_sender(fb), "new": _feedback_new(fb, "seen")} for fb in notes]
+    lists = {"story": ranked([story_note(r) for r in rows]), "askdnd": ranked([askdnd_note(fb) for fb in notes])}
     if not _looking(request):  # (the tab it opens on is seen; the other when it's opened, `seen`)
         _mark(rows, notes, tab)
         news[tab] = 0
         db.commit()
     return templates.TemplateResponse(request, "your_notes.html", {
-        "tab": tab, "rows": rows, "notes": shown, "askdnd": askdnd, "news": news, "toast": request.session.pop("toast", None)})
+        "tab": tab, "lists": lists, "note": note, "askdnd": askdnd, "news": news, "toast": request.session.pop("toast", None)})
 
 
 def _mark(rows: list[dict], notes: list, tab: str) -> None:
@@ -151,7 +232,7 @@ def add_to(request: Request, feedback_id: int, text: str = Form(""), db: Session
     fb.seen = fb.told = feedback.marker(fb)
     db.commit()
     request.session["toast"] = web.notice("Added: an admin reads it first" if not admin else "Added: it's with Claude")
-    return RedirectResponse("/your-notes?tab=askdnd", status_code=303)
+    return RedirectResponse(f"/your-notes?tab=askdnd&note=f{fb.id}", status_code=303)
 
 
 STORY_NEWS = {"Added": "The DM added your note", "Used": "The DM used your note", "Not used": "The DM didn't use your note"}

@@ -857,9 +857,9 @@
  {
   "title": "Your Notes, Round 2",
   "kind": "design",
-  "status": "Waiting for Brett",
+  "status": "Decided, built",
   "date": "Nov 7",
-  "what": "Feedback 54: each note's request, what happened and where it stands, the same in both tabs, three ways (a card per note, a list with the note beside it, a conversation); Claude recommends the list.",
+  "what": "Feedback 54: each note's request, what happened and where it stands, the same in both tabs; Brett chose B (a list with the note beside it, search and filters), the DM's optional reply and a reason on Delete.",
   "source": "docs/mockups/your-notes-2/index.html",
   "link": "https://claude.ai/artifact/FfXfam48LiWb1JfMTqDWUR"
  }

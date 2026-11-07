@@ -3362,9 +3362,6 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .fb-st.done { background: var(--green-soft); color: var(--green); }
 .fb-st.deleted { background: var(--surface-2); color: var(--muted); }
 /* Your feedback (a sender's own notes) */
-.fbm-list { display: grid; gap: var(--sp-4); }
-.fbm { display: grid; gap: var(--sp-2); }
-.fbm .fb-msg.claude { background: var(--blue-soft); }  /* a reply to you, from Claude or an admin */
 .fb-st.deleted { background: var(--surface-3); color: var(--muted); }
 .fb-open { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-3) var(--sp-2) var(--sp-4) calc(72px + var(--sp-5)); background: var(--surface); }
 @media (max-width: 900px) { .fb-open { grid-template-columns: minmax(0, 1fr); padding-left: var(--sp-2); } }
@@ -3507,5 +3504,44 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .notes-ico.dm { background: var(--violet-soft); color: var(--violet); }
 .notes-ico.app { background: var(--blue-soft); color: var(--blue); }
 .notes-dot { color: var(--red); font-size: var(--fs-xs); font-weight: 700; }
-.notes-new { box-shadow: inset 3px 0 0 var(--red); padding-left: var(--sp-3); }
-.notes-how { margin-top: var(--sp-4); }
+/* Round 2 (docs/mockups/your-notes-2/ Layout B, feedback 54): the Reader in both tabs. A row is the note's title, its
+   date, and where it stands with the first words of what happened; the note beside it has the track, what you asked and
+   what happened */
+.nt-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 var(--sp-2); align-items: center; padding: var(--sp-2); }
+.nt-row:not(:has(.rd-dot)) { padding-left: var(--sp-2); }
+.nt-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.nt-date { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; }
+.nt-sum { grid-column: 2 / -1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: var(--fs-xs); }
+.notes-sort { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.nt-read { display: grid; gap: var(--sp-4); align-content: start; }
+.nt-h { margin: 0; font-size: var(--fs-lg); }
+.nt-part { display: grid; gap: var(--sp-2); }
+.nt-part h3.divider { margin: 0; }
+.nt-quote { font-family: var(--serif); font-size: var(--fs-md); line-height: 1.5; border-left: 3px solid var(--line); padding-left: var(--sp-3); color: var(--text-strong); white-space: pre-wrap; overflow-wrap: anywhere; }
+.nt-read .fb-msg.claude { background: var(--blue-soft); }  /* an earlier reply to you, from Claude, an admin or the DM */
+.nt-answer { display: grid; gap: var(--sp-1); border-radius: var(--r-md); padding: var(--sp-3); background: var(--green-soft); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+.nt-answer small { color: var(--muted); font-size: var(--fs-xs); font-weight: 600; }
+.nt-said { white-space: pre-wrap; }
+.nt-answer.st-open, .nt-answer.st-closed { background: var(--surface-2); }
+.nt-answer.st-used { background: var(--violet-soft); }
+.nt-landed { justify-self: start; }
+
+/* The status track (DESIGN.md › Components): a note's steps, the one it's at lit; done in green, under way in blue, one
+   that ended it in grey, the steps it skipped struck through. Wraps on a narrow screen */
+.st-track { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) 0; font-size: var(--fs-xs); color: var(--muted); }
+.st-track li { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.st-track li + li::before { content: ""; width: 16px; height: 2px; margin: 0 6px 0 2px; background: var(--line-strong); order: -2; }
+.st-track li::after { content: ""; order: -1; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--line-strong); background: var(--surface); box-sizing: border-box; }
+.st-track .st-done::after { background: var(--green); border-color: var(--green); }
+.st-track .st-done + li::before { background: var(--green); }
+.st-track .st-now { color: var(--text-strong); font-weight: 600; }
+.st-track .st-now::after { background: var(--blue); border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.st-track .st-stop { color: var(--text-strong); font-weight: 600; }
+.st-track .st-stop::after { background: var(--muted); border-color: var(--muted); }
+.st-track .st-skip { opacity: .55; text-decoration: line-through; }
+/* A dot for where something stands (a row's): the track's colours */
+.st-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--muted); }
+.st-dot.st-wait { background: var(--amber); }
+.st-dot.st-claude, .st-dot.st-planned { background: var(--blue); }
+.st-dot.st-done { background: var(--green); }
+.st-dot.st-used { background: var(--violet); }

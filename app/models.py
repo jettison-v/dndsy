@@ -253,6 +253,7 @@ class Fact(Timestamped, Base):
     # "addition" (something new) or "correction" (something on the page is wrong)
     kind: Mapped[str] = mapped_column(String(20), default="addition", server_default="addition")
     seen: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the status its author last saw (Your notes' badge)
+    reply: Mapped[str] = mapped_column(Text, default="", server_default="")  # the DM's word to its author when deciding it (optional)
     told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the status its author last had a card about
 
     @property
@@ -278,6 +279,7 @@ class Suggestion(Timestamped, Base):
     # under the recap until the session is redrafted and published again.
     from_dm: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     seen: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the status its author last saw (Your notes' badge)
+    reply: Mapped[str] = mapped_column(Text, default="", server_default="")  # the DM's word to its author when deciding it (optional)
     told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the status its author last had a card about
 
 

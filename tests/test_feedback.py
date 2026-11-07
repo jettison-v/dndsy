@@ -231,3 +231,49 @@ def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, pla
     assert "Someone else" not in player.get("/your-notes?tab=askdnd").text
     assert player.post(f"/your-notes/feedback/{other.id}", data={"text": "mine now"}).status_code == 404
     assert dm.post(f"/your-notes/feedback/{fb.id}", data={"text": "not theirs"}).status_code == 404
+
+
+def test_your_notes_round_2_each_note_is_a_request_an_answer_and_a_track(admin, player, db):
+    """Brett, Nov 7 (feedback 54, docs/mockups/your-notes-2/ Layout B): each note in the list is its title (the first
+    sentence), its date and where it stands with what happened; beside it the note itself: its track of steps, what
+    you asked and what happened. Open first, then Done; ?note= opens one. Deleting asks for a reason for its sender,
+    never required."""
+    from app.your_notes import title_of, track
+    from tests.roles import set_role
+
+    assert title_of("The Rest button wraps. It did on Sheet too.") == "The Rest button wraps."
+    long = "word " * 30
+    assert title_of(long).endswith("word…") and len(title_of(long)) <= 91
+    assert [s["state"] for s in track(("Sent", "Approved", "Planned", "Fixed"), 1)] == ["done", "done", "now", "todo"]
+    assert [(s["label"], s["state"]) for s in track(("Sent", "Approved", "Planned", "Fixed"), 0, "Closed")] == \
+        [("Sent", "done"), ("Closed", "stop"), ("Planned", "skip"), ("Fixed", "skip")]
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    note(player, text="The Rest button wraps. It did on Sheet too.")
+    note(player, text="Dice are too loud.")
+    wraps, loud = db.scalars(select(Feedback).order_by(Feedback.id)).all()
+    admin.post(f"/manage/feedback/{wraps.id}", data={"to": "new"})
+    admin.post(f"/manage/feedback/{wraps.id}", data={"to": "done"})
+    admin.post(f"/manage/feedback/{wraps.id}", data={"to": "tell", "answer": "Fixed: Rest stays on one line."})
+    admin.post(f"/manage/feedback/{loud.id}", data={"to": "deleted", "answer": "Dice sounds are a setting in Your dice."})
+    page = player.get("/your-notes?tab=askdnd").text
+    rows = page.split('id="t-askdnd"')[1].split('data-ls-rows>')[1].split("</aside>")[0]
+    assert rows.index(f'data-note="f{loud.id}"') < rows.index(f'data-note="f{wraps.id}"')  # (both done: newest first)
+    assert '<span class="nt-title">The Rest button wraps.' in rows and "Fixed: Fixed: Rest stays on one line." in rows
+    assert 'data-group-newest="Done"' in rows and '"status": "Closed"' in rows
+    read = page.split(f'data-note-read="f{loud.id}"')[1].split("</article>")[0]
+    assert '<li class="st-stop">Closed</li>' in read and '<li class="st-skip">Fixed</li>' in read
+    assert "Dice sounds are a setting in Your dice." in read and "Add to it" not in read  # (a closed note: as today)
+    assert f'data-note-read="f{loud.id}">' in page  # (the first is shown when none is asked for)
+    picked = player.get(f"/your-notes?tab=askdnd&note=f{wraps.id}").text
+    assert f'data-note-read="f{wraps.id}">' in picked and f'data-note-read="f{loud.id}" hidden' in picked
+    # Deleting without a reason is fine: its sender sees what Closed means
+    note(player, text="A third note.")
+    third = db.scalar(select(Feedback).where(Feedback.text == "A third note."))
+    admin.post(f"/manage/feedback/{third.id}", data={"to": "deleted", "answer": ""})
+    db.refresh(third)
+    assert third.status == "deleted" and not third.thread
+    assert "Not something askdnd will change for now." in player.get(f"/your-notes?tab=askdnd&note=f{third.id}").text
+    assert "Why, for " in admin.get("/manage/feedback?tab=all").text
