@@ -109,8 +109,10 @@ def lock(db: Session, campaign: Campaign) -> None:
 
 
 def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
-    """The VTT's fight now (None: no fight). True when it changed."""
+    """The VTT's fight now (None: no fight). True when it changed. Ignored while askdnd runs the fight itself."""
     lock(db, campaign)
+    if (campaign.fight or {}).get("source") == "askdnd":
+        return False
     characters = {c.ddb_id: c.id for c in db.scalars(
         select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
         .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None), Character.ddb_id.is_not(None)))}
@@ -122,15 +124,32 @@ def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
     fresh = campaign.fight_at is None or datetime.now(UTC) - campaign.fight_at > timedelta(minutes=10)
     if _order(now) == _order(prev) and (now or {}).get("sets") == (prev or {}).get("sets") and not fresh:
         return False
-    if now is not None:  # (its reminders carry on through the fight; a new fight gets its own id)
+    settle(db, campaign, prev, now)
+    return True
+
+
+def settle(db: Session, campaign: Campaign, prev: dict | None, now: dict | None) -> None:
+    """Keep the fight as it is now, from D&D Beyond's VTT or askdnd's own (app/table_fight.py): its reminders carry on,
+    a new fight gets its own id, and a turn that began moves on what's timed by turns (follow), a creature's turn and
+    its character's turn's bar."""
+    if now is not None:
         now["reminders"], now["seq"] = list((prev or {}).get("reminders") or []), (prev or {}).get("seq", 0)
-        now["id"] = (prev or {}).get("id") or secrets.token_hex(4)
+        now["id"] = (prev or {}).get("id") or now.get("id") or secrets.token_hex(4)
         ended, began = turn_begun(prev, now)
         if began:
             follow(db, campaign, ended, began, now)
             creature_turns(db, campaign, ended, began, now)
+            starts_over(db, began, now)
     campaign.fight, campaign.fight_at = now, datetime.now(UTC)
-    return True
+
+
+def starts_over(db: Session, began: str, now: dict) -> None:
+    """A character's turn began: its turn's bar starts over (app/turn_bar.py: movement, Action, Bonus Action and
+    Reaction; the 2024 rules give a Reaction back at the start of your turn)."""
+    who = next((x.get("character") for x in now.get("order") or [] if x.get("key") == began), None)
+    ch = db.get(Character, who) if who else None
+    if ch is not None and ch.turn:
+        ch.turn = None
 
 
 def turn_begun(prev: dict | None, now: dict) -> tuple[str | None, str | None]:
@@ -340,10 +359,12 @@ def shown(campaign: Campaign | None, dm: bool, mine: set[int] = frozenset()) -> 
     "now" (whose turn: the entry), "next" (the entry after it), "yours" (it's one of `mine`'s turn), "next_yours",
     "reminders" (theirs: each says "mine" when it's one of their characters'), "waiting" (the DM added the tokens and
     combat hasn't started: whoever has rolled, and no one's turn yet; extension 0.12.0)}."""
-    if campaign is None or not campaign.fight or not campaign.fight_at or datetime.now(UTC) - campaign.fight_at > STALE:
+    if campaign is None or not campaign.fight or not campaign.fight_at:
         return None
     f = campaign.fight
-    if f.get("waiting") and not initiative.on(campaign):  # (before Start Combat, only with Initiative from askdnd)
+    if f.get("source") != "askdnd" and datetime.now(UTC) - campaign.fight_at > STALE:  # (askdnd's own runs until the DM ends it)
+        return None
+    if f.get("waiting") and not initiative.on(campaign) and f.get("source") != "askdnd":  # (before Start Combat, only with Initiative from askdnd)
         return None
     order = [x for x in f["order"] if dm or not x["hidden"]]
     if not order:
@@ -355,7 +376,7 @@ def shown(campaign: Campaign | None, dm: bool, mine: set[int] = frozenset()) -> 
     seen_now = now if now and (dm or not now["hidden"]) else None
     # A reminder (follow) is for that character's player and the DM (Brett, 2026-10-29)
     reminders = [{**r, "mine": r["character"] in mine} for r in f.get("reminders") or [] if dm or r["character"] in mine]
-    return {"id": f.get("id", ""), "round": f["round"], "turn": f["turn"], "waiting": waiting, "order": order, "now": seen_now, "next": nxt,
+    return {"id": f.get("id", ""), "source": f.get("source") or "ddb", "place": f.get("place"), "round": f["round"], "turn": f["turn"], "waiting": waiting, "order": order, "now": seen_now, "next": nxt,
             "yours": bool(seen_now and seen_now.get("character") in mine),
             "next_yours": bool(nxt and nxt.get("character") in mine and nxt is not now), "reminders": reminders}
 
@@ -391,7 +412,7 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
         now = next((i for i, x in enumerate(f["order"]) if x.get("active")), None)
         f["next"] = f["order"][(now + 1) % len(f["order"])]["name"] if now is not None and len(f["order"]) > 1 else ""  # (those this person sees)
         # The DM moves fighters in the order (Initiative from askdnd): a row's handle, ↑ ↓ and its number
-        f["can_order"] = initiative.on(campaign) and access.allows("fight_order", access.level(email), access.role(email, campaign.id))
+        f["can_order"] = (initiative.on(campaign) or f["source"] == "askdnd") and access.allows("fight_order", access.level(email), access.role(email, campaign.id))
         # (not a creature that acts right after its master: it moves with it)
         f["order"] = [{**x, "moves": f["can_order"] and not x.get("sub") and not (x.get("creature") and not x["creature"].get("own"))}
                       for x in f["order"]]

@@ -160,7 +160,7 @@
     // Menus (campaign, Party, Live, Manage, account, phone More). A click elsewhere closes
     // them; clicks inside a [data-keep-open] menu (the Live popover's switch) don't.
     const opener = e.target.closest('[data-menu]');
-    document.querySelectorAll('.menu').forEach(m => {
+    document.querySelectorAll('.menu[id]').forEach(m => {  // (only menus a [data-menu] opens: a <details> menu opens on its own)
       if ((!opener || m.id !== opener.dataset.menu) && !(m.hasAttribute('data-keep-open') && m.contains(e.target))) m.hidden = true;
     });
     if (opener) {
@@ -608,7 +608,7 @@
   // roll, the tour); your own (`now`) doesn't. Lists set themselves up as they appear; the rest is set up again here
   // (a panel as when it opened: panel:loaded). A button's own answer, such as a pin's or Wild Shape's, still swaps
   // just the box it changed.
-  const PARTY = /^(\/c\/[^/]+)?\/party$/;
+  const PARTY = /^(\/c\/[^/]+)?\/(party|table)$/;  // (and askdnd's table: everyone on it)
   let showWait = null, showing = false, again = false;
   function showsAny(ids) {  // ids: character ids as text, or '*' for any
     const page = document.querySelector('main[data-character]');
@@ -618,7 +618,9 @@
   }
   function busyHere() {
     const a = document.activeElement;
-    return !!(document.querySelector('.peek.open, .roll-win, .tour-card, dialog[open], details.conc-pop[open], details.cond-pill[open]') ||
+    // (on askdnd's table a side panel stays open through a fight, so the map keeps moving beside it)
+    const table = /^(\/c\/[^/]+)?\/table$/.test(location.pathname);
+    return !!(document.querySelector((table ? '' : '.peek.open, ') + '.roll-win, .tour-card, dialog[open], details.conc-pop[open], details.cond-pill[open], #tmap.dragging') ||
               (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))));
   }
   // A field that saves as you type (a note in a side panel): the box holding it isn't swapped while you're in it
@@ -677,7 +679,15 @@
     const restore = keepState(here), before = marksIn(here);
     [...here.attributes].forEach(a => { if (!there.hasAttribute(a.name)) here.removeAttribute(a.name); });
     [...there.attributes].forEach(a => here.setAttribute(a.name, a.value));
+    // What's the same in both stays as it is ([data-keep]: askdnd's table map's picture, so it never flashes)
+    const keep = new Map([...here.querySelectorAll('[data-keep]')].map(n => [n.dataset.keep, n]));
     here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
+    here.querySelectorAll('[data-keep]').forEach(n => { const old = keep.get(n.dataset.keep); if (old) n.replaceWith(old); });
+    // Parts drawn outside main that follow it ([data-with-main]: askdnd's table's windows), unless one is open
+    document.querySelectorAll('[data-with-main]').forEach(n => {
+      const now = doc.getElementById(n.id);
+      if (now && !n.querySelector('dialog[open]')) n.replaceWith(document.importNode(now, true));
+    });
     const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
     if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); liveWindowAgain(); }
     // Your character's conditions on its menu bar button, outside main
@@ -759,6 +769,7 @@
   document.addEventListener('askdnd:live', e => {
     const t = e.detail.type;
     if (t === 'game') { showInPlace(); return; }
+    if (t === 'table') { if (/^(\/c\/[^/]+)?\/table$/.test(location.pathname)) showInPlace(); return; }  // (askdnd's table: a place, a token, a scene)
     if (t === 'deliver') { window.postMessage({ askdndBridge: 'deliver', ddbId: String(e.detail.ddb) }, location.origin); return; }  // (a change another one waited for may go now: ddb_bridge._release)  // the fight moved on: every page, once it isn't in the way of a pop-up
     if (t !== 'character' && t !== 'resync') return;
     liveIds.add(t === 'resync' ? '*' : String(e.detail.id));
@@ -773,6 +784,10 @@
   // You changed something of a character's (a pin, bookmark, reminder or note: character_pages, player_notes):
   // the page and its open panels show their new copy at once. A form that's done with its window closes it first.
   document.body.addEventListener('closePanel', () => closePeek());
+  // A scene of the DM's to read or write in (app/scene_notes.py: a new one opens to write in, a saved one to read)
+  document.body.addEventListener('openScene', e => { const url = e.detail && (e.detail.value || e.detail); if (typeof url === 'string') openPanel(url, null, null); });
+  // Something on askdnd's table changed (a place, a token, the fight): this page shows its new copy at once
+  document.body.addEventListener('tableChanged', () => showInPlace(true));
   document.body.addEventListener('characterChanged', () => showInPlace(true));
   // Pop-ups made of <details> (Concentration, conditions, + Condition): a click anywhere else closes them
   document.addEventListener('click', e => {
@@ -835,6 +850,11 @@
       if (said) {
         t.innerHTML = '<b>' + escText(r.who) + '</b>: ' + escText(r.text) + '.';
         card(t, { kind: said, stay: said !== 'ok' });
+        continue;
+      }
+      if (r.kind === 'reach') {  // left a creature's reach (app/tokens.py): the same words for the player and the DM
+        t.innerHTML = escText(r.text) + '.';
+        card(t, { kind: 'info' });
         continue;
       }
       if (!r.mine) {  // the DM: to know
@@ -2172,7 +2192,7 @@
       if (go.follow === 'bonus') { p.set('die', go.die); p.set('label', go.bonusLabel || 'Added die'); }
     } else {
       Object.entries({ character: go.cid || '', kind: go.kind, label: go.label, mod: go.mod || '', dmg: go.dmg || '', mode: go.mode, to,
-                       count: go.count || 1, each: go.each || '', once: go.once ? 1 : '', who: go.who || '' }).forEach(([k, v]) => p.set(k, v));
+                       count: go.count || 1, each: go.each || '', once: go.once ? 1 : '', who: go.who || '', token: go.token || '' }).forEach(([k, v]) => p.set(k, v));
       (go.parts || []).forEach(x => p.append('part', x));
       (go.dmgParts || []).forEach(x => p.append('dmg_part', x));
     }
@@ -2189,6 +2209,7 @@
       if (!e) return showFailure(w, "Those dice don't look right.", () => chooser(w._anchor, go));
       if (e.kind === 'death' && go.follow !== 'damage') deathPrivate(go.cid, e, before);
       endHidden(go);
+      if (!go.follow) turnUsed(w._anchor);
       return showResult(w, e, go.follow);
     }
     const pending = !go.follow && logShown() && log ? placeholder(go.label) : null;
@@ -2200,6 +2221,7 @@
         addToLog(j.html, j.roll.id);
         showResult(w, j.roll, go.follow);
         endHidden(go);
+        if (!go.follow) turnUsed(w._anchor);
         deathMarked(j.death);
         // A familiar's Initiative, rolled with its character's (app/initiative.py): its row too, and a word on it
         (j.also || []).forEach(a => { addToLog(a.html, a.roll.id); toast(a.who + "'s Initiative: " + a.roll.total, null, 'info'); });
@@ -2260,6 +2282,14 @@
     return fetch(url, { method: 'POST', body: new URLSearchParams(fields), headers: { 'X-Requested-With': 'fetch' } })
       .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || j.error || "askdnd couldn't do that"); return j; }));
   }
+  // Your turn's bar on askdnd's table (app/turn_bar.py): a roll, Cast or Use made from one of its rows marks that row's
+  // Action, Bonus Action or Reaction used (pressing the mark unticks it); askdnd counts, never stops you
+  function turnUsed(anchor) {
+    const it = anchor && anchor.closest && anchor.closest('[data-turn-cost]'), bar = it && it.closest('#turn-bar');
+    if (!bar) return;
+    fetch('/characters/' + bar.dataset.character + '/turn', { method: 'POST', body: new URLSearchParams({ what: 'use', cost: it.dataset.turnCost, n: '1' }), headers: { 'X-Requested-With': 'fetch' } })
+      .then(r => { if (r.ok) document.body.dispatchEvent(new CustomEvent('characterChanged')); });
+  }
   function itemChanged(j) {
     document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver }));
     document.body.dispatchEvent(new CustomEvent('characterChanged'));
@@ -2276,6 +2306,7 @@
         if (level) roller.dataset.slot = level;
         chooser(roller, specFrom(roller));
       } else closeWin();
+      turnUsed(w._anchor);
       if (j.roll) {
         if (animate()) window.askdndThrowing.throwing(j.roll.id);
         addToLog(j.html, j.roll.id);
@@ -2283,6 +2314,7 @@
       }
       toast(j.text, j.undo ? { label: 'Undo', run: () => posted(j.undoUrl, j.undo).then(u => { toast(u.text); itemChanged(u); }).catch(err => toast(err.message, null, 'warn')) } : null);
       itemChanged(j);
+      if (j.area) document.body.dispatchEvent(new CustomEvent('areaTool', { detail: j.area }));  // (askdnd's table: its area to place)
     }).catch(err => {
       w.querySelectorAll('button').forEach(b => { b.disabled = false; });
       said.textContent = err.message;
@@ -2309,14 +2341,16 @@
   }
   function specFrom(el) {
     const cid = characterOf(el), kind = el.dataset.roll;
-    const shared = atTable() && !!side && (kind === 'dice' || (!!cid && (side.dataset.yours || '').split(',').includes(String(cid))));
+    // A creature on askdnd's table, rolled by the DM as it (app/table_creatures.py): its token's id goes with the roll
+    const tokEl = el.closest('[data-token]'), token = tokEl ? tokEl.dataset.token : '';
+    const shared = atTable() && !!side && (kind === 'dice' || !!token || (!!cid && (side.dataset.yours || '').split(',').includes(String(cid))));
     let recipe = null;
     try { recipe = el.dataset.recipe ? JSON.parse(el.dataset.recipe) : null; } catch (err) { recipe = null; }
     // A condition the character has now (Invisible…) offers Advantage with its reason, never forces it:
     // the roll window shows the reason and the player (and DM) decide (app/conditions.adv_reasons).
     let advWhy = el.dataset.advWhy || '';
     // On a creature's Battle (Your creatures) the roll is the creature's: it says so, and its master's conditions don't apply
-    const whoEl = el.closest('[data-who]'), who = whoEl ? whoEl.dataset.who : '';
+    const whoEl = el.closest('[data-who]'), who = whoEl ? whoEl.dataset.who : (tokEl ? tokEl.dataset.name : '');
     const body = cid && !who && document.querySelector('#battle-body[data-character="' + cid + '"]');
     if (body) {
       let ca = {};
@@ -2332,7 +2366,7 @@
     // Hidden (app/hiding.py): an attack roll ends it, so its window offers that, ticked (the DM may rule otherwise)
     const endsHidden = !!(body && body.dataset.hidden && kind === 'attack');
     return { kind, label: el.dataset.label || '', mod: el.dataset.mod || '', dmg: el.dataset.dmg || '', adv: !!el.dataset.adv, recipe, slot: +el.dataset.slot || 0,
-             advWhy, note: el.dataset.note || '', cid: kind === 'dice' && side ? side.dataset.mine : cid, shared, who, endsHidden };
+             advWhy, note: el.dataset.note || '', cid: token ? '' : kind === 'dice' && side ? side.dataset.mine : cid, shared, who, endsHidden, token };
   }
 
   document.addEventListener('click', e => {
@@ -4162,4 +4196,427 @@
     const btn = e.target.closest('[data-listen]');
     if (btn) { e.preventDefault(); play(btn); }
   });
+})();
+
+// Your turn's bar on a phone (askdnd's table, slice 4): one line at the bottom until pulled up; it stays as you left it
+// while the page shows a new copy
+(function () {
+  let open = false;
+  const apply = () => { const bar = document.getElementById('turn-bar'); if (!bar) return; bar.classList.toggle('open', open); const b = bar.querySelector('[data-tbar-toggle]'); if (b) b.setAttribute('aria-expanded', String(open)); };
+  document.addEventListener('click', e => { if (e.target.closest('[data-tbar-toggle]')) { open = !open; apply(); } });
+  document.addEventListener('askdnd:swapped', apply);
+})();
+
+// askdnd's table map (app/table_page.py, table.html; docs/plans/2026-11-06-table-build-plan.md): the picture, its grid
+// and the tokens in one world, moved and zoomed together (a drag on the map pans, the wheel or a pinch zooms, + − Fit,
+// ⌖ to whose turn it is). A token you may move is dragged to a square (POST …/move; the page then shows its new copy,
+// as every page at the table does), with a ruler saying its feet as app/measure.py counts them (the campaign's diagonal
+// rule, the DM's Difficult Terrain), what's left of your movement on your turn, and whose reach it leaves. Tools: the
+// ruler, a spell's area (app/areas.py: the same shapes and who's in it), the DM's scene pin, fog and terrain (drag over
+// squares, or click in a room). Keys (the ? window): + − 0 zoom, T and F find, arrows move the token you picked, R
+// ruler, A area, N next turn, Esc stops. The view (where you look, how close) is kept per place while the page shows
+// new copies, and per tab; when the turn passes to a token off the screen, the map glides to it.
+(function () {
+  const VIEW = 'askdnd:tmap:', STEP = 5, SVG = 'http://www.w3.org/2000/svg';
+  let view = null, drag = null, tool = null, area = null, picked = null, lastNow;
+  const map = () => document.getElementById('tmap');
+  const world = m => m.querySelector('.tmap-world');
+  const esc = v => { const d = document.createElement('div'); d.textContent = v == null ? '' : String(v); return d.innerHTML; };
+  const store = (m, v) => { try { sessionStorage.setItem(VIEW + m.dataset.place, JSON.stringify(v)); } catch (e) { /* private window */ } };
+  const kept = m => { try { return JSON.parse(sessionStorage.getItem(VIEW + m.dataset.place) || 'null'); } catch (e) { return null; } };
+  const json = (s, d) => { try { return JSON.parse(s || ''); } catch (e) { return d; } };
+  function fit(m) {
+    const w = +m.dataset.w, h = +m.dataset.h, r = m.getBoundingClientRect();
+    const z = Math.min(r.width / w, r.height / h) || 1;
+    return { x: (r.width - w * z) / 2, y: (r.height - h * z) / 2, z };
+  }
+  function apply(m, glide) {  // (--inv keeps a pin's and a name's words the same size at any zoom)
+    const w = world(m);
+    if (!w || !view) return;
+    w.classList.toggle('glide', !!glide);
+    w.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.z})`;
+    w.style.setProperty('--inv', String(1 / view.z));
+  }
+  function zoomAt(m, factor, cx, cy, glide) {
+    const r = m.getBoundingClientRect(), px = cx - r.left, py = cy - r.top;
+    const z = Math.min(4, Math.max(0.05, view.z * factor)), k = z / view.z;
+    view = { ...view, x: px - (px - view.x) * k, y: py - (py - view.y) * k, z };
+    apply(m, glide); store(m, view);
+  }
+  function centerOn(m, el, glide = true) {  // a token in the middle of the screen, as close as it is now (closer if far out)
+    const r = m.getBoundingClientRect(), z = Math.max(view.z, Math.min(1, fit(m).z * 2));
+    const cx = parseFloat(el.style.left) + el.offsetWidth / 2, cy = parseFloat(el.style.top) + el.offsetHeight / 2;
+    view = { ...view, z, x: r.width / 2 - cx * z, y: r.height / 2 - cy * z };
+    apply(m, glide); store(m, view);
+  }
+  function onScreen(m, el) {
+    const r = m.getBoundingClientRect(), t = el.getBoundingClientRect();
+    return t.right > r.left + 20 && t.left < r.right - 20 && t.bottom > r.top + 20 && t.top < r.bottom - 20;
+  }
+  const toWorld = (m, cx, cy) => { const r = m.getBoundingClientRect(); return { x: (cx - r.left - view.x) / view.z, y: (cy - r.top - view.y) / view.z }; };
+  const squares = (m, p) => ({ x: (p.x - +m.dataset.gx) / +m.dataset.size, y: (p.y - +m.dataset.gy) / +m.dataset.size });
+  const at = (m, e) => squares(m, toWorld(m, e.clientX, e.clientY));
+  const cell = p => ({ x: Math.floor(p.x), y: Math.floor(p.y) });
+  function post(url, fields) {
+    return fetch(url, { method: 'POST', body: new URLSearchParams(fields), headers: { 'X-Requested-With': 'fetch', 'HX-Request': 'true' } })
+      .then(r => { const t = r.headers.get('HX-Trigger'); if (t) { try { Object.entries(JSON.parse(t)).forEach(([k, v]) => document.body.dispatchEvent(new CustomEvent(k, { detail: v }))); } catch (e) { /* plain */ } }
+        if (!r.ok) r.json().then(j => window.askdndToast && window.askdndToast(j.detail || "That didn't work.", null, 'warn')).catch(() => {}); return r; });
+  }
+
+  // ------------------------------------------------ measuring: app/measure.py's numbers, the same here
+  function path(a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y, n = Math.round(Math.max(Math.abs(dx), Math.abs(dy))), out = [];
+    let px = a.x, py = a.y;
+    for (let i = 1; i <= n; i++) {
+      const x = Math.round(a.x + dx * i / n), y = Math.round(a.y + dy * i / n);
+      out.push({ x, y, diag: x !== px && y !== py }); px = x; py = y;
+    }
+    return out;
+  }
+  function cost(steps, rule, terrain, size) {
+    let feet = 0, rough = 0, diagonals = 0;
+    const span = Math.max(1, Math.round(size || 1));
+    for (const s of steps) {
+      let base = STEP;
+      if (s.diag) { diagonals++; if (rule === 'alternate' && diagonals % 2 === 0) base = 2 * STEP; }
+      let hard = false;
+      for (let i = 0; i < span && !hard; i++) for (let j = 0; j < span && !hard; j++) hard = terrain.has((s.x + i) + ',' + (s.y + j));
+      if (hard) { rough++; base += STEP; }
+      feet += base;
+    }
+    return { feet, rough, squares: steps.length };
+  }
+  function apart(a, b) {
+    const gap = (p, ps, q, qs) => Math.max(0, q - (p + ps), p - (q + qs));
+    const sa = Math.max(a.size || 1, 0.5), sb = Math.max(b.size || 1, 0.5);
+    return Math.round(Math.max(gap(a.x, sa, b.x, sb), gap(a.y, sa, b.y, sb))) * STEP + STEP;
+  }
+  const tokensOn = m => [...m.querySelectorAll('.tok-m')].map(el => ({ el, id: +el.dataset.token, name: el.dataset.name, x: +el.dataset.x, y: +el.dataset.y,
+    size: +el.dataset.sq || 1, reach: +el.dataset.reach || STEP, foe: el.hasAttribute('data-foe'), down: el.hasAttribute('data-down'), character: +el.dataset.character || 0 }));
+  function leaves(m, mover, end) {
+    return tokensOn(m).filter(o => o.id !== mover.id && o.foe !== mover.foe && !o.down)
+      .filter(o => apart(mover, o) <= o.reach && o.reach < apart({ ...mover, ...end }, o)).map(o => o.name);
+  }
+
+  // ------------------------------------------------ areas: app/areas.py's shapes, the same here
+  function covers(a, px, py) {
+    const r = a.feet / STEP, dx = px - a.x, dy = py - a.y, ang = (a.angle || 0) * Math.PI / 180;
+    const along = dx * Math.cos(ang) + dy * Math.sin(ang), across = -dx * Math.sin(ang) + dy * Math.cos(ang), e = 1e-9;
+    if (a.shape === 'sphere' || a.shape === 'cylinder') return Math.hypot(dx, dy) <= r + e;
+    if (a.shape === 'cone') return along > 0 && along <= r + e && Math.abs(across) <= along / 2 + e;
+    if (a.shape === 'line') return along >= 0 && along <= r + e && Math.abs(across) <= (a.wide || STEP) / STEP / 2 + e;
+    if (a.shape === 'cube') return along >= 0 && along <= r + e && Math.abs(across) <= r / 2 + e;
+    if (a.shape === 'emanation') { const s = a.size || 1; return px >= a.x - r && px <= a.x + s + r && py >= a.y - r && py <= a.y + s + r; }
+    return false;
+  }
+  function inside(a, toks) {
+    return toks.filter(t => {
+      if (a.shape === 'emanation' && a.token === t.id) return false;
+      const span = Math.max(1, Math.round(t.size));
+      for (let i = 0; i < span; i++) for (let j = 0; j < span; j++) if (covers(a, t.x + i + 0.5, t.y + j + 0.5)) return true;
+      return false;
+    });
+  }
+  function shapeOf(a) {  // (app/areas.py outline: in squares)
+    const r = a.feet / STEP, ang = (a.angle || 0) * Math.PI / 180;
+    const pt = (al, ac) => [a.x + al * Math.cos(ang) - ac * Math.sin(ang), a.y + al * Math.sin(ang) + ac * Math.cos(ang)];
+    if (a.shape === 'sphere' || a.shape === 'cylinder') return `<circle cx="${a.x}" cy="${a.y}" r="${r}"/>`;
+    if (a.shape === 'emanation') { const s = a.size || 1; return `<rect x="${a.x - r}" y="${a.y - r}" width="${s + 2 * r}" height="${s + 2 * r}" rx="${r}"/>`; }
+    const half = a.shape === 'line' ? (a.wide || STEP) / STEP / 2 : r / 2;
+    const pts = a.shape === 'cone' ? [pt(0, 0), pt(r, -half), pt(r, half)] : [pt(0, -half), pt(r, -half), pt(r, half), pt(0, half)];
+    return `<polygon points="${pts.map(p => p.map(v => v.toFixed(3)).join(',')).join(' ')}"/>`;
+  }
+
+  // ------------------------------------------------ the draft layer: the ruler, a rectangle being dragged, an area being placed
+  function draft(m) {
+    let s = m.querySelector('.tmap-draft');
+    if (!s) {
+      const cols = +m.dataset.cols, rows = +m.dataset.rows, size = +m.dataset.size;
+      s = document.createElementNS(SVG, 'svg');
+      s.setAttribute('class', 'tmap-layer tmap-draft');
+      s.setAttribute('viewBox', `0 0 ${cols} ${rows}`);
+      s.setAttribute('preserveAspectRatio', 'none');
+      s.setAttribute('aria-hidden', 'true');
+      Object.assign(s.style, { left: m.dataset.gx + 'px', top: m.dataset.gy + 'px', width: cols * size + 'px', height: rows * size + 'px' });
+      world(m).appendChild(s);
+    }
+    return s;
+  }
+  function tip(m, p, html) {  // words beside the draft, as big at any zoom
+    let t = m.querySelector('.tmap-tip');
+    if (!t) { t = document.createElement('div'); t.className = 'tmap-tip'; t.setAttribute('role', 'status'); world(m).appendChild(t); }
+    t.style.left = (+m.dataset.gx + p.x * +m.dataset.size) + 'px';
+    t.style.top = (+m.dataset.gy + p.y * +m.dataset.size) + 'px';
+    t.innerHTML = html;
+  }
+  function clearDraft(m) { m.querySelector('.tmap-draft')?.remove(); m.querySelector('.tmap-tip')?.remove(); }
+  function measureLine(m, from, to, size, mover) {
+    const rule = m.dataset.rule, terrain = new Set(json(m.dataset.terrain, []));
+    const c = cost(path(from, to), rule, terrain, size), h = (size || 1) / 2;
+    draft(m).innerHTML = `<line x1="${from.x + h}" y1="${from.y + h}" x2="${to.x + h}" y2="${to.y + h}"/>` +
+      `<rect class="to" x="${to.x}" y="${to.y}" width="${size || 1}" height="${size || 1}"/>`;
+    let words = `<b>${c.feet} ft</b>`;
+    if (c.rough) words += ` <small>· ${c.rough} Difficult</small>`;
+    const turn = json(m.dataset.turn, null);
+    if (mover && turn && mover.character && mover.character === turn.character) {
+      const left = turn.left - c.feet;
+      words += left >= 0 ? ` <small>· ${left} ft left</small>` : ` <small class="over">· ${-left} ft over your Speed</small>`;
+    }
+    if (mover) { const l = leaves(m, mover, to); if (l.length) words += `<br><small class="warn">Leaves the reach of ${esc(l.join(', '))}</small>`; }
+    tip(m, { x: to.x + (size || 1), y: to.y }, words);
+  }
+  function drawRect(m, a, b) {
+    const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y), w = Math.abs(a.x - b.x) + 1, h = Math.abs(a.y - b.y) + 1;
+    draft(m).innerHTML = `<rect class="${tool.startsWith('fog-hide') || tool === 'terrain-clear' ? 'off' : 'on'}" x="${x}" y="${y}" width="${w}" height="${h}"/>`;
+    tip(m, { x: x + w, y }, `${w * STEP} × ${h * STEP} ft`);
+  }
+  function drawArea(m, a) {
+    draft(m).innerHTML = shapeOf(a);
+    const names = inside(a, tokensOn(m)).map(t => t.name);
+    tip(m, { x: a.x, y: a.y }, `<b>${esc(a.label || (a.feet + '-ft ' + a.shape[0].toUpperCase() + a.shape.slice(1)))}</b>` +
+      (names.length ? `<br><small>In it: ${esc(names.join(', '))}</small>` : '<br><small>No one in it</small>'));
+  }
+
+  // ------------------------------------------------ tools
+  const HELP = {
+    pin: 'Click where the scene is.', ruler: 'Drag to measure.', 'fog-show': 'Drag over the squares to show them.',
+    'fog-hide': 'Drag over the squares to hide them.', 'fog-room': 'Click in a room to show it.', 'fog-hide-room': 'Click in a room to hide it.',
+    'terrain-add': 'Drag over Difficult Terrain.', 'terrain-clear': 'Drag over the squares to clear them.',
+    area: { sphere: 'Click the corner of a square where it centers.', cylinder: 'Click the corner of a square where it centers.',
+            cone: 'Press where it starts and drag the way it goes.', line: 'Press where it starts and drag the way it goes.',
+            cube: 'Press the middle of its near side and drag the way it goes.', emanation: 'Click the creature it spreads from.' }
+  };
+  function showTool(m) {
+    document.querySelectorAll('[data-tool]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === tool)));
+    if (!m) return;
+    m.classList.toggle('tooling', !!tool);
+    const help = m.querySelector('[data-tool-help]');
+    if (help) { help.hidden = !tool; help.textContent = tool ? (tool === 'area' ? HELP.area[area.shape] : HELP[tool]) + ' Esc to stop.' : ''; }
+  }
+  function useTool(name) { tool = name; const m = map(); if (m) clearDraft(m); showTool(m); }
+  const ROOMS = { 'fog-room': 'room', 'fog-hide-room': 'hide_room' };
+  const RECTS = { 'fog-show': ['fog', 'show'], 'fog-hide': ['fog', 'hide'], 'terrain-add': ['terrain', 'add'], 'terrain-clear': ['terrain', 'clear'] };
+  const placeArea = (m, a) => post(m.dataset.base + '/table/places/' + m.dataset.place + '/areas',
+    { shape: a.shape, feet: a.feet, wide: a.wide || STEP, x: a.x.toFixed(2), y: a.y.toFixed(2), angle: (a.angle || 0).toFixed(1), label: a.label || '', token: a.token || 0 });
+  // The area window: its shape and size, then the map (Cast on the table page starts it already sized: "areaTool")
+  function startArea(spec) {
+    area = { shape: spec.shape, feet: +spec.feet || 20, wide: +spec.wide || STEP, label: spec.label || '' };
+    useTool('area');
+  }
+  document.addEventListener('submit', e => {
+    const f = e.target.closest('[data-area-form]');
+    if (!f) return;
+    e.preventDefault();
+    const d = new FormData(f);
+    f.closest('dialog')?.close();
+    startArea({ shape: d.get('shape'), feet: d.get('feet'), wide: d.get('wide'), label: d.get('label') });
+  });
+  document.addEventListener('change', e => {
+    const f = e.target.closest('[data-area-form]');
+    if (f) f.querySelector('[data-area-wide]').hidden = f.querySelector('input[name=shape]:checked')?.value !== 'line';
+  });
+  document.body.addEventListener('areaTool', e => {  // a spell just cast on the table page: its area, sized from its words
+    const d = e.detail || {};
+    if (map() && d.shape) startArea(d);
+  });
+
+  // ------------------------------------------------ pointers: a token drags, a tool works, anything else pans; two pinch
+  const pts = new Map();
+  document.addEventListener('pointerdown', e => {
+    const m = e.target.closest && e.target.closest('#tmap');
+    if (!m || e.button > 0 || e.target.closest('.tmap-zoom, .tmap-tools, .tmap-pin, .tmap-area-x')) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; drag = { kind: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), z: view.z, moved: true }; m.setPointerCapture(e.pointerId); return; }
+    const p = at(m, e), tok = e.target.closest('.tok-m');
+    if (tool === 'ruler') drag = { kind: 'ruler', a: cell(p), moved: true };
+    else if (RECTS[tool]) drag = { kind: 'rect', a: cell(p), b: cell(p), moved: true };
+    else if (tool === 'area' && ['cone', 'line', 'cube'].includes(area.shape)) {
+      const o = { x: Math.round(p.x * 2) / 2, y: Math.round(p.y * 2) / 2 };
+      drag = { kind: 'area', a: { ...area, ...o, angle: 0 }, moved: true };
+      drawArea(m, drag.a);
+    } else if (tool) drag = { kind: 'click', moved: false, sx: e.clientX, sy: e.clientY };
+    else if (tok && tok.hasAttribute('data-moves')) drag = { kind: 'tok', el: tok, sx: e.clientX, sy: e.clientY, moved: false, left: parseFloat(tok.style.left), top: parseFloat(tok.style.top) };
+    else drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false };
+    m.setPointerCapture(e.pointerId);
+  });
+  document.addEventListener('pointermove', e => {
+    const m = map();
+    if (!m || !view) return;
+    if (tool === 'area' && !drag && ['sphere', 'cylinder'].includes(area.shape) && e.target.closest && e.target.closest('#tmap')) {
+      const p = at(m, e);
+      drawArea(m, { ...area, x: Math.round(p.x), y: Math.round(p.y) });  // (a corner of a square)
+      return;
+    }
+    if (!drag || !pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (drag.kind === 'pinch' && pts.size === 2) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      zoomAt(m, (drag.z * d / drag.d) / view.z, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      return;
+    }
+    if (drag.kind === 'ruler') { const b = cell(at(m, e)); measureLine(m, drag.a, b, 1, null); return; }
+    if (drag.kind === 'rect') { drag.b = cell(at(m, e)); drawRect(m, drag.a, drag.b); return; }
+    if (drag.kind === 'area') {
+      const p = at(m, e), dx = p.x - drag.a.x, dy = p.y - drag.a.y;
+      if (Math.hypot(dx, dy) > 0.3) { let ang = Math.atan2(dy, dx) * 180 / Math.PI; if (e.shiftKey) ang = Math.round(ang / 45) * 45; drag.a.angle = ang; }
+      drawArea(m, drag.a);
+      return;
+    }
+    const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+    if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+    drag.moved = true;
+    m.classList.add('dragging');
+    if (drag.kind === 'pan') { view = { ...view, x: drag.vx + dx, y: drag.vy + dy }; apply(m); }
+    else if (drag.kind === 'tok') {
+      const el = drag.el, sq = +el.dataset.sq || 1;
+      el.style.left = (drag.left + dx / view.z) + 'px'; el.style.top = (drag.top + dy / view.z) + 'px'; el.classList.add('lifted');
+      const to = snap(m, el), me = tokensOn(m).find(t => t.el === el);
+      measureLine(m, { x: me.x, y: me.y }, to, sq, me);
+    }
+  });
+  function snap(m, el) {
+    const size = +m.dataset.size, step = +el.dataset.sq < 1 ? 0.5 : 1;
+    const sq = { x: (parseFloat(el.style.left) - +m.dataset.gx) / size, y: (parseFloat(el.style.top) - +m.dataset.gy) / size };
+    return { x: Math.max(0, Math.round(sq.x / step) * step), y: Math.max(0, Math.round(sq.y / step) * step) };
+  }
+  function moveTo(m, el, to) {
+    const size = +m.dataset.size;
+    el.style.left = (+m.dataset.gx + to.x * size) + 'px'; el.style.top = (+m.dataset.gy + to.y * size) + 'px';
+    el.dataset.x = to.x; el.dataset.y = to.y;
+    return post(m.dataset.base + '/table/tokens/' + el.dataset.token + '/move', to);
+  }
+  function end(e) {
+    const m = map();
+    pts.delete(e.pointerId);
+    if (!m || !drag || pts.size) return;
+    const was = drag;
+    drag = null;
+    m.classList.remove('dragging');
+    if (was.kind === 'pan' && was.moved) store(m, view);
+    if (was.kind === 'pinch') store(m, view);
+    if (was.kind === 'tok' && was.moved) {
+      const el = was.el, to = snap(m, el);
+      el.classList.remove('lifted');
+      clearDraft(m);
+      moveTo(m, el, to);
+    } else if (was.kind === 'tok') pick(was.el);
+    if (was.kind === 'rect') {
+      const [what, doing] = RECTS[tool];
+      clearDraft(m);
+      post(m.dataset.base + '/table/places/' + m.dataset.place + '/' + what, { do: doing, rect: [was.a.x, was.a.y, was.b.x, was.b.y].join(',') });
+    }
+    if (was.kind === 'area') { clearDraft(m); placeArea(m, was.a); useTool(null); }
+    if (was.kind === 'click') {  // a tool's click: a pin, a room, an area that needs only a point or a creature
+      const p = at(m, e);
+      if (tool === 'pin') { useTool(null); post(m.dataset.base + '/table/scenes', { place: m.dataset.place, x: Math.max(0, p.x).toFixed(2), y: Math.max(0, p.y).toFixed(2) }); }
+      else if (ROOMS[tool]) { const c = cell(p); post(m.dataset.base + '/table/places/' + m.dataset.place + '/fog', { do: ROOMS[tool], x: c.x, y: c.y }); }
+      else if (tool === 'area' && area.shape === 'emanation') {
+        const tok = e.target.closest && e.target.closest('.tok-m');
+        if (!tok) { window.askdndToast && window.askdndToast('Click the creature it spreads from.', null, 'warn'); }
+        else { clearDraft(m); placeArea(m, { ...area, x: +tok.dataset.x, y: +tok.dataset.y, token: +tok.dataset.token }); useTool(null); }
+      } else if (tool === 'area') { clearDraft(m); placeArea(m, { ...area, x: Math.round(p.x), y: Math.round(p.y) }); useTool(null); }
+    }
+    if (was.moved || was.kind === 'click') { const stop = ev => { ev.stopPropagation(); ev.preventDefault(); }; document.addEventListener('click', stop, { capture: true, once: true }); setTimeout(() => document.removeEventListener('click', stop, true), 50); }
+  }
+  document.addEventListener('pointerup', end);
+  document.addEventListener('pointercancel', end);
+  document.addEventListener('wheel', e => {
+    const m = e.target.closest && e.target.closest('#tmap');
+    if (!m || !view) return;
+    e.preventDefault();
+    zoomAt(m, Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX, e.clientY);  // (a trackpad's pinch comes as ctrl+wheel)
+  }, { passive: false });
+  document.addEventListener('dblclick', e => {
+    const m = e.target.closest && e.target.closest('#tmap');
+    if (m && view && !tool && !e.target.closest('.tok-m, .tmap-zoom, .tmap-tools, .tmap-pin, .tmap-area')) zoomAt(m, 1.6, e.clientX, e.clientY, true);
+  });
+  function pick(el) {  // the token the arrow keys move
+    picked = el && el.hasAttribute('data-moves') ? el.dataset.token : null;
+    document.querySelectorAll('.tok-m.picked').forEach(t => t.classList.toggle('picked', t.dataset.token === picked));
+    if (el && picked) el.classList.add('picked');
+  }
+  document.addEventListener('click', e => {
+    const z = e.target.closest('[data-zoom]');
+    const m = map();
+    if (z && m) {
+      if (z.dataset.zoom === 'fit') { view = { ...fit(m), place: m.dataset.place }; apply(m, true); store(m, view); }
+      else if (z.dataset.zoom === 'turn') { const now = m.querySelector('.tok-m.now'); if (now) centerOn(m, now); else window.askdndToast && window.askdndToast("No one's turn on this map.", null, 'info'); }
+      else { const r = m.getBoundingClientRect(); zoomAt(m, +z.dataset.zoom, r.left + r.width / 2, r.top + r.height / 2, true); }
+      return;
+    }
+    const b = e.target.closest('[data-tool]');
+    if (b && m) { b.closest('details')?.removeAttribute('open'); useTool(tool === b.dataset.tool ? null : b.dataset.tool); }
+  }, true);
+
+  // ------------------------------------------------ keys (the ? window lists them)
+  const typing = t => t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+  document.addEventListener('keydown', e => {
+    const m = map();
+    if (e.key === 'Escape') {
+      document.querySelectorAll('details.tbl-more[open]').forEach(d => d.removeAttribute('open'));
+      if (m && tool) { useTool(null); e.preventDefault(); }
+      return;
+    }
+    if (!m || !view || e.ctrlKey || e.metaKey || e.altKey || typing(e.target) || document.querySelector('dialog[open], .roll-win')) return;
+    const r = m.getBoundingClientRect(), mid = [r.left + r.width / 2, r.top + r.height / 2];
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    let done = true;
+    if (k === '+' || k === '=') zoomAt(m, 1.25, ...mid, true);
+    else if (k === '-' || k === '_') zoomAt(m, 0.8, ...mid, true);
+    else if (k === '0') { view = { ...fit(m), place: m.dataset.place }; apply(m, true); store(m, view); }
+    else if (k === 't') { const now = m.querySelector('.tok-m.now'); if (now) centerOn(m, now); }
+    else if (k === 'f') { const mine = m.querySelector('.tok-m.picked') || m.querySelector('.tok-m.mine'); if (mine) centerOn(m, mine); }
+    else if (k === 'r') useTool(tool === 'ruler' ? null : 'ruler');
+    else if (k === 'a') document.getElementById('tbl-area')?.showModal();
+    else if (k === '?') document.getElementById('tbl-keys')?.showModal();
+    else if (k === 'n') { const b = [...document.querySelectorAll('[data-key="n"]')].find(x => x.offsetParent); if (b) b.click(); else done = false; }
+    else if (arrows[k] && e.shiftKey) { view = { ...view, x: view.x - arrows[k][0] * 80, y: view.y - arrows[k][1] * 80 }; apply(m, true); store(m, view); }
+    else if (arrows[k]) {
+      const el = picked && m.querySelector(`.tok-m[data-token="${picked}"]`);
+      if (!el) done = false;
+      else {
+        const step = +el.dataset.sq < 1 ? 0.5 : 1, me = tokensOn(m).find(t => t.el === el);
+        const to = { x: Math.max(0, me.x + arrows[k][0] * step), y: Math.max(0, me.y + arrows[k][1] * step) };
+        moveTo(m, el, to);
+        if (!onScreen(m, el)) centerOn(m, el);
+      }
+    } else done = false;
+    if (done) e.preventDefault();
+  });
+
+  // ------------------------------------------------ each copy of the page
+  function setup() {
+    const m = map();
+    if (!m) { view = null; return; }
+    if (!view || view.place !== m.dataset.place) { view = { ...(kept(m) || fit(m)), place: m.dataset.place }; lastNow = undefined; }
+    apply(m);
+    if (picked) pick(m.querySelector(`.tok-m[data-token="${picked}"]`));
+    showTool(m);
+    // When the turn passes to a token off the screen, glide to it (not on the page's first drawing)
+    const now = m.querySelector('.tok-m.now'), id = now ? now.dataset.token : null;
+    if (lastNow !== undefined && id && id !== lastNow && !onScreen(m, now)) centerOn(m, now);
+    lastNow = id;
+  }
+  // The DM's place picker, and the page's windows (<dialog>): opened by data-open-dialog, closed by data-close-dialog or
+  // when the form in them is done
+  document.addEventListener('change', e => {
+    const s = e.target.closest('[data-tbl-place]');
+    if (s && s.value) location.href = location.pathname + '?place=' + s.value;
+  });
+  document.addEventListener('click', e => {
+    // A click outside the table's own menus (Map ▾, ⋯, Fog ▾, Scenes ▾) closes them
+    document.querySelectorAll('details.tbl-more[open]').forEach(d => { if (!d.contains(e.target)) d.removeAttribute('open'); });
+    const o = e.target.closest('[data-open-dialog]');
+    if (o) { const d = document.getElementById(o.dataset.openDialog); if (d) { o.closest('details')?.removeAttribute('open'); d.showModal(); d.querySelector('[autofocus], input:not([type=hidden])')?.focus(); } }
+    const c = e.target.closest('[data-close-dialog]');
+    if (c) c.closest('dialog')?.close();
+  });
+  document.body.addEventListener('htmx:afterRequest', e => {
+    const d = e.target.closest && e.target.closest('dialog.win-dialog');
+    if (d && e.detail.successful && d.id !== 'tbl-creatures') d.close();
+  });
+  addEventListener('resize', () => { const m = map(); if (m && view && !kept(m)) { view = { ...fit(m), place: m.dataset.place }; apply(m); } });
+  document.addEventListener('askdnd:swapped', setup);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();

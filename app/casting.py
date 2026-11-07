@@ -225,7 +225,12 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         ch.concentration = sb.concentrating(e, chosen["level"] if chosen else e["level"]) | ({"was": {k: v for k, v in was.items() if k != "was"}} if was else {})
         said += f": Concentrating on {e['name']}" + (f", {was['spell']} ended" if was and was.get("key") != key else "")
     db.commit()
-    return JSONResponse({"text": said, "undo": undo, "undoUrl": f"/characters/{ch.id}/cast/undo", "deliver": web.deliver_now(ch)})
+    out = {"text": said, "undo": undo, "undoUrl": f"/characters/{ch.id}/cast/undo", "deliver": web.deliver_now(ch)}
+    from app import areas, rules_data
+
+    if area := areas.from_spell(rules_data.find("spell", e["name"], db, ch.campaign_id) or e):  # (on askdnd's table: place it)
+        out["area"] = {**area, "label": e["name"]}
+    return JSONResponse(out)
 
 
 def _spend(ch: Character, db: Session, way: str, delta: int, label: str) -> None:

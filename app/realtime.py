@@ -117,6 +117,9 @@ TABLE_SEES = {"Character": ("name", "owner_id", "wild_shape", "concentration", "
               "BridgeIntent": ("state", "error"), "BridgeLog": ("text",)}
 # And of the campaign itself: the fight heard from D&D Beyond's VTT (app/fight.py), announced as "game"
 CAMPAIGN_SEES = {"Campaign": ("fight",)}
+# askdnd's table (app/places.py, app/tokens.py, app/scene_notes.py): any change to these rows tells the table's pages
+# ("table"); each page fetches what it may see (a hidden token or a scene never reaches a player)
+TABLE_ROWS = ("Place", "Token")  # (a scene pin is the DM's alone: her own page shows her change)
 
 
 def _stored(value) -> str:
@@ -136,7 +139,12 @@ def _character_changes(db: Session, flush_context, instances) -> None:
                    and _stored((state.attrs[f].history.deleted or [None])[0]) != _stored((state.attrs[f].history.added or [None])[0])
                    for f in fields)
 
+    for obj in list(db.new) + list(db.dirty) + list(db.deleted):  # askdnd's table: a place, a token, a scene pin
+        if type(obj).__name__ in TABLE_ROWS and obj.campaign_id:
+            announce(db, obj.campaign_id, "table")
     for obj in list(db.dirty):
+        if type(obj).__name__ == "Campaign" and changed(obj, ("shown_place_id", "table_settings")):
+            announce(db, obj.id, "table")
         fields = CAMPAIGN_SEES.get(type(obj).__name__)
         if fields and changed(obj, fields):
             announce(db, obj.id, "game")

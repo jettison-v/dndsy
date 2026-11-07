@@ -18,6 +18,14 @@ from app.admin import router as admin_router
 from app.ddb_bridge import router as ddb_bridge_router
 from app.death_saves import router as death_saves_router
 from app.table_page import router as table_router
+from app.turn_bar import router as turn_bar_router
+from app.places import router as places_router
+from app.tokens import router as tokens_router
+from app.scene_notes import router as scene_notes_router
+from app.table_fight import router as table_fight_router
+from app.table_creatures import router as table_creatures_router
+from app.fog import router as fog_router
+from app.areas import router as areas_router
 from app.initiative import router as initiative_router
 from app.shifting import router as shifting_router
 from app.feedback import router as feedback_router
@@ -198,6 +206,14 @@ app.include_router(ddb_bridge_router)  # only where DDB_BRIDGE=1, per campaign (
 app.include_router(hit_points_router)  # (through the bridge: on_for)
 app.include_router(death_saves_router)  # (through the bridge: on_for)
 app.include_router(table_router)  # askdnd's VTT (app/vtt.py vtt_table)
+app.include_router(turn_bar_router)
+app.include_router(places_router)  # askdnd's table: places and maps, tokens, the DM's scenes, the fight, creatures
+app.include_router(tokens_router)
+app.include_router(scene_notes_router)
+app.include_router(table_fight_router)
+app.include_router(table_creatures_router)
+app.include_router(fog_router)
+app.include_router(areas_router)
 app.include_router(initiative_router)  # the DM changes the fight's order (Labs: Initiative from askdnd)
 app.include_router(shifting_router)  # Wild Shape: shifting and leaving
 app.include_router(feedback_router)  # notes for Claude from any page, and the queue

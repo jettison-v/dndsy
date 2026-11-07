@@ -1097,6 +1097,39 @@ def creature_of(d: dict, cid: int) -> dict:
     return next(c for c in d["creatures"] if c["id"] == cid)
 
 
+def owl_as(d: dict, oid: int) -> tuple:
+    """What askdnd keeps in step for a familiar form: switched on, its name, its creature type (character value 44)."""
+    c = creature_of(d, oid)
+    kind = next((v.get("value") for v in d.get("characterValues") or [] if v.get("typeId") == 44 and str(v.get("valueId")) == str(oid)), None)
+    return c["isActive"], c["name"], kind
+
+
+def caught_up(t: Table, page: Page, sheet: Page, oid: int) -> None:
+    """Through the DM, askdnd reads D&D Beyond's public copy, which trails a change by minutes; the run before put the
+    Owl back behind askdnd's back, so askdnd could still hold it as Fey and named Pip and send nothing (the nightly's
+    misses, Nov 5 to 7). Waits for the public copy to show the sheet as it is, then has askdnd read it again."""
+    if not t.via_dm:
+        return
+    import urllib.request
+
+    ddb = sheet.url.split("/characters/")[1].split("/")[0].split("?")[0]
+    want = owl_as(record(sheet), oid)
+
+    def public() -> tuple:
+        req = urllib.request.Request(f"https://character-service.dndbeyond.com/character/v5/character/{ddb}", headers={"User-Agent": "askdnd-live-test"})
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return owl_as(json.load(r)["data"], oid)
+
+    start = time.time()
+    while public() != want and time.time() - start < 300:
+        page.wait_for_timeout(10000)
+    cid = page.url.split("/characters/")[1].split("/")[0]
+    page.wait_for_timeout(21000)  # (askdnd's Refresh now reads at most every 20 seconds)
+    page.request.post(f"{page.url.split('/characters/')[0]}/live/refresh/{cid}")
+    page.goto(page.url, wait_until="domcontentloaded")
+    print(f"  askdnd's copy caught up with D&D Beyond in {int(time.time() - start)} seconds", flush=True)
+
+
 def familiar(t: Table, seat: str = "player4") -> None:
     """A familiar kept in step (Nov 4, extension 0.11.0; Levi's Owl): Find Familiar cast in askdnd as a Ritual, named Pip
     and made Fey, switches the Owl on on D&D Beyond with its creature type and name; sent to the pocket dimension it's
@@ -1108,6 +1141,7 @@ def familiar(t: Table, seat: str = "player4") -> None:
     before = record(sheet)
     owl = next(c for c in before["creatures"] if c["groupId"] == 2)
     oid = owl["id"]
+    caught_up(t, page, sheet, oid)
     page.locator(".spellbook-btn").first.click(timeout=8000)
     go(page, page.locator('.ls-row[data-ref="spell:Find Familiar"] [data-use-url*="/cast?"]').first)
     page.locator('select[name="way"]').first.select_option("ritual")
@@ -1146,6 +1180,7 @@ def wild_companion(t: Table, seat: str = "player4") -> None:
     before = record(sheet)
     owl = next(c for c in before["creatures"] if c["groupId"] == 2)
     oid, used = owl["id"], ws_used(before)
+    caught_up(t, page, sheet, oid)
     page.locator(".spellbook-btn").first.click(timeout=8000)
     go(page, page.locator('.ls-row[data-ref="spell:Find Familiar"] [data-use-url*="/cast?"]').first)
     page.locator('select[name="way"]').first.select_option("wild")

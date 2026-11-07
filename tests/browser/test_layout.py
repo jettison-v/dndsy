@@ -198,13 +198,39 @@ def test_the_table_page_holds_together(people, server, browser_db, long_names):
                           "at": datetime.now(UTC) if f else None, "c": server["campaign"]})
             conn.commit()
 
+    def with_map():  # a place with a map (its picture needn't be there for the layout), shown, with tokens on it
+        with engine.connect() as conn:
+            conn.execute(text("INSERT INTO stored_files (key, campaign_id, content_type, size) VALUES ('layout/map.webp', :c, 'image/webp', 1) ON CONFLICT DO NOTHING"),
+                         {"c": server["campaign"]})
+            pid = conn.execute(text("INSERT INTO places (campaign_id, name, map_key, map_w, map_h, grid) VALUES (:c, "
+                                    "'The Exceptionally Long-Named Ruined Chapel of the Drowned Bell', 'layout/map.webp', 2100, 1400, "
+                                    "CAST('{\"size\": 70, \"x\": 0, \"y\": 0}' AS JSONB)) RETURNING id"), {"c": server["campaign"]}).scalar()
+            conn.execute(text("UPDATE campaigns SET shown_place_id = :p WHERE id = :c"), {"p": pid, "c": server["campaign"]})
+            conn.execute(text("INSERT INTO tokens (campaign_id, place_id, kind, character_id, name, x, y, size) VALUES (:c, :p, 'character', :ch, 'Cole', 4, 4, 1)"),
+                         {"c": server["campaign"], "p": pid, "ch": server["cole"]})
+            conn.execute(text("INSERT INTO tokens (campaign_id, place_id, kind, name, x, y, size, hp, monster) VALUES (:c, :p, 'monster', "
+                              "'Enemy 1 the Exceptionally Long-Named', 8, 4, 2, CAST('{\"current\": 20, \"max\": 59}' AS JSONB), "
+                              "CAST('{\"key\": \"ogre\", \"name\": \"Ogre\"}' AS JSONB))"), {"c": server["campaign"], "p": pid})
+            conn.commit()
+        return pid
+
+    def without_map():
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE campaigns SET shown_place_id = NULL WHERE id = :c"), {"c": server["campaign"]})
+            conn.execute(text("DELETE FROM places WHERE campaign_id = :c"), {"c": server["campaign"]})
+            conn.commit()
+
     try:
         set_campaign(True, None)
         found = check(player, server, ("/c/main/table",))
         set_campaign(True, fight)
         found += check(player, server, ("/c/main/table",))
+        with_map()
+        found += check(player, server, ("/c/main/table",))
+        found += check(people("admin"), server, ("/c/main/table",))  # (the DM's tools: an admin has them too)
     finally:
+        without_map()
         set_campaign(False, None)
         engine.dispose()
     assert not found, "\n".join(found)
-    assert player.errors == []
+    assert [e for e in player.errors if "/map?v=" not in e] == []  # (the map's picture isn't there: only its layout is)

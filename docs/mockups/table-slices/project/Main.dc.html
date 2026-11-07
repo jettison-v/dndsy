@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The road to askdnd's table</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px">
+  <div class="head">
+    <div class="num">The road · read this board first</div>
+    <h1>askdnd's own table, one working slice at a time</h1>
+    <p class="where"><b>Where you'll find it:</b> Table ↗ in the menu bar, once a campaign switches on Manage › Settings › Labs › askdnd's VTT (VTT test first). The frame around the middle is built (slices 0 and 1). Every board on this canvas is that same page at one slice, with what the slice adds outlined in <b style="color: var(--new)">teal</b> and what's already there dimmed. The two boards to the right are where it ends up.</p>
+  </div>
+
+  <div class="road">
+    <div class="lane">
+      <div class="lane-h"><b>Milestone A</b><span class="note">askdnd's table open beside D&amp;D Beyond's map: it follows D&amp;D Beyond's fight and adds what D&amp;D Beyond doesn't have</span></div>
+      <div class="stops" style="grid-template-columns: repeat(6, minmax(0, 1fr))">
+        <div class="stop built"><span class="n">0 · built Nov 2</span><b>The two switches</b><span>Sync with D&amp;D Beyond, and Labs › askdnd's VTT.</span></div>
+        <div class="stop built"><span class="n">1 · built Nov 2</span><b>The table's frame</b><span>Turn bar, Table rolls, side panel, the fight's rows in the middle.</span></div>
+        <div class="stop moved"><span class="n">2 · M · was 3</span><b>Your turn's bar</b><span>Movement left, what you've used, Battle's pins by Action, Bonus and Reaction.</span></div>
+        <div class="stop moved"><span class="n">3 · L · was 4</span><b>Creatures in the side panel</b><span>A monster's stat block from your books; the DM rolls it here, Apply to as today.</span></div>
+        <div class="stop moved"><span class="n">4 · M · was 5</span><b>Phones</b><span>The same page on an iPhone: turn bar on top, the rest as sheets.</span></div>
+        <div class="stop ms"><span class="n">◆ Milestone A</span><b>Your table tries it</b><span>At a real game, beside D&amp;D Beyond's map. What they use decides what comes first after.</span></div>
+      </div>
+    </div>
+    <div class="lane">
+      <div class="lane-h"><b>Milestone B</b><span class="note">askdnd's own maps: Table ↗ opens askdnd's table, and D&amp;D Beyond's VTT is set aside</span></div>
+      <div class="stops" style="grid-template-columns: repeat(8, minmax(0, 1fr))">
+        <div class="stop prep"><span class="n">Before · roadmap</span><b>The DM's scene notes</b><span>Her prep page per scene, the DM's alone. Usable with D&amp;D Beyond's map at once.</span></div>
+        <div class="stop"><span class="n">5 · L · was 6</span><b>The map and its scenes</b><span>A picture or a Dungeon Alchemist file; a scene is its map and its notes.</span></div>
+        <div class="stop"><span class="n">6 · L · was 7</span><b>Tokens</b><span>The party and the creatures the DM places, hidden ones hers alone.</span></div>
+        <div class="stop moved"><span class="n">7 · L · was 2</span><b>askdnd runs the fight</b><span>Start a fight from the tokens on the map; Next turn, + Add, Undo.</span></div>
+        <div class="stop"><span class="n">8 · M</span><b>Moving and measuring</b><span>Drag a token; feet per square, Difficult Terrain, your table's diagonals.</span></div>
+        <div class="stop"><span class="n">9 · M</span><b>Fog</b><span>The DM hides and shows parts of the map.</span></div>
+        <div class="stop"><span class="n">10 · M</span><b>Spell areas</b><span>Cast starts the area; who's in it carries to the save and Apply to.</span></div>
+        <div class="stop ms"><span class="n">◆ Milestone B</span><b>A session on askdnd's maps</b><span>Then attacks that resolve, encounters, chat, in the roadmap's order.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols3">
+    <div class="decide">
+      <h3>One change I recommend: follow first, run with the map</h3>
+      <p>The Nov 2 plan had askdnd run the fight first (old slice 2), before it had a map. Since then, Initiative from askdnd made askdnd follow D&amp;D Beyond's fight closely. Running the fight in askdnd while the map stays on D&amp;D Beyond would make the DM set every monster up twice: once in askdnd's order, once as a token on D&amp;D Beyond's map.</p>
+      <div class="lbl">Nov 2</div>
+      <div class="order-line"><span class="mv">Run the fight</span><span>Your turn's bar</span><span>Creatures</span><span>Phones</span><span class="m">A</span><span>Map</span><span>Tokens</span><span>Moving</span><span>Fog</span><span>Areas</span></div>
+      <div class="lbl">Now</div>
+      <div class="order-line"><span>Your turn's bar</span><span>Creatures</span><span>Phones</span><span class="m">A</span><span>Map</span><span>Tokens</span><span class="mv">Run the fight</span><span>Moving</span><span>Fog</span><span>Areas</span></div>
+      <p>Slices 2 to 4 then add to the game you already play, and askdnd takes the fight over when its map holds the tokens, so the DM sets up once.</p>
+    </div>
+    <div class="decide">
+      <h3>Built since Nov 2 that the table builds on</h3>
+      <ul>
+        <li><b>Initiative from askdnd:</b> players roll from Battle; the DM orders the fight on Party's Rows.</li>
+        <li><b>Creatures in the fight:</b> familiars, summons and steeds take turns beside their master.</li>
+        <li><b>Hide and Ready</b> on Battle, <b>Wild Shape</b> forms, conditions that end on a turn.</li>
+        <li><b>Your creatures</b> and the <b>Monster Manual</b> as a book: the stat blocks slice 3 shows.</li>
+        <li><b>Pictures:</b> one per character and creature, the tokens' faces in slice 6.</li>
+        <li><b>Staging:</b> several seats and phones at once, before a slice reaches your table.</li>
+      </ul>
+      <p style="margin-top: 4px"><b>How each slice reaches the table:</b> you try it locally; staging when it needs several people or a phone; then main, in Labs for VTT test, then your campaign when you switch it on.</p>
+    </div>
+    <div class="decide">
+      <h3 class="ask">Questions for you, as we walk through</h3>
+      <ol class="qs">
+        <li><b>The order above?</b> <span class="rec">I recommend it.</span></li>
+        <li><b>Is a scene one thing to prepare:</b> its map, its notes and its creatures together? <span class="rec">I recommend yes</span> (slice 5).</li>
+        <li><b>The scene notes before the map?</b> Her notes work beside D&amp;D Beyond's map from day one; the map joins them in slice 5. <span class="rec">I recommend before.</span></li>
+        <li><b>A group of the same creature:</b> one Initiative roll for the group, the DMG's way, or one each? <span class="rec">I recommend one for the group</span>, kept as a battle setting (slice 7).</li>
+        <li><b>Milestone A at your real table?</b> Slices 2 to 4 only add a page; D&amp;D Beyond's VTT works as today. <span class="rec">I recommend yes</span>, at the game after slice 4.</li>
+      </ol>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

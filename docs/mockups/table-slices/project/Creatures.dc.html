@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 3: creatures in the side panel</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 3 · L · Milestone A · the DM</div>
+    <h1>Creatures in the side panel: a monster's stat block, rolled in askdnd</h1>
+    <p class="where"><b>Where you'll find it:</b> the same Table page, as the DM. Click a creature's row: its stat block opens in the side panel, from the campaign's books (the Monster Manual), matched to its token in D&amp;D Beyond's fight. On its turn, the bottom bar is the creature's. Round 2, Enemy 1's turn.</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="done">2 Your turn's bar</span><span class="here">3 Creatures</span><span>4 Phones</span><span class="ms">◆ A</span><span>Scene notes</span><span>5 Map</span><span>6 Tokens</span><span>7 Run the fight</span><span>8 Moving</span><span>9 Fog</span><span>10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="app" style="height: 820px">
+    <div class="mb dim"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Party ▾</span><span class="pill"><i></i>4 of 4 connected</span><span>Manage ▾</span><span>?</span></div>
+    <div class="turn dim">
+      <div class="pennant">Round<b>2</b></div>
+      <div class="whose">Enemy 1's turn</div>
+      <div class="order"><span class="tok">C</span><span class="tok pet">P</span><span class="tok foe now">E1</span><span class="tok">T</span><span class="tok foe hidden">E2</span><span class="tok foe">E3</span><span class="tok">BC</span><span class="tok">NN</span></div>
+      <span class="follow">Following <b>D&amp;D Beyond's VTT</b></span>
+    </div>
+    <div class="rail">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll new"><b>Enemy 1 · Greatclub</b><span>to hit Trah · only the DM</span><span class="n">17</span></div>
+        <div class="roll new"><b>Enemy 1 · damage</b><span>bludgeoning</span><span class="n">13</span><button type="button" class="btn mini apply">Apply to Trah</button></div>
+        <div class="roll dim"><b>Cole · Starry Wisp</b><span>to hit</span><span class="n">26</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="bd-list">
+        <div class="bd-head lbl dim"><span>Init.</span><span></span><span>Fighter</span><span>Hit Points</span><span>AC</span><span>Conditions and reminders</span></div>
+        <div class="bd-row dim"><span class="init">19</span><span class="tok">C</span><span><b>Cole</b></span><span class="hp">51 / 75<span class="bar"><i style="width: 68%"></i></span></span><span>16</span><span><span class="badge conc">◎ Moonbeam</span></span></div>
+        <div class="bd-row now sel"><span class="init">16</span><span class="tok foe now" style="width: 36px; height: 36px">E1</span><span><b>Enemy 1</b><br><span class="note">Ogre · MM 2024</span></span><span class="hp">27 / 59<span class="bar"><i style="width: 46%; background: var(--amber)"></i></span></span><span>11</span><span class="note">its turn</span></div>
+        <div class="bd-row dim"><span class="init">14</span><span class="tok">T</span><span><b>Trah</b></span><span class="hp">22 / 40<span class="bar"><i style="width: 55%"></i></span></span><span>18</span><span><span class="badge">Readied</span></span></div>
+        <div class="bd-row hid"><span class="init">13</span><span class="tok foe">E2</span><span><b>Enemy 2</b> <span class="note">hidden from players</span><br><span class="note">Bandit · MM 2024</span></span><span>11 / 11</span><span>12</span><span class="note">—</span></div>
+        <div class="bd-row new"><span class="init">12</span><span class="tok foe">E3</span><span><b>Enemy 3</b><br><span class="note" style="color: var(--new)">Which creature is this?</span></span><span><button type="button" class="btn mini">Pick from your books</button></span><span>—</span><span class="note">asked once per token</span></div>
+        <div class="bd-row dim"><span class="init">9</span><span class="tok">BC</span><span><b>Big C</b></span><span class="hp">44 / 44<span class="bar"><i style="width: 100%"></i></span></span><span>17</span><span class="note">—</span></div>
+      </div>
+      <div class="card new" style="left: 470px; top: 430px; width: 380px; background-color: var(--surface-2)">
+        <span class="lbl">What Trah's player sees on clicking Enemy 1</span>
+        <span><b style="color: var(--strong)">Enemy 1</b> · Large Giant · <span style="color: var(--link)">Bloodied</span></span>
+        <span class="note">Its numbers and stat block are the DM's. What players see of its Hit Points is a battle setting (Healthy, Bloodied or Down by default).</span>
+      </div>
+    </div>
+    <div class="pane new" style="gap: 10px">
+      <div class="pane-h"><span class="pic foe">E1</span><span><b>Enemy 1</b><small>Ogre · Large Giant · MM 2024</small></span></div>
+      <div class="nums"><div><small>HP <span style="float: right">− +</span></small><b>27</b> <span class="of">/ 59 · Bloodied</span></div><div><small>AC</small><b>11</b></div><div><small>Speed</small><b>40</b></div></div>
+      <div class="saves"><span>Str<b>+4</b></span><span>Dex<b>−1</b></span><span>Con<b>+3</b></span><span>Int<b>−3</b></span><span>Wis<b>−2</b></span><span>Cha<b>−2</b></span></div>
+      <div class="note">Players see: <b style="color: var(--text)">Large, Bloodied</b></div>
+      <div class="sb">
+        <h4>Actions</h4>
+        <div class="act"><b>Greatclub</b> · melee · reach 5 ft<br><button type="button" class="btn mini">Roll to hit</button> <button type="button" class="btn mini">Roll damage</button></div>
+        <div class="act"><b>Javelin</b> · ranged 30/120 ft<br><button type="button" class="btn mini">Roll to hit</button> <button type="button" class="btn mini">Roll damage</button></div>
+      </div>
+      <div class="note">Matched to its token in D&amp;D Beyond's fight. <span class="at">Not this creature?</span></div>
+    </div>
+    <div class="abar new">
+      <div class="move"><div class="row"><span>Enemy 1 moves</span><span><b>40</b> of 40 ft left</span></div><div class="meter"><i class="left" style="width: 100%"></i></div><div class="row"><span><button type="button" class="btn mini">− 5 ft</button> <button type="button" class="btn mini">+ 5 ft</button></span><button type="button" class="btn mini">Dash</button></div></div>
+      <div class="econ"><span class="pip a used"><i></i>Action</span><span class="pip b"><i></i>Bonus</span><span class="pip r"><i></i>Reaction</span></div>
+      <div class="slots">
+        <div class="grp"><span class="lbl a">Action · used</span><div class="items"><span class="it">Greatclub<small>hit Trah</small></span><span class="it">Javelin<small>30/120 ft</small></span></div></div>
+      </div>
+      <span class="note" style="align-self: center; width: 170px">End its turn on D&amp;D Beyond's VTT.</span>
+    </div>
+    <span class="nt" style="left: 1140px; top: 128px">New in slice 3</span>
+    <span class="co s" style="left: 1116px; top: 130px">1</span>
+    <span class="co s" style="left: 1116px; top: 186px">2</span>
+    <span class="co s" style="left: 1116px; top: 300px">3</span>
+    <span class="co s" style="left: 236px; top: 140px">4</span>
+    <span class="co s" style="left: 262px; top: 724px">5</span>
+    <span class="co s" style="left: 262px; top: 452px">6</span>
+  </div>
+  <div class="foot">
+    <div class="legend">
+      <div><span class="co s">1</span><span><b>Click a creature:</b> its stat block, from the campaign's books, then the SRD, as Wild Shape's forms come today.</span></div>
+      <div><span class="co s">2</span><span><b>Its Hit Points</b> with − and +, and Bloodied at half. To find out before building: whether D&amp;D Beyond's VTT tells askdnd a monster's Hit Points. If not, they stay on D&amp;D Beyond until slice 7.</span></div>
+      <div><span class="co s">3</span><span><b>Its actions roll here:</b> to hit, damage with its type. Only the DM sees them unless she picks; damage offers Apply to, as the hit points window does today.</span></div>
+      <div><span class="co s">4</span><span><b>Rolls in Table rolls</b>, made in askdnd now, not only heard from D&amp;D Beyond's game log.</span></div>
+      <div><span class="co s">5</span><span><b>On its turn, the bottom bar is the creature's:</b> its movement and actions, from the same pieces as a player's.</span></div>
+      <div><span class="co s">6</span><span><b>A token askdnd can't match</b> (a renamed one) asks the DM once which creature it is.</span></div>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>Stat blocks from the campaign's books, then the SRD (Nov 2).</li>
+        <li>Players see Healthy, Bloodied or Down by default (Oct 28).</li>
+        <li>The DM's damage reaches Apply to (the hit points window).</li>
+      </ul>
+      <h3 class="ask">For you</h3>
+      <ul><li>Nothing new. Mine to check first: what D&amp;D Beyond's VTT tells the extension about a monster.</li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

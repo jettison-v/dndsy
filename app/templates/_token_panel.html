@@ -1,0 +1,54 @@
+{# A creature's token in the side panel (app/table_creatures.py; askdnd's table, slice 3, docs/mockups/table-slices/
+   Creatures). The DM: its Hit Points to change, what players see, its stat block with each action's roll (rolled as the
+   creature: `data-token`), Hide or Show, Rename, Take off the map. Players: its name and what the settings let them see. #}
+{% from "_char.html" import hit %}
+<div class="peek-head">
+  <span class="tk-pic{{ ' foe' if t.kind == 'monster' }}" aria-hidden="true">{% if t.monster and t.monster.image %}<img src="{{ t.monster.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ t.name[:2] }}</span>
+  <div class="grow"><h2 id="peek-title">{{ t.name }}</h2>
+    <div class="note">{% if entry %}{{ entry.size }} {{ entry.type }}{% if dm and entry.source %} · {{ entry.source }}{% endif %}{% endif %}{% if t.hidden %} · <span class="tag draft">Hidden from the players</span>{% endif %}{% if its_turn %} · <b>its turn</b>{% endif %}</div></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body tk-panel" data-token="{{ t.id }}" data-name="{{ t.name }}">
+{% if not dm %}
+  {% if seen and seen.current is defined %}<p class="tk-hp"><b>{{ seen.current }}</b> / {{ seen.max }} Hit Points</p>
+  {% elif seen %}<p class="tk-status {{ seen | lower }}">{{ seen }}</p>{% endif %}
+  <p class="note">Its numbers and stat block are the DM's. Its attacks reach Table rolls when the DM rolls them.</p>
+{% else %}
+  {% set hp = t.hp or {} %}
+  <div class="tk-hp-row">
+    <div class="tk-hp" data-mark="tk{{ t.id }}:hp"><small>Hit Points</small><b>{{ hp.current }}</b> <span class="note">/ {{ hp.max }}{% if hp.temp %} · {{ hp.temp }} temporary{% endif %}</span>{% if status != "Healthy" %} <span class="tk-status {{ status | lower }}">{{ status }}</span>{% endif %}</div>
+    <form class="tk-hp-form" hx-post="{{ cbase }}/table/tokens/{{ t.id }}/hp" hx-swap="none" hx-on::after-request="this.reset()">
+      <label class="sr" for="tk-hp-{{ t.id }}">Damage, healing or a number</label>
+      <input id="tk-hp-{{ t.id }}" name="change" inputmode="numeric" placeholder="−7, +5 or 20" autocomplete="off" required>
+      <button type="submit" class="btn small">Take</button>
+    </form>
+  </div>
+  <p class="note">Players see: <b>{% if players_see == "numbers" %}its numbers{% elif players_see == "none" %}nothing of its Hit Points{% else %}{{ status or "Healthy" }}{% endif %}</b> <span class="faint">(battle settings)</span></p>
+  {% if k %}
+  <div class="tk-nums"><span><small>AC</small><b>{{ k.ac }}</b></span><span><small>Speed</small><b>{{ k.speed }}</b></span>{% if k.initiative %}<span><small>Initiative</small><b>{{ k.initiative }}</b></span>{% endif %}<span><small>CR</small><b>{{ k.cr }}</b></span></div>
+  <div class="tk-abil">{% for a in k.abilities %}<span><small>{{ a.short }}</small><b>{{ a.mod }}</b><button type="button" class="link-plain tk-save" data-roll="save" data-label="{{ a.short }} save" data-mod="{{ a.save | replace('−', '-') }}" title="Roll its {{ a.short }} save">save {{ a.save }}</button></span>{% endfor %}</div>
+  {% if k.skills %}<p class="tk-line"><b>Skills</b> {{ k.skills }}</p>{% endif %}
+  {% if k.resist %}<p class="tk-line"><b>Resistances</b> {{ k.resist }}</p>{% endif %}
+  {% if k.immune %}<p class="tk-line"><b>Immunities</b> {{ k.immune }}</p>{% endif %}
+  {% if k.vulnerable %}<p class="tk-line"><b>Vulnerabilities</b> {{ k.vulnerable }}</p>{% endif %}
+  {% if k.cond_immune %}<p class="tk-line"><b>Condition immunities</b> {{ k.cond_immune }}</p>{% endif %}
+  <p class="tk-line"><b>Senses</b> {{ k.senses or "—" }}{% if k.passive %} · Passive Perception {{ k.passive }}{% endif %}{% if k.languages %} · {{ k.languages }}{% endif %}</p>
+  {% for c in k.columns %}
+  <h3 class="divider k-{{ 'action' if c.cost == 'Action' else 'bonus' if c.cost == 'Bonus action' else 'reaction' if c.cost == 'Reaction' else 'other' }}">{{ c.cost }}{{ "s" if c.cost == "Action" else "" }}</h3>
+  {% if c.intro %}<p class="note">{{ c.intro }}</p>{% endif %}
+  {% for o in c.rows %}<div class="tk-act"><div class="tk-act-head"><b>{{ o.name }}</b>{{ hit(o) }}</div><p>{{ o.text }}</p></div>{% endfor %}
+  {% endfor %}
+  {% if k.traits %}<h3 class="divider">Traits</h3>{% for x in k.traits %}<div class="tk-act"><b>{{ x.name }}.</b> {{ x.text }}</div>{% endfor %}{% endif %}
+  {% elif t.kind == "monster" %}<p class="note">Its stat block isn't in the campaign's books or the SRD any more.</p>{% endif %}
+  <h3 class="divider">On the map</h3>
+  <div class="row">
+    <button type="button" class="btn small" hx-post="{{ cbase }}/table/tokens/{{ t.id }}/hidden" hx-vals='{"on": {{ 0 if t.hidden else 1 }}}' hx-swap="none">{{ "Show to the players" if t.hidden else "Hide from the players" }}</button>
+    <button type="button" class="btn small link" hx-post="{{ cbase }}/table/tokens/{{ t.id }}/remove" hx-swap="none" hx-confirm="Take {{ t.name }} off the map?">Take off the map</button>
+  </div>
+  <form class="row" hx-post="{{ cbase }}/table/tokens/{{ t.id }}/rename" hx-swap="none">
+    <label class="sr" for="tk-name-{{ t.id }}">Its name</label>
+    <input id="tk-name-{{ t.id }}" name="name" value="{{ t.name }}" maxlength="200">
+    <button type="submit" class="btn small">Rename</button>
+  </form>
+{% endif %}
+</div>

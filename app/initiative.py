@@ -293,7 +293,10 @@ def change_order(request: Request, key: str = Form(""), slot: int = Form(-1), to
     campaign = web.campaign(db)
     if not user or not campaign:
         return JSONResponse({"error": "Sign in to change the order."}, status_code=401)
-    if not on(campaign) or not access.allows("fight_order", access.level(user["email"]), access.role(user["email"], campaign.id)):
+    from app import table_fight
+
+    ours = table_fight.ours(campaign)  # (askdnd runs the fight on its own table: the numbers are set here, nothing is sent)
+    if not (on(campaign) or ours) or not access.allows("fight_order", access.level(user["email"]), access.role(user["email"], campaign.id)):
         return JSONResponse({"error": "Only the DM changes the order."}, status_code=403)
     fight.lock(db, campaign)
     f = copy.deepcopy(campaign.fight)  # (changed whole and saved: a change inside the saved one isn't seen)
@@ -319,6 +322,11 @@ def change_order(request: Request, key: str = Form(""), slot: int = Form(-1), to
         if not p:
             return JSONResponse({"text": "", "back": []})
         moves = p["moves"]
+    if ours:
+        made = table_fight.set_numbers(db, campaign, moves)
+        db.commit()
+        said = " · ".join(f"{names[k]}: {shown(before[k])} → {shown(moves[k])}" for k in made)
+        return JSONResponse({"text": said, "back": [{"key": k, "initiative": before[k]} for k in made]})
     made = [k for k, n in moves.items() if want(f, k, n)]
     if not made:
         return JSONResponse({"error": "D&D Beyond's VTT doesn't say where to change that: the DM's VTT needs the askdnd "

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 7: askdnd runs the fight</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.ini { position: absolute; z-index: 6; min-width: 22px; height: 20px; padding: 0 5px; border-radius: 6px; background: var(--chrome); border: 1px solid var(--gold); color: var(--gold); font: 700 11px/18px var(--sans); text-align: center; }
+.ini.wait { border-style: dashed; border-color: var(--line-strong); color: var(--muted); }
+.ord { display: grid; grid-template-columns: 16px 34px 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 5px 8px; font-size: 12px; color: var(--muted); }
+.ord .h { color: var(--faint); font-size: 14px; letter-spacing: -2px; }
+.ord .n { font: 700 15px/1 var(--sans); color: var(--strong); text-align: center; }
+.ord .tok { width: 28px; height: 28px; font-size: 10px; }
+.ord b { color: var(--strong); font-weight: 600; }
+.ord.wait { border-style: dashed; }
+.ord.wait .n { color: var(--muted); }
+.ord.hid { opacity: .55; border-style: dashed; }
+.set { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+.set b { color: var(--text); font-weight: 600; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 7 · L · Milestone B · the DM</div>
+    <h1>askdnd runs the fight: started from the tokens on the map</h1>
+    <p class="where"><b>Where you'll find it:</b> Start a fight in the turn bar (the DM's). Everyone on the map joins, the players roll their own Initiative from Battle or their bar as they do today, the creatures are rolled for her, and she orders it before Round 1. From here D&amp;D Beyond's VTT is set aside; the sheets still keep in step. Just after Start a fight.</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="done">2 Your turn's bar</span><span class="done">3 Creatures</span><span class="done">4 Phones</span><span class="ms">◆ A</span><span class="done">Scene notes</span><span class="done">5 Map</span><span class="done">6 Tokens</span><span class="here">7 Run the fight</span><span>8 Moving</span><span>9 Fog</span><span>10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="app" style="height: 820px">
+    <div class="mb dim"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Party ▾</span><span class="pill"><i></i>4 of 4 connected</span><span>Manage ▾</span><span>?</span></div>
+    <div class="turn new">
+      <div class="pennant" style="color: var(--muted); border-color: var(--line-strong)">Round<b>–</b></div>
+      <div class="whose" style="font-size: 17px">Rolling Initiative · 8 of 10 in</div>
+      <div class="order"><span class="tok">C</span><span class="tok pet">P</span><span class="tok foe">G</span><span class="tok foe">E1</span><span class="tok">T</span><span class="tok foe hidden">E2</span><span class="tok foe">E3</span><span class="tok" style="opacity: .4; border-style: dashed">BC</span><span class="tok" style="opacity: .4; border-style: dashed">NN</span></div>
+      <button type="button" class="btn">+ Add</button>
+      <button type="button" class="btn main">Begin Round 1</button>
+      <button type="button" class="btn" aria-label="The fight's menu">⋯</button>
+    </div>
+    <div class="rail">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll new"><b>Goblin Warriors · Initiative</b><span>one roll for the 3 · only the DM</span><span class="n">16</span></div>
+        <div class="roll new"><b>Enemy 1 · Initiative</b><span>only the DM</span><span class="n">16</span></div>
+        <div class="roll"><b>Cole · Initiative</b><span>and Pip's, as today</span><span class="n">19</span></div>
+        <div class="roll"><b>Trah · Initiative</b><span>to the table</span><span class="n">14</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map">
+      <div class="floor dim" style="left: 108px; top: 72px; width: 504px; height: 432px"></div>
+      <div class="floor dim" style="left: 612px; top: 252px; width: 216px; height: 108px; border-left: 0"></div>
+      <div class="door" style="left: 606px; top: 288px; width: 6px; height: 36px"></div>
+      <div class="scene-tag dim">Scene <b>The ruined chapel</b></div>
+      <div class="mtok" style="left: 180px; top: 360px; width: 36px; height: 36px">C</div><span class="ini" style="left: 186px; top: 334px">19</span>
+      <div class="mtok pet" style="left: 222px; top: 402px; width: 24px; height: 24px; font-size: 9px">P</div>
+      <div class="mtok" style="left: 144px; top: 324px; width: 36px; height: 36px">T</div><span class="ini" style="left: 150px; top: 298px">14</span>
+      <div class="mtok" style="left: 144px; top: 396px; width: 36px; height: 36px">BC</div><span class="ini wait" style="left: 150px; top: 436px">?</span>
+      <div class="mtok" style="left: 216px; top: 324px; width: 36px; height: 36px">NN</div><span class="ini wait" style="left: 222px; top: 298px">?</span>
+      <div class="mtok foe" style="left: 396px; top: 144px; width: 72px; height: 72px; font-size: 14px">E1</div><span class="ini" style="left: 420px; top: 118px">16</span>
+      <div class="mtok foe" style="left: 288px; top: 108px; width: 36px; height: 36px">E3</div><span class="ini" style="left: 294px; top: 82px">12</span>
+      <div class="mtok foe hid" style="left: 756px; top: 288px; width: 36px; height: 36px">E2</div><span class="ini" style="left: 762px; top: 262px; opacity: .6">13</span>
+      <div class="mtok foe" style="left: 504px; top: 252px; width: 36px; height: 36px">G1</div>
+      <div class="mtok foe" style="left: 540px; top: 216px; width: 36px; height: 36px">G2</div>
+      <div class="mtok foe" style="left: 540px; top: 288px; width: 36px; height: 36px">G3</div><span class="ini" style="left: 582px; top: 256px">16</span>
+      <div class="tag" style="left: 110px; top: 470px">Big C and No Name haven't rolled yet</div>
+    </div>
+    <div class="pane new" style="gap: 6px">
+      <div class="ptabs"><span>Scene</span><span>Clicked</span><span class="on">The fight</span></div>
+      <div class="lbl" style="margin-top: 4px">The order · drag, ↑ ↓ or type</div>
+      <div class="ord"><span class="h">⋮⋮</span><span class="n">19</span><span class="tok">C</span><span><b>Cole</b> · Pip after</span><span></span></div>
+      <div class="ord"><span class="h">⋮⋮</span><span class="n">16</span><span class="tok foe">G</span><span><b>Goblin Warriors</b> × 3</span><span class="note">tie</span></div>
+      <div class="ord"><span class="h">⋮⋮</span><span class="n">16</span><span class="tok foe">E1</span><span><b>Enemy 1</b></span><span class="note">tie</span></div>
+      <div class="ord"><span class="h">⋮⋮</span><span class="n">14</span><span class="tok">T</span><span><b>Trah</b></span><span></span></div>
+      <div class="ord hid"><span class="h">⋮⋮</span><span class="n">13</span><span class="tok foe">E2</span><span><b>Enemy 2</b> · hidden</span><span></span></div>
+      <div class="ord"><span class="h">⋮⋮</span><span class="n">12</span><span class="tok foe">E3</span><span><b>Enemy 3</b></span><span></span></div>
+      <div class="lbl" style="margin-top: 4px">Waiting</div>
+      <div class="ord wait"><span class="h">⋮⋮</span><span class="n">?</span><span class="tok">BC</span><span><b>Big C</b></span><span><button type="button" class="btn mini">Type</button></span></div>
+      <div class="ord wait"><span class="h">⋮⋮</span><span class="n">?</span><span class="tok">NN</span><span><b>No Name</b></span><span><button type="button" class="btn mini">Type</button></span></div>
+      <div class="note">A tie is hers to settle: drag one above the other.</div>
+    </div>
+    <div class="abar new">
+      <div class="set" style="flex: 1"><span class="lbl">Battle settings · kept for this campaign</span><span>Players see an enemy's Hit Points as <b>Healthy, Bloodied or Down</b> · A group of the same creature rolls <b>once</b> · New creatures start <b>seen</b></span></div>
+      <button type="button" class="btn endturn">Change</button>
+    </div>
+    <span class="nt" style="left: 262px; top: 56px">New in slice 7</span>
+    <span class="co s" style="left: 1150px; top: 62px">1</span>
+    <span class="co s" style="left: 236px; top: 300px">2</span>
+    <span class="co s" style="left: 236px; top: 160px">3</span>
+    <span class="co s" style="left: 1116px; top: 160px">4</span>
+    <span class="co s" style="left: 1260px; top: 62px">5</span>
+    <span class="co s" style="left: 262px; top: 724px">6</span>
+  </div>
+  <div class="foot">
+    <div class="legend">
+      <div><span class="co s">1</span><span><b>Start a fight</b> takes in everyone on the map; a hidden creature stays hidden. + Add brings in more (the books, the SRD).</span></div>
+      <div><span class="co s">2</span><span><b>Players roll their own</b> from Battle or their bar, as today; the number lands here at once, with their familiar's.</span></div>
+      <div><span class="co s">3</span><span><b>Creatures are rolled for her</b> with their Dexterity, shown only to her. A group of the same creature: one roll, by default.</span></div>
+      <div><span class="co s">4</span><span><b>She orders it:</b> drag, ↑ ↓, type a number, as on Party's Rows today; every change has Undo in ⋯.</span></div>
+      <div><span class="co s">5</span><span><b>Begin Round 1</b>, then Next turn. Rounds, reminders, Concentration and a familiar's turn count from askdnd's turns.</span></div>
+      <div><span class="co s">6</span><span><b>Battle settings</b> kept for the campaign; changing one mid-fight changes what players see at once.</span></div>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>Players roll their own; the order is the DM's (Nov 4).</li>
+        <li>Enemy Hit Points hidden by default, in battle settings (Oct 28).</li>
+        <li>One step, one Undo (askdnd Runs the Fight, Nov 3).</li>
+      </ul>
+      <h3 class="ask">For you</h3>
+      <ul><li><b>A group of the same creature:</b> one roll for the group (the DMG's way), or one each? <span class="rec">I recommend one for the group</span>; she can split any group by typing a number.</li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Slice 5: the map and its scenes</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./vtt.css">
+<link rel="stylesheet" href="./table.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap">
+<style>
+body{margin:0}
+.drop { border: 2px dashed var(--line-strong); border-radius: 10px; padding: 16px; text-align: center; color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
+.drop b { color: var(--strong); }
+.opt { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; align-items: start; font-size: 12px; color: var(--muted); }
+.opt i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line-strong); margin-top: 2px; display: block; }
+.opt i.on { border-color: var(--amber); background: radial-gradient(var(--amber) 40%, transparent 45%); }
+.opt b { color: var(--text); font-weight: 600; }
+.scenes { display: flex; gap: 10px; flex: 1; min-width: 0; align-items: stretch; }
+.sc { width: 150px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); padding: 6px; display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.sc .th { height: 36px; border-radius: 5px; background-color: var(--map); background-image: linear-gradient(var(--map-line) 1px, transparent 1px), linear-gradient(90deg, var(--map-line) 1px, transparent 1px); background-size: 9px 9px; position: relative; }
+.sc .th i { position: absolute; inset: 7px 18px; border: 2px solid #5a4b3a; background: rgba(120, 100, 72, .22); }
+.sc b { color: var(--strong); font-weight: 600; }
+.sc.on { border-color: var(--green); }
+.sc.add { display: grid; place-items: center; border-style: dashed; color: var(--muted); width: 110px; }
+.gridset { position: absolute; left: 252px; top: 252px; width: 36px; height: 36px; border: 2px solid var(--amber); box-shadow: 0 0 0 4px rgba(232, 179, 75, .25); z-index: 5; }
+</style>
+</helmet>
+<div class="board" style="width: 1600px; height: 1300px; gap: 18px">
+  <div class="head">
+    <div class="num">Slice 5 · L · Milestone B begins · the DM</div>
+    <h1>The map and its scenes: the middle becomes the map she made</h1>
+    <p class="where"><b>Where you'll find it:</b> Table ↗, which from here opens askdnd's table for everyone instead of D&amp;D Beyond's. The DM adds a map to a scene, from a picture or her Dungeon Alchemist file, and shows a scene to the players; her notes for it sit beside it. No fight yet: the party is exploring.</p>
+    <div class="strip" style="margin-top: 8px"><span class="done">0 Switches</span><span class="done">1 Frame</span><span class="done">2 Your turn's bar</span><span class="done">3 Creatures</span><span class="done">4 Phones</span><span class="ms">◆ A</span><span class="done">Scene notes</span><span class="here">5 Map</span><span>6 Tokens</span><span>7 Run the fight</span><span>8 Moving</span><span>9 Fog</span><span>10 Areas</span><span class="ms">◆ B</span></div>
+  </div>
+  <div class="app" style="height: 820px">
+    <div class="mb dim"><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span class="on">Table</span><span class="sp"></span><span>Party ▾</span><span class="pill"><i></i>4 of 4 connected</span><span>Manage ▾</span><span>?</span></div>
+    <div class="turn">
+      <div class="whose" style="color: var(--muted); font-size: 16px">No fight</div>
+      <span class="note">The party is exploring</span>
+      <span class="sp" style="flex: 1"></span>
+      <span class="follow new" style="background-color: var(--surface)">Players see <b>The ruined chapel</b></span>
+    </div>
+    <div class="rail dim">
+      <div class="rail-h"><span>Table rolls</span><span style="color: var(--muted)">‹</span></div>
+      <div class="rolls">
+        <div class="roll"><b>Trah · Perception</b><span>to the table</span><span class="n">18</span></div>
+        <div class="roll"><b>No Name · Investigation</b><span>only the DM</span><span class="n">12</span></div>
+      </div>
+      <div style="padding: 10px 12px; border-top: 1px solid var(--line)"><button type="button" class="btn" style="width: 100%">Roll…</button></div>
+    </div>
+    <div class="map new">
+      <div class="floor" style="left: 108px; top: 72px; width: 504px; height: 432px"></div>
+      <div class="floor" style="left: 612px; top: 252px; width: 216px; height: 108px; border-left: 0"></div>
+      <div class="door" style="left: 606px; top: 288px; width: 6px; height: 36px"></div>
+      <div class="room" style="left: 180px; top: 108px; width: 72px; height: 36px; border-width: 2px"></div>
+      <div class="room" style="left: 468px; top: 396px; width: 108px; height: 72px; border-width: 2px"></div>
+      <div class="scene-tag">Scene <b>The ruined chapel</b> · 5 ft squares</div>
+      <div class="tools" style="top: 56px">
+        <button type="button" class="on" aria-label="Select"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 2l9 5-4 1-2 4z"/></svg></button>
+        <button type="button" aria-label="Measure"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2 12L12 2l2 2L4 14z"/></svg></button>
+        <hr>
+        <button type="button" aria-label="Map and grid"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="2" y="2" width="12" height="12"/><path d="M6 2v12M10 2v12M2 6h12M2 10h12"/></svg></button>
+      </div>
+      <div class="win" style="left: 470px; top: 60px; width: 390px; z-index: 8">
+        <h3>Add a map to The crypt</h3>
+        <div class="drop"><b>Drop a picture or a Dungeon Alchemist file</b><span>.jpg, .png, .webp, or .dd2vtt / .uvtt (Universal VTT)</span></div>
+        <div class="opt"><i class="on"></i><span><b>From the file:</b> its grid, walls, doors and lights come with it. Nothing to set.</span></div>
+        <div class="opt"><i></i><span><b>A picture:</b> drag the gold square over one of its squares, or type how many squares across. Each square is 5 feet.</span></div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end"><button type="button" class="btn">Cancel</button><button type="button" class="btn main">Add the map</button></div>
+      </div>
+      <div class="gridset"></div>
+    </div>
+    <div class="pane" style="gap: 10px">
+      <div class="ptabs"><span class="on">Scene</span><span>Clicked</span></div>
+      <div style="display: flex; align-items: center; gap: 8px"><b style="color: var(--strong); font-size: 16px">The ruined chapel</b><span class="sp" style="flex: 1"></span><span class="secret">Only you</span></div>
+      <div class="readaloud dim">Rain drips through the broken roof. Somewhere past the altar, stone scrapes on stone…</div>
+      <div class="sect dim"><b>Purpose</b><span>Where the party learns who took the bell.</span></div>
+      <div class="sect dim"><b>Location info</b><span>The altar hides a lever (DC 15 Investigation).</span></div>
+      <div class="sect new" style="padding: 8px; border-radius: 8px"><b>Its map</b><span>chapel.dd2vtt · 24 × 18 squares · walls and 3 doors</span><span><button type="button" class="btn mini">Replace</button> <button type="button" class="btn mini">Grid</button></span></div>
+      <div class="sect"><b>Its creatures</b><span class="note">Placed on the map in slice 6.</span></div>
+    </div>
+    <div class="abar new">
+      <div class="scenes">
+        <div class="sc"><span class="th"><i></i></span><b>The road in</b><span>map · notes</span></div>
+        <div class="sc on"><span class="th"><i></i></span><b>The ruined chapel</b><span style="color: var(--green)">shown to players</span></div>
+        <div class="sc"><span class="th" style="background-image: none; display: grid; place-items: center; font-size: 10px">no map yet</span><b>The crypt</b><span>notes</span></div>
+        <div class="sc add">+ New scene</div>
+      </div>
+      <button type="button" class="btn main endturn">Show The crypt</button>
+    </div>
+    <span class="nt" style="left: 262px; top: 128px">New in slice 5</span>
+    <span class="co s" style="left: 730px; top: 182px">1</span>
+    <span class="co s" style="left: 500px; top: 360px">2</span>
+    <span class="co s" style="left: 262px; top: 724px">3</span>
+    <span class="co s" style="left: 1310px; top: 790px">4</span>
+    <span class="co s" style="left: 1116px; top: 300px">5</span>
+    <span class="co s" style="left: 1116px; top: 80px">6</span>
+  </div>
+  <div class="foot">
+    <div class="legend">
+      <div><span class="co s">1</span><span><b>A map from any builder:</b> a picture, or a Universal VTT file from Dungeon Alchemist with its grid, walls, doors and lights.</span></div>
+      <div><span class="co s">2</span><span><b>A picture's grid</b> is set by hand once: one square dragged over one of the picture's.</span></div>
+      <div><span class="co s">3</span><span><b>A scene is its map, her notes and its creatures.</b> Outside a fight, the DM's bottom bar lists the scenes she's prepared.</span></div>
+      <div><span class="co s">4</span><span><b>Show</b> puts a scene on the players' pages. The next one stays hers until she shows it.</span></div>
+      <div><span class="co s">5</span><span><b>Her notes beside the map</b>, from the scene notes before this slice; still only hers.</span></div>
+      <div><span class="co s">6</span><span><b>Players see</b> which scene is shown; their page never receives the others.</span></div>
+    </div>
+    <div class="decide">
+      <h3>Decided already</h3>
+      <ul>
+        <li>Maps from any builder, Dungeon Alchemist's files first-class (Nov 2).</li>
+        <li>Maps kept in askdnd's file storage, never in git.</li>
+        <li>Mine before it starts: the drawing engine, tried with a large map on an iPhone.</li>
+      </ul>
+      <h3 class="ask">For you</h3>
+      <ul><li><b>A scene as one thing</b> (map, notes, creatures)? <span class="rec">I recommend yes.</span></li><li><b>Notes first</b>, before this slice? <span class="rec">I recommend yes.</span></li></ul>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

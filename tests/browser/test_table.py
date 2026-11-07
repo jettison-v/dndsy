@@ -325,3 +325,81 @@ def test_a_number_that_changed_marks_itself_with_the_change(people, server, brow
     page.wait_for_function(f'document.querySelector(\'[data-mark="{server["cole"]}:hp"] b\').textContent.trim() === "{before}"')
     engine.dispose()
     assert player.errors == []
+
+
+def test_the_dms_table_tools_work_after_a_map_is_added(people, server, browser_db, tmp_path):
+    """askdnd's table as its DM runs it (Brett's first look on staging, Nov 6): a new place, a picture for its map, then
+    + Creatures opens its window without a reload (the windows follow the page), and the Map ▾ and ⋯ menus open and
+    stay open (a click used to hide every menu on the page, theirs too); a token's drag shows the ruler; the keys."""
+    from io import BytesIO
+
+    from PIL import Image
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(browser_db[0])
+
+    def labs(on):
+        with engine.connect() as conn:
+            conn.execute(text("UPDATE campaigns SET vtt_pieces = CAST(:p AS JSONB), fight = NULL, shown_place_id = NULL WHERE id = :c"),
+                         {"p": json.dumps(["labs", "vtt"] if on else []), "c": server["campaign"]})
+            if not on:
+                conn.execute(text("DELETE FROM places WHERE campaign_id = :c"), {"c": server["campaign"]})
+            conn.commit()
+
+    pic = tmp_path / "chapel.png"
+    buf = BytesIO()
+    Image.new("RGB", (700, 490), (90, 80, 60)).save(buf, "PNG")
+    pic.write_bytes(buf.getvalue())
+    admin = people("admin")
+    page = admin.page
+    try:
+        labs(True)
+        admin.open("/c/main/table")
+        page.get_by_role("button", name="+ Place").first.click()
+        page.locator("#tbl-new-place input[name=name]").fill("The ruined chapel")
+        page.locator("#tbl-new-place button[type=submit]").click()
+        page.wait_for_selector("text=No map here yet")
+        page.locator("main .btn.primary[data-open-dialog=tbl-map]").click()
+        page.locator("#tbl-map input[type=file]").set_input_files(str(pic))
+        page.locator("#tbl-map button[type=submit]").click()
+        page.wait_for_selector("#tmap")
+        page.get_by_role("button", name="+ Creatures").click()
+        page.locator("#tbl-creatures").wait_for(state="visible")
+        page.locator("#tbl-creatures [data-close-dialog]").click()
+        page.locator("summary", has_text="Map ▾").click()
+        page.get_by_role("button", name="Rename").wait_for(state="visible")
+        page.keyboard.press("Escape")  # Esc closes it
+        page.get_by_role("button", name="Rename").wait_for(state="hidden")
+        page.get_by_role("button", name="Place the party").click()
+        page.locator("#tmap .tok-m").first.wait_for()
+        # Dragging a token: the ruler says its feet while it moves
+        page.wait_for_load_state("networkidle")  # (the page's new copy, with the party on it)
+        tok = page.locator("#tmap .tok-m[data-moves]").first
+        tok.wait_for(state="visible")
+        box = tok.bounding_box()
+        page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        page.mouse.down()
+        page.mouse.move(box["x"] + box["width"] * 3, box["y"] + box["height"] / 2, steps=8)
+        assert " ft" in page.locator(".tmap-tip").inner_text()
+        page.mouse.up()
+        page.locator(".tmap-tip").wait_for(state="detached")
+        # Keys: ? lists them, A opens a spell's area, placed with a click
+        page.keyboard.press("?")
+        page.locator("#tbl-keys").wait_for(state="visible")
+        page.keyboard.press("Escape")
+        page.keyboard.press("a")
+        page.locator("#tbl-area input[name=label]").fill("Fireball")
+        page.locator("#tbl-area button[type=submit]").click()
+        m = page.locator("#tmap").bounding_box()
+        page.mouse.click(m["x"] + m["width"] / 2, m["y"] + m["height"] / 2)
+        page.locator(".tmap-area", has_text="Fireball").wait_for()
+        page.get_by_role("button", name="Start a fight").click()
+        page.get_by_role("button", name="Begin Round 1").wait_for()
+        page.locator("summary[aria-label=\"The fight's menu\"]").click()
+        page.get_by_role("button", name="Undo the last change").wait_for(state="visible")
+        page.locator("main h1, .tbl-top").first.click(position={"x": 2, "y": 2})  # a click elsewhere closes it
+        page.get_by_role("button", name="Undo the last change").wait_for(state="hidden")
+    finally:
+        labs(False)
+        engine.dispose()
+    assert admin.errors == []
