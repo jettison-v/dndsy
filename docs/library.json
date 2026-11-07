@@ -853,5 +853,14 @@
   "what": "Feedback 52 and 53: spending and gaining from a chosen bag and moving coins between bags, three ways; Brett chose A (Spend · Gain · Move) and making change.",
   "source": "docs/mockups/coins/index.html",
   "link": "https://claude.ai/artifact/1UNyuBzQeULSvv8M967PbH"
+ },
+ {
+  "title": "Your Notes, Round 2",
+  "kind": "design",
+  "status": "Waiting for Brett",
+  "date": "Nov 7",
+  "what": "Feedback 54: each note's request, what happened and where it stands, the same in both tabs, three ways (a card per note, a list with the note beside it, a conversation); Claude recommends the list.",
+  "source": "docs/mockups/your-notes-2/index.html",
+  "link": "https://claude.ai/artifact/FfXfam48LiWb1JfMTqDWUR"
  }
 ]
