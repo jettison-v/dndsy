@@ -160,7 +160,7 @@
     // Menus (campaign, Party, Live, Manage, account, phone More). A click elsewhere closes
     // them; clicks inside a [data-keep-open] menu (the Live popover's switch) don't.
     const opener = e.target.closest('[data-menu]');
-    document.querySelectorAll('.menu').forEach(m => {
+    document.querySelectorAll('.menu[id]').forEach(m => {  // (only menus a [data-menu] opens: a <details> menu opens on its own)
       if ((!opener || m.id !== opener.dataset.menu) && !(m.hasAttribute('data-keep-open') && m.contains(e.target))) m.hidden = true;
     });
     if (opener) {
@@ -683,6 +683,11 @@
     const keep = new Map([...here.querySelectorAll('[data-keep]')].map(n => [n.dataset.keep, n]));
     here.replaceChildren(...[...there.childNodes].map(n => document.importNode(n, true)));
     here.querySelectorAll('[data-keep]').forEach(n => { const old = keep.get(n.dataset.keep); if (old) n.replaceWith(old); });
+    // Parts drawn outside main that follow it ([data-with-main]: askdnd's table's windows), unless one is open
+    document.querySelectorAll('[data-with-main]').forEach(n => {
+      const now = doc.getElementById(n.id);
+      if (now && !n.querySelector('dialog[open]')) n.replaceWith(document.importNode(now, true));
+    });
     const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
     if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); liveWindowAgain(); }
     // Your character's conditions on its menu bar button, outside main
@@ -4314,6 +4319,7 @@
   document.addEventListener('keydown', e => {
     const m = map();
     if (e.key === 'Escape' && pinning && m) { pinning = false; m.classList.remove('pinning'); m.querySelector('[data-pin-help]').hidden = true; }
+    if (e.key === 'Escape') document.querySelectorAll('details.tbl-more[open]').forEach(d => d.removeAttribute('open'));
   });
   // The DM's place picker, and the page's windows (<dialog>): opened by data-open-dialog, closed by data-close-dialog or
   // when the form in them is done
@@ -4322,6 +4328,8 @@
     if (s && s.value) location.href = location.pathname + '?place=' + s.value;
   });
   document.addEventListener('click', e => {
+    // A click outside the table's own menus (Map ▾, ⋯, Scenes ▾) closes them
+    document.querySelectorAll('details.tbl-more[open]').forEach(d => { if (!d.contains(e.target)) d.removeAttribute('open'); });
     const o = e.target.closest('[data-open-dialog]');
     if (o) { const d = document.getElementById(o.dataset.openDialog); if (d) { o.closest('details')?.removeAttribute('open'); d.showModal(); d.querySelector('[autofocus], input:not([type=hidden])')?.focus(); } }
     const c = e.target.closest('[data-close-dialog]');

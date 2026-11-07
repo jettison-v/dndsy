@@ -32,7 +32,8 @@
     <div class="tbl-tools">
       <button type="button" class="btn small" hx-post="{{ cbase }}/table/places/{{ place.id }}/party" hx-swap="none">Place the party</button>
       <button type="button" class="btn small" data-open-dialog="tbl-creatures">+ Creatures</button>
-      {% if notes %}<button type="button" class="btn small" data-tool="pin" aria-pressed="false" title="Then click the map where the scene is">+ Scene pin</button>{% endif %}
+      {% if notes %}<button type="button" class="btn small" data-tool="pin" aria-pressed="false" title="Then click the map where the scene is">+ Scene pin</button>
+      {% else %}<span class="note" title="Her notes and their pins are hers alone: not admins, not View as">Scene pins: the campaign's DM only</span>{% endif %}
       {% if not ours %}<button type="button" class="btn small primary" hx-post="{{ cbase }}/table/places/{{ place.id }}/fight" hx-swap="none">Start a fight</button>
       {% elif f and f.waiting %}<button type="button" class="btn small primary" hx-post="{{ cbase }}/table/fight/begin" hx-swap="none">Begin Round 1</button>
       {% else %}<button type="button" class="btn small primary" hx-post="{{ cbase }}/table/fight/next" hx-swap="none">Next turn</button>{% endif %}
@@ -101,7 +102,9 @@
   {% include "_turn_bar.html" %}
 
 </main>
-{# The DM's windows sit outside main, so the page showing a new copy never closes one (+ Creatures adds several in a row) #}
+{# The DM's windows sit outside main, so the page showing a new copy never closes an open one (+ Creatures adds several
+   in a row); they follow main otherwise (data-with-main), so a map just added brings its + Creatures and Grid #}
+<div id="tbl-windows" data-with-main>
   {% if dm %}
   <dialog class="win-dialog" id="tbl-new-place" aria-labelledby="tbl-new-place-h">
     <form hx-post="{{ cbase }}/table/places" hx-swap="none"><h2 id="tbl-new-place-h">A new place</h2>
@@ -151,4 +154,5 @@
       <div class="row"><button type="submit" class="btn primary">Save</button><button type="button" class="btn link" data-close-dialog>Cancel</button></div></form>
   </dialog>
   {% endif %}
+</div>
 {% endblock %}
