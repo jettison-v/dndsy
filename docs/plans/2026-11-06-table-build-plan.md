@@ -105,9 +105,16 @@ staging. The table moves at the end.
 | 8 | Moving and measuring | Feet while dragging, Difficult Terrain the DM paints, leaving a creature's reach, the table's diagonal rule. |
 | 9 | Fog | Show and hide by squares, a whole room, all; each place keeps its own. |
 | 10 | Spell areas | The area tool; Cast starts it; who's in it carries to the saves and Apply to. |
+| 11 | Zoom and keys | Robust zoom (Brett's first look, Nov 6): to a token, to the whole map, to where the turn is; and keyboard commands for the DM and players (next turn, move a token by arrow keys, tools, Esc), listed on the page. |
 
 **When Brett looks:** once slices 2 to 6 run on staging, there's a map with tokens, the scene notes and the bars to
 judge. The rest follows his notes.
+
+**His first look (Nov 6, staging, as an admin):** a picture map, Place the party, Start a fight, Initiative and
+rolls worked. + Creatures did nothing until a reload after adding a map, and the ⋯ menu (Undo, Battle settings, End the
+fight) never opened, so the fight couldn't end: both fixed the same evening. Scene pins are the DM's alone, so an admin
+has no button (now said where it would be); he'll look as the DM next time. Next: zoom and keyboard commands (slice
+11) with the rest.
 
 ## How it's built (Claude's choices, in product terms)
 
