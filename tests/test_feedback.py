@@ -184,7 +184,7 @@ def test_only_the_tabs_that_need_you_have_a_badge(admin, db):
 
 
 def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, player, dm, db, monkeypatch):
-    """Brett, Nov 7: a feedback workflow for the players who send it. Your feedback lists each sender's own notes and
+    """Brett, Nov 7: a feedback workflow for the players who send it. Your notes › About askdnd lists each sender's own notes and
     where they stand in their words; replies meant for them (from an admin on the queue, or Claude with its key) show
     there, never the admin's and Claude's notes to each other; Add to it goes back to an admin first (a player's words
     reach Claude only once approved, Brett Nov 6); a corner card says once when a note moves."""
@@ -195,26 +195,26 @@ def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, pla
     access.invalidate()
     note(player, text="The Rest button wraps.")
     fb = db.scalar(select(Feedback))
-    assert 'href="/your-feedback"' in player.get("/help").text  # (the account menu and More)
-    page = player.get("/your-feedback").text
+    assert 'href="/your-notes"' in player.get("/help").text  # (the account menu and More)
+    page = player.get("/your-notes?tab=askdnd").text
     assert "The Rest button wraps." in page and "Waiting for an admin" in page and "Battle</body>" not in page
-    assert player.post("/your-feedback/news").json()["news"] == []  # (seen on the page: nothing to tell)
+    assert [c["text"] for c in player.post("/your-notes/news").json()["cards"]] == []  # (seen on the page: nothing to tell)
     # Approved, then Claude's question to the admin (not for the player) and a reply meant for the player
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "new"})
     monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 40)
     claude = {"X-Feedback-Key": "k" * 40}
     admin.post(f"/api/feedback/{fb.id}", json={"note": "Which page, Brett?", "status": "planned"}, headers=claude)
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "tell", "answer": "Thanks: it's planned."})
-    assert player.post("/your-feedback/news").json()["news"] == ["Planned: “The Rest button wraps.”"]
-    assert player.post("/your-feedback/news").json()["news"] == []  # (once)
-    page = player.get("/your-feedback").text
+    assert [c["text"] for c in player.post("/your-notes/news").json()["cards"]] == ["Planned: “The Rest button wraps.”"]
+    assert [c["text"] for c in player.post("/your-notes/news").json()["cards"]] == []  # (once)
+    page = player.get("/your-notes?tab=askdnd").text
     assert "Thanks: it&#39;s planned." in page and "Which page, Brett?" not in page and ">Planned<" in page
     # Claude tells them it's fixed
     admin.post(f"/api/feedback/{fb.id}", json={"tell": "Fixed: Rest stays on one line now.", "status": "done"}, headers=claude)
-    assert player.post("/your-feedback/news").json()["news"] == ["Fixed: “The Rest button wraps.”"]
-    assert "Fixed: Rest stays on one line now." in player.get("/your-feedback").text
+    assert [c["text"] for c in player.post("/your-notes/news").json()["cards"]] == ["Fixed: “The Rest button wraps.”"]
+    assert "Fixed: Rest stays on one line now." in player.get("/your-notes?tab=askdnd").text
     # Adding to it: back to an admin first; the queue says who wrote it
-    player.post(f"/your-feedback/{fb.id}", data={"text": "It wraps on Sheet too."})
+    player.post(f"/your-notes/feedback/{fb.id}", data={"text": "It wraps on Sheet too."})
     db.expire_all()
     assert db.get(Feedback, fb.id).status == "review"
     assert admin.get("/api/feedback", headers=claude).json()["items"] == []  # (not Claude's until approved)
@@ -224,6 +224,6 @@ def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, pla
     other = Feedback(text="Someone else's", sender="x (player)", status="new")
     db.add(other)
     db.flush()
-    assert "Someone else" not in player.get("/your-feedback").text
-    assert player.post(f"/your-feedback/{other.id}", data={"text": "mine now"}).status_code == 404
-    assert dm.post(f"/your-feedback/{fb.id}", data={"text": "not theirs"}).status_code == 404
+    assert "Someone else" not in player.get("/your-notes?tab=askdnd").text
+    assert player.post(f"/your-notes/feedback/{other.id}", data={"text": "mine now"}).status_code == 404
+    assert dm.post(f"/your-notes/feedback/{fb.id}", data={"text": "not theirs"}).status_code == 404

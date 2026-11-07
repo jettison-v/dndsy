@@ -67,7 +67,7 @@ def _page_context(request: Request) -> dict:
 
 
 # Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on Story)
-SWITCH_KEEPS = ("/", "/campaign", "/party", "/your-suggestions", "/manage", "/manage/inbox",
+SWITCH_KEEPS = ("/", "/campaign", "/party", "/your-notes", "/manage", "/manage/inbox",
                 "/manage/sessions", "/manage/sessions/doc", "/manage/table", "/manage/house-rules", "/manage/history",
                 "/manage/settings", "/manage/dm-guide")
 

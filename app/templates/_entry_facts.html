@@ -14,7 +14,7 @@
   {% if mine %}
   <h3>Your suggestions here</h3>
   <ul class="plain peek-mine">{% for f in mine | reverse %}{% set o = f.status | outcome %}<li><span class="tag {{ o.tag }}">{{ o.label }}</span> {{ f.text }}</li>{% endfor %}</ul>
-  <p class="note"><a href="/your-suggestions">All your suggestions</a></p>
+  <p class="note"><a href="/your-notes">All your notes</a></p>
   {% endif %}
 
   <form class="stack add-fact" hx-post="/campaign/{{ e.id }}/facts?in={{ w }}" {{ px | safe }} hx-disabled-elt="find button">

@@ -3913,7 +3913,7 @@
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
       win.close(); unmark();
       if (window.askdndToast) window.askdndToast(j.review ? 'Sent · an admin reads it before it goes to Claude' : 'In the queue · ' + j.waiting + ' new',
-        { label: 'Your feedback', run: () => { location.href = '/your-feedback'; } });  // (where it goes from here)
+        { label: 'Your notes', run: () => { location.href = '/your-notes?tab=askdnd'; } });  // (where it goes from here)
     } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
   });
   // \ anywhere but a field; the menus' item; pressing and holding the logo
@@ -4688,14 +4688,17 @@ document.addEventListener('askdnd:mention', e => {
     .catch(() => {});
 });
 
-// ---------------------------------------------------------------- your feedback moved on
-// For someone who sends feedback (body[data-feedback]): once a page, a corner card for each of their notes that moved
-// since they last heard (sent to Claude, planned, fixed, closed, a reply), with See it (app/feedback.py `news`)
+// ---------------------------------------------------------------- your notes
+// Once a page for anyone signed in (app/your_notes.py `news`): the badge on your picture, on More and beside Your
+// notes (what you haven't seen; opening that tab clears it), and a corner card for each note that moved since your last
+// card (once each), with See it
 (() => {
-  if (!document.body.hasAttribute('data-feedback') || location.pathname === '/your-feedback') return;
-  fetch('/your-feedback/news', { method: 'POST', headers: { Accept: 'application/json' } })
-    .then(r => (r.ok ? r.json() : { news: [] }))
-    .then(j => (j.news || []).forEach(text => window.askdndToast && window.askdndToast(text, { label: 'See it', run: () => { location.href = '/your-feedback'; } }, 'info')))
+  if (!document.getElementById('account-menu') && !document.getElementById('more-menu')) return;
+  fetch('/your-notes/news', { method: 'POST', headers: { Accept: 'application/json' } })
+    .then(r => (r.ok ? r.json() : { count: 0, cards: [] }))
+    .then(j => {
+      document.querySelectorAll('[data-notes-count]').forEach(b => { b.textContent = j.count || ''; b.hidden = !j.count; });
+      (j.cards || []).forEach(c => window.askdndToast && window.askdndToast(c.text, { label: 'See it', run: () => { location.href = c.href; } }, 'info'));
+    })
     .catch(() => {});
 })();
-
