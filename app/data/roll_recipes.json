@@ -577,7 +577,7 @@
    "events": [
     {
      "name": "Conjure Minor Elementals",
-     "on": "auto",
+     "on": "rider",
      "parts": [
       "2d8"
      ],
@@ -746,7 +746,7 @@
    "events": [
     {
      "name": "Divine Favor",
-     "on": "auto",
+     "on": "rider",
      "parts": [
       "1d4 radiant"
      ]
@@ -1201,7 +1201,7 @@
    "events": [
     {
      "name": "Hex",
-     "on": "auto",
+     "on": "rider",
      "parts": [
       "1d6 necrotic"
      ]
@@ -1214,7 +1214,7 @@
    "events": [
     {
      "name": "Hunter's Mark",
-     "on": "auto",
+     "on": "rider",
      "parts": [
       "1d6 force"
      ]

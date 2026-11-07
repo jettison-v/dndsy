@@ -1,7 +1,7 @@
 {# A spell's window, inside the roll window (app.js "using an item"; app/casting.py). With something to roll, Cast rolls at
    the level picked here, in one step (Brett, 2026-10-31); Roll alone stays for a roll without spending anything. #}
 {% from "_char.html" import spell_roll %}
-{% set rolls = e.recipe and (e.attack or (e.recipe.events | rejectattr("on", "equalto", "hit") | list)) %}
+{% set rolls = e.recipe and (e.attack or (e.recipe.events | rejectattr("on", "in", ["hit", "rider"]) | list)) %}
 <button type="button" class="rp-x" aria-label="Close">×</button>
 <div class="rw-title">{{ e.name }}</div>
 <p class="use-cost">{{ e.time }}{% if e.range %} · {{ e.range }}{% endif %}{% if e.duration %} · {{ e.duration }}{% endif %}</p>

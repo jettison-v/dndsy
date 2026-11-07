@@ -223,7 +223,7 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     wild = shape if shape is not None else ch.wild_shape
     if ctx["sheet"]:
         ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"], pinned_only=ctx["show_picks"])
-        ctx["riders"] = class_rules.turn(ctx["sheet"])["riders"]
+        ctx["riders"] = sb.riders(ctx["sheet"], ch.concentration) + class_rules.turn(ctx["sheet"])["riders"]
         ctx["known_forms"] = ws.known_forms(ctx["sheet"], ctx["beasts"]) if ctx["druid"] else []
         beast = ws.beast_for(ctx["sheet"], wild, ctx["beasts"]) if wild and ctx["druid"] else None
         if beast:

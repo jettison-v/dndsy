@@ -96,7 +96,7 @@ def resolve(recipe: dict, event: dict, slot: int, char_level: int) -> dict | Non
 def _main_event(recipe: dict | None) -> dict | None:
     """The event the average is about: the first one that rolls damage or healing."""
     for ev in (recipe or {}).get("events") or []:
-        if ev.get("on") in ("hit", "save", "auto", "heal", "temp") and ev.get("parts"):
+        if ev.get("on") in ("hit", "save", "auto", "rider", "heal", "temp") and ev.get("parts"):
             return ev
     return None
 
@@ -120,7 +120,7 @@ def average(recipe: dict | None, slot: int, char_level: int, spell_mod: int = 0)
         total += spell_mod
         shown.append(str(spell_mod))
     total *= e["count"]
-    per = {"hit": "on a hit", "save": "on a failed save", "auto": "each", "heal": "healed", "temp": "Temporary HP"}[e["on"]]
+    per = {"hit": "on a hit", "save": "on a failed save", "auto": "each", "rider": "each hit", "heal": "healed", "temp": "Temporary HP"}[e["on"]]
     count = f"{e['count']} × " if e["count"] > 1 else ""
     return {"avg": round(total, 1), "dice": count + " + ".join(shown), "per": per}
 
@@ -168,6 +168,21 @@ def _entry(sp: dict, char_level: int, mod: int, top: int, castable_in_form: set[
 
 
 HIGHER = re.compile(r"Higher-Level Spell Slot|At Higher Levels|(?:spell )?slot level above", re.I)
+
+
+def riders(sheet: dict, conc: dict | None) -> list[dict]:
+    """Battle's On a hit for the spell being concentrated on, when it adds damage to each hit while it lasts (Hunter's
+    Mark, Hex; feedback 48, Nov 7): {"name", "when", "effect", "source"}, as class_rules.turn's riders. Adding its dice to
+    a damage roll is the roll workflows' (the component library, next)."""
+    sp = next((s for s in (sheet or {}).get("spells") or [] if conc and s.get("name") == conc.get("spell")), None)
+    recipe = (house_rules.spell(sp["name"]) or sp.get("roll")) if sp else None
+    out = []
+    for ev in (recipe or {}).get("events") or []:
+        e = resolve(recipe, ev, conc.get("level") or 0, sheet.get("level") or 1) if ev.get("on") == "rider" else None
+        if e and e["parts"]:
+            out.append({"name": sp["name"], "when": "Each hit while it lasts", "source": "Concentration",
+                        "effect": "+" + " + ".join(e["parts"]) + " damage (the spell says which hits count)"})
+    return out
 
 
 def concentrating(e: dict, level: int) -> dict:

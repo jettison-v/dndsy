@@ -235,7 +235,10 @@ def rollable(o: dict, unarmed: dict | None = None) -> dict:
     makes Unarmed Strikes the Unarmed Strike's to-hit and damage."""
     recipe = o.get("recipe")
     if recipe and recipe.get("events"):  # an audited (or D&D Beyond) recipe says exactly what rolls
-        other = [e for e in recipe["events"] if e["on"] != "hit"]
+        if all(e["on"] == "rider" for e in recipe["events"]):  # (Hunter's Mark: added to hits, never rolled on casting)
+            o["dice"], o["heal"] = "", False
+            return o
+        other = [e for e in recipe["events"] if e["on"] not in ("hit", "rider")]
         o["dice"] = (other or recipe["events"])[0]["parts"][0] if (other or recipe["events"])[0].get("parts") else ""
         o["heal"] = bool(other) and other[0]["on"] == "heal"
         return o

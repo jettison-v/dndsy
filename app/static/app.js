@@ -1627,7 +1627,7 @@
     const rec = spec.recipe && !spec.follow ? spec.recipe : null;
     let evs = [], evi = 0, slot = 0;
     if (rec) {
-      evs = rec.events.filter(e => (spec.kind === 'attack') === (e.on === 'hit'));
+      evs = rec.events.filter(e => e.on !== 'rider' && (spec.kind === 'attack') === (e.on === 'hit'));
       const grows = rec.level && evs.some(e => (e.upcast || []).some(Boolean) || e.count_upcast);
       slot = rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0;
       if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-slot aria-label="Spell slot level">'
@@ -2856,7 +2856,7 @@
       const set = (sel, v) => { const el = row.querySelector(sel); if (el) el.textContent = v; };
       if (a) {
         set('[data-sb-avg]', a.avg);
-        set('[data-sb-dice]', a.dice + (a.per === 'healed' ? ' healed' : '') + (level && at > level ? ' · at ' + ORD(at) : ''));
+        set('[data-sb-dice]', a.dice + (a.per === 'healed' ? ' healed' : a.per === 'each hit' ? ' each hit' : '') + (level && at > level ? ' · at ' + ORD(at) : ''));
         set('[data-sb-half]', ' · ' + Math.floor(a.avg / 2) + ' on a save');
       }
       row.querySelectorAll('.sb-roll').forEach(b => { if (level) b.dataset.slot = at; });

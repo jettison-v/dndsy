@@ -223,7 +223,7 @@
    healing); a spell with nothing to roll opens its description. slot: the level to cast it at. #}
 {% macro spell_roll(c, e, label=none, cls="spell-chip", slot=0) -%}
 {%- set rec = e.recipe -%}
-{%- set first = (rec.events | rejectattr("on", "equalto", "hit") | list | first) if rec else none -%}
+{%- set first = (rec.events | rejectattr("on", "in", ["hit", "rider"]) | list | first) if rec else none -%}
 {%- if e.attack and rec -%}
 <button type="button" class="{{ cls }}" {{ roll_attrs("attack", e.name, e.attack, "", (), recipe=rec) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll to hit {{ e.attack }}">{{ label or e.name }}</button>
 {%- elif first -%}

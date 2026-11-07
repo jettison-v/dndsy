@@ -7,7 +7,8 @@ A recipe lists events: what gets rolled, and when.
        {"name": "Shard", "on": "hit", "parts": ["1d10 piercing"]},
        {"name": "Explosion", "on": "save", "save": "Dex", "success": "none", "parts": ["2d6 cold"], "upcast": ["1d6"]}]}
 
-- on: "hit" (a spell attack; the damage on a hit), "save" (targets save; success "half" or "none"),
+- on: "hit" (a spell attack; the damage on a hit), "save" (targets save; success "half" or "none"), "rider"
+  (added to each hit while the spell lasts: Hunter's Mark; never rolled on casting),
   "auto" (no attack or save, e.g. Magic Missile), "heal", "temp" (Temporary Hit Points), "plain"
   (a die that isn't damage, e.g. Blink's d6).
 - parts: dice, an optional flat bonus and the damage type ("1d4+1 force"); "mod": true adds the
