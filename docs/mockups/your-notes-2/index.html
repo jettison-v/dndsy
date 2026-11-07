@@ -83,6 +83,9 @@ a { color: var(--red); }
 .track .now { color: var(--strong); font-weight: 600; }
 .track .now::before { background: var(--blue); border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
 .track .bar.done { background: var(--green); }
+.track .stop { color: var(--strong); font-weight: 600; }
+.track .stop::before { background: var(--muted); border-color: var(--muted); }
+.track .skip { opacity: .45; text-decoration: line-through; }
 
 /* A: cards */
 .cards { display: grid; gap: 10px; }
@@ -163,8 +166,13 @@ button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2p
       <div class="fact"><span class="k">3 · Where it stands</span>A track of dots with the steps for that tab, the current one lit:
         <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="done">Approved</span><i class="bar done"></i><span class="now">Planned</span><i class="bar"></i><span>Fixed</span></div>
         <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="now">With the DM</span><i class="bar"></i><span>Added or used</span></div>
+        <span>One that isn't taken up stops where it was turned down, in grey, and the steps it skipped are struck through:</span>
+        <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="stop">Closed by an admin</span><i class="bar"></i><span class="skip">Planned</span><i class="bar"></i><span class="skip">Fixed</span></div>
+        <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="done">Approved</span><i class="bar done"></i><span class="stop">Closed by Claude</span><i class="bar"></i><span class="skip">Fixed</span></div>
+        <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="stop">Not used by the DM</span><i class="bar"></i><span class="skip">Added or used</span></div>
       </div>
     </div>
+    <p class="cap"><b>The ones you turn down</b> (your comment): a note you delete on the feedback queue, one Claude closes, and a story note the DM marks Not used all go to <b>Done</b> with the grey track above, and What happened says why. Today a note you delete tells its sender only “Not something askdnd will change for now”, so <b>Delete</b> on the queue would ask for a reason first (one line, for the sender, which you can leave blank), shown in What happened. The DM's Not used works the same way if you pick “let the DM reply” below. A note turned down stays on the sender's page with its reason. As today, it can't be added to; they can send a new one.</p>
     <p class="cap">The two tabs stay as they are (About the story, the DM's; About askdnd, Brett's then Claude's), each with its count of what's new. Inside both, the notes are split into <b>Open</b> and <b>Done</b>, open first, so what you're still waiting on is at the top.</p>
   </section>
 
@@ -226,7 +234,7 @@ button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2p
           <div class="sec">Done · 26</div>
           <div class="row on"><span class="dot done"></span><span class="t">Coins in a bag can't be spent <span class="new-dot">New</span></span><span class="d">Nov 7</span><span class="s">Fixed: press the coin purse on Sheet › Items…</span></div>
           <div class="row"><span class="dot done"></span><span class="t">Hunter's Mark rolls damage when cast</span><span class="d">Nov 7</span><span class="s">Fixed: it rolls nothing when cast now…</span></div>
-          <div class="row"><span class="dot closed"></span><span class="t">Show my old characters too</span><span class="d">Nov 4</span><span class="s">Closed: askdnd shows the campaign's…</span></div>
+          <div class="row"><span class="dot closed"></span><span class="t">Show my old characters too</span><span class="d">Nov 4</span><span class="s">Closed by an admin: only the campaign's current characters…</span></div>
         </div>
         <div class="detail">
           <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="done">Approved</span><i class="bar done"></i><span class="done">Planned</span><i class="bar done"></i><span class="done now">Fixed</span></div>
@@ -294,6 +302,12 @@ button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2p
           <label class="pick"><input type="radio" name="dm" value="no">No, the decision is enough</label>
         </div>
       </div>
+      <div class="q"><b>Turning a note down</b><span class="cap">Delete on the feedback queue asks for a one-line reason for the sender (it can be left blank).</span>
+        <div class="picks" role="radiogroup" aria-label="Turning a note down">
+          <label class="pick"><input type="radio" name="reject" value="yes">Yes, ask for a reason</label>
+          <label class="pick"><input type="radio" name="reject" value="no">No, keep it as it is</label>
+        </div>
+      </div>
       <div class="q"><b>Anything else</b><textarea id="words" name="words" placeholder="Optional"></textarea></div>
       <div class="send-row"><button class="send" type="submit" id="send">Submit</button><span class="sent" id="sent" role="status"></span></div>
     </form>
@@ -310,7 +324,7 @@ button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2p
     const f = new FormData(form);
     send.disabled = true;
     try {
-      await db.collection('answers').doc('pick').set({ layout: f.get('layout') || '', dm: f.get('dm') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
+      await db.collection('answers').doc('pick').set({ layout: f.get('layout') || '', dm: f.get('dm') || '', reject: f.get('reject') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
       sent.textContent = 'Sent to Claude';
     } catch (err) { sent.textContent = "Couldn't send it. Try again."; }
     send.disabled = false;
@@ -322,7 +336,7 @@ button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2p
       const d = await db.collection('answers').doc('pick').get();
       if (!d.exists) return;
       const a = d.data();
-      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = (r.name === 'layout' && r.value === a.layout) || (r.name === 'dm' && r.value === a.dm); });
+      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = (r.name === 'layout' && r.value === a.layout) || (r.name === 'dm' && r.value === a.dm) || (r.name === 'reject' && r.value === a.reject); });
       document.getElementById('words').value = a.words || '';
       sent.textContent = 'Sent earlier: change it and Submit again if you like';
     } catch (err) { /* nothing sent yet */ }
