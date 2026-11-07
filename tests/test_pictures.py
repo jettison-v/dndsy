@@ -58,6 +58,8 @@ def test_the_dm_adds_a_picture_in_the_picture_window_everyone_sees_it(people, db
     assert r.status_code == 404 and db.scalar(select(EntityPicture)) is None
     r = dm.post("/pictures/upload", data=ref, files={"file": ("k.png", png(), "image/png")}, headers=HX)
     assert r.status_code == 200 and r.headers["HX-Retarget"] == "[data-picture-window]" and "Last step: frame it" in r.text  # (Frame it)
+    # Staging feedback 32 (Nov 6): Kieran's a person, so the preview is his page's portrait, and the side panel's band beside it
+    assert 'data-shape="portrait"' in r.text and "In the side panel" in r.text and "Wide, as on its page" not in r.text
     r = dm.post("/pictures/frame", data={**ref, "skip": "1"}, headers=HX)
     assert r.status_code == 204 and "Picture saved" in r.headers["HX-Trigger"] and r.headers["HX-Refresh"] == "true"
     url = pictures.urls(db, [k.id])[k.id]

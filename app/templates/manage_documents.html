@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Documents · Manage · askdnd{% endblock %}
+{% block content %}
+{# Manage › askdnd › Documents (app/documents.py; Brett, Nov 6): every page made for askdnd, from docs/library.json, in
+   four groups, each row its status, date and what it is; it opens inside askdnd from the repo's copy. #}
+<main class="page manage-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Documents</h1></div>
+  <p class="subtitle">Every guide, plan and design made for askdnd: {{ count }} in all, each opened from askdnd's own copy, so none depends on claude.ai. New ones join the list as Claude makes them.</p>
+  <form class="doc-search" method="get" action="/manage/documents" role="search">
+    <input type="search" id="doc-q" name="q" value="{{ q }}" placeholder="Search titles and what each is" aria-label="Search the documents">
+    {% if q %}<a class="btn small" href="/manage/documents">Clear</a>{% endif %}
+  </form>
+  {% for key, name, about, rows in groups %}{% if rows or not q %}
+  <section class="section doc-group" data-kind="{{ key }}">
+    <h2>{{ name }} <span class="count">{{ rows | length }}</span></h2>
+    <p class="note">{{ about }}</p>
+    <ul class="doc-list">
+      {% for e in rows %}
+      <li class="doc-row">
+        <a class="doc-title" href="/manage/documents/{{ e.id }}">{{ e.title }}</a>
+        <span class="tag {{ 'draft' if e.status.lower().startswith(('current', 'paused', 'for you', 'approved')) else '' }}">{{ e.status }}</span>
+        <span class="doc-date">{{ e.date }}</span>
+        <span class="doc-what">{{ e.what }}</span>
+      </li>
+      {% else %}<li class="note">None here yet.</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}{% endfor %}
+  {% if q and not groups | map(attribute=3) | select | list %}<p class="note">No document matches “{{ q }}”.</p>{% endif %}
+</main>
+{% endblock %}

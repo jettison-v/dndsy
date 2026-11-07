@@ -318,6 +318,7 @@ def _combo_steps(turn: dict) -> list[dict]:
 templates.env.filters["combo_steps"] = _combo_steps
 # The D&D Beyond bridge (app/ddb_bridge.py) may run here (DDB_BRIDGE=1); pages also ask vtt_on("ddb_bridge")
 templates.env.globals["bridge_on"] = config.DDB_BRIDGE
+templates.env.globals["staging"] = config.STAGING  # (base.html: the Staging label and the amber menu bar)
 templates.env.globals["bridge_extension_url"] = config.BRIDGE_EXTENSION_URL
 templates.env.globals["lasts_times"], templates.env.globals["lasts_abilities"] = cond.TIMES, cond.ABILITIES  # + Condition's Lasts
 templates.env.globals["basic_names"] = BASIC_ACTIONS  # Battle's "What anyone can do"

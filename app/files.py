@@ -37,6 +37,7 @@ from app.models import StoredFile
 log = logging.getLogger(__name__)
 
 PREFIX = "v2/files/"
+STAGING_PREFIX = "v2/staging/files/"  # staging's own (FILE_STORAGE=s3-staging; docs/SETUP_LOG.md › A staging copy)
 ROOT = Path(__file__).resolve().parent.parent
 # What may be stored, and how big. Add a type here when a feature needs it (audio for 4.2, PDFs for handouts);
 # never anything a browser would run (HTML, SVG, scripts): files are served from askdnd's own address.
@@ -100,13 +101,14 @@ class LocalFolder:
 
 class S3:
     """S3 under v2/files/ only. The app's key can read and write there (not delete); the backup service's can also
-    list and delete, for sweep()."""
+    list and delete, for sweep(). Staging keeps its own under v2/staging/files/ and reads beta's from v2/files/ when
+    it hasn't one (its key can only read there), so it shows the pictures its copy of beta's data names."""
 
-    def __init__(self, bucket: str, region: str | None = None):
+    def __init__(self, bucket: str, region: str | None = None, prefix: str = PREFIX, read_also: str | None = None):
         import boto3
         from botocore.config import Config
 
-        self.bucket = bucket
+        self.bucket, self.prefix, self.read_also = bucket, prefix, read_also
         # One client for the whole app (it's thread-safe once made). Room for a page of pictures at once, and timeouts
         # so a slow answer from S3 fails in seconds instead of holding a request (2026-10-24: 23 pictures at once,
         # with no timeouts and a client made per first request, held the database's connections until they ran out).
@@ -115,31 +117,41 @@ class S3:
                                              retries={"max_attempts": 3, "mode": "standard"}))
 
     def put(self, key: str, data: bytes, content_type: str) -> None:
-        self.s3.put_object(Bucket=self.bucket, Key=PREFIX + key, Body=data, ContentType=content_type,
+        self.s3.put_object(Bucket=self.bucket, Key=self.prefix + key, Body=data, ContentType=content_type,
                            ServerSideEncryption="AES256")
 
     def get(self, key: str) -> bytes:
-        try:
-            return self.s3.get_object(Bucket=self.bucket, Key=PREFIX + key)["Body"].read()
-        except self.s3.exceptions.NoSuchKey:
-            raise FileNotFoundError(key) from None
+        from botocore.exceptions import ClientError
+
+        for prefix in (self.prefix, self.read_also) if self.read_also else (self.prefix,):
+            try:
+                return self.s3.get_object(Bucket=self.bucket, Key=prefix + key)["Body"].read()
+            except self.s3.exceptions.NoSuchKey:
+                continue
+            except ClientError as e:  # (staging's key can't list its folder, so S3 says "denied" for a file it hasn't got)
+                if not (self.read_also and prefix == self.prefix and e.response.get("Error", {}).get("Code") in ("AccessDenied", "403")):
+                    raise
+        raise FileNotFoundError(key)
 
     def delete(self, key: str) -> None:
-        self.s3.delete_object(Bucket=self.bucket, Key=PREFIX + key)
+        self.s3.delete_object(Bucket=self.bucket, Key=self.prefix + key)
 
     def list(self) -> Iterator[Stored]:
-        for page in self.s3.get_paginator("list_objects_v2").paginate(Bucket=self.bucket, Prefix=PREFIX):
+        for page in self.s3.get_paginator("list_objects_v2").paginate(Bucket=self.bucket, Prefix=self.prefix):
             for o in page.get("Contents") or []:
-                yield Stored(o["Key"].removeprefix(PREFIX), o["LastModified"])
+                yield Stored(o["Key"].removeprefix(self.prefix), o["LastModified"])
 
 
 def from_config():
-    """FILE_STORAGE: "s3" (the default on beta) or a folder (the default locally: private/files)."""
+    """FILE_STORAGE: "s3" (the default on beta), "s3-staging" (staging: its own folder in S3, reading beta's too) or a
+    folder (the default locally: private/files)."""
     where = config.FILE_STORAGE
-    if where != "s3":
+    if where not in ("s3", "s3-staging"):
         return LocalFolder(ROOT / where)
     if not (config.AWS_S3_BUCKET_NAME and os.getenv("AWS_ACCESS_KEY_ID")):
         return None
+    if where == "s3-staging":
+        return S3(config.AWS_S3_BUCKET_NAME, config.AWS_REGION, prefix=STAGING_PREFIX, read_also=PREFIX)
     return S3(config.AWS_S3_BUCKET_NAME, config.AWS_REGION)
 
 

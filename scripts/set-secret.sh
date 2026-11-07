@@ -8,6 +8,8 @@
 #   scripts/set-secret.sh SENTRY_DSN --clipboard --railway-only   # beta only: never in local .env
 #   scripts/set-secret.sh AWS_SECRET_ACCESS_KEY --service askdnd-backup   # another Railway service
 #   scripts/set-secret.sh SENTRY_DSN --mini   # only the Mac Mini's ~/askdnd-tests/.env (the nightly live test), over ssh
+#   scripts/set-secret.sh SESSION_SECRET --staging   # staging only (its askdnd-staging service, never local .env)
+#   scripts/set-secret.sh ANTHROPIC_API_KEY --staging --from-env   # staging, the value copied from local .env unseen
 set -euo pipefail
 
 name="${1:?usage: scripts/set-secret.sh NAME [--clipboard] [--local-only | --railway-only | --mini] [--service NAME]}"
@@ -17,6 +19,8 @@ local_only=false
 railway_only=false
 mini=false
 service=askdnd-v2
+environment=production
+from_env=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --clipboard) from_clipboard=true ;;
@@ -24,12 +28,16 @@ while [ $# -gt 0 ]; do
     --railway-only) railway_only=true ;;
     --mini) mini=true ;;
     --service) shift; service="${1:?--service needs a name}" ;;
+    --staging) environment=staging; service=askdnd-staging; railway_only=true ;;  # (docs/SETUP_LOG.md › Staging)
+    --from-env) from_env=true ;;
     *) echo "unknown option: $1" >&2; exit 1 ;;
   esac
   shift
 done
 
-if $from_clipboard; then
+if $from_env; then
+  value="$(grep "^${name}=" "$(dirname "$0")/../.env" | head -1 | cut -d= -f2-)"
+elif $from_clipboard; then
   value="$(pbpaste)"
 elif [ -t 0 ]; then
   read -r -s -p "Paste value for $name (hidden), then Enter: " value
@@ -62,10 +70,10 @@ if ! $railway_only; then
 fi
 
 if ! $local_only; then
-  if ! out="$(printf '%s' "$value" | railway variable set "$name" --stdin --service "$service" --environment production --skip-deploys 2>&1)"; then
+  if ! out="$(printf '%s' "$value" | railway variable set "$name" --stdin --service "$service" --environment "$environment" --skip-deploys 2>&1)"; then
     echo "✗ Railway update failed:" >&2
     echo "$out" >&2
     exit 1
   fi
-  echo "✓ $name saved to Railway ($service, production) — takes effect on next deploy"
+  echo "✓ $name saved to Railway ($service, $environment) — takes effect on next deploy"
 fi

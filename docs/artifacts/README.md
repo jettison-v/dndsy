@@ -9,9 +9,13 @@ live where they belong (`docs/roadmap.html`, `docs/stack.html`, `docs/mockups/`)
 Treat the repo as public (it's private for now, and may open again), so nothing goes here that couldn't be: no book text, campaign story or players' notes, and no
 screenshots of real pages (they show the campaign).
 
+Every page is also in `docs/library.json`, the list behind **Manage › askdnd › Documents** in askdnd (admins only),
+where each opens from its copy here; `scripts/library.py` writes the roadmap's table of documents from it.
+
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
-| How the Bridge Works | [VhKW45Ec3mYoQsksGnQZ1T](https://claude.ai/artifact/VhKW45Ec3mYoQsksGnQZ1T) | `bridge-flow.html` | The D&D Beyond bridge as four pictures: who talks to whom, a change made in askdnd (and catching up), a change made on D&D Beyond, how askdnd notices a sheet closed (Oct 28; keep current as the bridge changes) |
+| Recording to Recap | [NpPqj4ifE2zKdXAJgZQBaM](https://claude.ai/artifact/NpPqj4ifE2zKdXAJgZQBaM) | `recording-to-recap.html` | Brett's steps after a game night: MacWhisper, the Processor's four steps, publishing the recap, where the files are (Nov 6; kept current) |
+| How the Bridge Works | [VhKW45Ec3mYoQsksGnQZ1T](https://claude.ai/artifact/VhKW45Ec3mYoQsksGnQZ1T) | `bridge-flow.html` | Merged Nov 6 into askdnd D&D Beyond Bridge (`ddb-bridge.html`, How it works); the page now points there |
 | One Table List | [7e1exa6YDp5ndFeFN5p5PF](https://claude.ai/artifact/7e1exa6YDp5ndFeFN5p5PF) | `../mockups/the-table.html` | Manage › Table as one list, with one Add and a Remove that says what it does (decided and built, Oct 30) |
 | Table Without Modes | [2sEJ9btUudhWzZG6RbHEjx](https://claude.ai/artifact/2sEJ9btUudhWzZG6RbHEjx) | `../mockups/table-without-modes.html` | Game Mode designed again: no switch, a roll goes to the table by default, ready for askdnd's own encounters (decided and built, Oct 30) |
 | Correction Ladder | [UJfj2TbWeb1fniZYF17wBT](https://claude.ai/artifact/UJfj2TbWeb1fniZYF17wBT) | `../mockups/correction-flow.html` | Five steps for working out one thing about an item, the campaign's own correction first (decided and built, Oct 30) |

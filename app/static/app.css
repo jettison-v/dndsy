@@ -9,6 +9,7 @@
   --story-cap: #a99070; --story-fleuron: #5c5040; --rod-cap: #57462f; --rod-hi: #4a3c2c; --story-head: #f1e9da;
   --red: #d64545; --red-hover: #e35a5a; --red-soft: rgba(214, 69, 69, .14);
   --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --staging-bar: #3a2a08; --staging-edge: var(--amber); --staging-ink: #1a1204;  /* staging's menu bar and label */
   --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
   --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
   --surface-3: #30353b; --line-soft: #2c3036; --row-hover: #20242a; --bg-glass: rgba(21, 23, 26, .97);
@@ -78,6 +79,12 @@ img { max-width: 100%; }
 
 /* Top bar */
 .topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 5; }
+/* Staging (docs/SETUP_LOG.md › A staging copy): an amber menu bar and a Staging label, so it's never taken for the table's askdnd */
+body[data-staging] .topbar { background: var(--staging-bar); border-bottom-color: var(--staging-edge); }
+body[data-staging] .bottom-nav { background: var(--staging-bar); border-top: 2px solid var(--staging-edge); }
+body[data-staging] .brand-word { display: none; }  /* (the label takes the word's place, so the bar keeps its room) */
+.staging-mark { font-family: var(--cond); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--staging-ink); background: var(--amber); border-radius: var(--r-pill); padding: 1px 8px; line-height: 1.6; }
 .topbar-inner { max-width: 1360px; margin: 0 auto; padding: 0 24px; height: 60px; display: flex; align-items: center; gap: 14px; }
 .brand { font-family: var(--cond); font-weight: 700; font-size: var(--fs-lg); color: var(--text-strong); text-decoration: none; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .brand img { width: 34px; height: 34px; border-radius: var(--r-md); }
@@ -1292,6 +1299,24 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .ov-card { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); text-decoration: none; }
 .ov-card:hover { border-color: var(--line-strong); background: var(--row-hover); }
 .ov-card b { color: var(--text-strong); }
+/* Manage › askdnd › Documents (app/documents.py): the library's rows, and one document in its sealed frame */
+.doc-search { display: flex; gap: var(--sp-2); align-items: center; margin: 0 0 var(--sp-4); max-width: 520px; }
+.doc-search input { flex: 1; min-width: 0; }
+.doc-list { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; }
+.doc-row { display: grid; grid-template-columns: minmax(0, 15rem) auto 4.5rem minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); align-items: baseline;
+  padding: var(--sp-2) 0; border-top: 1px solid var(--line); }
+.doc-row .tag { justify-self: start; }
+.doc-title { font-weight: 600; color: var(--text-strong); }
+.doc-date { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+.doc-what { color: var(--muted); font-size: var(--fs-sm); min-width: 0; }
+@media (max-width: 900px) { .doc-row { grid-template-columns: minmax(0, 1fr) auto; } .doc-date { grid-column: 2; grid-row: 2; justify-self: end; } .doc-what { grid-column: 1 / -1; } }
+.doc-back { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
+.doc-meta { margin: var(--sp-1) 0 var(--sp-3); overflow-wrap: anywhere; }
+.doc-boards { margin-bottom: var(--sp-3); overflow-x: auto; }
+.doc-text { max-width: 860px; overflow-x: auto; }
+.doc-text table { border-collapse: collapse; }
+.doc-text th, .doc-text td { border: 1px solid var(--line); padding: var(--sp-1) var(--sp-2); text-align: left; vertical-align: top; }
+.doc-frame { display: block; width: 100%; height: calc(100vh - 220px); min-height: 480px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
 .ov-state { font-size: var(--fs-sm); }
 .ov-state.ok { color: var(--green); } .ov-state.warn { color: var(--amber); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
@@ -3134,6 +3159,8 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .fb-answer .field, .fb-answer textarea { width: 100%; }
 /* The one Picture window (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2) */
 .pw { display: grid; gap: var(--sp-3); }
+.pw > .tabbar { min-height: 41px; flex: none; }  /* (staging feedback 31: a full window squeezed the tabs to a sliver) */
+.pw-drawing, #pw-options:not(:empty) { margin-top: var(--sp-3); }  /* room between Draw and the pictures (staging feedback 31) */
 .pw-form { display: grid; gap: var(--sp-3); }
 .pw-drop { display: grid; place-items: center; gap: var(--sp-2); text-align: center; min-height: 160px; padding: var(--sp-3); border: 2px dashed var(--line-strong); border-radius: var(--r-lg); color: var(--muted); cursor: pointer; }
 .pw-drop.over { border-color: var(--amber); background: var(--amber-soft); }
@@ -3219,6 +3246,11 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .pw-frame-side { display: grid; gap: var(--sp-4); min-width: 0; }
 .pw-frame-side input[type=range] { width: 100%; }
 .pw-band { width: 100%; max-width: 360px; aspect-ratio: 360 / 206; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); display: block; }
+/* Each preview in the shape it's shown in (staging feedback 32): its page's by kind (entity_pages.SHAPES), the side panel's band */
+.pw-band[data-shape=portrait] { aspect-ratio: 3 / 4; max-width: 180px; }
+.pw-band[data-shape=square], .pw-band[data-shape=item], .pw-band[data-shape=emblem] { aspect-ratio: 1; max-width: 200px; }
+.pw-band[data-shape=banner] { aspect-ratio: 16 / 5; }
+.pw-previews { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: flex-start; }
 /* Hide (app/hiding.py): an attack while hidden offers to end it */
 .rw-hidden { display: flex; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); }
 /* Readied (app/readying.py; feedback 14): the top of Battle's Reaction column, in the Readied colour */

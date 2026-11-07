@@ -8,6 +8,11 @@
     uv run python scripts/restore_db.py --into ... --s3-key v2/backups/askdnd-2026-10-20.json.gz
 
 Restoring into beta itself is a big step: do it only after talking it through.
+
+Staging (docs/SETUP_LOG.md › Staging) has no public database address, so its copy of beta is loaded from inside its
+own server, where only it runs:
+    railway ssh --service askdnd-staging --environment staging -- python scripts/restore_db.py --into-staging --file /tmp/x.json.gz
+--into-staging restores into that server's own database, and only when Railway says the server is staging's.
 """
 
 import os
@@ -27,10 +32,16 @@ def arg(name: str) -> str | None:
 
 def main() -> None:
     into = arg("--into")
+    if "--into-staging" in sys.argv:
+        if os.environ.get("RAILWAY_ENVIRONMENT_NAME") != "staging":
+            sys.exit("--into-staging runs only on staging's own server (railway ssh --environment staging).")
+        from app import config
+
+        into = config.DATABASE_URL
+    elif into and "railway" in into and "--yes-this-is-beta" not in sys.argv:
+        sys.exit("That looks like the Railway database. Add --yes-this-is-beta only if you really mean it.")
     if not into:
         sys.exit("Say which database to restore into with --into (it must be empty).")
-    if "railway" in into and "--yes-this-is-beta" not in sys.argv:
-        sys.exit("That looks like the Railway database. Add --yes-this-is-beta only if you really mean it.")
     if arg("--file"):
         raw = Path(arg("--file")).read_bytes()
     elif arg("--s3-key"):

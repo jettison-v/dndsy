@@ -958,3 +958,50 @@ Earlier that day a pull request was merged four minutes after its last change, w
 2. Run a short end-to-end test right after every deploy, not only nightly. Trigger it off the version changing, so it doesn't care how the deploy happened.
 3. When your tests use saved copies of an outside service's data, check the live data against those copies on a schedule, or the tests will keep passing on a world that's gone.
 
+## 2026-11-06: A staging copy of askdnd
+
+**What was set up.** A second askdnd at `staging.askdnd.ai`, in its own Railway environment (`staging`, beside
+`production`), with its own service (`askdnd-staging`) and its own Postgres. It deploys the `staging` branch, not
+`main`, and its database started as a copy of this morning's nightly backup of beta. Beta and the table never see it.
+
+**Why.** `beta.askdnd.ai` isn't a test copy: it's the same app and database as askdnd.ai, so a merge goes straight to
+the table. Your Mac's local copy covers most changes, but not the ones that need the cloud: several people at once,
+phones, Google sign-in, the extension. Staging is where those get tried first. Not every change goes there (that
+would slow everything down): VTT slices, the bridge and the extension, risky groundwork, and anything merged near a
+game.
+
+**How work moves through it, with nothing lost.** Staging is a place, not a branch anyone works on. Every change lives
+on its own branch with a pull request into main; `scripts/staging.sh <branch>` copies that branch onto staging, and
+`scripts/staging.sh main` puts it back to what the table runs. The script refuses when staging holds a commit no
+other branch has, when the branch has changes not pushed, or when it has no open pull request, so whatever is tried
+on staging reaches main through its pull request, checked by the same tests as always. Staging's data is
+throwaway: what's typed there never goes to beta.
+
+**How it was done.**
+- `railway environment new staging` made an empty environment. Not a duplicate of production: that would have copied
+  the legacy app and the nightly backup job too, and a second backup job could overwrite beta's backups.
+- `railway add --database postgres` and `railway add --service askdnd-staging` inside it, then
+  `railway service source connect --repo … --branch staging`. Production's four services were checked unchanged.
+- Settings: `APP_ENV=production` (so the dev login is off), `SENTRY_ENVIRONMENT=staging`, `AUTO_DRAFT=0`, files in a
+  folder on its own server, and no `DDB_BRIDGE` (the bridge would write to the same test sheets beta uses).
+- Secrets with `scripts/set-secret.sh NAME --staging`: a new sign-in secret; the Google, Anthropic and OpenAI keys
+  copied from your `.env` unseen (`--from-env`); Sentry's address copied from the Mac Mini.
+- The database has no public address, so the backup was copied into staging's own server over `railway ssh` and
+  loaded there (`restore_db.py --into-staging`, which refuses to run anywhere else).
+- `staging.askdnd.ai`: Brett recreated staging's public networking in Railway so it syncs with Cloudflare itself (its
+  CNAME and TXT records appeared on their own), and added staging's return addresses in Google's sign-in settings.
+
+**Pictures.** Staging keeps its own under `v2/staging/files/` in the same bucket and reads beta's from `v2/files/`
+when it hasn't one (`FILE_STORAGE=s3-staging`), with its own AWS user (`askdnd-staging-files`) that can only read
+beta's folder and read and write its own: staging can show beta's pictures but never change them.
+
+**Still to do.** The bridge: an extension build that points at staging, used only with test
+sheets beta isn't using at the same time.
+
+**For a new project:**
+1. Have three places from the start: your computer, staging, production. Staging runs the same code and settings
+   as production, with its own database and keys.
+2. Make the staging environment empty and add only what it needs; copying production copies its scheduled jobs too.
+3. Fill staging from a production backup; it doubles as a check that your backups restore.
+4. Use staging for what your computer can't show you, not for every change.
+

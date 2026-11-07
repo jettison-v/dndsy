@@ -3916,7 +3916,7 @@
   // middle. The square always stays covered.
   function framer(box) {
     if (!box || box.dataset.ready) return;
-    const stage = box.querySelector('[data-pw-stage]'), img = box.querySelector('[data-pw-img]'), band = box.querySelector('[data-pw-band]');
+    const stage = box.querySelector('[data-pw-stage]'), img = box.querySelector('[data-pw-img]'), bands = box.querySelectorAll('[data-pw-band]');
     const zoomIn = box.querySelector('[data-pw-zoom]'), fx = box.querySelector('[data-pw-x]'), fy = box.querySelector('[data-pw-y]'), fz = box.querySelector('[data-pw-z]');
     let x = Number(box.dataset.x) || 0.5, y = Number(box.dataset.y) || 0.5, zoom = Number(box.dataset.zoom) || 1;
     const draw = () => {
@@ -3926,7 +3926,7 @@
       const left = Math.min(0, Math.max(S - w, S / 2 - x * w)), top = Math.min(0, Math.max(S - h, S / 2 - y * h));
       x = (S / 2 - left) / w; y = (S / 2 - top) / h;  // (held inside the picture)
       Object.assign(img.style, { width: w + 'px', height: h + 'px', left: left + 'px', top: top + 'px' });
-      if (band) band.style.objectPosition = (x * 100).toFixed(1) + '% ' + (y * 100).toFixed(1) + '%';
+      bands.forEach(b => { b.style.objectPosition = (x * 100).toFixed(1) + '% ' + (y * 100).toFixed(1) + '%'; });  // (each preview, its own shape)
       fx.value = x.toFixed(4); fy.value = y.toFixed(4); fz.value = zoom.toFixed(3);
     };
     box.dataset.ready = '1';

@@ -103,7 +103,11 @@ def _framing(request: Request, db: Session, o: pictures.Owner, new: bool = False
         return _done(o, "Picture saved")
     x, y = o.centering
     f = pic.frame or {"x": x, "y": y, "zoom": 1.0}
-    out = templates.TemplateResponse(request, "_picture_frame.html", {"o": o, "shown": shown, "f": f, "new": new, "most": pictures.ZOOM_MAX})
+    from app.entity_pages import SHAPES
+
+    shape = SHAPES.get(o.entity.kind, "banner") if o.entity is not None else "square"  # (a creature's is square)
+    out = templates.TemplateResponse(request, "_picture_frame.html", {"o": o, "shown": shown, "f": f, "new": new, "most": pictures.ZOOM_MAX,
+                                                                       "shape": shape})
     out.headers["HX-Retarget"], out.headers["HX-Reswap"] = "[data-picture-window]", "outerHTML"
     return out
 

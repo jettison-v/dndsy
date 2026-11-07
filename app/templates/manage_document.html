@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ e.title }} · Documents · askdnd{% endblock %}
+{% block content %}
+{# One document (app/documents.py): a plan's Markdown in the page; any other page in the sealed frame (its own address,
+   a key good for an hour, no askdnd sign-in inside it); a design's boards as tabs. #}
+<main class="page manage-page doc-page">
+  {% include "_manage_head.html" %}
+  <p class="doc-back"><a href="/manage/documents">← Documents</a></p>
+  <div class="title-row"><h1>{{ e.title }}</h1><span class="tag">{{ e.status }}</span></div>
+  <p class="subtitle">{{ e.what }}{% if e.date %} · {{ e.date }}{% endif %}</p>
+  <p class="doc-meta note">From the repo: <code>{{ e.source }}</code>{% if e.link %} · <a href="{{ e.link }}" target="_blank" rel="noopener noreferrer">On claude.ai ↗</a>{% endif %}{% if frame %} · <a href="{{ frame }}" target="_blank" rel="noopener noreferrer">Open on its own ↗</a>{% endif %}</p>
+  {% if pages | length > 1 %}
+  <nav class="sub-tabs doc-boards" aria-label="Its pages">
+    {% for p in pages %}<a href="/manage/documents/{{ e.id }}?page={{ p | urlencode }}" class="{{ 'on' if p == current }}"{% if p == current %} aria-current="page"{% endif %}>{{ label(p) }}</a>{% endfor %}
+  </nav>
+  {% endif %}
+  {% if body %}
+  <article class="section doc-text">{{ body }}</article>
+  {% else %}
+  <iframe class="doc-frame" src="{{ frame }}" title="{{ e.title }}" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" loading="lazy"></iframe>
+  {% endif %}
+</main>
+{% endblock %}
