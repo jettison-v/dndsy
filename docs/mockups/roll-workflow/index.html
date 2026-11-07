@@ -1,0 +1,386 @@
+<title>Roll Workflow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Mockups of the roll workflow (Brett, Nov 7: "the most-used workflow, and I want it to be perfect"), before the action
+   roll becomes a component (docs/artifacts/component-scan.html). Where it lives first, today's flow, then four options,
+   each as the frames a player presses through, drawn in askdnd's own look at phone width. Then a comparison and an answer
+   form (db: Brett's pick, read back by Claude). Example numbers; the table's own characters, enemies by role. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --violet: #b99be8;
+  --green-soft: rgba(91,191,127,.15); --amber-soft: rgba(232,179,75,.15); --blue-soft: rgba(126,166,224,.15); --red-soft: rgba(229,83,75,.15); --violet-soft: rgba(185,155,232,.16);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); --violet-soft: rgba(107,75,176,.12); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); --violet-soft: rgba(107,75,176,.12); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.4rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 70ch; }
+b, strong { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.note { color: var(--muted); font-size: .86rem; }
+section, header { display: grid; gap: 14px; min-width: 0; }
+.lead { font-size: 1.06rem; }
+.opt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.opt-head h2 { flex: 1 1 auto; min-width: 0; }
+.badge { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; }
+.badge.rec { background: var(--green-soft); color: var(--green); }
+.badge.today { background: var(--surface-2); color: var(--muted); }
+.presses { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .88rem; }
+.presses b { font-size: 1.05rem; }
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; align-items: start; }
+.frame { display: grid; gap: 8px; min-width: 0; }
+.frame > .k { font: 700 .72rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: flex; gap: 6px; }
+.frame > .k i { font-style: normal; color: var(--red); }
+.frame > .cap { font-size: .84rem; color: var(--muted); }
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .9rem; display: grid; gap: 4px; }
+.pro > b { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.pro.good > b { color: var(--green); } .pro.cost > b { color: var(--amber); }
+.pro ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+hr.sep { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+/* askdnd's pieces, drawn */
+.ui { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 9px; font-size: .86rem; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.ui.page { box-shadow: none; }
+.ui-title { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.ui-title b { font-size: .95rem; }
+.ui-title .x { color: var(--muted); }
+.sub { color: var(--muted); font-size: .8rem; }
+.row { display: flex; align-items: center; justify-content: space-between; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; background: var(--surface-2); }
+.row.hot { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-soft); }
+.row b { font-size: .9rem; }
+.num-btn { border: 1px solid var(--line); border-radius: 8px; padding: 3px 9px; font-weight: 700; background: var(--surface); }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg span { flex: 1; text-align: center; padding: 5px 4px; font-size: .78rem; border-left: 1px solid var(--line); white-space: nowrap; }
+.seg span:first-child { border-left: 0; }
+.seg span.on { background: var(--surface-3); color: var(--strong); font-weight: 600; }
+.reason { background: var(--amber-soft); color: var(--amber); border-radius: 6px; padding: 5px 8px; font-size: .78rem; }
+.reason b { color: inherit; }
+.fold { color: var(--muted); font-size: .8rem; }
+.fold::before { content: "▸ "; }
+.btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 8px; padding: 5px 11px; font-size: .8rem; white-space: nowrap; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 600; }
+.btn.big { padding: 9px 14px; font-size: .9rem; justify-content: center; flex: 1; }
+.btn.link { background: none; border: 0; color: var(--muted); padding-inline: 2px; }
+.btn.ghost { background: none; }
+.tog { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+.tog i { flex: none; width: 15px; height: 15px; border: 1.5px solid var(--line); border-radius: 4px; }
+.tog.on { border-color: var(--blue); background: var(--blue-soft); }
+.tog.on i { background: var(--blue); border-color: var(--blue); }
+.tog span { flex: 1; min-width: 0; }
+.tog small { color: var(--muted); }
+.chipline { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 10px; font-size: .78rem; border: 1px solid var(--line); background: var(--surface-2); white-space: nowrap; }
+.chip.on { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chip.cost { border-style: dashed; }
+.res { display: flex; align-items: center; gap: 10px; }
+.die { flex: none; width: 46px; height: 46px; display: grid; place-items: center; font-weight: 800; font-size: 1.15rem; color: var(--strong); background: var(--surface-3); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.die.dmg { clip-path: none; border-radius: 10px; background: var(--red-soft); color: var(--red); }
+.res .big { font-size: 1.8rem; font-weight: 800; color: var(--strong); line-height: 1; font-variant-numeric: tabular-nums; }
+.res .big small { font-size: .8rem; font-weight: 500; color: var(--muted); }
+.line { font-size: .8rem; color: var(--muted); }
+.line b { color: var(--text); }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.split > div { background: var(--surface-2); border-radius: 8px; padding: 8px; display: grid; gap: 2px; }
+.split .lab { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.split .v { font-size: 1.5rem; font-weight: 800; color: var(--strong); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.split .v small { font-size: .74rem; font-weight: 500; color: var(--muted); }
+.addon { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .8rem; border-top: 1px dashed var(--line); padding-top: 7px; }
+.added { color: var(--blue); font-weight: 600; }
+.log { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; display: grid; gap: 3px; font-size: .8rem; }
+.log .who { display: flex; justify-content: space-between; gap: 8px; }
+.log .tot { font-weight: 800; font-size: 1.15rem; color: var(--strong); }
+.steps { display: flex; gap: 4px; }
+.steps span { flex: 1; height: 4px; border-radius: 2px; background: var(--surface-3); }
+.steps span.done { background: var(--green); } .steps span.now { background: var(--red); }
+.step-names { display: flex; justify-content: space-between; font-size: .68rem; color: var(--muted); }
+.step-names .now { color: var(--strong); font-weight: 600; }
+.ask { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dock { background: var(--surface); border: 1px solid var(--line); border-radius: 14px 14px 10px 10px; padding: 10px; display: grid; gap: 8px; }
+.dock-h { display: flex; justify-content: space-between; align-items: center; font-size: .8rem; }
+.stack { display: grid; gap: 6px; }
+.mini { display: flex; justify-content: space-between; gap: 8px; background: var(--surface-2); border-radius: 8px; padding: 6px 9px; font-size: .78rem; }
+.mini b { font-size: .95rem; }
+.dim { opacity: .45; }
+.where { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .where { grid-template-columns: minmax(0, 1fr); } }
+
+/* comparison and answer */
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 640px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 700 .74rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+td.num { font-variant-numeric: tabular-nums; }
+tr.rec td { background: var(--green-soft); }
+.verdict { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.q { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 64px; font: 15px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { font: 600 15px var(--sans); background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; cursor: pointer; }
+button.send:disabled { opacity: .5; cursor: default; }
+button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2px; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · the action roll · Nov 7</div>
+    <h1>The roll workflow, four ways</h1>
+    <p class="lead">Before the action roll becomes a component (see the Component Scan), a choice of how it should feel. Every option is drawn for the same moment, the one today's flow handles worst: <b>No Name attacks Enemy 1 with an Unarmed Strike</b> while concentrating on <b>Hunter's Mark</b>, with <b>Stunning Strike</b> to spend if it hits. The numbers are examples.</p>
+  </header>
+
+  <section>
+    <h2>Where it lives</h2>
+    <div class="where">
+      <p>Every option starts the same way: the <b>+7</b> on an attack's row on Battle (or the same row on Sheet, a spell's Cast, a save in the side panel). On a computer the roll opens beside the row; on a phone it rises from the bottom, within thumb reach. What the table sees lands in <b>Table rolls</b> as it does today, and the dice are thrown on everyone's screen. The options differ in what happens <b>between pressing +7 and the damage reaching Enemy 1</b>.</p>
+      <div class="ui page">
+        <div class="sub">BATTLE · ACTION</div>
+        <div class="row hot"><span><b>Unarmed Strike</b><br><span class="sub">5 ft · 1d8+4 bludgeoning</span></span><span class="num-btn">+7</span></div>
+        <div class="row"><span><b>Eldritch Blast</b><br><span class="sub">120 ft · 1d10 force</span></span><span class="num-btn">+4</span></div>
+        <div class="sub">ON A HIT · Hunter's Mark +1d6 force (concentrating) · Stunning Strike (1 Focus Point)</div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="sep">
+
+  <!-- TODAY -->
+  <section>
+    <div class="opt-head"><span class="badge today">Today</span><h2>For reference: how it works now</h2><span class="presses"><b>7</b> presses, 3 windows</span></div>
+    <div class="frames">
+      <div class="frame"><div class="k"><i>1</i> Press +7: the roll window</div>
+        <div class="ui"><div class="ui-title"><b>Unarmed Strike <span class="sub">d20 +7</span></b><span class="x">×</span></div>
+          <div class="seg"><span class="on">Normal</span><span>Advantage</span><span>Disadvantage</span></div>
+          <div class="fold">Add dice or a bonus</div>
+          <div class="seg"><span class="on">Table</span><span>DM only</span><span>Only me</span></div>
+          <div class="btns"><span class="btn primary">Roll</span></div></div></div>
+      <div class="frame"><div class="k"><i>2</i> Roll: the result</div>
+        <div class="ui"><div class="res"><div class="die">13</div><div><div class="big">20 <small>to hit</small></div><div class="line">d20 13 +7</div></div></div>
+          <div class="btns"><span class="btn primary">Roll damage (1d8+4)</span><span class="btn link">+ Add a die</span></div></div></div>
+      <div class="frame"><div class="k"><i>3–4</i> Roll damage: another window</div>
+        <div class="ui"><div class="ui-title"><b>Unarmed Strike · damage <span class="sub">1d8+4</span></b><span class="x">×</span></div>
+          <div class="fold">Add dice or a bonus <span class="sub">(Hunter's Mark: add a d6 here yourself)</span></div>
+          <div class="btns"><span class="btn primary">Roll</span></div></div></div>
+      <div class="frame"><div class="k"><i>5–7</i> Table rolls: Apply to</div>
+        <div class="ui"><div class="log"><div class="who"><span>No Name · Unarmed Strike</span><span class="tot">9</span></div><div>to hit 20 · damage 9</div></div>
+          <div class="btns"><span class="btn">Apply to…</span></div><div class="sub">→ pick Enemy 1 → Apply in the Hit Points window</div></div></div>
+    </div>
+    <p class="note">Stunning Strike isn't part of it at all: it's a line under the columns, spent from Resources. Hunter's Mark is a die you remember to add.</p>
+  </section>
+
+  <hr class="sep">
+
+  <!-- A -->
+  <section id="a">
+    <div class="opt-head"><h2>A. Roll at once, decide after</h2><span class="presses"><b>3</b> presses</span></div>
+    <p>Pressing +7 rolls straight away with what askdnd knows (Advantage if a rule gives it, said on the result). Everything else is decided on the result: Advantage after the fact, damage with the riders ticked in, then the target. The window before the roll is gone; a long press (or ⋯) still opens it for the rare roll that needs it.</p>
+    <div class="frames">
+      <div class="frame"><div class="k"><i>1</i> Press +7: it rolls</div>
+        <div class="ui"><div class="res"><div class="die">13</div><div><div class="big">20 <small>to hit</small></div><div class="line">d20 13 +7 · to the table</div></div></div>
+          <div class="btns"><span class="btn">Roll again with Advantage</span><span class="btn link">⋯</span></div>
+          <div class="addon"><span>Hit?</span><span class="btns"><span class="btn primary">Roll damage</span><span class="btn ghost">Missed</span></span></div></div>
+        <div class="cap">The DM says hit or miss; Missed closes it.</div></div>
+      <div class="frame"><div class="k"><i>2</i> Roll damage: riders ticked in</div>
+        <div class="ui"><div class="ui-title"><b>Damage <span class="sub">1d8+4</span></b></div>
+          <div class="tog on"><i></i><span>Hunter's Mark <small>+1d6 force · if Enemy 1 is marked</small></span></div>
+          <div class="tog"><i></i><span>Stunning Strike <small>1 Focus Point · Con save DC 14</small></span></div>
+          <div class="btns"><span class="btn primary big">Roll 1d8+4 + 1d6</span></div></div></div>
+      <div class="frame"><div class="k"><i>3</i> Damage: apply it</div>
+        <div class="ui"><div class="res"><div class="die dmg">12</div><div><div class="big">12 <small>damage</small></div><div class="line">1d8 6 +4 · <span class="added">Hunter's Mark 2</span></div></div></div>
+          <div class="btns"><span class="btn primary">Apply to Enemy 1</span><span class="btn">Someone else…</span></div></div>
+        <div class="cap">Enemy 1 is offered because it's whose turn the fight shows you facing or the last you hit.</div></div>
+    </div>
+    <div class="pros">
+      <div class="pro good"><b>Good at</b><ul><li>The fastest: a plain check or save is one press, done.</li><li>Nothing to read before the dice fly.</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>Advantage chosen after rolling becomes a second d20: right by the rules, but the table sees two rolls.</li><li>"Who sees" moves to ⋯ (or stays as you last set it).</li></ul></div>
+    </div>
+  </section>
+
+  <hr class="sep">
+
+  <!-- B -->
+  <section id="b">
+    <div class="opt-head"><span class="badge rec">My pick</span><h2>B. One attack card</h2><span class="presses"><b>2–3</b> presses</span></div>
+    <p>Pressing +7 opens a card that shows the whole attack: to hit and damage side by side, Advantage and why at the top, what adds to the damage already ticked when it applies (Hunter's Mark while you concentrate). One <b>Roll</b> throws both. The result stays on the same card: if it hits, the after-hit choices (Stunning Strike, Divine Smite, Sneak Attack once a turn) are one press each, and <b>Apply to Enemy 1</b> finishes it.</p>
+    <div class="frames">
+      <div class="frame"><div class="k"><i>1</i> Press +7: the attack card</div>
+        <div class="ui"><div class="ui-title"><b>Unarmed Strike</b><span class="x">×</span></div>
+          <div class="seg"><span class="on">Normal</span><span>Advantage</span><span>Disadvantage</span></div>
+          <div class="split"><div><span class="lab">To hit</span><span class="v">d20 +7</span></div><div><span class="lab">Damage</span><span class="v" style="font-size:1.05rem">1d8+4 <small>bludgeoning</small></span></div></div>
+          <div class="chipline"><span class="chip on">+1d6 Hunter's Mark</span><span class="chip">+ dice or bonus</span></div>
+          <div class="btns"><span class="btn primary big">Roll</span></div>
+          <div class="sub">To the table · change in ⋯</div></div></div>
+      <div class="frame"><div class="k"><i>2</i> Roll: both at once</div>
+        <div class="ui"><div class="split"><div><span class="lab">To hit</span><span class="v">20</span><span class="sub">d20 13 +7</span></div><div><span class="lab">Damage</span><span class="v">12</span><span class="sub">6 +4 · <span class="added">HM 2</span></span></div></div>
+          <div class="addon"><span>On a hit</span></div>
+          <div class="chipline"><span class="chip cost">Stunning Strike · 1 Focus</span><span class="chip cost">+ a die</span></div>
+          <div class="btns"><span class="btn primary">Apply 12 to Enemy 1</span><span class="btn ghost">Missed</span></div></div>
+        <div class="cap">On a natural 20 the damage is rolled as a critical straight away.</div></div>
+      <div class="frame"><div class="k"><i>3</i> If it hits: one press each</div>
+        <div class="ui"><div class="split"><div><span class="lab">To hit</span><span class="v">20</span></div><div><span class="lab">Damage</span><span class="v">12</span></div></div>
+          <div class="addon"><span><b>Stunning Strike</b> · 1 Focus Point spent</span><span class="sub">Undo</span></div>
+          <div class="line">Enemy 1 makes a <b>Con save, DC 14</b>: in Table rolls for the DM</div>
+          <div class="btns"><span class="btn primary">Apply 12 to Enemy 1</span></div></div></div>
+      <div class="frame"><div class="k">What the table sees</div>
+        <div class="ui page"><div class="log"><div class="who"><span>No Name · Unarmed Strike</span><span class="tot">20</span></div><div>to hit 20 · damage 12 (Hunter's Mark 2)</div><div class="sub">Stunning Strike: Con save DC 14</div></div></div>
+        <div class="cap">One row for the whole attack, the DM's Apply to on it too.</div></div>
+    </div>
+    <div class="pros">
+      <div class="pro good"><b>Good at</b><ul><li>An attack is one card from start to end: nothing to remember, nothing to add up.</li><li>Riders show where they apply: before the roll if they always add (Hunter's Mark), after a hit if you choose them then (Stunning Strike, Smite).</li><li>Checks and saves stay the short version: one press, mode on the card.</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>Damage is rolled even on a miss (Missed sets it aside; the table sees it struck through).</li><li>A bigger card than today's window, so on a phone it takes the lower half of the screen.</li></ul></div>
+    </div>
+  </section>
+
+  <hr class="sep">
+
+  <!-- C -->
+  <section id="c">
+    <div class="opt-head"><h2>C. A guided sequence</h2><span class="presses"><b>5</b> presses</span></div>
+    <p>The same window walks through the action one step at a time, showing only the steps this action has: <b>Before</b> (Advantage and why) → <b>To hit</b> → <b>Hit or miss</b> (you say what the DM said) → <b>Damage</b> (riders) → <b>Apply</b>. A bar at the top shows where you are; Back goes a step back. A save spell's steps would be Before → DC → Damage → Apply.</p>
+    <div class="frames">
+      <div class="frame"><div class="k"><i>1</i> Before</div>
+        <div class="ui"><div class="steps"><span class="now"></span><span></span><span></span><span></span><span></span></div><div class="step-names"><span class="now">Before</span><span>Hit</span><span>Damage</span><span>Apply</span></div>
+          <div class="seg"><span class="on">Normal</span><span>Advantage</span><span>Disadvantage</span></div>
+          <div class="reason"><b>Heroic Inspiration</b> you have it: you can reroll after you see the roll</div>
+          <div class="btns"><span class="btn primary big">Roll to hit</span></div></div></div>
+      <div class="frame"><div class="k"><i>2</i> To hit, then hit or miss</div>
+        <div class="ui"><div class="steps"><span class="done"></span><span class="now"></span><span></span><span></span><span></span></div><div class="step-names"><span>Before</span><span class="now">Hit</span><span>Damage</span><span>Apply</span></div>
+          <div class="res"><div class="die">13</div><div><div class="big">20 <small>to hit</small></div></div></div>
+          <div class="sub">What did the DM say?</div>
+          <div class="ask"><span class="btn primary big">Hit</span><span class="btn big">Missed</span></div></div></div>
+      <div class="frame"><div class="k"><i>3</i> Damage and riders</div>
+        <div class="ui"><div class="steps"><span class="done"></span><span class="done"></span><span class="now"></span><span></span><span></span></div><div class="step-names"><span>Before</span><span>Hit</span><span class="now">Damage</span><span>Apply</span></div>
+          <div class="tog on"><i></i><span>Hunter's Mark <small>+1d6 force</small></span></div>
+          <div class="tog"><i></i><span>Stunning Strike <small>1 Focus Point · DC 14</small></span></div>
+          <div class="btns"><span class="btn primary big">Roll damage</span></div></div></div>
+      <div class="frame"><div class="k"><i>4</i> Apply</div>
+        <div class="ui"><div class="steps"><span class="done"></span><span class="done"></span><span class="done"></span><span class="now"></span><span></span></div><div class="step-names"><span>Before</span><span>Hit</span><span>Damage</span><span class="now">Apply</span></div>
+          <div class="res"><div class="die dmg">12</div><div><div class="big">12 <small>damage</small></div><div class="line">6 +4 · <span class="added">HM 2</span></div></div></div>
+          <div class="btns"><span class="btn primary big">Apply to Enemy 1</span></div></div></div>
+    </div>
+    <div class="pros">
+      <div class="pro good"><b>Good at</b><ul><li>The clearest for someone new: one decision at a time, nothing missed.</li><li>Damage is only rolled after a hit, as at a real table.</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>The most presses for an experienced player.</li><li>"Hit or miss" asks the player for the DM's ruling, an extra step every attack.</li></ul></div>
+    </div>
+  </section>
+
+  <hr class="sep">
+
+  <!-- D -->
+  <section id="d">
+    <div class="opt-head"><h2>D. A roll dock</h2><span class="presses"><b>3</b> presses</span></div>
+    <p>A dock at the bottom of Battle (the edge on a computer) holds the next roll, the way a game's action bar does. Pressing +7 <b>loads</b> the attack into the dock; its chips are what can change it (Advantage, Hunter's Mark, Bless's d4 from someone else). One big <b>Roll</b>; results stack above it, newest on top, each with its next step. The dock stays: the next roll loads in the same place.</p>
+    <div class="frames">
+      <div class="frame"><div class="k"><i>1</i> Press +7: loaded in the dock</div>
+        <div class="dock"><div class="dock-h"><b>Unarmed Strike · d20 +7 · 1d8+4</b><span class="sub">✕</span></div>
+          <div class="chipline"><span class="chip">Advantage</span><span class="chip">Disadvantage</span><span class="chip on">+1d6 Hunter's Mark</span><span class="chip">+ die</span></div>
+          <div class="btns"><span class="btn primary big">Roll</span></div></div></div>
+      <div class="frame"><div class="k"><i>2</i> Roll: the result stacks above</div>
+        <div class="stack"><div class="mini"><span>Unarmed Strike · to hit</span><b>20</b></div>
+          <div class="mini"><span>Damage (with HM)</span><b>12</b></div></div>
+        <div class="dock"><div class="dock-h"><b>Next for this attack</b></div>
+          <div class="btns"><span class="btn primary">Apply to Enemy 1</span><span class="btn cost">Stunning Strike</span><span class="btn ghost">Missed</span></div></div></div>
+      <div class="frame"><div class="k"><i>3</i> The next roll, same place</div>
+        <div class="stack"><div class="mini dim"><span>Unarmed Strike → Enemy 1</span><b>12</b></div></div>
+        <div class="dock"><div class="dock-h"><b>Flurry of Blows · d20 +7</b><span class="sub">1 Focus Point</span></div>
+          <div class="chipline"><span class="chip on">+1d6 Hunter's Mark</span><span class="chip">Advantage</span></div>
+          <div class="btns"><span class="btn primary big">Roll</span></div></div></div>
+    </div>
+    <div class="pros">
+      <div class="pro good"><b>Good at</b><ul><li>A phone: everything under your thumb, the page never covered by a window.</li><li>A turn of several attacks reads as one stack.</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>The biggest change: a new strip on Battle, and Table rolls and the dock both list rolls.</li><li>Less room for Battle's columns on a phone while it's open.</li></ul></div>
+    </div>
+  </section>
+
+  <hr class="sep">
+
+  <section>
+    <h2>Side by side</h2>
+    <div class="table-scroll">
+      <table>
+        <tr><th></th><th>Presses (this attack)</th><th>A check or save</th><th>Riders</th><th>Damage on a miss</th><th>Change from today</th></tr>
+        <tr><td><b>Today</b></td><td class="num">7</td><td>2 (window, Roll)</td><td>You add them yourself</td><td>Not rolled</td><td>—</td></tr>
+        <tr><td><b>A. Roll at once</b></td><td class="num">3</td><td>1</td><td>Ticked in the damage step</td><td>Not rolled</td><td>Medium</td></tr>
+        <tr class="rec"><td><b>B. One attack card</b></td><td class="num">2–3</td><td>2 (card, Roll)</td><td>Before the roll if they always add, after a hit if chosen then</td><td>Rolled, set aside</td><td>Medium</td></tr>
+        <tr><td><b>C. Guided</b></td><td class="num">5</td><td>2</td><td>In their own step</td><td>Not rolled</td><td>Medium</td></tr>
+        <tr><td><b>D. Roll dock</b></td><td class="num">3</td><td>2</td><td>Chips on the dock</td><td>Rolled, set aside</td><td>Large</td></tr>
+      </table>
+    </div>
+    <div class="verdict">
+      <b>My recommendation: B, one attack card.</b>
+      <p>It turns an attack into one thing from start to finish, puts each rider where the rules put it (Hunter's Mark adds to every hit, so it's on before the roll; Stunning Strike and Divine Smite are chosen after a hit, so they're on the result), and keeps checks and saves as quick as they are now. It's also the shape the component needs anyway: a card drawn from the action's roll plan, so a spell attack, a save spell, a weapon with Sneak Attack and a creature's attack are all the same card with different steps. A's "roll at once" could be a setting on top later for experienced players.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your pick</h2>
+    <form class="answer" id="answer">
+      <div class="q"><b>Which flow?</b>
+        <div class="picks" role="radiogroup" aria-label="Which flow">
+          <label class="pick"><input type="radio" name="pick" value="A" id="p-a">A. Roll at once</label>
+          <label class="pick"><input type="radio" name="pick" value="B" id="p-b">B. One attack card</label>
+          <label class="pick"><input type="radio" name="pick" value="C" id="p-c">C. Guided</label>
+          <label class="pick"><input type="radio" name="pick" value="D" id="p-d">D. Roll dock</label>
+          <label class="pick"><input type="radio" name="pick" value="Mix" id="p-mix">A mix (say which)</label>
+        </div>
+      </div>
+      <div class="q"><b>Hunter's Mark while concentrating: ticked in by itself, or left for the player to tick?</b>
+        <div class="picks" role="radiogroup" aria-label="Riders ticked">
+          <label class="pick"><input type="radio" name="riders" value="Ticked" id="r-on">Ticked (it applies to every hit on the mark)</label>
+          <label class="pick"><input type="radio" name="riders" value="Unticked" id="r-off">Unticked</label>
+        </div>
+      </div>
+      <div class="q"><b>Anything else</b> <span class="note">(what you'd change in the one you pick)</span><textarea id="words" name="words" placeholder="Optional"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Submit</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const form = document.getElementById('answer'), said = document.getElementById('said'), send = document.getElementById('send');
+  let db = null;
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = 'Open this page signed in to claude.ai to send it.'; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try {
+      await db.collection('answers').doc('pick').set({ pick: f.get('pick') || '', riders: f.get('riders') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
+      said.textContent = 'Sent to Claude';
+    } catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    db = await claude.use('db');
+    if (!db) return;
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) return;
+      const a = d.data();
+      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = (r.name === 'pick' && r.value === a.pick) || (r.name === 'riders' && r.value === a.riders); });
+      document.getElementById('words').value = a.words || '';
+      said.textContent = 'Sent earlier: change it and Submit again if you like';
+    } catch (err) { /* nothing sent yet */ }
+  })();
+})();
+</script>

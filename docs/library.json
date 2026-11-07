@@ -817,5 +817,23 @@
   "what": "Every open feedback note from prod and staging with Claude's take, answered from a phone with Submit; the notes and replies live in the page's own store, never in its source.",
   "source": "docs/artifacts/feedback-replies.html",
   "link": "https://claude.ai/artifact/8q9SiAxV8ucTpZiRrsCdgY"
+ },
+ {
+  "title": "Component Scan",
+  "kind": "plan",
+  "status": "Waiting for Brett",
+  "date": "Nov 7",
+  "what": "What in askdnd repeats and is worth making into shared components, ranked: the action roll, the action window, pills and chips; the rest is already shared.",
+  "source": "docs/artifacts/component-scan.html",
+  "link": "https://claude.ai/artifact/YKUCThHN5drzWGigrN4axb"
+ },
+ {
+  "title": "Roll Workflow",
+  "kind": "design",
+  "status": "Waiting for Brett",
+  "date": "Nov 7",
+  "what": "Four ways the attack roll could work (roll at once, one attack card, guided, a roll dock), drawn for one attack with Hunter's Mark and Stunning Strike; Claude recommends the attack card.",
+  "source": "docs/mockups/roll-workflow/index.html",
+  "link": "https://claude.ai/artifact/KPVczF8JhgbCY7x1iUyVsJ"
  }
 ]

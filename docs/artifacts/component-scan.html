@@ -1,0 +1,255 @@
+<title>Component Scan</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column; a ranked list of candidates as cards, a table of the evidence, then the plan and an
+   answer form (db: Brett's answers, read back by Claude). askdnd's own dark look, light too. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0;
+  --green-soft: rgba(91,191,127,.14); --amber-soft: rgba(232,179,75,.14); --blue-soft: rgba(126,166,224,.14); --red-soft: rgba(229,83,75,.14);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e;
+  --green-soft: rgba(47,125,76,.11); --amber-soft: rgba(138,95,6,.11); --blue-soft: rgba(47,95,158,.11); --red-soft: rgba(184,50,50,.1); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e;
+  --green-soft: rgba(47,125,76,.11); --amber-soft: rgba(138,95,6,.11); --blue-soft: rgba(47,95,158,.11); --red-soft: rgba(184,50,50,.1); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); margin: 0; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.35rem; } h3 { font-size: 1.05rem; }
+p { margin: 0; max-width: 68ch; }
+b, strong { color: var(--strong); }
+code { font-size: .86em; background: var(--surface-2); border-radius: 4px; padding: 1px 5px; }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.note { color: var(--muted); font-size: .88rem; }
+section, header { display: grid; gap: 14px; min-width: 0; }
+.lead { font-size: 1.08rem; }
+.verdict { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
+.fact b { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.fact span { font-size: .82rem; color: var(--muted); }
+.cards { display: grid; gap: 12px; counter-reset: rank; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; min-width: 0; }
+.card-h { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+.card-h h3 { flex: 1 1 auto; min-width: 0; }
+.rank { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tag { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 9px; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+.t-now { background: var(--red-soft); color: var(--red); }
+.t-next { background: var(--amber-soft); color: var(--amber); }
+.t-later { background: var(--blue-soft); color: var(--blue); }
+.t-keep { background: var(--green-soft); color: var(--green); }
+.card dl { margin: 0; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 4px 12px; font-size: .9rem; }
+.card dt { color: var(--muted); }
+.card dd { margin: 0; min-width: 0; }
+.table-scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 560px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 700 .74rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+td.num { font-variant-numeric: tabular-nums; text-align: right; }
+ol.plan { margin: 0; padding-left: 1.3em; display: grid; gap: 10px; }
+ol.plan li { padding-left: 4px; }
+/* the answer form */
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.q { display: grid; gap: 8px; }
+.q > b { font-size: .95rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+label.chip { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.chip input { position: absolute; opacity: 0; pointer-events: none; }
+label.chip:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.chip:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 70px; font: 15px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { font: 600 15px var(--sans); background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; cursor: pointer; }
+button.send:disabled { opacity: .5; cursor: default; }
+button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2px; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · Nov 7</div>
+    <h1>What to make into components</h1>
+    <p class="lead">A scan of askdnd's pages for the pieces that repeat, which of them are worth making into one shared part, and in what order. You asked after the Hunter's Mark fix: the roll sequence first, and what else.</p>
+  </header>
+
+  <section>
+    <div class="verdict">
+      <b>My recommendation: three components, in this order.</b>
+      <p><b>1. The action roll</b> (everything from pressing an attack to the damage landing on the target), <b>2. the action window</b> (Cast, Use one, Rest, Give and the other eight windows that change a character), and <b>3. one set of pills and chips</b>. Everything else is already shared or isn't worth the churn. Each one gets a page on Manage › askdnd › Design system, which becomes the component library.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What "a component" means in askdnd</h2>
+    <p>One piece of the page, defined once, used everywhere it appears. In askdnd's stack that's four parts kept together: a template macro (what it draws), its styles, its bit of script (what it does when pressed), and the Python that decides what it shows. Today some pieces already work that way (the corner cards, the side panel, the list with filters). Others were built one at a time, so the same idea exists in several slightly different copies. Hunter's Mark is the example: a rule about extra damage on a hit had nowhere to live, because no single place owns "what happens when you attack".</p>
+    <p>The biggest win isn't tidier code. It's that the rules move into Python, where they can be tested. The roll window today is assembled from text inside the browser script, so a rule like "add Hunter's Mark to each hit" can only be checked by clicking.</p>
+  </section>
+
+  <section>
+    <h2>The scan in numbers</h2>
+    <div class="facts">
+      <div class="fact"><b>117</b><span>page templates</span></div>
+      <div class="fact"><b>4,688</b><span>lines of browser script (app.js)</span></div>
+      <div class="fact"><b>3,488</b><span>lines of styles (app.css)</span></div>
+      <div class="fact"><b>12</b><span>windows that change a character</span></div>
+      <div class="fact"><b>~10</b><span>kinds of pill or chip</span></div>
+      <div class="fact"><b>39</b><span>shared macros in one file (_char.html)</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The candidates, most valuable first</h2>
+    <div class="cards">
+      <article class="card">
+        <div class="card-h"><span class="rank">1</span><h3>The action roll</h3><span class="tag t-now">Do first</span></div>
+        <dl>
+          <dt>What it is</dt><dd>The whole sequence after you press an action: the roll window (Normal, Advantage, Disadvantage and why; who sees it; added dice), the dice, the result, then what follows: damage, reroll, add a die, Apply to the target, the target's Concentration save, a death save's mark, Hidden ending.</dd>
+          <dt>Today</dt><dd>About 450 lines of browser script build the window and result from text, deciding by the roll's kind and whether it's a follow-up. Each follow-up opens a fresh window. Riders (Hunter's Mark, Sneak Attack, Stunning Strike, Divine Smite) aren't part of it; they're a list under the columns you add up yourself.</dd>
+          <dt>As a component</dt><dd>The server describes each action's roll as a short <b>roll plan</b>: its steps (to hit, damage, a save), what can be added at each step and why (riders with their cost and when they apply), and what can follow. One component draws any plan. New rules become new entries in the plan, written in Python and tested, and every place that rolls gets them at once.</dd>
+          <dt>Why first</dt><dd>It's the most-used flow at the table, and the next fixes you've asked for (Hunter's Mark in the damage, riders after a hit) need it. That's why the roll workflow mockups come with this scan: pick the flow, then build the component around it.</dd>
+          <dt>Size</dt><dd>Large: about two sessions, plus moving the browser tests that cover rolling.</dd>
+        </dl>
+      </article>
+
+      <article class="card">
+        <div class="card-h"><span class="rank">2</span><h3>The action window</h3><span class="tag t-next">Next</span></div>
+        <dl>
+          <dt>What it is</dt><dd>The small window that changes a character: Cast, Use one and Give one back, Change coins, Give, Rest, Shift (Wild Shape), Ready, Prepare, Inspiration, using an item, and Hit Points.</dd>
+          <dt>Today</dt><dd>Twelve templates with the same shape (a title, what's left, a choice or two, a warning when the sheet can't be reached, buttons), and twelve server routes that each check the sheet can be reached, make the change, send it to D&amp;D Beyond and offer Undo. Undo is done three different ways.</dd>
+          <dt>As a component</dt><dd>One window shell and one server helper for "an action": check, change, send, and an Undo that works the same everywhere. A new action is then a few lines saying what it changes.</dd>
+          <dt>Why second</dt><dd>Cast already hands off to the roll ("Cast and roll"), so the two should meet cleanly. It also makes "say it where it starts" (the warning when D&amp;D Beyond can't be reached) impossible to forget.</dd>
+          <dt>Size</dt><dd>Medium: one session.</dd>
+        </dl>
+      </article>
+
+      <article class="card">
+        <div class="card-h"><span class="rank">3</span><h3>Pills and chips</h3><span class="tag t-next">Next, small</span></div>
+        <dl>
+          <dt>What it is</dt><dd>The small rounded labels and buttons: tags, conditions, spell chips, Wild Shape forms, roll chips, list filters, Concentration, the Part of link.</dd>
+          <dt>Today</dt><dd>About ten separate styles, each with its own size, corners and colours. That's why the Part of chip went oval (feedback 35) and why sizes drift from page to page.</dd>
+          <dt>As a component</dt><dd>One pill with a few variants: a label, a button, a toggle, and a condition with its colour and icon. Same height, corners and wrapping everywhere.</dd>
+          <dt>Size</dt><dd>Small: half a session, mostly styles. Low risk, and the layout tests at every width catch mistakes.</dd>
+        </dl>
+      </article>
+
+      <article class="card">
+        <div class="card-h"><span class="rank">4</span><h3>Pop-overs and folds</h3><span class="tag t-later">Later</span></div>
+        <dl>
+          <dt>What it is</dt><dd>Things that open in place: + Condition, a condition's pill, Concentration's pop-up, the table's ⋯ and Map ▾ menus, the phone folds (Resources, Wild Shape, pinned spells).</dd>
+          <dt>Today</dt><dd>Five ways of opening and closing, each with its own rule about clicks outside and Esc. The ⋯ menu that didn't open on the table was one of these.</dd>
+          <dt>As a component</dt><dd>One "opens in place" behaviour: a click outside or Esc closes it, the page waits to refresh while it's open, and it remembers itself on a phone where that matters.</dd>
+          <dt>Size</dt><dd>Small to medium. Worth doing once the action roll settles, since the roll window is one of these too.</dd>
+        </dl>
+      </article>
+
+      <article class="card">
+        <div class="card-h"><span class="rank">5</span><h3>Number tiles and rows</h3><span class="tag t-keep">Already shared: keep</span></div>
+        <dl>
+          <dt>What it is</dt><dd>Hit Points, AC, Speed and the other tiles (37 uses), and the rows on Battle and Sheet.</dd>
+          <dt>Today</dt><dd>Already macros used everywhere (<code>ntile</code>, <code>opt_row</code>, <code>ri</code>), with D&amp;D Beyond's sync marks built in. They work.</dd>
+          <dt>Recommendation</dt><dd>Leave them. Add each to the Design system page so they're documented with the rest.</dd>
+        </dl>
+      </article>
+
+      <article class="card">
+        <div class="card-h"><span class="rank">6</span><h3>Side panel, modal, corner cards, lists, pictures</h3><span class="tag t-keep">Already shared: keep</span></div>
+        <dl>
+          <dt>Today</dt><dd>Each is already one piece: the side panel and modal (one way to open, one way to refresh), corner cards (the one place for messages), the list with filters (ten pages), and the one Picture window. These are what the other components should look like when they're done.</dd>
+          <dt>Recommendation</dt><dd>Leave them. Document them on the Design system page.</dd>
+        </dl>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <h2>The evidence</h2>
+    <p class="note">Where each repeated piece shows up today.</p>
+    <div class="table-scroll">
+      <table>
+        <tr><th>Piece</th><th>Copies today</th><th>Where</th><th>Shared already?</th></tr>
+        <tr><td>Roll window and result</td><td class="num">1 big one</td><td>app.js "the roll window", "rolling", "showing a result"; follow-ups as new windows</td><td>Partly: one script, but rules live in browser text</td></tr>
+        <tr><td>Roll follow-ups</td><td class="num">6</td><td>Damage, reroll, add a die, Apply to, Concentration save, death save mark</td><td>No: each its own path</td></tr>
+        <tr><td>Riders on a hit</td><td class="num">1 list</td><td>Battle's On a hit: Sneak Attack, Stunning Strike, Brutal Strike, Hunter's Mark…</td><td>No: shown, never offered in the roll</td></tr>
+        <tr><td>Action windows</td><td class="num">12</td><td>Cast, Use one, Coins, Give, Rest, Shift, Ready, Prepare, Inspiration, item use, Hit Points (two)</td><td>Partly: shared buttons, separate logic</td></tr>
+        <tr><td>Undo after an action</td><td class="num">3 ways</td><td>Item use and Cast one way, resources and rests another, Shift a third</td><td>No</td></tr>
+        <tr><td>"Can't reach the sheet" warning</td><td class="num">9 routes</td><td>Each window checks for itself (a test makes sure they do)</td><td>Partly: one wording, separate checks</td></tr>
+        <tr><td>Pills and chips</td><td class="num">~10 styles</td><td>tag, chip, ls-chip, roll-chip, cond-pill, chip-link, ws-chip, spell-chip, fold button…</td><td>No</td></tr>
+        <tr><td>Pop-overs and folds</td><td class="num">5 ways</td><td>details folds, condition pills, Concentration, table menus, phone folds</td><td>Partly</td></tr>
+        <tr><td>Number tiles</td><td class="num">37 uses</td><td><code>ntile</code>, <code>hp_tile</code>, <code>battle_strip</code></td><td>Yes</td></tr>
+        <tr><td>Lists with filters</td><td class="num">10 pages</td><td><code>_lists.html</code></td><td>Yes</td></tr>
+        <tr><td>Corner cards</td><td class="num">40 messages</td><td><code>web.notice</code>, app.js <code>toast</code></td><td>Yes</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>How I'd do it</h2>
+    <ol class="plan">
+      <li><b>You pick the roll flow</b> from the mockups (the other page). That decides what the action roll component has to do.</li>
+      <li><b>The roll plan in Python, first</b>: every action on Battle gets its plan (steps, what can be added and why, what follows), tested against the party's four sheets the way Battle's columns are today. No visible change yet.</li>
+      <li><b>One component draws it</b>, in the flow you picked, replacing the roll window and its follow-ups. Hunter's Mark, Hex, Sneak Attack and the other riders appear where the flow puts them. The browser tests that roll move over and grow.</li>
+      <li><b>The Design system page becomes the library</b>: each component with a live example and where it's used, starting with the action roll.</li>
+      <li><b>Then the action window, then pills</b>, each a pull request of its own, tried on your local copy and on prod's VTT test like everything else.</li>
+    </ol>
+    <p class="note">This would slot in before the rest of askdnd's own table, since the table's fight uses the same rolls.</p>
+  </section>
+
+  <section>
+    <h2>Your answer</h2>
+    <form class="answer" id="answer">
+      <div class="q"><b>The order: action roll, action window, pills</b>
+        <div class="chips" role="radiogroup" aria-label="The order">
+          <label class="chip"><input type="radio" name="order" value="Agree" id="o-agree">Agree</label>
+          <label class="chip"><input type="radio" name="order" value="Change it" id="o-change">Change it</label>
+          <label class="chip"><input type="radio" name="order" value="Only the action roll for now" id="o-roll">Only the action roll for now</label>
+        </div>
+      </div>
+      <div class="q"><b>Make the Design system page the component library?</b>
+        <div class="chips" role="radiogroup" aria-label="The library">
+          <label class="chip"><input type="radio" name="library" value="Yes" id="l-yes">Yes</label>
+          <label class="chip"><input type="radio" name="library" value="A page of its own" id="l-own">A page of its own</label>
+        </div>
+      </div>
+      <div class="q"><b>Anything to add</b><textarea id="words" name="words" placeholder="Optional"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Submit</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const form = document.getElementById('answer'), said = document.getElementById('said'), send = document.getElementById('send');
+  let db = null;
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = 'Open this page signed in to claude.ai to send it.'; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try {
+      await db.collection('answers').doc('scan').set({ order: f.get('order') || '', library: f.get('library') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
+      said.textContent = 'Sent to Claude';
+    } catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    db = await claude.use('db');
+    if (!db) return;
+    try {
+      const d = await db.collection('answers').doc('scan').get();
+      if (!d.exists) return;
+      const a = d.data();
+      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = (r.name === 'order' && r.value === a.order) || (r.name === 'library' && r.value === a.library); });
+      document.getElementById('words').value = a.words || '';
+      said.textContent = 'Sent earlier: change it and Submit again if you like';
+    } catch (err) { /* nothing sent yet */ }
+  })();
+})();
+</script>
