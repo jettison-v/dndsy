@@ -257,6 +257,7 @@
     f.setSelectionRange(caret, caret);
     closeMention();
     f.focus();
+    f.dispatchEvent(new CustomEvent('askdnd:mention', { bubbles: true, detail: { name: item.name } }));  // (Describe it: its picture to go by)
   }
 
   document.addEventListener('input', e => {
@@ -4666,3 +4667,22 @@
     if (pic && !pic.dataset.bigChecked) { pic.dataset.bigChecked = '1'; if (big(pic)) pic.classList.add('pic-can-big'); }
   });
 })();
+
+// ---------------------------------------------------------------- Describe it: pictures to go by
+// A name picked with @ in Describe it that has a picture joins "Pictures to go by", ticked (feedback 36, Nov 7); the
+// server says whether it has one this person may send (/pictures/ref). A relative's are listed already, unticked.
+document.addEventListener('askdnd:mention', e => {
+  const form = e.target.closest && e.target.closest('.pw-draw-form');
+  const box = form && form.querySelector('[data-pw-refs]');
+  if (!box) return;
+  fetch('/pictures/ref?for=' + encodeURIComponent(box.dataset.for) + '&name=' + encodeURIComponent(e.detail.name))
+    .then(r => (r.status === 200 ? r.text() : ''))
+    .then(html => {
+      if (!html) return;
+      const t = document.createElement('template'); t.innerHTML = html.trim();
+      const row = t.content.firstElementChild, had = row && box.querySelector('[data-pw-ref="' + row.dataset.pwRef + '"]');
+      if (had) { had.querySelector('input').checked = true; return; }
+      if (row) { box.append(row); box.hidden = false; }
+    })
+    .catch(() => {});
+});

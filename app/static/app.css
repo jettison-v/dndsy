@@ -3475,3 +3475,11 @@ img.pic-can-big { cursor: zoom-in; }
 dialog.pic-big { padding: 0; border: 0; background: transparent; max-width: 94vw; max-height: 90vh; cursor: zoom-out; }
 dialog.pic-big::backdrop { background: color-mix(in srgb, var(--backdrop-dark) 78%, transparent); }
 dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: auto; height: auto; object-fit: contain; border-radius: var(--r-md); }
+
+/* Describe it's pictures to go by (feedback 34, 36) */
+.pw-refs { display: grid; gap: var(--sp-2); margin: 0; padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); }
+.pw-refs legend { padding: 0 var(--sp-1); font-size: var(--fs-sm); }
+.pw-ref { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); cursor: pointer; }
+.pw-ref img { width: 32px; height: 32px; border-radius: var(--r-sm); object-fit: cover; border: 1px solid var(--line); }
+.pw-at { margin: 0; }
+

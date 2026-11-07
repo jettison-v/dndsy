@@ -123,3 +123,37 @@ def test_a_characters_d_and_d_beyond_portrait_can_be_a_picture_to_match(people, 
 
     characters.refresh(db, cole, fetch=lambda i: {**COLE, "decorations": {"avatarUrl": "https://evil.example/x.jpg"}})
     assert "portrait:" not in dm.get("/c/main/manage/settings").text.split('id="art-style"')[1].split("</section>")[0]
+
+
+def test_describe_it_goes_by_a_relatives_picture_and_one_named_with_at(people, db, openai):
+    """Feedback 34 and 36 (Brett, Nov 7): Describe it offers a relative's picture (unticked) so family looks related, and
+    an entry named with @ that has a picture (ticked); only the ticked ones go to OpenAI, each said for what it is, and
+    never one the person may not see or another campaign's."""
+    from app import relations
+    from app.models import Status
+
+    import_bundle(db, {**BUNDLE, "entities": BUNDLE["entities"] + [{"kind": "npc", "name": "Mira"}, {"kind": "npc", "name": "Sorrow"}]})
+    dm = people["dm"]
+    k, w, mira, sorrow = (entity(db, n) for n in ("Kieran", "Womford", "Mira", "Sorrow"))
+    for e in (k, w, sorrow):
+        dm.post("/pictures/upload", data={"for": f"entity:{e.id}"}, files={"file": ("p.png", png(), "image/png")}, headers=HX)
+    relations.add(db, k, "parent_of", mira)  # (Mira's father Kieran has a picture: hers can look like him)
+    relations.add(db, sorrow, "sibling_of", mira)
+    sorrow.status = Status.DRAFT  # (a hidden entry is still the DM's to go by; a player never sees it offered)
+    db.flush()
+    win = dm.get(f"/pictures?for=entity:{mira.id}").text
+    assert 'name="like" value="%d"' % k.id in win and "Parent" in win and 'name="like" value="%d" checked' % k.id not in win
+    assert 'name="like" value="%d"' % sorrow.id in win
+    # @Womford: its picture joins, ticked; a name without a picture, or the entry itself, doesn't
+    row = dm.get(f"/pictures/ref?for=entity:{mira.id}&name=Womford")
+    assert row.status_code == 200 and f'name="ref" value="{w.id}" checked' in row.text
+    assert dm.get(f"/pictures/ref?for=entity:{mira.id}&name=Mira").status_code == 204
+    assert dm.get(f"/pictures/ref?for=entity:{mira.id}&name=Nobody").status_code == 204
+    dm.post("/pictures/draw", data={"for": f"entity:{mira.id}", "words": "Mira, a young sailor", "like": [str(k.id)], "ref": [str(w.id), "999999"]}, headers=HX)
+    call = openai[-1]
+    assert call["path"] == "edits" and len(call["files"]) == 2
+    assert "Picture 1 shows Kieran, family of this subject" in call["fields"]["prompt"]
+    assert "Picture 2 shows Womford as it looks in this campaign" in call["fields"]["prompt"] and "painting style" not in call["fields"]["prompt"]
+    # Unticked, nothing is sent
+    dm.post("/pictures/draw", data={"for": f"entity:{mira.id}", "words": "Mira"}, headers=HX)
+    assert openai[-1]["path"] == "generations" and not openai[-1]["files"]
