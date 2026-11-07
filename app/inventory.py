@@ -1,7 +1,7 @@
 """Inventory in play (roadmap 1.5): equip, attune and coins, through the bridge. An item's count and charges are counted
 in app/resources.py, using one in app/item_use.py.
 
-An item's side panel has Equip, Attune and Move to (another of your bags, or carried); Sheet › Items has Change coins. D&D Beyond keeps all of it, and what it does to
+An item's side panel has Equip, Attune and Move to (another of your bags, or carried); Sheet › Items' purse opens the Coins window (app/coins.py: carried and in bags, Spend · Gain · Move). D&D Beyond keeps all of it, and what it does to
 a character's numbers (AC, spells from an item) comes back with its next read. Attunement stops at 3, as the rules do.
 """
 
@@ -9,13 +9,12 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app import ddb_bridge, web
+from app import coins, ddb_bridge, web
 from app.db import get_db
 from app.item_use import _guard as _player, _sheet
 from app.templating import templates
 
 router = APIRouter()
-COINS = ("cp", "sp", "ep", "gp", "pp")
 
 
 def _guard(db: Session, request: Request, character_id: int):
@@ -81,29 +80,73 @@ def move(request: Request, character_id: int, item_id: int, to: str = Form(""), 
     return _set(db, ch, f"container:{item_id}", value, f"{it['name']} {where}")
 
 
+DOING = ("spend", "gain", "move")
+
+
 @router.get("/characters/{character_id:int}/coins")
-def coins_window(request: Request, character_id: int, db: Session = Depends(get_db)):
-    """What Change coins opens, in the roll window."""
+def coins_window(request: Request, character_id: int, do: str = "spend", db: Session = Depends(get_db)):
+    """The Coins window, in the roll window: Spend, Gain or Move (docs/mockups/coins/, Brett chose A). A place is chosen
+    only once a bag holds coins: until then it's carried coins, as before."""
     ch, _ = _guard(db, request, character_id)
-    return templates.TemplateResponse(request, "_coins_window.html", {"c": ch, "has": _sheet(db, ch).get("currency") or {}, "bags": _sheet(db, ch).get("bag_coins") or [], "coins": COINS,
-                                                                      "reachable": ddb_bridge.reachable(ch)})
+    sheet = _sheet(db, ch)
+    every = coins.places(sheet)
+    holding = [p for p in every if p["has"]]
+    bags_hold = any(p["key"] != coins.CARRIED for p in holding)
+    do = do if do in DOING and (do != "move" or len(every) > 1) else "spend"
+    pick = holding if do == "spend" else [p for p in every if p["key"] == coins.CARRIED or p["has"]]
+    return templates.TemplateResponse(request, "_coins_window.html", {
+        "c": ch, "do": do, "every": every, "holding": holding, "pick": pick if bags_hold else [], "can_move": len(every) > 1,
+        "coins": coins.LARGEST, "reachable": ddb_bridge.reachable(ch),
+        "data": {p["key"]: {"name": p["name"], "coins": p["coins"]} for p in every}})
+
+
+def _amount(coin: str, amount: str) -> int:
+    n = int(amount) if amount.isdigit() else 0
+    if coin not in coins.COINS or not 0 < n <= coins.MOST:
+        raise HTTPException(409, "Enter how many coins.")
+    return n
 
 
 @router.post("/characters/{character_id:int}/coins")
-def coins(request: Request, character_id: int, to: str = Form("spend"), coin: str = Form("gp"), amount: str = Form(""), db: Session = Depends(get_db)):
-    """Spend or gain coins (Undo is the other of the two)."""
+def change_coins(request: Request, character_id: int, to: str = Form("spend"), coin: str = Form("gp"), amount: str = Form(""),
+                 place: str = Form(coins.CARRIED), source: str = Form("", alias="from"), into: str = Form(""), deltas: str = Form(""),
+                 db: Session = Depends(get_db)):
+    """Spend or gain coins in one place, move them between two, or undo one of those (its corner card's Undo). One
+    change for D&D Beyond whatever it takes (app/coins.py): spending a coin the place hasn't got makes change."""
     ch, _ = _guard(db, request, character_id)
     ddb_bridge.reach(ch)
-    n = int(amount) if amount.isdigit() else 0
-    if coin not in COINS or to not in ("spend", "gain") or not 0 < n <= 100000:
-        raise HTTPException(409, "Enter how many coins.")
-    if to == "spend" and n > (_sheet(db, ch).get("currency") or {}).get(coin, 0):
-        raise HTTPException(409, f"{ch.name} doesn't have {n:,} {coin}.")
-    numbers = ddb_bridge.numbers(ch)
-    made = ddb_bridge._change(numbers, {"kind": "use", "field": f"coin:{coin}", "delta": n if to == "gain" else -n})
-    if not made:
-        raise HTTPException(409, "That isn't a change askdnd can make on D&D Beyond.")
-    ddb_bridge.add(db, ch, *made, f"{ch.name}: {ddb_bridge.describe(*made, numbers)}")
+    sheet = _sheet(db, ch)
+    if to == "undo":
+        back = coins.checked(sheet, deltas)
+        if back is None:
+            raise HTTPException(409, "That can't be undone here.")
+        return _made(db, ch, back, "Undone", undo=False)
+    n = _amount(coin, amount)
+    if to == "move":
+        a, b = coins.place(sheet, source), coins.place(sheet, into)
+        if a is None or b is None or a is b or a["key"] == b["key"]:
+            raise HTTPException(409, "Pick where the coins come from and where they go.")
+        if a["coins"][coin] < n:
+            raise HTTPException(409, f"{a['name']} has {a['coins'][coin]:,} {coin}.")
+        return _made(db, ch, {coins.field(a["key"], coin): -n, coins.field(b["key"], coin): n}, f"Moved {n:,} {coin} from {_where(a)} to {_where(b)}")
+    here = coins.place(sheet, place)
+    if here is None or to not in ("spend", "gain"):
+        raise HTTPException(409, "That bag isn't one of yours.")
+    whose = "" if here["key"] == coins.CARRIED else (" from " if to == "spend" else " into ") + here["name"]
+    if to == "gain":
+        return _made(db, ch, {coins.field(here["key"], coin): n}, f"Gained {n:,} {coin}{whose}")
+    spent = coins.spend(here, coin, n)
+    if spent is None:
+        raise HTTPException(409, f"{ch.name} doesn't have {n:,} {coin}" + ("" if here["key"] == coins.CARRIED else f" in {here['name']}") + ", even making change.")
+    return _made(db, ch, spent, f"Spent {n:,} {coin}{whose}{coins.made_change(spent, coin)}")
+
+
+def _where(p: dict) -> str:
+    return "carried" if p["key"] == coins.CARRIED else p["name"]
+
+
+def _made(db: Session, ch, deltas: dict, said: str, undo: bool = True) -> JSONResponse:
+    coins.make(db, ch, deltas, said[0].lower() + said[1:])
     db.commit()
-    return JSONResponse({"text": f"{'Gained' if to == 'gain' else 'Spent'} {n:,} {coin}", "undo": {"to": "spend" if to == "gain" else "gain", "coin": coin, "amount": n},
-                         "undoUrl": f"/characters/{ch.id}/coins", "deliver": web.deliver_now(ch)})
+    return JSONResponse({"text": said, **({"undo": coins.undo_of(deltas), "undoUrl": f"/characters/{ch.id}/coins"} if undo else {}),
+                         "deliver": web.deliver_now(ch)})

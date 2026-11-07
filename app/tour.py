@@ -183,8 +183,9 @@ STOPS = [
      "at": '[data-tour="sheet"] button.pick.remind',
      "what": "The <b>bell</b> on a row adds it to the Reminders you just saw on Battle.", "why": "For the things that are easy to miss mid-fight: an Advantage, a resistance, a feature you rarely use."},
     {"group": "character", "title": "Inventory", "page": "sheet", "needs": "sync", "open": '[data-tab="t-items"]', "at": "#t-items .purse",
-     "what": "Inventory starts with your coin purse: press it to change coins. <b>+ Add item</b> browses D&D Beyond's items, "
-             "says what one would mean for you, and can pay from the purse. Open an item to equip, attune, use or give it.",
+     "what": "Inventory starts with your coin purse, every coin you have, in bags too: press it to spend, gain or move coins "
+             "between bags. <b>+ Add item</b> browses D&D Beyond's items, says what one would mean for you, and can pay "
+             "from the purse. Open an item to equip, attune, use or give it.",
      "why": "All of it lands on your D&D Beyond sheet. A magic item's price is the DM's call."},
     {"group": "plan", "title": "Battle combos", "page": "plan", "needs": "character", "open": '[data-tab="t-combo"]',
      "at": '[data-tour="plan"]',

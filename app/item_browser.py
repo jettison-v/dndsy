@@ -10,22 +10,20 @@ agrees. Not yet: homebrew, an item changed for the campaign, and the DM's shops,
 (docs/mockups/item-browser/ board 4).
 """
 
-import re
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app import ddb_bridge, item_fit, picks, realtime, web
+from app import coins as purse_coins, ddb_bridge, item_fit, picks, realtime, web
 from app.auth import current_user, is_admin, is_dm
 from app.db import get_db
-from app.giving import COINS, catalog
+from app.coins import COINS, money, parse_money
+from app.giving import catalog
 from app.item_use import _sheet
 from app.models import Character
 from app.templating import templates
 
 router = APIRouter()
-CP = {"cp": 1, "sp": 10, "ep": 50, "gp": 100, "pp": 1000}
 RARITY_ORDER = ("Not magic", "Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact", "Varies")
 
 
@@ -40,51 +38,6 @@ def _mode(db: Session, request: Request, character_id: int) -> tuple[Character, 
     if is_admin(user) or is_dm(user, ch.campaign_id):
         return ch, user, "loot"
     raise HTTPException(404)
-
-
-def money(cp: int) -> str:
-    """Copper pieces in coins as the books write them: 150 → "1 gp 5 sp"."""
-    out = []
-    for coin in ("gp", "sp", "cp"):
-        n, cp = divmod(cp, CP[coin])
-        if n:
-            out.append(f"{n:,} {coin}")
-    return " ".join(out) or "0 gp"
-
-
-def parse_money(text: str) -> int | None:
-    """What a player typed to pay, in copper: "2 gp 1 sp", "21 sp", "2.5 gp", "3" (gold), "" (nothing). None: not money."""
-    text = (text or "").strip().lower().replace(",", "")
-    if not text:
-        return 0
-    if re.fullmatch(r"\d+(\.\d+)?", text):
-        return round(float(text) * 100)
-    parts = re.findall(r"(\d+(?:\.\d+)?)\s*(pp|gp|ep|sp|cp)", text)
-    if not parts or re.sub(r"(\d+(?:\.\d+)?)\s*(pp|gp|ep|sp|cp)", "", text).strip():
-        return None
-    return round(sum(float(n) * CP[c] for n, c in parts))
-
-
-def pay_from(purse: dict, cp: int) -> dict | None:
-    """The purse after paying `cp` copper, or None when it holds too little. Counted out as you would, the largest
-    coins that fit first; when what's left is less than any coin still there, the smallest of them is broken and the
-    change comes back in gold, silver and copper."""
-    have = {c: int(purse.get(c) or 0) for c in COINS}
-    if sum(have[c] * CP[c] for c in COINS) < cp:
-        return None
-    left = cp
-    for c in ("pp", "gp", "ep", "sp", "cp"):
-        use = min(have[c], left // CP[c])
-        have[c] -= use
-        left -= use * CP[c]
-    if left:  # (every coin left is worth more than what's still owed)
-        c = next(c for c in ("cp", "sp", "ep", "gp", "pp") if have[c])
-        have[c] -= 1
-        change = CP[c] - left
-        for k in ("gp", "sp", "cp"):
-            n, change = divmod(change, CP[k])
-            have[k] += n
-    return have
 
 
 # For the character (feedback 13, Brett, Nov 4: "filter by whether you are proficient and can use the item"): the row's
@@ -124,8 +77,10 @@ def browse(request: Request, character_id: int, db: Session = Depends(get_db)):
               {"key": "attune", "label": "Attunement", "values": ["Needs attunement", "No attunement"]},
               {"key": "book", "label": "Book", "values": sorted({r["f"]["book"] for r in rows if r["f"]["book"]}), "more": True}]
     bags = [b for b in sheet.get("inventory") or [] if b.get("bag") and b["key"].startswith("item:")]
+    holding = [p for p in purse_coins.places(sheet) if p["has"]]  # (Pay from: a choice once a bag holds coins too)
     return templates.TemplateResponse(request, "_item_browser.html", {
-        "c": ch, "mode": mode, "rows": rows, "groups": groups, "bags": bags, "sheet": sheet, "coins": COINS,
+        "c": ch, "mode": mode, "rows": rows, "groups": groups, "bags": bags, "sheet": sheet, "coins": purse_coins.LARGEST,
+        "pay_places": holding if any(p["key"] != purse_coins.CARRIED for p in holding) else [],
         "reachable": ddb_bridge.reachable(ch), "loaded": bool(rows)})
 
 
@@ -162,16 +117,18 @@ def add(request: Request, character_id: int, body=web.JsonBody, db: Session = De
     bag = next((b for b in sheet.get("inventory") or [] if b.get("bag") and b["key"] == f"item:{into}"), None) if into else None
     if into and bag is None:
         raise HTTPException(409, "That bag isn't one of yours.")
-    cp, paid, coins = 0, {}, None  # (worked out before anything's made, so a refusal makes nothing)
+    cp, paid, coins, payer = 0, {}, None, None  # (worked out before anything's made, so a refusal makes nothing)
     if mode == "add" and body.get("pay"):
         cp = parse_money(str(body.get("pay")))
         if cp is None:
             raise HTTPException(409, "Write what you pay as coins: 2 gp 1 sp, 21 sp or 2.1 gp.")
-        purse = sheet.get("currency") or {}
-        after = pay_from(purse, cp) if cp else purse
+        payer = purse_coins.place(sheet, str(body.get("from") or purse_coins.CARRIED))  # (Pay from: carried, or a bag)
+        if payer is None:
+            raise HTTPException(409, "That bag isn't one of yours.")
+        after = purse_coins.pay_from(payer["coins"], cp) if cp else payer["coins"]
         if after is None:
-            raise HTTPException(409, f"{ch.name} doesn't have {money(cp)}.")
-        paid = {c: after[c] - int(purse.get(c) or 0) for c in COINS if cp and after[c] != int(purse.get(c) or 0)}
+            raise HTTPException(409, f"{ch.name} doesn't have {money(cp)}" + ("." if payer["key"] == purse_coins.CARRIED else f" in {payer['name']}."))
+        paid = {purse_coins.field(payer["key"], c): after[c] - payer["coins"][c] for c in COINS if cp and after[c] != payer["coins"][c]}
     if mode == "loot" and str(body.get("amount") or "").strip():
         m, coin = str(body["amount"]).strip(), str(body.get("coin") or "gp")
         if not m.isdigit() or coin not in COINS or not 0 < int(m) <= 100000:
@@ -180,8 +137,7 @@ def add(request: Request, character_id: int, body=web.JsonBody, db: Session = De
     if not wanted and not coins:
         raise HTTPException(409, "Add something first: + on an item puts it in Adding.")
     numbers = ddb_bridge.numbers(ch)
-    changes = [ddb_bridge._change(numbers, {"kind": "use", "field": f"coin:{c}", "delta": d}) for c, d in
-               ([*paid.items()] + ([coins] if coins else []))]
+    changes = [ddb_bridge._change(numbers, {"kind": "use", "field": f"coin:{coins[0]}", "delta": coins[1]})] if coins else []
     if not all(changes):
         raise HTTPException(409, "That isn't a change askdnd can make on D&D Beyond.")
     said = []
@@ -190,12 +146,14 @@ def add(request: Request, character_id: int, body=web.JsonBody, db: Session = De
         data = {"definition": item["id"], "entityTypeId": item["entityTypeId"], "quantity": n, "name": item["name"], **({"container": int(into)} if bag else {})}
         ddb_bridge.add(db, ch, "add_item", data, f"{ch.name} got {what}" + (" from the DM" if mode == "loot" else ""))
         said.append(what)
+    if paid:
+        purse_coins.make(db, ch, paid, f"paid {money(cp)}" + ("" if payer["key"] == purse_coins.CARRIED else f" from {payer['name']}"))
     for made in changes:
-        ddb_bridge.add(db, ch, *made, f"{ch.name} paid {money(cp)}" if paid else f"{ch.name} got {coins[1]:,} {coins[0]} from the DM")
+        ddb_bridge.add(db, ch, *made, f"{ch.name} got {coins[1]:,} {coins[0]} from the DM")
     if coins:
         said.append(f"{coins[1]:,} {coins[0]}")
     realtime.announce(db, ch.campaign_id, "character", id=ch.id)
     db.commit()
     where = f" into {bag['name']}" if bag else ""
-    text = (f"{' and '.join(said)} to {ch.name}" if mode == "loot" else f"{ch.name} got {', '.join(said)}{where}" + (f", paid {money(cp)}" if paid else ""))
+    text = (f"{' and '.join(said)} to {ch.name}" if mode == "loot" else f"{ch.name} got {', '.join(said)}{where}" + (f", paid {money(cp)}" + ("" if payer["key"] == purse_coins.CARRIED else f" from {payer['name']}") if paid else ""))
     return JSONResponse({"text": text + ": on its way to D&D Beyond", "deliver": web.deliver_now(ch)})

@@ -33,25 +33,6 @@ def test_equip_goes_to_d_and_d_beyond(player, db, sheet):
     assert change.kind == "set" and change.data == {"field": f"equipped:{iid(it)}", "value": False}
 
 
-def test_coins_spend_gain_and_undo(player, db, sheet):
-    cole = char(db, "Cole")
-    sheet["currencies"] = {"gp": 50}
-    characters.refresh(db, cole)
-    assert "50 gp" in player.get(f"/characters/{cole.id}/coins").text
-    r = player.post(f"/characters/{cole.id}/coins", data={"to": "spend", "coin": "gp", "amount": "20"}).json()
-    assert r["text"] == "Spent 20 gp" and db.scalar(select(BridgeIntent)).data["delta"] == -20
-    assert player.post(r["undoUrl"], data=r["undo"]).json()["text"] == "Gained 20 gp"
-
-
-def test_you_cant_spend_what_you_havent_got(player, db, sheet):
-    cole = char(db, "Cole")
-    sheet["currencies"] = {"gp": 5}
-    characters.refresh(db, cole)
-    r = player.post(f"/characters/{cole.id}/coins", data={"to": "spend", "coin": "gp", "amount": "6"})
-    assert r.status_code == 409 and "doesn't have 6 gp" in r.json()["detail"]
-    assert player.post(f"/characters/{cole.id}/coins", data={"to": "spend", "coin": "xx", "amount": "1"}).status_code == 409
-
-
 def test_an_items_count_goes_down_as_its_used(player, db, sheet):
     cole = char(db, "Cole")
     inv = next(i for i in sheet["inventory"] if (i.get("quantity") or 0) > 1)

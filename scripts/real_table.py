@@ -416,36 +416,55 @@ def resource(t: Table, seat: str = "player3") -> None:
     undone(t, sheet, before, "giving it back restores D&D Beyond")
 
 
+def coins_window(page: Page, do: str, amount: int = 1, **picks: str) -> None:
+    """The Coins window on Sheet › Items (app/coins.py): its tab (Spend, Gain, Move), how many gold, the places, its button."""
+    tab = page.locator('[data-tab="t-items"]:visible').first
+    if tab.get_attribute("aria-selected") != "true":
+        tab.click(timeout=8000)
+    for tries in (1, 2):  # (Nov 4: the window opened and was gone before its button, with the page drawn again around it)
+        go(page, page.locator('[data-use-url$="/coins"]:visible').first)
+        try:
+            win = page.locator(".roll-win").first
+            if do != "spend":
+                win.locator(f'.coins-do [data-use-url$="do={do}"]').click(timeout=5000)
+                win.locator(f'[data-coins-go][data-to="{do}"]').wait_for(timeout=5000)
+            win.locator('input[name="amount"]').fill(str(amount), timeout=5000)
+            for name, value in picks.items():
+                win.locator(f'select[name="{name}"]').select_option(value, timeout=5000)
+            win.locator("[data-coins-go]").click(timeout=5000)
+            break
+        except PlaywrightTimeout:
+            if tries == 2:
+                raise
+            print("  the coins window closed before its button: opened again", flush=True)
+            page.wait_for_timeout(2000)
+    page.wait_for_timeout(1500)
+    page.keyboard.press("Escape")
+    page.wait_for_selector(".roll-win", state="detached", timeout=8000)  # (Nov 4: the next window opened while this
+    page.wait_for_timeout(1000)                                         # one closed, and the page swapped under it)
+
+
 def coins(t: Table, seat: str = "player3") -> None:
-    """Coins gained in askdnd land on D&D Beyond; spending them takes them off."""
+    """Coins gained in askdnd land on D&D Beyond; spending them takes them off; moving one into a bag puts it there (its
+    Backpack, kept on the sheet for this, Nov 7) and moving it back takes it out."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
     connects(t, page)
     before = record(sheet)
     page.goto(page.url.replace("/battle", ""), wait_until="domcontentloaded")
-    for to, what in (("gain", "the coin is on D&D Beyond"), ("spend", "spending it takes it off")):  # (the window both ways:
-        tab = page.locator('[data-tab="t-items"]:visible').first                                       # Undo's card is gone
-        if tab.get_attribute("aria-selected") != "true":                                                # after a few seconds)
-            tab.click(timeout=8000)
-        for tries in (1, 2):  # (Nov 4: the window opened and was gone before Spend, with the page drawn again around it)
-            go(page, page.locator('[data-use-url$="/coins"]:visible').first)
-            try:
-                page.locator('.roll-win input[name="amount"]:visible').first.fill("1", timeout=5000)
-                page.locator(f'.roll-win [data-use-go][data-to="{to}"]:visible').first.click(timeout=5000)
-                break
-            except PlaywrightTimeout:
-                if tries == 2:
-                    raise
-                print("  the coins window closed before its button: opened again", flush=True)
-                page.wait_for_timeout(2000)
-        if to == "gain":
-            changed(t, sheet, before, what)
-        else:
-            undone(t, sheet, before, what)
-        page.wait_for_timeout(1500)
-        page.keyboard.press("Escape")
-        page.wait_for_selector(".roll-win", state="detached", timeout=8000)  # (Nov 4: the next window opened while this
-        page.wait_for_timeout(1000)                                         # one closed, and the page swapped under it)
+    coins_window(page, "gain")
+    changed(t, sheet, before, "the coin is on D&D Beyond")
+    coins_window(page, "spend")
+    undone(t, sheet, before, "spending it takes it off")
+    bag = next((i for i in before["inventory"] if (i.get("definition") or {}).get("isContainer")), None)
+    if bag is None:
+        t.note(False, f"{seat}'s sheet has a bag to move coins into (docs/testing-setup.md)")
+        return
+    coins_window(page, "move", **{"from": "me", "into": str(bag["id"])})
+    t.expect("a gold moved into the bag is in it on D&D Beyond",
+             lambda: ((item(record(sheet), bag["id"]).get("currency") or {}).get("gp") or 0) == ((bag.get("currency") or {}).get("gp") or 0) + 1, SLOW)
+    coins_window(page, "move", **{"from": str(bag["id"]), "into": "me"})
+    undone(t, sheet, before, "moving it back puts it back")
 
 
 def spent(data: dict) -> int:

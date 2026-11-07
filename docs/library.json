@@ -848,9 +848,9 @@
  {
   "title": "Coins and Bags",
   "kind": "design",
-  "status": "Waiting for Brett",
+  "status": "Decided, built",
   "date": "Nov 7",
-  "what": "Feedback 52 and 53: spending and gaining from a chosen bag and moving coins between bags, three ways (tabs Spend · Gain · Move, place first, a purse table); Claude recommends the tabs.",
+  "what": "Feedback 52 and 53: spending and gaining from a chosen bag and moving coins between bags, three ways; Brett chose A (Spend · Gain · Move) and making change.",
   "source": "docs/mockups/coins/index.html",
   "link": "https://claude.ai/artifact/1UNyuBzQeULSvv8M967PbH"
  }

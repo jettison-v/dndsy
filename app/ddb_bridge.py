@@ -432,6 +432,14 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
                 continue
             vals[f] = new
             touched.append(f)
+        elif kind == "coins":  # coins spent, gained or moved (app/coins.py): every place's change or none of them
+            news = {f: get(f) + dlt for f, dlt in d["deltas"].items() if get(f) is not None}
+            short = next((f for f, v in news.items() if v < 0), None)
+            if len(news) < len(d["deltas"]) or short:
+                no(it, f"D&D Beyond has {ddb_fields.show(n['raw'], short, get(short))}: not enough." if short else "That bag isn't on D&D Beyond any more.")
+                continue
+            vals.update(news)
+            touched += list(news)
         elif kind == "death":  # a success or a failure (at most 3 of each), or back to none
             ds = get("death")
             if d.get("reset"):
@@ -551,6 +559,8 @@ def describe(kind: str, d: dict, n: dict) -> str:
         if d["field"].startswith("coin:"):
             return f"{many} {what} {'gained' if d['delta'] > 0 else 'spent'}"
         return f"{what}: {many} more used" if d["delta"] > 0 else f"{what}: {many} back"
+    if kind == "coins":
+        return d.get("said") or "coins changed"
     if kind == "death":
         return "Death Saving Throws back to none" if d.get("reset") else \
             f"a Death Saving Throw {'failure' if d.get('fail') else 'success'}" + (" (×2)" if max(d.get("fail", 0), d.get("success", 0)) > 1 else "")
@@ -604,6 +614,8 @@ def _mark(field: str) -> str:
         return "hp"
     if kind == "condition":
         return "cond:" + ddb_fields.CONDITIONS.get(int(arg), "")
+    if kind == "bagcoin":  # (the purse counts a bag's coins in with the carried ones: the coin's own mark)
+        return "coin:" + arg.rpartition(":")[2]
     return "cond:Exhaustion" if kind == "exhaustion" else field
 
 
@@ -1029,6 +1041,9 @@ def _every_change(n: dict) -> list[tuple[str, dict]]:
     thing = first("container:", lambda f, v: str(v) == str(raw.get("id")) and box and f[10:] != str(box["id"]))
     if box and thing:
         out.append(("set", {"field": thing, "value": box["id"]}))
+    spare = next((c for c in ("cp", "sp", "ep", "pp") if (now.get(f"coin:{c}") or 0) >= 1), None)  # (not gold: it's gained above)
+    if box and spare:  # a coin moved into a bag (app/coins.py)
+        out.append(("coins", {"deltas": {f"coin:{spare}": -1, f"bagcoin:{box['id']}:{spare}": 1}, "said": f"1 {spare} moved into a bag"}))
     return out
 
 
@@ -1861,7 +1876,7 @@ CONNECTIONS = [
     ("Limited uses (Resources, Wild Shape)", ("uses",), ("resource", "wild-shape"), "yes"),
     ("A Short Rest's Hit Point Dice", ("hitdice",), ("rests", "short-rest"), "yes"),
     ("Items: count, equipped, attuned, charges, moved", ("item", "equipped", "attuned", "charges", "container"), ("inventory", "give"), "yes"),
-    ("Coins", ("coin",), ("coins", "add-item"), "yes"),
+    ("Coins: carried and in bags, moved between them", ("coin", "bagcoin"), ("coins", "add-item"), "yes"),
     ("Adding an item (Add item, Give, Give loot)", ("add",), ("add-item", "give", "loot"), "yes"),
     ("Preparing spells", ("prep",), ("prepare",), "yes"),
     ("A creature's Hit Points and maximum", ("creature", "creature_max"), ("creature-hp",), "yes"),
