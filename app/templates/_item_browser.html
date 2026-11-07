@@ -69,7 +69,7 @@
       {% else %}
       <label class="ls-check"><input type="checkbox" data-ib-paying checked> Pay from the purse</label>
       <input class="ib-pay" type="text" data-ib-pay aria-label="What you pay" placeholder="0 gp" autocomplete="off" title="Starts at the book's price for ordinary gear; change it to whatever the DM agrees">
-      {{ purse(sheet, total=false) }}
+      {{ purse(sheet, total=false, bags=false) }}
       {% endif %}
       {% if reachable %}<button type="button" class="btn primary" data-ib-go disabled>{{ "Give" if loot else "Add" }}</button>{% endif %}
     </div>

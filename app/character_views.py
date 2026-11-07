@@ -624,7 +624,8 @@ def party_item_list(rows: list[dict]) -> dict:
 
 def party_coins(rows: list[dict]) -> int:
     rate = {"pp": 10, "gp": 1, "ep": 0.5, "sp": 0.1, "cp": 0.01}
-    return int(sum(v * rate.get(k, 0) for r in rows if r["sheet"] for k, v in r["sheet"]["currency"].items()))
+    purses = [p for r in rows if r["sheet"] for p in [r["sheet"]["currency"], *(b["coins"] for b in r["sheet"].get("bag_coins") or [])]]
+    return int(sum(v * rate.get(k, 0) for p in purses for k, v in p.items()))  # (bags' coins too: feedback 47)
 
 
 def granted_spells(sheet: dict) -> list[dict]:

@@ -85,7 +85,7 @@ def move(request: Request, character_id: int, item_id: int, to: str = Form(""), 
 def coins_window(request: Request, character_id: int, db: Session = Depends(get_db)):
     """What Change coins opens, in the roll window."""
     ch, _ = _guard(db, request, character_id)
-    return templates.TemplateResponse(request, "_coins_window.html", {"c": ch, "has": _sheet(db, ch).get("currency") or {}, "coins": COINS,
+    return templates.TemplateResponse(request, "_coins_window.html", {"c": ch, "has": _sheet(db, ch).get("currency") or {}, "bags": _sheet(db, ch).get("bag_coins") or [], "coins": COINS,
                                                                       "reachable": ddb_bridge.reachable(ch)})
 
 

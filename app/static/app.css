@@ -3151,6 +3151,7 @@ button.purse:hover .coin, button.purse:focus-visible .coin { background: var(--s
 .coin small { color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; }
 .coin-pp { background: var(--coin-pp); } .coin-gp { background: var(--coin-gp); } .coin-ep { background: var(--coin-ep); } .coin-sp { background: var(--coin-sp); } .coin-cp { background: var(--coin-cp); }
 .purse-sum { white-space: nowrap; }
+.purse-bag { flex-basis: 100%; font-size: var(--fs-xs); }  /* a bag's coins, counted in the purse (feedback 47) */
 .prep-foot { position: sticky; bottom: calc(-1 * var(--sp-4)); display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) 0; background: var(--surface); border-top: 1px solid var(--line); }
 .prep-foot-note { flex: none; white-space: nowrap; }  /* ("Prepare 2, drop 1" on one line; a longer sentence beside it wraps instead) */
 .prep-foot > .use-said { flex: 1 1 16em; min-width: 0; margin: 0; }
@@ -3456,5 +3457,5 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 /* A picture, large (app.js "a picture, large"; feedback 44) */
 img.pic-can-big { cursor: zoom-in; }
 dialog.pic-big { padding: 0; border: 0; background: transparent; max-width: 94vw; max-height: 90vh; cursor: zoom-out; }
-dialog.pic-big::backdrop { background: rgb(0 0 0 / .78); }
+dialog.pic-big::backdrop { background: color-mix(in srgb, var(--backdrop-dark) 78%, transparent); }
 dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: auto; height: auto; object-fit: contain; border-radius: var(--r-md); }

@@ -51,7 +51,12 @@ def test_coins_are_a_purse_with_the_total_in_gold(player, db):
     """Question 6: each coin in its metal, the total in gold; pressing it opens Change coins where the bridge works.
     Brett, 2026-11-02: small, at the right end of Items' toolbar."""
     cole = char(db, "Cole")
-    cur = characters.character_summary(cole)["currency"]
+    summary = characters.character_summary(cole)
+    cur = dict(summary["currency"])
+    for b in summary["bag_coins"]:  # (a bag's coins count too: feedback 47, Cole's 7,000 gp in his Bag of Holding)
+        for k, v in b["coins"].items():
+            cur[k] = cur.get(k, 0) + v
+    assert summary["bag_coins"] == [{"name": "Bag of Holding", "coins": {"gp": 7000}}]
     page = player.get(f"/characters/{cole.id}").text
     purse = page.split('class="purse"', 1)[1].split("</button>", 1)[0]
     for k, v in cur.items():
@@ -59,6 +64,8 @@ def test_coins_are_a_purse_with_the_total_in_gold(player, db):
     assert f'class="purse" data-use-url="/characters/{cole.id}/coins"' in page
     if len(cur) > 1:  # (on Sheet › Items the total is the purse's hover text, so the toolbar stays one line)
         assert "gp in all: Change coins" in purse
+    assert "In Bag of Holding: 7,000 gp" in purse
+    assert "In Bag of Holding: 7,000 gp (change a bag's coins on D&amp;D Beyond)" in player.get(f"/characters/{cole.id}/coins").text
 
 
 def test_an_item_on_its_way_is_marked_in_its_row(player, db):
