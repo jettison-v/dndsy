@@ -678,6 +678,14 @@ def fields_for(section: str, opt: dict | None) -> list[str]:
     return fields
 
 
+def sheet_actions(sheet: dict, star: set | None = None) -> list[dict]:
+    """Sheet's Actions tab: everything Battle offers except spells cast with an Action (those are on the Spells tab,
+    like D&D Beyond), keeping attack cantrips and every Bonus Action and Reaction spell (feedback 42, Nov 7: Trah's
+    Shield and Counterspell were on Battle but not here; tests/test_party_sheets.py keeps the two in step)."""
+    return [o for o in options(sheet, star)
+            if o["kind"] != "spell" or o.get("cost") in ("Bonus action", "Reaction") or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
+
+
 TURN_COSTS = ("Action", "Bonus action", "Reaction")
 OPTION_KINDS = (("attack", "Attacks"), ("feature", "Features"), ("spell", "Spells"), ("item", "Items"), ("rule", "Rules"))
 
