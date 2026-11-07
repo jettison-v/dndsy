@@ -24,8 +24,8 @@ from fastapi.responses import JSONResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app import files, pictures, spending, vtt, web
-from app.auth import current_user
+from app import files, mentions, pictures, spending, vtt, web
+from app.auth import current_user, is_admin
 from app.db import get_db
 from app.extraction import session_label
 from app.models import Entity, EntityKind, ExtractionRun, GameSession, Recap, Status
@@ -40,7 +40,6 @@ COST_PER_1K = float(os.getenv("OPENAI_TTS_COST_PER_1K_CHARS", "0.015"))  # an es
 STYLE = ("You are the narrator of a dark fantasy series reading its 'previously on'. Speak low, slow and ominous, with "
          "weight on names and dramatic pauses between sentences; never cheerful, never rushed.")
 CHUNK = 3800  # OpenAI reads at most 4096 characters at a time; longer recaps are read in parts, joined
-MOST_PICTURES = 3  # on screen at once, for one paragraph
 PIECE = "recap_listen"
 FETCH = None  # tests replace it: (text) -> mp3 bytes
 
@@ -55,7 +54,7 @@ def published(db: Session, session: GameSession) -> Recap | None:
 
 def paragraphs(body: str) -> list[str]:
     """The recap's paragraphs as plain words: what's read aloud and what's on screen."""
-    text = re.sub(r"<[^>]+>", " ", markdown_to_html(body or "", lambda _n: None).replace("</p>", "\n\n").replace("<br>", "\n"))
+    text = re.sub(r"<[^>]+>", "", markdown_to_html(body or "", lambda _n: None).replace("</p>", "\n\n").replace("<br>", "\n"))  # (no space where a link was: "Oakhurst,")
     return [p for p in (" ".join(html.unescape(x).split()) for x in text.split("\n\n")) if p]
 
 
@@ -101,10 +100,10 @@ def _parts(lines: list[str]) -> list[str]:
     return out + ([cur] if cur else [])
 
 
-def narrate(db: Session, session: GameSession, recap: Recap, campaign_name: str) -> str:
+def narrate(db: Session, session: GameSession, recap: Recap, campaign_name: str, again: bool = False) -> str:
     """The recap's narration, made now if it hasn't been: its key in file storage. The caller lets go of the database
-    first (reading takes OpenAI a little while)."""
-    if recap.narration_key:
+    first (reading takes OpenAI a little while). `again`: an admin's Re-record the voice, a new narration in its place."""
+    if recap.narration_key and not again:
         return recap.narration_key
     if not os.getenv("OPENAI_API_KEY") and FETCH is None:
         raise NarrationError("Listen isn't set up yet: askdnd needs an OpenAI key (an admin's step).")
@@ -131,40 +130,44 @@ def narrate(db: Session, session: GameSession, recap: Recap, campaign_name: str)
     return key
 
 
-def _names(db: Session, campaign_id: int) -> list[tuple[re.Pattern, int]]:
-    """Each World entry's names (its own and its other names, longest first) as a word match, with its id."""
-    out = []
-    for e in db.scalars(select(Entity).where(Entity.campaign_id == campaign_id, Entity.status == Status.PUBLISHED,
-                                             Entity.kind != EntityKind.QUEST).options(selectinload(Entity.aliases))):
-        for name in [e.name] + [a.alias for a in e.display_aliases]:
-            if len(name.strip()) >= 3:
-                out.append((re.compile(r"(?<!\w)" + re.escape(name.strip()) + r"(?!\w)", re.I), e.id))
-    out.sort(key=lambda x: -len(x[0].pattern))
-    return out
+PLACES = (EntityKind.PLACE,)
+PEOPLE = (EntityKind.PC, EntityKind.NPC, EntityKind.CREATURE)
+MOST_PEOPLE = 2  # portraits in front of the place, for one paragraph
+
+
+def _names(db: Session, campaign_id: int) -> tuple[dict[int, Entity], object]:
+    """The campaign's published people and places, and a finder for their names (app/mentions.py)."""
+    entries = {e.id: e for e in db.scalars(select(Entity).where(Entity.campaign_id == campaign_id, Entity.status == Status.PUBLISHED,
+                                                              Entity.kind.in_(PLACES + PEOPLE)).options(selectinload(Entity.aliases)))}
+    return entries, mentions.finder((n, e.id) for e in entries.values() for n in [e.name] + [a.alias for a in e.display_aliases])
 
 
 def tale(db: Session, session: GameSession, recap: Recap, campaign_name: str) -> dict:
-    """What the motion comic shows: the session's label and title, then each paragraph with the pictures of the
-    entries it names (the last ones shown carry on where a paragraph names no one with a picture) and its share of
-    the narration's length."""
+    """What the motion comic shows (Brett, Nov 6: the place as the backdrop): the session's label and title, then each
+    paragraph over a place, the one it names, else the last one named, else the recap's most named place, with the
+    portraits of up to two people it names in front (a paragraph naming no one shows just its place), and its share
+    of the narration's length."""
     lines = paragraphs(recap.body)
-    names = _names(db, session.campaign_id)
-    found = []
-    for line in lines:
-        ids = []
-        for pattern, eid in names:
-            if eid not in ids and pattern.search(line):
-                ids.append(eid)
-        found.append(ids)
-    shown = pictures.urls(db, {i for ids in found for i in ids})
-    slides, last = [], []
-    for line, ids in zip(lines, found):
-        pics = [{"src": shown[i]["full"], "pos": shown[i].get("pos") or "50% 30%"} for i in ids if i in shown][:MOST_PICTURES]
-        slides.append({"text": line, "pictures": pics or last, "weight": len(line)})
-        last = pics or last
+    entries, find = _names(db, session.campaign_id)
+    named = [[entries[i] for i in find(line)] for line in lines]
+    shown = pictures.urls(db, {e.id for es in named for e in es})
+    pic = lambda e: {"src": shown[e.id]["full"], "pos": shown[e.id].get("pos") or "50% 30%", "name": e.name}  # noqa: E731
+    counts = {}
+    for es in named:
+        for e in es:
+            if e.kind in PLACES and e.id in shown:
+                counts[e.id] = counts.get(e.id, 0) + 1
+    home = next((e for es in named for e in es if e.id == max(counts, key=counts.get)), None) if counts else None
+    slides, place = [], None
+    for line, es in zip(lines, named):
+        place = next((e for e in es if e.kind in PLACES and e.id in shown), place)
+        people = [pic(e) for e in es if e.kind in PEOPLE and e.id in shown][:MOST_PEOPLE]
+        backdrop = place or home
+        slides.append({"text": line, "place": pic(backdrop) if backdrop else None, "people": people, "weight": len(line)})
     intro = opening(campaign_name)
+    first = slides[0]["place"] if slides else (pic(home) if home else None)
     return {"label": session_label(session), "title": session.title or "", "intro": intro,
-            "slides": [{"text": "", "pictures": slides[0]["pictures"] if slides else [], "weight": len(intro), "intro": True}] + slides}
+            "slides": [{"text": "", "place": first, "people": [], "weight": len(intro), "intro": True}] + slides}
 
 
 def _here(request: Request, db: Session, session_id: int) -> tuple[dict | None, GameSession | None, Recap | None, Response | None]:
@@ -183,22 +186,26 @@ def _here(request: Request, db: Session, session_id: int) -> tuple[dict | None, 
 @router.get("/sessions/{session_id:int}/tale")
 def tale_route(request: Request, session_id: int, db: Session = Depends(get_db)):
     """The motion comic's pictures and words, and the narration's address when it's been made."""
-    _, s, recap, stop = _here(request, db, session_id)
+    user, s, recap, stop = _here(request, db, session_id)
     if stop:
         return stop
     out = tale(db, s, recap, web.campaign(db).name)
+    out["can_redo"] = is_admin(user)  # (Re-record the voice, in the player)
     out["audio"] = f"{web.base()}/sessions/{s.id}/narration?v={files.version(recap.narration_key)}" if recap.narration_key else ""
     return JSONResponse(out)
 
 
 @router.post("/sessions/{session_id:int}/narrate")
-def narrate_route(request: Request, session_id: int, db: Session = Depends(get_db)):
-    """Make the narration if it hasn't been made (the first Listen), and say where it is."""
-    _, s, recap, stop = _here(request, db, session_id)
+def narrate_route(request: Request, session_id: int, again: int = 0, db: Session = Depends(get_db)):
+    """Make the narration if it hasn't been made (the first Listen), and say where it is; `again=1`, an admin's
+    Re-record the voice, makes a new one in its place (Brett, Nov 6)."""
+    user, s, recap, stop = _here(request, db, session_id)
     if stop:
         return stop
+    if again and not is_admin(user):
+        return JSONResponse({"error": "Only an admin can have the voice recorded again."}, status_code=403)
     try:
-        key = narrate(db, s, recap, web.campaign(db).name)
+        key = narrate(db, s, recap, web.campaign(db).name, again=bool(again))
     except NarrationError as e:
         return JSONResponse({"error": str(e)}, status_code=503)
     return JSONResponse({"audio": f"{web.base()}/sessions/{s.id}/narration?v={files.version(key)}"})

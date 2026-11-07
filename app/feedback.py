@@ -34,8 +34,10 @@ from app.models import Feedback
 from app.templating import templates
 
 router = APIRouter()
-STATUSES = ("new", "question", "planned", "done", "deleted")
-LABELS = {"new": "New", "question": "Question for you", "planned": "Planned", "done": "Done", "deleted": "Deleted"}
+# "review": a note from someone at the table (not an admin) waits for an admin to approve it before Claude sees it
+# (Brett, Nov 6); approved, it's "new". Claude's queue (OPEN, /api/feedback) never holds a note waiting for approval.
+STATUSES = ("review", "new", "question", "planned", "done", "deleted")
+LABELS = {"review": "Waiting for you", "new": "New", "question": "Question for you", "planned": "Planned", "done": "Done", "deleted": "Deleted"}
 OPEN = ("new", "question", "planned")
 MAX_TEXT, MAX_HTML, MAX_CONTEXT = 4000, 3_000_000, 50_000
 IMAGE = re.compile(r"^data:(image/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$")
@@ -78,7 +80,13 @@ def _image(value) -> tuple[bytes, str] | None:
 
 
 def waiting(db: Session) -> int:
+    """Notes with Claude, not yet taken up."""
     return db.scalar(select(func.count()).select_from(Feedback).where(Feedback.status == "new")) or 0
+
+
+def for_you(db: Session) -> int:
+    """Notes waiting for an admin: the table's to approve, and Claude's questions."""
+    return db.scalar(select(func.count()).select_from(Feedback).where(Feedback.status.in_(("review", "question")))) or 0
 
 
 @router.post("/feedback")
@@ -110,11 +118,13 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
             except (files.FileError, files.StorageNotReady) as e:
                 context[f"{name}_left_out"] = str(e)
     me = picks.user_row(db, user)
+    admin = access.level(email) == access.ADMIN
     fb = Feedback(user_id=me.id if me else None, sender=sender[:300], text=text, url=str(body.get("url") or "")[:1000],
+                  status="new" if admin else "review",  # (the table's notes wait for an admin's approval)
                   context=context, html=str(body.get("html") or "")[:MAX_HTML], shot_key=keys.get("shot"), pasted_key=keys.get("pasted"))
     db.add(fb)
     db.commit()
-    return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db)})
+    return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": not admin})
 
 
 # ------------------------------------------------------------------ the queue (admins)
@@ -128,25 +138,27 @@ def _item(fb: Feedback, html: bool = False) -> dict:
 
 
 @router.get("/manage/feedback")
-def queue(request: Request, tab: str = "new", open: int = 0, db: Session = Depends(get_db)):  # noqa: A002 (the address's word)
+def queue(request: Request, tab: str = "", open: int = 0, db: Session = Depends(get_db)):  # noqa: A002 (the address's word)
     """Manage › askdnd › Feedback: every note, by where it stands."""
     _, denied = web.require(request, is_admin, "Feedback is for admins.")
     if denied:
         return denied
     counts = dict(db.execute(select(Feedback.status, func.count()).group_by(Feedback.status)).all())
-    tab = tab if tab in (*OPEN, "done", "all") else "new"
+    tab = tab if tab in ("review", *OPEN, "done", "all") else ("review" if counts.get("review") else "new")
     q = select(Feedback).order_by(Feedback.id.desc())
     q = q.where(Feedback.status != "deleted") if tab == "all" else q.where(Feedback.status == tab)
     return templates.TemplateResponse(request, "manage_feedback.html", {
         "items": list(db.scalars(q.limit(200))), "tab": tab, "open": open, "counts": counts, "labels": LABELS,
-        "tabs": [(t, LABELS.get(t, "All"), counts.get(t, 0) if t != "all" else None) for t in (*OPEN, "done", "all")],
+        "tabs": [(t, LABELS.get(t, "All"), counts.get(t, 0) if t != "all" else None) for t in ("review", *OPEN, "done", "all")
+                 if t != "review" or counts.get("review") or tab == "review"],
         "toast": request.session.pop("toast", None)})
 
 
 @router.post("/manage/feedback/{feedback_id:int}")
 def change(request: Request, feedback_id: int, to: str = Form(...), answer: str = Form(""), db: Session = Depends(get_db)):
     """Answer Claude's question, or add to a note any time (feedback 18, Brett, Nov 5: something forgotten): it's new
-    again for Claude, unless it's planned. Or move a note: planned, done, back to new, deleted."""
+    again for Claude, unless it's planned. Or move a note: planned, done, back to new, deleted. A note from the table
+    waiting for approval: Approve sends it to Claude (new), Delete drops it; adding to it approves it too."""
     _, denied = web.require(request, is_admin, "Feedback is for admins.")
     if denied:
         return denied
@@ -154,18 +166,21 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
     if to == "answer":
         if not answer.strip():
             raise HTTPException(400, "Write your answer first.")
-        asked = fb.status == "question"
+        asked, approving = fb.status == "question", fb.status == "review"
         fb.thread = [*(fb.thread or []), {"who": "you", "text": answer.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat()}]
         if fb.status != "planned":
             fb.status = "new"
-        said = "Answered: it's back with Claude" if asked else "Added to the note" + ("" if fb.status == "planned" else ": it's back with Claude")
+        said = ("Answered: it's back with Claude" if asked else "Added and approved: it's with Claude" if approving
+                else "Added to the note" + ("" if fb.status == "planned" else ": it's back with Claude"))
     elif to in ("new", "planned", "done", "deleted"):
-        fb.status, said = to, {"new": "Back to new", "planned": "Planned", "done": "Done", "deleted": "Deleted"}[to]
+        approved = fb.status == "review" and to == "new"
+        fb.status, said = to, {"new": "Approved: it's with Claude" if approved else "Back to new", "planned": "Planned", "done": "Done",
+                               "deleted": "Deleted"}[to]
     else:
         raise HTTPException(400)
     db.commit()
     request.session["toast"] = said
-    return RedirectResponse(f"{BACK}?tab={request.query_params.get('tab', 'new')}", status_code=303)
+    return RedirectResponse(f"{BACK}?tab={request.query_params.get('tab', '')}", status_code=303)
 
 
 def _missing():
