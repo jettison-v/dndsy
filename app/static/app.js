@@ -2629,9 +2629,20 @@
     setTimeout(() => {
       const n = away.rolls;
       away.on = false; away.rolls = 0;
-      if (n && current() === 'closed') toast(n + (n === 1 ? ' roll' : ' rolls') + ' while you were away', { label: 'Show', run: () => setState('open', !narrow()) }, 'info');
+      if (n && current() === 'closed') toast(n + (n === 1 ? ' roll' : ' rolls') + ' while you were away', { label: 'Show', run: () => showMissed(n) }, 'info');
     }, 1200);
   });
+  // Show on that card (feedback 46, Nov 7: it opened nothing Mark could see): Table rolls opened the way this screen
+  // shows it (a phone's full sheet), at the newest, with the rolls you missed marked for a moment
+  function showMissed(n) {
+    setState(phone.matches ? 'full' : 'open', !narrow() && !phone.matches);
+    if (!log) return;
+    log.scrollTop = 0;
+    [...log.querySelectorAll(':scope > .roll-item')].slice(0, n).forEach(li => {
+      li.classList.add('rs-missed');
+      setTimeout(() => li.classList.remove('rs-missed'), 6000);
+    });
+  }
   // Only polled rows move `lastId` on: your own roll can land before someone else's earlier one.
   let before = 0;
   if (log) log.addEventListener('htmx:beforeSwap', e => {

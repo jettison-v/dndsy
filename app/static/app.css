@@ -79,7 +79,7 @@ button { font: inherit; cursor: pointer; }
 img { max-width: 100%; }
 
 /* Top bar */
-.topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 5; }
+.topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 6; }  /* (over Table rolls, 5, so its menus open over it) */
 /* Staging (docs/SETUP_LOG.md › A staging copy): an amber menu bar and a Staging label, so it's never taken for the table's askdnd */
 body[data-staging] .topbar { background: var(--staging-bar); border-bottom-color: var(--staging-edge); }
 body[data-staging] .bottom-nav { background: var(--staging-bar); border-top: 2px solid var(--staging-edge); }
@@ -1621,7 +1621,7 @@ a.sheet-ref { text-decoration-style: dotted; }
    the page over (wide windows) or lies over it (narrower); closed, only the edge tab shows.
    Phones: a bottom sheet above the bottom bar. Under the side panel and windows (z-index 4). */
 .rolls-side { display: none; }
-body.at-table .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 4; left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: var(--chrome); border-right: 1px solid var(--line); transition: transform .25s ease, visibility 0s; }
+body.at-table .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 5; /* over a page's sticky tab bar (4): feedback 45 */ left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: var(--chrome); border-right: 1px solid var(--line); transition: transform .25s ease, visibility 0s; }
 body.at-table.rolls-open { --rolls-w: 340px; }
 @media (max-width: 1099px) and (min-width: 901px) { body.at-table.rolls-open { --rolls-w: 0px; } body.at-table.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
 body.at-table { padding-left: var(--rolls-w, 0); }
@@ -1689,7 +1689,8 @@ body.at-table.rolls-closed { --rolls-w: 0px; }
 body.rolls-snap .rolls-side { transition: none !important; }
 body.at-table.rolls-closed .rolls-side { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
 .rs-edge { display: none; }
-body.at-table.rolls-closed .rs-edge { position: fixed; z-index: 4; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 var(--r-md) var(--r-md) 0; }
+.rs-log > .roll-item.rs-missed { outline: 2px solid var(--amber); outline-offset: -2px; transition: outline-color 1s; }  /* rolls made while you were away (feedback 46) */
+body.at-table.rolls-closed .rs-edge { position: fixed; z-index: 5; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 var(--r-md) var(--r-md) 0; }
 .rs-edge:hover { color: var(--text); }
 .rs-people { display: none; }
 .rs-person { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; color: var(--text); font: inherit; cursor: pointer; }

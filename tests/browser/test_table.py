@@ -198,6 +198,15 @@ def test_the_rolls_sidebar_stays_as_you_left_it(people, server):
     assert page.evaluate(state) == "open" and page.evaluate(pad) == "0px"
     page.mouse.click(700, 500)
     assert page.evaluate(state) == "closed"
+    # Over the page, it's in front of a page's sticky tab bar (feedback 45, Nov 7: the Campaign page's covered it)
+    for path in ("/c/main/campaign", f"/characters/{server['cole']}"):
+        player.open(path)
+        page.click(".rs-edge")
+        page.wait_for_function("document.getElementById('table-rolls').getBoundingClientRect().left === 0")  # (slid in)
+        bar = page.locator(".tabbar").first.bounding_box()
+        top = "(x, y) => !!document.elementFromPoint(x, y).closest('#table-rolls')"
+        assert page.evaluate(f"({top})({bar['x'] + 40}, {bar['y'] + bar['height'] / 2})"), path
+        page.mouse.click(700, 500)
     page.set_viewport_size({"width": 1300, "height": 900})
     player.open("/c/main/")
     assert page.evaluate(state) == "open"  # what you chose at full width still holds
