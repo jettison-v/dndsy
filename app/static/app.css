@@ -2559,6 +2559,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ep-glance { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); font-size: var(--fs-sm); }
 .ep-glance dt { color: var(--muted); }
 .ep-glance dd { margin: 0; min-width: 0; }
+.ep-glance dt:has(+ dd.part-of) { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--sp-1)); }
+.ep-glance dd.part-of { grid-column: 1 / -1; }  /* a quest's name is long: the box's whole width, under its label (feedback 35) */
 .ep-cols { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-6); margin-top: var(--sp-3); }
 .ep-links { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); }
 .ep-links ul { margin: 0; }
@@ -2593,6 +2595,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .part-of { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
 .chip-link { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--chip-h); padding: 0 var(--sp-3); border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font-size: var(--fs-sm); text-decoration: none; }
 .chip-link:hover { border-color: var(--line-strong); }
+.part-of > .chip-link { flex: 0 1 auto; flex-wrap: wrap; row-gap: 2px; min-width: 0; max-width: 100%; padding-block: 3px; line-height: 1.35; border-radius: var(--r-md); }  /* a long name wraps across the box, not word by word in a pill (feedback 35) */
 .head-link { margin-left: var(--sp-2); font-size: var(--fs-xs); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--link); }
 
 /* Quests: the board */
@@ -3354,7 +3357,7 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 /* The one Picture window (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2) */
 .pw { display: grid; gap: var(--sp-3); }
 .pw > .tabbar { min-height: 41px; flex: none; }  /* (staging feedback 31: a full window squeezed the tabs to a sliver) */
-.pw-drawing, #pw-options:not(:empty) { margin-top: var(--sp-3); }  /* room between Draw and the pictures (staging feedback 31) */
+.pw-drawing, #pw-options:not(:empty) { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--line); }  /* the pictures stand apart from Draw (staging feedback 31, feedback 39): twice the form's own gaps, and a line */
 .pw-form { display: grid; gap: var(--sp-3); }
 .pw-drop { display: grid; place-items: center; gap: var(--sp-2); text-align: center; min-height: 160px; padding: var(--sp-3); border: 2px dashed var(--line-strong); border-radius: var(--r-lg); color: var(--muted); cursor: pointer; }
 .pw-drop.over { border-color: var(--amber); background: var(--amber-soft); }
