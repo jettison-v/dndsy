@@ -330,7 +330,7 @@ def test_a_number_that_changed_marks_itself_with_the_change(people, server, brow
 def test_the_dms_table_tools_work_after_a_map_is_added(people, server, browser_db, tmp_path):
     """askdnd's table as its DM runs it (Brett's first look on staging, Nov 6): a new place, a picture for its map, then
     + Creatures opens its window without a reload (the windows follow the page), and the Map ▾ and ⋯ menus open and
-    stay open (a click used to hide every menu on the page, theirs too)."""
+    stay open (a click used to hide every menu on the page, theirs too); a token's drag shows the ruler; the keys."""
     from io import BytesIO
 
     from PIL import Image
@@ -372,6 +372,27 @@ def test_the_dms_table_tools_work_after_a_map_is_added(people, server, browser_d
         page.get_by_role("button", name="Rename").wait_for(state="hidden")
         page.get_by_role("button", name="Place the party").click()
         page.locator("#tmap .tok-m").first.wait_for()
+        # Dragging a token: the ruler says its feet while it moves
+        page.wait_for_load_state("networkidle")  # (the page's new copy, with the party on it)
+        tok = page.locator("#tmap .tok-m[data-moves]").first
+        tok.wait_for(state="visible")
+        box = tok.bounding_box()
+        page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
+        page.mouse.down()
+        page.mouse.move(box["x"] + box["width"] * 3, box["y"] + box["height"] / 2, steps=8)
+        assert " ft" in page.locator(".tmap-tip").inner_text()
+        page.mouse.up()
+        page.locator(".tmap-tip").wait_for(state="detached")
+        # Keys: ? lists them, A opens a spell's area, placed with a click
+        page.keyboard.press("?")
+        page.locator("#tbl-keys").wait_for(state="visible")
+        page.keyboard.press("Escape")
+        page.keyboard.press("a")
+        page.locator("#tbl-area input[name=label]").fill("Fireball")
+        page.locator("#tbl-area button[type=submit]").click()
+        m = page.locator("#tmap").bounding_box()
+        page.mouse.click(m["x"] + m["width"] / 2, m["y"] + m["height"] / 2)
+        page.locator(".tmap-area", has_text="Fireball").wait_for()
         page.get_by_role("button", name="Start a fight").click()
         page.get_by_role("button", name="Begin Round 1").wait_for()
         page.locator("summary[aria-label=\"The fight's menu\"]").click()

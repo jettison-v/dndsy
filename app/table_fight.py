@@ -14,7 +14,7 @@ turn and your turn's bar follow it unchanged. While it runs, what D&D Beyond's V
 
 **Battle settings** (kept for the campaign, `Campaign.table_settings`): what players see of a creature's Hit Points
 (Healthy, Bloodied or Down by default; the numbers; nothing), whether a group rolls once or each its own, and whether
-new creatures start seen or hidden.
+new creatures start seen or hidden, and how diagonals count (each 5 feet, the 2024 rule, or 5 then 10, the DMG's).
 """
 
 import copy
@@ -33,8 +33,9 @@ from app.table_rolls import roll_d20
 
 router = APIRouter()
 
-SETTINGS = {"enemy_hp": ("status", "numbers", "none"), "group": ("once", "each"), "new": ("seen", "hidden")}
-DEFAULTS = {"enemy_hp": "status", "group": "once", "new": "seen"}
+SETTINGS = {"enemy_hp": ("status", "numbers", "none"), "group": ("once", "each"), "new": ("seen", "hidden"),
+            "diagonal": ("5", "alternate")}
+DEFAULTS = {"enemy_hp": "status", "group": "once", "new": "seen", "diagonal": "5"}
 UNDO = 20
 
 
@@ -301,11 +302,11 @@ def left(db: Session, campaign: Campaign, token_id: int) -> None:
 
 @router.post("/table/settings")
 def save_settings(request: Request, enemy_hp: str = Form(""), group: str = Form(""), new: str = Form(""),
-                  db: Session = Depends(get_db)):
+                  diagonal: str = Form(""), db: Session = Depends(get_db)):
     """The DM's battle settings, kept for the campaign."""
     _, campaign = places.here(request, db)
     s = settings(campaign)
-    for k, v in (("enemy_hp", enemy_hp), ("group", group), ("new", new)):
+    for k, v in (("enemy_hp", enemy_hp), ("group", group), ("new", new), ("diagonal", diagonal)):
         if v in SETTINGS[k]:
             s[k] = v
     campaign.table_settings = s

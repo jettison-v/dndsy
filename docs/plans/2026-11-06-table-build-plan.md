@@ -116,6 +116,13 @@ fight) never opened, so the fight couldn't end: both fixed the same evening. Sce
 has no button (now said where it would be); he'll look as the DM next time. Next: zoom and keyboard commands (slice
 11) with the rest.
 
+**Built the same night (slices 8 to 11, on staging):** the ruler while dragging (feet by the diagonal setting and the
+DM's Difficult Terrain, your Speed left, whose reach you leave), the reach reminder in a fight, fog by rectangle, room
+or all, spell areas for everyone with who's in them (Cast on the table page starts the spell's own), and the keys (?
+lists them) with ⌖ and T to whose turn it is, the map gliding to a turn that starts off the screen. Still to come:
+Apply to for the DM's creatures (a damage roll offering everyone in an area), the creature's own bar on its turn, and
+Prepare for your turn.
+
 ## How it's built (Claude's choices, in product terms)
 
 - **Places, scenes and tokens are rows of their own.** Many people drag tokens at the same moment, so a token is one

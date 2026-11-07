@@ -34,9 +34,24 @@
       <button type="button" class="btn small" data-open-dialog="tbl-creatures">+ Creatures</button>
       {% if notes %}<button type="button" class="btn small" data-tool="pin" aria-pressed="false" title="Then click the map where the scene is">+ Scene pin</button>
       {% else %}<span class="note" title="Her notes and their pins are hers alone: not admins, not View as">Scene pins: the campaign's DM only</span>{% endif %}
+      <details class="tbl-more"><summary class="btn small">Fog{{ ' (on)' if layers.fog_on }} ▾</summary><div class="menu">
+        {% if layers.fog_on %}<button type="button" hx-post="{{ cbase }}/table/places/{{ place.id }}/fog" hx-vals='{"do": "off"}' hx-swap="none">Turn fog off</button>
+        {% else %}<button type="button" hx-post="{{ cbase }}/table/places/{{ place.id }}/fog" hx-vals='{"do": "on"}' hx-swap="none">Turn fog on</button>{% endif %}
+        <button type="button" data-tool="fog-show">Show squares <small>· drag over them</small></button>
+        <button type="button" data-tool="fog-hide">Hide squares <small>· drag over them</small></button>
+        {% if g.walls %}<button type="button" data-tool="fog-room">Show a room <small>· click in it</small></button>
+        <button type="button" data-tool="fog-hide-room">Hide a room <small>· click in it</small></button>{% endif %}
+        <button type="button" hx-post="{{ cbase }}/table/places/{{ place.id }}/fog" hx-vals='{"do": "all"}' hx-swap="none">Show everything</button>
+        <button type="button" hx-post="{{ cbase }}/table/places/{{ place.id }}/fog" hx-vals='{"do": "none"}' hx-swap="none">Hide everything</button>
+      </div></details>
+      <details class="tbl-more"><summary class="btn small">Terrain ▾</summary><div class="menu">
+        <button type="button" data-tool="terrain-add">Difficult Terrain <small>· drag over it</small></button>
+        <button type="button" data-tool="terrain-clear">Clear squares <small>· drag over them</small></button>
+        <button type="button" hx-post="{{ cbase }}/table/places/{{ place.id }}/terrain" hx-vals='{"do": "none"}' hx-swap="none" hx-confirm="Clear all the Difficult Terrain here?">Clear it all</button>
+      </div></details>
       {% if not ours %}<button type="button" class="btn small primary" hx-post="{{ cbase }}/table/places/{{ place.id }}/fight" hx-swap="none">Start a fight</button>
-      {% elif f and f.waiting %}<button type="button" class="btn small primary" hx-post="{{ cbase }}/table/fight/begin" hx-swap="none">Begin Round 1</button>
-      {% else %}<button type="button" class="btn small primary" hx-post="{{ cbase }}/table/fight/next" hx-swap="none">Next turn</button>{% endif %}
+      {% elif f and f.waiting %}<button type="button" class="btn small primary" data-key="n" hx-post="{{ cbase }}/table/fight/begin" hx-swap="none">Begin Round 1</button>
+      {% else %}<button type="button" class="btn small primary" data-key="n" hx-post="{{ cbase }}/table/fight/next" hx-swap="none" title="Next turn (N)">Next turn</button>{% endif %}
       {% if ours %}<details class="tbl-more"><summary class="btn small" aria-label="The fight's menu">⋯</summary><div class="menu">
         <button type="button" hx-post="{{ cbase }}/table/fight/undo" hx-swap="none">Undo the last change</button>
         <button type="button" data-open-dialog="tbl-settings">Battle settings</button>
@@ -56,15 +71,21 @@
   {% if g and g.url %}
   {# The map: the picture, its grid and the tokens, moved and zoomed as one (app.js "askdnd's table map") #}
   <section class="tmap" id="tmap" aria-label="The map of {{ place.name }}" data-place="{{ g.id }}" data-size="{{ g.size }}" data-gx="{{ g.x }}" data-gy="{{ g.y }}"
-           data-w="{{ g.w }}" data-h="{{ g.h }}" data-cols="{{ g.cols }}" data-rows="{{ g.rows }}" data-base="{{ cbase }}"{% if notes %} data-notes{% endif %}>
+           data-w="{{ g.w }}" data-h="{{ g.h }}" data-cols="{{ g.cols }}" data-rows="{{ g.rows }}" data-base="{{ cbase }}"{% if notes %} data-notes{% endif %}{% if dm %} data-dm{% endif %}
+           data-rule="{{ layers.rule }}" data-terrain="{{ layers.terrain_keys | tojson | forceescape }}"{% if layers.turn %} data-turn="{{ layers.turn | tojson | forceescape }}"{% endif %}>
     <div class="tmap-world" style="width: {{ g.w }}px; height: {{ g.h }}px">
       <img class="tmap-img" src="{{ g.url }}" alt="" width="{{ g.w }}" height="{{ g.h }}" draggable="false" data-keep="map-{{ g.id }}-{{ g.url }}">
       <div class="tmap-grid" style="left: {{ g.x }}px; top: {{ g.y }}px; width: {{ g.cols * g.size }}px; height: {{ g.rows * g.size }}px; background-size: {{ g.size }}px {{ g.size }}px"></div>
+      {% set sq = 'left: ' ~ g.x ~ 'px; top: ' ~ g.y ~ 'px; width: ' ~ (g.cols * g.size) ~ 'px; height: ' ~ (g.rows * g.size) ~ 'px' %}
+      {% if layers.terrain %}<svg class="tmap-layer tmap-terrain" style="{{ sq }}" viewBox="0 0 {{ g.cols }} {{ g.rows }}" preserveAspectRatio="none" aria-hidden="true"><path d="{% for x, y, w in layers.terrain %}M{{ x }} {{ y }}h{{ w }}v1h-{{ w }}z{% endfor %}"/></svg>{% endif %}
+      {% if layers.areas %}<svg class="tmap-layer tmap-areas" style="{{ sq }}" viewBox="0 0 {{ g.cols }} {{ g.rows }}" preserveAspectRatio="none" aria-hidden="true">
+        {% for a in layers.areas %}{% if a.circle %}<circle cx="{{ a.circle[0] }}" cy="{{ a.circle[1] }}" r="{{ a.circle[2] }}"/>{% elif a.rect %}<rect x="{{ a.rect[0] }}" y="{{ a.rect[1] }}" width="{{ a.rect[2] }}" height="{{ a.rect[3] }}" rx="{{ a.rect[4] }}"/>{% else %}<polygon points="{{ a.points }}"/>{% endif %}{% endfor %}</svg>{% endif %}
+      {% if layers.fog %}<svg class="tmap-layer tmap-fog{{ ' dm' if dm }}" style="{{ sq }}" viewBox="0 0 {{ g.cols }} {{ g.rows }}" preserveAspectRatio="none" aria-hidden="true"><path d="{% for x, y, w in layers.fog %}M{{ x }} {{ y }}h{{ w }}v1h-{{ w }}z{% endfor %}"/></svg>{% endif %}
       {% for s in pins %}<button type="button" class="tmap-pin" style="left: {{ g.x + s.x * g.size }}px; top: {{ g.y + s.y * g.size }}px" data-panel-url="{{ cbase }}/table/scenes/{{ s.id }}" data-pin="{{ s.id }}" title="{{ s.name }} (only you see this pin)"><span>{{ s.name }}</span></button>{% endfor %}
       {% for t in tokens %}
-      <button type="button" class="tok-m{{ ' foe' if t.kind == 'monster' }}{{ ' pet' if t.kind == 'creature' }}{{ ' mine' if t.mine }}{{ ' hid' if t.hidden }}{{ ' down' if t.status == 'Down' }}{{ ' now' if t.now }}"
+      <button type="button" class="tok-m{{ ' foe' if t.kind == 'monster' }}{{ ' pet' if t.kind == 'creature' }}{{ ' mine' if t.mine }}{{ ' hid' if t.hidden }}{{ ' fogged' if t.fogged }}{{ ' down' if t.status == 'Down' }}{{ ' now' if t.now }}"
               style="left: {{ g.x + t.x * g.size }}px; top: {{ g.y + t.y * g.size }}px; width: {{ t.size * g.size }}px; height: {{ t.size * g.size }}px"
-              data-token="{{ t.id }}" data-x="{{ t.x }}" data-y="{{ t.y }}" data-sq="{{ t.size }}"{% if t.moves %} data-moves{% endif %} data-panel-url="{{ t.panel }}"
+              data-token="{{ t.id }}" data-x="{{ t.x }}" data-y="{{ t.y }}" data-sq="{{ t.size }}"{% if t.moves %} data-moves{% endif %} data-name="{{ t.name }}" data-reach="{{ t.reach }}"{% if t.kind == "character" %} data-character="{{ t.character }}"{% endif %}{% if t.foe %} data-foe{% endif %}{% if t.down %} data-down{% endif %} data-panel-url="{{ t.panel }}"
               aria-label="{{ t.name }}{{ ' (hidden from the players)' if t.hidden }}{{ ' · ' ~ t.status if t.status }}" title="{{ t.name }}{{ ' · ' ~ t.status if t.status }}{% if t.conds %} · {{ t.conds | join(', ') }}{% endif %}">
         <span class="tok-face">{% if t.picture %}<img src="{{ t.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" draggable="false" onerror="this.remove()">{% endif %}<i>{{ t.name[:2] }}</i></span>
         {% if t.hp is not none %}<span class="tok-hp"><i style="width: {{ t.hp }}%"{% if t.hp * 2 <= 100 %} class="low"{% endif %}></i></span>{% endif %}
@@ -73,9 +94,19 @@
         <span class="tok-name">{{ t.name }}</span>
       </button>
       {% endfor %}
+      {% for a in layers.areas %}<div class="tmap-area" style="left: {{ g.x + a.lx * g.size }}px; top: {{ g.y + a.ly * g.size }}px">
+        <span><b>{{ a.label or a.named }}</b>{% if a.label %} · {{ a.named }}{% endif %}{% if a['in'] %}<br><small>In it: {{ a['in'] | join(', ') }}</small>{% endif %}</span>
+        {% if a.mine %}<button type="button" class="tmap-area-x" hx-post="{{ cbase }}/table/places/{{ place.id }}/areas/{{ a.id }}/remove" hx-swap="none" aria-label="Take away {{ a.label or a.named }}">✕</button>{% endif %}
+      </div>{% endfor %}
     </div>
-    <div class="tmap-zoom" role="group" aria-label="Zoom"><button type="button" class="btn small" data-zoom="1.25" aria-label="Zoom in">+</button><button type="button" class="btn small" data-zoom="0.8" aria-label="Zoom out">−</button><button type="button" class="btn small" data-zoom="fit" aria-label="See the whole map">Fit</button></div>
-    <p class="tmap-help note" data-pin-help hidden>Click where the scene is. Esc to stop.</p>
+    <div class="tmap-tools" role="toolbar" aria-label="Map tools">
+      <button type="button" class="btn small" data-tool="ruler" aria-pressed="false" title="Measure (R)">Ruler</button>
+      <button type="button" class="btn small" data-open-dialog="tbl-area" title="A spell's area (A)">Area</button>
+      {% if dm and layers.areas %}<button type="button" class="btn small link" hx-post="{{ cbase }}/table/places/{{ place.id }}/areas/all/remove" hx-swap="none">Clear areas</button>{% endif %}
+      <button type="button" class="btn small link" data-open-dialog="tbl-keys" aria-label="Keys (?)">?</button>
+    </div>
+    <div class="tmap-zoom" role="group" aria-label="Zoom"><button type="button" class="btn small" data-zoom="1.25" aria-label="Zoom in">+</button><button type="button" class="btn small" data-zoom="0.8" aria-label="Zoom out">−</button><button type="button" class="btn small" data-zoom="fit" aria-label="See the whole map">Fit</button><button type="button" class="btn small" data-zoom="turn" aria-label="To whose turn it is (T)" title="To whose turn it is (T)">⌖</button></div>
+    <p class="tmap-help note" data-tool-help hidden></p>
   </section>
   {% elif place %}
   <section class="section tb-empty">
@@ -150,8 +181,39 @@
         {% for v, label in [("once", "Once for the group (you can give any its own number)"), ("each", "Each its own")] %}<label class="check"><input type="radio" name="group" value="{{ v }}"{{ ' checked' if settings.group == v }}> {{ label }}</label>{% endfor %}</fieldset>
       <fieldset><legend>New creatures start</legend>
         {% for v, label in [("seen", "Seen by the players"), ("hidden", "Hidden until you show them")] %}<label class="check"><input type="radio" name="new" value="{{ v }}"{{ ' checked' if settings.new == v }}> {{ label }}</label>{% endfor %}</fieldset>
+      <fieldset><legend>Moving diagonally</legend>
+        {% for v, label in [("5", "Each square 5 feet (the 2024 rules)"), ("alternate", "5 feet, then 10, alternating (the DMG's option)")] %}<label class="check"><input type="radio" name="diagonal" value="{{ v }}"{{ ' checked' if settings.diagonal == v }}> {{ label }}</label>{% endfor %}</fieldset>
       <p class="note">Kept for this campaign. Changing one mid-fight changes what players see at once.</p>
       <div class="row"><button type="submit" class="btn primary">Save</button><button type="button" class="btn link" data-close-dialog>Cancel</button></div></form>
+  </dialog>
+  {% endif %}
+  {% if g and g.url %}
+  <dialog class="win-dialog" id="tbl-area" aria-labelledby="tbl-area-h">
+    <form data-area-form><h2 id="tbl-area-h">An area</h2>
+      <fieldset class="tbl-shapes"><legend>Its shape</legend>
+        {% for v, label, how in [("sphere", "Sphere", "a radius, from a corner of a square"), ("cylinder", "Cylinder", "a radius, from a corner"), ("cone", "Cone", "from you, as wide as it is long"), ("line", "Line", "from you, its length"), ("cube", "Cube", "from a face, its side"), ("emanation", "Emanation", "around a creature")] %}
+        <label class="check"><input type="radio" name="shape" value="{{ v }}"{{ ' checked' if loop.first }}> {{ label }} <small>· {{ how }}</small></label>{% endfor %}</fieldset>
+      <div class="row">
+        <label class="field"><span>Size (feet)</span><input name="feet" type="number" min="5" max="500" step="5" value="20" required></label>
+        <label class="field" data-area-wide><span>Width (feet)</span><input name="wide" type="number" min="5" max="100" step="5" value="5"></label></div>
+      <label class="field"><span>What it is <small>(optional)</small></span><input name="label" maxlength="80" placeholder="Fireball"></label>
+      <p class="note">Then click the map where it starts, and for a Cone, Line or Cube drag the way it goes. Everyone at the table sees it and who's in it.</p>
+      <div class="row"><button type="submit" class="btn primary">Place it</button><button type="button" class="btn link" data-close-dialog>Cancel</button></div></form>
+  </dialog>
+  <dialog class="win-dialog" id="tbl-keys" aria-labelledby="tbl-keys-h">
+    <div class="win-head"><h2 id="tbl-keys-h">Keys on the map</h2><button type="button" class="btn link" data-close-dialog aria-label="Close">✕</button></div>
+    <dl class="tbl-keys">
+      <dt><kbd>+</kbd> <kbd>−</kbd></dt><dd>Zoom in, out (or the wheel, or pinch)</dd>
+      <dt><kbd>0</kbd></dt><dd>The whole map</dd>
+      <dt><kbd>T</kbd></dt><dd>To whose turn it is</dd>
+      <dt><kbd>F</kbd></dt><dd>To your token</dd>
+      <dt><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd></dt><dd>Move the token you picked a square (click it first); with Shift, look around the map</dd>
+      <dt><kbd>R</kbd></dt><dd>The ruler: drag to measure</dd>
+      <dt><kbd>A</kbd></dt><dd>A spell's area</dd>
+      <dt><kbd>N</kbd></dt><dd>{% if dm %}Next turn{% else %}End your turn{% endif %}</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Stop the tool, close a menu</dd>
+      <dt><kbd>?</kbd></dt><dd>These keys</dd>
+    </dl>
   </dialog>
   {% endif %}
 </div>

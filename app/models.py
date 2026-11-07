@@ -908,6 +908,10 @@ class Place(Timestamped, Base):
     walls: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     # Its fog (app/fog.py): {"on": bool, "shown": ["x,y", …] squares the DM showed}; off, the whole map shows
     fog: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    # Difficult Terrain the DM painted (app/measure.py), squares as "x,y"; and the spell areas on it now (app/areas.py):
+    # [{"id", "shape", "feet", "wide", "x", "y", "angle", "label", "by", "by_name"}], shown to everyone at the table
+    terrain: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    areas: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
 
 
 class ScenePin(Timestamped, Base):

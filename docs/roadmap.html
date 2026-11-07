@@ -106,7 +106,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 
 <div class="wrap">
   <header class="top">
-    <div class="eyebrow">askdnd · roadmap · updated Nov 4, 2026</div>
+    <div class="eyebrow">askdnd · roadmap · updated Nov 6, 2026</div>
     <h1>askdnd roadmap</h1>
     <p class="lead">One list of everything left to do, in the order it happens, whoever it's waiting on. Yours are marked <span class="chip yours">Yours</span> and say exactly where to click; tick one when it's done (the ticks stay in this browser) and tell me. Everything already done is at the bottom, most recent first.</p>
     <nav class="jump" aria-label="On this page"><a href="#todo">To do</a><a href="#vtt">The VTT</a><a href="#done">Done</a><a href="#documents">Every plan and mockup</a></nav>
@@ -155,8 +155,8 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
       <div class="step" data-step="session-stats"><span class="n"></span><div class="body"><h3>13. Session stats and trophies</h3>
         <p>Fun stats for each session, beside its recap, worked out from Table rolls and what happened (you, Nov 6): best roller, most damage dealt, most healing, most natural 20s (and 1s), the luckiest save, each with a fun name ("Dice Goblin", "Walking Hospital"). Trophies kept on each player's profile across sessions. All for fun and engagement; never a ranking that tells anyone how to play.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Idea, to mock up</span><span class="chip eff">M</span></div></div>
-      <div class="step mine" data-step="table-look"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>14. Take a quick look at askdnd's table on staging</h3>
-        <p>Built to the fight, on staging (<a href="https://github.com/jettison-v/dndsy/pull/251">PR 251</a>, a draft): places and their maps, tokens, the DM's scene notes, a creature's stat block, askdnd running the fight, your turn's bar, on a phone too. <span class="chip yours">Yours</span> Open <a href="https://staging.askdnd.ai/c/vtt-test/table">staging.askdnd.ai/c/vtt-test/table</a>, press <b>+ Place</b>, name it, then <b>Map ▾ › Add a map</b> with one of your Dungeon Alchemist exports (.dd2vtt) or any picture; <b>Show to players</b>, <b>Place the party</b>, <b>+ Creatures</b> (try three Goblin Warriors), <b>+ Scene pin</b>, then <b>Start a fight</b>. Say whether it's on the right track; the rest (moving, fog, areas) follows your notes.</p></div>
+      <div class="step mine" data-step="table-look"><span class="n"><input type="checkbox" aria-label="Done"></span><div class="body"><h3>14. Take a second look at askdnd's table on staging</h3>
+        <p>Your first look (Nov 6): a picture map, the party, a fight, Initiative and rolls worked; + Creatures and the ⋯ menu (End the fight) were broken and are fixed. Since then, on staging: the ruler while you drag (feet, Difficult Terrain, your Speed left, whose reach you leave), Terrain ▾, Fog ▾, spell areas, and keys. <span class="chip yours">Yours</span> Open <a href="https://staging.askdnd.ai/c/vtt-test/table">staging.askdnd.ai/c/vtt-test/table</a>: drag a token slowly and watch the ruler; <b>Terrain ▾ › Difficult Terrain</b> and drag over some squares; <b>Fog ▾ › Turn fog on</b>, then <b>Show squares</b> and drag; <b>Area</b> (a 20-ft Sphere) and click the map; press <b>?</b> for the keys. Scene pins show only to the DM seat. Your notes on zoom and keys are welcome.</p></div>
         <div class="tags"><span class="chip yours">Yours</span><span class="chip s-todo">Waiting for you</span><span class="chip eff">S</span></div></div>
       <div class="step" data-step="action-widgets"><span class="n"></span><div class="body"><h3>15. The component library: action widgets first, then the shared pieces</h3>
         <p>Every class feature has meant its own window, and the party pass's three gaps were each a window missing a case (you, Nov 5: "keyed off values about an action, not a separate build for each one"). An action becomes data (its cost, then steps: Spend, Choose, Enter, Roll, Convert, Apply), drawn by one Use window from the design system's widgets, with Undo and tests that come with it; then Font of Magic, Arcane Recovery, Metamagic and Bardic Inspiration are lines of data. Then the same for the pieces outside combat: a picture by kind, counts and badges, one window shell in three sizes, the list pattern, an entry by kind, the story scroll. After the game, before slice 3 and Prepare for your turn, which reuse it. The plan: <code>docs/plans/2026-11-05-action-widgets.md</code>.</p></div>
@@ -189,47 +189,44 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
         <div class="tags"><span class="chip yours">Yours to decide</span><span class="chip eff">S</span></div></div>
       <div class="step" data-step="table-built"><span class="n"></span><div class="body"><h3>22. Built to the fight: places and maps, tokens, scene notes, the fight, your turn's bar</h3>
         <p>On staging (<a href="https://github.com/jettison-v/dndsy/pull/251">PR 251</a>): a place's map from a picture or a Dungeon Alchemist file (its grid and walls come with it); the party's tokens and the DM's creatures from her books and the SRD, hidden ones hers alone; her scene notes pinned on the map, hers alone; a creature's stat block, Hit Points and rolls in the side panel; askdnd running the fight (one Initiative roll per group, which she can split; Begin, Next turn, Undo, battle settings); your turn's bar under the map; the same on a phone.</p></div>
-        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Built, waiting for your look (14)</span><span class="chip eff">L</span></div></div>
+        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-ready">Built, on staging</span><span class="chip eff">L</span></div></div>
       <div class="step" data-step="prepare-turn"><span class="n"></span><div class="body"><h3>23. Prepare for your turn</h3>
         <p>To speed up fights (you, Nov 5): while others take their turns, a player drafts their own from what Battle Combos already do. When their turn comes, they step through it or do something else. It sits on your turn's bar.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s8"><span class="n"></span><div class="body"><h3>24. Moving and measuring</h3>
-        <p>Dragging already counts your movement on your turn. Next: feet on each square as you drag, Difficult Terrain the DM paints, leaving a creature's reach says it may provoke an Opportunity Attack, the table's diagonal rule in Manage › House rules. It counts and shows; it never stops a move.</p></div>
-        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do, after your look</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s9"><span class="n"></span><div class="body"><h3>25. Fog</h3>
-        <p>The DM hides and shows parts of a place's map by squares, a whole room in one click (with a file's walls), or all; each place keeps its own.</p></div>
-        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
-      <div class="step" data-step="s10"><span class="n"></span><div class="body"><h3>26. Spell areas</h3>
-        <p>The area tool, and Cast starting it for a spell with an area; who's in it carries to the saves and Apply to. The DM rules close calls.</p></div>
-        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">To do</span><span class="chip eff">M</span></div></div>
+      <div class="step" data-step="s8"><span class="n"></span><div class="body"><h3>24. Moving and measuring, fog, spell areas, keys</h3>
+        <p>On staging: the ruler while you drag (feet by the 2024 rule or the DMG's 5-then-10, a battle setting; Difficult Terrain the DM paints; your Speed left; whose reach you leave), a reminder for the player and the DM when a move leaves a creature's reach in a fight; fog by squares, a whole room (a Dungeon Alchemist map's walls) or all, each place its own, creatures under it never sent to players; spell areas everyone sees with who's in them (Cast on the table page starts the spell's own); the Ruler; keys (+ − 0, T, F, arrows, R, A, N, ?) and ⌖ to whose turn it is.</p></div>
+        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-ready">Built, on staging</span><span class="chip eff">L</span></div></div>
+      <div class="step" data-step="s11"><span class="n"></span><div class="body"><h3>25. The DM's creatures in play</h3>
+        <p>Apply to for the DM's creatures (a damage roll offering everyone in an area, each save in turn), and on a creature's turn the bar under the map is the creature's: its actions, movement and what it's used.</p></div>
+        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Next</span><span class="chip eff">M</span></div></div>
       <div class="mark">The cutover · the table plays on askdnd's table<span>Instead of D&amp;D Beyond Maps, once everything above is built and you've tried it on staging with the test seats. The table dice built on Oct 23 (3.11) are released with it.</span></div>
-      <div class="step" data-step="p2b"><span class="n"></span><div class="body"><h3>27. The rest of combat (Phase 2b)</h3>
+      <div class="step" data-step="p2b"><span class="n"></span><div class="body"><h3>26. The rest of combat (Phase 2b)</h3>
         <ul><li>2.4 Attacks and saves that resolve, the DM confirms (L)</li><li>2.1 Encounters with the 2024 DMG's budget (L)</li><li>Nice to have: 2.5 Reactions at the right moment (M) · 2.7 Fights flow into the recap (S)</li></ul>
         <p class="small muted">Milestone: a whole fight in askdnd.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p3"><span class="n"></span><div class="body"><h3>28. More for maps (Phase 3, nice to have)</h3>
+      <div class="step" data-step="p3"><span class="n"></span><div class="body"><h3>27. More for maps (Phase 3, nice to have)</h3>
         <ul><li>3.7 Walls, doors and vision (XL; an imported .dd2vtt's walls make it smaller)</li><li>3.9 Draw and ping (S) · 3.10 Story map (M)</li></ul>
         <p class="small muted">To decide then: how much map automation, after using simple maps.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p4"><span class="n"></span><div class="body"><h3>29. The DM's table tools (Phase 4)</h3>
+      <div class="step" data-step="p4"><span class="n"></span><div class="body"><h3>28. The DM's table tools (Phase 4)</h3>
         <ul><li>4.1 Show to the table (S) · 4.4 Asset library (M) · 4.5 Make stat blocks and items (L) · 4.6 Session prep (M)</li><li>Nice to have: 4.2 Music and ambience (M) · 4.3 Sound effects (S) · 4.7 Whispers (S; secret rolls are in) · 4.8 Paste-in import (M)</li></ul>
         <p class="small muted">To decide then: where music comes from (tracks the DM uploads or has rights to).</p>
         <p><b>Explore first (your idea, Nov 4): a DM Tools menu item</b> gathering maps, homebrew items, stores and story images in one place. Before any design, map what already exists so nothing is built twice: Campaign › Map (places and their maps), Campaign › World (entries and their pictures, through the Picture window), the item browser's planned shops and homebrew (<a href="https://claude.ai/artifact/MMQKQd6ubxBZeDkv8wCe9c">Item Browser</a>, board 4), the campaign's own creations (rules content, <code>campaign_content</code>) and Manage's pages. DM Tools may be a doorway to those rather than a new home for them.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p5"><span class="n"></span><div class="body"><h3>30. During play (Phase 5)</h3>
+      <div class="step" data-step="p5"><span class="n"></span><div class="body"><h3>29. During play (Phase 5)</h3>
         <ul><li>5.1 Rules answers in play (L)</li><li>Nice to have: 5.2 Table chat with rolls (M) · 5.4 Start-of-turn summary (S)</li></ul></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="bridge-faster"><span class="n"></span><div class="body"><h3>31. A faster bridge: count D&amp;D Beyond's reply</h3>
+      <div class="step" data-step="bridge-faster"><span class="n"></span><div class="body"><h3>30. A faster bridge: count D&amp;D Beyond's reply</h3>
         <p>With the next extension update: clear the ↻ mark on D&amp;D Beyond's own answer to a change and check it again in the background, about 1 to 3 seconds faster. The cost: when D&amp;D Beyond answers OK without keeping a change (it has happened), the mark clears and comes back as ! a few seconds later. Yours to decide then.</p></div>
         <div class="tags"><span class="chip yours">Yours to decide</span><span class="chip s-todo">Later</span></div></div>
-      <div class="step" data-step="p6"><span class="n"></span><div class="body"><h3>32. Voice and video (Phase 6)</h3>
+      <div class="step" data-step="p6"><span class="n"></span><div class="body"><h3>31. Voice and video (Phase 6)</h3>
         <ul><li>6.1 Voice and video in askdnd (L) · 6.2 One recording track per person (L) · 6.3 Recording straight to recap (L) · 6.4 Live captions (M) · 6.5 An AI-made video "previously on" (Sora, Veo) from the recap and the pictures: dollars per session, and characters that don't yet stay the same from shot to shot; Listen covers it for now (M)</li></ul>
         <p class="small muted">Needs your decision first: recording stays on your Mac, or the raw-transcript privacy rule changes.</p></div>
         <div class="tags"><span class="chip s-parked">Nice to have</span></div></div>
-      <div class="step" data-step="p7"><span class="n"></span><div class="body"><h3>33. Other groups (Phase 7)</h3>
+      <div class="step" data-step="p7"><span class="n"></span><div class="body"><h3>32. Other groups (Phase 7)</h3>
         <ul><li>7.1 Content and licensing check (S, before sharing) · 7.2 Invite another group (L) · 7.3 Accounts and costs per group (L)</li></ul></div>
         <div class="tags"><span class="chip s-parked">Not planned</span></div></div>
-      <div class="step" data-step="retire-dev"><span class="n"></span><div class="body"><h3>34. Retire Railway's old "dev" environment</h3>
+      <div class="step" data-step="retire-dev"><span class="n"></span><div class="body"><h3>33. Retire Railway's old "dev" environment</h3>
         <p>Railway's <code>dev</code> environment is the legacy app's (its old <code>beta</code> branch). Once askdnd's own rules chat has replaced the legacy app and legacy is kept only as a record, remove <code>dev</code> or reuse it (you, Nov 6). Until then it's left alone, like everything legacy.</p></div>
         <div class="tags"><span class="chip claude">Claude</span><span class="chip s-parked">After the chat feature</span><span class="chip eff">S</span></div></div>
     </div>
@@ -239,6 +236,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
       <div class="day"><span class="d">Nov 6</span><ul>
+        <li><b>askdnd's table: moving and measuring, fog, spell areas and keys, on staging</b> (<a href="https://github.com/jettison-v/dndsy/pull/251">PR 251</a>): after your first look, + Creatures and the ⋯ menu fixed; the ruler while dragging with Difficult Terrain and the diagonal setting, the reach reminder, fog by squares or rooms, areas with who's in them (Cast starts a spell's), the keys and ⌖.</li>
         <li><b>askdnd's table, built to the fight, on staging</b> (<a href="https://github.com/jettison-v/dndsy/pull/251">PR 251</a>, a draft): the whole-table walkthrough (<a href="https://claude.ai/artifact/1tfXFVcXJHMLdYs9Z9gFkR">askdnd's Table, slice by slice</a>), your answers (one cutover; one Initiative roll per group, which the DM can split), research into how D&amp;D Beyond Maps, Foundry, Roll20 and Owlbear handle scenes, the new plan, then places and maps (Dungeon Alchemist files included), tokens, the DM's scene notes (hers alone), creatures' stat blocks and rolls, askdnd running the fight and your turn's bar, on a phone too.</li>
         <li><b>Listen to the recap, in Labs</b> (<a href="https://github.com/jettison-v/dndsy/pull/246">PR 246</a>, on beta): ▶ Listen on Previously on… plays the recap read by a narrator over its people's and places' pictures; about 2¢ a recap, made once and kept. Switch it on in Manage › Settings › Labs.</li>
         <li><b>Feedback before the game</b> (<a href="https://github.com/jettison-v/dndsy/pull/245">PR 245</a>, on beta): the Last session filter says which session it means, ⚙ Admin level with the page's buttons, Table rolls above Sheet's tabs on a phone, a moving Drafting… bar, and the Processor's send getting past Cloudflare.</li>
@@ -484,7 +482,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     </details>
   </section>
 
-  <footer>askdnd · roadmap · kept current in the repo as <code>docs/roadmap.html</code> and published to this same link whenever anything on it changes · updated Nov 4, 2026</footer>
+  <footer>askdnd · roadmap · kept current in the repo as <code>docs/roadmap.html</code> and published to this same link whenever anything on it changes · updated Nov 6, 2026</footer>
 </div>
 
 <script>

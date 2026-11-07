@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app import fight, places, rules_data, scene_notes, table_fight, tokens, turn_bar, vtt, web
+from app import areas, fight, fog, picks, places, rules_data, scene_notes, table_fight, tokens, turn_bar, vtt, web
 from app.auth import current_user
 from app.character_pages import party_rows
 from app.db import get_db
@@ -44,8 +44,15 @@ def table_page(request: Request, place: int = 0, db: Session = Depends(get_db)):
     for t in toks:  # whose turn it is, ringed on the map
         t["now"] = bool(active) and (active.get("token") == t["id"] or (t["kind"] == "character" and active.get("character") == t["character"]))
     pins = [s for s in scene_notes.scenes(db, campaign, p) if s.x is not None] if notes and p else []
+    g = places.drawn(p)
+    me = picks.user_row(db, user)
+    layers = {"terrain": fog.runs(set(p.terrain or [])) if p else [], "fog": fog.hidden(p, g["cols"], g["rows"]) if p and g else [],
+              "fog_on": fog.on(p), "areas": areas.shown(p, areas.tokens_for(db, p, dm), me.id if me else None, dm) if p else [],
+              "rule": table_fight.settings(campaign)["diagonal"], "terrain_keys": sorted(p.terrain or []) if p else []}
+    if tb and tb.get("on_turn"):  # (your feet left this turn, for the ruler while you drag)
+        layers["turn"] = {"character": tb["c"].id, "left": tb["turn"]["left"]}
     return templates.TemplateResponse(request, "table.html", {
-        "campaign": campaign, "rows": rows, "tb": tb, "dm": dm, "notes": notes, "place": p, "g": places.drawn(p),
+        "campaign": campaign, "rows": rows, "tb": tb, "dm": dm, "notes": notes, "place": p, "g": g, "layers": layers,
         "tokens": toks, "pins": pins,
         "scenes": scene_notes.scenes(db, campaign) if notes else [], "places": places.places(db, campaign) if dm else [],
         "shown_id": campaign.shown_place_id, "ours": table_fight.ours(campaign), "fight_here": table_fight.in_fight(campaign, p),

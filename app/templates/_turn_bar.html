@@ -43,7 +43,7 @@
       </div>
       {% endfor %}
     </div>
-    {% if tb.on_turn %}<div class="tbar-end">{% if tb.ends_here %}<button type="button" class="btn primary" hx-post="{{ cbase }}/table/fight/next" hx-swap="none">End turn</button>{% else %}<span class="note">End your turn on D&amp;D Beyond's VTT; this bar starts over when your next turn begins.</span>{% endif %}<button type="button" class="btn small link" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{"what": "start"}' hx-swap="none">Start over</button></div>{% endif %}
+    {% if tb.on_turn %}<div class="tbar-end">{% if tb.ends_here %}<button type="button" class="btn primary" data-key="n" hx-post="{{ cbase }}/table/fight/next" hx-swap="none" title="End turn (N)">End turn</button>{% else %}<span class="note">End your turn on D&amp;D Beyond's VTT; this bar starts over when your next turn begins.</span>{% endif %}<button type="button" class="btn small link" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{"what": "start"}' hx-swap="none">Start over</button></div>{% endif %}
   </div>
 </section>
 {% endif %}

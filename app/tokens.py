@@ -8,7 +8,8 @@ Initiative (Brett, Nov 6) until the DM gives one its own number.
 Who sees what: a hidden token reaches only the DM's page (and admins'); a creature's numbers reach players only as the
 battle settings say (Healthy, Bloodied or Down by default, app/table_fight.py). Who moves what: the DM any token, a
 player their own characters' and their creatures'. A move on your own turn counts toward your movement (your turn's
-bar), 5 feet a square, diagonals too (the 2024 rule; a table's own rule comes with slice 8).
+bar) in feet as app/measure.py counts them (the campaign's diagonal rule, the DM's Difficult Terrain), and leaving a
+creature's reach says an Opportunity Attack is possible.
 """
 
 import json
@@ -78,7 +79,8 @@ def may_move(db: Session, user: dict | None, campaign: Campaign, t: Token, dm: b
 # ------------------------------------------------------------------ what a page draws
 def shown(db: Session, place: Place, user: dict | None, campaign: Campaign, dm: bool, rows: list[dict]) -> list[dict]:
     """The place's tokens as this person may see them, each {"id", "name", "kind", "x", "y", "size", "hidden",
-    "picture", "moves", "panel", "hp" (pct or None), "status", "conds" (names), "character", "mine"}. `rows`: Party's
+    "picture", "moves", "panel", "hp" (pct or None), "status", "conds" (names), "character", "mine", "foe", "reach" (feet),
+    "down", "fogged" (the DM's: under fog, players don't see it)}. A creature under fog never reaches a player. `rows`: Party's
     rows (character_pages.party_rows), for each character's portrait, Hit Points and what it's under."""
     from app import table_fight
 
@@ -86,13 +88,18 @@ def shown(db: Session, place: Place, user: dict | None, campaign: Campaign, dm: 
     settings = table_fight.settings(campaign)
     me = picks.user_row(db, user)
     out = []
+    from app import fog
+
     for t in db.scalars(select(Token).where(Token.place_id == place.id).order_by(Token.id)):
         if t.hidden and not dm:
             continue
+        if t.kind == "monster" and not dm and fog.covered(place, t.x, t.y, t.size):
+            continue  # (under fog: as if it weren't there)
         r = by_char.get(t.character_id) if t.character_id else None
         d = {"id": t.id, "name": t.name, "kind": t.kind, "x": t.x, "y": t.y, "size": t.size, "hidden": t.hidden, "picture": "",
              "panel": f"{web.base()}/table/tokens/{t.id}", "hp": None, "status": "", "conds": [], "character": t.character_id,
-             "mine": bool(me and r and r["c"].owner_id == me.id)}
+             "mine": bool(me and r and r["c"].owner_id == me.id), "foe": t.kind == "monster", "reach": reach(db, campaign, t),
+             "fogged": dm and t.kind == "monster" and fog.covered(place, t.x, t.y, t.size)}
         d["moves"] = dm or d["mine"]
         if t.kind == "character" and r:
             s = r["sheet"] or {}
@@ -117,6 +124,7 @@ def shown(db: Session, place: Place, user: dict | None, campaign: Campaign, dm: 
             elif settings["enemy_hp"] == "none":
                 d["status"] = ""
             d["conds"] = [x.get("name", "") for x in t.conditions or []]
+        d["down"] = d["status"] == "Down" or (t.kind == "monster" and status(t.hp) == "Down")
         out.append(d)
     return out
 
@@ -135,19 +143,75 @@ def move(request: Request, token_id: int, x: float = Form(...), y: float = Form(
     step = 0.5 if t.size < 1 else 1
     nx = max(0.0, min(cols - max(t.size, step), round(x / step) * step))
     ny = max(0.0, min(rows - max(t.size, step), round(y / step) * step))
-    squares = max(abs(nx - t.x), abs(ny - t.y))
-    if t.kind == "character" and t.character_id and squares:
+    from app import measure, table_fight
+
+    steps = measure.path((t.x, t.y), (nx, ny))
+    feet = measure.cost(steps, table_fight.settings(campaign)["diagonal"], set(p.terrain or []), t.size)["feet"]
+    if t.kind == "character" and t.character_id and feet:
         from app import fight
 
         f = fight.shown(campaign, True)
         ch = db.get(Character, t.character_id)
         if f and f.get("now") and f["now"].get("character") == t.character_id and ch is not None:
             turn = dict(ch.turn or {})
-            turn["moved"] = int(turn.get("moved") or 0) + int(round(squares)) * 5
+            turn["moved"] = int(turn.get("moved") or 0) + feet
             ch.turn = turn
+    left = measure.leaves({"size": t.size}, (t.x, t.y), (nx, ny), threats(db, campaign, t, dm))
     t.x, t.y = nx, ny
+    if left:
+        _left_reach(db, campaign, t, left)
     db.commit()
-    return Response(status_code=204, headers={"HX-Trigger": json.dumps({"tableChanged": True})})
+    return _changed()
+
+
+def _left_reach(db: Session, campaign: Campaign, t: Token, left: list[dict]) -> None:
+    """In a fight, leaving a creature's reach is a reminder for the DM and the player whose character it concerns (the
+    mover's, or each character whose reach a creature left): an Opportunity Attack is possible. Out of a fight, nothing."""
+    import copy
+
+    from sqlalchemy.orm.attributes import flag_modified
+
+    from app import fight, measure
+
+    now = fight.shown(campaign, True) if campaign.fight else None
+    if not now or now.get("waiting"):  # (before Round 1 begins, no one's turn: nothing to remind)
+        return
+    f = copy.deepcopy(campaign.fight)
+    if t.character_id:
+        ch = db.get(Character, t.character_id)
+        if ch is not None:
+            fight.remind(f, ch, "reach", t.name, measure.says(t.name, left))
+    else:
+        for x in left:
+            o = db.get(Token, x["id"])
+            ch = db.get(Character, o.character_id) if o is not None and o.character_id else None
+            if ch is not None:
+                fight.remind(f, ch, "reach", t.name, measure.says(t.name, [x]))
+    campaign.fight = f
+    flag_modified(campaign, "fight")
+
+
+def reach(db: Session, campaign: Campaign, t: Token) -> int:
+    """How far a token reaches (feet): a creature's from its stat block, anyone else 5 feet."""
+    from app import measure
+
+    if t.kind == "monster" and (t.monster or {}).get("key"):
+        return measure.reach_of(rules_data.find("monster", t.monster["key"], db, campaign.id))
+    return measure.DEFAULT_REACH
+
+
+def threats(db: Session, campaign: Campaign, t: Token, dm: bool) -> list[dict]:
+    """The tokens that could make an Opportunity Attack on this one as it moves: the other side (the party's against
+    the DM's creatures), not Down, and for a player only the creatures they can see."""
+    foe = t.kind != "monster"
+    out = []
+    for o in db.scalars(select(Token).where(Token.place_id == t.place_id, Token.id != t.id)):
+        if (o.kind == "monster") != foe or (o.hidden and not dm):
+            continue
+        if o.kind == "monster" and status(o.hp) == "Down":
+            continue
+        out.append({"id": o.id, "name": o.name, "x": o.x, "y": o.y, "size": o.size, "reach": reach(db, campaign, o)})
+    return out
 
 
 @router.post("/table/places/{place_id:int}/party")
