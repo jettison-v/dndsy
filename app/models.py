@@ -252,6 +252,8 @@ class Fact(Timestamped, Base):
     status: Mapped[str] = mapped_column(String(20), default="pending", server_default="pending")
     # "addition" (something new) or "correction" (something on the page is wrong)
     kind: Mapped[str] = mapped_column(String(20), default="addition", server_default="addition")
+    seen: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the status its author last saw (Your notes' badge)
+    told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the status its author last had a card about
 
     @property
     def labeled_text(self) -> str:
@@ -275,6 +277,8 @@ class Suggestion(Timestamped, Base):
     # From the DM: skipped review, went straight into the session's answers, and shows
     # under the recap until the session is redrafted and published again.
     from_dm: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    seen: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the status its author last saw (Your notes' badge)
+    told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # the status its author last had a card about
 
 
 class EntityRelation(Timestamped, Base):
@@ -887,10 +891,11 @@ class Feedback(Timestamped, Base):
     html: Mapped[str] = mapped_column(Text, default="", server_default="")
     shot_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
     pasted_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
-    # [{"who": "claude"|"you"|"sender", "text", "at"}]; "to": "sender" marks a reply its sender sees (Your feedback)
+    # [{"who": "claude"|"you"|"sender", "text", "at"}]; "to": "sender" marks a reply its sender sees (Your notes)
     thread: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     pr: Mapped[str] = mapped_column(String(300), default="", server_default="")
-    told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last heard (feedback.marker)
+    told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last had a card about (feedback.marker)
+    seen: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last saw on Your notes (the badge)
 
 
 

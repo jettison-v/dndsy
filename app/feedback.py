@@ -9,11 +9,10 @@ until Brett says "review the feedback", so nothing small goes unrecorded and not
   views as someone (app/view_as.py), the note is still theirs, saying whom they were viewing as.
 - **The queue** (admins: Manage › askdnd › Feedback): new → question (Claude asked, in `thread`; Brett answers under
   it, which makes it new again) → planned → done (with the PR that fixed it), or deleted.
-- **Your feedback** (`/your-feedback`, Brett, Nov 7: a feedback workflow for the players who send it): each sender's
-  own notes, where each stands in their words (`SENDER_SAYS`), the replies meant for them (thread entries with
-  `"to": "sender"`, from an admin on the queue or from Claude with `feedback.py tell`), and Add to it, which goes back
-  to an admin first (a player's words reach Claude only once approved). A corner card tells them once when a note
-  moves (`news`, `Feedback.told`).
+- **Your notes › About askdnd** (app/your_notes.py; Brett, Nov 7: a feedback workflow for the players who send it):
+  each sender's own notes, where each stands in their words (`SENDER_SAYS`), the replies meant for them (thread
+  entries with `"to": "sender"`, from an admin on the queue or from Claude with `feedback.py tell`), and Add to it,
+  which goes back to an admin first (a player's words reach Claude only once approved).
 - **Claude** reads and updates it with its own key (`config.FEEDBACK_KEY`, header X-Feedback-Key) through `/api/feedback`
   (scripts/feedback.py pulls it into private/feedback/, never committed), since it can't sign in to beta.
 
@@ -72,7 +71,6 @@ def shows_menu(request: Request) -> bool:
 
 templates.env.globals["feedback_send"] = can_send
 templates.env.globals["feedback_menu"] = shows_menu
-templates.env.globals["feedback_mine"] = can_send  # (Your feedback in the account menu and More: anyone who can send one)
 
 
 def _image(value) -> tuple[bytes, str] | None:
@@ -178,7 +176,7 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
             fb.status = "new"
         said = ("Answered: it's back with Claude" if asked else "Added and approved: it's with Claude" if approving
                 else "Added to the note" + ("" if fb.status == "planned" else ": it's back with Claude"))
-    elif to == "tell":  # a reply its sender sees on Your feedback (and hears about once)
+    elif to == "tell":  # a reply its sender sees on Your notes (and hears about once)
         if not answer.strip():
             raise HTTPException(400, "Write your reply first.")
         fb.thread = [*(fb.thread or []), {"who": "you", "to": "sender", "text": answer.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat()}]
@@ -270,7 +268,7 @@ def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None =
     return JSONResponse(_item(fb))
 
 
-# ------------------------------------------------------------------ Your feedback (each sender's own notes)
+# ------------------------------------------------------------------ a sender's own notes (Your notes › About askdnd, app/your_notes.py)
 
 SENDER_SAYS = {"review": ("Waiting for an admin", "An admin reads it first, then sends it to Claude."),
                "new": ("With Claude", "Claude has it and will look at it with the next batch."),
@@ -278,6 +276,10 @@ SENDER_SAYS = {"review": ("Waiting for an admin", "An admin reads it first, then
                "planned": ("Planned", "Claude is going to fix this."),
                "done": ("Fixed", "It's fixed on askdnd."),
                "deleted": ("Closed", "Not something askdnd will change for now.")}
+
+
+def now_iso() -> str:
+    return datetime.now(UTC).isoformat()
 
 
 def marker(fb: Feedback) -> str:
@@ -302,61 +304,3 @@ def for_sender(fb: Feedback) -> dict:
              for m in fb.thread or [] if m.get("who") == "sender" or m.get("to") == "sender"]
     return {"id": fb.id, "text": fb.text, "status": fb.status, "label": label, "says": says, "page": (fb.context or {}).get("page") or fb.url,
             "url": fb.url, "at": fb.created_at, "thread": shown, "can_add": fb.status != "deleted"}
-
-
-@router.get("/your-feedback")
-def mine(request: Request, db: Session = Depends(get_db)):
-    """Your feedback: every note you sent, where it stands, the replies to you, and Add to it."""
-    user, notes = _mine(db, request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    for fb in notes:  # (seen here: no card about it after this)
-        fb.told = marker(fb)
-    db.commit()
-    return templates.TemplateResponse(request, "feedback_mine.html", {"notes": [for_sender(fb) for fb in notes],
-                                                                     "toast": request.session.pop("toast", None)})
-
-
-@router.post("/your-feedback/{feedback_id:int}")
-def add_to(request: Request, feedback_id: int, text: str = Form(""), db: Session = Depends(get_db)):
-    """Add to your own note. From a player it goes to an admin first, as a new note does (Brett, Nov 6)."""
-    user, notes = _mine(db, request)
-    fb = next((x for x in notes if x.id == feedback_id), None)
-    if fb is None or fb.status == "deleted":
-        raise HTTPException(404)
-    if not text.strip():
-        raise HTTPException(400, "Write what you'd add first.")
-    fb.thread = [*(fb.thread or []), {"who": "sender", "text": text.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat()}]
-    admin = access.level((user or {}).get("email")) == access.ADMIN
-    fb.status = ("planned" if fb.status == "planned" else "new") if admin else "review"
-    fb.told = marker(fb)
-    db.commit()
-    request.session["toast"] = web.notice("Added: an admin reads it first" if not admin else "Added: it's with Claude")
-    return RedirectResponse("/your-feedback", status_code=303)
-
-
-NEWS = {"new": "Sent to Claude", "planned": "Planned", "done": "Fixed", "deleted": "Closed"}
-MOST_CARDS = 3  # (more at once: one card that says how many)
-
-
-@router.post("/your-feedback/news")
-def news(request: Request, db: Session = Depends(get_db)):
-    """What moved since you last heard (app.js shows each as a corner card once, with See it): a note sent to Claude,
-    planned, fixed or closed, or a reply to you. Asked once a page; nothing for someone who has sent none."""
-    _, notes = _mine(db, request)
-    out = []
-    for fb in notes:
-        now = marker(fb)
-        if now == fb.told or fb.status == "review":
-            continue
-        was_status, _, was_replies = (fb.told or "review:0").partition(":")
-        moved = now.split(":")[0] != was_status
-        short = fb.text if len(fb.text) <= 60 else fb.text[:57].rstrip() + "…"
-        out.append(f"{NEWS.get(fb.status, 'Moved') if moved else 'A reply'}: “{short}”")
-        fb.told = now
-    if out:
-        db.commit()
-    if len(out) > MOST_CARDS:
-        out = [f"{len(out)} of your notes moved on"]
-    return JSONResponse({"news": out}, headers={"Cache-Control": "no-store"})
-

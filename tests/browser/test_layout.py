@@ -15,7 +15,7 @@ CHECK = (Path(__file__).parent / "layout_check.js").read_text()
 WIDTHS = (375, 768, 1000, 1280)
 PAGES = {
     "player": ("/c/main/", "/c/main/?tab=sessions", "/c/main/campaign", "/characters/{cole}/battle", "/characters/{cole}",
-               "/characters/{cole}/plan", "/party", "/help", "/your-suggestions", "/your-feedback", "/twin"),
+               "/characters/{cole}/plan", "/party", "/help", "/your-notes", "/your-notes?tab=askdnd", "/twin"),
     "admin": tuple(f"/c/main/manage{p}" for p in ("", "/inbox", "/sessions", "/table", "/house-rules", "/history", "/settings",
                                                   "/dm-guide"))
              + tuple(f"/manage/{p}" for p in ("askdnd", "campaigns", "accounts", "tool-corrections", "usage", "backups", "history",

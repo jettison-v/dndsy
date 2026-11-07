@@ -28,6 +28,7 @@ from app.fog import router as fog_router
 from app.areas import router as areas_router
 from app.initiative import router as initiative_router
 from app.shifting import router as shifting_router
+from app.your_notes import router as your_notes_router
 from app.feedback import router as feedback_router
 from app.hit_points import router as hit_points_router
 from app.casting import router as casting_router
@@ -217,6 +218,7 @@ app.include_router(areas_router)
 app.include_router(initiative_router)  # the DM changes the fight's order (Labs: Initiative from askdnd)
 app.include_router(shifting_router)  # Wild Shape: shifting and leaving
 app.include_router(feedback_router)  # notes for Claude from any page, and the queue
+app.include_router(your_notes_router)  # Your notes: what each person sent, about the story and about askdnd
 
 LOGIN_ERRORS = {
     "not_allowed": "That Google account isn't on the list for this table.",

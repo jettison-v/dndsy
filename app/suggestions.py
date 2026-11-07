@@ -10,7 +10,7 @@ Glossary terms also get a side panel, with editing for reviewers.
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from markupsafe import escape
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import web
@@ -29,7 +29,7 @@ REDRAFTABLE = ("notes", "account")  # sessions Claude can redraft: transcripts a
 
 
 def _thanks(message: str = "Thanks! The DM or a reviewer will take a look.", follow: bool = False) -> HTMLResponse:
-    more = ' <a href="/your-suggestions">See what happens to it</a>' if follow else ""
+    more = ' <a href="/your-notes">See what happens to it</a>' if follow else ""
     return HTMLResponse(f'<p class="all-clear suggest-thanks" role="status">✓ {escape(message)}{more}</p>')
 
 
@@ -191,7 +191,7 @@ def glossary_delete(request: Request, term_id: int, db: Session = Depends(get_db
 # with the same actions everywhere (Accept · Edit · Ask Claude to work it in · Dismiss), Claude's description
 # drafts, and session drafts waiting for review (those keep their own page). Players see what happened to theirs.
 
-# A suggestion's status in the words its author sees (on the entry, and on Your suggestions; no notifications)
+# A suggestion's status in the words its author sees (on the entry, and on Your notes › About the story)
 OUTCOME = {"pending": "Waiting", "merged": "Added", "added": "Added", "done": "Used", "used": "Used",
            "rejected": "Not used", "dismissed": "Not used"}
 OUTCOME_TAG = {"Waiting": "draft", "Added": "new", "Used": "done", "Not used": "faint"}
@@ -255,7 +255,7 @@ def inbox(request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/login", status_code=303)
     if not can_moderate(user):
-        return RedirectResponse("/your-suggestions", status_code=303)
+        return RedirectResponse("/your-notes", status_code=303)
     campaign = web.campaign(db)
     return templates.TemplateResponse(request, "suggestions.html", {
         "items": from_the_table(db, campaign.id) if campaign else [],
@@ -263,27 +263,6 @@ def inbox(request: Request, db: Session = Depends(get_db)):
         "reviews": sessions_to_review(db, campaign.id) if campaign else [],
         "toast": request.session.pop("toast", None),
     })
-
-
-@router.get("/your-suggestions")
-def mine(request: Request, db: Session = Depends(get_db)):
-    """Your suggestions and what happened to each: Waiting, Added, Used or Not used."""
-    user = current_user(request)
-    if not user:
-        return RedirectResponse("/login", status_code=303)
-    email = (user.get("email") or "").lower()
-    rows = [{"x": f, "label": e.name, "href": f"{web.base()}/campaign?open={e.id}"}
-            for f, e in db.execute(select(Fact, Entity).join(Entity, Fact.entity_id == Entity.id)
-                                   .where(func.lower(Fact.author_email) == email, Entity.status == Status.PUBLISHED))]
-    for x in db.scalars(select(Suggestion).where(func.lower(Suggestion.author_email) == email)):
-        if x.target_type == "session":
-            s = db.get(GameSession, x.target_id)
-            rows.append({"x": x, "label": session_label(s) if s else "A session", "href": f"{web.base()}/?tab=sessions#s{s.id}" if s else f"{web.base()}/?tab=sessions"})
-        else:
-            t = db.get(GlossaryTerm, x.target_id) if x.target_id else None
-            rows.append({"x": x, "label": f"Glossary: {t.term}" if t else "Glossary: new term", "href": f"{web.base()}/campaign?tab=glossary"})
-    rows.sort(key=lambda r: (r["x"].created_at, r["x"].id), reverse=True)
-    return templates.TemplateResponse(request, "suggestions_mine.html", {"rows": rows})
 
 
 def _done(request: Request, message: str, kind: str = "ok") -> RedirectResponse:

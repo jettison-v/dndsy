@@ -149,7 +149,7 @@ def test_suggestions_go_to_the_dm_and_admins(dm, player, db):
     s = db.scalar(select(GameSession))
     player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sails."}, headers=HX)
     player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
-    assert player.get("/c/main/manage/inbox", follow_redirects=False).headers["location"] == "/your-suggestions"
+    assert player.get("/c/main/manage/inbox", follow_redirects=False).headers["location"] == "/your-notes"
     assert "Manage" not in player.get("/").text
     home = dm.get("/").text
     assert "2 suggestions or drafts are waiting" in home and 'href="/c/main/manage/inbox"' in home
@@ -186,7 +186,7 @@ def test_one_inbox_same_actions_and_players_see_the_outcome(dm, player, db, monk
     db.add(Recap(session_id=s.id, version=1, body="The party met Kiera.", author="ai", status=Status.PUBLISHED))
     for text in ("He sails.", "He sings.", "He fishes.", "He hums."):
         r = player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": text}, headers=HX)
-    assert 'href="/your-suggestions"' in r.text
+    assert 'href="/your-notes"' in r.text
     player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
     player.post("/campaign/glossary/suggest", data={"text": "Womford is a fishing village."}, headers=HX)
     fact = {f.text: f for f in db.scalars(select(Fact))}
@@ -224,8 +224,17 @@ def test_one_inbox_same_actions_and_players_see_the_outcome(dm, player, db, monk
     assert db.scalar(select(GlossaryTerm).where(GlossaryTerm.term == "Womford")).misheard_as == ["Wombford"]
     assert "Nothing waiting from the table" in dm.get("/c/main/manage/inbox").text
 
-    mine = player.get("/your-suggestions").text
+    # Your notes (Brett, Nov 7, Layout A and a badge): the DM's decisions are news. A card once each (more than
+    # three at once: one that says how many); the badge counts them until the player opens About the story
+    news = player.post("/your-notes/news").json()
+    assert news["count"] == 6 and news["tabs"]["story"] == 6
+    assert [c["text"] for c in news["cards"]] == ["6 of your notes moved on"] and news["cards"][0]["href"] == "/your-notes?tab=story"
+    again = player.post("/your-notes/news").json()
+    assert again["cards"] == [] and again["count"] == 6  # (a card doesn't clear the badge)
+    mine = player.get("/your-notes").text
     assert (mine.count(">Added</span>"), mine.count(">Used</span>"), mine.count(">Not used</span>")) == (3, 2, 1)
+    assert mine.count('class="notes-dot"') == 6 and "6 new" not in mine  # (each marked, the tab cleared)
+    assert player.post("/your-notes/news").json()["count"] == 0  # (opened: seen)
     peek = player.get(f"/campaign/{e.id}/peek").text
     assert "Your suggestions here" in peek and ">Not used<" in peek and "He hums." in peek
     assert "Your suggestions here" not in dm.get(f"/campaign/{e.id}/peek").text
