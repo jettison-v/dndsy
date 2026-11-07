@@ -4694,7 +4694,7 @@ document.addEventListener('askdnd:mention', e => {
 // card (once each), with See it
 (() => {
   if (!document.getElementById('account-menu') && !document.getElementById('more-menu')) return;
-  fetch('/your-notes/news', { method: 'POST', headers: { Accept: 'application/json' } })
+  fetch('/your-notes/news', { headers: { Accept: 'application/json' }, cache: 'no-store' })
     .then(r => (r.ok ? r.json() : { count: 0, cards: [] }))
     .then(j => {
       document.querySelectorAll('[data-notes-count]').forEach(b => { b.textContent = j.count || ''; b.hidden = !j.count; });

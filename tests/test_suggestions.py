@@ -226,15 +226,15 @@ def test_one_inbox_same_actions_and_players_see_the_outcome(dm, player, db, monk
 
     # Your notes (Brett, Nov 7, Layout A and a badge): the DM's decisions are news. A card once each (more than
     # three at once: one that says how many); the badge counts them until the player opens About the story
-    news = player.post("/your-notes/news").json()
+    news = player.get("/your-notes/news").json()
     assert news["count"] == 6 and news["tabs"]["story"] == 6
     assert [c["text"] for c in news["cards"]] == ["6 of your notes moved on"] and news["cards"][0]["href"] == "/your-notes?tab=story"
-    again = player.post("/your-notes/news").json()
+    again = player.get("/your-notes/news").json()
     assert again["cards"] == [] and again["count"] == 6  # (a card doesn't clear the badge)
     mine = player.get("/your-notes").text
     assert (mine.count(">Added</span>"), mine.count(">Used</span>"), mine.count(">Not used</span>")) == (3, 2, 1)
     assert mine.count('class="notes-dot"') == 6 and "6 new" not in mine  # (each marked, the tab cleared)
-    assert player.post("/your-notes/news").json()["count"] == 0  # (opened: seen)
+    assert player.get("/your-notes/news").json()["count"] == 0  # (opened: seen)
     peek = player.get(f"/campaign/{e.id}/peek").text
     assert "Your suggestions here" in peek and ">Not used<" in peek and "He hums." in peek
     assert "Your suggestions here" not in dm.get(f"/campaign/{e.id}/peek").text

@@ -77,3 +77,25 @@ def test_only_admins_and_never_a_dm_into_their_players_notes(setup, monkeypatch)
     admin.post("/view-as", data={"email": "mark@example.com"})
     assert "Viewing as" not in admin.get("/").text  # would show the DM their player's notes
     assert 'action="/view-as"' not in admin.get("/manage/accounts").text.split("mark@example.com")[1].split("</div>")[0]
+
+
+def test_viewing_as_a_player_shows_their_notes_only_and_marks_nothing_seen(setup, monkeypatch):
+    """Brett, Nov 7: viewing as Mark, Your notes showed Brett's own feedback. It shows the viewed person's, and looking
+    changes nothing for them: their badge and cards stay theirs (View as is read-only)."""
+    from app import picks
+    from app.models import Feedback
+
+    db = setup
+    admin = client_for(monkeypatch, db, "brett@example.com")
+    mark = picks.user_row(db, {"email": "mark@example.com", "name": "Mark"})
+    brett = picks.user_row(db, {"email": "brett@example.com", "name": "Brett"})
+    db.add_all([Feedback(user_id=brett.id, sender="Brett (admin)", text="Brett's own note", status="done"),
+                Feedback(user_id=mark.id, sender="Mark (player)", text="Mark's note", status="done")])
+    db.flush()
+    admin.post("/view-as", data={"email": "mark@example.com"})
+    page = admin.get("/your-notes?tab=askdnd").text
+    assert "Mark&#39;s note" in page and "Brett&#39;s own note" not in page
+    news = admin.get("/your-notes/news").json()
+    assert news["count"] == 1 and news["cards"] == []  # (his count; his cards stay his)
+    db.expire_all()
+    assert db.scalar(select(Feedback).where(Feedback.user_id == mark.id)).seen == ""  # (nothing marked seen for him)
