@@ -79,7 +79,7 @@ button { font: inherit; cursor: pointer; }
 img { max-width: 100%; }
 
 /* Top bar */
-.topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 5; }
+.topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 6; }  /* (over Table rolls, 5, so its menus open over it) */
 /* Staging (docs/SETUP_LOG.md › A staging copy): an amber menu bar and a Staging label, so it's never taken for the table's askdnd */
 body[data-staging] .topbar { background: var(--staging-bar); border-bottom-color: var(--staging-edge); }
 body[data-staging] .bottom-nav { background: var(--staging-bar); border-top: 2px solid var(--staging-edge); }
@@ -216,7 +216,7 @@ a.live-row:hover .live-go { color: var(--text); }
 .res-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0; padding: 0 10px; border-left: 1px solid var(--line); }
 .res-gname { color: var(--muted); margin-right: 6px; }
 .res-group .res { border-left: none; padding: 0 8px 0 0; }
-.res-more { display: none; }
+.res-more, .fold-btn { display: none; }  /* (phones only: Battle's rows fold there) */
 .rs-latest { display: none; }
 /* A small window's buttons (DESIGN.md › Where a window's actions go; the UI pass, 2026-11-02): the main action first, then
    others, then Cancel as a quiet link */
@@ -590,6 +590,9 @@ details.tale-more[open] > summary { display: none; }  /* opened, its moments sim
 .ev .btn.link { opacity: 0; }
 .ev:hover .btn.link, .ev:focus-within .btn.link { opacity: 1; }
 @media (hover: none) { .ev .btn.link { opacity: 1; } }
+.ev-major { flex: none; margin: 0; }
+.ev .ev-major .btn.link { opacity: 1; padding: 0; color: var(--faint); font-size: var(--fs-md); }  /* (always shown: it says which Story shows first) */
+.ev .ev-major .btn.link.on { color: var(--amber); }
 .kind { flex: none; width: 76px; font-size: var(--fs-xs); font-weight: 600; text-transform: capitalize; }
 .kind.event { color: var(--muted); }
 .kind.reveal { color: var(--violet); }
@@ -1062,7 +1065,11 @@ dl.mech dt { color: var(--muted); } dl.mech dd { margin: 0; }
 .entity-pic figcaption { margin: 0; }
 .pic-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .pic-form label.btn { cursor: pointer; white-space: nowrap; }
-.peek-pic { width: 100%; max-height: 240px; object-fit: cover; border-radius: var(--r-md); margin-bottom: 12px; border: 1px solid var(--line); }
+.peek-pic { width: 100%; max-height: 240px; object-fit: cover; border-radius: var(--r-md); margin-bottom: 12px; border: 1px solid var(--line); display: block; }
+/* Only a place is wide: a person, creature, item or emblem keeps its own shape in the side panel (staging feedback 32) */
+.peek-pic[data-shape=portrait] { width: min(180px, 55%); aspect-ratio: 3 / 4; max-height: none; }
+.peek-pic[data-shape=square], .peek-pic[data-shape=emblem] { width: min(200px, 60%); aspect-ratio: 1; max-height: none; }
+.peek-pic[data-shape=item] { width: min(200px, 60%); aspect-ratio: 1; max-height: none; object-fit: contain; background: var(--surface-2); }
 @media (max-width: 640px) { .entity-head { flex-direction: column-reverse; } .entity-pic { width: 100%; } .entity-pic img { max-height: 280px; } }
 .dm-notes { margin-top: 14px; border-left: 3px solid var(--amber); background: var(--amber-soft); border-radius: 0 var(--r-md) var(--r-md) 0; padding: 10px 14px; }
 .dm-notes p { margin: 6px 0 0; }
@@ -1621,7 +1628,7 @@ a.sheet-ref { text-decoration-style: dotted; }
    the page over (wide windows) or lies over it (narrower); closed, only the edge tab shows.
    Phones: a bottom sheet above the bottom bar. Under the side panel and windows (z-index 4). */
 .rolls-side { display: none; }
-body.at-table .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 4; left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: var(--chrome); border-right: 1px solid var(--line); transition: transform .25s ease, visibility 0s; }
+body.at-table .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 5; /* over a page's sticky tab bar (4): feedback 45 */ left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: var(--chrome); border-right: 1px solid var(--line); transition: transform .25s ease, visibility 0s; }
 body.at-table.rolls-open { --rolls-w: 340px; }
 @media (max-width: 1099px) and (min-width: 901px) { body.at-table.rolls-open { --rolls-w: 0px; } body.at-table.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
 body.at-table { padding-left: var(--rolls-w, 0); }
@@ -1689,7 +1696,8 @@ body.at-table.rolls-closed { --rolls-w: 0px; }
 body.rolls-snap .rolls-side { transition: none !important; }
 body.at-table.rolls-closed .rolls-side { transform: translateX(-100%); visibility: hidden; transition: transform .25s ease, visibility 0s .25s; }
 .rs-edge { display: none; }
-body.at-table.rolls-closed .rs-edge { position: fixed; z-index: 4; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 var(--r-md) var(--r-md) 0; }
+.rs-log > .roll-item.rs-missed { outline: 2px solid var(--amber); outline-offset: -2px; transition: outline-color 1s; }  /* rolls made while you were away (feedback 46) */
+body.at-table.rolls-closed .rs-edge { position: fixed; z-index: 5; left: 0; top: calc(var(--stick-top, 62px) + 12px); width: 28px; height: 44px; display: grid; place-items: center; background: var(--chrome); color: var(--amber); border: 1px solid var(--line); border-left: 0; border-radius: 0 var(--r-md) var(--r-md) 0; }
 .rs-edge:hover { color: var(--text); }
 .rs-people { display: none; }
 .rs-person { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 0; color: var(--text); font: inherit; cursor: pointer; }
@@ -2558,6 +2566,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ep-glance { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); font-size: var(--fs-sm); }
 .ep-glance dt { color: var(--muted); }
 .ep-glance dd { margin: 0; min-width: 0; }
+.ep-glance dt:has(+ dd.part-of) { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--sp-1)); }
+.ep-glance dd.part-of { grid-column: 1 / -1; }  /* a quest's name is long: the box's whole width, under its label (feedback 35) */
 .ep-cols { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--sp-6); margin-top: var(--sp-3); }
 .ep-links { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); }
 .ep-links ul { margin: 0; }
@@ -2592,6 +2602,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .part-of { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
 .chip-link { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--chip-h); padding: 0 var(--sp-3); border-radius: var(--r-pill); background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font-size: var(--fs-sm); text-decoration: none; }
 .chip-link:hover { border-color: var(--line-strong); }
+.part-of > .chip-link { flex: 0 1 auto; flex-wrap: wrap; row-gap: 2px; min-width: 0; max-width: 100%; padding-block: 3px; line-height: 1.35; border-radius: var(--r-md); }  /* a long name wraps across the box, not word by word in a pill (feedback 35) */
 .head-link { margin-left: var(--sp-2); font-size: var(--fs-xs); font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--link); }
 
 /* Quests: the board */
@@ -2639,6 +2650,11 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .cx-diagram > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .cx-node { position: absolute; transform: translate(-50%, -50%); width: 150px; max-width: 30%; display: flex; flex-direction: column; align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text); text-decoration: none; text-align: center; line-height: 1.3; }
 a.cx-node:hover { border-color: var(--text); }
+/* A picture beside the name (feedback 34): the node keeps its height, so the layout's spacing still fits */
+.cx-node.has-pic { flex-direction: row; gap: var(--sp-2); text-align: left; padding-left: var(--sp-1); }
+.cx-pic { flex: none; width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
+.cx-words { display: flex; flex-direction: column; min-width: 0; }
+.cx-words b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cx-node b { font-size: var(--fs-sm); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cx-node small { font-size: var(--fs-xs); color: var(--muted); }
 .cx-node.faction, .cx-node.quest { background: var(--story-bg); border-color: var(--story-line); }
@@ -2974,7 +2990,11 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
   .status-phone .res-insp { margin-left: 0; }
   .battlebar > .res-more { order: 2; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: var(--control-h-sm); margin-top: var(--sp-2); padding: 0 var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; cursor: pointer; }
   .battlebar > .res-row { order: 3; display: none; margin: var(--sp-2) 0 0; }
-  body.res-open .battlebar > .res-row { display: flex; }
+  body.fold-res .battlebar > .res-row { display: flex; }
+  .fold-btn { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--control-h-sm); padding: 0 var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--text); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+  .fold-btn::after { content: "▾"; color: var(--muted); }
+  .fold-btn[aria-expanded="true"]::after { content: "▴"; }
+  body:not(.fold-ws) .ws-row > .ws-chip, body:not(.fold-sb) .spell-bar > .sb-starred { display: none; }
   .battlebar > .res-more + .res-row { margin: var(--sp-2) 0 0; }
   .battlebar > .res-row .res-label { display: none; }
   .res-group { padding: 0; border-left: none; }
@@ -3150,6 +3170,7 @@ button.purse:hover .coin, button.purse:focus-visible .coin { background: var(--s
 .coin small { color: var(--muted); font-size: var(--fs-xs); text-transform: uppercase; }
 .coin-pp { background: var(--coin-pp); } .coin-gp { background: var(--coin-gp); } .coin-ep { background: var(--coin-ep); } .coin-sp { background: var(--coin-sp); } .coin-cp { background: var(--coin-cp); }
 .purse-sum { white-space: nowrap; }
+.purse-bag { flex-basis: 100%; font-size: var(--fs-xs); }  /* a bag's coins, counted in the purse (feedback 47) */
 .prep-foot { position: sticky; bottom: calc(-1 * var(--sp-4)); display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-3) 0; background: var(--surface); border-top: 1px solid var(--line); }
 .prep-foot-note { flex: none; white-space: nowrap; }  /* ("Prepare 2, drop 1" on one line; a longer sentence beside it wraps instead) */
 .prep-foot > .use-said { flex: 1 1 16em; min-width: 0; margin: 0; }
@@ -3348,7 +3369,7 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 /* The one Picture window (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2) */
 .pw { display: grid; gap: var(--sp-3); }
 .pw > .tabbar { min-height: 41px; flex: none; }  /* (staging feedback 31: a full window squeezed the tabs to a sliver) */
-.pw-drawing, #pw-options:not(:empty) { margin-top: var(--sp-3); }  /* room between Draw and the pictures (staging feedback 31) */
+.pw-drawing, #pw-options:not(:empty) { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--line); }  /* the pictures stand apart from Draw (staging feedback 31, feedback 39): twice the form's own gaps, and a line */
 .pw-form { display: grid; gap: var(--sp-3); }
 .pw-drop { display: grid; place-items: center; gap: var(--sp-2); text-align: center; min-height: 160px; padding: var(--sp-3); border: 2px dashed var(--line-strong); border-radius: var(--r-lg); color: var(--muted); cursor: pointer; }
 .pw-drop.over { border-color: var(--amber); background: var(--amber-soft); }
@@ -3451,3 +3472,17 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 /* A change for D&D Beyond that can't reach the sheet now (Brett, Nov 5): said where it starts (templating unreached_says) */
 .unreached { margin: 0 0 var(--sp-2); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--amber-soft); color: var(--text); font-size: var(--fs-sm); }
 .ls-chip:disabled { opacity: .45; cursor: not-allowed; }
+
+/* A picture, large (app.js "a picture, large"; feedback 44) */
+img.pic-can-big { cursor: zoom-in; }
+dialog.pic-big { padding: 0; border: 0; background: transparent; max-width: 94vw; max-height: 90vh; cursor: zoom-out; }
+dialog.pic-big::backdrop { background: color-mix(in srgb, var(--backdrop-dark) 78%, transparent); }
+dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: auto; height: auto; object-fit: contain; border-radius: var(--r-md); }
+
+/* Describe it's pictures to go by (feedback 34, 36) */
+.pw-refs { display: grid; gap: var(--sp-2); margin: 0; padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); }
+.pw-refs legend { padding: 0 var(--sp-1); font-size: var(--fs-sm); }
+.pw-ref { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); cursor: pointer; }
+.pw-ref img { width: 32px; height: 32px; border-radius: var(--r-sm); object-fit: cover; border: 1px solid var(--line); }
+.pw-at { margin: 0; }
+

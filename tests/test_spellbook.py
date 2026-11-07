@@ -31,6 +31,23 @@ def test_averages_count_upcasting_and_cantrip_tiers():
     assert sb.average(None, 3, 8) is None
 
 
+def test_a_spell_that_adds_to_hits_rolls_nothing_when_cast():
+    """Feedback 48 (Tim, Nov 7): Hunter's Mark's 1d6 is added to each hit while it lasts, never rolled on casting; the
+    Spell Book says "each hit", Battle's row has nothing to roll, and On a hit lists it while concentrating."""
+    from app import character_views as views
+    mark = rr.spell("Hunter's Mark")
+    assert [e["on"] for e in mark["events"]] == ["rider"]
+    assert all(e["on"] == "rider" for n in ("Hex", "Divine Favor") for e in rr.spell(n)["events"])
+    assert [e["on"] for e in rr.spell("Searing Smite")["events"]][0] == "auto"  # (a smite is cast on the hit: it deals it)
+    assert sb.average(mark, 1, 5) == {"avg": 3.5, "dice": "1d6 force", "per": "each hit"}
+    assert views.rollable({"recipe": mark})["dice"] == ""
+    sheet = {"level": 5, "spells": [{"name": "Hunter's Mark", "roll": mark}]}
+    assert sb.riders(sheet, {"spell": "Hunter's Mark", "level": 1}) == [
+        {"name": "Hunter's Mark", "when": "Each hit while it lasts", "source": "Concentration",
+         "effect": "+1d6 force damage (the spell says which hits count)"}]
+    assert sb.riders(sheet, None) == [] and sb.riders(sheet, {"spell": "Bless", "level": 1}) == []
+
+
 def test_concentration_rules():
     assert sb.concentration_dc(0) == 10 and sb.concentration_dc(31) == 15 and sb.concentration_dc(200) == 30
     assert sb.rounds("Concentration, up to 1 minute") == 10 and sb.rounds("Concentration, up to 10 minutes") == 100

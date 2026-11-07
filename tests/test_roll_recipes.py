@@ -23,7 +23,7 @@ def test_every_stored_recipe_is_well_formed():
     for name, recipe in list(data["spells"].items()) + list(data["items"].items()):
         assert recipe["checked"], name
         for e in recipe["events"]:
-            assert e["on"] in ("hit", "save", "auto", "heal", "temp", "plain"), name
+            assert e["on"] in ("hit", "save", "auto", "rider", "heal", "temp", "plain"), name
             assert e["parts"] and all(rr.parse_part(p) for p in e["parts"]), name
             assert len(e.get("upcast") or e["parts"]) == len(e["parts"]), name
             if e["on"] == "save":

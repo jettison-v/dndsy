@@ -148,13 +148,19 @@
 {# Coins as a purse (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html, question 6): each coin in its metal, the total in
    gold beside them. On Sheet › Items, where the bridge works, pressing it opens Change coins; on a Party card it only
    shows. A coin on its way to D&D Beyond has its ↻. `total` says the gold it's all worth beside it (else on hover). #}
-{% macro purse(s, c=none, change=false, total=true) -%}
-{%- set cur = s.currency or {} -%}
+{% macro purse(s, c=none, change=false, total=true, bags=true) -%}
+{#- Every coin the character has: carried and in bags (feedback 47: Cole's gold in his Bag of Holding wasn't counted),
+    each bag's said under it; `bags=false` for paying, which takes carried coins only (item_browser.pay_from) -#}
+{%- set held = s.bag_coins if bags else [] -%}
+{%- set ns = namespace(cur=dict(s.currency or {})) -%}
+{%- for b in held %}{% for k, v in b.coins.items() %}{% set _ = ns.cur.update({k: ns.cur.get(k, 0) + v}) %}{% endfor %}{% endfor -%}
+{%- set cur = ns.cur -%}
 {%- set worth = cur.get("pp", 0) * 10 + cur.get("gp", 0) + cur.get("ep", 0) * 0.5 + cur.get("sp", 0) * 0.1 + cur.get("cp", 0) * 0.01 -%}
 {%- set sum = "{:,.2f}".format(worth).rstrip("0").rstrip(".") ~ " gp in all" -%}
 {%- set inner -%}
 {%- for k in ("pp", "gp", "ep", "sp", "cp") if cur.get(k) %}<span class="coin"{{ sync(s, "coin:" ~ k) }}><i class="coin-{{ k }}" aria-hidden="true"></i><b>{{ "{:,}".format(cur[k]) }}</b><small>{{ k }}</small></span>{% else %}<span class="note">No coins</span>{% endfor -%}
 {%- if total and cur | length > 1 %}<span class="purse-sum note">{{ sum }}</span>{% endif -%}
+{%- for b in held %}<span class="purse-bag note">In {{ b.name }}: {% for k in ("pp", "gp", "ep", "sp", "cp") if b.coins.get(k) %}{{ "{:,}".format(b.coins[k]) }} {{ k }}{{ ", " if not loop.last }}{% endfor %}</span>{% endfor -%}
 {%- endset -%}
 {%- if change %}<button type="button" class="purse" data-use-url="/characters/{{ c.id }}/coins" title="{{ sum ~ ': ' if cur | length > 1 }}Change coins">{{ inner }}</button>
 {%- else %}<div class="purse"{% if not total and cur | length > 1 %} title="{{ sum }}"{% endif %}>{{ inner }}</div>{% endif -%}
@@ -223,7 +229,7 @@
    healing); a spell with nothing to roll opens its description. slot: the level to cast it at. #}
 {% macro spell_roll(c, e, label=none, cls="spell-chip", slot=0) -%}
 {%- set rec = e.recipe -%}
-{%- set first = (rec.events | rejectattr("on", "equalto", "hit") | list | first) if rec else none -%}
+{%- set first = (rec.events | rejectattr("on", "in", ["hit", "rider"]) | list | first) if rec else none -%}
 {%- if e.attack and rec -%}
 <button type="button" class="{{ cls }}" {{ roll_attrs("attack", e.name, e.attack, "", (), recipe=rec) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll to hit {{ e.attack }}">{{ label or e.name }}</button>
 {%- elif first -%}
@@ -293,7 +299,7 @@
 
 {% macro resource_row(s, slots=True, skip=(), c=none) -%}
 {% set res_rows = s.actions | selectattr("uses") | selectattr("source", "in", ["class", "feat", "race"]) | rejectattr("name", "in", skip) | sort(attribute="uses.max", reverse=True) | list %}
-{% if res_rows %}<button type="button" class="res-more" data-res-more aria-expanded="false"><span>Resources</span><span class="count">{{ res_rows | length }}</span></button>
+{% if res_rows %}<button type="button" class="res-more" data-fold="res" aria-expanded="false"><span>Resources</span><span class="count">{{ res_rows | length }}</span></button>
 <div class="res-row"><span class="res-label">Resources</span>{% for g in res_rows | res_groups %}{% if g.name %}<span class="res-group"><span class="res-gname" title="{{ g.name }}">{{ res_name(g.name) }}:</span>{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name.split(": ", 1)[1], a.uses, a.name) }}{% endfor %}</span>{% else %}{% for a in g.rows %}{{ res(s, c if a.id else none, "uses:" ~ a.id, a.name, a.uses) }}{% endfor %}{% endif %}{% endfor %}{% if caller %}{{ caller() }}{% endif %}</div>{% elif caller %}<div class="res-row"><span class="res-label">Resources</span>{{ caller() }}</div>{% endif %}
 {% if slots and (s.spell_slots.slots or s.spell_slots.pact) %}<div class="res-row slots"><span class="res-label">Spell slots</span>
   {% for sl in s.spell_slots.slots %}{{ res(s, c, "slot:" ~ sl.level, sl.level ~ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th"), {"max": sl.max, "left": sl.max - sl.used}) }}{% endfor %}

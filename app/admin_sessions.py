@@ -355,6 +355,15 @@ def save_event(request: Request, session_id: int, kind: str = Form(...), text: s
     return _act(request, db, session_id, act)
 
 
+@router.post("/sessions/{session_id:int}/events/{event_id:int}/major")
+def major_event(request: Request, session_id: int, event_id: int, db: Session = Depends(get_db)):
+    """★ on a key moment: Story shows the major ones first (feedback 40, Nov 7)."""
+    def act(s):
+        return "Marked major: Story shows it first" if review.toggle_major(db, s, event_id) else "Not major: it's behind Show the other"
+
+    return _act(request, db, session_id, act)
+
+
 @router.post("/sessions/{session_id:int}/events/{event_id}/delete")
 def delete_event(request: Request, session_id: int, event_id: int, db: Session = Depends(get_db)):
     def act(s):

@@ -16,6 +16,7 @@ import secrets
 import urllib.error
 import urllib.request
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import pictures, spending
@@ -116,10 +117,23 @@ def _png(raw: bytes) -> bytes:
     return out.getvalue()
 
 
-def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene", match: bool = False) -> tuple[list[tuple[str, str]], str]:
+def _guide(db: Session, entity) -> bytes | None:
+    """An entry's picture to send along: its own (uploaded or drawn), else its character's D&D Beyond portrait."""
+    from app.models import CampaignCharacter
+
+    p = db.scalar(select(EntityPicture).where(EntityPicture.entity_id == entity.id))
+    if p is not None and p.file_key:
+        return pictures.files.read(p.file_key)
+    cc = db.scalar(select(CampaignCharacter).where(CampaignCharacter.entity_id == entity.id).limit(1))
+    return _portrait(db, str(cc.character_id)) if cc else None
+
+
+def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene", match: bool = False,
+         like: list | None = None, refs_of: list | None = None) -> tuple[list[tuple[str, str]], str]:
     """Four pictures of `words` in the campaign's style, framed for what they're of (pictures.FRAMES: a portrait, the
     whole item…), each kept in file storage: ([(full key, thumb key)], the style's words). The caller lets go of the
-    database first (OpenAI takes up to a minute)."""
+    database first (OpenAI takes up to a minute). `like`: relatives to resemble; `refs_of`: entries named with @ to draw
+    as they look (feedback 34, 36; entries pictures.usable checked); with the style's pictures, REFS in all."""
     words = " ".join((words or "").split())[:1000]
     if not words:
         raise pictures.PictureError("Say what it looks like first.")
@@ -128,8 +142,16 @@ def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene
         raise pictures.PictureError(stop)
     st = style(campaign)
     look = st["words"].strip() or PLAIN
-    refs = []  # the Art style's pictures, only when asked to match them (Brett, Nov 6: matched every time, everyone looked alike)
-    for pid in (st["refs"][:REFS] if match else []):
+    refs, said = [], []  # who or what the first pictures show, then the Art style's
+    for kind, e in [("like", e) for e in like or []] + [("ref", e) for e in refs_of or []]:
+        data = _guide(db, e) if len(refs) < REFS else None
+        if data:
+            refs.append(("ref.png", _png(data)))
+            said.append(f"Picture {len(refs)} shows {e.name}, family of this subject: give a clear family resemblance (face shape, "
+                        "eyes, nose, skin and hair colour) while keeping a different person, with their own age and features as described."
+                        if kind == "like" else f"Picture {len(refs)} shows {e.name} as it looks in this campaign: where it appears, draw it to match.")
+    guided = len(refs)
+    for pid in (st["refs"][:REFS - guided] if match else []):  # (only when asked to match them: Brett, Nov 6, everyone looked alike)
         if isinstance(pid, str) and pid.startswith(PORTRAIT):
             data = _portrait(db, pid[len(PORTRAIT):])
         else:
@@ -138,9 +160,11 @@ def draw(db: Session, campaign: Campaign | None, words: str, frame: str = "scene
         if data:
             refs.append(("ref.png", _png(data)))
     framing, size, centering = pictures.FRAMES.get(frame, pictures.FRAMES["scene"])
+    styling = len(refs) > guided
     prompt = f"{words}\n\n{framing}\n\nArt style for every picture in this campaign: {look}" + (
-        "\nUse the pictures given only for their painting style: palette, brushwork and light. Don't copy any face, hair, "
-        "body, clothing, pose or composition from them: this subject looks only as described above." if refs else "")
+        "\n" + "\n".join(said) if said else "") + (
+        ("\nUse the " + ("remaining " if said else "") + "pictures given only for their painting style: palette, brushwork and light. "
+         "Don't copy any face, hair, body, clothing, pose or composition from them: this subject looks only as described above.") if styling else "")
     run = ExtractionRun(source="picture", model=MODEL, status="running")
     db.add(run)
     db.commit()  # (counted before the call; the database isn't held while OpenAI draws)

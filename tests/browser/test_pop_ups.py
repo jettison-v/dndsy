@@ -85,3 +85,41 @@ def test_a_long_button_stays_inside_its_window(people, server):
     }""", label)
     assert out <= 0, out
 
+
+
+def test_a_picture_opens_large_and_a_tap_closes_it(people, server):
+    """Feedback 44 (Mark, Nov 7): tapping a picture shows it large over the page; a picture that is a button keeps
+    opening what it opens."""
+    player = people("player")
+    page = battle(player, server)
+    dot = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+    page.evaluate("""src => {
+      const a = document.createElement('img'); a.className = 'ws-pic'; a.id = 'pic-plain'; a.src = src; a.width = 40; a.height = 40;
+      const b = document.createElement('button'); b.type = 'button'; b.id = 'pic-button';
+      const c = document.createElement('img'); c.className = 'ws-pic'; c.src = src; c.width = 40; c.height = 40; b.append(c);
+      document.querySelector('h1').after(a, b);
+    }""", dot)
+    page.click("#pic-plain")
+    assert page.locator("dialog.pic-big[open] img").is_visible()
+    page.mouse.click(5, 5)
+    page.wait_for_function("!document.querySelector('dialog.pic-big')")
+    page.click("#pic-button img")
+    assert page.locator("dialog.pic-big").count() == 0
+    assert player.errors == []
+
+
+def test_on_a_phone_wild_shape_folds_to_a_line_that_opens_and_stays_open(people, server):
+    """Feedback 29 (Brett, Nov 7): on a phone Wild Shape's forms (and the spell bar's pinned spells, and Resources) fold to
+    one line that opens; the choice holds on that device."""
+    player = people("player")
+    player.page.set_viewport_size({"width": 390, "height": 844})
+    page = battle(player, server)
+    chip = page.locator(".ws-row > .ws-chip").first
+    assert page.locator('[data-fold="ws"]').is_visible() and not chip.is_visible()
+    page.click('[data-fold="ws"]')
+    assert chip.is_visible() and page.get_attribute('[data-fold="ws"]', "aria-expanded") == "true"
+    page.reload()
+    assert page.locator(".ws-row > .ws-chip").first.is_visible()
+    page.set_viewport_size({"width": 1280, "height": 900})
+    assert not page.locator('[data-fold="ws"]').is_visible() and page.locator(".ws-row > .ws-chip").first.is_visible()
+    assert player.errors == []

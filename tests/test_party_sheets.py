@@ -53,6 +53,19 @@ def test_every_row_and_resource_is_where_it_belongs(player, db, sheet, name):
 
 
 @pytest.mark.parametrize("name", PARTY)
+def test_sheet_lists_every_bonus_action_and_reaction_battle_does(player, db, sheet, name):
+    """Feedback 42 (Mark, Nov 7): Trah's reaction spells were on Battle but missing from Sheet's Actions tab. Everything
+    Battle's Bonus Action and Reaction columns hold (their See all panels) is on Sheet too."""
+    cole, _ = _as(sheet, name, db)
+    page = player.get(f"/characters/{cole.id}").text
+    actions = page.split('<div id="t-actions">', 1)[1].split('<div id="t-', 1)[0]  # (the Actions tab alone: Spells repeats them)
+    on_sheet = set(re.findall(r'data-ref="([^"]+)"', actions))
+    for col in ("bonus", "reaction"):
+        on_battle = set(re.findall(r'data-ref="([^"]+)"', player.get(f"/characters/{cole.id}/all/{col}").text))
+        assert on_battle and on_battle <= on_sheet, (name, col, sorted(on_battle - on_sheet))
+
+
+@pytest.mark.parametrize("name", PARTY)
 def test_every_window_their_pages_offer_opens(player, db, sheet, name):
     cole, parsed = _as(sheet, name, db)
     pages = [player.get(f"/characters/{cole.id}/battle").text, player.get(f"/characters/{cole.id}").text]

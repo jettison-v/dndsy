@@ -17,8 +17,14 @@ from app.templating import templates
 router = APIRouter(prefix="/manage")  # askdnd-wide: /manage/usage
 
 
-def _spent(db: Session, since: datetime | None = None) -> float:
-    q = select(func.coalesce(func.sum(ExtractionRun.cost_usd), 0.0))
+OPENAI = ("picture", "narration")  # runs paid to OpenAI (drawn pictures, Listen's voice); the rest are Claude's
+OPENAI_BILLING = "https://platform.openai.com/settings/organization/billing/overview"
+
+
+def _spent(db: Session, since: datetime | None = None, openai: bool = False) -> float:
+    """Claude's spending, or (openai=True) OpenAI's: Anthropic's balance counts only Claude's (feedback 38, Nov 7)."""
+    q = select(func.coalesce(func.sum(ExtractionRun.cost_usd), 0.0)).where(
+        ExtractionRun.source.in_(OPENAI) if openai else ExtractionRun.source.not_in(OPENAI))
     if since is not None:
         q = q.where(ExtractionRun.created_at >= since)
     return float(db.scalar(q) or 0.0)
@@ -30,11 +36,12 @@ def usage_summary(db: Session, now: datetime | None = None) -> dict:
     month = today.replace(day=1)
     bought = float(db.scalar(select(func.coalesce(func.sum(CreditTopUp.amount_usd), 0.0))) or 0.0)
     total = _spent(db)
-    done = db.scalar(select(func.count()).select_from(ExtractionRun).where(ExtractionRun.status == "done")) or 0
-    month_spent = _spent(db, month)
+    done = db.scalar(select(func.count()).select_from(ExtractionRun).where(ExtractionRun.status == "done", ExtractionRun.source.not_in(OPENAI))) or 0
+    openai_month = _spent(db, month, openai=True)
+    month_spent = _spent(db, month) + openai_month  # (the monthly limit covers both)
     cap = spending.limit(db)
     return {
-        "today": _spent(db, today),
+        "today": _spent(db, today) + _spent(db, today, openai=True),
         "month": month_spent,
         "limit": cap,
         "limit_left": max(cap - month_spent, 0.0) if cap is not None else None,
@@ -44,6 +51,10 @@ def usage_summary(db: Session, now: datetime | None = None) -> dict:
         "balance": bought - total if bought else None,
         "average": total / done if done else None,
         "drafts": done,
+        "claude_month": month_spent - openai_month,
+        "openai_month": openai_month,
+        "openai_total": _spent(db, openai=True),
+        "openai_billing": OPENAI_BILLING,
     }
 
 

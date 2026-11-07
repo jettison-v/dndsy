@@ -50,7 +50,7 @@
           {% set healing = e.avgs and (e.avgs.values() | first).per in ("healed", "Temporary HP") %}
           <span class="sb-avg-col{{ ' heal' if healing }}">{% if e.avgs %}<b data-sb-avg>—</b> <span class="note" data-sb-dice></span>{% if e.on_save == "half" %}<span class="note sb-half" data-sb-half></span>{% endif %}{% else %}<span class="note">—</span>{% endif %}</span>
           <span class="sb-actions">
-            {% if e.recipe and not (can_play and e.level) %}{{ spell_roll(c, e, "Roll", "row-act sb-roll", 0) }}{% endif %}{# compact: the row says what it rolls (Brett, 2026-10-29) #}
+            {% if e.recipe and not (can_play and e.level) and (e.attack or e.recipe.events | rejectattr("on", "in", ["hit", "rider"]) | list) %}{{ spell_roll(c, e, "Roll", "row-act sb-roll", 0) }}{% endif %}{# compact: the row says what it rolls (Brett, 2026-10-29) #}
             {% if can_play and (e.level or e.conc) %}<button type="button" class="row-act item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ e.key | urlencode }}">Cast</button>{% endif %}
             {% if e.conc and can_pick and not (conc and conc.key == e.key) %}
             {% if conc %}{# already concentrating: ask first, as ✕ does (Brett, 2026-10-29) #}

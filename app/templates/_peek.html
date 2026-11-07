@@ -13,7 +13,7 @@
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 <div class="peek-body">
-  {% if picture %}<img class="peek-pic" src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer"{% if picture.pos %} style="object-position: {{ picture.pos }}"{% endif %}>{% if not picture.uploaded %}<p class="note byline">From D&amp;D Beyond</p>{% endif %}{% endif %}
+  {% if picture %}<img class="peek-pic" data-shape="{{ shape }}" src="{{ picture.full }}" alt="{{ e.name }}" referrerpolicy="no-referrer"{% if picture.pos %} style="object-position: {{ picture.pos }}"{% endif %}>{% if not picture.uploaded %}<p class="note byline">From D&amp;D Beyond</p>{% endif %}{% endif %}
   {% if e.summary %}<div class="story">{{ ln.text(e.summary) }}</div>{% elif not companion %}<p class="muted">No description yet.{% if can_edit %} Use <b>Edit</b> to write one.{% endif %}</p>{% endif %}
   {% if companion %}{# A familiar's or steed's (app/companion_story.py; Creatures as Characters board 4), from what the table did #}
   <dl class="mech companion-facts">

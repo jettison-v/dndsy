@@ -117,7 +117,7 @@ def test_player_characters_are_people_in_world(player, db):  # noqa: F811
     assert 'data-noun="entry" data-nouns="entries"' in page  # "43 entries shown", not names
 
 
-def test_relationships_and_connections(player, db):  # noqa: F811
+def test_relationships_and_connections(player, db, monkeypatch):  # noqa: F811
     import_bundle(db, BUNDLE)
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [{"kind": "npc", "name": "Mo"}, {"kind": "faction", "name": "Harpers"}]})
     lil, mo, harpers = lillippi(db), entry(db, "Mo"), entry(db, "Harpers")
@@ -129,6 +129,12 @@ def test_relationships_and_connections(player, db):  # noqa: F811
     cx = player.get(f"/campaign/{lil.id}/connections").text
     assert 'class="cx-node cx-hub"' in cx and "Child of" in cx and "Member of" in cx
     assert f'hx-get="/c/main/campaign/{mo.id}/connections"' in cx  # a name moves it to the middle
+    # A picture beside the name, which still shows (feedback 34, Nov 7)
+    from app import campaign_views
+    monkeypatch.setattr(campaign_views.pictures, "urls", lambda db, ids: {mo.id: {"thumb": "/mo.webp"}} if mo.id in ids else {})
+    cx = player.get(f"/campaign/{lil.id}/connections").text
+    node = cx.split('class="cx-node npc has-pic"', 1)[1].split("</a>", 1)[0]
+    assert 'class="cx-pic" src="/mo.webp"' in node and "<b>Mo</b>" in node
     # The Reader lists them, its names opening that entry, and opens the diagram from a link (layout A, Brett Nov 5)
     reader = player.get(f"/c/main/campaign?open={lil.id}").text
     assert f'Child of</span> <a class="ent" href="/c/main/campaign?open={mo.id}"' in reader
@@ -264,13 +270,27 @@ def test_all_sessions_reads_from_the_start_and_shows_a_few_key_moments(player, d
     # A session's key moments past the first three sit behind Show all
     real = story_mod.published_story
 
-    def many(db):
+    from types import SimpleNamespace
+
+    def like(e, n, major=None):  # (a copy of a moment, its own)
+        return SimpleNamespace(kind=e.kind, text=f"{e.text} ({n})", entities=e.entities, major=major)
+
+    def many(db, majors=()):
         out = real(db)
         for item in out.get("items") or []:
-            item["events"] = (item.get("events") or []) * 5 or item.get("events")
+            evs = item.get("events") or []
+            item["events"] = [like(e, n, major=(n, i) in majors) for n in range(5) for i, e in enumerate(evs)] or evs
+        if out.get("latest"):
+            out["latest"]["events"] = (out["items"] or [{}])[-1].get("events") or out["latest"]["events"]
         return out
     monkeypatch.setattr(story_mod, "published_story", many)
     most = max(len(i.get("events") or []) for i in many(db)["items"])
     assert most > 4  # (the test's sessions, each moment five times)
     page = player.get("/c/main/?tab=sessions").text
-    assert f'<details class="tale-more"><summary>Show all {most} key moments</summary>' in page
+    assert f'<details class="tale-more"><summary>Show the other {most - 3} key moments</summary>' in page
+    # Feedback 40 (Brett, Nov 7): too many to scroll. The major ones show (here two), the rest behind the fold
+    monkeypatch.setattr(story_mod, "published_story", lambda db: many(db, majors={(1, 0), (3, 0)}))
+    page = player.get("/c/main/?tab=sessions").text
+    shown = page.split('<ol class="moment-line tale-moments">', 1)[1].split("</ol>", 1)[0]
+    assert shown.count('class="ev ') == 2 and "(1)" in shown and "(3)" in shown
+    assert f"Show the other {most - 2} key moments" in page

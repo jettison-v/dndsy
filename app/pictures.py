@@ -18,7 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
 
 from app import access, files
-from app.models import CampaignCharacter, Character, Entity, EntityPicture
+from app.models import CampaignCharacter, Character, Entity, EntityPicture, EntityRelation, Status
 
 MAX_UPLOAD = 15 * 1024 * 1024
 FULL_SIZE, THUMB_SIZE = 1200, 320
@@ -277,3 +277,51 @@ def urls(db: Session, entity_ids) -> dict[int, dict]:
     for p in pics:
         out[p.entity_id] = _urls(p, f"/campaign/{p.entity_id}/picture")
     return out
+
+
+# ---------------------------------------------------------------- pictures to go by (feedback 34 and 36, Nov 7)
+# Describe it can send other entries' pictures along with the words: a relative's, so a family looks related, and any
+# entry named with @ that has one (the Leviathan, to draw Crow's Keep on its mast). Only what the person asking may see,
+# only when ticked, and never the entry itself.
+FAMILY = {"parent_of": ("Parent", "Child"), "sibling_of": ("Sibling", "Sibling")}  # (blood family: a spouse isn't)
+
+
+def _sees(user: dict | None):
+    return lambda e: e is not None and (e.status == Status.PUBLISHED or can_manage(user))
+
+
+def relatives(db: Session, entity: Entity | None, user: dict | None) -> list[dict]:
+    """The entry's parents, children and siblings that have a picture: [{"id", "name", "label"}] ("Parent", "Child")."""
+    if entity is None:
+        return []
+    sees, out = _sees(user), {}
+    for r in db.scalars(select(EntityRelation).where(EntityRelation.type.in_(FAMILY),
+                                                     (EntityRelation.from_entity_id == entity.id) | (EntityRelation.to_entity_id == entity.id))):
+        mine = r.from_entity_id == entity.id
+        other = r.to_entity if mine else r.from_entity
+        if other.id != entity.id and sees(other):  # (I'm the parent: they're my child; they're the parent: they're mine)
+            out[other.id] = {"id": other.id, "name": other.name, "label": FAMILY[r.type][1 if mine else 0]}
+    pics = urls(db, list(out))
+    return sorted(({**x, "pic": pics[i]["thumb"]} for i, x in out.items() if i in pics), key=lambda x: x["name"].casefold())
+
+
+def named(db: Session, o: "Owner", name: str, user: dict | None) -> Entity | None:
+    """The entry an @ name picked, if it has a picture this person may see and send (not the picture's own entry)."""
+    if not o.campaign_id or not name.strip():
+        return None
+    key = name.strip().casefold()  # (the @ picker inserts an entry's own name; an alias works too)
+    e = next((x for x in db.scalars(select(Entity).where(Entity.campaign_id == o.campaign_id))
+              if x.name.casefold() == key or any(a.alias.casefold() == key for a in x.aliases)), None)
+    if e is None or (o.entity is not None and e.id == o.entity.id) or not _sees(user)(e) or e.id not in urls(db, [e.id]):
+        return None
+    return e
+
+
+def usable(db: Session, o: "Owner", ids: list[int], user: dict | None) -> list[Entity]:
+    """The ticked entries, as checked again here: this campaign's, seen by this person, with a picture."""
+    sees = _sees(user)
+    out = [e for e in (db.get(Entity, i) for i in dict.fromkeys(ids)) if e is not None and e.campaign_id == o.campaign_id
+           and sees(e) and not (o.entity is not None and e.id == o.entity.id)]
+    pics = urls(db, [e.id for e in out])
+    return [e for e in out if e.id in pics]
+

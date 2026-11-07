@@ -235,7 +235,10 @@ def rollable(o: dict, unarmed: dict | None = None) -> dict:
     makes Unarmed Strikes the Unarmed Strike's to-hit and damage."""
     recipe = o.get("recipe")
     if recipe and recipe.get("events"):  # an audited (or D&D Beyond) recipe says exactly what rolls
-        other = [e for e in recipe["events"] if e["on"] != "hit"]
+        if all(e["on"] == "rider" for e in recipe["events"]):  # (Hunter's Mark: added to hits, never rolled on casting)
+            o["dice"], o["heal"] = "", False
+            return o
+        other = [e for e in recipe["events"] if e["on"] not in ("hit", "rider")]
         o["dice"] = (other or recipe["events"])[0]["parts"][0] if (other or recipe["events"])[0].get("parts") else ""
         o["heal"] = bool(other) and other[0]["on"] == "heal"
         return o
@@ -621,7 +624,8 @@ def party_item_list(rows: list[dict]) -> dict:
 
 def party_coins(rows: list[dict]) -> int:
     rate = {"pp": 10, "gp": 1, "ep": 0.5, "sp": 0.1, "cp": 0.01}
-    return int(sum(v * rate.get(k, 0) for r in rows if r["sheet"] for k, v in r["sheet"]["currency"].items()))
+    purses = [p for r in rows if r["sheet"] for p in [r["sheet"]["currency"], *(b["coins"] for b in r["sheet"].get("bag_coins") or [])]]
+    return int(sum(v * rate.get(k, 0) for p in purses for k, v in p.items()))  # (bags' coins too: feedback 47)
 
 
 def granted_spells(sheet: dict) -> list[dict]:
@@ -673,6 +677,14 @@ def fields_for(section: str, opt: dict | None) -> list[str]:
         fields += ["cost", "battle"]
     fields += {"features": ["feature_group"], "situational": ["situ_group"], "inventory": ["item_group"]}.get(section, [])
     return fields
+
+
+def sheet_actions(sheet: dict, star: set | None = None) -> list[dict]:
+    """Sheet's Actions tab: everything Battle offers except spells cast with an Action (those are on the Spells tab,
+    like D&D Beyond), keeping attack cantrips and every Bonus Action and Reaction spell (feedback 42, Nov 7: Trah's
+    Shield and Counterspell were on Battle but not here; tests/test_party_sheets.py keeps the two in step)."""
+    return [o for o in options(sheet, star)
+            if o["kind"] != "spell" or o.get("cost") in ("Bonus action", "Reaction") or (o["tags"] and o["tags"][0] == "cantrip" and o["hit"])]
 
 
 TURN_COSTS = ("Action", "Bonus action", "Reaction")

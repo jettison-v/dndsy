@@ -35,7 +35,7 @@ the script.
 | Conjure Celestial | 7 | Healing Light: 4d12 + spellcasting modifier (healing); +1d12 per slot level · Searing Light: 6d12 radiant (Dex save, half on a success); +1d12 per slot level | by hand: two effects, each named, and both upcast (the reader misses Searing Light's); checked against the 2024 Player's Handbook; same dice as the 2024 PHB |
 | Conjure Elemental | 5 | Conjure Elemental: 8d8 (Dex save, nothing on a success); +1d8 per slot level · Restrained target: 4d8 (Dex save, nothing on a success; again at the start of each of the Restrained target's turns); +1d8 per slot level | by hand: the Restrained target repeats the save each turn for less damage (checked against the 2024 Player's Handbook); same dice as the 2024 PHB |
 | Conjure Fey | 6 | Conjure Fey: 3d12 psychic + spellcasting modifier (on a hit); +1d12 per slot level | by hand: damage 'equal to 3d12 plus your spellcasting ability modifier'; same dice as the 2024 PHB |
-| Conjure Minor Elementals | 4 | Conjure Minor Elementals: 2d8 (no roll to hit); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
+| Conjure Minor Elementals | 4 | Conjure Minor Elementals: 2d8 (added to each hit while it lasts); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
 | Conjure Woodland Beings | 4 | Conjure Woodland Beings: 5d8 force (Wis save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
 | Contact Other Plane | 5 | If you fail your DC 15 Int save: 6d6 psychic (no roll to hit) | by hand: the damage is to you, if you fail your own DC 15 Intelligence save; same dice as the 2024 PHB |
 | Contagion | 5 | Contagion: 11d8 necrotic (Con save, nothing on a success) | read from the text; same dice as the 2024 PHB |
@@ -46,7 +46,7 @@ the script.
 | Dimension Door | 4 | Dimension Door: 4d6 force (no roll to hit) | read from the text; same dice as the 2024 PHB |
 | Disintegrate | 6 | Disintegrate: 10d6+40 force (Dex save, nothing on a success); +3d6 per slot level | read from the text; same dice as the 2024 PHB |
 | Dissonant Whispers | 1 | Dissonant Whispers: 3d6 psychic (Wis save, half on a success); +1d6 per slot level | by hand: adds the note that a failed save spends the target's Reaction; checked against the 2024 Player's Handbook; same dice as the 2024 PHB |
-| Divine Favor | 1 | Divine Favor: 1d4 radiant (no roll to hit) | read from the text; same dice as the 2024 PHB |
+| Divine Favor | 1 | Divine Favor: 1d4 radiant (added to each hit while it lasts) | read from the text; same dice as the 2024 PHB |
 | Divine Smite | 1 | Divine Smite: 2d8 radiant (no roll to hit); +1d8 per slot level | by hand: a Fiend or Undead adds a die; on a Critical Hit its dice double with the attack's; same dice as the 2024 PHB |
 | Dragon's Breath | 2 | Dragon's Breath: 3d6 (Dex save, half on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
 | Dream | 5 | Dream: 3d6 psychic (Wis save, nothing on a success) | read from the text; same dice as the 2024 PHB |
@@ -75,8 +75,8 @@ the script.
 | Heat Metal | 2 | Heat Metal: 2d8 fire (no roll to hit); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
 | Hellish Rebuke | 1 | Hellish Rebuke: 2d10 fire (Dex save, half on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
 | Heroes' Feast | 6 | Hit Point maximum: 2d10 (healing) | by hand: the Hit Point maximum (and Hit Points) go up by 2d10; same dice as the 2024 PHB |
-| Hex | 1 | Hex: 1d6 necrotic (no roll to hit) | read from the text; same dice as the 2024 PHB |
-| Hunter's Mark | 1 | Hunter's Mark: 1d6 force (no roll to hit) | read from the text; same dice as the 2024 PHB |
+| Hex | 1 | Hex: 1d6 necrotic (added to each hit while it lasts) | read from the text; same dice as the 2024 PHB |
+| Hunter's Mark | 1 | Hunter's Mark: 1d6 force (added to each hit while it lasts) | read from the text; same dice as the 2024 PHB |
 | Ice Knife | 1 | On a hit: 1d10 piercing (on a hit) · Dex save: 2d6 cold (Dex save, nothing on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
 | Ice Storm | 4 | Ice Storm: 2d10 bludgeoning + 4d6 cold (Dex save, half on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
 | Incendiary Cloud | 8 | Incendiary Cloud: 10d8 fire (Dex save, half on a success) | read from the text; same dice as the 2024 PHB |
@@ -258,81 +258,3 @@ are separate choices, never added to every hit.
 | Giant Ape: Boulder Toss (Recharge 6) | Boulder Toss (Recharge 6): 7d6 bludgeoning (Dex save, half on a success) | read from the stat block |
 | Tyrannosaurus Rex: Bite | Bite: 4d12+7 piercing (on a hit) | read from the stat block |
 | Tyrannosaurus Rex: Tail | Tail: 4d8+7 bludgeoning (on a hit) | read from the stat block |
-
-## The table's spells
-
-Every spell on the table's characters (from D&D Beyond), with the recipe askdnd uses. "D&D Beyond differs" shows
-D&D Beyond's own numbers where they don't match the audit (askdnd uses the audited recipe).
-
-| Spell | Level | How it rolls | Recipe |
-|---|---|---|---|
-| Absorb Elements | 1 | Absorb Elements: 1d6 acid or cold or fire or lightning or thunder (no roll to hit); +1d6 per slot level | D&D Beyond's numbers, not checked against a book |
-| Armor of Agathys | 1 | no damage or healing roll | no damage or healing roll |
-| Augury | 2 | no damage or healing roll | no damage or healing roll |
-| Banishment | 4 | no damage or healing roll | no damage or healing roll |
-| Bless | 1 | no damage or healing roll | no damage or healing roll |
-| Branding Smite | 2 | Branding Smite: 2d6 radiant (no roll to hit); +1d6 per slot level | D&D Beyond's numbers, not checked against a book |
-| Burning Hands | 1 | Burning Hands: 3d6 fire (Dex save, half on a success); +1d6 per slot level | audited (text) |
-| Chromatic Orb | 1 | Chromatic Orb: 3d8 (on a hit); +1d8 per slot level | audited (by hand); D&D Beyond differs: Chromatic Orb: 3d8 acid or cold or fire or lightning or poison or thunder (on a hit); +1d8 per slot level |
-| Command | 1 | no damage or healing roll | no damage or healing roll |
-| Compelled Duel | 1 | no damage or healing roll | no damage or healing roll |
-| Conjure Animals | 3 | Conjure Animals: 3d10 slashing (Dex save, nothing on a success); +1d10 per slot level | audited (text) |
-| Counterspell | 3 | no damage or healing roll | no damage or healing roll |
-| Cure Wounds | 1 | Healing: 2d8 + spellcasting modifier (healing); +2d8 per slot level | audited (text) |
-| Darkness | 2 | no damage or healing roll | no damage or healing roll |
-| Depth Charge | 3 | Depth Charge: 7d6 thunder (Con save, nothing on a success); +1d6 per slot level · If the affected creature is submerged in a liquid: 9d6 thunder (Con save, nothing on a success) | D&D Beyond's numbers, not checked against a book |
-| Detect Magic | 1 | no damage or healing roll | no damage or healing roll |
-| Dispel Magic | 3 | no damage or healing roll | no damage or healing roll |
-| Divine Smite | 1 | Divine Smite: 2d8 radiant (no roll to hit); +1d8 per slot level | audited (by hand) |
-| Eldritch Blast | cantrip | Eldritch Blast: 1d10 force (on a hit); more beams at levels 5, 11, 17 | audited (text) |
-| Expeditious Retreat | 1 | no damage or healing roll | no damage or healing roll |
-| Faerie Fire | 1 | no damage or healing roll | no damage or healing roll |
-| Feather Fall | 1 | no damage or healing roll | no damage or healing roll |
-| Find Familiar | 1 | no damage or healing roll | no damage or healing roll |
-| Find Steed | 2 | no damage or healing roll | no damage or healing roll |
-| Fire Bolt | cantrip | Fire Bolt: 1d10 fire (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | audited (text) |
-| Fireball | 3 | Fireball: 8d6 fire (Dex save, half on a success); +1d6 per slot level | audited (text) |
-| Greater Restoration | 5 | no damage or healing roll | no damage or healing roll |
-| Green-Flame Blade | cantrip | no damage or healing roll | no damage or healing roll |
-| Guidance | cantrip | no damage or healing roll | no damage or healing roll |
-| Healing Word | 1 | Healing: 2d4 + spellcasting modifier (healing); +2d4 per slot level | audited (text) |
-| Heat Metal | 2 | Heat Metal: 2d8 fire (no roll to hit); +1d8 per slot level | audited (text) |
-| Hellish Rebuke | 1 | Hellish Rebuke: 2d10 fire (Dex save, half on a success); +1d10 per slot level | audited (text) |
-| Hold Person | 2 | no damage or healing roll | no damage or healing roll |
-| Hunter's Mark | 1 | Hunter's Mark: 1d6 force (no roll to hit) | audited (text) |
-| Inflict Wounds | 1 | Inflict Wounds: 2d10 necrotic (Con save, half on a success); +1d10 per slot level | audited (text); D&D Beyond differs: Inflict Wounds: 3d10 necrotic (on a hit); +1d10 per slot level |
-| Leomund's Tiny Hut | 3 | no damage or healing roll | no damage or healing roll |
-| Lesser Restoration | 2 | no damage or healing roll | no damage or healing roll |
-| Lightning Lure | cantrip | Lightning Lure: 1d8 lightning (Str save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | D&D Beyond's numbers, not checked against a book |
-| Locate Object | 2 | no damage or healing roll | no damage or healing roll |
-| Mage Hand | cantrip | no damage or healing roll | no damage or healing roll |
-| Magic Missile | 1 | Dart: 3 darts × 1d4+1 force (no roll to hit); +1 dart per slot level | audited (by hand) |
-| Mending | cantrip | no damage or healing roll | no damage or healing roll |
-| Message | cantrip | no damage or healing roll | no damage or healing roll |
-| Mind Sliver | cantrip | Mind Sliver: 1d6 psychic (Int save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | audited (by hand (PHB)) |
-| Minor Illusion | cantrip | no damage or healing roll | no damage or healing roll |
-| Misty Step | 2 | no damage or healing roll | no damage or healing roll |
-| Moonbeam | 2 | Moonbeam: 2d10 radiant (Con save, half on a success); +1d10 per slot level | audited (text) |
-| Planar Ally | 6 | no damage or healing roll | no damage or healing roll |
-| Prayer of Healing | 2 | Healing: 2d8 (healing); +1d8 per slot level | audited (text) |
-| Prestidigitation | cantrip | no damage or healing roll | no damage or healing roll |
-| Purify Food and Drink | 1 | no damage or healing roll | no damage or healing roll |
-| Raulothim's Psychic Lance | 4 | Raulothim's Psychic Lance: 7d6 psychic (Int save, nothing on a success); +1d6 per slot level | D&D Beyond's numbers, not checked against a book |
-| Ray of Frost | cantrip | Ray of Frost: 1d8 cold (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | audited (text) |
-| Shape Water | cantrip | no damage or healing roll | no damage or healing roll |
-| Shield | 1 | no damage or healing roll | no damage or healing roll |
-| Shield of Faith | 1 | no damage or healing roll | no damage or healing roll |
-| Sickening Radiance | 4 | Sickening Radiance: 4d10 radiant (Con save, nothing on a success) | D&D Beyond's numbers, not checked against a book |
-| Speak with Animals | 1 | no damage or healing roll | no damage or healing roll |
-| Spiritual Weapon | 2 | Spiritual Weapon: 1d8 force + spellcasting modifier (on a hit; again at the Bonus Action on your later turns); +1d8 per slot level | audited (by hand) |
-| Starry Wisp | cantrip | Starry Wisp: 1d8 radiant (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | audited (text) |
-| Suggestion | 2 | no damage or healing roll | no damage or healing roll |
-| Tasha's Hideous Laughter | 1 | no damage or healing roll | no damage or healing roll |
-| Thaumaturgy | cantrip | no damage or healing roll | no damage or healing roll |
-| Thorn Whip | cantrip | Thorn Whip: 1d6 piercing (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | audited (by hand (PHB)) |
-| Toll the Dead | cantrip | Unhurt target: 1d8 necrotic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 · Target missing Hit Points: 1d12 necrotic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | audited (by hand (PHB)); D&D Beyond differs: Toll the Dead: 1d8 necrotic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 |
-| Unseen Servant | 1 | no damage or healing roll | no damage or healing roll |
-| Warding Wind | 2 | no damage or healing roll | no damage or healing roll |
-| Water Breathing | 3 | no damage or healing roll | no damage or healing roll |
-| Wind Walk | 6 | no damage or healing roll | no damage or healing roll |
-| Word of Radiance | cantrip | Word of Radiance: 1d6 radiant (Con save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | audited (by hand (PHB)) |

@@ -586,6 +586,9 @@ class StoryEvent(Timestamped, Base):
     kind: Mapped[EventKind] = mapped_column(_enum(EventKind))
     text: Mapped[str] = mapped_column(Text)
     status: Mapped[Status] = mapped_column(_enum(Status), default=Status.DRAFT)
+    # One that matters most (at most extraction.MAJOR_MOST a draft): Story shows these, the rest behind Show all (feedback 40, Nov 7);
+    # None on moments drafted before, which show their first few instead
+    major: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     session: Mapped[GameSession] = relationship(back_populates="events")
     entities: Mapped[list[Entity]] = relationship(secondary="event_entities")
 

@@ -12,10 +12,11 @@
     {%- for t, x, y in cx.heads %}{% set p = cx.pct(x, y) %}<span class="cx-head" style="left: {{ p[0] }}%; top: {{ p[1] }}%">{{ t }}</span>{% endfor %}
     {%- for n in cx.nodes %}{% set p = cx.pct((cx.cx + n.x) / 2, (cx.cy + n.y) / 2) %}<span class="cx-label" style="left: {{ p[0] }}%; top: {{ p[1] }}%">{{ n.label }}</span>{% endfor %}
     {%- for n in cx.nodes %}{% set p = cx.pct(n.x, n.y) %}
-    <a class="cx-node {{ n.entity.kind.value }}" style="left: {{ p[0] }}%; top: {{ p[1] }}%" {% if mode == "window" %}href="#" hx-get="{{ cbase }}/campaign/{{ n.entity.id }}/connections" hx-target="closest .peek" hx-swap="innerHTML"{% else %}href="{{ entry_url(n.entity.id) }}"{% endif %} title="{{ n.label | capitalize }} {{ n.entity.name }}">
-      <b>{{ n.entity.name }}</b><small>{{ kinds.get(n.entity.kind.value, "") }}{% if n.entity.status.value != "published" %} · Hidden{% endif %}</small></a>
+    {%- set pic = (cx.pics or {}).get(n.entity.id) %}
+    <a class="cx-node {{ n.entity.kind.value }}{{ ' has-pic' if pic }}" style="left: {{ p[0] }}%; top: {{ p[1] }}%" {% if mode == "window" %}href="#" hx-get="{{ cbase }}/campaign/{{ n.entity.id }}/connections" hx-target="closest .peek" hx-swap="innerHTML"{% else %}href="{{ entry_url(n.entity.id) }}"{% endif %} title="{{ n.label | capitalize }} {{ n.entity.name }}">
+      {% if pic %}<img class="cx-pic" src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()"><span class="cx-words">{% endif %}<b>{{ n.entity.name }}</b><small>{{ kinds.get(n.entity.kind.value, "") }}{% if n.entity.status.value != "published" %} · Hidden{% endif %}</small>{% if pic %}</span>{% endif %}</a>
     {%- endfor %}
-    {% set p = cx.pct(cx.cx, cx.cy) %}<div class="cx-node cx-hub" style="left: {{ p[0] }}%; top: {{ p[1] }}%"><b>{{ cx.e.name }}</b><small>{{ cx.nodes | length }} tie{{ "s" if cx.nodes | length != 1 }}</small></div>
+    {% set p = cx.pct(cx.cx, cx.cy) %}{% set pic = (cx.pics or {}).get(cx.e.id) %}<div class="cx-node cx-hub{{ ' has-pic' if pic }}" style="left: {{ p[0] }}%; top: {{ p[1] }}%">{% if pic %}<img class="cx-pic" src="{{ pic }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><span class="cx-words">{% endif %}<b>{{ cx.e.name }}</b><small>{{ cx.nodes | length }} tie{{ "s" if cx.nodes | length != 1 }}</small>{% if pic %}</span>{% endif %}</div>
   </div>
   <div class="cx-legend note" aria-hidden="true">
     {%- for g, t in [("family", "Family"), ("allegiance", "Factions and service"), ("ally", "Allies"), ("enemy", "Enemies"), ("quest", "Quests")] %}{% if cx.nodes | selectattr("group", "equalto", g) | first %}

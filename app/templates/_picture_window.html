@@ -34,6 +34,12 @@
       <p class="pw-style"><span class="tag">{{ "Campaign style" if styled else "A plain style" }}</span> <span class="note">{{ style }}</span></p>
       {# The Art style's pictures only when asked (Brett, Nov 6: matched every time, everyone looked alike): off for a person or creature, whose look is their own #}
       {% if style_refs %}<label class="pw-match"><input type="checkbox" name="match" value="1"{% if o.frame not in ("portrait", "creature") %} checked{% endif %}> Match the campaign's {{ style_refs }} style picture{{ "s" if style_refs > 1 }} <span class="note">their painting style only; leave it off for a face of its own</span></label>{% endif %}
+      {# Pictures to go by (feedback 34, 36): a relative's for a family likeness, and any entry named with @ that has one #}
+      <fieldset class="pw-refs" data-pw-refs data-for="{{ o.ref }}"{% if not relatives %} hidden{% endif %}>
+        <legend>Pictures to go by <span class="note">· sent along when ticked, {{ most_refs }} at most</span></legend>
+        {% for r in relatives %}{% with field = "like", on = false %}{% include "_picture_ref.html" %}{% endwith %}{% endfor %}
+      </fieldset>
+      <p class="note pw-at">Type @ and a name to draw it as it looks in its own picture.</p>
       <div class="pw-foot"><button class="btn primary" type="submit">Draw {{ how_many }}</button><span class="note">A few cents each, counted on Manage › Usage.</span></div>
     </form>
     {# While it draws (feedback 22): a place for each picture, filling, and a bar for the minute it can take #}

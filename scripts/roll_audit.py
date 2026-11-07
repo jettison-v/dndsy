@@ -28,6 +28,9 @@ from app import roll_recipes as rr  # noqa: E402
 from app import rules_data  # noqa: E402
 
 OUT = ROOT / "app" / "data" / "roll_recipes.json"
+# Extra damage added to each hit while the spell lasts, not damage dealt when it's cast (feedback 48, Nov 7: Hunter's Mark
+# rolled its 1d6 on casting). The 2024 smites ("As you hit the target") are cast on the hit, so they stay "auto".
+RIDER = re.compile(r"\bextra\b[^.]*\b(?:whenever you hit|on a hit|when (?:it|you) hits?)\b|\b(?:whenever you hit|on a hit)\b[^.]*\bextra\b", re.I)
 OVERRIDES = ROOT / "scripts" / "roll_overrides.json"
 REPORT = ROOT / "docs" / "rules" / "rolls-audit.md"
 CREDIT = "Roll recipes for spells in the SRD 5.2.1 (attribution in app/data/srd/README.md), written by askdnd from the rules text."
@@ -91,6 +94,8 @@ def read_spell(s: dict) -> tuple[dict, list[str], list[str]]:
                 ev["save"] = SAVES[ab[-1]]
             after = " ".join(sents[i:i + 2])
             ev["success"] = "half" if re.search(r"half as much damage|Half damage", after, re.I) else "none"
+        elif RIDER.search(sent):
+            ev["on"] = "rider"  # extra damage on each hit while it lasts (Hunter's Mark, Hex): never rolled on casting
         else:
             ev["on"] = "auto"
         rep = re.search(r"(start|end) of each of (?:its|their|your) turns|each of your (?:later |subsequent )?turns|enters? (?:the|that)", sent, re.I)
@@ -105,7 +110,7 @@ def read_spell(s: dict) -> tuple[dict, list[str], list[str]]:
         for e in events:
             if e["on"] in ("heal", "temp"):
                 continue
-            n = {"hit": "On a hit", "save": f"{e.get('save', '')} save".strip(), "auto": "Damage"}.get(e["on"], e["name"])
+            n = {"hit": "On a hit", "save": f"{e.get('save', '')} save".strip(), "auto": "Damage", "rider": "Each hit"}.get(e["on"], e["name"])
             seen[n] = seen.get(n, 0) + 1
             e["name"] = n if seen[n] == 1 else f"{n} (later)"
     # upcasting and cantrip growth
@@ -272,7 +277,8 @@ def describe(recipe: dict) -> str:
     bits = []
     for e in recipe.get("events") or []:
         on = {"hit": "on a hit", "save": f"{e.get('save', '')} save, {'half' if e.get('success') == 'half' else 'nothing'} on a success",
-              "auto": "no roll to hit", "heal": "healing", "temp": "Temporary Hit Points"}.get(e["on"], e["on"])
+              "auto": "no roll to hit", "rider": "added to each hit while it lasts", "heal": "healing",
+              "temp": "Temporary Hit Points"}.get(e["on"], e["on"])
         count = f"{e['count']} {e.get('count_label', '')}s × " if e.get("count", 1) > 1 else ""
         parts = " + ".join(e["parts"]) + (" + spellcasting modifier" if e.get("mod") else "")
         up = []

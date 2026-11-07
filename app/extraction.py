@@ -75,7 +75,10 @@ Events: the session's key moments in order, each one or two sentences. Kinds: \
 event (something happened), reveal (lore or information learned), decision \
 (the party chose something), loot (items or rewards gained, lost or used up), \
 theory (speculation from the notes or the table). List the names of the \
-people, places, factions, items and quests each event involves.
+people, places, factions, items and quests each event involves. Mark at most \
+8 events major: the ones that matter most to the story, what a player would \
+most want to remember before the next session. Keep every event; the rest \
+are still listed, behind "Show all".
 
 Entities: only ones this session adds information about. Use the existing \
 name when it is already known (match aliases and misspellings); give a full \
@@ -113,6 +116,7 @@ known world being ahead of this session — that's expected."""
 
 _ENTITY_KINDS = [k.value for k in EntityKind]
 _EVENT_KINDS = [k.value for k in EventKind]
+MAJOR_MOST = 8  # key moments marked major in a draft: what Story shows first (feedback 40, Nov 7)
 _REL_TYPES = list(REL_TYPES)
 
 SCHEMA = {
@@ -127,9 +131,10 @@ SCHEMA = {
             "items": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["kind", "text", "entities"],
+                "required": ["kind", "text", "entities", "major"],
                 "properties": {
                     "kind": {"type": "string", "enum": _EVENT_KINDS},
+                    "major": {"type": "boolean"},
                     "text": {"type": "string"},
                     "entities": {"type": "array", "items": {"type": "string"}},
                 },
@@ -498,8 +503,11 @@ def store_result(db: Session, session: GameSession, run: ExtractionRun, data: di
     index = _entity_index(db, session.campaign_id)
     for old_event in db.scalars(select(StoryEvent).where(StoryEvent.session_id == session.id, StoryEvent.status == Status.DRAFT)):
         db.delete(old_event)  # one at a time, so version history keeps the replaced draft moments
+    majors = 0
     for pos, ev in enumerate(data.get("events", []), start=1):
-        event = StoryEvent(session_id=session.id, position=pos, kind=EventKind(ev["kind"]), text=ev["text"].strip())
+        major = bool(ev.get("major")) and majors < MAJOR_MOST  # (at most MAJOR_MOST, whatever comes back)
+        majors += major
+        event = StoryEvent(session_id=session.id, position=pos, kind=EventKind(ev["kind"]), text=ev["text"].strip(), major=major)
         linked = {index[_norm(n)].id: index[_norm(n)] for n in ev.get("entities", []) if _norm(n) in index}
         event.entities = list(linked.values())
         db.add(event)

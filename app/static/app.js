@@ -257,6 +257,7 @@
     f.setSelectionRange(caret, caret);
     closeMention();
     f.focus();
+    f.dispatchEvent(new CustomEvent('askdnd:mention', { bubbles: true, detail: { name: item.name } }));  // (Describe it: its picture to go by)
   }
 
   document.addEventListener('input', e => {
@@ -522,13 +523,20 @@
   watchRes();
   document.fonts?.ready.then(fitRes);
   document.body.addEventListener('htmx:afterSettle', watchRes);
-  // Resources on a phone: one line that opens, one choice per device for every character
-  try { document.body.classList.toggle('res-open', localStorage.getItem('askdnd-res-open') === '1'); } catch (err) { /* private window */ }
+  // On a phone, Battle's longer rows fold to one line that opens (data-fold): Resources, Wild Shape's forms and the spell
+  // bar's pinned spells (feedback 29, Nov 7); one choice each per device, for every character (body.fold-<key>)
+  const FOLDS = ['res', 'ws', 'sb'];
+  const stored = k => { try { return localStorage.getItem('askdnd-fold-' + k) === '1' || (k === 'res' && localStorage.getItem('askdnd-res-open') === '1'); } catch (err) { return false; } };
+  FOLDS.forEach(k => document.body.classList.toggle('fold-' + k, stored(k)));
+  const marks = () => FOLDS.forEach(k => document.querySelectorAll('[data-fold="' + k + '"]')
+    .forEach(x => x.setAttribute('aria-expanded', document.body.classList.contains('fold-' + k) ? 'true' : 'false')));
+  marks();
+  document.addEventListener('askdnd:swapped', marks);  // (a new copy of the page: its buttons say how they stand)
   document.addEventListener('click', e => {
-    const b = e.target.closest('[data-res-more]'); if (!b) return;
-    const open = document.body.classList.toggle('res-open');
-    document.querySelectorAll('[data-res-more]').forEach(x => x.setAttribute('aria-expanded', open ? 'true' : 'false'));
-    try { localStorage.setItem('askdnd-res-open', open ? '1' : '0'); } catch (err) { /* private window */ }
+    const b = e.target.closest('[data-fold]'); if (!b) return;
+    const k = b.dataset.fold, open = document.body.classList.toggle('fold-' + k);
+    marks();
+    try { localStorage.setItem('askdnd-fold-' + k, open ? '1' : '0'); if (k === 'res') localStorage.removeItem('askdnd-res-open'); } catch (err) { /* private window */ }
   });
 
   // Busy buttons: a normal (non-HTMX) form shows that it's working once submitted —
@@ -1627,7 +1635,7 @@
     const rec = spec.recipe && !spec.follow ? spec.recipe : null;
     let evs = [], evi = 0, slot = 0;
     if (rec) {
-      evs = rec.events.filter(e => (spec.kind === 'attack') === (e.on === 'hit'));
+      evs = rec.events.filter(e => e.on !== 'rider' && (spec.kind === 'attack') === (e.on === 'hit'));
       const grows = rec.level && evs.some(e => (e.upcast || []).some(Boolean) || e.count_upcast);
       slot = rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0;
       if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-slot aria-label="Spell slot level">'
@@ -2629,9 +2637,20 @@
     setTimeout(() => {
       const n = away.rolls;
       away.on = false; away.rolls = 0;
-      if (n && current() === 'closed') toast(n + (n === 1 ? ' roll' : ' rolls') + ' while you were away', { label: 'Show', run: () => setState('open', !narrow()) }, 'info');
+      if (n && current() === 'closed') toast(n + (n === 1 ? ' roll' : ' rolls') + ' while you were away', { label: 'Show', run: () => showMissed(n) }, 'info');
     }, 1200);
   });
+  // Show on that card (feedback 46, Nov 7: it opened nothing Mark could see): Table rolls opened the way this screen
+  // shows it (a phone's full sheet), at the newest, with the rolls you missed marked for a moment
+  function showMissed(n) {
+    setState(phone.matches ? 'full' : 'open', !narrow() && !phone.matches);
+    if (!log) return;
+    log.scrollTop = 0;
+    [...log.querySelectorAll(':scope > .roll-item')].slice(0, n).forEach(li => {
+      li.classList.add('rs-missed');
+      setTimeout(() => li.classList.remove('rs-missed'), 6000);
+    });
+  }
   // Only polled rows move `lastId` on: your own roll can land before someone else's earlier one.
   let before = 0;
   if (log) log.addEventListener('htmx:beforeSwap', e => {
@@ -2856,7 +2875,7 @@
       const set = (sel, v) => { const el = row.querySelector(sel); if (el) el.textContent = v; };
       if (a) {
         set('[data-sb-avg]', a.avg);
-        set('[data-sb-dice]', a.dice + (a.per === 'healed' ? ' healed' : '') + (level && at > level ? ' · at ' + ORD(at) : ''));
+        set('[data-sb-dice]', a.dice + (a.per === 'healed' ? ' healed' : a.per === 'each hit' ? ' each hit' : '') + (level && at > level ? ' · at ' + ORD(at) : ''));
         set('[data-sb-half]', ' · ' + Math.floor(a.avg / 2) + ' on a save');
       }
       row.querySelectorAll('.sb-roll').forEach(b => { if (level) b.dataset.slot = at; });
@@ -4620,3 +4639,50 @@
   document.addEventListener('askdnd:swapped', setup);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', setup); else setup();
 })();
+
+// ---------------------------------------------------------------- a picture, large
+// Tapping a picture shows it large over the page (feedback 44, Nov 7: Mark wanted to see a familiar's picture); a tap
+// or Esc closes it. A picture that is itself a button or link (your creature's, which opens the Picture window; a
+// party card) keeps doing that.
+(() => {
+  const PICS = '.ws-pic, .ep-pic img, .ep-mark, .peek-pic, img.portrait, .ib-pic, .fm-pic';
+  const big = pic => pic.matches(PICS) && !pic.closest('a, button, [data-panel-url], [data-modal-url], [data-use-url], label');
+  document.addEventListener('click', e => {
+    const pic = e.target.closest && e.target.closest('img');
+    if (!pic || !big(pic) || !pic.currentSrc) return;
+    e.preventDefault();
+    const d = document.createElement('dialog');
+    d.className = 'pic-big';
+    d.setAttribute('aria-label', pic.alt || 'Picture');
+    const img = document.createElement('img');
+    img.src = pic.dataset.full || pic.currentSrc; img.alt = pic.alt || ''; img.referrerPolicy = 'no-referrer';
+    d.append(img);
+    d.addEventListener('click', () => d.close());
+    d.addEventListener('close', () => d.remove());
+    document.body.append(d);
+    d.showModal();
+  });
+  document.addEventListener('mouseover', e => {
+    const pic = e.target.closest && e.target.closest('img');
+    if (pic && !pic.dataset.bigChecked) { pic.dataset.bigChecked = '1'; if (big(pic)) pic.classList.add('pic-can-big'); }
+  });
+})();
+
+// ---------------------------------------------------------------- Describe it: pictures to go by
+// A name picked with @ in Describe it that has a picture joins "Pictures to go by", ticked (feedback 36, Nov 7); the
+// server says whether it has one this person may send (/pictures/ref). A relative's are listed already, unticked.
+document.addEventListener('askdnd:mention', e => {
+  const form = e.target.closest && e.target.closest('.pw-draw-form');
+  const box = form && form.querySelector('[data-pw-refs]');
+  if (!box) return;
+  fetch('/pictures/ref?for=' + encodeURIComponent(box.dataset.for) + '&name=' + encodeURIComponent(e.detail.name))
+    .then(r => (r.status === 200 ? r.text() : ''))
+    .then(html => {
+      if (!html) return;
+      const t = document.createElement('template'); t.innerHTML = html.trim();
+      const row = t.content.firstElementChild, had = row && box.querySelector('[data-pw-ref="' + row.dataset.pwRef + '"]');
+      if (had) { had.querySelector('input').checked = true; return; }
+      if (row) { box.append(row); box.hidden = false; }
+    })
+    .catch(() => {});
+});

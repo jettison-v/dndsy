@@ -39,6 +39,7 @@
     {%- set ws_act = s.actions | selectattr("name", "equalto", "Wild Shape") | selectattr("uses") | first if s else none %}
     <span class="ws-label">Wild Shape{% if druid.uses %} {{ count_pips(c if can_play else none, "uses:" ~ ws_act.id if ws_act and ws_act.id else "", druid.uses, "Wild Shape", sync(s, "uses:" ~ ws_act.id) if ws_act else "") }}{% endif %}</span>
     {% if can_pick %}
+    <button type="button" class="fold-btn" data-fold="ws" aria-expanded="false">Forms <span class="count">{{ known_forms | length }}</span></button>{# (a phone: folded until opened, feedback 29) #}
     {# A pill opens the Shift window (app/shifting.py): the form's cost and Temporary Hit Points, then Shift; Normal opens Leave #}
     <button type="button" class="ws-chip{{ ' on' if not form }}"{% if form %} data-use-url="/characters/{{ c.id }}/wild-shape"{% endif %} aria-pressed="{{ 'false' if form else 'true' }}">Normal</button>
     {% for kf in known_forms %}{% set here = form and form.beast.name == kf.name %}<button type="button" class="ws-chip{{ ' on' if here }}"{% if loop.first %} data-tour="ws-form"{% endif %}{% if not here %} data-use-url="/characters/{{ c.id }}/wild-shape?form={{ kf.name | urlencode }}"{% endif %}

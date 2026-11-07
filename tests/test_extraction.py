@@ -121,6 +121,20 @@ def test_rerun_adds_recap_version_and_replaces_drafts(db):
     assert len(list(db.scalars(select(Proposal).where(Proposal.kind == "entity")))) == 2
 
 
+def test_at_most_eight_key_moments_are_major(db):
+    """Feedback 40 (Brett, Nov 7): too many key moments to scroll. Claude marks the ones that matter most, which Story
+    shows first; never more than eight, whatever comes back, and the rest are kept."""
+    from app import extraction
+
+    session = setup(db)
+    many = {**RESULT, "events": [{"kind": "event", "text": f"Moment {i}", "entities": [], "major": True} for i in range(11)]}
+    seen = []
+    extract_session(db, session, Source("notes", "x"), fake_client(result=many, seen=seen))
+    events = list(db.scalars(select(StoryEvent).order_by(StoryEvent.position)))
+    assert len(events) == 11 and [e.major for e in events] == [True] * extraction.MAJOR_MOST + [False] * 3
+    assert "Mark at most 8 events major" in str(seen[0])  # (the instruction Claude is given)
+
+
 def test_refusal_is_recorded_not_raised(db):
     session = setup(db)
     run = extract_session(db, session, Source("notes", "x"), fake_client(stop_reason="refusal"))
