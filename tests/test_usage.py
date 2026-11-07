@@ -35,6 +35,22 @@ def test_summary_totals_and_balance(db):
     assert round(usage_summary(db)["balance"], 2) == 19.78
 
 
+
+def test_openai_is_counted_apart_from_claude(db):
+    """Feedback 38 (Brett, Nov 7): OpenAI's spending (drawn pictures, Listen's voice) is its own line with a link to its
+    balance; Anthropic's balance counts only Claude's; the monthly limit and This month count both."""
+    runs(db)
+    now = datetime.now(UTC)
+    db.add_all([ExtractionRun(source="picture", status="done", cost_usd=0.16, created_at=now),
+                ExtractionRun(source="narration", status="done", cost_usd=0.02, created_at=now - timedelta(days=40)),
+                CreditTopUp(amount_usd=20.0, added_on=now.date())])
+    db.flush()
+    u = usage_summary(db)
+    assert round(u["total"], 2) == 0.22 and round(u["balance"], 2) == 19.78 and u["drafts"] == 2  # (Claude's alone)
+    assert round(u["openai_month"], 2) == 0.16 and round(u["openai_total"], 2) == 0.18
+    assert round(u["month"], 2) == 0.28 and round(u["today"], 2) == 0.28 and "platform.openai.com" in u["openai_billing"]
+
+
 @pytest.fixture
 def client(monkeypatch, db):
     monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("admin@example.com"))
