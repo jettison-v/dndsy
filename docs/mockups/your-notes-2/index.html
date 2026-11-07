@@ -96,6 +96,12 @@ a { color: var(--red); }
 .foot { display: flex; gap: 14px; font-size: .8rem; color: var(--muted); }
 
 /* B: list and detail */
+.search { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--surface); color: var(--muted); font-size: .86rem; }
+.search b { color: var(--strong); font-weight: 500; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.toolbar .search { flex: 1 1 240px; min-width: 0; }
+.sel { border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; font-size: .8rem; white-space: nowrap; }
+.sel::after { content: " ▾"; color: var(--muted); }
 .ld { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 360px; }
 @media (max-width: 760px) { .ld { grid-template-columns: minmax(0, 1fr); } .ld .detail { border-top: 1px solid var(--line); } }
 .list { background: var(--surface); border-right: 1px solid var(--line); display: grid; align-content: start; }
@@ -205,6 +211,12 @@ button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2p
     <div class="screen"><div class="pg">
       <h3>Your notes</h3>
       <div class="tabs"><span>About the story <i class="n">4</i></span><span class="on">About askdnd <i class="n new">2 new</i></span></div>
+      <div class="toolbar">
+        <div class="search">⌕ Search your notes and the answers</div>
+        <span class="sel">Sent from: any page</span>
+        <span class="sel">Newest first</span>
+      </div>
+      <div class="filters"><span class="chip on">All <i>31</i></span><span class="chip">New to you <i>2</i></span><span class="chip">Waiting for an admin <i>1</i></span><span class="chip">With Claude <i>2</i></span><span class="chip">Planned <i>2</i></span><span class="chip">Fixed <i>24</i></span><span class="chip">Closed <i>2</i></span></div>
       <div class="ld">
         <div class="list">
           <div class="sec">Open · 5</div>
@@ -225,10 +237,11 @@ button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2p
         </div>
       </div>
     </div></div>
-    <p class="cap">About the story is the same layout: the dot is violet once the DM used it, the title is the first line of your suggestion, and What happened says where it went (“Added to Pip's entry”, “Worked into the recap of Session 18”) with a link to it.</p>
+    <p class="cap"><b>Search and filters</b> (your comment), the list pattern's own, as on Sheet › Items and the item browser: search looks through your words and the answers; a chip per status with its count, and <b>New to you</b>; <b>Sent from</b> picks a page (Battle, Sheet, Story…); the order is newest or oldest first. Open and Done stay the list's two headings whatever is filtered. On a phone, search and the chips sit above the list, the chips in one row that scrolls.</p>
+    <p class="cap">About the story is the same layout: the dot is violet once the DM used it, the title is the first line of your suggestion, and What happened says where it went (“Added to Pip's entry”, “Worked into the recap of Session 18”) with a link to it. Its chips are Waiting, Added, Used and Not used, and Sent from becomes <b>About</b> (an entry, a session's recap, the glossary).</p>
     <div class="pros">
       <div class="pro good"><b>Good at</b><ul><li>Thirty notes fit on one screen, each a different title.</li><li>Open and Done are separate at a glance; the dot's colour says where each stands.</li><li>The same layout as the quest log and the World tab, so it's already familiar.</li></ul></div>
-      <div class="pro cost"><b>Costs</b><ul><li>One click to read an answer in full (its first words are on the row).</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>One click to read an answer in full (its first words are on the row).</li><li>Search and filters take a row above the list (worth it past a dozen notes).</li></ul></div>
     </div>
   </section>
 
