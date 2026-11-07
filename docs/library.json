@@ -835,5 +835,14 @@
   "what": "Four ways the attack roll could work (roll at once, one attack card, guided, a roll dock), drawn for one attack with Hunter's Mark and Stunning Strike; Claude recommends the attack card.",
   "source": "docs/mockups/roll-workflow/index.html",
   "link": "https://claude.ai/artifact/KPVczF8JhgbCY7x1iUyVsJ"
+ },
+ {
+  "title": "Your Notes",
+  "kind": "design",
+  "status": "Waiting for Brett",
+  "date": "Nov 7",
+  "what": "Your suggestions and Your feedback as one page that says how they differ (two layouts), and a badge, a bell or corner cards for news; Claude recommends two tabs and a badge.",
+  "source": "docs/mockups/your-notes/index.html",
+  "link": "https://claude.ai/artifact/KsBv9QoWeP6cVfGpv7Er7F"
  }
 ]
