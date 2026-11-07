@@ -117,7 +117,7 @@ def test_player_characters_are_people_in_world(player, db):  # noqa: F811
     assert 'data-noun="entry" data-nouns="entries"' in page  # "43 entries shown", not names
 
 
-def test_relationships_and_connections(player, db):  # noqa: F811
+def test_relationships_and_connections(player, db, monkeypatch):  # noqa: F811
     import_bundle(db, BUNDLE)
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [{"kind": "npc", "name": "Mo"}, {"kind": "faction", "name": "Harpers"}]})
     lil, mo, harpers = lillippi(db), entry(db, "Mo"), entry(db, "Harpers")
@@ -129,6 +129,12 @@ def test_relationships_and_connections(player, db):  # noqa: F811
     cx = player.get(f"/campaign/{lil.id}/connections").text
     assert 'class="cx-node cx-hub"' in cx and "Child of" in cx and "Member of" in cx
     assert f'hx-get="/c/main/campaign/{mo.id}/connections"' in cx  # a name moves it to the middle
+    # A picture beside the name, which still shows (feedback 34, Nov 7)
+    from app import campaign_views
+    monkeypatch.setattr(campaign_views.pictures, "urls", lambda db, ids: {mo.id: {"thumb": "/mo.webp"}} if mo.id in ids else {})
+    cx = player.get(f"/campaign/{lil.id}/connections").text
+    node = cx.split('class="cx-node npc has-pic"', 1)[1].split("</a>", 1)[0]
+    assert 'class="cx-pic" src="/mo.webp"' in node and "<b>Mo</b>" in node
     # The Reader lists them, its names opening that entry, and opens the diagram from a link (layout A, Brett Nov 5)
     reader = player.get(f"/c/main/campaign?open={lil.id}").text
     assert f'Child of</span> <a class="ent" href="/c/main/campaign?open={mo.id}"' in reader

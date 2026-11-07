@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app import entities
+from app import entities, pictures
 from app.extraction import timeline
 from app.models import Entity, EntityKind, EntityRelation, EventEntity, Status, StoryEvent
 from app.relations import TYPES
@@ -282,5 +282,7 @@ def connections(db: Session, entity: Entity, visible: Visible) -> dict:
     heads = [(t, x - x0, y - y0) for t, x, y in heads]
     cx, cy = cx - x0, cy - y0
     pct = lambda x, y: (round(100 * x / width, 2), round(100 * y / height, 2))  # noqa: E731
+    # Each one's picture beside the name, which always shows (feedback 34, Nov 7: players won't know every face yet)
+    pics = {i: u["thumb"] for i, u in pictures.urls(db, [entity.id] + [n.entity.id for n in nodes]).items() if u.get("thumb")}
     return {"e": entity, "nodes": nodes, "heads": heads, "w": round(width), "h": round(height), "cx": cx, "cy": cy, "pct": pct,
-            "lines": sorted(lines, key=lambda l: list(TYPES).index(l[0]))}
+            "pics": pics, "lines": sorted(lines, key=lambda l: list(TYPES).index(l[0]))}

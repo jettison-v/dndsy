@@ -2647,6 +2647,11 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .cx-diagram > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .cx-node { position: absolute; transform: translate(-50%, -50%); width: 150px; max-width: 30%; display: flex; flex-direction: column; align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line-strong); color: var(--text); text-decoration: none; text-align: center; line-height: 1.3; }
 a.cx-node:hover { border-color: var(--text); }
+/* A picture beside the name (feedback 34): the node keeps its height, so the layout's spacing still fits */
+.cx-node.has-pic { flex-direction: row; gap: var(--sp-2); text-align: left; padding-left: var(--sp-1); }
+.cx-pic { flex: none; width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--line); }
+.cx-words { display: flex; flex-direction: column; min-width: 0; }
+.cx-words b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cx-node b { font-size: var(--fs-sm); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cx-node small { font-size: var(--fs-xs); color: var(--muted); }
 .cx-node.faction, .cx-node.quest { background: var(--story-bg); border-color: var(--story-line); }
