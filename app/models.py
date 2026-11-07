@@ -887,8 +887,10 @@ class Feedback(Timestamped, Base):
     html: Mapped[str] = mapped_column(Text, default="", server_default="")
     shot_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
     pasted_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
-    thread: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"who": "claude"|"you", "text", "at"}]
+    # [{"who": "claude"|"you"|"sender", "text", "at"}]; "to": "sender" marks a reply its sender sees (Your feedback)
+    thread: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     pr: Mapped[str] = mapped_column(String(300), default="", server_default="")
+    told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last heard (feedback.marker)
 
 
 

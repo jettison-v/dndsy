@@ -7,6 +7,7 @@ When Brett says "review the feedback", pull the queue from askdnd, then answer o
     uv run python scripts/feedback.py ask 42 "Do you mean …?"    # a question for Brett, on the note
     uv run python scripts/feedback.py set 42 planned             # new | question | planned | done | deleted
     uv run python scripts/feedback.py set 42 done --pr https://github.com/jettison-v/dndsy/pull/190
+    uv run python scripts/feedback.py tell 42 "Fixed: …"     # a reply its sender sees on Your feedback
 
 `pull` writes each note to private/feedback/<id>/ (never committed: notes hold campaign pages): note.md (the words,
 who, where, when, the thread), context.json, page.html (the page as drawn), shot.jpg (its picture) and pasted.* (a
@@ -100,6 +101,9 @@ def main() -> None:
     ask = sub.add_parser("ask")
     ask.add_argument("id", type=int)
     ask.add_argument("question")
+    tl = sub.add_parser("tell")
+    tl.add_argument("id", type=int)
+    tl.add_argument("text")
     st = sub.add_parser("set")
     st.add_argument("id", type=int)
     st.add_argument("status", choices=["new", "question", "planned", "done", "deleted"])
@@ -111,6 +115,8 @@ def main() -> None:
         if a.base == DEFAULT_BASE:  # (and staging's own queue: notes sent from staging.askdnd.ai, filed as staging-<id>)
             print("Staging:")
             pull(STAGING_BASE, a.status)
+    elif a.cmd == "tell":
+        print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"tell": a.text}))["status"])
     elif a.cmd == "ask":
         print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"note": a.question, "status": "question"}))["status"])
     else:
