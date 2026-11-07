@@ -844,5 +844,14 @@
   "what": "Your suggestions and Your feedback as one page that says how they differ (two layouts), and a badge, a bell or corner cards for news; Claude recommends two tabs and a badge.",
   "source": "docs/mockups/your-notes/index.html",
   "link": "https://claude.ai/artifact/KsBv9QoWeP6cVfGpv7Er7F"
+ },
+ {
+  "title": "Coins and Bags",
+  "kind": "design",
+  "status": "Decided, built",
+  "date": "Nov 7",
+  "what": "Feedback 52 and 53: spending and gaining from a chosen bag and moving coins between bags, three ways; Brett chose A (Spend · Gain · Move) and making change.",
+  "source": "docs/mockups/coins/index.html",
+  "link": "https://claude.ai/artifact/1UNyuBzQeULSvv8M967PbH"
  }
 ]

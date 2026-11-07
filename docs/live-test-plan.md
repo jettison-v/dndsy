@@ -31,7 +31,7 @@ On the Mini, in `~/askdnd-tests`, `.venv/bin/python real_table.py` runs everythi
 | `condition` | A condition started in askdnd lands on the real sheet, and ending it there takes it off | Every time |
 | `cast` | Cast spends a real slot on D&D Beyond, and Undo gives it back | Every time |
 | `resource` | A resource counts down on D&D Beyond and comes back | Every time |
-| `coins` | Coins gained in askdnd land on D&D Beyond, and Undo takes them off | Every time |
+| `coins` | Coins gained in askdnd's Coins window land on D&D Beyond and spending takes them off; a gold moved into Vi's Backpack is in it, and moving it back takes it out (Nov 7: Spend · Gain · Move) | Every time |
 | `rests` | A Short Rest spends a real Hit Point Die and heals; a Long Rest brings back Hit Points, Hit Point Dice, slots and a resource | Every time |
 | `temp-hp` | Temporary Hit Points given in askdnd land on the sheet; damage takes them first and leaves Hit Points be | Every time |
 | `death-saves` | Down to 0: Unconscious and the marks start on the sheet; a death save rolled in askdnd marks itself; healing clears the marks and ends Unconscious | Every time |

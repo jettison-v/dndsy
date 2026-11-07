@@ -3,7 +3,9 @@ the request the sheet itself sends to change it (each seen on Brett's test chara
 
 A field is a key: "hp", "death", "inspiration", "exhaustion", "condition:<id>", "hitdice:<class id>", "slot:<level>",
 "pact:<level>", "uses:<action id>", "item:<inventory id>" (its count; None once removed),
-"equipped:<id>", "attuned:<id>", "charges:<id>", "container:<id>", "coin:<cp|sp|ep|gp|pp>", "add:<definition id>" (how
+"equipped:<id>", "attuned:<id>", "charges:<id>", "container:<id>", "coin:<cp|sp|ep|gp|pp>" (carried), "bagcoin:<bag's
+inventory id>:<cp|sp|ep|gp|pp>" (kept in that container; the same request as a carried coin, naming the container: tried
+on a test sheet, Nov 7, feedback 52), "add:<definition id>" (how
 many of that item the character has, in all), "prep:<class row id>:<spell's id on the class list>" (whether it's prepared;
 D&D Beyond drops an unprepared spell from the sheet, which reads as not prepared), "creature:<creature id>" (one of the
 character's creatures' damage taken and temporary hit points, app/creatures.py) and "creature_max:<creature id>" (the
@@ -114,6 +116,7 @@ def steps(field: str) -> list:
         "charges": [*item, "limitedUse", "numberUsed"],
         "container": [*item, "containerEntityId"],
         "coin": ["currencies", arg, {"or": 0}],
+        "bagcoin": [*["inventory", {"id": arg.partition(":")[0]}], "currency", arg.partition(":")[2], {"or": 0}],
         "add": ["inventory", {"sum": [["definition", "id"], arg, "quantity"]}],
         "prep": ["classSpells", {"characterClassId": arg.partition(":")[0]}, "spells", {"id": arg.partition(":")[2]}, "prepared", {"or": False}],
         "creature": ["creatures", {"id": arg}, {"read": {"removedHitPoints": ["removedHitPoints", {"or": 0}],
@@ -170,6 +173,11 @@ def put(data: dict, field: str, v) -> None:
         rest = [x for x in data.get("characterValues") or [] if not _matches(x, {"typeId": VALUES[kind], "valueId": arg})]
         data["characterValues"] = rest + ([{"typeId": VALUES[kind], "valueId": str(arg), "value": int(v)}] if v else [])
         return
+    if kind == "bagcoin":  # (a container that has never held coins has none at all on D&D Beyond)
+        row = pick(data, ["inventory", {"id": arg.partition(":")[0]}])
+        if isinstance(row, dict):
+            row["currency"] = {**{c: 0 for c in COINS}, **(row.get("currency") or {}), arg.partition(":")[2]: v}
+        return
     if kind in ("condition", "exhaustion"):  # a condition is there or not; Exhaustion is one with a level
         cid = EXHAUSTION if kind == "exhaustion" else int(arg)
         rest = [c for c in data.get("conditions") or [] if not (isinstance(c, dict) and c.get("id") == cid)]
@@ -219,6 +227,7 @@ def tracked(data: dict | None) -> dict:
             fs += [f"{k}:{i['id']}" for k in ("item", "equipped", "container")]
             fs += [f"attuned:{i['id']}"] if (i.get("definition") or {}).get("canAttune") or i.get("isAttuned") else []
             fs += [f"charges:{i['id']}"] if i.get("limitedUse") else []
+            fs += [f"bagcoin:{i['id']}:{c}" for c in COINS] if (i.get("definition") or {}).get("isContainer") else []
     for c in data.get("creatures") or []:  # (a Wild Shape form's Hit Points are the druid's: not followed)
         if isinstance(c, dict) and c.get("id") is not None and c.get("groupId") not in (1, 13):
             fs += [f"creature:{c['id']}", f"creature_max:{c['id']}"]
@@ -273,6 +282,9 @@ def name(data: dict | None, field: str) -> str:
                               "creature_active": "Active", "creature_name": "name"}[kind]
     if kind == "condition":
         return CONDITIONS.get(int(arg), "a condition")
+    if kind == "bagcoin":  # "copper in Backpack"
+        bag, _, coin = arg.partition(":")
+        return f"{COINS.get(coin, 'coins')} in {item_name(data, bag)}"
     if kind == "slot":
         return f"{ordinal(int(arg))}-level slots"
     return {"hp": "hit points", "death": "Death Saving Throws", "inspiration": "Heroic Inspiration", "exhaustion": "Exhaustion",
@@ -382,6 +394,10 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
                    containerEntityTypeId=CHARACTER_CONTAINER if own else box.get("entityTypeId"))
     if kind == "coin":
         return req("PUT", f"inventory/currency/{COINS[arg]}", amount=v)
+    if kind == "bagcoin":  # the container's own total of that coin, as D&D Beyond's coin manager sets it
+        bag, _, coin = arg.partition(":")
+        box = pick(data, ["inventory", {"id": bag}]) or {}
+        return req("PUT", f"inventory/currency/{COINS[coin]}", amount=v, destinationEntityId=int(bag), destinationEntityTypeId=box.get("entityTypeId"))
     if kind == "prep":
         cls, _, entry = arg.partition(":")
         return req("PUT", "spell/prepared", spellId=extra.get("spellId"), characterClassId=int(cls), entityTypeId=extra.get("entityTypeId"),

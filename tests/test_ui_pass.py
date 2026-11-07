@@ -74,7 +74,8 @@ def test_coins_are_a_purse_with_the_total_in_gold(player, db):
     notes = json.loads(html.unescape(items.split("data-group-notes-bag='", 1)[1].split("'", 1)[0]))
     assert notes == {"Carried": "654 gp, 68 sp, 92 cp", "Bag of Holding": "7,000 gp"}
     assert 'data-group-bag="Carried"' in items and 'data-group-bag="Bag of Holding"' in items and "holds 7,000 gp" in items
-    assert "In Bag of Holding: 7,000 gp (change a bag's coins on D&amp;D Beyond)" in player.get(f"/characters/{cole.id}/coins").text
+    w = player.get(f"/characters/{cole.id}/coins").text  # (the Coins window: each place with its coins, largest first; feedback 51)
+    assert "654 gp, 68 sp, 92 cp" in w and "7,000 gp" in w and "change a bag's coins on D&amp;D Beyond" not in w
 
 
 def test_an_item_on_its_way_is_marked_in_its_row(player, db):

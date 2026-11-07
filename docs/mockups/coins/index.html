@@ -1,0 +1,287 @@
+<title>Coins and Bags</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Mockup (Brett, Nov 7, feedback 52 and 53): spending and gaining coins from a chosen bag, and moving coins between
+   bags. Where it lives first, what D&D Beyond allows, three windows, the other places coins move, then an answer form
+   (db: Brett's pick, read back by Claude). askdnd's own look; Cole from the table; the amounts are made up. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --on-red: #fff;
+  --gold: #e3b341; --silver: #b9bec6; --copper: #c9814f; --plat: #d7dde6; --elec: #c7c08a;
+  --green-soft: rgba(91,191,127,.15); --amber-soft: rgba(232,179,75,.15); --blue-soft: rgba(126,166,224,.15); --red-soft: rgba(229,83,75,.15);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e;
+  --gold: #a87a0c; --silver: #6f7680; --copper: #9a5527; --plat: #5d6a7c; --elec: #7d7430;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e;
+  --gold: #a87a0c; --silver: #6f7680; --copper: #9a5527; --plat: #5d6a7c; --elec: #7d7430;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.4rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 70ch; }
+b, strong { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+section, header { display: grid; gap: 14px; min-width: 0; }
+.lead { font-size: 1.06rem; }
+.opt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.opt-head h2 { flex: 1 1 auto; min-width: 0; }
+.badge-rec { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.cap { font-size: .84rem; color: var(--muted); }
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .9rem; display: grid; gap: 4px; }
+.pro > b { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.pro.good > b { color: var(--green); } .pro.cost > b { color: var(--amber); }
+.pro ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; display: grid; gap: 4px; }
+
+/* askdnd, drawn */
+.purse { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.coin { display: inline-flex; align-items: baseline; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; font-weight: 700; font-size: .86rem; white-space: nowrap; }
+.coin::before { content: ""; width: 10px; height: 10px; border-radius: 50%; align-self: center; background: var(--c); }
+.coin small { font-weight: 500; color: var(--muted); font-size: .7rem; letter-spacing: .04em; }
+.c-gp { --c: var(--gold); } .c-sp { --c: var(--silver); } .c-cp { --c: var(--copper); } .c-pp { --c: var(--plat); } .c-ep { --c: var(--elec); }
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.28); max-width: 420px; width: 100%; }
+.win-h { display: flex; justify-content: space-between; align-items: center; font-weight: 700; color: var(--strong); }
+.win-h .x { color: var(--muted); font-weight: 400; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; font-size: .86rem; }
+.seg span { flex: 1; text-align: center; padding: 6px 4px; color: var(--muted); }
+.seg span + span { border-left: 1px solid var(--line); }
+.seg span.on { background: var(--surface-3); color: var(--strong); font-weight: 600; }
+.places { display: grid; gap: 6px; }
+.place { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 9px; font-size: .86rem; }
+.place .r { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--muted); grid-row: span 2; }
+.place.on { border-color: var(--strong); background: var(--surface-2); }
+.place.on .r { border-color: var(--strong); background: radial-gradient(var(--strong) 0 4px, transparent 5px); }
+.place.to { border-color: var(--blue); background: var(--blue-soft); }
+.place.to .r { border-color: var(--blue); background: radial-gradient(var(--blue) 0 4px, transparent 5px); }
+.place b { font-weight: 600; }
+.place .cs { color: var(--muted); font-size: .78rem; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .9rem; }
+.in { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 70px; color: var(--strong); }
+.sel { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; color: var(--strong); white-space: nowrap; }
+.sel::after { content: " ▾"; color: var(--muted); }
+.btn { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-size: .86rem; font-weight: 600; white-space: nowrap; }
+.btn.pri { background: var(--red); border-color: var(--red); color: var(--on-red); }
+.btn.lnk { border-color: transparent; color: var(--muted); font-weight: 500; }
+.said { font-size: .82rem; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 7px 10px; }
+.said.ok { color: var(--green); background: var(--green-soft); }
+.grid { width: 100%; border-collapse: collapse; font-size: .84rem; }
+.grid th { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 4px 6px; }
+.grid th:first-child, .grid td:first-child { text-align: left; }
+.grid td { border-top: 1px solid var(--line); padding: 6px; text-align: right; }
+.grid td.ed { color: var(--strong); }
+.grid td.ed span { display: inline-block; min-width: 46px; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; background: var(--bg); }
+.grid td.ch span { border-color: var(--amber); background: var(--amber-soft); }
+.grid tfoot td { font-weight: 700; color: var(--strong); }
+.tbl-wrap { overflow-x: auto; }
+.chg { font-size: .8rem; display: grid; gap: 2px; }
+.chg .m { color: var(--red); } .chg .p { color: var(--green); }
+.stack { display: grid; gap: 10px; align-content: start; }
+.verdict { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.q { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 64px; font: 15px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { font: 600 15px var(--sans); background: var(--red); color: var(--on-red); border: 0; border-radius: 10px; padding: 11px 20px; cursor: pointer; }
+button.send:disabled { opacity: .5; cursor: default; }
+button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2px; }
+.sent { color: var(--green); font-weight: 600; font-size: .9rem; }
+</style>
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · Coins · Nov 7</div>
+    <h1>Coins in more than one place</h1>
+    <p class="lead">Today the <b>Coins</b> window only spends and gains what a character carries. A bag's coins are only shown, with “change a bag's coins on D&amp;D Beyond”. Your notes 52 and 53 ask for two things: <b>choose which bag</b> when spending or gaining, and <b>move coins between bags</b>. Below are three ways the window could work.</p>
+  </header>
+
+  <section>
+    <h2>Where it lives</h2>
+    <p>Sheet › Items (Inventory on Battle). The purse at the top of the list is one line, <span class="purse"><span class="coin c-gp">7,654 <small>GP</small></span><span class="coin c-sp">68 <small>SP</small></span><span class="coin c-cp">92 <small>CP</small></span></span>, counting every bag. Pressing it opens the Coins window. Nothing else on the page changes.</p>
+  </section>
+
+  <section>
+    <h2>What D&amp;D Beyond allows</h2>
+    <div class="facts">
+      <div class="fact"><b>Every change names its place</b>D&amp;D Beyond's own coin changes say where the coins are: the character, or one of its containers. So askdnd can spend from or add to a bag the same way it does for carried coins today.</div>
+      <div class="fact"><b>No “move” of its own</b>D&amp;D Beyond has no call that moves coins. A move is two changes made together: take them out of one place, put them into the other. If the second one doesn't go through, askdnd puts the first one back.</div>
+      <div class="fact"><b>Any container can hold coins</b>A backpack, a pouch or a Bag of Holding. The window lists only the places that already hold coins, plus any other container you pick as the place to put them.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="opt-head"><span class="badge-rec">My pick</span><h2>A. Spend · Gain · Move</h2></div>
+    <p>Three tabs at the top of the window, each one a sentence you fill in. <b>Carried</b> is picked unless you choose a bag. With coins in only one place, nothing about bags appears: the window looks like it does today.</p>
+    <div class="two">
+      <div class="stack">
+        <div class="win">
+          <div class="win-h">Coins <span class="x">×</span></div>
+          <div class="seg"><span class="on">Spend</span><span>Gain</span><span>Move</span></div>
+          <div class="places">
+            <div class="place on"><span class="r"></span><b>Carried</b><span class="cs">654 gp, 68 sp, 92 cp</span></div>
+            <div class="place"><span class="r"></span><b>Bag of Holding</b><span class="cs">7,000 gp</span></div>
+          </div>
+          <div class="row">Spend <span class="in">25</span><span class="sel">gp</span></div>
+          <div class="row"><span class="btn pri">Spend 25 gp</span><span class="btn lnk">Cancel</span></div>
+        </div>
+        <p class="cap">Spend. The button repeats the amount, so you can see what you're about to do.</p>
+      </div>
+      <div class="stack">
+        <div class="win">
+          <div class="win-h">Coins <span class="x">×</span></div>
+          <div class="seg"><span>Spend</span><span>Gain</span><span class="on">Move</span></div>
+          <div class="row">Move <span class="in">500</span><span class="sel">gp</span></div>
+          <div class="row">from <span class="sel">Bag of Holding (7,000 gp)</span></div>
+          <div class="row">to <span class="sel">Carried</span></div>
+          <div class="row"><span class="btn pri">Move 500 gp</span><span class="btn lnk">Cancel</span></div>
+          <div class="said">Afterwards: Carried 1,154 gp, 68 sp, 92 cp · Bag of Holding 6,500 gp</div>
+        </div>
+        <p class="cap">Move: from and to are menus listing every container. The line under the button shows the result before you commit.</p>
+      </div>
+    </div>
+    <div class="pros">
+      <div class="pro good"><b>Good at</b><ul><li>One clear verb at a time, the same on a phone and a computer.</li><li>Spending from carried coins (the everyday case) takes the same taps as today.</li><li>A move shows the result before it happens.</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>One change per press: splitting a haul into two bags takes two moves.</li></ul></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="opt-head"><h2>B. Pick a place, then act</h2></div>
+    <p>The window opens as a list of places, each with its coins. Tap a place: its row opens with an amount, Spend, Gain and <b>Move to…</b>. No tabs; the place comes first.</p>
+    <div class="two">
+      <div class="stack">
+        <div class="win">
+          <div class="win-h">Coins <span class="x">×</span></div>
+          <div class="places">
+            <div class="place"><span class="r"></span><b>Carried</b><span class="cs">654 gp, 68 sp, 92 cp</span></div>
+            <div class="place on" style="grid-template-columns:auto minmax(0,1fr)"><span class="r"></span><b>Bag of Holding</b><span class="cs">7,000 gp</span>
+              <div class="row" style="grid-column:1/-1;margin-top:8px"><span class="in">500</span><span class="sel">gp</span></div>
+              <div class="row" style="grid-column:1/-1;margin-top:6px"><span class="btn pri">Spend</span><span class="btn">Gain</span><span class="btn">Move to… ▾</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="cap">Move to… lists the other containers; picking one makes the move.</p>
+      </div>
+      <div class="stack">
+        <div class="pros" style="grid-template-columns:1fr">
+          <div class="pro good"><b>Good at</b><ul><li>You see every place's coins first, then act on one.</li><li>Fits D&amp;D Beyond's own coin manager, which works per container.</li></ul></div>
+          <div class="pro cost"><b>Costs</b><ul><li>Spending carried coins takes one tap more than today (pick Carried first).</li><li>Moving into a container that holds no coins yet is less obvious: it's under Move to…, not in the list.</li></ul></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="opt-head"><h2>C. A purse table</h2></div>
+    <p>One table: a row per place, a column per coin. Type new numbers, see the changes listed, and press <b>Make</b> once. Moving is lowering one row and raising another.</p>
+    <div class="two">
+      <div class="stack">
+        <div class="win" style="max-width:520px">
+          <div class="win-h">Coins <span class="x">×</span></div>
+          <div class="tbl-wrap"><table class="grid">
+            <thead><tr><th></th><th>pp</th><th>gp</th><th>sp</th><th>cp</th></tr></thead>
+            <tbody>
+              <tr><td>Carried</td><td class="ed"><span>0</span></td><td class="ed ch"><span>1,154</span></td><td class="ed"><span>68</span></td><td class="ed"><span>92</span></td></tr>
+              <tr><td>Bag of Holding</td><td class="ed"><span>0</span></td><td class="ed ch"><span>6,500</span></td><td class="ed"><span>0</span></td><td class="ed"><span>0</span></td></tr>
+              <tr><td>Backpack</td><td class="ed"><span>0</span></td><td class="ed"><span>0</span></td><td class="ed"><span>0</span></td><td class="ed"><span>0</span></td></tr>
+            </tbody>
+            <tfoot><tr><td>In all</td><td>0</td><td>7,654</td><td>68</td><td>92</td></tr></tfoot>
+          </table></div>
+          <div class="chg"><span class="p">Carried +500 gp</span><span class="m">Bag of Holding −500 gp</span></div>
+          <div class="row"><span class="btn pri">Make 2 changes</span><span class="btn lnk">Cancel</span></div>
+        </div>
+      </div>
+      <div class="stack">
+        <div class="pros" style="grid-template-columns:1fr">
+          <div class="pro good"><b>Good at</b><ul><li>Many changes at once: splitting loot, tidying after a shopping trip.</li><li>Every coin in every place is visible.</li></ul></div>
+          <div class="pro cost"><b>Costs</b><ul><li>Typing a new total instead of “spend 25”: you do the sum yourself.</li><li>Cramped on a phone: five columns of numbers in a small window.</li><li>A move isn't a move to askdnd, just two edits, so Undo puts back each separately.</li></ul></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>The same choice everywhere coins move</h2>
+    <p>Whichever you pick, the other places that change coins follow it, so “which bag” means the same thing everywhere:</p>
+    <div class="facts">
+      <div class="fact"><b>Buying in the item browser</b>Paying from the purse asks <b>Pay from</b> (Carried, or a bag) when coins are in more than one place. Today it only pays from carried coins.</div>
+      <div class="fact"><b>The DM's Give loot</b>Coins land in Carried, as they do now. The player moves them with Move.</div>
+      <div class="fact"><b>Spending a coin you don't have</b>Spending 5 gp with only silver could make change, the way buying already does (largest coins first, change given back). Today the window refuses. Say if you want this too.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="verdict">
+      <b>My recommendation: A (Spend · Gain · Move).</b>
+      <p>Spending carried coins is by far the most common case at the table, and A keeps it exactly as quick as today. A bag only shows up when it holds coins. Move is its own tab, so it reads plainly, and it shows the result before you press it. C is better for big tidy-ups but slower for the everyday spend, and hard to use on a phone.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your pick</h2>
+    <form class="answer" id="answer">
+      <div class="q"><b>The window</b>
+        <div class="picks" role="radiogroup" aria-label="The window">
+          <label class="pick"><input type="radio" name="layout" value="A">A. Spend · Gain · Move</label>
+          <label class="pick"><input type="radio" name="layout" value="B">B. Pick a place, then act</label>
+          <label class="pick"><input type="radio" name="layout" value="C">C. A purse table</label>
+        </div>
+      </div>
+      <div class="q"><b>Making change when you spend a coin you don't have</b>
+        <div class="picks" role="radiogroup" aria-label="Making change">
+          <label class="pick"><input type="radio" name="change" value="yes">Yes, like buying</label>
+          <label class="pick"><input type="radio" name="change" value="no">No, keep refusing</label>
+        </div>
+      </div>
+      <div class="q"><b>Anything else</b><textarea id="words" name="words" placeholder="Optional"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Submit</button><span class="sent" id="sent" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const form = document.getElementById('answer'), sent = document.getElementById('sent'), send = document.getElementById('send');
+  let db = null;
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { sent.textContent = 'Open this page signed in to claude.ai to send it.'; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try {
+      await db.collection('answers').doc('pick').set({ layout: f.get('layout') || '', change: f.get('change') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
+      sent.textContent = 'Sent to Claude';
+    } catch (err) { sent.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    db = await claude.use('db');
+    if (!db) return;
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) return;
+      const a = d.data();
+      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = (r.name === 'layout' && r.value === a.layout) || (r.name === 'change' && r.value === a.change); });
+      document.getElementById('words').value = a.words || '';
+      sent.textContent = 'Sent earlier: change it and Submit again if you like';
+    } catch (err) { /* nothing sent yet */ }
+  })();
+})();
+</script>

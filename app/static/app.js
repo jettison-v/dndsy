@@ -2273,14 +2273,54 @@
     w._use = btn.dataset.useUrl;
     fetch(w._use, { headers: { 'X-Requested-With': 'fetch' } })
       .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-      .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); place(w, btn); w.querySelector('[autofocus]')?.focus(); } })
+      .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); coinsWin(w); place(w, btn); w.querySelector('[autofocus]')?.focus(); } })
       .catch(() => { if (win === w) showFailure(w, "Couldn't reach askdnd.", () => openUse(btn)); });
+  }
+  // The Coins window (app/coins.py; docs/mockups/coins/ A): its button says what it will do ("Spend 25 gp"), and a line
+  // says what happens before it does: change made from a place's other coins, not enough there, or a move's result.
+  // The server decides the same things again (app/inventory.py).
+  const COIN_CP = { cp: 1, sp: 10, ep: 50, gp: 100, pp: 1000 }, COIN_ORDER = ['pp', 'gp', 'ep', 'sp', 'cp'];
+  function coinWords(c) { return COIN_ORDER.filter(k => c[k]).map(k => c[k].toLocaleString() + ' ' + k).join(', ') || 'no coins'; }
+  function coinsWin(w) {
+    const cw = w && w.querySelector('.coins-win');
+    if (!cw || !cw.dataset.places) return;
+    if (!cw._wired) { cw._wired = true; cw.addEventListener('input', () => coinsWin(w)); cw.addEventListener('change', () => coinsWin(w)); }
+    let places = {};
+    try { places = JSON.parse(cw.dataset.places); } catch (err) { return; }
+    const val = n => (cw.querySelector('[name="' + n + '"]:checked') || cw.querySelector('select[name="' + n + '"], input[name="' + n + '"]:not([type=radio])') || {}).value;
+    const doing = cw.dataset.do, n = Math.max(0, parseInt(val('amount'), 10) || 0), coin = val('coin') || 'gp';
+    const go = cw.querySelector('[data-coins-go]'), said = cw.querySelector('[data-coins-said]');
+    if (!go) return;
+    const verb = doing.charAt(0).toUpperCase() + doing.slice(1);
+    go.textContent = n ? verb + ' ' + n.toLocaleString() + ' ' + coin : verb;
+    let say = '', ok = n > 0;
+    if (doing === 'spend' && n) {
+      const p = places[val('place') || 'me'], have = p.coins[coin] || 0;
+      const worth = Object.keys(COIN_CP).reduce((t, k) => t + (p.coins[k] || 0) * COIN_CP[k], 0);
+      if (have < n && worth >= n * COIN_CP[coin]) say = p.name + ' has ' + have.toLocaleString() + ' ' + coin + ': askdnd makes change from its other coins.';
+      else if (have < n) { say = p.name + " hasn't that much, even making change."; ok = false; }
+    }
+    if (doing === 'move') {
+      const from = cw.querySelector('select[name="from"]'), into = cw.querySelector('select[name="into"]');
+      [...into.options].forEach(o => { o.hidden = o.disabled = o.value === from.value; });
+      if (into.value === from.value) into.value = [...into.options].find(o => !o.disabled)?.value || '';
+      const a = places[from.value], b = places[into.value];
+      if (!a || !b) ok = false;
+      else if (n && (a.coins[coin] || 0) < n) { say = a.name + ' has ' + (a.coins[coin] || 0).toLocaleString() + ' ' + coin + '.'; ok = false; }
+      else if (n) {
+        const after = (p, d) => ({ ...p.coins, [coin]: (p.coins[coin] || 0) + d });
+        say = 'Afterwards: ' + a.name + ' ' + coinWords(after(a, -n)) + ' · ' + b.name + ' ' + coinWords(after(b, n));
+      }
+    }
+    go.disabled = !ok;
+    said.textContent = say;
+    said.hidden = !say;
   }
   function swapUse(w, url) {
     w._use = url;
     fetch(url, { headers: { 'X-Requested-With': 'fetch' } })
       .then(r => { if (!r.ok) throw new Error(); return r.text(); })
-      .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); place(w); } })
+      .then(html => { if (win === w) { w.innerHTML = html; if (window.htmx) htmx.process(w); coinsWin(w); place(w); w.querySelector('[autofocus]')?.focus(); } })
       .catch(() => { if (win === w) showFailure(w, "Couldn't reach askdnd.", () => swapUse(w, url)); });
   }
   // The hit points window in it: its working redraws as you type, and taking it closes it
@@ -3656,6 +3696,7 @@
       if (pay) {
         if (!typed) pay.value = count ? money(items.reduce((t, b) => t + b.n * b.cp, 0)) : '';
         pay.disabled = !paying.checked;
+        if ($('[data-ib-from]')) $('[data-ib-from]').disabled = !paying.checked;
         const unpriced = items.filter(b => !b.cp).length, note = $('[data-ib-price-note]');
         note.hidden = !unpriced;
         note.textContent = unpriced ? (unpriced === 1 ? '1 item has' : unpriced + ' items have') + " no price in the books (a magic item never does): what you pay for it is the DM's to say." : '';
@@ -3694,7 +3735,7 @@
         go.disabled = true;
         said.hidden = true;
         const body = { items: [...basket].map(([id, b]) => ({ id: +id, n: b.n })), into: $('[data-ib-into]').value };
-        if (paying && paying.checked) body.pay = pay.value;
+        if (paying && paying.checked) { body.pay = pay.value; body.from = $('[data-ib-from]')?.value || 'me'; }
         if (amount) { body.amount = amount.value; body.coin = $('[data-ib-coin]').value; }
         fetch(root.dataset.url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' }, body: JSON.stringify(body) })
           .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || "askdnd couldn't do that"); return j; }))

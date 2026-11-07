@@ -50,6 +50,8 @@ def put(data, field, v):
         row["limitedUse"]["numberUsed"] = v
     elif kind == "coin":
         data["currencies"][arg] = v
+    elif kind == "bagcoin":  # (a container's own coins, as D&D Beyond keeps them)
+        ddb_fields.put(data, field, v)
     elif kind == "add":
         like = next(i for i in data["inventory"] if str(i["definition"]["id"]) == arg)
         have = sum(i["quantity"] for i in data["inventory"] if i["definition"] is like["definition"])
@@ -739,7 +741,7 @@ def test_the_full_check_takes_one_of_each_out_and_puts_everything_back(admin, db
     out = ddb_bridge.outbox(db, cole)
     kinds = {op["field"].split(":")[0] for op in out["ops"]}
     assert {"hp", "item", "death", "inspiration", "condition", "exhaustion", "coin", "hitdice", "uses", "charges",
-            "equipped", "attuned", "container"} <= kinds
+            "equipped", "attuned", "container", "bagcoin"} <= kinds
     make(sheet, out)
     ddb_bridge.delivered(db, out["id"], ok=True)
     back = ddb_bridge.outbox(db, cole)

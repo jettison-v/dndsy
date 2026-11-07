@@ -3,9 +3,9 @@
 <button type="button" class="rp-x" aria-label="Close">×</button>
 <div class="rw-title">Ready <span class="roll-sub">Action · then your Reaction</span></div>
 {% if readied %}<p class="use-cost">Readied now: <b>{{ readied.name }}</b>, when {{ readied.trigger }}. Readying again replaces it.</p>{% endif %}
-<div class="rw-row ready-what" role="radiogroup" aria-label="What you'll do">
-  {% for x in choices %}<label class="ready-opt"><input type="radio" name="what" value="{{ x.key }}"{{ ' checked' if loop.first }}><span>{{ x.name }}</span><small>{{ "Attack" if x.kind == "attack" else ("Spell · cantrip" if not x.level else "Spell · " ~ x.level | ordinal ~ "-level") }}</small></label>{% endfor %}
-  <label class="ready-opt"><input type="radio" name="what" value="move"{{ ' checked' if not choices }}><span>Move up to your Speed</span><small>{{ speed ~ " ft" if speed else "" }}</small></label>
+<div class="rw-row rw-choices" role="radiogroup" aria-label="What you'll do">
+  {% for x in choices %}<label class="rw-choice"><input type="radio" name="what" value="{{ x.key }}"{{ ' checked' if loop.first }}><span>{{ x.name }}</span><small>{{ "Attack" if x.kind == "attack" else ("Spell · cantrip" if not x.level else "Spell · " ~ x.level | ordinal ~ "-level") }}</small></label>{% endfor %}
+  <label class="rw-choice"><input type="radio" name="what" value="move"{{ ' checked' if not choices }}><span>Move up to your Speed</span><small>{{ speed ~ " ft" if speed else "" }}</small></label>
 </div>
 <label class="field">When<input type="text" name="trigger" maxlength="200" placeholder="Enemy 1 steps through the doorway" autofocus></label>
 <p class="note">When it happens before your next turn starts, you take it with your Reaction, or let it go. A spell that uses a slot: cast it now (its slot is spent) and it's held with Concentration until then.</p>

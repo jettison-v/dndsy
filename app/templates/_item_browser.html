@@ -4,7 +4,7 @@
    Adding at the bottom, and one press there makes them all on D&D Beyond (app.js "Item browser"). Nothing is priced
    that D&D Beyond doesn't price: a magic item says ask the DM. #}
 {% from "_lists.html" import filter_column, search_box, active_row %}
-{% from "_char.html" import purse %}
+{% from "_char.html" import purse, coins_text %}
 {# Can the character use it (app/item_fit.py; Brett, Nov 3): a circle with a tick, or a triangle for a catch the rules
    attach; shape and colour both say it, and hovering (or tapping) says why. Nothing to say: an empty cell. #}
 {% macro fit_icon(f, who) -%}
@@ -69,7 +69,9 @@
       {% else %}
       <label class="ls-check"><input type="checkbox" data-ib-paying checked> Pay from the purse</label>
       <input class="ib-pay" type="text" data-ib-pay aria-label="What you pay" placeholder="0 gp" autocomplete="off" title="Starts at the book's price for ordinary gear; change it to whatever the DM agrees">
-      {{ purse(sheet, total=false, bags=false) }}
+      {% if pay_places %}<label class="ls-select"><span>From</span>
+        <select data-ib-from aria-label="Pay from">{% for p in pay_places %}<option value="{{ p.key }}">{{ p.name }} ({{ coins_text(p.coins) }})</option>{% endfor %}</select></label>
+      {% else %}{{ purse(sheet, total=false, bags=false) }}{% endif %}
       {% endif %}
       {% if reachable %}<button type="button" class="btn primary" data-ib-go disabled>{{ "Give" if loot else "Add" }}</button>{% endif %}
     </div>

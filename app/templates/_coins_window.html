@@ -1,16 +1,30 @@
-{# Change coins, inside the roll window (app.js "using an item"; app/inventory.py). #}
+{# The Coins window, inside the roll window (app.js "using an item" and "the Coins window"; app/inventory.py, app/coins.py;
+   docs/mockups/coins/, Brett chose A, Nov 7): Spend · Gain · Move, each a sentence to fill in. A place to choose shows
+   only once a bag holds coins; Move only once the character has a bag. Coins read largest first (feedback 51). #}
+{% from "_char.html" import coins_text %}
 <button type="button" class="rp-x" aria-label="Close">×</button>
 <div class="rw-title">Coins</div>
-<p class="use-cost">{% if bags %}Carried: {% endif %}{% for k, v in has.items() %}{{ "{:,}".format(v) }} {{ k }}{{ " · " if not loop.last }}{% else %}None yet{% endfor %}</p>
-{% for b in bags %}<p class="note">In {{ b.name }}: {% for k, v in b.coins.items() %}{{ "{:,}".format(v) }} {{ k }}{{ ", " if not loop.last }}{% endfor %} (change a bag's coins on D&amp;D Beyond)</p>{% endfor %}
-{% if reachable %}
-<div class="rw-row"><input class="rw-text" type="number" name="amount" min="1" max="100000" inputmode="numeric" placeholder="0" aria-label="How many coins"><select class="rw-slot" name="coin" aria-label="Which coin">{% for k in coins %}<option value="{{ k }}"{{ " selected" if k == "gp" }}>{{ k }}</option>{% endfor %}</select></div>
+<div class="coins-win" data-places="{{ data | tojson | forceescape }}" data-do="{{ do }}">
+{% if not reachable %}
+<p class="use-cost">{% for p in holding %}{{ p.name }}: {{ coins_text(p.coins) }}{{ " · " if not loop.last }}{% else %}No coins{% endfor %}</p>
+<p class="unreached">{{ unreached_says(c, "change coins") }}</p>
+{% else %}
+<div class="seg coins-do" role="group" aria-label="What to do">{% for k, label in (("spend", "Spend"), ("gain", "Gain"), ("move", "Move")) if k != "move" or can_move %}<button type="button" data-use-url="/characters/{{ c.id }}/coins?do={{ k }}"{% if k == do %} aria-pressed="true"{% endif %}>{{ label }}</button>{% endfor %}</div>
+{% if do == "move" %}
+<div class="rw-row"><span class="rw-label">Move</span><input class="rw-text" type="number" name="amount" min="1" max="100000" inputmode="numeric" placeholder="0" aria-label="How many coins" autofocus><select class="rw-slot" name="coin" aria-label="Which coin">{% for k in coins %}<option value="{{ k }}"{{ " selected" if k == "gp" }}>{{ k }}</option>{% endfor %}</select></div>
+<div class="rw-row"><span class="rw-label">from</span><select class="rw-slot" name="from" aria-label="From">{% for p in holding %}<option value="{{ p.key }}">{{ p.name }} ({{ coins_text(p.coins) }})</option>{% else %}<option value="" disabled selected>No coins anywhere</option>{% endfor %}</select></div>
+<div class="rw-row"><span class="rw-label">to</span><select class="rw-slot" name="into" aria-label="To">{% for p in every %}<option value="{{ p.key }}"{{ " selected" if loop.index == 2 }}>{{ p.name }}</option>{% endfor %}</select></div>
+{% else %}
+{% if pick %}<div class="rw-row rw-choices" role="radiogroup" aria-label="{{ 'From' if do == 'spend' else 'Into' }}">
+  {% for p in pick %}<label class="rw-choice"><input type="radio" name="place" value="{{ p.key }}"{{ " checked" if loop.first }}><span>{{ p.name }}</span><small>{{ coins_text(p.coins) or "none yet" }}</small></label>{% endfor %}
+</div>{% elif do == "spend" %}<p class="use-cost">{{ coins_text(holding[0].coins) if holding else "No coins" }}</p>{% endif %}
+<div class="rw-row"><span class="rw-label">{{ "Spend" if do == "spend" else "Gain" }}</span><input class="rw-text" type="number" name="amount" min="1" max="100000" inputmode="numeric" placeholder="0" aria-label="How many coins" autofocus><select class="rw-slot" name="coin" aria-label="Which coin">{% for k in coins %}<option value="{{ k }}"{{ " selected" if k == "gp" }}>{{ k }}</option>{% endfor %}</select></div>
+{% endif %}
+<p class="note coins-said" data-coins-said hidden></p>
 <div class="rw-row use-foot">
-  <button type="button" class="btn primary small" data-use-go data-to="spend">Spend</button>
-  <button type="button" class="btn small" data-use-go data-to="gain">Gain</button>
+  <button type="button" class="btn primary small" data-use-go data-to="{{ do }}" data-coins-go>{{ do | capitalize }}</button>
   <button type="button" class="btn link small" data-use-close>Cancel</button>
 </div>
 <p class="use-said" role="alert" hidden></p>
-{% else %}
-<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to change coins here, or change them on D&amp;D Beyond (askdnd shows it within seconds).</p>
 {% endif %}
+</div>

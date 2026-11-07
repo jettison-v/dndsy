@@ -7,7 +7,7 @@ import os
 import pytest
 from sqlalchemy import select
 
-from app import characters, giving, item_browser
+from app import characters, coins, giving, item_browser
 from app.models import BridgeIntent, Campaign
 from tests.roles import set_role
 from tests.table_setup import char
@@ -47,15 +47,16 @@ def test_the_list_is_the_2024_books_with_the_free_rules_and_book_prices_only():
 
 
 def test_coins_are_counted_out_largest_first_and_a_coin_is_broken_for_change():
-    assert item_browser.parse_money("2 gp 5 sp") == 250 and item_browser.parse_money("21 sp") == 210
-    assert item_browser.parse_money("2.5 GP") == 250 and item_browser.parse_money("3") == 300 and item_browser.parse_money("") == 0
-    assert item_browser.parse_money("a goat") is None and item_browser.parse_money("2 gp and a goat") is None
-    assert item_browser.pay_from({"gp": 654, "sp": 68, "cp": 92}, 250) == {"cp": 92, "sp": 63, "ep": 0, "gp": 652, "pp": 0}
-    assert item_browser.pay_from({"gp": 1}, 10) == {"cp": 0, "sp": 9, "ep": 0, "gp": 0, "pp": 0}
-    assert item_browser.pay_from({"gp": 5, "cp": 3}, 25) == {"cp": 8, "sp": 7, "ep": 0, "gp": 4, "pp": 0}
-    assert item_browser.pay_from({"pp": 1}, 150) == {"cp": 0, "sp": 5, "ep": 0, "gp": 8, "pp": 0}
-    assert item_browser.pay_from({"gp": 1}, 101) is None
-    assert item_browser.money(1500) == "15 gp" and item_browser.money(251) == "2 gp 5 sp 1 cp"
+    parse_money, pay_from, money = coins.parse_money, coins.pay_from, coins.money
+    assert parse_money("2 gp 5 sp") == 250 and parse_money("21 sp") == 210
+    assert parse_money("2.5 GP") == 250 and parse_money("3") == 300 and parse_money("") == 0
+    assert parse_money("a goat") is None and parse_money("2 gp and a goat") is None
+    assert pay_from({"gp": 654, "sp": 68, "cp": 92}, 250) == {"cp": 92, "sp": 63, "ep": 0, "gp": 652, "pp": 0}
+    assert pay_from({"gp": 1}, 10) == {"cp": 0, "sp": 9, "ep": 0, "gp": 0, "pp": 0}
+    assert pay_from({"gp": 5, "cp": 3}, 25) == {"cp": 8, "sp": 7, "ep": 0, "gp": 4, "pp": 0}
+    assert pay_from({"pp": 1}, 150) == {"cp": 0, "sp": 5, "ep": 0, "gp": 8, "pp": 0}
+    assert pay_from({"gp": 1}, 101) is None
+    assert money(1500) == "15 gp" and money(251) == "2 gp 5 sp 1 cp"
 
 
 def test_a_player_adds_items_into_a_bag_and_pays_what_they_typed(player, db):
@@ -66,10 +67,10 @@ def test_a_player_adds_items_into_a_bag_and_pays_what_they_typed(player, db):
     assert "you have 1" in w  # (his Rope)
     r = player.post(f"/characters/{cole.id}/items/add", json={"items": [{"id": 415, "n": 2}, {"id": 8960641, "n": 1}], "into": str(BAG), "pay": "2 gp 5 sp"})
     assert r.json()["text"] == "Cole got Rope ×2, Potion of Healing into Bag of Holding, paid 2 gp 5 sp: on its way to D&D Beyond"
-    rope, potion, sp, gp = intents(db)
+    rope, potion, paid = intents(db)
     assert rope == ("add_item", {"definition": 415, "entityTypeId": 1439493548, "quantity": 2, "name": "Rope", "container": BAG}, "Cole got Rope ×2")
     assert potion[1]["definition"] == 8960641 and potion[1]["container"] == BAG
-    assert (gp[1]["field"], gp[1]["delta"], sp[1]["field"], sp[1]["delta"]) == ("coin:gp", -2, "coin:sp", -5) and gp[2] == "Cole paid 2 gp 5 sp"
+    assert paid == ("coins", {"deltas": {"coin:gp": -2, "coin:sp": -5}, "said": "paid 2 gp 5 sp"}, "Cole: paid 2 gp 5 sp")
 
 
 def test_carried_and_unpaid_is_just_the_items(player, db):

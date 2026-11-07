@@ -76,6 +76,7 @@ Brett, 2026-10-30: test with the real D&D Beyond, not only the stand-in in the b
 - **The runs.** `scripts/real_table.py` holds named runs: each does what a person would, watches the pages, and says what it expected and what happened. Run one on the Mini with `.venv/bin/python real_table.py <run>`.
 - **The plan.** [live-test-plan.md](live-test-plan.md) is what to run and when, with the checks that still need a person.
 - **Stays apart.** Never on GitHub, since it needs the signed-in seats and D&D Beyond itself. It tests what's on beta, not unmerged changes.
+- **Vi's Backpack** (Nov 7): an empty Backpack on Vi's sheet, added for the `coins` run, which moves a gold into it and back. Leave it there.
 - **Don't overlap.** While a run is going, stay off Cathartic, Vi and Levi: it opens and closes their sheets.
 
 | Run | What it shows |
