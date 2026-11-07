@@ -1,0 +1,188 @@
+<title>Feedback Replies</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Alegreya+SC:wght@500;700&display=swap">
+<style>
+/* Layout: one column of note cards, a sticky bar with the count and Submit; askdnd's dark table look, light too.
+   The notes and replies live in the page's store (db), never in this file: it's kept in a public repo. */
+:root {
+  --bg: #f4f2ee; --panel: #ffffff; --line: #ddd8cf; --fg: #23201c; --muted: #6d665c;
+  --accent: #c0362f; --accent-ink: #ffffff; --gold: #9a6b12; --chip: #efebe4; --chip-on: #23201c; --chip-on-ink: #ffffff;
+  --ok: #2f7d4f; --wait: #a55a00;
+  --display: "Alegreya SC", Georgia, serif; --body: "Alegreya Sans", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15171b; --panel: #1e2126; --line: #30343b; --fg: #ece8e1; --muted: #9c978e;
+  --accent: #e2524a; --accent-ink: #ffffff; --gold: #e0b04a; --chip: #272b31; --chip-on: #ece8e1; --chip-on-ink: #15171b;
+  --ok: #5cc28a; --wait: #f0a54a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #15171b; --panel: #1e2126; --line: #30343b; --fg: #ece8e1; --muted: #9c978e;
+  --accent: #e2524a; --accent-ink: #ffffff; --gold: #e0b04a; --chip: #272b31; --chip-on: #ece8e1; --chip-on-ink: #15171b;
+  --ok: #5cc28a; --wait: #f0a54a; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 17px/1.5 var(--body); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--panel) }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line);
+  padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.bar-in { max-width: 680px; margin: 0 auto; display: flex; align-items: center; gap: 12px }
+.bar h1 { font: 700 20px/1.1 var(--display); letter-spacing: .02em; margin: 0; flex: 1; min-width: 0 }
+.count { color: var(--muted); font-size: 14px; white-space: nowrap; font-variant-numeric: tabular-nums }
+button.send { font: 700 16px var(--body); background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 10px; padding: 10px 16px; cursor: pointer }
+button.send:disabled { opacity: .45; cursor: default }
+button:focus-visible, textarea:focus-visible, label.chip:focus-within { outline: 2px solid var(--accent); outline-offset: 2px }
+main { padding-block: 16px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.wrap { max-width: 680px; margin: 0 auto; display: grid; gap: 28px }
+.intro { color: var(--muted); margin: 0 }
+.state { color: var(--muted); padding: 24px 0; text-align: center }
+section { display: grid; gap: 12px }
+section > h2 { font: 700 14px var(--display); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); margin: 0;
+  display: flex; gap: 10px; align-items: center }
+section > h2::after { content: ""; flex: 1; height: 1px; background: var(--line) }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0 }
+.card.sent { border-color: color-mix(in srgb, var(--ok) 55%, var(--line)) }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; color: var(--muted); align-items: baseline }
+.meta .n { font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums }
+.tag { font-size: 12px; font-weight: 700; letter-spacing: .04em; border-radius: 6px; padding: 1px 7px; border: 1px solid currentColor }
+.tag.review { color: var(--wait) } .tag.new { color: var(--muted) } .tag.planned { color: var(--gold) }
+.size { margin-left: auto; font-size: 12px; color: var(--muted) }
+blockquote { margin: 0; font-size: 18px; line-height: 1.45; border-left: 3px solid var(--accent); padding-left: 12px; overflow-wrap: anywhere }
+.take { margin: 0; color: var(--fg); overflow-wrap: anywhere }
+.take b { font-family: var(--display); font-weight: 700; letter-spacing: .03em; color: var(--gold); font-size: 14px; margin-right: 4px }
+.chips { display: flex; flex-wrap: wrap; gap: 8px }
+label.chip { position: relative; display: inline-flex; align-items: center; min-height: 40px; padding: 6px 14px; border-radius: 999px; background: var(--chip);
+  border: 1px solid var(--line); cursor: pointer; font-weight: 500; user-select: none }
+label.chip input { position: absolute; opacity: 0; pointer-events: none }
+label.chip:has(input:checked) { background: var(--chip-on); color: var(--chip-on-ink); border-color: var(--chip-on) }
+textarea { width: 100%; min-height: 64px; font: 16px/1.4 var(--body); color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; resize: vertical }
+.foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); min-height: 18px }
+.foot .ok { color: var(--ok); font-weight: 700 }
+.end { display: grid; gap: 10px; justify-items: center; text-align: center; color: var(--muted) }
+.end button.send { width: 100%; max-width: 680px; padding: 14px }
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--chip-on); color: var(--chip-on-ink);
+  padding: 10px 16px; border-radius: 10px; font-weight: 700; max-width: calc(100% - 32px) }
+@media (prefers-reduced-motion: no-preference) { .card { transition: border-color .3s } }
+</style>
+
+<header class="bar"><div class="bar-in">
+  <h1>Feedback replies</h1>
+  <span class="count" id="count">Loading…</span>
+  <button class="send" id="send-top" type="button" disabled>Submit</button>
+</div></header>
+
+<main><div class="wrap">
+  <p class="intro">Every open note, from prod and staging. Each has what I think it means and what I'd do. Pick an answer, add words if you like, then Submit. You can submit a few at a time and come back for the rest.</p>
+  <div id="notes"><p class="state" id="state">Loading the notes…</p></div>
+  <div class="end"><button class="send" id="send-end" type="button" disabled>Submit</button><span id="end-note"></span></div>
+</div></main>
+<div id="toast" hidden></div>
+
+<script>
+(() => {
+  const GROUPS = [["review", "From the players · waiting for your approval"], ["mine", "Yours"], ["staging", "Only on staging"]];
+  const TAGS = { review: "Needs approval", new: "New", planned: "Planned" };
+  const notesEl = document.getElementById("notes"), countEl = document.getElementById("count");
+  const sendBtns = [document.getElementById("send-top"), document.getElementById("send-end")];
+  let db = null, notes = [], replies = {}, dirty = new Set();
+
+  const DRAFT = "feedback-replies-draft";
+  const loadDraft = () => { try { return JSON.parse(localStorage.getItem(DRAFT) || "{}") } catch { return {} } };
+  const saveDraft = d => { try { localStorage.setItem(DRAFT, JSON.stringify(d)) } catch {} };
+  let draft = loadDraft();
+
+  function toast(text) {
+    const t = document.getElementById("toast"); t.textContent = text; t.hidden = false;
+    clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true }, 2600);
+  }
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e }
+
+  function current(key) {  // what this card holds now: the draft, else what was sent
+    return draft[key] || replies[key] || { choice: "", words: "" };
+  }
+  function updateCount() {
+    const answered = notes.filter(n => (replies[n.key] || {}).choice || (replies[n.key] || {}).words).length;
+    countEl.textContent = `${answered} of ${notes.length} sent`;
+    sendBtns.forEach(b => { b.disabled = !dirty.size; b.textContent = dirty.size ? `Submit ${dirty.size}` : "Submit" });
+    document.getElementById("end-note").textContent = dirty.size ? "" : (notes.length && answered === notes.length ? "All answered. Thank you." : "");
+  }
+
+  function card(n) {
+    const c = el("article", "card"); c.dataset.key = n.key;
+    const meta = el("div", "meta");
+    meta.append(el("span", "n", n.label), el("span", null, n.from), el("span", null, "· " + n.page));
+    if (TAGS[n.status]) meta.append(el("span", "tag " + n.status, TAGS[n.status]));
+    if (n.size) meta.append(el("span", "size", "Size " + n.size));
+    c.append(meta, el("blockquote", null, n.text));
+    const take = el("p", "take"); take.append(el("b", null, "My take"), document.createTextNode(n.take)); c.append(take);
+    const now = current(n.key);
+    const chips = el("div", "chips"); chips.setAttribute("role", "radiogroup"); chips.setAttribute("aria-label", "Your answer to " + n.label);
+    (n.choices || []).forEach((ch, i) => {
+      const l = el("label", "chip"), r = document.createElement("input");
+      r.type = "radio"; r.name = "choice-" + n.key; r.id = `c-${n.key}-${i}`; r.value = ch; r.checked = now.choice === ch;
+      r.addEventListener("change", () => edit(n.key, { choice: ch }));
+      l.append(r, document.createTextNode(ch)); chips.append(l);
+    });
+    const ta = document.createElement("textarea"); ta.id = "w-" + n.key; ta.placeholder = "Anything to add (optional)"; ta.value = now.words || "";
+    ta.addEventListener("input", () => edit(n.key, { words: ta.value }));
+    const foot = el("div", "foot"); foot.append(el("span", "st"));
+    c.append(chips, ta, foot);
+    paint(c, n.key);
+    return c;
+  }
+  function paint(c, key) {
+    const st = c.querySelector(".st"), sent = replies[key];
+    c.classList.toggle("sent", !!sent && !dirty.has(key));
+    st.className = "st" + (sent && !dirty.has(key) ? " ok" : "");
+    st.textContent = dirty.has(key) ? "Not sent yet" : sent ? "Sent ✓" : "";
+  }
+  function edit(key, patch) {
+    draft[key] = { ...current(key), ...patch }; saveDraft(draft);
+    dirty.add(key); paint(document.querySelector(`.card[data-key="${key}"]`), key); updateCount();
+  }
+
+  function render() {
+    notesEl.textContent = "";
+    if (!notes.length) { notesEl.append(el("p", "state", "No notes yet. Claude adds them here; reload in a moment.")); return }
+    for (const [g, title] of GROUPS) {
+      const these = notes.filter(n => n.group === g).sort((a, b) => a.order - b.order);
+      if (!these.length) continue;
+      const s = el("section"); s.append(el("h2", null, title)); these.forEach(n => s.append(card(n))); notesEl.append(s);
+    }
+    // a draft left from an earlier visit counts as not sent yet
+    Object.keys(draft).forEach(k => { const r = replies[k] || {}, d = draft[k]; if (d.choice !== (r.choice || "") || d.words !== (r.words || "")) dirty.add(k); else delete draft[k] });
+    document.querySelectorAll(".card").forEach(c => paint(c, c.dataset.key));
+    updateCount();
+  }
+
+  async function submit() {
+    if (!db || !dirty.size) return;
+    sendBtns.forEach(b => b.disabled = true);
+    let ok = 0;
+    for (const key of [...dirty]) {
+      const body = { choice: draft[key].choice || "", words: (draft[key].words || "").trim(), at: new Date().toISOString() };
+      try { await db.collection("replies").doc(key).set(body); replies[key] = body; dirty.delete(key); delete draft[key]; ok++ }
+      catch (e) { toast("Couldn't send one: " + (e && e.message || "try again")); break }
+    }
+    saveDraft(draft);
+    document.querySelectorAll(".card").forEach(c => paint(c, c.dataset.key));
+    updateCount();
+    if (ok) toast(ok === 1 ? "Sent 1 reply to Claude" : `Sent ${ok} replies to Claude`);
+  }
+  sendBtns.forEach(b => b.addEventListener("click", submit));
+
+  (async () => {
+    const timer = setTimeout(() => { document.getElementById("state") && (document.getElementById("state").textContent = "Still loading. If this stays, open the page again.") }, 10000);
+    db = await claude.use("db");
+    if (!db) { clearTimeout(timer); notesEl.textContent = ""; notesEl.append(el("p", "state", "Open this page signed in to claude.ai to see and answer the notes.")); return }
+    let gotNotes = false, gotReplies = false;
+    db.collection("notes").onSnapshot(s => {
+      clearTimeout(timer); gotNotes = true;
+      notes = s.docs.map(d => ({ key: d.id, ...d.data() }));
+      if (gotReplies) render();
+    }, () => { clearTimeout(timer); notesEl.textContent = ""; notesEl.append(el("p", "state", "Couldn't load the notes. Open the page again.")) });
+    db.collection("replies").onSnapshot(s => {
+      gotReplies = true; replies = {}; s.docs.forEach(d => { replies[d.id] = d.data() });
+      if (gotNotes) render();
+    }, () => { gotReplies = true; if (gotNotes) render() });
+  })();
+})();
+</script>

@@ -15,6 +15,7 @@ where each opens from its copy here; `scripts/library.py` writes the roadmap's t
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
 | Recording to Recap | [NpPqj4ifE2zKdXAJgZQBaM](https://claude.ai/artifact/NpPqj4ifE2zKdXAJgZQBaM) | `recording-to-recap.html` | Brett's steps after a game night: MacWhisper, the Processor's four steps, publishing the recap, where the files are (Nov 6; kept current) |
+| Feedback Replies | [8q9SiAxV8ucTpZiRrsCdgY](https://claude.ai/artifact/8q9SiAxV8ucTpZiRrsCdgY) | `feedback-replies.html` | Brett answers the open feedback notes from his phone (Nov 7). Claude loads the notes into the page's store and reads the replies there (ArtifactData, collections `notes` and `replies`); no note text in the source |
 | How the Bridge Works | [VhKW45Ec3mYoQsksGnQZ1T](https://claude.ai/artifact/VhKW45Ec3mYoQsksGnQZ1T) | `bridge-flow.html` | Merged Nov 6 into askdnd D&D Beyond Bridge (`ddb-bridge.html`, How it works); the page now points there |
 | One Table List | [7e1exa6YDp5ndFeFN5p5PF](https://claude.ai/artifact/7e1exa6YDp5ndFeFN5p5PF) | `../mockups/the-table.html` | Manage › Table as one list, with one Add and a Remove that says what it does (decided and built, Oct 30) |
 | Table Without Modes | [2sEJ9btUudhWzZG6RbHEjx](https://claude.ai/artifact/2sEJ9btUudhWzZG6RbHEjx) | `../mockups/table-without-modes.html` | Game Mode designed again: no switch, a roll goes to the table by default, ready for askdnd's own encounters (decided and built, Oct 30) |

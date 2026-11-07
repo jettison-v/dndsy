@@ -808,5 +808,14 @@
   "what": "The DM's request: a page of prep notes per scene (read-aloud text, purpose, outcomes, location info, activities, scenes, links), seen by the DM alone, not even admins.",
   "source": "docs/plans/2026-11-06-dm-scene-notes.md",
   "link": ""
+ },
+ {
+  "title": "Feedback Replies",
+  "kind": "guide",
+  "status": "In use",
+  "date": "Nov 7",
+  "what": "Every open feedback note from prod and staging with Claude's take, answered from a phone with Submit; the notes and replies live in the page's own store, never in its source.",
+  "source": "docs/artifacts/feedback-replies.html",
+  "link": "https://claude.ai/artifact/8q9SiAxV8ucTpZiRrsCdgY"
  }
 ]
