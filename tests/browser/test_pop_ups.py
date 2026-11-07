@@ -106,3 +106,20 @@ def test_a_picture_opens_large_and_a_tap_closes_it(people, server):
     page.click("#pic-button img")
     assert page.locator("dialog.pic-big").count() == 0
     assert player.errors == []
+
+
+def test_on_a_phone_wild_shape_folds_to_a_line_that_opens_and_stays_open(people, server):
+    """Feedback 29 (Brett, Nov 7): on a phone Wild Shape's forms (and the spell bar's pinned spells, and Resources) fold to
+    one line that opens; the choice holds on that device."""
+    player = people("player")
+    player.page.set_viewport_size({"width": 390, "height": 844})
+    page = battle(player, server)
+    chip = page.locator(".ws-row > .ws-chip").first
+    assert page.locator('[data-fold="ws"]').is_visible() and not chip.is_visible()
+    page.click('[data-fold="ws"]')
+    assert chip.is_visible() and page.get_attribute('[data-fold="ws"]', "aria-expanded") == "true"
+    page.reload()
+    assert page.locator(".ws-row > .ws-chip").first.is_visible()
+    page.set_viewport_size({"width": 1280, "height": 900})
+    assert not page.locator('[data-fold="ws"]').is_visible() and page.locator(".ws-row > .ws-chip").first.is_visible()
+    assert player.errors == []

@@ -522,13 +522,20 @@
   watchRes();
   document.fonts?.ready.then(fitRes);
   document.body.addEventListener('htmx:afterSettle', watchRes);
-  // Resources on a phone: one line that opens, one choice per device for every character
-  try { document.body.classList.toggle('res-open', localStorage.getItem('askdnd-res-open') === '1'); } catch (err) { /* private window */ }
+  // On a phone, Battle's longer rows fold to one line that opens (data-fold): Resources, Wild Shape's forms and the spell
+  // bar's pinned spells (feedback 29, Nov 7); one choice each per device, for every character (body.fold-<key>)
+  const FOLDS = ['res', 'ws', 'sb'];
+  const stored = k => { try { return localStorage.getItem('askdnd-fold-' + k) === '1' || (k === 'res' && localStorage.getItem('askdnd-res-open') === '1'); } catch (err) { return false; } };
+  FOLDS.forEach(k => document.body.classList.toggle('fold-' + k, stored(k)));
+  const marks = () => FOLDS.forEach(k => document.querySelectorAll('[data-fold="' + k + '"]')
+    .forEach(x => x.setAttribute('aria-expanded', document.body.classList.contains('fold-' + k) ? 'true' : 'false')));
+  marks();
+  document.addEventListener('askdnd:swapped', marks);  // (a new copy of the page: its buttons say how they stand)
   document.addEventListener('click', e => {
-    const b = e.target.closest('[data-res-more]'); if (!b) return;
-    const open = document.body.classList.toggle('res-open');
-    document.querySelectorAll('[data-res-more]').forEach(x => x.setAttribute('aria-expanded', open ? 'true' : 'false'));
-    try { localStorage.setItem('askdnd-res-open', open ? '1' : '0'); } catch (err) { /* private window */ }
+    const b = e.target.closest('[data-fold]'); if (!b) return;
+    const k = b.dataset.fold, open = document.body.classList.toggle('fold-' + k);
+    marks();
+    try { localStorage.setItem('askdnd-fold-' + k, open ? '1' : '0'); if (k === 'res') localStorage.removeItem('askdnd-res-open'); } catch (err) { /* private window */ }
   });
 
   // Busy buttons: a normal (non-HTMX) form shows that it's working once submitted —

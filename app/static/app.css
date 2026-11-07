@@ -216,7 +216,7 @@ a.live-row:hover .live-go { color: var(--text); }
 .res-group { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0; padding: 0 10px; border-left: 1px solid var(--line); }
 .res-gname { color: var(--muted); margin-right: 6px; }
 .res-group .res { border-left: none; padding: 0 8px 0 0; }
-.res-more { display: none; }
+.res-more, .fold-btn { display: none; }  /* (phones only: Battle's rows fold there) */
 .rs-latest { display: none; }
 /* A small window's buttons (DESIGN.md › Where a window's actions go; the UI pass, 2026-11-02): the main action first, then
    others, then Cancel as a quiet link */
@@ -2975,7 +2975,11 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
   .status-phone .res-insp { margin-left: 0; }
   .battlebar > .res-more { order: 2; display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: var(--control-h-sm); margin-top: var(--sp-2); padding: 0 var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; cursor: pointer; }
   .battlebar > .res-row { order: 3; display: none; margin: var(--sp-2) 0 0; }
-  body.res-open .battlebar > .res-row { display: flex; }
+  body.fold-res .battlebar > .res-row { display: flex; }
+  .fold-btn { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--control-h-sm); padding: 0 var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-pill); color: var(--text); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+  .fold-btn::after { content: "▾"; color: var(--muted); }
+  .fold-btn[aria-expanded="true"]::after { content: "▴"; }
+  body:not(.fold-ws) .ws-row > .ws-chip, body:not(.fold-sb) .spell-bar > .sb-starred { display: none; }
   .battlebar > .res-more + .res-row { margin: var(--sp-2) 0 0; }
   .battlebar > .res-row .res-label { display: none; }
   .res-group { padding: 0; border-left: none; }
