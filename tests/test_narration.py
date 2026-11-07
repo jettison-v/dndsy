@@ -84,11 +84,18 @@ def test_an_admin_has_it_read_again(admin, player, db, told):
     assert len(calls) == 2 and db.scalar(select(Recap)).narration_key != before and again["audio"].endswith(db.scalar(select(Recap)).narration_key.rsplit("/", 1)[-1][:16])
 
 
+def test_every_session_in_all_sessions_can_be_heard(player, db, told):
+    """Feedback 37 (Brett, Nov 7): ▶ Listen on each session's scroll in All sessions, not only Previously on…"""
+    s, _ = told
+    assert f'data-listen="/c/main/sessions/{s.id}"' in player.get("/c/main/?tab=sessions").text
+
+
 def test_listen_is_a_labs_feature(player, db, told):
     s, calls = told
     db.scalar(select(Campaign)).vtt_pieces = []
     db.flush()
     assert "data-listen" not in player.get("/c/main/").text
+    assert "data-listen" not in player.get("/c/main/?tab=sessions").text
     assert player.get(f"/c/main/sessions/{s.id}/tale").status_code == 404
     assert player.post(f"/c/main/sessions/{s.id}/narrate").status_code == 404 and calls == []
 

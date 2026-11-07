@@ -121,6 +121,7 @@
       <span class="note tale-roll-count">{% if item.events %}{{ item.events | length }} key moment{{ "s" if item.events | length != 1 }}{% endif %}</span>
     </summary>
     <div class="session-body">
+      {% if vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen</button>{% endif %}{# every session's own (feedback 37) #}
       {{ scroll(item, head=False) }}
       {{ after(item.events, [], [], few=3) }}
       {% if not item.events and not item.dm_notes %}<p class="note">No key moments recorded for this session.</p>{% endif %}
