@@ -1356,7 +1356,7 @@ def parse_character(data: dict) -> dict:
             "attuned": [i["name"] for i in items if i["attunement"] == "attuned"],
             "currency": {k: v for k, v in (data.get("currencies") or {}).items() if v},
             # coins kept in a bag (a Bag of Holding: D&D Beyond keeps them on the container; feedback 47, Nov 7)
-            "bag_coins": [{"name": (i.get("definition") or {}).get("name") or "A bag", "coins": {k: v for k, v in i["currency"].items() if v}}
+            "bag_coins": [{"id": str(i.get("id")), "name": (i.get("definition") or {}).get("name") or "A bag", "coins": {k: v for k, v in i["currency"].items() if v}}
                           for i in data.get("inventory") or [] if any((i.get("currency") or {}).values())],
             "creatures": sh.creatures(),
             "form_options": sh.form_options(),

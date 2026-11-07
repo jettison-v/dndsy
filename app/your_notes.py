@@ -103,18 +103,37 @@ def page(request: Request, tab: str = "", db: Session = Depends(get_db)):
     if tab not in TABS or (tab == "askdnd" and not askdnd):
         tab = "askdnd" if askdnd and news["askdnd"] and not news["story"] else "story" if rows or not askdnd else "askdnd"
     shown = [{**feedback.for_sender(fb), "new": _feedback_new(fb, "seen")} for fb in notes]
-    if not _looking(request):  # (opening a tab clears its news, and its cards: seen here, nothing to tell)
-        if tab == "story":
-            for r in rows:
-                r["x"].seen = r["x"].told = r["x"].status
-            news["story"] = 0
-        else:
-            for fb in notes:
-                fb.seen = fb.told = feedback.marker(fb)
-            news["askdnd"] = 0
+    if not _looking(request):  # (the tab it opens on is seen; the other when it's opened, `seen`)
+        _mark(rows, notes, tab)
+        news[tab] = 0
         db.commit()
     return templates.TemplateResponse(request, "your_notes.html", {
         "tab": tab, "rows": rows, "notes": shown, "askdnd": askdnd, "news": news, "toast": request.session.pop("toast", None)})
+
+
+def _mark(rows: list[dict], notes: list, tab: str) -> None:
+    """A tab opened: its notes are seen (the badge) and need no card."""
+    if tab == "story":
+        for r in rows:
+            r["x"].seen = r["x"].told = r["x"].status
+    else:
+        for fb in notes:
+            fb.seen = fb.told = feedback.marker(fb)
+
+
+@router.get("/your-notes/seen")
+def seen(request: Request, tab: str = "", db: Session = Depends(get_db)):
+    """Another tab opened on the page (app.js "your notes"): its notes are seen. The badge's new count comes back. A
+    read under View as: an admin viewing as someone changes nothing for them."""
+    user = current_user(request)
+    if not user or tab not in TABS:
+        return JSONResponse({"count": 0}, headers={"Cache-Control": "no-store"})
+    rows, notes = story(db, user), notes_of(db, user)
+    if not _looking(request):
+        _mark(rows, notes, tab)
+        db.commit()
+    count = sum(_story_new(r["x"], "seen") for r in rows) + sum(_feedback_new(fb, "seen") for fb in notes)
+    return JSONResponse({"count": count}, headers={"Cache-Control": "no-store"})
 
 
 @router.post("/your-notes/feedback/{feedback_id:int}")

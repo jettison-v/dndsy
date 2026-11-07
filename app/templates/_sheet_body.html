@@ -87,7 +87,7 @@
   <div id="t-items" hidden>
     {%- set end %}{{ purse(s, c, can_play, total=false) }}{% if can_play %}<button type="button" class="btn small" data-modal-url="/characters/{{ c.id }}/items/browse" data-modal-size="large">+ Add item</button>{% elif can_loot %}<button type="button" class="btn small" data-modal-url="/characters/{{ c.id }}/items/browse" data-modal-size="large">Give loot</button>{% endif %}{% endset %}
     {% if s.attuned %}<p class="note m-0 mb-3">Attuned: {{ s.attuned | join(", ") }} ({{ s.attuned | length }} of 3)</p>{% endif %}
-    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("all", "All"), ("ready", "Equipped"), ("fav", "Shortlist")], s.sync or {}, end, play=can_play) }}
+    {{ item_list(c, s.inventory, picks, can_pick, show_picks, item_notes, "sheet-items", [("all", "All"), ("ready", "Equipped"), ("fav", "Shortlist")], s.sync or {}, end, play=can_play, coins=sheet_coins(s)) }}
   </div>
 
   <div id="t-features" hidden>

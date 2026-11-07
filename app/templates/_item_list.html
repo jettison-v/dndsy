@@ -6,7 +6,10 @@
 {# `sync` is the sheet's changes on their way to D&D Beyond (ddb_bridge.as_shown): each row marks its count, equipping,
    attuning and charges with the one ↻ (Brett, 2026-11-02, the UI pass) #}
 {# `end`: what sits at the toolbar's right end (Sheet › Items: the coin purse, Give loot) #}
-{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=(), sync={}, end="", play=false) -%}
+{# `coins`: what's carried and what each bag holds ({"": carried, "<bag item id>": coins}): Sort › Container groups the
+   rows as D&D Beyond does, Carried then each bag, each heading with its coins (feedback 49, Nov 7) #}
+{% from "_char.html" import coins_text %}
+{% macro item_list(c, items, picks, can_pick, show_picks, item_notes, key="sheet-items", views=(), sync={}, end="", play=false, coins={}) -%}
 {%- set GROUPS = [("battle", "Usable in battle"), ("equipped", "Equipped"), ("Weapons", "Weapons"), ("Armor", "Armor"),
                   ("Magic items", "Magic items"), ("Potions and scrolls", "Potions and scrolls"), ("Gear", "Gear")] -%}
 {%- set RARITY = ["Common", "Uncommon", "Rare", "Very Rare", "Legendary", "Artifact"] -%}
@@ -18,7 +21,11 @@
   {"key": "attune", "label": "Attunement", "values": ["Attuned", "Needs attunement"] | select("in", items | map(attribute="attune_label") | list) | list, "more": true},
   {"key": "rarity", "label": "Rarity", "values": RARITY | select("in", items | map(attribute="rarity") | list) | list, "more": true},
 ] | selectattr("values") | list -%}
-<div class="item-list" data-list="{{ key }}" data-noun="item" data-default-sort="default">
+{%- set bags = items | selectattr("bag") | map(attribute="key") | map("replace", "item:", "") | list -%}
+{%- set bag_names = {} -%}{%- for it in items if it.bag %}{% set _ = bag_names.update({it.key.split(":")[1]: it.name}) %}{% endfor -%}
+{%- set notes = {"Carried": coins_text(coins.get("", {}))} -%}
+{%- for b in bags %}{% set t = coins_text(coins.get(b, {})) | trim %}{% if t %}{% set _ = notes.update({bag_names[b]: t}) %}{% endif %}{% endfor -%}
+<div class="item-list" data-list="{{ key }}" data-noun="item" data-default-sort="default"{% if bags %} data-group-notes-bag='{{ notes | tojson }}'{% endif %}>
   <div class="ls-layout">
     {{ filter_column(groups) }}
     <div class="ls-main">
@@ -27,7 +34,7 @@
         {% if show_picks and views %}{{ view_switch(views, "Which items") }}{% endif %}
         <span class="note" data-ls-summary></span>
         <label class="ls-select"><span>Sort</span>
-          <select data-ls-sort aria-label="Sort"><option value="default">Group</option><option value="name">Name</option><option value="rarity">Rarity</option></select></label>
+          <select data-ls-sort aria-label="Sort"><option value="default">Group</option>{% if bags %}<option value="bag">Container</option>{% endif %}<option value="name">Name</option><option value="rarity">Rarity</option></select></label>
         {% if show_picks %}{{ notes_toggle() }}{% endif %}
         {% if end %}<span class="ls-end">{{ end }}</span>{% endif %}
       </div>
@@ -41,6 +48,7 @@
           data-views="{{ 'ready ' if on }}{{ 'fav ' if it.key in picks.fav }}all" data-name="{{ it.name | lower }}" data-group-label="{{ GROUPS[gi][1] }}"
           data-f='{{ {"kind": it.kind_label, "magic": "Magic" if it.magic else "Not magic", "use": it.use_labels, "attune": it.attune_label, "rarity": it.rarity} | tojson }}'
           data-sort-default="{{ gi * 1000 + loop.index }}" data-sort-rarity="{{ (RARITY.index(it.rarity) + 1) if it.rarity in RARITY else 0 }}"
+          {%- if bags %}{% set home = it.in_id if it.in and it.in_id in bags else "" %} data-group-bag="{{ bag_names[home] if home else 'Carried' }}" data-sort-bag="{{ ((bags.index(home) + 1) if home else 0) * 1000 + loop.index }}"{% endif %}
           data-panel-url="/characters/{{ c.id }}/detail?ref={{ it.key | urlencode }}" tabindex="0" role="button" aria-label="{{ it.name }}: details">
           {%- set iid = it.key.split(":")[1] %}
           {%- set gear = sync.get("attuned:" ~ iid) or sync.get("equipped:" ~ iid) %}
@@ -52,7 +60,8 @@
             {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
           <span>{{ it.kind_label }}{% if it.magic and it.rarity %}<span class="note it-rarity">{{ it.rarity }}</span>{% endif %}</span>
           <span{{ sync_attrs(sync.get("charges:" ~ iid)) }}>{% if it.charges %}{{ count_pips(c if play and it.key.startswith("item:") else none, "charges:" ~ iid, it.charges, it.name, show=("" if it.charges.reset != "Used up" else '<span class="note">%s left</span>' % it.charges.left) | safe) }}{% else %}<span class="note">—</span>{% endif %}</span>
-          <span class="sb-range">{{ [it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else ""] | select | join(" · ") or "—" }}</span>
+          {%- set holds = coins_text(coins.get(iid, {})) if it.bag else "" %}
+          <span class="sb-range">{{ [it.damage, ("AC " ~ it.armor_class) if it.armor_class else "", ("in " ~ it.in) if it.in else "", ("holds " ~ holds) if holds else ""] | select | join(" · ") or "—" }}</span>
           <span class="ls-marks"><span>{{ pick_btn(c, "fav", it.key, it.key in picks.fav, can_pick) }}</span><span>{% if it.battle %}{{ pick_btn(c, "star", it.key, it.key in picks.star, can_pick) }}{% endif %}</span><span>{{ pick_btn(c, "remind", it.key, it.key in picks.remind, can_pick) }}</span></span>
         </div>
         {% endfor %}

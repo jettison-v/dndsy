@@ -1,6 +1,8 @@
 """The UI and UX pass (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html): rules the pages keep. How things look at every
 width is tests/browser/test_layout.py's (Manage › Design system draws the tile with a change on its way and buttons)."""
 
+import html
+import json
 import re
 
 import pytest
@@ -56,15 +58,22 @@ def test_coins_are_a_purse_with_the_total_in_gold(player, db):
     for b in summary["bag_coins"]:  # (a bag's coins count too: feedback 47, Cole's 7,000 gp in his Bag of Holding)
         for k, v in b["coins"].items():
             cur[k] = cur.get(k, 0) + v
-    assert summary["bag_coins"] == [{"name": "Bag of Holding", "coins": {"gp": 7000}}]
+    assert summary["bag_coins"] == [{"id": "340867412", "name": "Bag of Holding", "coins": {"gp": 7000}}]
     page = player.get(f"/characters/{cole.id}").text
     purse = page.split('class="purse"', 1)[1].split("</button>", 1)[0]
     for k, v in cur.items():
         assert f'class="coin-{k}"' in purse and f"<b>{v:,}</b><small>{k}</small>" in purse
     assert f'class="purse" data-use-url="/characters/{cole.id}/coins"' in page
     if len(cur) > 1:  # (on Sheet › Items the total is the purse's hover text, so the toolbar stays one line)
-        assert "gp in all: Change coins" in purse
-    assert "In Bag of Holding: 7,000 gp" in purse
+        assert "gp in all · Bag of Holding: 7,000 gp: Change coins" in purse
+    # Feedback 49 (Brett, Nov 7): the purse is one line, the total, as D&D Beyond's top line; each bag's coins are on its
+    # heading in Sort › Container (Carried, then each bag) and on the bag's own row; the purse's hover text says them too
+    assert "In Bag of Holding" not in purse and "· Bag of Holding: 7,000 gp: Change coins" in page
+    items = page.split('<div id="t-items"', 1)[1]
+    assert '<option value="bag">Container</option>' in items
+    notes = json.loads(html.unescape(items.split("data-group-notes-bag='", 1)[1].split("'", 1)[0]))
+    assert notes == {"Carried": "654 gp, 68 sp, 92 cp", "Bag of Holding": "7,000 gp"}
+    assert 'data-group-bag="Carried"' in items and 'data-group-bag="Bag of Holding"' in items and "holds 7,000 gp" in items
     assert "In Bag of Holding: 7,000 gp (change a bag's coins on D&amp;D Beyond)" in player.get(f"/characters/{cole.id}/coins").text
 
 

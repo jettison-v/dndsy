@@ -1,43 +1,47 @@
 {% extends "base.html" %}
 {% block title %}Your notes · askdnd{% endblock %}
 {# Your notes (app/your_notes.py; Brett, Nov 7, docs/mockups/your-notes/ Layout A): what you sent, in two tabs that
-   say who reads it. A red dot marks what moved since you last opened that tab; opening it clears its badge. #}
+   say who reads it. Help's width and tab bar (feedback 50: the design system's full width, no narrow column). A red
+   New marks what moved since you last opened that tab; opening a tab clears its badge (app.js "your notes"). #}
 {% block content %}
-<main class="page narrow">
+<main class="page wide notes-page">
   <div class="title-row"><h1>Your notes</h1></div>
   <p class="subtitle">What you sent and what happened to it. Notes <b>about the story</b> go to the DM; notes <b>about askdnd</b> go to Brett, then Claude.</p>
-  {% if askdnd %}<div class="tabbar notes-tabs" role="tablist">
-    <a href="?tab=story" role="tab" aria-selected="{{ 'true' if tab == 'story' else 'false' }}" class="{{ 'on' if tab == 'story' }}">About the story <span class="count{{ ' new' if news.story }}">{% if news.story %}{{ news.story }} new{% else %}{{ rows | length }}{% endif %}</span></a>
-    <a href="?tab=askdnd" role="tab" aria-selected="{{ 'true' if tab == 'askdnd' else 'false' }}" class="{{ 'on' if tab == 'askdnd' }}">About askdnd <span class="count{{ ' new' if news.askdnd }}">{% if news.askdnd %}{{ news.askdnd }} new{% else %}{{ notes | length }}{% endif %}</span></a>
+  {% if askdnd %}<div class="tabbar" role="tablist" data-tab-param>
+    <button role="tab" aria-selected="{{ 'true' if tab == 'story' else 'false' }}" data-tab="t-story">About the story <span class="count{{ ' notes-tab-new' if news.story }}" data-notes-tab="story">{% if news.story %}{{ news.story }} new{% else %}{{ rows | length }}{% endif %}</span></button>
+    <button role="tab" aria-selected="{{ 'true' if tab == 'askdnd' else 'false' }}" data-tab="t-askdnd">About askdnd <span class="count{{ ' notes-tab-new' if news.askdnd }}" data-notes-tab="askdnd">{% if news.askdnd %}{{ news.askdnd }} new{% else %}{{ notes | length }}{% endif %}</span></button>
   </div>{% endif %}
 
-  {% if tab == "story" %}
-  <div class="notes-who"><span class="notes-ico dm" aria-hidden="true">DM</span><p>The DM reads these and decides what goes into the campaign. <b>Added</b>: it's on the page as you wrote it. <b>Used</b>: the DM worked it into a description or recap. <b>Not used</b>: the DM decided against it.</p></div>
-  {% if rows %}
-  <ul class="plain mine-list">{% for r in rows %}{% set o = r.x.status | outcome %}
-    <li class="item{{ ' notes-new' if r.new }}"><p class="item-title"><span class="tag {{ o.tag }}">{{ o.label }}</span> <a href="{{ r.href }}" data-no-peek>{{ r.label }}</a>
-      <span class="note">· {{ r.x.created_at.strftime("%b %-d") }}</span>{% if r.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</p>
-      <div class="answer">{{ r.x.text }}</div></li>{% endfor %}</ul>
-  {% else %}<p class="muted">Nothing yet.</p>{% endif %}
-  <p class="note notes-how">Send one with <b>Suggest a correction or addition</b> under a recap, or <b>What the table knows</b> in an entry's side panel.</p>
+  <section id="t-story" class="notes-tab"{% if tab != "story" %} hidden{% endif %}>
+    <div class="notes-who"><span class="notes-ico dm" aria-hidden="true">DM</span><p>The DM reads these and decides what goes into the campaign. <b>Added</b>: it's on the page as you wrote it. <b>Used</b>: the DM worked it into a description or recap. <b>Not used</b>: the DM decided against it.</p></div>
+    {% if rows %}
+    <ul class="plain mine-list">{% for r in rows %}{% set o = r.x.status | outcome %}
+      <li class="item{{ ' notes-new' if r.new }}"><p class="item-title"><span class="tag {{ o.tag }}">{{ o.label }}</span> <a href="{{ r.href }}" data-no-peek>{{ r.label }}</a>
+        <span class="note">· {{ r.x.created_at.strftime("%b %-d") }}</span>{% if r.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</p>
+        <div class="answer">{{ r.x.text }}</div></li>{% endfor %}</ul>
+    {% else %}<p class="muted">Nothing yet.</p>{% endif %}
+    <p class="note notes-how">Send one with <b>Suggest a correction or addition</b> under a recap, or <b>What the table knows</b> in an entry's side panel.</p>
+  </section>
 
-  {% else %}
-  <div class="notes-who"><span class="notes-ico app" aria-hidden="true">a</span><p>Brett reads these first, then Claude, who fixes askdnd. <b>Waiting for an admin</b>, then <b>With Claude</b>, <b>Planned</b> and <b>Fixed</b>; <b>Closed</b> if askdnd won't change it for now.</p></div>
-  {% if notes %}
-  <ul class="plain fbm-list">{% for n in notes %}
-    <li class="item fbm{{ ' notes-new' if n.new }}" id="note{{ n.id }}">
-      <p class="item-title"><span class="fb-st {{ n.status }}">{{ n.label }}</span> <span class="note">· {{ n.at.strftime("%b %-d") }}{% if n.page %} · {% if n.url %}<a href="{{ n.url }}" data-no-peek>{{ n.page }}</a>{% else %}{{ n.page }}{% endif %}{% endif %}</span>{% if n.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</p>
-      <div class="answer">{{ n.text }}</div>
-      <p class="note">{{ n.says }}</p>
-      {% for m in n.thread %}<div class="fb-msg{{ ' you' if m.mine else ' claude' }}"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
-      {% if n.can_add %}<details class="fold fbm-add"><summary>Add to it</summary>
-        <form method="post" action="/your-notes/feedback/{{ n.id }}" class="fb-answer">
-          <label class="field"><span>Something you forgot, or what happened next</span><textarea name="text" rows="2" required></textarea></label>
-          <button class="btn small" type="submit">Add</button>
-        </form></details>{% endif %}
-    </li>{% endfor %}</ul>
-  {% else %}<p class="muted">Nothing yet.</p>{% endif %}
-  <p class="note notes-how">Press <kbd>\</kbd> on any page to send one about it.</p>
+  {% if askdnd %}
+  <section id="t-askdnd" class="notes-tab"{% if tab != "askdnd" %} hidden{% endif %}>
+    <div class="notes-who"><span class="notes-ico app" aria-hidden="true">a</span><p>Brett reads these first, then Claude, who fixes askdnd. <b>Waiting for an admin</b>, then <b>With Claude</b>, <b>Planned</b> and <b>Fixed</b>; <b>Closed</b> if askdnd won't change it for now.</p></div>
+    {% if notes %}
+    <ul class="plain fbm-list">{% for n in notes %}
+      <li class="item fbm{{ ' notes-new' if n.new }}" id="note{{ n.id }}">
+        <p class="item-title"><span class="fb-st {{ n.status }}">{{ n.label }}</span> <span class="note">· {{ n.at.strftime("%b %-d") }}{% if n.page %} · {% if n.url %}<a href="{{ n.url }}" data-no-peek>{{ n.page }}</a>{% else %}{{ n.page }}{% endif %}{% endif %}</span>{% if n.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</p>
+        <div class="answer">{{ n.text }}</div>
+        <p class="note">{{ n.says }}</p>
+        {% for m in n.thread %}<div class="fb-msg{{ ' you' if m.mine else ' claude' }}"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
+        {% if n.can_add %}<details class="fold fbm-add"><summary>Add to it</summary>
+          <form method="post" action="/your-notes/feedback/{{ n.id }}" class="fb-answer">
+            <label class="field"><span>Something you forgot, or what happened next</span><textarea name="text" rows="2" required></textarea></label>
+            <button class="btn small" type="submit">Add</button>
+          </form></details>{% endif %}
+      </li>{% endfor %}</ul>
+    {% else %}<p class="muted">Nothing yet.</p>{% endif %}
+    <p class="note notes-how">Press <kbd>\</kbd> on any page to send one about it.</p>
+  </section>
   {% endif %}
 </main>
 {% endblock %}

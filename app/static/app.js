@@ -2777,24 +2777,34 @@
     root.dispatchEvent(new CustomEvent('list:before-sort', { bubbles: true, detail: { rows } }));
     const name = r => r.dataset.name || '';
     // level (with headings), name, avg (highest first), default (the server's order), or any other key:
-    // highest first by the row's data-sort-<key> (Wild Shape: damage, hit, speed, cr)
-    const by = k => r => +(r.dataset['sort' + k[0].toUpperCase() + k.slice(1)] || -1);
+    // highest first by the row's data-sort-<key> (Wild Shape: damage, hit, speed, cr). A sort whose rows carry
+    // data-group-<key> is a grouping instead: in the server's order, with those headings (Items' Container), and the
+    // list's data-group-notes-<key> puts a note beside each heading (a container's coins; feedback 49)
+    const cap = k => k[0].toUpperCase() + k.slice(1);
+    const by = k => r => +(r.dataset['sort' + cap(k)] || -1);
+    const grouping = rows.some(r => r.dataset['group' + cap(sort)] != null);
+    const groupOf = r => grouping ? r.dataset['group' + cap(sort)] : (sort === 'level' || sort === 'default') ? r.dataset.groupLabel : null;
+    let notes = {}; try { notes = JSON.parse(root.dataset['groupNotes' + cap(sort)] || '{}'); } catch (err) { notes = {}; }
     const sorted = rows.slice().sort((a, b) => sort === 'name' ? name(a).localeCompare(name(b))
       : sort === 'level' ? (+a.dataset.level - +b.dataset.level) || name(a).localeCompare(name(b))
-      : sort === 'default' ? by('default')(a) - by('default')(b)
+      : sort === 'default' || grouping ? by(sort)(a) - by(sort)(b)
       : (by(sort)(b) - by(sort)(a)) || name(a).localeCompare(name(b)));
     // Move rows only when the order or the headings change, and keep the scroll position: moving every
     // row on each press (a bookmark) made the page jump to the top.
     const scroller = root.closest('.peek-body'), y = window.scrollY, sy = scroller ? scroller.scrollTop : 0;
-    const heads = new Map([...box.querySelectorAll('.ls-grouphead')].map(h => [h.textContent, h]));
+    const heads = new Map([...box.querySelectorAll('.ls-grouphead')].map(h => [h.dataset.label, h]));
     const want = [];
     let last = null;
     sorted.forEach(r => {
-      if ((sort === 'level' || sort === 'default') && !r.hidden && r.dataset.groupLabel !== last) {
-        last = r.dataset.groupLabel;
+      const g = groupOf(r);
+      if (g != null && !r.hidden && g !== last) {
+        last = g;
         let h = heads.get(last);
         if (h) heads.delete(last);
-        else { h = document.createElement('div'); h.className = 'ls-grouphead'; h.textContent = last; }
+        else {
+          h = document.createElement('div'); h.className = 'ls-grouphead'; h.dataset.label = last; h.textContent = last;
+          if (notes[last]) { const n = document.createElement('span'); n.className = 'ls-group-note'; n.textContent = notes[last]; h.append(n); }
+        }
         want.push(h);
       }
       want.push(r);
@@ -4694,10 +4704,24 @@ document.addEventListener('askdnd:mention', e => {
 // card (once each), with See it
 (() => {
   if (!document.getElementById('account-menu') && !document.getElementById('more-menu')) return;
+  const badge = n => document.querySelectorAll('[data-notes-count]').forEach(b => { b.textContent = n || ''; b.hidden = !n; });
+  // On Your notes, opening the other tab clears its news (the page cleared the one it opened on)
+  document.addEventListener('tab:shown', e => {
+    if (!e.target.closest || !e.target.closest('.notes-page')) return;
+    const tab = e.target.id.replace(/^t-/, '');
+    fetch('/your-notes/seen?tab=' + encodeURIComponent(tab), { headers: { Accept: 'application/json' }, cache: 'no-store' })
+      .then(r => (r.ok ? r.json() : null)).then(j => {
+        if (!j) return;
+        badge(j.count);
+        const n = document.querySelector('[data-notes-tab="' + tab + '"]');
+        if (n && n.classList.contains('notes-tab-new')) { n.classList.remove('notes-tab-new'); n.textContent = e.target.querySelectorAll('li.item').length; }
+      }).catch(() => {});
+  });
   fetch('/your-notes/news', { headers: { Accept: 'application/json' }, cache: 'no-store' })
     .then(r => (r.ok ? r.json() : { count: 0, cards: [] }))
     .then(j => {
-      document.querySelectorAll('[data-notes-count]').forEach(b => { b.textContent = j.count || ''; b.hidden = !j.count; });
+      badge(j.count);
+      if (location.pathname === '/your-notes') return;  // (here, the page itself says what's new)
       (j.cards || []).forEach(c => window.askdndToast && window.askdndToast(c.text, { label: 'See it', run: () => { location.href = c.href; } }, 'info'));
     })
     .catch(() => {});

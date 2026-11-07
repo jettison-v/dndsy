@@ -173,6 +173,15 @@ def _outcome(status: str) -> dict:
 templates.env.filters["outcome"] = _outcome
 
 
+def _sheet_coins(s: dict | None) -> dict:
+    """What's carried ("") and what each bag holds (its item id), for Sheet › Items (feedback 49)."""
+    s = s or {}
+    return {"": dict(s.get("currency") or {}), **{b["id"]: b["coins"] for b in s.get("bag_coins") or [] if b.get("id")}}
+
+
+templates.env.globals["sheet_coins"] = _sheet_coins
+
+
 def _diff(old: str, new: str):
     from app.render import word_diff
 
