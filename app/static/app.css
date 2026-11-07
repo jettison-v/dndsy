@@ -3354,6 +3354,11 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .fb-st.review { background: var(--amber-soft); color: var(--amber); }  /* the table's note, waiting for an admin */
 .fb-st.planned { background: var(--blue-soft); color: var(--blue); }
 .fb-st.done { background: var(--green-soft); color: var(--green); }
+.fb-st.deleted { background: var(--surface-2); color: var(--muted); }
+/* Your feedback (a sender's own notes) */
+.fbm-list { display: grid; gap: var(--sp-4); }
+.fbm { display: grid; gap: var(--sp-2); }
+.fbm .fb-msg.claude { background: var(--blue-soft); }  /* a reply to you, from Claude or an admin */
 .fb-st.deleted { background: var(--surface-3); color: var(--muted); }
 .fb-open { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-3) var(--sp-2) var(--sp-4) calc(72px + var(--sp-5)); background: var(--surface); }
 @media (max-width: 900px) { .fb-open { grid-template-columns: minmax(0, 1fr); padding-left: var(--sp-2); } }

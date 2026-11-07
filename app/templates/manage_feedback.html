@@ -30,11 +30,16 @@
           </div>
           <div class="fb-side">
             <p class="fb-text">{{ f.text }}</p>
-            {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else "You" }}</small>{{ m.text }}</div>{% endfor %}
+            {% set who = f.sender.split(" (")[0] or "Its sender" %}
+            {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else who if m.who == "sender" else "You" }}{% if m.to == "sender" %}, to {{ who }}{% endif %}</small>{{ m.text }}</div>{% endfor %}
             {% if f.pr %}<p class="note">Fixed in <a href="{{ f.pr }}" target="_blank" rel="noopener">{{ f.pr }}</a></p>{% endif %}
             {% if f.status != "deleted" %}{% set asked = f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
               <label class="field"><span>{{ "Your answer" if asked else "Add to it and send it to Claude" if f.status == "review" else "Add to this note" }}</span><textarea name="answer" rows="2" required{% if not asked %} placeholder="Something you forgot, or what happened next"{% endif %}></textarea></label>
               <input type="hidden" name="to" value="answer"><button class="btn {{ 'primary' if asked }} small" type="submit">{{ "Answer" if asked else "Add" }}</button></form>{% endif %}
+            {% if f.user_id %}<details class="fold"><summary>Reply to {{ who }}</summary>{# (they see it on Your feedback, and a corner card once) #}
+              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
+                <label class="field"><span>{{ who }} sees this on Your feedback</span><textarea name="answer" rows="2" required></textarea></label>
+                <input type="hidden" name="to" value="tell"><button class="btn small" type="submit">Send to {{ who }}</button></form></details>{% endif %}
             <div class="row tight">
               {% set moves = (("new", "Approve: send to Claude"), ("deleted", "Delete")) if f.status == "review" else (("planned", "Mark planned"), ("done", "Done"), ("new", "Back to new"), ("deleted", "Delete")) %}
               {% for to, label in moves if to != f.status %}

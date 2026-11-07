@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Your feedback · askdnd{% endblock %}
+{# Your feedback (app/feedback.py; Brett, Nov 7): every note you sent with \ , where it stands, the replies meant for
+   you, and Add to it. Like Your suggestions, the status is where you look; a corner card says once when one moves. #}
+{% block content %}
+<main class="page narrow">
+  <div class="title-row"><h1>Your feedback</h1></div>
+  <p class="subtitle">The notes you sent with <kbd>\</kbd>, and what happened to each. <b>Waiting for an admin</b>: an admin reads it before Claude does. <b>With Claude</b>, <b>Planned</b>, <b>Fixed</b>: where Claude has got to. <b>Closed</b>: not something askdnd will change for now.</p>
+  {% if notes %}
+  <ul class="plain fbm-list">{% for n in notes %}
+    <li class="item fbm" id="note{{ n.id }}">
+      <p class="item-title"><span class="fb-st {{ n.status }}">{{ n.label }}</span> <span class="note">· {{ n.at.strftime("%b %-d") }}{% if n.page %} · {% if n.url %}<a href="{{ n.url }}" data-no-peek>{{ n.page }}</a>{% else %}{{ n.page }}{% endif %}{% endif %}</span></p>
+      <div class="answer">{{ n.text }}</div>
+      <p class="note">{{ n.says }}</p>
+      {% for m in n.thread %}<div class="fb-msg{{ ' you' if m.mine else ' claude' }}"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
+      {% if n.can_add %}<details class="fold fbm-add"><summary>Add to it</summary>
+        <form method="post" action="/your-feedback/{{ n.id }}" class="fb-answer">
+          <label class="field"><span>Something you forgot, or what happened next</span><textarea name="text" rows="2" required></textarea></label>
+          <button class="btn small" type="submit">Add</button>
+        </form></details>{% endif %}
+    </li>{% endfor %}</ul>
+  {% else %}<p class="muted">Nothing yet. Press <kbd>\</kbd> on any page to send a note about it.</p>{% endif %}
+</main>
+{% endblock %}
