@@ -57,7 +57,6 @@ from app.view_as import ViewAs
 from app.view_as import router as view_as_router
 from app.character_pages import router as character_router
 from app.help_pages import router as help_router
-from app.twins import router as twins_router
 from app.readying import router as readying_router
 from app.live import router as live_router
 from app.table_rolls import router as table_rolls_router
@@ -93,10 +92,15 @@ async def lifespan(app: FastAPI):
     # The live table connection: this copy hears every copy's changes through Postgres (app/realtime.py)
     listener = asyncio.create_task(realtime.listen()) if db_engine is not None and db_engine.dialect.name == "postgresql" else None
     reparsing = asyncio.create_task(asyncio.to_thread(reparse_old_summaries))  # (beside the first pages, not before them)
+    # Sheets no extension watches, read every 30 seconds while the bridge is awake (app/unwatched.py)
+    from app import unwatched
+
+    reading = (asyncio.create_task(unwatched.loop()) if config.DDB_BRIDGE and unwatched.TICK and listener is not None else None)
     yield
     await reparsing
-    if listener:
-        listener.cancel()
+    for task in (listener, reading):
+        if task:
+            task.cancel()
 
 
 def reparse_old_summaries() -> None:
@@ -191,7 +195,6 @@ app.include_router(api_router)
 app.include_router(admin_usage_router)
 app.include_router(help_router)
 app.include_router(readying_router)  # (Ready kept on Battle, app/readying.py)
-app.include_router(twins_router)  # (A test copy of your character: temporary, app/twins.py)
 app.include_router(atlas_router)
 app.include_router(manage_router)
 app.include_router(notes_router)

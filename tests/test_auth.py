@@ -155,7 +155,7 @@ def test_www_goes_to_askdnd_ai():
 
 
 def test_a_page_opened_signed_out_opens_again_after_signing_in(monkeypatch, db):
-    """Brett, 2026-11-05: askdnd.ai/twin, opened signed out, landed on the Story page after signing in."""
+    """Brett, 2026-11-05: askdnd.ai/twin (a page since retired), opened signed out, landed on the Story page after signing in."""
     from fastapi.testclient import TestClient
 
     from app import auth, config
@@ -167,18 +167,18 @@ def test_a_page_opened_signed_out_opens_again_after_signing_in(monkeypatch, db):
     app.dependency_overrides[get_db] = lambda: db
     c = TestClient(app)
     page = {"accept": "text/html,application/xhtml+xml"}
-    r = c.get("/twin?x=1", headers=page, follow_redirects=False)
-    assert r.headers["location"] == "/login?next=%2Ftwin%3Fx%3D1"
-    assert 'href="/auth/google?next=/twin%3Fx%3D1"' in c.get(r.headers["location"]).text
-    assert c.get("/twin", headers={**page, "HX-Request": "true"}, follow_redirects=False).headers["location"] == "/login"  # (not a page visit)
+    r = c.get("/party?x=1", headers=page, follow_redirects=False)
+    assert r.headers["location"] == "/login?next=%2Fparty%3Fx%3D1"
+    assert 'href="/auth/google?next=/party%3Fx%3D1"' in c.get(r.headers["location"]).text
+    assert c.get("/party", headers={**page, "HX-Request": "true"}, follow_redirects=False).headers["location"] == "/login"  # (not a page visit)
 
-    c.get("/auth/google?next=/twin%3Fx%3D1", follow_redirects=False)
+    c.get("/auth/google?next=/party%3Fx%3D1", follow_redirects=False)
 
     async def token(request):
         return {"userinfo": {"email": "player@example.com", "email_verified": True, "name": "Pat"}}
 
     monkeypatch.setattr(auth.oauth.google, "authorize_access_token", token)
-    assert c.get("/auth/callback", follow_redirects=False).headers["location"] == "/twin?x=1"
+    assert c.get("/auth/callback", follow_redirects=False).headers["location"] == "/party?x=1"
     assert c.get("/login?next=/party", follow_redirects=False).headers["location"] == "/party"  # (signed in already)
     app.dependency_overrides.clear()
 
