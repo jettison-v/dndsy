@@ -346,10 +346,13 @@ def test_the_review_is_a_wizard_that_opens_on_what_is_left_and_keeps_its_place(d
 
 def test_a_redrafts_key_moments_replace_the_published_ones_when_published(db, story):
     s = publish(db, story)
-    for ev in s.events:
-        ev.updated_at = datetime(2026, 11, 7, 9, tzinfo=session_story.TABLE_TIME)  # (published before the redraft)
+    review.published_recap(s).updated_at = datetime(2026, 11, 7, 9, tzinfo=session_story.TABLE_TIME)  # (published before the redraft)
     db.flush()
     told(db, s)
+    db.expire_all()
+    s = db.get(GameSession, s.id)
+    old = next(ev for ev in s.events if ev.status == Status.PUBLISHED)
+    review.toggle_major(db, s, old.id)  # (a published moment starred after the redraft: still replaced)
     db.expire_all()
     s = db.get(GameSession, s.id)
     review.save_event(db, s, None, "event", "Added by hand.")  # (a moment of the DM's, added to the redraft)

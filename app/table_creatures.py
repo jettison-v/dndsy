@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from app import creatures, places, rules_data, table_fight, tokens
 from app import wild_shape as ws
 from app.db import get_db
-from app.models import Token
+from app.models import Place, Token
 from app.templating import templates
 
 router = APIRouter()
@@ -54,8 +54,9 @@ def token_panel(request: Request, token_id: int, db: Session = Depends(get_db)):
     user, campaign = places.here(request, db, need_runs=False)
     t = db.get(Token, token_id)
     dm = places.runs(user, campaign)
-    if t is None or t.campaign_id != campaign.id or (t.hidden and not dm):
-        raise HTTPException(404)
+    if t is None or t.campaign_id != campaign.id or (not dm and (t.place_id != campaign.shown_place_id
+                                                                  or not tokens.visible(db.get(Place, t.place_id), t, False))):
+        raise HTTPException(404)  # (a player: only a creature they can see, on the place the DM shows)
     entry = rules_data.find("monster", (t.monster or {}).get("key", ""), db, campaign.id) if t.kind == "monster" else None
     s = table_fight.settings(campaign)
     f = table_fight.ours(campaign) and campaign.fight

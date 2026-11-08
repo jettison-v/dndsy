@@ -286,10 +286,32 @@ def joined(db: Session, campaign: Campaign, toks: list[Token], user_id: int | No
     _save(db, campaign, f)
 
 
+def renamed(db: Session, campaign: Campaign, t: Token) -> None:
+    """A token's name or Hidden changed: its place in a running fight says so too (a creature hidden mid-fight leaves
+    players' fight band at once; the band follows `hidden`)."""
+    if not ours(campaign):
+        return
+    fight.lock(db, campaign)
+    f = copy.deepcopy(campaign.fight)
+    x = next((x for x in f["order"] if x.get("token") == t.id), None)
+    if x is None or (x["name"], bool(x.get("hidden"))) == (t.name, bool(t.hidden)):
+        return
+    x["name"], x["hidden"] = t.name, bool(t.hidden)
+    _save(db, campaign, f, undo=False)
+
+
+def ended_with(db: Session, campaign: Campaign, place_id: int) -> None:
+    """The place a fight runs on is gone: the fight ends with it."""
+    if ours(campaign) and campaign.fight.get("place") == place_id:
+        fight.lock(db, campaign)
+        fight.settle(db, campaign, campaign.fight, None)
+
+
 def left(db: Session, campaign: Campaign, token_id: int) -> None:
     """A token taken off the map leaves the fight (whose turn it was passes to the next)."""
     if not ours(campaign):
         return
+    fight.lock(db, campaign)
     f = copy.deepcopy(campaign.fight)
     gone = next((x for x in f["order"] if x.get("token") == token_id), None)
     if gone is None:
@@ -297,6 +319,9 @@ def left(db: Session, campaign: Campaign, token_id: int) -> None:
     if gone.get("active") and len(f["order"]) > 1:
         _advance(f)
     f["order"] = [x for x in f["order"] if x.get("token") != token_id]
+    i = next((k for k, x in enumerate(f["order"]) if x.get("active")), None)
+    if i is not None:
+        f["turn"] = i + 1  # (where whose turn it is stands, now the order is one shorter)
     _save(db, campaign, f if f["order"] else None)
 
 
