@@ -572,6 +572,11 @@ body.tale-playing { overflow: hidden; }
 .wizard-foot { display: flex; justify-content: flex-end; margin: var(--sp-3) 0 var(--sp-5); }
 .wizard-foot:empty { display: none; }
 .checklist a { color: inherit; text-decoration: none; } .checklist a:hover { text-decoration: underline; }
+.new-entries { margin-top: var(--sp-5); }  /* the review's New in the World: a picture for each, from here */
+.new-entries h3 { margin-top: 0; }
+.new-entry { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; padding: var(--sp-1) 0; }
+.new-entry .roll-av { width: 32px; height: 32px; }
+.new-entry .grow { min-width: 0; overflow-wrap: anywhere; }
 .numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-4); }
 .numbers-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
 .numbers-card .tale-label { margin: 0; }

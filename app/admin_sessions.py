@@ -30,7 +30,7 @@ from app.extraction import (
     split_notes,
     timeline,
 )
-from app.models import NON_DRAFTING_SOURCES, Campaign, ExtractionRun, GameSession, Proposal
+from app.models import NON_DRAFTING_SOURCES, Campaign, EntityKind, ExtractionRun, GameSession, Proposal
 from app.linking import entity_linker
 from app.suggestions import waiting_count
 from app.render import markdown_to_html
@@ -259,6 +259,11 @@ def _body_context(db: Session, s: GameSession, tab: str = "") -> dict:
         told=review.last_told(db, s),
     )
     session_story.pictured(db, ctx["awards"], ctx["talked"]["rows"])
+    from app import drawing, pictures
+
+    ctx["new_pictures"] = pictures.urls(db, {e.id for e in ctx["new_entries"]})
+    ctx["can_draw"] = bool(ctx["new_entries"]) and not drawing.why_not(db, campaign)
+    ctx["entity_kinds"] = [k.value for k in EntityKind if k.value != "pc"]
     ctx["steps"], ctx["tab"] = _steps(ctx, s, tab)
     ctx["step"] = {x["key"]: x for x in ctx["steps"]}
     return ctx
@@ -523,9 +528,12 @@ def _proposal_action(request: Request, db: Session, proposal_id: int, fn: Callab
 
 
 @router.post("/proposals/{proposal_id}/accept")
-def accept(request: Request, proposal_id: int, summary: str = Form(""), db: Session = Depends(get_db)):
+def accept(request: Request, proposal_id: int, summary: str = Form(""), name: str = Form(""), kind: str = Form(""),
+           race: str | None = Form(None), class_: str | None = Form(None, alias="class"), db: Session = Depends(get_db)):
     def fn(p):
-        review.accept_proposal(db, p, summary or None, by=web.person_name(current_user(request)))
+        review.accept_proposal(db, p, summary or None, by=web.person_name(current_user(request)), name=name, kind=kind, race=race, class_=class_)
+        if p.kind == "entity" and not p.payload.get("entity_id"):
+            return f"Added {p.payload['name']}: give them a picture under New in the World"
         return "Accepted"
 
     return _proposal_action(request, db, proposal_id, fn)

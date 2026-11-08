@@ -161,6 +161,9 @@ class Entity(Timestamped, Base):
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
     kind: Mapped[EntityKind] = mapped_column(_enum(EntityKind))
     name: Mapped[str] = mapped_column(String(200))  # current canonical name
+    # A person's race and class ({"race": "Owlin", "class": "Wizard"}; class is what they do when they have none), from a
+    # draft or the DM: on their entry, and the start of Describe it's words (Brett, Nov 7)
+    traits: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     summary: Mapped[str] = mapped_column(Text, default="")
     quest_open: Mapped[bool | None] = mapped_column(Boolean, nullable=True)  # quests only
     status: Mapped[Status] = mapped_column(_enum(Status), default=Status.DRAFT)

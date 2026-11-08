@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, object_session
 
 from app import spending
+from app.traits import TRAITS, clean_traits, has_traits, traits_line  # noqa: F401  (re-exported)
 from app.extraction import MODEL, ExtractionError, _cost, _norm, session_label, timeline
 from app.models import (
     NEW_CHARACTER,
@@ -397,8 +398,8 @@ def create(db: Session, campaign_id: int, kind: str, name: str, summary: str = "
     return entity
 
 
-def set_details(entity: Entity, kind: str, quest_open: str, published: bool) -> None:
-    """Kind, a quest's open or done, and whether the table sees it."""
+def set_details(entity: Entity, kind: str, quest_open: str, published: bool, race: str | None = None, class_: str | None = None) -> None:
+    """Kind, a quest's open or done, whether the table sees it, and a person's race and class."""
     try:
         k = EntityKind(kind)
     except ValueError as e:
@@ -408,6 +409,8 @@ def set_details(entity: Entity, kind: str, quest_open: str, published: bool) -> 
     entity.kind = k
     entity.quest_open = (quest_open != "done") if k == EntityKind.QUEST else None
     entity.status = Status.PUBLISHED if published else Status.DRAFT
+    if race is not None and has_traits(k):
+        entity.traits = clean_traits(race, class_ or "")
 
 
 def set_quest_open(entity: Entity, is_open: bool) -> str:

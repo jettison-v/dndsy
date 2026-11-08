@@ -19,6 +19,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.characters import campaign_characters
+from app.traits import clean_traits, has_traits, traits_line
 
 from app import files, spending
 from app.relations import TYPES as REL_TYPES
@@ -88,7 +89,12 @@ updated summary of 1-3 sentences that merges what was known with what's new. \
 For new ones, pick the kind and write a summary. For a person or creature, \
 the summary also says what they look like whenever the source says or shows \
 it: race or species, rough age, and visible features (build, hair, clothing, \
-marks); pictures of them are drawn from it. Never invent a look. Add aliases \
+marks); pictures of them are drawn from it. Never invent a look. For a person \
+(npc), also give their race and their class (their D&D class, or what they do \
+when they have none: "librarian", "dockhand") as the source says or shows \
+them, else empty; when a new person's race isn't clear, ask in to_check. A \
+known person's race and class are in the known world: give them again only \
+to correct or complete them. Add aliases \
 only for real alternative names or spellings. A summary marked "written by" a person is their \
 words: keep its wording and order, and change only what this session adds or \
 corrects (add a sentence, fix a detail); never rephrase what's still true, and \
@@ -211,11 +217,13 @@ _PROPS = {
         "items": {
             "type": "object",
             "additionalProperties": False,
-            "required": ["name", "kind", "summary", "aliases", "quest_status"],
+            "required": ["name", "kind", "summary", "aliases", "quest_status", "race", "class"],
             "properties": {
                 "name": {"type": "string"},
                 "kind": {"type": "string", "enum": _ENTITY_KINDS},
                 "summary": {"type": "string"},
+                "race": {"type": "string", "description": "A person's race (npc only); empty when unknown"},
+                "class": {"type": "string", "description": "A person's class, or what they do when they have none; empty when unknown"},
                 "aliases": {"type": "array", "items": {"type": "string"}},
                 "quest_status": {"type": "string", "enum": ["open", "done", "not_a_quest"]},
             },
@@ -357,7 +365,8 @@ def _known_world(db: Session, campaign: Campaign) -> str:
     ):
         quest = "" if e.quest_open is None else (" (open)" if e.quest_open else " (done)")
         who = f" (written by {e.written_by_person}: keep their wording)" if e.written_by_person else ""
-        lines.append(f"- {e.name} [{e.kind.value}]{quest}{who}: {e.summary}{_alias_text(e)}")
+        traits = f" ({traits_line(e, ', ')})" if traits_line(e) else ""
+        lines.append(f"- {e.name} [{e.kind.value}]{traits}{quest}{who}: {e.summary}{_alias_text(e)}")
     facts: dict[int, list[str]] = {}
     for f in db.scalars(
         select(Fact).join(Entity).where(Entity.campaign_id == campaign.id, Entity.status == Status.PUBLISHED, Fact.status == "merged")
@@ -660,7 +669,10 @@ def _store_suggestions(db: Session, session: GameSession, run: ExtractionRun, da
         known_aliases = {_norm(a.alias) for a in existing.aliases} | {_norm(existing.name)} if existing else set()
         new_aliases = [a for a in item.get("aliases", []) if _norm(a) not in known_aliases]
         quest_open = {"open": True, "done": False}.get(item.get("quest_status"))
-        if existing and existing.summary.strip() == item["summary"].strip() and not new_aliases and (
+        kind = existing.kind.value if existing else item["kind"]
+        traits = clean_traits(item.get("race", ""), item.get("class", "")) if has_traits(kind) else {}
+        new_traits = {k: v for k, v in traits.items() if not existing or (existing.traits or {}).get(k) != v}
+        if existing and existing.summary.strip() == item["summary"].strip() and not new_aliases and not new_traits and (
             quest_open is None or quest_open == existing.quest_open
         ):
             continue  # nothing new
@@ -677,6 +689,7 @@ def _store_suggestions(db: Session, session: GameSession, run: ExtractionRun, da
                     "summary": item["summary"].strip(),
                     "new_aliases": new_aliases,
                     "quest_open": quest_open,
+                    "traits": {**((existing.traits or {}) if existing else {}), **traits},  # (a person's race and class)
                 },
             )
         )

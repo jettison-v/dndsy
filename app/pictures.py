@@ -115,7 +115,10 @@ def owner(db: Session, ref: str, user: dict | None) -> Owner | None:
         email = (user or {}).get("email")
         if e is None or not can_manage(user) or (access.level(email) != access.ADMIN and access.current_campaign_id(email) != e.campaign_id):
             return None
-        return Owner(ref, e.campaign_id, e.name, (f"{e.name}: {e.summary}" if e.summary else e.name)[:600], entity=e,
+        from app.traits import traits_line
+
+        who = f"{e.name} ({traits_line(e, ' ')})" if traits_line(e) else e.name  # (race and class first: Brett, Nov 7)
+        return Owner(ref, e.campaign_id, e.name, (f"{who}: {e.summary}" if e.summary else who)[:600], entity=e,
                      frame=KIND_FRAMES.get(str(e.kind), "scene"))
     if kind == "creature":
         cid, _, crid = rest.partition(":")

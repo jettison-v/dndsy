@@ -167,7 +167,12 @@
             </div>
           </div>
           <form id="p{{ p.id }}-form" class="stack" hidden hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/accept" {{ hx | safe }}>
-            <textarea name="summary" rows="3" required>{{ d.summary }}</textarea>
+            <div class="row"><label class="field grow">Name<input type="text" name="name" value="{{ d.name }}" maxlength="200" required></label>
+              {% if not d.entity_id %}<label class="field">Kind<select name="kind">{% for k in entity_kinds %}<option value="{{ k }}"{{ " selected" if k == d.kind }}>{{ {"npc": "NPC"}.get(k, k | capitalize) }}</option>{% endfor %}</select></label>{% endif %}</div>
+            {% if d.kind == "npc" %}<div class="row" data-traits><label class="field grow">Race<input type="text" name="race" value="{{ (d.traits or {}).race or '' }}" maxlength="60" placeholder="Human, owlin, tiefling…"></label>
+              <label class="field grow">Class<input type="text" name="class" value="{{ (d.traits or {})['class'] or '' }}" maxlength="60" placeholder="Wizard, or what they do"></label></div>{% endif %}
+            {% if d.entity_id %}<p class="note m-0">A new name keeps the old one as another name, so links still find it.</p>{% else %}<p class="note m-0">If Claude misheard it, its spelling is kept as a misspelling so later drafts spell it your way.</p>{% endif %}
+            <textarea name="summary" rows="3" required aria-label="Description">{{ d.summary }}</textarea>
             <div class="row"><button class="btn primary">Save and accept</button><button type="button" class="btn link" data-cancel="p{{ p.id }}-form" data-restore="p{{ p.id }}-view">Cancel</button></div>
           </form>
           {% elif p.kind == "relationship" %}
@@ -186,6 +191,20 @@
         <p class="all-clear">{% if done_proposals %}✓ All suggestions handled.{% else %}No suggestions this time.{% endif %}</p>
         {% endfor %}
 
+        {% if new_entries %}
+        {# New in the World (Brett, Nov 7): what this session's suggestions added, with a picture of each from here #}
+        <div class="new-entries">
+          <h3>New in the World <span class="count">{{ new_entries | length }}</span></h3>
+          <ul class="plain">
+            {% for e in new_entries %}{% set pic = new_pictures.get(e.id) %}
+            <li class="new-entry"><span class="roll-av hue{{ e.id % 6 }}" aria-hidden="true">{{ e.name[:1] }}{% if pic %}<img src="{{ pic.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+              <a href="{{ entry_url(e.id) }}" class="grow">{{ e.name }}</a><span class="tag">{{ {"npc": "NPC"}.get(e.kind.value, e.kind.value | capitalize) }}</span>
+              {% if can_draw %}<button type="button" class="btn small{{ ' primary' if not pic }}" data-modal-url="/pictures?for=entity:{{ e.id }}&amp;tab=draw">✦ Draw</button>{% endif %}
+              <button type="button" class="btn small" data-modal-url="/pictures?for=entity:{{ e.id }}">{{ "Change" if pic else "Upload" }}</button></li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
         {% if done_proposals %}
         <details class="done"><summary>Done ({% if accepted_count %}{{ accepted_count }} accepted{% endif %}{% if accepted_count and rejected_count %}, {% endif %}{% if rejected_count %}{{ rejected_count }} rejected{% endif %})</summary>
           {% for p in done_proposals %}{% set d = p.payload %}

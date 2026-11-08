@@ -195,11 +195,27 @@ def unused_answer_count(db: Session, session: GameSession) -> int:
 # --- Suggestions (proposals) -------------------------------------------------
 
 
-def accept_proposal(db: Session, p: Proposal, summary: str | None = None, by: str = "") -> None:
+def accept_proposal(db: Session, p: Proposal, summary: str | None = None, by: str = "", name: str = "", kind: str = "",
+                    race: str | None = None, class_: str | None = None) -> None:
     """Apply a suggestion and remember what it replaced, so Undo can restore it. `summary` is the reviewer's edit
-    of the proposed description (which makes it theirs: `by`)."""
+    of the proposed description (which makes it theirs: `by`); `name` their spelling of the name (Brett, Nov 7: a new
+    one's is often misheard; Claude's spelling is kept as a misspelling, an existing entry's old name as another name)
+    and `kind` a new entry's kind."""
     if p.status != "pending":
         raise ReviewError("That suggestion was already decided.")
+    name = " ".join((name or "").split())[:200]
+    if p.kind == "entity" and name and name != p.payload.get("name"):
+        heard = p.payload["name"]
+        if p.payload.get("entity_id"):
+            p.payload = {**p.payload, "rename": name}
+        else:
+            p.payload = {**p.payload, "name": name, "new_aliases": [*p.payload.get("new_aliases", []), heard], "misheard": heard}
+    if p.kind == "entity" and kind and not p.payload.get("entity_id") and kind in {k.value for k in EntityKind} and kind != "pc":
+        p.payload = {**p.payload, "kind": kind}
+    if p.kind == "entity" and race is not None:  # (the reviewer's race and class: Brett, Nov 7)
+        from app.traits import clean_traits
+
+        p.payload = {**p.payload, "traits": clean_traits(race, class_ or "")}
     from app.history import mark
 
     mark("recap")  # version history: these changes came from a recap's suggestions
@@ -274,11 +290,21 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None, by: st
             entity.summary_by = by[:200] if edited and by else "claude"
         if data.get("quest_open") is not None:
             entity.quest_open = data["quest_open"]
+        from app.traits import has_traits
+
+        if has_traits(entity.kind) and data.get("traits") is not None and data["traits"] != (entity.traits or {}):
+            undo["traits"] = dict(entity.traits or {})
+            entity.traits = dict(data["traits"])
+        if data.get("rename") and data["rename"] != entity.name:
+            from app.entities import rename
+
+            undo["renamed_from"] = entity.name
+            rename(entity, data["rename"])
         have = {a.alias.casefold() for a in entity.aliases}
         added = []
         for alias in data.get("new_aliases", []):
             if alias.casefold() not in have and alias.casefold() != entity.name.casefold():
-                entity.aliases.append(EntityAlias(alias=alias))
+                entity.aliases.append(EntityAlias(alias=alias, misspelling=alias == data.get("misheard")))
                 have.add(alias.casefold())
                 added.append(alias)
         entity.status = Status.PUBLISHED
@@ -361,6 +387,14 @@ def undo_proposal(db: Session, p: Proposal) -> None:
             from app.models import EventEntity
 
             db.execute(delete(EventEntity).where(EventEntity.entity_id == undo["entity_id"], EventEntity.event_id.in_(undo["linked_events"])))
+        if entity and undo.get("renamed_from"):
+            gone = entity.name
+            entity.name = undo["renamed_from"]
+            for alias in list(entity.aliases):
+                if alias.alias.casefold() in (entity.name.casefold(), gone.casefold()):
+                    entity.aliases.remove(alias)
+        if entity and "traits" in undo:
+            entity.traits = undo["traits"]
         if entity:
             entity.summary = undo.get("summary", entity.summary)
             entity.summary_by = undo.get("summary_by", "")
@@ -635,6 +669,9 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
         "open_proposals": open_proposals,
         "done_proposals": done_proposals,
         "accepted_count": sum(1 for p in done_proposals if p.status == "accepted"),
+        # The entries this session's suggestions added to the World: for a picture of each, here (Brett, Nov 7)
+        "new_entries": [e for e in (db.get(Entity, p.payload["undo"]["created_entity_id"]) for p in done_proposals
+                                    if p.status == "accepted" and p.kind == "entity" and (p.payload.get("undo") or {}).get("created_entity_id")) if e],
         "rejected_count": sum(1 for p in done_proposals if p.status == "rejected"),
         "last_run": last_run,
         "last_done": last_done,

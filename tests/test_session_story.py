@@ -373,3 +373,70 @@ def test_editing_a_published_moment_and_publishing_again_keeps_the_rest(db, stor
     db.flush()
     db.expire_all()
     assert len(db.get(GameSession, s.id).events) == 2
+
+
+def suggested(db, s):
+    from app.models import Entity, Proposal
+
+    lil = Entity(campaign_id=s.campaign_id, kind="npc", name="Lillippi Lemon", summary="Tiefling bard.", status=Status.PUBLISHED)
+    db.add(lil)
+    db.flush()
+    read(db, s, {**ASKED, "entities": [
+        {"name": "Alith", "kind": "creature", "summary": "Tiny owlin in the library.", "aliases": [], "quest_status": "not_a_quest"},
+        {"name": "Lillippi Lemon", "kind": "npc", "summary": "Tiefling bard who sings.", "aliases": [], "quest_status": "not_a_quest"}]})
+    by = {p.payload["name"]: p for p in db.scalars(select(Proposal))}
+    return by["Alith"], by["Lillippi Lemon"], lil
+
+
+def test_a_suggestions_name_and_kind_can_be_changed_before_accepting(db, story, dm):
+    """Brett, Nov 7: a new person's name is often misheard; Edit takes the name (and a new one's kind)."""
+    from app.models import Entity
+
+    new, old, lil = suggested(db, story)
+    page = dm.get(f"/c/main/manage/sessions/{story.id}?tab=suggestions").text
+    assert f'hx-post="/c/main/manage/proposals/{new.id}/accept"' in page and 'name="name" value="Alith"' in page and 'name="kind"' in page
+    dm.post(f"/c/main/manage/proposals/{new.id}/accept", data={"name": "Aleth", "kind": "npc", "summary": "Tiny owlin, barn owl's face."}, headers=HX)
+    db.expire_all()
+    aleth = db.scalar(select(Entity).where(Entity.name == "Aleth"))
+    assert aleth.kind.value == "npc" and [(a.alias, a.misspelling) for a in aleth.aliases] == [("Alith", True)]
+    page = dm.get(f"/c/main/manage/sessions/{story.id}?tab=suggestions").text
+    assert "New in the World" in page and f"/pictures?for=entity:{aleth.id}" in page  # a picture of it, from here
+    dm.post(f"/c/main/manage/proposals/{old.id}/accept", data={"name": "Lillippi", "summary": "Tiefling bard who sings."}, headers=HX)
+    db.expire_all()
+    lil = db.get(Entity, lil.id)
+    assert lil.name == "Lillippi" and "Lillippi Lemon" in [a.alias for a in lil.aliases]  # (renamed; the old name still finds it)
+    review.undo_proposal(db, db.get(type(old), old.id))
+    db.flush()
+    db.expire_all()
+    lil = db.get(Entity, lil.id)
+    assert lil.name == "Lillippi Lemon" and lil.aliases == [] and lil.summary == "Tiefling bard."
+
+
+def test_a_persons_race_and_class_come_with_the_suggestion_and_start_their_picture(db, story, dm):
+    """Brett, Nov 7: every person's race and class, for their entry and for drawing them."""
+    from app import pictures
+    from app.extraction import _known_world
+    from app.models import Entity, Proposal
+
+    read(db, story, {**ASKED, "entities": [
+        {"name": "Devin", "kind": "npc", "summary": "Librarian of the Crow's Keep.", "aliases": [], "quest_status": "not_a_quest",
+         "race": "Human", "class": "Wizard (diviner)"},
+        {"name": "Perth", "kind": "npc", "summary": "A fleeing lad.", "aliases": [], "quest_status": "not_a_quest", "race": "", "class": ""},
+        {"name": "The Reach", "kind": "place", "summary": "Fog.", "aliases": [], "quest_status": "not_a_quest", "race": "Elf", "class": ""}]})
+    by = {p.payload["name"]: p for p in db.scalars(select(Proposal))}
+    assert by["Devin"].payload["traits"] == {"race": "Human", "class": "Wizard (diviner)"} and by["The Reach"].payload["traits"] == {}
+    page = dm.get(f"/c/main/manage/sessions/{story.id}?tab=suggestions").text
+    assert "Human · Wizard (diviner)" in page and "Race not known" in page
+    dm.post(f"/c/main/manage/proposals/{by['Devin'].id}/accept", headers=HX)
+    dm.post(f"/c/main/manage/proposals/{by['Perth'].id}/accept", data={"name": "Perth", "summary": "A fleeing lad.", "race": "Halfling", "class": "Dockhand"}, headers=HX)
+    db.expire_all()
+    devin, perth = (db.scalar(select(Entity).where(Entity.name == n)) for n in ("Devin", "Perth"))
+    assert perth.traits == {"race": "Halfling", "class": "Dockhand"}
+    o = pictures.owner(db, f"entity:{devin.id}", {"email": "admin@example.com"})
+    assert o.words.startswith("Devin (Human Wizard (diviner)): Librarian")
+    assert "- Devin [npc] (Human, Wizard (diviner)): Librarian" in _known_world(db, db.get(Campaign, story.campaign_id))
+    entry = dm.get(f"/c/main/campaign?open={devin.id}").text
+    assert "<dt>Race</dt><dd>Human</dd>" in entry
+    dm.post(f"/campaign/{devin.id}/details", data={"kind": "npc", "published": "1", "race": "Human", "class": "Librarian"}, headers=HX)
+    db.expire_all()
+    assert db.get(Entity, devin.id).traits == {"race": "Human", "class": "Librarian"}
