@@ -7,7 +7,7 @@ been fetched. It never contains player notes.
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
@@ -129,6 +129,13 @@ class Read:
     summary: dict | None = None
     notes: list = field(default_factory=list)
     error: str = ""
+    sheet: bool = False  # read from the sheet itself by the extension (ddb_bridge.fresh_read), not D&D Beyond's public copy
+
+
+# D&D Beyond's public copy can trail a save on the sheet by a minute or two (and its servers disagree for a few
+# seconds): for this long after a read from the sheet itself, a public read never takes its place (Nov 8: the
+# unwatched reader's public reads put spent uses back, so the live test's Give back found nothing to give back).
+PUBLIC_TRAILS = timedelta(minutes=3)
 
 
 def read(ddb_id: str | None, fetch: Fetch | None = None) -> Read:
@@ -155,10 +162,12 @@ def read_released(db: Session, character: Character, fetch: Fetch | None = None)
     return read(ddb_id, fetch)
 
 
-def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
+def store(db: Session, character: Character, got: Read, over_sheet: bool = False) -> CharacterSnapshot:
     """Keep a read as the character's copy. On success the snapshot is replaced; on any failure only its status and
     error change, so the last good copy stays. A read older than the copy already kept (another request stored a newer
-    one while this one waited for D&D Beyond) changes nothing."""
+    one while this one waited for D&D Beyond) changes nothing, and neither does a public read within PUBLIC_TRAILS of a
+    read from the sheet itself, unless `over_sheet`: the bridge reading back its own write (the sheet's read right after
+    writing can still show the old value, and the public copy may already have it)."""
     snap = character.snapshot
     if snap is None:
         snap = CharacterSnapshot(character=character, status="ok", error="")
@@ -168,6 +177,9 @@ def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
     if snap.fetched_at is not None and snap.fetched_at > got.at:
         return snap
     snap.attempted_at = got.at
+    if got.raw is not None and not got.sheet and not over_sheet and trails(snap, got.at):
+        db.flush()
+        return snap  # (asked, so the party's refresh and the unwatched reader count it: the sheet's own copy stays)
     if got.raw is None:
         snap.status, snap.error = "error", got.error
     else:
@@ -187,6 +199,8 @@ def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
         if (news := level_up.changes(snap.summary, summary)):
             character.level_up = level_up.merged(character.level_up, news)
         snap.raw, snap.summary, snap.fetched_at = raw, summary, got.at
+        if got.sheet:
+            snap.sheet_at = got.at
         character.ddb_campaign_id = ddb.campaign_id(raw)
         snap.status, snap.error = "ok", ""
         _store_item_notes(db, character, got.notes)
@@ -196,6 +210,12 @@ def store(db: Session, character: Character, got: Read) -> CharacterSnapshot:
                 character.membership.entity.name = character.name
     db.flush()
     return snap
+
+
+def trails(snap: CharacterSnapshot | None, at: datetime | None = None) -> bool:
+    """A public read made `at` (now) may be behind the copy kept: one read from the sheet itself in the last
+    PUBLIC_TRAILS."""
+    return bool(snap and snap.sheet_at and (at or datetime.now(UTC)) - snap.sheet_at < PUBLIC_TRAILS)
 
 
 def refresh(db: Session, character: Character, fetch: Fetch | None = None) -> CharacterSnapshot:

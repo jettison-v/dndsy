@@ -423,6 +423,9 @@ class CharacterSnapshot(Timestamped, Base):
     status: Mapped[str] = mapped_column(String(20), default="ok", server_default="ok")  # result of the latest attempt
     error: Mapped[str] = mapped_column(Text, default="", server_default="")
     attempted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    # when the copy kept was last read from the sheet itself (the extension's, `characters.Read.sheet`): a public read
+    # within characters.PUBLIC_TRAILS of it can be behind, so it never takes its place
+    sheet_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     character: Mapped[Character] = relationship(back_populates="snapshot")
 
 

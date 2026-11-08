@@ -6,7 +6,10 @@ pages can't multiply it, and one copy of the app does it at a time (a Postgres a
 D&D Beyond's public copy can trail a save by a minute or two.
 
 A character counts as watched while its own sheet was heard by its player's extension in the last live.REACH; those
-are read by the extension itself. Test copies share a real sheet, so they're never read here (the real one is).
+are read by the extension itself. One read from its sheet (or through the DM's browser) in the last
+characters.PUBLIC_TRAILS isn't read either: D&D Beyond's public copy can be behind it, and `characters.store` would keep
+the sheet's own anyway (Nov 8: these reads put spent uses back). Test copies share a real sheet, so they're never read
+here (the real one is).
 """
 
 import asyncio
@@ -38,7 +41,9 @@ def unwatched(db: Session) -> list:
     rows = db.scalars(select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
                       .where(CampaignCharacter.campaign_id.in_(on), CampaignCharacter.left_on.is_(None), Character.copy_of_id.is_(None),
                              Character.ddb_id.is_not(None), Character.ddb_id != "").order_by(Character.id))
-    return [c for c in rows if not ddb_bridge.own_sheet(c)]
+    from app import characters
+
+    return [c for c in rows if not ddb_bridge.own_sheet(c) and not characters.trails(c.snapshot)]
 
 
 def tick(db: Session) -> list[int]:

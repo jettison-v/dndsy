@@ -20,6 +20,8 @@ Access is checked on every request, so the rows are cached in memory for a few
 seconds and reloaded after any change made on Accounts or Table.
 """
 
+import asyncio
+import threading
 import time
 from collections.abc import Callable
 from contextvars import ContextVar
@@ -39,12 +41,21 @@ ROLE_LABELS = {DM: "DM", REVIEWER: "Reviewer", PLAYER: "Player"}
 CACHE_SECONDS = 10
 
 
+def _on_loop() -> bool:
+    """Running on the server's event loop (middleware, an async route, a page's live connection), not a worker thread."""
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    return True
+
+
 def _load_from_db() -> dict[str, dict]:
-    from app.db import SessionLocal, engine
+    from app.db import LoopSession, SessionLocal, engine
 
     if engine is None:
         return {}
-    with SessionLocal() as db:
+    with (LoopSession() if _on_loop() else SessionLocal()) as db:  # (the loop never waits on the pool: app/db.py)
         return rows_from(db)
 
 
@@ -72,20 +83,46 @@ def rows_from(db) -> dict[str, dict]:
 CAMPAIGNS = "@campaigns"  # not an email, so it never matches a person
 TUNING = "@dice_tuning"
 loader: Callable[[], dict[str, dict]] = _load_from_db
-_cache: dict = {"rows": {}, "at": 0.0}
+_cache: dict = {"rows": {}, "at": 0.0, "gen": 0}
+_refreshing = threading.Lock()
 
 
 def invalidate() -> None:
+    """Something here changed: the next look loads it, wherever it's asked from."""
+    _cache["gen"] += 1
     _cache["at"] = 0.0
 
 
-def _rows() -> dict[str, dict]:
-    if time.monotonic() - _cache["at"] > CACHE_SECONDS:
-        try:
-            _cache["rows"] = loader()
-        except Exception:
-            pass  # database unavailable: keep the last rows; the env lists still work
+def _load() -> None:
+    gen = _cache["gen"]
+    try:
+        rows = loader()
+    except Exception:
+        rows = None  # database unavailable: keep the last rows; the env lists still work
+    if rows is not None:
+        _cache["rows"] = rows
+    if _cache["gen"] == gen:  # (changed meanwhile: what was loaded may be from before it, so it stays due)
         _cache["at"] = time.monotonic()
+
+
+def _in_background() -> None:
+    try:
+        _load()
+    finally:
+        _refreshing.release()
+
+
+def _rows() -> dict[str, dict]:
+    """Everyone's access, at most CACHE_SECONDS old. On the event loop, rows that have merely aged are refreshed on a
+    thread while the loop goes on with them: the loop never waits for the database there (Sentry ASKDND-V2-P). A change
+    (`invalidate`) or the first look loads at once, on the loop through its own connection (`db.LoopSession`)."""
+    if time.monotonic() - _cache["at"] <= CACHE_SECONDS:
+        return _cache["rows"]
+    if _cache["at"] and CACHE_SECONDS > 0 and _on_loop():  # (no cache, the tests': nothing to go on with)
+        if _refreshing.acquire(blocking=False):
+            threading.Thread(target=_in_background, daemon=True).start()
+        return _cache["rows"]
+    _load()
     return _cache["rows"]
 
 

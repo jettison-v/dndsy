@@ -14,6 +14,7 @@ primary account is not a seat here, and it never signs in to anything.
 """
 
 import json
+import re
 import sys
 import time
 from html import unescape
@@ -96,7 +97,14 @@ class Table:
                                       return a && a.getAttribute('href').match(/\\d+/)[0]; }""", name)
         if not cid:
             raise RuntimeError(f"{name} isn't on Party for {seat}'s account (is it in VTT test, played by it?)")
+        return self._battle(seat, cid)
+
+    def _battle(self, seat: str, cid: str) -> Page:
+        """A character's Battle, with the seat's other characters' pages closed: each open page asks askdnd for its pill
+        whenever anyone changes, and the twins' runs left twelve open (Nov 8: three times the night's requests)."""
         page = self.page(seat, f"https://beta.askdnd.ai/characters/{cid}/battle")
+        for x in [x for x in self.contexts[seat].pages if x is not page and re.search(r"askdnd\.ai/characters/\d+(/|$)", x.url)]:
+            x.close()
         page.wait_for_selector(save("Dex"), timeout=20000)
         return page
 
@@ -104,9 +112,7 @@ class Table:
         """The seat's own character on Battle, reached from the menu bar like a person would."""
         home = self.page(seat, f"{BETA}/party")
         cid = home.evaluate("document.querySelector('header a[href^=\"/characters/\"], nav a[href^=\"/characters/\"]').getAttribute('href').match(/\\d+/)[0]")
-        page = self.page(seat, f"https://beta.askdnd.ai/characters/{cid}/battle")
-        page.wait_for_selector(save("Dex"), timeout=20000)
-        return page
+        return self._battle(seat, cid)
 
     def expect(self, what: str, check, seconds: float = 20) -> bool:
         """Waits for `check()` to be true, like a person watching the page; a miss is a result, not a crash."""

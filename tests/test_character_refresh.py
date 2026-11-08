@@ -169,3 +169,24 @@ def test_refresh_buttons_show_that_they_are_working(dm, db):
     panel = dm.get("/live", params={"c": cole.id}).text
     refresh = re.findall(r'hx-post="/live/refresh[^"]*"[^>]*>', panel)
     assert len(refresh) == 2 and all('hx-disabled-elt="this"' in b for b in refresh)  # Refresh Cole, Refresh everyone: disabled while working
+
+
+def test_a_public_read_never_takes_the_place_of_a_fresher_read_from_the_sheet(db):
+    """D&D Beyond's public copy can trail a save on the sheet by minutes (Nov 8: the unwatched reader's public reads put
+    spent uses back in askdnd's copy, so the live test's Give back found nothing to give back). For PUBLIC_TRAILS after
+    a read from the sheet itself, a public read is counted as asked but keeps the sheet's copy; after it, it's kept."""
+    from datetime import timedelta
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    sheet = characters.read(cole.ddb_id, fake_fetch)
+    sheet.sheet = True
+    snap = characters.store(db, cole, sheet)
+    assert snap.sheet_at == sheet.at and characters.trails(snap)
+    public = characters.read(cole.ddb_id, lambda i: {**fake_fetch(i), "_public": 1})
+    characters.store(db, cole, public)
+    assert "_public" not in snap.raw and snap.fetched_at == sheet.at and snap.attempted_at == public.at
+    snap.sheet_at -= characters.PUBLIC_TRAILS + timedelta(seconds=1)  # (the sheet was last read long enough ago)
+    later = characters.read(cole.ddb_id, lambda i: {**fake_fetch(i), "_public": 1})
+    characters.store(db, cole, later)
+    assert snap.raw["_public"] == 1 and snap.fetched_at == later.at and not characters.trails(snap)
