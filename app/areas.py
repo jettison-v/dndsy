@@ -23,7 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from app import fog, picks, places
+from app import picks, places
 from app.db import get_db
 from app.models import Place, Token
 
@@ -144,8 +144,10 @@ def add(request: Request, place_id: int, shape: str = Form(...), feet: int = For
     area = {"id": secrets.token_hex(4), "shape": shape, "feet": int(feet), "wide": int(wide), "x": round(x, 2), "y": round(y, 2),
             "angle": round(angle % 360, 1), "label": label.strip()[:80]}
     if shape == "emanation":
+        from app.tokens import visible
+
         t = db.get(Token, token) if token else None
-        if t is None or t.place_id != p.id:
+        if t is None or t.place_id != p.id or not visible(p, t, dm):
             raise HTTPException(400, "An Emanation spreads from a creature: pick its token.")
         area["token"] = t.id
     area["by"], area["by_name"] = _who(db, user)
@@ -179,8 +181,10 @@ def tokens_for(db: Session, p: Place, dm: bool) -> list[dict]:
     """Every token on the place as areas need them, as this person may see them (no hidden ones, none under fog, for a
     player)."""
     out = []
+    from app.tokens import visible
+
     for t in db.scalars(select(Token).where(Token.place_id == p.id)):
-        if not dm and (t.hidden or (t.kind == "monster" and fog.covered(p, t.x, t.y, t.size))):
+        if not visible(p, t, dm):
             continue
         out.append({"id": t.id, "name": t.name, "x": t.x, "y": t.y, "size": t.size})
     return out

@@ -112,15 +112,34 @@ def wait_deploy(service: str, sha: str, after: str = "", appear: int = 600) -> d
     sys.exit(f"{service}: still deploying after 30 minutes; look at the Railway dashboard.")
 
 
+def changes_what_it_runs(service: str, sha: str) -> bool:
+    """Whether the commit changes a file the service's watch paths cover (what Railway builds it for)."""
+    watch = APP_WATCH if service == SERVICES[0] else BACKUP_WATCH
+    changed = run("git", "diff", "--name-only", f"{sha}~1", sha, check=False).split()
+    return any(f == w or (w.endswith("/**") and f.startswith(w[:-2])) for f in changed for w in watch)
+
+
 def follow(service: str, sha: str, appear: int) -> bool:
     d = wait_deploy(service, sha, appear=appear)
     if d is None:
         say(f"{service}: no deploy for this commit (nothing it runs changed).")
         return True
+    rebuilt = False
     for attempt in range(3):
         if d["status"] == "SKIPPED":
-            say(f"{service}: skipped (nothing it runs changed).")
-            return True
+            if rebuilt or not changes_what_it_runs(service, sha):
+                say(f"{service}: skipped (nothing it runs changed).")
+                return True
+            # (Railway also skips a commit whose tests failed when it was pushed, and doesn't go back when a rerun
+            # passes: Nov 7, PR 261 never reached prod until it was built from source)
+            say(f"{service}: Railway skipped it, though it changes what {service} runs (its tests failed at first?). Building it from source…")
+            run("railway", "redeploy", "--service", service, "--from-source", "-y", check=False)
+            rebuilt = True
+            d = wait_deploy(service, sha, after=d["createdAt"], appear=300) or d
+            if d["status"] == "SKIPPED":
+                say(f"{service}: still not built. Build it on Railway: its service › Deployments › Redeploy.")
+                return False
+            continue
         if d["status"] in ("SUCCESS", "SLEEPING", "REMOVED"):
             say(f"{service}: deployed ({d['status'].lower()}).")
             return True

@@ -578,11 +578,11 @@ def publish(db: Session, session: GameSession) -> None:
     latest = latest_recap(session)
     if latest is None:
         raise ReviewError("There's no recap to publish yet.")
+    redrafted = any(ev.status == Status.DRAFT for ev in session.events) and _drafted_since(db, session)  # (before this publish)
     for r in session.recaps:
         if r.status == Status.PUBLISHED and r.id != latest.id:
             r.status = Status.DRAFT
     latest.status = Status.PUBLISHED
-    redrafted = any(ev.status == Status.DRAFT for ev in session.events if ev.id is not None) and _drafted_since(db, session)
     for ev in list(session.events):
         if redrafted and ev.status == Status.PUBLISHED:
             db.delete(ev)  # a redraft's key moments replace the ones published before (kept in version history)
@@ -591,10 +591,13 @@ def publish(db: Session, session: GameSession) -> None:
 
 
 def _drafted_since(db: Session, session: GameSession) -> bool:
-    """Whether Claude drafted the key moments again after they were last published (its moments then replace them)."""
-    published = [ev for ev in session.events if ev.status == Status.PUBLISHED]
-    run = last_told(db, session)
-    return bool(published and run and run.created_at > max(ev.updated_at for ev in published))
+    """Whether Claude drafted the key moments again after the session was last published (its moments then replace
+    the published ones). Measured from the published recap, which nothing changes after publishing (an edit makes a
+    new version), so starring or fixing a published moment meanwhile doesn't count (Nov 7 review)."""
+    if not any(ev.status == Status.PUBLISHED for ev in session.events):
+        return False
+    run, shown = last_told(db, session), published_recap(session)
+    return bool(run and shown and run.created_at > shown.updated_at)
 
 
 def save_event(db: Session, session: GameSession, event_id: int | None, kind: str, text: str) -> None:

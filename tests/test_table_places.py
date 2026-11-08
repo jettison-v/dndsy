@@ -199,3 +199,86 @@ def test_your_turns_bar_counts_and_never_stops_you(player, db, table):
     assert "past your Speed" not in player.get("/c/main/table").text
     other = db.scalar(select(Character).where(Character.name == "Trah"))
     assert player.post(f"/characters/{other.id}/turn", data={"what": "move", "n": "5"}).status_code == 404
+
+
+def _goblin(dm, db, p, at=(4, 1), hidden=False):
+    dm.post(f"/c/main/table/places/{p.id}/creatures", data={"key": "goblin-warrior", "count": "1", "x": str(at[0]), "y": str(at[1]),
+                                                            **({"hidden": "1"} if hidden else {})})
+    return db.scalars(select(Token).where(Token.kind == "monster").order_by(Token.id.desc())).first()
+
+
+def test_a_creature_a_player_cant_see_is_never_named_to_them(dm, player, db, table):
+    """A standing rule (CLAUDE.md, askdnd's table: a creature under fog never reaches a player's page; Nov 7 review): not
+    in a reach reminder, whoever moves the token, nor in its side panel, nor on a place the DM hasn't shown."""
+    campaign, p = table
+    campaign.shown_place_id = p.id
+    cole = char(db, "Cole")
+    db.flush()
+    dm.post(f"/c/main/table/places/{p.id}/party", data={"x": "3", "y": "1"})
+    mine = db.scalar(select(Token).where(Token.character_id == cole.id, Token.kind == "character"))
+    fogged = _goblin(dm, db, p, at=(mine.x + 1, mine.y))
+    hidden = _goblin(dm, db, p, at=(mine.x - 1, mine.y), hidden=True)
+    p.fog = {"on": True, "shown": [f"{int(mine.x)},{int(mine.y)}"]}  # (only Cole's square shown)
+    db.flush()
+    dm.post(f"/c/main/table/places/{p.id}/fight")
+    dm.post("/c/main/table/fight/begin")
+    player.post(f"/c/main/table/tokens/{mine.id}/move", data={"x": str(mine.x), "y": str(mine.y + 4)})
+    dm.post(f"/c/main/table/tokens/{mine.id}/move", data={"x": str(mine.x), "y": str(mine.y - 4)})
+    said = json.dumps(db.get(Campaign, campaign.id).fight.get("reminders") or [])
+    assert fogged.name not in said and hidden.name not in said
+    assert player.get(f"/c/main/table/tokens/{fogged.id}").status_code == 404  # (under fog)
+    assert dm.get(f"/c/main/table/tokens/{fogged.id}").status_code == 200
+    p.fog = {"on": False, "shown": []}
+    db.flush()
+    assert player.get(f"/c/main/table/tokens/{fogged.id}").status_code == 200
+    campaign.shown_place_id = None
+    db.flush()
+    assert player.get(f"/c/main/table/tokens/{fogged.id}").status_code == 404  # (a place the DM isn't showing)
+
+
+def test_hiding_or_renaming_a_creature_mid_fight_reaches_the_fight(dm, player, db, table):
+    campaign, p = table
+    gob = _goblin(dm, db, p)
+    dm.post(f"/c/main/table/places/{p.id}/fight")
+    dm.post(f"/c/main/table/tokens/{gob.id}/hidden", data={"on": "1"})
+    dm.post(f"/c/main/table/tokens/{gob.id}/rename", data={"name": "The Shadow"})
+    x = next(x for x in db.get(Campaign, campaign.id).fight["order"] if x.get("token") == gob.id)
+    assert x["hidden"] and x["name"] == "The Shadow"
+
+
+def test_deleting_the_place_a_fight_runs_on_ends_the_fight(dm, db, table):
+    campaign, p = table
+    _goblin(dm, db, p)
+    dm.post(f"/c/main/table/places/{p.id}/fight")
+    assert db.get(Campaign, campaign.id).fight
+    dm.post(f"/c/main/table/places/{p.id}/delete")
+    assert db.get(Campaign, campaign.id).fight is None
+
+
+def test_taking_the_active_token_off_keeps_whose_turn_it_is_right(dm, db, table):
+    campaign, p = table
+    a, b, c = (_goblin(dm, db, p, at=(i, 1)) for i in (1, 3, 5))
+    dm.post(f"/c/main/table/places/{p.id}/fight")
+    dm.post("/c/main/table/fight/begin")
+    dm.post("/c/main/table/fight/next")
+    f = db.get(Campaign, campaign.id).fight
+    active = next(x for x in f["order"] if x["active"])
+    dm.post(f"/c/main/table/tokens/{active['token']}/remove")
+    f = db.get(Campaign, campaign.id).fight
+    i = next(k for k, x in enumerate(f["order"]) if x["active"])
+    assert f["turn"] == i + 1 and len(f["order"]) == 2
+
+
+def test_a_creatures_reach_is_kept_on_its_token(dm, db, table):
+    _, p = table
+    gob = _goblin(dm, db, p)
+    assert gob.monster["reach"] == 5
+
+
+def test_a_map_too_large_to_read_is_refused_plainly(monkeypatch):
+    """Nov 7 review: Pillow's own limit stays (a huge picture is refused, not decoded in memory)."""
+    from PIL import Image
+
+    monkeypatch.setattr(Image, "MAX_IMAGE_PIXELS", 1000)  # (so a small picture is "too large" here)
+    with pytest.raises(places.MapError, match="too large"):
+        places.read_map(_png(), "map.png")

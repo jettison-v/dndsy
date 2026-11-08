@@ -67,6 +67,14 @@ def party(db: Session, campaign: Campaign) -> list[Character]:
                            .order_by(Character.id)))
 
 
+def visible(place: Place | None, t: Token, dm: bool) -> bool:
+    """Whether this person sees the token at all: the DM every one; a player not a hidden one, nor a creature under fog
+    (the one rule for the map, areas, the side panel and reach reminders: a creature they can't see is as if not there)."""
+    from app import fog
+
+    return dm or not (t.hidden or (t.kind == "monster" and fog.covered(place, t.x, t.y, t.size)))
+
+
 def may_move(db: Session, user: dict | None, campaign: Campaign, t: Token, dm: bool) -> bool:
     if dm:
         return True
@@ -91,10 +99,8 @@ def shown(db: Session, place: Place, user: dict | None, campaign: Campaign, dm: 
     from app import fog
 
     for t in db.scalars(select(Token).where(Token.place_id == place.id).order_by(Token.id)):
-        if t.hidden and not dm:
-            continue
-        if t.kind == "monster" and not dm and fog.covered(place, t.x, t.y, t.size):
-            continue  # (under fog: as if it weren't there)
+        if not visible(place, t, dm):
+            continue  # (hidden, or under fog: as if it weren't there)
         r = by_char.get(t.character_id) if t.character_id else None
         d = {"id": t.id, "name": t.name, "kind": t.kind, "x": t.x, "y": t.y, "size": t.size, "hidden": t.hidden, "picture": "",
              "panel": f"{web.base()}/table/tokens/{t.id}", "hp": None, "status": "", "conds": [], "character": t.character_id,
@@ -156,7 +162,8 @@ def move(request: Request, token_id: int, x: float = Form(...), y: float = Form(
             turn = dict(ch.turn or {})
             turn["moved"] = int(turn.get("moved") or 0) + feet
             ch.turn = turn
-    left = measure.leaves({"size": t.size}, (t.x, t.y), (nx, ny), threats(db, campaign, t, dm))
+    # (players are told: only creatures they can see count, and a creature they can't see moving tells them nothing)
+    left = measure.leaves({"size": t.size}, (t.x, t.y), (nx, ny), threats(db, campaign, t)) if visible(p, t, False) else []
     t.x, t.y = nx, ny
     if left:
         _left_reach(db, campaign, t, left)
@@ -192,21 +199,27 @@ def _left_reach(db: Session, campaign: Campaign, t: Token, left: list[dict]) -> 
 
 
 def reach(db: Session, campaign: Campaign, t: Token) -> int:
-    """How far a token reaches (feet): a creature's from its stat block, anyone else 5 feet."""
+    """How far a token reaches (feet): a creature's from its stat block (kept on the token when it's added; looked up
+    for one added before), anyone else 5 feet."""
     from app import measure
 
-    if t.kind == "monster" and (t.monster or {}).get("key"):
-        return measure.reach_of(rules_data.find("monster", t.monster["key"], db, campaign.id))
-    return measure.DEFAULT_REACH
+    m = t.monster or {}
+    if t.kind != "monster" or not m.get("key"):
+        return measure.DEFAULT_REACH
+    if isinstance(m.get("reach"), int):
+        return m["reach"]
+    return measure.reach_of(rules_data.find("monster", m["key"], db, campaign.id))
 
 
-def threats(db: Session, campaign: Campaign, t: Token, dm: bool) -> list[dict]:
+def threats(db: Session, campaign: Campaign, t: Token) -> list[dict]:
     """The tokens that could make an Opportunity Attack on this one as it moves: the other side (the party's against
-    the DM's creatures), not Down, and for a player only the creatures they can see."""
+    the DM's creatures), not Down, and only creatures the players can see (the reminder reaches a player, whoever
+    moved the token)."""
     foe = t.kind != "monster"
+    p = db.get(Place, t.place_id)
     out = []
     for o in db.scalars(select(Token).where(Token.place_id == t.place_id, Token.id != t.id)):
-        if (o.kind == "monster") != foe or (o.hidden and not dm):
+        if (o.kind == "monster") != foe or not visible(p, o, False):
             continue
         if o.kind == "monster" and status(o.hp) == "Down":
             continue
@@ -253,6 +266,8 @@ def add_creatures(request: Request, place_id: int, key: str = Form(...), count: 
     group for Initiative. Hidden ones only the DM sees until shown."""
     user, campaign = places.here(request, db)
     p = places._place(db, campaign, place_id)
+    from app import measure
+
     entry = rules_data.find("monster", key, db, campaign.id)
     if entry is None:
         return _changed("That creature isn't in your books or the SRD.", "warn")
@@ -274,7 +289,8 @@ def add_creatures(request: Request, place_id: int, key: str = Form(...), count: 
             continue
         taken.add(label)
         db.add(Token(campaign_id=campaign.id, place_id=p.id, kind="monster", name=label, group=group, hidden=hide,
-                     monster={"key": entry["key"], "name": entry["name"], "source": entry.get("source", ""), "image": pic},
+                     monster={"key": entry["key"], "name": entry["name"], "source": entry.get("source", ""), "image": pic,
+                              "reach": measure.reach_of(entry)},
                      hp={"current": int(entry.get("hp") or 1), "max": int(entry.get("hp") or 1), "temp": 0},
                      x=x + (made % 4) * size, y=y + (made // 4) * size, size=size))
         made += 1
@@ -294,6 +310,9 @@ def set_hidden(request: Request, token_id: int, on: int = Form(...), db: Session
     _, campaign = places.here(request, db)
     t = _token(db, campaign, token_id)
     t.hidden = bool(on)
+    from app import table_fight
+
+    table_fight.renamed(db, campaign, t)
     db.commit()
     return _changed(f"{t.name} is hidden from the players." if on else f"Players see {t.name} now.")
 
@@ -319,6 +338,9 @@ def rename(request: Request, token_id: int, name: str = Form(...), db: Session =
     if t.kind != "monster":
         raise HTTPException(422)
     t.name = " ".join(name.split())[:200] or t.name
+    from app import table_fight
+
+    table_fight.renamed(db, campaign, t)
     db.commit()
     return _changed(f"Renamed to {t.name}.")
 

@@ -60,7 +60,9 @@ def run_once() -> list[int]:
     from app.db import SessionLocal, engine
 
     with engine.connect() as hold:
-        if not hold.execute(select(func.pg_try_advisory_lock(LOCK))).scalar():
+        got = hold.execute(select(func.pg_try_advisory_lock(LOCK))).scalar()
+        hold.commit()  # (the lock outlives the transaction: nothing stays open while D&D Beyond answers)
+        if not got:
             return []
         try:
             with SessionLocal() as db:

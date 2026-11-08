@@ -30,6 +30,9 @@ MAX_PIXELS = 24_000_000  # a map bigger than this is made smaller (an iPhone can
 MAX_SIDE = 8192
 MIN_SQUARE = 12  # pixels per square, at the least
 UVTT = (".dd2vtt", ".uvtt", ".df2vtt")
+# (Pillow's own limit stays: it refuses a picture over about 179 million pixels, a 13,000 × 13,000 map, rather than
+# decode it in memory; Nov 7 review: raising it for every picture askdnd reads let one upload run the server out of memory)
+TOO_BIG = "That map is too large to read. Export it at a lower resolution (under 13,000 pixels a side)."
 
 
 class MapError(Exception):
@@ -135,7 +138,6 @@ def read_map(raw: bytes, filename: str) -> dict:
         raise MapError("That file is empty.")
     if len(raw) > MAX_UPLOAD:
         raise MapError(f"That file is over {MAX_UPLOAD // (1024 * 1024)} MB.")
-    Image.MAX_IMAGE_PIXELS = 400_000_000
     if name.endswith(UVTT) or raw[:1] == b"{":
         try:
             j = json.loads(raw)
@@ -143,6 +145,8 @@ def read_map(raw: bytes, filename: str) -> dict:
             ppg = float(res["pixels_per_grid"])
             img = Image.open(io.BytesIO(base64.b64decode(j["image"])))
             img.load()
+        except Image.DecompressionBombError:
+            raise MapError(TOO_BIG) from None
         except (ValueError, KeyError, TypeError, UnidentifiedImageError, OSError):
             raise MapError("That doesn't look like a Universal VTT file (.dd2vtt or .uvtt).") from None
         if ppg < 1:
@@ -161,6 +165,8 @@ def read_map(raw: bytes, filename: str) -> dict:
     try:
         img = Image.open(io.BytesIO(raw))
         img.load()
+    except Image.DecompressionBombError:
+        raise MapError(TOO_BIG) from None
     except (UnidentifiedImageError, OSError):
         raise MapError("askdnd can't read that picture. A .jpg, .png or .webp, or a Universal VTT file.") from None
     data, w, h = _webp(img, _factor(img.width, img.height))
@@ -257,6 +263,9 @@ def delete(request: Request, place_id: int, db: Session = Depends(get_db)):
     p = _place(db, campaign, place_id)
     if campaign.shown_place_id == p.id:
         campaign.shown_place_id = None
+    from app import table_fight
+
+    table_fight.ended_with(db, campaign, p.id)  # (a fight on it ends: its tokens go with the place)
     name = p.name
     db.delete(p)
     db.commit()

@@ -116,3 +116,16 @@ def test_every_file_is_either_run_by_beta_or_never_needs_a_deploy():
     loose = [f for f in files if not any(f == w or (w.endswith("/") and f.startswith(w)) for w in watched + check.NOT_RUN)]
     assert not loose, f"Add each to APP_WATCH (then --set-app-watch) or NOT_RUN in scripts/deploy_check.py: {loose[:10]}"
     assert not set(check.BACKUP_WATCH) - {f for f in files if any(f == w or f.startswith(w) for w in watched)}  # (the backup builds from the same files)
+
+
+def test_a_skipped_deploy_that_changes_what_a_service_runs_is_noticed(monkeypatch):
+    """Nov 7: Railway skipped PR 261 (its first tests failed) and the check said "nothing it runs changed"."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("deploy_check", Path(__file__).resolve().parent.parent / "scripts" / "deploy_check.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr(mod, "run", lambda *cmd, check=True: "app/unwatched.py\ndocs/roadmap.html\n")
+    assert mod.changes_what_it_runs("askdnd-v2", "abc") and not mod.changes_what_it_runs("askdnd-backup", "abc")
+    monkeypatch.setattr(mod, "run", lambda *cmd, check=True: "docs/roadmap.html\ntests/test_x.py\n")
+    assert not mod.changes_what_it_runs("askdnd-v2", "abc")
