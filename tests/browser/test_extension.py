@@ -158,7 +158,9 @@ def test_inspiration_asks_first_and_undo_takes_it_back(chrome, server):
     card = page.locator("#cards > .card", has_text="Heroic Inspiration")
     card.wait_for(timeout=5000)
     card.locator(".card-act").click()
-    page.locator("#cards > .card", has_text="Heroic Inspiration").nth(1).wait_for(timeout=5000)
+    # Undo's own words, not "a second card": the first card can follow its change in place or leave on its own before
+    # Undo's arrives on a slow machine (Nov 7: this flaked twice on GitHub)
+    page.locator("#cards > .card", has_text="Heroic Inspiration given").wait_for(timeout=8000)
 
 
 def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server):
