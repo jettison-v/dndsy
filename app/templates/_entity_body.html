@@ -187,6 +187,8 @@
     <form class="row mt-2" hx-post="/campaign/{{ e.id }}/details" {{ hx | safe }}>
       {% if e.kind.value == "pc" %}<input type="hidden" name="kind" value="pc"><span class="tag">Player character</span>
       {% else %}<select name="kind" aria-label="Kind">{% for value, label in kinds %}<option value="{{ value }}"{{ ' selected' if value == e.kind.value }}>{{ label }}</option>{% endfor %}</select>{% endif %}
+      {% if e.kind.value == "npc" %}<input type="text" name="race" value="{{ e.traits.race or '' }}" maxlength="60" placeholder="Race" aria-label="Race">
+        <input type="text" name="class" value="{{ e.traits['class'] or '' }}" maxlength="60" placeholder="Class, or what they do" aria-label="Class, or what they do">{% endif %}
       {% if e.kind.value == "quest" %}<select name="quest_open" aria-label="Quest status"><option value="open"{{ ' selected' if e.quest_open }}>Open</option><option value="done"{{ ' selected' if not e.quest_open }}>Done</option></select>{% endif %}
       <label class="check"><input type="checkbox" name="published" value="1"{{ ' checked' if e.status.value == "published" }}> The table can see it</label>
       <button class="btn small">Save</button>

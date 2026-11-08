@@ -1,8 +1,10 @@
 """Draft a session's story with Claude: recap, events, entity and glossary
 suggestions. Everything lands as a draft (or pending proposal) for Brett.
 
-Sources: a session's section of the synced campaign notes, or a filtered
-transcript. The transcript text is used only for this call and never stored.
+Sources: a session's section of the synced campaign notes, a written account, or a cleaned transcript (kept in
+file storage since Nov 7, app/session_story.py). A transcript is drafted in two passes (Session Story, Brett Nov 7):
+the first read asks and suggests (STEP "ask"); once Brett has answered and settled the World entries, Draft the recap
+writes the story (STEP "tell": the recap, the full tale, key moments, awards). Notes and accounts do both at once ("full").
 """
 
 import base64
@@ -17,6 +19,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.characters import campaign_characters
+from app.traits import clean_traits, has_traits, traits_line
 
 from app import files, spending
 from app.relations import TYPES as REL_TYPES
@@ -86,7 +89,12 @@ updated summary of 1-3 sentences that merges what was known with what's new. \
 For new ones, pick the kind and write a summary. For a person or creature, \
 the summary also says what they look like whenever the source says or shows \
 it: race or species, rough age, and visible features (build, hair, clothing, \
-marks); pictures of them are drawn from it. Never invent a look. Add aliases \
+marks); pictures of them are drawn from it. Never invent a look. For a person \
+(npc), also give their race and their class (their D&D class, or what they do \
+when they have none: "librarian", "dockhand") as the source says or shows \
+them, else empty; when a new person's race isn't clear, ask in to_check. A \
+known person's race and class are in the known world: give them again only \
+to correct or complete them. Add aliases \
 only for real alternative names or spellings. A summary marked "written by" a person is their \
 words: keep its wording and order, and change only what this session adds or \
 corrects (add a sentence, fix a detail); never rephrase what's still true, and \
@@ -99,6 +107,32 @@ serves (a person serving another person or a faction), ally_of, enemy_of, \
 gave (a person or faction who gave the party a quest; "to" is the quest). \
 Use exact known names (or the names of new entities you list). Only state \
 what the source says, not guesses.
+
+The full tale: the whole session told as a story, for someone with time to \
+read: 1,200-2,500 words of Markdown in chapters, one per scene (a scene \
+changes with the place, the time or what the party is doing). Each chapter has \
+a short evocative title (2-5 words, no numbering), its kind (fight: a fight \
+ran; story: talking, roleplay, learning, deciding; exploring: travel, \
+searching, puzzles, traps; rest: resting, shopping, downtime), when it started \
+("H:MM:SS" from the transcript's timestamps; empty when the source has no \
+times) and its text: vivid but faithful, past tense, third person, using the \
+characters' own words where the source has them. The recap's rules apply: \
+nothing invented, no advice, no headings inside a chapter.
+
+Awards: give 2-5 of these, only where the session clearly earned one. Each \
+award has 2-3 nominees for the reviewer to choose from (one when only one \
+moment fits), your strongest first, each a player character by their exact \
+name, and the awards' first choices never all the same character: Most \
+Strategic (the plan that shaped a scene or fight), Best Decision (a choice \
+that changed where the story went), Line of the Night (an in-character line, \
+quoted exactly in "quote"), Clutch Moment (an action or roll when it counted \
+most), Unsung Hero (quiet help that made someone else's moment), and DM \
+Shining Moment (the Dungeon Master's best moment of the night: a scene, a \
+voice, a reveal or a twist that landed; its nominees are different moments, \
+each "character" "The DM"). A nominee's "why" is one sentence saying what they \
+did; "at" is when ("H:MM:SS", or empty). The \
+players' awards are about what characters did, never how well someone played. \
+Hardest Luck and Damage King come from the dice, not from you.
 
 Glossary: proper nouns that a transcription might mangle and that aren't \
 already in the glossary.
@@ -119,72 +153,126 @@ _EVENT_KINDS = [k.value for k in EventKind]
 MAJOR_MOST = 8  # key moments marked major in a draft: what Story shows first (feedback 40, Nov 7)
 _REL_TYPES = list(REL_TYPES)
 
-SCHEMA = {
-    "type": "object",
-    "additionalProperties": False,
-    "required": ["title", "recap", "events", "entities", "relationships", "glossary", "to_check"],
-    "properties": {
-        "title": {"type": "string", "description": "Short session title, 2-6 words"},
-        "recap": {"type": "string"},
-        "events": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "additionalProperties": False,
-                "required": ["kind", "text", "entities", "major"],
-                "properties": {
-                    "kind": {"type": "string", "enum": _EVENT_KINDS},
-                    "major": {"type": "boolean"},
-                    "text": {"type": "string"},
-                    "entities": {"type": "array", "items": {"type": "string"}},
-                },
+CHAPTER_KINDS = ["fight", "story", "exploring", "rest"]
+AWARDS = ["Most Strategic", "Best Decision", "Line of the Night", "Clutch Moment", "Unsung Hero", "DM Shining Moment"]  # Brett's list, Nov 7
+DM_AWARD = "DM Shining Moment"  # (the DM's: its "character" is "The DM")
+_PROPS = {
+    "title": {"type": "string", "description": "Short session title, 2-6 words"},
+    "recap": {"type": "string"},
+    "tale": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["title", "kind", "starts_at", "text"],
+            "properties": {
+                "title": {"type": "string"},
+                "kind": {"type": "string", "enum": CHAPTER_KINDS},
+                "starts_at": {"type": "string", "description": "H:MM:SS from the transcript, or empty"},
+                "text": {"type": "string"},
             },
         },
-        "entities": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "additionalProperties": False,
-                "required": ["name", "kind", "summary", "aliases", "quest_status"],
-                "properties": {
-                    "name": {"type": "string"},
-                    "kind": {"type": "string", "enum": _ENTITY_KINDS},
-                    "summary": {"type": "string"},
-                    "aliases": {"type": "array", "items": {"type": "string"}},
-                    "quest_status": {"type": "string", "enum": ["open", "done", "not_a_quest"]},
-                },
-            },
-        },
-        "relationships": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "additionalProperties": False,
-                "required": ["from", "type", "to", "note"],
-                "properties": {
-                    "from": {"type": "string"},
-                    "type": {"type": "string", "enum": _REL_TYPES},
-                    "to": {"type": "string"},
-                    "note": {"type": "string", "description": "Optional short detail, e.g. 'adopted'; empty if none"},
-                },
-            },
-        },
-        "glossary": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "additionalProperties": False,
-                "required": ["term", "description", "misheard_as"],
-                "properties": {
-                    "term": {"type": "string"},
-                    "description": {"type": "string"},
-                    "misheard_as": {"type": "array", "items": {"type": "string"}},
-                },
-            },
-        },
-        "to_check": {"type": "array", "items": {"type": "string"}},
     },
+    "events": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["kind", "text", "entities", "major"],
+            "properties": {
+                "kind": {"type": "string", "enum": _EVENT_KINDS},
+                "major": {"type": "boolean"},
+                "text": {"type": "string"},
+                "entities": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+    },
+    "awards": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["award", "nominees"],
+            "properties": {
+                "award": {"type": "string", "enum": AWARDS},
+                "nominees": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["character", "why", "quote", "at"],
+                        "properties": {
+                            "character": {"type": "string"},
+                            "why": {"type": "string"},
+                            "quote": {"type": "string", "description": "Line of the Night's line; empty otherwise"},
+                            "at": {"type": "string", "description": "H:MM:SS, or empty"},
+                        },
+                    },
+                },
+            },
+        },
+    },
+    "entities": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["name", "kind", "summary", "aliases", "quest_status", "race", "class"],
+            "properties": {
+                "name": {"type": "string"},
+                "kind": {"type": "string", "enum": _ENTITY_KINDS},
+                "summary": {"type": "string"},
+                "race": {"type": "string", "description": "A person's race (npc only); empty when unknown"},
+                "class": {"type": "string", "description": "A person's class, or what they do when they have none; empty when unknown"},
+                "aliases": {"type": "array", "items": {"type": "string"}},
+                "quest_status": {"type": "string", "enum": ["open", "done", "not_a_quest"]},
+            },
+        },
+    },
+    "relationships": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["from", "type", "to", "note"],
+            "properties": {
+                "from": {"type": "string"},
+                "type": {"type": "string", "enum": _REL_TYPES},
+                "to": {"type": "string"},
+                "note": {"type": "string", "description": "Optional short detail, e.g. 'adopted'; empty if none"},
+            },
+        },
+    },
+    "glossary": {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["term", "description", "misheard_as"],
+            "properties": {
+                "term": {"type": "string"},
+                "description": {"type": "string"},
+                "misheard_as": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+    },
+    "to_check": {"type": "array", "items": {"type": "string"}},
 }
+# What each pass writes: the first read of a transcript asks and suggests, Draft the recap tells the story, and notes
+# and accounts do both at once (Session Story, Brett Nov 7)
+STEPS = {
+    "ask": ["title", "entities", "relationships", "glossary", "to_check"],
+    "tell": ["title", "recap", "tale", "events", "awards"],
+    "full": ["title", "recap", "tale", "events", "awards", "entities", "relationships", "glossary", "to_check"],
+}
+
+
+def schema(step: str = "full") -> dict:
+    keys = STEPS[step]
+    return {"type": "object", "additionalProperties": False, "required": keys, "properties": {k: _PROPS[k] for k in keys}}
+
+
+SCHEMA = schema("full")
 
 
 class ExtractionError(RuntimeError):
@@ -277,7 +365,8 @@ def _known_world(db: Session, campaign: Campaign) -> str:
     ):
         quest = "" if e.quest_open is None else (" (open)" if e.quest_open else " (done)")
         who = f" (written by {e.written_by_person}: keep their wording)" if e.written_by_person else ""
-        lines.append(f"- {e.name} [{e.kind.value}]{quest}{who}: {e.summary}{_alias_text(e)}")
+        traits = f" ({traits_line(e, ', ')})" if traits_line(e) else ""
+        lines.append(f"- {e.name} [{e.kind.value}]{traits}{quest}{who}: {e.summary}{_alias_text(e)}")
     facts: dict[int, list[str]] = {}
     for f in db.scalars(
         select(Fact).join(Entity).where(Entity.campaign_id == campaign.id, Entity.status == Status.PUBLISHED, Fact.status == "merged")
@@ -375,7 +464,16 @@ def session_label(s: GameSession) -> str:
     return " — ".join(bits) or f"Session #{s.id}"
 
 
-def build_messages(db: Session, session: GameSession, source: Source, background: str = "", background_images=()) -> list[dict]:
+ASK_NOTE = ("This is the first read. Ask and suggest only: Brett answers your questions and settles the suggested World "
+            "entries first, and the story (recap, full tale, key moments, awards) is written in a second pass once he has. "
+            "Ask about anything that would change that story: who someone is, a name you can't make out, what was decided.")
+TELL_NOTE = ("Brett has answered your questions (the clarifications) and settled the suggested World entries, which are "
+             "now in the known world. Write the session's story: the recap, the full tale, key moments and awards. Use "
+             "the known world's exact names so they link.")
+
+
+def build_messages(db: Session, session: GameSession, source: Source, background: str = "", background_images=(),
+                   step: str = "full") -> list[dict]:
     campaign = db.get(Campaign, session.campaign_id)
     stable: list[dict] = [{"type": "text", "text": "<known_world>\n" + _known_world(db, campaign) + "\n</known_world>"}]
     if background:
@@ -424,7 +522,7 @@ def build_messages(db: Session, session: GameSession, source: Source, background
             f"{who} wrote or edited the current recap. Your recap must keep their wording, order and paragraphs: "
             "change only what the source or the clarifications show is wrong or missing. Don't rephrase anything "
             "that's still true.")})
-    volatile.append({"type": "text", "text": "Draft this session's record."})
+    volatile.append({"type": "text", "text": {"ask": ASK_NOTE, "tell": TELL_NOTE}.get(step, "Draft this session's record.")})
     return [{"role": "user", "content": stable + volatile}]
 
 
@@ -444,13 +542,13 @@ def _cost(usage) -> float:
     )
 
 
-def call_claude(client: anthropic.Anthropic, messages: list[dict]) -> tuple[dict, object]:
+def call_claude(client: anthropic.Anthropic, messages: list[dict], step: str = "full") -> tuple[dict, object]:
     with client.beta.messages.stream(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
         messages=messages,
-        output_config={"effort": EFFORT, "format": {"type": "json_schema", "schema": SCHEMA}},
+        output_config={"effort": EFFORT, "format": {"type": "json_schema", "schema": schema(step)}},
         betas=["server-side-fallback-2026-07-01"],
         fallbacks="default",
     ) as stream:
@@ -493,12 +591,60 @@ def _entity_index(db: Session, campaign_id: int) -> dict[str, Entity]:
     return index
 
 
+def seconds(stamp: str) -> int | None:
+    """ "1:02:03" (or "2:03") as seconds; None for anything else."""
+    parts = (stamp or "").strip().split(":")
+    if not 2 <= len(parts) <= 3 or not all(p.isdigit() for p in parts):
+        return None
+    total = 0
+    for p in parts:
+        total = total * 60 + int(p)
+    return total
+
+
+def _chapters(data: dict) -> list[dict]:
+    out = []
+    for c in data.get("tale") or []:
+        text = (c.get("text") or "").strip()
+        if text:
+            out.append({"title": (c.get("title") or "").strip()[:120], "kind": c.get("kind") if c.get("kind") in CHAPTER_KINDS else "story",
+                        "at": seconds(c.get("starts_at", "")), "text": text})
+    return out
+
+
+NOMINEES_MOST = 3
+
+
+def _nominee(n: dict) -> dict:
+    return {"character": n["character"].strip()[:120], "why": (n.get("why") or "").strip()[:400],
+            "quote": (n.get("quote") or "").strip()[:400], "at": seconds(n.get("at", ""))}
+
+
+def _awards(data: dict) -> list[dict]:
+    """Each award Claude gave with its nominees (the reviewer picks one; the first until they do: `pick`)."""
+    out = []
+    for a in data.get("awards") or []:
+        nominees = [_nominee(n) for n in a.get("nominees") or [] if (n.get("character") or "").strip()][:NOMINEES_MOST]
+        if a.get("award") in AWARDS and nominees:
+            out.append({"award": a["award"], "nominees": nominees, "pick": 0})
+    return out
+
+
 def store_result(db: Session, session: GameSession, run: ExtractionRun, data: dict) -> None:
-    """Save Claude's draft: a new recap version, draft events, pending proposals."""
+    """Save Claude's draft. The story ("recap" in it: a new recap version with its full tale and awards, draft key
+    moments) and the questions and suggestions ("to_check" or "entities" in it: pending proposals), whichever came."""
     if data.get("title") and not session.title:
         session.title = data["title"].strip()
+    if "recap" in data:
+        _store_story(db, session, data)
+    if "to_check" in data or "entities" in data:
+        _store_suggestions(db, session, run, data)
+
+
+def _store_story(db: Session, session: GameSession, data: dict) -> None:
     version = (db.scalar(select(func.max(Recap.version)).where(Recap.session_id == session.id)) or 0) + 1
-    db.add(Recap(session_id=session.id, version=version, body=data["recap"].strip(), author="ai", status=Status.DRAFT))
+    db.add(Recap(session_id=session.id, version=version, body=data["recap"].strip(), author="ai", status=Status.DRAFT,
+                 tale=_chapters(data), awards=_awards(data)))
 
     index = _entity_index(db, session.campaign_id)
     for old_event in db.scalars(select(StoryEvent).where(StoryEvent.session_id == session.id, StoryEvent.status == Status.DRAFT)):
@@ -512,6 +658,9 @@ def store_result(db: Session, session: GameSession, run: ExtractionRun, data: di
         event.entities = list(linked.values())
         db.add(event)
 
+
+def _store_suggestions(db: Session, session: GameSession, run: ExtractionRun, data: dict) -> None:
+    index = _entity_index(db, session.campaign_id)
     db.execute(delete(Proposal).where(Proposal.session_id == session.id, Proposal.status == "pending"))
     for item in data.get("entities", []):
         existing = index.get(_norm(item["name"])) or next(
@@ -520,7 +669,10 @@ def store_result(db: Session, session: GameSession, run: ExtractionRun, data: di
         known_aliases = {_norm(a.alias) for a in existing.aliases} | {_norm(existing.name)} if existing else set()
         new_aliases = [a for a in item.get("aliases", []) if _norm(a) not in known_aliases]
         quest_open = {"open": True, "done": False}.get(item.get("quest_status"))
-        if existing and existing.summary.strip() == item["summary"].strip() and not new_aliases and (
+        kind = existing.kind.value if existing else item["kind"]
+        traits = clean_traits(item.get("race", ""), item.get("class", "")) if has_traits(kind) else {}
+        new_traits = {k: v for k, v in traits.items() if not existing or (existing.traits or {}).get(k) != v}
+        if existing and existing.summary.strip() == item["summary"].strip() and not new_aliases and not new_traits and (
             quest_open is None or quest_open == existing.quest_open
         ):
             continue  # nothing new
@@ -537,6 +689,7 @@ def store_result(db: Session, session: GameSession, run: ExtractionRun, data: di
                     "summary": item["summary"].strip(),
                     "new_aliases": new_aliases,
                     "quest_open": quest_open,
+                    "traits": {**((existing.traits or {}) if existing else {}), **traits},  # (a person's race and class)
                 },
             )
         )
@@ -582,16 +735,18 @@ def extract_session(
     client_factory: Callable[[], anthropic.Anthropic] = anthropic.Anthropic,
     background: str = "",
     background_images=(),
+    step: str = "full",
 ) -> ExtractionRun:
     """Run one extraction and store the drafts. Commits; never raises for API errors
-    (they're recorded on the run so the admin page can show them)."""
-    run = ExtractionRun(session_id=session.id, source=source.kind, model=MODEL, status="running")
+    (they're recorded on the run so the admin page can show them). `step`: "full", or a transcript's two passes,
+    "ask" (its run's source is "transcript") and "tell" (Draft the recap: source "recap")."""
+    run = ExtractionRun(session_id=session.id, source="recap" if step == "tell" else source.kind, model=MODEL, status="running")
     db.add(run)
     db.commit()
     try:
         spending.check(db)  # the monthly limit set on Manage › Usage
-        messages = build_messages(db, session, source, background, background_images)
-        data, response = call_claude(client_factory(), messages)
+        messages = build_messages(db, session, source, background, background_images, step=step)
+        data, response = call_claude(client_factory(), messages, step=step)
         run.input_tokens = (response.usage.input_tokens or 0) + (response.usage.cache_read_input_tokens or 0) + (
             response.usage.cache_creation_input_tokens or 0
         )

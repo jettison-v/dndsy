@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.characters import campaign_characters
 
-from app import relations
+from app import extraction, relations
 from app.models import (
     Correction,
     Entity,
@@ -148,22 +148,34 @@ def reopen_question(db: Session, session: GameSession, question: str) -> None:
         db.delete(row)
 
 
-def _last_draft_run(db: Session, session: GameSession, status: str | None = "done") -> ExtractionRun | None:
-    """Most recent drafting run (conversation checks and entity runs don't count)."""
+ASKING = ("notes", "account", "transcript")  # runs that ask questions (a transcript's first read, since Nov 7, asks only)
+TELLING = ("notes", "account", "recap")  # runs that write the story ("recap": Draft the recap, a transcript's second pass)
+
+
+def _last_draft_run(db: Session, session: GameSession, status: str | None = "done", sources=None) -> ExtractionRun | None:
+    """Most recent drafting run (conversation checks and entity runs don't count); `sources`: only those."""
     q = select(ExtractionRun).where(ExtractionRun.session_id == session.id, ExtractionRun.source.notin_(NON_DRAFTING_SOURCES))
+    if sources:
+        q = q.where(ExtractionRun.source.in_(sources))
     if status:
         q = q.where(ExtractionRun.status == status)
     return db.scalar(q.order_by(ExtractionRun.id.desc()))
 
 
 def latest_questions(db: Session, session: GameSession) -> list[str]:
-    run = _last_draft_run(db, session)
+    run = _last_draft_run(db, session, sources=ASKING)
     return list(run.to_check) if run else []
 
 
+def last_told(db: Session, session: GameSession) -> ExtractionRun | None:
+    """The run that wrote the latest story: Draft the recap's, a notes or account draft's, or (a transcript drafted in
+    one go before Nov 7) the transcript run itself."""
+    return _last_draft_run(db, session, sources=TELLING) or (_last_draft_run(db, session) if session.recaps else None)
+
+
 def unused_answer_count(db: Session, session: GameSession) -> int:
-    """Answers saved after the latest successful draft (so a redraft would use them)."""
-    run = _last_draft_run(db, session)
+    """Answers saved after the latest story was drafted (so a redraft would use them)."""
+    run = last_told(db, session)
     if run is None:
         return 0
     return (
@@ -183,11 +195,27 @@ def unused_answer_count(db: Session, session: GameSession) -> int:
 # --- Suggestions (proposals) -------------------------------------------------
 
 
-def accept_proposal(db: Session, p: Proposal, summary: str | None = None, by: str = "") -> None:
+def accept_proposal(db: Session, p: Proposal, summary: str | None = None, by: str = "", name: str = "", kind: str = "",
+                    race: str | None = None, class_: str | None = None) -> None:
     """Apply a suggestion and remember what it replaced, so Undo can restore it. `summary` is the reviewer's edit
-    of the proposed description (which makes it theirs: `by`)."""
+    of the proposed description (which makes it theirs: `by`); `name` their spelling of the name (Brett, Nov 7: a new
+    one's is often misheard; Claude's spelling is kept as a misspelling, an existing entry's old name as another name)
+    and `kind` a new entry's kind."""
     if p.status != "pending":
         raise ReviewError("That suggestion was already decided.")
+    name = " ".join((name or "").split())[:200]
+    if p.kind == "entity" and name and name != p.payload.get("name"):
+        heard = p.payload["name"]
+        if p.payload.get("entity_id"):
+            p.payload = {**p.payload, "rename": name}
+        else:
+            p.payload = {**p.payload, "name": name, "new_aliases": [*p.payload.get("new_aliases", []), heard], "misheard": heard}
+    if p.kind == "entity" and kind and not p.payload.get("entity_id") and kind in {k.value for k in EntityKind} and kind != "pc":
+        p.payload = {**p.payload, "kind": kind}
+    if p.kind == "entity" and race is not None:  # (the reviewer's race and class: Brett, Nov 7)
+        from app.traits import clean_traits
+
+        p.payload = {**p.payload, "traits": clean_traits(race, class_ or "")}
     from app.history import mark
 
     mark("recap")  # version history: these changes came from a recap's suggestions
@@ -262,11 +290,21 @@ def accept_proposal(db: Session, p: Proposal, summary: str | None = None, by: st
             entity.summary_by = by[:200] if edited and by else "claude"
         if data.get("quest_open") is not None:
             entity.quest_open = data["quest_open"]
+        from app.traits import has_traits
+
+        if has_traits(entity.kind) and data.get("traits") is not None and data["traits"] != (entity.traits or {}):
+            undo["traits"] = dict(entity.traits or {})
+            entity.traits = dict(data["traits"])
+        if data.get("rename") and data["rename"] != entity.name:
+            from app.entities import rename
+
+            undo["renamed_from"] = entity.name
+            rename(entity, data["rename"])
         have = {a.alias.casefold() for a in entity.aliases}
         added = []
         for alias in data.get("new_aliases", []):
             if alias.casefold() not in have and alias.casefold() != entity.name.casefold():
-                entity.aliases.append(EntityAlias(alias=alias))
+                entity.aliases.append(EntityAlias(alias=alias, misspelling=alias == data.get("misheard")))
                 have.add(alias.casefold())
                 added.append(alias)
         entity.status = Status.PUBLISHED
@@ -349,6 +387,14 @@ def undo_proposal(db: Session, p: Proposal) -> None:
             from app.models import EventEntity
 
             db.execute(delete(EventEntity).where(EventEntity.entity_id == undo["entity_id"], EventEntity.event_id.in_(undo["linked_events"])))
+        if entity and undo.get("renamed_from"):
+            gone = entity.name
+            entity.name = undo["renamed_from"]
+            for alias in list(entity.aliases):
+                if alias.alias.casefold() in (entity.name.casefold(), gone.casefold()):
+                    entity.aliases.remove(alias)
+        if entity and "traits" in undo:
+            entity.traits = undo["traits"]
         if entity:
             entity.summary = undo.get("summary", entity.summary)
             entity.summary_by = undo.get("summary_by", "")
@@ -392,15 +438,20 @@ def statuses(db: Session, campaign_id: int) -> dict[int, str]:
     rows = db.execute(select(Recap.session_id, func.max(Recap.version), func.max(Recap.version).filter(Recap.status == Status.PUBLISHED))
                       .join(GameSession, GameSession.id == Recap.session_id).where(GameSession.campaign_id == campaign_id)
                       .group_by(Recap.session_id))
-    return {sid: "draft" if published is None else "published" if latest == published else "edited" for sid, latest, published in rows}
+    out = {sid: "draft" if published is None else "published" if latest == published else "edited" for sid, latest, published in rows}
+    for sid in db.scalars(select(GameSession.id).where(GameSession.campaign_id == campaign_id, GameSession.transcript_key.is_not(None))):
+        out.setdefault(sid, "read")  # (read, its recap not drafted yet)
+    return out
 
 
 def review_status(session: GameSession, drafting: bool) -> str:
+    """drafting, no draft, read (a transcript read, its questions and suggestions waiting, the recap not drafted yet),
+    draft, published or edited (since publishing)."""
     if drafting:
         return "drafting"
     latest, published = latest_recap(session), published_recap(session)
     if published is None:
-        return "draft" if latest else "no draft"
+        return "draft" if latest else "read" if session.transcript_key else "no draft"
     return "published" if latest.id == published.id else "edited"
 
 
@@ -410,11 +461,7 @@ def save_recap(db: Session, session: GameSession, body: str, note: str = "", sta
         raise ReviewError("The recap can't be empty.")
     latest = latest_recap(session)
     if latest is None or latest.body.strip() != body:
-        version = (db.scalar(select(func.max(Recap.version)).where(Recap.session_id == session.id)) or 0) + 1
-        latest = Recap(session_id=session.id, version=version, body=body, author="brett", author_name=by[:200], status=Status.DRAFT)
-        db.add(latest)
-        db.flush()
-        db.refresh(session)
+        latest = _new_version(db, session, latest, body, by)
     ai_draft = next((r for r in reversed(session.recaps) if r.author == "ai"), None)
     if ai_draft and (note.strip() or ai_draft.body.strip() != body):
         existing = db.scalar(
@@ -429,6 +476,85 @@ def save_recap(db: Session, session: GameSession, body: str, note: str = "", sta
             correction.standing_instruction = standing
         db.add(correction)
     return latest
+
+
+def _new_version(db: Session, session: GameSession, latest: Recap | None, body: str, by: str) -> Recap:
+    """A person's new version of the recap: their words, the full tale and awards carried over from the latest."""
+    version = (db.scalar(select(func.max(Recap.version)).where(Recap.session_id == session.id)) or 0) + 1
+    new = Recap(session_id=session.id, version=version, body=body, author="brett", author_name=by[:200], status=Status.DRAFT,
+                tale=[dict(c) for c in latest.tale] if latest else [], awards=[dict(a) for a in latest.awards] if latest else [],
+                tale_narration_key=latest.tale_narration_key if latest else None)
+    db.add(new)
+    db.flush()
+    db.refresh(session)
+    return new
+
+
+def _working(db: Session, session: GameSession, by: str) -> Recap:
+    """The version a change to the full tale or awards goes into: the latest while it's a draft, else a new one (the
+    table keeps reading the published one until it's published again)."""
+    latest = latest_recap(session)
+    if latest is None:
+        raise ReviewError("There's no recap yet.")
+    return latest if latest.status != Status.PUBLISHED else _new_version(db, session, latest, latest.body, by)
+
+
+def save_chapter(db: Session, session: GameSession, index: int, title: str, text: str, kind: str = "", by: str = "") -> None:
+    """A reviewer's change to one chapter of the full tale: its title, words and kind (a fight, story…; Fights and
+    story counts it); its time stays."""
+    text = text.replace("\r\n", "\n").strip()
+    if not text:
+        raise ReviewError("A chapter can't be empty.")
+    recap = _working(db, session, by)
+    tale = [dict(c) for c in recap.tale]
+    if not 0 <= index < len(tale):
+        raise ReviewError("That chapter isn't there any more.")
+    tale[index].update(title=" ".join(title.split())[:120], text=text)
+    if kind in extraction.CHAPTER_KINDS:
+        tale[index]["kind"] = kind
+    recap.tale = tale
+    recap.tale_narration_key = None  # (its words changed: Listen reads it again)
+
+
+def save_award(db: Session, session: GameSession, index: int, character: str, why: str, quote: str, by: str = "") -> None:
+    """A reviewer's change to one of Claude's awards: who it goes to and what it says."""
+    recap = _working(db, session, by)
+    awards = [dict(a) for a in recap.awards]
+    if not 0 <= index < len(awards):
+        raise ReviewError("That award isn't there any more.")
+    if not character.strip():
+        raise ReviewError("Say who it goes to.")
+    from app.session_story import nominees_of, picked
+
+    nominees = [dict(n) for n in nominees_of(awards[index])]
+    pick = picked(awards[index])
+    nominees[pick].update(character=" ".join(character.split())[:120], why=" ".join(why.split())[:400], quote=" ".join(quote.split())[:400])
+    awards[index] = {"award": awards[index]["award"], "nominees": nominees, "pick": pick}
+    recap.awards = awards
+
+
+def pick_nominee(db: Session, session: GameSession, index: int, nominee: int, by: str = "") -> str:
+    """The reviewer's pick of who an award goes to, from Claude's nominees."""
+    from app.session_story import nominees_of
+
+    latest = latest_recap(session)
+    if latest is None or not 0 <= index < len(latest.awards) or not 0 <= nominee < len(nominees_of(latest.awards[index])):
+        raise ReviewError("That nominee isn't there any more.")
+    recap = _working(db, session, by)
+    awards = [dict(a) for a in recap.awards]
+    awards[index] = {"award": awards[index]["award"], "nominees": nominees_of(awards[index]), "pick": nominee}
+    recap.awards = awards
+    return nominees_of(awards[index])[nominee]["character"]
+
+
+def drop_award(db: Session, session: GameSession, index: int, by: str = "") -> str:
+    recap = _working(db, session, by)
+    awards = [dict(a) for a in recap.awards]
+    if not 0 <= index < len(awards):
+        raise ReviewError("That award isn't there any more.")
+    gone = awards.pop(index)
+    recap.awards = awards
+    return gone["award"]
 
 
 def person_version(session: GameSession) -> Recap | None:
@@ -456,8 +582,19 @@ def publish(db: Session, session: GameSession) -> None:
         if r.status == Status.PUBLISHED and r.id != latest.id:
             r.status = Status.DRAFT
     latest.status = Status.PUBLISHED
-    for ev in session.events:
-        ev.status = Status.PUBLISHED
+    redrafted = any(ev.status == Status.DRAFT for ev in session.events if ev.id is not None) and _drafted_since(db, session)
+    for ev in list(session.events):
+        if redrafted and ev.status == Status.PUBLISHED:
+            db.delete(ev)  # a redraft's key moments replace the ones published before (kept in version history)
+        else:
+            ev.status = Status.PUBLISHED
+
+
+def _drafted_since(db: Session, session: GameSession) -> bool:
+    """Whether Claude drafted the key moments again after they were last published (its moments then replace them)."""
+    published = [ev for ev in session.events if ev.status == Status.PUBLISHED]
+    run = last_told(db, session)
+    return bool(published and run and run.created_at > max(ev.updated_at for ev in published))
 
 
 def save_event(db: Session, session: GameSession, event_id: int | None, kind: str, text: str) -> None:
@@ -532,6 +669,9 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
         "open_proposals": open_proposals,
         "done_proposals": done_proposals,
         "accepted_count": sum(1 for p in done_proposals if p.status == "accepted"),
+        # The entries this session's suggestions added to the World: for a picture of each, here (Brett, Nov 7)
+        "new_entries": [e for e in (db.get(Entity, p.payload["undo"]["created_entity_id"]) for p in done_proposals
+                                    if p.status == "accepted" and p.kind == "entity" and (p.payload.get("undo") or {}).get("created_entity_id")) if e],
         "rejected_count": sum(1 for p in done_proposals if p.status == "rejected"),
         "last_run": last_run,
         "last_done": last_done,

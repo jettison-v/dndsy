@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import web
-from app import admin_sessions, config
+from app import admin_sessions, config, files, session_story
 from app.db import get_db
 from app.extraction import session_label
 from app.models import Campaign, GameSession
@@ -24,6 +24,8 @@ class TranscriptUpload(BaseModel):
     played_on: date
     text: str = Field(min_length=1, max_length=MAX_TRANSCRIPT_CHARS)
     campaign: str | None = None  # the campaign's slug (its /c/<slug>/ address); none = the first campaign
+    # Who talked, counted on Brett's Mac: {"speakers": {recording's name: seconds}, "length": seconds} (app/session_story.py)
+    talk: dict | None = None
 
 
 def _authorized(authorization: str | None) -> bool:
@@ -39,8 +41,9 @@ def upload_transcript(
     authorization: str | None = Header(default=None),
     db: Session = Depends(get_db),
 ):
-    """Start drafting a session from a filtered transcript. The text is passed to
-    Claude in memory and never stored (CLAUDE.md privacy rule)."""
+    """Keep a session's cleaned transcript and who talked, and start its first read (questions and suggestions; the
+    recap is drafted once they're settled). The transcript goes to file storage, never the database (Session Story,
+    Brett Nov 7: the raw recording stays on his Mac)."""
     if not config.UPLOAD_TOKEN:
         return JSONResponse({"error": "Uploads aren't set up on the server (UPLOAD_TOKEN)."}, status_code=503)
     if not _authorized(authorization):
@@ -56,10 +59,18 @@ def upload_transcript(
         session = GameSession(campaign_id=campaign.id, played_on=body.played_on, source="transcript")
         db.add(session)
         db.commit()
-    if not admin_sessions.draft_transcript_in_background(session.id, body.text):
+    if admin_sessions.busy():
+        return JSONResponse({"error": "Claude is busy drafting another session. Try again in a minute."}, status_code=409)
+    try:
+        session_story.keep(db, session, body.text, session_story.clean_talk(body.talk))
+        db.commit()
+    except (files.FileError, files.StorageNotReady) as e:
+        db.rollback()
+        return JSONResponse({"error": f"askdnd couldn't keep the transcript: {e}"}, status_code=503)
+    if not admin_sessions.read_transcript_in_background(session.id, body.text):
         return JSONResponse({"error": "Claude is busy drafting another session. Try again in a minute."}, status_code=409)
     review_url = str(request.base_url).rstrip("/") + f"/c/{campaign.slug}/manage/sessions/{session.id}"
     return JSONResponse(
-        {"session_id": session.id, "label": session_label(session), "review_url": review_url, "status": "drafting"},
+        {"session_id": session.id, "label": session_label(session), "review_url": review_url, "status": "reading"},
         status_code=202,
     )

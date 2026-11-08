@@ -547,6 +547,57 @@ body.tale-playing { overflow: hidden; }
 .tale-after { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-6); padding: 0 var(--sp-2); }
 .tale-after:has(> section:only-child) { grid-template-columns: minmax(0, 1fr); }
 .tale-label { margin: 0 0 var(--sp-3); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+/* Session Story (Brett, Nov 7; docs/mockups/session-story/): Read the full tale at the recap's end, the session's own
+   page (its chapters, then awards and numbers), the award cards, Who talked's share rows and Fights and story's bar */
+.tale-more-link { display: flex; width: fit-content; margin: var(--sp-5) auto 0; }
+.tale-chapter + .tale-chapter { margin-top: var(--sp-6); }
+.tale-chapter-head { display: flex; align-items: baseline; gap: var(--sp-3); margin: 0 0 var(--sp-3); font-family: var(--tale-cap, inherit); font-size: var(--fs-lg); font-weight: 600; color: var(--story-head); text-wrap: balance; }
+.tale-chapter-n { font-size: var(--fs-xs); font-weight: 700; letter-spacing: .14em; color: var(--story-cap); flex: none; }
+.tale-chapters .tale-chapter > p:first-of-type::first-letter { float: none; font-size: inherit; padding: 0; color: inherit; }
+.tale-after-block { padding: 0 var(--sp-2); }
+.award-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
+.award-card { display: flex; flex-direction: column; gap: var(--sp-2); background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--amber); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); min-width: 0; }
+.award-card.dice { border-top-color: var(--blue); }
+.award-name { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.award-card.dice .award-name { color: var(--blue); }
+.award-who { display: flex; align-items: center; gap: var(--sp-2); font-weight: 600; min-width: 0; }
+.award-who .roll-av { width: 30px; height: 30px; font-size: var(--fs-xs); }
+.award-line { font-family: var(--tale-cap, inherit); font-style: italic; color: var(--story-head); }
+.award-why { font-size: var(--fs-sm); }
+.award-nominees { max-height: none; margin-top: var(--sp-2); }  /* (the review page: pick who an award goes to) */
+/* The review as a wizard (Brett, Nov 7): the tab bar's tabs numbered in order, a tick on a finished step, Next at each one's end */
+.review-steps .step-n { color: var(--muted); font-weight: 700; margin-right: var(--sp-1); font-variant-numeric: tabular-nums; }
+.review-steps [aria-selected=true] .step-n { color: var(--red); }
+.review-steps .step-done { color: var(--green); }
+.wizard-foot { display: flex; justify-content: flex-end; margin: var(--sp-3) 0 var(--sp-5); }
+.wizard-foot:empty { display: none; }
+.checklist a { color: inherit; text-decoration: none; } .checklist a:hover { text-decoration: underline; }
+.new-entries { margin-top: var(--sp-5); }  /* the review's New in the World: a picture for each, from here */
+.new-entries h3 { margin-top: 0; }
+.new-entry { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; padding: var(--sp-1) 0; }
+.new-entry .roll-av { width: 32px; height: 32px; }
+.new-entry .grow { min-width: 0; overflow-wrap: anywhere; }
+.numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-4); }
+.numbers-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.numbers-card .tale-label { margin: 0; }
+.numbers-card .note { margin: 0; }
+.share-rows { display: grid; gap: var(--sp-2); }
+.share-row { display: grid; grid-template-columns: minmax(0, 9rem) 1fr 3rem; gap: var(--sp-2); align-items: center; font-size: var(--fs-sm); }
+.share-who { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.share-who .roll-av { width: 24px; height: 24px; font-size: var(--fs-xs); }
+.share-bar { height: 8px; border-radius: var(--r-pill); background: var(--surface-2); overflow: hidden; }
+.share-bar i { display: block; height: 100%; border-radius: var(--r-pill); background: var(--blue); }
+.share-n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mix-bar { display: flex; height: 14px; border-radius: var(--r-sm); overflow: hidden; background: var(--surface-2); }
+.mix-bar i { display: block; height: 100%; }
+.numbers .mix-legend { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); }
+.mix-legend li, .mix-scenes li { display: flex; align-items: center; gap: var(--sp-2); }
+.mix-legend i, .mix-scenes i { width: 10px; height: 10px; border-radius: var(--r-xs); flex: none; }
+.mix-scenes { display: grid; gap: 2px; font-size: var(--fs-sm); padding: 0; margin: 0; }
+.mix-scenes .note { width: 3rem; flex: none; font-variant-numeric: tabular-nums; }
+.mix-fight { background: var(--red); } .mix-story { background: var(--violet); } .mix-exploring { background: var(--green); } .mix-rest { background: var(--amber); }
+.numbers-dice { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; }
+.numbers-dice > div { background: var(--surface-2); }
 .tale-moments .ev, .tale-moments .ev + .ev { display: block; padding: 0 0 var(--sp-3) var(--sp-4); border: 0; }
 .tale-moments .kind { display: block; font-size: var(--fs-xs); }
 .tale-threads li { display: flex; flex-wrap: wrap; gap: 0 var(--sp-1); padding: var(--sp-1) 0; }
@@ -714,7 +765,7 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
 .login .flash { text-align: left; }
 
 @media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; }
+  .layout { grid-template-columns: minmax(0, 1fr); }
   .aside { position: static; }
   .aside .publish-block { display: none; }
   .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--chrome); border-top: 2px solid var(--red); gap: 12px; align-items: center; z-index: 4; }

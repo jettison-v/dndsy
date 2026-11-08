@@ -14,11 +14,11 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, config, web
+from app import access, config, session_story, web
 from app import db as dbmod
 from app import review
 from app.admin import _reviewer_guard as _guard
-from app.auth import current_user
+from app.auth import current_user, is_admin
 from app.db import get_db
 from app.extraction import (
     ExtractionError,
@@ -30,7 +30,7 @@ from app.extraction import (
     split_notes,
     timeline,
 )
-from app.models import NON_DRAFTING_SOURCES, ExtractionRun, GameSession, Proposal
+from app.models import NON_DRAFTING_SOURCES, Campaign, EntityKind, ExtractionRun, GameSession, Proposal
 from app.linking import entity_linker
 from app.suggestions import waiting_count
 from app.render import markdown_to_html
@@ -41,13 +41,16 @@ router = APIRouter(prefix="/manage")  # under the campaign: /c/<campaign>/manage
 _busy = threading.Lock()  # one drafting job at a time keeps costs and order predictable
 
 
+_starting: set[int] = set()  # sessions whose draft was started here but whose run isn't written yet (the page redraws first)
+
+
 def _running_ids(db: Session) -> set[int]:
     """Sessions with a draft in progress (conversation checks and entity runs don't count)."""
     return set(
         db.scalars(
             select(ExtractionRun.session_id).where(ExtractionRun.status == "running", ExtractionRun.source.notin_(NON_DRAFTING_SOURCES))
         )
-    )
+    ) | _starting
 
 
 def source_for(db: Session, session: GameSession):
@@ -85,18 +88,42 @@ def _draft_in_background(session_ids: list[int]) -> bool:
     return True
 
 
-def draft_transcript_in_background(session_id: int, text: str) -> bool:
-    """Draft one session from a filtered transcript. The text lives only in this
-    thread's memory for the Claude call; it is never written to the database."""
+def busy() -> bool:
+    return _busy.locked()
+
+
+def read_transcript_in_background(session_id: int, text: str) -> bool:
+    """A transcript's first read (Session Story, Brett Nov 7): Claude's questions and suggested World updates. The
+    recap waits for Draft the recap, once they're settled."""
+    return _in_background(session_id, lambda db, s: extract_session(db, s, Source("transcript", text), step="ask"))
+
+
+def draft_recap_in_background(session_id: int) -> bool:
+    """Draft the recap (and the full tale, key moments and awards) from the kept transcript, with the answers and the
+    World as they are now."""
+    def tell(db, s):
+        words = session_story.text(s)
+        if words is None:
+            db.add(ExtractionRun(session_id=s.id, source="recap", status="error",
+                                 error="askdnd doesn't have this session's transcript. Send it again from the Processor."))
+            db.commit()
+            return
+        extract_session(db, s, Source("transcript", words), step="tell")
+
+    return _in_background(session_id, tell)
+
+
+def _in_background(session_id: int, work_on) -> bool:
     if not _busy.acquire(blocking=False):
         return False
+    _starting.add(session_id)
 
     def work():
         try:
             with dbmod.SessionLocal() as db:
-                session = db.get(GameSession, session_id)
-                extract_session(db, session, Source("transcript", text))
+                work_on(db, db.get(GameSession, session_id))
         finally:
+            _starting.discard(session_id)
             _busy.release()
 
     threading.Thread(target=work, daemon=True).start()
@@ -175,7 +202,40 @@ def _next_session(db: Session, s: GameSession) -> dict | None:
     return {"s": nxt, "label": session_label(nxt), "drafted": bool(nxt.recaps), "has_notes": has_notes}
 
 
-def _body_context(db: Session, s: GameSession) -> dict:
+STEPS = ("questions", "suggestions", "recap", "tale", "moments", "awards", "numbers")
+
+
+def _tab(request: Request) -> str:
+    """The review step that's open: the address's ?tab=, or (an HTMX action or the page polling while Claude drafts)
+    the one in the address of the page that asked, so a change keeps you where you were."""
+    from urllib.parse import parse_qs, urlparse
+
+    tab = request.query_params.get("tab") or (parse_qs(urlparse(request.headers.get("HX-Current-URL", "")).query).get("tab") or [""])[0]
+    return tab if tab in STEPS else ""
+
+
+def _steps(ctx: dict, s: GameSession, tab: str) -> tuple[list[dict], str]:
+    """The review as a wizard (Brett, Nov 7): a tab per step, in the order they're done, each saying what's left; and the
+    step to open (the one asked for, else the first with something left)."""
+    latest = ctx["latest"]
+    steps = [
+        {"key": "questions", "label": "Questions", "left": len(ctx["open_questions"])},
+        {"key": "suggestions", "label": "Suggestions", "left": len(ctx["open_proposals"])},
+        {"key": "recap", "label": "Recap" if latest or s.source != "transcript" else "Draft the recap", "left": 0 if latest else 1},
+    ]
+    if latest:
+        steps += [{"key": "tale", "label": "Full tale", "left": 0, "count": len(ctx["chapters"])}] if ctx["chapters"] else []
+        steps += [{"key": "moments", "label": "Key moments", "left": 0, "count": len(ctx["events"])},
+                  {"key": "awards", "label": "Awards", "left": 0, "count": len(ctx["awards"])},
+                  {"key": "numbers", "label": "Numbers", "left": len(ctx["talked"]["unmatched"])}]
+    keys = [x["key"] for x in steps]
+    open_ = tab if tab in keys else next((x["key"] for x in steps[:3] if x["left"]), "recap")
+    for i, x in enumerate(steps):
+        x["n"], x["next"] = i + 1, steps[i + 1] if i + 1 < len(steps) else None
+    return steps, open_
+
+
+def _body_context(db: Session, s: GameSession, tab: str = "") -> dict:
     running = _running_ids(db)
     ctx = review.review_context(db, s, drafting=s.id in running)
     ctx.update(
@@ -186,6 +246,26 @@ def _body_context(db: Session, s: GameSession) -> dict:
         ln=entity_linker(db, s.campaign_id, include_drafts=True),
         anything_drafting=bool(running),
     )
+    campaign = db.get(Campaign, s.campaign_id)
+    rolled = session_story.dice(db, s)
+    ctx.update(
+        chapters=session_story.chapters(ctx["latest"]),
+        awards=session_story.awards(db, s, ctx["latest"], rolled),
+        rolled=rolled,
+        talked=session_story.who_talked(db, s, campaign),
+        people=sorted(session_story.table(db, campaign).values(), key=lambda p: (not p["dm"], p["name"].casefold())),
+        mix=session_story.mix(s, ctx["latest"]),
+        chapter_kinds=session_story.KINDS,
+        told=review.last_told(db, s),
+    )
+    session_story.pictured(db, ctx["awards"], ctx["talked"]["rows"])
+    from app import drawing, pictures
+
+    ctx["new_pictures"] = pictures.urls(db, {e.id for e in ctx["new_entries"]})
+    ctx["can_draw"] = bool(ctx["new_entries"]) and not drawing.why_not(db, campaign)
+    ctx["entity_kinds"] = [k.value for k in EntityKind if k.value != "pc"]
+    ctx["steps"], ctx["tab"] = _steps(ctx, s, tab)
+    ctx["step"] = {x["key"]: x for x in ctx["steps"]}
     return ctx
 
 
@@ -206,7 +286,7 @@ def review_page(request: Request, session_id: int, db: Session = Depends(get_db)
     return templates.TemplateResponse(
         request,
         "admin_review.html",
-        {**_body_context(db, s), "toast": request.session.pop("toast", None), "auto_check": request.query_params.get("check") == "1"},
+        {**_body_context(db, s, _tab(request)), "toast": request.session.pop("toast", None), "auto_check": request.query_params.get("check") == "1"},
     )
 
 
@@ -219,7 +299,7 @@ def review_body(request: Request, session_id: int, db: Session = Depends(get_db)
     s = db.get(GameSession, session_id)
     if s is None:
         return RedirectResponse(f"{web.base()}/manage/sessions", status_code=303)
-    return templates.TemplateResponse(request, "_review_body.html", _body_context(db, s))
+    return templates.TemplateResponse(request, "_review_body.html", _body_context(db, s, _tab(request)))
 
 
 def _act(request: Request, db: Session, session_id: int, action: Callable[[GameSession], str]):
@@ -239,7 +319,7 @@ def _act(request: Request, db: Session, session_id: int, action: Callable[[GameS
     db.expire_all()
     s = db.get(GameSession, session_id)
     if request.headers.get("HX-Request"):
-        response = templates.TemplateResponse(request, "_review_body.html", _body_context(db, s))
+        response = templates.TemplateResponse(request, "_review_body.html", _body_context(db, s, _tab(request)))
         response.headers["HX-Trigger"] = json.dumps({"toast": message})
         return response
     request.session["toast"] = message
@@ -295,7 +375,11 @@ def reopen(request: Request, session_id: int, q: str = Form(...), db: Session = 
 def redraft(request: Request, session_id: int, db: Session = Depends(get_db)):
     def act(s):
         if s.source == "transcript":
-            raise review.ReviewError("Transcript sessions are redrafted by sending them again from the Processor.")
+            if not s.transcript_key:
+                raise review.ReviewError("askdnd doesn't have this session's transcript. Send it again from the Processor.")
+            if not draft_recap_in_background(s.id):
+                raise review.ReviewError("Claude is busy; try again in a minute.")
+            return "Claude is drafting the recap… a few minutes"
         if s.source == "manual":
             raise review.ReviewError("You wrote this one by hand; edit the recap directly.")
         if not _draft_in_background([s.id]):
@@ -310,6 +394,69 @@ def save_recap(request: Request, session_id: int, body: str = Form(...), note: s
     def act(s):
         review.save_recap(db, s, body, note, bool(standing), by=web.person_name(current_user(request)))
         return "Recap saved"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/tale/{index:int}")
+def save_chapter(request: Request, session_id: int, index: int, title: str = Form(""), text: str = Form(...), kind: str = Form(""),
+                 db: Session = Depends(get_db)):
+    def act(s):
+        review.save_chapter(db, s, index, title, text, kind, by=web.person_name(current_user(request)))
+        return "Chapter saved"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/awards/{index:int}")
+def save_award(request: Request, session_id: int, index: int, character: str = Form(...), why: str = Form(""), quote: str = Form(""),
+               db: Session = Depends(get_db)):
+    def act(s):
+        review.save_award(db, s, index, character, why, quote, by=web.person_name(current_user(request)))
+        return "Award saved"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/awards/{index:int}/pick")
+def pick_nominee(request: Request, session_id: int, index: int, nominee: int = Form(...), db: Session = Depends(get_db)):
+    def act(s):
+        return f"Goes to {review.pick_nominee(db, s, index, nominee, by=web.person_name(current_user(request)))}"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/awards/{index:int}/drop")
+def drop_award(request: Request, session_id: int, index: int, db: Session = Depends(get_db)):
+    def act(s):
+        return f"{review.drop_award(db, s, index, by=web.person_name(current_user(request)))} taken away"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/speakers")
+def match_speaker(request: Request, session_id: int, name: str = Form(...), user_id: int = Form(...), db: Session = Depends(get_db)):
+    """Who a speaker name in the recording is (0: no one at the table), for this session and every later one."""
+    def act(s):
+        campaign = db.get(Campaign, s.campaign_id)
+        if user_id and user_id not in session_story.table(db, campaign):
+            raise review.ReviewError("They aren't at this table.")
+        if name not in ((s.talk or {}).get("speakers") or {}):
+            raise review.ReviewError("That name isn't in this recording.")
+        session_story.set_speaker(campaign, name, user_id)
+        return "Matched" if user_id else "Left out"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/transcript/forget")
+def forget_transcript(request: Request, session_id: int, db: Session = Depends(get_db)):
+    """An admin lets a session's kept transcript go (the nightly sweep deletes it once no backup needs it)."""
+    def act(s):
+        if not is_admin(current_user(request)):
+            raise review.ReviewError("Only an admin can let a transcript go.")
+        session_story.forget(s)
+        return "The transcript is gone from askdnd. Send it again from the Processor to redraft."
 
     return _act(request, db, session_id, act)
 
@@ -381,9 +528,12 @@ def _proposal_action(request: Request, db: Session, proposal_id: int, fn: Callab
 
 
 @router.post("/proposals/{proposal_id}/accept")
-def accept(request: Request, proposal_id: int, summary: str = Form(""), db: Session = Depends(get_db)):
+def accept(request: Request, proposal_id: int, summary: str = Form(""), name: str = Form(""), kind: str = Form(""),
+           race: str | None = Form(None), class_: str | None = Form(None, alias="class"), db: Session = Depends(get_db)):
     def fn(p):
-        review.accept_proposal(db, p, summary or None, by=web.person_name(current_user(request)))
+        review.accept_proposal(db, p, summary or None, by=web.person_name(current_user(request)), name=name, kind=kind, race=race, class_=class_)
+        if p.kind == "entity" and not p.payload.get("entity_id"):
+            return f"Added {p.payload['name']}: give them a picture under New in the World"
         return "Accepted"
 
     return _proposal_action(request, db, proposal_id, fn)

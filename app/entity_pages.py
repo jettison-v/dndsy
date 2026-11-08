@@ -303,8 +303,8 @@ def rename(request: Request, entity_id: int, name: str = Form(""), db: Session =
 
 @router.post("/{entity_id:int}/details")
 def set_details(request: Request, entity_id: int, kind: str = Form(...), quest_open: str = Form("open"), published: str = Form(""),
-                db: Session = Depends(get_db)):
-    return _act(request, db, entity_id, lambda entity, user: entities.set_details(entity, kind, quest_open, bool(published)) or "Saved")
+                race: str | None = Form(None), class_: str | None = Form(None, alias="class"), db: Session = Depends(get_db)):
+    return _act(request, db, entity_id, lambda entity, user: entities.set_details(entity, kind, quest_open, bool(published), race, class_) or "Saved")
 
 
 @router.post("/{entity_id:int}/quest")

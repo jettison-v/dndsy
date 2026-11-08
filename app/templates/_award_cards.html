@@ -1,0 +1,14 @@
+{# The session's awards (Session Story, Brett Nov 7): a card each, the award, who, why and, for Line of the Night, the
+   line. Needs awards (app/session_story.py awards, pictured). #}
+<div class="award-cards">
+  {% for a in awards %}
+  <div class="award-card{{ ' dice' if a.dice }}">
+    <span class="award-name">{{ a.award }}</span>
+    <span class="award-who">{% if a.dm %}<span class="roll-av hue5" aria-hidden="true">DM</span>{% else %}<span class="roll-av hue{{ (a.entity_id or loop.index) % 6 }}" aria-hidden="true">{{ a.who[:1] }}{% if a.picture %}<img src="{{ a.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endif %}
+      {% if a.entity_id %}<a href="{{ entry_url(a.entity_id) }}">{{ a.who }}</a>{% else %}<b>{{ a.who }}</b>{% endif %}</span>
+    {% if a.quote %}<q class="award-line">{{ a.quote }}</q>{% endif %}
+    {% if a.why %}<span class="award-why">{{ ln.text(a.why) }}</span>{% endif %}
+    <span class="note">{% if a.dice %}From Table rolls{% elif a.clock %}{{ a.clock }} into the session{% endif %}</span>
+  </div>
+  {% endfor %}
+</div>

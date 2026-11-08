@@ -27,6 +27,7 @@ from transcript_filter.pipeline import (
     PipelineError,
     cut_stretches,
     is_final_kept,
+    talk_times,
     load_state,
     run,
     save_state,
@@ -78,14 +79,15 @@ def upload_settings() -> tuple[str, str]:
     return url, token
 
 
-def send_transcript(stem: str, text: str) -> dict:
-    """POST the final transcript to askdnd. Returns the server's JSON reply."""
+def send_transcript(stem: str, text: str, talk: dict | None = None) -> dict:
+    """POST the final transcript to askdnd, with who talked (seconds per speaker, from talk_times). Returns the
+    server's JSON reply."""
     url, token = upload_settings()
     if not token:
         raise RuntimeError("No UPLOAD_TOKEN in your local .env yet.")
     req = urllib.request.Request(
         f"{url}/api/transcripts",
-        data=json.dumps({"played_on": stem, "text": text}).encode(),
+        data=json.dumps({"played_on": stem, "text": text, **({"talk": talk} if talk else {})}).encode(),
         # Its own name: Cloudflare, in front of askdnd since Nov 2, refuses Python's default one (error 1010, a 403)
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}", "User-Agent": "askdnd-processor/1.0"},
         method="POST",
@@ -282,7 +284,8 @@ def send(stem: str):
     if not p["final_txt"].exists():
         return RedirectResponse(f"/sessions/{stem}", status_code=303)
     try:
-        reply = send_transcript(stem, p["final_txt"].read_text())
+        talk = talk_times(load_state(p["state"])) if p["state"].exists() else None
+        reply = send_transcript(stem, p["final_txt"].read_text(), talk)
         p["sent"].write_text(json.dumps({**reply, "sent_at": datetime.now().isoformat(timespec="minutes")}))
     except RuntimeError as e:
         send_errors[stem] = str(e)

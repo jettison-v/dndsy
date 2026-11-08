@@ -69,6 +69,20 @@
     <div class="ds-row"><ol class="st-track" aria-label="Sample"><li class="st-done">Sent</li><li class="st-done">Approved</li><li class="st-now">Planned</li><li class="st-todo">Fixed</li></ol></div>
     <div class="ds-row"><ol class="st-track" aria-label="Sample, turned down"><li class="st-done">Sent</li><li class="st-stop">Closed</li><li class="st-skip">Planned</li><li class="st-skip">Fixed</li></ol>
       <span class="st-dot st-wait"></span><span class="st-dot st-claude"></span><span class="st-dot st-done"></span><span class="st-dot st-used"></span><span class="st-dot st-closed"></span></div>
+    {{ ds("Award card", ".award-cards > .award-card(.dice) · .award-name · .award-who · .award-line · .award-why", "A session's awards on its own page (Session Story, Nov 7, docs/mockups/session-story/): the award in amber over a gold edge, blue for one from the dice; who by portrait; Line of the Night's line; why.") }}
+    <div class="ds-row"><div class="award-cards" style="width: 100%">
+      <div class="award-card"><span class="award-name">Most Strategic</span><span class="award-who"><span class="roll-av hue1" aria-hidden="true">T</span><b>Trah</b></span><span class="award-why">Read the runes before anyone touched the bell.</span><span class="note">1:05 into the session</span></div>
+      <div class="award-card"><span class="award-name">Line of the Night</span><span class="award-who"><span class="roll-av hue2" aria-hidden="true">B</span><b>Big C</b></span><q class="award-line">If it rings for the dead, it rings them home.</q></div>
+      <div class="award-card dice"><span class="award-name">Damage King</span><span class="award-who"><span class="roll-av hue0" aria-hidden="true">C</span><b>Cole</b></span><span class="award-why">41 damage rolled, in 6 rolls.</span><span class="note">From Table rolls</span></div>
+    </div></div>
+    {{ ds("Share rows and mix bar", ".numbers > .numbers-card · .share-row > .share-who, .share-bar > i, .share-n · .mix-bar > i.mix-fight, .mix-story, .mix-exploring, .mix-rest", "The session in numbers: each person's share, most first; a whole split by kind in one bar with its legend and scenes.") }}
+    <div class="ds-row"><div class="numbers" style="width: 100%">
+      <div class="numbers-card"><h3 class="tale-label">Who talked</h3><ul class="plain share-rows">
+        <li class="share-row"><span class="share-who"><span class="roll-av hue5" aria-hidden="true">T</span>The DM</span><span class="share-bar" aria-hidden="true"><i style="width: 37%"></i></span><span class="share-n">37%</span></li>
+        <li class="share-row"><span class="share-who"><span class="roll-av hue0" aria-hidden="true">C</span>Cole</span><span class="share-bar" aria-hidden="true"><i style="width: 31%"></i></span><span class="share-n">31%</span></li></ul></div>
+      <div class="numbers-card"><h3 class="tale-label">Fights and story</h3><div class="mix-bar" role="img" aria-label="Fights 20%, story 50%, exploring 30%"><i class="mix-fight" style="width: 20%"></i><i class="mix-story" style="width: 50%"></i><i class="mix-exploring" style="width: 30%"></i></div>
+        <ul class="plain mix-legend"><li><i class="mix-fight" aria-hidden="true"></i>Fights 20%</li><li><i class="mix-story" aria-hidden="true"></i>Story 50%</li><li><i class="mix-exploring" aria-hidden="true"></i>Exploring 30%</li></ul></div>
+    </div></div>
     {{ ds("Two-way switch", ".seg > button[aria-pressed]", "Two or three choices side by side that change something on the page (By level · By name); the one that's on is a blue rounded piece inside its track, like a chip that's on (red is for the one main action; the UI pass, 2026-11-02).") }}
     <div class="ds-row"><span class="seg" role="group" aria-label="Sort"><button type="button" aria-pressed="true">By level</button><button type="button" aria-pressed="false">By name</button></span></div>
     {{ ds("Tabs", ".tabbar[role=tablist] > [role=tab] · .cut-l, .cut-r", "A page's parts (Sheet's Spells, Inventory…). On a phone a row that doesn't fit scrolls sideways with the open tab always in view, and fades the edge it's cut at, so you can see there's more (the UI pass, 2026-11-02).") }}

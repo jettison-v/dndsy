@@ -144,6 +144,9 @@ def needs(db: Session, user: dict) -> list[dict]:
                         "sub": "Nothing reaches the table until you publish it",
                         "href": f"{base}/manage/sessions/{first.id}" if len(ready) == 1 else f"{base}/manage/sessions",
                         "go": "Review it" if len(ready) == 1 else "Sessions"})
+        for s in [s for s, st in rows if st == "read"]:  # (a transcript read: its questions first, then Draft the recap)
+            out.append({"text": f"{session_label(s)} has Claude's questions and suggestions",
+                        "sub": "Settle them, then draft the recap", "href": f"{base}/manage/sessions/{s.id}", "go": "Open it"})
         undrafted = sum(1 for s, st in rows if st == "no draft" and s.source == "notes")
         if undrafted:
             out.append({"text": f"Backlog: {_plural(undrafted, 'session')} not drafted yet",
@@ -322,7 +325,7 @@ def backlog(db: Session) -> dict:
     return {
         "to_draft": [s for s, st in rows if st == "no draft" and s.source == "notes"],
         "to_record": [s for s, st in rows if st == "no draft" and s.source == "transcript"],
-        "to_review": [{"s": s, "label": session_label(s), "status": st} for s, st in rows if st in ("draft", "edited")],
+        "to_review": [{"s": s, "label": session_label(s), "status": st} for s, st in rows if st in ("read", "draft", "edited")],
         "published": sum(1 for _, st in rows if st == "published"),
         "total": len(rows),
         "proposals": db.scalar(select(func.count()).select_from(Proposal).where(Proposal.status == "pending")) or 0,

@@ -27,7 +27,7 @@ Before each session, every player gets:
 
 ### 2. Campaign memory
 - Sessions are recorded and transcribed with MacWhisper, which labels speakers. Expect imperfect audio such as Zoom echo.
-- **Privacy: only the extracted story is kept.** Raw transcripts contain personal banter. A first pass runs locally on Brett's Mac (Ollama) to strip clearly off-topic stretches before anything goes to a cloud AI service. The cloud step pulls out story events, NPCs, places, quests and loot. Raw transcripts are never stored in the app.
+- **Privacy: only the extracted story is kept.** Raw transcripts contain personal banter. A first pass runs locally on Brett's Mac (Ollama) to strip clearly off-topic stretches before anything goes to a cloud AI service. The cloud step pulls out story events, NPCs, places, quests and loot. Raw transcripts are never stored in the app. The cleaned game transcript is kept in private file storage for drafting (Nov 7), shown on no page.
 - It builds a running campaign record that anyone at the table can browse or ask about ("who was the dwarf at the bridge?").
 - Backfill for the current campaign comes from Brett's notes plus the one recorded session (the most recent). Recaps of earlier sessions will be thinner than later ones.
 - **Supports multiple campaigns.** A new campaign may start soon; nothing is tied to this one.

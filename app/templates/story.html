@@ -7,7 +7,7 @@
     {% if head %}<header class="tale-head"><span class="tale-kicker">{{ item.label }}</span>{% if item.s.title %}<h2>{{ item.s.title }}</h2>{% endif %}
       {% if listen %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen</button>{% endif %}</header>{% endif %}
     <div class="tale-text">{{ ln.html(item.html) }}</div>
-    <div class="tale-end" aria-hidden="true">❦</div>
+    {% if item.more %}<a class="btn tale-more-link" href="{{ cbase }}/sessions/{{ item.s.id }}">Read the full tale →</a>{% else %}<div class="tale-end" aria-hidden="true">❦</div>{% endif %}
     {% if item.dm_notes %}
     <div class="tale-dm" role="note"><b>From the DM</b>{% for x in item.dm_notes %}<p>{% if x.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(x.text) }}</p>{% endfor %}</div>
     {% endif %}

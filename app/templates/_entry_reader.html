@@ -55,6 +55,7 @@
     {% if companion.forms %}<dt>{{ "Forms" if companion.forms | length > 1 else "Its form" }}</dt><dd>{% for f in companion.forms %}{{ f.form }} <span class="note">({{ f.when }})</span>{{ " · " if not loop.last }}{% endfor %}</dd>{% endif %}
     {% if companion.times %}<dt>Away and back</dt><dd>{% for t in companion.times %}{{ t.what[:1] | upper }}{{ t.what[1:] }} <span class="note">{{ t.when }}</span>{{ "<br>" | safe if not loop.last }}{% endfor %}</dd>{% endif %}
     {% endif %}
+    {% if e.kind.value == "npc" and (e.traits.race or e.traits['class']) %}{% if e.traits.race %}<dt>Race</dt><dd>{{ e.traits.race }}</dd>{% endif %}{% if e.traits['class'] %}<dt>Class</dt><dd>{{ e.traits['class'] }}</dd>{% endif %}{% endif %}
     {% if e.kind.value == "quest" and e.quest_open is not none %}<dt>Status</dt><dd><span class="tag {{ 'draft' if e.quest_open else 'done' }}">{{ "Open" if e.quest_open else "Done" }}</span></dd>{% endif %}
     {% if moments %}
     <dt>{{ "First met" if e.kind.value in ("npc", "pc", "creature") else "First" }}</dt><dd>{{ moments[0].label }}</dd>

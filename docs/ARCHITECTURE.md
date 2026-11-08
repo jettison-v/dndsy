@@ -86,7 +86,7 @@ extension follows the fight (order, round, whose turn) and reports it; askdnd on
 ## Data (in plain terms)
 - **Campaign** → sessions, story entries (NPCs, places, quests, items), members with roles, characters, house rules,
   its books, its VTT pieces, and the fight heard from its D&D Beyond game.
-- **Session** → date, approved recap, extracted events. Raw transcripts are never stored.
+- **Session** → date, approved recap (with its full tale and awards), extracted events, who talked. Raw transcripts are never stored; the cleaned transcript is kept in file storage for drafting, never in the database (Nov 7).
 - **Character** → its own name, owner, D&D Beyond id (and the D&D Beyond campaign its sheet is in), the last good copy
   of its sheet, its player's notes, pins and reminders, askdnd's own conditions and Concentration. It belongs to its
   player, not a campaign, so all of this travels with it. A **test copy** (`copy_of_id`) shares the sheet and has its

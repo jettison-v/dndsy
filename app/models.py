@@ -121,6 +121,8 @@ class Campaign(Timestamped, Base):
     # "hidden"}; app/table_fight.py SETTINGS)
     shown_place_id: Mapped[int | None] = mapped_column(ForeignKey("places.id", ondelete="SET NULL", use_alter=True, name="campaigns_shown_place_id_fkey"), nullable=True)
     table_settings: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    # A recording's speaker names matched to people (Session Story): {name: user id, or 0 for no one at the table}
+    speakers: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
 
 
@@ -159,6 +161,9 @@ class Entity(Timestamped, Base):
     campaign_id: Mapped[int] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"), index=True)
     kind: Mapped[EntityKind] = mapped_column(_enum(EntityKind))
     name: Mapped[str] = mapped_column(String(200))  # current canonical name
+    # A person's race and class ({"race": "Owlin", "class": "Wizard"}; class is what they do when they have none), from a
+    # draft or the DM: on their entry, and the start of Describe it's words (Brett, Nov 7)
+    traits: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     summary: Mapped[str] = mapped_column(Text, default="")
     quest_open: Mapped[bool | None] = mapped_column(Boolean, nullable=True)  # quests only
     status: Mapped[Status] = mapped_column(_enum(Status), default=Status.DRAFT)
@@ -555,6 +560,11 @@ class GameSession(Timestamped, Base):
     played_on: Mapped[date | None] = mapped_column(Date)
     title: Mapped[str] = mapped_column(String(200), default="")
     source: Mapped[str] = mapped_column(String(20))  # "notes", "transcript" or "account" (Add Session)
+    # The cleaned transcript the Processor sent (game talk only; Brett, Nov 7): in file storage, read only by Claude when
+    # drafting, shown on no page; an admin can let it go (the nightly sweep deletes it once no backup needs it)
+    transcript_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
+    # Who talked (app/session_story.py): {"speakers": {recording's name: seconds}, "length": seconds}, counted on Brett's Mac
+    talk: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # Children are deleted with the session (the database cascades; passive_deletes lets it).
     recaps: Mapped[list["Recap"]] = relationship(
         back_populates="session", order_by="Recap.version", cascade="all, delete-orphan", passive_deletes=True
@@ -581,6 +591,12 @@ class Recap(Timestamped, Base):
     status: Mapped[Status] = mapped_column(_enum(Status), default=Status.DRAFT)
     # Its narration (Listen, app/narration.py): the voice reading it, in file storage, made the first time it's asked for
     narration_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
+    # The full tale (Session Story, Nov 7): chapters, one per scene, [{"title", "at" (seconds into the recording, or
+    # None), "kind" (fight | story | exploring | rest), "text" (Markdown)}]; and the awards Claude gave,
+    # [{"award", "character", "why", "quote", "at"}] (app/session_story.py); the tale's own narration
+    tale: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    awards: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
+    tale_narration_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
     session: Mapped[GameSession] = relationship(back_populates="recaps")
 
 
