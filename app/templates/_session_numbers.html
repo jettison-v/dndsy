@@ -1,0 +1,37 @@
+{# The session in numbers (Session Story, Brett Nov 7; docs/mockups/session-story/ part 5): who talked, fights and story,
+   the night's dice. Needs talked, mix, chapters and rolled (app/session_story.py); on the session's Story page and its
+   review page. #}
+{% if talked.rows or mix or rolled.rolls %}
+<div class="numbers">
+  {% if talked.rows %}
+  <div class="numbers-card">
+    <h3 class="tale-label">Who talked</h3>
+    <ul class="plain share-rows">
+      {% for r in talked.rows %}
+      <li class="share-row"><span class="share-who"><span class="roll-av hue{{ 5 if r.dm else (r.entity_id or r.user_id) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{{ r.name }}</span>
+        <span class="share-bar" aria-hidden="true"><i style="width: {{ r.share }}%"></i></span><span class="share-n">{{ r.share }}%</span></li>
+      {% endfor %}
+    </ul>
+    <p class="note">Each person's share of the talking, from the recording's speaker names.</p>
+  </div>
+  {% endif %}
+  {% if mix %}
+  <div class="numbers-card">
+    <h3 class="tale-label">Fights and story</h3>
+    <div class="mix-bar" role="img" aria-label="{% for p in mix.parts %}{{ p.label }} {{ p.share }}%{{ ', ' if not loop.last }}{% endfor %}">{% for p in mix.parts if p.share %}<i class="mix-{{ p.kind }}" style="width: {{ p.share }}%"></i>{% endfor %}</div>
+    <ul class="plain mix-legend">{% for p in mix.parts %}<li><i class="mix-{{ p.kind }}" aria-hidden="true"></i>{{ p.label }} {{ p.share }}%</li>{% endfor %}</ul>
+    <ol class="plain mix-scenes">{% for c in chapters %}<li><span class="note">{{ c.clock }}</span><i class="mix-{{ c.kind }}" title="{{ c.kind_label }}" aria-hidden="true"></i><span>{{ c.title }}</span></li>{% endfor %}</ol>
+    <p class="note">From the scenes of the full tale and when each began.</p>
+  </div>
+  {% endif %}
+  {% if rolled.rolls %}
+  <div class="numbers-card">
+    <h3 class="tale-label">Dice</h3>
+    <div class="strip numbers-dice"><div><small>Natural 20s</small><b>{{ rolled.twenties }}</b></div><div><small>Natural 1s</small><b>{{ rolled.ones }}</b></div><div><small>Rolls</small><b>{{ rolled.rolls }}</b></div></div>
+    <p class="note">The rolls everyone saw that night in Table rolls.</p>
+  </div>
+  {% endif %}
+</div>
+{% else %}
+<p class="muted">No numbers for this session: it has no recording's speaker times, no scene times and no rolls seen by the table that night.</p>
+{% endif %}

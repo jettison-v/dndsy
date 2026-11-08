@@ -34,6 +34,29 @@ def long_names(browser_db):
     engine.dispose()
 
 
+@pytest.fixture(scope="module")
+def told_session(browser_db):
+    """A published session with a full tale, awards and who talked (Session Story, Nov 7): its own page's address."""
+    import json
+
+    url, ids = browser_db
+    engine = create_engine(url)
+    tale = [{"title": f"Chapter of the Very Long Night Number {n}", "kind": k, "at": n * 3000, "text": "The fog closed in. " * 40}
+            for n, k in enumerate(("exploring", "story", "fight", "rest"))]
+    awards = [{"award": a, "character": "Coleridge Thistlewood", "why": "Kept the boat off the rocks the whole time. " * 3,
+               "quote": "If it rings for the dead, it can ring them home." if a == "Line of the Night" else "", "at": 3600}
+              for a in ("Most Strategic", "Line of the Night", "DM Shining Moment")]
+    with engine.begin() as conn:
+        sid = conn.execute(text("INSERT INTO game_sessions (campaign_id, played_on, title, source, talk, created_at, updated_at) "
+                                "VALUES (:c, '2026-11-06', 'The Drowned Bell of Saltmere Reach', 'transcript', :talk, now(), now()) RETURNING id"),
+                           {"c": ids["campaign"], "talk": json.dumps({"speakers": {"dm": 4000, "player": 2000}, "length": 12000})}).scalar()
+        conn.execute(text("INSERT INTO recaps (session_id, version, body, author, status, tale, awards, created_at, updated_at) "
+                          "VALUES (:s, 1, 'Fog rolled off the Reach.', 'ai', 'published', :tale, :awards, now(), now())"),
+                     {"s": sid, "tale": json.dumps(tale), "awards": json.dumps(awards)})
+    engine.dispose()
+    return f"/c/main/sessions/{sid}"
+
+
 def problems(page, where: str) -> list[str]:
     return [f"{where} · {p['kind']}: {p['where']} ({p['detail']})" for p in page.evaluate(CHECK)]
 
@@ -61,9 +84,9 @@ def check(person, server, paths, widths=WIDTHS) -> list[str]:
     return found
 
 
-def test_a_players_pages_hold_together_at_every_width(people, server, long_names):
+def test_a_players_pages_hold_together_at_every_width(people, server, long_names, told_session):
     player = people("player")
-    found = check(player, server, PAGES["player"])
+    found = check(player, server, PAGES["player"] + (told_session,))
     player.open(f"/characters/{server['cole']}/battle")  # Battle's side panel (+ Add)
     for width in WIDTHS:
         player.page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})

@@ -215,7 +215,7 @@ def test_the_nightly_sweep_keeps_every_file_a_kept_backup_could_need(db, file_st
     dropped = files.put(db, c.id, b"RIFF dropped", "image/webp")
     db.add(EntityPicture(entity_id=k.id, file_key=used, thumb_key=used))
     db.flush()
-    assert {str(col) for col in files.references()} == {"entity_pictures.file_key", "entity_pictures.thumb_key", "note_images.file_key", "feedback.shot_key", "feedback.pasted_key", "recaps.narration_key", "places.map_key"}
+    assert {str(col) for col in files.references()} == {"entity_pictures.file_key", "entity_pictures.thumb_key", "note_images.file_key", "feedback.shot_key", "feedback.pasted_key", "recaps.narration_key", "places.map_key", "recaps.tale_narration_key", "game_sessions.transcript_key"}
     now = datetime.now(UTC)
     assert files.sweep(db, file_store, now) == {"files": 2, "deleted": 0, "leftovers": 0, "missing": []}
     assert db.get(StoredFile, dropped).unused_since == now and db.get(StoredFile, used).unused_since is None

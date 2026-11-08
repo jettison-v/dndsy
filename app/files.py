@@ -47,6 +47,7 @@ TYPES = {
     "image/jpeg": (".jpg", 20 * 1024 * 1024),
     "image/gif": (".gif", 20 * 1024 * 1024),
     "audio/mpeg": (".mp3", 25 * 1024 * 1024),  # a recap's narration (app/narration.py)
+    "text/plain": (".txt", 5 * 1024 * 1024),  # a session's cleaned transcript (app/session_story.py), never served
 }
 # Backups are kept 30 days (app/backup.py); a few days more covers a missed night or two.
 KEEP_UNUSED_DAYS = 35

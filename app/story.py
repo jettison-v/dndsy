@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app import web
-from app import campaign_views, review
+from app import campaign_views, review, session_story
 from app.auth import can_edit_entries, can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
@@ -44,6 +44,7 @@ def published_items(db: Session, campaign: Campaign) -> list[dict]:
                 "s": s,
                 "label": session_label(s),
                 "html": markdown_to_html(recap.body, lambda n: None),
+                "more": session_story.has_more(recap),  # (Read the full tale: the session's own page)
                 "events": [e for e in events if e.kind != EventKind.THEORY],
                 "theories": [e for e in events if e.kind == EventKind.THEORY],
                 "dm_notes": [x for x in dm_notes if x.target_id == s.id and x.created_at >= recap.updated_at],
@@ -117,6 +118,31 @@ def story(request: Request, tab: str = "", order: str = "", db: Session = Depend
             "ln": _linker(db),
         },
     )
+
+
+@router.get("/sessions/{session_id:int}")
+def session_page(request: Request, session_id: int, db: Session = Depends(get_db)):
+    """A session's own page (Session Story, Brett chose B, Nov 7): the full tale in chapters, one per scene, then the
+    awards and the session in numbers, from the version the DM published. A session without a full tale (drafted
+    before) shows its recap instead."""
+    user = current_user(request)
+    if not user:
+        return RedirectResponse("/login", status_code=303)
+    campaign = web.campaign(db)
+    s = db.get(GameSession, session_id)
+    recap = review.published_recap(s) if s is not None else None
+    if campaign is None or s is None or s.campaign_id != campaign.id or recap is None:
+        return web.not_found(request, "That session isn't published yet.")
+    rolled = session_story.dice(db, s)
+    awards = session_story.awards(db, s, recap, rolled)
+    talked = session_story.who_talked(db, s, campaign)
+    session_story.pictured(db, awards, talked["rows"])
+    length = (s.talk or {}).get("length")
+    return templates.TemplateResponse(request, "story_session.html", {
+        "s": s, "label": session_label(s), "recap_html": markdown_to_html(recap.body, lambda n: None),
+        "chapters": [{**c, "html": markdown_to_html(c["text"], lambda n: None)} for c in session_story.chapters(recap)],
+        "awards": awards, "talked": talked, "rolled": rolled, "mix": session_story.mix(s, recap),
+        "length": f"{length // 3600} h {length % 3600 // 60} min" if length else "", "ln": _linker(db)})
 
 
 @router.post("/questions/{correction_id:int}/answer")

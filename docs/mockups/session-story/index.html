@@ -1,0 +1,448 @@
+<title>Session Story</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style>
+/* Mockup (Brett, Nov 7): roadmap step 2, the recap drafted after the questions and entries are settled (Brett chose A),
+   and what he added the same evening: a short and a long telling, awards, the session's numbers, keeping the cleaned
+   transcript, and a more dramatic Listen. askdnd's own look; the table's characters; the story and numbers are made up. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --violet: #b99be8; --gold: #d8b25a;
+  --green-soft: rgba(91,191,127,.15); --amber-soft: rgba(232,179,75,.15); --blue-soft: rgba(126,166,224,.15); --red-soft: rgba(229,83,75,.15); --violet-soft: rgba(185,155,232,.16); --gold-soft: rgba(216,178,90,.14);
+  --parch: #211e19; --parch-2: #1a1916; --rod: #3a3024; --rod-cap: #57462f; --story-cap: #a99070; --story-head: #f1e9da; --story-text: #e2d9c8;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Cormorant Garamond", Georgia, serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0; --gold: #8a6a1c;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); --violet-soft: rgba(107,75,176,.12); --gold-soft: rgba(138,106,28,.12);
+  --parch: #f3ead8; --parch-2: #ebe0ca; --rod: #b49b74; --rod-cap: #8c7350; --story-cap: #8a6a3c; --story-head: #3b2e1c; --story-text: #3b3226; color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0; --gold: #8a6a1c;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); --violet-soft: rgba(107,75,176,.12); --gold-soft: rgba(138,106,28,.12);
+  --parch: #f3ead8; --parch-2: #ebe0ca; --rod: #b49b74; --rod-cap: #8c7350; --story-cap: #8a6a3c; --story-head: #3b2e1c; --story-text: #3b3226; color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 48px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.4rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 72ch; }
+b, strong { color: var(--strong); }
+a { color: var(--red); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+section, header { display: grid; gap: 14px; min-width: 0; }
+.lead { font-size: 1.06rem; }
+.cap { font-size: .84rem; color: var(--muted); }
+.k { font: 700 .7rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.badge-rec { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
+.opt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.opt-head h2 { flex: 1 1 auto; min-width: 0; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; display: grid; gap: 6px; align-content: start; }
+.fact > b { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.fact.good > b { color: var(--green); } .fact.cost > b { color: var(--amber); } .fact.plain > b { color: var(--muted); }
+.fact ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; align-items: start; }
+.cols > * { min-width: 0; }
+
+/* the flow */
+.flow { overflow-x: auto; }
+.flow svg { display: block; min-width: 860px; width: 100%; height: auto; color: var(--text); }
+
+/* askdnd, drawn */
+.screen { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.bar { display: flex; gap: 14px; align-items: center; padding: 9px 14px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: .84rem; color: var(--muted); flex-wrap: wrap; }
+.bar b { color: var(--strong); }
+.bar .on { color: var(--strong); border-bottom: 2px solid var(--red); padding-bottom: 2px; }
+.pg { padding: 18px; display: grid; gap: 14px; }
+.step { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 12px 14px; display: grid; gap: 8px; }
+.step-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.step-h h3 { flex: 1 1 auto; }
+.num { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font: 700 .8rem/1 var(--sans); background: var(--surface-3); color: var(--strong); flex: none; }
+.step.done .num { background: var(--green-soft); color: var(--green); }
+.step.now { border-color: var(--red); box-shadow: 0 0 0 1px var(--red) inset; }
+.step.now .num { background: var(--red); color: #fff; }
+.step.later { opacity: .55; }
+.pill { border-radius: 999px; padding: 1px 9px; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.pill.ok { background: var(--green-soft); color: var(--green); }
+.pill.wait { background: var(--amber-soft); color: var(--amber); }
+.pill.mute { background: var(--surface-2); color: var(--muted); }
+.btn { display: inline-flex; align-items: center; gap: 6px; border-radius: 8px; padding: 6px 12px; font: 600 .86rem/1.2 var(--sans); border: 1px solid var(--line); background: var(--surface-2); color: var(--strong); white-space: nowrap; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.link { background: none; border: none; color: var(--red); padding: 0; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.muted { color: var(--muted); }
+.small { font-size: .84rem; }
+
+/* the scroll and the tale */
+.tale { max-width: 760px; margin: 0 auto; width: 100%; display: grid; gap: 18px; }
+.tale-head { text-align: center; display: grid; gap: 4px; justify-items: center; }
+.tale-head h3 { font: 600 1.5rem/1.2 var(--serif); color: var(--story-head); }
+.scroll { display: grid; }
+.scroll::before, .scroll::after { content: ""; height: 14px; margin: 0 -10px; border-radius: 999px; background: radial-gradient(circle at 7px 50%, var(--rod-cap) 0 6px, transparent 6.5px), radial-gradient(circle at calc(100% - 7px) 50%, var(--rod-cap) 0 6px, transparent 6.5px), var(--rod); }
+.story { background: linear-gradient(180deg, var(--parch), var(--parch-2)); color: var(--story-text); font: 500 1.12rem/1.7 var(--serif); padding: 26px clamp(18px, 5vw, 48px) 22px; display: grid; gap: 12px; }
+.story p { max-width: none; }
+.story > p:first-of-type::first-letter { float: left; font-size: 3.2em; line-height: .8; padding: 6px 8px 0 0; color: var(--story-cap); }
+.story a { color: inherit; text-decoration: underline; text-decoration-color: var(--story-cap); text-underline-offset: 3px; }
+.story .more { font: 600 .9rem/1.3 var(--sans); color: var(--red); text-decoration: none; justify-self: center; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; background: var(--surface); }
+.story h4 { margin: 6px 0 0; font: 600 1.2rem/1.2 var(--serif); color: var(--story-head); display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.story h4 small { font: 600 .72rem/1 var(--sans); color: var(--story-cap); letter-spacing: .06em; text-transform: uppercase; }
+.listen { font: 600 .84rem/1 var(--sans); }
+
+/* awards */
+.awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.award { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 14px; display: grid; gap: 6px; align-content: start; position: relative; }
+.award .medal { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold); }
+.award .medal svg { width: 18px; height: 18px; }
+.award .what { font: 700 .72rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.award .who { font-weight: 700; color: var(--strong); display: flex; align-items: center; gap: 8px; }
+.ava { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 .7rem/1 var(--sans); color: #fff; flex: none; }
+.ava.bc { background: #8a4b3c; } .ava.co { background: #3c6a8a; } .ava.tr { background: #4b7a4f; } .ava.nn { background: #6a4b8a; } .ava.dm { background: #555; }
+.award .why { font-size: .88rem; }
+.award q { font: italic 500 1rem/1.4 var(--serif); color: var(--story-head); quotes: "“" "”"; }
+.award .at { font-size: .76rem; color: var(--muted); }
+
+/* numbers */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.stat { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 14px; display: grid; gap: 10px; align-content: start; }
+.talk { display: grid; gap: 7px; }
+.talk-row { display: grid; grid-template-columns: 112px 1fr 44px; gap: 8px; align-items: center; font-size: .86rem; }
+.talk-row .nm { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.talk-row .tk { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.talk-row .tk i { display: block; height: 100%; border-radius: 999px; background: var(--blue); }
+.talk-row .pc { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.mix { display: flex; height: 22px; border-radius: 6px; overflow: hidden; }
+.mix i { display: block; height: 100%; }
+.c-fight { background: var(--red); } .c-talk { background: var(--violet); } .c-explore { background: var(--green); } .c-rest { background: var(--amber); }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .82rem; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.timeline { display: grid; gap: 4px; font-size: .8rem; }
+.timeline .tl { display: grid; grid-template-columns: 54px 10px 1fr; gap: 8px; align-items: center; }
+.timeline .tl i { width: 10px; height: 10px; border-radius: 3px; }
+.dice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.die { background: var(--surface-2); border-radius: 8px; padding: 8px; text-align: center; display: grid; gap: 2px; }
+.die b { font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+.die span { font-size: .74rem; color: var(--muted); }
+.note-box { border-left: 3px solid var(--amber); background: var(--amber-soft); padding: 8px 12px; border-radius: 0 8px 8px 0; font-size: .88rem; }
+
+/* option A, drawn small */
+.mini { font-size: .9rem; }
+.mini .story { font-size: 1rem; padding: 18px 22px; }
+.fold-open { border-top: 1px dashed var(--story-cap); padding-top: 10px; display: grid; gap: 8px; }
+
+/* the voice */
+.voice { display: grid; gap: 10px; }
+.voice pre { white-space: pre-wrap; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font: 500 .9rem/1.5 var(--sans); }
+.voice .was { opacity: .7; }
+
+/* the answer form */
+.answer-form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 16px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-weight: 700; color: var(--strong); padding: 0; margin-bottom: 4px; }
+.choice { display: flex; gap: 10px; align-items: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.choice input { margin-top: 4px; }
+.choice span { display: grid; gap: 2px; }
+.choice small { color: var(--muted); }
+textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; }
+.sent { font-size: .86rem; color: var(--green); }
+@media (max-width: 560px) {
+  .talk-row { grid-template-columns: 92px 1fr 40px; }
+  .dice { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">askdnd · design · Nov 7</span>
+  <h1>Session Story</h1>
+  <p class="lead">Last night's session gets a fuller story: the recap drafted <b>after</b> you've answered Claude's questions and settled the suggested entries (you chose A), plus what you asked for this evening. That's a short and a long telling, awards, the session's numbers, keeping the cleaned transcript, and a more dramatic Listen.</p>
+  <p class="cap">Everything here is made up: the table's characters, an invented evening. It lives in two places you know. The first is <b>Manage › Sessions › a session</b>, where you review a draft. The second is <b>Story</b>, where the table reads it.</p>
+</header>
+
+<section>
+  <span class="eyebrow">1 · The order things happen</span>
+  <h2>From the recording to the Story page</h2>
+  <div class="flow">
+  <figure style="margin:0">
+  <svg viewBox="0 0 1100 250" role="img" aria-label="The Processor on Brett's Mac sends the cleaned transcript and talking-time numbers; askdnd keeps the transcript in private storage; a first read makes questions, suggested entries and the session's scenes; Brett answers and accepts; Draft the recap reads the transcript again with his answers and the accepted entries and writes the short recap, the full tale, key moments and awards; Brett reviews and publishes.">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+    <g font-family="Inter, sans-serif" font-size="12.5" fill="currentColor">
+      <rect x="10" y="40" width="150" height="74" rx="10" fill="none" stroke="currentColor" opacity=".6"/>
+      <text x="85" y="66" text-anchor="middle" font-weight="700">The Processor</text>
+      <text x="85" y="84" text-anchor="middle" opacity=".75">on your Mac</text>
+      <text x="85" y="101" text-anchor="middle" opacity=".75">cuts the table talk</text>
+
+      <line x1="160" y1="77" x2="218" y2="77" stroke="currentColor" marker-end="url(#ar)"/>
+      <text x="189" y="68" text-anchor="middle" font-size="11" opacity=".75">sends</text>
+
+      <rect x="222" y="22" width="170" height="110" rx="10" fill="none" stroke="#d8b25a" stroke-width="1.6"/>
+      <text x="307" y="46" text-anchor="middle" font-weight="700">Kept, private</text>
+      <text x="307" y="66" text-anchor="middle" opacity=".8">the cleaned transcript</text>
+      <text x="307" y="83" text-anchor="middle" opacity=".8">(S3, encrypted; no page</text>
+      <text x="307" y="100" text-anchor="middle" opacity=".8">ever shows it)</text>
+      <text x="307" y="120" text-anchor="middle" font-size="11" fill="#d8b25a">your choice 1</text>
+
+      <line x1="392" y1="77" x2="450" y2="77" stroke="currentColor" marker-end="url(#ar)"/>
+      <text x="421" y="68" text-anchor="middle" font-size="11" opacity=".75">read</text>
+
+      <rect x="454" y="30" width="180" height="94" rx="10" fill="none" stroke="currentColor" opacity=".6"/>
+      <text x="544" y="54" text-anchor="middle" font-weight="700">First read</text>
+      <text x="544" y="73" text-anchor="middle" opacity=".8">questions for you</text>
+      <text x="544" y="90" text-anchor="middle" opacity=".8">suggested entries</text>
+      <text x="544" y="107" text-anchor="middle" opacity=".8">the scenes, with times</text>
+
+      <line x1="634" y1="77" x2="692" y2="77" stroke="currentColor" marker-end="url(#ar)"/>
+      <text x="663" y="68" text-anchor="middle" font-size="11" opacity=".75">you</text>
+
+      <rect x="696" y="40" width="150" height="74" rx="10" fill="none" stroke="#e5534b" stroke-width="1.6"/>
+      <text x="771" y="66" text-anchor="middle" font-weight="700">You answer</text>
+      <text x="771" y="84" text-anchor="middle" opacity=".8">and accept or</text>
+      <text x="771" y="101" text-anchor="middle" opacity=".8">dismiss entries</text>
+
+      <line x1="846" y1="77" x2="904" y2="77" stroke="currentColor" marker-end="url(#ar)"/>
+      <text x="875" y="68" text-anchor="middle" font-size="11" opacity=".75">press</text>
+
+      <rect x="908" y="14" width="182" height="126" rx="10" fill="none" stroke="currentColor" opacity=".6"/>
+      <text x="999" y="38" text-anchor="middle" font-weight="700">Draft the recap</text>
+      <text x="999" y="58" text-anchor="middle" opacity=".8">short recap</text>
+      <text x="999" y="75" text-anchor="middle" opacity=".8">the full tale</text>
+      <text x="999" y="92" text-anchor="middle" opacity=".8">key moments</text>
+      <text x="999" y="109" text-anchor="middle" opacity=".8">awards</text>
+      <text x="999" y="128" text-anchor="middle" font-size="11" opacity=".7">then review, publish</text>
+
+      <path d="M85 114 V200 H999 V140" fill="none" stroke="currentColor" stroke-dasharray="4 4" opacity=".6" marker-end="url(#ar)"/>
+      <text x="540" y="192" text-anchor="middle" font-size="11.5" opacity=".85">talking time: seconds per speaker, counted on your Mac (numbers only)</text>
+      <path d="M544 124 V170 H960" fill="none" stroke="currentColor" stroke-dasharray="2 4" opacity=".45"/>
+      <text x="740" y="164" text-anchor="middle" font-size="11.5" opacity=".75">the scenes give fight vs story</text>
+      <text x="999" y="232" text-anchor="middle" font-size="11.5" opacity=".75">dice from Table rolls</text>
+      <line x1="999" y1="218" x2="999" y2="204" stroke="currentColor" opacity=".45"/>
+    </g>
+  </svg>
+  <figcaption class="cap">The recap is written once your answers and the World are settled, so it uses the right names and links to the entries you accepted. Redraft stays: it reads the transcript again with whatever you've answered since.</figcaption>
+  </figure>
+  </div>
+</section>
+
+<section>
+  <div class="opt-head"><h2>Keeping the cleaned transcript</h2><span class="badge-rec">Recommended: keep it</span></div>
+  <p><b>Why we haven't kept it:</b> the rule came from the first week (DECISIONS, Oct 14). The <i>raw</i> recording holds personal conversation, so we promised that only the story is kept. The cleaned transcript is different. The Processor has cut the table talk and you've reviewed every cut, so what's left is the game.</p>
+  <div class="facts">
+    <div class="fact good"><b>What keeping it gives</b><ul>
+      <li>Draft the recap and Redraft read the real words every time, with no re-sending from the Processor.</li>
+      <li>The full tale and awards are written from what was said, not from a summary of it.</li>
+      <li>New features (awards, scene times) can run on past sessions too.</li></ul></div>
+    <div class="fact plain"><b>How it's kept</b><ul>
+      <li>S3 under <code>v2/transcripts/</code>, encrypted, never in the database or git.</li>
+      <li>No page shows it to anyone. Only Claude reads it when drafting.</li>
+      <li>An admin can delete a session's transcript (Manage › Sessions › a session).</li></ul></div>
+    <div class="fact cost"><b>Worth knowing</b><ul>
+      <li>It's still everyone's words, by name. The table should know it's kept, so a line in Help › About says so.</li>
+      <li>The raw recording stays on your Mac, as now.</li></ul></div>
+  </div>
+  <p class="cap">If you'd rather not keep it, A works as you chose: the first read also writes a detailed account of what happened, and the recap step drafts from that.</p>
+</section>
+
+<section>
+  <span class="eyebrow">2 · Manage › Sessions › a session</span>
+  <h2>The review page, in the order you'll use it</h2>
+  <div class="cols">
+    <div class="screen">
+      <div class="bar"><b>Sessions</b><span class="on">Nov 6 · The Drowned Bell</span><span>Draft</span></div>
+      <div class="pg">
+        <div class="step done"><div class="step-h"><span class="num">1</span><h3>Questions</h3><span class="pill ok">5 of 5 answered</span></div>
+          <p class="small muted">Who is "the captain"? · Was the bell rung twice? · …</p></div>
+        <div class="step done"><div class="step-h"><span class="num">2</span><h3>Suggested updates</h3><span class="pill ok">12 settled</span></div>
+          <p class="small muted">9 accepted · 3 dismissed · Saltmere Reach, Captain Oyelaran, The Drowned Bell…</p></div>
+        <div class="step now"><div class="step-h"><span class="num">3</span><h3>Draft the recap</h3></div>
+          <p class="small">Claude reads the session again with your 5 answers and the 9 entries you accepted, then writes the recap, the full tale, key moments and awards.</p>
+          <div class="row"><span class="btn primary">Draft the recap</span><span class="small muted">about 2 minutes · about $0.40</span></div></div>
+        <div class="step later"><div class="step-h"><span class="num">4</span><h3>Review and publish</h3></div>
+          <p class="small muted">The recap · The full tale · Key moments · Awards · The session's numbers</p></div>
+      </div>
+    </div>
+    <div class="facts" style="grid-template-columns:1fr">
+      <div class="fact plain"><b>What changes</b><ul>
+        <li>The first read no longer writes a recap. It asks, suggests and finds the scenes.</li>
+        <li>Draft the recap waits for nothing. You can press it with a question unanswered, and it says how many are still open.</li>
+        <li>Steps 1 and 2 stay open after drafting. A new answer brings back the Redraft banner as today.</li>
+        <li>Awards and the full tale are reviewed like the recap: edit, drop an award, or Redraft.</li></ul></div>
+      <div class="fact good"><b>Last night's session</b><p>Send it from the Processor once more after this is built. Your answers are kept, so the questions it asks again are only new ones. Then press Draft the recap.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">3 · Story</span>
+  <div class="opt-head"><h2>B · The full tale is the session's own page</h2><span class="badge-rec">Recommended</span></div>
+  <p>The short recap stays on Previously on… as it is. Its scroll ends with <b>Read the full tale</b>, which opens the session's own page: the long telling in chapters, one per scene, with the awards and the numbers after it. All sessions links each session there too.</p>
+  <div class="cols">
+    <div class="screen">
+      <div class="bar"><b>Story</b><span class="on">Previously on…</span><span>All sessions</span></div>
+      <div class="pg">
+        <div class="tale">
+          <div class="tale-head"><span class="k">Session 14 · Nov 6</span><h3>The Drowned Bell</h3><span class="btn listen">▶ Listen</span></div>
+          <div class="scroll"><div class="story">
+            <p>Fog rolled off Saltmere Reach as the party rowed for the wreck. <a>Cole</a> found the bell lashed to the mast, still dry, and <a>Trah</a> would not let anyone touch it until she had read the runes.</p>
+            <p>When <a>Captain Oyelaran</a> came aboard with her drowned crew, <a>No Name</a> talked them down, and <a>Big C</a> rang the bell to send them back beneath the water.</p>
+            <a class="more">Read the full tale →</a>
+          </div></div>
+        </div>
+      </div>
+    </div>
+    <div class="screen">
+      <div class="bar"><b>Story</b><span>Previously on…</span><span>All sessions</span><span class="on">Session 14</span></div>
+      <div class="pg">
+        <div class="tale">
+          <div class="tale-head"><span class="k">Session 14 · Nov 6 · 3 h 25 min</span><h3>The Drowned Bell</h3><span class="row"><span class="btn listen">▶ Listen to the full tale</span><span class="small muted">about 12 min</span></span></div>
+          <div class="scroll"><div class="story">
+            <h4>I · The Reach <small>0:12 · exploring</small></h4>
+            <p>Nobody spoke for the first mile. The oars dipped, the fog closed behind them, and Saltmere Reach went from a coastline to a rumour…</p>
+            <h4>II · What the Runes Said <small>0:48 · story</small></h4>
+            <p>Trah knelt by the bell for a long time. "It isn't a warning," she said at last. "It's an invitation"…</p>
+            <h4>III · The Crew Comes Aboard <small>1:40 · story</small></h4>
+            <p class="muted" style="font-family:var(--sans);font-size:.85rem">… five chapters in all, about 1,800 words …</p>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="facts">
+    <div class="fact good"><b>Why its own page</b><ul>
+      <li>The short recap stays quick to read before a game, as it is now.</li>
+      <li>A long read gets room: chapters, the awards and numbers after it, its own address to share.</li>
+      <li>It works the same from All sessions for any earlier session.</li></ul></div>
+    <div class="fact plain"><b>A · Open it in place</b><p>Instead, <b>Read the full tale ▾</b> unrolls the long version on the same scroll, under the short one. It's simpler, but the Previously on… page gets very long, and the awards and numbers would sit below the key moments.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">4 · On the session's page, after the tale</span>
+  <h2>Awards</h2>
+  <p>Claude gives three to five, only where something in the session earned one, each to a character with why and the moment it happened. One character can't take them all. You can drop or change any before publishing.</p>
+  <div class="awards">
+    <div class="award"><span class="medal"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="7"/><path d="M10 3v14M3 10h14"/></svg></span>
+      <span class="what">Most Strategic</span><span class="who"><span class="ava tr">Tr</span>Trah</span>
+      <span class="why">Wouldn't let anyone touch the bell until she'd read the runes, which turned the fight into a parley.</span><span class="at">Chapter II · 0:52</span></div>
+    <div class="award"><span class="medal"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10l4 4 8-8"/></svg></span>
+      <span class="what">Best Decision</span><span class="who"><span class="ava nn">NN</span>No Name</span>
+      <span class="why">Offered the drowned crew their names back instead of drawing steel.</span><span class="at">Chapter III · 1:58</span></div>
+    <div class="award"><span class="medal"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 5h10v7H9l-4 3z"/></svg></span>
+      <span class="what">Line of the Night</span><span class="who"><span class="ava bc">BC</span>Big C</span>
+      <q>If it rings for the dead, it can ring them home.</q><span class="at">Chapter IV · 2:41</span></div>
+    <div class="award"><span class="medal"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M10 2l2.5 5 5.5.8-4 3.9.9 5.5L10 14.6 5.1 17.2l.9-5.5-4-3.9 5.5-.8z"/></svg></span>
+      <span class="what">Unsung Hero</span><span class="who"><span class="ava co">Co</span>Cole</span>
+      <span class="why">Kept the boat off the rocks the whole time the others were talking to ghosts.</span><span class="at">Chapter III · 2:05</span></div>
+  </div>
+  <div class="facts">
+    <div class="fact plain"><b>The awards Claude can give</b><ul>
+      <li><b>Most Strategic</b>: the plan that shaped a scene or fight</li>
+      <li><b>Best Decision</b>: a choice that changed where the story went</li>
+      <li><b>Best Roleplay</b>: in character when it mattered</li>
+      <li><b>Line of the Night</b>: an in-character line, quoted</li>
+      <li><b>Clutch Moment</b>: an action or roll when it counted most</li>
+      <li><b>Unsung Hero</b>: quiet help that made someone else's moment</li>
+      <li><b>Hardest Luck</b>: when the dice turned (from Table rolls)</li></ul></div>
+    <div class="fact cost"><b>Your list from before</b><p>We talked about awards in the planning chat, so the repo doesn't have your list. Change, add or remove any in the box at the bottom. Awards go to characters, never to how well someone played.</p></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">5 · On the session's page, last</span>
+  <h2>The session in numbers</h2>
+  <div class="stats">
+    <div class="stat"><span class="k">Who talked</span>
+      <div class="talk">
+        <div class="talk-row"><span class="nm"><span class="ava dm">DM</span>The DM</span><span class="tk"><i style="width:37%"></i></span><span class="pc">37%</span></div>
+        <div class="talk-row"><span class="nm"><span class="ava bc">BC</span>Big C</span><span class="tk"><i style="width:31%"></i></span><span class="pc">31%</span></div>
+        <div class="talk-row"><span class="nm"><span class="ava tr">Tr</span>Trah</span><span class="tk"><i style="width:19%"></i></span><span class="pc">19%</span></div>
+        <div class="talk-row"><span class="nm"><span class="ava co">Co</span>Cole</span><span class="tk"><i style="width:8%"></i></span><span class="pc">8%</span></div>
+        <div class="talk-row"><span class="nm"><span class="ava nn">NN</span>No Name</span><span class="tk"><i style="width:5%"></i></span><span class="pc">5%</span></div>
+      </div>
+      <p class="cap">Counted on your Mac from the recording's speaker names, before anything is cut. Only seconds per name are sent. A name askdnd can't match to someone at the table is asked once, on the review page.</p>
+    </div>
+    <div class="stat"><span class="k">Fights and story</span>
+      <div class="mix" aria-label="No fights; story 62%, exploring 30%, rest and shopping 8%"><i class="c-talk" style="width:62%"></i><i class="c-explore" style="width:30%"></i><i class="c-rest" style="width:8%"></i></div>
+      <div class="legend"><span><i class="c-fight"></i>Fights 0%</span><span><i class="c-talk"></i>Story 62%</span><span><i class="c-explore"></i>Exploring 30%</span><span><i class="c-rest"></i>Rest and shopping 8%</span></div>
+      <div class="timeline">
+        <div class="tl"><span class="muted">0:12</span><i class="c-explore"></i><span>The Reach</span></div>
+        <div class="tl"><span class="muted">0:48</span><i class="c-talk"></i><span>What the Runes Said</span></div>
+        <div class="tl"><span class="muted">1:40</span><i class="c-talk"></i><span>The Crew Comes Aboard</span></div>
+        <div class="tl"><span class="muted">2:30</span><i class="c-explore"></i><span>Below Decks</span></div>
+        <div class="tl"><span class="muted">3:05</span><i class="c-rest"></i><span>Back at the Gull</span></div>
+      </div>
+      <p class="cap">From the scenes Claude finds on the first read, with their start times. The chapters of the full tale are the same scenes.</p>
+    </div>
+    <div class="stat"><span class="k">Dice</span>
+      <div class="dice"><div class="die"><b>3</b><span>natural 20s</span></div><div class="die"><b>2</b><span>natural 1s</span></div><div class="die"><b>41</b><span>rolls</span></div></div>
+      <p class="cap">From Table rolls on the night: askdnd's own and what D&amp;D Beyond's game log carried. A night rolled mostly on paper shows fewer.</p>
+    </div>
+  </div>
+  <div class="note-box"><b>Who sees "Who talked"?</b> Everyone else here is for the whole table. Talking time can sting: a quiet player sees themselves at 5% next to the others. It's choice 3 below.</div>
+</section>
+
+<section>
+  <span class="eyebrow">6 · Listen</span>
+  <h2>A more dramatic narrator</h2>
+  <div class="cols">
+    <div class="voice"><span class="k">Now</span>
+      <pre class="was">The narrator of a dark fantasy series reading its "previously on". Speak low, slow and ominous, with weight on names and dramatic pauses between sentences; never cheerful, never rushed.</pre></div>
+    <div class="voice"><span class="k">Proposed</span>
+      <pre>An epic fantasy trailer narrator. A low, resonant voice with real swing: hushed and close for mystery, building in pace and volume as danger rises, a held breath before a reveal, then the line landing hard. Lean on names and on the last words of a paragraph. Let the opening "Previously on…" hang. Never cheerful, never flat, never rushed.</pre></div>
+  </div>
+  <p class="cap">The same voice (OpenAI's "onyx"), told to act more. A published recap keeps the reading it has until an admin presses <b>Re-record the voice</b> in the player, which costs a few cents. The full tale gets its own Listen.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Your choices</span>
+  <h2>Three questions and a box</h2>
+  <form class="answer-form" id="answer">
+    <fieldset><legend>1 · Keep the cleaned transcript in private storage?</legend>
+      <label class="choice"><input type="radio" name="keep" value="keep"><span><b>Keep it (recommended)</b><small>Draft the recap and Redraft read it again; no re-sending.</small></span></label>
+      <label class="choice"><input type="radio" name="keep" value="dont"><span><b>Don't keep it</b><small>A as chosen: the first read writes a detailed account; the recap is drafted from that.</small></span></label>
+    </fieldset>
+    <fieldset><legend>2 · Where does the full tale live?</legend>
+      <label class="choice"><input type="radio" name="tale" value="B"><span><b>B · The session's own page (recommended)</b><small>Read the full tale → chapters, awards, numbers.</small></span></label>
+      <label class="choice"><input type="radio" name="tale" value="A"><span><b>A · Unrolls in place</b><small>Under the short recap, on Previously on….</small></span></label>
+    </fieldset>
+    <fieldset><legend>3 · Who sees "Who talked"?</legend>
+      <label class="choice"><input type="radio" name="talk" value="all"><span><b>Everyone at the table</b><small>Like the rest of the numbers.</small></span></label>
+      <label class="choice"><input type="radio" name="talk" value="dm"><span><b>The DM and admins</b><small>On the session's review page and its Story page, for them only.</small></span></label>
+    </fieldset>
+    <label style="display:grid;gap:6px"><b>Awards and anything else</b><textarea id="words" name="words" placeholder="Your award list from before, names to change, what to add…"></textarea></label>
+    <div class="row"><button class="btn primary" id="send" type="submit">Submit</button><span class="sent" id="sent"></span></div>
+  </form>
+</section>
+</div>
+
+<script>
+(() => {
+  const form = document.getElementById('answer'), sent = document.getElementById('sent'), send = document.getElementById('send');
+  let db = null;
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { sent.textContent = 'Open this page signed in to claude.ai to send it.'; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try {
+      await db.collection('answers').doc('pick').set({ keep: f.get('keep') || '', tale: f.get('tale') || '', talk: f.get('talk') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
+      sent.textContent = 'Sent to Claude';
+    } catch (err) { sent.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    db = await claude.use('db');
+    if (!db) return;
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) return;
+      const a = d.data();
+      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = a[r.name] === r.value; });
+      document.getElementById('words').value = a.words || '';
+      sent.textContent = 'Sent earlier: change it and Submit again if you like';
+    } catch (err) { /* nothing sent yet */ }
+  })();
+})();
+</script>

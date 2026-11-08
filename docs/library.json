@@ -862,5 +862,14 @@
   "what": "Feedback 54: each note's request, what happened and where it stands, the same in both tabs; Brett chose B (a list with the note beside it, search and filters), the DM's optional reply and a reason on Delete.",
   "source": "docs/mockups/your-notes-2/index.html",
   "link": "https://claude.ai/artifact/FfXfam48LiWb1JfMTqDWUR"
+ },
+ {
+  "title": "Session Story",
+  "kind": "design",
+  "status": "Chosen · built",
+  "date": "Nov 7",
+  "what": "Roadmap step 2 and Brett's additions: the recap drafted after questions and entries are settled, keeping the cleaned transcript, the full tale on the session's own page (B), awards (with DM Shining Moment, Hardest Luck and Damage King), the session's numbers for everyone (who talked, fights and story, dice) and a more dramatic Listen.",
+  "source": "docs/mockups/session-story/index.html",
+  "link": "https://claude.ai/artifact/3qLnh6vwaUizSq4qWgAHBv"
  }
 ]

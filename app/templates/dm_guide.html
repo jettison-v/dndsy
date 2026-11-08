@@ -62,10 +62,13 @@
         {% if b.to_review %}<p>Next up: {% for r in b.to_review[:3] %}<a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>{{ ", " if not loop.last }}{% endfor %}{% if b.to_review | length > 3 %} and {{ b.to_review | length - 3 }} more{% endif %}.</p>{% endif %}
         <p>Each one takes 10 to 20 minutes. On the session's page, top to bottom:</p>
         <ol class="guide-sub">
-          <li><b>Read the recap.</b> Fix anything wrong right there; your wording wins.</li>
-          <li><b>Key moments.</b> Delete wrong ones, fix the wording, add any that are missing. ★ marks the major ones, which Story shows first (Claude marks up to 8 when drafting); the rest sit behind <b>Show the other</b>.</li>
-          <li><b>Claude's questions.</b> Answer what you know and <b>Skip</b> the rest. If you answered several, <b>Redraft</b> lets Claude use them (or just edit the recap yourself).</li>
+          <li><b>Claude's questions.</b> Answer what you know and <b>Skip</b> the rest.</li>
           <li><b>Suggested updates</b> (new people and places, spellings, description changes): <b>Accept</b>, <b>Edit</b> or <b>Reject</b>. A description change shows as a <b>marked-up edit</b>: struck-through words would go, highlighted words are Claude's. Where you wrote the description, Claude keeps your words and only adds or fixes what the session changed.</li>
+          <li><b>Draft the recap</b> (a session from a recording). Claude reads the session first only to ask and suggest. Once you've settled those, this writes the recap, the full tale, key moments and awards with your answers and the right names (a few minutes, about $1). A session from Brett's notes arrives already drafted. If you answer more later, <b>Redraft</b> uses the new answers.</li>
+          <li><b>Read the recap.</b> Fix anything wrong right there; your wording wins.</li>
+          <li><b>The full tale</b> (the session's own page, after <b>Read the full tale</b>): a chapter per scene. <b>Edit</b> any chapter.</li>
+          <li><b>Key moments.</b> Delete wrong ones, fix the wording, add any that are missing. ★ marks the major ones, which Story shows first (Claude marks up to 8 when drafting); the rest sit behind <b>Show the other</b>.</li>
+          <li><b>Awards.</b> Edit who it goes to or what it says, or <b>Take away</b> one that doesn't fit. One is yours: <b>DM Shining Moment</b>. Hardest Luck and Damage King come from the night's Table rolls. Under them, <b>The session in numbers</b> asks once who a name in the recording is.</li>
           <li><b>Publish.</b> The table sees it on <i>Story</i> (<i>Previously on…</i> and <i>All sessions</i>). You can edit and republish any time.</li>
         </ol></li>
       {% if b.to_record %}<li><b>Sessions waiting for a recording</b> <span class="tag">{{ b.to_record | length }}</span>
@@ -103,7 +106,7 @@
       <dt>Dismiss</dt><dd>Drop it. Nothing on the page changes.</dd>
     </dl>
     <ul class="guide-list">
-      <li><b>On a recap:</b> <b>Edit the recap</b> yourself and press <b>I fixed it</b>, or <b>Ask Claude</b> to redraft with it. (Sessions you wrote by hand or that came from a recording can't be redrafted, so edit those.)</li>
+      <li><b>On a recap:</b> <b>Edit the recap</b> yourself and press <b>I fixed it</b>, or <b>Ask Claude</b> to redraft with it. (Sessions you wrote by hand can't be redrafted, so edit those. One from a recording can be, while askdnd keeps its transcript.)</li>
       <li><b>On a glossary term:</b> <b>Edit the term</b> (or <b>Add the term</b> for a new one) right there, and it's accepted when you save.</li>
       <li><b>On an entry</b> (on the Campaign page, or its side panel elsewhere) you can also Accept or Dismiss without opening the inbox. When you've worked a fact into the description yourself, press <b>Done</b> to take it off <i>What the table knows</i>.</li>
       <li><b>Players see what happened</b> to theirs, in the entry's panel and on <i>Your notes</i> (in their account menu): <b>Added</b> (on the page), <b>Used</b> (worked into a description or recap), or <b>Not used</b>. With any decision you can write <b>a word to them</b> (the line above the buttons in the Inbox: why, or what you changed); it's never required, and they read it under What happened. Your decision shows them a red count on their picture until they look, and a corner card once.</li>

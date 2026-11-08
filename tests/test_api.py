@@ -38,7 +38,7 @@ def test_disabled_without_server_token(client, monkeypatch):
 def test_upload_matches_session_by_date_and_starts_draft(client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"played_on": "2026-08-29", "source": "transcript"}]})
     calls = []
-    monkeypatch.setattr(admin_sessions, "draft_transcript_in_background", lambda sid, text: calls.append((sid, text)) or True)
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: calls.append((sid, text)) or True)
     r = post(client)
     assert r.status_code == 202
     sid = db.scalar(select(GameSession)).id
@@ -48,7 +48,7 @@ def test_upload_matches_session_by_date_and_starts_draft(client, db, monkeypatch
 
 def test_upload_creates_session_for_new_date(client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
-    monkeypatch.setattr(admin_sessions, "draft_transcript_in_background", lambda sid, text: True)
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: True)
     assert post(client, played_on="2026-11-07").status_code == 202
     s = db.scalar(select(GameSession))
     assert (str(s.played_on), s.source) == ("2026-11-07", "transcript")
@@ -56,15 +56,21 @@ def test_upload_creates_session_for_new_date(client, db, monkeypatch):
 
 def test_busy_returns_conflict(client, db, monkeypatch):
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
-    monkeypatch.setattr(admin_sessions, "draft_transcript_in_background", lambda sid, text: False)
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: False)
     assert post(client).status_code == 409
 
 
 def test_transcript_text_is_not_stored(client, db, monkeypatch):
-    """Privacy rule: the transcript must not land in any table."""
+    """A standing rule (CLAUDE.md privacy rules; DECISIONS Oct 14, revised Nov 7): a transcript never lands in any
+    database table. The cleaned one the Processor sends is kept in file storage, for drafting, with who talked."""
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
-    monkeypatch.setattr(admin_sessions, "draft_transcript_in_background", lambda sid, text: True)
-    post(client, text="SECRET-TRANSCRIPT-MARKER")
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: True)
+    post(client, text="SECRET-TRANSCRIPT-MARKER", talk={"speakers": {"Mary Stewart": 4530.2, "": 3, "Brett Cupta": "x"}, "length": 12300})
+    from app import files, session_story
+
+    s = db.scalar(select(GameSession))
+    assert session_story.text(s) == "SECRET-TRANSCRIPT-MARKER" and files.get(s.transcript_key) == b"SECRET-TRANSCRIPT-MARKER"
+    assert s.talk == {"speakers": {"Mary Stewart": 4530.2}, "length": 12300}  # (checked: no empty name, no words)
     from sqlalchemy import text as sql
 
     tables = [r[0] for r in db.execute(sql("select tablename from pg_tables where schemaname='public'"))]

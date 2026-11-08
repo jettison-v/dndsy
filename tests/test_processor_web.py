@@ -105,9 +105,10 @@ def test_send_to_askdnd(client, tmp_path, monkeypatch):
     client.post("/sessions/2026-08-29/save")
     sent = []
     monkeypatch.setattr(web, "upload_settings", lambda: ("https://beta.example", "token"))
-    monkeypatch.setattr(web, "send_transcript", lambda stem, text: sent.append((stem, text)) or {"label": "Aug 29, 2026", "review_url": "https://beta.example/admin/sessions/7"})
+    monkeypatch.setattr(web, "send_transcript", lambda stem, text, talk=None: sent.append((stem, text, talk)) or {"label": "Aug 29, 2026", "review_url": "https://beta.example/admin/sessions/7"})
     client.post("/sessions/2026-08-29/send")
     assert sent[0][0] == "2026-08-29"
+    assert sent[0][2]["length"] > 0 and all(isinstance(v, float) for v in sent[0][2]["speakers"].values())  # who talked: numbers only
     assert "You enter the brig." in sent[0][1] and "How was work today?" not in sent[0][1]  # only game content
     page = client.get("/sessions/2026-08-29").text
     assert "Review on askdnd" in page and "https://beta.example/admin/sessions/7" in page
@@ -120,7 +121,7 @@ def test_send_error_is_shown(client, monkeypatch):
     wait_for_job(client, "2026-08-29")
     client.post("/sessions/2026-08-29/save")
 
-    def fail(stem, text):
+    def fail(stem, text, talk=None):
         raise RuntimeError("Claude is busy drafting another session. Try again in a minute.")
 
     monkeypatch.setattr(web, "upload_settings", lambda: ("https://beta.example", "token"))

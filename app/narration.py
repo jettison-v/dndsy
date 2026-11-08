@@ -37,8 +37,10 @@ API = "https://api.openai.com/v1/audio/speech"
 MODEL = os.getenv("OPENAI_TTS_MODEL", "gpt-4o-mini-tts")
 VOICE = os.getenv("OPENAI_TTS_VOICE", "onyx")
 COST_PER_1K = float(os.getenv("OPENAI_TTS_COST_PER_1K_CHARS", "0.015"))  # an estimate, for Usage and the monthly limit
-STYLE = ("You are the narrator of a dark fantasy series reading its 'previously on'. Speak low, slow and ominous, with "
-         "weight on names and dramatic pauses between sentences; never cheerful, never rushed.")
+STYLE = ("You are an epic fantasy trailer narrator reading a series' 'previously on'. A low, resonant voice with real swing: "
+         "hushed and close for mystery, building in pace and volume as danger rises, a held breath before a reveal, then the "
+         "line landing hard. Lean on names and on the last words of each paragraph. Let the opening 'Previously, on…' hang "
+         "in the air. Never cheerful, never flat, never rushed.")  # (Brett, Nov 7: "slightly more dramatic")
 CHUNK = 3800  # OpenAI reads at most 4096 characters at a time; longer recaps are read in parts, joined
 PIECE = "recap_listen"
 FETCH = None  # tests replace it: (text) -> mp3 bytes
@@ -60,6 +62,23 @@ def paragraphs(body: str) -> list[str]:
 
 def opening(campaign_name: str) -> str:
     return f"Previously, on {campaign_name}…"
+
+
+PARTS = ("recap", "full")  # the recap (Previously on…), and the full tale (the session's own page; Session Story, Nov 7)
+KEYS = {"recap": "narration_key", "full": "tale_narration_key"}
+
+
+def words(session: GameSession, recap: Recap, campaign_name: str, part: str = "recap") -> list[str]:
+    """What's read aloud, in order: the opening, then the recap's paragraphs or each chapter's title and paragraphs."""
+    if part == "full":
+        from app.session_story import chapters
+
+        lines = [f"{campaign_name}. {session.title or session_label(session)}…"]
+        for c in chapters(recap):
+            lines.append(f"Chapter {c['n']}. {c['title']}.")
+            lines += paragraphs(c["text"])
+        return lines
+    return [opening(campaign_name)] + paragraphs(recap.body)
 
 
 def _speak(text: str) -> bytes:
@@ -100,17 +119,18 @@ def _parts(lines: list[str]) -> list[str]:
     return out + ([cur] if cur else [])
 
 
-def narrate(db: Session, session: GameSession, recap: Recap, campaign_name: str, again: bool = False) -> str:
-    """The recap's narration, made now if it hasn't been: its key in file storage. The caller lets go of the database
-    first (reading takes OpenAI a little while). `again`: an admin's Re-record the voice, a new narration in its place."""
-    if recap.narration_key and not again:
-        return recap.narration_key
+def narrate(db: Session, session: GameSession, recap: Recap, campaign_name: str, again: bool = False, part: str = "recap") -> str:
+    """The recap's narration (or the full tale's, `part` "full"), made now if it hasn't been: its key in file storage.
+    The caller lets go of the database first (reading takes OpenAI a little while). `again`: an admin's Re-record the
+    voice, a new narration in its place."""
+    if getattr(recap, KEYS[part]) and not again:
+        return getattr(recap, KEYS[part])
     if not os.getenv("OPENAI_API_KEY") and FETCH is None:
         raise NarrationError("Listen isn't set up yet: askdnd needs an OpenAI key (an admin's step).")
     stop = spending.reached(db)
     if stop:
         raise NarrationError(stop)
-    lines = [opening(campaign_name)] + paragraphs(recap.body)
+    lines = words(session, recap, campaign_name, part)
     run = ExtractionRun(source="narration", model=MODEL, status="running", session_id=session.id)
     db.add(run)
     db.commit()  # (counted before the call; the database isn't held while OpenAI reads)
@@ -124,7 +144,7 @@ def narrate(db: Session, session: GameSession, recap: Recap, campaign_name: str,
         db.commit()
         raise NarrationError(str(e)) from None
     recap = db.get(Recap, recap.id)
-    recap.narration_key = key
+    setattr(recap, KEYS[part], key)
     run.status, run.cost_usd = "done", round(COST_PER_1K * sum(len(x) for x in lines) / 1000, 4)
     db.commit()
     return key
@@ -142,12 +162,12 @@ def _names(db: Session, campaign_id: int) -> tuple[dict[int, Entity], object]:
     return entries, mentions.finder((n, e.id) for e in entries.values() for n in [e.name] + [a.alias for a in e.display_aliases])
 
 
-def tale(db: Session, session: GameSession, recap: Recap, campaign_name: str) -> dict:
+def tale(db: Session, session: GameSession, recap: Recap, campaign_name: str, part: str = "recap") -> dict:
     """What the motion comic shows (Brett, Nov 6: the place as the backdrop): the session's label and title, then each
     paragraph over a place, the one it names, else the last one named, else the recap's most named place, with the
     portraits of up to two people it names in front (a paragraph naming no one shows just its place), and its share
     of the narration's length."""
-    lines = paragraphs(recap.body)
+    first, *lines = words(session, recap, campaign_name, part)
     entries, find = _names(db, session.campaign_id)
     named = [[entries[i] for i in find(line)] for line in lines]
     shown = pictures.urls(db, {e.id for es in named for e in es})
@@ -164,60 +184,83 @@ def tale(db: Session, session: GameSession, recap: Recap, campaign_name: str) ->
         people = [pic(e) for e in es if e.kind in PEOPLE and e.id in shown][:MOST_PEOPLE]
         backdrop = place or home
         slides.append({"text": line, "place": pic(backdrop) if backdrop else None, "people": people, "weight": len(line)})
-    intro = opening(campaign_name)
+    intro = first
     first = slides[0]["place"] if slides else (pic(home) if home else None)
     return {"label": session_label(session), "title": session.title or "", "intro": intro,
             "slides": [{"text": "", "place": first, "people": [], "weight": len(intro), "intro": True}] + slides}
 
 
-def _here(request: Request, db: Session, session_id: int) -> tuple[dict | None, GameSession | None, Recap | None, Response | None]:
-    """Who's asking and the session's published recap, in their campaign, with Listen switched on; else the answer."""
+def _at(s: GameSession, part: str) -> str:
+    return f"{web.base()}/sessions/{s.id}" + ("/full" if part == "full" else "")
+
+
+def _here(request: Request, db: Session, session_id: int, part: str = "recap") -> tuple[dict | None, GameSession | None, Recap | None, Response | None]:
+    """Who's asking and the session's published recap, in their campaign, with Listen switched on (and, for the full
+    tale, a full tale); else the answer."""
     user = current_user(request)
     if not user:
         return None, None, None, JSONResponse({"error": "Sign in first."}, status_code=401)
     campaign = web.campaign(db)
     s = db.get(GameSession, session_id)
     recap = published(db, s) if s is not None else None
-    if campaign is None or s is None or s.campaign_id != campaign.id or recap is None or not vtt.on(campaign, PIECE):
+    if (part not in PARTS or campaign is None or s is None or s.campaign_id != campaign.id or recap is None or not vtt.on(campaign, PIECE)
+            or (part == "full" and not recap.tale)):
         return user, None, None, JSONResponse({"error": "That recap isn't here."}, status_code=404)
     return user, s, recap, None
 
 
 @router.get("/sessions/{session_id:int}/tale")
-def tale_route(request: Request, session_id: int, db: Session = Depends(get_db)):
+def tale_route(request: Request, session_id: int, db: Session = Depends(get_db), part: str = "recap"):
     """The motion comic's pictures and words, and the narration's address when it's been made."""
-    user, s, recap, stop = _here(request, db, session_id)
+    user, s, recap, stop = _here(request, db, session_id, part)
     if stop:
         return stop
-    out = tale(db, s, recap, web.campaign(db).name)
+    out = tale(db, s, recap, web.campaign(db).name, part)
     out["can_redo"] = is_admin(user)  # (Re-record the voice, in the player)
-    out["audio"] = f"{web.base()}/sessions/{s.id}/narration?v={files.version(recap.narration_key)}" if recap.narration_key else ""
+    key = getattr(recap, KEYS[part])
+    out["audio"] = f"{_at(s, part)}/narration?v={files.version(key)}" if key else ""
     return JSONResponse(out)
 
 
 @router.post("/sessions/{session_id:int}/narrate")
-def narrate_route(request: Request, session_id: int, again: int = 0, db: Session = Depends(get_db)):
+def narrate_route(request: Request, session_id: int, again: int = 0, db: Session = Depends(get_db), part: str = "recap"):
     """Make the narration if it hasn't been made (the first Listen), and say where it is; `again=1`, an admin's
     Re-record the voice, makes a new one in its place (Brett, Nov 6)."""
-    user, s, recap, stop = _here(request, db, session_id)
+    user, s, recap, stop = _here(request, db, session_id, part)
     if stop:
         return stop
     if again and not is_admin(user):
         return JSONResponse({"error": "Only an admin can have the voice recorded again."}, status_code=403)
     try:
-        key = narrate(db, s, recap, web.campaign(db).name, again=bool(again))
+        key = narrate(db, s, recap, web.campaign(db).name, again=bool(again), part=part)
     except NarrationError as e:
         return JSONResponse({"error": str(e)}, status_code=503)
-    return JSONResponse({"audio": f"{web.base()}/sessions/{s.id}/narration?v={files.version(key)}"})
+    return JSONResponse({"audio": f"{_at(s, part)}/narration?v={files.version(key)}"})
 
 
 @router.get("/sessions/{session_id:int}/narration")
-def narration_file(request: Request, session_id: int, db: Session = Depends(get_db)):
+def narration_file(request: Request, session_id: int, db: Session = Depends(get_db), part: str = "recap"):
     """The narration itself, for the people at its table."""
-    _, s, recap, stop = _here(request, db, session_id)
+    _, s, recap, stop = _here(request, db, session_id, part)
     if stop:
         return stop
-    data = files.read(recap.narration_key)
+    data = files.read(getattr(recap, KEYS[part]))
     if data is None:
         return JSONResponse({"error": "The narration isn't there. Press Listen again."}, status_code=404)
     return Response(data, media_type="audio/mpeg", headers={"Cache-Control": "private, max-age=31536000, immutable"})
+
+
+# The full tale's Listen (Session Story, Nov 7): the same player and voice, reading the chapters
+@router.get("/sessions/{session_id:int}/full/tale")
+def full_tale_route(request: Request, session_id: int, db: Session = Depends(get_db)):
+    return tale_route(request, session_id, db, part="full")
+
+
+@router.post("/sessions/{session_id:int}/full/narrate")
+def full_narrate_route(request: Request, session_id: int, again: int = 0, db: Session = Depends(get_db)):
+    return narrate_route(request, session_id, again, db, part="full")
+
+
+@router.get("/sessions/{session_id:int}/full/narration")
+def full_narration_file(request: Request, session_id: int, db: Session = Depends(get_db)):
+    return narration_file(request, session_id, db, part="full")

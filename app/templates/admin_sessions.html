@@ -34,7 +34,7 @@
       {% for r in rows %}
       <tr>
         <td><a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}</a>{% if r.s.title %}<div class="note">{{ r.s.title }}</div>{% endif %}</td>
-        <td><span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(r.status, '') }}">{{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Drafting…', 'no draft': 'Not drafted'}[r.status] }}</span></td>
+        <td><span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(r.status, '') }}">{{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Drafting…', 'no draft': 'Not drafted', 'read': 'Recap to draft'}[r.status] }}</span></td>
         <td class="note">{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="tag error">Failed</span>{% elif r.last_run.status == "done" %}{{ "%.0f" | format(r.last_run.cost_usd * 100) }}¢{% endif %}{% endif %}</td>
         <td class="end">
           {% if r.has_notes and r.status == "no draft" and not running %}

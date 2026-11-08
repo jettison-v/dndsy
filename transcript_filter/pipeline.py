@@ -89,6 +89,20 @@ def load_state(path: Path) -> list[Segment]:
     return segments
 
 
+def talk_times(segments: list[Segment]) -> dict:
+    """Who talked, for askdnd's Session Story (Brett, Nov 7): seconds per speaker name over the whole recording (cut
+    table talk included, Zoom's echo copies not), and the recording's length. Numbers only: no words leave the Mac."""
+    spoken = [s for s in segments if s.removed_by != "echo" and s.end > s.start]
+    speakers: dict[str, float] = {}
+    for s in spoken:
+        if s.speaker:
+            speakers[s.speaker] = speakers.get(s.speaker, 0.0) + (s.end - s.start)
+    if not spoken:
+        return {}
+    return {"speakers": {k: round(v, 1) for k, v in speakers.items()},
+            "length": round(max(s.end for s in spoken) - min(s.start for s in spoken))}
+
+
 def is_final_kept(seg: Segment) -> bool:
     if seg.removed_by == "echo":
         return False
