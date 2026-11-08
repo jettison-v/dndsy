@@ -277,3 +277,36 @@ def test_your_notes_round_2_each_note_is_a_request_an_answer_and_a_track(admin, 
     assert third.status == "deleted" and not third.thread
     assert "Not something askdnd will change for now." in player.get(f"/your-notes?tab=askdnd&note=f{third.id}").text
     assert "Why, for " in admin.get("/manage/feedback?tab=all").text
+
+
+def test_a_note_sent_on_staging_goes_to_prods_queue_marked_staging(admin, db, monkeypatch):
+    """Brett, Nov 6: one feedback queue; staging's notes reach prod, so refreshing staging's data loses none."""
+    from app import config, feedback
+
+    monkeypatch.setattr(config, "STAGING", True)
+    monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 32)
+    sent = []
+    monkeypatch.setattr(feedback, "SEND", lambda url, note, key: sent.append((url, note, key)) or {"id": 77, "review": False})
+    r = note(admin)
+    assert r.json()["id"] == 77 and r.json()["to_prod"] and db.scalar(select(Feedback)) is None  # (none kept on staging)
+    url, payload, key = sent[0]
+    assert url == "https://askdnd.ai/api/feedback/from-staging" and key == "k" * 32
+    assert payload["email"] == "admin@example.com" and payload["shot"].startswith("data:image/png") and payload["context"]["pointed"]["label"] == "Speed"
+    monkeypatch.setattr(feedback, "SEND", lambda url, note, key: {"error": "Prod didn't take it (timed out)."})
+    note(admin, text="Kept here when prod is away.")
+    fb = db.scalar(select(Feedback))
+    assert fb.text == "Kept here when prod is away." and "timed out" in fb.context["not_sent_to_prod"]
+
+
+def test_prod_takes_a_staging_note_only_with_the_key(admin, db, monkeypatch):
+    client_for_api = admin  # (the key decides, not who is signed in)
+    from app import config
+
+    monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 32)
+    body = {"email": "Player@Example.com", "name": "Pat", "text": "The Coins window is cut off on staging.", "url": "https://staging.askdnd.ai/x",
+            "context": {"page": "Battle"}, "html": "<html></html>", "shot": png()}
+    assert client_for_api.post("/api/feedback/from-staging", json=body).status_code == 404
+    assert client_for_api.post("/api/feedback/from-staging", json=body, headers={"X-Feedback-Key": "nope" * 8}).status_code == 404
+    r = client_for_api.post("/api/feedback/from-staging", json=body, headers={"X-Feedback-Key": "k" * 32})
+    fb = db.get(Feedback, r.json()["id"])
+    assert r.json()["review"] and fb.status == "review" and fb.context["staging"] and fb.shot_key and fb.sender.startswith("Pat (")

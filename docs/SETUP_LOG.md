@@ -1005,3 +1005,19 @@ sheets beta isn't using at the same time.
 3. Fill staging from a production backup; it doubles as a check that your backups restore.
 4. Use staging for what your computer can't show you, not for every change.
 
+## Refreshing staging, and one feedback queue (Nov 7)
+
+**What was set up.** `scripts/refresh_staging.sh` gives staging a fresh copy of prod's data in one command (say
+"refresh staging"). It asks S3 for a link to the newest nightly backup that works for 15 minutes and for that one file
+(made with the backup service's key, which Railway lends to that one command), then runs the restore inside staging's
+own server over `railway ssh`: staging's database is emptied, its tables built as they were when the backup was made,
+the backup loaded, and the tables brought up to today's version. Prod is only read. Staging's pictures stay apart.
+And feedback sent on staging now goes straight to prod's queue, marked Staging, so a refresh never loses a note.
+
+**Why a link instead of giving staging a key.** Staging's own AWS user can't read the backups, on purpose. A
+short-lived link (an S3 "presigned URL") lends it one file for a few minutes, without a new key to keep or rotate.
+
+**For a new project:** make "refresh staging from production" one command early on. It keeps staging useful, and
+running it is a regular check that your backups really restore. Keep anything people type on staging that matters
+(feedback, notes) flowing to production, so throwing staging's data away is always safe.
+

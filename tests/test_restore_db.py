@@ -30,3 +30,9 @@ def test_a_railway_database_needs_saying_so(monkeypatch):
 def test_into_staging_refuses_anywhere_but_staging(monkeypatch):
     assert "only on staging's own server" in run(monkeypatch, "--into-staging", "--file", "x")
     assert "only on staging's own server" in run(monkeypatch, "--into-staging", "--file", "x", env={"RAILWAY_ENVIRONMENT_NAME": "production"})
+
+
+def test_fresh_empties_a_database_only_on_staging(monkeypatch):
+    """--fresh (refresh_staging.sh) drops everything first, so it never runs with --into: only on staging's own server."""
+    assert "only with --into-staging" in run(monkeypatch, "--into", "postgresql://localhost/x", "--fresh", "--file", "x")
+    assert "only on staging's own server" in run(monkeypatch, "--into-staging", "--fresh", "--url", "https://x")
