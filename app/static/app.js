@@ -4755,8 +4755,26 @@ document.addEventListener('askdnd:mention', e => {
         if (!j) return;
         badge(j.count);
         const n = document.querySelector('[data-notes-tab="' + tab + '"]');
-        if (n && n.classList.contains('notes-tab-new')) { n.classList.remove('notes-tab-new'); n.textContent = e.target.querySelectorAll('li.item').length; }
+        if (n && n.classList.contains('notes-tab-new')) { n.classList.remove('notes-tab-new'); n.textContent = e.target.querySelectorAll('[data-ls-row]').length; }
       }).catch(() => {});
+  });
+  // Your notes' Reader (round 2, Layout B): a row opens its note beside the list (on a phone, under it), and the address
+  // says which (?note=), so Back and a shared link open the same one; nothing is fetched, every note is on the page
+  document.addEventListener('click', e => {
+    const row = e.target.closest && e.target.closest('.notes-page [data-note]');
+    if (!row || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    e.preventDefault();
+    const tab = row.closest('.notes-tab'), key = row.dataset.note;
+    tab.querySelectorAll('[data-note]').forEach(r => r.classList.toggle('sel', r === row));
+    let shown = null;
+    tab.querySelectorAll('[data-note-read]').forEach(a => { a.hidden = a.dataset.noteRead !== key; if (!a.hidden) shown = a; });
+    const u = new URL(location.href); u.searchParams.set('note', key); u.searchParams.set('tab', tab.id.replace(/^t-/, ''));
+    history.replaceState(null, '', u);
+    if (shown && matchMedia('(max-width: 900px)').matches) shown.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  document.querySelectorAll('.notes-page .notes-tab').forEach(tab => {  // (the one shown at first: marked in its list)
+    const a = tab.querySelector('[data-note-read]:not([hidden])');
+    tab.querySelectorAll('[data-note]').forEach(r => r.classList.toggle('sel', !!a && r.dataset.note === a.dataset.noteRead));
   });
   fetch('/your-notes/news', { headers: { Accept: 'application/json' }, cache: 'no-store' })
     .then(r => (r.ok ? r.json() : { count: 0, cards: [] }))

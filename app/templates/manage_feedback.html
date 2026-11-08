@@ -42,9 +42,13 @@
                 <input type="hidden" name="to" value="tell"><button class="btn small" type="submit">Send to {{ who }}</button></form></details>{% endif %}
             <div class="row tight">
               {% set moves = (("new", "Approve: send to Claude"), ("deleted", "Delete")) if f.status == "review" else (("planned", "Mark planned"), ("done", "Done"), ("new", "Back to new"), ("deleted", "Delete")) %}
-              {% for to, label in moves if to != f.status %}
+              {% for to, label in moves if to != f.status and not (to == "deleted" and f.user_id) %}
               <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="inline"><input type="hidden" name="to" value="{{ to }}"><button class="btn small{{ ' link danger' if to == 'deleted' }}{{ ' primary' if f.status == 'review' and to == 'new' }}" type="submit">{{ label }}</button></form>{% endfor %}
             </div>
+            {% if f.user_id and f.status != "deleted" %}<details class="fold fb-delete"><summary>Delete</summary>{# (Your notes, round 2, Brett Nov 7: a reason for the sender, never required) #}
+              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
+                <label class="field"><span>Why, for {{ who }} (they see it on Your notes; leave it blank if you like)</span><input type="text" name="answer" maxlength="500" autocomplete="off"></label>
+                <input type="hidden" name="to" value="deleted"><button class="btn small danger" type="submit">Delete</button></form></details>{% endif %}
             <details class="fold"><summary>Sent with it</summary>
               <dl class="fb-ctx">
                 <dt>Page</dt><dd><a href="{{ f.url }}">{{ f.url }}</a></dd>

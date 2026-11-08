@@ -1,46 +1,95 @@
 {% extends "base.html" %}
+{% from "_lists.html" import search_box %}
 {% block title %}Your notes · askdnd{% endblock %}
-{# Your notes (app/your_notes.py; Brett, Nov 7, docs/mockups/your-notes/ Layout A): what you sent, in two tabs that
-   say who reads it. Help's width and tab bar (feedback 50: the design system's full width, no narrow column). A red
-   New marks what moved since you last opened that tab; opening a tab clears its badge (app.js "your notes"). #}
+{# Your notes (app/your_notes.py; Brett, Nov 7: docs/mockups/your-notes/ Layout A and a badge, then
+   docs/mockups/your-notes-2/ Layout B, feedback 54): what you sent, in two tabs that say who reads it, each the Reader
+   (a list beside the note, as the World tab and the quest log): search, the status and where-from chips, Newest or
+   Oldest first, Open and Done as the list's headings. Each note has the same three parts: what you asked, what
+   happened, and where it stands (the status track). #}
+
+{# A note's track: the steps for its tab, the one it's at lit; one turned down stops in grey, the rest struck through #}
+{% macro status_track(steps) -%}
+<ol class="st-track" aria-label="Where it stands">{% for s in steps %}<li class="st-{{ s.state }}">{{ s.label }}</li>{% endfor %}</ol>
+{%- endmacro %}
+
+{% macro note_reader(kind, notes, placeholder, from_label, statuses) %}
+{% set froms = notes | map(attribute="from") | unique | sort | list %}
+<div class="reader notes-reader">
+  <aside class="reader-nav" data-list="notes-{{ kind }}" data-noun="note" data-nouns="notes" data-default-sort="newest" aria-label="Your notes">
+    <div class="reader-nav-head">
+      {{ search_box(placeholder) }}
+      <details class="ls-fold" data-ls-fold open>{# (folded to "Filters (N)" on a phone, as every list's filters are) #}
+      <summary>Filters <span class="count" data-ls-fold-count hidden></span></summary>
+      <div class="reader-filters">
+        <div class="reader-filters-head"><span>Where it stands</span><button type="button" class="btn link small" data-ls-clear>Clear</button></div>
+        <div class="ls-chips">{% for v in statuses %}<button type="button" class="ls-chip" data-ls-group="status" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}
+          <button type="button" class="ls-chip" data-ls-group="new" data-ls-value="New to you" aria-pressed="false">New to you <span class="ls-n" data-ls-n></span></button></div>
+        {% if froms | length > 1 %}<div class="reader-filters-head"><span>{{ from_label }}</span></div>
+        <div class="ls-chips">{% for v in froms %}<button type="button" class="ls-chip" data-ls-group="from" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}</div>{% endif %}
+        <div class="notes-sort"><label class="ls-select"><span>Order</span><select data-ls-sort aria-label="Order"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
+          <span class="note"><span data-ls-summary></span> shown</span></div>
+      </div>
+      </details>
+    </div>
+    <div class="reader-rows" data-ls-rows>
+      {% for n in notes %}
+      <a class="rd-item nt-row" data-ls-row data-note="{{ n.key }}" href="/your-notes?tab={{ kind }}&amp;note={{ n.key }}"
+         data-name="{{ [n.title, n.text, n.where, n.answer.text if n.answer else '', n.says] | join(' ') | lower }}"
+         data-sort-newest="{{ n.rank_newest }}" data-sort-oldest="{{ n.rank_oldest }}" data-group-newest="{{ 'Open' if n.open else 'Done' }}" data-group-oldest="{{ 'Open' if n.open else 'Done' }}"
+         data-f='{{ {"status": n.label, "new": "New to you" if n.new else "", "from": n.from} | tojson }}'>
+        <span class="st-dot st-{{ n.dot }}" title="{{ n.label }}" aria-hidden="true"></span>
+        <span class="nt-title">{{ n.title }}{% if n.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</span>
+        <span class="nt-date">{{ n.at.strftime("%b %-d") }}</span>
+        <span class="nt-sum">{{ n.label }}: {{ n.answer.text if n.answer else n.says }}</span>
+      </a>
+      {% endfor %}
+    </div>
+    {% if not notes %}<p class="muted">Nothing yet.</p>{% endif %}
+    <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
+  </aside>
+  <div class="notes-read">
+    {% for n in notes %}
+    <article class="reader-article nt-read" data-note-read="{{ n.key }}"{% if not (note == n.key or (note not in notes | map(attribute="key") | list and loop.first)) %} hidden{% endif %}>
+      {{ status_track(n.track) }}
+      <h2 class="nt-h">{{ n.title }}</h2>
+      <section class="nt-part"><h3 class="divider">You asked · {{ n.at.strftime("%b %-d") }}{% if n.where %} · {% if n.href %}<a href="{{ n.href }}" data-no-peek>{{ n.where }}</a>{% else %}{{ n.where }}{% endif %}{% endif %}</h3>
+        <div class="nt-quote">{{ n.text }}</div>
+        {% for m in n.earlier if m.mine %}<div class="fb-msg you"><small>You added</small>{{ m.text }}</div>{% endfor %}</section>
+      <section class="nt-part"><h3 class="divider">What happened</h3>
+        {% for m in n.earlier if not m.mine %}<div class="fb-msg claude"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
+        <div class="nt-answer st-{{ n.dot }}{{ ' st-open' if n.open }}"><small>{{ n.label }}{% if n.answer %} · {{ n.answer.who }}{% endif %}</small><span class="nt-said">{{ n.answer.text if n.answer else n.says }}</span>
+          {%- if n.landed %}<a class="nt-landed" href="{{ n.landed.href }}" data-no-peek>{{ n.landed.text }} →</a>{% endif %}</div></section>
+      {% if n.can_add %}<details class="fold fbm-add"><summary>Add to it</summary>
+        <form method="post" action="/your-notes/feedback/{{ n.id }}" class="fb-answer">
+          <label class="field"><span>Something you forgot, or what happened next</span><textarea name="text" rows="2" required></textarea></label>
+          <button class="btn small" type="submit">Add</button>
+        </form></details>{% endif %}
+    </article>
+    {% else %}
+    <article class="reader-article"><p class="muted">Nothing here yet.</p></article>
+    {% endfor %}
+  </div>
+</div>
+{% endmacro %}
+
 {% block content %}
 <main class="page wide notes-page">
   <div class="title-row"><h1>Your notes</h1></div>
   <p class="subtitle">What you sent and what happened to it. Notes <b>about the story</b> go to the DM; notes <b>about askdnd</b> go to Brett, then Claude.</p>
   {% if askdnd %}<div class="tabbar" role="tablist" data-tab-param>
-    <button role="tab" aria-selected="{{ 'true' if tab == 'story' else 'false' }}" data-tab="t-story">About the story <span class="count{{ ' notes-tab-new' if news.story }}" data-notes-tab="story">{% if news.story %}{{ news.story }} new{% else %}{{ rows | length }}{% endif %}</span></button>
-    <button role="tab" aria-selected="{{ 'true' if tab == 'askdnd' else 'false' }}" data-tab="t-askdnd">About askdnd <span class="count{{ ' notes-tab-new' if news.askdnd }}" data-notes-tab="askdnd">{% if news.askdnd %}{{ news.askdnd }} new{% else %}{{ notes | length }}{% endif %}</span></button>
+    <button role="tab" aria-selected="{{ 'true' if tab == 'story' else 'false' }}" data-tab="t-story">About the story <span class="count{{ ' notes-tab-new' if news.story }}" data-notes-tab="story">{% if news.story %}{{ news.story }} new{% else %}{{ lists.story | length }}{% endif %}</span></button>
+    <button role="tab" aria-selected="{{ 'true' if tab == 'askdnd' else 'false' }}" data-tab="t-askdnd">About askdnd <span class="count{{ ' notes-tab-new' if news.askdnd }}" data-notes-tab="askdnd">{% if news.askdnd %}{{ news.askdnd }} new{% else %}{{ lists.askdnd | length }}{% endif %}</span></button>
   </div>{% endif %}
 
   <section id="t-story" class="notes-tab"{% if tab != "story" %} hidden{% endif %}>
-    <div class="notes-who"><span class="notes-ico dm" aria-hidden="true">DM</span><p>The DM reads these and decides what goes into the campaign. <b>Added</b>: it's on the page as you wrote it. <b>Used</b>: the DM worked it into a description or recap. <b>Not used</b>: the DM decided against it.</p></div>
-    {% if rows %}
-    <ul class="plain mine-list">{% for r in rows %}{% set o = r.x.status | outcome %}
-      <li class="item{{ ' notes-new' if r.new }}"><p class="item-title"><span class="tag {{ o.tag }}">{{ o.label }}</span> <a href="{{ r.href }}" data-no-peek>{{ r.label }}</a>
-        <span class="note">· {{ r.x.created_at.strftime("%b %-d") }}</span>{% if r.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</p>
-        <div class="answer">{{ r.x.text }}</div></li>{% endfor %}</ul>
-    {% else %}<p class="muted">Nothing yet.</p>{% endif %}
-    <p class="note notes-how">Send one with <b>Suggest a correction or addition</b> under a recap, or <b>What the table knows</b> in an entry's side panel.</p>
+    <div class="notes-who"><span class="notes-ico dm" aria-hidden="true">DM</span><p>The DM reads these and decides what goes into the campaign: <b>Added</b> (on the page as you wrote it), <b>Used</b> (worked into a description or recap) or <b>Not used</b>, sometimes with a word to you. Send one with <b>Suggest a correction or addition</b> under a recap, or <b>What the table knows</b> in an entry's side panel.</p></div>
+    {{ note_reader("story", lists.story, "Search your notes and the DM's answers", "About", ["Waiting", "Added", "Used", "Not used"]) }}
   </section>
 
   {% if askdnd %}
   <section id="t-askdnd" class="notes-tab"{% if tab != "askdnd" %} hidden{% endif %}>
-    <div class="notes-who"><span class="notes-ico app" aria-hidden="true">a</span><p>Brett reads these first, then Claude, who fixes askdnd. <b>Waiting for an admin</b>, then <b>With Claude</b>, <b>Planned</b> and <b>Fixed</b>; <b>Closed</b> if askdnd won't change it for now.</p></div>
-    {% if notes %}
-    <ul class="plain fbm-list">{% for n in notes %}
-      <li class="item fbm{{ ' notes-new' if n.new }}" id="note{{ n.id }}">
-        <p class="item-title"><span class="fb-st {{ n.status }}">{{ n.label }}</span> <span class="note">· {{ n.at.strftime("%b %-d") }}{% if n.page %} · {% if n.url %}<a href="{{ n.url }}" data-no-peek>{{ n.page }}</a>{% else %}{{ n.page }}{% endif %}{% endif %}</span>{% if n.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</p>
-        <div class="answer">{{ n.text }}</div>
-        <p class="note">{{ n.says }}</p>
-        {% for m in n.thread %}<div class="fb-msg{{ ' you' if m.mine else ' claude' }}"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
-        {% if n.can_add %}<details class="fold fbm-add"><summary>Add to it</summary>
-          <form method="post" action="/your-notes/feedback/{{ n.id }}" class="fb-answer">
-            <label class="field"><span>Something you forgot, or what happened next</span><textarea name="text" rows="2" required></textarea></label>
-            <button class="btn small" type="submit">Add</button>
-          </form></details>{% endif %}
-      </li>{% endfor %}</ul>
-    {% else %}<p class="muted">Nothing yet.</p>{% endif %}
-    <p class="note notes-how">Press <kbd>\</kbd> on any page to send one about it.</p>
+    <div class="notes-who"><span class="notes-ico app" aria-hidden="true">a</span><p>Brett reads these first, then Claude, who fixes askdnd: <b>Waiting for an admin</b>, then <b>With Claude</b>, <b>Planned</b> and <b>Fixed</b>; <b>Closed</b> if askdnd won't change it for now. Press <kbd>\</kbd> on any page to send one about it.</p></div>
+    {{ note_reader("askdnd", lists.askdnd, "Search your notes and the answers", "Sent from", ["Waiting for an admin", "With Claude", "Planned", "Fixed", "Closed"]) }}
   </section>
   {% endif %}
 </main>

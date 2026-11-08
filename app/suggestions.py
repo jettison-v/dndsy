@@ -265,13 +265,21 @@ def inbox(request: Request, db: Session = Depends(get_db)):
     })
 
 
+REPLY_MOST = 500
+
+
+def _word(reply: str) -> str:
+    """The DM's optional word to the note's author when deciding it (Your notes, round 2; Brett, Nov 7: never required)."""
+    return " ".join((reply or "").split())[:REPLY_MOST]
+
+
 def _done(request: Request, message: str, kind: str = "ok") -> RedirectResponse:
     request.session["toast"] = web.notice(message, kind)
     return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
 
 
 @router.post("/suggestions/facts/{fact_id:int}/{action}")
-def act_on_fact(request: Request, fact_id: int, action: str, text: str = Form(""), db: Session = Depends(get_db)):
+def act_on_fact(request: Request, fact_id: int, action: str, text: str = Form(""), reply: str = Form(""), db: Session = Depends(get_db)):
     """Accept (on the page as written), Edit then accept, Ask Claude to work it in (accept, then Claude drafts a
     new description using it, for you to check), or Dismiss. "merge" and "reject" are the old names."""
     user = current_user(request)
@@ -280,6 +288,7 @@ def act_on_fact(request: Request, fact_id: int, action: str, text: str = Form(""
     if not can_moderate(user) or fact is None or fact.status != "pending" or action not in ("accept", "edit", "claude", "dismiss"):
         return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
     entity = db.get(Entity, fact.entity_id)
+    fact.reply = _word(reply)
     if action == "dismiss":
         entities.reject_fact(fact)
         db.commit()
@@ -301,7 +310,7 @@ def act_on_fact(request: Request, fact_id: int, action: str, text: str = Form(""
 
 @router.post("/admin/suggestions/{suggestion_id:int}/glossary")
 def accept_glossary(request: Request, suggestion_id: int, term: str = Form(""), description: str = Form(""), misheard_as: str = Form(""),
-                    db: Session = Depends(get_db)):
+                    reply: str = Form(""), db: Session = Depends(get_db)):
     """Edit then accept a glossary suggestion: fix the term it's about, or add the new term it suggests."""
     user = current_user(request)
     x = db.get(Suggestion, suggestion_id)
@@ -314,6 +323,7 @@ def accept_glossary(request: Request, suggestion_id: int, term: str = Form(""), 
     if not new_term or clash:
         return _done(request, "That spelling is empty or already in the glossary.", "warn")
     misheard = [m.strip() for m in misheard_as.split(",") if m.strip()]
+    x.reply = _word(reply)
     if g is None:
         db.add(GlossaryTerm(campaign_id=x.campaign_id, term=new_term, description=description.strip()[:MAX_TEXT], misheard_as=misheard))
         x.status = "added"
@@ -325,13 +335,14 @@ def accept_glossary(request: Request, suggestion_id: int, term: str = Form(""), 
 
 
 @router.post("/admin/suggestions/{suggestion_id:int}/{action}")
-def act_on_suggestion(request: Request, suggestion_id: int, action: str, db: Session = Depends(get_db)):
+def act_on_suggestion(request: Request, suggestion_id: int, action: str, reply: str = Form(""), db: Session = Depends(get_db)):
     """A session or glossary suggestion: Ask Claude to work it in (redraft the session with it), I fixed it (you
     edited the recap or term yourself), or Dismiss. "use" (into the next redraft, no redraft now) still works."""
     user = current_user(request)
     x = db.get(Suggestion, suggestion_id)
     if not can_moderate(user) or x is None or x.status != "pending" or action not in ("use", "claude", "done", "dismiss"):
         return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
+    x.reply = _word(reply)
     if action in ("use", "claude") and x.target_type == "session":
         s = db.get(GameSession, x.target_id)
         if action == "claude" and (s is None or s.source not in REDRAFTABLE):
@@ -346,7 +357,7 @@ def act_on_suggestion(request: Request, suggestion_id: int, action: str, db: Ses
 
         if not admin_sessions._draft_in_background([s.id]):
             db.delete(answer)
-            x.status = "pending"
+            x.status, x.reply = "pending", ""
             db.commit()
             return _done(request, "Claude is busy drafting; try again in a minute.", "warn")
         return _done(request, f"Claude is redrafting {session_label(s)} with it (about a minute). Review and publish it from Sessions to review.")

@@ -196,7 +196,7 @@ def test_one_inbox_same_actions_and_players_see_the_outcome(dm, player, db, monk
 
     dm.post(f"/suggestions/facts/{fact['He sails.'].id}/accept")
     dm.post(f"/suggestions/facts/{fact['He sings.'].id}/edit", data={"text": "He sings sea shanties."})
-    dm.post(f"/suggestions/facts/{fact['He hums.'].id}/dismiss")
+    dm.post(f"/suggestions/facts/{fact['He hums.'].id}/dismiss", data={"reply": "  Kieran   never hums.  "})
 
     def fake_regenerate(db, entity):
         entity.draft_summary = "Cole's father, a sailor who fishes."
@@ -232,7 +232,10 @@ def test_one_inbox_same_actions_and_players_see_the_outcome(dm, player, db, monk
     again = player.get("/your-notes/news").json()
     assert again["cards"] == [] and again["count"] == 6  # (a card doesn't clear the badge)
     mine = player.get("/your-notes").text
-    assert (mine.count(">Added</span>"), mine.count(">Used</span>"), mine.count(">Not used</span>")) == (3, 2, 1)
+    # (round 2, Layout B: each note's dot says where it stands; the DM's optional word is what happened)
+    assert (mine.count('class="st-dot st-done" title="Added"'), mine.count('title="Used"'), mine.count('title="Not used"')) == (3, 2, 1)
+    assert "Not used · The DM</small><span class=\"nt-said\">Kieran never hums.</span>" in mine
+    assert db.get(Fact, fact["He sails."].id).reply == ""  # (never required)
     assert mine.count('class="notes-dot"') == 6 and "6 new" not in mine  # (each marked, the tab cleared)
     assert player.get("/your-notes/news").json()["count"] == 0  # (opened: seen)
     peek = player.get(f"/campaign/{e.id}/peek").text

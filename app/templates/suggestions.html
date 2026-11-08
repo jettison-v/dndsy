@@ -4,10 +4,15 @@
    the same actions (Accept · Edit · Ask Claude to work it in · Dismiss), Claude's description drafts open the
    entry's Edit window, and session drafts link to their review page. #}
 {% block content %}
+{# The DM's optional word to the note's author with any decision (Your notes, round 2, Brett Nov 7: never required),
+   in the same form as the decision's buttons (each its own formaction) #}
+{% macro reply_field(x) -%}
+<label class="field inbox-reply"><span>A word to {{ (x.author_name or "whoever sent it").split()[0] }}, if you like</span><input type="text" name="reply" maxlength="500" placeholder="Why, or what you changed: they see it on Your notes" autocomplete="off"></label>
+{%- endmacro %}
 <main class="page manage-page inbox">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Inbox</h1>{% set n = items | length + drafts | length %}{% if n %}<span class="count">{{ n }} waiting</span>{% endif %}</div>
-  <p class="subtitle">Everything waiting for an OK from the DM, a reviewer or an admin. Nothing reaches the table until one of you decides. Players see what happened to theirs: Added, Used or Not used.</p>
+  <p class="subtitle">Everything waiting for an OK from the DM, a reviewer or an admin. Nothing reaches the table until one of you decides. Players see what happened to theirs on Your notes: Added, Used or Not used, and your word to them if you write one.</p>
 
   <section class="section">
     <h2>From the table</h2>
@@ -20,35 +25,46 @@
         <span class="note">from {{ x.author_name or x.author_email or "someone" }} · {{ x.created_at.strftime("%b %-d") }}</span></p>
       <div class="answer" id="{{ key }}-text">{{ x.text }}</div>
       {% if it.type == "fact" %}
-      <div class="row" id="{{ key }}-actions">
-        <form class="inline" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/accept"><button class="btn primary">Accept</button></form>
+      <form class="stack" id="{{ key }}-actions" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/accept">
+        {{ reply_field(x) }}
+        <div class="row">
+        <button class="btn primary">Accept</button>
         <button type="button" class="btn" data-show="{{ key }}-edit" data-hide="{{ key }}-actions {{ key }}-text">Edit</button>
-        <form class="inline" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/claude"><button class="btn" data-busy="Claude is drafting…">Ask Claude to work it in</button></form>
-        <form class="inline" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
-      </div>
+        <button class="btn" formaction="{{ cbase }}/suggestions/facts/{{ x.id }}/claude" data-busy="Claude is drafting…">Ask Claude to work it in</button>
+        <button class="btn link" formaction="{{ cbase }}/suggestions/facts/{{ x.id }}/dismiss">Dismiss</button>
+        </div>
+      </form>
       <form class="stack" id="{{ key }}-edit" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/edit" hidden>
         <textarea name="text" rows="3" required aria-label="The fact, as it will show on {{ it.label }}">{{ x.text }}</textarea>
+        {{ reply_field(x) }}
         <div class="row"><button class="btn primary">Accept with my changes</button>
           <button type="button" class="btn link" data-cancel="{{ key }}-edit" data-restore="{{ key }}-actions {{ key }}-text">Cancel</button></div>
       </form>
       {% elif it.type == "session" %}
-      <div class="row">
+      <form class="stack" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/done">
+        {{ reply_field(x) }}
+        <div class="row">
         <a class="btn primary" href="{{ it.href }}#recap">Edit the recap</a>
-        {% if it.redraft %}<form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/claude"><button class="btn">Ask Claude to work it in</button></form>{% endif %}
-        <form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/done"><button class="btn">I fixed it</button></form>
-        <form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
-      </div>
+        {% if it.redraft %}<button class="btn" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/claude">Ask Claude to work it in</button>{% endif %}
+        <button class="btn">I fixed it</button>
+        <button class="btn link" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/dismiss">Dismiss</button>
+        </div>
+      </form>
       <p class="note">{% if it.redraft %}Ask Claude redrafts the session with it; you review and publish again.{% else %}Edit the recap yourself, then press I fixed it.{% endif %}</p>
       {% else %}{% set t = it.term %}
-      <div class="row" id="{{ key }}-actions">
+      <form class="stack" id="{{ key }}-actions" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/dismiss">
+        {{ reply_field(x) }}
+        <div class="row">
         <button type="button" class="btn primary" data-show="{{ key }}-edit" data-hide="{{ key }}-actions">{{ "Edit the term" if t else "Add the term" }}</button>
-        {% if t %}<form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/done"><button class="btn">I fixed it</button></form>{% endif %}
-        <form class="inline" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/dismiss"><button class="btn link">Dismiss</button></form>
-      </div>
+        {% if t %}<button class="btn" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/done">I fixed it</button>{% endif %}
+        <button class="btn link">Dismiss</button>
+        </div>
+      </form>
       <form class="stack" id="{{ key }}-edit" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/glossary" hidden>
         <label class="field">Term <input type="text" name="term" required value="{{ t.term if t }}"></label>
         <label class="field">What it is <textarea name="description" rows="2">{{ t.description if t }}</textarea></label>
         <label class="field">Misheard as <input type="text" name="misheard_as" value="{{ t.misheard_as | join(', ') if t }}" placeholder="Spellings a transcript might use, separated by commas"></label>
+        {{ reply_field(x) }}
         <div class="row"><button class="btn primary">{{ "Save and accept" if t else "Add and accept" }}</button>
           <button type="button" class="btn link" data-cancel="{{ key }}-edit" data-restore="{{ key }}-actions">Cancel</button></div>
       </form>

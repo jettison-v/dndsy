@@ -1,0 +1,345 @@
+<title>Your Notes, Round 2</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Mockup (Brett, Nov 7, feedback 54): Your notes, so each note's request, what was done and where it stands are easy
+   to tell apart, and the two tabs work the same way. The shared parts first, then three layouts, then an answer form
+   (db: Brett's pick, read back by Claude). askdnd's own look; the table's characters; every note is made up. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --violet: #b99be8; --on-red: #fff;
+  --green-soft: rgba(91,191,127,.15); --amber-soft: rgba(232,179,75,.15); --blue-soft: rgba(126,166,224,.15); --red-soft: rgba(229,83,75,.15); --violet-soft: rgba(185,155,232,.16);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: Georgia, "Times New Roman", serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); --violet-soft: rgba(107,75,176,.12); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); --violet-soft: rgba(107,75,176,.12); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.4rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 72ch; }
+b, strong { color: var(--strong); }
+kbd { font: 600 .8em var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface-2); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+section, header { display: grid; gap: 14px; min-width: 0; }
+.lead { font-size: 1.06rem; }
+.opt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.opt-head h2 { flex: 1 1 auto; min-width: 0; }
+.badge-rec { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
+.cap { font-size: .84rem; color: var(--muted); }
+.k { font: 700 .7rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .9rem; display: grid; gap: 4px; }
+.pro > b { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.pro.good > b { color: var(--green); } .pro.cost > b { color: var(--amber); }
+.pro ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; display: grid; gap: 6px; align-content: start; }
+a { color: var(--red); }
+
+/* askdnd, drawn */
+.screen { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pg { padding: 16px; display: grid; gap: 12px; }
+.pg h3 { font-size: 1.3rem; }
+.tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); font-size: .9rem; overflow-x: auto; }
+.tabs span { padding: 7px 0; color: var(--muted); white-space: nowrap; }
+.tabs span.on { color: var(--strong); border-bottom: 2px solid var(--red); font-weight: 600; }
+.tabs .n { font-size: .74rem; margin-left: 3px; }
+.tabs .n.new { color: var(--red); font-weight: 700; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: .8rem; white-space: nowrap; }
+.chip.on { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chip i { font-style: normal; color: var(--muted); margin-left: 3px; }
+.st { border-radius: 999px; padding: 1px 8px; font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.st.wait { background: var(--amber-soft); color: var(--amber); }
+.st.claude, .st.planned { background: var(--blue-soft); color: var(--blue); }
+.st.done { background: var(--green-soft); color: var(--green); }
+.st.used { background: var(--violet-soft); color: var(--violet); }
+.st.closed { background: var(--surface-2); color: var(--muted); }
+.new-dot { color: var(--red); font-size: .72rem; font-weight: 700; }
+.title { font-weight: 600; color: var(--strong); }
+.where { font-size: .78rem; color: var(--muted); }
+.quote { font-family: var(--serif); font-size: .98rem; line-height: 1.45; border-left: 3px solid var(--line); padding-left: 10px; color: var(--strong); }
+.answer { background: var(--green-soft); border-radius: 8px; padding: 8px 10px; font-size: .88rem; display: grid; gap: 2px; }
+.answer.waiting { background: var(--surface-2); color: var(--muted); }
+.answer.used { background: var(--violet-soft); }
+.answer small { font: 700 .66rem/1.3 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* the status track: the same shape in both tabs, its own steps in each */
+.track { display: flex; align-items: center; gap: 0; font-size: .72rem; color: var(--muted); flex-wrap: wrap; row-gap: 4px; }
+.track span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.track span::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--line); background: var(--bg); }
+.track span + span::after { content: none; }
+.track .bar { width: 14px; height: 2px; background: var(--line); margin: 0 4px; }
+.track .done::before { background: var(--green); border-color: var(--green); }
+.track .now { color: var(--strong); font-weight: 600; }
+.track .now::before { background: var(--blue); border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.track .bar.done { background: var(--green); }
+.track .stop { color: var(--strong); font-weight: 600; }
+.track .stop::before { background: var(--muted); border-color: var(--muted); }
+.track .skip { opacity: .45; text-decoration: line-through; }
+
+/* A: cards */
+.cards { display: grid; gap: 10px; }
+.group-h { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; }
+.card.new { border-left: 3px solid var(--red); }
+.card-h { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; justify-content: space-between; }
+.card-h .left { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; min-width: 0; }
+.two-col { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 760px) { .two-col { grid-template-columns: minmax(0, 1fr); } }
+.foot { display: flex; gap: 14px; font-size: .8rem; color: var(--muted); }
+
+/* B: list and detail */
+.search { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--surface); color: var(--muted); font-size: .86rem; }
+.search b { color: var(--strong); font-weight: 500; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.toolbar .search { flex: 1 1 240px; min-width: 0; }
+.sel { border: 1px solid var(--line); border-radius: 8px; padding: 3px 10px; font-size: .8rem; white-space: nowrap; }
+.sel::after { content: " ▾"; color: var(--muted); }
+.ld { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; min-height: 360px; }
+@media (max-width: 760px) { .ld { grid-template-columns: minmax(0, 1fr); } .ld .detail { border-top: 1px solid var(--line); } }
+.list { background: var(--surface); border-right: 1px solid var(--line); display: grid; align-content: start; }
+.list .sec { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 10px 12px 6px; }
+.row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); cursor: pointer; }
+.row.on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--red); }
+.row .dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.wait { background: var(--amber); } .dot.claude, .dot.planned { background: var(--blue); } .dot.done { background: var(--green); } .dot.used { background: var(--violet); } .dot.closed { background: var(--muted); }
+.row .t { font-size: .86rem; font-weight: 600; color: var(--strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .d { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.row .s { grid-column: 2 / -1; font-size: .74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.detail { padding: 16px; display: grid; gap: 14px; align-content: start; }
+.detail h4 { margin: 0; font-size: 1.1rem; color: var(--strong); }
+.part { display: grid; gap: 6px; }
+.add { font-size: .84rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
+
+/* C: conversation */
+.conv { display: grid; gap: 10px; }
+.thread { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.thread summary { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px 14px; cursor: pointer; }
+.thread summary::-webkit-details-marker { display: none; }
+.thread summary .t { font-weight: 600; color: var(--strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.thread summary .s { grid-column: 1 / -1; font-size: .8rem; color: var(--muted); }
+.msgs { display: grid; gap: 8px; padding: 4px 14px 14px; }
+.msg { max-width: 85%; border-radius: 10px; padding: 7px 10px; font-size: .86rem; display: grid; gap: 2px; }
+.msg small { font-size: .7rem; color: var(--muted); }
+.msg.you { justify-self: end; background: var(--surface-3); }
+.msg.them { background: var(--blue-soft); }
+.msg.fixed { background: var(--green-soft); }
+.event { justify-self: center; font-size: .72rem; color: var(--muted); }
+
+.verdict { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; }
+.answer-form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.q { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 64px; font: 15px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { font: 600 15px var(--sans); background: var(--red); color: var(--on-red); border: 0; border-radius: 10px; padding: 11px 20px; cursor: pointer; }
+button.send:disabled { opacity: .5; cursor: default; }
+button.send:focus-visible { outline: 2px solid var(--strong); outline-offset: 2px; }
+.sent { color: var(--green); font-weight: 600; font-size: .9rem; }
+</style>
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · Your notes, round 2 · Nov 7</div>
+    <h1>Telling your notes apart</h1>
+    <p class="lead">Today every note on Your notes looks the same: a status pill, your words in a big quote, then the answer underneath in small grey text, all at full width. With thirty notes it's hard to see which is which, what was done about it, and where it stands. Below are three layouts. They share one idea: <b>every note has the same three parts, in both tabs</b>.</p>
+  </header>
+
+  <section>
+    <h2>The three parts, in both tabs</h2>
+    <div class="facts">
+      <div class="fact"><span class="k">1 · You asked</span><b>A short title</b>: the first sentence of what you wrote, cut to one line, so a list of notes is a list of different things. Your whole note, and the page you were on, are one tap away.</div>
+      <div class="fact"><span class="k">2 · What happened</span>About askdnd: Claude's words on how it was fixed and where to see it, or why not. About the story: where your words ended up (added to an entry, or worked into a recap), with a link. A green box once it's done, grey while it's still open.</div>
+      <div class="fact"><span class="k">3 · Where it stands</span>A track of dots with the steps for that tab, the current one lit:
+        <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="done">Approved</span><i class="bar done"></i><span class="now">Planned</span><i class="bar"></i><span>Fixed</span></div>
+        <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="now">With the DM</span><i class="bar"></i><span>Added or used</span></div>
+        <span>One that isn't taken up stops where it was turned down, in grey, and the steps it skipped are struck through:</span>
+        <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="stop">Closed by an admin</span><i class="bar"></i><span class="skip">Planned</span><i class="bar"></i><span class="skip">Fixed</span></div>
+        <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="done">Approved</span><i class="bar done"></i><span class="stop">Closed by Claude</span><i class="bar"></i><span class="skip">Fixed</span></div>
+        <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="stop">Not used by the DM</span><i class="bar"></i><span class="skip">Added or used</span></div>
+      </div>
+    </div>
+    <p class="cap"><b>The ones you turn down</b> (your comment): a note you delete on the feedback queue, one Claude closes, and a story note the DM marks Not used all go to <b>Done</b> with the grey track above, and What happened says why. Today a note you delete tells its sender only “Not something askdnd will change for now”, so <b>Delete</b> on the queue would ask for a reason first (one line, for the sender, which you can leave blank), shown in What happened. The DM's Not used works the same way if you pick “let the DM reply” below. A note turned down stays on the sender's page with its reason. As today, it can't be added to; they can send a new one.</p>
+    <p class="cap">The two tabs stay as they are (About the story, the DM's; About askdnd, Brett's then Claude's), each with its count of what's new. Inside both, the notes are split into <b>Open</b> and <b>Done</b>, open first, so what you're still waiting on is at the top.</p>
+  </section>
+
+  <!-- ===================================================== A -->
+  <section>
+    <div class="opt-head"><h2>A. A card per note</h2></div>
+    <p>Each note is one card: the title and the track across the top, then <b>You asked</b> and <b>What happened</b> side by side (stacked on a phone). Open notes first, then Done. Everything is visible without a click.</p>
+    <div class="screen"><div class="pg">
+      <h3>Your notes</h3>
+      <div class="tabs"><span>About the story <i class="n">4</i></span><span class="on">About askdnd <i class="n new">2 new</i></span></div>
+      <div class="filters"><span class="chip on">All <i>31</i></span><span class="chip">Open <i>5</i></span><span class="chip">Done <i>26</i></span></div>
+      <div class="cards">
+        <div class="group-h"><span class="k">Open · 5</span></div>
+        <div class="card">
+          <div class="card-h"><div class="left"><span class="title">Rests should say what comes back</span><span class="where">Nov 7 · Cole · Battle</span></div>
+            <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="done">Approved</span><i class="bar done"></i><span class="now">Planned</span><i class="bar"></i><span>Fixed</span></div></div>
+          <div class="two-col">
+            <div class="part"><span class="k">You asked</span><div class="quote">Rests should say what comes back before I take one. I never know if Bardic Inspiration resets on a Short Rest.</div></div>
+            <div class="part"><span class="k">What happened</span><div class="answer waiting">Claude has a plan for this and will fix it in the next round.</div></div>
+          </div>
+          <div class="foot"><span>Add to it</span></div>
+        </div>
+        <div class="group-h"><span class="k">Done · 26</span></div>
+        <div class="card new">
+          <div class="card-h"><div class="left"><span class="title">Coins in a bag can't be spent</span><span class="new-dot">New</span><span class="where">Nov 7 · Cole · Sheet</span></div>
+            <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="done">Approved</span><i class="bar done"></i><span class="done">Planned</span><i class="bar done"></i><span class="done now">Fixed</span></div></div>
+          <div class="two-col">
+            <div class="part"><span class="k">You asked</span><div class="quote">When spending, I should pick which bag the coins come from.</div></div>
+            <div class="part"><span class="k">What happened</span><div class="answer"><small>Fixed · Claude</small>Press the coin purse on Sheet › Items: Spend, Gain and Move. Once a bag holds coins, it asks which place first.</div></div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+    <div class="pros">
+      <div class="pro good"><b>Good at</b><ul><li>Request and answer side by side: you never have to hunt for the answer.</li><li>Nothing to click to read it all.</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>Still long: 31 cards, each a few lines tall.</li><li>On a phone each card stacks into a tall block.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ===================================================== B -->
+  <section>
+    <div class="opt-head"><span class="badge-rec">My pick</span><h2>B. A list, and the note beside it</h2></div>
+    <p>The way the <b>quest log</b> works on Campaign › Quests: Open and Done down the left, one line per note (a coloured dot for where it stands, the title, the date, and the answer's first words under it). Pick one and it opens on the right with all three parts. On a phone the list comes first and a note opens over it.</p>
+    <div class="screen"><div class="pg">
+      <h3>Your notes</h3>
+      <div class="tabs"><span>About the story <i class="n">4</i></span><span class="on">About askdnd <i class="n new">2 new</i></span></div>
+      <div class="toolbar">
+        <div class="search">⌕ Search your notes and the answers</div>
+        <span class="sel">Sent from: any page</span>
+        <span class="sel">Newest first</span>
+      </div>
+      <div class="filters"><span class="chip on">All <i>31</i></span><span class="chip">New to you <i>2</i></span><span class="chip">Waiting for an admin <i>1</i></span><span class="chip">With Claude <i>2</i></span><span class="chip">Planned <i>2</i></span><span class="chip">Fixed <i>24</i></span><span class="chip">Closed <i>2</i></span></div>
+      <div class="ld">
+        <div class="list">
+          <div class="sec">Open · 5</div>
+          <div class="row"><span class="dot planned"></span><span class="t">Rests should say what comes back</span><span class="d">Nov 7</span><span class="s">Planned: Claude will fix it next round</span></div>
+          <div class="row"><span class="dot wait"></span><span class="t">The Party page is slow on my phone</span><span class="d">Nov 7</span><span class="s">Waiting for an admin</span></div>
+          <div class="row"><span class="dot claude"></span><span class="t">Dice tray covers the End turn button</span><span class="d">Nov 6</span><span class="s">With Claude</span></div>
+          <div class="sec">Done · 26</div>
+          <div class="row on"><span class="dot done"></span><span class="t">Coins in a bag can't be spent <span class="new-dot">New</span></span><span class="d">Nov 7</span><span class="s">Fixed: press the coin purse on Sheet › Items…</span></div>
+          <div class="row"><span class="dot done"></span><span class="t">Hunter's Mark rolls damage when cast</span><span class="d">Nov 7</span><span class="s">Fixed: it rolls nothing when cast now…</span></div>
+          <div class="row"><span class="dot closed"></span><span class="t">Show my old characters too</span><span class="d">Nov 4</span><span class="s">Closed by an admin: only the campaign's current characters…</span></div>
+        </div>
+        <div class="detail">
+          <div class="track"><span class="done">Sent</span><i class="bar done"></i><span class="done">Approved</span><i class="bar done"></i><span class="done">Planned</span><i class="bar done"></i><span class="done now">Fixed</span></div>
+          <h4>Coins in a bag can't be spent</h4>
+          <div class="part"><span class="k">You asked · Nov 7 · on <a href="#b">Cole · Sheet</a></span><div class="quote">When spending, I should pick which bag the coins come from.</div></div>
+          <div class="part"><span class="k">What happened</span><div class="answer"><small>Fixed · Claude · Nov 7</small>Press the coin purse on Sheet › Items: the Coins window has Spend, Gain and Move. Once a bag holds coins, Spend and Gain ask which place first.</div></div>
+          <div class="add">Add to it: something you forgot, or what happened next</div>
+        </div>
+      </div>
+    </div></div>
+    <p class="cap"><b>Search and filters</b> (your comment), the list pattern's own, as on Sheet › Items and the item browser: search looks through your words and the answers; a chip per status with its count, and <b>New to you</b>; <b>Sent from</b> picks a page (Battle, Sheet, Story…); the order is newest or oldest first. Open and Done stay the list's two headings whatever is filtered. On a phone, search and the chips sit above the list, the chips in one row that scrolls.</p>
+    <p class="cap">About the story is the same layout: the dot is violet once the DM used it, the title is the first line of your suggestion, and What happened says where it went (“Added to Pip's entry”, “Worked into the recap of Session 18”) with a link to it. Its chips are Waiting, Added, Used and Not used, and Sent from becomes <b>About</b> (an entry, a session's recap, the glossary).</p>
+    <div class="pros">
+      <div class="pro good"><b>Good at</b><ul><li>Thirty notes fit on one screen, each a different title.</li><li>Open and Done are separate at a glance; the dot's colour says where each stands.</li><li>The same layout as the quest log and the World tab, so it's already familiar.</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>One click to read an answer in full (its first words are on the row).</li><li>Search and filters take a row above the list (worth it past a dozen notes).</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ===================================================== C -->
+  <section>
+    <div class="opt-head"><h2>C. A conversation per note</h2></div>
+    <p>Each note is one line until you open it, then reads like a chat: your words on the right, each step in the middle (“An admin approved it · Nov 7”), and the answer on the left, green once it's fixed. Adding to it is replying.</p>
+    <div class="screen"><div class="pg">
+      <h3>Your notes</h3>
+      <div class="tabs"><span>About the story <i class="n">4</i></span><span class="on">About askdnd <i class="n new">2 new</i></span></div>
+      <div class="conv">
+        <details class="thread" open><summary><span class="t">Coins in a bag can't be spent <span class="new-dot">New</span></span><span class="st done">Fixed</span><span class="s">Nov 7 · Cole · Sheet</span></summary>
+          <div class="msgs">
+            <div class="msg you"><small>You · Nov 7</small>When spending, I should pick which bag the coins come from.</div>
+            <div class="event">An admin approved it · Nov 7</div>
+            <div class="event">Planned · Nov 7</div>
+            <div class="msg fixed"><small>Claude · Fixed · Nov 7</small>Press the coin purse on Sheet › Items: Spend, Gain and Move. Once a bag holds coins, it asks which place first.</div>
+          </div>
+        </details>
+        <details class="thread"><summary><span class="t">Rests should say what comes back</span><span class="st planned">Planned</span><span class="s">Nov 7 · Cole · Battle</span></summary></details>
+        <details class="thread"><summary><span class="t">Hunter's Mark rolls damage when cast</span><span class="st done">Fixed</span><span class="s">Nov 7 · Big C · Battle</span></summary></details>
+      </div>
+    </div></div>
+    <div class="pros">
+      <div class="pro good"><b>Good at</b><ul><li>Shows the whole back-and-forth when a note was added to or asked about.</li></ul></div>
+      <div class="pro cost"><b>Costs</b><ul><li>Most notes are one message and one answer: a conversation is more than they need.</li><li>Closed, you see the status but not the answer.</li></ul></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="verdict">
+      <b>My recommendation: B, a list with the note beside it.</b>
+      <p>Your three goals map onto it directly: the <b>title</b> tells notes apart, the <b>dot and the first words of the answer</b> on each row say where it stands and what happened, and the note on the right gives all three parts in full. It is also askdnd's existing list pattern (the quest log), so it's built from the design system rather than a new kind of page, and it holds up at thirty notes and more. The track of dots goes on the open note in either tab.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your pick</h2>
+    <form class="answer-form" id="answer">
+      <div class="q"><b>The layout</b>
+        <div class="picks" role="radiogroup" aria-label="The layout">
+          <label class="pick"><input type="radio" name="layout" value="A">A. A card per note</label>
+          <label class="pick"><input type="radio" name="layout" value="B">B. A list, and the note beside it</label>
+          <label class="pick"><input type="radio" name="layout" value="C">C. A conversation per note</label>
+        </div>
+      </div>
+      <div class="q"><b>The DM's answer on a story note</b><span class="cap">Today the DM decides (Added, Used, Not used) but can't say why. A short reply from the DM would fill What happened the way Claude's does. It's never required: the DM can leave it blank, and the note then says only the decision.</span>
+        <div class="picks" role="radiogroup" aria-label="The DM's answer">
+          <label class="pick"><input type="radio" name="dm" value="yes">Yes, let the DM reply</label>
+          <label class="pick"><input type="radio" name="dm" value="no">No, the decision is enough</label>
+        </div>
+      </div>
+      <div class="q"><b>Turning a note down</b><span class="cap">Delete on the feedback queue asks for a one-line reason for the sender (it can be left blank).</span>
+        <div class="picks" role="radiogroup" aria-label="Turning a note down">
+          <label class="pick"><input type="radio" name="reject" value="yes">Yes, ask for a reason</label>
+          <label class="pick"><input type="radio" name="reject" value="no">No, keep it as it is</label>
+        </div>
+      </div>
+      <div class="q"><b>Anything else</b><textarea id="words" name="words" placeholder="Optional"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Submit</button><span class="sent" id="sent" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const form = document.getElementById('answer'), sent = document.getElementById('sent'), send = document.getElementById('send');
+  let db = null;
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { sent.textContent = 'Open this page signed in to claude.ai to send it.'; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try {
+      await db.collection('answers').doc('pick').set({ layout: f.get('layout') || '', dm: f.get('dm') || '', reject: f.get('reject') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
+      sent.textContent = 'Sent to Claude';
+    } catch (err) { sent.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    db = await claude.use('db');
+    if (!db) return;
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) return;
+      const a = d.data();
+      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = (r.name === 'layout' && r.value === a.layout) || (r.name === 'dm' && r.value === a.dm) || (r.name === 'reject' && r.value === a.reject); });
+      document.getElementById('words').value = a.words || '';
+      sent.textContent = 'Sent earlier: change it and Submit again if you like';
+    } catch (err) { /* nothing sent yet */ }
+  })();
+})();
+</script>

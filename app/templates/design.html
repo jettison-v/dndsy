@@ -65,6 +65,10 @@
 
   <section class="section" id="switches">
     <h2>Switches</h2>
+    {{ ds("Status track", ".st-track > li.st-done · .st-now · .st-todo · .st-stop · .st-skip · .st-dot", "Where something stands as its steps, the one it's at lit (Your notes, docs/mockups/your-notes-2/, Nov 7): green done, blue under way, grey for the step that ended it with the skipped ones struck through. A list's row shows the same as one dot.") }}
+    <div class="ds-row"><ol class="st-track" aria-label="Sample"><li class="st-done">Sent</li><li class="st-done">Approved</li><li class="st-now">Planned</li><li class="st-todo">Fixed</li></ol></div>
+    <div class="ds-row"><ol class="st-track" aria-label="Sample, turned down"><li class="st-done">Sent</li><li class="st-stop">Closed</li><li class="st-skip">Planned</li><li class="st-skip">Fixed</li></ol>
+      <span class="st-dot st-wait"></span><span class="st-dot st-claude"></span><span class="st-dot st-done"></span><span class="st-dot st-used"></span><span class="st-dot st-closed"></span></div>
     {{ ds("Two-way switch", ".seg > button[aria-pressed]", "Two or three choices side by side that change something on the page (By level · By name); the one that's on is a blue rounded piece inside its track, like a chip that's on (red is for the one main action; the UI pass, 2026-11-02).") }}
     <div class="ds-row"><span class="seg" role="group" aria-label="Sort"><button type="button" aria-pressed="true">By level</button><button type="button" aria-pressed="false">By name</button></span></div>
     {{ ds("Tabs", ".tabbar[role=tablist] > [role=tab] · .cut-l, .cut-r", "A page's parts (Sheet's Spells, Inventory…). On a phone a row that doesn't fit scrolls sideways with the open tab always in view, and fades the edge it's cut at, so you can see there's more (the UI pass, 2026-11-02).") }}

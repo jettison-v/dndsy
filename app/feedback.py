@@ -183,6 +183,8 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
         said = "Sent to " + (fb.sender.split(" (")[0] or "its sender")
     elif to in ("new", "planned", "done", "deleted"):
         approved = fb.status == "review" and to == "new"
+        if to == "deleted" and answer.strip() and fb.user_id:  # why, for its sender (Your notes, round 2: optional)
+            fb.thread = [*(fb.thread or []), {"who": "you", "to": "sender", "text": answer.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat()}]
         fb.status, said = to, {"new": "Approved: it's with Claude" if approved else "Back to new", "planned": "Planned", "done": "Done",
                                "deleted": "Deleted"}[to]
     else:
