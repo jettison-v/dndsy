@@ -184,12 +184,11 @@ def tuning_page(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/manage/dice")
-async def save_tuning(request: Request, db: Session = Depends(get_db)):
+def save_tuning(request: Request, form=web.FormBody, db: Session = Depends(get_db)):
     """Save the sliders for everyone (fields "<place>.<knob>"), or `reset` to askdnd's own tuning."""
     _, stop = web.require(request, is_admin, "Dice tuning is for admins.")
     if stop:
         return stop
-    form = await request.form()
     row = db.get(ToolSetting, TUNING_KEY) or ToolSetting(key=TUNING_KEY)
     if form.get("reset"):
         row.value = ""

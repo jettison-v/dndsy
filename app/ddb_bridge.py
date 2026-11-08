@@ -71,7 +71,6 @@ import time
 from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import event, inspect, select
 from sqlalchemy.exc import IntegrityError
@@ -684,7 +683,7 @@ def outbox(db: Session, character: Character, by: str = "sheet", got: chars.Read
     if not waiting:
         return None
     if got is not None:
-        chars.store(db, character, got)
+        chars.store(db, character, got, over_sheet=True)  # (read to plan this batch: the extension checks each total)
     else:
         snap = character.snapshot
         if not (snap and snap.status != "error" and snap.fetched_at and now - snap.fetched_at.timestamp() < COPY_SECONDS):
@@ -873,6 +872,7 @@ def fresh_read(db: Session, user: dict, character: Character, data) -> chars.Rea
         got = chars.read(character.ddb_id, fetch=lambda _id: data)
     except Exception:  # (a sheet D&D Beyond never sent: nothing of it is kept)
         return None
+    got.sheet = True  # (a public read for a while after it can be behind it: characters.PUBLIC_TRAILS)
     return got if got.raw is not None else None
 
 
@@ -884,7 +884,7 @@ def _reread(db: Session, b: BridgeBatch, character: Character, fresh: chars.Read
     db.refresh(b)
     if b.state != "sending":
         return False
-    chars.store(db, character, got)
+    chars.store(db, character, got, over_sheet=True)  # (looking for its own write: PUBLIC_TRAILS is for routine reads)
     return True
 
 
@@ -1303,17 +1303,14 @@ def bridge_links(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/bridge/hello")
-async def bridge_hello(request: Request, db: Session = Depends(get_db)):
+def bridge_hello(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     """The extension's report every 30 seconds: it's on, and which D&D Beyond sheets are open."""
     _signed_in(request, db)
-    body = await request.json()
+    body = body if isinstance(body, dict) else {}
     _health["extension_at"], _health["sheets"] = time.time(), [str(s) for s in body.get("sheets", [])][:20]
-
-    def report():  # (its hourly read reaches D&D Beyond, and only while awake)
-        h = health(db)
-        db.commit()
-        return h
-    return _json(await run_in_threadpool(report))
+    h = health(db)  # (its hourly read reaches D&D Beyond, and only while awake)
+    db.commit()
+    return _json(h)
 
 
 @router.get("/bridge/health")
@@ -1325,17 +1322,14 @@ def bridge_health(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/bridge/active")
-async def bridge_active(request: Request, db: Session = Depends(get_db)):
+def bridge_active(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     """Someone opened or used an askdnd page (app.js) or a D&D Beyond sheet (the extension, with `sheet`: an opened
     sheet is read when askdnd's copy is older than the party's refresh)."""
     _signed_in(request, db)
-    sheet = str((await request.json()).get("sheet") or "")
-
-    def note():
-        character = _by_ddb(db, request, sheet)[0] if sheet else None
-        page_opened(db, character)
-        return health(db)
-    return _json(await run_in_threadpool(note))
+    sheet = str((body if isinstance(body, dict) else {}).get("sheet") or "")
+    character = _by_ddb(db, request, sheet)[0] if sheet else None
+    page_opened(db, character)
+    return _json(health(db))
 
 
 @router.post("/bridge/check")
@@ -1451,17 +1445,15 @@ def bridge_carry(request: Request, body=web.JsonBody, db: Session = Depends(get_
 
 
 @router.post("/bridge/delivered/{batch_id:int}")
-async def bridge_delivered(batch_id: int, request: Request, db: Session = Depends(get_db)):
+def bridge_delivered(batch_id: int, request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
+    """The extension made a batch (or couldn't): settled with its read-back (a plain route: that waits on D&D Beyond)."""
     user = _signed_in(request, db)
-    body = await request.json()
-
-    def settle():  # off the event loop: the read-back waits on D&D Beyond, a second at a time
-        b = db.get(BridgeBatch, batch_id)
-        character = db.get(Character, b.character_id) if b else None
-        fresh = fresh_read(db, user, character, body.get("data")) if character else None
-        delivered(db, batch_id, bool(body.get("ok")), str(body.get("error") or "")[:200], [str(c) for c in body.get("conflicts") or []], fresh)
-        db.commit()
-    await run_in_threadpool(settle)
+    body = body if isinstance(body, dict) else {}
+    b = db.get(BridgeBatch, batch_id)
+    character = db.get(Character, b.character_id) if b else None
+    fresh = fresh_read(db, user, character, body.get("data")) if character else None
+    delivered(db, batch_id, bool(body.get("ok")), str(body.get("error") or "")[:200], [str(c) for c in body.get("conflicts") or []], fresh)
+    db.commit()
     return _json({"ok": True})
 
 
@@ -1923,12 +1915,11 @@ def manage_log(character_id: int, request: Request, limit: int = 200, db: Sessio
 
 
 @router.post("/manage/bridge")
-async def save_timers(request: Request, db: Session = Depends(get_db)):
+def save_timers(request: Request, form=web.FormBody, db: Session = Depends(get_db)):
     _allowed()
     _, stop = web.require(request, is_admin, "The D&D Beyond bridge's settings are for admins.")
     if stop:
         return stop
-    form = await request.form()
     row = db.get(ToolSetting, TIMERS_KEY) or ToolSetting(key=TIMERS_KEY)
     if form.get("reset"):
         row.value = ""

@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -155,7 +156,7 @@ async def auth_callback(request: Request, db: Session = Depends(get_db)):
         "name": info.get("name") or email,
         "picture": info.get("picture"),
     }
-    _record_sign_in(db, email.lower(), info.get("name") or "")
+    await run_in_threadpool(_record_sign_in, db, email.lower(), info.get("name") or "")  # (never the database on the event loop)
     return RedirectResponse(back_to(request.session.pop("next", "/")), status_code=303)
 
 

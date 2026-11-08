@@ -80,3 +80,18 @@ def test_one_copy_of_the_app_reads_at_a_time(monkeypatch):
             other.execute(select(func.pg_advisory_unlock(unwatched.LOCK)))
             other.commit()
     assert unwatched.run_once() == ["read"]
+
+
+def test_a_sheet_read_from_itself_a_moment_ago_is_left_alone(db, sheet):
+    """Closed a moment ago (or reached through the DM's browser), its copy came from the sheet itself: D&D Beyond's
+    public copy can be behind it for minutes, so it isn't read here until PUBLIC_TRAILS has passed (Nov 8)."""
+    trah = char(db, "Trah")
+    trah.sheet_heard_at = None
+    characters.refresh(db, trah)  # (a copy to keep)
+    _old(db)
+    trah.snapshot.sheet_at = datetime.now(UTC) - timedelta(minutes=1)
+    db.flush()
+    assert trah.id not in [c.id for c in unwatched.unwatched(db)]
+    trah.snapshot.sheet_at -= characters.PUBLIC_TRAILS
+    db.flush()
+    assert trah.id in [c.id for c in unwatched.unwatched(db)]

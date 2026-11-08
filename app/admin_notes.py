@@ -12,6 +12,7 @@ in Testing mode Google expires stored refresh tokens after 7 days anyway.
 
 from authlib.integrations.starlette_client import OAuthError
 from fastapi import APIRouter, Depends, Form, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -186,7 +187,7 @@ async def sync_callback(request: Request, db: Session = Depends(get_db)):
         request.session["notes_error"] = "Sign in with your own account and allow read-only Drive access."
         return _back()
 
-    sources = list(db.scalars(select(NoteSource).where(NoteSource.character_id.is_(None)).order_by(NoteSource.id)))
+    sources = await run_in_threadpool(lambda: list(db.scalars(select(NoteSource).where(NoteSource.character_id.is_(None)).order_by(NoteSource.id))))
     fetched: dict[str, object] = {}
     for s in sources:
         try:
@@ -200,8 +201,11 @@ async def sync_callback(request: Request, db: Session = Depends(get_db)):
             raise value
         return value
 
-    results = sync_sources(db, sources, fetch)
-    db.commit()
+    def keep():  # (the database only ever from a worker thread: never on the event loop)
+        results = sync_sources(db, sources, fetch)
+        db.commit()
+        return results
+    results = await run_in_threadpool(keep)
     request.session["sync_results"] = results
     return _back()
 

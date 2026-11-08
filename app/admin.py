@@ -88,12 +88,12 @@ def book_upload(request: Request, file: UploadFile = File(...), db: Session = De
 
 
 @router.post("/import")
-async def import_upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+def import_upload(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     """Step 1: read the file and show what it would change. Nothing is written yet."""
     user, denied = _guard(request)
     if denied:
         return denied
-    raw = await file.read(MAX_UPLOAD_BYTES + 1)
+    raw = file.file.read(MAX_UPLOAD_BYTES + 1)
     context = {"user": user, "filename": file.filename}
     if len(raw) > MAX_UPLOAD_BYTES:
         context["error"] = "That file is too large (2 MB max)."

@@ -3,6 +3,7 @@
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine
+from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app import config
@@ -17,6 +18,11 @@ class Base(DeclarativeBase):
 # hours). Beta's Postgres allows 100: room for a second copy while a deploy overlaps, the backup job and the listener.
 engine = create_engine(config.DATABASE_URL, pool_pre_ping=True, pool_size=10, max_overflow=20) if config.DATABASE_URL else None
 SessionLocal = sessionmaker(bind=engine, expire_on_commit=False)
+# The event loop's own way in (app/access.py, the sign-in check every page and middleware makes): a connection of its
+# own each time, never one from the pool. Worker threads give pool connections back only through the loop, so the loop
+# waiting for one froze the whole server for 37 seconds (Sentry ASKDND-V2-P, Nov 8). Nothing else may use it.
+loop_engine = create_engine(config.DATABASE_URL, poolclass=NullPool) if config.DATABASE_URL else None
+LoopSession = sessionmaker(bind=loop_engine, expire_on_commit=False)
 
 
 def get_db() -> Iterator[Session]:
