@@ -490,8 +490,27 @@ def save_award(db: Session, session: GameSession, index: int, character: str, wh
         raise ReviewError("That award isn't there any more.")
     if not character.strip():
         raise ReviewError("Say who it goes to.")
-    awards[index].update(character=" ".join(character.split())[:120], why=" ".join(why.split())[:400], quote=" ".join(quote.split())[:400])
+    from app.session_story import nominees_of, picked
+
+    nominees = [dict(n) for n in nominees_of(awards[index])]
+    pick = picked(awards[index])
+    nominees[pick].update(character=" ".join(character.split())[:120], why=" ".join(why.split())[:400], quote=" ".join(quote.split())[:400])
+    awards[index] = {"award": awards[index]["award"], "nominees": nominees, "pick": pick}
     recap.awards = awards
+
+
+def pick_nominee(db: Session, session: GameSession, index: int, nominee: int, by: str = "") -> str:
+    """The reviewer's pick of who an award goes to, from Claude's nominees."""
+    from app.session_story import nominees_of
+
+    latest = latest_recap(session)
+    if latest is None or not 0 <= index < len(latest.awards) or not 0 <= nominee < len(nominees_of(latest.awards[index])):
+        raise ReviewError("That nominee isn't there any more.")
+    recap = _working(db, session, by)
+    awards = [dict(a) for a in recap.awards]
+    awards[index] = {"award": awards[index]["award"], "nominees": nominees_of(awards[index]), "pick": nominee}
+    recap.awards = awards
+    return nominees_of(awards[index])[nominee]["character"]
 
 
 def drop_award(db: Session, session: GameSession, index: int, by: str = "") -> str:
@@ -529,8 +548,19 @@ def publish(db: Session, session: GameSession) -> None:
         if r.status == Status.PUBLISHED and r.id != latest.id:
             r.status = Status.DRAFT
     latest.status = Status.PUBLISHED
-    for ev in session.events:
-        ev.status = Status.PUBLISHED
+    redrafted = any(ev.status == Status.DRAFT for ev in session.events if ev.id is not None) and _drafted_since(db, session)
+    for ev in list(session.events):
+        if redrafted and ev.status == Status.PUBLISHED:
+            db.delete(ev)  # a redraft's key moments replace the ones published before (kept in version history)
+        else:
+            ev.status = Status.PUBLISHED
+
+
+def _drafted_since(db: Session, session: GameSession) -> bool:
+    """Whether Claude drafted the key moments again after they were last published (its moments then replace them)."""
+    published = [ev for ev in session.events if ev.status == Status.PUBLISHED]
+    run = last_told(db, session)
+    return bool(published and run and run.created_at > max(ev.updated_at for ev in published))
 
 
 def save_event(db: Session, session: GameSession, event_id: int | None, kind: str, text: str) -> None:

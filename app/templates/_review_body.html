@@ -1,5 +1,8 @@
 {# The whole review area. Actions post with HTMX and swap this block in place. #}
 {% set hx = 'hx-target="#review" hx-swap="outerHTML"' %}
+{# The review as a wizard (Brett, Nov 7): a tab per step, each ending with the way to the next; the open one is in the
+   address (?tab=), so a change made here keeps you on it (admin_sessions._tab) #}
+{% macro step_foot(x) %}<div class="wizard-foot">{% if x.next %}<button type="button" class="btn" data-goto-tab="t-{{ x.next.key }}">Next: {{ x.next.label }} →</button>{% elif latest %}<span class="note">That's everything. Publish when you're ready.</span>{% endif %}</div>{% endmacro %}
 <div id="review" {% if drafting %}hx-get="{{ cbase }}/manage/sessions/{{ s.id }}/body" hx-trigger="every 5s" hx-swap="outerHTML"{% endif %}>
   <div class="title-row">
     <h1>{{ ("Session " ~ s.number) if s.number is not none else label }}{% if s.title %}: {{ s.title }}{% endif %}</h1>
@@ -49,7 +52,11 @@
   {% else %}
   <div class="layout">
     <div>
+      <div class="tabbar review-steps" role="tablist" data-tab-param aria-label="Review steps">
+        {% for x in steps %}<button role="tab" aria-selected="{{ 'true' if tab == x.key else 'false' }}" data-tab="t-{{ x.key }}"><span class="step-n">{{ x.n }}</span>{{ x.label }}{% if x.left and x.key != "recap" %} <span class="count notes-tab-new">{{ x.left }}</span>{% elif x.count is defined %} <span class="count">{{ x.count }}</span>{% elif not x.left %} <span class="step-done" aria-label="done">✓</span>{% endif %}</button>{% endfor %}
+      </div>
       {# 1. Questions #}
+      <div id="t-questions" role="tabpanel"{% if tab != "questions" %} hidden{% endif %}>
       <section class="section" id="questions">
         <div class="section-head"><h2><span class="num">1</span>Claude's questions</h2><span class="count">{% if open_questions %}{{ open_questions | length }} to answer{% endif %}</span></div>
         <p class="hint">Answer what you know and skip the rest. {% if s.source == "transcript" %}Your answers go into the recap when you draft it.{% else %}Answers make the next draft more accurate.{% endif %}</p>
@@ -132,8 +139,11 @@
         </details>
         {% endif %}
       </section>
+      {{ step_foot(step["questions"]) }}
+      </div>
 
       {# 2. Suggested updates #}
+      <div id="t-suggestions" role="tabpanel"{% if tab != "suggestions" %} hidden{% endif %}>
       <section class="section" id="suggestions">
         <div class="section-head"><h2><span class="num">2</span>Suggested updates</h2><span class="count">{% if open_proposals %}{{ open_proposals | length }} to review{% endif %}</span></div>
         <p class="hint">Changes to what askdnd knows about people, places, relationships and spellings.{% if s.source == "transcript" %} Settle these before drafting the recap, so it uses the right names and links to the entries you accept.{% endif %}</p>
@@ -202,7 +212,10 @@
         </details>
         {% endif %}
       </section>
+      {{ step_foot(step["suggestions"]) }}
+      </div>
       {# 3. Recap: drafted once the questions and suggestions are settled (a transcript's), else with them #}
+      <div id="t-recap" role="tabpanel"{% if tab != "recap" %} hidden{% endif %}>
       <section class="section" id="recap">
         <div class="section-head"><h2><span class="num">3</span>Recap</h2>{% if latest %}<button type="button" class="btn link" id="recap-edit" data-show="recap-form" data-hide="recap-view recap-edit">Edit</button>{% endif %}</div>
         <p class="hint">This is what the table reads on Previously on…{% if chapters %} It ends with <b>Read the full tale</b>.{% endif %}</p>
@@ -241,9 +254,12 @@
         <p class="meta">Version {{ latest.version }} by {{ "Claude" if latest.author == "ai" else (latest.author_name or "a person") }}{% if told %} · drafting cost {{ "%.0f" | format(told.cost_usd * 100) }}¢{% endif %}{% if published and published.id != latest.id %} · the table still sees version {{ published.version }}{% endif %}</p>
         {% endif %}
       </section>
+      {{ step_foot(step["recap"]) }}
+      </div>
 
       {% if chapters %}
       {# 4. The full tale (Session Story, Brett Nov 7): the session's own page on Story, a chapter per scene #}
+      <div id="t-tale" role="tabpanel"{% if tab != "tale" %} hidden{% endif %}>
       <section class="section" id="tale">
         <div class="section-head"><h2><span class="num">4</span>The full tale</h2><span class="count">{{ chapters | length }} chapters</span></div>
         <p class="hint">The long telling, on the session's own page after <b>Read the full tale</b>. Each chapter is a scene; its kind and time make <i>Fights and story</i>.</p>
@@ -263,9 +279,12 @@
         </div>
         {% endfor %}
       </section>
+      {{ step_foot(step["tale"]) }}
+      </div>
       {% endif %}
       {% if latest %}
       {# 5. Key moments #}
+      <div id="t-moments" role="tabpanel"{% if tab != "moments" %} hidden{% endif %}>
       <section class="section" id="events">
         <div class="section-head"><h2><span class="num">5</span>Key moments</h2><button type="button" class="btn link" data-show="ev-new" data-hide="">+ Add</button></div>
         <p class="hint">Shown under the recap. Theories appear as open threads, never as facts. ★ marks the major ones, which Story shows first (a draft marks up to 8); the rest are behind <b>Show the other</b>.</p>
@@ -297,13 +316,16 @@
         </ul>
         {% if not events %}<p class="muted">No key moments yet.</p>{% endif %}
       </section>
+      {{ step_foot(step["moments"]) }}
+      </div>
 
       {% endif %}
       {% if latest %}
       {# 6. Awards: Claude's from the session, the dice's from Table rolls on the night #}
+      <div id="t-awards" role="tabpanel"{% if tab != "awards" %} hidden{% endif %}>
       <section class="section" id="awards">
         <div class="section-head"><h2><span class="num">6</span>Awards</h2><span class="count">{% if awards %}{{ awards | length }}{% endif %}</span></div>
-        <p class="hint">On the session's page after the full tale. Claude gives them only where the session earned one; Hardest Luck and Damage King come from the rolls everyone saw that night.</p>
+        <p class="hint">On the session's page after the full tale. Claude gives them only where the session earned one, with a few nominees each: pick who it goes to (Claude's first choice until you do). Hardest Luck and Damage King come from the rolls everyone saw that night.</p>
         {% for a in awards %}{% set aid = "aw" ~ loop.index0 %}
         <div class="item">
           <div id="{{ aid }}-view">
@@ -311,8 +333,14 @@
               {% if a.dice %}<span class="note">From Table rolls</span>{% else %}
               <button type="button" class="btn link" data-show="{{ aid }}-form" data-hide="{{ aid }}-view">Edit</button>
               <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/awards/{{ a.index }}/drop" {{ hx | safe }}><button class="btn link danger">Take away</button></form>{% endif %}</div>
+            {% if a.nominees | length > 1 %}
+            <form class="rw-choices award-nominees" role="radiogroup" aria-label="Who {{ a.award }} goes to" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/awards/{{ a.index }}/pick" hx-trigger="change" {{ hx | safe }}>
+              {% for n in a.nominees %}<label class="rw-choice"><input type="radio" name="nominee" value="{{ loop.index0 }}"{{ " checked" if loop.index0 == a.pick }}><span><b>{{ n.who }}</b> · {% if n.quote %}“{{ n.quote }}” {% endif %}{{ n.why }}</span><small>{{ n.clock }}</small></label>{% endfor %}
+            </form>
+            {% else %}
             {% if a.quote %}<p class="answer">“{{ a.quote }}”</p>{% endif %}
             <p class="note m-0">{{ a.why }}{% if a.clock %} · {{ a.clock }}{% endif %}</p>
+            {% endif %}
           </div>
           {% if not a.dice %}
           <form id="{{ aid }}-form" class="stack" hidden hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/awards/{{ a.index }}" {{ hx | safe }}>
@@ -327,8 +355,11 @@
         <p class="muted">No awards this time.</p>
         {% endfor %}
       </section>
+      {{ step_foot(step["awards"]) }}
+      </div>
 
       {# 7. The session in numbers #}
+      <div id="t-numbers" role="tabpanel"{% if tab != "numbers" %} hidden{% endif %}>
       <section class="section" id="numbers">
         <div class="section-head"><h2><span class="num">7</span>The session in numbers</h2></div>
         {% include "_session_numbers.html" %}
@@ -346,6 +377,8 @@
         </div>
         {% endif %}
       </section>
+      {{ step_foot(step["numbers"]) }}
+      </div>
       {% endif %}
     </div>
 
@@ -353,12 +386,7 @@
       <div class="panel">
         <h3>Review</h3>
         <ul class="checklist">
-          <li><span class="tick {{ 'on' if not open_questions }}">{{ '✓' if not open_questions }}</span>Questions<small>{{ (open_questions | length ~ ' left') if open_questions else 'done' }}{% if waiting_count %} · {{ waiting_count }} waiting{% endif %}</small></li>
-          <li><span class="tick {{ 'on' if not open_proposals }}">{{ '✓' if not open_proposals }}</span>Suggestions<small>{{ (open_proposals | length ~ ' left') if open_proposals else 'done' }}</small></li>
-          <li><span class="tick {{ 'on' if latest }}">{{ '✓' if latest }}</span>Recap<small>{{ ('v' ~ latest.version) if latest else 'to draft' }}</small></li>
-          {% if latest %}<li><span class="tick on">✓</span>Full tale<small>{{ (chapters | length ~ ' chapters') if chapters else 'none' }}</small></li>
-          <li><span class="tick on">✓</span>Key moments<small>{{ events | length }}</small></li>
-          <li><span class="tick on">✓</span>Awards<small>{{ awards | length }}</small></li>{% endif %}
+          {% for x in steps %}<li><span class="tick {{ 'on' if not x.left }}">{{ '✓' if not x.left }}</span><a href="?tab={{ x.key }}" data-goto-tab="t-{{ x.key }}">{{ x.label }}</a><small>{% if x.left and x.key != "recap" %}{{ x.left }} left{% elif x.key == "recap" %}{{ ('v' ~ latest.version) if latest else 'to draft' }}{% elif x.count is defined %}{{ x.count }}{% else %}done{% endif %}{% if x.key == "questions" and waiting_count %} · {{ waiting_count }} waiting{% endif %}</small></li>{% endfor %}
         </ul>
         {% if latest %}<div class="publish-block">{% include "_publish_button.html" %}
           <p class="note">Shows on Previously on… You can edit and publish again any time.</p></div>

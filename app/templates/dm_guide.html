@@ -60,7 +60,7 @@
         <p>If nothing is ready to review, press <b>Draft the next one</b> on <a href="{{ cbase }}/manage/sessions">Sessions</a> (about a minute, about 13¢). After that it runs itself: <b>publishing a session starts drafting the next one</b>, so it's waiting for you next time.</p>
         <p class="note">Why one at a time: each draft only knows the people and places you've already accepted. Drafting all at once would suggest the same new NPC again in every session, and ask the same questions twice.</p>
         {% if b.to_review %}<p>Next up: {% for r in b.to_review[:3] %}<a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>{{ ", " if not loop.last }}{% endfor %}{% if b.to_review | length > 3 %} and {{ b.to_review | length - 3 }} more{% endif %}.</p>{% endif %}
-        <p>Each one takes 10 to 20 minutes. On the session's page, top to bottom:</p>
+        <p>Each one takes 10 to 20 minutes. The session's page is a set of numbered tabs, one per step, each saying what's left and ending with <b>Next</b>:</p>
         <ol class="guide-sub">
           <li><b>Claude's questions.</b> Answer what you know and <b>Skip</b> the rest.</li>
           <li><b>Suggested updates</b> (new people and places, spellings, description changes): <b>Accept</b>, <b>Edit</b> or <b>Reject</b>. A description change shows as a <b>marked-up edit</b>: struck-through words would go, highlighted words are Claude's. Where you wrote the description, Claude keeps your words and only adds or fixes what the session changed.</li>
@@ -68,7 +68,7 @@
           <li><b>Read the recap.</b> Fix anything wrong right there; your wording wins.</li>
           <li><b>The full tale</b> (the session's own page, after <b>Read the full tale</b>): a chapter per scene. <b>Edit</b> any chapter.</li>
           <li><b>Key moments.</b> Delete wrong ones, fix the wording, add any that are missing. ★ marks the major ones, which Story shows first (Claude marks up to 8 when drafting); the rest sit behind <b>Show the other</b>.</li>
-          <li><b>Awards.</b> Edit who it goes to or what it says, or <b>Take away</b> one that doesn't fit. One is yours: <b>DM Shining Moment</b>. Hardest Luck and Damage King come from the night's Table rolls. Under them, <b>The session in numbers</b> asks once who a name in the recording is.</li>
+          <li><b>Awards.</b> Claude suggests two or three nominees for each: pick who it goes to (its first choice until you do). <b>Edit</b> what it says, or <b>Take away</b> one that doesn't fit. One is yours: <b>DM Shining Moment</b>. Hardest Luck and Damage King come from the night's Table rolls. Under them, <b>The session in numbers</b> asks once who a name in the recording is.</li>
           <li><b>Publish.</b> The table sees it on <i>Story</i> (<i>Previously on…</i> and <i>All sessions</i>). You can edit and republish any time.</li>
         </ol></li>
       {% if b.to_record %}<li><b>Sessions waiting for a recording</b> <span class="tag">{{ b.to_record | length }}</span>

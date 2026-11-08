@@ -28,10 +28,16 @@ TOLD = {
     ],
     "events": [{"kind": "event", "text": "Trah read the runes.", "entities": ["Trah"], "major": True}],
     "awards": [
-        {"award": "Most Strategic", "character": "Trah", "why": "Read the runes before anyone touched the bell.", "quote": "", "at": "1:05:00"},
-        {"award": "Line of the Night", "character": "Big C", "why": "To the drowned crew.", "quote": "If it rings for the dead, it rings them home.", "at": ""},
-        {"award": "DM Shining Moment", "character": "The DM", "why": "The captain's voice from under the water.", "quote": "", "at": "2:31:00"},
-        {"award": "Most Strategic", "character": "", "why": "No one: dropped.", "quote": "", "at": ""},
+        {"award": "Most Strategic", "nominees": [
+            {"character": "Trah", "why": "Read the runes before anyone touched the bell.", "quote": "", "at": "1:05:00"},
+            {"character": "Cole", "why": "Kept the boat off the rocks.", "quote": "", "at": "0:20:00"},
+            {"character": "", "why": "No one: dropped.", "quote": "", "at": ""}]},
+        {"award": "Line of the Night", "nominees": [
+            {"character": "Big C", "why": "To the drowned crew.", "quote": "If it rings for the dead, it rings them home.", "at": ""}]},
+        {"award": "DM Shining Moment", "nominees": [
+            {"character": "The DM", "why": "The captain's voice from under the water.", "quote": "", "at": "2:31:00"},
+            {"character": "The DM", "why": "The bell ringing on its own.", "quote": "", "at": "3:00:00"}]},
+        {"award": "Best Decision", "nominees": [{"character": " ", "why": "No one: dropped.", "quote": "", "at": ""}]},
     ],
 }
 
@@ -72,7 +78,7 @@ def test_the_first_read_asks_and_suggests_and_writes_no_recap(db, story, dm):
     assert s.recaps == [] and review.review_status(s, False) == "read" and review.statuses(db, s.campaign_id)[s.id] == "read"
     page = dm.get(f"/c/main/manage/sessions/{s.id}").text
     assert "Who is the captain?" in page and "Draft the recap" in page and "Recap to draft" in page
-    assert page.index("Suggested updates") < page.index("Draft the recap")  # (questions, then suggestions, then the recap)
+    assert page.index('data-tab="t-questions"') < page.index('data-tab="t-suggestions"') < page.index('data-tab="t-recap"')  # (in order)
     assert "has Claude&#39;s questions and suggestions" in dm.get("/c/main/manage").text  # Needs you
 
 
@@ -98,6 +104,7 @@ def test_draft_the_recap_reads_the_kept_transcript_with_the_answers_and_keeps_th
     recap = s.recaps[-1]
     assert [c["at"] for c in recap.tale] == [0, 3600, 9000] and recap.tale[2]["kind"] == "fight"
     assert [a["award"] for a in recap.awards] == ["Most Strategic", "Line of the Night", "DM Shining Moment"]  # (one with no one: dropped)
+    assert [n["character"] for n in recap.awards[0]["nominees"]] == ["Trah", "Cole"] and recap.awards[0]["pick"] == 0
     assert review.latest_questions(db, s) == ASKED["to_check"]  # the recap's run doesn't clear the first read's questions
     assert review.unused_answer_count(db, s) == 0
     review.answer_question(db, s, "Was the bell rung twice?", "Once.", False)
@@ -227,6 +234,32 @@ def test_the_nights_dice_and_their_awards_count_only_what_the_table_saw(db, stor
     assert [(a["award"], a["who"], a["dice"]) for a in awards] == [("Hardest Luck", "Trah", True), ("Damage King", "Trah", True)]
 
 
+def test_the_reviewer_picks_who_an_award_goes_to_from_its_nominees(db, story, dm, player):
+    s = publish(db, story)
+    page = dm.get(f"/c/main/manage/sessions/{s.id}").text
+    assert 'name="nominee" value="1"' in page and "Kept the boat off the rocks." in page
+    assert "Kept the boat off the rocks." not in player.get(f"/c/main/sessions/{s.id}").text  # (Claude's first, until picked)
+    r = dm.post(f"/c/main/manage/sessions/{s.id}/awards/0/pick", data={"nominee": "1"}, headers=HX)
+    assert "Goes to Cole" in r.headers["HX-Trigger"]
+    db.expire_all()
+    s = db.get(GameSession, s.id)
+    assert s.recaps[-1].awards[0]["pick"] == 1 and review.review_status(s, False) == "edited"
+    review.publish(db, s)
+    db.flush()
+    page = player.get(f"/c/main/sessions/{s.id}").text
+    assert "Kept the boat off the rocks." in page and "Read the runes before anyone touched the bell." not in page
+    r = dm.post(f"/c/main/manage/sessions/{s.id}/awards/0/pick", data={"nominee": "7"}, headers=HX)
+    assert "isn" in r.headers["HX-Trigger"]
+    shown = session_story.awards(db, s, s.recaps[-1], {"hardest_luck": None, "damage_king": None})
+    assert [a["who"] for a in shown] == ["Cole", "Big C", "The DM"] and shown[2]["dm"]
+
+
+def test_an_award_drafted_without_nominees_still_shows(db, story):
+    recap = Recap(session_id=story.id, version=1, body="R.", author="ai", awards=[{"award": "Unsung Hero", "character": "Cole", "why": "Held the line.", "quote": "", "at": 60}])
+    shown = session_story.awards(db, story, recap, {})
+    assert (shown[0]["who"], shown[0]["why"], shown[0]["clock"], len(shown[0]["nominees"])) == ("Cole", "Held the line.", "0:01", 1)
+
+
 def test_editing_the_tale_or_an_award_after_publishing_makes_a_new_version(db, story, dm):
     s = publish(db, story)
     published = review.published_recap(s)
@@ -239,7 +272,8 @@ def test_editing_the_tale_or_an_award_after_publishing_makes_a_new_version(db, s
     assert latest.id != published.id and latest.status == Status.DRAFT and review.review_status(s, False) == "edited"
     assert latest.tale[1]["title"] == "The Runes" and latest.tale[1]["text"] == "Trah read them aloud." and latest.tale[1]["at"] == 3600
     assert latest.tale[1]["kind"] == "fight"
-    assert [a["award"] for a in latest.awards] == ["Line of the Night", "DM Shining Moment"] and latest.awards[0]["character"] == "Cole"
+    assert [a["award"] for a in latest.awards] == ["Line of the Night", "DM Shining Moment"]
+    assert latest.awards[0]["nominees"][0]["character"] == "Cole" and latest.awards[0]["nominees"][0]["quote"] == "It rings them home."
     assert db.get(Recap, published.id).awards[0]["award"] == "Most Strategic"  # the table still reads what was published
     review.save_recap(db, s, "A new recap.", by="Dee")
     assert s.recaps[-1].tale == latest.tale and s.recaps[-1].awards == latest.awards  # a recap edit keeps the tale and awards
@@ -288,3 +322,54 @@ def test_a_drafted_story_keeps_old_sessions_working(db, story):
     assert db.scalar(select(StoryEvent)) is None
     assert files.get(s.transcript_key).startswith(b"[0:00:01]")
     assert date(2026, 11, 6) == s.played_on
+
+
+def test_the_review_is_a_wizard_that_opens_on_what_is_left_and_keeps_its_place(db, story, dm):
+    """Brett, Nov 7: the review's parts as tabs in order, each ending with Next; a change keeps the tab you're on."""
+    read(db, story)
+    page = dm.get(f"/c/main/manage/sessions/{story.id}").text
+    assert 'data-tab="t-questions"' in page and 'id="t-questions" role="tabpanel">' in page  # questions left: opens there
+    assert 'id="t-suggestions" role="tabpanel" hidden' in page and "Next: Suggestions →" in page and 'data-tab="t-awards"' not in page
+    for q in ASKED["to_check"]:
+        review.skip_question(db, story, q)
+    db.flush()
+    page = dm.get(f"/c/main/manage/sessions/{story.id}").text
+    assert 'id="t-recap" role="tabpanel">' in page  # (no suggestions either: straight to Draft the recap)
+    told(db, story)
+    r = dm.post(f"/c/main/manage/sessions/{story.id}/awards/0/pick", data={"nominee": "1"},
+                headers={**HX, "HX-Current-URL": f"http://testserver/c/main/manage/sessions/{story.id}?tab=awards"})
+    assert 'id="t-awards" role="tabpanel">' in r.text and 'id="t-recap" role="tabpanel" hidden' in r.text
+    page = dm.get(f"/c/main/manage/sessions/{story.id}?tab=numbers").text
+    assert 'id="t-numbers" role="tabpanel">' in page and "That's everything" in page
+    assert dm.get(f"/c/main/manage/sessions/{story.id}?tab=nope").status_code == 200
+
+
+def test_a_redrafts_key_moments_replace_the_published_ones_when_published(db, story):
+    s = publish(db, story)
+    for ev in s.events:
+        ev.updated_at = datetime(2026, 11, 7, 9, tzinfo=session_story.TABLE_TIME)  # (published before the redraft)
+    db.flush()
+    told(db, s)
+    db.expire_all()
+    s = db.get(GameSession, s.id)
+    review.save_event(db, s, None, "event", "Added by hand.")  # (a moment of the DM's, added to the redraft)
+    db.flush()
+    db.expire_all()
+    s = db.get(GameSession, s.id)
+    assert len(s.events) == 3  # the published one, the DM's and the redraft's, until publishing
+    review.publish(db, s)
+    db.flush()
+    db.expire_all()
+    s = db.get(GameSession, s.id)
+    assert sorted(ev.text for ev in s.events) == ["Added by hand.", "Trah read the runes."]
+    assert all(ev.status == Status.PUBLISHED for ev in s.events)
+
+
+def test_editing_a_published_moment_and_publishing_again_keeps_the_rest(db, story):
+    s = publish(db, story)
+    review.save_event(db, s, None, "event", "Added by hand.")
+    db.flush()
+    review.publish(db, s)
+    db.flush()
+    db.expire_all()
+    assert len(db.get(GameSession, s.id).events) == 2

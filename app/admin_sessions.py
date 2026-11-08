@@ -202,7 +202,40 @@ def _next_session(db: Session, s: GameSession) -> dict | None:
     return {"s": nxt, "label": session_label(nxt), "drafted": bool(nxt.recaps), "has_notes": has_notes}
 
 
-def _body_context(db: Session, s: GameSession) -> dict:
+STEPS = ("questions", "suggestions", "recap", "tale", "moments", "awards", "numbers")
+
+
+def _tab(request: Request) -> str:
+    """The review step that's open: the address's ?tab=, or (an HTMX action or the page polling while Claude drafts)
+    the one in the address of the page that asked, so a change keeps you where you were."""
+    from urllib.parse import parse_qs, urlparse
+
+    tab = request.query_params.get("tab") or (parse_qs(urlparse(request.headers.get("HX-Current-URL", "")).query).get("tab") or [""])[0]
+    return tab if tab in STEPS else ""
+
+
+def _steps(ctx: dict, s: GameSession, tab: str) -> tuple[list[dict], str]:
+    """The review as a wizard (Brett, Nov 7): a tab per step, in the order they're done, each saying what's left; and the
+    step to open (the one asked for, else the first with something left)."""
+    latest = ctx["latest"]
+    steps = [
+        {"key": "questions", "label": "Questions", "left": len(ctx["open_questions"])},
+        {"key": "suggestions", "label": "Suggestions", "left": len(ctx["open_proposals"])},
+        {"key": "recap", "label": "Recap" if latest or s.source != "transcript" else "Draft the recap", "left": 0 if latest else 1},
+    ]
+    if latest:
+        steps += [{"key": "tale", "label": "Full tale", "left": 0, "count": len(ctx["chapters"])}] if ctx["chapters"] else []
+        steps += [{"key": "moments", "label": "Key moments", "left": 0, "count": len(ctx["events"])},
+                  {"key": "awards", "label": "Awards", "left": 0, "count": len(ctx["awards"])},
+                  {"key": "numbers", "label": "Numbers", "left": len(ctx["talked"]["unmatched"])}]
+    keys = [x["key"] for x in steps]
+    open_ = tab if tab in keys else next((x["key"] for x in steps[:3] if x["left"]), "recap")
+    for i, x in enumerate(steps):
+        x["n"], x["next"] = i + 1, steps[i + 1] if i + 1 < len(steps) else None
+    return steps, open_
+
+
+def _body_context(db: Session, s: GameSession, tab: str = "") -> dict:
     running = _running_ids(db)
     ctx = review.review_context(db, s, drafting=s.id in running)
     ctx.update(
@@ -226,6 +259,8 @@ def _body_context(db: Session, s: GameSession) -> dict:
         told=review.last_told(db, s),
     )
     session_story.pictured(db, ctx["awards"], ctx["talked"]["rows"])
+    ctx["steps"], ctx["tab"] = _steps(ctx, s, tab)
+    ctx["step"] = {x["key"]: x for x in ctx["steps"]}
     return ctx
 
 
@@ -246,7 +281,7 @@ def review_page(request: Request, session_id: int, db: Session = Depends(get_db)
     return templates.TemplateResponse(
         request,
         "admin_review.html",
-        {**_body_context(db, s), "toast": request.session.pop("toast", None), "auto_check": request.query_params.get("check") == "1"},
+        {**_body_context(db, s, _tab(request)), "toast": request.session.pop("toast", None), "auto_check": request.query_params.get("check") == "1"},
     )
 
 
@@ -259,7 +294,7 @@ def review_body(request: Request, session_id: int, db: Session = Depends(get_db)
     s = db.get(GameSession, session_id)
     if s is None:
         return RedirectResponse(f"{web.base()}/manage/sessions", status_code=303)
-    return templates.TemplateResponse(request, "_review_body.html", _body_context(db, s))
+    return templates.TemplateResponse(request, "_review_body.html", _body_context(db, s, _tab(request)))
 
 
 def _act(request: Request, db: Session, session_id: int, action: Callable[[GameSession], str]):
@@ -279,7 +314,7 @@ def _act(request: Request, db: Session, session_id: int, action: Callable[[GameS
     db.expire_all()
     s = db.get(GameSession, session_id)
     if request.headers.get("HX-Request"):
-        response = templates.TemplateResponse(request, "_review_body.html", _body_context(db, s))
+        response = templates.TemplateResponse(request, "_review_body.html", _body_context(db, s, _tab(request)))
         response.headers["HX-Trigger"] = json.dumps({"toast": message})
         return response
     request.session["toast"] = message
@@ -374,6 +409,14 @@ def save_award(request: Request, session_id: int, index: int, character: str = F
     def act(s):
         review.save_award(db, s, index, character, why, quote, by=web.person_name(current_user(request)))
         return "Award saved"
+
+    return _act(request, db, session_id, act)
+
+
+@router.post("/sessions/{session_id:int}/awards/{index:int}/pick")
+def pick_nominee(request: Request, session_id: int, index: int, nominee: int = Form(...), db: Session = Depends(get_db)):
+    def act(s):
+        return f"Goes to {review.pick_nominee(db, s, index, nominee, by=web.person_name(current_user(request)))}"
 
     return _act(request, db, session_id, act)
 

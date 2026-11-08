@@ -166,9 +166,10 @@ def test_tap_targets_on_a_phone(people, server):
     assert not small, small
 
 
-def test_manage_pages_hold_together_at_every_width(people, server, long_names):
+def test_manage_pages_hold_together_at_every_width(people, server, long_names, told_session):
     admin = people("admin")
-    found = check(admin, server, PAGES["admin"])
+    review = told_session.replace("/sessions/", "/manage/sessions/")  # (the review wizard: every step's tab is checked)
+    found = check(admin, server, PAGES["admin"] + (review,))
     assert not found, "\n".join(found)
     assert admin.errors == []
 

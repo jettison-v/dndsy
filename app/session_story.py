@@ -213,12 +213,17 @@ def awards(db: Session, session: GameSession, recap: Recap | None, rolled: dict 
         if ch.entity is not None:
             for n in [ch.name, ch.entity.name] + [a.alias for a in ch.entity.aliases if not a.misspelling]:
                 by_name.setdefault(n.casefold(), ch)
+    def shown(award: str, n: dict) -> dict:
+        dm = award == DM_AWARD or n["character"].casefold().strip() in ("the dm", "dm")
+        ch = None if dm else by_name.get(n["character"].casefold())
+        return {**n, "who": "The DM" if dm else ch.name if ch else n["character"], "dm": dm,
+                "entity_id": ch.entity.id if ch and ch.entity else None, "clock": clock(n.get("at"))}
+
     out = []
     for i, a in enumerate(recap.awards if recap else []):
-        dm = a["award"] == DM_AWARD or a["character"].casefold().strip() in ("the dm", "dm")
-        ch = None if dm else by_name.get(a["character"].casefold())
-        out.append({**a, "index": i, "who": "The DM" if dm else ch.name if ch else a["character"], "dm": dm,
-                    "entity_id": ch.entity.id if ch and ch.entity else None, "clock": clock(a.get("at")), "dice": False})
+        nominees = [shown(a["award"], n) for n in nominees_of(a)]
+        pick = picked(a)
+        out.append({**nominees[pick], "award": a["award"], "index": i, "nominees": nominees, "pick": pick, "dice": False})
     rolled = rolled if rolled is not None else dice(db, session)
     for award, key in zip(DICE_AWARDS, ("hardest_luck", "damage_king")):
         got = rolled.get(key)
@@ -227,6 +232,17 @@ def awards(db: Session, session: GameSession, recap: Recap | None, rolled: dict 
             out.append({"award": award, "who": ch.name, "dm": False, "entity_id": ch.entity.id if ch.entity else None, "why": got["why"], "quote": "",
                         "clock": "", "dice": True})
     return out
+
+
+def nominees_of(award: dict) -> list[dict]:
+    """An award's nominees (one given straight to someone, as drafts before Nov 7 did, is its only nominee)."""
+    return award.get("nominees") or [{k: award.get(k) for k in ("character", "why", "quote", "at")}]
+
+
+def picked(award: dict) -> int:
+    """Which nominee the award goes to: the reviewer's pick, else Claude's first."""
+    pick = award.get("pick") or 0
+    return pick if 0 <= pick < len(nominees_of(award)) else 0
 
 
 def pictured(db: Session, *lists: list[dict]) -> None:

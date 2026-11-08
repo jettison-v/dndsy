@@ -113,15 +113,18 @@ times) and its text: vivid but faithful, past tense, third person, using the \
 characters' own words where the source has them. The recap's rules apply: \
 nothing invented, no advice, no headings inside a chapter.
 
-Awards: give 2-5 of these, only where the session clearly earned one, each to \
-a player character by their exact name, and never all to one character: Most \
+Awards: give 2-5 of these, only where the session clearly earned one. Each \
+award has 2-3 nominees for the reviewer to choose from (one when only one \
+moment fits), your strongest first, each a player character by their exact \
+name, and the awards' first choices never all the same character: Most \
 Strategic (the plan that shaped a scene or fight), Best Decision (a choice \
 that changed where the story went), Line of the Night (an in-character line, \
 quoted exactly in "quote"), Clutch Moment (an action or roll when it counted \
 most), Unsung Hero (quiet help that made someone else's moment), and DM \
 Shining Moment (the Dungeon Master's best moment of the night: a scene, a \
-voice, a reveal or a twist that landed; its "character" is "The DM"). "why" is \
-one sentence saying what they did; "at" is when ("H:MM:SS", or empty). The \
+voice, a reveal or a twist that landed; its nominees are different moments, \
+each "character" "The DM"). A nominee's "why" is one sentence saying what they \
+did; "at" is when ("H:MM:SS", or empty). The \
 players' awards are about what characters did, never how well someone played. \
 Hardest Luck and Damage King come from the dice, not from you.
 
@@ -183,13 +186,23 @@ _PROPS = {
         "items": {
             "type": "object",
             "additionalProperties": False,
-            "required": ["award", "character", "why", "quote", "at"],
+            "required": ["award", "nominees"],
             "properties": {
                 "award": {"type": "string", "enum": AWARDS},
-                "character": {"type": "string"},
-                "why": {"type": "string"},
-                "quote": {"type": "string", "description": "Line of the Night's line; empty otherwise"},
-                "at": {"type": "string", "description": "H:MM:SS, or empty"},
+                "nominees": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": ["character", "why", "quote", "at"],
+                        "properties": {
+                            "character": {"type": "string"},
+                            "why": {"type": "string"},
+                            "quote": {"type": "string", "description": "Line of the Night's line; empty otherwise"},
+                            "at": {"type": "string", "description": "H:MM:SS, or empty"},
+                        },
+                    },
+                },
             },
         },
     },
@@ -590,12 +603,21 @@ def _chapters(data: dict) -> list[dict]:
     return out
 
 
+NOMINEES_MOST = 3
+
+
+def _nominee(n: dict) -> dict:
+    return {"character": n["character"].strip()[:120], "why": (n.get("why") or "").strip()[:400],
+            "quote": (n.get("quote") or "").strip()[:400], "at": seconds(n.get("at", ""))}
+
+
 def _awards(data: dict) -> list[dict]:
+    """Each award Claude gave with its nominees (the reviewer picks one; the first until they do: `pick`)."""
     out = []
     for a in data.get("awards") or []:
-        if a.get("award") in AWARDS and (a.get("character") or "").strip():
-            out.append({"award": a["award"], "character": a["character"].strip()[:120], "why": (a.get("why") or "").strip()[:400],
-                        "quote": (a.get("quote") or "").strip()[:400], "at": seconds(a.get("at", ""))})
+        nominees = [_nominee(n) for n in a.get("nominees") or [] if (n.get("character") or "").strip()][:NOMINEES_MOST]
+        if a.get("award") in AWARDS and nominees:
+            out.append({"award": a["award"], "nominees": nominees, "pick": 0})
     return out
 
 
