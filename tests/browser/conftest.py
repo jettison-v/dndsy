@@ -91,7 +91,7 @@ def server(browser_db, tmp_path_factory, request):
     env = {**os.environ, "DATABASE_URL": database_url, "APP_ENV": "development", "SESSION_SECRET": "browser-tests",
            "FILE_STORAGE": str(tmp_path_factory.mktemp("files")),
            "DEV_LOGIN_EMAIL": PEOPLE["admin"], "ADMIN_EMAILS": PEOPLE["admin"], "ALLOWED_EMAILS": ",".join(PEOPLE.values()),
-           "AUTO_DRAFT": "0", "HTTP_PROXY": "http://127.0.0.1:9", "HTTPS_PROXY": "http://127.0.0.1:9",  # never D&D Beyond
+           "AUTO_DRAFT": "0", "UNWATCHED_SECONDS": "0", "HTTP_PROXY": "http://127.0.0.1:9", "HTTPS_PROXY": "http://127.0.0.1:9",  # never D&D Beyond
            "NO_PROXY": "127.0.0.1,localhost", **getattr(request.module, "SERVER_ENV", {})}
     # Its log goes to a file: a pipe nobody reads fills after ~64 KB of request lines, and the server then stops answering
     # mid-file (Nov 2: failures only in slow runs, which make more requests)

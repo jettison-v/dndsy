@@ -58,9 +58,6 @@ FEEDBACK_KEY = os.getenv("FEEDBACK_KEY", "").strip()
 PROD_URL = os.getenv("PROD_URL", "https://askdnd.ai").rstrip("/")
 # Where the table adds the extension: its Chrome Web Store listing (unlisted: only people with this link find it)
 BRIDGE_EXTENSION_URL = "https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl"
-# VTT test's invite link on D&D Beyond, for "A test copy of your character" (app/twins.py, temporary): anyone with it can
-# join the test campaign, so it's kept out of git (scripts/set-secret.sh VTT_TEST_INVITE_URL)
-VTT_TEST_INVITE_URL = os.getenv("VTT_TEST_INVITE_URL", "").strip()
 
 
 def sqlalchemy_url(raw: str | None) -> str:
