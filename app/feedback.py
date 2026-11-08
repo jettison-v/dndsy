@@ -95,7 +95,8 @@ def for_you(db: Session) -> int:
 
 @router.post("/feedback")
 def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
-    """A note for Claude, with what the page was at that moment."""
+    """A note for Claude, with what the page was at that moment. On staging it goes to prod's queue, marked Staging
+    (Brett, Nov 6: one queue, and nothing lost when staging's data is refreshed); kept here only if prod can't be reached."""
     user = _real(request)
     if not user or not access.sends_feedback(user.get("email")):
         raise HTTPException(404)
@@ -106,29 +107,79 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     context = body.get("context") if isinstance(body.get("context"), dict) else {}
     if len(json.dumps(context)) > MAX_CONTEXT:
         context = {"left_out": "The page's details were too long to keep."}
-    campaign = web.campaign(db)
-    email = user["email"].lower()
-    role = access.role(email, campaign.id if campaign else None)
-    sender = f"{user.get('name') or email} ({'admin' if access.level(email) == access.ADMIN else role or 'member'})"
     viewing = view_as.viewing(request.session)
-    context |= {"signed_in_as": sender, "server_at": datetime.now(UTC).isoformat(),
-                **({"viewing_as": viewing.get("name") or viewing["email"]} if viewing else {})}
+    if viewing:
+        context |= {"viewing_as": viewing.get("name") or viewing["email"]}
+    note = {"email": user["email"].lower(), "name": user.get("name") or "", "text": text, "url": str(body.get("url") or "")[:1000],
+            "context": context, "html": str(body.get("html") or "")[:MAX_HTML], "shot": body.get("shot"), "pasted": body.get("pasted")}
+    if config.STAGING:
+        sent = to_prod(note)
+        if "id" in sent:
+            return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": sent.get("review", True), "to_prod": True})
+        note["context"] = {**context, "not_sent_to_prod": sent.get("error", "")[:300]}
+    fb = _store(db, note)
+    return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": fb.status == "review"})
+
+
+def _store(db: Session, note: dict, staging: bool = False) -> Feedback:
+    """Keep a note in this askdnd's queue: who sent it (as what, here), its pictures in file storage, waiting for an
+    admin unless an admin sent it."""
+    campaign = web.campaign(db)
+    email = note["email"]
+    role = access.role(email, campaign.id if campaign else None)
+    admin = access.level(email) == access.ADMIN
+    sender = f"{note.get('name') or email} ({'admin' if admin else role or 'member'})"
+    context = dict(note.get("context") or {}) | {"signed_in_as": sender, "server_at": datetime.now(UTC).isoformat(),
+                                                **({"staging": True} if staging else {})}
     keys = {}
     for name in ("shot", "pasted"):
-        img = _image(body.get(name))
+        img = _image(note.get(name))
         if img and campaign:
             try:
                 keys[name] = files.put(db, campaign.id, *img)
             except (files.FileError, files.StorageNotReady) as e:
                 context[f"{name}_left_out"] = str(e)
-    me = picks.user_row(db, user)
-    admin = access.level(email) == access.ADMIN
-    fb = Feedback(user_id=me.id if me else None, sender=sender[:300], text=text, url=str(body.get("url") or "")[:1000],
+    me = picks.user_row(db, {"email": email})
+    fb = Feedback(user_id=me.id if me else None, sender=sender[:300], text=note["text"][:MAX_TEXT], url=str(note.get("url") or "")[:1000],
                   status="new" if admin else "review",  # (the table's notes wait for an admin's approval)
-                  context=context, html=str(body.get("html") or "")[:MAX_HTML], shot_key=keys.get("shot"), pasted_key=keys.get("pasted"))
+                  context=context, html=str(note.get("html") or "")[:MAX_HTML], shot_key=keys.get("shot"), pasted_key=keys.get("pasted"))
     db.add(fb)
     db.commit()
-    return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": not admin})
+    return fb
+
+
+SEND = None  # tests replace it: (url, payload, key) -> dict
+
+
+def to_prod(note: dict) -> dict:
+    """Staging's note, sent to prod's queue with the feedback key: {"id", "review"}, or {"error"}."""
+    import urllib.error
+    import urllib.request
+
+    if not config.FEEDBACK_KEY:
+        return {"error": "Staging has no FEEDBACK_KEY, so the note stays here."}
+    url = f"{config.PROD_URL}/api/feedback/from-staging"
+    if SEND is not None:
+        return SEND(url, note, config.FEEDBACK_KEY)
+    req = urllib.request.Request(url, data=json.dumps(note).encode(), method="POST",
+                                 headers={"Content-Type": "application/json", "X-Feedback-Key": config.FEEDBACK_KEY,
+                                          "User-Agent": "askdnd-staging/1.0"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read())
+    except (urllib.error.URLError, TimeoutError, ValueError) as e:
+        return {"error": f"Prod didn't take it ({e})."}
+
+
+@router.post("/api/feedback/from-staging")
+def from_staging(body=web.JsonBody, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """A note sent on staging, into this queue marked Staging (its sender as they are here)."""
+    _claude(x_feedback_key)
+    body = body if isinstance(body, dict) else {}
+    if not str(body.get("text") or "").strip() or not str(body.get("email") or "").strip():
+        raise HTTPException(400, "A note needs its words and who sent it.")
+    fb = _store(db, {**body, "email": str(body["email"]).lower(), "text": str(body["text"]).strip()}, staging=True)
+    return JSONResponse({"id": fb.id, "review": fb.status == "review"})
 
 
 # ------------------------------------------------------------------ the queue (admins)

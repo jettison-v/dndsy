@@ -1,0 +1,249 @@
+<title>Trophy Case</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@700&family=Cormorant+Garamond:ital,wght@0,600;1,500&display=swap" rel="stylesheet">
+<style>
+/* Mockup (Brett, Nov 7): a page per player that keeps their awards from the recaps and their own numbers from Table
+   rolls and the sessions, for his review on Nov 8. askdnd's own look; the table's characters; every number is made up. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --violet: #b99be8; --gold: #d8b25a;
+  --green-soft: rgba(91,191,127,.15); --amber-soft: rgba(232,179,75,.15); --blue-soft: rgba(126,166,224,.15); --gold-soft: rgba(216,178,90,.14);
+  --story-head: #f1e9da; --story-cap: #a99070;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --serif: "Cormorant Garamond", Georgia, serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0; --gold: #8a6a1c;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --gold-soft: rgba(138,106,28,.12);
+  --story-head: #3b2e1c; --story-cap: #8a6a3c; color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0; --gold: #8a6a1c;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --gold-soft: rgba(138,106,28,.12);
+  --story-head: #3b2e1c; --story-cap: #8a6a3c; color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 48px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.4rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 72ch; }
+b { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+section, header { display: grid; gap: 14px; min-width: 0; }
+.lead { font-size: 1.06rem; }
+.cap { font-size: .84rem; color: var(--muted); }
+.k { font: 700 .7rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.badge-rec { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
+.opt-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.opt-head h2 { flex: 1 1 auto; min-width: 0; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; display: grid; gap: 6px; align-content: start; }
+.fact > b { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.fact.good > b { color: var(--green); } .fact.cost > b { color: var(--amber); } .fact.plain > b { color: var(--muted); }
+.fact ul { margin: 0; padding-left: 1.1em; display: grid; gap: 3px; }
+
+.screen { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.bar { display: flex; gap: 14px; align-items: center; padding: 9px 14px; background: var(--surface); border-bottom: 1px solid var(--line); font-size: .84rem; color: var(--muted); flex-wrap: wrap; }
+.bar b { color: var(--strong); }
+.pg { padding: 18px; display: grid; gap: 18px; }
+.who { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.ava { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 700 1.1rem/1 var(--sans); color: #fff; background: #3c6a8a; flex: none; }
+.ava.s { width: 26px; height: 26px; font-size: .7rem; }
+.ava.bc { background: #8a4b3c; } .ava.tr { background: #4b7a4f; } .ava.nn { background: #6a4b8a; }
+.who h3 { font-size: 1.4rem; }
+.modes { display: flex; gap: 4px; margin-left: auto; background: var(--surface-2); border-radius: 999px; padding: 3px; font-size: .84rem; }
+.modes span { padding: 4px 12px; border-radius: 999px; color: var(--muted); }
+.modes span.on { background: var(--surface); color: var(--strong); font-weight: 600; box-shadow: 0 0 0 1px var(--line); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.tile { background: var(--surface); border-radius: 8px; padding: 8px 12px; display: grid; gap: 2px; }
+.tile small { color: var(--muted); font-size: .74rem; }
+.tile b { font-size: 1.35rem; font-variant-numeric: tabular-nums; }
+.tile .note { font-size: .74rem; color: var(--muted); }
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.trophy { background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--amber); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; align-content: start; }
+.trophy.dice { border-top-color: var(--blue); }
+.trophy .n { font: 700 .7rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.trophy.dice .n { color: var(--blue); }
+.trophy .x { font-size: 1.6rem; font-weight: 700; color: var(--strong); line-height: 1; }
+.trophy .when { font-size: .76rem; color: var(--muted); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: grid; gap: 10px; }
+.label { font: 800 .7rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.hist { display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; align-items: end; height: 90px; }
+.hist i { background: var(--blue); border-radius: 2px 2px 0 0; display: block; }
+.hist i.one { background: var(--red); } .hist i.twenty { background: var(--green); }
+.axis { display: grid; grid-template-columns: repeat(20, 1fr); font-size: .62rem; color: var(--muted); text-align: center; }
+.list { display: grid; gap: 8px; }
+.row { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; font-size: .9rem; }
+.row .grow { flex: 1 1 200px; min-width: 0; }
+.row .note { font-size: .78rem; color: var(--muted); }
+.tag { border-radius: 999px; padding: 1px 8px; font-size: .72rem; font-weight: 600; background: var(--gold-soft); color: var(--gold); white-space: nowrap; }
+.tag.dice { background: var(--blue-soft); color: var(--blue); }
+q { font-family: var(--serif); font-style: italic; color: var(--story-head); }
+.spark { display: flex; gap: 3px; align-items: end; height: 34px; }
+.spark i { width: 10px; background: var(--violet); border-radius: 2px; display: block; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.cols > * { min-width: 0; }
+.party-table { width: 100%; border-collapse: collapse; font-size: .86rem; min-width: 520px; }
+.party-table th, .party-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+.party-table th { font: 700 .7rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.party-table td.n { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll-x { overflow-x: auto; }
+.mini { font-size: .84rem; }
+
+.answer-form { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 16px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 8px; min-width: 0; }
+legend { font-weight: 700; color: var(--strong); padding: 0; margin-bottom: 4px; }
+.choice { display: flex; gap: 10px; align-items: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.choice input { margin-top: 4px; }
+.choice span { display: grid; gap: 2px; }
+.choice small { color: var(--muted); }
+textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; }
+.btn { display: inline-flex; align-items: center; border-radius: 8px; padding: 7px 14px; font: 600 .9rem/1.2 var(--sans); border: 1px solid var(--red); background: var(--red); color: #fff; cursor: pointer; }
+.sent { font-size: .86rem; color: var(--green); }
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">askdnd · design · for Nov 8</span>
+  <h1>Trophy Case</h1>
+  <p class="lead">A page per player that keeps what the recaps gave them and what their dice did: <b>every award</b> from the published sessions (Claude's, which you pick, and the dice's), and <b>their own numbers</b> from Table rolls and the sessions, across the whole campaign.</p>
+  <p class="cap">Where it lives: today a character has three pages, <b>Battle · Sheet · Plan</b>. Everything here is made up: Cole and the party, invented numbers. It's for fun, never a ranking of how anyone plays. Who talked stays on each session's page, so this page never compares people by talking.</p>
+</header>
+
+<section>
+  <div class="opt-head"><h2>A · A fourth page on the character: Trophies</h2><span class="badge-rec">Recommended</span></div>
+  <p>Beside Battle · Sheet · Plan, a <b>Trophies</b> page anyone at the table can open, on their own character or someone else's (from Party too). The trophy shelf comes first, then the numbers, then the dice.</p>
+  <div class="screen">
+    <div class="bar"><b>Cole</b><span>Party ▾</span><span>Story</span><span>Campaign</span></div>
+    <div class="pg">
+      <div class="who"><span class="ava">Co</span><div><h3>Cole</h3><span class="cap">Druid 6 / Monk 2 · played by Brett · 14 sessions</span></div>
+        <div class="modes"><span>Battle</span><span>Sheet</span><span>Plan</span><span class="on">Trophies</span></div></div>
+
+      <div class="label">The shelf · 7 awards</div>
+      <div class="shelf">
+        <div class="trophy"><span class="n">Most Strategic</span><span class="x">×3</span><span class="when">Sessions 9, 12, 14</span></div>
+        <div class="trophy"><span class="n">Unsung Hero</span><span class="x">×2</span><span class="when">Sessions 11, 14</span></div>
+        <div class="trophy"><span class="n">Clutch Moment</span><span class="x">×1</span><span class="when">Session 13</span></div>
+        <div class="trophy dice"><span class="n">Damage King</span><span class="x">×1</span><span class="when">Session 10</span></div>
+        <div class="trophy dice" style="opacity:.45"><span class="n">Hardest Luck</span><span class="x">—</span><span class="when">Not yet</span></div>
+      </div>
+
+      <div class="label">Across the campaign</div>
+      <div class="tiles">
+        <div class="tile"><small>Rolls</small><b>412</b><span class="note">29 a session</span></div>
+        <div class="tile"><small>Natural 20s</small><b>23</b><span class="note">1 in 18</span></div>
+        <div class="tile"><small>Natural 1s</small><b>17</b><span class="note">1 in 24</span></div>
+        <div class="tile"><small>Average d20</small><b>10.9</b><span class="note">the dice expect 10.5</span></div>
+        <div class="tile"><small>Damage dealt</small><b>1,284</b><span class="note">biggest: 38</span></div>
+        <div class="tile"><small>Healing</small><b>211</b><span class="note">Goodberry and potions</span></div>
+        <div class="tile"><small>In key moments</small><b>58</b><span class="note">most: Session 12</span></div>
+        <div class="tile"><small>Sessions</small><b>14</b><span class="note">since Aug 29</span></div>
+      </div>
+
+      <div class="cols">
+        <div class="panel"><span class="label">Every d20 Cole rolled</span>
+          <div class="hist" aria-label="How often each number came up on the d20">
+            <i class="one" style="height:62%"></i><i style="height:55%"></i><i style="height:70%"></i><i style="height:58%"></i><i style="height:66%"></i><i style="height:60%"></i><i style="height:72%"></i><i style="height:52%"></i><i style="height:64%"></i><i style="height:69%"></i>
+            <i style="height:57%"></i><i style="height:75%"></i><i style="height:61%"></i><i style="height:68%"></i><i style="height:59%"></i><i style="height:71%"></i><i style="height:63%"></i><i style="height:66%"></i><i style="height:58%"></i><i class="twenty" style="height:84%"></i></div>
+          <div class="axis"><span>1</span><span></span><span></span><span></span><span>5</span><span></span><span></span><span></span><span></span><span>10</span><span></span><span></span><span></span><span></span><span>15</span><span></span><span></span><span></span><span></span><span>20</span></div>
+        </div>
+        <div class="panel"><span class="label">Their awards, newest first</span>
+          <div class="list mini">
+            <div class="row"><span class="tag">Most Strategic</span><span class="grow">Planned the library search that led straight to Terra.</span><span class="note">Session 14</span></div>
+            <div class="row"><span class="tag">Unsung Hero</span><span class="grow">Kept the boat off the rocks while the others talked to ghosts.</span><span class="note">Session 14</span></div>
+            <div class="row"><span class="tag">Clutch Moment</span><span class="grow">The last Wild Shape before the bridge gave way.</span><span class="note">Session 13</span></div>
+            <div class="row"><span class="tag dice">Damage King</span><span class="grow">96 damage rolled, in 7 rolls.</span><span class="note">Session 10</span></div>
+          </div>
+          <span class="cap">Each opens its session's page.</span>
+        </div>
+      </div>
+      <div class="panel"><span class="label">Natural 20s by session</span><div class="spark" aria-label="Natural 20s in each session"><i style="height:30%"></i><i style="height:60%"></i><i style="height:15%"></i><i style="height:45%"></i><i style="height:90%"></i><i style="height:30%"></i><i style="height:60%"></i><i style="height:15%"></i><i style="height:45%"></i><i style="height:30%"></i><i style="height:75%"></i><i style="height:45%"></i><i style="height:30%"></i><i style="height:60%"></i></div></div>
+    </div>
+  </div>
+  <div class="facts">
+    <div class="fact good"><b>Why here</b><ul>
+      <li>Awards go to characters, so they sit with the character, one click from Battle.</li>
+      <li>Anyone can look at anyone's, from Party, like the Sheet.</li>
+      <li>A test campaign's twins get their own, apart from the real ones.</li></ul></div>
+    <div class="fact plain"><b>Where the numbers come from</b><ul>
+      <li>Rolls everyone saw in Table rolls: askdnd's own and D&amp;D Beyond's game log. A DM-only or private roll never counts.</li>
+      <li>Damage and healing: the damage and heal rolls.</li>
+      <li>Key moments: the published ones that link the character.</li>
+      <li>Awards: the published version of each recap.</li></ul></div>
+    <div class="fact cost"><b>Worth knowing</b><ul>
+      <li>Rolls made on paper or before Table rolls existed aren't counted, so early sessions look quiet.</li>
+      <li>"Average d20" is facts only: no "lucky" or "unlucky" verdict.</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="opt-head"><h2>B · One Trophies page for the whole party</h2></div>
+  <p>Instead, a <b>Trophies</b> tab on Party: every character in one table, each row opening that character's shelf. Easier to compare, which is exactly its risk.</p>
+  <div class="screen"><div class="bar"><b>Party</b><span>At a glance</span><span>Spells</span><span>Items</span><span style="color:var(--strong);font-weight:600">Trophies</span></div>
+    <div class="pg"><div class="scroll-x"><table class="party-table">
+      <tr><th>Character</th><th>Awards</th><th class="n">Rolls</th><th class="n">Nat 20s</th><th class="n">Damage</th><th class="n">Healing</th></tr>
+      <tr><td><span class="ava s">Co</span> Cole</td><td><span class="tag">Most Strategic ×3</span> <span class="tag">+4</span></td><td class="n">412</td><td class="n">23</td><td class="n">1,284</td><td class="n">211</td></tr>
+      <tr><td><span class="ava s bc">BC</span> Big C</td><td><span class="tag">Line of the Night ×4</span> <span class="tag">+2</span></td><td class="n">388</td><td class="n">19</td><td class="n">1,702</td><td class="n">96</td></tr>
+      <tr><td><span class="ava s tr">Tr</span> Trah</td><td><span class="tag">Best Decision ×3</span> <span class="tag">+3</span></td><td class="n">351</td><td class="n">21</td><td class="n">944</td><td class="n">0</td></tr>
+      <tr><td><span class="ava s nn">NN</span> No Name</td><td><span class="tag">Clutch Moment ×2</span> <span class="tag">+1</span></td><td class="n">296</td><td class="n">12</td><td class="n">1,120</td><td class="n">340</td></tr>
+    </table></div></div></div>
+  <div class="facts">
+    <div class="fact good"><b>Good for</b><ul><li>Seeing the party's season at a glance.</li></ul></div>
+    <div class="fact cost"><b>But</b><ul><li>A table side by side reads as a ranking, which the rules here avoid.</li><li>It's where an A page would link from anyway.</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <h2>What I'd build first</h2>
+  <p>A, with the shelf, the tiles and the awards list from data askdnd already has. The d20 chart and the per-session sparkline come second. B can come later as links to each character's page, without the comparison columns.</p>
+  <p class="cap">The awards list includes Claude's (only the nominee the DM picked, once published) and the dice's. A trophy for something new (most healing in a night, say) is added in one place and shows on every shelf.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Your choices</span>
+  <h2>Two questions and a box</h2>
+  <form class="answer-form" id="answer">
+    <fieldset><legend>1 · Where does it live?</legend>
+      <label class="choice"><input type="radio" name="where" value="A"><span><b>A · A Trophies page on each character (recommended)</b><small>Beside Battle · Sheet · Plan; open from Party too.</small></span></label>
+      <label class="choice"><input type="radio" name="where" value="B"><span><b>B · One Trophies tab on Party</b><small>Every character in one table.</small></span></label>
+    </fieldset>
+    <fieldset><legend>2 · Which numbers?</legend>
+      <label class="choice"><input type="radio" name="numbers" value="all"><span><b>All of these</b><small>Rolls, 20s and 1s, average d20, damage, healing, key moments, sessions, the d20 chart.</small></span></label>
+      <label class="choice"><input type="radio" name="numbers" value="few"><span><b>Fewer</b><small>Say which in the box.</small></span></label>
+    </fieldset>
+    <label style="display:grid;gap:6px"><b>Anything else</b><textarea id="words" name="words" placeholder="More trophies, fun names, what to leave out…"></textarea></label>
+    <div class="row"><button class="btn" id="send" type="submit">Submit</button><span class="sent" id="sent"></span></div>
+  </form>
+</section>
+</div>
+
+<script>
+(() => {
+  const form = document.getElementById('answer'), sent = document.getElementById('sent'), send = document.getElementById('send');
+  let db = null;
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { sent.textContent = 'Open this page signed in to claude.ai to send it.'; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try {
+      await db.collection('answers').doc('pick').set({ where: f.get('where') || '', numbers: f.get('numbers') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
+      sent.textContent = 'Sent to Claude';
+    } catch (err) { sent.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    db = await claude.use('db');
+    if (!db) return;
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) return;
+      const a = d.data();
+      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = a[r.name] === r.value; });
+      document.getElementById('words').value = a.words || '';
+      sent.textContent = 'Sent earlier: change it and Submit again if you like';
+    } catch (err) { /* nothing sent yet */ }
+  })();
+})();
+</script>

@@ -54,6 +54,8 @@ DDB_BRIDGE = os.getenv("DDB_BRIDGE", "").strip() == "1"
 # Claude's key to the feedback queue (app/feedback.py `/api/feedback`, scripts/feedback.py): set with scripts/set-secret.sh;
 # unset, the API answers nothing
 FEEDBACK_KEY = os.getenv("FEEDBACK_KEY", "").strip()
+# Prod's address: staging sends its feedback notes there (app/feedback.py to_prod; Brett, Nov 6: one queue)
+PROD_URL = os.getenv("PROD_URL", "https://askdnd.ai").rstrip("/")
 # Where the table adds the extension: its Chrome Web Store listing (unlisted: only people with this link find it)
 BRIDGE_EXTENSION_URL = "https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl"
 # VTT test's invite link on D&D Beyond, for "A test copy of your character" (app/twins.py, temporary): anyone with it can

@@ -20,7 +20,7 @@
         <summary class="fb-row">
           {% if f.shot_key %}<img class="fb-thumb" src="/manage/feedback/{{ f.id }}/shot" alt="" loading="lazy">{% else %}<span class="fb-thumb" aria-hidden="true"></span>{% endif %}
           <span class="fb-main"><b>{{ f.text | truncate(160) }}</b>
-            <span class="note">{{ ctx.page or f.url }} · <time datetime="{{ f.created_at.isoformat() }}" data-clock="date">{{ f.created_at | ago }}</time> · {{ f.sender }}{% if ctx.viewing_as %} viewing as {{ ctx.viewing_as }}{% endif %}{% if ctx.browser %} · {{ ctx.browser }}{% endif %}{% if ctx.window %}, {{ ctx.window }}{% endif %}{% if ctx.pointed %} · pointed at {{ ctx.pointed.label }}{% endif %}{% if f.pasted_key %} · a screenshot pasted{% endif %}</span></span>
+            <span class="note">{% if ctx.staging %}<span class="tag staging-tag" title="Sent from staging.askdnd.ai">Staging</span> {% endif %}{{ ctx.page or f.url }} · <time datetime="{{ f.created_at.isoformat() }}" data-clock="date">{{ f.created_at | ago }}</time> · {{ f.sender }}{% if ctx.viewing_as %} viewing as {{ ctx.viewing_as }}{% endif %}{% if ctx.browser %} · {{ ctx.browser }}{% endif %}{% if ctx.window %}, {{ ctx.window }}{% endif %}{% if ctx.pointed %} · pointed at {{ ctx.pointed.label }}{% endif %}{% if f.pasted_key %} · a screenshot pasted{% endif %}</span></span>
           <span class="fb-st {{ f.status }}">{{ labels[f.status] }}</span>
         </summary>
         <div class="fb-open">
