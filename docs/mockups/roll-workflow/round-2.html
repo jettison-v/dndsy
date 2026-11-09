@@ -240,6 +240,16 @@ header, section { display: grid; gap: 14px; min-width: 0; }
 .panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .panel-h small { color: var(--muted); font-size: .8rem; }
 .tr-list { display: grid; gap: 6px; }
+.tr-card { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; display: grid; gap: 4px; font-size: .82rem; animation: in .3s; }
+.tr-card.dm { border-left: 3px solid var(--amber); } .tr-card.me { border-left: 3px solid var(--blue); }
+.tr-h { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.tr-h .w { color: var(--muted); font-size: .72rem; white-space: nowrap; }
+.beat { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-top: 1px solid var(--line); padding-top: 4px; animation: in .3s; }
+.beat span { min-width: 0; display: grid; }
+.beat small { color: var(--muted); font-size: .72rem; }
+.beat b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.beat.k-dmg b { color: var(--red); } .beat.k-apply b { color: var(--green); }
+.beat.struck span, .beat.struck b { text-decoration: line-through; color: var(--muted); }
 .tr { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; background: var(--surface-2); border-radius: 10px; padding: 8px 10px; font-size: .82rem; animation: in .3s; }
 @keyframes in { from { opacity: 0; transform: translateY(-4px); } }
 .tr .w { color: var(--muted); font-size: .74rem; }
@@ -482,7 +492,7 @@ button.send:disabled { opacity: .5; cursor: default; }
       extra: [], adding: false, visOpen: false, vis: 'table',
       riders: Object.fromEntries((s.riders || []).map(r => [r.k, !!r.on])), smiteLvl: 1, fiend: false,
       hit: null, rerolled: false, favored: null, outcome: null, dmg: null, target: (s.targets || [])[0], applied: false,
-      saves: {}, dmSave: null, spent: [], table: [], record: {}, rolling: false,
+      saves: {}, dmSave: null, spent: [], table: [], card: null, record: {}, rolling: false,
     };
     presses = 0;
     drawBattle(); drawCard(); drawTable(); drawRecord(); counter();
@@ -703,15 +713,25 @@ button.send:disabled { opacity: .5; cursor: default; }
     if (sc === 'tr') spend('3rd-level slot', 'Fireball');
   }
   function spend(what, note) { st.spent.push({ what, note }); }
-  function tableRow(text, tot, sub, struck) {
-    st.table.unshift({ text, tot, sub, vis: st.vis, struck, at: nowT() });
+  // One card per action in Table rolls (Brett's comment, Nov 9): to hit, then damage, then what was applied, each
+  // landing in the same card as it happens; a roll that replaces one of its kind (a reroll, a die added) strikes it
+  function beat(kind, label, tot, sub) {
+    const s = SC[sc];
+    if (!st.card) {
+      const o = s.choice && st.choice && s.choice.opts.find(o => o.k === st.choice);
+      st.card = { title: `${s.who} · ${s.name}${o && sc === 'nn' && st.choice !== 'damage' ? ' (' + o.t + (st.sub ? ': ' + st.sub.toLowerCase() : '') + ')' : ''}`, beats: [], at: nowT() };
+      st.table.unshift(st.card);
+    }
+    if (kind === 'hit' || kind === 'dmg') st.card.beats.forEach(b => { if (b.kind === kind) b.struck = true; });
+    st.card.vis = st.vis;
+    st.card.beats.push({ kind, label, tot, sub });
   }
 
   // ---- what the table sees
   function drawTable() {
     const el = tableEl;
     if (!st.table.length) { el.innerHTML = '<div class="empty">Nothing yet. Rolls land here one at a time: the to-hit first, then the damage.</div>'; return; }
-    el.innerHTML = st.table.map(r => `<div class="tr${r.vis === 'dm' ? ' dm' : r.vis === 'me' ? ' me' : ''}${r.struck ? ' struck' : ''}"><span>${r.text}</span><span class="tot">${r.tot}</span><span class="w">${r.sub}${r.vis === 'dm' ? ' · DM only' : r.vis === 'me' ? ' · only you' : ''} · ${r.at}</span></div>`).join('');
+    el.innerHTML = st.table.map(c => `<div class="tr-card${c.vis === 'dm' ? ' dm' : c.vis === 'me' ? ' me' : ''}"><div class="tr-h"><b>${c.title}</b><span class="w">${c.vis === 'dm' ? 'DM only · ' : c.vis === 'me' ? 'only you · ' : ''}${c.at}</span></div>${c.beats.map(b => `<div class="beat k-${b.kind}${b.struck ? ' struck' : ''}"><span>${b.label}<small>${b.sub}</small></span><b>${b.tot}</b></div>`).join('')}</div>`).join('');
   }
 
   // ---- what askdnd keeps
@@ -764,10 +784,10 @@ button.send:disabled { opacity: .5; cursor: default; }
       if (b.dataset.choice === 'shove') { st.choice = 'shove-pick'; drawCard(); return; }
       st.choice = b.dataset.choice;
       st.step = sc === 'tr' ? 'dmgpre' : st.choice === 'damage' ? 'attack' : 'save';
-      if (st.step === 'save') tableRow(`${s.who} · ${st.choice === 'grapple' ? 'Grapple' : 'Shove'} Enemy 1`, 'DC 15', 'Enemy 1: Str or Dex save, for the DM');
+      if (st.step === 'save') beat('save', 'Enemy 1 saves', 'DC 15', 'Strength or Dexterity, for the DM');
       all(); return;
     }
-    if (b.dataset.sub) { st.choice = 'shove'; st.sub = b.dataset.sub; st.step = 'save'; tableRow(`${s.who} · Shove Enemy 1 (${st.sub.toLowerCase()})`, 'DC 15', 'Enemy 1: Str or Dex save, for the DM'); all(); return; }
+    if (b.dataset.sub) { st.choice = 'shove'; st.sub = b.dataset.sub; st.step = 'save'; beat('save', 'Enemy 1 saves', 'DC 15', 'Strength or Dexterity, for the DM'); all(); return; }
     if (b.hasAttribute('data-back')) { if (st.step === 'choice') st.choice = null; else { st.step = 'choice'; st.choice = null; st.sub = null; } all(); return; }
     if (b.dataset.mode) { st.mode = b.dataset.mode; drawCard(); return; }
     if (b.dataset.pre) { st.pre[b.dataset.pre] = !st.pre[b.dataset.pre]; drawCard(); return; }
@@ -777,14 +797,14 @@ button.send:disabled { opacity: .5; cursor: default; }
       if (st.step === 'dmgres' && st.dmg) {  // forgot something: it joins the damage
         const part = isDie ? { src: 'added', type: s.dmg.type, rolls: [d(+v.slice(1))], flat: 0 } : { src: 'added', type: s.dmg.type, rolls: [], flat: +v };
         st.dmg.parts.push(part); st.dmg.byType[part.type] = (st.dmg.byType[part.type] || 0) + sum(part.rolls) + part.flat; st.dmg.total = sum(Object.values(st.dmg.byType));
-        tableRow(`${s.who} · ${s.name} · damage, with ${isDie ? '1' + v : v}`, st.dmg.total, `${isDie ? '1' + v + ' → ' + part.rolls[0] : v} added`);
+        beat('dmg', `Damage, with ${isDie ? '1' + v : v}`, st.dmg.total, `${isDie ? '1' + v + ' → ' + part.rolls[0] : v} added`);
         st.adding = false; all(); return;
       }
       const dmgSide = st.step === 'dmgpre';
       if (st.step === 'hitres' && st.hit && !st.rolling) {  // after the roll: it adds to the to-hit now (Bardic Inspiration, a Guidance-like die)
         const add = isDie ? { v: d(+v.slice(1)), src: 'added +1' + v, die: '1' + v } : { v: +v, src: 'added', die: (v > 0 ? '+' : '') + v };
         st.hit.adds.push(add); st.hit.total += add.v; st.adding = false;
-        tableRow(`${s.who} · ${s.name} · to hit, with ${add.src.replace('added ', '')}`, st.hit.total, `${add.die} → ${add.v}`);
+        beat('hit', `To hit, with ${add.src.replace('added ', '')}`, st.hit.total, `${add.die} → ${add.v}`);
         all(); return;
       }
       st.extra.push(isDie ? { n: +v.slice(1), label: '+1' + v, dmg: dmgSide } : { v: +v, label: (+v > 0 ? '+' : '−') + Math.abs(+v), dmg: dmgSide });
@@ -795,13 +815,12 @@ button.send:disabled { opacity: .5; cursor: default; }
     if (b.dataset.vis) { st.vis = b.dataset.vis; st.visOpen = false; all(); return; }
     if (b.hasAttribute('data-roll-hit')) {
       st.step = 'hitres'; st.adding = false;
-      spin(() => { rollHit(); const h = st.hit; tableRow(`${s.who} · ${s.name}${st.choice === 'damage' ? '' : ''} · to hit`, h.total, `d20 ${h.d20s.join(' / ')}${h.mode !== 'normal' ? (h.mode === 'adv' ? ' (Advantage)' : ' (Disadvantage)') : ''} +${s.attack.bonus}${h.adds.map(a => ` +${a.src} ${a.v}`).join('')}${h.crit ? ' · natural 20' : h.fumble ? ' · natural 1' : ''}`); all(); });
+      spin(() => { rollHit(); const h = st.hit; beat('hit', 'To hit', h.total, `d20 ${h.d20s.join(' / ')}${h.mode !== 'normal' ? (h.mode === 'adv' ? ' (Advantage)' : ' (Disadvantage)') : ''} +${s.attack.bonus}${h.adds.map(a => ` +${a.src} ${a.v}`).join('')}${h.crit ? ' · natural 20' : h.fumble ? ' · natural 1' : ''}`); all(); });
       return;
     }
     if (b.hasAttribute('data-reroll')) {
       st.rerolled = true; spend('Heroic Inspiration', 'reroll');
-      const was = st.table[0]; if (was) was.struck = true;
-      spin(() => { rollHit(true); st.rerolled = true; const h = st.hit; tableRow(`${s.who} · ${s.name} · to hit, rerolled (Heroic Inspiration)`, h.total, `d20 ${h.d20s.join(' / ')} +${s.attack.bonus}${h.adds.map(a => ` +${a.src} ${a.v}`).join('')}`); all(); });
+      spin(() => { rollHit(true); st.rerolled = true; const h = st.hit; beat('hit', 'To hit, rerolled (Heroic Inspiration)', h.total, `d20 ${h.d20s.join(' / ')} +${s.attack.bonus}${h.adds.map(a => ` +${a.src} ${a.v}`).join('')}`); all(); });
       return;
     }
     if (b.dataset.rider) {
@@ -817,7 +836,7 @@ button.send:disabled { opacity: .5; cursor: default; }
       spin(() => {
         rollDamage(); st.step = toStep;
         const m = st.dmg;
-        tableRow(`${s.who} · ${s.name} · damage${sc === 'tr' ? ' (Dex save DC 15)' : ''}`, m.total, Object.entries(m.byType).map(([t, v]) => `${v} ${t}`).join(' + ') + (m.crit ? ' · critical' : '') + (st.riders.stun ? ' · Stunning Strike: Con save DC 14' : ''));
+        beat('dmg', sc === 'tr' ? 'Damage · Dex save DC 15' : 'Damage', m.total, Object.entries(m.byType).map(([t, v]) => `${v} ${t}`).join(' + ') + (m.crit ? ' · critical' : '') + (st.riders.stun ? ' · Stunning Strike: Con save DC 14' : ''));
         all();
       });
       return;
@@ -831,7 +850,7 @@ button.send:disabled { opacity: .5; cursor: default; }
       st.favored = 'used'; spend('Favored by the Gods', '1 of 1, until a Short or Long Rest');
       const r = rollDice(2, 4), v = sum(r);
       st.hit.adds.push({ v, src: 'Favored by the Gods', die: '2d4' }); st.hit.total += v;
-      tableRow(`${s.who} · ${s.name} · to hit, Favored by the Gods`, st.hit.total, `+2d4 (${r.join(' + ')}) after a miss`);
+      beat('hit', 'To hit, Favored by the Gods', st.hit.total, `+2d4 (${r.join(' + ')}) after a miss`);
       all(); return;
     }
     if (b.dataset.target) { st.target = b.dataset.target; drawCard(); return; }
@@ -840,28 +859,29 @@ button.send:disabled { opacity: .5; cursor: default; }
       all(); return;
     }
     if (b.dataset.flip) { const v = st.saves[b.dataset.flip]; v.ok = !v.ok; all(); return; }
-    if (b.hasAttribute('data-dm-save')) { const dd = d(20); st.dmSave = { d: dd, roll: dd + 3, ok: dd + 3 >= 15 }; tableRow('Enemy 1 · save vs ' + (st.choice === 'grapple' ? 'Grapple' : 'Shove'), st.dmSave.roll, 'the DM · ' + (st.dmSave.ok ? 'succeeded' : 'failed') + ' vs DC 15'); all(); return; }
+    if (b.hasAttribute('data-dm-save')) { const dd = d(20); st.dmSave = { d: dd, roll: dd + 3, ok: dd + 3 >= 15 }; beat('save', "Enemy 1's save", st.dmSave.roll, 'rolled by the DM · ' + (st.dmSave.ok ? 'succeeded' : 'failed') + ' vs DC 15'); all(); return; }
     if (b.hasAttribute('data-finish')) {
       const ok = st.dmSave.ok;
       st.applied = true; st.appliedSay = ok ? 'nothing: Enemy 1 succeeded' : st.choice === 'grapple' ? 'Enemy 1: Grappled (escape DC 15)' : st.sub === 'Knock Prone' ? 'Enemy 1: Prone' : 'Enemy 1 pushed 5 ft';
       st.doneSay = ok ? 'Enemy 1 holds its ground.' : st.choice === 'grapple' ? 'Enemy 1 is Grappled by No Name. Its Speed is 0 until it escapes (DC 15).' : st.sub === 'Knock Prone' ? 'Enemy 1 is Prone. Attacks within 5 ft have Advantage against it.' : 'Enemy 1 is pushed 5 feet.';
+      beat('apply', ok ? 'Holds its ground' : st.appliedSay.replace('Enemy 1: ', 'Enemy 1 is '), ok ? '—' : '✓', ok ? 'nothing changes' : 'shown on Enemy 1');
       st.step = 'done'; all(); return;
     }
     if (b.hasAttribute('data-apply')) {
       if (sc === 'tr') {
         const got = s.area.filter(a => !(a.ally && st.riders.sculpt)).map(a => `${a.n} ${st.saves[a.n].ok ? Math.floor(st.dmg.total / 2) : st.dmg.total}`);
         st.appliedSay = got.join(', ') + (st.riders.sculpt ? ' · Cole 0 (Sculpt Spells)' : '');
-        tableRow(`Fireball → ${got.join(', ')}`, '✓', 'applied');
+        beat('apply', 'Applied', '✓', got.join(', ') + (st.riders.sculpt ? ' · Cole 0 (Sculpt Spells)' : ''));
         st.doneSay = 'Applied: ' + got.join(', ') + '.';
       } else {
         st.appliedSay = `${st.dmg.total} to ${st.target}`;
-        tableRow(`${s.who} → ${st.target}`, '✓', `${st.dmg.total} damage applied`);
+        beat('apply', `${st.target} takes`, st.dmg.total, 'applied');
         st.doneSay = `${st.target} takes ${st.dmg.total}.` + (st.riders.stun ? ' Its Con save against Stunning Strike is with the DM.' : '');
       }
       st.applied = true; st.step = 'done'; all(); return;
     }
     if (b.hasAttribute('data-undo')) {
-      st.table.forEach(r => r.struck = true);
+      if (st.card) { st.card.beats.forEach(b => { if (b.kind === 'apply') b.struck = true; }); beat('note', 'Undone', '↺', 'nothing applied, nothing spent'); }
       st.spent = []; st.applied = false; st.appliedSay = '';
       st.doneSay = 'Undone: nothing applied, nothing spent.'; all(); return;
     }
@@ -869,8 +889,8 @@ button.send:disabled { opacity: .5; cursor: default; }
   function finishMiss() {
     const s = SC[sc];
     st.outcome = 'miss';
-    if (st.dmg) { const r = st.table.find(r => / damage/.test(r.text)); if (r) r.struck = true; }
-    tableRow(`${s.who} · ${s.name}`, '—', 'missed');
+    if (st.card) st.card.beats.forEach(b => { if (b.kind === 'dmg') b.struck = true; });
+    beat('miss', 'Missed', '—', 'the DM said it missed');
     st.doneSay = 'Missed.' + (st.spent.some(x => /Focus|slot/.test(x.what)) ? '' : ' Nothing was spent on damage.');
     st.step = 'done'; all();
   }
