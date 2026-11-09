@@ -1,0 +1,308 @@
+<title>Which Features Get Used</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Brett, Nov 9 (roadmap step 5): askdnd's own counts of which features get used, as a page in the Admin menu: visual,
+   live, made to decide what to build next. Drawn at a 13-14" laptop's size with made-up numbers. One series per chart
+   (the admin blue, validated on both surfaces), a one-hue scale for the who-uses-what grid. His answers are kept in the
+   page's store (db: answers/pick). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --grid: #2c3036; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --chart: #6593e6; --chart-soft: rgba(101,147,230,.18);
+  --blue-soft: rgba(126,166,224,.16); --shadow: rgba(0,0,0,.45);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --grid: #ebe6dc; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --chart: #2f5f9e; --chart-soft: rgba(47,95,158,.14);
+  --blue-soft: rgba(47,95,158,.12); --shadow: rgba(40,30,10,.18); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --grid: #ebe6dc; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --chart: #2f5f9e; --chart-soft: rgba(47,95,158,.14);
+  --blue-soft: rgba(47,95,158,.12); --shadow: rgba(40,30,10,.18); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 30px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.2rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 74ch; }
+b { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--blue); }
+.lbl { font: 700 .7rem/1 var(--cond); letter-spacing: .11em; text-transform: uppercase; color: var(--muted); }
+.note { color: var(--muted); font-size: .86rem; }
+header, section { display: grid; gap: 12px; min-width: 0; }
+
+/* the page as askdnd draws it: Admin's thin blue line, the page's title, filters in one row */
+.page { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg); }
+.page::before { content: ""; display: block; height: 4px; background: var(--blue); }
+.page-in { padding: 18px 22px 24px; display: grid; gap: 18px; min-width: 0; }
+.ph { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; }
+.ph h2 { font-size: 1.5rem; }
+.filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 5px 11px; font-size: .82rem; font-weight: 600; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--blue-soft); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.seg button:focus-visible, .frow:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; display: grid; gap: 2px; }
+.tile .big { font-size: 1.7rem; font-weight: 800; color: var(--strong); font-variant-numeric: tabular-nums; }
+.tile .d { font-size: .8rem; color: var(--muted); }
+.up { color: var(--green); } .down { color: var(--red); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; position: relative; }
+.card-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 900px) { .grid2, .tiles { grid-template-columns: minmax(0, 1fr); } .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+svg text { fill: var(--muted); font: 11px var(--sans); }
+.chart-wrap { overflow-x: auto; }
+.tip { position: absolute; pointer-events: none; background: var(--strong); color: var(--bg); border-radius: 8px; padding: 6px 9px; font-size: .78rem; white-space: nowrap; box-shadow: 0 8px 20px var(--shadow); z-index: 3; }
+.tip[hidden] { display: none; }
+
+/* the ranked list */
+.flist { display: grid; gap: 2px; }
+.frow { display: grid; grid-template-columns: minmax(130px, 1.3fr) minmax(80px, 2fr) 74px 92px 64px; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 8px; cursor: pointer; border: 0; background: none; text-align: left; width: 100%; }
+.frow:hover, .frow[aria-pressed="true"] { background: var(--surface-2); }
+.frow .n { font-size: .88rem; color: var(--strong); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.frow .bar { height: 10px; background: var(--grid); border-radius: 0 4px 4px 0; position: relative; }
+.frow .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--chart); border-radius: 0 4px 4px 0; }
+.frow .c { font-variant-numeric: tabular-nums; font-size: .84rem; text-align: right; }
+.who { display: flex; gap: 3px; }
+.who span { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line); }
+.who span.on { background: var(--chart); border-color: var(--chart); }
+.frow .t { font-size: .8rem; text-align: right; font-variant-numeric: tabular-nums; }
+.fhead { grid-template-columns: minmax(130px, 1.3fr) minmax(80px, 2fr) 74px 92px 64px; display: grid; gap: 10px; padding: 0 8px; }
+@media (max-width: 700px) { .frow, .fhead { grid-template-columns: minmax(0, 1fr) 60px 70px; } .frow .bar, .fhead .hb, .frow .who, .fhead .hw { display: none; } }
+
+/* never touched, releases */
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 10px; font-size: .8rem; }
+.chip small { color: var(--muted); }
+.rel { display: grid; grid-template-columns: minmax(0, 1.2fr) 60px 60px 70px; gap: 8px; font-size: .86rem; padding: 4px 0; border-top: 1px solid var(--grid); align-items: center; }
+.rel .c { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* who uses what */
+.heat { display: grid; grid-template-columns: minmax(120px, 1.2fr) repeat(5, minmax(44px, 1fr)); gap: 3px; font-size: .8rem; }
+.heat .h { color: var(--muted); font-size: .74rem; text-align: center; align-self: end; }
+.heat .r { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.heat .cell { height: 22px; border-radius: 4px; display: grid; place-items: center; font-size: .7rem; font-variant-numeric: tabular-nums; color: var(--strong); background: var(--grid); }
+.legend { display: flex; align-items: center; gap: 6px; font-size: .76rem; color: var(--muted); }
+.legend i { width: 18px; height: 10px; border-radius: 3px; display: inline-block; }
+
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .88rem; }
+.pro > b:first-child { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 4px; color: var(--green); }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.aq { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 70px; font: 16px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; font-weight: 600; cursor: pointer; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · ⚙ Admin · Nov 9</div>
+    <h1>Which features get used</h1>
+    <p>A page in the Admin menu, counted by askdnd itself from what it already sees (a roll, a window used, a change made), never sent anywhere. It's made to answer three questions: what's used, what's never touched, and what a release changed. <b>The numbers are made up</b> for the mockup; the features are askdnd's.</p>
+  </header>
+
+  <div class="page">
+    <div class="page-in">
+      <div class="ph"><h2>Features</h2><span class="note">⚙ Admin · counted by askdnd, kept 90 days</span></div>
+      <div class="filters">
+        <span class="seg" role="group" aria-label="Range" id="range"><button type="button" data-days="7" aria-pressed="false">7 days</button><button type="button" data-days="30" aria-pressed="true">30 days</button><button type="button" data-days="90" aria-pressed="false">90 days</button></span>
+        <span class="seg" role="group" aria-label="Campaign"><button type="button" aria-pressed="true">The Adventure Begins</button><button type="button" aria-pressed="false">VTT test</button><button type="button" aria-pressed="false">All</button></span>
+        <span class="seg" role="group" aria-label="Sort" id="sort"><button type="button" data-sort="uses" aria-pressed="true">Most used</button><button type="button" data-sort="trend" aria-pressed="false">Growing</button><button type="button" data-sort="fall" aria-pressed="false">Falling</button></span>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-h"><h3>Every use, by day</h3><span class="note">dashed lines: a release reached prod</span></div>
+          <div class="chart-wrap" id="line"></div>
+          <div class="tip" id="tip" hidden></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3 id="pick-title">Pick a feature</h3><span class="note" id="pick-sub"></span></div>
+          <div id="pick-body" class="note">Press a row below: its own line, who used it, and what it was used for.</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>By feature</h3><span class="note">uses · who of the five · against the period before</span></div>
+        <div class="fhead lbl"><span>Feature</span><span class="hb">Uses</span><span style="text-align:right">Count</span><span class="hw">Who</span><span style="text-align:right">Trend</span></div>
+        <div class="flist" id="flist"></div>
+      </div>
+      <div class="grid2">
+        <div class="card">
+          <div class="card-h"><h3>Never touched in this range</h3><span class="note">built, on, and no one used it</span></div>
+          <div class="chips" id="never"></div>
+          <p class="note">A feature only counts here when it's switched on for the campaign (Labs pieces too), so "never" means nobody chose it.</p>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>What a release changed</h3><span class="note">7 days before and after</span></div>
+          <div id="rel"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><h3>Who uses what</h3><span class="legend">fewer <i style="background:var(--grid)"></i><i style="background:color-mix(in srgb, var(--chart) 30%, var(--grid))"></i><i style="background:color-mix(in srgb, var(--chart) 60%, var(--grid))"></i><i style="background:var(--chart)"></i> more</span></div>
+        <div class="heat" id="heat"></div>
+        <p class="note">By character for players and by role for the DM, as everywhere in askdnd. A number in each square, so it reads without the colour.</p>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <h2>Two choices for you</h2>
+    <div class="pros">
+      <div class="pro"><b>1. What counts as a use · my pick: A</b><b>A</b>, doing something: a roll, a window used, a change made, a page of the story read for a while. <b>B</b>, also every page opened. B is bigger numbers but counts the times someone passed through.</div>
+      <div class="pro"><b>2. Who's in the numbers · my pick: A</b><b>A</b>, the table only: players and the DM; your own clicks and test accounts left out, so building doesn't drown the play. <b>B</b>, everyone, with a switch.</div>
+    </div>
+    <form class="answer" id="answer">
+      <div class="aq"><b>1. What counts as a use?</b>
+        <div class="picks" role="radiogroup" aria-label="What counts">
+          <label class="pick"><input type="radio" name="counts" value="A">A. Doing something</label>
+          <label class="pick"><input type="radio" name="counts" value="B">B. Opening a page too</label>
+        </div></div>
+      <div class="aq"><b>2. Who's in the numbers?</b>
+        <div class="picks" role="radiogroup" aria-label="Who">
+          <label class="pick"><input type="radio" name="who" value="A">A. The table only</label>
+          <label class="pick"><input type="radio" name="who" value="B">B. Everyone, with a switch</label>
+        </div></div>
+      <div class="aq"><b>Anything else</b> <span class="note">(optional)</span><textarea name="words" id="words"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Send to Claude</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const PEOPLE = ["Big C", "Cole", "Trah", "No Name", "The DM"];
+  // made-up: [feature, uses in 30 days, who (bitmask over PEOPLE), trend % vs the 30 before, what for]
+  const F = [
+    ["Rolls on Battle", 412, 31, 18, "attacks 61% · checks 22% · saves 17%"], ["Table rolls", 298, 31, 9, "opened during play"],
+    ["Party", 121, 31, 4, "Rows in a fight 70%"], ["Hit points window", 96, 31, 22, "damage 64% · healing 36%"],
+    ["Cast", 88, 14, 31, "a slot 70% · free uses 12%"], ["Previously on…", 64, 31, -6, "read before the game"],
+    ["Conditions", 51, 23, 12, "Prone, Poisoned, Frightened"], ["Your creatures", 38, 6, 140, "Cole's familiar, Trah's bone"],
+    ["Item browser", 27, 21, 0, "browsing 80% · buying 20%"], ["Rests", 24, 31, -14, "Long 75% · Short 25%"],
+    ["Campaign › World", 22, 19, -20, "people 55% · places 30%"], ["The roll card", 19, 2, null, "new: switched on Nov 9"],
+    ["▶ Listen", 14, 13, 60, "played to the end 71%"], ["Wild Shape", 12, 2, -40, "Cole"], ["Coins", 9, 7, 0, "spending"],
+    ["Initiative from askdnd", 8, 31, 0, "each fight"], ["Hide", 4, 4, null, "new this month"],
+  ];
+  const NEVER = [["Prepare spells", "on since Nov 2"], ["Ready", "Nov 5"], ["Spell Book's notes", "Oct 31"], ["The tour", "Oct 26"], ["Give", "Nov 2"]];
+  const RELEASES = [{ d: 66, name: "Session Story", rows: [["Previously on…", 41, 64], ["▶ Listen", 6, 14]] },
+                    { d: 79, name: "Your creatures", rows: [["Your creatures", 9, 38], ["Party", 98, 121]] },
+                    { d: 88, name: "The roll card", rows: [["Rolls on Battle", 101, 118], ["The roll card", 0, 19]] }];
+  let days = 30, sort = "uses", picked = null;
+  // a day's uses: game nights (Thursdays) tall, prep days small, made up but steady
+  const day = (i, f = 1) => Math.round(f * ((i % 7 === 3 ? 150 : i % 7 === 2 ? 28 : 9) + (i * 7) % 11 + (i > 21 ? 30 : 0) * (i % 7 === 3)));
+  const series = (n, f) => Array.from({ length: n }, (_, i) => day(i + (90 - n), f));
+
+  function tiles() {
+    const k = days / 30;
+    const t = [["People at the table", "5 of 5", "everyone this month"], ["Game nights", days === 7 ? "1" : days === 30 ? "4" : "12", "Thursdays"],
+               ["Uses", String(Math.round(1407 * k)), "▲ 14% on the period before"], ["Features used", "17 of 22", "5 never touched"]];
+    $("#tiles").innerHTML = t.map(([l, v, d], i) => `<div class="tile"><span class="lbl">${l}</span><span class="big">${v}</span><span class="d${i === 2 ? " up" : ""}">${d}</span></div>`).join("");
+  }
+
+  // one line, the admin blue; release markers; a crosshair and tooltip on hover
+  function line(data, label) {
+    const W = 620, H = 200, L = 34, R = 10, T = 10, B = 24, n = data.length, max = Math.max(...data) * 1.1 || 1;
+    const x = i => L + (W - L - R) * (n === 1 ? 0 : i / (n - 1)), y = v => T + (H - T - B) * (1 - v / max);
+    const ticks = [0, Math.round(max / 2), Math.round(max)];
+    const rel = RELEASES.filter(r => r.d >= 90 - n).map(r => ({ ...r, i: r.d - (90 - n) }));
+    let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${label}: uses per day for the last ${n} days" style="min-width:420px">`;
+    ticks.forEach(t => { s += `<line x1="${L}" x2="${W - R}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${t}</text>`; });
+    rel.forEach(r => { s += `<line x1="${x(r.i)}" x2="${x(r.i)}" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="3 3"/><text x="${x(r.i) + (x(r.i) > W - 110 ? -4 : 4)}" y="${T + 10}" text-anchor="${x(r.i) > W - 110 ? "end" : "start"}">${r.name}</text>`; });
+    s += `<path d="${data.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ")} L ${x(n - 1)} ${H - B} L ${L} ${H - B} Z" fill="var(--chart-soft)"/>`;
+    s += `<path d="${data.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1)).join(" ")}" fill="none" stroke="var(--chart)" stroke-width="2" stroke-linejoin="round"/>`;
+    s += `<text x="${L}" y="${H - 6}">${n} days ago</text><text x="${W - R}" y="${H - 6}" text-anchor="end">today</text>`;
+    s += `<line class="xh" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="var(--text)" stroke-width="1" visibility="hidden"/><circle class="pt" r="4" fill="var(--chart)" stroke="var(--surface)" stroke-width="2" visibility="hidden"/>`;
+    s += `<rect x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" fill="transparent" class="hit"/></svg>`;
+    return { svg: s, x, y, n, data, W, L, R };
+  }
+  function hover(host, ch, what) {
+    const svg = host.querySelector("svg"), tip = $("#tip"), xh = svg.querySelector(".xh"), pt = svg.querySelector(".pt");
+    svg.querySelector(".hit").addEventListener("mousemove", e => {
+      const r = svg.getBoundingClientRect(), sx = (e.clientX - r.left) * ch.W / r.width;
+      const i = Math.max(0, Math.min(ch.n - 1, Math.round((sx - ch.L) / (ch.W - ch.L - ch.R) * (ch.n - 1))));
+      xh.setAttribute("x1", ch.x(i)); xh.setAttribute("x2", ch.x(i)); xh.setAttribute("visibility", "visible");
+      pt.setAttribute("cx", ch.x(i)); pt.setAttribute("cy", ch.y(ch.data[i])); pt.setAttribute("visibility", "visible");
+      const back = ch.n - 1 - i, card = host.closest(".card").getBoundingClientRect();
+      tip.hidden = false; tip.textContent = `${back ? back + " days ago" : "Today"}${(i + 90 - ch.n) % 7 === 3 ? " (game night)" : ""}: ${ch.data[i]} ${what}`;
+      tip.style.left = Math.min(card.width - tip.offsetWidth - 8, e.clientX - card.left + 12) + "px"; tip.style.top = (e.clientY - card.top - 34) + "px";
+    });
+    svg.querySelector(".hit").addEventListener("mouseleave", () => { tip.hidden = true; xh.setAttribute("visibility", "hidden"); pt.setAttribute("visibility", "hidden"); });
+  }
+  function drawLine() { const ch = line(series(days, 1), "Every use"); $("#line").innerHTML = ch.svg; hover($("#line"), ch, "uses"); }
+
+  function list() {
+    const k = days / 30, rows = F.map(f => ({ f, uses: Math.round(f[1] * k) }));
+    rows.sort((a, b) => sort === "uses" ? b.uses - a.uses : sort === "trend" ? (b.f[3] ?? 999) - (a.f[3] ?? 999) : (a.f[3] ?? 999) - (b.f[3] ?? 999));
+    const top = Math.max(...rows.map(r => r.uses));
+    $("#flist").innerHTML = rows.map(({ f, uses }) => {
+      const tr = f[3] == null ? '<span class="note">new</span>' : f[3] > 0 ? `<span class="up">▲ ${f[3]}%</span>` : f[3] < 0 ? `<span class="down">▼ ${-f[3]}%</span>` : '<span class="note">—</span>';
+      return `<button type="button" class="frow" data-f="${f[0]}" aria-pressed="${picked === f[0]}"><span class="n">${f[0]}</span><span class="bar"><i style="width:${(uses / top * 100).toFixed(1)}%"></i></span>`
+        + `<span class="c">${uses}</span><span class="who" aria-label="${PEOPLE.filter((_, i) => f[2] & (1 << i)).join(", ")}">${PEOPLE.map((p, i) => `<span class="${f[2] & (1 << i) ? "on" : ""}" title="${p}"></span>`).join("")}</span><span class="t">${tr}</span></button>`;
+    }).join("");
+  }
+  function pick(name) {
+    picked = name; list();
+    const f = F.find(x => x[0] === name), k = days / 30;
+    $("#pick-title").textContent = name;
+    $("#pick-sub").textContent = `${Math.round(f[1] * k)} uses · ${PEOPLE.filter((_, i) => f[2] & (1 << i)).length} of 5`;
+    const ch = line(series(days, f[1] / 1407), name);
+    $("#pick-body").innerHTML = `<div class="chart-wrap">${ch.svg}</div><p class="note"><b>Used for:</b> ${f[4]}</p><p class="note"><b>Who:</b> ${PEOPLE.filter((_, i) => f[2] & (1 << i)).join(", ") || "no one"}</p>`;
+    hover($("#pick-body"), ch, "uses of " + name);
+  }
+  function never() { $("#never").innerHTML = NEVER.map(([n, s]) => `<span class="chip">${n} <small>· ${s}</small></span>`).join(""); }
+  function rel() {
+    $("#rel").innerHTML = RELEASES.slice().reverse().map(r => `<div class="lbl" style="margin-top:6px">${r.name} · ${90 - r.d} days ago</div>`
+      + r.rows.map(([n, a, b]) => `<div class="rel"><span>${n}</span><span class="c note">${a}</span><span class="c">${b}</span><span class="c ${b > a ? "up" : "down"}">${b > a ? "▲" : "▼"} ${a ? Math.round((b - a) / a * 100) + "%" : "new"}</span></div>`).join("")).join("");
+  }
+  function heat() {
+    const rows = F.slice(0, 10), step = v => v === 0 ? "var(--grid)" : v < 5 ? "color-mix(in srgb, var(--chart) 30%, var(--grid))" : v < 20 ? "color-mix(in srgb, var(--chart) 60%, var(--grid))" : "var(--chart)";
+    let h = '<span></span>' + PEOPLE.map(p => `<span class="h">${p}</span>`).join("");
+    rows.forEach((f, ri) => {
+      h += `<span class="r">${f[0]}</span>`;
+      PEOPLE.forEach((p, i) => { const v = f[2] & (1 << i) ? Math.max(1, Math.round(f[1] / 5 * (1 + ((ri + i) % 3 - 1) * .4) * (i === 4 && ri === 0 ? .2 : 1))) : 0;
+        h += `<span class="cell" style="background:${step(v)}" title="${p}, ${f[0]}: ${v}">${v || ""}</span>`; });
+    });
+    $("#heat").innerHTML = h;
+  }
+  function all() { tiles(); drawLine(); list(); never(); rel(); heat(); if (picked) pick(picked); }
+  $("#range").addEventListener("click", e => { const b = e.target.closest("[data-days]"); if (!b) return; days = +b.dataset.days; $("#range").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); all(); });
+  $("#sort").addEventListener("click", e => { const b = e.target.closest("[data-sort]"); if (!b) return; sort = b.dataset.sort; $("#sort").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); list(); });
+  $("#flist").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (b) pick(b.dataset.f); });
+  all(); pick("Your creatures");
+
+  const form = $("#answer"), said = $("#said"), send = $("#send");
+  let db = null;
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = "Open this page signed in to claude.ai to send it."; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try { await db.collection("answers").doc("pick").set({ counts: f.get("counts") || "", who: f.get("who") || "", words: (f.get("words") || "").trim(), at: new Date().toISOString() }); said.textContent = "Sent to Claude"; }
+    catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use("db"); } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const doc = await db.collection("answers").doc("pick").get();
+      if (!doc.exists) return;
+      const a = doc.data();
+      form.querySelectorAll("input[type=radio]").forEach(r => { r.checked = (r.name === "counts" && r.value === a.counts) || (r.name === "who" && r.value === a.who); });
+      $("#words").value = a.words || "";
+      said.textContent = "Sent earlier: change it and send again if you like";
+    } catch (err) { /* nothing yet */ }
+  })();
+})();
+</script>

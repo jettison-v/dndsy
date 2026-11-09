@@ -1,0 +1,236 @@
+<title>Inbox Email Digest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Brett, Nov 9: one digest email when something new reaches a campaign's Inbox, from Resend (sending from askdnd.ai),
+   counts and a link only, never story text. Where it shows, what it says, when it's sent and who gets it, with the
+   choices for him. His answers are kept in the page's store (db: answers/pick). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --gold: #e2b54a;
+  --green-soft: rgba(91,191,127,.15); --blue-soft: rgba(126,166,224,.16); --gold-soft: rgba(226,181,74,.16); --shadow: rgba(0,0,0,.45);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+  /* the email itself: light, as mail apps show it */
+  --mail-bg: #f4f1ea; --mail-card: #ffffff; --mail-text: #2a2723; --mail-muted: #6b655c; --mail-line: #e2ddd3; --mail-red: #b83232;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10;
+  --green-soft: rgba(47,125,76,.12); --blue-soft: rgba(47,95,158,.12); --gold-soft: rgba(138,106,16,.13); --shadow: rgba(40,30,10,.18); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10;
+  --green-soft: rgba(47,125,76,.12); --blue-soft: rgba(47,95,158,.12); --gold-soft: rgba(138,106,16,.13); --shadow: rgba(40,30,10,.18); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.3rem; } h3 { font-size: 1.02rem; }
+p { margin: 0; max-width: 74ch; }
+b { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lbl { font: 700 .7rem/1 var(--cond); letter-spacing: .11em; text-transform: uppercase; color: var(--muted); }
+.note { color: var(--muted); font-size: .86rem; }
+header, section { display: grid; gap: 12px; min-width: 0; }
+.two { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 880px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; font-size: .84rem; font-weight: 600; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--blue-soft); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.seg button:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; }
+
+/* the mail app's list and the email */
+.mailapp { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--mail-bg); color: var(--mail-text); }
+.inbox-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 12px 16px; background: var(--mail-card); border-bottom: 1px solid var(--mail-line); }
+.inbox-row .av { grid-row: span 2; width: 36px; height: 36px; border-radius: 50%; background: #1d1f22; color: #fff; display: grid; place-items: center; font: 800 .8rem/1 var(--sans); }
+.inbox-row b { color: var(--mail-text); font-size: .92rem; }
+.inbox-row .when { color: var(--mail-muted); font-size: .78rem; }
+.inbox-row .prev { grid-column: 2 / 4; color: var(--mail-muted); font-size: .84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mail { padding: 22px 16px 26px; display: grid; justify-items: center; }
+.mail-card { width: 100%; max-width: 520px; background: var(--mail-card); border-radius: 12px; padding: 26px 28px; display: grid; gap: 14px; box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.mail-card .from { display: flex; align-items: center; gap: 10px; color: var(--mail-muted); font-size: .8rem; }
+.mail-card .logo { width: 28px; height: 28px; border-radius: 7px; background: #1d1f22; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: .8rem; }
+.mail-card h3 { color: var(--mail-text); font-size: 1.25rem; }
+.mail-card p { color: var(--mail-text); font-size: .95rem; }
+.counts { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.counts li { display: flex; justify-content: space-between; border: 1px solid var(--mail-line); border-radius: 9px; padding: 8px 12px; font-size: .92rem; }
+.counts li b { color: var(--mail-text); }
+.mail-btn { justify-self: start; background: var(--mail-red); color: #fff; border-radius: 9px; padding: 11px 18px; font-weight: 700; text-decoration: none; font-size: .95rem; }
+.mail-foot { color: var(--mail-muted); font-size: .76rem; border-top: 1px solid var(--mail-line); padding-top: 12px; }
+.mail-foot u { color: var(--mail-muted); }
+
+/* the timeline */
+.tl { display: grid; gap: 0; }
+.tl-row { display: grid; grid-template-columns: 74px 18px minmax(0, 1fr); gap: 10px; align-items: start; }
+.tl-row .t { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .84rem; text-align: right; padding-top: 1px; }
+.tl-row .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--surface-3); border: 2px solid var(--line); margin-top: 4px; position: relative; }
+.tl-row:not(:last-child) .dot::after { content: ""; position: absolute; left: 3px; top: 12px; width: 2px; height: 34px; background: var(--line); }
+.tl-row .what { padding-bottom: 18px; font-size: .9rem; }
+.tl-row.send .dot { background: var(--red); border-color: var(--red); }
+.tl-row.send .what b { color: var(--red); }
+.tl-row.quiet .what { color: var(--muted); }
+
+/* settings */
+.setting { display: flex; justify-content: space-between; gap: 12px; align-items: center; border-top: 1px solid var(--line); padding-top: 10px; font-size: .9rem; }
+.toggle { width: 42px; height: 24px; border-radius: 999px; background: var(--green); position: relative; border: 0; cursor: pointer; flex: none; }
+.toggle::after { content: ""; position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; }
+.toggle[aria-pressed="false"] { background: var(--surface-3); }
+.toggle[aria-pressed="false"]::after { right: auto; left: 3px; }
+.privacy { background: var(--green-soft); border: 1px solid var(--green); border-radius: 12px; padding: 12px 14px; font-size: .88rem; display: grid; gap: 4px; }
+.privacy ul { margin: 0; padding-left: 18px; }
+
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .88rem; }
+.pro b:first-child { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 4px; color: var(--green); }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.aq { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 70px; font: 16px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; font-weight: 600; cursor: pointer; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · Inbox · Nov 9</div>
+    <h1>An email when the Inbox gets something new</h1>
+    <p>You chose one digest, from Resend, with counts and a link only. Today the DM finds out only by opening askdnd: a player's suggestion, or Claude's draft waiting for an OK, can sit for a week. This is the email, when it goes out, who gets it, and where each person turns it off.</p>
+  </header>
+
+  <section>
+    <h2>The email</h2>
+    <div class="toolbar"><span class="lbl">Try a night with</span>
+      <span class="seg" role="group" aria-label="What arrived"><button type="button" data-n="1" aria-pressed="false">One suggestion</button><button type="button" data-n="3" aria-pressed="true">A few things</button><button type="button" data-n="9" aria-pressed="false">After a session</button></span></div>
+    <div class="two">
+      <div class="mailapp" aria-label="The email in a mail app">
+        <div class="inbox-row"><span class="av">a</span><span><b>askdnd</b></span><span class="when">7:42 PM</span><span class="prev" id="preview"></span></div>
+        <div class="mail"><div class="mail-card">
+          <div class="from"><span class="logo">a</span>askdnd · noreply@askdnd.ai</div>
+          <h3 id="mail-title"></h3>
+          <p>In <b>The Adventure Begins</b>' Inbox since you last looked:</p>
+          <ul class="counts" id="counts"></ul>
+          <a class="mail-btn" href="#" onclick="return false">Open the Inbox</a>
+          <p class="mail-foot">You get this as the campaign's DM. No more until you've opened the Inbox. <u>Stop these emails</u> (one click, or Your account › Email in askdnd).</p>
+        </div></div>
+      </div>
+      <div class="panel">
+        <h3>What's in it, and what never is</h3>
+        <div class="privacy"><b>Counts and a link</b>
+          <ul><li>How many of each kind, and the campaign's name</li><li>Never a word of a suggestion, a draft or the story, never a player's name</li><li>The link opens askdnd, which asks you to sign in as usual</li></ul></div>
+        <p class="note">Why counts only: an email can be forwarded, kept by the mail service, or read over someone's shoulder. The Inbox itself stays behind sign-in.</p>
+        <h3>Its subject line</h3>
+        <p id="subject" class="note"></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>When it's sent</h2>
+    <div class="two">
+      <div class="panel">
+        <div class="lbl">An evening, with my pick (A)</div>
+        <div class="tl">
+          <div class="tl-row"><span class="t">7:12 PM</span><span class="dot"></span><span class="what">A player sends a suggestion. askdnd waits a little, in case more come.</span></div>
+          <div class="tl-row"><span class="t">7:31 PM</span><span class="dot"></span><span class="what">Another player sends one too.</span></div>
+          <div class="tl-row send"><span class="t">7:42 PM</span><span class="dot"></span><span class="what"><b>The email goes:</b> 30 minutes after the first thing, everything so far in one email.</span></div>
+          <div class="tl-row quiet"><span class="t">9:05 PM</span><span class="dot"></span><span class="what">A third thing arrives. No email: one is waiting unread.</span></div>
+          <div class="tl-row quiet"><span class="t">Next day</span><span class="dot"></span><span class="what">The DM opens the Inbox. The next new thing can start another email.</span></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>The two ways</h3>
+        <p><b>A. Soon, then quiet</b> (my pick). The first new thing starts a 30-minute wait; then one email with all of it. No other email until the Inbox has been opened. A busy night is one email; a quiet week is none.</p>
+        <p><b>B. Once a day</b>. At a set hour (say 6 PM), one email if anything arrived since the last. Predictable, but a question can wait almost a day.</p>
+        <p class="note">Either way: never more than one email at a time waiting, and none for what you did yourself (the DM's own changes don't count).</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Who gets it, and where they turn it off</h2>
+    <div class="two">
+      <div class="panel">
+        <div class="lbl">Your account › Email (each person's own)</div>
+        <div class="setting"><span><b>The Adventure Begins</b><br><span class="note">Inbox digest · you're its DM</span></span><button type="button" class="toggle" aria-pressed="true" aria-label="Inbox digest for The Adventure Begins"></button></div>
+        <div class="setting"><span><b>VTT test</b><br><span class="note">Inbox digest · you're its DM</span></span><button type="button" class="toggle" aria-pressed="false" aria-label="Inbox digest for VTT test"></button></div>
+        <p class="note">On for a campaign's DM unless they turn it off; the email's own link turns it off in one click. Sent to the address they sign in with (Google's).</p>
+      </div>
+      <div class="panel">
+        <h3>Who's asked</h3>
+        <p><b>The DM</b> (my pick): the Inbox is theirs to answer. <b>Reviewers</b> can turn it on for themselves. <b>Admins</b>, the same. Players never get it: their own news is on Your notes.</p>
+        <p class="note">Built on Resend's free tier (3,000 emails a month, 100 a day): this table sends a few a week.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Two choices for you</h2>
+    <form class="answer" id="answer">
+      <div class="aq"><b>1. When does it go?</b>
+        <div class="picks" role="radiogroup" aria-label="When">
+          <label class="pick"><input type="radio" name="when" value="A">A. 30 minutes after, then quiet</label>
+          <label class="pick"><input type="radio" name="when" value="B">B. Once a day</label>
+        </div></div>
+      <div class="aq"><b>2. Who gets it?</b>
+        <div class="picks" role="radiogroup" aria-label="Who">
+          <label class="pick"><input type="radio" name="who" value="A">A. The DM, others can opt in</label>
+          <label class="pick"><input type="radio" name="who" value="B">B. The DM and reviewers by default</label>
+        </div></div>
+      <div class="aq"><b>Anything else</b> <span class="note">(optional)</span><textarea name="words" id="words"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Send to Claude</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const NIGHTS = { 1: [["From the table", 1]], 3: [["From the table", 2], ["Claude's drafts for your OK", 1]],
+    9: [["From the table", 5], ["Claude's drafts for your OK", 4]] };
+  function show(n) {
+    const rows = NIGHTS[n], total = rows.reduce((t, r) => t + r[1], 0);
+    const title = total === 1 ? "1 new thing in your Inbox" : total + " new things in your Inbox";
+    $("#mail-title").textContent = title;
+    $("#counts").innerHTML = rows.map(([w, c]) => `<li><span>${w}</span><b>${c}</b></li>`).join("");
+    $("#preview").textContent = "The Adventure Begins: " + rows.map(([w, c]) => c + " " + w.toLowerCase()).join(", ");
+    $("#subject").textContent = "“The Adventure Begins: " + title.toLowerCase().replace("in your inbox", "in the Inbox") + "”";
+    document.querySelectorAll("[data-n]").forEach(b => b.setAttribute("aria-pressed", b.dataset.n === String(n)));
+  }
+  document.querySelectorAll("[data-n]").forEach(b => b.addEventListener("click", () => show(+b.dataset.n)));
+  document.querySelectorAll(".toggle").forEach(t => t.addEventListener("click", () => t.setAttribute("aria-pressed", t.getAttribute("aria-pressed") !== "true")));
+  show(3);
+
+  const form = $("#answer"), said = $("#said"), send = $("#send");
+  let db = null;
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = "Open this page signed in to claude.ai to send it."; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try { await db.collection("answers").doc("pick").set({ when: f.get("when") || "", who: f.get("who") || "", words: (f.get("words") || "").trim(), at: new Date().toISOString() }); said.textContent = "Sent to Claude"; }
+    catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use("db"); } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const doc = await db.collection("answers").doc("pick").get();
+      if (!doc.exists) return;
+      const a = doc.data();
+      form.querySelectorAll("input[type=radio]").forEach(r => { r.checked = (r.name === "when" && r.value === a.when) || (r.name === "who" && r.value === a.who); });
+      $("#words").value = a.words || "";
+      said.textContent = "Sent earlier: change it and send again if you like";
+    } catch (err) { /* nothing yet */ }
+  })();
+})();
+</script>
