@@ -1036,3 +1036,10 @@ turned up a real problem straight away: every search box was small enough that a
 **For a new project:** test phone layouts in two layers. Fast imitations (Playwright's device settings) on every change,
 and the real phone browser in a simulator on a schedule. Xcode needs about 30 GB of disk and an Apple ID to install,
 and `sudo safaridriver --enable` once; Android's equivalent is Android Studio's emulator with Chrome.
+
+**Later the same evening:** the Mini needed Xcode set as its developer tools (`sudo xcode-select -s …`), its license
+accepted, and macOS updated to match the simulator. Safari's own driver still couldn't start a simulator (Xcode 27
+renamed the app it looks for), so **Appium** drives it instead, the open-source tool most teams use for phone browsers,
+installed with its own copy of Node.js inside the test folder so nothing changes system-wide. It now runs every night
+after the live test, on a small iPhone, a large one and an iPad, and reports to Sentry. Lesson for a new project: Apple's
+tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulator) to one version and update them together.
