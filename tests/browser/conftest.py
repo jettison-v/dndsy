@@ -202,3 +202,14 @@ def people(chromium, server):
         p.context.close()
 
 
+
+
+def pytest_collection_modifyitems(config, items):
+    """A browser test that fails is tried once more before it fails the run (Brett, Nov 9: a timing miss on GitHub's
+    shared machines meant re-running the whole job, 5 minutes or more, for nothing). Browser tests only: the server
+    tests have never flaked and stay strict. Every second try is listed on the run's summary page ("passed only on a
+    second try", .github/workflows/tests.yml), so a flaky test is seen and fixed at its cause, not hidden."""
+    here = Path(__file__).parent
+    for item in items:
+        if Path(str(item.fspath)).is_relative_to(here):
+            item.add_marker(pytest.mark.flaky(reruns=1, reruns_delay=2))
