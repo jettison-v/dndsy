@@ -71,3 +71,31 @@ def test_the_roadmaps_table_is_written_from_the_library():
     spec.loader.exec_module(lib)
     page = (ROOT / "docs" / "roadmap.html").read_text()
     assert lib.written(page) == page, "docs/roadmap.html's table differs from docs/library.json: run scripts/library.py"
+
+
+def test_the_roadmaps_tags_all_close():
+    """Nov 9: one missing </div> in a step nested every step after it, and the published roadmap's columns overlapped."""
+    from html.parser import HTMLParser
+
+    class Tags(HTMLParser):
+        VOID = {"br", "img", "input", "meta", "link", "hr", "col", "source", "wbr"}
+
+        def __init__(self):
+            super().__init__()
+            self.open, self.wrong = [], []
+
+        def handle_starttag(self, tag, attrs):
+            if tag not in self.VOID:
+                self.open.append((tag, self.getpos()[0]))
+
+        def handle_endtag(self, tag):
+            if tag in self.VOID:
+                return
+            if self.open and self.open[-1][0] == tag:
+                self.open.pop()
+            else:
+                self.wrong.append((tag, self.getpos()[0], self.open[-1] if self.open else None))
+
+    p = Tags()
+    p.feed((ROOT / "docs" / "roadmap.html").read_text())
+    assert p.wrong == [] and p.open == [], (p.wrong[:3], p.open[-3:])
