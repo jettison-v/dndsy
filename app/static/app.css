@@ -1641,7 +1641,6 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rcard-pills { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .rcard-pill small { color: var(--muted); font-size: var(--fs-xs); }
 .rcard-plus { color: var(--muted); }
-.rcard-rider { cursor: help; }
 .rcard-adder { display: flex; flex-wrap: wrap; gap: var(--sp-1); background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2); }
 .rcard-result { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--sp-3); align-items: center; background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-1) var(--sp-3); }
 .rcard-big { grid-row: span 2; font-size: var(--fs-2xl); font-weight: 800; color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1; }

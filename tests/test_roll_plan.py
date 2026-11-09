@@ -64,6 +64,16 @@ def test_the_unarmed_strike_asks_first(plans):
     assert "Stunning Strike" in [r["name"] for r in p["riders"]]
 
 
+def test_a_mastered_weapon_says_its_mastery(plans):
+    """Feedback (Nov 9): the roll card left out what the roll window's row says, a weapon's mastery (Trah's Shortsword:
+    Vex). It's a rider in words, on a hit; Graze's is on a miss."""
+    vex = [r for r in by(plans, "trah", "Shortsword")["riders"] if r["on"] == "mastery"]
+    assert vex == [{"name": "Vex", "when": "hit", "says": roll_plan.class_rules.MASTERIES["Vex"], "on": "mastery"}]
+    graze = roll_plan.plan({}, {"name": "Greatsword", "hit": "+5", "kind": "attack", "dice": "2d6", "tags": ["Mastery: Graze"]})
+    assert [(r["name"], r["when"]) for r in graze["riders"]] == [("Graze", "miss")]
+    assert not roll_plan.plan({}, {"name": "Club", "hit": "+5", "kind": "attack", "dice": "1d4", "tags": ["Mastery: Nonsense"]})["riders"]
+
+
 def test_a_checked_recipe_decides_attack_or_save():
     """Inflict Wounds: D&D Beyond's sheet has the 2014 attack roll, the 2024 rules a Constitution save."""
     p = next(p for p in roll_plan.plans(sheet("big_c")) if p["name"] == "Inflict Wounds")

@@ -8,7 +8,7 @@ already knows, never guessed:
      "save": {"ability": "Dex", "dc": 15, "success": "half" | "none" | ""} or None,   # the target rolls
      "damage": [{"dice": "1d8", "flat": 4, "type": "bludgeoning", "from": "Unarmed Strike"}],
      "heal": [...],                                         # the same shape, healing or Temporary Hit Points ("temp")
-     "riders": [{"name": "Stunning Strike", "when": "hit", ...}],
+     "riders": [{"name": "Stunning Strike", "when": "hit", ...}],   # a weapon's mastery too ("when": "miss" for Graze)
      "spends": [...],                                       # what using it costs (options' own)
      "sources": {"attack": "sheet", "damage": "checked", ...},
      "status": "ready" | "unchecked" | "no roll" | "gap", "gaps": ["…"]}
@@ -190,6 +190,9 @@ def plan(sheet: dict, o: dict) -> dict:
         src["heal" if o.get("heal") else "damage"] = "sheet" if sheet_part else "text"
 
     if out["attack"] or (out["damage"] and o.get("kind") == "attack"):
+        for t in o.get("tags") or []:  # the weapon's mastery, if you've mastered it (character_views: "Mastery: Vex")
+            if t.startswith("Mastery: ") and (m := t[9:]) in class_rules.MASTERIES:
+                out["riders"].append({"name": m, "when": "miss" if m == "Graze" else "hit", "says": class_rules.MASTERIES[m], "on": "mastery"})
         for r in class_rules.turn(sheet)["riders"]:  # what you can add once it hits (Stunning Strike, Divine Smite…)
             out["riders"].append({"name": r["name"], "when": "hit", "says": r["effect"], "on": r["when"]})
     out["modifiers"] = modifiers_for(sheet, "attack" if out["attack"] else "save" if out["save"] else "")

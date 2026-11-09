@@ -1645,8 +1645,7 @@
     if (spec.note) h += '<p class="rw-note">' + esc(spec.note) + '</p>';
     // Flat damage comes with the attack roll; one that can only be 0 says so first (feedback 25, 26)
     const flat = spec.kind === 'attack' && !spec.follow && /^[+]?\d+$/.test((spec.dmg || '').replace(/\s/g, '')) ? num(spec.dmg) : null;
-    if (flat === 0) h += '<p class="rw-note rw-warn"><b>0 damage</b> on a hit: 1 + your Strength modifier comes to 0. The DM rules.</p>';
-    else if (flat != null) h += '<p class="rw-note" data-flat-note>On a hit: <b>' + flat + ' damage</b>, flat, with the roll (no dice to roll).</p>';
+    if (flat != null) h += flatNote(flat, spec.label);
     if (spec.endsHidden && !spec.follow) h += '<label class="rw-row rw-hidden"><input type="checkbox" data-ends-hidden checked> This attack ends Hidden</label>';
     if (spec.follow === 'damage' && spec.crit) h += '<p class="rw-note">Critical hit: every damage die is rolled twice, extra dice too.</p>';
     // A recipe: the slot level (when it changes the dice), the choice between its effects, what it rolls
@@ -1748,22 +1747,34 @@
   // (an Unarmed Strike's Damage, Grapple or Shove), to hit with what adds to it as pills, the result (a reroll, a die,
   // what comes after a miss, what you add once it hits), then its damage. Each roll goes the usual way (sendRoll):
   // Table rolls, the thrown dice, the Game Log. On a laptop it opens beside the row, on a phone from the bottom.
-  const CARD_DICE = [['+1d4', 'd4'], ['+1d6', 'd6'], ['+1d8', 'd8'], ['+1d10', 'd10'], ['+1d12', 'd12'], ['+1', '+1'], ['+2', '+2'], ['-1', '−1'], ['-2', '−2']];
+  const CARD_DICE = [['+1d4', 'd4'], ['+1d6', 'd6'], ['+1d8', 'd8'], ['+1d10', 'd10'], ['+1d12', 'd12'], ['+1', '+1'], ['+2', '+2'], ['-1d4', '−d4'], ['-1', '−1'], ['-2', '−2']];  // (−d4: Bane and the like)
+  // Flat damage comes with the attack roll; one that can only be 0 says so first (feedback 25, 26): the roll window's and the card's
+  function flatNote(flat, label) {
+    if (flat === 0) return '<p class="rw-note rw-warn" data-flat-note><b>0 damage</b> on a hit' + (/^Unarmed Strike\b/.test(label || '') ? ': 1 + your Strength modifier comes to 0' : '') + '. The DM rules.</p>';
+    return '<p class="rw-note" data-flat-note>On a hit: <b>' + flat + ' damage</b>, flat, with the roll (no dice to roll).</p>';
+  }
   function card(anchor, spec, plan) {
     const w = openWin(anchor), ctx = ctxFor(spec.cid);
     w.classList.add('roll-card');
     const mods = plan.modifiers || [];
     const st = { step: plan.choice ? 'choose' : 'attack', mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false,
-                 visOpen: false, entry: null, dmg: null, busy: false };
+                 visOpen: false, entry: null, dmg: null, busy: false, hidden: !!spec.endsHidden };
     mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = !m.once; });  // (on by themselves while they last; once a turn: yours to tick)
-    const dmgText = () => (plan.damage || []).map(p => (p.dice || '') + (p.flat ? (p.dice ? (p.flat > 0 ? '+' : '') : '') + p.flat : '') + (p.type ? ' ' + p.type : '')).join(' + ');
+    const dmgText = () => (plan.damage || []).map(p => (p.dice || '') + (p.flat || !p.dice ? (p.dice && p.flat > 0 ? '+' : '') + (p.flat || 0) : '') + (p.type ? ' ' + p.type : '')).join(' + ');
+    const flat = (plan.damage || []).length && plan.damage.every(p => !p.dice) ? plan.damage.reduce((t, p) => t + (p.flat || 0), 0) : null;  // (no dice: it comes with the roll)
     const steps = () => [...(plan.choice ? ['Choose'] : []), 'To hit', 'Damage'];
     const at = () => ({ choose: 0, attack: plan.choice ? 1 : 0, result: plan.choice ? 1 : 0, damage: plan.choice ? 2 : 1, done: 9 })[st.step];
     const pill = (attr, on, text, small) => '<button type="button" class="chip rcard-pill" ' + attr + ' aria-pressed="' + !!on + '">' + esc(text) + (small ? ' <small>' + esc(small) + '</small>' : '') + '</button>';
     const adder = target => '<div class="rcard-adder" data-adder="' + target + '">' + CARD_DICE.map(([v, t]) => '<button type="button" class="chip" data-add="' + v + '">' + t + '</button>').join('') + '</div>';
-    const visLine = () => st.visOpen
+    const visLine = () => !spec.shared
+      ? '<div class="rcard-vis"><span>Only you see this: you don\'t play this character</span></div>'
+      : (st.visOpen
       ? '<div class="rcard-vis rcard-vis-open"><span class="rw-label">Who sees it</span>' + seg('To', [['table', 'The table'], ['dm', 'DM only'], ['self', 'Just you']], to) + '</div>'
-      : '<div class="rcard-vis"><span>' + ({ table: 'The table sees this', dm: 'Only the DM sees this', self: 'Only you see this' }[to] || '') + '</span><button type="button" class="btn small link" data-vis-open>Change</button></div>';
+      : '<div class="rcard-vis"><span>' + ({ table: 'The table sees this', dm: 'Only the DM sees this', self: 'Only you see this' }[to] || '') + '</span><button type="button" class="btn small link" data-vis-open>Change</button></div>')
+      + (to !== 'self' && logNote() ? '<p class="rw-note" data-log-note>' + logNote() + '</p>' : '');
+    // What it does on a hit (or Graze, on a miss): a weapon's mastery and a class's riders, in words (they're yours to use)
+    const riders = when => (plan.riders || []).filter(r => r.says && (r.when === 'miss') === (when === 'miss'));
+    const riderList = when => riders(when).map(r => '<li><b>' + esc(r.name) + '</b> ' + esc(r.says) + (r.on && r.on !== 'mastery' ? ' <small>(' + esc(r.on) + ')</small>' : '') + '</li>').join('');
     function head() {
       const sub = [plan.attack ? 'to hit ' + signed(plan.attack.bonus) : '', dmgText()].filter(Boolean).join(' · ');
       return '<button type="button" class="rp-x" aria-label="Close">×</button><div class="rcard-head"><b>' + esc(plan.name) + '</b>' + (sub ? '<span class="rcard-sub">' + esc(sub) + '</span>' : '') + '</div>'
@@ -1780,13 +1791,18 @@
           '<button type="button" class="rcard-choice" data-choice="' + esc(o.key) + '"><b>' + esc(o.name) + '</b><small>' + esc(o.says) + '</small></button>').join('') + '</div>';
       } else if (st.step === 'attack') {
         h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + '</div>';
-        const why = (spec.advWhy || '').split('\n').filter(Boolean);
-        if (ctx.luck) why.push('!note You can spend a Luck Point (' + ctx.luck + ' left) for Advantage');
-        if (why.length) h += '<ul class="rw-notes">' + why.map(t => '<li>' + (t.startsWith('!dis ') ? '<b>Disadvantage</b> ' + esc(t.slice(5)) : t.startsWith('!note ') ? esc(t.slice(6)) : '<b>Advantage</b> ' + esc(t.replace(/^advantage\s*/i, ''))) + '</li>').join('') + '</ul>';
+        const why = (spec.advWhy || '').split('\n').filter(Boolean).map(t => t.startsWith('!dis ') ? '<b>Disadvantage</b> ' + esc(t.slice(5))
+          : t.startsWith('!note ') ? '<b>Note</b> ' + esc(t.slice(6)) : '<b>Advantage</b> ' + esc(t.replace(/^advantage\s*/i, '')));
+        if (ctx.luck) why.push('<b>Lucky</b> you can spend a Luck Point (' + ctx.luck + ' left) for Advantage');
+        if (ctx.inspiration) why.push('<b>Heroic Inspiration</b> you have it: you can reroll after you see the roll');
+        if (ctx.halfling) why.push('<b>Luck</b> (Halfling) you can reroll a 1');
+        if (why.length) h += '<ul class="rw-notes">' + why.map(t => '<li>' + t + '</li>').join('') + '</ul>';
         const pre = mods.filter(m => m.when === 'before' && m.adds);
         h += '<div class="rcard-group"><span class="rcard-lbl">Adds to the roll</span><div class="rcard-pills">' + pre.map(m => pill('data-pre="' + esc(m.name) + '"', st.pre[m.name], m.name, m.adds)).join('')
           + st.added.map((a, i) => pill('data-unadd="' + i + '"', true, a.replace(/^Added:/, ''), 'tap to take off')).join('')
           + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ die or bonus</button></div>' + (st.adding ? adder('pre') : '') + '</div>';
+        if (spec.endsHidden) h += '<div class="rcard-pills">' + pill('data-ends-hidden', st.hidden, 'This attack ends Hidden', st.hidden ? 'the DM may rule otherwise' : 'you stay Hidden') + '</div>';
+        if (flat != null) h += flatNote(flat, plan.name);
         h += '<button type="button" class="btn primary rcard-go" data-roll-hit>Roll to hit <small>' + esc(hitLine()) + '</small></button>' + visLine();
       } else if (st.step === 'result' || st.step === 'rolling') {
         h += st.step === 'rolling' ? '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling to hit</span></div>' : resultBox(st.entry, false);
@@ -1796,18 +1812,19 @@
           const adjust = (c.reroll ? pill('data-reroll', false, 'Reroll', c.reroll) : '') + (c.bonus ? after.map(m => pill('data-after="' + esc(m.name) + '"', false, m.name, m.adds + ' after a miss')).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
           if (adjust) h += '<div class="rcard-pills rcard-adjust">' + adjust + '</div>' + (st.adding ? adder('bonus') : '');
           if (c.damage) {
-            const hitMods = mods.filter(m => m.when === 'on_hit' && m.adds), riders = (plan.riders || []).filter(r => r.says);
-            if (hitMods.length || riders.length) h += '<div class="rcard-group"><span class="rcard-lbl">On a hit</span><div class="rcard-pills">'
-              + hitMods.map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.name, m.adds + (m.once ? ' · once a turn' : ''))).join('')
-              + riders.map(r => '<span class="chip rcard-rider" title="' + esc(r.says) + '">' + esc(r.name) + '</span>').join('') + '</div></div>';
+            const hitMods = mods.filter(m => m.when === 'on_hit' && m.adds), said = riderList('hit');
+            if (hitMods.length || said) h += '<div class="rcard-group"><span class="rcard-lbl">On a hit</span>'
+              + (hitMods.length ? '<div class="rcard-pills">' + hitMods.map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.name, m.adds + (m.once ? ' · once a turn' : ''))).join('') + '</div>' : '')
+              + (said ? '<ul class="rw-notes" data-riders>' + said + '</ul>' : '') + '</div>';
             h += '<div class="rcard-acts"><button type="button" class="btn primary rcard-go" data-roll-dmg>Roll ' + (e.nat === 20 ? 'critical ' : '') + 'damage <small>' + esc(c.damage) + dmgAdds() + '</small></button>'
               + '<button type="button" class="btn" data-missed>Missed</button></div>';
           } else {
             h += '<div class="rcard-acts"><button type="button" class="btn" data-missed>' + (e.nat === 1 ? 'It misses' : 'Done') + '</button></div>';
           }
+          if (riderList('miss')) h += '<div class="rcard-group"><span class="rcard-lbl">On a miss</span><ul class="rw-notes" data-riders>' + riderList('miss') + '</ul></div>';
         }
       } else if (st.step === 'damage') {
-        h += st.dmg ? resultBox(st.entry, true) + '<p class="rw-note">In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.</p>'
+        h += st.dmg ? resultBox(st.entry, true) + (riderList('hit') ? '<ul class="rw-notes" data-riders>' + riderList('hit') + '</ul>' : '') + '<p class="rw-note">In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.</p>'
           + '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>'
           : '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling damage</span></div>';
       } else if (st.step === 'done') {
@@ -1843,7 +1860,8 @@
       return '<div class="rcard-result"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">to hit</span><span class="rcard-how">' + dline(e.main, true) + '</span></div>'
         + (e.rerolled ? '<p class="rcard-line">Rerolled (' + esc(e.rerolled.reason) + '): was <s>' + e.rerolled.total + '</s></p>' : '')
         + (e.bonus ? '<p class="rcard-line">+ ' + esc(e.bonus.label) + ' ' + e.bonus.total + ' <span class="roll-x">(' + esc(e.bonus.formula) + ')</span></p>' : '')
-        + (flag ? '<p class="rcard-flag">' + esc(flag) + '</p>' : '');
+        + (flag ? '<p class="rcard-flag">' + esc(flag) + '</p>' : '')
+        + (e.damage && !dmg ? '<p class="' + (e.damage.total ? 'rcard-line' : 'rw-note rw-warn') + '" data-flat-dmg>On a hit: <b>' + e.damage.total + ' damage</b>' + (e.damage.total ? ', flat' : '') + ', with the roll' + (e.damage.total ? '' : '. The DM rules') + '.</p>' : '');
     }
     function go(o) {  // one roll, its journey (sendRoll), then the card draws what came back
       if (st.busy) return Promise.resolve();
@@ -1854,7 +1872,7 @@
     function rollHit() {
       const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
       st.step = 'rolling'; st.adding = false; draw();
-      go({ kind: 'attack', mode: st.mode, extras }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
+      go({ kind: 'attack', mode: st.mode, extras, endsHidden: st.hidden }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
     }
     function follow(action, o) {
       const was = st.step;
@@ -1879,6 +1897,7 @@
       }
       if (b.dataset.mode) { st.mode = b.dataset.mode; return draw(); }
       if (b.hasAttribute('data-vis-open')) { st.visOpen = true; return draw(); }
+      if (b.hasAttribute('data-ends-hidden')) { st.hidden = !st.hidden; return draw(); }
       if (b.dataset.to) { to = b.dataset.to; store.set(TO, to); st.visOpen = false; return draw(); }
       if (b.dataset.pre) { st.pre[b.dataset.pre] = !st.pre[b.dataset.pre]; return draw(); }
       if (b.dataset.on) { st.on[b.dataset.on] = !st.on[b.dataset.on]; return draw(); }
