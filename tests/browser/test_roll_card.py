@@ -247,3 +247,45 @@ def test_a_save_and_a_check_on_the_card(people, server, browser_db):
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)
+
+
+def test_a_spell_from_the_spell_book_opens_the_card(people, server, browser_db):
+    """Every roll button goes through one choice (app.js openRoll): a spell in the Spell Book has no plan of its own, so
+    the card works one out from its recipe and the button's note (Cole's Moonbeam: a Con save, half on a success)."""
+    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    try:
+        player = people("player")
+        page = _battle_with(player, server, True)
+        page.locator(".spellbook-btn").first.click()
+        spell = page.locator('[data-roll="damage"][data-label="Moonbeam"]:visible >> nth=0')
+        spell.wait_for()
+        spell.click()
+        card = page.locator(".roll-card")
+        card.locator("[data-roll-save]").wait_for()
+        assert "Con save, DC" in card.locator(".rcard-sub").inner_text() and "half damage on a success" in card.inner_text()
+        assert player.errors == []
+    finally:
+        _pieces(browser_db, server, was)
+
+
+def test_several_rays_roll_a_to_hit_each(people, server, browser_db):
+    """Scorching Ray, Eldritch Blast (Nov 9): one to-hit per ray on the card, then damage for each that isn't a 1.
+    Cole's Starry Wisp is made a two-ray spell in the page."""
+    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    try:
+        player = people("player")
+        page = _battle_with(player, server, True)
+        wisp = page.locator('[data-plan][data-label="Starry Wisp"]:visible >> nth=0')
+        if not wisp.count():
+            page.locator('[data-panel-url*="/all/action"]').first.click()
+            wisp = page.locator('.peek [data-plan][data-label="Starry Wisp"] >> nth=0')
+        wisp.evaluate("""b => { const r = JSON.parse(b.dataset.recipe);
+            r.events.forEach(e => { if (e.on === 'hit') { e.count = 2; e.count_label = 'ray'; e.cantrip = ''; } }); b.dataset.recipe = JSON.stringify(r); }""")
+        wisp.click()
+        card = page.locator(".roll-card")
+        card.locator("[data-roll-hit]").click()
+        card.locator(".rcard-result:not(.rolling)").wait_for(timeout=20000)
+        assert " · " in card.locator(".rcard-big").inner_text() and "one per ray" in card.inner_text().lower()
+        assert player.errors == []
+    finally:
+        _pieces(browser_db, server, was)
