@@ -5,6 +5,7 @@
 // - "wraps": a one-line control (a button, tab, tag, chip) broke onto two lines
 // - "overlaps": two items in the menu bar sit on top of each other, or something placed on top (a badge, a corner
 //   button) covers text beside it
+// - "zooms", on a touch screen only: a box you type in with text under 16px, which makes an iPhone zoom the page in
 // - "misaligned", only when asked ({rows: true}): rows of one list whose small last item (an icon, a ↗) doesn't line up
 //   with the rest. scripts/layout_sweep.py asks; the tests don't yet, since it finds rows on the Character page that
 //   wrap differently on a phone (Nov 2), a design question before it can be a rule.
@@ -106,6 +107,16 @@ ask => {
       if (!n.textContent.trim() || el.contains(n) || n.parentElement.closest('[hidden]') || !shown(n.parentElement)) continue;
       const range = document.createRange(); range.selectNodeContents(n);
       if ([...range.getClientRects()].some(t => rx(t, r))) { add('overlaps', el, `${el.textContent} covers "${n.textContent.trim()}"`); break; }
+    }
+  }
+  // A box you type in whose text is under 16px, on a touch screen: Safari on an iPhone or iPad zooms the whole page in
+  // when you tap it, and leaves it zoomed (Nov 8)
+  if (matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0) {
+    const TYPED = 'textarea, select, [contenteditable=""], [contenteditable=true], input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=button]):not([type=submit]):not([type=reset]):not([type=file]):not([type=color]):not([type=hidden]):not([type=image])';
+    for (const el of document.body.querySelectorAll(TYPED)) {
+      if (!shown(el) || el.disabled || el.readOnly) continue;
+      const px = parseFloat(getComputedStyle(el).fontSize);
+      if (px < 16) add('zooms', el, `its text is ${px}px, under 16px: tapping it zooms the page`);
     }
   }
   // Rows of one list that are meant to line up and don't: three or more rows built the same way (same tag and class, the

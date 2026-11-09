@@ -431,7 +431,15 @@ form.inline.row select { width: auto; max-width: 100%; }  /* its controls stay o
 textarea, input[type=text], input[type=url], input[type=date], input[type=number], select { width: 100%; font: inherit; font-size: var(--fs-sm); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px 10px; }
 input[type=text], input[type=url], input[type=date], input[type=number], select { min-height: var(--control-h); padding-block: 0; }
 input[type=number] { width: 6em; }
-@media (max-width: 640px) { textarea, input[type=text], input[type=url], input[type=date], input[type=number], input[type=search], select { font-size: var(--fs-md); } }
+/* On a phone, and on any touch screen, every box you type in is at least 16px: Safari on an iPhone or iPad zooms the whole
+   page in when you tap a smaller one, and leaves it zoomed (Nov 8; tests/browser/layout_check.js "zooms"). A floor for
+   every field whatever its own class sets (a search box, a list's sort), hence !important; a bigger one (Hit points'
+   amount) keeps its size. */
+@media (max-width: 640px), (pointer: coarse) {
+  textarea, select, [contenteditable=""], [contenteditable=true],
+  input:not([type]), input[type=text], input[type=search], input[type=url], input[type=email], input[type=password], input[type=tel],
+  input[type=number], input[type=date], input[type=time], input[type=datetime-local], input[type=month], input[type=week] { font-size: max(var(--fs-md), 1em) !important; }
+}
 textarea:focus, input:focus, select:focus { border-color: var(--red); outline: none; }
 select { width: auto; max-width: 100%; padding: 0 var(--sp-2); }  /* a long option (a campaign's name) never pushes the page wider */
 input[type=file] { color: var(--muted); font: inherit; font-size: var(--fs-sm); max-width: 100%; }

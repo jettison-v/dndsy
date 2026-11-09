@@ -124,6 +124,9 @@ window) are where things break. The rules:
 - **Text stays in its box.** Menus, panels, cards and buttons hold their text; long words (a web address) break
   (`overflow-wrap` on `body`), and names that must stay on one line end in "…".
 - **Decide what gives way, in order, for anything that shares a row.** Write it next to the component's CSS.
+- **Boxes you type in are at least 16px on a phone or any touch screen** (Nov 8). Safari on an iPhone or iPad zooms the
+  whole page in when you tap a smaller one and leaves it zoomed. One rule in app.css sets the floor for every field,
+  whatever its own class says; the layout check calls a smaller one "zooms".
 
 How each part gives way:
 

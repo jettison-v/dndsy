@@ -22,7 +22,7 @@ def _without_tokens(css: str) -> str:
 def offenders() -> dict[str, list[str]]:
     css = _without_tokens(CSS)
     sizes = [v.strip() for v in re.findall(r"font-size:\s*([^;}]+)", css)
-             if not re.match(r"(var\(--fs-|inherit|calc\(var\(--fs-|[\d.]+em$)", v.strip())]  # em: relative to a token
+             if not re.match(r"(var\(--fs-|inherit|calc\(var\(--fs-|max\(var\(--fs-|[\d.]+em$)", v.strip())]  # em: relative to a token; max: a floor at one
     colors = re.findall(r"#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\([^)]*\)", css)
     # Screen widths in media queries; a list's own width in a container query is its columns' need, not a screen size
     widths = [w for w in re.findall(r"@media[^{]*\((?:max|min)-width:\s*(\d+)px\)", css) if int(w) not in SCREEN_WIDTHS]
