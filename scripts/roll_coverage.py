@@ -26,6 +26,9 @@ SOURCES = {"correction": "a correction", "checked": "checked recipe", "sheet": "
 
 def fixture(name: str) -> dict:
     return ddb.parse_character(ddb.sanitize(json.loads((ROOT / "tests" / "fixtures" / "ddb" / f"{name}.json").read_text())["data"]))
+    import fixtures  # (the saved sheets are locked: unlocked on first use)
+
+    fixtures.ready()
 
 
 def sheets(table: bool) -> list[tuple[str, dict]]:

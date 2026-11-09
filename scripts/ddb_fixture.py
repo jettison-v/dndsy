@@ -44,6 +44,8 @@ def main(source: str, name: str) -> None:
     data = ddb.sanitize(data)
     for key in ("traits", "notes"):  # the player's own writing stays out of git (the parser copes without it)
         data.pop(key, None)
+    for c in data.get("customItems") or []:  # (a custom item's description is the player's writing too, Nov 9)
+        c["description"] = ""
     portrait = (data.get("decorations") or {}).get("avatarUrl")
     data = trim(data)
     data["decorations"] = {"avatarUrl": portrait}  # the only decoration the parser reads
@@ -60,7 +62,7 @@ def main(source: str, name: str) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     out = OUT / f"{name}.json"
     out.write_text(json.dumps({"data": data}, ensure_ascii=False, separators=(",", ":")) + "\n")
-    print(f"Wrote {out} ({out.stat().st_size // 1024} KB)")
+    print(f"Wrote {out} ({out.stat().st_size // 1024} KB). Seal it with: uv run python scripts/fixtures.py lock")
 
 
 if __name__ == "__main__":

@@ -1,3 +1,14 @@
+
+
+# The party's saved D&D Beyond sheets are locked in the repository (scripts/fixtures.py; Nov 9): unlocked here, before
+# anything reads them, with FIXTURES_KEY from .env or the Actions secret
+import importlib.util as _iu  # noqa: E402
+from pathlib import Path as _P  # noqa: E402
+
+_spec = _iu.spec_from_file_location("askdnd_fixtures", _P(__file__).resolve().parents[1] / "scripts" / "fixtures.py")
+_fx = _iu.module_from_spec(_spec)
+_spec.loader.exec_module(_fx)
+_fx.ready()
 import os
 import re
 from pathlib import Path

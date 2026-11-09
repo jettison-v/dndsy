@@ -5,8 +5,8 @@ cluttering the menus; askdnd itself never deletes, so this is the one place it h
   over his testing on Nov 3), and every test copy that sits at no table (the first try at test copies). Never one at a
   real table now, and never a test copy still at one.
 - Their World entries, where each is only that character's own entry in a test campaign.
-- Accounts removed on Manage › Accounts that another account of the same name replaced (Tim Stewart's and Mary
-  Stewart's older ones), with nothing attached, and only if no Railway sign-in list names them: a removed account's
+- Accounts removed on Manage › Accounts that another account of the same name replaced (two players'
+  older ones), with nothing attached, and only if no Railway sign-in list names them: a removed account's
   record is what keeps it out, so a listed one stays.
 
 What cascades with them is test history only (VTT test's rolls and bridge changes for these characters). There's no

@@ -22,3 +22,5 @@ jobs:
       - run: uv python install
       - run: uv sync --frozen
       - run: uv run python scripts/ddb_drift.py
+        env:
+          FIXTURES_KEY: ${{ secrets.FIXTURES_KEY }}  # (the saved sheets are locked: scripts/fixtures.py)

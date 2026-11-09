@@ -7,7 +7,7 @@
 # Chrome won't let a script drive its normal profile folder, hence the copies. Brett's own profile is never a seat.
 T=$HOME/askdnd-tests
 C="$HOME/Library/Application Support/Google/Chrome"
-PROFILES=("dm:Profile 1" "player2:Default" "player3:Profile 4" "player4:")  # (the Mini's Jettison, Cupta Family and Trent profiles; Levi's seat)
+PROFILES=("dm:Profile 1" "player2:Default" "player3:Profile 4" "player4:")  # (the Mini's Jettison, Family and Trent profiles; Levi's seat)
 
 port() { case "$1" in dm) echo 9231;; player2) echo 9232;; player3) echo 9233;; player4) echo 9234;; esac; }
 up() { curl -s -m 2 "http://127.0.0.1:$(port "$1")/json/version" >/dev/null; }

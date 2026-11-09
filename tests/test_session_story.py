@@ -46,15 +46,15 @@ TOLD = {
 def story(db):
     """Main with Cole (player@'s), Trah (other@'s) and Big C; dm@ its DM; a transcript session played Nov 6."""
     import_bundle(db, {**BUNDLE, "sessions": [{"played_on": "2026-11-06", "source": "transcript"}]})
-    owned_by(db, char(db, "Cole"), "player@example.com", name="Brett Cupta")
-    owned_by(db, char(db, "Trah"), "other@example.com", name="Mark Cupta")
+    owned_by(db, char(db, "Cole"), "player@example.com", name="Alex Moore")
+    owned_by(db, char(db, "Trah"), "other@example.com", name="Sam Rivera")
     campaign = db.scalar(select(Campaign))
-    set_role(db, "player@example.com", "player", "Brett Cupta", campaign)
-    set_role(db, "other@example.com", "player", "Mark Cupta", campaign)
-    set_role(db, "dm@example.com", "dm", "Mary Stewart", campaign)
+    set_role(db, "player@example.com", "player", "Alex Moore", campaign)
+    set_role(db, "other@example.com", "player", "Sam Rivera", campaign)
+    set_role(db, "dm@example.com", "dm", "Jordan Vale", campaign)
     s = db.scalar(select(GameSession))
-    session_story.keep(db, s, "[0:00:01] Mary Stewart: You row into the fog.",
-                       {"speakers": {"Mary Stewart": 3000.0, "Brett Cupta": 1500.0, "Mark Cupta": 500.0, "Claude AI": 120.0}, "length": 4 * 3600})
+    session_story.keep(db, s, "[0:00:01] Jordan Vale: You row into the fog.",
+                       {"speakers": {"Jordan Vale": 3000.0, "Alex Moore": 1500.0, "Sam Rivera": 500.0, "Claude AI": 120.0}, "length": 4 * 3600})
     db.flush()
     return s
 

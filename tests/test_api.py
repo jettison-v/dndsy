@@ -65,12 +65,12 @@ def test_transcript_text_is_not_stored(client, db, monkeypatch):
     database table. The cleaned one the Processor sends is kept in file storage, for drafting, with who talked."""
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}})
     monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda sid, text: True)
-    post(client, text="SECRET-TRANSCRIPT-MARKER", talk={"speakers": {"Mary Stewart": 4530.2, "": 3, "Brett Cupta": "x"}, "length": 12300})
+    post(client, text="SECRET-TRANSCRIPT-MARKER", talk={"speakers": {"Jordan Vale": 4530.2, "": 3, "Alex Moore": "x"}, "length": 12300})
     from app import files, session_story
 
     s = db.scalar(select(GameSession))
     assert session_story.text(s) == "SECRET-TRANSCRIPT-MARKER" and files.get(s.transcript_key) == b"SECRET-TRANSCRIPT-MARKER"
-    assert s.talk == {"speakers": {"Mary Stewart": 4530.2}, "length": 12300}  # (checked: no empty name, no words)
+    assert s.talk == {"speakers": {"Jordan Vale": 4530.2}, "length": 12300}  # (checked: no empty name, no words)
     from sqlalchemy import text as sql
 
     tables = [r[0] for r in db.execute(sql("select tablename from pg_tables where schemaname='public'"))]

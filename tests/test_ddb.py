@@ -185,7 +185,7 @@ def test_custom_and_changed_items_are_marked(cole):
     egg = items["Golden Dragon Egg"]
     assert egg["custom"] and egg["key"].startswith("custom:") and egg["type"] == "Custom item" and not egg["changes"]
     mask = items["Mind Control Mask"]
-    assert mask["text"].startswith("Took off a young woman") and "Trah analysized" not in json.dumps(cole)  # a custom item's note
+    assert mask["text"] == "" and "Trah analysized" not in json.dumps(cole)  # (its description is the player's writing: not saved, Nov 9; nor its note)
     flask = items["Flask (blessed water)"]
     assert not flask["custom"] and flask["base_name"] == "Flask"
     assert flask["changes"] == ["Renamed (the D&D Beyond item is Flask)", "Has a note from the player (below)"]

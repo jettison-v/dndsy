@@ -47,3 +47,6 @@ logs/
 
 # Screenshots made while reproducing a bug (Oct 26: seven were committed by mistake). Real pages never go in git.
 /repro_*.png
+
+# The saved D&D Beyond sheets, readable copies: never committed (the books' words); tests/fixtures/ddb.locked holds them (scripts/fixtures.py)
+tests/fixtures/ddb/*.json
