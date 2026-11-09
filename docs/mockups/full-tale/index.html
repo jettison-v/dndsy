@@ -1,0 +1,258 @@
+<title>Full Tale and Stats</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Brett, Nov 9 (feedback 55, 56, and "highlight the stats and awards more"): three ways for a session's own page to put
+   its awards and the night's numbers forward, at a 13-14" laptop's size. The table's characters; the tale's words and
+   lines are made up. His pick is kept in the page's store (db: answers/pick). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --gold: #e2b54a; --gold-soft: rgba(226,181,74,.14);
+  --parch: #2a2620; --parch-text: #e9e0cc; --shadow: rgba(0,0,0,.45);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; --serif: "Cormorant Garamond", Georgia, serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10; --gold-soft: rgba(138,106,16,.12);
+  --parch: #f3ead6; --parch-text: #3b3225; --shadow: rgba(40,30,10,.18); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10; --gold-soft: rgba(138,106,16,.12);
+  --parch: #f3ead6; --parch-text: #3b3225; --shadow: rgba(40,30,10,.18); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+button, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 28px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.25rem; } h3 { font-size: 1rem; }
+p { margin: 0; max-width: 74ch; }
+b { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lbl { font: 700 .7rem/1 var(--cond); letter-spacing: .11em; text-transform: uppercase; color: var(--muted); }
+.note { color: var(--muted); font-size: .86rem; }
+header, section { display: grid; gap: 12px; min-width: 0; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; background: var(--surface); padding: 7px 14px; font-weight: 600; font-size: .88rem; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: rgba(126,166,224,.16); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+
+/* the page as askdnd draws it */
+.frame { border: 1px solid var(--line); border-radius: 14px; background: var(--bg); padding: 18px 22px 26px; display: grid; gap: 18px; min-width: 0; }
+.crumbs { font-size: .82rem; color: var(--muted); }
+.top { display: flex; flex-wrap: wrap; align-items: end; gap: 10px 18px; }
+.top .grow { flex: 1; min-width: 240px; }
+.kicker { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.title { font-family: var(--serif); font-size: 2rem; font-weight: 600; color: var(--strong); }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 7px 12px; font-size: .86rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+/* awards */
+.trophies { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.trophy { position: relative; background: linear-gradient(180deg, var(--gold-soft), var(--surface) 60%); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 6px; align-content: start; }
+.trophy .aw { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.trophy .who { display: flex; align-items: center; gap: 8px; }
+.av { width: 34px; height: 34px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-weight: 800; font-size: .8rem; color: var(--muted); flex: none; }
+.av.big { width: 46px; height: 46px; font-size: 1rem; }
+.trophy .who b { font-size: 1.05rem; }
+.trophy q { font-family: var(--serif); font-size: 1.05rem; color: var(--strong); }
+.trophy .why { font-size: .84rem; color: var(--text); }
+.trophy .dice { font-size: .74rem; color: var(--muted); }
+.trophy.hidden-award .who, .trophy.hidden-award q, .trophy.hidden-award .why { filter: blur(6px); }
+.trophy.hidden-award::after { content: "Press to reveal"; position: absolute; inset: auto 0 12px; text-align: center; font-size: .8rem; color: var(--strong); }
+
+/* numbers */
+.band { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; display: grid; gap: 2px; }
+.tile b { font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.tile small { color: var(--muted); font-size: .76rem; }
+.tile.new { border-style: dashed; }
+.tile.new::before { content: "New"; font: 700 .62rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+.bars { display: grid; gap: 6px; }
+.bar-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 46px; gap: 10px; align-items: center; font-size: .86rem; }
+.bar { height: 10px; background: var(--surface-2); border-radius: 0 4px 4px 0; position: relative; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--gold); border-radius: 0 4px 4px 0; }
+.bar.dmg i { background: var(--red); } .bar.heal i { background: var(--green); }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mix { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; }
+.mix i { display: block; } .mix .f { background: var(--red); } .mix .s { background: var(--gold); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+
+/* the tale */
+.parch { background: var(--parch); color: var(--parch-text); border-radius: 12px; padding: 22px 28px; font-family: var(--serif); font-size: 1.12rem; line-height: 1.6; display: grid; gap: 12px; }
+.parch h3 { font-family: var(--serif); font-size: 1.3rem; color: var(--parch-text); display: flex; gap: 10px; align-items: baseline; }
+.parch h3 span { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; color: var(--gold); }
+.parch p { max-width: none; }
+
+/* B: two columns */
+.twocol { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+.rail { position: sticky; top: 12px; display: grid; gap: 12px; }
+.rail .trophies { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.rail .trophy { padding: 8px 10px; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 2px 10px; }
+.rail .trophy .aw { grid-column: 2; grid-row: 1; } .rail .trophy .who { grid-column: 1; grid-row: 1; } .rail .trophy .who b { display: none; }
+.rail .trophy .av.big { width: 32px; height: 32px; } .rail .trophy q, .rail .trophy .why, .rail .trophy .dice { display: none; }
+.rail .trophy .aw::after { content: attr(data-who); display: block; margin-top: 3px; font: 600 .9rem/1.2 var(--sans); letter-spacing: 0; text-transform: none; color: var(--strong); }
+.rail .band { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* C: tabs */
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; background: none; padding: 10px 16px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+.tabs button[aria-selected="true"] { color: var(--strong); border-bottom-color: var(--red); }
+
+.opt[hidden] { display: none; }
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .88rem; }
+.pro > b:first-child { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 4px; color: var(--green); }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.aq { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 70px; font: 16px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; font-weight: 600; cursor: pointer; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+@media (max-width: 1000px) { .twocol { grid-template-columns: minmax(0, 1fr); } .rail { position: static; } .trophies { grid-template-columns: repeat(2, minmax(0, 1fr)); } .band { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .trophies, .band { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · A session's own page · Nov 9</div>
+    <h1>Full Tale and Stats</h1>
+    <p>Today the session's page is the whole tale first; the awards and the night's numbers come after its last chapter, where few scroll to. Three ways to put them forward, drawn at laptop size. <b>Proposed new numbers</b> (dashed, marked New) come from Table rolls, which already keeps every roll: damage dealt, the biggest hit and healing given, by character.</p>
+    <p class="note">The table's characters; the tale's chapters, lines and reasons are made up.</p>
+    <div class="seg" role="group" aria-label="Layout"><button type="button" data-opt="a" aria-pressed="true">A. The night first</button><button type="button" data-opt="b" aria-pressed="false">B. Side by side</button><button type="button" data-opt="c" aria-pressed="false">C. Two tabs</button></div>
+  </header>
+
+  <!-- A -->
+  <section class="opt" id="opt-a">
+    <p><b>A. The night first.</b> The page opens on the awards as trophies, then a band of the night's numbers, then the tale. Everyone sees who won before reading.</p>
+    <div class="frame">
+      <div class="crumbs">Story › All sessions › Session 5</div>
+      <div class="top"><div class="grow"><div class="kicker">Session 5 · Nov 6 · 3 h 40 min</div><div class="title">Terra in the Observatory</div></div><button class="btn">▶ Listen to the full tale · 9:12</button></div>
+      <div class="lbl">The awards</div>
+      <div class="trophies" data-awards></div>
+      <div class="lbl">The night in numbers</div>
+      <div class="band" data-band></div>
+      <div class="twocol" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><div class="card" data-bars="dmg"></div><div class="card" data-bars="talk"></div></div>
+      <div class="lbl">The tale</div>
+      <div class="parch" data-tale></div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="opt" id="opt-b" hidden>
+    <p><b>B. Side by side.</b> The tale in its reading column; beside it, a column that stays in view as you read: the awards, then the numbers. On a phone the column comes first.</p>
+    <div class="frame">
+      <div class="crumbs">Story › All sessions › Session 5</div>
+      <div class="top"><div class="grow"><div class="kicker">Session 5 · Nov 6 · 3 h 40 min</div><div class="title">Terra in the Observatory</div></div><button class="btn">▶ Listen to the full tale · 9:12</button></div>
+      <div class="twocol">
+        <div class="parch" data-tale></div>
+        <aside class="rail"><div class="lbl">The awards</div><div class="trophies" data-awards></div><div class="lbl">The night in numbers</div><div class="band" data-band></div><div class="card" data-bars="dmg"></div></aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="opt" id="opt-c" hidden>
+    <p><b>C. Two tabs.</b> <b>The Night</b> first: the awards face down, each revealed with a press (as at an awards night, good at the table on a shared screen), then the numbers. <b>The Tale</b> is its own tab.</p>
+    <div class="frame">
+      <div class="crumbs">Story › All sessions › Session 5</div>
+      <div class="top"><div class="grow"><div class="kicker">Session 5 · Nov 6 · 3 h 40 min</div><div class="title">Terra in the Observatory</div></div><button class="btn">▶ Listen to the full tale · 9:12</button></div>
+      <div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="true" data-tab="night">The Night</button><button type="button" role="tab" aria-selected="false" data-tab="tale">The Tale</button></div>
+      <div data-pane="night" style="display:grid;gap:14px">
+        <div class="trophies" data-awards data-hidden-awards></div>
+        <div class="band" data-band></div>
+        <div class="twocol" style="grid-template-columns: repeat(2, minmax(0, 1fr))"><div class="card" data-bars="dmg"></div><div class="card" data-bars="talk"></div></div>
+      </div>
+      <div data-pane="tale" hidden><div class="parch" data-tale></div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your pick</h2>
+    <div class="pros">
+      <div class="pro"><b>My pick: B</b>Laptop-first: the awards and numbers stay in view the whole time you read, and the tale isn't pushed down. A is the boldest for awards; C makes revealing them a moment at the table, but hides the tale a tab away.</div>
+      <div class="pro"><b>The new numbers</b>Damage dealt, the biggest hit and healing given come from the night's table rolls (applied damage where it was applied). Mark which you want; Damage King and Hardest Luck stay awards.</div>
+    </div>
+    <form class="answer" id="answer">
+      <div class="aq"><b>Which layout?</b>
+        <div class="picks" role="radiogroup" aria-label="Layout">
+          <label class="pick"><input type="radio" name="layout" value="A">A. The night first</label>
+          <label class="pick"><input type="radio" name="layout" value="B">B. Side by side</label>
+          <label class="pick"><input type="radio" name="layout" value="C">C. Two tabs</label>
+        </div></div>
+      <div class="aq"><b>Which new numbers?</b> <span class="note">(any)</span>
+        <div class="picks">
+          <label class="pick"><input type="checkbox" name="new" value="damage">Damage dealt</label>
+          <label class="pick"><input type="checkbox" name="new" value="biggest">Biggest hit</label>
+          <label class="pick"><input type="checkbox" name="new" value="healing">Healing given</label>
+          <label class="pick"><input type="checkbox" name="new" value="spells">Spells cast</label>
+        </div></div>
+      <div class="aq"><b>Anything else</b> <span class="note">(optional)</span><textarea name="words" id="words"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Send to Claude</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
+  const AWARDS = [
+    ["Most Strategic", "Trah", "T", "", "Read the room before the fight and moved the party out of the trap's line."],
+    ["Line of the Night", "Big C", "BC", "I didn't come all this way to be polite to a door.", ""],
+    ["Clutch Moment", "Cole", "C", "", "Wild Shaped into a spider and climbed out with the key as the ceiling came down."],
+    ["DM Shining Moment", "The DM", "DM", "", "The observatory's clocks, ticking backwards a little more each scene."],
+    ["Best Decision", "No Name", "NN", "", "Kept the stranger talking until the others found the way out."],
+    ["Unsung Hero", "Cole", "C", "", "Healed twice when no one asked."],
+    ["Damage King", "Big C", "BC", "", "41 damage, from Table rolls", true],
+    ["Hardest Luck", "Trah", "T", "", "Three natural 1s, from Table rolls", true],
+  ];
+  const BAND = [["3", "Natural 20s"], ["4", "Natural 1s"], ["86", "Rolls the table saw"], ["35%", "Fights · 65% story"], ["23", "Biggest hit · Big C", true], ["18", "Healing given · Cole", true]];
+  const DMG = [["Big C", 41], ["Cole", 27], ["Trah", 22], ["No Name", 14]];
+  const TALK = [["The DM", 38], ["Big C", 18], ["Trah", 16], ["Cole", 15], ["No Name", 13]];
+  const TALE = [["I", "The doors that wouldn't open"], ["II", "Clocks that run backwards"], ["III", "The stranger in the dome"]];
+  function awards(el, hidden) {
+    el.innerHTML = AWARDS.map(([aw, who, ini, q, why, dice], i) => `<div class="trophy${hidden ? " hidden-award" : ""}" data-i="${i}" ${hidden ? 'role="button" tabindex="0"' : ""}>
+      <span class="aw" data-who="${who}" title="${(q || why).replace(/"/g, "&quot;")}">${aw}</span><span class="who"><span class="av big">${ini}</span><b>${who}</b></span>${q ? `<q>${q}</q>` : ""}${why ? `<span class="${dice ? "dice" : "why"}">${why}</span>` : ""}</div>`).join("");
+  }
+  const band = el => { el.innerHTML = BAND.map(([b, s, n]) => `<div class="tile${n ? " new" : ""}"><b>${b}</b><small>${s}</small></div>`).join(""); };
+  const bars = (el, kind) => {
+    const rows = kind === "dmg" ? DMG : TALK, top = Math.max(...rows.map(r => r[1]));
+    el.innerHTML = `<div class="lbl">${kind === "dmg" ? "Damage dealt (New)" : "Who talked"}</div><div class="bars">` + rows.map(([w, n]) =>
+      `<div class="bar-row"><span>${w}</span><span class="bar${kind === "dmg" ? " dmg" : ""}"><i style="width:${n / top * 100}%"></i></span><span class="num">${kind === "dmg" ? n : n + "%"}</span></div>`).join("") + "</div>"
+      + (kind === "talk" ? '<div class="lbl" style="margin-top:6px">Fights and story</div><div class="mix"><i class="f" style="width:35%"></i><i class="s" style="width:65%"></i></div>' : "");
+  };
+  const tale = el => { el.innerHTML = TALE.map(([n, t]) => `<h3><span>${n}</span>${t}</h3><p>The party reached the doors at dusk and found them sealed by more than iron. Big C tried the polite way first; it went as well as anyone expected.</p>`).join(""); };
+  $$("[data-awards]").forEach(el => awards(el, el.hasAttribute("data-hidden-awards")));
+  $$("[data-band]").forEach(band); $$("[data-bars]").forEach(el => bars(el, el.dataset.bars)); $$("[data-tale]").forEach(tale);
+  document.addEventListener("click", e => { const t = e.target.closest(".hidden-award"); if (t) t.classList.remove("hidden-award"); });
+  $$("[data-opt]").forEach(b => b.addEventListener("click", () => { $$("[data-opt]").forEach(x => x.setAttribute("aria-pressed", x === b)); $$(".opt").forEach(o => { o.hidden = o.id !== "opt-" + b.dataset.opt; }); }));
+  $$("[data-tab]").forEach(b => b.addEventListener("click", () => { $$("[data-tab]").forEach(x => x.setAttribute("aria-selected", x === b)); $$("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; }); }));
+
+  const form = $("#answer"), said = $("#said"), send = $("#send");
+  let db = null;
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = "Open this page signed in to claude.ai to send it."; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try { await db.collection("answers").doc("pick").set({ layout: f.get("layout") || "", new: f.getAll("new"), words: (f.get("words") || "").trim(), at: new Date().toISOString() }); said.textContent = "Sent to Claude"; }
+    catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use("db"); } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const doc = await db.collection("answers").doc("pick").get();
+      if (!doc.exists) return;
+      const a = doc.data();
+      form.querySelectorAll("input").forEach(r => { r.checked = (r.name === "layout" && r.value === a.layout) || (r.name === "new" && (a.new || []).includes(r.value)); });
+      $("#words").value = a.words || "";
+      said.textContent = "Sent earlier: change it and send again if you like";
+    } catch (err) { /* nothing yet */ }
+  })();
+})();
+</script>
