@@ -193,6 +193,26 @@ def test_custom_and_changed_items_are_marked(cole):
     assert not items["Bag of Holding"]["changes"] and not items["Bag of Holding"]["custom"]
 
 
+def test_a_custom_item_is_listed_once_where_it_is():
+    """Brett, Nov 9: Trah's custom items showed twice. D&D Beyond now also lists each custom item as an inventory row
+    (its definition marked isCustomItem, with the custom item's id); askdnd lists it once, as the custom item, in the
+    bag that row puts it in. Two real Blankets stay two."""
+    data = load("trah")
+    bag = next(i for i in data["inventory"] if (i.get("definition") or {}).get("isContainer"))
+    rows = [{"id": 9_000_000 + n, "definitionId": 0, "quantity": c.get("quantity") or 1, "equipped": n == 0,
+             "containerEntityId": bag["id"] if n == 1 else data["id"],
+             "definition": {"id": c["id"], "name": c["name"], "isCustomItem": True, "filterType": None, "description": None}}
+            for n, c in enumerate(data["customItems"])]
+    sheet = ddb.parse_character({**data, "inventory": data["inventory"] + rows})
+    names = [x["name"] for x in sheet["inventory"]]
+    for c in data["customItems"]:
+        assert names.count(c["name"].strip()) == 1, c["name"]
+    second = next(x for x in sheet["inventory"] if x["name"] == data["customItems"][1]["name"].strip())
+    assert second["custom"] and second["key"] == f"custom:{data['customItems'][1]['id']}" and second["in"] == bag["definition"]["name"]
+    assert next(x for x in sheet["inventory"] if x["name"] == data["customItems"][0]["name"].strip())["equipped"]
+    assert names.count("Blanket") == 2
+
+
 def test_portrait_comes_from_d_and_d_beyond_only(cole):
     assert cole["portrait"].startswith("https://www.dndbeyond.com/avatars/")
     assert ddb.parse_character({**load("cole"), "decorations": {"avatarUrl": "https://evil.example/x.png"}})["portrait"] == ""
