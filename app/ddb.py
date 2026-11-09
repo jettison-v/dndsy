@@ -25,7 +25,7 @@ CHARACTER_URL = "https://character-service.dndbeyond.com/character/v5/character/
 SHEET_URL = "https://www.dndbeyond.com/characters/{id}"
 USER_AGENT = "askdnd/2 (private table companion; +https://askdnd.ai)"
 TIMEOUT_SECONDS = 15
-PARSER_VERSION = 29  # bump when the summary shape changes; stored summaries are re-parsed
+PARSER_VERSION = 30  # bump when the summary shape changes; stored summaries are re-parsed (30: custom items once, Nov 9)
 
 
 class DdbError(Exception):

@@ -955,10 +955,13 @@ class _Sheet:
         other_changes = {str(v.get("valueId")) for v in self.d.get("characterValues") or [] if v.get("typeId") not in (8, ITEM_NOTE_VALUE_TYPE)}
         noted = {x if ":" in x else f"item:{x}" for x in self.d.get("noteItemIds") or []}  # older copies kept bare ids
         containers = {i.get("id"): i for i in self.items}
+        # D&D Beyond also lists each custom item as an inventory row (its definition marked isCustomItem, carrying the
+        # custom item's id; Nov 9): listed once, below, as the custom item, where that row puts it
+        placed = {str(_d(i, "definition", "id")): i for i in self.items if _d(i, "definition", "isCustomItem")}
         out = []
         for i in self.items:
             df = i.get("definition") or {}
-            if not df.get("name"):
+            if not df.get("name") or df.get("isCustomItem"):
                 continue
             container = containers.get(i.get("containerEntityId"))
             dmg = _d(df, "damage", "diceString")
@@ -996,15 +999,21 @@ class _Sheet:
                 "summary": _first_paragraph(html_to_text(df.get("description")), 280) if df.get("magic") else "",
                 "text": html_to_text(df.get("description")) if df.get("magic") or usable else "",
             })
-        for c in self.d.get("customItems") or []:  # made up on D&D Beyond (by a player or the DM), not from a book
-            if not c.get("name"):
-                continue
+        customs = [c for c in self.d.get("customItems") or [] if c.get("name")]
+        known = {str(c.get("id")) for c in customs}
+        customs += [{**i["definition"], "quantity": i.get("quantity")} for cid, i in placed.items() if cid not in known]  # (a row alone)
+        for c in customs:  # made up on D&D Beyond (by a player or the DM), not from a book
             text = html_to_text(c.get("description"))
+            row = placed.get(str(c.get("id"))) or {}
+            container = containers.get(row.get("containerEntityId"))
+            noted_here = f"custom:{c.get('id')}" in noted or (row and f"item:{row.get('id')}" in noted)
             out.append({
                 "key": f"custom:{c.get('id')}", "name": c["name"].strip(), "base_name": c["name"].strip(), "custom": True,
-                "changes": ["Has a note from the player (below)"] if f"custom:{c.get('id')}" in noted else [], "battle": False, "category": "Other Gear", "type": "Custom item", "quantity": c.get("quantity") or 1,
-                "equipped": False, "magic": False, "rarity": "", "attunement": "", "attunement_note": "", "charges": None,
-                "in": "", "in_id": "", "bag": False, "damage": "", "properties": [], "armor_class": None,
+                "changes": ["Has a note from the player (below)"] if noted_here else [], "battle": False, "category": "Other Gear", "type": "Custom item",
+                "quantity": row.get("quantity") or c.get("quantity") or 1,
+                "equipped": bool(row.get("equipped")), "magic": False, "rarity": "", "attunement": "", "attunement_note": "", "charges": None,
+                "in": _d(container, "definition", "name") if container else "", "in_id": str(row.get("containerEntityId") or "") if container else "",
+                "bag": False, "damage": "", "properties": [], "armor_class": None,
                 "summary": _first_paragraph(text, 280), "text": text,
             })
         out.sort(key=lambda x: (not x["equipped"], not x["magic"], bool(x["in"]), x["name"]))
