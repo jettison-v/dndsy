@@ -41,6 +41,7 @@ from app.companions import router as companions_router
 from app.picture_window import router as picture_window_router
 from app.item_use import router as item_use_router
 from app.item_creatures import router as item_creatures_router
+from app.digest import router as digest_router
 from app.level_up import router as level_up_router
 from app.resources import router as resources_router
 from app.rests import router as rests_router
@@ -97,9 +98,12 @@ async def lifespan(app: FastAPI):
     from app import unwatched
 
     reading = (asyncio.create_task(unwatched.loop()) if config.DDB_BRIDGE and unwatched.TICK and listener is not None else None)
+    from app import digest  # the Inbox digest, once a day where email is set up (app/digest.py)
+
+    mailing = asyncio.create_task(digest.loop()) if digest.enabled() and listener is not None else None
     yield
     await reparsing
-    for task in (listener, reading):
+    for task in (listener, reading, mailing):
         if task:
             task.cancel()
 
@@ -171,6 +175,7 @@ app.include_router(view_as_router)
 app.include_router(admin_router)
 app.include_router(item_use_router)
 app.include_router(item_creatures_router)  # items that bring a creature (the Beasty Bone)
+app.include_router(digest_router)  # the Inbox digest email and Your account › Email
 app.include_router(casting_router)  # (through the bridge: on_for)
 app.include_router(resources_router)  # (through the bridge: on_for)
 app.include_router(rests_router)  # (through the bridge: on_for)

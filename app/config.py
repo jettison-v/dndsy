@@ -56,6 +56,11 @@ DDB_BRIDGE = os.getenv("DDB_BRIDGE", "").strip() == "1"
 FEEDBACK_KEY = os.getenv("FEEDBACK_KEY", "").strip()
 # Prod's address: staging sends its feedback notes there (app/feedback.py to_prod; Brett, Nov 6: one queue)
 PROD_URL = os.getenv("PROD_URL", "https://askdnd.ai").rstrip("/")
+# The Inbox digest (app/digest.py): Resend's key, the address it's sent from (askdnd.ai's, verified at Resend) and the
+# hour of the table's day it goes out (America/Los_Angeles, 0-23). No key: no email (locally, and on staging anyway).
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+EMAIL_FROM = os.getenv("EMAIL_FROM", "askdnd <noreply@askdnd.ai>")
+DIGEST_HOUR = int(os.getenv("DIGEST_HOUR", "18"))
 # Where the table adds the extension: its Chrome Web Store listing (unlisted: only people with this link find it)
 BRIDGE_EXTENSION_URL = "https://chromewebstore.google.com/detail/askdnd-bridge/obpgemimnhngpcckodjkcihiahoaefpl"
 

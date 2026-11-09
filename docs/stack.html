@@ -114,7 +114,7 @@ td { min-width: 0; }
 
   <figure>
     <div class="frame">
-      <svg viewBox="0 0 1120 520" role="img" aria-label="askdnd's pieces and how they connect. Code goes from Claude Code on Brett's Mac to GitHub, where checks run and then Railway deploys the website. The table reaches the website through Cloudflare. The website uses Postgres, Sentry, Anthropic, OpenAI (drawn pictures), Google, D&amp;D Beyond and S3. A nightly backup copies Postgres to S3, and the newest backup becomes the local test copy.">
+      <svg viewBox="0 0 1120 520" role="img" aria-label="askdnd's pieces and how they connect. Code goes from Claude Code on Brett's Mac to GitHub, where checks run and then Railway deploys the website. The table reaches the website through Cloudflare. The website uses Postgres, Sentry, Anthropic, OpenAI (drawn pictures), Resend (the Inbox email), Google, D&amp;D Beyond and S3. A nightly backup copies Postgres to S3, and the newest backup becomes the local test copy.">
         <defs>
           <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
             <path class="tip" d="M0 0 L10 5 L0 10 z"/>
@@ -217,7 +217,7 @@ td { min-width: 0; }
         <g class="bx both"><rect x="900" y="60" width="200" height="44" rx="6"/>
           <text class="bt" x="912" y="78">Sentry</text><text class="bs" x="912" y="94">emails Brett; Claude reads</text></g>
         <g class="bx brett"><rect x="900" y="124" width="200" height="44" rx="6"/>
-          <text class="bt" x="912" y="142">Anthropic</text><text class="bs" x="912" y="158">Claude; OpenAI: pictures, Listen</text></g>
+          <text class="bt" x="912" y="142">Anthropic</text><text class="bs" x="912" y="158">Claude; OpenAI; Resend: email</text></g>
         <g class="bx brett"><rect x="900" y="188" width="200" height="44" rx="6"/>
           <text class="bt" x="912" y="206">Google</text><text class="bs" x="912" y="222">sign-in, the campaign doc</text></g>
         <g class="bx out"><rect x="900" y="252" width="200" height="44" rx="6"/>
@@ -370,6 +370,7 @@ td { min-width: 0; }
             <tr><td>AWS</td><td>Two narrow keys: <code>askdnd-v2-files</code> (website: read and write <code>v2/files/</code>) and <code>askdnd-v2-backups</code> (backup: <code>v2/backups/</code>, tidying <code>v2/files/</code>).</td><td>Rotating a key, or a new kind of storage.</td></tr>
             <tr><td>Google Cloud</td><td>The sign-in client and its secret; the test-user list (Testing mode until launch).</td><td>Adding a player: here <em>and</em> on Manage › Accounts.</td></tr>
             <tr><td>Anthropic Console</td><td>The API key and the prepaid balance (auto-reload off).</td><td>Topping up. askdnd's own limit is on Manage › Usage.</td></tr>
+            <tr><td>Resend</td><td>Sends the Inbox digest (app/digest.py): one email a day to a campaign's DM (others opt in), counts and a link only, from <code>noreply@askdnd.ai</code>, the askdnd.ai domain verified there (its DNS records added in Cloudflare). Free tier: 3,000 a month.</td><td>The account and its API key; the domain's records if Resend asks again.</td></tr>
             <tr><td>OpenAI Platform</td><td>The <code>askdnd-v2</code> API key (its own, not the legacy app's) for pictures drawn from a description and Listen's narration (only a published recap's words and the campaign's name are sent), and OpenAI's own monthly budget.</td><td>Making or replacing the key; a budget; verifying the organization if image models ask for it. askdnd's own limit (Manage › Usage) counts drawn pictures too.</td></tr>
             <tr><td>GitHub, Railway</td><td>Your accounts and the CLI logins Claude borrows.</td><td>If a login expires.</td></tr>
             <tr><td>Chrome Web Store</td><td>The developer account (Brett's Google account, publisher askdnd) and the askdnd bridge's listing, unlisted.</td><td>Publishing an update; sharing its link with the table.</td></tr>
@@ -398,6 +399,7 @@ td { min-width: 0; }
         <tr><td><code>AWS_ACCESS_KEY_ID</code>, <code>_SECRET_ACCESS_KEY</code></td><td>website and backup, each its own user</td><td>AWS › IAM › Users › Security credentials</td><td>Brett</td></tr>
         <tr><td><code>SENTRY_DSN</code></td><td>website and backup (Railway), and the Mac Mini's nightly live test (<code>~/askdnd-tests/.env</code>, through <code>scripts/set-secret.sh --mini</code>); never your Mac's <code>.env</code></td><td>Sentry › askdnd-v2 › Client Keys</td><td>Brett made it; Claude copied it to the Mini</td></tr>
         <tr><td><code>SESSION_SECRET</code>, <code>UPLOAD_TOKEN</code></td><td>website (the token also in your <code>.env</code> for the Processor)</td><td>Random, generated on the Mac</td><td>Either</td></tr>
+        <tr><td><code>RESEND_API_KEY</code></td><td>website on prod only (Railway; not staging, not your <code>.env</code>: no key, no email): the Inbox digest (app/digest.py)</td><td>Resend › API Keys (sending access, askdnd.ai)</td><td>Brett, with <code>scripts/set-secret.sh</code></td></tr>
         <tr><td><code>OPENAI_API_KEY</code></td><td>website (Railway) and your <code>.env</code>: the Picture window's Describe it (app/drawing.py) and Listen to the recap (app/narration.py)</td><td>OpenAI Platform › API keys (<code>askdnd-v2</code>)</td><td>Brett, with <code>scripts/set-secret.sh --clipboard</code></td></tr>
         <tr><td><code>FEEDBACK_KEY</code></td><td>website, and your <code>.env</code> for Claude's <code>scripts/feedback.py</code> (the feedback queue)</td><td>Random, generated on the Mac</td><td>Brett, with <code>scripts/set-secret.sh</code></td></tr>
         <tr><td><code>DATABASE_URL</code></td><td>website and backup</td><td>A Railway reference to Postgres, never copied</td><td>Automatic</td></tr>
@@ -424,5 +426,5 @@ td { min-width: 0; }
   </section>
 
   <p class="foot">Kept in the repo at <code>docs/stack.html</code> and updated whenever a service, a key or who does
-    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-09 (staging: a second askdnd in its own Railway environment; Listen to the recap: OpenAI reads a published recap).</p>
+    what changes; published privately at <code>claude.ai/artifact/AYYGdebsBtPND4HoTq5uyr</code>. Last updated 2026-11-09 (staging: a second askdnd in its own Railway environment; Listen to the recap: OpenAI reads a published recap; Resend sends the Inbox digest).</p>
 </main>

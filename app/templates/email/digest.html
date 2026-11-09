@@ -1,0 +1,23 @@
+{# An email, not a page (so DESIGN.md's page rules don't apply: mail apps drop stylesheets). The Inbox digest's email (app/digest.py; docs/mockups/inbox-email/): counts and a link only. Inline styles, light,
+   and a table for the layout: mail apps drop stylesheets and many ignore dark mode. #}
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ title }}</title></head>
+<body style="margin:0;padding:0;background:#f4f1ea;font-family:Inter,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif;color:#2a2723;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f1ea;padding:24px 12px;"><tr><td align="center">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:26px 28px;">
+    <tr><td style="font-size:13px;color:#6b655c;padding-bottom:14px;">
+      <span style="display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;border-radius:7px;background:#1d1f22;color:#ffffff;font-weight:800;margin-right:8px;">a</span>askdnd · {{ campaign.name }}
+    </td></tr>
+    <tr><td style="font-size:22px;font-weight:700;padding-bottom:10px;">{{ title }}</td></tr>
+    <tr><td style="font-size:15px;line-height:1.5;padding-bottom:12px;">Since the last email, in <b>{{ campaign.name }}</b>'s Inbox:</td></tr>
+    {% for what, n in rows %}
+    <tr><td style="padding-bottom:6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2ddd3;border-radius:9px;">
+      <tr><td style="padding:9px 12px;font-size:15px;">{{ what }}</td><td align="right" style="padding:9px 12px;font-size:15px;font-weight:700;">{{ n }}</td></tr></table></td></tr>
+    {% endfor %}
+    <tr><td style="padding:14px 0 18px;"><a href="{{ link }}" style="display:inline-block;background:#b83232;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:11px 18px;border-radius:9px;">Open the Inbox</a></td></tr>
+    <tr><td style="border-top:1px solid #e2ddd3;padding-top:12px;font-size:12px;line-height:1.5;color:#6b655c;">
+      {{ why }} One email a day at most, only when something new arrives. <a href="{{ stop }}" style="color:#6b655c;">Stop these emails</a> (one click), or Your account › Email in askdnd.
+    </td></tr>
+  </table>
+</td></tr></table>
+</body></html>

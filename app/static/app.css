@@ -3647,3 +3647,7 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .rs-pick .rc.prof span { font-weight: 600; }
 @media (max-width: 900px) { .rs-pick { position: fixed; top: auto; left: var(--sp-3); right: var(--sp-3); bottom: calc(72px + env(safe-area-inset-bottom, 0px)); max-height: 60vh; } }
 @media (max-width: 640px) { body.rolls-closed .rs-roll { display: none; } }
+
+/* Your account › Email (app/digest.py): a switch per campaign */
+.email-settings { display: grid; gap: var(--sp-1); margin-top: var(--sp-3); }
+.email-row { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 0; border-top: 1px solid var(--line); }

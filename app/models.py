@@ -89,6 +89,9 @@ class User(Timestamped, Base):
     dice: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # their dice: set, material, by_type (app/dice.py)
     # Can send feedback for Claude with \ though not an admin (Brett's test accounts; app/feedback.py), set on Accounts
     feedback: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # Email (app/digest.py): {"inbox": {campaign id: on/off, a person's own choice}, "at": {campaign id: when the last
+    # digest went out}, "checked": {campaign id: the table's date it was last looked at}}
+    emails: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
 
 
 class Campaign(Timestamped, Base):
