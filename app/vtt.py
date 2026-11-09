@@ -58,6 +58,13 @@ FEATURES: list[Feature] = [
             "Initiative in askdnd (docs/mockups/initiative/), Nov 4: being built. Once askdnd's own VTT runs, nothing is "
             "sent to D&D Beyond's.",
             labs=True, state="Being built"),
+    Feature("roll_card", "The roll card",
+            "Pressing an attack's to-hit on Battle opens the roll card instead of the roll window: a choice first when the "
+            "attack has one (an Unarmed Strike's Damage, Grapple or Shove), to hit with what adds to it as pills, then the "
+            "result, with what you can add once it hits, and its damage, each its own moment; who sees it stays one line. "
+            "Laptop: beside the row; phone: from the bottom. Being built: save spells and checks come next.",
+            "The roll card (docs/mockups/roll-workflow/round-2.html, Brett chose it Nov 9): attacks first.",
+            labs=True, state="Being built"),
     Feature("recap_listen", "Listen to the recap",
             "On Story › Previously on… and each session in All sessions, ▶ Listen plays the recap read aloud by a narrator, over the pictures of who and "
             "what each paragraph names, panning slowly, with the words on screen: a \"previously on\" to start the night. "

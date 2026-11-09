@@ -58,7 +58,7 @@ def initials(name: str) -> str:
 
 def entity_context(db: Session, entity: Entity, user: dict) -> dict:
     companion = companion_story.view(db, entity)
-    can_picture = pictures.can_manage(user)
+    can_picture = pictures.owner(db, f"entity:{entity.id}", user) is not None  # (the DM's, or a player's own character's)
     reviewer = is_reviewer(user)
     moderator = can_moderate(user)  # decides on facts from the table
     facts = list(db.scalars(select(Fact).where(Fact.entity_id == entity.id).order_by(Fact.id)))

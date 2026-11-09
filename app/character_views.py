@@ -212,6 +212,11 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     unarmed = attacks.get("Unarmed Strike")
     for o in out:
         rollable(o, unarmed)
+    from app.roll_plan import plan  # (the roll card's: an attack's steps and numbers, Labs `roll_card`, Nov 9)
+
+    for o in out:
+        if str(o.get("hit") or "")[:1] in "+-\u2212":
+            o["plan"] = plan(sheet, o)
     return out
 
 

@@ -104,6 +104,18 @@ class Owner:
         return FRAMES[self.frame][2]
 
 
+def _plays(db: Session, e: Entity, user: dict | None) -> bool:
+    """Is this the World entry of a character this person plays? (Its picture is theirs to change, Brett Nov 9.)"""
+    from app import characters as chars
+    from app import picks
+    from app.models import EntityKind
+
+    if not user or e.kind != EntityKind.PC:
+        return False
+    ch = chars.for_entity(db, e.id)
+    return ch is not None and picks.can_edit(db, user, ch)
+
+
 def owner(db: Session, ref: str, user: dict | None) -> Owner | None:
     """The thing `ref` names, if it exists and this person may change its picture; else None."""
     from app import characters as chars
@@ -113,7 +125,9 @@ def owner(db: Session, ref: str, user: dict | None) -> Owner | None:
     if kind == "entity" and rest.isdigit():
         e = db.get(Entity, int(rest))
         email = (user or {}).get("email")
-        if e is None or not can_manage(user) or (access.level(email) != access.ADMIN and access.current_campaign_id(email) != e.campaign_id):
+        if e is None or (access.level(email) != access.ADMIN and access.current_campaign_id(email) != e.campaign_id):
+            return None
+        if not can_manage(user) and not _plays(db, e, user):  # (a player: their own character's entry, Brett Nov 9)
             return None
         from app.traits import traits_line
 
