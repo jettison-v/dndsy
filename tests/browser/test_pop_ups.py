@@ -38,6 +38,27 @@ def test_a_change_landing_leaves_an_open_pop_up_alone_and_shows_when_its_closed(
         change(other, "Poisoned", "/end")
 
 
+def test_an_open_pill_stays_open_when_the_page_shows_its_new_copy_at_once(people, server):
+    """Nov 9 (the live test's Exhaustion step): your own change landing makes the page show its new copy at once, past
+    the check for an open pop-up; the pill you had just opened stays open in it."""
+    player = people("player")
+    change(player, "Prone")
+    page = battle(player, server)
+    try:
+        page.locator(f"{PRONE} > summary").click()
+        swapped = page.evaluate("""s => new Promise(done => {
+            document.querySelector(s).dataset.old = '1';
+            document.addEventListener('askdnd:swapped', () => done(true), { once: true });
+            document.body.dispatchEvent(new CustomEvent('characterChanged', { detail: {} }));
+            setTimeout(() => done(false), 8000);
+        })""", PRONE)
+        assert swapped
+        assert page.locator(f"{PRONE}:not([data-old])[open]").count() == 1  # (a new copy, open)
+        assert player.errors == []
+    finally:
+        change(player, "Prone", "/end")
+
+
 def test_prones_icon_lies_down_on_its_pill_and_badge_and_nothing_else_does(people, server):
     player = people("player")
     change(player, "Prone")
