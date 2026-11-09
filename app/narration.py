@@ -66,6 +66,40 @@ def opening(campaign_name: str) -> str:
 
 PARTS = ("recap", "full")  # the recap (Previously on…), and the full tale (the session's own page; Session Story, Nov 7)
 KEYS = {"recap": "narration_key", "full": "tale_narration_key"}
+SECONDS = {"recap": "narration_seconds", "full": "tale_narration_seconds"}
+PACE = 180  # words a minute: the narrator's pace on the first recordings (169-193, Nov 9), for the estimate before one is made
+
+_BITRATES = {1: (0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320),  # MPEG-1 Layer III, kbit/s
+             2: (0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160)}  # MPEG-2 and 2.5
+_RATES = {3: (44100, 48000, 32000), 2: (22050, 24000, 16000), 0: (11025, 12000, 8000)}
+
+
+def mp3_seconds(data: bytes) -> int | None:
+    """How long an MP3 plays: its frames counted (OpenAI's voice is MPEG-2 at 24 kHz; parts joined play as one)."""
+    i, total, n = 0, 0.0, len(data)
+    while i + 4 <= n:
+        if data[i:i + 3] == b"ID3" and i + 10 <= n:  # (a tag: skipped whole)
+            i += 10 + ((data[i + 6] & 0x7F) << 21 | (data[i + 7] & 0x7F) << 14 | (data[i + 8] & 0x7F) << 7 | (data[i + 9] & 0x7F))
+            continue
+        b1, b2 = data[i + 1], data[i + 2]
+        ver, layer, bri, sri = (b1 >> 3) & 3, (b1 >> 1) & 3, b2 >> 4, (b2 >> 2) & 3
+        if data[i] != 0xFF or (b1 & 0xE0) != 0xE0 or ver == 1 or layer != 1 or bri in (0, 15) or sri == 3:
+            i += 1
+            continue
+        rate, per = _RATES[ver][sri], (1152 if ver == 3 else 576)
+        total += per / rate
+        i += per // 8 * _BITRATES[1 if ver == 3 else 2][bri] * 1000 // rate + ((b2 >> 1) & 1)
+    return round(total) if total else None
+
+
+def length(session: GameSession, recap: Recap, campaign_name: str, part: str = "recap") -> dict:
+    """How long Listen plays: the narration's own length once it's made, else an estimate from the words at the
+    narrator's pace. {"seconds", "estimate", "says"}: "2:04", or "≈ 2 min" before it's made."""
+    real = getattr(recap, SECONDS[part])
+    if real:
+        return {"seconds": real, "estimate": False, "says": f"{real // 60}:{real % 60:02d}"}
+    secs = round(sum(len(x.split()) for x in words(session, recap, campaign_name, part)) * 60 / PACE)
+    return {"seconds": secs, "estimate": True, "says": f"≈ {max(1, round(secs / 60))} min"}
 
 
 def words(session: GameSession, recap: Recap, campaign_name: str, part: str = "recap") -> list[str]:
@@ -145,6 +179,7 @@ def narrate(db: Session, session: GameSession, recap: Recap, campaign_name: str,
         raise NarrationError(str(e)) from None
     recap = db.get(Recap, recap.id)
     setattr(recap, KEYS[part], key)
+    setattr(recap, SECONDS[part], mp3_seconds(audio))
     run.status, run.cost_usd = "done", round(COST_PER_1K * sum(len(x) for x in lines) / 1000, 4)
     db.commit()
     return key
@@ -247,6 +282,9 @@ def narration_file(request: Request, session_id: int, db: Session = Depends(get_
     data = files.read(getattr(recap, KEYS[part]))
     if data is None:
         return JSONResponse({"error": "The narration isn't there. Press Listen again."}, status_code=404)
+    if not getattr(recap, SECONDS[part]):  # (one made before lengths were kept: measured the first time it's played)
+        setattr(recap, SECONDS[part], mp3_seconds(data))
+        db.commit()
     return Response(data, media_type="audio/mpeg", headers={"Cache-Control": "private, max-age=31536000, immutable"})
 
 

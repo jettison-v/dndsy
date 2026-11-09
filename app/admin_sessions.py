@@ -14,13 +14,14 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, config, session_story, web
+from app import access, config, narration, session_story, web
 from app import db as dbmod
 from app import review
 from app.admin import _reviewer_guard as _guard
 from app.auth import current_user, is_admin
 from app.db import get_db
 from app.extraction import (
+    revise_suggestions,
     ExtractionError,
     Source,
     extract_session,
@@ -98,9 +99,24 @@ def read_transcript_in_background(session_id: int, text: str) -> bool:
     return _in_background(session_id, lambda db, s: extract_session(db, s, Source("transcript", text), step="ask"))
 
 
-def draft_recap_in_background(session_id: int) -> bool:
+def revise_in_background(session_id: int) -> bool:
+    """Put the answers into the waiting suggestions (Brett, Nov 9): no transcript, cents, under a minute."""
+    return _in_background(session_id, lambda db, s: revise_suggestions(db, s))
+
+
+def revise_when_settled(db: Session, s: GameSession) -> str:
+    """Once the last of Claude's questions is settled, answers given since the suggestions were written go into them by
+    themselves. Call after the change is committed; says so, else nothing."""
+    if s.source != "transcript" or review.questions_left(db, s) or not review.answers_since_suggestions(db, s):
+        return ""
+    if not db.scalar(select(func.count()).select_from(Proposal).where(Proposal.session_id == s.id, Proposal.status == "pending")):
+        return ""
+    return " · Claude is putting your answers into the suggestions" if revise_in_background(s.id) else ""
+
+
+def draft_recap_in_background(session_id: int, update: bool = False) -> bool:
     """Draft the recap (and the full tale, key moments and awards) from the kept transcript, with the answers and the
-    World as they are now."""
+    World as they are now; `update`: change the current draft instead of writing a new one."""
     def tell(db, s):
         words = session_story.text(s)
         if words is None:
@@ -108,7 +124,7 @@ def draft_recap_in_background(session_id: int) -> bool:
                                  error="askdnd doesn't have this session's transcript. Send it again from the Processor."))
             db.commit()
             return
-        extract_session(db, s, Source("transcript", words), step="tell")
+        extract_session(db, s, Source("transcript", words), step="tell", update=update)
 
     return _in_background(session_id, tell)
 
@@ -258,6 +274,9 @@ def _body_context(db: Session, s: GameSession, tab: str = "") -> dict:
         chapter_kinds=session_story.KINDS,
         told=review.last_told(db, s),
     )
+    if ctx["latest"]:  # how long Listen would play it (Brett, Nov 9): the recorded length once it's been read, else an estimate
+        ctx["listen"] = narration.length(s, ctx["latest"], campaign.name)
+        ctx["listen_full"] = narration.length(s, ctx["latest"], campaign.name, "full") if ctx["latest"].tale else None
     session_story.pictured(db, ctx["awards"], ctx["talked"]["rows"])
     from app import drawing, pictures
 
@@ -338,7 +357,9 @@ def answer(
 ):
     def act(s):
         review.answer_question(db, s, q, answer, bool(remember), answered_by=on_behalf_of)
-        return f"Saved {on_behalf_of}'s answer" if on_behalf_of.strip() else "Answer saved"
+        db.commit()
+        said = f"Saved {on_behalf_of}'s answer" if on_behalf_of.strip() else "Answer saved"
+        return said + revise_when_settled(db, s)
 
     return _act(request, db, session_id, act)
 
@@ -348,7 +369,9 @@ def ask(request: Request, session_id: int, q: str = Form(...), person: str = For
     def act(s):
         user = request.session.get("user") or {}
         review.ask_question(db, s, q, person, note, asked_by=user.get("name") or user.get("email", ""))
-        return f"Waiting on {' '.join(person.split())}"
+        db.commit()
+        said = f"Waiting on {' '.join(person.split())}"
+        return said + revise_when_settled(db, s)
 
     return _act(request, db, session_id, act)
 
@@ -357,7 +380,9 @@ def ask(request: Request, session_id: int, q: str = Form(...), person: str = For
 def skip(request: Request, session_id: int, q: str = Form(...), db: Session = Depends(get_db)):
     def act(s):
         review.skip_question(db, s, q)
-        return "Skipped"
+        db.commit()
+        said = "Skipped"
+        return said + revise_when_settled(db, s)
 
     return _act(request, db, session_id, act)
 
@@ -371,15 +396,28 @@ def reopen(request: Request, session_id: int, q: str = Form(...), db: Session = 
     return _act(request, db, session_id, act)
 
 
+@router.post("/sessions/{session_id:int}/suggestions/update")
+def update_suggestions(request: Request, session_id: int, db: Session = Depends(get_db)):
+    def act(s):
+        if not review.answers_since_suggestions(db, s):
+            raise review.ReviewError("No new answers since these suggestions were written.")
+        if not revise_in_background(s.id):
+            raise review.ReviewError("Claude is busy; try again in a minute.")
+        return "Claude is putting your answers into the suggestions… under a minute"
+
+    return _act(request, db, session_id, act)
+
+
 @router.post("/sessions/{session_id:int}/redraft")
-def redraft(request: Request, session_id: int, db: Session = Depends(get_db)):
+def redraft(request: Request, session_id: int, fresh: str = Form(""), db: Session = Depends(get_db)):
     def act(s):
         if s.source == "transcript":
             if not s.transcript_key:
                 raise review.ReviewError("askdnd doesn't have this session's transcript. Send it again from the Processor.")
-            if not draft_recap_in_background(s.id):
+            update = bool(s.recaps) and not fresh  # (Update the draft by default; Start over writes a new one, Nov 9)
+            if not draft_recap_in_background(s.id, update=update):
                 raise review.ReviewError("Claude is busy; try again in a minute.")
-            return "Claude is drafting the recap… a few minutes"
+            return "Claude is updating the draft… a few minutes" if update else "Claude is drafting the recap… a few minutes"
         if s.source == "manual":
             raise review.ReviewError("You wrote this one by hand; edit the recap directly.")
         if not _draft_in_background([s.id]):

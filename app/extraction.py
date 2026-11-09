@@ -47,7 +47,7 @@ MODEL = "claude-opus-5-5"
 EFFORT = "high"
 MAX_TOKENS = 32000
 # Claude Opus 5.5 prices per million tokens (input, output, cache write, cache read).
-PRICES = {"input": 4.00, "output": 20.00, "cache_write": 5.00, "cache_read": 0.20}
+PRICES = {"input": 4.00, "output": 20.00, "cache_write": 5.00, "cache_write_1h": 8.00, "cache_read": 0.20}
 MAX_IMAGES = 12
 
 SYSTEM_PROMPT = """\
@@ -120,9 +120,10 @@ characters' own words where the source has them. The recap's rules apply: \
 nothing invented, no advice, no headings inside a chapter.
 
 Awards: give 2-5 of these, only where the session clearly earned one. Each \
-award has 2-3 nominees for the reviewer to choose from (one when only one \
-moment fits), your strongest first, each a player character by their exact \
-name, and the awards' first choices never all the same character: Most \
+award has exactly 3 nominees for the reviewer to choose from, your strongest \
+first: three different characters where the session allows, else different \
+moments; each a player character by their exact name, and the awards' first \
+choices never all the same character: Most \
 Strategic (the plan that shaped a scene or fight), Best Decision (a choice \
 that changed where the story went), Line of the Night (an in-character line, \
 quoted exactly in "quote"), Clutch Moment (an action or roll when it counted \
@@ -197,6 +198,7 @@ _PROPS = {
                 "award": {"type": "string", "enum": AWARDS},
                 "nominees": {
                     "type": "array",
+                    "description": "Exactly 3, your strongest first",
                     "items": {
                         "type": "object",
                         "additionalProperties": False,
@@ -264,6 +266,7 @@ STEPS = {
     "ask": ["title", "entities", "relationships", "glossary", "to_check"],
     "tell": ["title", "recap", "tale", "events", "awards"],
     "full": ["title", "recap", "tale", "events", "awards", "entities", "relationships", "glossary", "to_check"],
+    "revise": ["entities", "relationships", "glossary"],  # the suggestions again, with Brett's answers (Nov 9)
 }
 
 
@@ -467,20 +470,69 @@ def session_label(s: GameSession) -> str:
 ASK_NOTE = ("This is the first read. Ask and suggest only: Brett answers your questions and settles the suggested World "
             "entries first, and the story (recap, full tale, key moments, awards) is written in a second pass once he has. "
             "Ask about anything that would change that story: who someone is, a name you can't make out, what was decided.")
+UPDATE_NOTE = ("This session already has a draft (current_draft), which Brett has read. Update it rather than writing a new "
+               "one: keep its wording, its chapters, its key moments and its awards, and change only what the clarifications "
+               "(those marked new came after it was written) and the known world now show is wrong or missing: a name, who did "
+               "what, a moment it missed. Use the known world's exact names so they link. Return the whole record with your "
+               "changes made.")
+REVISE_NOTE = ("These are your suggested World updates from the first read of this session (suggestions), made before Brett "
+               "answered your questions; his answers are the clarifications. Return the suggestions again with his answers "
+               "applied: use the names and spellings he gave (a misheard name becomes an alias of the right one), point a "
+               "suggestion at a known entry when an answer says it's someone or something already known (use that entry's "
+               "exact name), merge suggestions his answers show are the same, drop what his answers rule out, and add a "
+               "suggestion only when an answer itself states something new for the World. Leave everything his answers don't "
+               "touch exactly as it is. Never bring back a suggestion he rejected.")
 TELL_NOTE = ("Brett has answered your questions (the clarifications) and settled the suggested World entries, which are "
              "now in the known world. Write the session's story: the recap, the full tale, key moments and awards. Use "
              "the known world's exact names so they link.")
 
 
+def _told_at(db: Session, session: GameSession):
+    """When the story was last drafted (a telling run), for marking the answers given since."""
+    return db.scalar(select(ExtractionRun.updated_at).where(
+        ExtractionRun.session_id == session.id, ExtractionRun.status == "done", ExtractionRun.source.in_(("notes", "account", "recap")),
+    ).order_by(ExtractionRun.id.desc()))
+
+
+def _clarifications(db: Session, session: GameSession) -> dict | None:
+    answers = list(db.scalars(select(Correction).where(Correction.session_id == session.id, Correction.kind == "answer").order_by(Correction.id)))
+    if not answers:
+        return None
+    since = _told_at(db, session)
+    qa = "\n".join(f"- Q: {c.before}\n  A: {c.after}{' (new)' if since and c.updated_at >= since else ''}" for c in answers)
+    return {"type": "text", "text": f"<clarifications_from_brett>\n{qa}\n</clarifications_from_brett>"}
+
+
+def _hms(sec) -> str:
+    return "" if sec is None else f"{sec // 3600}:{sec % 3600 // 60:02d}:{sec % 60:02d}"
+
+
+def _current_draft(session: GameSession, latest: Recap) -> dict:
+    """The draft as it stands (the recap, the full tale, key moments, awards), for an update or to keep a person's words."""
+    who = "Claude" if latest.author == "ai" else (latest.author_name or "someone at the table")
+    tale = "\n\n".join(f"## {c.get('title', '')} ({c.get('kind', 'story')}{', starts ' + _hms(c['at']) if c.get('at') is not None else ''})\n{c.get('text', '')}"
+                        for c in latest.tale or [])
+    drafts = [e for e in session.events if e.status == Status.DRAFT] or list(session.events)
+    moments = "\n".join(f"- [{e.kind.value}{', major' if e.major else ''}] {e.text}" for e in sorted(drafts, key=lambda e: e.position))
+    awards = "\n".join(
+        f"- {a['award']}: " + "; ".join(f"{n['character']}{' (picked)' if i == a.get('pick', 0) else ''}: {n.get('why', '')}"
+                                        f"{' \u201c' + n['quote'] + '\u201d' if n.get('quote') else ''}{' at ' + _hms(n['at']) if n.get('at') is not None else ''}"
+                                        for i, n in enumerate(a.get("nominees") or []))
+        for a in latest.awards or [])
+    return {"type": "text", "text": (f"<current_draft written_by=\"{who}\">\n<recap>\n{latest.body}\n</recap>\n<full_tale>\n{tale}\n</full_tale>\n"
+                                     f"<key_moments>\n{moments}\n</key_moments>\n<awards>\n{awards}\n</awards>\n</current_draft>")}
+
+
 def build_messages(db: Session, session: GameSession, source: Source, background: str = "", background_images=(),
-                   step: str = "full") -> list[dict]:
+                   step: str = "full", update: bool = False) -> list[dict]:
+    """One drafting request. `update` (Draft the recap again, Nov 9): Claude gets the current draft and changes only what
+    the new answers and the World show, instead of writing a new one."""
     campaign = db.get(Campaign, session.campaign_id)
-    stable: list[dict] = [{"type": "text", "text": "<known_world>\n" + _known_world(db, campaign) + "\n</known_world>"}]
+    known: list[dict] = [{"type": "text", "text": "<known_world>\n" + _known_world(db, campaign) + "\n</known_world>"}]
     if background:
-        stable.append({"type": "text", "text": "<background_notes>\n" + background + "\n</background_notes>"})
+        known.append({"type": "text", "text": "<background_notes>\n" + background + "\n</background_notes>"})
     for img in list(background_images)[:MAX_IMAGES]:
-        stable += _image_block(img, f"from background notes ({img.name})")
-    stable[-1]["cache_control"] = {"type": "ephemeral"}  # reused across sessions in a backfill
+        known += _image_block(img, f"from background notes ({img.name})")
 
     if source.kind == "notes":
         intro = (
@@ -500,41 +552,88 @@ def build_messages(db: Session, session: GameSession, source: Source, background
             "and fantasy names are often misheard. The DM's narration carries the story; "
             "use player lines for decisions and plans."
         )
-    volatile: list[dict] = [
-        {"type": "text", "text": "<story_so_far>\n" + _story_so_far(db, session) + "\n</story_so_far>"},
-        {"type": "text", "text": f"<session>{session_label(session)}</session>\n{intro}\n<source>\n{source.text}\n</source>"},
-    ]
-    for img in source.images[:MAX_IMAGES]:
-        volatile += _image_block(img, img.name)
-    answers = list(
-        db.scalars(
-            select(Correction).where(Correction.session_id == session.id, Correction.kind == "answer").order_by(Correction.id)
-        )
-    )
-    if answers:
-        qa = "\n".join(f"- Q: {c.before}\n  A: {c.after}" for c in answers)
-        volatile.append({"type": "text", "text": f"<clarifications_from_brett>\n{qa}\n</clarifications_from_brett>"})
+    told = {"type": "text", "text": f"<session>{session_label(session)}</session>\n{intro}\n<source>\n{source.text}\n</source>"}
+    images = [b for img in source.images[:MAX_IMAGES] for b in _image_block(img, img.name)]
+    so_far = {"type": "text", "text": "<story_so_far>\n" + _story_so_far(db, session) + "\n</story_so_far>"}
+    if step == "tell":
+        # The session's own words first, kept for an hour: Draft the recap and each update after it send the same ones,
+        # so the later passes read them at a twentieth of the price (Nov 9). What changes between passes (the World,
+        # the answers, the draft) comes after.
+        told["cache_control"] = {"type": "ephemeral", "ttl": "1h"}
+        content = [told, *images, *known, so_far]
+    else:
+        known[-1]["cache_control"] = {"type": "ephemeral"}  # reused across sessions in a backfill
+        content = [*known, so_far, told, *images]
+    clar = _clarifications(db, session)
+    if clar:
+        content.append(clar)
     latest = session.recaps[-1] if session.recaps else None
-    if latest is not None and latest.author != "ai":  # protect their words (content workflows step 3)
-        who = latest.author_name or "someone at the table"
-        volatile.append({"type": "text", "text": (
-            f"<current_recap written_by=\"{who}\">\n{latest.body}\n</current_recap>\n"
-            f"{who} wrote or edited the current recap. Your recap must keep their wording, order and paragraphs: "
-            "change only what the source or the clarifications show is wrong or missing. Don't rephrase anything "
-            "that's still true.")})
-    volatile.append({"type": "text", "text": {"ask": ASK_NOTE, "tell": TELL_NOTE}.get(step, "Draft this session's record.")})
-    return [{"role": "user", "content": stable + volatile}]
+    updating = update and latest is not None
+    if latest is not None and (updating or latest.author != "ai"):
+        content.append(_current_draft(session, latest))
+        if latest.author != "ai":  # protect their words (content workflows step 3)
+            who = latest.author_name or "someone at the table"
+            content.append({"type": "text", "text": (
+                f"{who} wrote or edited the current recap. Your recap must keep their wording, order and paragraphs: "
+                "change only what the source or the clarifications show is wrong or missing. Don't rephrase anything "
+                "that's still true.")})
+    content.append({"type": "text", "text": UPDATE_NOTE if updating else {"ask": ASK_NOTE, "tell": TELL_NOTE}.get(step, "Draft this session's record.")})
+    return [{"role": "user", "content": content}]
+
+
+def _pending_text(db: Session, session: GameSession) -> tuple[str, str]:
+    """The waiting suggestions as Claude gave them, and the ones Brett rejected (never to come back)."""
+    rows = list(db.scalars(select(Proposal).where(Proposal.session_id == session.id).order_by(Proposal.id)))
+    out, rejected = {"entities": [], "relationships": [], "glossary": []}, []
+    for p in rows:
+        d = p.payload
+        if p.kind == "entity":
+            item = {"name": d.get("name", ""), "kind": d.get("kind", ""), "summary": d.get("summary", ""), "aliases": d.get("new_aliases") or [],
+                    "quest_status": {True: "open", False: "done"}.get(d.get("quest_open"), "not_a_quest"),
+                    "race": (d.get("traits") or {}).get("race", ""), "class": (d.get("traits") or {}).get("class", "")}
+            if d.get("entity_id"):
+                item["updates_known_entry"] = d.get("name", "")
+            key, label = "entities", d.get("name", "")
+        elif p.kind == "relationship":
+            item = {"from": d.get("from_name", ""), "type": d.get("type", ""), "to": d.get("to_name", ""), "note": d.get("note", "")}
+            key, label = "relationships", f"{item['from']} {item['type']} {item['to']}"
+        else:
+            item = {"term": d.get("term", ""), "description": d.get("description", ""), "misheard_as": d.get("misheard_as") or []}
+            key, label = "glossary", d.get("term", "")
+        if p.status == "pending":
+            out[key].append(item)
+        elif p.status == "rejected":
+            rejected.append(f"- {key[:-1] if key != 'glossary' else 'glossary term'}: {label}")
+    return json.dumps(out, ensure_ascii=False, indent=1), "\n".join(rejected)
+
+
+def revise_messages(db: Session, session: GameSession) -> list[dict]:
+    """Answers update the suggestions (Brett, Nov 9: a name he answered didn't reach them): the waiting suggestions, his
+    answers and the World, without the transcript, so it costs cents."""
+    campaign = db.get(Campaign, session.campaign_id)
+    pending, rejected = _pending_text(db, session)
+    content = [{"type": "text", "text": "<known_world>\n" + _known_world(db, campaign) + "\n</known_world>"},
+               {"type": "text", "text": f"<session>{session_label(session)}</session>\n<suggestions>\n{pending}\n</suggestions>"}]
+    if rejected:
+        content.append({"type": "text", "text": f"<rejected_by_brett>\n{rejected}\n</rejected_by_brett>"})
+    clar = _clarifications(db, session)
+    if clar:
+        content.append(clar)
+    content.append({"type": "text", "text": REVISE_NOTE})
+    return [{"role": "user", "content": content}]
 
 
 def _cost(usage) -> float:
     def g(name):
         return getattr(usage, name, 0) or 0
 
+    hour = getattr(getattr(usage, "cache_creation", None), "ephemeral_1h_input_tokens", 0) or 0  # (an hour's write costs twice the input)
     return round(
         (
             g("input_tokens") * PRICES["input"]
             + g("output_tokens") * PRICES["output"]
-            + g("cache_creation_input_tokens") * PRICES["cache_write"]
+            + (g("cache_creation_input_tokens") - hour) * PRICES["cache_write"]
+            + hour * PRICES["cache_write_1h"]
             + g("cache_read_input_tokens") * PRICES["cache_read"]
         )
         / 1_000_000,
@@ -548,7 +647,7 @@ def call_claude(client: anthropic.Anthropic, messages: list[dict], step: str = "
         max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
         messages=messages,
-        output_config={"effort": EFFORT, "format": {"type": "json_schema", "schema": schema(step)}},
+        output_config={"effort": "medium" if step == "revise" else EFFORT, "format": {"type": "json_schema", "schema": schema(step)}},
         betas=["server-side-fallback-2026-07-01"],
         fallbacks="default",
     ) as stream:
@@ -641,10 +740,51 @@ def store_result(db: Session, session: GameSession, run: ExtractionRun, data: di
         _store_suggestions(db, session, run, data)
 
 
+def revise_suggestions(db: Session, session: GameSession,
+                       client_factory: Callable[[], anthropic.Anthropic] = anthropic.Anthropic) -> ExtractionRun:
+    """Update the waiting suggestions with Brett's answers (run source "revise"). Commits; never raises for API errors."""
+    run = ExtractionRun(session_id=session.id, source="revise", model=MODEL, status="running")
+    db.add(run)
+    db.commit()
+    try:
+        spending.check(db)
+        data, response = call_claude(client_factory(), revise_messages(db, session), step="revise")
+        _usage(run, response)
+        _store_suggestions(db, session, run, data)
+        run.status = "done"
+    except (ExtractionError, anthropic.APIError, json.JSONDecodeError, KeyError, ValueError) as e:
+        db.rollback()
+        run = db.merge(run)
+        run.status, run.error = "error", (str(e) or type(e).__name__)[:2000]
+    db.commit()
+    return run
+
+
+def _usage(run: ExtractionRun, response) -> None:
+    run.input_tokens = (response.usage.input_tokens or 0) + (response.usage.cache_read_input_tokens or 0) + (
+        response.usage.cache_creation_input_tokens or 0
+    )
+    run.output_tokens = response.usage.output_tokens or 0
+    run.cost_usd = _cost(response.usage)
+    run.model = getattr(response, "model", MODEL) or MODEL
+
+
+def _keep_picks(awards: list[dict], before: Recap | None) -> list[dict]:
+    """A nominee the reviewer picked stays picked through an update, when it's still among the nominees."""
+    picked = {a["award"]: _norm(a["nominees"][a.get("pick", 0)]["character"]) for a in (before.awards or []) if before and a.get("nominees")
+              and 0 <= a.get("pick", 0) < len(a["nominees"])} if before else {}
+    for a in awards:
+        names = [_norm(n["character"]) for n in a["nominees"]]
+        if picked.get(a["award"]) in names:
+            a["pick"] = names.index(picked[a["award"]])
+    return awards
+
+
 def _store_story(db: Session, session: GameSession, data: dict) -> None:
     version = (db.scalar(select(func.max(Recap.version)).where(Recap.session_id == session.id)) or 0) + 1
+    before = session.recaps[-1] if session.recaps else None
     db.add(Recap(session_id=session.id, version=version, body=data["recap"].strip(), author="ai", status=Status.DRAFT,
-                 tale=_chapters(data), awards=_awards(data)))
+                 tale=_chapters(data), awards=_keep_picks(_awards(data), before)))
 
     index = _entity_index(db, session.campaign_id)
     for old_event in db.scalars(select(StoryEvent).where(StoryEvent.session_id == session.id, StoryEvent.status == Status.DRAFT)):
@@ -736,6 +876,7 @@ def extract_session(
     background: str = "",
     background_images=(),
     step: str = "full",
+    update: bool = False,
 ) -> ExtractionRun:
     """Run one extraction and store the drafts. Commits; never raises for API errors
     (they're recorded on the run so the admin page can show them). `step`: "full", or a transcript's two passes,
@@ -745,14 +886,9 @@ def extract_session(
     db.commit()
     try:
         spending.check(db)  # the monthly limit set on Manage › Usage
-        messages = build_messages(db, session, source, background, background_images, step=step)
+        messages = build_messages(db, session, source, background, background_images, step=step, update=update)
         data, response = call_claude(client_factory(), messages, step=step)
-        run.input_tokens = (response.usage.input_tokens or 0) + (response.usage.cache_read_input_tokens or 0) + (
-            response.usage.cache_creation_input_tokens or 0
-        )
-        run.output_tokens = response.usage.output_tokens or 0
-        run.cost_usd = _cost(response.usage)
-        run.model = getattr(response, "model", MODEL) or MODEL
+        _usage(run, response)
         store_result(db, session, run, data)
         run.status = "done"
     except (ExtractionError, anthropic.APIError, json.JSONDecodeError, KeyError, ValueError) as e:

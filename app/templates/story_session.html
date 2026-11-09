@@ -9,7 +9,7 @@
     <div class="scroll">
       <div class="story">
         <header class="tale-head"><span class="tale-kicker">{{ label }}{% if length %} · {{ length }}{% endif %}</span>{% if s.title %}<h2>{{ s.title }}</h2>{% endif %}
-          {% if chapters and vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ s.id }}/full">▶ Listen to the full tale</button>{% endif %}</header>
+          {% if chapters and vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ s.id }}/full">▶ Listen to the full tale{% if listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if listen.estimate else 'How long it plays' }}">{{ listen.says }}</span>{% endif %}</button>{% endif %}</header>
         {% if chapters %}
         <div class="tale-text tale-chapters">
           {% for c in chapters %}

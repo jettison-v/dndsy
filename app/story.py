@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app import web
-from app import campaign_views, review, session_story
+from app import campaign_views, narration, review, session_story
 from app.auth import can_edit_entries, can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
@@ -45,6 +45,7 @@ def published_items(db: Session, campaign: Campaign) -> list[dict]:
                 "label": session_label(s),
                 "html": markdown_to_html(recap.body, lambda n: None),
                 "more": session_story.has_more(recap),  # (Read the full tale: the session's own page)
+                "listen": narration.length(s, recap, campaign.name),  # (how long Listen plays, Brett Nov 9)
                 "events": [e for e in events if e.kind != EventKind.THEORY],
                 "theories": [e for e in events if e.kind == EventKind.THEORY],
                 "dm_notes": [x for x in dm_notes if x.target_id == s.id and x.created_at >= recap.updated_at],
@@ -142,7 +143,8 @@ def session_page(request: Request, session_id: int, db: Session = Depends(get_db
         "s": s, "label": session_label(s), "recap_html": markdown_to_html(recap.body, lambda n: None),
         "chapters": [{**c, "html": markdown_to_html(c["text"], lambda n: None)} for c in session_story.chapters(recap)],
         "awards": awards, "talked": talked, "rolled": rolled, "mix": session_story.mix(s, recap),
-        "length": f"{length // 3600} h {length % 3600 // 60} min" if length else "", "ln": _linker(db)})
+        "length": f"{length // 3600} h {length % 3600 // 60} min" if length else "", "ln": _linker(db),
+        "listen": narration.length(s, recap, campaign.name, "full") if recap.tale else None})
 
 
 @router.post("/questions/{correction_id:int}/answer")

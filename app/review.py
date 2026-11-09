@@ -170,7 +170,7 @@ def latest_questions(db: Session, session: GameSession) -> list[str]:
 def last_told(db: Session, session: GameSession) -> ExtractionRun | None:
     """The run that wrote the latest story: Draft the recap's, a notes or account draft's, or (a transcript drafted in
     one go before Nov 7) the transcript run itself."""
-    return _last_draft_run(db, session, sources=TELLING) or (_last_draft_run(db, session) if session.recaps else None)
+    return _last_draft_run(db, session, sources=TELLING) or (_last_draft_run(db, session, sources=("transcript",)) if session.recaps else None)
 
 
 def unused_answer_count(db: Session, session: GameSession) -> int:
@@ -190,6 +190,33 @@ def unused_answer_count(db: Session, session: GameSession) -> int:
         )
         or 0
     )
+
+
+def questions_left(db: Session, session: GameSession) -> int:
+    """Claude's questions with no answer, skip or ask yet."""
+    handled = set(db.scalars(select(Correction.before).where(Correction.session_id == session.id, Correction.kind.in_(QUESTION_KINDS))))
+    return sum(1 for q in latest_questions(db, session) if q not in handled)
+
+
+def world_changes(db: Session, session: GameSession) -> int:
+    """Suggestions accepted since the latest story was drafted (an update would use their names and links)."""
+    run = last_told(db, session)
+    if run is None:
+        return 0
+    return db.scalar(select(func.count()).select_from(Proposal).where(
+        Proposal.session_id == session.id, Proposal.status == "accepted", Proposal.updated_at >= run.updated_at)) or 0
+
+
+SUGGESTING = ASKING + ("revise",)  # runs that wrote the waiting suggestions (revise: your answers put into them, Nov 9)
+
+
+def answers_since_suggestions(db: Session, session: GameSession) -> int:
+    """Answers given since the waiting suggestions were written, which Update the suggestions would put into them."""
+    run = _last_draft_run(db, session, sources=SUGGESTING)
+    if run is None:
+        return 0
+    return db.scalar(select(func.count()).select_from(Correction).where(
+        Correction.session_id == session.id, Correction.kind == "answer", Correction.updated_at >= run.created_at)) or 0
 
 
 # --- Suggestions (proposals) -------------------------------------------------
@@ -669,6 +696,7 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
         "waiting_count": sum(len(v) for v in waiting.values()),
         "ask_options": ask_options(db, session.campaign_id),
         "unused_answers": unused_answer_count(db, session),
+        "world_changes": world_changes(db, session),
         "open_proposals": open_proposals,
         "done_proposals": done_proposals,
         "accepted_count": sum(1 for p in done_proposals if p.status == "accepted"),
@@ -678,5 +706,7 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
         "rejected_count": sum(1 for p in done_proposals if p.status == "rejected"),
         "last_run": last_run,
         "last_done": last_done,
+        "working": last_run.source if drafting and last_run and last_run.status == "running" else "",
+        "answers_for_suggestions": answers_since_suggestions(db, session) if open_proposals else 0,
         "drafting": drafting,
     }

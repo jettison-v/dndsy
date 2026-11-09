@@ -112,6 +112,10 @@ Read these before designing or building any page; sessions that skipped them pro
   calling it done. The width check (tests/browser/test_layout.py) does the measurable part on every pull request; see
   Narrow screens below for what it checks and how each part of a page gives way.
 
+## The screen we design for (Nov 9)
+
+A 13–14" laptop, about 1280–1512px wide and 800 tall: about 95% of play is at a computer (Brett). Every page and mockup is designed and drawn there first; a phone and a tablet must work and adapt (below), but they never lead.
+
 ## Narrow screens (2026-10-26)
 
 Pages are used from 375px phones to wide monitors, and the in-between widths (a laptop with a side panel, a half-screen
