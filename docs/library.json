@@ -848,7 +848,7 @@
  {
   "title": "Search Like Spotlight",
   "kind": "design",
-  "status": "Waiting for Brett",
+  "status": "Chose A and A",
   "date": "Nov 9",
   "what": "One search for anything about your character, playable: a Search button in the menu bar, ⌘F or ⌘K, a box in the middle, results as you type grouped by kind (your character, checks and saves, rules, the story, pages), Enter does it; two choices: what Enter does, and whose things it finds.",
   "source": "docs/mockups/search/index.html",
