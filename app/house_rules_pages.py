@@ -26,6 +26,10 @@ def _rows(db: Session, campaign_id: int) -> list[dict]:
 
 def _sheet_text(r: HouseRule) -> str:
     """A correction made in an item's side panel, in a few words."""
+    if r.field == "brings":  # (an item that brings a creature: app/item_creatures.py)
+        from app import item_creatures
+
+        return item_creatures.describe(r.value)
     said = dict(views.OVERRIDE_CHOICES.get(r.field, [])).get(r.value, r.value)
     return f"{views.FIELD_LABELS.get(r.field, r.field)}: {said}"
 

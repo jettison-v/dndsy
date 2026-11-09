@@ -1,0 +1,29 @@
+{# An item that brings a creature (app/item_creatures.py; docs/mockups/item-creatures/): its window, inside the roll
+   window like an item's (app.js "using an item"). askdnd's own creature: no D&D Beyond sheet needed. #}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">{{ it.name }}</div>
+{% if not cfg %}
+<p class="use-what">askdnd doesn't know what it brings yet: its words don't say everything (which creature?). The DM sets it up once, in the item's side panel under <b>Correct this</b>.</p>
+<div class="rw-row use-foot"><button type="button" class="btn link small" data-use-close>Close</button></div>
+{% elif not k %}
+<p class="use-what">It brings a {{ cfg.creature }}, which isn't in this campaign's books or the SRD any more. The DM can pick another in the item's setup.</p>
+<div class="rw-row use-foot"><button type="button" class="btn link small" data-use-close>Close</button></div>
+{% elif state != "ready" %}
+<p class="use-what">{% if state == "here" %}{{ k.name }} is here: its Battle is by {{ c.name }}'s name.{% else %}Spent: back after {{ until(cfg) }}.{% endif %}</p>
+<div class="rw-row use-foot"><button type="button" class="btn link small" data-use-close>Close</button></div>
+{% else %}
+<p class="use-cost">{{ {"Bonus action": "Bonus Action", "Magic action": "Magic action"}.get(cfg.cost, "Action") }}{% if cfg.range %} · within {{ cfg.range }} ft{% endif %}</p>
+<ul class="bring-list">
+  <li>{{ "An " if (cfg.type or k.kind)[:1] in "AEIOU" else "A " }}<b>{{ (cfg.type ~ " " if cfg.type else "") ~ k.kind }}</b> appears: {{ k.hit_points }} Hit Points, AC {{ k.armor_class }}</li>
+  {% if cfg.immune %}<li>Immune to {{ cfg.immune }}</li>{% endif %}
+  <li>{{ "Its own Initiative" if cfg.init == "own" else "Acts right after " ~ c.name }}{% if cfg.command %}; commanded with a {{ {"Bonus action": "Bonus Action"}.get(cfg.command, cfg.command) }}{% if cfg.command_range %} within {{ cfg.command_range }} ft{% endif %}{% endif %}</li>
+  {% if cfg.lasts %}<li>Up to {{ cfg.lasts }}</li>{% endif %}
+  <li>Then spent until {{ until(cfg) }}</li>
+</ul>
+<label class="rw-row"><span class="rw-label">Its name</span><input type="text" class="rw-text" name="name" maxlength="60" placeholder="{{ k.kind }} (optional)"></label>
+<div class="rw-row use-foot">
+  <button type="button" class="btn primary small" data-use-go>Use it</button>
+  <button type="button" class="btn link small" data-use-close>Not now</button>
+</div>
+<p class="use-said" role="alert" hidden></p>
+{% endif %}

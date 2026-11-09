@@ -1,0 +1,25 @@
+{# What an item brings (app/item_creatures.py; Brett chose A, Nov 9, docs/mockups/item-creatures/): the DM's setup, once,
+   for every item with this name in the campaign. askdnd fills in what the item's words say; the creature is the DM's pick. #}
+<section class="admin-move correct bring-setup" aria-label="What it brings">
+  <div class="admin-head"><b>It brings a creature</b> <span class="note">{{ "set up for this campaign" if bring.set else "not set up yet" }}</span></div>
+  {% if not bring.set %}<p class="note">askdnd read its words and filled this in: check each part. The creature is yours to pick.</p>{% endif %}
+  <form class="bring-form" hx-post="/characters/{{ c.id }}/bring/{{ bring.id }}/setup" hx-swap="none">
+    {% set f = bring.cfg %}
+    <label class="field"><span>The creature</span><input type="text" name="creature" list="bring-names-{{ bring.id }}" value="{{ f.creature }}" placeholder="Which one? (its words don't say)" autocomplete="off"></label>
+    <datalist id="bring-names-{{ bring.id }}">{% for n in bring.names %}<option value="{{ n }}">{% endfor %}</datalist>
+    <div class="bring-grid">
+      <label class="field"><span>Its type becomes</span><input type="text" name="type" value="{{ f.type }}" placeholder="unchanged" maxlength="40"></label>
+      <label class="field"><span>Immune to</span><input type="text" name="immune" value="{{ f.immune }}" placeholder="none" maxlength="200"></label>
+      <label class="field"><span>Using it</span><select name="cost">{% for v in bring.costs %}<option value="{{ v }}"{{ ' selected' if f.cost == v }}>{{ v | replace("action", "Action") }}</option>{% endfor %}</select></label>
+      <label class="field"><span>Within (ft)</span><input type="text" inputmode="numeric" name="range" value="{{ f.range or '' }}" placeholder="—"></label>
+      <label class="field"><span>Initiative</span><select name="init"><option value="own"{{ ' selected' if f.init == 'own' }}>Its own</option><option value="shares"{{ ' selected' if f.init != 'own' }}>Right after {{ c.name }}</option></select></label>
+      <label class="field"><span>Commanded with</span><select name="command">{% for v in bring.commands %}<option value="{{ v }}"{{ ' selected' if (f.command or '') == v }}>{{ (v | replace("action", "Action")) or "No command" }}</option>{% endfor %}</select></label>
+      <label class="field"><span>Command within (ft)</span><input type="text" inputmode="numeric" name="command_range" value="{{ f.command_range or '' }}" placeholder="—"></label>
+      <label class="field"><span>Lasts</span><input type="text" name="lasts" value="{{ f.lasts }}" placeholder="until dismissed" maxlength="80"></label>
+      <label class="field"><span>Back after</span><select name="back">{% for v in bring.backs %}<option value="{{ v }}"{{ ' selected' if f.back == v }}>{{ v }}</option>{% endfor %}</select></label>
+    </div>
+    <div class="bring-acts"><button type="submit" class="btn primary small">{{ "Save" if bring.set else "Set it up" }}</button>
+      {% if bring.set %}<button type="button" class="btn small link" hx-post="/characters/{{ c.id }}/bring/{{ bring.id }}/setup" hx-vals='{"creature": ""}' hx-swap="none">Remove the setup</button>{% endif %}</div>
+  </form>
+  <p class="note admin-foot">Only this campaign, for every item named “{{ x.name }}”. Listed on <a href="{{ cbase }}/manage/house-rules" data-no-peek>Manage › House rules</a>.</p>
+</section>

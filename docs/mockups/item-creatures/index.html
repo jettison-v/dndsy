@@ -1,0 +1,444 @@
+<title>Items That Bring a Creature</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Brett, Nov 9: Trah's Beasty Bone (a homebrew item the DM wrote) brings a creature, and should play like Find Familiar.
+   One flow for any item that brings a creature, built from what askdnd has: Battle's Items, the item window, Correct this,
+   Your creatures (the switch by the name, its own Battle, Party's second half, the fight) and the Long Rest window.
+   Drawn at a 13-14" laptop's size. The beast is the SRD's Wolf (the item doesn't say which; the DM does). His answers are
+   kept in the page's store (db: answers/pick). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --gold: #e2b54a; --violet: #b18be0;
+  --red-soft: rgba(229,83,75,.15); --blue-soft: rgba(126,166,224,.16); --green-soft: rgba(91,191,127,.15); --gold-soft: rgba(226,181,74,.16); --violet-soft: rgba(177,139,224,.16);
+  --shadow: rgba(0,0,0,.45);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10; --violet: #6a44a0;
+  --red-soft: rgba(184,50,50,.1); --blue-soft: rgba(47,95,158,.12); --green-soft: rgba(47,125,76,.12); --gold-soft: rgba(138,106,16,.13); --violet-soft: rgba(106,68,160,.12);
+  --shadow: rgba(40,30,10,.18); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10; --violet: #6a44a0;
+  --red-soft: rgba(184,50,50,.1); --blue-soft: rgba(47,95,158,.12); --green-soft: rgba(47,125,76,.12); --gold-soft: rgba(138,106,16,.13); --violet-soft: rgba(106,68,160,.12);
+  --shadow: rgba(40,30,10,.18); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+button, input, select { font: inherit; color: inherit; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.3rem; } h3 { font-size: 1.05rem; }
+p { margin: 0; max-width: 74ch; }
+b { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.note { color: var(--muted); font-size: .86rem; }
+header, section { display: grid; gap: 12px; min-width: 0; }
+.lbl { font: 700 .7rem/1 var(--cond); letter-spacing: .11em; text-transform: uppercase; color: var(--muted); }
+.badge { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
+.reuse { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.reuse div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .86rem; }
+.reuse b { display: block; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 6px 12px; font-size: .84rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+.btn.small { padding: 4px 10px; font-size: .8rem; }
+.btn.link { border: 0; background: none; color: var(--red); text-decoration: underline; padding: 2px 4px; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn:focus-visible, .chip:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 10px; font-size: .78rem; white-space: nowrap; }
+.chip.on { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chip.undead { background: var(--violet-soft); border-color: var(--violet); color: var(--strong); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: var(--surface); padding: 6px 12px; font-size: .84rem; font-weight: 600; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--blue-soft); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+
+/* the stage: a laptop's Battle, the side panel or a window over it */
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.stage { position: relative; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); min-height: 560px; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.page { padding: 18px 22px 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.ch-head { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.port { width: 46px; height: 46px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-weight: 800; color: var(--muted); flex: none; }
+.port.wolf { background: var(--violet-soft); color: var(--violet); }
+.ch-head h3 { font-size: 1.5rem; }
+.ch-head small { color: var(--muted); display: block; font-size: .82rem; }
+.switch { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.switch button { border: 0; background: var(--surface); padding: 5px 12px; font-size: .86rem; font-weight: 600; cursor: pointer; }
+.switch button[aria-pressed="true"] { background: var(--blue-soft); box-shadow: inset 0 0 0 1px var(--blue); color: var(--strong); }
+.band { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: var(--violet-soft); border: 1px solid var(--violet); border-radius: 12px; padding: 8px 12px; font-size: .86rem; }
+.band .grow { flex: 1; min-width: 200px; }
+.tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; display: grid; gap: 2px; }
+.tile .big { font-size: 1.5rem; font-weight: 800; color: var(--strong); display: flex; align-items: center; gap: 6px; }
+.tile .pm { display: inline-flex; gap: 4px; margin-left: auto; }
+.tile .pm button { width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; font-weight: 700; }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 8px; align-content: start; }
+.col h4 { margin: 0; font: 700 .82rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; }
+.col.a h4 { color: var(--red); } .col.b h4 { color: var(--amber); } .col.r h4 { color: var(--blue); }
+.col .sub { color: var(--muted); font-size: .8rem; margin-top: -4px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; border-top: 1px solid var(--line); padding-top: 8px; }
+.row b { font-size: .95rem; }
+.row small { color: var(--muted); font-size: .8rem; grid-column: 1; }
+.row .act { grid-row: span 2; }
+.row.new { background: var(--violet-soft); border-radius: 10px; padding: 8px; border-top: 0; }
+.row.dim b, .row.dim small { opacity: .55; }
+.hit { border: 1px solid var(--line); background: var(--surface-2); border-radius: 9px; padding: 4px 10px; font-weight: 800; cursor: pointer; }
+.sect { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-top: 4px; }
+
+/* side panel and window */
+.panel { width: 360px; border-left: 1px solid var(--line); background: var(--surface); padding: 16px; display: grid; gap: 12px; align-content: start; }
+.panel[hidden] { display: none; }
+.panel h3 { display: flex; justify-content: space-between; gap: 8px; }
+.x { border: 0; background: none; font-size: 1.2rem; line-height: 1; cursor: pointer; color: var(--muted); }
+.words { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .84rem; color: var(--muted); }
+.form { display: grid; gap: 10px; }
+.field { display: grid; gap: 5px; }
+.field select, .field input { width: 100%; font-size: 16px; padding: 7px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--bg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.claude { background: var(--blue-soft); border: 1px solid var(--blue); border-radius: 10px; padding: 8px 10px; font-size: .82rem; }
+.ask { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 10px; padding: 8px 10px; font-size: .84rem; }
+.win { position: absolute; z-index: 4; width: 380px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px var(--shadow); padding: 14px; display: grid; gap: 10px; }
+.win[hidden] { display: none; }
+.win h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.win ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .86rem; }
+.cards { position: absolute; right: 14px; bottom: 14px; display: grid; gap: 8px; z-index: 5; width: 300px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 12px; padding: 10px 12px; font-size: .84rem; box-shadow: 0 10px 24px var(--shadow); display: grid; gap: 6px; }
+.card.warn { border-left-color: var(--amber); }
+.statblock { display: grid; gap: 6px; font-size: .86rem; }
+.statblock .trait { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+
+/* board: party and the fight */
+.mini { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.frame { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: var(--bg); display: grid; gap: 10px; align-content: start; min-width: 0; }
+.pair { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.pair > div { padding: 10px 12px; display: grid; gap: 4px; font-size: .84rem; }
+.pair > div + div { border-left: 1px dashed var(--line); background: var(--violet-soft); }
+.order { display: flex; gap: 8px; flex-wrap: wrap; }
+.fighter { display: grid; justify-items: center; gap: 4px; font-size: .74rem; width: 64px; text-align: center; }
+.fighter .port { width: 42px; height: 42px; font-size: .8rem; }
+.fighter.now .port { box-shadow: 0 0 0 3px var(--gold); }
+.fighter.foe .port { background: var(--red-soft); color: var(--red); }
+
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .88rem; }
+.pro b { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.pro.good b { color: var(--green); } .pro.cost b { color: var(--amber); }
+
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.aq { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 70px; font: 16px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; font-weight: 600; cursor: pointer; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+
+@media (max-width: 900px) {
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  .panel { width: auto; border-left: 0; border-top: 1px solid var(--line); }
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .win { left: 12px !important; right: 12px; width: auto; }
+  .cards { left: 12px; right: 12px; width: auto; }
+}
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · Items · Nov 9</div>
+    <h1>Items that bring a creature</h1>
+    <p>Trah's <b>Beasty Bone</b> is a homebrew item the DM wrote. Thrown as an Action, it becomes an undead version of the beast the bone came from: immune to poison, with its own turn, commanded with a Bonus Action within 60 ft. It lasts up to an hour or until 0 Hit Points, then it's spent until a Long Rest. Today askdnd shows it only as words. Here it plays like a familiar. The same flow fits the book's items that bring a creature (a Figurine of Wondrous Power, a Bag of Tricks), which would come set up by askdnd.</p>
+    <p class="note">The beast here is the SRD's <b>Wolf</b>. The item doesn't say which beast, so that's the DM's call.</p>
+  </header>
+
+  <section>
+    <h2>Nothing new to learn: it's made of what askdnd has</h2>
+    <div class="reuse">
+      <div><b>Correct this</b>The DM's way to tell askdnd what an item does. Here: "It brings a creature".</div>
+      <div><b>Battle's Items</b>The item sits under Action, with how often it can be used.</div>
+      <div><b>The item window</b>Use it, Undo, and "Didn't go through" like a potion.</div>
+      <div><b>Your creatures</b>The switch by the name, its own Battle, Party's second half, the fight.</div>
+      <div><b>The Long Rest window</b>"Beasty Bone: ready again", ticked.</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="toolbar">
+      <h2 style="flex:1">Play it</h2>
+      <span class="lbl">You are</span>
+      <span class="seg" role="group" aria-label="Who you are"><button type="button" data-who="player" aria-pressed="true">Trah's player</button><button type="button" data-who="dm" aria-pressed="false">The DM</button></span>
+      <button type="button" class="btn small" data-reset>Start over</button>
+    </div>
+    <p class="note" id="hint"></p>
+    <div class="stage" id="stage">
+      <div class="page" id="page"></div>
+      <aside class="panel" id="panel" hidden></aside>
+      <div class="win" id="win" hidden></div>
+      <div class="cards" id="cards"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Everywhere else it shows</h2>
+    <div class="mini">
+      <div class="frame">
+        <span class="lbl">Party</span>
+        <div class="pair">
+          <div><b>Trah</b><span class="note">HP 52 / 52 · AC 17 · Speed 30 ft</span><span class="note">with the Wolf</span></div>
+          <div><b>Wolf <span class="chip undead">Undead</span></b><span class="note">Trah's · from the Beasty Bone</span><span class="note">HP 11 / 11 · AC 12 · 40 ft</span></div>
+        </div>
+        <p class="note">Its own card as the second half of Trah's, as Cole's familiar has. The whole half opens its Battle.</p>
+      </div>
+      <div class="frame">
+        <span class="lbl">The fight</span>
+        <div class="order">
+          <div class="fighter now"><span class="port">T</span>Trah</div>
+          <div class="fighter foe"><span class="port">E1</span>Enemy 1</div>
+          <div class="fighter"><span class="port wolf">W</span>Wolf</div>
+          <div class="fighter"><span class="port">C</span>Cole</div>
+        </div>
+        <p class="note">It rolls its own Initiative (the item says so) and joins the order, with a corner card when its turn comes: "The Wolf's turn: it follows your last command." Its rolls say "Trah (Wolf)" in Table rolls.</p>
+      </div>
+      <div class="frame">
+        <span class="lbl">Long Rest</span>
+        <div class="statblock">
+          <div class="trait">☑ <b>Beasty Bone</b> ready again <span class="note">(spent today)</span></div>
+          <div class="trait">☑ Hit Points, spell slots, Wild Shape…</div>
+        </div>
+        <p class="note">Listed with what comes back, ticked. Untick it if the DM rules otherwise.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Two choices for you</h2>
+    <div class="pros">
+      <div class="pro good"><b>1. Who sets it up · my pick: A</b>A homebrew item's words can't say everything (which beast?), so someone tells askdnd once. <b>A</b>, the DM in Correct this, with askdnd's reading of the words filled in to check. <b>B</b>, its player, which the DM can change. <b>C</b>, askdnd's reading alone, which stalls on "which beast".</div>
+      <div class="pro good"><b>2. On D&amp;D Beyond · my pick: A</b><b>A</b>, askdnd's own creature, like Find Steed's: undead and its immunities show as they are, Hit Points kept in askdnd. <b>B</b>, also added to D&amp;D Beyond's Extras as the plain Wolf (Hit Points kept there, like Cole's familiar), with the undead changes only in askdnd.</div>
+      <div class="pro cost"><b>What askdnd won't do</b>Time the hour or decide what the creature does. It reminds: "Up to 1 hour" on its band, and its turn's card says what it was last told. The DM rules.</div>
+    </div>
+    <form class="answer" id="answer">
+      <div class="aq"><b>1. Who sets up a homebrew item like this?</b>
+        <div class="picks" role="radiogroup" aria-label="Who sets it up">
+          <label class="pick"><input type="radio" name="who" value="A">A. The DM, askdnd fills in</label>
+          <label class="pick"><input type="radio" name="who" value="B">B. Its player</label>
+          <label class="pick"><input type="radio" name="who" value="C">C. askdnd alone</label>
+        </div></div>
+      <div class="aq"><b>2. The creature on D&amp;D Beyond?</b>
+        <div class="picks" role="radiogroup" aria-label="On D&D Beyond">
+          <label class="pick"><input type="radio" name="ddb" value="A">A. askdnd's own</label>
+          <label class="pick"><input type="radio" name="ddb" value="B">B. Also on Extras</label>
+        </div></div>
+      <div class="aq"><b>Anything else</b> <span class="note">(optional)</span><textarea name="words" id="words"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Send to Claude</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const WOLF = { name: "Wolf", ac: 12, hp: 11, speed: "40 ft", init: "+2", type: "Undead (was a Beast)",
+    trait: ["Pack Tactics", "Advantage on attack rolls against a creature when an ally of the wolf's is within 5 ft of it and not Incapacitated."],
+    bite: ["Bite", "+4", "1d6+2 piercing", "If the target is Medium or smaller, it has the Prone condition."] };
+  const BEASTS = { Wolf: "SRD · CR 1/4", Mastiff: "SRD · CR 1/8", Panther: "SRD · CR 1/4" };
+  const st0 = () => ({ who: "player", setUp: false, beast: "", state: "ready", view: "trah", hp: 11, panel: null, win: null, asked: false, commanded: "", bonusUsed: false });
+  let st = st0();
+  const page = $("#page"), panel = $("#panel"), win = $("#win"), cards = $("#cards");
+
+  function card(text, warn, undo) {
+    const c = document.createElement("div");
+    c.className = "card" + (warn ? " warn" : "");
+    c.innerHTML = text + (undo ? ' <div><button type="button" class="btn small" data-undo>Undo</button></div>' : "");
+    cards.prepend(c);
+    setTimeout(() => c.remove(), 6000);
+  }
+  function hint() {
+    $("#hint").textContent = !st.setUp ? (st.who === "dm" ? "As the DM: open the Beasty Bone and tell askdnd what it brings."
+        : "As Trah's player: press Use on the Beasty Bone. The DM hasn't set it up yet.")
+      : st.state === "ready" ? "Press Use on the Beasty Bone." : st.state === "here" ? "Switch to the Wolf by Trah's name, or command it from Trah's Bonus Action column. Take its Hit Points to 0 to see it end."
+      : "It's spent until a Long Rest: try Rest.";
+  }
+
+  // ------------------------------------------------ the page: Trah's Battle, or the Wolf's
+  function trah() {
+    const here = st.state === "here";
+    const itemSays = !st.setUp ? "Action · brings a creature (not set up)" : st.state === "spent" ? "Spent · back after a Long Rest" : here ? "In use: the Wolf is here" : "Action · once a day · brings an undead Wolf";
+    return `
+      <div class="ch-head"><span class="port">T</span><div><h3>Trah</h3><small>Gnome · Wizard 7 (Evoker) / Fighter 1</small></div>
+        ${here ? `<span class="switch" role="group" aria-label="Whose Battle"><button type="button" data-view="trah" aria-pressed="true">Trah</button><button type="button" data-view="wolf" aria-pressed="false">Wolf</button></span>` : ""}
+        <span style="flex:1"></span><button type="button" class="btn small" data-rest>☾ Rest</button></div>
+      <div class="tiles"><div class="tile"><span class="lbl">HP</span><span class="big">52</span></div><div class="tile"><span class="lbl">AC</span><span class="big">17</span></div>
+        <div class="tile"><span class="lbl">Speed</span><span class="big">30 ft</span></div><div class="tile"><span class="lbl">Init.</span><span class="big">+2</span></div><div class="tile"><span class="lbl">Spell</span><span class="big">15</span></div></div>
+      <div class="cols">
+        <div class="col a"><h4>◆ Action</h4><span class="sub">One per turn</span>
+          <div class="row"><b>Shortsword</b><small>5 ft · 1d6+2 piercing</small><button type="button" class="hit act">+5</button></div>
+          <div class="row"><b>Fire Bolt</b><small>120 ft · 2d10 fire</small><button type="button" class="hit act">+7</button></div>
+          <span class="sect">Items</span>
+          <div class="row ${here ? "new" : ""} ${st.state === "spent" ? "dim" : ""}"><b>Beasty Bone</b><small>${itemSays}</small>
+            <span class="act" style="display:flex;gap:6px"><button type="button" class="btn small link" data-open-item>ⓘ</button>${here || st.state === "spent" ? "" : '<button type="button" class="btn small" data-use>Use</button>'}</span></div>
+        </div>
+        <div class="col b"><h4>▲ Bonus Action</h4><span class="sub">One per turn</span>
+          <div class="row"><b>Misty Step</b><small>2nd-level · Self</small><button type="button" class="btn small act">Cast</button></div>
+          ${here ? `<div class="row new"><b>Command the Wolf</b><small>${st.commanded ? "Told: " + st.commanded : "Within 60 ft · it acts on its own turn"}</small><button type="button" class="btn small act" data-command ${st.bonusUsed ? "disabled" : ""}>${st.bonusUsed ? "Used" : "Command"}</button></div>` : ""}
+        </div>
+        <div class="col r"><h4>↻ Reaction</h4><span class="sub">One per round</span>
+          <div class="row"><b>Shield</b><small>1st-level · when you're hit</small><button type="button" class="btn small act">Cast</button></div>
+        </div>
+      </div>`;
+  }
+  function wolf() {
+    return `
+      <div class="ch-head"><span class="port wolf">W</span><div><h3>Wolf <span class="chip undead">Undead</span></h3><small>Trah's · from the Beasty Bone</small></div>
+        <span class="switch" role="group" aria-label="Whose Battle"><button type="button" data-view="trah" aria-pressed="false">Trah</button><button type="button" data-view="wolf" aria-pressed="true">Wolf</button></span></div>
+      <div class="band"><span class="grow"><b>From the Beasty Bone</b> · up to 1 hour or until 0 Hit Points · its own turn${st.commanded ? " · told: " + st.commanded : ""}</span><button type="button" class="btn small" data-dismiss>Dismiss</button></div>
+      <div class="tiles">
+        <div class="tile"><span class="lbl">HP</span><span class="big">${st.hp} <small class="note">/ ${WOLF.hp}</small><span class="pm"><button type="button" data-hp="-4" aria-label="Take 4 damage">−</button><button type="button" data-hp="4" aria-label="Heal 4">+</button></span></span></div>
+        <div class="tile"><span class="lbl">AC</span><span class="big">${WOLF.ac}</span></div><div class="tile"><span class="lbl">Speed</span><span class="big">${WOLF.speed}</span></div>
+        <div class="tile"><span class="lbl">Init.</span><span class="big">${WOLF.init}</span></div>
+        <div class="tile"><span class="lbl">Immune</span><span style="font-size:.84rem">Poison damage, Poisoned</span></div></div>
+      <div class="cols">
+        <div class="col a"><h4>◆ Action</h4><span class="sub">On its turn, what Trah told it</span>
+          <div class="row"><b>${WOLF.bite[0]}</b><small>${WOLF.bite[2]} · ${WOLF.bite[3]}</small><button type="button" class="hit act" data-bite>${WOLF.bite[1]}</button></div></div>
+        <div class="col b"><h4>Traits</h4><div class="statblock"><div class="trait"><b>${WOLF.trait[0]}</b> ${WOLF.trait[1]}</div>
+          <div class="trait"><b>Changed by the bone</b> Undead; immune to poison damage and the Poisoned condition.</div></div></div>
+        <div class="col r"><h4>↻ Reaction</h4><span class="sub">None</span></div>
+      </div>`;
+  }
+
+  // ------------------------------------------------ the item's panel: its words, and for the DM, Correct this
+  function itemPanel() {
+    const dm = st.who === "dm";
+    let h = `<h3><span>Beasty Bone</span><button type="button" class="x" data-close-panel aria-label="Close">×</button></h3>
+      <span class="note">Custom item · in Trah's pouch · once a day</span>
+      <div class="words">An animal bone covered in runes. Thrown as an Action into a space within 20 ft, it becomes an undead version of the beast it came from, under your control… <i>(its own words, as D&amp;D Beyond has them)</i></div>`;
+    if (st.setUp) {
+      h += `<div class="field"><span class="lbl">askdnd plays it as</span><div class="chips"><span class="chip on">Action</span><span class="chip on">Brings: ${st.beast}</span><span class="chip undead">Undead</span><span class="chip on">Immune: poison, Poisoned</span><span class="chip on">Own Initiative</span><span class="chip on">Command: Bonus Action, 60 ft</span><span class="chip on">Up to 1 hour or 0 HP</span><span class="chip on">Back: Long Rest</span></div></div>
+        ${dm ? '<button type="button" class="btn small link" data-edit>Change how it plays</button>' : '<span class="note">Set up by the DM.</span>'}`;
+    } else if (dm) {
+      h += `<div class="claude">askdnd read its words and filled this in. Check each part; only the beast was left for you.</div>
+      <div class="form">
+        <div class="field"><span class="lbl">It brings</span><select id="beast"><option value="">Which beast? (its words don't say)</option>${Object.entries(BEASTS).map(([n, s]) => `<option value="${n}">${n} · ${s}</option>`).join("")}<option disabled>…every beast in your books and the SRD</option></select></div>
+        <div class="field"><span class="lbl">Changed</span><div class="chips"><span class="chip undead">Type: Undead</span><span class="chip on">Immune: poison damage</span><span class="chip on">Immune: Poisoned</span></div></div>
+        <div class="field"><span class="lbl">Using it</span><div class="chips"><span class="chip on">Action</span><span class="chip on">Within 20 ft</span><span class="chip on">Once, back after a Long Rest</span></div></div>
+        <div class="field"><span class="lbl">In a fight</span><div class="chips"><span class="chip on">Its own Initiative</span><span class="chip on">Command: Bonus Action, within 60 ft</span></div></div>
+        <div class="field"><span class="lbl">Ends</span><div class="chips"><span class="chip on">Up to 1 hour</span><span class="chip on">At 0 Hit Points</span></div></div>
+        <button type="button" class="btn primary" data-save-setup>Save for this campaign</button>
+        <span class="note">A campaign correction, listed on Manage › House rules with the rest.</span>
+      </div>`;
+    } else {
+      h += `<div class="ask">The DM hasn't told askdnd which beast it brings yet. ${st.asked ? "<b>Asked.</b> It's on the DM's Needs you." : '<button type="button" class="btn small" data-ask>Ask the DM</button>'}</div>`;
+    }
+    return h;
+  }
+
+  // ------------------------------------------------ the use window, beside the row
+  function useWin() {
+    return `<h3><span>Use the Beasty Bone</span><button type="button" class="x" data-close-win aria-label="Close">×</button></h3>
+      <ul><li><b>Action</b>: throw it into a space within 20 ft</li><li>An undead <b>${st.beast}</b> appears: ${WOLF.hp} Hit Points, AC ${WOLF.ac}</li>
+        <li>Up to 1 hour, or until 0 Hit Points</li><li>Then spent until a Long Rest</li></ul>
+      <div class="field"><span class="lbl">Its name</span><input id="cname" placeholder="${st.beast} (optional)"></div>
+      <div style="display:flex;gap:8px"><button type="button" class="btn primary" data-go>Throw it</button><button type="button" class="btn" data-close-win>Not now</button></div>
+      <span class="note">It rolls its Initiative when a fight starts, or now if one's running.</span>`;
+  }
+  function commandWin() {
+    return `<h3><span>Command the Wolf</span><button type="button" class="x" data-close-win aria-label="Close">×</button></h3>
+      <span class="note">Bonus Action · it's within 60 ft. It follows this on its turns until it's done or you say something new.</span>
+      <div class="chips">${["Attack Enemy 1", "Guard Trah", "Move to the door"].map(c => `<button type="button" class="chip" data-said="${c}">${c}</button>`).join("")}</div>
+      <div class="field"><span class="lbl">Or in your words</span><input id="said-in" placeholder="Drag it away from Cole"></div>
+      <button type="button" class="btn primary" data-command-go>Command it</button>`;
+  }
+  function restWin() {
+    return `<h3><span>Long Rest</span><button type="button" class="x" data-close-win aria-label="Close">×</button></h3>
+      <span class="note">What comes back</span>
+      <div class="statblock"><div class="trait">☑ <b>Beasty Bone</b> ready again${st.state === "here" ? " (the Wolf here goes)" : ""}</div><div class="trait">☑ Hit Points, spell slots, Arcane Recovery</div></div>
+      <button type="button" class="btn primary" data-rest-go>Take the Long Rest</button>`;
+  }
+
+  function draw() {
+    page.innerHTML = st.view === "wolf" && st.state === "here" ? wolf() : trah();
+    panel.hidden = !st.panel;
+    if (st.panel) panel.innerHTML = itemPanel();
+    win.hidden = !st.win;
+    if (st.win) {
+      win.innerHTML = st.win === "use" ? useWin() : st.win === "command" ? commandWin() : restWin();
+      const at = st.win === "use" ? page.querySelector("[data-use]") || page.querySelector("[data-open-item]") : st.win === "command" ? page.querySelector("[data-command]") : page.querySelector("[data-rest]");
+      const s = $("#stage").getBoundingClientRect(), r = at ? at.getBoundingClientRect() : s;
+      win.style.top = Math.max(12, Math.min(r.top - s.top - 20, s.height - win.offsetHeight - 12)) + "px";
+      win.style.left = Math.max(12, Math.min(r.right - s.left + 12, s.width - win.offsetWidth - 12)) + "px";
+    }
+    document.querySelectorAll("[data-who]").forEach(b => b.setAttribute("aria-pressed", b.dataset.who === st.who));
+    hint();
+  }
+
+  document.addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b || !b.closest("#stage, .toolbar")) return;
+    const d = b.dataset;
+    if (d.who) { st.who = d.who; st.win = null; return draw(); }
+    if ("reset" in d) { st = st0(); cards.innerHTML = ""; return draw(); }
+    if (d.view) { st.view = d.view; return draw(); }
+    if ("openItem" in d) { st.panel = st.panel ? null : "item"; st.win = null; return draw(); }
+    if ("closePanel" in d) { st.panel = null; return draw(); }
+    if ("closeWin" in d) { st.win = null; return draw(); }
+    if ("use" in d) {
+      if (!st.setUp) { st.panel = "item"; st.win = null; draw(); card("askdnd doesn't know which beast it brings yet: the DM sets that up once.", true); return; }
+      st.win = "use"; return draw();
+    }
+    if ("ask" in d) { st.asked = true; draw(); card("Sent to the DM's Needs you: set up the Beasty Bone."); return; }
+    if ("saveSetup" in d) {
+      const v = $("#beast").value;
+      if (!v) { card("Pick the beast first.", true); return; }
+      st.beast = v; st.setUp = true; draw(); card("Saved: the Beasty Bone brings an undead " + v + " in this campaign."); return;
+    }
+    if ("edit" in d) { st.setUp = false; return draw(); }
+    if ("go" in d) { st.state = "here"; st.win = null; st.hp = WOLF.hp; draw(); card("The Wolf is here. It joins the fight with its own Initiative.", false, true); return; }
+    if ("undo" in d) { st.state = "ready"; st.view = "trah"; st.commanded = ""; st.bonusUsed = false; b.closest(".card").remove(); return draw(); }
+    if ("command" in d) { st.win = "command"; return draw(); }
+    if (d.said) { $("#said-in").value = d.said; return; }
+    if ("commandGo" in d) { st.commanded = ($("#said-in").value || "").trim() || "Guard Trah"; st.bonusUsed = true; st.win = null; draw(); card("Bonus Action used. The Wolf: " + st.commanded + "."); return; }
+    if (d.hp) {
+      st.hp = Math.max(0, Math.min(WOLF.hp, st.hp + +d.hp));
+      if (!st.hp) { st.state = "spent"; st.view = "trah"; st.commanded = ""; draw(); card("The Wolf is at 0 Hit Points and goes. The Beasty Bone is spent until a Long Rest.", true); return; }
+      return draw();
+    }
+    if ("dismiss" in d) { st.state = "spent"; st.view = "trah"; st.commanded = ""; draw(); card("The Wolf goes. The Beasty Bone is spent until a Long Rest.", false, false); return; }
+    if ("bite" in d) { card("Bite opens the roll card, as Trah's own attacks do; Table rolls says \"Trah (Wolf)\"."); return; }
+    if ("rest" in d) { st.win = "rest"; return draw(); }
+    if ("restGo" in d) { if (st.state !== "ready" || st.bonusUsed) card("Long Rest: the Beasty Bone is ready again."); st.state = "ready"; st.view = "trah"; st.hp = WOLF.hp; st.commanded = ""; st.bonusUsed = false; st.win = null; return draw(); }
+  });
+  draw();
+  addEventListener("resize", () => { if (st.win) draw(); });
+
+  // the answer (db: answers/pick)
+  const form = $("#answer"), said = $("#said"), send = $("#send");
+  let db = null;
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = "Open this page signed in to claude.ai to send it."; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try { await db.collection("answers").doc("pick").set({ who: f.get("who") || "", ddb: f.get("ddb") || "", words: (f.get("words") || "").trim(), at: new Date().toISOString() }); said.textContent = "Sent to Claude"; }
+    catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use("db"); } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const doc = await db.collection("answers").doc("pick").get();
+      if (!doc.exists) return;
+      const a = doc.data();
+      form.querySelectorAll("input[type=radio]").forEach(r => { r.checked = (r.name === "who" && r.value === a.who) || (r.name === "ddb" && r.value === a.ddb); });
+      $("#words").value = a.words || "";
+      said.textContent = "Sent earlier: change it and send again if you like";
+    } catch (err) { /* nothing yet */ }
+  })();
+})();
+</script>

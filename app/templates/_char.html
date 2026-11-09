@@ -340,9 +340,11 @@
    columns (_battle_body.html `move`), an item's use or a spell's Cast (Brett, Nov 3: only pinned rows had Cast). #}
 {% macro opt_row(c, o, picks, can_pick, can_use=False, can_play=False) -%}
 {%- set cast = can_play and o.cast and not (can_use and o.use) -%}
-{%- set go = (can_use and o.use) or cast -%}
+{%- set bring = can_pick and o.bring and o.bring.state == "ready" -%}
+{%- set go = (can_use and o.use) or cast or bring -%}
 {%- set btn -%}{% if cast %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ o.key | urlencode }}">Cast</button>
-{%- elif go %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button>{% endif %}{%- endset -%}
+{%- elif go %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button>
+{%- elif bring %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/bring/{{ o.bring.id }}">{{ o.bring.verb }}</button>{% endif %}{%- endset -%}
 {#- In a Wild Shape form (Sheet, character_pages._in_form): what the form can't do greyed with its reason, an item's note -#}
 {{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags + ([(o.form_note, "form-note")] if o.form_note else []),
       what=o.form_why or o.summary or o.meta, mech=o.meta if o.summary else "", cls="form-no" if o.form_why else "",

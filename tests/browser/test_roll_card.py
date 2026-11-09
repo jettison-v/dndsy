@@ -137,3 +137,27 @@ def test_hidden_the_card_says_the_attack_ends_it_and_you_can_untick_it(people, s
         assert ended == [] and player.errors == []
     finally:
         _pieces(browser_db, server, was)
+
+
+def test_an_attack_spell_on_the_card_at_its_level(people, server, browser_db):
+    """Next slice (Nov 9): an attack spell's damage from its recipe, a cantrip's at the character's level (Cole's Starry
+    Wisp: 2d8 at level 8), sent with the attack, so its damage rolls from the card."""
+    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    try:
+        player = people("player")
+        page = _battle_with(player, server, True)
+        wisp = page.locator('[data-plan][data-label="Starry Wisp"]:visible >> nth=0')
+        if not wisp.count():  # (pinned rows only: from See all otherwise)
+            page.locator('[data-panel-url*="/all/action"]').first.click()
+            wisp = page.locator('.peek [data-plan][data-label="Starry Wisp"] >> nth=0')
+        wisp.click()
+        card = page.locator(".roll-card")
+        card.locator("[data-roll-hit]").wait_for()
+        assert "2d8" in card.locator(".rcard-sub").inner_text()
+        card.locator("[data-roll-hit]").click()
+        card.locator("[data-roll-dmg], [data-missed]").first.wait_for()
+        if card.locator("[data-roll-dmg]").count():
+            assert "2d8" in card.locator("[data-roll-dmg]").inner_text()
+        assert player.errors == []
+    finally:
+        _pieces(browser_db, server, was)

@@ -1754,13 +1754,26 @@
     return '<p class="rw-note" data-flat-note>On a hit: <b>' + flat + ' damage</b>, flat, with the roll (no dice to roll).</p>';
   }
   function card(anchor, spec, plan) {
-    const w = openWin(anchor), ctx = ctxFor(spec.cid);
+    const ctx = ctxFor(spec.cid);
+    // An attack spell (its recipe, app/roll_recipes.py): its damage at the level cast, a cantrip's at your level, with
+    // the spellcasting modifier where it adds it. Several rays or beams, or a choice of effects, keep the roll window.
+    const rec = spec.recipe || null, hits = rec ? (rec.events || []).filter(x => x.on === 'hit') : [];
+    const slot0 = rec && rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0;
+    const spellEv = level => {
+      if (!hits.length) return null;
+      const ev = resolve(rec, hits[0], level, ctx.level);
+      if (ev && ev.mod && ctx.spell_mod != null) ev.parts = ev.parts.concat([ascii(ctx.spell_mod) + ' spellcasting modifier']);
+      return ev;
+    };
+    if (rec && (hits.length > 1 || (spellEv(slot0) || {}).count > 1)) return chooser(anchor, spec);
+    const grows = !!(rec && rec.level && hits.some(x => (x.upcast || []).some(Boolean) || x.count_upcast));
+    const w = openWin(anchor);
     w.classList.add('roll-card');
     const mods = plan.modifiers || [];
     const st = { step: plan.choice ? 'choose' : 'attack', mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false,
-                 visOpen: false, entry: null, dmg: null, busy: false, hidden: !!spec.endsHidden };
+                 visOpen: false, entry: null, dmg: null, busy: false, hidden: !!spec.endsHidden, slot: slot0 };
     mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = !m.once; });  // (on by themselves while they last; once a turn: yours to tick)
-    const dmgText = () => (plan.damage || []).map(p => (p.dice || '') + (p.flat || !p.dice ? (p.dice && p.flat > 0 ? '+' : '') + (p.flat || 0) : '') + (p.type ? ' ' + p.type : '')).join(' + ');
+    const dmgText = () => (spellEv(st.slot) ? describe(spellEv(st.slot)) : '') || (plan.damage || []).map(p => (p.dice || '') + (p.flat || !p.dice ? (p.dice && p.flat > 0 ? '+' : '') + (p.flat || 0) : '') + (p.type ? ' ' + p.type : '')).join(' + ');
     const flat = (plan.damage || []).length && plan.damage.every(p => !p.dice) ? plan.damage.reduce((t, p) => t + (p.flat || 0), 0) : null;  // (no dice: it comes with the roll)
     const steps = () => [...(plan.choice ? ['Choose'] : []), 'To hit', 'Damage'];
     const at = () => ({ choose: 0, attack: plan.choice ? 1 : 0, result: plan.choice ? 1 : 0, damage: plan.choice ? 2 : 1, done: 9 })[st.step];
@@ -1790,6 +1803,10 @@
         h += '<p class="rcard-q">' + esc(plan.choice.ask) + '</p><div class="rcard-choices">' + plan.choice.options.map(o =>
           '<button type="button" class="rcard-choice" data-choice="' + esc(o.key) + '"><b>' + esc(o.name) + '</b><small>' + esc(o.says) + '</small></button>').join('') + '</div>';
       } else if (st.step === 'attack') {
+        if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-card-slot aria-label="Spell slot level">'
+          + [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => l >= rec.level).map(l => '<option value="' + l + '"' + (l === st.slot ? ' selected' : '') + '>Level ' + l
+            + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
+        (rec && rec.house_rules || []).forEach(r => { h += '<p class="rw-note rw-house"><b>House rule</b> ' + esc(r.text) + (r.reason ? ' · ' + esc(r.reason) : '') + '</p>'; });
         h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + '</div>';
         const why = (spec.advWhy || '').split('\n').filter(Boolean).map(t => t.startsWith('!dis ') ? '<b>Disadvantage</b> ' + esc(t.slice(5))
           : t.startsWith('!note ') ? '<b>Note</b> ' + esc(t.slice(6)) : '<b>Advantage</b> ' + esc(t.replace(/^advantage\s*/i, '')));
@@ -1872,7 +1889,8 @@
     function rollHit() {
       const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
       st.step = 'rolling'; st.adding = false; draw();
-      go({ kind: 'attack', mode: st.mode, extras, endsHidden: st.hidden }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
+      const ev = spellEv(st.slot);
+      go({ kind: 'attack', mode: st.mode, extras, endsHidden: st.hidden, ...(ev ? { dmgParts: ev.parts, count: 1, each: '' } : {}) }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
     }
     function follow(action, o) {
       const was = st.step;
@@ -1884,6 +1902,7 @@
         if (w.isConnected) draw();
       }, () => { st.step = was; if (w.isConnected) draw(); });
     }
+    w.addEventListener('change', ev => { if (ev.target.matches('[data-card-slot]')) { st.slot = +ev.target.value; draw(); } });
     w.addEventListener('click', ev => {
       const b = ev.target.closest('button');
       if (!b || st.busy) return;
@@ -2653,7 +2672,7 @@
     const spec = specFrom(el);
     // The roll card (Labs `roll_card`): weapon attacks and the Unarmed Strike first; an attack spell's damage depends on
     // its level and its cantrip's growth, which the roll window works out, so spells keep it for now
-    if (document.body.hasAttribute('data-roll-card') && el.dataset.plan && el.dataset.roll === 'attack' && !el.dataset.recipe && !e.shiftKey) {
+    if (document.body.hasAttribute('data-roll-card') && el.dataset.plan && el.dataset.roll === 'attack' && !e.shiftKey) {
       let plan = null;
       try { plan = JSON.parse(el.dataset.plan); } catch (err) { plan = null; }
       if (plan) return card(el, spec, spec.shared ? plan : { ...plan, choice: null });  // (Grapple and Shove go to the table: yours only)
