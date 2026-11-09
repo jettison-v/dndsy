@@ -91,3 +91,22 @@ def test_a_page_holding_a_nul_character_still_gets_its_picture(people, server):
     page.keyboard.press("\\")
     page.locator("[data-fb-shot]").wait_for(state="visible", timeout=15000)
     assert not admin.errors, admin.errors
+
+
+def test_point_at_leaves_the_roll_window_open_to_point_inside_it(people, server):
+    """Brett, Nov 9: "clicking Point at closes all modals". Point at, its click and Escape belong to Feedback for Claude:
+    the roll window under it stays open, and pointing at its Advantage marks it without pressing it."""
+    admin = people("admin")
+    page = admin.open(f"/characters/{server['cole']}/battle")
+    page.locator(".roll-hit:visible").first.click()
+    page.locator(".roll-win").wait_for()
+    page.keyboard.press("\\")
+    page.locator("#fb-win").wait_for(state="visible")
+    page.locator("#fb-win [data-fb-point]").click()
+    page.locator(".roll-win [data-mode='adv']").click()
+    page.locator("#fb-win").wait_for(state="visible")
+    assert page.locator(".roll-win").count() == 1 and "Advantage" in page.locator("[data-fb-pointed]").inner_text()
+    assert page.locator(".roll-win [data-mode='adv']").get_attribute("aria-pressed") == "false"
+    page.keyboard.press("Escape")
+    assert page.locator("#fb-win").is_hidden() and page.locator(".roll-win").count() == 1
+    assert not admin.errors, admin.errors

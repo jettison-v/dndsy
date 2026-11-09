@@ -202,6 +202,11 @@ def db(db_engine, monkeypatch):
             from app import campaign_paths
 
             monkeypatch.setattr(campaign_paths, "remember", lambda email, cid: campaign_paths.remember_in(session, email, cid))
+            import contextlib
+
+            from app import usage
+
+            monkeypatch.setattr(usage, "opener", lambda: contextlib.nullcontext(session))  # (counting a use: app/usage.py)
             yield session
         trans.rollback()
 

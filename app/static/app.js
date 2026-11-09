@@ -1,4 +1,11 @@
 // askdnd: small page behaviors. Server-rendered pages; HTMX handles partial updates.
+
+// Feedback for Claude's window, or its Point at (Brett, Nov 9: "clicking Point at closes all modals"): a click or Escape
+// there belongs to it, so whatever is open on the page (the roll window, a side panel, a picker) stays open to point at.
+function feedbackBusy(e) {
+  return !!(e && e.target && e.target.closest && e.target.closest('#fb-win')) || document.body.classList.contains('fb-pointing');
+}
+
 (function () {
   const $ = (s, el = document) => el.querySelector(s);
 
@@ -474,7 +481,7 @@
     }
     openPeek(ref, a);
   });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePeek(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !feedbackBusy(e)) closePeek(); });
 
   // Party in a fight: Cards or Rows (party.html), one choice per device
   function ptView() {
@@ -1204,7 +1211,7 @@
       });
       return;
     }
-    if (termTip && !e.target.closest('.term-tip')) termHide();
+    if (termTip && !e.target.closest('.term-tip') && !feedbackBusy(e)) termHide();
   });
   document.addEventListener('keydown', e => {
     const el = e.target.closest && e.target.closest('.term');
@@ -1780,7 +1787,7 @@
     const pick = document.getElementById('rs-pick');
     if (!pick || pick.hidden) return;
     if (e.target.closest('#rs-pick .rc')) { setTimeout(() => rsPick(false)); return; }  // (the roll window opens from the same click first)
-    if (!e.target.closest('#rs-pick')) rsPick(false);
+    if (!e.target.closest('#rs-pick') && !feedbackBusy(e)) rsPick(false);
   }, true);  // (first: the roll's own handler stops the click once it opens the roll window)
   document.addEventListener('input', e => { if (e.target.matches('.rs-pick-q')) rsFilter(e.target.closest('#rs-pick'), e.target.value); });
   document.addEventListener('htmx:afterSwap', e => { const p = e.target.closest && e.target.closest('#rs-pick'); if (p) rsFilter(p, p.querySelector('.rs-pick-q').value); });
@@ -1953,7 +1960,7 @@
     function go(o) {  // one roll, its journey (sendRoll), then the card draws what came back
       if (st.busy) return Promise.resolve();
       st.busy = true;
-      return sendRoll({ ...spec, ctx, ...o }).then(e => { st.busy = false; return (animate() ? throwMine(e, o.follow).catch(() => stage(e, o.follow)) : Promise.resolve()).then(() => { landed(e.id); return e; }); })
+      return sendRoll({ ...spec, ctx, ...o, via: 'card' }).then(e => { st.busy = false; return (animate() ? throwMine(e, o.follow).catch(() => stage(e, o.follow)) : Promise.resolve()).then(() => { landed(e.id); return e; }); })
         .catch(err => { st.busy = false; toast((err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.', null, 'warn'); throw err; });
     }
     function rollHit() {
@@ -2496,6 +2503,7 @@
       (go.dmgParts || []).forEach(x => p.append('dmg_part', x));
     }
     (go.extras || []).forEach(x => p.append('extra', x));
+    if (go.via) p.set('via', go.via);  // (the roll card: counted as its own, app/usage.py)
     return p;
   }
   // A roll's whole journey, whatever shows it (the roll window, the roll card): rolled by the server for the table (or in
@@ -2745,7 +2753,7 @@
     const using = e.target.closest('[data-use-url]');
     if (using) { e.preventDefault(); if (!using.disabled) openUse(using); return; }
     const el = e.target.closest('[data-roll]');
-    if (!el) { if (win && !e.target.closest('[data-manual]')) closeWin(); return; }
+    if (!el) { if (win && !e.target.closest('[data-manual]') && !feedbackBusy(e)) closeWin(); return; }
     e.preventDefault();
     const spec = specFrom(el);
     // The roll card (Labs `roll_card`): weapon attacks and the Unarmed Strike first; an attack spell's damage depends on
@@ -2764,6 +2772,7 @@
   // elsewhere on the page is left alone. Capture phase: before a focused button's own Enter.
   document.addEventListener('keydown', e => {
     if (!win || e.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key === 'Escape' && feedbackBusy(e)) return;  // (closing Feedback for Claude, not the roll window under it)
     if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); closeWin(); return; }
     const go = win.querySelector('[data-go]'), t = e.target, a = win._anchor;
     if (e.key !== 'Enter' || !go) return;
@@ -2837,7 +2846,7 @@
     });
     // Clicking outside an over-the-page sidebar closes it
     document.addEventListener('click', e => {
-      if (narrow() && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win, .peek')) setState('closed');
+      if (narrow() && current() === 'open' && e.target.isConnected && !side.contains(e.target) && !e.target.closest('[data-roll], .roll-win, .peek') && !feedbackBusy(e)) setState('closed');
     });
     // Crossing a width (the phone's sheet to the side panel, or WIDE) moves the sidebar to another place, not open or
     // closed: no slide, which would flash it across the page (Brett, 2026-10-26).
@@ -4224,7 +4233,7 @@
       pointedNote.textContent = 'Pointed at: ' + pointed.label;
       done();
     };
-    const esc = e => { if (e.key === 'Escape') { e.preventDefault(); done(); } };
+    const esc = e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(); } };
     setTimeout(() => { document.addEventListener('click', pick, true); document.addEventListener('keydown', esc, true); }, 0);
   });
   function take(file) {
