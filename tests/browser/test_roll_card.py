@@ -31,6 +31,15 @@ def _battle_with(person, server, on: bool):
     raise AssertionError("The roll card's switch never reached the page")
 
 
+def _sees(page, words: str, seconds: int = 20):
+    """The newest rolls this person may see, from Table rolls' own address (a closed sidebar loads none), include these words."""
+    for _ in range(seconds * 2):
+        if words in page.evaluate("fetch('/rolls?since=-1').then(r => r.text())"):
+            return
+        time.sleep(0.5)
+    raise AssertionError(f"{words} never reached Table rolls")
+
+
 def test_an_attack_on_the_roll_card_and_the_dm_sees_it(people, server, browser_db):
     was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
     try:
@@ -48,13 +57,12 @@ def test_an_attack_on_the_roll_card_and_the_dm_sees_it(people, server, browser_d
         card.locator("[data-roll-hit]").click()
         card.locator("[data-roll-dmg], [data-missed]").first.wait_for()
         assert "to hit" in card.inner_text().lower() and "Added" in card.inner_text()
-        dm_page.wait_for_function("document.querySelector('#roll-log > li') && /Unarmed Strike/.test(document.querySelector('#roll-log > li').innerText)",
-                                 timeout=20000)  # (live, across pages: slower while the whole suite runs)
+        _sees(dm_page, "Unarmed Strike")
         if card.locator("[data-roll-dmg]").count():  # (a natural 1 offers no damage)
             card.locator("[data-roll-dmg]").click()
             card.locator("[data-done]").wait_for()
             assert "damage" in card.inner_text().lower()
-            page.wait_for_function("/Damage/.test(document.querySelector('#roll-log > li').innerText)", timeout=20000)
+            _sees(page, "Damage")
         card.locator("[data-done], [data-missed]").first.click()
         assert page.locator(".roll-card").count() == 0
         # Grapple: no roll of yours, the DC for the DM
@@ -62,7 +70,7 @@ def test_an_attack_on_the_roll_card_and_the_dm_sees_it(people, server, browser_d
         page.locator('.roll-card [data-choice="grapple"]').click()
         page.locator(".roll-card [data-done]").wait_for()
         assert "DC" in page.locator(".roll-card").inner_text()
-        page.wait_for_function("/Grapple/.test(document.querySelector('#roll-log > li').innerText)")
+        _sees(page, "Grapple")
         assert player.errors == [] and dm.errors == []
     finally:
         _pieces(browser_db, server, was)
