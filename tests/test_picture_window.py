@@ -157,3 +157,33 @@ def test_describe_it_goes_by_a_relatives_picture_and_one_named_with_at(people, d
     # Unticked, nothing is sent
     dm.post("/pictures/draw", data={"for": f"entity:{mira.id}", "words": "Mira"}, headers=HX)
     assert openai[-1]["path"] == "generations" and not openai[-1]["files"]
+
+
+def test_a_player_draws_their_own_characters_picture_and_no_one_elses(player, dm, db, openai):
+    """Brett, Nov 9: players draw pictures of their own characters (and already of their familiars); never of another
+    player's character or anyone else in the World, which stay the DM's."""
+    from app.models import Entity, EntityKind
+    from tests.table_setup import BUNDLE as TABLE
+    from tests.table_setup import char, owned_by
+
+    import_bundle(db, TABLE)
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    owned_by(db, cole, "player@example.com")
+    owned_by(db, trah, "other@example.com")
+    db.flush()
+    mine = next(m.entity for m in cole.memberships if m.left_on is None)
+    theirs = next(m.entity for m in trah.memberships if m.left_on is None)
+    npc = Entity(campaign_id=mine.campaign_id, kind=EntityKind.NPC, name="Kieran", summary="Cole's father.")
+    db.add(npc)
+    db.flush()
+    assert mine.kind == EntityKind.PC
+    assert player.get(f"/pictures?for=entity:{mine.id}").status_code == 200
+    r = player.post("/pictures/draw", data={"for": f"entity:{mine.id}", "words": "Cole, a wood elf druid"}, headers=HX)
+    assert r.status_code == 200 and r.text.count('name="pick"') == 4 and len(openai) == 1
+    for other in (theirs, npc):
+        assert player.get(f"/pictures?for=entity:{other.id}").status_code in (403, 404)
+        assert player.post("/pictures/draw", data={"for": f"entity:{other.id}", "words": "x"}, headers=HX).status_code in (403, 404)
+    assert len(openai) == 1
+    assert dm.get(f"/pictures?for=entity:{theirs.id}").status_code == 200  # (the DM's, as before)
+    page = player.get(f"/c/main/campaign?open={mine.id}").text
+    assert f"/pictures?for=entity:{mine.id}" in page

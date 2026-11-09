@@ -1618,6 +1618,47 @@ a.sheet-ref { text-decoration-style: dotted; }
 /* The roll window (app.js): opens next to the roll button with Normal / Adv / Dis, situational
    bonuses and who sees it, then turns into the result in place. Above side panels and windows. */
 .roll-win { position: fixed; z-index: 20; width: min(360px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; box-shadow: var(--lift); font-size: var(--fs-sm); animation: roll-pop .14s ease-out; }
+/* The roll card (Labs roll_card; the Roll Card Prototype, Nov 9): an attack's moments, in the roll window's place */
+.roll-win.roll-card { width: min(400px, calc(100vw - 16px)); display: grid; gap: var(--sp-2); padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4); }  /* (compact steps, Brett Nov 9) */
+.rcard-head { display: grid; gap: 2px; padding-right: var(--sp-5); }
+.rcard-head b { font-size: var(--fs-lg); color: var(--text-strong); }
+.rcard-sub { color: var(--muted); font-size: var(--fs-xs); }
+.rcard-rail { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); margin: 0; padding: 0; list-style: none; font-size: var(--fs-xs); color: var(--faint); }
+.rcard-rail li { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.rcard-rail li::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.rcard-rail li.done { color: var(--muted); }
+.rcard-rail li.done::before { background: var(--green); }
+.rcard-rail li.now { color: var(--text-strong); font-weight: 600; }
+.rcard-rail li.now::before { background: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
+.rcard-q { margin: 0; color: var(--muted); }
+.rcard-choices { display: grid; gap: var(--sp-2); }
+.rcard-choice { display: grid; gap: 2px; text-align: left; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); cursor: pointer; color: var(--text); font: inherit; }
+.rcard-choice:hover, .rcard-choice:focus-visible { border-color: var(--red); outline: none; }
+.rcard-choice b { color: var(--text-strong); }
+.rcard-choice small { color: var(--muted); font-size: var(--fs-xs); }
+.rcard-group { display: grid; gap: var(--sp-1); }
+.rcard-lbl { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rcard-pills { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+.rcard-pill small { color: var(--muted); font-size: var(--fs-xs); }
+.rcard-plus { color: var(--muted); }
+.rcard-adder { display: flex; flex-wrap: wrap; gap: var(--sp-1); background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2); }
+.rcard-result { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--sp-3); align-items: center; background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-1) var(--sp-3); }
+.rcard-big { grid-row: span 2; font-size: var(--fs-2xl); font-weight: 800; color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1; }
+.rcard-dmg .rcard-big { color: var(--red); }
+.rcard-result.rolling .rcard-big { color: var(--muted); }
+.rcard-what { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rcard-how { color: var(--muted); font-size: var(--fs-xs); }
+.rcard-line { margin: 0; color: var(--muted); font-size: var(--fs-xs); }
+.rcard-flag { margin: 0; font-weight: 600; }
+.roll-card.nat20 .rcard-flag { color: var(--amber); }
+.roll-card.nat1 .rcard-flag { color: var(--red); }
+.rcard-acts { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.rcard-go { flex: 1; display: grid; justify-items: center; gap: 2px; }
+.rcard-go small { font-weight: 500; opacity: .85; font-size: var(--fs-xs); }
+.rcard-vis { display: flex; align-items: center; gap: var(--sp-2); border-top: 1px solid var(--line); padding-top: var(--sp-1); color: var(--muted); font-size: var(--fs-xs); }
+.rcard-vis span:first-child { flex: 1; }
+.rcard-vis-open { display: grid; }
+.roll-card .rw-row, .roll-card .rw-notes, .roll-card .rw-note { margin: 0; }
 .roll-win.nat20 { border-color: var(--green); } .roll-win.nat1, .roll-win.failed { border-color: var(--red); }
 /* An item on Battle (Brett, 2026-10-30): its section in a column, its button, its window */
 .seeall.items-all { margin-top: 0; }

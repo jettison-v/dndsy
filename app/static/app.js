@@ -1463,8 +1463,13 @@
       e.rerolled = { ...old, reason: opts.reason };
       e.main = part({ ...old, dice, kept, total: kept + old.modifier + sum(old.extras) });
     } else if (action === 'bonus') {
-      const n = die(opts.die);
-      e.bonus = { label: opts.label || 'Added die', formula: '1d' + opts.die, dice: [n], total: n };
+      if ((opts.extras || []).length) {  // dice a feature adds after the roll (Favored by the Gods' 2d4: the roll card)
+        const got = rollExtras(opts.extras);
+        e.bonus = { label: opts.label || (opts.extras[0].split(':')[0]), formula: got.map(x => x.formula).join(' ').replace(/^\+/, ''), dice: got.flatMap(x => x.dice || []), total: sum(got) };
+      } else {
+        const n = die(opts.die);
+        e.bonus = { label: opts.label || 'Added die', formula: '1d' + opts.die, dice: [n], total: n };
+      }
     }
     return settle(e, opts.ctx || {});
   }
@@ -1640,8 +1645,7 @@
     if (spec.note) h += '<p class="rw-note">' + esc(spec.note) + '</p>';
     // Flat damage comes with the attack roll; one that can only be 0 says so first (feedback 25, 26)
     const flat = spec.kind === 'attack' && !spec.follow && /^[+]?\d+$/.test((spec.dmg || '').replace(/\s/g, '')) ? num(spec.dmg) : null;
-    if (flat === 0) h += '<p class="rw-note rw-warn"><b>0 damage</b> on a hit: 1 + your Strength modifier comes to 0. The DM rules.</p>';
-    else if (flat != null) h += '<p class="rw-note" data-flat-note>On a hit: <b>' + flat + ' damage</b>, flat, with the roll (no dice to roll).</p>';
+    if (flat != null) h += flatNote(flat, spec.label);
     if (spec.endsHidden && !spec.follow) h += '<label class="rw-row rw-hidden"><input type="checkbox" data-ends-hidden checked> This attack ends Hidden</label>';
     if (spec.follow === 'damage' && spec.crit) h += '<p class="rw-note">Critical hit: every damage die is rolled twice, extra dice too.</p>';
     // A recipe: the slot level (when it changes the dice), the choice between its effects, what it rolls
@@ -1735,6 +1739,183 @@
       }
     });
     (w.querySelector('[data-go]') || w).focus();
+  }
+
+  // ---------------------------------------------------------------- the roll card
+  // (Labs `roll_card`; Brett chose the Roll Card Prototype, Nov 9: docs/mockups/roll-workflow/round-2.html) An attack
+  // as its own moments, from its roll plan (app/roll_plan.py, data-plan on the to-hit): a choice first when it has one
+  // (an Unarmed Strike's Damage, Grapple or Shove), to hit with what adds to it as pills, the result (a reroll, a die,
+  // what comes after a miss, what you add once it hits), then its damage. Each roll goes the usual way (sendRoll):
+  // Table rolls, the thrown dice, the Game Log. On a laptop it opens beside the row, on a phone from the bottom.
+  const CARD_DICE = [['+1d4', 'd4'], ['+1d6', 'd6'], ['+1d8', 'd8'], ['+1d10', 'd10'], ['+1d12', 'd12'], ['+1', '+1'], ['+2', '+2'], ['-1d4', '−d4'], ['-1', '−1'], ['-2', '−2']];  // (−d4: Bane and the like)
+  // Flat damage comes with the attack roll; one that can only be 0 says so first (feedback 25, 26): the roll window's and the card's
+  function flatNote(flat, label) {
+    if (flat === 0) return '<p class="rw-note rw-warn" data-flat-note><b>0 damage</b> on a hit' + (/^Unarmed Strike\b/.test(label || '') ? ': 1 + your Strength modifier comes to 0' : '') + '. The DM rules.</p>';
+    return '<p class="rw-note" data-flat-note>On a hit: <b>' + flat + ' damage</b>, flat, with the roll (no dice to roll).</p>';
+  }
+  function card(anchor, spec, plan) {
+    const w = openWin(anchor), ctx = ctxFor(spec.cid);
+    w.classList.add('roll-card');
+    const mods = plan.modifiers || [];
+    const st = { step: plan.choice ? 'choose' : 'attack', mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false,
+                 visOpen: false, entry: null, dmg: null, busy: false, hidden: !!spec.endsHidden };
+    mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = !m.once; });  // (on by themselves while they last; once a turn: yours to tick)
+    const dmgText = () => (plan.damage || []).map(p => (p.dice || '') + (p.flat || !p.dice ? (p.dice && p.flat > 0 ? '+' : '') + (p.flat || 0) : '') + (p.type ? ' ' + p.type : '')).join(' + ');
+    const flat = (plan.damage || []).length && plan.damage.every(p => !p.dice) ? plan.damage.reduce((t, p) => t + (p.flat || 0), 0) : null;  // (no dice: it comes with the roll)
+    const steps = () => [...(plan.choice ? ['Choose'] : []), 'To hit', 'Damage'];
+    const at = () => ({ choose: 0, attack: plan.choice ? 1 : 0, result: plan.choice ? 1 : 0, damage: plan.choice ? 2 : 1, done: 9 })[st.step];
+    const pill = (attr, on, text, small) => '<button type="button" class="chip rcard-pill" ' + attr + ' aria-pressed="' + !!on + '">' + esc(text) + (small ? ' <small>' + esc(small) + '</small>' : '') + '</button>';
+    const adder = target => '<div class="rcard-adder" data-adder="' + target + '">' + CARD_DICE.map(([v, t]) => '<button type="button" class="chip" data-add="' + v + '">' + t + '</button>').join('') + '</div>';
+    const visLine = () => !spec.shared
+      ? '<div class="rcard-vis"><span>Only you see this: you don\'t play this character</span></div>'
+      : (st.visOpen
+      ? '<div class="rcard-vis rcard-vis-open"><span class="rw-label">Who sees it</span>' + seg('To', [['table', 'The table'], ['dm', 'DM only'], ['self', 'Just you']], to) + '</div>'
+      : '<div class="rcard-vis"><span>' + ({ table: 'The table sees this', dm: 'Only the DM sees this', self: 'Only you see this' }[to] || '') + '</span><button type="button" class="btn small link" data-vis-open>Change</button></div>')
+      + (to !== 'self' && logNote() ? '<p class="rw-note" data-log-note>' + logNote() + '</p>' : '');
+    // What it does on a hit (or Graze, on a miss): a weapon's mastery and a class's riders, in words (they're yours to use)
+    const riders = when => (plan.riders || []).filter(r => r.says && (r.when === 'miss') === (when === 'miss'));
+    const riderList = when => riders(when).map(r => '<li><b>' + esc(r.name) + '</b> ' + esc(r.says) + (r.on && r.on !== 'mastery' ? ' <small>(' + esc(r.on) + ')</small>' : '') + '</li>').join('');
+    function head() {
+      const sub = [plan.attack ? 'to hit ' + signed(plan.attack.bonus) : '', dmgText()].filter(Boolean).join(' · ');
+      return '<button type="button" class="rp-x" aria-label="Close">×</button><div class="rcard-head"><b>' + esc(plan.name) + '</b>' + (sub ? '<span class="rcard-sub">' + esc(sub) + '</span>' : '') + '</div>'
+        + '<ol class="rcard-rail" aria-label="Steps">' + steps().map((n, i) => '<li class="' + (i < at() ? 'done' : i === at() ? 'now' : '') + '">' + n + '</li>').join('') + '</ol>';
+    }
+    function hitLine() {
+      const e = st.entry, adds = [...mods.filter(m => m.when === 'before' && st.pre[m.name]).map(m => m.adds), ...st.added];
+      return 'd20 ' + signed(plan.attack ? plan.attack.bonus : num(spec.mod)) + (adds.length ? ' ' + adds.join(' ').replace(/(^| )(?=\d)/g, '$1+') : '') + (st.mode !== 'normal' ? ' · ' + (st.mode === 'adv' ? 'Advantage' : 'Disadvantage') : '');
+    }
+    function draw() {
+      let h = head();
+      if (st.step === 'choose') {
+        h += '<p class="rcard-q">' + esc(plan.choice.ask) + '</p><div class="rcard-choices">' + plan.choice.options.map(o =>
+          '<button type="button" class="rcard-choice" data-choice="' + esc(o.key) + '"><b>' + esc(o.name) + '</b><small>' + esc(o.says) + '</small></button>').join('') + '</div>';
+      } else if (st.step === 'attack') {
+        h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + '</div>';
+        const why = (spec.advWhy || '').split('\n').filter(Boolean).map(t => t.startsWith('!dis ') ? '<b>Disadvantage</b> ' + esc(t.slice(5))
+          : t.startsWith('!note ') ? '<b>Note</b> ' + esc(t.slice(6)) : '<b>Advantage</b> ' + esc(t.replace(/^advantage\s*/i, '')));
+        if (ctx.luck) why.push('<b>Lucky</b> you can spend a Luck Point (' + ctx.luck + ' left) for Advantage');
+        if (ctx.inspiration) why.push('<b>Heroic Inspiration</b> you have it: you can reroll after you see the roll');
+        if (ctx.halfling) why.push('<b>Luck</b> (Halfling) you can reroll a 1');
+        if (why.length) h += '<ul class="rw-notes">' + why.map(t => '<li>' + t + '</li>').join('') + '</ul>';
+        const pre = mods.filter(m => m.when === 'before' && m.adds);
+        h += '<div class="rcard-group"><span class="rcard-lbl">Adds to the roll</span><div class="rcard-pills">' + pre.map(m => pill('data-pre="' + esc(m.name) + '"', st.pre[m.name], m.name, m.adds)).join('')
+          + st.added.map((a, i) => pill('data-unadd="' + i + '"', true, a.replace(/^Added:/, ''), 'tap to take off')).join('')
+          + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ die or bonus</button></div>' + (st.adding ? adder('pre') : '') + '</div>';
+        if (spec.endsHidden) h += '<div class="rcard-pills">' + pill('data-ends-hidden', st.hidden, 'This attack ends Hidden', st.hidden ? 'the DM may rule otherwise' : 'you stay Hidden') + '</div>';
+        if (flat != null) h += flatNote(flat, plan.name);
+        h += '<button type="button" class="btn primary rcard-go" data-roll-hit>Roll to hit <small>' + esc(hitLine()) + '</small></button>' + visLine();
+      } else if (st.step === 'result' || st.step === 'rolling') {
+        h += st.step === 'rolling' ? '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling to hit</span></div>' : resultBox(st.entry, false);
+        if (st.step === 'result') {
+          const e = st.entry, c = e.can || {};
+          const after = mods.filter(m => m.when === 'after_fail' && m.adds && (m.to || []).includes('attack'));
+          const adjust = (c.reroll ? pill('data-reroll', false, 'Reroll', c.reroll) : '') + (c.bonus ? after.map(m => pill('data-after="' + esc(m.name) + '"', false, m.name, m.adds + ' after a miss')).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
+          if (adjust) h += '<div class="rcard-pills rcard-adjust">' + adjust + '</div>' + (st.adding ? adder('bonus') : '');
+          if (c.damage) {
+            const hitMods = mods.filter(m => m.when === 'on_hit' && m.adds), said = riderList('hit');
+            if (hitMods.length || said) h += '<div class="rcard-group"><span class="rcard-lbl">On a hit</span>'
+              + (hitMods.length ? '<div class="rcard-pills">' + hitMods.map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.name, m.adds + (m.once ? ' · once a turn' : ''))).join('') + '</div>' : '')
+              + (said ? '<ul class="rw-notes" data-riders>' + said + '</ul>' : '') + '</div>';
+            h += '<div class="rcard-acts"><button type="button" class="btn primary rcard-go" data-roll-dmg>Roll ' + (e.nat === 20 ? 'critical ' : '') + 'damage <small>' + esc(c.damage) + dmgAdds() + '</small></button>'
+              + '<button type="button" class="btn" data-missed>Missed</button></div>';
+          } else {
+            h += '<div class="rcard-acts"><button type="button" class="btn" data-missed>' + (e.nat === 1 ? 'It misses' : 'Done') + '</button></div>';
+          }
+          if (riderList('miss')) h += '<div class="rcard-group"><span class="rcard-lbl">On a miss</span><ul class="rw-notes" data-riders>' + riderList('miss') + '</ul></div>';
+        }
+      } else if (st.step === 'damage') {
+        h += st.dmg ? resultBox(st.entry, true) + (riderList('hit') ? '<ul class="rw-notes" data-riders>' + riderList('hit') + '</ul>' : '') + '<p class="rw-note">In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.</p>'
+          + '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>'
+          : '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling damage</span></div>';
+      } else if (st.step === 'done') {
+        h += resultBox(st.entry, false) + '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>';
+      }
+      w.innerHTML = h;
+      w.classList.toggle('nat20', !!(st.entry && st.entry.nat === 20));
+      w.classList.toggle('nat1', !!(st.entry && st.entry.nat === 1));
+      placeCard();
+      const first = w.querySelector('.rcard-go, .rcard-choice, [data-done], [data-missed]');
+      if (first) first.focus({ preventScroll: true });
+    }
+    // Beside the row on a laptop, so Battle and Table rolls stay in view (the prototype); a phone's from the bottom
+    function placeCard() {
+      const row = anchor && anchor.isConnected ? (anchor.closest('.move, li, .row') || anchor) : null;
+      if (phone.matches || !row) return place(w, anchor);
+      const r = row.getBoundingClientRect(), pw = w.offsetWidth, ph = w.offsetHeight, m = 8;
+      let left = r.right + 12;
+      if (left + pw > innerWidth - m) left = r.left - pw - 12;
+      if (left < m) return place(w, anchor);
+      w.style.left = left + 'px';
+      w.style.top = Math.max(m, Math.min(r.top - 24, innerHeight - ph - m)) + 'px';
+    }
+    function dmgAdds() {
+      return mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => ' + ' + m.adds).join('');
+    }
+    function resultBox(e, dmg) {
+      if (!e) return '';
+      if (e.kind === 'dc') return '<div class="rcard-result"><span class="rcard-big">DC ' + e.total + '</span><span class="rcard-what">' + esc(e.label) + '</span><span class="rcard-how">The target picks Strength or Dexterity; the DM rolls its save. It\'s in Table rolls.</span></div>';
+      if (dmg && e.damage) return '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + e.damage.total + '</span><span class="rcard-what">' + (e.damage.crit ? 'critical damage' : 'damage') + '</span><span class="rcard-how">' + dline(e.damage, false) + '</span></div>'
+        + '<p class="rcard-line">To hit <b>' + e.total + '</b> · ' + dline(e.main, true) + '</p>';
+      const flag = e.nat ? 'Natural ' + e.nat + (e.nat === 20 ? ': a critical hit, damage dice doubled' : ': it misses, whatever the bonus') : '';
+      return '<div class="rcard-result"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">to hit</span><span class="rcard-how">' + dline(e.main, true) + '</span></div>'
+        + (e.rerolled ? '<p class="rcard-line">Rerolled (' + esc(e.rerolled.reason) + '): was <s>' + e.rerolled.total + '</s></p>' : '')
+        + (e.bonus ? '<p class="rcard-line">+ ' + esc(e.bonus.label) + ' ' + e.bonus.total + ' <span class="roll-x">(' + esc(e.bonus.formula) + ')</span></p>' : '')
+        + (flag ? '<p class="rcard-flag">' + esc(flag) + '</p>' : '')
+        + (e.damage && !dmg ? '<p class="' + (e.damage.total ? 'rcard-line' : 'rw-note rw-warn') + '" data-flat-dmg>On a hit: <b>' + e.damage.total + ' damage</b>' + (e.damage.total ? ', flat' : '') + ', with the roll' + (e.damage.total ? '' : '. The DM rules') + '.</p>' : '');
+    }
+    function go(o) {  // one roll, its journey (sendRoll), then the card draws what came back
+      if (st.busy) return Promise.resolve();
+      st.busy = true;
+      return sendRoll({ ...spec, ctx, ...o }).then(e => { st.busy = false; return (animate() ? throwMine(e, o.follow).catch(() => stage(e, o.follow)) : Promise.resolve()).then(() => { landed(e.id); return e; }); })
+        .catch(err => { st.busy = false; toast((err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.', null, 'warn'); throw err; });
+    }
+    function rollHit() {
+      const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
+      st.step = 'rolling'; st.adding = false; draw();
+      go({ kind: 'attack', mode: st.mode, extras, endsHidden: st.hidden }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
+    }
+    function follow(action, o) {
+      const was = st.step;
+      if (action === 'damage') { st.step = 'damage'; st.dmg = null; draw(); }
+      go({ follow: action, parent: st.entry.id, entry: st.entry, extras: [], ...o }).then(e => {
+        st.entry = e;
+        if (action === 'damage') st.dmg = e.damage;
+        st.step = action === 'damage' ? 'damage' : 'result';
+        if (w.isConnected) draw();
+      }, () => { st.step = was; if (w.isConnected) draw(); });
+    }
+    w.addEventListener('click', ev => {
+      const b = ev.target.closest('button');
+      if (!b || st.busy) return;
+      if (b.classList.contains('rp-x') || b.hasAttribute('data-done')) return closeWin();
+      if (b.hasAttribute('data-missed')) { closeWin(); toast(plan.name + ': missed', null, 'info'); return; }
+      if (b.dataset.choice) {
+        if (b.dataset.choice === 'damage') { st.step = 'attack'; return draw(); }
+        st.step = 'rolling'; draw();
+        const name = (plan.choice.options.find(x => x.key === b.dataset.choice) || {}).name;
+        return go({ kind: 'dc', label: name, mod: '', dmg: '', mode: 'normal', extras: [] }).then(e => { st.entry = e; st.step = 'done'; if (w.isConnected) draw(); }, () => { st.step = 'choose'; draw(); });
+      }
+      if (b.dataset.mode) { st.mode = b.dataset.mode; return draw(); }
+      if (b.hasAttribute('data-vis-open')) { st.visOpen = true; return draw(); }
+      if (b.hasAttribute('data-ends-hidden')) { st.hidden = !st.hidden; return draw(); }
+      if (b.dataset.to) { to = b.dataset.to; store.set(TO, to); st.visOpen = false; return draw(); }
+      if (b.dataset.pre) { st.pre[b.dataset.pre] = !st.pre[b.dataset.pre]; return draw(); }
+      if (b.dataset.on) { st.on[b.dataset.on] = !st.on[b.dataset.on]; return draw(); }
+      if (b.dataset.unadd != null) { st.added.splice(+b.dataset.unadd, 1); return draw(); }
+      if (b.hasAttribute('data-adding')) { st.adding = !st.adding; return draw(); }
+      if (b.dataset.add) {
+        const v = b.dataset.add, list = b.closest('[data-adder]').dataset.adder;
+        st.adding = false;
+        if (list === 'bonus') return follow('bonus', { extras: ['Added:' + (v.startsWith('-') ? v : '+' + v.replace(/^\+/, ''))], bonusLabel: 'Added', die: 4 });
+        st.added.push('Added:' + (v.startsWith('-') ? v : '+' + v.replace(/^\+/, '')));
+        return draw();
+      }
+      if (b.hasAttribute('data-roll-hit')) return rollHit();
+      if (b.hasAttribute('data-reroll')) return follow('reroll', { reason: st.entry.can.reroll });
+      if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return follow('bonus', { extras: [m.name + ':+' + m.adds], bonusLabel: m.name, die: 4 }); }
+      if (b.hasAttribute('data-roll-dmg')) return follow('damage', { extras: mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => m.name + ':+' + m.adds.replace(/^\+/, '').split(' ')[0]) });
+    });
+    draw();
   }
 
   // ---------------------------------------------------------------- rolling
@@ -2220,39 +2401,43 @@
     (go.extras || []).forEach(x => p.append('extra', x));
     return p;
   }
-  function roll(w, go) {
-    showRolling(w);
-    w._go = go;
+  // A roll's whole journey, whatever shows it (the roll window, the roll card): rolled by the server for the table (or in
+  // this browser for someone else's character), into the log, its dice thrown, into D&D Beyond's Game Log. Resolves
+  // with the roll; rejects with a message (err.said) or a failure to reach askdnd.
+  function sendRoll(go) {
     if (!go.shared) {
       const before = go.follow ? go.entry._death : undefined;
       const e = go.follow ? privateFollow(go.entry, go.follow, { extras: go.extras, reason: go.reason, die: go.die, label: go.bonusLabel, ctx: go.ctx })
                           : privateRoll(go);
-      if (!e) return showFailure(w, "Those dice don't look right.", () => chooser(w._anchor, go));
+      if (!e) return Promise.reject(Object.assign(new Error("Those dice don't look right."), { said: true, local: true }));
       if (e.kind === 'death' && go.follow !== 'damage') deathPrivate(go.cid, e, before);
       endHidden(go);
-      if (!go.follow) turnUsed(w._anchor);
-      return showResult(w, e, go.follow);
+      return Promise.resolve(e);
     }
     const pending = !go.follow && logShown() && log ? placeholder(go.label) : null;
-    fetch('/rolls', { method: 'POST', body: payload(go), headers: { 'X-Requested-With': 'fetch' } })
+    return fetch('/rolls', { method: 'POST', body: payload(go), headers: { 'X-Requested-With': 'fetch' } })
       .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw Object.assign(new Error(j.error || "askdnd couldn't roll that"), { said: true }); return j; }))
       .then(j => {
         if (pending) pending.remove();
         if (animate()) window.askdndThrowing.throwing(j.roll.id);
         addToLog(j.html, j.roll.id);
-        showResult(w, j.roll, go.follow);
         endHidden(go);
-        if (!go.follow) turnUsed(w._anchor);
         deathMarked(j.death);
         // A familiar's Initiative, rolled with its character's (app/initiative.py): its row too, and a word on it
         (j.also || []).forEach(a => { addToLog(a.html, a.roll.id); toast(a.who + "'s Initiative: " + a.roll.total, null, 'info'); });
         // Into D&D Beyond's Game Log too, as askdnd's (app/gamelog.py): the extension sends it from this player's sheet
         if (j.gamelog) window.postMessage({ askdndBridge: 'gamelog', ddbId: j.gamelog.ddbId, messages: j.gamelog.messages }, location.origin);
-      })
-      .catch(err => {
-        if (pending) pending.remove();
-        showFailure(w, (err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.', () => roll(w, go));
-      });
+        return j.roll;
+      }, err => { if (pending) pending.remove(); throw err; });
+  }
+  function roll(w, go) {
+    showRolling(w);
+    w._go = go;
+    sendRoll(go).then(e => {
+      if (!go.follow) turnUsed(w._anchor);
+      return showResult(w, e, go.follow);
+    }).catch(err => err.local ? showFailure(w, err.message, () => chooser(w._anchor, go))
+      : showFailure(w, (err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.', () => roll(w, go)));
   }
   // Hidden ends with the attack (app/hiding.py), once it's rolled: the window's tick, which the DM may overrule
   function endHidden(go) {
@@ -2466,6 +2651,13 @@
     if (!el) { if (win && !e.target.closest('[data-manual]')) closeWin(); return; }
     e.preventDefault();
     const spec = specFrom(el);
+    // The roll card (Labs `roll_card`): weapon attacks and the Unarmed Strike first; an attack spell's damage depends on
+    // its level and its cantrip's growth, which the roll window works out, so spells keep it for now
+    if (document.body.hasAttribute('data-roll-card') && el.dataset.plan && el.dataset.roll === 'attack' && !el.dataset.recipe && !e.shiftKey) {
+      let plan = null;
+      try { plan = JSON.parse(el.dataset.plan); } catch (err) { plan = null; }
+      if (plan) return card(el, spec, spec.shared ? plan : { ...plan, choice: null });  // (Grapple and Shove go to the table: yours only)
+    }
     if (e.shiftKey) { const w = openWin(el); roll(w, { ...spec, mode: spec.adv ? 'adv' : 'normal', extras: [], ctx: ctxFor(spec.cid) }); }
     else chooser(el, spec);
   });

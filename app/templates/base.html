@@ -19,7 +19,7 @@
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-{% set fr = fight_now() %}<body{% if staging %} data-staging{% endif %}{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if feedback_send(request) %} data-feedback{% endif %}{% endif %}>
+{% set fr = fight_now() %}<body{% if staging %} data-staging{% endif %}{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %}{% if vtt_on("roll_card") %} data-roll-card{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if feedback_send(request) %} data-feedback{% endif %}{% endif %}>
 {% if user %}<script>
 /* The Table rolls sidebar's place, before the page is drawn, so pages don't shift sideways as they load (Brett,
    2026-10-26). The same rules as app.js "the sidebar's state", which takes over once it runs: at the table in a

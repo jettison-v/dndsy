@@ -659,11 +659,18 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
         row = TableRoll(**base, kind="reroll", label=label, mode=root.mode, dice=dice, kept=kept, modifier=root.modifier,
                         total=total, formula=root.formula, extras=list(root.extras or []))
     elif action == "bonus":
-        if root.kind not in D20_KINDS or "bonus" in kids or damage_rolled(kids.get("damage")) or die_size not in BONUS_DICE:
+        # One die (die_size), or dice a feature adds after the roll (`extra`: Favored by the Gods' 2d4; the roll card, Nov 9)
+        if root.kind not in D20_KINDS or "bonus" in kids or damage_rolled(kids.get("damage")) or (die_size not in BONUS_DICE and not extras):
             return _error("That die can't be added now.", 409)
-        n = die(die_size)
+        if extras:
+            got = roll_extras(extras)
+            dice, n, formula = [d for x in got for d in x["dice"]], sum(x["total"] for x in got), " ".join(x["formula"] for x in got).lstrip("+")
+            label = label or extras[0][0]
+        else:
+            n = die(die_size)
+            dice, formula = [n], f"1d{die_size}"
         row = TableRoll(**base, kind="bonus", label=(" ".join(label.split())[:40] or "Added die"), mode="normal",
-                        dice=[n], kept=None, modifier=0, total=n, formula=f"1d{die_size}", extras=[])
+                        dice=dice, kept=None, modifier=0, total=n, formula=formula, extras=[])
     else:
         return _error("That roll is missing something.")
     db.add(row)
