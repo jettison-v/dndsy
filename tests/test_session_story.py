@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app import admin_sessions, extraction, files, narration, review, session_story
 from app.extraction import Source, extract_session
 from app.importer import import_bundle
-from app.models import Campaign, Correction, ExtractionRun, GameSession, Recap, Status, StoryEvent, TableRoll
+from app.models import Campaign, Correction, ExtractionRun, GameSession, Proposal, Recap, Status, StoryEvent, TableRoll
 from tests.roles import set_role
 from tests.table_setup import BUNDLE, char, owned_by
 from tests.test_extraction import fake_client
@@ -90,7 +90,7 @@ def test_draft_the_recap_reads_the_kept_transcript_with_the_answers_and_keeps_th
         c.updated_at = datetime(2026, 11, 7, 9, tzinfo=session_story.TABLE_TIME)  # (answered before drafting: one test transaction has one clock)
     db.flush()
     started = []
-    monkeypatch.setattr(admin_sessions, "draft_recap_in_background", lambda sid: started.append(sid) or True)
+    monkeypatch.setattr(admin_sessions, "draft_recap_in_background", lambda sid, update=False: started.append(sid) or True)
     r = dm.post(f"/c/main/manage/sessions/{story.id}/redraft", headers=HX)
     assert started == [story.id] and "drafting the recap" in r.headers["HX-Trigger"]
     seen = []
@@ -111,7 +111,8 @@ def test_draft_the_recap_reads_the_kept_transcript_with_the_answers_and_keeps_th
     db.flush()
     assert review.unused_answer_count(db, s) == 1
     page = dm.get(f"/c/main/manage/sessions/{s.id}").text
-    assert "The full tale" in page and "What the Runes Said" in page and "DM Shining Moment" in page and "Redraft" in page
+    assert "The full tale" in page and "What the Runes Said" in page and "DM Shining Moment" in page
+    assert "Update the draft" in page and "Start over" in page
 
 
 def test_draft_the_recap_without_a_kept_transcript_says_to_send_it_again(db, story, dm, monkeypatch):
@@ -126,6 +127,89 @@ def test_draft_the_recap_without_a_kept_transcript_says_to_send_it_again(db, sto
     assert admin_sessions.draft_recap_in_background(story.id)
     run = db.scalar(select(ExtractionRun).where(ExtractionRun.source == "recap"))
     assert run.status == "error" and "Send it again" in run.error
+
+
+REVISED = {"entities": [{"name": "Captain Oyelaran", "kind": "npc", "summary": "Captain of the drowned crew.", "aliases": ["Captain O'Lauren"],
+                          "quest_status": "not_a_quest", "race": "", "class": "sea captain"}],
+           "relationships": [], "glossary": []}
+
+
+def test_answers_go_into_the_waiting_suggestions_once_the_questions_are_settled(db, story, dm, monkeypatch):
+    """Brett, Nov 9: a name he answered didn't reach the suggestions, written in the same pass as the questions."""
+    misheard = {**ASKED, "entities": [{"name": "Captain O'Lauren", "kind": "npc", "summary": "Leads the crew in the fog.", "aliases": [],
+                                       "quest_status": "not_a_quest", "race": "", "class": ""}],
+                "glossary": [{"term": "Reach", "description": "The fogbound strait.", "misheard_as": []}]}
+    read(db, story, misheard)
+    glossary = db.scalar(select(Proposal).where(Proposal.kind == "glossary"))
+    glossary.status = "rejected"
+    db.flush()
+    started = []
+    monkeypatch.setattr(admin_sessions, "revise_in_background", lambda sid: started.append(sid) or True)
+    r = dm.post(f"/c/main/manage/sessions/{story.id}/questions/answer", data={"q": "Who is the captain?", "answer": "Captain Oyelaran."}, headers=HX)
+    assert started == [] and "into the suggestions" not in r.headers["HX-Trigger"]  # (a question is still open)
+    assert "1 answer since these were written" in r.text and "Update the suggestions" in r.text
+    r = dm.post(f"/c/main/manage/sessions/{story.id}/questions/skip", data={"q": "Was the bell rung twice?"}, headers=HX)
+    assert started == [story.id] and "putting your answers into the suggestions" in r.headers["HX-Trigger"]
+
+    seen = []
+    run = extraction.revise_suggestions(db, story, fake_client(result=REVISED, seen=seen))
+    assert run.status == "done" and run.source == "revise"
+    kw = seen[0]
+    assert kw["output_config"] == {"effort": "medium", "format": {"type": "json_schema", "schema": extraction.schema("revise")}}
+    sent = " ".join(b.get("text", "") for b in kw["messages"][0]["content"])
+    assert "Captain O'Lauren" in sent and "Captain Oyelaran." in sent and "Never bring back a suggestion" in sent
+    assert "glossary term: Reach" in sent and "You row into the fog." not in sent  # (rejected ones named; no transcript: cents)
+    db.expire_all()
+    pending = list(db.scalars(select(Proposal).where(Proposal.status == "pending")))
+    assert [(p.kind, p.payload["name"], p.payload["new_aliases"]) for p in pending] == [("entity", "Captain Oyelaran", ["Captain O'Lauren"])]
+    assert review.latest_questions(db, story) == ASKED["to_check"]  # (the questions stay the first read's)
+    for c in db.scalars(select(Correction)):
+        c.updated_at = datetime(2026, 11, 7, 9, tzinfo=session_story.TABLE_TIME)  # (answered before it: one test transaction has one clock)
+    db.flush()
+    assert review.answers_since_suggestions(db, story) == 0
+
+
+def test_draft_the_recap_again_updates_the_draft_and_keeps_the_picks(db, story, dm, monkeypatch):
+    """Brett, Nov 9: drafting again keeps what's good instead of starting over; the transcript is cached for an hour."""
+    read(db, story)
+    told(db, story)
+    db.expire_all()
+    s = db.get(GameSession, story.id)
+    review.pick_nominee(db, s, 0, 1)  # Cole for Most Strategic
+    db.flush()
+    calls = []
+    monkeypatch.setattr(admin_sessions, "draft_recap_in_background", lambda sid, update=False: calls.append(update) or True)
+    r = dm.post(f"/c/main/manage/sessions/{s.id}/redraft", headers=HX)
+    assert calls == [True] and "updating the draft" in r.headers["HX-Trigger"]
+    dm.post(f"/c/main/manage/sessions/{s.id}/redraft", data={"fresh": "1"}, headers=HX)
+    assert calls == [True, False]  # Start over
+
+    review.answer_question(db, s, "Was the bell rung twice?", "Once.", False)
+    db.flush()
+    seen = []
+    extract_session(db, s, Source("transcript", session_story.text(s)), fake_client(result=TOLD, seen=seen), step="tell", update=True)
+    blocks = seen[0]["messages"][0]["content"]
+    assert "You row into the fog." in blocks[0]["text"] and blocks[0]["cache_control"] == {"type": "ephemeral", "ttl": "1h"}
+    assert sum("cache_control" in b for b in blocks) == 1
+    sent = " ".join(b.get("text", "") for b in blocks)
+    assert '<current_draft written_by="Claude">' in sent and "Fog rolled off the Reach." in sent and "## The Crew Comes Aboard (fight, starts 2:30:00)" in sent
+    assert "Cole (picked)" in sent and "A: Once. (new)" in sent and blocks[-1]["text"] == extraction.UPDATE_NOTE
+    db.expire_all()
+    s = db.get(GameSession, story.id)
+    assert [n["character"] for n in s.recaps[-1].awards[0]["nominees"]][s.recaps[-1].awards[0]["pick"]] == "Cole"  # (still picked)
+
+
+def test_every_award_asks_for_three_nominees():
+    """Brett, Nov 9: three to pick from, not two."""
+    assert "exactly 3 nominees" in extraction.SYSTEM_PROMPT and "2-3 nominees" not in extraction.SYSTEM_PROMPT
+    assert extraction.NOMINEES_MOST == 3
+
+
+def test_an_hours_cache_write_is_priced_at_twice_the_input():
+    from types import SimpleNamespace
+    usage = SimpleNamespace(input_tokens=1000, output_tokens=0, cache_read_input_tokens=0, cache_creation_input_tokens=90_000,
+                            cache_creation=SimpleNamespace(ephemeral_1h_input_tokens=90_000, ephemeral_5m_input_tokens=0))
+    assert extraction._cost(usage) == round((1000 * 4 + 90_000 * 8) / 1e6, 4)
 
 
 class _Same:

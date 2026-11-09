@@ -12,7 +12,7 @@
   <p class="subtitle">{% if s.played_on %}Played {{ s.played_on.strftime("%b %-d, %Y") }} · {% endif %}{{ {"transcript": "from a transcript", "account": "written up from memory", "manual": "written by hand"}.get(s.source, "from the campaign notes") }} · only reviewers can see this page</p>
 
   {% if last_run and last_run.status == "error" %}<div class="flash bad"><b>The last draft failed.</b> {{ last_run.error }}</div>{% endif %}
-  {% if drafting %}<div class="flash warn">{% if s.source == "transcript" and not latest and not last_done %}Claude is reading this session for its questions and suggestions{% elif s.source == "transcript" and not latest %}Claude is drafting the recap, the full tale, key moments and awards{% else %}Claude is drafting this session{% endif %}. This page updates by itself in a minute or two.</div>{% endif %}
+  {% if drafting %}<div class="flash warn">{% if working == "revise" %}Claude is putting your answers into the suggestions{% elif working == "recap" and latest %}Claude is updating the draft with your answers and the World as it is now{% elif s.source == "transcript" and not latest and not last_done %}Claude is reading this session for its questions and suggestions{% elif s.source == "transcript" and not latest %}Claude is drafting the recap, the full tale, key moments and awards{% else %}Claude is drafting this session{% endif %}. This page updates by itself in a minute or two.</div>{% endif %}
 
   {% if s.source == "account" %}
   {% set last = s.messages[-1] if s.messages else none %}
@@ -59,7 +59,7 @@
       <div id="t-questions" role="tabpanel"{% if tab != "questions" %} hidden{% endif %}>
       <section class="section" id="questions">
         <div class="section-head"><h2><span class="num">1</span>Claude's questions</h2><span class="count">{% if open_questions %}{{ open_questions | length }} to answer{% endif %}</span></div>
-        <p class="hint">Answer what you know and skip the rest. {% if s.source == "transcript" %}Your answers go into the recap when you draft it.{% else %}Answers make the next draft more accurate.{% endif %}</p>
+        <p class="hint">Answer what you know and skip the rest. {% if s.source == "transcript" %}Once the last one is settled, your answers go into the suggestions by themselves, and into the recap when you draft it.{% else %}Answers make the next draft more accurate.{% endif %}</p>
         {% for q in open_questions %}{% set qid = "q" ~ loop.index %}
         <div class="item">
           <p class="item-title">{{ q }}</p>
@@ -147,6 +147,13 @@
       <section class="section" id="suggestions">
         <div class="section-head"><h2><span class="num">2</span>Suggested updates</h2><span class="count">{% if open_proposals %}{{ open_proposals | length }} to review{% endif %}</span></div>
         <p class="hint">Changes to what askdnd knows about people, places, relationships and spellings.{% if s.source == "transcript" %} Settle these before drafting the recap, so it uses the right names and links to the entries you accept.{% endif %}</p>
+        {% if answers_for_suggestions and not drafting %}
+        <div class="callout" id="suggestions-update"><div class="row">
+          <span class="grow"><b>{{ answers_for_suggestions }} answer{{ "s" if answers_for_suggestions != 1 }} since these were written.</b> Claude puts {{ "them" if answers_for_suggestions != 1 else "it" }} in by itself once the last question is settled: names, spellings, who someone is. Or now:</span>
+          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/suggestions/update" {{ hx | safe }}><button class="btn primary" {% if anything_drafting %}disabled{% endif %}>Update the suggestions</button></form>
+          <span class="note">under a minute · ≈ 10¢</span>
+        </div></div>
+        {% endif %}
         {% for p in open_proposals %}{% set d = p.payload %}
         <div class="item">
           {% include "_proposal_head.html" %}
@@ -255,11 +262,13 @@
             <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/recap/keep-mine" {{ hx | safe }}><button class="btn">Keep {{ who }}{{ "'s" if person_version.author_name }} version</button></form></div>
         </div>
         {% endif %}
-        {% if unused_answers and s.source in ("notes", "transcript", "account") %}
-        <div class="callout"><div class="row">
-          <span class="grow"><b>{{ unused_answers }} new answer{{ "s" if unused_answers > 1 }}.</b> Redraft so the recap, the full tale and key moments use {{ "them" if unused_answers > 1 else "it" }}.</span>
-          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn primary" {% if drafting %}disabled{% endif %}>Redraft</button></form>
-          <span class="note">{{ "≈ $1" if s.source == "transcript" else "≈ 12¢" }} · your current version stays until you publish again</span>
+        {% if (unused_answers or world_changes) and s.source in ("notes", "transcript", "account") %}
+        <div class="callout" id="draft-update"><div class="row">
+          <span class="grow"><b>{% if unused_answers %}{{ unused_answers }} new answer{{ "s" if unused_answers > 1 }}{% endif %}{% if unused_answers and world_changes %} and {% endif %}{% if world_changes %}{{ world_changes }} suggestion{{ "s" if world_changes > 1 }} accepted{% endif %} since this draft.</b>
+            {% if s.source == "transcript" %}Update the draft: Claude keeps the recap, the full tale, key moments and awards as they are and changes only what these show.{% else %}Redraft so the recap, the full tale and key moments use {{ "them" if (unused_answers + world_changes) > 1 else "it" }}.{% endif %}</span>
+          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn primary" {% if drafting or anything_drafting %}disabled{% endif %}>{{ "Update the draft" if s.source == "transcript" else "Redraft" }}</button></form>
+          {% if s.source == "transcript" %}<form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><input type="hidden" name="fresh" value="1"><button class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Start over</button></form>{% endif %}
+          <span class="note">{{ "≈ 35¢ within an hour of the last draft, else ≈ $1" if s.source == "transcript" else "≈ 12¢" }} · your current version stays until you publish again</span>
         </div></div>
         {% endif %}
         <div class="story" id="recap-view">{{ ln.html(recap_html) }}</div>
@@ -270,7 +279,13 @@
           <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="recap-form" data-restore="recap-view recap-edit">Cancel</button>
             <span class="note">Use **double asterisks** for bold names.</span></div>
         </form>
-        <p class="meta">Version {{ latest.version }} by {{ "Claude" if latest.author == "ai" else (latest.author_name or "a person") }}{% if told %} · drafting cost {{ "%.0f" | format(told.cost_usd * 100) }}¢{% endif %}{% if published and published.id != latest.id %} · the table still sees version {{ published.version }}{% endif %}</p>
+        <p class="meta">Version {{ latest.version }} by {{ "Claude" if latest.author == "ai" else (latest.author_name or "a person") }}{% if told %} · drafting cost {% if told.cost_usd >= 1 %}${{ "%.2f" | format(told.cost_usd) }}{% else %}{{ "%.0f" | format(told.cost_usd * 100) }}¢{% endif %}{% endif %}{% if published and published.id != latest.id %} · the table still sees version {{ published.version }}{% endif %}</p>
+        {% if s.source == "transcript" and s.transcript_key and not (unused_answers or world_changes) %}
+        <div class="row" id="draft-again"><span class="note">Something to change?</span>
+          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Update the draft</button></form>
+          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><input type="hidden" name="fresh" value="1"><button class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Start over</button></form>
+          <span class="note">≈ 35¢ within an hour of the last draft, else ≈ $1 · your current version stays until you publish again</span></div>
+        {% endif %}
         {% endif %}
       </section>
       {{ step_foot(step["recap"]) }}

@@ -62,13 +62,13 @@
         {% if b.to_review %}<p>Next up: {% for r in b.to_review[:3] %}<a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}{% if r.s.title %}: {{ r.s.title }}{% endif %}</a>{{ ", " if not loop.last }}{% endfor %}{% if b.to_review | length > 3 %} and {{ b.to_review | length - 3 }} more{% endif %}.</p>{% endif %}
         <p>Each one takes 10 to 20 minutes. The session's page is a set of numbered tabs, one per step, each saying what's left and ending with <b>Next</b>:</p>
         <ol class="guide-sub">
-          <li><b>Claude's questions.</b> Answer what you know and <b>Skip</b> the rest.</li>
+          <li><b>Claude's questions.</b> Answer what you know and <b>Skip</b> the rest. Once the last one is settled, Claude puts your answers into the waiting suggestions by itself (a name you gave, who someone really is), in under a minute; <b>Update the suggestions</b> does it sooner.</li>
           <li><b>Suggested updates</b> (new people and places, spellings, description changes): <b>Accept</b>, <b>Edit</b> (the name, a person's race and class, and for a new one its kind: a misheard spelling is remembered so later drafts get it right, and race and class start the words a picture of them is drawn from) or <b>Reject</b>. Each one you add appears under <b>New in the World</b>, with <b>✦ Draw</b> and <b>Upload</b> to give it a picture there and then. A description change shows as a <b>marked-up edit</b>: struck-through words would go, highlighted words are Claude's. Where you wrote the description, Claude keeps your words and only adds or fixes what the session changed.</li>
-          <li><b>Draft the recap</b> (a session from a recording). Claude reads the session first only to ask and suggest. Once you've settled those, this writes the recap, the full tale, key moments and awards with your answers and the right names (a few minutes, about $1). A session from Brett's notes arrives already drafted. If you answer more later, <b>Redraft</b> uses the new answers.</li>
+          <li><b>Draft the recap</b> (a session from a recording). Claude reads the session first only to ask and suggest. Once you've settled those, this writes the recap, the full tale, key moments and awards with your answers and the right names (a few minutes, about $1). A session from Brett's notes arrives already drafted. If you answer more or accept more suggestions later, <b>Update the draft</b> keeps the recap, the full tale, key moments and awards as they are and changes only what those show (a nominee you picked stays picked); <b>Start over</b> writes a new draft instead.</li>
           <li><b>Read the recap.</b> Fix anything wrong right there; your wording wins.</li>
           <li><b>The full tale</b> (the session's own page, after <b>Read the full tale</b>): a chapter per scene. <b>Edit</b> any chapter.</li>
           <li><b>Key moments.</b> Delete wrong ones, fix the wording, add any that are missing. ★ marks the major ones, which Story shows first (Claude marks up to 8 when drafting); the rest sit behind <b>Show the other</b>.</li>
-          <li><b>Awards.</b> Claude suggests two or three nominees for each: pick who it goes to (its first choice until you do). <b>Edit</b> what it says, or <b>Take away</b> one that doesn't fit. One is yours: <b>DM Shining Moment</b>. Hardest Luck and Damage King come from the night's Table rolls. Under them, <b>The session in numbers</b> asks once who a name in the recording is.</li>
+          <li><b>Awards.</b> Claude suggests three nominees for each: pick who it goes to (its first choice until you do). <b>Edit</b> what it says, or <b>Take away</b> one that doesn't fit. One is yours: <b>DM Shining Moment</b>. Hardest Luck and Damage King come from the night's Table rolls. Under them, <b>The session in numbers</b> asks once who a name in the recording is.</li>
           <li><b>Publish.</b> The table sees it on <i>Story</i> (<i>Previously on…</i> and <i>All sessions</i>). You can edit and republish any time.</li>
         </ol></li>
       {% if b.to_record %}<li><b>Sessions waiting for a recording</b> <span class="tag">{{ b.to_record | length }}</span>
@@ -184,7 +184,7 @@
       <dt>What the table knows</dt><dd>Facts added by players or you, listed on an entry until worked into its description.</dd>
       <dt>Suggested update</dt><dd>A change Claude proposes while drafting a session (a new person, a spelling, a new description).</dd>
       <dt>Claude's questions</dt><dd>Things Claude wasn't sure about while drafting; answering them improves this and later drafts.</dd>
-      <dt>Redraft</dt><dd>Claude drafts the session again, using your answers and corrections.</dd>
+      <dt>Update the draft</dt><dd>Claude changes the session's draft where your new answers and the World show it's wrong or missing, and keeps the rest. <b>Start over</b> drafts it again from the beginning. (A session from notes has <b>Redraft</b>.)</dd>
     </dl>
   </section>
 </main>

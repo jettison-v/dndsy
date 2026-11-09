@@ -830,11 +830,20 @@
  {
   "title": "Roll Workflow",
   "kind": "design",
-  "status": "Waiting for Brett",
+  "status": "Earlier: round 2 replaces it",
   "date": "Nov 7",
-  "what": "Four ways the attack roll could work (roll at once, one attack card, guided, a roll dock), drawn for one attack with Hunter's Mark and Stunning Strike; Claude recommends the attack card.",
+  "what": "Four ways the attack roll could work (roll at once, one attack card, guided, a roll dock), drawn for one attack with Hunter's Mark and Stunning Strike; Claude recommends the attack card. Brett chose B with changes (Nov 9): no double roll, a choice first when needed; see Roll Card Prototype.",
   "source": "docs/mockups/roll-workflow/index.html",
   "link": "https://claude.ai/artifact/KPVczF8JhgbCY7x1iUyVsJ"
+ },
+ {
+  "title": "Roll Card Prototype",
+  "kind": "design",
+  "status": "Waiting for Brett",
+  "date": "Nov 9",
+  "what": "Round 2 of the roll workflow, playable on a 13–14\" laptop's Battle (a phone toggle shows it adapting): No Name's Unarmed Strike (Damage, Grapple or Shove), Big C's Hammer of Thunderbolts (Divine Smite, Favored by the Gods) and Trah's Fireball (level, saves, Sculpt Spells), to hit and damage as separate moments, with Table rolls and what askdnd keeps of each roll as it builds.",
+  "source": "docs/mockups/roll-workflow/round-2.html",
+  "link": "https://claude.ai/artifact/V2FUfi8ojtEPcYYf45jYa9"
  },
  {
   "title": "Your Notes",

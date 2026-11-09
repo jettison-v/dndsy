@@ -312,7 +312,7 @@ def test_the_dms_words_are_kept(client, db):
     s = db.get(GameSession, s.id)
     assert s.recaps[-1].author_name
     prompt = "".join(b["text"] for b in build_messages(db, s, Source("notes", "x"))[0]["content"] if b["type"] == "text")
-    assert "<current_recap written_by=" in prompt and "We fought **devils** at the gate." in prompt
+    assert "<current_draft written_by=" in prompt and "We fought **devils** at the gate." in prompt
     run = ExtractionRun(session_id=s.id, source="notes", status="done")
     db.add(run)
     db.flush()

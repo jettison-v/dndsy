@@ -1,0 +1,909 @@
+<title>Roll Card Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Round 2 of the roll workflow (Brett, Nov 9, after round 1's option B): a playable prototype of the roll card. No double
+   roll (to hit, then damage, each its own moment), a choice first only when the action has one, B's pills for extra dice
+   and riders, a quiet but clearly changeable "who sees", and what askdnd keeps of each roll shown as it builds. Three
+   real actions from the table's sheets (askdnd_beta, Nov 9), enemies by role. Brett's answer in its store (db: answers/round2). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93; --faint: #6f6a62;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --violet: #b99be8; --orange: #ef8a4b; --gold: #f0c75e;
+  --green-soft: rgba(91,191,127,.15); --amber-soft: rgba(232,179,75,.15); --blue-soft: rgba(126,166,224,.16); --red-soft: rgba(229,83,75,.15); --violet-soft: rgba(185,155,232,.16); --orange-soft: rgba(239,138,75,.16); --gold-soft: rgba(240,199,94,.18);
+  --sheet: #1b1e22; --frame: #0b0c0e; --shadow: rgba(0,0,0,.45);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c; --faint: #9a948a;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0; --orange: #b4561b; --gold: #8a6a10;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); --violet-soft: rgba(107,75,176,.12); --orange-soft: rgba(180,86,27,.12); --gold-soft: rgba(138,106,16,.13);
+  --sheet: #fbfaf7; --frame: #2a2723; --shadow: rgba(40,30,10,.18); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c; --faint: #9a948a;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --violet: #6b4bb0; --orange: #b4561b; --gold: #8a6a10;
+  --green-soft: rgba(47,125,76,.12); --amber-soft: rgba(138,95,6,.12); --blue-soft: rgba(47,95,158,.12); --red-soft: rgba(184,50,50,.1); --violet-soft: rgba(107,75,176,.12); --orange-soft: rgba(180,86,27,.12); --gold-soft: rgba(138,106,16,.13);
+  --sheet: #fbfaf7; --frame: #2a2723; --shadow: rgba(40,30,10,.18); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.35rem; } h3 { font-size: .95rem; }
+p { margin: 0; max-width: 70ch; }
+b, strong { color: var(--strong); }
+button { font: inherit; color: inherit; }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.note { color: var(--muted); font-size: .86rem; }
+header, section { display: grid; gap: 14px; min-width: 0; }
+.lead { font-size: 1.06rem; }
+.heard { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.heard div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .88rem; display: grid; gap: 3px; }
+.heard div > b { font: 700 .72rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+
+/* scenario picker */
+.scen { display: flex; flex-wrap: wrap; gap: 8px; }
+.scen button { display: grid; gap: 1px; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 9px 14px; cursor: pointer; min-width: 0; }
+.scen button small { color: var(--muted); font-size: .78rem; }
+.scen button[aria-pressed="true"] { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-soft); }
+.scen button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+.device { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); }
+.device .tabs button { font-size: .82rem; padding: 5px 12px; }
+.stage { display: grid; justify-items: center; min-width: 0; }
+.below { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; align-items: start; }
+
+/* the laptop: askdnd at 1280 × 800, scaled to fit the page */
+.laptop { width: 100%; max-width: 1304px; background: var(--frame); border-radius: 18px 18px 4px 4px; padding: 12px 12px 0; box-shadow: 0 24px 60px var(--shadow); }
+.laptop::after { content: ""; display: block; height: 14px; margin: 0 -12px; background: linear-gradient(var(--surface-3), var(--line)); border-radius: 0 0 14px 14px; }
+.fit { width: 100%; overflow: hidden; border-radius: 6px 6px 0 0; position: relative; height: 800px; }
+.desk { width: 1280px; height: 800px; transform-origin: top left; position: absolute; top: 0; left: 0; overflow: hidden; background: var(--bg); display: grid; grid-template-rows: 46px minmax(0, 1fr); font-size: 14px; }
+.d-top { display: flex; align-items: center; gap: 18px; padding: 0 20px; background: var(--surface); border-bottom: 2px solid var(--red); font-size: .9rem; white-space: nowrap; }
+.d-top b { font-size: 1rem; }
+.d-top .sep { width: 1px; height: 20px; background: var(--line); }
+.d-top .me { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; color: var(--strong); }
+.d-top .live { margin-left: auto; border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; font-size: .8rem; color: var(--muted); }
+.d-top .live::before { content: "● "; color: var(--green); }
+.d-top span { color: var(--muted); }
+.d-body { display: grid; grid-template-columns: 290px minmax(0, 1fr); min-height: 0; }
+.d-rolls { border-right: 1px solid var(--line); padding: 14px; display: grid; align-content: start; gap: 10px; overflow: hidden; background: var(--bg); }
+.d-main { padding: 22px 30px; overflow: hidden; display: grid; align-content: start; gap: 14px; }
+.d-head { display: flex; align-items: center; gap: 14px; }
+.d-head .b-port { width: 54px; height: 54px; font-size: 1rem; }
+.d-head h3 { font-size: 1.6rem; }
+.d-head small { color: var(--muted); font-size: .86rem; }
+.d-tabs { margin-left: auto; display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.d-tabs span { padding: 6px 16px; font-size: .9rem; color: var(--muted); }
+.d-tabs span.on { background: var(--red); color: #fff; font-weight: 600; }
+.d-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.d-stats div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: .74rem; color: var(--muted); }
+.d-stats b { display: block; font-size: 1.3rem; }
+.d-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.d-col { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; }
+.d-col .b-col { margin: 0; }
+.d-col .b-col.bonus { color: var(--amber); } .d-col .b-col.react { color: var(--blue); }
+.d-col .b-row { background: var(--surface-2); }
+.d-col .any { font-size: .8rem; color: var(--muted); }
+.d-rolls .lbl { font-size: .74rem; }
+.d-rolls .empty { font-size: .8rem; }
+.desk .card { width: 400px; left: auto; right: auto; bottom: auto; top: 80px; border: 1px solid var(--line); border-radius: 16px; transform: none; opacity: 0; pointer-events: none; transition: opacity .16s, translate .16s; translate: 0 6px; max-height: 740px; box-shadow: 0 18px 40px var(--shadow); padding: 14px 16px 16px; }
+.desk .card.on { opacity: 1; pointer-events: auto; translate: 0 0; }
+.desk .grab { display: none; }
+.desk .scrim { display: none; }
+@media (prefers-reduced-motion: reduce) { .desk .card { transition: none; } }
+
+/* the phone */
+.phone { position: relative; width: 100%; max-width: 400px; height: 760px; border-radius: 38px; background: var(--frame); padding: 10px; box-shadow: 0 20px 50px var(--shadow); }
+.screen { position: relative; height: 100%; border-radius: 30px; overflow: hidden; background: var(--bg); display: flex; flex-direction: column; }
+.status { display: flex; justify-content: space-between; padding: 10px 22px 4px; font-size: .75rem; font-weight: 600; color: var(--strong); }
+.ph-main { flex: 1; min-height: 0; display: flex; }
+.battle { flex: 1; overflow: hidden; padding: 6px 14px; display: grid; align-content: start; gap: 8px; }
+.desk .battle { padding: 0; gap: 14px; overflow: visible; }
+.b-head { display: flex; align-items: center; gap: 10px; }
+.b-port { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-weight: 800; color: var(--muted); font-size: .8rem; }
+.b-head b { font-size: 1.05rem; }
+.b-head small { display: block; color: var(--muted); font-size: .74rem; line-height: 1.2; }
+.b-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.b-stats div { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 4px 6px; font-size: .64rem; color: var(--muted); }
+.b-stats b { display: block; font-size: .95rem; }
+.b-col { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--red); margin-top: 4px; }
+.b-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: .84rem; }
+.b-row small { display: block; color: var(--muted); font-size: .74rem; }
+.b-row .go { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 4px 10px; font-weight: 800; cursor: pointer; min-width: 48px; }
+.b-row .go:hover { border-color: var(--red); }
+.b-row .go.cast { font-weight: 600; font-size: .78rem; }
+.b-row.hot { border-color: var(--red); box-shadow: 0 0 0 2px var(--red-soft); }
+.b-row.quiet { opacity: .5; }
+.desk .b-row.quiet { opacity: 1; }
+.scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.scrim.on { opacity: 1; pointer-events: auto; }
+
+/* the roll card (a bottom sheet on a phone) */
+.card { position: absolute; left: 0; right: 0; bottom: 0; background: var(--sheet); border-top: 1px solid var(--line); border-radius: 22px 22px 0 0; padding: 8px 16px 16px; display: grid; gap: 12px; transform: translateY(105%); transition: transform .26s cubic-bezier(.2,.8,.2,1); box-shadow: 0 -12px 30px var(--shadow); max-height: 92%; overflow-y: auto; }
+.card.on { transform: none; }
+.grab { width: 38px; height: 4px; border-radius: 2px; background: var(--line); margin: 0 auto 2px; }
+.c-head { display: flex; align-items: flex-start; gap: 10px; }
+.c-head .t { flex: 1; min-width: 0; }
+.c-head b { font-size: 1.05rem; display: block; line-height: 1.25; }
+.c-head small { color: var(--muted); font-size: .78rem; }
+.x { border: 0; background: var(--surface-2); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; color: var(--muted); flex: none; }
+.rail { display: flex; gap: 6px; align-items: center; font-size: .7rem; color: var(--faint); flex-wrap: wrap; }
+.rail span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.rail span::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--surface-3); }
+.rail span.done { color: var(--muted); }
+.rail span.done::before { background: var(--green); }
+.rail span.now { color: var(--strong); font-weight: 600; }
+.rail span.now::before { background: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
+.rail i { width: 10px; height: 1px; background: var(--line); }
+
+.q { font-size: .82rem; color: var(--muted); }
+.choices { display: grid; gap: 8px; }
+.choice { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 10px 12px; cursor: pointer; }
+.choice:hover, .choice:focus-visible { border-color: var(--red); outline: none; }
+.choice .ic { grid-row: span 2; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; background: var(--surface-2); font-size: 1rem; }
+.choice b { font-size: .95rem; }
+.choice small { color: var(--muted); font-size: .78rem; line-height: 1.35; }
+.choice[disabled] { opacity: .45; cursor: default; }
+.choice[disabled]:hover { border-color: var(--line); }
+.subchoice { display: flex; gap: 6px; flex-wrap: wrap; grid-column: 2; margin-top: 6px; }
+
+/* mode */
+.seg { display: flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 3px; }
+.seg button { flex: 1; border: 0; background: none; border-radius: 8px; padding: 7px 4px; font-size: .8rem; cursor: pointer; color: var(--muted); white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--strong); font-weight: 600; box-shadow: 0 1px 3px var(--shadow); }
+.seg button.adv[aria-pressed="true"] { color: var(--green); }
+.seg button.dis[aria-pressed="true"] { color: var(--red); }
+.why { font-size: .76rem; color: var(--green); margin-top: -6px; }
+
+/* pills */
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 5px 11px; font-size: .78rem; border: 1px solid var(--line); background: var(--surface); cursor: pointer; white-space: nowrap; color: var(--text); }
+.pill small { color: var(--muted); font-size: .72rem; }
+.pill[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.pill[aria-pressed="true"]::before { content: "✓"; font-size: .7rem; color: var(--blue); }
+.pill.cost { border-style: dashed; }
+.pill.cost[aria-pressed="true"] { border-style: solid; background: var(--violet-soft); border-color: var(--violet); }
+.pill.cost[aria-pressed="true"]::before { color: var(--violet); }
+.pill.add { color: var(--muted); }
+.pill.lvl { padding: 4px 9px; }
+.pill[disabled] { opacity: .4; cursor: default; }
+.pill:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.adder { display: flex; flex-wrap: wrap; gap: 5px; background: var(--surface-2); border-radius: 10px; padding: 7px; }
+.adder button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 4px 9px; font-size: .78rem; cursor: pointer; }
+.lbl { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.group { display: grid; gap: 7px; }
+.cost-say { font-size: .74rem; color: var(--violet); }
+
+/* buttons */
+.acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); border-radius: 12px; padding: 11px 14px; font-size: .9rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; flex: 1; }
+.btn.primary small { font-weight: 500; opacity: .85; font-size: .78rem; }
+.btn.ghost { background: none; }
+.btn.quiet { background: none; border-color: transparent; color: var(--muted); font-weight: 500; padding-inline: 8px; }
+.btn:focus-visible { outline: 2px solid var(--strong); outline-offset: 2px; }
+
+/* results */
+.result { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.result .num { grid-row: span 2; font: 800 2.9rem/1 var(--sans); color: var(--strong); font-variant-numeric: tabular-nums; min-width: 2ch; text-align: center; }
+.result .num.dmg { color: var(--red); }
+.result .what { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.result .how { font-size: .8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.d { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 4px; border-radius: 6px; background: var(--surface-3); font-weight: 700; font-size: .78rem; color: var(--strong); font-variant-numeric: tabular-nums; }
+.d.d20 { clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); min-width: 26px; height: 28px; border-radius: 0; }
+.d.drop { opacity: .35; text-decoration: line-through; }
+.d.nat20 { background: var(--gold); color: #1a1405; }
+.d.nat1 { background: var(--red); color: #fff; }
+.d.t-bludgeoning { background: var(--surface-3); }
+.d.t-necrotic { background: var(--violet-soft); color: var(--violet); }
+.d.t-radiant { background: var(--gold-soft); color: var(--gold); }
+.d.t-fire { background: var(--orange-soft); color: var(--orange); }
+.d.t-bonus { background: var(--blue-soft); color: var(--blue); }
+.tag { font-size: .72rem; color: var(--muted); }
+.banner { border-radius: 10px; padding: 7px 10px; font-size: .82rem; font-weight: 600; }
+.banner.crit { background: var(--gold-soft); color: var(--gold); }
+.banner.miss { background: var(--red-soft); color: var(--red); }
+.banner.info { background: var(--surface-2); color: var(--text); font-weight: 500; }
+.banner.ok { background: var(--green-soft); color: var(--green); }
+.split-total { display: flex; flex-wrap: wrap; gap: 6px; }
+.split-total span { font-size: .78rem; border-radius: 999px; padding: 3px 9px; }
+.rolling .num { animation: wob .12s linear infinite; color: var(--muted); }
+@keyframes wob { 50% { transform: translateY(-2px) rotate(-3deg); } }
+.land .num { animation: land .35s cubic-bezier(.2,1.6,.4,1); }
+@keyframes land { from { transform: scale(.6); opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .rolling .num, .land .num { animation: none; } .card { transition: none; } }
+
+.targets { display: grid; gap: 6px; }
+.tgt { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 10px; font-size: .84rem; }
+.tgt .nm { flex: 1; min-width: 0; }
+.tgt .nm small { display: block; color: var(--muted); font-size: .74rem; }
+.tgt .amt { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--red); min-width: 2.5ch; text-align: right; }
+.tgt .amt.none { color: var(--muted); font-weight: 600; }
+.tgt button.sv { border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 3px 9px; font-size: .74rem; cursor: pointer; white-space: nowrap; }
+.tgt button.sv.fail { border-color: var(--red); color: var(--red); background: var(--red-soft); }
+.tgt button.sv.save { border-color: var(--green); color: var(--green); background: var(--green-soft); }
+.tgt.sculpt { opacity: .7; }
+
+/* who sees: quiet, but plainly a control */
+.vis { display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; font-size: .78rem; color: var(--muted); }
+.vis .eye { font-size: .9rem; }
+.vis b { color: var(--text); font-weight: 600; }
+.vis button.chg { margin-left: auto; border: 1px solid var(--line); background: none; color: var(--muted); border-radius: 999px; padding: 3px 10px; font-size: .74rem; cursor: pointer; }
+.vis button.chg::after { content: " ▾"; }
+.vis-open { display: grid; gap: 6px; }
+.vis-open .seg button { font-size: .76rem; }
+.mockdm { border: 1px dashed var(--amber); border-radius: 10px; padding: 8px 10px; display: grid; gap: 6px; font-size: .78rem; color: var(--amber); }
+.mockdm .acts .btn { padding: 6px 10px; font-size: .78rem; }
+
+/* side: table rolls, the record */
+.side { display: grid; gap: 18px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.panel-h small { color: var(--muted); font-size: .8rem; }
+.tr-list { display: grid; gap: 6px; }
+.tr { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; background: var(--surface-2); border-radius: 10px; padding: 8px 10px; font-size: .82rem; animation: in .3s; }
+@keyframes in { from { opacity: 0; transform: translateY(-4px); } }
+.tr .w { color: var(--muted); font-size: .74rem; }
+.tr .tot { grid-row: span 2; font-weight: 800; font-size: 1.3rem; color: var(--strong); align-self: center; font-variant-numeric: tabular-nums; }
+.tr.dm { border-left: 3px solid var(--amber); }
+.tr.me { border-left: 3px solid var(--blue); }
+.tr.struck .tot { text-decoration: line-through; color: var(--muted); }
+.empty { color: var(--muted); font-size: .84rem; }
+.rec { display: grid; gap: 0; font-size: .82rem; }
+.rec .r { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.rec .r:last-child { border-bottom: 0; }
+.rec .k { font: 700 .68rem/1.5 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.rec .v { min-width: 0; overflow-wrap: anywhere; }
+.rec .v .new { animation: glow 1.4s; border-radius: 4px; }
+@keyframes glow { from { background: var(--green-soft); } }
+pre.json { margin: 0; background: var(--surface-2); border-radius: 10px; padding: 10px; font-size: .74rem; line-height: 1.45; overflow-x: auto; max-height: 360px; }
+.uses { display: grid; gap: 4px; font-size: .82rem; }
+.uses li { color: var(--text); }
+ul.uses { margin: 0; padding-left: 1.1em; }
+.dice-demo { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .8rem; color: var(--muted); }
+.counter { font-variant-numeric: tabular-nums; }
+.counter b { font-size: 1.1rem; }
+.tabs { display: flex; gap: 4px; }
+.tabs button { border: 1px solid var(--line); background: none; border-radius: 999px; padding: 3px 10px; font-size: .74rem; cursor: pointer; color: var(--muted); }
+.tabs button[aria-pressed="true"] { background: var(--surface-3); color: var(--strong); }
+
+/* answer */
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.aq { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 80px; font: 16px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { font: 600 15px var(--sans); background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; cursor: pointer; }
+button.send:disabled { opacity: .5; cursor: default; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · the roll card · round 2 · Nov 9</div>
+    <h1>The roll card, to play with</h1>
+    <p class="lead">Press the <b>+7</b> or <b>Cast</b> on Battle and play the whole action through, the way you would at the table. Each of the three actions follows its own path. The dice are real (random), the numbers are the characters' own, and Table rolls fills in on the left as it would at the table, and below the screen is what askdnd keeps of the roll as you go.</p>
+    <div class="heard">
+      <div><b>Heard</b>To hit, then damage, each its own moment: separate rolls build the drama. No double roll.</div>
+      <div><b>Heard</b>A choice first only when the action needs one (Unarmed Strike: Damage, Grapple or Shove; Fireball: the level).</div>
+      <div><b>Heard</b>B's look: pills for extra dice and riders, a quieter "who sees" that still says it can change.</div>
+      <div><b>Heard</b>One card, no second damage window, no press that doesn't earn its place.</div>
+      <div><b>Heard</b>Designed for a 13–14" laptop, where nearly all play happens: the card opens beside the row. The phone is a toggle, to show it adapting.</div>
+    </div>
+  </header>
+
+  <section>
+    <div class="scen" role="group" aria-label="Which action">
+      <button type="button" data-sc="nn" aria-pressed="true"><b>No Name · Unarmed Strike</b><small>a choice first · Hex · Stunning Strike · Luck</small></button>
+      <button type="button" data-sc="bc" aria-pressed="false"><b>Big C · Hammer of Thunderbolts</b><small>Advantage and why · Bless · Divine Smite · Favored by the Gods</small></button>
+      <button type="button" data-sc="tr" aria-pressed="false"><b>Trah · Fireball</b><small>the level first · no attack · three saves · Sculpt Spells</small></button>
+    </div>
+
+    <div class="device">Shown on <span class="tabs" id="device"><button type="button" data-dev="desk" aria-pressed="true">A 13–14" laptop</button><button type="button" data-dev="phone" aria-pressed="false">A phone</button></span><span>The laptop is the design; the phone shows the same card adapting.</span></div>
+
+    <div class="stage">
+      <div class="laptop" id="laptop">
+        <div class="fit" id="fit">
+          <div class="desk" id="desk">
+            <div class="d-top"><b>askdnd</b><span>The table</span><span class="sep"></span><span>Story</span><span>Campaign</span><span>Table</span><span class="sep"></span><span class="me" id="d-me">No Name</span><span>Party ▾</span><span class="live">Connected</span></div>
+            <div class="d-body">
+              <aside class="d-rolls"><span class="lbl">Table rolls</span><div id="slot-desk-rolls"></div></aside>
+              <div class="d-main" id="slot-desk-main"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="phone" id="phone" hidden>
+        <div class="screen" id="ph-screen">
+          <div class="status"><span>9:41</span><span>Round 2 · your turn</span></div>
+          <div id="slot-ph-main" class="ph-main"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="below">
+      <div class="panel" id="ph-rolls" hidden>
+        <div class="panel-h"><h3>Table rolls</h3><small>what everyone sees, as it happens</small></div>
+        <div id="slot-ph-rolls"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>What askdnd keeps of this roll</h3><span class="tabs"><button type="button" data-view="read" aria-pressed="true">Read it</button><button type="button" data-view="data" aria-pressed="false">As data</button></span></div>
+        <div id="record"></div>
+        <p class="note">Kept with every roll, so later it can answer: the night's best and worst luck, damage by person and by kind, how often Stunning Strike landed, which slots went to Smites, every Grapple and who escaped. Session Story's Hardest Luck and Damage King read this today; this keeps more of the flavor.</p>
+      </div>
+      <div class="panel">
+        <div class="panel-h"><h3>Try the edges</h3><span class="counter" id="presses"></span></div>
+        <div class="dice-demo">Next d20: <span class="tabs" id="force"><button type="button" data-f="" aria-pressed="true">Random</button><button type="button" data-f="20" aria-pressed="false">a 20</button><button type="button" data-f="1" aria-pressed="false">a 1</button><button type="button" data-f="5" aria-pressed="false">a low one</button></span></div>
+        <p class="note">A 20 shows the critical: damage dice doubled, a Smite's too. A low one lets you try Big C's Favored by the Gods after a miss, or No Name's Heroic Inspiration reroll.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What's decided here, and what isn't yet</h2>
+    <ul class="uses">
+      <li><b>Hit or miss is the DM's call</b>, said by the player: <b>Roll damage</b> means "it hits", <b>Missed</b> ends it. askdnd never assumes a target's Armor Class.</li>
+      <li><b>Riders sit where the rules put them</b>: what adds to the d20 before the roll (Bless, a Luck Point), what's chosen once it hits (Hex, Stunning Strike, Divine Smite), what comes after a miss (Favored by the Gods).</li>
+      <li><b>Spending is part of the roll</b>: a Focus Point, a slot, a Luck Point or Inspiration is spent when the roll is, through the bridge, and Undo puts it back.</li>
+      <li><b>A check or save is the short version</b>: the same card with only its mode and pills, one Roll, done.</li>
+      <li><b>On a laptop the card opens beside the row you pressed</b>, so Battle and Table rolls stay in view; on a phone the same card rises from the bottom, within thumb reach.</li>
+      <li><b>Not drawn here</b>: the DM's side of a save, and askdnd's own table with its map.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>How it feels</h2>
+    <form class="answer" id="answer">
+      <div class="aq"><b>After playing it</b>
+        <div class="picks" role="radiogroup" aria-label="After playing it">
+          <label class="pick"><input type="radio" name="feel" value="build">Build it like this</label>
+          <label class="pick"><input type="radio" name="feel" value="close">Close: change what I wrote</label>
+          <label class="pick"><input type="radio" name="feel" value="again">Not yet: another round</label>
+        </div>
+      </div>
+      <div class="aq"><b>Riders that apply to every hit while they last (Hex, Bless): on by themselves?</b>
+        <div class="picks" role="radiogroup" aria-label="Riders on by themselves">
+          <label class="pick"><input type="radio" name="riders" value="on">On by themselves</label>
+          <label class="pick"><input type="radio" name="riders" value="off">Off until I tap them</label>
+        </div>
+      </div>
+      <div class="aq"><b>What would you change?</b> <span class="note">(a step, a pill, a word, the order)</span><textarea id="words" name="words" placeholder="Optional"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Send to Claude</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  // ---- the three actions, from the table's own sheets (Nov 9)
+  const SC = {
+    nn: {
+      who: 'No Name', init: 'NN', line: 'Human Monk 6 / Warlock 2', stats: [['AC', 17], ['HP', '58'], ['Speed', '45 ft'], ['Focus', '6']],
+      col: 'Action', rows: [{ t: 'Unarmed Strike', m: '5 ft · 1d8+4 bludgeoning', go: '+7', hot: true }, { t: 'Vicious Quarterstaff', m: '5 ft · 1d8+4 bludgeoning', go: '+7' }, { t: 'Dart', m: '20/60 ft · 1d4+4 piercing', go: '+7' }],
+      name: 'Unarmed Strike', sub: 'Action · Monk · 5 ft',
+      choice: { q: 'Which Unarmed Strike?', opts: [
+        { k: 'damage', ic: '✊', t: 'Damage', d: 'Attack roll +7 · 1d8+4 bludgeoning' },
+        { k: 'grapple', ic: '🤼', t: 'Grapple', d: 'No attack roll: Enemy 1 makes a Strength or Dexterity save, DC 15 (Dexterous Attacks). Needs a free hand.' },
+        { k: 'shove', ic: '🫸', t: 'Shove', d: 'No attack roll: Enemy 1 makes a Strength or Dexterity save, DC 15. Push 5 ft or knock Prone.', sub: ['Push 5 ft', 'Knock Prone'] } ] },
+      attack: { bonus: 7, label: 'd20 +7' },
+      pre: [{ k: 'luck', t: 'Luck Point', note: 'Advantage', cost: '3 left', adv: true }, { k: 'bless', t: 'Bless', note: '+1d4', die: [1, 4], from: 'Big C', on: true }],
+      inspiration: true,
+      dmg: { dice: [1, 8], flat: 4, type: 'bludgeoning', src: 'Unarmed Strike' },
+      riders: [{ k: 'hex', t: 'Hex', note: '+1d6 necrotic', die: [1, 6], type: 'necrotic', on: true, why: 'Enemy 1 is your Hex' },
+               { k: 'stun', t: 'Stunning Strike', note: '1 Focus Point', cost: '6 left', effect: 'Con save DC 14' }],
+      targets: ['Enemy 1', 'Enemy 2'],
+    },
+    bc: {
+      who: 'Big C', init: 'BC', line: 'Tiefling Paladin 6 / Sorcerer 2', stats: [['AC', 20], ['HP', '84'], ['Speed', '30 ft'], ['Slots', '4·3·2']],
+      col: 'Action', rows: [{ t: 'Hammer of Thunderbolts', m: 'Maul · 5 ft · 2d6+8 bludgeoning', go: '+11', hot: true }, { t: 'Javelin', m: '30/120 ft · 1d6+7 piercing', go: '+10' }, { t: 'Unarmed Strike', m: '5 ft · 8 bludgeoning', go: '+10' }],
+      name: 'Hammer of Thunderbolts', sub: 'Action · Maul · 5 ft',
+      attack: { bonus: 11, label: 'd20 +11' }, mode: 'adv', modeWhy: 'Advantage: Enemy 1 is Prone and within 5 ft',
+      pre: [{ k: 'bless', t: 'Bless', note: '+1d4', die: [1, 4], from: 'his own, concentrating', on: true }],
+      favored: true,
+      dmg: { dice: [2, 6], flat: 8, type: 'bludgeoning', src: 'Hammer of Thunderbolts' },
+      riders: [{ k: 'smite', t: 'Divine Smite', note: 'Bonus Action · a slot', smite: true }],
+      targets: ['Enemy 1', 'Enemy 2'],
+    },
+    tr: {
+      who: 'Trah', init: 'TR', line: 'Gnome Wizard 7 / Fighter 1', stats: [['AC', 15], ['HP', '52'], ['Speed', '25 ft'], ['Slots', '4·3·3·0']],
+      col: 'Action · spells', rows: [{ t: 'Fireball', m: '3rd · 150 ft · 20-ft sphere · Dex save DC 15', go: 'Cast', hot: true, cast: true }, { t: 'Shortsword', m: '5 ft · 1d6+2 piercing', go: '+5' }],
+      name: 'Fireball', sub: 'Action · 3rd-level evocation · 150 ft',
+      choice: { q: 'At what level?', opts: [
+        { k: 'l3', ic: '3', t: '3rd level', d: '8d6 fire · 3 of 3 slots left' },
+        { k: 'l4', ic: '4', t: '4th level', d: '9d6 fire · no 4th-level slots left', off: true },
+        { k: 'l5', ic: '5', t: '5th level', d: 'Trah has no 5th-level slots', off: true } ] },
+      save: { dc: 15, ab: 'Dex' },
+      riders: [{ k: 'sculpt', t: 'Sculpt Spells', note: 'Cole', on: true, why: 'Cole is in the area' }],
+      dmg: { dice: [8, 6], flat: 0, type: 'fire', src: 'Fireball' },
+      area: [{ n: 'Enemy 1', mod: 1 }, { n: 'Enemy 2', mod: 3 }, { n: 'Enemy 3', mod: -1 }, { n: 'Cole', ally: true }],
+    },
+  };
+
+  // ---- Battle on a laptop: the three columns around each action (the sheets' own, Nov 9)
+  SC.nn.desk = { stats: [['Armor Class', 17], ['Hit points', '58 / 58'], ['Speed', '45 ft'], ['Initiative', '+4'], ['Focus Points', '6 / 6'], ['Luck Points', '3 / 3']],
+    bonus: [{ t: 'Flurry of Blows', m: '1 Focus Point · two Unarmed Strikes', go: 'Use' }, { t: 'Patient Defense', m: 'Disengage, or 1 Focus Point for Dodge too', go: 'Use' }, { t: 'Hex', m: '1st · pact slot · +1d6 necrotic on a hit', go: 'Cast' }],
+    react: [{ t: 'Opportunity Attack', m: 'one melee attack · Unarmed Strike', go: '+7' }, { t: 'Deflect Attacks', m: 'reduce the damage of an attack that hits you', go: 'Use' }] };
+  SC.bc.desk = { stats: [['Armor Class', 20], ['Hit points', '84 / 84'], ['Speed', '30 ft'], ['Initiative', '+0'], ['Spell DC', '14 / +6'], ['Lay On Hands', '30']],
+    bonus: [{ t: 'Divine Smite', m: 'after you hit · a slot · 2d8 radiant', go: 'Cast' }, { t: 'Lay On Hands', m: 'heal from a pool of 30', go: 'Use' }],
+    react: [{ t: 'Opportunity Attack', m: 'one melee attack · Hammer of Thunderbolts', go: '+11' }] };
+  SC.tr.desk = { stats: [['Armor Class', 15], ['Hit points', '52 / 52'], ['Speed', '25 ft'], ['Initiative', '+2'], ['Spell DC', '15 / +7'], ['Slots', '4 · 3 · 3 · 0']],
+    bonus: [{ t: 'Second Wind', m: 'regain 1d10+1 Hit Points · 2 left', go: 'Use' }],
+    react: [{ t: 'Opportunity Attack', m: 'one melee attack · Shortsword', go: '+5' }] };
+
+  const $ = s => document.querySelector(s);
+  const make = (cls, id) => { const e = document.createElement('div'); e.className = cls; if (id) e.id = id; return e; };
+  const battle = make('battle', 'battle'), card = make('card', 'card'), scrim = make('scrim'), tableEl = make('tr-list', 'table');
+  card.setAttribute('role', 'dialog'); card.setAttribute('aria-label', 'Roll');
+  let dev = 'desk';
+  const desk = $('#desk'), fitEl = $('#fit');
+  function mount() {
+    const onDesk = dev === 'desk';
+    $('#laptop').hidden = !onDesk; $('#phone').hidden = onDesk; $('#ph-rolls').hidden = onDesk;
+    if (onDesk) { $('#slot-desk-main').append(battle); desk.append(scrim, card); $('#slot-desk-rolls').append(tableEl); }
+    else { card.style.left = card.style.top = ''; $('#slot-ph-main').append(battle); $('#ph-screen').append(scrim, card); $('#slot-ph-rolls').append(tableEl); }
+    fit();
+  }
+  function fit() {  // the laptop's 1280 × 800 screen, scaled to the page
+    if (dev !== 'desk') return;
+    const k = Math.min(1, fitEl.clientWidth / 1280);
+    desk.style.transform = `scale(${k})`; fitEl.style.height = Math.round(800 * k) + 'px';
+  }
+  new ResizeObserver(fit).observe(fitEl);
+  function place() {  // on a laptop the card opens beside the row you pressed
+    if (dev !== 'desk' || !st.open) return;
+    const go = battle.querySelector('[data-open]');
+    if (!go) return;
+    let x = 0, y = 0;
+    for (let e = go; e && e !== desk; e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; }
+    let left = x + go.offsetWidth + 16;
+    if (left + 400 > 1264) left = x - 416;
+    const h = card.offsetHeight;
+    card.style.left = left + 'px';
+    card.style.top = Math.max(58, Math.min(y - 24, 800 - h - 16)) + 'px';
+  }
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let sc = 'nn', st = null, force = '', presses = 0, view = 'read', fresh = new Set();
+
+  const d = n => 1 + Math.floor(Math.random() * n);
+  const d20 = () => { const f = force; if (f) { force = ''; setForce(''); return +f; } return d(20); };
+  const rollDice = (n, sides) => Array.from({ length: n }, () => d(sides));
+  const sum = a => a.reduce((x, y) => x + y, 0);
+  const ord = n => n + (n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th');
+  const nowT = () => new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+  function reset() {
+    const s = SC[sc];
+    st = {
+      step: s.choice ? 'choice' : 'attack', open: false, choice: null, sub: null,
+      mode: s.mode || 'normal', modeWhy: s.modeWhy || '', pre: Object.fromEntries((s.pre || []).map(p => [p.k, !!p.on])),
+      extra: [], adding: false, visOpen: false, vis: 'table',
+      riders: Object.fromEntries((s.riders || []).map(r => [r.k, !!r.on])), smiteLvl: 1, fiend: false,
+      hit: null, rerolled: false, favored: null, outcome: null, dmg: null, target: (s.targets || [])[0], applied: false,
+      saves: {}, dmSave: null, spent: [], table: [], record: {}, rolling: false,
+    };
+    presses = 0;
+    drawBattle(); drawCard(); drawTable(); drawRecord(); counter();
+  }
+  const press = () => { presses++; counter(); };
+  function counter() { $('#presses').innerHTML = `<b>${presses}</b> press${presses === 1 ? '' : 'es'} so far`; }
+  function setForce(f) { force = f; document.querySelectorAll('#force button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === f))); }
+
+  // ---- Battle behind the card
+  function drawBattle() {
+    const s = SC[sc];
+    $('#d-me').textContent = s.who;
+    if (dev === 'desk') {
+      const row = r => `<div class="b-row${r.hot ? ' hot' : ''}"><span><b>${r.t}</b><small>${r.m}</small></span><button type="button" class="go${/^[+-]/.test(r.go) ? '' : ' cast'}" ${r.hot ? 'data-open' : 'disabled'}>${r.go}</button></div>`;
+      battle.innerHTML = `<div class="d-head"><div class="b-port">${s.init}</div><div><h3>${s.who}</h3><small>${s.line}</small></div><div class="d-tabs"><span class="on">Battle</span><span>Sheet</span><span>Plan</span></div></div>
+        <div class="d-stats">${s.desk.stats.map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join('')}</div>
+        <div class="d-cols">
+          <div class="d-col"><div class="b-col">◆ Action</div>${s.rows.map(row).join('')}<div class="any">Dash, Disengage, Dodge, Help, Hide, Influence, Magic, Ready, Search, Study, Utilize</div></div>
+          <div class="d-col"><div class="b-col bonus">▲ Bonus Action</div>${s.desk.bonus.map(row).join('')}</div>
+          <div class="d-col"><div class="b-col react">↻ Reaction</div>${s.desk.react.map(row).join('')}</div>
+        </div>`;
+      return;
+    }
+    battle.innerHTML = `<div class="b-head"><div class="b-port">${s.init}</div><div><b>${s.who}</b><small>${s.line}</small></div></div>
+      <div class="b-stats">${s.stats.map(([k, v]) => `<div>${k}<b>${v}</b></div>`).join('')}</div>
+      <div class="b-col">◆ ${s.col}</div>
+      ${s.rows.map((r, i) => `<div class="b-row${r.hot ? ' hot' : ' quiet'}"><span><b>${r.t}</b><small>${r.m}</small></span><button type="button" class="go${r.cast ? ' cast' : ''}" ${r.hot ? 'data-open' : 'disabled'}>${r.go}</button></div>`).join('')}
+      <div class="b-col" style="color:var(--amber)">▲ Bonus Action</div>
+      <div class="b-row quiet"><span><b>${sc === 'nn' ? 'Flurry of Blows' : sc === 'bc' ? 'Divine Smite' : 'Misty Step'}</b><small>${sc === 'nn' ? '1 Focus Point · two Unarmed Strikes' : sc === 'bc' ? 'after you hit · a slot' : '2nd · 30 ft teleport'}</small></span><button type="button" class="go" disabled>${sc === 'tr' ? 'Cast' : 'Use'}</button></div>`;
+  }
+
+  // ---- the card
+  function path() {
+    const s = SC[sc];
+    if (sc === 'tr') return ['Level', 'Damage', 'Saves'];
+    if (sc === 'nn' && st.choice && st.choice !== 'damage') return ['Choose', 'Save', 'Done'];
+    return [...(s.choice ? ['Choose'] : []), 'To hit', 'Damage', 'Apply'];
+  }
+  function at() {  // Brett's four steps: a choice, to hit, the hit and damage, adjust and apply
+    if (st.step === 'choice') return sc === 'tr' ? 'Level' : 'Choose';
+    if (st.step === 'dmgpre') return 'Damage';
+    return { attack: 'To hit', hitres: 'Damage', dmgres: 'Apply', saves: 'Saves', save: 'Save', done: 'Done' }[st.step];
+  }
+  function rail() {
+    const p = path(), now = st.step === 'done' ? p.length : p.indexOf(at());
+    return `<div class="rail" aria-label="Steps">${p.map((n, i) => `${i ? '<i></i>' : ''}<span class="${i < now ? 'done' : i === now ? 'now' : ''}">${n}</span>`).join('')}</div>`;
+  }
+  function visRow() {
+    const say = { table: 'The table sees this', dm: 'Only the DM sees this', me: 'Only you see this' }[st.vis];
+    if (st.visOpen) return `<div class="vis-open"><span class="lbl">Who sees it</span><div class="seg" role="group" aria-label="Who sees it">${[['table', 'The table'], ['dm', 'DM only'], ['me', 'Only me']].map(([k, t]) => `<button type="button" data-vis="${k}" aria-pressed="${st.vis === k}">${t}</button>`).join('')}</div><span class="tag">Remembered on this phone for your rolls.</span></div>`;
+    return `<div class="vis"><span class="eye" aria-hidden="true">👁</span><span><b>${say}</b></span><button type="button" class="chg" data-visopen>Change</button></div>`;
+  }
+  function head() {
+    const s = SC[sc];
+    let sub = s.sub;
+    const o = st.choice && s.choice && s.choice.opts.find(o => o.k === st.choice);
+    if (o) sub = o.t + (st.sub ? ' · ' + st.sub : '') + ' · ' + s.sub.split(' · ').slice(-1)[0];
+    return `<div class="grab"></div><div class="c-head"><div class="t"><b>${s.name}</b><small>${sub}</small></div><button type="button" class="x" data-close aria-label="Close">✕</button></div>${rail()}`;
+  }
+  function preGroup() {
+    const s = SC[sc];
+    const pills = (s.pre || []).map(p => `<button type="button" class="pill${p.cost ? ' cost' : ''}" data-pre="${p.k}" aria-pressed="${st.pre[p.k]}">${p.t} <small>${p.note}${p.from ? ' · ' + p.from : ''}${p.cost ? ' · ' + p.cost : ''}</small></button>`).join('');
+    const extra = st.extra.map((e, i) => `<button type="button" class="pill" data-unextra="${i}" aria-pressed="true">${e.label} <small>tap to take off</small></button>`).join('');
+    return `<div class="group"><span class="lbl">Adds to the roll</span><div class="pills">${pills}${extra}<button type="button" class="pill add" data-adding>+ die or bonus</button></div>${st.adding ? adder() : ''}</div>`;
+  }
+  function adder() {
+    return `<div class="adder">${[[1, 4], [1, 6], [1, 8], [1, 10], [1, 12]].map(([n, s]) => `<button type="button" data-extra="d${s}">+1d${s}</button>`).join('')}${[1, 2, -1, -2].map(v => `<button type="button" data-extra="${v}">${v > 0 ? '+' : '−'}${Math.abs(v)}</button>`).join('')}</div>`;
+  }
+  function modeSeg() {
+    return `<div class="seg" role="group" aria-label="Roll with">${[['normal', 'Normal', ''], ['adv', 'Advantage', 'adv'], ['dis', 'Disadvantage', 'dis']].map(([k, t, c]) => `<button type="button" class="${c}" data-mode="${k}" aria-pressed="${st.mode === k}">${t}</button>`).join('')}</div>${st.modeWhy && st.mode === 'adv' ? `<div class="why">✓ ${st.modeWhy}</div>` : ''}`;
+  }
+  function effMode() {  // the Luck Point gives Advantage; with Disadvantage they cancel (2024: one of each is neither)
+    const luck = st.pre.luck;
+    if (!luck) return st.mode;
+    return st.mode === 'dis' ? 'normal' : 'adv';
+  }
+  function hitFormula() {
+    const s = SC[sc], bits = [s.attack.label];
+    (s.pre || []).forEach(p => { if (st.pre[p.k] && p.die) bits.push(`+${p.die[0]}d${p.die[1]}`); });
+    st.extra.forEach(e => bits.push(e.label));
+    return bits.join(' ');
+  }
+  function riderPills() {
+    const s = SC[sc];
+    return (s.riders || []).map(r => {
+      if (r.smite) {
+        const on = st.riders.smite, lv = st.smiteLvl;
+        const lvls = [[1, 4], [2, 3], [3, 2]];
+        return `<button type="button" class="pill cost" data-rider="smite" aria-pressed="${on}">Divine Smite <small>${on ? `${lv + 1 + (st.fiend ? 1 : 0)}d8 radiant · ${ord(lv)}-level slot` : 'Bonus Action · a slot'}</small></button>${on ? `<span class="pills">${lvls.map(([l, left]) => `<button type="button" class="pill lvl" data-smite="${l}" aria-pressed="${lv === l}">${ord(l)} <small>${left} left</small></button>`).join('')}<button type="button" class="pill lvl" data-fiend aria-pressed="${st.fiend}">Fiend or Undead <small>+1d8</small></button></span>` : ''}`;
+      }
+      return `<button type="button" class="pill${r.cost ? ' cost' : ''}" data-rider="${r.k}" aria-pressed="${st.riders[r.k]}">${r.t} <small>${r.note}${r.cost ? ' · ' + r.cost : ''}</small></button>`;
+    }).join('');
+  }
+  function dmgFormula() {
+    const s = SC[sc], crit = st.hit && st.hit.crit, k = crit ? 2 : 1, bits = [];
+    let n = s.dmg.dice[0];
+    if (sc === 'tr') n = 8;
+    bits.push(`${n * k}d${s.dmg.dice[1]}${s.dmg.flat ? '+' + s.dmg.flat : ''}`);
+    (s.riders || []).forEach(r => { if (st.riders[r.k] && r.die) bits.push(`+${r.die[0] * k}d${r.die[1]}`); if (r.smite && st.riders.smite) bits.push(`+${(st.smiteLvl + 1 + (st.fiend ? 1 : 0)) * k}d8`); });
+    return bits.join(' ');
+  }
+  function resultBox(kind) {
+    if (st.rolling) return `<div class="result rolling"><div class="num" id="spin">–</div><div class="what">${kind === 'hit' ? 'Rolling to hit' : 'Rolling damage'}</div><div class="how">…</div></div>`;
+    if (kind === 'hit') {
+      const h = st.hit;
+      const dice = h.d20s.map((v, i) => `<span class="d d20${i !== h.keep ? ' drop' : ''}${v === 20 && i === h.keep ? ' nat20' : ''}${v === 1 && i === h.keep ? ' nat1' : ''}">${v}</span>`).join('');
+      const adds = h.adds.map(a => `<span class="d t-bonus" title="${a.src}">${a.v > 0 ? '+' : ''}${a.v}</span><span class="tag">${a.src}</span>`).join('');
+      return `<div class="result land"><div class="num">${h.total}</div><div class="what">to hit${h.mode !== 'normal' ? ' · ' + (h.mode === 'adv' ? 'Advantage' : 'Disadvantage') : ''}${st.rerolled ? ' · rerolled' : ''}</div><div class="how">${dice}<span class="tag">+${SC[sc].attack.bonus}</span>${adds}</div></div>`;
+    }
+    const m = st.dmg;
+    const parts = m.parts.map(p => `${p.rolls.map(v => `<span class="d t-${p.type}">${v}</span>`).join('')}${p.flat ? `<span class="tag">+${p.flat}</span>` : ''}<span class="tag">${p.src}</span>`).join('<span class="tag">·</span>');
+    const by = Object.entries(m.byType).map(([t, v]) => `<span class="d t-${t}" style="min-width:auto;padding:0 8px">${v} ${t}</span>`).join('');
+    return `<div class="result land"><div class="num dmg">${m.total}</div><div class="what">damage${st.hit && st.hit.crit ? ' · critical' : ''}</div><div class="how">${parts}</div></div>${Object.keys(m.byType).length > 1 ? `<div class="split-total">${by}</div>` : ''}`;
+  }
+
+  function drawCard() {
+    const s = SC[sc];
+    card.classList.toggle('on', st.open); scrim.classList.toggle('on', st.open);
+    if (!st.open) { card.innerHTML = ''; return; }
+    queueMicrotask(place);
+    let body = '';
+    if (st.step === 'choice') {
+      body = `<div class="q">${s.choice.q}</div><div class="choices">${s.choice.opts.map(o => `<div><button type="button" class="choice" data-choice="${o.k}" ${o.off ? 'disabled' : ''}><span class="ic">${o.ic}</span><b>${o.t}</b><small>${o.d}</small></button>${o.sub && st.choice === 'shove-pick' ? '' : ''}</div>`).join('')}</div>`;
+      if (st.choice === 'shove-pick') body = `<div class="q">Shove: what happens if Enemy 1 fails?</div><div class="choices">${s.choice.opts[2].sub.map(x => `<button type="button" class="choice" data-sub="${x}"><span class="ic">${x.startsWith('Push') ? '➡' : '⤵'}</span><b>${x}</b><small>${x.startsWith('Push') ? 'Enemy 1 is pushed 5 feet away from you' : 'Enemy 1 has the Prone condition'}</small></button>`).join('')}</div><div class="acts"><button type="button" class="btn quiet" data-back>‹ Back</button></div>`;
+    } else if (st.step === 'attack') {
+      body = `${modeSeg()}${st.pre.luck && st.mode !== 'adv' ? `<div class="why">✓ Advantage from your Luck Point${st.mode === 'dis' ? ', which cancels the Disadvantage: a normal roll' : ''}</div>` : ''}${preGroup()}
+        <div class="acts"><button type="button" class="btn primary" data-roll-hit>Roll to hit <small>${hitFormula()}${effMode() === 'adv' ? ' · Advantage' : effMode() === 'dis' ? ' · Disadvantage' : ''}</small></button></div>
+        ${s.choice ? '<div class="acts"><button type="button" class="btn quiet" data-back>‹ Back to the choice</button></div>' : ''}`;
+    } else if (st.step === 'hitres') {
+      const h = st.hit;
+      const banner = st.rolling ? '' : h.crit ? '<div class="banner crit">Natural 20: a critical hit. Damage dice are doubled.</div>' : h.fumble ? '<div class="banner miss">Natural 1: it misses, whatever the bonus.</div>' : '';
+      const adjust = st.rolling ? '' : `<div class="pills">${s.inspiration && !st.rerolled ? `<button type="button" class="pill cost" data-reroll>Reroll <small>Heroic Inspiration</small></button>` : ''}<button type="button" class="pill add" data-adding>+ die or bonus</button></div>${st.adding ? adder() : ''}`;
+      if (st.favored === 'offer') {
+        body = `${resultBox('hit')}<div class="banner miss">The DM says it missed.</div>
+          <div class="group"><span class="lbl">After a miss</span><div class="pills"><button type="button" class="pill cost" data-favored>Favored by the Gods <small>+2d4 to the roll · 1 left</small></button></div></div>
+          <div class="acts"><button type="button" class="btn ghost" data-missed-final>It missed</button></div>`;
+      } else {
+        body = `${resultBox('hit')}${banner}${adjust}
+          ${st.rolling || h.fumble ? '' : `<div class="group"><span class="lbl">On a hit</span><div class="pills">${riderPills()}</div>${st.riders.stun ? '<div class="cost-say">Stunning Strike: 1 Focus Point · Enemy 1 makes a Con save, DC 14, or is Stunned until your next turn starts</div>' : ''}</div>`}
+          ${st.rolling ? '' : `<div class="acts">${h.fumble ? '' : `<button type="button" class="btn primary" data-roll-dmg>Roll damage <small>${dmgFormula()}</small></button>`}<button type="button" class="btn ${h.fumble ? 'primary' : 'ghost'}" data-missed>Missed</button></div>`}`;
+      }
+    } else if (st.step === 'dmgpre') {
+      body = `<div class="banner info">Everyone in a 20-foot sphere makes a <b>Dexterity save, DC 15</b>: half damage on a success.</div>
+        <div class="group"><span class="lbl">Adds to it</span><div class="pills">${riderPills()}<button type="button" class="pill add" data-adding>+ die or bonus</button></div>${st.adding ? adder() : ''}${st.riders.sculpt ? '<div class="cost-say" style="color:var(--green)">Sculpt Spells: Cole succeeds on the save and takes no damage (up to 4 creatures at 3rd level)</div>' : ''}</div>
+        ${st.rolling ? resultBox('dmg') : `<div class="acts"><button type="button" class="btn primary" data-roll-dmg>Roll damage <small>${dmgFormula()} fire</small></button></div>`}
+        <div class="acts"><button type="button" class="btn quiet" data-back>‹ Back to the level</button></div>`;
+    } else if (st.step === 'dmgres') {
+      const lines = [];
+      if (st.riders.stun) lines.push('<div class="banner info">Stunning Strike: Enemy 1 makes a <b>Con save, DC 14</b>. It goes to the DM with the damage.</div>');
+      if (st.riders.smite) lines.push(`<div class="banner info">Divine Smite: your ${ord(st.smiteLvl)}-level slot and your Bonus Action are spent.</div>`);
+      if (st.rolling) body = resultBox('dmg'); else body = `${resultBox('dmg')}${lines.join('')}
+        <div class="pills"><button type="button" class="pill add" data-adding>+ die or bonus to the damage</button></div>${st.adding ? adder() : ''}
+        <div class="group"><span class="lbl">To</span><div class="pills">${s.targets.map(t => `<button type="button" class="pill" data-target="${t}" aria-pressed="${st.target === t}">${t}</button>`).join('')}<button type="button" class="pill add">Someone else…</button></div></div>
+        <div class="acts"><button type="button" class="btn primary" data-apply>Apply ${st.dmg.total} to ${st.target}</button><button type="button" class="btn ghost" data-missed>Missed</button></div>
+        <div class="tag">Resistance and Temporary Hit Points are worked out as it's applied, as the Hit Points window does now.</div>`;
+    } else if (st.step === 'saves') {
+      const rolled = Object.keys(st.saves).length > 0;
+      const tot = st.dmg.total, half = Math.floor(tot / 2);
+      body = `${resultBox('dmg')}
+        <div class="targets">${s.area.map(a => {
+          if (a.ally && st.riders.sculpt) return `<div class="tgt sculpt"><span class="nm">${a.n}<small>Sculpt Spells: no save, no damage</small></span><span class="amt none">0</span></div>`;
+          const sv = st.saves[a.n];
+          const amt = sv ? (sv.ok ? half : tot) : '?';
+          return `<div class="tgt"><span class="nm">${a.n}<small>${sv ? `Dex save ${sv.roll} (d20 ${sv.d} ${sv.mod >= 0 ? '+' : '−'}${Math.abs(sv.mod || 0)}) vs 15` : 'Dex save, DC 15: the DM rolls'}</small></span>${sv ? `<button type="button" class="sv ${sv.ok ? 'save' : 'fail'}" data-flip="${a.n}">${sv.ok ? 'Saved · half' : 'Failed · full'}</button>` : ''}<span class="amt${sv ? '' : ' none'}">${amt}</span></div>`;
+        }).join('')}</div>
+        ${rolled ? `<div class="acts"><button type="button" class="btn primary" data-apply>Apply to ${s.area.filter(a => !(a.ally && st.riders.sculpt)).length}</button></div><div class="tag">Tap Saved or Failed to correct one (Evasion, a ruling).</div>`
+          : `<div class="mockdm"><span>In the prototype, you play the DM:</span><div class="acts"><button type="button" class="btn" data-dm-saves>The DM rolls their saves</button></div></div>`}`;
+    } else if (st.step === 'save') {
+      const what = st.choice === 'grapple' ? 'Grappled' : st.sub === 'Knock Prone' ? 'Prone' : 'pushed 5 feet';
+      const sv = st.dmSave;
+      body = `<div class="banner info">Enemy 1 makes a <b>Strength or Dexterity save</b> (its choice) against <b>DC 15</b>. On a failure it's <b>${what}</b>.</div>
+        <div class="tag">No dice for you: the save is Enemy 1's, rolled by the DM. Sent to Table rolls for the DM.</div>
+        ${sv ? `<div class="result land"><div class="num" style="color:${sv.ok ? 'var(--green)' : 'var(--red)'}">${sv.roll}</div><div class="what">Enemy 1's save · ${sv.ok ? 'succeeded' : 'failed'}</div><div class="how"><span class="d d20">${sv.d}</span><span class="tag">+3 Strength vs DC 15</span></div></div>
+          <div class="acts">${sv.ok ? `<button type="button" class="btn primary" data-finish>It holds its ground</button>` : `<button type="button" class="btn primary" data-finish>${st.choice === 'grapple' ? 'Enemy 1 is Grappled' : st.sub === 'Knock Prone' ? 'Enemy 1 is Prone' : 'Enemy 1 is pushed'}</button>`}</div>
+          ${!sv.ok && st.choice === 'grapple' ? '<div class="tag">Grappled: its Speed is 0, escape DC 15. It shows on Enemy 1 for everyone.</div>' : ''}`
+          : `<div class="mockdm"><span>In the prototype, you play the DM:</span><div class="acts"><button type="button" class="btn" data-dm-save>The DM rolls Enemy 1's save</button></div></div>`}`;
+    } else if (st.step === 'done') {
+      body = `<div class="banner ${st.outcome === 'miss' || (st.dmSave && st.dmSave.ok) ? 'info' : 'ok'}">${st.doneSay}</div>
+        <div class="acts"><button type="button" class="btn primary" data-close>Done</button><button type="button" class="btn ghost" data-undo>Undo</button></div>
+        <div class="tag">Undo takes back what was applied and spent. The rolls stay in Table rolls, struck through.</div>`;
+    }
+    card.innerHTML = head() + body + (st.step !== 'done' ? visRow() : '');
+  }
+
+  // ---- rolling: a moment of drama, then the number lands
+  function spin(then) {
+    st.rolling = true; drawCard();
+    const el = () => card.querySelector('#spin');
+    const t = setInterval(() => { const e = el(); if (e) e.textContent = d(20); }, 60);
+    setTimeout(() => { clearInterval(t); st.rolling = false; then(); }, reduce ? 120 : 950);
+  }
+  function rollHit(again) {
+    const s = SC[sc], mode = effMode();
+    const d20s = mode === 'normal' ? [d20()] : [d20(), d20()];
+    const keep = d20s.length === 1 ? 0 : (mode === 'adv' ? (d20s[0] >= d20s[1] ? 0 : 1) : (d20s[0] <= d20s[1] ? 0 : 1));
+    const adds = [];
+    (s.pre || []).forEach(p => { if (st.pre[p.k] && p.die) adds.push({ v: sum(rollDice(p.die[0], p.die[1])), src: p.t, die: `${p.die[0]}d${p.die[1]}` }); });
+    st.extra.forEach(e => adds.push({ v: e.n ? sum(rollDice(1, e.n)) : e.v, src: e.n ? 'added ' + e.label.slice(1) : 'added', die: e.label }));
+    const nat = d20s[keep];
+    st.hit = { d20s, keep, mode, adds, nat, total: nat + s.attack.bonus + sum(adds.map(a => a.v)), crit: nat === 20, fumble: nat === 1 };
+    if (st.pre.luck && !again) spend('Luck Point', '1 of 3');
+    st.outcome = st.hit.fumble ? 'miss' : null;
+  }
+  function rollDamage() {
+    const s = SC[sc], k = st.hit && st.hit.crit ? 2 : 1, parts = [];
+    const n = sc === 'tr' ? 8 : s.dmg.dice[0];
+    parts.push({ src: s.dmg.src, type: s.dmg.type, rolls: rollDice(n * k, s.dmg.dice[1]), flat: s.dmg.flat });
+    (s.riders || []).forEach(r => {
+      if (st.riders[r.k] && r.die) parts.push({ src: r.t, type: r.type, rolls: rollDice(r.die[0] * k, r.die[1]), flat: 0 });
+      if (r.smite && st.riders.smite) parts.push({ src: 'Divine Smite', type: 'radiant', rolls: rollDice((st.smiteLvl + 1 + (st.fiend ? 1 : 0)) * k, 8), flat: 0 });
+    });
+    st.extra.filter(e => e.dmg).forEach(e => parts.push({ src: 'added', type: s.dmg.type, rolls: e.n ? rollDice(1, e.n) : [], flat: e.n ? 0 : e.v }));
+    const byType = {};
+    parts.forEach(p => { byType[p.type] = (byType[p.type] || 0) + sum(p.rolls) + p.flat; });
+    st.dmg = { parts, byType, total: sum(Object.values(byType)), crit: k === 2 };
+    if (st.riders.stun) spend('Focus Point', '1 of 6 · Stunning Strike');
+    if (st.riders.smite) spend(`${ord(st.smiteLvl)}-level slot`, 'Divine Smite · and the Bonus Action');
+    if (sc === 'tr') spend('3rd-level slot', 'Fireball');
+  }
+  function spend(what, note) { st.spent.push({ what, note }); }
+  function tableRow(text, tot, sub, struck) {
+    st.table.unshift({ text, tot, sub, vis: st.vis, struck, at: nowT() });
+  }
+
+  // ---- what the table sees
+  function drawTable() {
+    const el = tableEl;
+    if (!st.table.length) { el.innerHTML = '<div class="empty">Nothing yet. Rolls land here one at a time: the to-hit first, then the damage.</div>'; return; }
+    el.innerHTML = st.table.map(r => `<div class="tr${r.vis === 'dm' ? ' dm' : r.vis === 'me' ? ' me' : ''}${r.struck ? ' struck' : ''}"><span>${r.text}</span><span class="tot">${r.tot}</span><span class="w">${r.sub}${r.vis === 'dm' ? ' · DM only' : r.vis === 'me' ? ' · only you' : ''} · ${r.at}</span></div>`).join('');
+  }
+
+  // ---- what askdnd keeps
+  function record() {
+    const s = SC[sc], R = { who: s.who, action: s.name };
+    const picked = st.choice && s.choice && s.choice.opts.find(o => o.k === st.choice);
+    if (picked) R.choice = picked.t + (st.sub ? ' · ' + st.sub : '');
+    if (st.hit) {
+      R.to_hit = { mode: st.hit.mode, why: st.hit.mode === 'adv' ? (st.pre.luck ? 'Luck Point' : st.modeWhy.replace('Advantage: ', '')) : '', d20: st.hit.d20s, kept: st.hit.nat, bonus: s.attack.bonus, adds: st.hit.adds.map(a => `${a.src} ${a.die} → ${a.v}`), total: st.hit.total };
+      if (st.hit.crit) R.to_hit.critical = true;
+      if (st.rerolled) R.to_hit.rerolled = 'Heroic Inspiration';
+      if (st.favored === 'used') R.to_hit.after_miss = 'Favored by the Gods';
+    }
+    if (st.outcome) R.outcome = st.outcome === 'hit' ? 'hit (the player, on the DM\'s word)' : 'miss';
+    if (st.dmg) R.damage = { parts: st.dmg.parts.map(p => `${p.src}: ${p.rolls.join('+') || ''}${p.flat ? (p.rolls.length ? '+' : '') + p.flat : ''} ${p.type}`), by_type: st.dmg.byType, total: st.dmg.total, ...(st.dmg.crit ? { critical: 'dice doubled' } : {}) };
+    if (st.riders.stun && st.dmg) R.effects = ['Stunning Strike: Enemy 1, Con save DC 14 (to the DM)'];
+    if (sc === 'tr' && st.dmg) R.save = { ability: 'Dex', dc: 15, targets: Object.fromEntries(s.area.map(a => [a.n, a.ally && st.riders.sculpt ? 'Sculpt Spells: no damage' : st.saves[a.n] ? `${st.saves[a.n].roll} ${st.saves[a.n].ok ? 'saved: half' : 'failed: full'}` : 'waiting'])) };
+    if (st.step === 'save' || (st.dmSave && sc === 'nn')) R.save = { by: 'Enemy 1', ability: 'Str or Dex', dc: 15, ...(st.dmSave ? { rolled: st.dmSave.roll, result: st.dmSave.ok ? 'succeeded' : 'failed' } : { result: 'waiting for the DM' }) };
+    if (st.spent.length) R.spent = st.spent.map(x => `${x.what} (${x.note})`);
+    if (st.applied) R.applied = st.appliedSay;
+    R.seen_by = { table: 'the table', dm: 'the DM only', me: 'only them' }[st.vis];
+    R.when = 'Round 2, ' + s.who + "'s turn";
+    return R;
+  }
+  function drawRecord() {
+    const R = record(), el = $('#record');
+    const old = st.record; st.record = R;
+    const changed = k => JSON.stringify(old[k]) !== JSON.stringify(R[k]);
+    if (view === 'data') { el.innerHTML = `<pre class="json">${JSON.stringify(R, null, 2).replace(/[<&]/g, c => c === '<' ? '&lt;' : '&amp;')}</pre>`; return; }
+    const say = v => typeof v === 'string' ? v : Array.isArray(v) ? v.join('<br>') : Object.entries(v).filter(([, x]) => x !== '' && !(Array.isArray(x) && !x.length)).map(([k, x]) => `<span style="color:var(--muted)">${k.replace(/_/g, ' ')}</span> ${Array.isArray(x) ? x.join(', ') : typeof x === 'object' ? Object.entries(x).map(([a, b]) => `${a} ${b}`).join(', ') : x}`).join('<br>');
+    const label = { who: 'Who', action: 'Action', choice: 'Choice', to_hit: 'To hit', outcome: 'Hit or miss', damage: 'Damage', effects: 'Effects', save: 'Save', spent: 'Spent', applied: 'Applied', seen_by: 'Seen by', when: 'When' };
+    el.innerHTML = `<div class="rec">${Object.keys(R).map(k => `<div class="r"><span class="k">${label[k] || k}</span><span class="v"><span class="${changed(k) ? 'new' : ''}">${say(R[k])}</span></span></div>`).join('')}</div>`;
+  }
+  const all = () => { drawCard(); drawTable(); drawRecord(); };
+
+  // ---- presses
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const s = SC[sc];
+    if (b.dataset.dev) { dev = b.dataset.dev; document.querySelectorAll('[data-dev]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); mount(); drawBattle(); drawCard(); return; }
+    if (b.dataset.sc) { sc = b.dataset.sc; document.querySelectorAll('.scen button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); reset(); return; }
+    if (b.dataset.f !== undefined && b.closest('#force')) { setForce(b.dataset.f); return; }
+    if (b.dataset.view) { view = b.dataset.view; document.querySelectorAll('[data-view]').forEach(x => x.setAttribute('aria-pressed', String(x === b))); drawRecord(); return; }
+    if (!b.closest('#card') && !b.hasAttribute('data-open')) return;
+    if (b.hasAttribute('data-open')) { press(); st.open = true; all(); return; }
+    if (b.hasAttribute('data-close')) { if (st.step === 'done' || confirmClose()) { const was = st.step === 'done'; reset(); if (!was) presses = 0; counter(); } return; }
+    press();
+    if (b.dataset.choice) {
+      if (b.dataset.choice === 'shove') { st.choice = 'shove-pick'; drawCard(); return; }
+      st.choice = b.dataset.choice;
+      st.step = sc === 'tr' ? 'dmgpre' : st.choice === 'damage' ? 'attack' : 'save';
+      if (st.step === 'save') tableRow(`${s.who} · ${st.choice === 'grapple' ? 'Grapple' : 'Shove'} Enemy 1`, 'DC 15', 'Enemy 1: Str or Dex save, for the DM');
+      all(); return;
+    }
+    if (b.dataset.sub) { st.choice = 'shove'; st.sub = b.dataset.sub; st.step = 'save'; tableRow(`${s.who} · Shove Enemy 1 (${st.sub.toLowerCase()})`, 'DC 15', 'Enemy 1: Str or Dex save, for the DM'); all(); return; }
+    if (b.hasAttribute('data-back')) { if (st.step === 'choice') st.choice = null; else { st.step = 'choice'; st.choice = null; st.sub = null; } all(); return; }
+    if (b.dataset.mode) { st.mode = b.dataset.mode; drawCard(); return; }
+    if (b.dataset.pre) { st.pre[b.dataset.pre] = !st.pre[b.dataset.pre]; drawCard(); return; }
+    if (b.hasAttribute('data-adding')) { st.adding = !st.adding; drawCard(); return; }
+    if (b.dataset.extra) {
+      const v = b.dataset.extra, isDie = v.startsWith('d');
+      if (st.step === 'dmgres' && st.dmg) {  // forgot something: it joins the damage
+        const part = isDie ? { src: 'added', type: s.dmg.type, rolls: [d(+v.slice(1))], flat: 0 } : { src: 'added', type: s.dmg.type, rolls: [], flat: +v };
+        st.dmg.parts.push(part); st.dmg.byType[part.type] = (st.dmg.byType[part.type] || 0) + sum(part.rolls) + part.flat; st.dmg.total = sum(Object.values(st.dmg.byType));
+        tableRow(`${s.who} · ${s.name} · damage, with ${isDie ? '1' + v : v}`, st.dmg.total, `${isDie ? '1' + v + ' → ' + part.rolls[0] : v} added`);
+        st.adding = false; all(); return;
+      }
+      const dmgSide = st.step === 'dmgpre';
+      if (st.step === 'hitres' && st.hit && !st.rolling) {  // after the roll: it adds to the to-hit now (Bardic Inspiration, a Guidance-like die)
+        const add = isDie ? { v: d(+v.slice(1)), src: 'added +1' + v, die: '1' + v } : { v: +v, src: 'added', die: (v > 0 ? '+' : '') + v };
+        st.hit.adds.push(add); st.hit.total += add.v; st.adding = false;
+        tableRow(`${s.who} · ${s.name} · to hit, with ${add.src.replace('added ', '')}`, st.hit.total, `${add.die} → ${add.v}`);
+        all(); return;
+      }
+      st.extra.push(isDie ? { n: +v.slice(1), label: '+1' + v, dmg: dmgSide } : { v: +v, label: (+v > 0 ? '+' : '−') + Math.abs(+v), dmg: dmgSide });
+      st.adding = false; drawCard(); return;
+    }
+    if (b.dataset.unextra) { st.extra.splice(+b.dataset.unextra, 1); drawCard(); return; }
+    if (b.dataset.visopen !== undefined) { st.visOpen = true; drawCard(); return; }
+    if (b.dataset.vis) { st.vis = b.dataset.vis; st.visOpen = false; all(); return; }
+    if (b.hasAttribute('data-roll-hit')) {
+      st.step = 'hitres'; st.adding = false;
+      spin(() => { rollHit(); const h = st.hit; tableRow(`${s.who} · ${s.name}${st.choice === 'damage' ? '' : ''} · to hit`, h.total, `d20 ${h.d20s.join(' / ')}${h.mode !== 'normal' ? (h.mode === 'adv' ? ' (Advantage)' : ' (Disadvantage)') : ''} +${s.attack.bonus}${h.adds.map(a => ` +${a.src} ${a.v}`).join('')}${h.crit ? ' · natural 20' : h.fumble ? ' · natural 1' : ''}`); all(); });
+      return;
+    }
+    if (b.hasAttribute('data-reroll')) {
+      st.rerolled = true; spend('Heroic Inspiration', 'reroll');
+      const was = st.table[0]; if (was) was.struck = true;
+      spin(() => { rollHit(true); st.rerolled = true; const h = st.hit; tableRow(`${s.who} · ${s.name} · to hit, rerolled (Heroic Inspiration)`, h.total, `d20 ${h.d20s.join(' / ')} +${s.attack.bonus}${h.adds.map(a => ` +${a.src} ${a.v}`).join('')}`); all(); });
+      return;
+    }
+    if (b.dataset.rider) {
+      st.riders[b.dataset.rider] = !st.riders[b.dataset.rider]; drawCard(); return;
+    }
+    if (b.dataset.smite) { st.smiteLvl = +b.dataset.smite; drawCard(); return; }
+    if (b.hasAttribute('data-fiend')) { st.fiend = !st.fiend; drawCard(); return; }
+    if (b.hasAttribute('data-roll-dmg')) {
+      if (sc !== 'tr') st.outcome = 'hit';
+      const toStep = sc === 'tr' ? 'saves' : 'dmgres';
+      if (sc === 'tr') { st.rolling = true; drawCard(); }
+      else { st.step = 'dmgres'; }
+      spin(() => {
+        rollDamage(); st.step = toStep;
+        const m = st.dmg;
+        tableRow(`${s.who} · ${s.name} · damage${sc === 'tr' ? ' (Dex save DC 15)' : ''}`, m.total, Object.entries(m.byType).map(([t, v]) => `${v} ${t}`).join(' + ') + (m.crit ? ' · critical' : '') + (st.riders.stun ? ' · Stunning Strike: Con save DC 14' : ''));
+        all();
+      });
+      return;
+    }
+    if (b.hasAttribute('data-missed')) {
+      if (s.favored && st.favored === null && st.step === 'hitres') { st.favored = 'offer'; drawCard(); return; }
+      finishMiss(); return;
+    }
+    if (b.hasAttribute('data-missed-final')) { finishMiss(); return; }
+    if (b.hasAttribute('data-favored')) {
+      st.favored = 'used'; spend('Favored by the Gods', '1 of 1, until a Short or Long Rest');
+      const r = rollDice(2, 4), v = sum(r);
+      st.hit.adds.push({ v, src: 'Favored by the Gods', die: '2d4' }); st.hit.total += v;
+      tableRow(`${s.who} · ${s.name} · to hit, Favored by the Gods`, st.hit.total, `+2d4 (${r.join(' + ')}) after a miss`);
+      all(); return;
+    }
+    if (b.dataset.target) { st.target = b.dataset.target; drawCard(); return; }
+    if (b.hasAttribute('data-dm-saves')) {
+      s.area.forEach(a => { if (a.ally && st.riders.sculpt) return; const dd = d(20), mod = a.ally ? 2 : a.mod; st.saves[a.n] = { d: dd, mod, roll: dd + mod, ok: dd + mod >= 15 }; });
+      all(); return;
+    }
+    if (b.dataset.flip) { const v = st.saves[b.dataset.flip]; v.ok = !v.ok; all(); return; }
+    if (b.hasAttribute('data-dm-save')) { const dd = d(20); st.dmSave = { d: dd, roll: dd + 3, ok: dd + 3 >= 15 }; tableRow('Enemy 1 · save vs ' + (st.choice === 'grapple' ? 'Grapple' : 'Shove'), st.dmSave.roll, 'the DM · ' + (st.dmSave.ok ? 'succeeded' : 'failed') + ' vs DC 15'); all(); return; }
+    if (b.hasAttribute('data-finish')) {
+      const ok = st.dmSave.ok;
+      st.applied = true; st.appliedSay = ok ? 'nothing: Enemy 1 succeeded' : st.choice === 'grapple' ? 'Enemy 1: Grappled (escape DC 15)' : st.sub === 'Knock Prone' ? 'Enemy 1: Prone' : 'Enemy 1 pushed 5 ft';
+      st.doneSay = ok ? 'Enemy 1 holds its ground.' : st.choice === 'grapple' ? 'Enemy 1 is Grappled by No Name. Its Speed is 0 until it escapes (DC 15).' : st.sub === 'Knock Prone' ? 'Enemy 1 is Prone. Attacks within 5 ft have Advantage against it.' : 'Enemy 1 is pushed 5 feet.';
+      st.step = 'done'; all(); return;
+    }
+    if (b.hasAttribute('data-apply')) {
+      if (sc === 'tr') {
+        const got = s.area.filter(a => !(a.ally && st.riders.sculpt)).map(a => `${a.n} ${st.saves[a.n].ok ? Math.floor(st.dmg.total / 2) : st.dmg.total}`);
+        st.appliedSay = got.join(', ') + (st.riders.sculpt ? ' · Cole 0 (Sculpt Spells)' : '');
+        tableRow(`Fireball → ${got.join(', ')}`, '✓', 'applied');
+        st.doneSay = 'Applied: ' + got.join(', ') + '.';
+      } else {
+        st.appliedSay = `${st.dmg.total} to ${st.target}`;
+        tableRow(`${s.who} → ${st.target}`, '✓', `${st.dmg.total} damage applied`);
+        st.doneSay = `${st.target} takes ${st.dmg.total}.` + (st.riders.stun ? ' Its Con save against Stunning Strike is with the DM.' : '');
+      }
+      st.applied = true; st.step = 'done'; all(); return;
+    }
+    if (b.hasAttribute('data-undo')) {
+      st.table.forEach(r => r.struck = true);
+      st.spent = []; st.applied = false; st.appliedSay = '';
+      st.doneSay = 'Undone: nothing applied, nothing spent.'; all(); return;
+    }
+  });
+  function finishMiss() {
+    const s = SC[sc];
+    st.outcome = 'miss';
+    if (st.dmg) { const r = st.table.find(r => / damage/.test(r.text)); if (r) r.struck = true; }
+    tableRow(`${s.who} · ${s.name}`, '—', 'missed');
+    st.doneSay = 'Missed.' + (st.spent.some(x => /Focus|slot/.test(x.what)) ? '' : ' Nothing was spent on damage.');
+    st.step = 'done'; all();
+  }
+  function confirmClose() { return true; }
+
+  // ---- the answer (db: answers/round2)
+  const form = $('#answer'), said = $('#said'), send = $('#send');
+  let db = null;
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = 'Open this page signed in to claude.ai to send it.'; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try {
+      await db.collection('answers').doc('round2').set({ feel: f.get('feel') || '', riders: f.get('riders') || '', words: (f.get('words') || '').trim(), at: new Date().toISOString() });
+      said.textContent = 'Sent to Claude';
+    } catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const doc = await db.collection('answers').doc('round2').get();
+      if (!doc.exists) return;
+      const a = doc.data();
+      form.querySelectorAll('input[type=radio]').forEach(r => { r.checked = (r.name === 'feel' && r.value === a.feel) || (r.name === 'riders' && r.value === a.riders); });
+      $('#words').value = a.words || '';
+      said.textContent = 'Sent earlier: change it and send again if you like';
+    } catch (err) { /* nothing sent yet */ }
+  })();
+
+  mount();
+  reset();
+})();
+</script>
