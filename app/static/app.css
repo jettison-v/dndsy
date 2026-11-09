@@ -3697,3 +3697,12 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .session-body > .tale-acts { justify-content: flex-start; margin-bottom: var(--sp-3); }
 /* The Admin menu's door: a gear, admins only (feedback 57: it needn't be found, and the bar needs the room) */
 .manage.admin > button.admin-gear { font-size: var(--fs-lg); padding: 0 10px; }
+/* An attack in Table rolls, one card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with
+   its total on the right, as the damage row (.roll-dmg-line) already was; a replaced roll struck, what was applied in green */
+.roll-beat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }
+.roll-beat > span { min-width: 0; }
+.roll-beat .roll-dice { display: inline; }
+.roll-beat .roll-total { font-size: var(--fs-xl); color: var(--text-strong); }
+.roll-beat.roll-old s { font-size: var(--fs-lg); }
+.roll-item.kind-attack .roll-dmg-line b { color: var(--red); font-size: var(--fs-xl); }
+.roll-applied.roll-beat { color: var(--green); }
