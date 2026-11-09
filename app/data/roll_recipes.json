@@ -1,5 +1,141 @@
 {
  "credit": "Roll recipes for spells in the SRD 5.2.1 (attribution in app/data/srd/README.md), written by askdnd from the rules text.",
+ "features": {
+  "Create Eldritch Cannon": {
+   "checked": "by hand",
+   "events": []
+  },
+  "Deflect Attack: Redirect Attack": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Redirect Attack",
+     "note": "the same damage type as the attack you deflected",
+     "on": "save",
+     "parts": [
+      "2{martial_arts}+{mod:dexterity}"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ]
+  },
+  "Detonate Eldritch Cannon": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Detonate",
+     "on": "save",
+     "parts": [
+      "3d8 force"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
+  "Eldritch Cannon: Flamethrower": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Flamethrower",
+     "on": "save",
+     "parts": [
+      "2d8 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
+  "Eldritch Cannon: Force Ballista": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Force Ballista",
+     "on": "hit",
+     "parts": [
+      "2d8 force"
+     ]
+    }
+   ]
+  },
+  "Eldritch Cannon: Protector": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Protector",
+     "note": "minimum 1",
+     "on": "temp",
+     "parts": [
+      "1d8+{mod:intelligence}"
+     ]
+    }
+   ]
+  },
+  "Land\u2019s Aid: Damage": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Land's Aid",
+     "on": "save",
+     "parts": [
+      "{lands_aid}d6 necrotic"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ]
+  },
+  "Land\u2019s Aid: Heal": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Land's Aid",
+     "on": "heal",
+     "parts": [
+      "{lands_aid}d6"
+     ]
+    }
+   ]
+  },
+  "Second Wind": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Second Wind",
+     "on": "heal",
+     "parts": [
+      "1d10+{level:Fighter}"
+     ]
+    }
+   ]
+  },
+  "Uncanny Metabolism": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Uncanny Metabolism",
+     "on": "heal",
+     "parts": [
+      "1{martial_arts}+{level:Monk}"
+     ]
+    }
+   ]
+  },
+  "Undead Steed: Ghostly Stride": {
+   "checked": "by hand",
+   "events": []
+  },
+  "Wild Shape: Feral Forms": {
+   "checked": "by hand",
+   "events": []
+  },
+  "Wild Shape: Guardian Forms": {
+   "checked": "by hand",
+   "events": []
+  }
+ },
  "items": {
   "Acid": {
    "checked": "by hand",
@@ -80,6 +216,19 @@
    ],
    "level": 0
   },
+  "Keoghtom's Ointment": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Keoghtom's Ointment",
+     "on": "heal",
+     "parts": [
+      "2d8+2"
+     ]
+    }
+   ],
+   "level": 0
+  },
   "Potion of Healing": {
    "checked": "by hand",
    "events": [
@@ -131,9 +280,141 @@
     }
    ],
    "level": 0
+  },
+  "Soul Coin": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Drain Life",
+     "on": "temp",
+     "parts": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 0
+  }
+ },
+ "modifiers": {
+  "Arcane Firearm": {
+   "adds": "1d8",
+   "checked": "by hand",
+   "to": [
+    "spell damage"
+   ],
+   "when": "on_damage",
+   "why": "Artillerist: add 1d8 to one damage roll of an artificer spell cast through it"
+  },
+  "Bardic Inspiration": {
+   "adds": "1{bardic}",
+   "checked": "by hand",
+   "gives": true,
+   "to": [
+    "attack",
+    "save",
+    "check"
+   ],
+   "when": "after_fail",
+   "why": "the creature can add the die to a D20 Test it fails (2024: after seeing it fail)"
+  },
+  "Bless": {
+   "adds": "1d4",
+   "checked": "by hand",
+   "from": "another's spell",
+   "to": [
+    "attack",
+    "save"
+   ],
+   "when": "before",
+   "why": "up to three creatures add 1d4 to attack rolls and saving throws while the caster concentrates"
+  },
+  "Blessed Strikes": {
+   "adds": "1d8 radiant",
+   "checked": "by hand",
+   "once": "a turn",
+   "to": [
+    "damage"
+   ],
+   "when": "on_hit",
+   "why": "Cleric: once a turn, extra radiant damage on a hit with a cantrip or weapon attack"
+  },
+  "Deflect Attack": {
+   "checked": "by hand",
+   "reduces": "1d10+{mod:dexterity}+{level:Monk}",
+   "to": [
+    "damage_taken"
+   ],
+   "when": "damage_taken",
+   "why": "Monk: reduce an attack's damage by 1d10 + Dexterity + Monk level"
+  },
+  "Favored by the Gods": {
+   "adds": "2d4",
+   "checked": "by hand",
+   "cost": "1 use",
+   "to": [
+    "attack",
+    "save"
+   ],
+   "when": "after_fail",
+   "why": "Divine Soul: add 2d4 to a failed saving throw or a missed attack roll"
+  },
+  "Guidance": {
+   "adds": "1d4",
+   "checked": "by hand",
+   "to": [
+    "check"
+   ],
+   "when": "before",
+   "why": "add 1d4 to one ability check you choose before rolling (2024 PHB)"
+  },
+  "Resistance": {
+   "adds": "1d4",
+   "checked": "by hand",
+   "to": [
+    "save"
+   ],
+   "when": "before",
+   "why": "add 1d4 to one saving throw"
+  },
+  "Sneak Attack": {
+   "adds": "{sneak}d6",
+   "checked": "by hand",
+   "once": "a turn",
+   "to": [
+    "damage"
+   ],
+   "when": "on_hit",
+   "why": "Rogue: once a turn, extra damage on a hit with a Finesse or ranged weapon, with Advantage or an ally beside the target"
+  },
+  "Tactical Mind": {
+   "adds": "1d10",
+   "checked": "by hand",
+   "cost": "a Second Wind use",
+   "to": [
+    "check"
+   ],
+   "when": "after_fail",
+   "why": "Fighter: on a failed ability check, spend a Second Wind use to add 1d10 (kept if it still fails)"
   }
  },
  "spells": {
+  "Absorb Elements": {
+   "checked": "by hand (Xanathar's)",
+   "events": [
+    {
+     "name": "Absorb Elements",
+     "note": "the damage type is the one you absorbed; the first melee hit on your next turn",
+     "on": "rider",
+     "parts": [
+      "1d6"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
   "Acid Arrow": {
    "checked": "by hand",
    "events": [
@@ -331,6 +612,23 @@
     }
    ],
    "level": 3
+  },
+  "Branding Smite": {
+   "checked": "by hand (PHB 2014)",
+   "events": [
+    {
+     "name": "Branding Smite",
+     "note": "the next time you hit with a weapon attack before it ends",
+     "on": "rider",
+     "parts": [
+      "2d6 radiant"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 2
   },
   "Burning Hands": {
    "checked": "text",
@@ -691,6 +989,28 @@
    ],
    "level": 7
   },
+  "Depth Charge": {
+   "checked": "by hand (another book)",
+   "events": [
+    {
+     "alt": [
+      "9d6 thunder"
+     ],
+     "name": "Depth Charge",
+     "note": "9d6 instead for a creature submerged in a liquid",
+     "on": "save",
+     "parts": [
+      "7d6 thunder"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 3
+  },
   "Dimension Door": {
    "checked": "text",
    "events": [
@@ -894,6 +1214,11 @@
     }
    ],
    "level": 1
+  },
+  "Find Steed": {
+   "checked": "by hand (PHB)",
+   "events": [],
+   "level": 2
   },
   "Finger of Death": {
    "checked": "text",
@@ -1099,6 +1424,31 @@
     }
    ],
    "level": 3
+  },
+  "Green-Flame Blade": {
+   "checked": "by hand (another book)",
+   "events": [
+    {
+     "cantrip": "extra",
+     "name": "Green-Flame Blade",
+     "note": "added to the weapon's own damage on a hit (from level 5)",
+     "on": "hit",
+     "parts": [
+      "1d8 fire"
+     ]
+    },
+    {
+     "cantrip": "extra",
+     "mod": true,
+     "name": "Leaping fire",
+     "note": "a second creature within 5 ft of the target; before level 5 it's just your spellcasting modifier",
+     "on": "auto",
+     "parts": [
+      "1d8 fire"
+     ]
+    }
+   ],
+   "level": 0
   },
   "Guiding Bolt": {
    "checked": "text",
@@ -1335,6 +1685,23 @@
     }
    ],
    "level": 3
+  },
+  "Lightning Lure": {
+   "checked": "by hand (another book)",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Lightning Lure",
+     "note": "pulled up to 10 ft toward you on a failed save; the damage only if it ends within 5 ft",
+     "on": "save",
+     "parts": [
+      "1d8 lightning"
+     ],
+     "save": "Str",
+     "success": "none"
+    }
+   ],
+   "level": 0
   },
   "Magic Missile": {
    "checked": "by hand",
@@ -1668,6 +2035,25 @@
    ],
    "level": 0
   },
+  "Raulothim's Psychic Lance": {
+   "checked": "by hand (another book)",
+   "events": [
+    {
+     "name": "Raulothim's Psychic Lance",
+     "note": "Incapacitated until the start of your next turn on a failed save",
+     "on": "save",
+     "parts": [
+      "7d6 psychic"
+     ],
+     "save": "Int",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 4
+  },
   "Ray of Frost": {
    "checked": "text",
    "events": [
@@ -1835,6 +2221,23 @@
     }
    ],
    "level": 0
+  },
+  "Sickening Radiance": {
+   "checked": "by hand (another book)",
+   "events": [
+    {
+     "name": "Sickening Radiance",
+     "note": "and a level of Exhaustion on a failed save, until the spell ends",
+     "on": "save",
+     "parts": [
+      "4d10 radiant"
+     ],
+     "repeat": "a creature entering it or starting its turn there",
+     "save": "Con",
+     "success": "none"
+    }
+   ],
+   "level": 4
   },
   "Sorcerous Burst": {
    "checked": "by hand",
