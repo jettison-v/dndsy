@@ -846,6 +846,15 @@
   "link": "https://claude.ai/artifact/V2FUfi8ojtEPcYYf45jYa9"
  },
  {
+  "title": "Finding Checks and Saves",
+  "kind": "design",
+  "status": "Waiting for Brett",
+  "date": "Nov 9",
+  "what": "Four ways to make Checks, skills and saves easy to find in Table rolls (a Roll button with search, buttons, a louder fold, a die on what already rolls), at laptop size with Big C's numbers; Claude recommends the Roll button with the die on hover.",
+  "source": "docs/mockups/find-checks/index.html",
+  "link": "https://claude.ai/artifact/WDR61Rw2ENfRb8k9MG5kjt"
+ },
+ {
   "title": "Your Notes",
   "kind": "design",
   "status": "Built (Layout A and the badge)",
