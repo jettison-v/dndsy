@@ -344,7 +344,8 @@ def test_the_sidebar_is_on_every_page_and_knows_your_character(table, db):
         page = table["player"].get(path).text
         assert 'id="table-rolls"' in page and f'data-mine="{cole.id}"' in page, path
     assert 'data-mine=""' in table["dm"].get("/party").text  # the DM has no character to roll for
-    assert "rs-checks" not in table["dm"].get("/party").text and "Manual roll" in table["dm"].get("/party").text
+    assert "data-rs-roll" not in table["dm"].get("/party").text and "Manual roll" in table["dm"].get("/party").text  # (Roll: your character's)
+    assert "data-rs-roll" in table["player"].get("/party").text and "rs-checks" not in table["player"].get("/party").text  # (the fold it replaced)
 
 
 # ------------------------------------------------------------------ what can roll

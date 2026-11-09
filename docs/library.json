@@ -848,7 +848,7 @@
  {
   "title": "Which Features Get Used",
   "kind": "design",
-  "status": "Waiting for Brett",
+  "status": "Chose A and A (tagged by page)",
   "date": "Nov 9",
   "what": "The Admin page for askdnd's own usage counts (made-up numbers): uses by day with releases marked, each feature's uses, who of the five and trend, what's never touched, what a release changed, who uses what; two choices: what counts as a use, and who's in the numbers.",
   "source": "docs/mockups/feature-use/index.html",
@@ -857,7 +857,7 @@
  {
   "title": "Inbox Email Digest",
   "kind": "design",
-  "status": "Waiting for Brett",
+  "status": "Chose B and A",
   "date": "Nov 9",
   "what": "The one email when something new reaches a campaign's Inbox (counts and a link only, from Resend): the email, when it's sent, who gets it and where they turn it off; two choices: when (30 minutes after, or once a day) and who.",
   "source": "docs/mockups/inbox-email/index.html",
@@ -875,7 +875,7 @@
  {
   "title": "Finding Checks and Saves",
   "kind": "design",
-  "status": "Chose A, without D",
+  "status": "Chose A, without D · built",
   "date": "Nov 9",
   "what": "Four ways to make Checks, skills and saves easy to find in Table rolls (a Roll button with search, buttons, a louder fold, a die on what already rolls), at laptop size with Big C's numbers; Claude recommends the Roll button with the die on hover.",
   "source": "docs/mockups/find-checks/index.html",

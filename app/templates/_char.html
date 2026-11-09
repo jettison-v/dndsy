@@ -215,7 +215,7 @@
 <span class="hit">
 {%- if hits and o.hit and o.hit[0] in "+-−" -%}<button type="button" class="roll-hit" {{ roll_attrs("attack", o.name, o.hit, "", o.adv, recipe=rec, plan=o.plan) }} title="Roll to hit">{{ o.hit }}</button>{% if o.adv %} {{ adv(o.adv) }}{% endif %}
 {%- elif o.hit %}{{ o.hit }}{% endif -%}
-{%- if first %} <button type="button" class="roll-chip" {{ roll_attrs({"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.on, "damage"), o.name, "", "", note=("Each target makes a " ~ o.hit ~ " save." if o.hit and o.hit[0] not in "+-−" else ""), recipe=rec) }} title="Roll">{{ "Heal" if first.on == "heal" else "Roll" }}</button>{% endif -%}
+{%- if first %} <button type="button" class="roll-chip" {{ roll_attrs({"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.on, "damage"), o.name, "", "", note=("Each target makes a " ~ o.hit ~ " save." if o.hit and o.hit[0] not in "+-−" else ""), recipe=rec, plan=o.plan if o.hit and o.hit[0] not in "+-−" else none) }} title="Roll">{{ "Heal" if first.on == "heal" else "Roll" }}</button>{% endif -%}
 </span>
 {%- else -%}
 {%- set dmg = o.dice if o.dice is defined else o.meta | dice -%}
@@ -224,7 +224,7 @@
 {%- if o.hit and o.hit[0] in "+-−" -%}
 <span class="hit"><button type="button" class="roll-hit" {{ roll_attrs("attack", o.name, o.hit, dmg, o.adv, plan=o.plan) }} title="Roll to hit{{ ' (then damage)' if dmg }}">{{ o.hit }}</button>{% if o.adv %} {{ adv(o.adv) }}{% endif %}</span>
 {%- elif o.hit -%}
-<span class="hit">{{ o.hit }}{% if dmg %} <button type="button" class="roll-chip" {{ roll_attrs(k, o.name, "", dmg, note="Each target makes a " ~ o.hit ~ " save; the spell says what a success does.") }} title="Roll {{ dmg }}">{{ "Heal" if heal else "Roll" }}</button>{% endif %}</span>
+<span class="hit">{{ o.hit }}{% if dmg %} <button type="button" class="roll-chip" {{ roll_attrs(k, o.name, "", dmg, note="Each target makes a " ~ o.hit ~ " save; the spell says what a success does.", plan=o.plan) }} title="Roll {{ dmg }}">{{ "Heal" if heal else "Roll" }}</button>{% endif %}</span>
 {%- elif dmg -%}
 <span class="hit"><button type="button" class="roll-chip" {{ roll_attrs(k, o.name, "", dmg) }} title="Roll {{ dmg }}">{{ "Heal" if heal else "Roll" }}</button></span>
 {%- endif -%}
