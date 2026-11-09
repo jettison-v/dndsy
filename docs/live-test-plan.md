@@ -70,7 +70,7 @@ Run it three times after a bridge change: the timing bugs so far only showed in 
 
 ## Every night: the canary
 
-A canary is a small check that runs on its own and warns you before anyone else notices. At 4:00, Mini time, launchd on the Mac Mini runs `real_table_nightly.sh`: it opens the seats, runs part 1 (then again through the DM, since Nov 4) against beta and closes them. Any miss, or seats that won't open, becomes an issue in [Sentry](https://brett-vw.sentry.io/issues/?project=askdnd-v2) titled "Live test part 1: … missed" (environment `live-test`), which alerts Brett like the app's own errors. Each night's output is in `~/askdnd-tests/logs/nightly-<date>.log` on the Mini. The seats are test accounts, so game nights don't matter.
+A canary is a small check that runs on its own and warns you before anyone else notices. At 4:00, Mini time, launchd on the Mac Mini runs `real_table_nightly.sh`: it opens the seats, runs part 1 (then again through the DM, since Nov 4) against beta, checks the seats' pages in real iPhone and iPad Safari (since Nov 8, below) and closes them. Any miss, or seats that won't open, becomes an issue in [Sentry](https://brett-vw.sentry.io/issues/?project=askdnd-v2) titled "Live test part 1: … missed" (environment `live-test`), which alerts Brett like the app's own errors. Each night's output is in `~/askdnd-tests/logs/nightly-<date>.log` on the Mini. The seats are test accounts, so game nights don't matter.
 
 - **The job:** `~/Library/LaunchAgents/ai.askdnd.live-test.plist` (its source is `scripts/ai.askdnd.live-test.plist`). A Mini asleep at 4:00 runs it when it wakes. To switch it on, from the repo on your Mac: `scp scripts/ai.askdnd.live-test.plist mac-mini-server:Library/LaunchAgents/ && ssh mac-mini-server 'launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/ai.askdnd.live-test.plist'` (on since Nov 2, Brett approved; a deliberate miss reached Sentry).
 - **The Sentry key:** `SENTRY_DSN` in `~/askdnd-tests/.env` on the Mini, readable only by its owner, put there with `scripts/set-secret.sh SENTRY_DSN --mini`. Never in git.
@@ -86,24 +86,31 @@ Since Nov 5, a deploy that breaks the table is known within minutes, not at 4:00
 - **Turn it off:** `launchctl bootout gui/$(id -u)/ai.askdnd.after-deploy` on the Mini.
 - **Running part 1 by hand on the Mini:** check the after-deploy check isn't running first (`ls ~/askdnd-tests/logs/.seats-busy`: no such folder means the seats are free).
 
-## iPhone Safari (being set up)
+## iPhone Safari, every night
 
 The layout tests on every pull request draw pages in WebKit sized like an iPhone, which isn't Safari on one: they can't see
 Safari's own bars, the notch, the keyboard rising or the page zooming when you tap a text box. `iphone_check.py` (its
 source is `scripts/iphone_check.py`, beside `layout_check.js` from `tests/browser/`) opens askdnd in the real Mobile
-Safari, in Apple's iOS Simulator on the Mini, driven by Safari's own WebDriver (Brett, Nov 8). For a small iPhone, a large
-one and an iPad mini, one at a time, it opens the DM seat's Manage pages and player2's Story, Campaign, Battle, Sheet,
+Safari, in Apple's iOS Simulator on the Mini, driven by Appium (Brett, Nov 8). For a small iPhone (17e), a large one (18
+Pro Max) and an iPad mini, one at a time, it opens the DM seat's Manage pages and player2's Story, Campaign, Battle, Sheet,
 Plan, Party, Help and Your notes, each tab too, signed in as that seat (the sign-in copied from the seat's Chrome), and
 checks: the layout tests' checks; tapping the page's first text box with a finger, which mustn't zoom the page and must
 stay in sight above the keyboard; and the end of the page above the bottom bar. A screenshot of each page, and of each
-tapped box with the keyboard up, goes to `~/askdnd-tests/logs/iphone/` (the newest run only). It changes nothing.
+tapped box with the keyboard up, goes to `~/askdnd-tests/logs/iphone/` (the newest run only). It changes nothing. The
+nightly runs it after part 1 while the seats are open (about 15 minutes); what it finds goes to Sentry as "iPhone
+Safari: …" (environment `live-test`, its own issue).
 
-- **Run it:** with the seats open, `.venv/bin/python iphone_check.py` in `~/askdnd-tests` (`--devices ipad`, `--seats dm`
-  for one; `--sentry` reports what it finds as "iPhone Safari: …", environment `live-test`, its own issue).
-- **Setup, once:** room on the Mini's disk (Xcode and one iOS simulator take about 30 GB), Xcode from the App Store,
-  then `xcodebuild -downloadPlatform iOS` and `sudo safaridriver --enable`. Once a run has passed by hand it joins the
-  nightly, after part 1 while the seats are open.
-- **After changing it:** `scp scripts/iphone_check.py tests/browser/layout_check.js mac-mini-server:askdnd-tests/`.
+- **Run it by hand:** with the seats open (and free: `ls ~/askdnd-tests/logs/.seats-busy`), `.venv/bin/python
+  iphone_check.py` in `~/askdnd-tests` (`--devices small,large,ipad`, `--seats dm,player2` for fewer).
+- **What's on the Mini for it** (Nov 8): Xcode 27.2 from the App Store (`sudo xcode-select -s
+  /Applications/Xcode.app/Contents/Developer`, `sudo xcodebuild -license accept`, `sudo xcodebuild -runFirstLaunch`), its
+  iOS 27.2 simulator (`xcodebuild -downloadPlatform iOS`), macOS 27.2 to match, Node.js in `~/askdnd-tests/node` and Appium
+  with its XCUITest driver in `~/askdnd-tests/appium-pkg` (`APPIUM_HOME=~/askdnd-tests/appium-home`). Safari's own
+  `safaridriver` can't start a simulator with Xcode 27.2 (it looks for the Simulator app, which Xcode 27 replaced with
+  DeviceHub), hence Appium. A new simulator's first session installs Appium's helper app, a few minutes.
+- **After a new Xcode or iOS:** download the new simulator (`xcodebuild -downloadPlatform iOS`); the check picks the
+  newest. Update Appium's driver with `appium driver update xcuitest` (with the PATH and APPIUM_HOME above).
+- **After changing it:** `scp scripts/iphone_check.py scripts/real_table_nightly.sh tests/browser/layout_check.js mac-mini-server:askdnd-tests/`.
 
 ## Every morning: D&D Beyond drift
 
@@ -159,3 +166,4 @@ These need a person, or D&D Beyond's VTT, which is a game canvas a script can't 
 | 2026-11-06, 4:00 | 0.12.1 | 260 of 283 | The first night with the twins' `*-every` runs: beta ran out of database connections at 4:21–4:35 and 5:08–5:24, and nearly every miss was a window that didn't open in time. The cause was askdnd's, not D&D Beyond's: each change made every other open page re-read the whole party (fixed: those pages ask for their pill only). Also a familiar renamed back to an earlier name failed its cast (fixed) |
 | 2026-11-07, by hand | 0.12.1 | familiar, wild-companion twice each through the DM: 24 of 24 | Every night since Nov 5 the familiar runs through the DM missed (switched on as Fey, named Pip, on again). The test's own doing: each run puts the Owl back on D&D Beyond behind askdnd's back, and through the DM askdnd reads D&D Beyond's public copy, so it still held the Owl as Fey and Pip and sent nothing. Each familiar run through the DM now waits for that copy and has askdnd read it first (`caught_up`). Still open: the twins' `*-every` runs sometimes press Give one back before askdnd shows the use spent (the button is greyed for a moment); they pass on the second try |
 | 2026-11-07, after PR 257 (coins in bags) | 0.12.1 | coins with Spend · Gain · Move: 7 of 7 on Vi's own sheet, and 7 of 7 through the DM: a gold gained and spent, a gold moved into Vi's Backpack (added for this run) and back | D&D Beyond's coin request naming the container works through the extension unchanged, both ways. |
+| 2026-11-08, by hand (iPhone Safari's first runs) | 0.12.1 | iphone_check.py on iPhone 17e, iPhone 18 Pro Max and iPad mini, the DM's and player2's pages: 42 of 42 | The first runs found only the check's own mistakes: text in a closed fold counted as the page's end (now Safari's own visibility test), and a new simulator's first session needs minutes. A deliberate miss reached Sentry (ASKDND-V2-Q, resolved). Joins the nightly from Nov 9 |
