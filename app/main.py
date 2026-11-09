@@ -42,6 +42,7 @@ from app.picture_window import router as picture_window_router
 from app.item_use import router as item_use_router
 from app.item_creatures import router as item_creatures_router
 from app.digest import router as digest_router
+from app.usage import router as usage_router
 from app.level_up import router as level_up_router
 from app.resources import router as resources_router
 from app.rests import router as rests_router
@@ -148,6 +149,9 @@ async def not_found_page(request: Request, exc: StarletteHTTPException):
 
         return not_found(request, "There's no page at this address. If it's an old bookmark, open the page from the menu and save it again.")
     return await http_exception_handler(request, exc)
+from app.usage import Recorder  # noqa: E402 (which features get used: after each action, app/usage.py)
+
+app.add_middleware(Recorder)  # innermost: it sees the route that ran, and who's asking
 app.add_middleware(CampaignPaths)  # inside the session middleware (added last), so it knows who's asking
 app.add_middleware(ViewAs)  # between the two: an admin viewing as someone else (app/view_as.py)
 app.add_middleware(ReturnAfterSignIn)  # outside both, so it sees the address as asked (app/auth.py)
@@ -176,6 +180,7 @@ app.include_router(admin_router)
 app.include_router(item_use_router)
 app.include_router(item_creatures_router)  # items that bring a creature (the Beasty Bone)
 app.include_router(digest_router)  # the Inbox digest email and Your account › Email
+app.include_router(usage_router)  # Admin › Features: which features get used
 app.include_router(casting_router)  # (through the bridge: on_for)
 app.include_router(resources_router)  # (through the bridge: on_for)
 app.include_router(rests_router)  # (through the bridge: on_for)

@@ -1,120 +1,67 @@
-from datetime import UTC, datetime, timedelta
+"""Which features get used (app/usage.py; Brett chose A and A, Nov 9, docs/mockups/feature-use/): every action route is
+counted as a feature or is askdnd's own bookkeeping; a use is tagged with the page it was done on; the table's uses
+count, not admins', test accounts' or a test campaign's."""
 
-import pytest
-from fastapi.testclient import TestClient
+import time
+
 from sqlalchemy import select
 
-from app import auth, config
-from app.admin_usage import usage_summary
-from app.config import parse_allowlist
-from app.db import get_db
-from app.importer import import_bundle
+from app import usage
 from app.main import app
-from app.models import CreditTopUp, ExtractionRun, GameSession
+from app.models import Campaign, UsageEvent
 
 
-def runs(db):
-    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": 29}]})
-    sid = db.scalar(select(GameSession)).id
-    now = datetime.now(UTC)
-    db.add_all([
-        ExtractionRun(session_id=sid, source="notes", status="done", cost_usd=0.12, created_at=now),
-        ExtractionRun(session_id=sid, source="notes", status="done", cost_usd=0.10, created_at=now - timedelta(days=40)),
-        ExtractionRun(session_id=sid, source="notes", status="error", cost_usd=0.0, created_at=now),
-    ])
-    db.flush()
+def test_every_action_route_is_a_feature_or_bookkeeping():
+    """A new route is counted the day it's added: give it a feature in usage.FEATURES, or list it in IGNORED."""
+    paths = app.openapi()["paths"]
+    missing = [p for p, ops in paths.items() if any(m in ("post", "put", "patch", "delete") for m in ops) and usage.feature_of(p) is None]
+    assert missing == [], missing
+    assert usage.feature_of("/rolls") == "Rolls" and usage.feature_of("/characters/{character_id}/cast") == "Cast"
+    assert usage.feature_of("/bridge/hello") == "" and usage.feature_of("/live/sync") == ""
 
 
-def test_summary_totals_and_balance(db):
-    runs(db)
-    u = usage_summary(db)
-    assert round(u["total"], 2) == 0.22 and round(u["today"], 2) == 0.12 and u["drafts"] == 2
-    assert u["balance"] is None  # no top-ups yet
-    db.add(CreditTopUp(amount_usd=20.0, added_on=datetime.now(UTC).date()))
-    db.flush()
-    assert round(usage_summary(db)["balance"], 2) == 19.78
+def test_the_page_comes_from_the_address():
+    assert usage.page_of("https://askdnd.ai/characters/3/battle?creature=9") == "Battle"
+    assert usage.page_of("https://askdnd.ai/characters/3") == "Sheet" and usage.page_of("https://askdnd.ai/characters/3/plan") == "Plan"
+    assert usage.page_of("https://askdnd.ai/c/main/table") == "askdnd's table" and usage.page_of("https://askdnd.ai/c/main/") == "Story"
+    assert usage.page_of("https://askdnd.ai/party") == "Party" and usage.page_of("") == ""
 
 
-
-def test_openai_is_counted_apart_from_claude(db):
-    """Feedback 38 (Brett, Nov 7): OpenAI's spending (drawn pictures, Listen's voice) is its own line with a link to its
-    balance; Anthropic's balance counts only Claude's; the monthly limit and This month count both."""
-    runs(db)
-    now = datetime.now(UTC)
-    db.add_all([ExtractionRun(source="picture", status="done", cost_usd=0.16, created_at=now),
-                ExtractionRun(source="narration", status="done", cost_usd=0.02, created_at=now - timedelta(days=40)),
-                CreditTopUp(amount_usd=20.0, added_on=now.date())])
-    db.flush()
-    u = usage_summary(db)
-    assert round(u["total"], 2) == 0.22 and round(u["balance"], 2) == 19.78 and u["drafts"] == 2  # (Claude's alone)
-    assert round(u["openai_month"], 2) == 0.16 and round(u["openai_total"], 2) == 0.18
-    assert round(u["month"], 2) == 0.28 and round(u["today"], 2) == 0.28 and "platform.openai.com" in u["openai_billing"]
+def _events(db, n, seconds=5):
+    for _ in range(seconds * 10):
+        db.expire_all()
+        rows = list(db.scalars(select(UsageEvent).order_by(UsageEvent.id)))
+        if len(rows) >= n:
+            return rows
+        time.sleep(0.1)
+    return list(db.scalars(select(UsageEvent)))
 
 
-@pytest.fixture
-def client(monkeypatch, db):
-    monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("admin@example.com"))
-    monkeypatch.setattr(config, "ADMIN_EMAILS", parse_allowlist("admin@example.com"))
-    app.dependency_overrides[get_db] = lambda: db
-    c = TestClient(app)
+def test_a_players_roll_is_counted_with_its_page_and_an_admins_is_not(player, admin, db, sheet):
+    from tests.table_setup import char
 
-    async def token(request):
-        return {"userinfo": {"email": "admin@example.com", "email_verified": True}}
-
-    monkeypatch.setattr(auth.oauth.google, "authorize_access_token", token)
-    c.get("/auth/callback", follow_redirects=False)
-    yield c
-    app.dependency_overrides.clear()
-
-
-def test_usage_page_and_topups(client, db):
-    runs(db)
-    page = client.post("/manage/usage/topups", data={"amount": "$20.00", "added_on": "2026-10-15", "note": "first"}).text
-    assert "$19.78" in page and "of $20.00 bought" in page
-    t = db.scalar(select(CreditTopUp))
-    client.post(f"/manage/usage/topups/{t.id}/delete")
-    assert db.scalar(select(CreditTopUp)) is None
-
-
-def test_parse_amount():
-    from app.admin_usage import parse_amount
-
-    assert parse_amount("$20") == 20.0
-    assert parse_amount(" $1,000.50 ") == 1000.5
-    assert parse_amount("20.00") == 20.0
-    assert parse_amount("twenty") is None
-    assert parse_amount("nan") is None
+    cole = char(db, "Cole")
+    before = len(_events(db, 0, 0))
+    r = player.post("/rolls", data={"character": cole.id, "kind": "check", "label": "Stealth check", "mod": "+2"},
+                    headers={"referer": f"https://askdnd.ai/characters/{cole.id}/battle"})
+    assert r.status_code == 200
+    rows = _events(db, before + 1)
+    e = rows[-1]
+    assert (e.feature, e.page, e.campaign_id) == ("Rolls: checks", "Battle", cole.campaign_id)
+    player.post("/rolls", data={"character": cole.id, "kind": "attack", "label": "Shortsword", "mod": "+5", "via": "card"},
+                headers={"referer": f"https://askdnd.ai/characters/{cole.id}/battle"})
+    assert _events(db, before + 2)[-1].feature == "Roll card: attacks"
+    admin.post("/dice", data={"set": "classic"})
+    rows = _events(db, before + 3)
+    admin_ids = {x.user_id for x in rows if x.feature == "Your dice"}
+    counted = usage.counted(db, cole.campaign_id)
+    assert all(x.user_id not in admin_ids for x in counted) and any(x.feature == "Rolls: checks" for x in counted)
+    db.get(Campaign, cole.campaign_id).is_test = True  # (a test campaign's uses don't count either)
+    db.commit()
+    assert usage.counted(db, cole.campaign_id) == []
 
 
-def test_monthly_limit_blocks_new_claude_calls(db):
-    """A standing rule (CLAUDE.md › Privacy and data rules): a monthly spending limit on the Anthropic API; every
-    Claude call checks it first."""
-    from app import spending
-    from app.extraction import Source, extract_session
-    from app.models import Campaign
-    from tests.test_extraction import fake_client
-
-    runs(db)  # $0.12 this month
-    assert spending.reached(db) is None  # no limit set
-    spending.set_limit(db, 0.50)
-    db.flush()
-    assert spending.reached(db) is None and usage_summary(db)["limit_left"] == pytest.approx(0.38)
-    spending.set_limit(db, 0.10)
-    db.flush()
-    assert "reached the $0.10 monthly limit" in spending.reached(db)
-    assert usage_summary(db)["limit_reached"]
-    seen = []
-    run = extract_session(db, db.scalar(select(GameSession)), Source("notes", "x"), fake_client(seen=seen))
-    assert run.status == "error" and "monthly limit" in run.error and not seen  # Claude was never called
-
-
-def test_usage_page_sets_and_clears_the_limit(client, db):
-    from app import spending
-
-    runs(db)
-    page = client.post("/manage/usage/limit", data={"amount": "$0.10"}).text
-    assert "Monthly limit set to $0.10" in page and "limit of $0.10 reached" in page
-    assert spending.limit(db) == 0.10
-    assert "Enter a monthly limit" in client.post("/manage/usage/limit", data={"amount": "lots"}).text
-    assert "Monthly limit removed" in client.post("/manage/usage/limit", data={"amount": ""}).text
-    assert spending.limit(db) is None
+def test_the_features_page_is_the_admins(admin, dm, db, sheet):
+    page = admin.get("/manage/features?days=7")
+    assert page.status_code == 200 and "Every use, by day" in page.text and "Never touched" in page.text
+    assert dm.get("/manage/features").status_code == 403

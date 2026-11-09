@@ -50,6 +50,7 @@ PAGES = (
     ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, RUNNING, is_admin, ()),
     ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, RUNNING, is_admin, ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, RUNNING, is_admin, ()),
+    ("features", "Features", "/manage/features", "Which features the table uses, and on which page", ASKDND, RUNNING, is_admin, ()),
     ("backups", "Backups and imports", "/manage/backups", "Nightly backups, then imports", ASKDND, RUNNING, is_admin, ()),
     ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, RUNNING, is_admin, ()),
     ("corrections", "Tool corrections", "/manage/tool-corrections", "Fixes to how askdnd reads D&D Beyond, for every character", ASKDND, TUNING, is_admin, ()),

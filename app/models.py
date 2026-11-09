@@ -8,6 +8,7 @@ from datetime import date, datetime
 from enum import StrEnum
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Date,
     DateTime,
@@ -989,3 +990,21 @@ class Token(Timestamped, Base):
     group: Mapped[str | None] = mapped_column(String(80), nullable=True)  # creatures added together roll one Initiative
 
 from app import history  # noqa: E402,F401
+
+
+class UsageEvent(Base):
+    """Something someone did in askdnd: its feature and the page it was done on (app/usage.py; Brett, Nov 9: "doing
+    something", tagged with the page, to see what's used and where UX can improve). Who's left out (admins, test
+    accounts, test campaigns) is decided when it's read."""
+
+    __tablename__ = "usage_events"
+    __table_args__ = (Index("ix_usage_events_campaign_at", "campaign_id", "at"),)
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="CASCADE"))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    feature: Mapped[str] = mapped_column(String(60))
+    page: Mapped[str] = mapped_column(String(30), default="", server_default="")
+    version: Mapped[str] = mapped_column(String(12), default="", server_default="")  # the deploy it happened on
+

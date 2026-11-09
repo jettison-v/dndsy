@@ -61,6 +61,8 @@ def address(path: str, op: dict, ids: dict) -> str:
 # What any page visit keeps about the person visiting: the campaign they're in now (app/campaign_paths.py) and when
 # they were last seen. Never a change to anything of anyone else's.
 BOOKKEEPING = {"users": ("current_campaign_id", "last_seen_at", "updated_at")}
+# Whole tables of bookkeeping: what was done, counted for Admin › Features (app/usage.py), not a change to anything
+BOOKKEEPING_TABLES = {"usage_events"}
 # The asker's own settings, which every signed-in person may change for themself
 OWN = {("POST", "/dice")}  # (Your dice)
 
@@ -69,6 +71,8 @@ def fingerprint(db) -> dict[str, str]:
     db.flush()
     out = {}
     for t in Base.metadata.sorted_tables:
+        if t.name in BOOKKEEPING_TABLES:
+            continue
         row = "to_jsonb(x)" + "".join(f" - '{c}'" for c in BOOKKEEPING.get(t.name, ()))
         out[t.name] = db.execute(text(f'SELECT md5(coalesce(string_agg(({row})::text, \'|\' ORDER BY ({row})::text), \'\')) FROM "{t.name}" x')).scalar()
     return out

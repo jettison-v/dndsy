@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{# Which features get used (app/usage.py; Brett chose A and A, Nov 9, docs/mockups/feature-use/): askdnd's own counts of
+   what the table does, by feature and by the page it was done on. Charts are drawn here as SVG, each day a hover target. #}
+{% block title %}Features · Manage · askdnd{% endblock %}
+{% block content %}
+<main class="page manage-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Features</h1></div>
+  <p class="subtitle">What the table does in askdnd: a roll, a cast, an item used, a change made (not pages opened), and on which page. Counted by askdnd itself, never sent anywhere. Admins' uses are left out (yours, even as a player), and so are test campaigns, where the test accounts play. Rolls go back to the first Table roll; everything else from Nov 9.</p>
+
+  <div class="ft-filters">
+    {% set q = "&campaign=" ~ (here.id if here else "") ~ "&sort=" ~ sort %}
+    <div class="seg" role="group" aria-label="How far back">{% for d in (7, 30, 90) %}<a href="?days={{ d }}{{ q }}" aria-current="{{ 'true' if d == days else 'false' }}">{{ d }} days</a>{% endfor %}</div>
+    {% if campaigns | length > 1 %}<div class="seg" role="group" aria-label="Campaign">{% for c in campaigns %}<a href="?days={{ days }}&campaign={{ c.id }}&sort={{ sort }}" aria-current="{{ 'true' if here and c.id == here.id else 'false' }}">{{ c.name }}</a>{% endfor %}</div>{% endif %}
+  </div>
+
+  <div class="stats ft-stats">
+    <div class="stat"><span>At the table</span><b>{{ s.active }} of {{ s.table }}</b><small>did something in {{ days }} days</small></div>
+    <div class="stat"><span>Game nights</span><b>{{ s.nights }}</b><small>days with 20 or more uses</small></div>
+    <div class="stat"><span>Uses</span><b>{{ s.total }}</b><small>{% if s.change is none %}nothing to compare with yet{% elif s.change >= 0 %}▲ {{ s.change }}% on the {{ days }} days before{% else %}▼ {{ -s.change }}% on the {{ days }} days before{% endif %}</small></div>
+    <div class="stat"><span>Features used</span><b>{{ s.families }} of {{ s.all_families }}</b><small>{{ s.never | length }} never touched</small></div>
+  </div>
+
+  <section class="section">
+    <h2>Every use, by day</h2>
+    <p class="hint">Dashed lines: a deploy reached askdnd.ai. Point at a day for its count.</p>
+    <div class="ft-chart">
+      <svg viewBox="0 0 {{ chart.w }} {{ chart.h }}" role="img" aria-label="Uses per day for the last {{ days }} days, {{ s.total }} in all">
+        {% for y, t in chart.ticks %}<line x1="{{ chart.left }}" x2="{{ chart.right }}" y1="{{ y }}" y2="{{ y }}" class="ft-grid"/><text x="{{ chart.left - 6 }}" y="{{ y + 4 }}" text-anchor="end">{{ t }}</text>{% endfor %}
+        {% for r in chart.releases %}<line x1="{{ r.x }}" x2="{{ r.x }}" y1="{{ chart.top }}" y2="{{ chart.base }}" class="ft-release"/><text x="{{ r.x + (-4 if r.end else 4) }}" y="{{ chart.top + 10 }}" text-anchor="{{ 'end' if r.end else 'start' }}">{{ r.label }}</text>{% endfor %}
+        <path d="{{ chart.area }}" class="ft-area"/><path d="{{ chart.line }}" class="ft-line"/>
+        {% for d in chart.days %}<g class="ft-day"><rect x="{{ d.x - chart.step / 2 }}" y="{{ chart.top }}" width="{{ chart.step }}" height="{{ chart.base - chart.top }}"/><circle cx="{{ d.x }}" cy="{{ d.y }}" r="4"/><title>{{ d.on }}: {{ d.n }} use{{ "s" if d.n != 1 }}</title></g>{% endfor %}
+        <text x="{{ chart.left }}" y="{{ chart.h - 6 }}">{{ chart.days[0].on }}</text><text x="{{ chart.right }}" y="{{ chart.h - 6 }}" text-anchor="end">today</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="ft-head"><h2>By feature</h2>
+      <div class="seg" role="group" aria-label="Order">{% for k, label in (("uses", "Most used"), ("growing", "Growing"), ("falling", "Falling")) %}<a href="?days={{ days }}&campaign={{ here.id if here else '' }}&sort={{ k }}" aria-current="{{ 'true' if k == sort else 'false' }}">{{ label }}</a>{% endfor %}</div></div>
+    {% if rows %}
+    <div class="ft-rows">
+      <div class="ft-row ft-row-head note"><span>Feature</span><span>Uses</span><span class="num">Count</span><span>Who</span><span class="num">On the {{ days }} days before</span></div>
+      {% for r in rows %}
+      <div class="ft-row"><span class="ft-name">{{ r.feature }}</span><span class="ft-bar"><i style="width: {{ (r.uses / top * 100) | round(1) }}%"></i></span><span class="num">{{ r.uses }}</span>
+        <span class="ft-who" aria-label="{{ s.people | selectattr('id', 'in', r.who) | map(attribute='name') | join(', ') or 'no one at the table' }}">{% for p in s.people %}<span class="{{ 'on' if p.id in r.who }}" title="{{ p.name }}"></span>{% endfor %}</span>
+        <span class="num">{% if r.trend is none %}<span class="note">new</span>{% elif r.trend > 0 %}<span class="ft-up">▲ {{ r.trend }}%</span>{% elif r.trend < 0 %}<span class="ft-down">▼ {{ -r.trend }}%</span>{% else %}<span class="note">same</span>{% endif %}</span></div>
+      {% endfor %}
+    </div>
+    {% else %}<p class="note">Nothing yet in these {{ days }} days.</p>{% endif %}
+  </section>
+
+  <div class="section-pair">
+    <section class="section">
+      <h2>By page</h2>
+      <p class="hint">Where things are done: a page that does a lot is worth its polish; one that does little may be in the wrong place.</p>
+      {% for p in s.pages %}
+      <div class="ft-page"><span class="ft-name">{{ p.page }}</span><span class="ft-bar"><i style="width: {{ (p.uses / page_top * 100) | round(1) }}%"></i></span><span class="num">{{ p.uses }}</span>
+        <span class="note ft-top">{% for f, n in p.top %}{{ f }} {{ n }}{{ " · " if not loop.last }}{% endfor %}</span></div>
+      {% else %}<p class="note">Nothing yet.</p>{% endfor %}
+    </section>
+    <section class="section">
+      <h2>Never touched in these {{ days }} days</h2>
+      <p class="hint">Built and on, and no one at the table used it.</p>
+      <div class="chips">{% for f in s.never %}<span class="chip">{{ f }}</span>{% else %}<span class="note">Everything was used.</span>{% endfor %}</div>
+    </section>
+  </div>
+
+  {% if s.people and s.grid_features %}
+  <section class="section">
+    <h2>Who uses what</h2>
+    <p class="hint">The most used features, by character (the DM as the DM). A number in each square, so it reads without the colour.</p>
+    <div class="table-scroll"><div class="ft-grid-wrap" style="--cols: {{ s.people | length }}">
+      <span></span>{% for p in s.people %}<span class="ft-col note">{{ p.name }}</span>{% endfor %}
+      {% for f in s.grid_features %}<span class="ft-name">{{ f }}</span>{% for p in s.people %}{% set n = s.grid.get((f, p.id), 0) %}<span class="ft-cell ft-s{{ step(n) }}" title="{{ p.name }}, {{ f }}: {{ n }}">{{ n or "" }}</span>{% endfor %}{% endfor %}
+    </div></div>
+  </section>
+  {% endif %}
+</main>
+{% endblock %}

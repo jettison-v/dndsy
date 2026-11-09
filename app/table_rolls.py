@@ -483,17 +483,28 @@ def add_roll(db: Session, ch: Character, me_id: int, label: str, dice: str) -> T
     return row
 
 
+KIND_USES = {"attack": "attacks", "save": "saves", "check": "checks", "damage": "damage", "heal": "healing", "temp": "healing",
+             "death": "death saves", "dc": "Grapple and Shove"}
+
+
+def usage_name(kind: str, action: str, via: str) -> str:
+    """A roll's use, as Admin › Features counts it: "Rolls: attacks", "Roll card: damage", "Rolls: rerolls"."""
+    what = {"reroll": "rerolls", "bonus": "added dice", "damage": "damage"}.get(action) or KIND_USES.get(kind, "other")
+    return f"{'Roll card' if via == 'card' else 'Rolls'}: {what}"
+
+
 @router.post("/rolls")
 def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), label: str = Form(""),
               mod: str = Form(""), dmg: str = Form(""), adv: str = Form(""), mode: str = Form("normal"),
               to: str = Form("table"), extra: list[str] = Form([]), parent: int = Form(0), action: str = Form(""),
               die_size: int = Form(0, alias="die"), part: list[str] = Form([]), dmg_part: list[str] = Form([]),
               count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), token: int = Form(0),
-              db: Session = Depends(get_db)):
+              via: str = Form(""), db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
     none). A follow-up: `parent` (your roll) and `action` = damage | reroll | bonus."""
+    request.state.usage = usage_name(kind, action, via)  # (which features get used: app/usage.py)
     user = current_user(request)
     if not user:
         return _error("Sign in to roll.", 401)

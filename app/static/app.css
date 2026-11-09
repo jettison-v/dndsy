@@ -3651,3 +3651,41 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 /* Your account › Email (app/digest.py): a switch per campaign */
 .email-settings { display: grid; gap: var(--sp-1); margin-top: var(--sp-3); }
 .email-row { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 0; border-top: 1px solid var(--line); }
+
+/* Admin › Features (app/usage.py): which features get used. One series per chart, in the admin blue */
+.ft-filters { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-bottom: var(--sp-4); }
+.ft-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.ft-chart svg { width: 100%; height: auto; display: block; }
+.ft-chart text { fill: var(--muted); font-size: var(--fs-xs); }
+.ft-grid { stroke: var(--line); }
+.ft-release { stroke: var(--muted); stroke-dasharray: 3 3; }
+.ft-area { fill: color-mix(in srgb, var(--blue) 18%, transparent); }
+.ft-line { fill: none; stroke: var(--blue); stroke-width: 2; stroke-linejoin: round; }
+.ft-day rect { fill: transparent; }
+.ft-day circle { fill: var(--blue); stroke: var(--surface); stroke-width: 2; opacity: 0; }
+.ft-day:hover circle { opacity: 1; }
+.ft-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--sp-2); }
+.ft-rows { display: grid; gap: 2px; margin-top: var(--sp-2); }
+.ft-row, .ft-page { display: grid; grid-template-columns: minmax(140px, 1.3fr) minmax(80px, 2fr) 56px 110px 120px; gap: var(--sp-3); align-items: center; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm); }
+.ft-page { grid-template-columns: minmax(110px, 1fr) minmax(60px, 1.4fr) 48px; row-gap: 0; }
+.ft-page .ft-top { grid-column: 1 / -1; font-size: var(--fs-xs); padding-bottom: var(--sp-2); }
+.ft-row:not(.ft-row-head):hover { background: var(--surface-2); }
+.ft-row-head { font-size: var(--fs-xs); }
+.ft-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ft-bar { height: 10px; background: var(--surface-2); border-radius: 0 var(--r-xs) var(--r-xs) 0; position: relative; }
+.ft-bar i { position: absolute; inset: 0 auto 0 0; background: var(--blue); border-radius: 0 var(--r-xs) var(--r-xs) 0; }
+.ft-who { display: flex; gap: 3px; }
+.ft-who span { width: 13px; height: 13px; border-radius: 50%; border: 1.5px solid var(--line); }
+.ft-who span.on { background: var(--blue); border-color: var(--blue); }
+.ft-up { color: var(--green); } .ft-down { color: var(--red); }
+.ft-grid-wrap { display: grid; grid-template-columns: minmax(140px, 1.2fr) repeat(var(--cols), minmax(56px, 1fr)); gap: 3px; font-size: var(--fs-sm); min-width: 520px; }
+.ft-col { text-align: center; align-self: end; }
+.ft-cell { height: 24px; border-radius: var(--r-xs); display: grid; place-items: center; font-size: var(--fs-xs); font-variant-numeric: tabular-nums; background: var(--surface-2); }
+.ft-s1 { background: color-mix(in srgb, var(--blue) 30%, var(--surface-2)); }
+.ft-s2 { background: color-mix(in srgb, var(--blue) 60%, var(--surface-2)); }
+.ft-s3 { background: var(--blue); color: var(--bg); }
+@media (max-width: 900px) {
+  .ft-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ft-row { grid-template-columns: minmax(0, 1fr) 48px 80px; }
+  .ft-row .ft-bar, .ft-row .ft-who { display: none; }
+}
