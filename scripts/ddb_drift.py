@@ -64,6 +64,9 @@ def essentials(s: dict) -> list[str]:
 def main() -> int:
     from app import characters, ddb
 
+    import fixtures  # (the saved sheets are locked: unlocked on first use; FIXTURES_KEY is the workflow's secret)
+
+    fixtures.ready()
     copies: dict = {}
     for f in sorted((ROOT / "tests/fixtures/ddb").glob("*.json")):
         d = json.loads(f.read_text())

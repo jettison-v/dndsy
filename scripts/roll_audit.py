@@ -155,6 +155,9 @@ def dice_in(text: str | None) -> set[str]:
 
 def sheet_text(name: str) -> str | None:
     """A spell's own words as D&D Beyond gives them on the party's saved sheets (for spells outside the SRD and PHB)."""
+    import fixtures  # (the saved sheets are locked: unlocked on first use)
+
+    fixtures.ready()
     from app import ddb
 
     for f in sorted((ROOT / "tests" / "fixtures" / "ddb").glob("*.json")):

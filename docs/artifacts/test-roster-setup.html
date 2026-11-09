@@ -92,7 +92,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
     <div class="table-box"><table>
       <thead><tr><th>Account (Google and D&amp;D Beyond)</th><th>Has now</th><th>Adds</th><th>Total</th></tr></thead>
       <tbody>
-        <tr><td><b>Cupta Family</b><br><span class="note">D&amp;D Beyond: CatharticPlayer</span></td><td>Cathartic, Roscoe Norell</td><td class="add">Cole (twin), Test Ranger</td><td>4</td></tr>
+        <tr><td><b>Family</b><br><span class="note">D&amp;D Beyond: CatharticPlayer</span></td><td>Cathartic, Roscoe Norell</td><td class="add">Cole (twin), Test Ranger</td><td>4</td></tr>
         <tr><td><b>Trent Davis Lawson</b><br><span class="note">D&amp;D Beyond: ViPlayer</span></td><td>Vi</td><td class="add">Trah (twin), Test Bard, Test Rogue</td><td>4</td></tr>
         <tr><td><b>Levi's account</b></td><td>Levi Shadowquick</td><td class="add">No Name (twin), Big C (twin), Test Barbarian, Test Fighter</td><td>5</td></tr>
         <tr><td><b>Jettison</b><br><span class="note">D&amp;D Beyond: WeslockePlayer, the DM</span></td><td>Weslocke (unlinked)</td><td>Nothing: the DM plays no character</td><td>1</td></tr>
@@ -120,14 +120,14 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
 
 <script>
 const TWINS = [
-  { key: "cole", name: "Cole (twin)", real: "Cole", account: "Cupta Family", build: "Wood Elf · Druid 6 (Circle of the Moon) / Monk 2", extra: "His Owl familiar comes with the copy (Extras)." },
+  { key: "cole", name: "Cole (twin)", real: "Cole", account: "Family", build: "Wood Elf · Druid 6 (Circle of the Moon) / Monk 2", extra: "His Owl familiar comes with the copy (Extras)." },
   { key: "trah", name: "Trah (twin)", real: "Trah", account: "Trent Davis Lawson", build: "Gnome · Wizard 7 (Evoker) / Fighter 1", extra: "Check his spellbook's spells came across." },
   { key: "noname", name: "No Name (twin)", real: "No Name", account: "Levi's account", build: "Human · Monk 6 (Warrior of Shadow) / Warlock 2", extra: "" },
   { key: "bigc", name: "Big C (twin)", real: "Big C", account: "Levi's account", build: "Tiefling · Paladin 6 (Oath of Conquest) / Sorcerer 2 (Divine Soul)",
     extra: "", flag: "Oath of Conquest is from Xanathar's and Divine Soul from the 2014 rules. After claiming, open the sheet: if either subclass shows as missing or locked, VTT test doesn't share that book. Tell Claude what it shows." },
 ];
 const OTHERS = [
-  { key: "ranger", name: "Test Ranger", account: "Cupta Family", build: "Ranger 5 (Beast Master), any species", extra: "Pick its Primal Companion (Beast of the Land) so it's on Extras, and prepare Hunter's Mark." },
+  { key: "ranger", name: "Test Ranger", account: "Family", build: "Ranger 5 (Beast Master), any species", extra: "Pick its Primal Companion (Beast of the Land) so it's on Extras, and prepare Hunter's Mark." },
   { key: "bard", name: "Test Bard", account: "Trent Davis Lawson", build: "Bard 5 (College of Lore), any species", extra: "Bardic Inspiration is what's being tested: give it its full uses." },
   { key: "rogue", name: "Test Rogue", account: "Trent Davis Lawson", build: "Rogue 5 (any subclass), any species", extra: "Sneak Attack and Cunning Action; give it Thieves' Tools." },
   { key: "barbarian", name: "Test Barbarian", account: "Levi's account", build: "Barbarian 5 (any subclass), any species", extra: "Rage and Reckless Attack; a Greataxe." },

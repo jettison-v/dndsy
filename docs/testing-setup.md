@@ -8,8 +8,8 @@ Email addresses stay out of this file because the repo is treated as public. Eac
 
 | | DM | Player 2 | Player 3 | Player 4 |
 |---|---|---|---|---|
-| **Chrome profile on the Mac Mini** | Jettison | Cupta Family | Trent | None: made in its own seat window (below) |
-| **Google and D&D Beyond login** | The Jettison Corp account | The Cupta Family account | The Trent Davis Lawson account | Levi's account (Brett, Nov 3) |
+| **Chrome profile on the Mac Mini** | Jettison | Family | Trent | None: made in its own seat window (below) |
+| **Google and D&D Beyond login** | The Jettison Corp account | The Family account | The Trent Davis Lawson account | Levi's account (Brett, Nov 3) |
 | **D&D Beyond username** | WeslockePlayer | CatharticPlayer | ViPlayer | Levi's |
 | **D&D Beyond role** | Owner of the campaign | Player | Player | Player |
 | **Character** | None at the table: Weslocke (172986973) is on the account but stays unlinked, as DMs at this table don't play one | Cathartic, called CatharticPlayer on D&D Beyond ([sheet](https://www.dndbeyond.com/characters/172986165)). Roscoe Norell (Druid 6 Land / Warlock 2) is on the same account on D&D Beyond only: Levi took over his testing, and askdnd let him go on Nov 5 | Vi ([sheet](https://www.dndbeyond.com/characters/172992073)) | Levi Shadowquick, Druid 6 (Circle of the Land) / Warlock 2 ([sheet](https://www.dndbeyond.com/characters/173148163)), for Wild Shape |

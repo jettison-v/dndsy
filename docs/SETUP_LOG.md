@@ -1043,3 +1043,11 @@ renamed the app it looks for), so **Appium** drives it instead, the open-source 
 installed with its own copy of Node.js inside the test folder so nothing changes system-wide. It now runs every night
 after the live test, on a small iPhone, a large one and an iPad, and reports to Sentry. Lesson for a new project: Apple's
 tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulator) to one version and update them together.
+
+## Going public, with the test data locked (Nov 9)
+
+**What was set up.** The repository can be public again. The one thing that couldn't be published was the tests' saved copies of the party's D&D Beyond sheets: D&D Beyond shows anyone a public character with the books' words in it, but that's D&D Beyond's to show, not ours to republish. So those copies are now committed *encrypted*: one file, `tests/fixtures/ddb.locked`, that a key opens. The key lives in three places only: `.env` on this Mac, and a GitHub Actions secret called `FIXTURES_KEY` that the checks use. The tests unlock the file themselves before they start. A test also checks every committed file for book text, email addresses and the table's real names.
+
+**Why.** Public repositories get GitHub's checks for free (this month's included minutes had run out). Encrypting beats deleting: the tests keep using real sheets, and nothing readable is published. A pull request from someone else's copy (a fork) never gets the secret, so their tests can't unlock it.
+
+**For a new project.** Keep anything you can't publish (other people's text, private data) out of git, or commit it encrypted with the key held as a secret. Decide early whether a repository may ever be public: history is forever once it is. Add a test that fails when something private slips in; it's cheaper than remembering.

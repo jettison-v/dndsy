@@ -31,6 +31,9 @@ env:
   CI: "1"
   TEST_DATABASE_URL: postgresql+psycopg://askdnd:askdnd@localhost:5432/askdnd_test
   APP_ENV: development
+  # Opens tests/fixtures/ddb.locked, the party's saved D&D Beyond sheets (scripts/fixtures.py; the books' words, not ours
+  # to publish). A pull request from a fork gets no secrets, so its tests can't read them: only ours run
+  FIXTURES_KEY: ${{ secrets.FIXTURES_KEY }}
 
 jobs:
   server:
