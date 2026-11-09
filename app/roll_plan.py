@@ -31,6 +31,9 @@ from app import roll_recipes as rr
 
 DICE = re.compile(r"\b(\d+)d(\d+)\b")
 # Dice that aren't a roll at the table: how many charges, doses or beads an item has (rolled once, when it's found)
+# ...and dice that aren't this action's roll: how long something lasts, or the lower-level die a feature's words name
+# ("roll 1d6 in place of the normal damage": the sheet already has this level's)
+ASIDES = re.compile(r"\b\d+d\d+\s+(?:hours?|minutes?|days?|rounds?)\b|\broll \d+d\d+ in place of\b", re.I)
 COUNTS = re.compile(r"\b(\d+)d(\d+)(?:\s*\+\s*\d+)?\s+(?:expended\s+)?(?:charges|doses|magic beads|beads)\b", re.I)
 SAVE = re.compile(r"^(Str|Dex|Con|Int|Wis|Cha)\s+(\d+)$")
 BONUS = re.compile(r"^[+−-]\d+$")
@@ -39,8 +42,27 @@ UNARMED = (("damage", "Damage", "an attack roll"), ("grapple", "Grapple", "the t
            ("shove", "Shove", "the target saves: pushed 5 feet or Prone"))
 
 
+def fill(part: str, sheet: dict) -> str:
+    """A recipe part's {tokens} from the sheet: {level:Fighter}, {mod:dexterity}, N{martial_arts} (the Monk's die),
+    {sneak} (Sneak Attack's d6s), {lands_aid} (Land's Aid's d6s), N{bardic} (the Bard's die)."""
+    lv = {c.get("name"): c.get("level") or 0 for c in sheet.get("classes") or []}
+    mods = {a["key"]: a.get("modifier") or 0 for a in sheet.get("abilities") or []}
+    monk, bard = lv.get("Monk", 0), lv.get("Bard", 0)
+    die = {"martial_arts": 0 if not monk else 6 if monk < 5 else 8 if monk < 11 else 10 if monk < 17 else 12,
+           "bardic": 0 if not bard else 6 if bard < 5 else 8 if bard < 10 else 10 if bard < 15 else 12}
+    part = re.sub(r"(\d*)\{(martial_arts|bardic)\}", lambda m: f"{m.group(1) or 1}d{die[m.group(2)]}" if die[m.group(2)] else "", part)
+    druid = lv.get("Druid", 0)
+    plain = {"sneak": str((lv.get("Rogue", 0) + 1) // 2), "lands_aid": str(2 + (druid >= 10) + (druid >= 14))}
+
+    def value(m):
+        k = m.group(1)
+        return str(lv.get(k[6:], 0)) if k.startswith("level:") else str(mods.get(k[4:], 0)) if k.startswith("mod:") else plain.get(k, "")
+    out = re.sub(r"\{([^}]+)\}", value, part).replace("+-", "-")
+    return re.sub(r"\+0\b(?!d)", "", out)
+
+
 def _part(text: str, src: str) -> dict | None:
-    p = rr.parse_part(text)
+    p = rr.parse_part((text or "").replace("\u2212", "-").replace("+-", "-"))  # (a weapon's 1d6+-1, Strength −1)
     if not p:
         return None
     n, d, flat, kind = p
@@ -53,10 +75,12 @@ def _bonus(hit: str) -> int | None:
 
 
 def _dice_in(text: str) -> set[str]:
-    return {f"{n}d{d}" for n, d in DICE.findall(COUNTS.sub("", text or ""))}
+    return {f"{n}d{d}" for n, d in DICE.findall(ASIDES.sub("", COUNTS.sub("", text or "")))}
 
 
 def _recipe_source(o: dict) -> str | None:
+    if o.get("kind") == "feature" and rr.feature(o["name"]) is not None:
+        return "checked"
     recipe = o.get("recipe")
     if not recipe:
         return None
@@ -106,10 +130,18 @@ def plan(sheet: dict, o: dict) -> dict:
             {"key": k, "name": n, "says": s if k == "damage" else f"{s} (DC {dc})"} for k, n, s in UNARMED]}
         src["choice"] = "rule"
 
-    recipe, rsrc = o.get("recipe"), _recipe_source(o)
+    recipe = rr.feature(o["name"]) if o.get("kind") == "feature" and rr.feature(o["name"]) is not None else o.get("recipe")
+    rsrc = _recipe_source(o)
     events = (recipe or {}).get("events") or []
+    if not events and (mod := rr.modifier(o["name"])):  # it changes another roll: Guidance, Sneak Attack, Deflect Attacks
+        out["modifier"], src["modifier"] = _modifier(o["name"], mod, sheet), "checked"
+        out["steps"], out["status"] = ["modify"], "ready"
+        out["modifiers"] = []
+        return out
     for e in events:
-        parts = [p for p in (_part(x, e.get("name") or o["name"]) for x in e.get("parts") or []) if p]
+        parts = [p for p in (_part(fill(x, sheet), e.get("name") or o["name"]) for x in e.get("parts") or []) if p]
+        if e.get("alt"):
+            out.setdefault("alternatives", []).append({"of": e.get("name") or o["name"], "parts": [p for p in (_part(x, e.get("name") or o["name"]) for x in e["alt"]) if p], "says": e.get("note", "")})
         for p in parts:
             p["count"] = e.get("count") or 1
             if e.get("mod"):
@@ -137,14 +169,18 @@ def plan(sheet: dict, o: dict) -> dict:
             out["save"] = None
         if "hit" in on and not out["attack"] and (b := _spell_attack(sheet)) is not None:
             out["attack"], src["attack"] = {"bonus": b}, "sheet"
-        if out["save"] and not out["save"].get("dc"):
-            out["save"]["dc"] = _spell_dc(sheet)
+    if out["save"] and not out["save"].get("dc"):  # a feature's: its words say the DC ("DC 14"), else it's the spell save DC
+        said = re.search(r"\bDC (\d+)", f"{o.get('text') or ''} {o.get('summary') or ''} {o.get('meta') or ''}")
+        out["save"]["dc"] = int(said.group(1)) if said else _spell_dc(sheet)
+        src["save"] = "sheet"
     if events:
         src["damage" if out["damage"] or out["riders"] else "heal"] = rsrc
         if any(any(e.get("upcast") or []) or e.get("count_upcast") for e in events) and o.get("level"):
             levels = _slot_levels(sheet, o["level"])
             if len(levels) > 1:
                 out["choice"], src["choice"] = {"ask": "At what level?", "options": [{"key": f"l{x}", "name": f"{x}", "says": ""} for x in levels]}, "sheet"
+    elif recipe is not None and rsrc in ("checked", "correction"):
+        pass  # (a checked recipe that rolls nothing: Shillelagh, Find Steed; never dice read from its words)
     elif o.get("dice"):
         weapon = next((a for a in sheet.get("attacks") or [] if a["name"] == o["name"]), None) or next(  # (Flurry of Blows: the Unarmed Strike's)
             (a for a in sheet.get("attacks") or [] if a.get("damage") and a["damage"] == o.get("meta")), None) if out["attack"] else None
@@ -156,6 +192,7 @@ def plan(sheet: dict, o: dict) -> dict:
     if out["attack"] or (out["damage"] and o.get("kind") == "attack"):
         for r in class_rules.turn(sheet)["riders"]:  # what you can add once it hits (Stunning Strike, Divine Smite…)
             out["riders"].append({"name": r["name"], "when": "hit", "says": r["effect"], "on": r["when"]})
+    out["modifiers"] = modifiers_for(sheet, "attack" if out["attack"] else "save" if out["save"] else "")
 
     steps = (["choose"] if out["choice"] else []) + (["attack"] if out["attack"] else []) + (["save"] if out["save"] else [])
     if out["damage"]:
@@ -169,6 +206,37 @@ def plan(sheet: dict, o: dict) -> dict:
     return out
 
 
+def _modifier(name: str, mod: dict, sheet: dict) -> dict:
+    out = {"name": name, **{k: v for k, v in mod.items() if k not in ("why", "checked")}, "why": mod.get("why", "")}
+    for k in ("adds", "reduces"):
+        if mod.get(k):
+            out[k] = fill(mod[k], sheet)
+    return out
+
+
+def _has(sheet: dict) -> set[str]:
+    """The names of what the character has: features, actions, spells (what a modifier is named after)."""
+    names = {a.get("name") for a in sheet.get("actions") or []} | {s.get("name") for s in sheet.get("spells") or []}
+    names |= {f.get("name") for f in sheet.get("features") or [] if isinstance(f, dict)}
+    return {n for n in names if n}
+
+
+def modifiers_for(sheet: dict, roll: str) -> list[dict]:
+    """What this character can do to a roll of this kind ("attack", "save", "check"): their own modifiers, each with
+    when it applies (before, after a failure, on a hit). Bless and the like, given by others, come from the table."""
+    if not roll:
+        return []
+    has = _has(sheet)
+    out = []
+    for name in sorted(has):
+        mod = rr.modifier(name)
+        if not mod or mod.get("gives") or mod.get("from"):
+            continue
+        if roll in mod.get("to") or (roll == "attack" and mod.get("when") == "on_hit"):
+            out.append(_modifier(name, mod, sheet))
+    return out
+
+
 def _judge(out: dict, o: dict, rsrc: str | None) -> None:
     """The plan's status, and its gaps in plain words."""
     text = f"{o.get('meta') or ''} {o.get('text') or ''} {o.get('summary') or ''}"
@@ -176,8 +244,9 @@ def _judge(out: dict, o: dict, rsrc: str | None) -> None:
     rolled |= {p["dice"] for r in out["riders"] for p in r.get("parts") or [] if p.get("dice")}
     for e in (o.get("recipe") or {}).get("events") or []:
         rolled |= {f"{n}d{d}" for x in e.get("upcast") or [] for n, d in DICE.findall(x)}
-        if e.get("cantrip") == "dice":  # (a cantrip's dice grow at levels 5, 11 and 17)
-            rolled |= {f"{int(n) * k}d{d}" for x in e.get("parts") or [] for n, d in DICE.findall(x) for k in (2, 3, 4)}
+        times = {"dice": (2, 3, 4), "extra": (1, 2, 3)}.get(e.get("cantrip"), ())  # (a cantrip's dice grow at levels 5, 11 and 17)
+        rolled |= {f"{int(n) * k}d{d}" for x in e.get("parts") or [] for n, d in DICE.findall(x) for k in times}
+        rolled |= {f"{n}d{d}" for x in e.get("alt") or [] for n, d in DICE.findall(x)}  # (an alternative: Depth Charge underwater)
     if rsrc not in ("checked", "correction"):  # (a checked recipe already accounts for every die in the rules text)
         unrolled = sorted(_dice_in(text) - rolled - {"1d20"})
         if unrolled:
@@ -203,16 +272,4 @@ def plans(sheet: dict) -> list[dict]:
 
 # The gaps askdnd knows about on the table's sheets, each with what fills it (scripts/roll_coverage.py, Nov 9). A gap
 # not listed fails tests/test_roll_plan.py; one that's filled must come off the list (the test says so).
-KNOWN_GAPS = {
-    "Green-Flame Blade": "a 2024 spell outside the free rules with no recipe: needs a checked one (the second target's fire)",
-    "Branding Smite": "D&D Beyond's data rolls it on casting with no upcasting: needs a checked recipe (on the next hit, +1d6 a level)",
-    "Depth Charge": "a spell outside the free rules: needs a checked recipe",
-    "Raulothim's Psychic Lance": "a spell outside the free rules: needs a checked recipe",
-    "Find Steed": "the dice are the steed's (its stat block, app/summons.py), not the caster's",
-    "Favored by the Gods": "adds 2d4 to a missed attack or failed save: the card's after-a-miss pill",
-    "Guidance": "adds 1d4 to an ability check: a pill on the check it's used on",
-    "Deflect Attack": "reduces the damage you take: a Reaction's own roll, not yet a step of the card",
-    "Deflect Attack: Redirect Attack": "the same reduction; the redirected damage is in the plan",
-    "Unarmed Strike": "the Martial Arts die its words name for lower levels; the sheet's die is the one rolled",
-    "Soul Coin": "Drain Life's Temporary Hit Points: needs an item recipe",
-}
+KNOWN_GAPS: dict[str, str] = {}  # (empty since Nov 9: every party gap has a recipe, a modifier or a reason it isn't a roll)

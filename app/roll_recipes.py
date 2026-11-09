@@ -60,6 +60,18 @@ def spell(name: str) -> dict | None:
     return (recipes().get("spells") or {})[key] if key else None
 
 
+def feature(name: str) -> dict | None:
+    """The recipe for a class feature's roll by its Battle name ("Second Wind"), parts with {tokens} the sheet fills in
+    (app/roll_plan.py): {level:Fighter}, {mod:dexterity}, {martial_arts}, {sneak}, {lands_aid}, {bardic}."""
+    return (recipes().get("features") or {}).get((name or "").replace("'", "’")) or (recipes().get("features") or {}).get(name or "")
+
+
+def modifier(name: str) -> dict | None:
+    """What a feature or spell does to another roll (Bless, Guidance, Favored by the Gods, Sneak Attack, Deflect Attacks…):
+    when ("before", "after_fail", "on_hit", "on_damage", "damage_taken"), what it's for, what it adds or reduces."""
+    return (recipes().get("modifiers") or {}).get(name or "")
+
+
 def item(name: str) -> dict | None:
     """The recipe for an item by name ("Potion of Healing (Superior)"), any capitalization."""
     want = (name or "").removeprefix("Use an item: ").strip().lower()

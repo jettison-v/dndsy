@@ -153,10 +153,37 @@ def dice_in(text: str | None) -> set[str]:
     return {f"{m.group(1)}d{m.group(2)}" for m in DICE.finditer(text or "")}
 
 
+def sheet_text(name: str) -> str | None:
+    """A spell's own words as D&D Beyond gives them on the party's saved sheets (for spells outside the SRD and PHB)."""
+    from app import ddb
+
+    for f in sorted((ROOT / "tests" / "fixtures" / "ddb").glob("*.json")):
+        try:
+            sheet = ddb.parse_character(ddb.sanitize(json.loads(f.read_text())["data"]))
+        except (KeyError, ValueError, TypeError, AttributeError, ddb.DdbError):  # (items.json is a list of items, not a sheet)
+            continue
+        for sp in sheet.get("spells") or []:
+            if sp["name"] == name:
+                return sp.get("text") or ""
+    return None
+
+
+def cantrip_dice(recipe: dict) -> set[str]:
+    """The larger dice a cantrip's parts grow to at levels 5, 11 and 17."""
+    out = set()
+    for e in recipe.get("events") or []:
+        times = {"dice": (2, 3, 4), "extra": (1, 2, 3)}.get(e.get("cantrip"), ())
+        for p in e.get("parts") or []:
+            m = DICE.search(p or "")
+            if m:
+                out |= {f"{int(m.group(1)) * k}d{m.group(2)}" for k in times}
+    return out
+
+
 def recipe_dice(recipe: dict) -> list[str]:
     out = []
     for e in recipe.get("events") or []:
-        for p in list(e.get("parts") or []) + list(e.get("upcast") or []):
+        for p in list(e.get("parts") or []) + list(e.get("upcast") or []) + list(e.get("alt") or []):
             m = DICE.search(p or "")
             if m:
                 out.append(f"{m.group(1)}d{m.group(2)}")
@@ -216,12 +243,27 @@ def build() -> int:
         problems += bool(missing)
         out[name] = {**recipe, "checked": "by hand (PHB)"}
         phb_rows.append((name, recipe.get("level") or 0, recipe, f"by hand: {o['why']}" + (f"; **not in the PHB text: {missing}**" if missing else "")))
+    # spells from other books that the table's sheets have (Xanathar's, Tasha's, the 2014 PHB…): by hand, checked
+    # against the spell's own words on the party's saved sheets (tests/fixtures/ddb)
+    for name, o in sorted((hand.get("other_spells") or {}).items()):
+        recipe = {k: v for k, v in o.items() if k not in ("why", "book")}
+        own = sheet_text(name)
+        missing = [d for d in recipe_dice(recipe) if own is not None and d not in dice_in(own)]
+        unrolled = sorted(dice_in(own) - set(recipe_dice(recipe)) - cantrip_dice(recipe)) if own else []
+        problems += bool(missing or unrolled or own is None)
+        out[name] = {**recipe, "checked": f"by hand ({o.get('book') or 'its own text'})"}
+        phb_rows.append((name, recipe.get("level") or 0, recipe, f"by hand ({o.get('book')}): {o['why']}"
+                         + (f"; **not in its text: {missing}**" if missing else "") + (f"; **its text also has {unrolled}**" if unrolled else "")
+                         + ("; **not on a saved sheet to check against**" if own is None else "")))
     items = {}
     for name, o in sorted((hand.get("items") or {}).items()):
         items[name] = {"level": 0, **{k: v for k, v in o.items() if k != "why"}, "checked": "by hand"}
     beasts = beast_rows()
     problems += sum(1 for r in beasts if r[3].startswith("**"))
-    OUT.write_text(json.dumps({"credit": CREDIT, "spells": out, "items": items}, indent=1, sort_keys=True) + "\n")
+    features = {n: {**{k: v for k, v in f.items() if k != "why"}, "checked": "by hand"} for n, f in (hand.get("features") or {}).items()}
+    modifiers = {n: {**m, "checked": "by hand"} for n, m in (hand.get("modifiers") or {}).items()}
+    OUT.write_text(json.dumps({"credit": CREDIT, "spells": out, "items": items, "features": features, "modifiers": modifiers},
+                              indent=1, sort_keys=True) + "\n")
     write_report(report, phb_rows, [(n, 0, {k: v for k, v in o.items() if k != "why"}, o["why"]) for n, o in sorted((hand.get("items") or {}).items())],
                  beasts, campaign_rows(out) if "--campaign" in sys.argv else None)
     print(f"{len(out)} spell recipes, {len(items)} items, {len(beasts)} Beast actions; {problems} to check")
@@ -287,7 +329,7 @@ def describe(recipe: dict) -> str:
         if e.get("count_upcast"):
             up.append(f"+{e['count_upcast']} {e.get('count_label', '')} per slot level")
         if e.get("cantrip"):
-            up.append("more beams at levels 5, 11, 17" if e["cantrip"] == "count" else "dice ×2/×3/×4 at levels 5, 11, 17")
+            up.append({"count": "more beams at levels 5, 11, 17", "extra": "none before level 5, then ×1/×2/×3 at levels 5, 11, 17"}.get(e["cantrip"], "dice ×2/×3/×4 at levels 5, 11, 17"))
         rep = f"; again at the {e['repeat']}" if e.get("repeat") else ""
         bits.append(f"{e.get('name', '')}: {count}{parts} ({on}{rep}){'; ' + '; '.join(up) if up else ''}")
     return " · ".join(bits) or "no damage or healing roll"

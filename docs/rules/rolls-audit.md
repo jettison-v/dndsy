@@ -123,7 +123,7 @@ the script.
 | Teleport | 7 | Mishap: 3d10 force (no roll to hit) | by hand: the GM rolls the outcome; this is the damage of a Mishap; same dice as the 2024 PHB |
 | Thunderwave | 1 | Thunderwave: 2d8 thunder (Con save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
 | Time Stop | 9 | Turns in a row: 1d4+1 (plain) | by hand: how many turns you take is a roll; same dice as the 2024 PHB |
-| True Strike | cantrip | Extra Radiant (level 5+): 1d6 radiant (no roll to hit); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: a weapon attack; extra Radiant damage only from level 5; same dice as the 2024 PHB |
+| True Strike | cantrip | Extra Radiant (level 5+): 1d6 radiant (no roll to hit); none before level 5, then ×1/×2/×3 at levels 5, 11, 17 | by hand: a weapon attack; extra Radiant damage only from level 5; same dice as the 2024 PHB |
 | Tsunami | 8 | When it appears: 6d10 bludgeoning (Str save, half on a success) · Later rounds: 5d10 bludgeoning (Str save, nothing on a success) | by hand: a smaller save-or-take for later rounds, shrinking each round; same dice as the 2024 PHB |
 | Vampiric Touch | 3 | Vampiric Touch: 3d6 necrotic (on a hit; again at the Magic action on later turns); +1d6 per slot level | by hand: you also regain half the damage; same dice as the 2024 PHB |
 | Vicious Mockery | cantrip | Vicious Mockery: 1d6 psychic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
@@ -143,10 +143,18 @@ recipes; no book text). Their dice are checked against the offline copy when it'
 
 | Spell | Level | How it rolls | Checked |
 |---|---|---|---|
+| Find Steed | 2 | no damage or healing roll | by hand: the steed attacks with its own stat block (app/summons.py), not the caster's dice |
 | Mind Sliver | cantrip | Mind Sliver: 1d6 psychic (Int save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: not in the SRD; checked against the 2024 Player's Handbook |
 | Thorn Whip | cantrip | Thorn Whip: 1d6 piercing (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: not in the SRD; checked against the 2024 Player's Handbook |
 | Toll the Dead | cantrip | Unhurt target: 1d8 necrotic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 · Target missing Hit Points: 1d12 necrotic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: 1d8, or 1d12 if the target is missing Hit Points; not in the SRD, checked against the 2024 Player's Handbook |
 | Word of Radiance | cantrip | Word of Radiance: 1d6 radiant (Con save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: not in the SRD; checked against the 2024 Player's Handbook |
+| Absorb Elements | 1 | Absorb Elements: 1d6 (added to each hit while it lasts); +1d6 per slot level | by hand (Xanathar's): Xanathar's: resistance now, and the extra damage rides the first melee hit on your next turn |
+| Branding Smite | 2 | Branding Smite: 2d6 radiant (added to each hit while it lasts); +1d6 per slot level | by hand (PHB 2014): the 2014 Player's Handbook's (the 2024 one has Shining Smite): extra damage on the next weapon hit, not rolled on casting |
+| Depth Charge | 3 | Depth Charge: 7d6 thunder (Con save, half on a success); +1d6 per slot level | by hand (another book): 7d6, or 9d6 for a creature submerged in a liquid: one or the other, never both |
+| Green-Flame Blade | cantrip | Green-Flame Blade: 1d8 fire (on a hit); none before level 5, then ×1/×2/×3 at levels 5, 11, 17 · Leaping fire: 1d8 fire + spellcasting modifier (no roll to hit); none before level 5, then ×1/×2/×3 at levels 5, 11, 17 | by hand (another book): Tasha's: a melee weapon attack with the weapon's own damage, and fire that leaps to a second creature; both grow at levels 5, 11 and 17 |
+| Lightning Lure | cantrip | Lightning Lure: 1d8 lightning (Str save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | by hand (another book): Tasha's: a Strength save; the damage only if pulled within 5 ft |
+| Raulothim's Psychic Lance | 4 | Raulothim's Psychic Lance: 7d6 psychic (Int save, half on a success); +1d6 per slot level | by hand (another book): Fizban's: an Intelligence save, half on a success |
+| Sickening Radiance | 4 | Sickening Radiance: 4d10 radiant (Con save, nothing on a success; again at the a creature entering it or starting its turn there) | by hand (another book): Xanathar's: a save each time a creature enters the light or starts its turn there |
 
 ## Items
 
@@ -157,10 +165,12 @@ recipes; no book text). Their dice are checked against the offline copy when it'
 | Basic Poison | Basic Poison: 1d4 poison (no roll to hit) | SRD 5.2 adventuring gear |
 | Holy Water | Holy Water: 2d8 radiant (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
 | Hunting Trap | Hunting Trap: 1d4 piercing (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
+| Keoghtom's Ointment | Keoghtom's Ointment: 2d8+2 (healing) | a dose heals 2d8 + 2 (the jar's 1d4 + 1 doses are counted when it's found) |
 | Potion of Healing | Healing: 2d4+2 (healing) | SRD 5.2 Potions of Healing table |
 | Potion of Healing (Greater) | Healing: 4d4+4 (healing) | SRD 5.2 Potions of Healing table |
 | Potion of Healing (Superior) | Healing: 8d4+8 (healing) | SRD 5.2 Potions of Healing table |
 | Potion of Healing (Supreme) | Healing: 10d4+20 (healing) | SRD 5.2 Potions of Healing table |
+| Soul Coin | Drain Life: 1d10 (Temporary Hit Points) | Drain Life: Temporary Hit Points from the soul inside (a Bonus Action, 2024 DMG) |
 
 ## Beast actions (Wild Shape)
 

@@ -976,6 +976,11 @@
      "cantrip": "dice"
     }
    ]
+  },
+  "Find Steed": {
+   "why": "the steed attacks with its own stat block (app/summons.py), not the caster's dice",
+   "level": 2,
+   "events": []
   }
  },
  "items": {
@@ -1100,6 +1105,401 @@
      "note": "Extra damage when the coated weapon or ammunition deals Piercing or Slashing damage"
     }
    ]
+  },
+  "Soul Coin": {
+   "why": "Drain Life: Temporary Hit Points from the soul inside (a Bonus Action, 2024 DMG)",
+   "events": [
+    {
+     "name": "Drain Life",
+     "on": "temp",
+     "parts": [
+      "1d10"
+     ]
+    }
+   ]
+  },
+  "Keoghtom's Ointment": {
+   "why": "a dose heals 2d8 + 2 (the jar's 1d4 + 1 doses are counted when it's found)",
+   "events": [
+    {
+     "name": "Keoghtom's Ointment",
+     "on": "heal",
+     "parts": [
+      "2d8+2"
+     ]
+    }
+   ]
+  }
+ },
+ "other_spells": {
+  "Absorb Elements": {
+   "why": "Xanathar's: resistance now, and the extra damage rides the first melee hit on your next turn",
+   "book": "Xanathar's",
+   "level": 1,
+   "events": [
+    {
+     "name": "Absorb Elements",
+     "on": "rider",
+     "parts": [
+      "1d6"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "the damage type is the one you absorbed; the first melee hit on your next turn"
+    }
+   ]
+  },
+  "Branding Smite": {
+   "why": "the 2014 Player's Handbook's (the 2024 one has Shining Smite): extra damage on the next weapon hit, not rolled on casting",
+   "book": "PHB 2014",
+   "level": 2,
+   "events": [
+    {
+     "name": "Branding Smite",
+     "on": "rider",
+     "parts": [
+      "2d6 radiant"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "the next time you hit with a weapon attack before it ends"
+    }
+   ]
+  },
+  "Depth Charge": {
+   "why": "7d6, or 9d6 for a creature submerged in a liquid: one or the other, never both",
+   "book": "another book",
+   "level": 3,
+   "events": [
+    {
+     "name": "Depth Charge",
+     "on": "save",
+     "save": "Con",
+     "success": "half",
+     "parts": [
+      "7d6 thunder"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "alt": [
+      "9d6 thunder"
+     ],
+     "note": "9d6 instead for a creature submerged in a liquid"
+    }
+   ]
+  },
+  "Green-Flame Blade": {
+   "why": "Tasha's: a melee weapon attack with the weapon's own damage, and fire that leaps to a second creature; both grow at levels 5, 11 and 17",
+   "book": "another book",
+   "level": 0,
+   "events": [
+    {
+     "name": "Green-Flame Blade",
+     "on": "hit",
+     "parts": [
+      "1d8 fire"
+     ],
+     "cantrip": "extra",
+     "note": "added to the weapon's own damage on a hit (from level 5)"
+    },
+    {
+     "name": "Leaping fire",
+     "on": "auto",
+     "parts": [
+      "1d8 fire"
+     ],
+     "mod": true,
+     "cantrip": "extra",
+     "note": "a second creature within 5 ft of the target; before level 5 it's just your spellcasting modifier"
+    }
+   ]
+  },
+  "Lightning Lure": {
+   "why": "Tasha's: a Strength save; the damage only if pulled within 5 ft",
+   "book": "another book",
+   "level": 0,
+   "events": [
+    {
+     "name": "Lightning Lure",
+     "on": "save",
+     "save": "Str",
+     "success": "none",
+     "parts": [
+      "1d8 lightning"
+     ],
+     "cantrip": "dice",
+     "note": "pulled up to 10 ft toward you on a failed save; the damage only if it ends within 5 ft"
+    }
+   ]
+  },
+  "Raulothim's Psychic Lance": {
+   "why": "Fizban's: an Intelligence save, half on a success",
+   "book": "another book",
+   "level": 4,
+   "events": [
+    {
+     "name": "Raulothim's Psychic Lance",
+     "on": "save",
+     "save": "Int",
+     "success": "half",
+     "parts": [
+      "7d6 psychic"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "Incapacitated until the start of your next turn on a failed save"
+    }
+   ]
+  },
+  "Sickening Radiance": {
+   "why": "Xanathar's: a save each time a creature enters the light or starts its turn there",
+   "book": "another book",
+   "level": 4,
+   "events": [
+    {
+     "name": "Sickening Radiance",
+     "on": "save",
+     "save": "Con",
+     "success": "none",
+     "parts": [
+      "4d10 radiant"
+     ],
+     "repeat": "a creature entering it or starting its turn there",
+     "note": "and a level of Exhaustion on a failed save, until the spell ends"
+    }
+   ]
+  }
+ },
+ "features": {
+  "Second Wind": {
+   "why": "Fighter: regain 1d10 + your Fighter level",
+   "events": [
+    {
+     "name": "Second Wind",
+     "on": "heal",
+     "parts": [
+      "1d10+{level:Fighter}"
+     ]
+    }
+   ]
+  },
+  "Uncanny Metabolism": {
+   "why": "Monk: regain a roll of your Martial Arts die + your Monk level (and your Focus Points)",
+   "events": [
+    {
+     "name": "Uncanny Metabolism",
+     "on": "heal",
+     "parts": [
+      "1{martial_arts}+{level:Monk}"
+     ]
+    }
+   ]
+  },
+  "Deflect Attack: Redirect Attack": {
+   "why": "Monk: the target saves against your Monk DC or takes two rolls of your Martial Arts die + Dexterity, the attack's type; the reduction is Deflect Attacks'",
+   "events": [
+    {
+     "name": "Redirect Attack",
+     "on": "save",
+     "save": "Dex",
+     "success": "none",
+     "parts": [
+      "2{martial_arts}+{mod:dexterity}"
+     ],
+     "note": "the same damage type as the attack you deflected"
+    }
+   ]
+  },
+  "Land’s Aid: Damage": {
+   "why": "Circle of the Land: a Con save in a 10-ft sphere, half on a success; 3d6 at Druid level 10, 4d6 at 14",
+   "events": [
+    {
+     "name": "Land's Aid",
+     "on": "save",
+     "save": "Con",
+     "success": "half",
+     "parts": [
+      "{lands_aid}d6 necrotic"
+     ]
+    }
+   ]
+  },
+  "Land’s Aid: Heal": {
+   "why": "Circle of the Land: one creature in the area regains the same dice",
+   "events": [
+    {
+     "name": "Land's Aid",
+     "on": "heal",
+     "parts": [
+      "{lands_aid}d6"
+     ]
+    }
+   ]
+  },
+  "Create Eldritch Cannon": {
+   "why": "making the cannon rolls nothing; its options roll (Mending's 2d6 heals the cannon, not a roll of yours)",
+   "events": []
+  },
+  "Eldritch Cannon: Flamethrower": {
+   "why": "Artillerist: a Dex save in a 15-ft cone, half on a success",
+   "events": [
+    {
+     "name": "Flamethrower",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "2d8 fire"
+     ]
+    }
+   ]
+  },
+  "Eldritch Cannon: Force Ballista": {
+   "why": "Artillerist: a ranged spell attack; pushed 5 ft on a hit",
+   "events": [
+    {
+     "name": "Force Ballista",
+     "on": "hit",
+     "parts": [
+      "2d8 force"
+     ]
+    }
+   ]
+  },
+  "Eldritch Cannon: Protector": {
+   "why": "Artillerist: Temporary Hit Points to itself and each creature within 10 ft",
+   "events": [
+    {
+     "name": "Protector",
+     "on": "temp",
+     "parts": [
+      "1d8+{mod:intelligence}"
+     ],
+     "note": "minimum 1"
+    }
+   ]
+  },
+  "Detonate Eldritch Cannon": {
+   "why": "Artillerist: a Dex save within 20 ft, half on a success",
+   "events": [
+    {
+     "name": "Detonate",
+     "on": "save",
+     "save": "Dex",
+     "success": "half",
+     "parts": [
+      "3d8 force"
+     ]
+    }
+   ]
+  },
+  "Wild Shape: Feral Forms": {
+   "why": "the dice are the forms' own (their stat blocks: Wild Shape, app/wild_shape.py), not a roll of the Druid's",
+   "events": []
+  },
+  "Wild Shape: Guardian Forms": {
+   "why": "the dice are the forms' own (their stat blocks: Wild Shape, app/wild_shape.py), not a roll of the Druid's",
+   "events": []
+  },
+  "Undead Steed: Ghostly Stride": {
+   "why": "the steed's own feature (its stat block, app/summons.py), not the rider's roll",
+   "events": []
+  }
+ },
+ "modifiers": {
+  "Bless": {
+   "why": "up to three creatures add 1d4 to attack rolls and saving throws while the caster concentrates",
+   "when": "before",
+   "to": [
+    "attack",
+    "save"
+   ],
+   "adds": "1d4",
+   "from": "another's spell"
+  },
+  "Guidance": {
+   "why": "add 1d4 to one ability check you choose before rolling (2024 PHB)",
+   "when": "before",
+   "to": [
+    "check"
+   ],
+   "adds": "1d4"
+  },
+  "Resistance": {
+   "why": "add 1d4 to one saving throw",
+   "when": "before",
+   "to": [
+    "save"
+   ],
+   "adds": "1d4"
+  },
+  "Bardic Inspiration": {
+   "why": "the creature can add the die to a D20 Test it fails (2024: after seeing it fail)",
+   "when": "after_fail",
+   "to": [
+    "attack",
+    "save",
+    "check"
+   ],
+   "adds": "1{bardic}",
+   "gives": true
+  },
+  "Favored by the Gods": {
+   "why": "Divine Soul: add 2d4 to a failed saving throw or a missed attack roll",
+   "when": "after_fail",
+   "to": [
+    "attack",
+    "save"
+   ],
+   "adds": "2d4",
+   "cost": "1 use"
+  },
+  "Tactical Mind": {
+   "why": "Fighter: on a failed ability check, spend a Second Wind use to add 1d10 (kept if it still fails)",
+   "when": "after_fail",
+   "to": [
+    "check"
+   ],
+   "adds": "1d10",
+   "cost": "a Second Wind use"
+  },
+  "Deflect Attack": {
+   "why": "Monk: reduce an attack's damage by 1d10 + Dexterity + Monk level",
+   "when": "damage_taken",
+   "to": [
+    "damage_taken"
+   ],
+   "reduces": "1d10+{mod:dexterity}+{level:Monk}"
+  },
+  "Sneak Attack": {
+   "why": "Rogue: once a turn, extra damage on a hit with a Finesse or ranged weapon, with Advantage or an ally beside the target",
+   "when": "on_hit",
+   "to": [
+    "damage"
+   ],
+   "adds": "{sneak}d6",
+   "once": "a turn"
+  },
+  "Arcane Firearm": {
+   "why": "Artillerist: add 1d8 to one damage roll of an artificer spell cast through it",
+   "when": "on_damage",
+   "to": [
+    "spell damage"
+   ],
+   "adds": "1d8"
+  },
+  "Blessed Strikes": {
+   "why": "Cleric: once a turn, extra radiant damage on a hit with a cantrip or weapon attack",
+   "when": "on_hit",
+   "to": [
+    "damage"
+   ],
+   "adds": "1d8 radiant",
+   "once": "a turn"
   }
  }
 }

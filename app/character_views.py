@@ -176,7 +176,9 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
                 continue  # the attack is listed once, from the attacks; "(Dex.)" variants are the same strike
             u = attacks.get("Unarmed Strike") or {}
             hit, meta = u.get("to_hit", ""), u.get("damage", "")
+        recipe = _feature_recipe(sheet, a["name"])  # (a checked recipe says how it rolls: Land's Aid deals damage, Nov 9)
         add(key=a["key"], kind="feature", cost=cost, name=a["name"], hit=hit, meta=meta, uses=a["uses"], text=a["text"], cost_from=from_text or None,
+            **({"recipe": recipe} if recipe is not None else {}),
             spends=[] if a["uses"] else resource_spends(sheet, a["name"], a["key"], a["text"] or ""),
             summary=a.get("summary", ""),
             common=not a.get("rule") and (unarmed or cost == "Reaction" or bool(a["uses"] and a["source"] in ("class", "feat", "race"))))
@@ -234,6 +236,9 @@ def rollable(o: dict, unarmed: dict | None = None) -> dict:
     """Sets o["dice"] (damage or healing dice, "" if none) and o["heal"]; gives a feature that
     makes Unarmed Strikes the Unarmed Strike's to-hit and damage."""
     recipe = o.get("recipe")
+    if recipe is not None and not recipe.get("events") and recipe.get("checked") and recipe.get("checked") != "D&D Beyond":
+        o["dice"], o["heal"] = "", False  # (a checked recipe that rolls nothing: Create Eldritch Cannon, Find Steed; never its words' dice)
+        return o
     if recipe and recipe.get("events"):  # an audited (or D&D Beyond) recipe says exactly what rolls
         if all(e["on"] == "rider" for e in recipe["events"]):  # (Hunter's Mark: added to hits, never rolled on casting)
             o["dice"], o["heal"] = "", False
@@ -256,6 +261,16 @@ def rollable(o: dict, unarmed: dict | None = None) -> dict:
     if not o["dice"] and str(o.get("hit") or "")[:1] in "+-\u2212" and o.get("hit") and (f := FLAT.search(meta)):
         o["dice"] = f.group(1)
     return o
+
+
+def _feature_recipe(sheet: dict, name: str) -> dict | None:
+    """A class feature's checked recipe (app/roll_recipes.py `feature`), its {tokens} filled from this sheet."""
+    from app.roll_plan import fill
+
+    r = rr.feature(name)
+    if r is None:
+        return None
+    return {**r, "events": [{**e, "parts": [fill(x, sheet) for x in e.get("parts") or []]} for e in r.get("events") or []]}
 
 
 def _mastery(attack: dict, mastered: dict[str, str]) -> str | None:
