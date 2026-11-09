@@ -1021,3 +1021,18 @@ short-lived link (an S3 "presigned URL") lends it one file for a few minutes, wi
 running it is a regular check that your backups really restore. Keep anything people type on staging that matters
 (feedback, notes) flowing to production, so throwing staging's data away is always safe.
 
+
+## Testing on a real iPhone's browser, without an iPhone (Nov 8)
+
+**What was set up:** the tests already drew every page at phone width in WebKit, the engine under Safari. That's an
+imitation: it can't show Safari's own bars, the keyboard rising, or the page zooming when you tap a text box. Apple's
+**iOS Simulator** (free, part of Xcode) runs the real iPhone Safari on a Mac, and Safari ships its own **WebDriver**
+(`safaridriver`), a standard way for a script to drive a browser. `scripts/iphone_check.py` uses the two on the Mac Mini:
+a small iPhone, a large one and an iPad, each page opened as a test seat, checked and photographed. Building the check
+turned up a real problem straight away: every search box was small enough that an iPhone zooms the page when you tap it.
+
+**Why:** you play on an iPhone, and the bugs that only happen there (bars, keyboard, zoom) were found by playing.
+
+**For a new project:** test phone layouts in two layers. Fast imitations (Playwright's device settings) on every change,
+and the real phone browser in a simulator on a schedule. Xcode needs about 30 GB of disk and an Apple ID to install,
+and `sudo safaridriver --enable` once; Android's equivalent is Android Studio's emulator with Chrome.

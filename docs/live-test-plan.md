@@ -86,6 +86,25 @@ Since Nov 5, a deploy that breaks the table is known within minutes, not at 4:00
 - **Turn it off:** `launchctl bootout gui/$(id -u)/ai.askdnd.after-deploy` on the Mini.
 - **Running part 1 by hand on the Mini:** check the after-deploy check isn't running first (`ls ~/askdnd-tests/logs/.seats-busy`: no such folder means the seats are free).
 
+## iPhone Safari (being set up)
+
+The layout tests on every pull request draw pages in WebKit sized like an iPhone, which isn't Safari on one: they can't see
+Safari's own bars, the notch, the keyboard rising or the page zooming when you tap a text box. `iphone_check.py` (its
+source is `scripts/iphone_check.py`, beside `layout_check.js` from `tests/browser/`) opens askdnd in the real Mobile
+Safari, in Apple's iOS Simulator on the Mini, driven by Safari's own WebDriver (Brett, Nov 8). For a small iPhone, a large
+one and an iPad mini, one at a time, it opens the DM seat's Manage pages and player2's Story, Campaign, Battle, Sheet,
+Plan, Party, Help and Your notes, each tab too, signed in as that seat (the sign-in copied from the seat's Chrome), and
+checks: the layout tests' checks; tapping the page's first text box with a finger, which mustn't zoom the page and must
+stay in sight above the keyboard; and the end of the page above the bottom bar. A screenshot of each page, and of each
+tapped box with the keyboard up, goes to `~/askdnd-tests/logs/iphone/` (the newest run only). It changes nothing.
+
+- **Run it:** with the seats open, `.venv/bin/python iphone_check.py` in `~/askdnd-tests` (`--devices ipad`, `--seats dm`
+  for one; `--sentry` reports what it finds as "iPhone Safari: …", environment `live-test`, its own issue).
+- **Setup, once:** room on the Mini's disk (Xcode and one iOS simulator take about 30 GB), Xcode from the App Store,
+  then `xcodebuild -downloadPlatform iOS` and `sudo safaridriver --enable`. Once a run has passed by hand it joins the
+  nightly, after part 1 while the seats are open.
+- **After changing it:** `scp scripts/iphone_check.py tests/browser/layout_check.js mac-mini-server:askdnd-tests/`.
+
 ## Every morning: D&D Beyond drift
 
 The other tests read D&D Beyond through copies in `tests/fixtures/ddb`. At 12:30 UTC GitHub runs `scripts/ddb_drift.py` (the workflow "D&D Beyond drift"): it reads today's three test sheets as askdnd does, says if a field the copies have is gone or has changed kind, and runs askdnd's parser on each to check what every character has comes out (a name, level, Hit Points, AC, abilities, saves, skills, a class, actions, items, spells). A miss fails the run and GitHub emails Brett: refresh the copies (`scripts/ddb_fixture.py`) and fix the parser.
