@@ -1797,6 +1797,35 @@ function feedbackBusy(e) {
     if (e.key === 'Enter') { e.preventDefault(); const f = rsFilter(e.target.closest('#rs-pick'), e.target.value); if (f) { f.click(); setTimeout(() => rsPick(false)); } }
   });
 
+  // A roll button pressed (anywhere: Battle, Sheet, the Spell Book, Cast's "Cast and roll", Table rolls' Roll): the roll
+  // card where the Labs piece is on and it can play it, else the roll window; Shift rolls at once
+  function openRoll(el, spec, shift) {
+    const plan = !shift && cardPlan(el, spec);
+    if (plan) return card(el, spec, plan);
+    if (shift) { const w = openWin(el); roll(w, { ...spec, mode: spec.adv ? 'adv' : 'normal', extras: [], ctx: ctxFor(spec.cid) }); }
+    else chooser(el, spec);
+  }
+  // What the card plays: the button's roll plan (Battle's attacks and save spells), a check or a save of your own, or a
+  // spell from its recipe where the button has no plan (the Spell Book, Cast's roll): its attack bonus, or its save
+  // and DC from the button's own note. Death saves keep the roll window, which marks the sheet.
+  function cardPlan(el, spec) {
+    if (!document.body.hasAttribute('data-roll-card')) return null;
+    const kind = el.dataset.roll;
+    let plan = null;
+    try { plan = el.dataset.plan ? JSON.parse(el.dataset.plan) : null; } catch (err) { plan = null; }
+    if (plan && (kind === 'attack' || (kind === 'damage' && plan.save))) return spec.shared ? plan : { ...plan, choice: null };  // (Grapple and Shove go to the table: yours only)
+    if (kind === 'check' || kind === 'save') {
+      return { name: spec.label, attack: { bonus: num(spec.mod) }, damage: [], riders: [], modifiers: (ctxFor(spec.cid).mods || {})[kind] || [], d20: true };
+    }
+    if (spec.recipe && kind === 'attack') return { name: spec.label, attack: { bonus: num(spec.mod) }, damage: [], riders: [], modifiers: [] };
+    const m = spec.recipe && kind === 'damage' && /makes an? (Str|Dex|Con|Int|Wis|Cha) (\d+) save/.exec(spec.note || '');
+    if (m) {
+      const ev = (spec.recipe.events || []).find(x => x.on === 'save');
+      return { name: spec.label, save: { ability: m[1], dc: +m[2], success: (ev && ev.success) || '' }, damage: [], riders: [], modifiers: [] };
+    }
+    return null;
+  }
+
   // ---------------------------------------------------------------- the roll card
   // (Labs `roll_card`; Brett chose the Roll Card Prototype, Nov 9: docs/mockups/roll-workflow/round-2.html) An attack
   // as its own moments, from its roll plan (app/roll_plan.py, data-plan on the to-hit): a choice first when it has one
@@ -1825,8 +1854,7 @@ function feedbackBusy(e) {
       if (ev && ev.mod && ctx.spell_mod != null) ev.parts = ev.parts.concat([ascii(ctx.spell_mod) + ' spellcasting modifier']);
       return ev;
     };
-    if (rec && hits.some((x, i) => { evi = i; return (spellEv(slot0) || {}).count > 1; })) return chooser(anchor, spec);
-    evi = 0;
+    evi = 0;  // (several rays or beams, Scorching Ray, Eldritch Blast: an attack roll each, then damage for each)
     const grows = !!(rec && rec.level && hits.some(x => (x.upcast || []).some(Boolean) || x.count_upcast));
     const w = openWin(anchor);
     w.classList.add('roll-card');
@@ -1955,6 +1983,12 @@ function feedbackBusy(e) {
       if (e.kind === 'dc') return '<div class="rcard-result"><span class="rcard-big">DC ' + e.total + '</span><span class="rcard-what">' + esc(e.label) + '</span><span class="rcard-how">The target picks Strength or Dexterity; the DM rolls its save. It\'s in Table rolls.</span></div>';
       if (dmg && e.damage) return '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + e.damage.total + '</span><span class="rcard-what">' + (e.damage.crit ? 'critical damage' : 'damage') + '</span><span class="rcard-how">' + dline(e.damage, false) + '</span></div>'
         + '<p class="rcard-line">To hit <b>' + e.total + '</b> · ' + dline(e.main, true) + '</p>';
+      const rays = ((e.main && e.main.parts) || []).filter(x => x.kept != null);
+      if (rays.length > 1) {  // (one to-hit per ray; the DM says which hit)
+        return '<div class="rcard-result"><span class="rcard-big">' + rays.map(x => x.total).join(' · ') + '</span><span class="rcard-what">to hit, one per ' + esc((spellEv(st.slot) || {}).count_label || 'ray') + '</span>'
+          + '<span class="rcard-how">' + rays.map(x => esc(x.label) + ': d20 ' + x.kept + (x.kept === 20 ? ' (critical)' : x.kept === 1 ? ' (misses)' : '')).join(' · ') + '</span></div>'
+          + '<p class="rw-note">The DM says which hit. Damage rolls for each one that isn\'t a natural 1, doubled for a 20.</p>';
+      }
       const flag = e.nat ? 'Natural ' + e.nat + (d20 ? '' : e.nat === 20 ? ': a critical hit, damage dice doubled' : ': it misses, whatever the bonus') : '';
       return '<div class="rcard-result"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">' + (d20 ? esc(spec.label) : 'to hit') + '</span><span class="rcard-how">' + dline(e.main, true) + '</span></div>'
         + (e.rerolled ? '<p class="rcard-line">Rerolled (' + esc(e.rerolled.reason) + '): was <s>' + e.rerolled.total + '</s></p>' : '')
@@ -1972,7 +2006,7 @@ function feedbackBusy(e) {
       const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
       st.step = 'rolling'; st.adding = false; draw();
       const ev = spellEv(st.slot);
-      go({ kind: d20 ? spec.kind : 'attack', mode: st.mode, extras, endsHidden: st.hidden && !d20, ...(ev ? { dmgParts: ev.parts, count: 1, each: '' } : {}) }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
+      go({ kind: d20 ? spec.kind : 'attack', mode: st.mode, extras, endsHidden: st.hidden && !d20, ...(ev ? { dmgParts: ev.parts, count: ev.count || 1, each: ev.count_label || '' } : {}) }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
     }
     function follow(action, o) {
       const was = st.step;
@@ -2660,7 +2694,7 @@ function feedbackBusy(e) {
       if (roller) {
         const level = w.querySelector('select[name=way]')?.selectedOptions[0]?.dataset.level;
         if (level) roller.dataset.slot = level;
-        chooser(roller, specFrom(roller));
+        openRoll(roller, specFrom(roller));
       } else closeWin();
       turnUsed(w._anchor);
       if (j.roll) {
@@ -2760,21 +2794,7 @@ function feedbackBusy(e) {
     const el = e.target.closest('[data-roll]');
     if (!el) { if (win && !e.target.closest('[data-manual]') && !feedbackBusy(e)) closeWin(); return; }
     e.preventDefault();
-    const spec = specFrom(el);
-    // The roll card (Labs `roll_card`): weapon attacks and the Unarmed Strike first; an attack spell's damage depends on
-    // its level and its cantrip's growth, which the roll window works out, so spells keep it for now
-    if (document.body.hasAttribute('data-roll-card') && el.dataset.plan && (el.dataset.roll === 'attack' || (el.dataset.roll === 'damage' && /"save": \{/.test(el.dataset.plan))) && !e.shiftKey) {
-      let plan = null;
-      try { plan = JSON.parse(el.dataset.plan); } catch (err) { plan = null; }
-      if (plan) return card(el, spec, spec.shared ? plan : { ...plan, choice: null });  // (Grapple and Shove go to the table: yours only)
-    }
-    // A check or a save (Stealth, a Dex save, Initiative): the card too, its modifiers from the character's roll context
-    if (document.body.hasAttribute('data-roll-card') && (el.dataset.roll === 'check' || el.dataset.roll === 'save') && !e.shiftKey) {
-      const mods = (ctxFor(spec.cid).mods || {})[el.dataset.roll] || [];
-      return card(el, spec, { name: spec.label, attack: { bonus: num(spec.mod) }, damage: [], riders: [], modifiers: mods, d20: true });
-    }
-    if (e.shiftKey) { const w = openWin(el); roll(w, { ...spec, mode: spec.adv ? 'adv' : 'normal', extras: [], ctx: ctxFor(spec.cid) }); }
-    else chooser(el, spec);
+    openRoll(el, specFrom(el), e.shiftKey);
   });
   // While the roll window is open, Enter rolls and Esc closes it (only it, not a side panel behind it), wherever focus
   // is: on an option just clicked (Advantage, a die, Just me), in its fields, on the roll button that opened it, or
