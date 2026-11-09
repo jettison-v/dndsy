@@ -1051,3 +1051,11 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **Why.** Public repositories get GitHub's checks for free (this month's included minutes had run out). Encrypting beats deleting: the tests keep using real sheets, and nothing readable is published. A pull request from someone else's copy (a fork) never gets the secret, so their tests can't unlock it.
 
 **For a new project.** Keep anything you can't publish (other people's text, private data) out of git, or commit it encrypted with the key held as a secret. Decide early whether a repository may ever be public: history is forever once it is. Add a test that fails when something private slips in; it's cheaper than remembering.
+
+## Flaky tests: retry once, and say so (Nov 9)
+
+**What**: a browser test that fails now gets one automatic retry before it fails the whole run, and every retry is listed on the GitHub run's summary page as "passed only on a second try". Server tests get no retry.
+
+**Why**: in a week, 16 of about 200 runs failed or needed a re-run. Every flake was a browser test: a timing deadline missed on GitHub's shared, slower machines, or a check that read a closed sidebar. Each one cost a full re-run of 5 minutes or more. Retrying just the one test costs seconds, and listing it keeps the flake visible so it gets fixed rather than ignored.
+
+**Reuse on a new project**: retry only the kind of test that is timing-sensitive (browser and UI tests), never your logic tests, and always report retries somewhere you'll see them. In tests, check that things happen in the right order or reach the right result, not that they finish within N seconds.

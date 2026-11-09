@@ -50,8 +50,19 @@ def test_a_long_page_opens_at_once_and_draws_one_picture_of_what_is_on_screen(pe
       document.body.append(box);
       window.scrollTo(0, 400);
     }""")
+    page.evaluate("""() => {  // which comes first, the window or its picture (the order is the promise, not a time:
+      window.__fbFirst = '';      // a second on GitHub's shared machines missed now and then, Nov 6)
+      const seen = () => {
+        if (window.__fbFirst) return;
+        const win = document.querySelector('#fb-win'), shot = document.querySelector('[data-fb-shot]');
+        if (shot && shot.checkVisibility()) window.__fbFirst = 'picture';
+        else if (win && win.checkVisibility()) window.__fbFirst = 'window';  // (a fixed window has no offsetParent)
+      };
+      new MutationObserver(seen).observe(document.body, { subtree: true, childList: true, attributes: true });
+    }""")
     page.keyboard.press("\\")
-    page.locator("#fb-win").wait_for(state="visible", timeout=1000)  # (before the picture: it used to wait for it)
+    page.locator("#fb-win").wait_for(state="visible")
+    assert page.evaluate("window.__fbFirst") == "window"  # (before the picture: it used to wait for it)
     page.keyboard.press("Escape")
     page.wait_for_timeout(100)  # (Chrome closes the window just after the key; a person is never quicker)
     page.keyboard.press("\\")  # (again at once, while the first picture is drawn: one picture, not two)
