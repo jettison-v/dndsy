@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% from "_suggest_form.html" import suggest with context %}
 {% block title %}Story · askdnd{% endblock %}
+{% macro tale_link(item) %}{% if item.more %}<a class="btn tale-more-link" href="{{ cbase }}/sessions/{{ item.s.id }}">Full Tale &amp; Stats →</a>{% endif %}{% endmacro %}
 {% macro scroll(item, head=True, listen=False) %}{# A session's recap on its scroll: the rods, the parchment, its title, the DM's note #}
 <div class="scroll">
   <div class="story">
     {% if head %}<header class="tale-head"><span class="tale-kicker">{{ item.label }}</span>{% if item.s.title %}<h2>{{ item.s.title }}</h2>{% endif %}
-      {% if listen %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen{% if item.listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if item.listen.estimate else 'How long it plays' }}">{{ item.listen.says }}</span>{% endif %}</button>{% endif %}</header>{% endif %}
+      <span class="tale-acts">{% if listen %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen{% if item.listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if item.listen.estimate else 'How long it plays' }}">{{ item.listen.says }}</span>{% endif %}</button>{% endif %}{# the full tale, its awards and the night's numbers, at the top beside Listen (feedback 55, 56) #}{{ tale_link(item) }}</span></header>{% endif %}
     <div class="tale-text">{{ ln.html(item.html) }}</div>
-    {% if item.more %}<a class="btn tale-more-link" href="{{ cbase }}/sessions/{{ item.s.id }}">Read the full tale →</a>{% else %}<div class="tale-end" aria-hidden="true">❦</div>{% endif %}
+    <div class="tale-end" aria-hidden="true">❦</div>
     {% if item.dm_notes %}
     <div class="tale-dm" role="note"><b>From the DM</b>{% for x in item.dm_notes %}<p>{% if x.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(x.text) }}</p>{% endfor %}</div>
     {% endif %}
@@ -124,7 +125,7 @@
       <span class="note tale-roll-count">{% if item.events %}{{ item.events | length }} key moment{{ "s" if item.events | length != 1 }}{% endif %}</span>
     </summary>
     <div class="session-body">
-      {% if vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen{% if item.listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if item.listen.estimate else 'How long it plays' }}">{{ item.listen.says }}</span>{% endif %}</button>{% endif %}{# every session's own (feedback 37) #}
+      <div class="tale-acts">{% if vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen{% if item.listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if item.listen.estimate else 'How long it plays' }}">{{ item.listen.says }}</span>{% endif %}</button>{% endif %}{# every session's own (feedback 37) #}{{ tale_link(item) }}</div>
       {{ scroll(item, head=False) }}
       {{ after(item.events, [], [], few=3) }}
       {% if not item.events and not item.dm_notes %}<p class="note">No key moments recorded for this session.</p>{% endif %}

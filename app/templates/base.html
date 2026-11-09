@@ -102,7 +102,7 @@
     {% endif %}
     {% if admin_pages %}{% set on_admin = admin_pages | selectattr("here") | list %}
     <div class="manage admin">
-      <button class="{{ 'active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true"><span aria-hidden="true">⚙</span> Admin ▾</button>
+      <button class="admin-gear{{ ' active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true" aria-label="Admin" title="Admin: askdnd, for every campaign"><span aria-hidden="true">⚙</span></button>{# a gear: admins only, it needn't be found (feedback 57) #}
       <div class="menu manage-menu" id="admin-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head tool"><b>askdnd admin</b><span>Every campaign</span></div>
         {% for p in admin_pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
