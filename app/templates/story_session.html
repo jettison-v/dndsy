@@ -2,7 +2,7 @@
 {% block title %}{{ s.title or label }} · Story · askdnd{% endblock %}
 {% block content %}
 {# A session's own page (Session Story, Brett chose B, Nov 7; docs/mockups/session-story/): the full tale in chapters,
-   then the awards and the session in numbers. Opened by Read the full tale on the recap's scroll and from All sessions. #}
+   then the awards and the session in numbers. Opened by Full Tale & Stats beside Listen on the recap's scroll and in All sessions. #}
 <main class="page wide">
   <div class="crumbs"><a href="{{ cbase }}/">Story</a> › <a href="{{ cbase }}/?tab=sessions#s{{ s.id }}">All sessions</a> › {{ label }}</div>
   <div class="tale">

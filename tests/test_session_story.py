@@ -247,7 +247,7 @@ def publish(db, s):
 def test_the_session_page_has_the_full_tale_awards_and_numbers_for_everyone_at_the_table(db, story, player):
     s = publish(db, story)
     home = player.get("/c/main/").text
-    assert "Read the full tale" in home and f"/c/main/sessions/{s.id}" in home
+    assert "Full Tale &amp; Stats" in home and f"/c/main/sessions/{s.id}" in home
     page = player.get(f"/c/main/sessions/{s.id}").text
     assert page.index("The Reach") < page.index("What the Runes Said") < page.index("The Crew Comes Aboard")
     assert "If it rings for the dead, it rings them home." in page and "The DM" in page and "DM Shining Moment" in page

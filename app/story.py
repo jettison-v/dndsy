@@ -44,7 +44,7 @@ def published_items(db: Session, campaign: Campaign) -> list[dict]:
                 "s": s,
                 "label": session_label(s),
                 "html": markdown_to_html(recap.body, lambda n: None),
-                "more": session_story.has_more(recap),  # (Read the full tale: the session's own page)
+                "more": session_story.has_more(recap),  # (Full Tale & Stats: the session's own page)
                 "listen": narration.length(s, recap, campaign.name),  # (how long Listen plays, Brett Nov 9)
                 "events": [e for e in events if e.kind != EventKind.THEORY],
                 "theories": [e for e in events if e.kind == EventKind.THEORY],
