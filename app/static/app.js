@@ -1815,6 +1815,7 @@ function feedbackBusy(e) {
     // the spellcasting modifier where it adds it. Several rays or beams, or a choice of effects, keep the roll window.
     // A save spell (Fireball): the save and its DC said first, then its damage, and what a success takes
     const save = !!plan.save && spec.kind !== 'attack';
+    const d20 = !!plan.d20;  // (a check or a save of your own: Stealth, a Dex save, Initiative; one step, Roll)
     const rec = spec.recipe || null, hits = rec ? (rec.events || []).filter(x => x.on !== 'rider' && (save ? x.on !== 'hit' : x.on === 'hit')) : [];
     const slot0 = rec && rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0;
     let evi = 0;  // (which effect, where a spell has several: Toll the Dead's unhurt target or one missing Hit Points)
@@ -1835,8 +1836,8 @@ function feedbackBusy(e) {
     mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = !m.once; });  // (on by themselves while they last; once a turn: yours to tick)
     const dmgText = () => (spellEv(st.slot) ? describe({ ...spellEv(st.slot), on: 'hit' }) : '') || (plan.damage || []).map(p => (p.dice || '') + (p.flat || !p.dice ? (p.dice && p.flat > 0 ? '+' : '') + (p.flat || 0) : '') + (p.type ? ' ' + p.type : '')).join(' + ');
     const flat = (plan.damage || []).length && plan.damage.every(p => !p.dice) ? plan.damage.reduce((t, p) => t + (p.flat || 0), 0) : null;  // (no dice: it comes with the roll)
-    const steps = () => save ? ['The save', 'Damage'] : [...(plan.choice ? ['Choose'] : []), 'To hit', 'Damage'];
-    const at = () => save ? ({ save: 0, rolling: 1, saved: 9 })[st.step] : ({ choose: 0, attack: plan.choice ? 1 : 0, result: plan.choice ? 1 : 0, damage: plan.choice ? 2 : 1, done: 9 })[st.step];
+    const steps = () => d20 ? ['Roll'] : save ? ['The save', 'Damage'] : [...(plan.choice ? ['Choose'] : []), 'To hit', 'Damage'];
+    const at = () => d20 ? (st.step === 'done' ? 9 : 0) : save ? ({ save: 0, rolling: 1, saved: 9 })[st.step] : ({ choose: 0, attack: plan.choice ? 1 : 0, result: plan.choice ? 1 : 0, damage: plan.choice ? 2 : 1, done: 9 })[st.step];
     const pill = (attr, on, text, small) => '<button type="button" class="chip rcard-pill" ' + attr + ' aria-pressed="' + !!on + '">' + esc(text) + (small ? ' <small>' + esc(small) + '</small>' : '') + '</button>';
     const adder = target => '<div class="rcard-adder" data-adder="' + target + '">' + CARD_DICE.map(([v, t]) => '<button type="button" class="chip" data-add="' + v + '">' + t + '</button>').join('') + '</div>';
     const visLine = () => !spec.shared
@@ -1849,7 +1850,7 @@ function feedbackBusy(e) {
     const riders = when => (plan.riders || []).filter(r => r.says && (r.when === 'miss') === (when === 'miss'));
     const riderList = when => riders(when).map(r => '<li><b>' + esc(r.name) + '</b> ' + esc(r.says) + (r.on && r.on !== 'mastery' ? ' <small>(' + esc(r.on) + ')</small>' : '') + '</li>').join('');
     function head() {
-      const sub = [plan.attack ? 'to hit ' + signed(plan.attack.bonus) : save ? plan.save.ability + ' save, DC ' + plan.save.dc : '', dmgText()].filter(Boolean).join(' · ');
+      const sub = [d20 ? 'd20 ' + signed(plan.attack.bonus) : plan.attack ? 'to hit ' + signed(plan.attack.bonus) : save ? plan.save.ability + ' save, DC ' + plan.save.dc : '', dmgText()].filter(Boolean).join(' · ');
       return '<button type="button" class="rp-x" aria-label="Close">×</button><div class="rcard-head"><b>' + esc(plan.name) + '</b>' + (sub ? '<span class="rcard-sub">' + esc(sub) + '</span>' : '') + '</div>'
         + '<ol class="rcard-rail" aria-label="Steps">' + steps().map((n, i) => '<li class="' + (i < at() ? 'done' : i === at() ? 'now' : '') + '">' + n + '</li>').join('') + '</ol>';
     }
@@ -1890,6 +1891,9 @@ function feedbackBusy(e) {
         if (ctx.luck) why.push('<b>Lucky</b> you can spend a Luck Point (' + ctx.luck + ' left) for Advantage');
         if (ctx.inspiration) why.push('<b>Heroic Inspiration</b> you have it: you can reroll after you see the roll');
         if (ctx.halfling) why.push('<b>Luck</b> (Halfling) you can reroll a 1');
+        if (d20 && /^Con save/.test(spec.label)) why.push('<b>Concentration</b> after damage: DC 10 or half the damage, whichever is higher (up to 30)');
+        if (d20 && spec.label === 'Initiative') why.push('<b>Initiative</b> Disadvantage if you\'re Surprised, Advantage if you\'re Invisible');
+        if (d20 && spec.note) why.push(esc(spec.note));
         if (why.length) h += '<ul class="rw-notes">' + why.map(t => '<li>' + t + '</li>').join('') + '</ul>';
         const pre = mods.filter(m => m.when === 'before' && m.adds);
         h += '<div class="rcard-group"><span class="rcard-lbl">Adds to the roll</span><div class="rcard-pills">' + pre.map(m => pill('data-pre="' + esc(m.name) + '"', st.pre[m.name], m.name, m.adds)).join('')
@@ -1897,13 +1901,13 @@ function feedbackBusy(e) {
           + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ die or bonus</button></div>' + (st.adding ? adder('pre') : '') + '</div>';
         if (spec.endsHidden) h += '<div class="rcard-pills">' + pill('data-ends-hidden', st.hidden, 'This attack ends Hidden', st.hidden ? 'the DM may rule otherwise' : 'you stay Hidden') + '</div>';
         if (flat != null) h += flatNote(flat, plan.name);
-        h += '<button type="button" class="btn primary rcard-go" data-roll-hit>Roll to hit <small>' + esc(hitLine()) + '</small></button>' + visLine();
+        h += '<button type="button" class="btn primary rcard-go" data-roll-hit>' + (d20 ? 'Roll' : 'Roll to hit') + ' <small>' + esc(hitLine()) + '</small></button>' + visLine();
       } else if (st.step === 'result' || st.step === 'rolling') {
-        h += st.step === 'rolling' ? '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">' + (save ? 'Rolling damage' : 'Rolling to hit') + '</span></div>' : resultBox(st.entry, false);
+        h += st.step === 'rolling' ? '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">' + (save ? 'Rolling damage' : d20 ? 'Rolling' : 'Rolling to hit') + '</span></div>' : resultBox(st.entry, false);
         if (st.step === 'result' && !save) {
           const e = st.entry, c = e.can || {};
-          const after = mods.filter(m => m.when === 'after_fail' && m.adds && (m.to || []).includes('attack'));
-          const adjust = (c.reroll ? pill('data-reroll', false, 'Reroll', c.reroll) : '') + (c.bonus ? after.map(m => pill('data-after="' + esc(m.name) + '"', false, m.name, m.adds + ' after a miss')).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
+          const after = mods.filter(m => m.when === 'after_fail' && m.adds && (m.to || []).includes(d20 ? spec.kind : 'attack'));
+          const adjust = (c.reroll ? pill('data-reroll', false, 'Reroll', c.reroll) : '') + (c.bonus ? after.map(m => pill('data-after="' + esc(m.name) + '"', false, m.name, m.adds + (d20 ? ' after a failure' : ' after a miss'))).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
           if (adjust) h += '<div class="rcard-pills rcard-adjust">' + adjust + '</div>' + (st.adding ? adder('bonus') : '');
           if (c.damage) {
             const hitMods = mods.filter(m => m.when === 'on_hit' && m.adds), said = riderList('hit');
@@ -1913,7 +1917,8 @@ function feedbackBusy(e) {
             h += '<div class="rcard-acts"><button type="button" class="btn primary rcard-go" data-roll-dmg>Roll ' + (e.nat === 20 ? 'critical ' : '') + 'damage <small>' + esc(c.damage) + dmgAdds() + '</small></button>'
               + '<button type="button" class="btn" data-missed>Missed</button></div>';
           } else {
-            h += '<div class="rcard-acts"><button type="button" class="btn" data-missed>' + (e.nat === 1 ? 'It misses' : 'Done') + '</button></div>';
+            h += d20 ? '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>'
+              : '<div class="rcard-acts"><button type="button" class="btn" data-missed>' + (e.nat === 1 ? 'It misses' : 'Done') + '</button></div>';
           }
           if (riderList('miss')) h += '<div class="rcard-group"><span class="rcard-lbl">On a miss</span><ul class="rw-notes" data-riders>' + riderList('miss') + '</ul></div>';
         }
@@ -1950,8 +1955,8 @@ function feedbackBusy(e) {
       if (e.kind === 'dc') return '<div class="rcard-result"><span class="rcard-big">DC ' + e.total + '</span><span class="rcard-what">' + esc(e.label) + '</span><span class="rcard-how">The target picks Strength or Dexterity; the DM rolls its save. It\'s in Table rolls.</span></div>';
       if (dmg && e.damage) return '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + e.damage.total + '</span><span class="rcard-what">' + (e.damage.crit ? 'critical damage' : 'damage') + '</span><span class="rcard-how">' + dline(e.damage, false) + '</span></div>'
         + '<p class="rcard-line">To hit <b>' + e.total + '</b> · ' + dline(e.main, true) + '</p>';
-      const flag = e.nat ? 'Natural ' + e.nat + (e.nat === 20 ? ': a critical hit, damage dice doubled' : ': it misses, whatever the bonus') : '';
-      return '<div class="rcard-result"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">to hit</span><span class="rcard-how">' + dline(e.main, true) + '</span></div>'
+      const flag = e.nat ? 'Natural ' + e.nat + (d20 ? '' : e.nat === 20 ? ': a critical hit, damage dice doubled' : ': it misses, whatever the bonus') : '';
+      return '<div class="rcard-result"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">' + (d20 ? esc(spec.label) : 'to hit') + '</span><span class="rcard-how">' + dline(e.main, true) + '</span></div>'
         + (e.rerolled ? '<p class="rcard-line">Rerolled (' + esc(e.rerolled.reason) + '): was <s>' + e.rerolled.total + '</s></p>' : '')
         + (e.bonus ? '<p class="rcard-line">+ ' + esc(e.bonus.label) + ' ' + e.bonus.total + ' <span class="roll-x">(' + esc(e.bonus.formula) + ')</span></p>' : '')
         + (flag ? '<p class="rcard-flag">' + esc(flag) + '</p>' : '')
@@ -1967,7 +1972,7 @@ function feedbackBusy(e) {
       const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
       st.step = 'rolling'; st.adding = false; draw();
       const ev = spellEv(st.slot);
-      go({ kind: 'attack', mode: st.mode, extras, endsHidden: st.hidden, ...(ev ? { dmgParts: ev.parts, count: 1, each: '' } : {}) }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
+      go({ kind: d20 ? spec.kind : 'attack', mode: st.mode, extras, endsHidden: st.hidden && !d20, ...(ev ? { dmgParts: ev.parts, count: 1, each: '' } : {}) }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
     }
     function follow(action, o) {
       const was = st.step;
@@ -2762,6 +2767,11 @@ function feedbackBusy(e) {
       let plan = null;
       try { plan = JSON.parse(el.dataset.plan); } catch (err) { plan = null; }
       if (plan) return card(el, spec, spec.shared ? plan : { ...plan, choice: null });  // (Grapple and Shove go to the table: yours only)
+    }
+    // A check or a save (Stealth, a Dex save, Initiative): the card too, its modifiers from the character's roll context
+    if (document.body.hasAttribute('data-roll-card') && (el.dataset.roll === 'check' || el.dataset.roll === 'save') && !e.shiftKey) {
+      const mods = (ctxFor(spec.cid).mods || {})[el.dataset.roll] || [];
+      return card(el, spec, { name: spec.label, attack: { bonus: num(spec.mod) }, damage: [], riders: [], modifiers: mods, d20: true });
     }
     if (e.shiftKey) { const w = openWin(el); roll(w, { ...spec, mode: spec.adv ? 'adv' : 'normal', extras: [], ctx: ctxFor(spec.cid) }); }
     else chooser(el, spec);

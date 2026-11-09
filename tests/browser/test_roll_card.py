@@ -218,3 +218,32 @@ def test_the_roll_button_finds_a_check_by_typing(people, server):
     page.locator("[data-rs-roll]").click()
     page.locator(".rs-pick-q").press("Escape")
     assert page.locator("#rs-pick").is_hidden() and player.errors == []
+
+
+def test_a_save_and_a_check_on_the_card(people, server, browser_db):
+    """Checks and saves (Nov 9): a save on Battle's tiles and a skill from Table rolls' Roll open the card, one step,
+    with the roll's own name on its result and Done (not "missed")."""
+    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    try:
+        player = people("player")
+        page = _battle_with(player, server, True)
+        page.locator('[data-roll="save"][data-label^="Dex"]:visible >> nth=0').click()
+        card = page.locator(".roll-card")
+        card.locator("[data-roll-hit]").wait_for()
+        assert card.locator(".rcard-head b").inner_text() == "Dex save" and card.locator(".rcard-rail li").count() == 1
+        card.locator("[data-roll-hit]").click()
+        card.locator("[data-done]").wait_for(timeout=20000)
+        assert "dex save" in card.locator(".rcard-what").inner_text().lower() and card.locator("[data-missed]").count() == 0
+        _sees(page, "Dex save")
+        card.locator("[data-done]").click()
+        if page.evaluate("document.body.classList.contains('rolls-closed')"):
+            page.locator(".rs-edge").click()
+        page.locator("[data-rs-roll]").click()
+        page.locator("#rs-pick .rc").first.wait_for()
+        page.locator(".rs-pick-q").fill("stealth")
+        page.locator(".rs-pick-q").press("Enter")
+        page.locator(".roll-card [data-roll-hit]").wait_for()
+        assert "Stealth check" in page.locator(".roll-card .rcard-head").inner_text()
+        assert player.errors == []
+    finally:
+        _pieces(browser_db, server, was)

@@ -211,7 +211,18 @@ def roll_context(sheet: dict | None) -> dict:
                   | ({slots["pact"]["level"]} if slots.get("pact") and slots["pact"].get("max", 0) > slots["pact"].get("used", 0) else set()))
     return {"inspiration": bool(s.get("inspiration")), "luck": luck["left"] if luck else None,
             "halfling": "halfling" in (s.get("species") or "").lower(), "spell_mod": spell_mod, "con": con, "hit_dice": dice,
-            "level": s.get("level") or 1, "slots": have}
+            "level": s.get("level") or 1, "slots": have,
+            # (the roll card's pills on a check or a save: this character's own modifiers, app/roll_plan.py)
+            "mods": {k: _modifiers(s, k) for k in ("check", "save")}}
+
+
+def _modifiers(sheet: dict, kind: str) -> list[dict]:
+    from app.roll_plan import modifiers_for
+
+    try:
+        return modifiers_for(sheet, kind)
+    except Exception:  # noqa: BLE001 - a sheet the plan can't read: no pills, the roll still works
+        return []
 
 
 templates.env.globals["roll_context"] = lambda sheet: json.dumps(roll_context(sheet))
