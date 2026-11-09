@@ -14,7 +14,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, config, session_story, web
+from app import access, config, narration, session_story, web
 from app import db as dbmod
 from app import review
 from app.admin import _reviewer_guard as _guard
@@ -274,6 +274,9 @@ def _body_context(db: Session, s: GameSession, tab: str = "") -> dict:
         chapter_kinds=session_story.KINDS,
         told=review.last_told(db, s),
     )
+    if ctx["latest"]:  # how long Listen would play it (Brett, Nov 9): the recorded length once it's been read, else an estimate
+        ctx["listen"] = narration.length(s, ctx["latest"], campaign.name)
+        ctx["listen_full"] = narration.length(s, ctx["latest"], campaign.name, "full") if ctx["latest"].tale else None
     session_story.pictured(db, ctx["awards"], ctx["talked"]["rows"])
     from app import drawing, pictures
 

@@ -279,7 +279,7 @@
           <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="recap-form" data-restore="recap-view recap-edit">Cancel</button>
             <span class="note">Use **double asterisks** for bold names.</span></div>
         </form>
-        <p class="meta">Version {{ latest.version }} by {{ "Claude" if latest.author == "ai" else (latest.author_name or "a person") }}{% if told %} · drafting cost {% if told.cost_usd >= 1 %}${{ "%.2f" | format(told.cost_usd) }}{% else %}{{ "%.0f" | format(told.cost_usd * 100) }}¢{% endif %}{% endif %}{% if published and published.id != latest.id %} · the table still sees version {{ published.version }}{% endif %}</p>
+        <p class="meta">Version {{ latest.version }} by {{ "Claude" if latest.author == "ai" else (latest.author_name or "a person") }}{% if told %} · drafting cost {% if told.cost_usd >= 1 %}${{ "%.2f" | format(told.cost_usd) }}{% else %}{{ "%.0f" | format(told.cost_usd * 100) }}¢{% endif %}{% endif %}{% if published and published.id != latest.id %} · the table still sees version {{ published.version }}{% endif %}{% if listen and vtt_on("recap_listen") %} · Listen plays it in {{ "about " ~ listen.says[2:] if listen.estimate else listen.says }}{% endif %}</p>
         {% if s.source == "transcript" and s.transcript_key and not (unused_answers or world_changes) %}
         <div class="row" id="draft-again"><span class="note">Something to change?</span>
           <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Update the draft</button></form>
@@ -295,7 +295,7 @@
       {# 4. The full tale (Session Story, Brett Nov 7): the session's own page on Story, a chapter per scene #}
       <div id="t-tale" role="tabpanel"{% if tab != "tale" %} hidden{% endif %}>
       <section class="section" id="tale">
-        <div class="section-head"><h2><span class="num">4</span>The full tale</h2><span class="count">{{ chapters | length }} chapters</span></div>
+        <div class="section-head"><h2><span class="num">4</span>The full tale</h2><span class="count">{{ chapters | length }} chapters{% if listen_full and vtt_on("recap_listen") %} · Listen: {{ "about " ~ listen_full.says[2:] if listen_full.estimate else listen_full.says }}{% endif %}</span></div>
         <p class="hint">The long telling, on the session's own page after <b>Read the full tale</b>. Each chapter is a scene; its kind and time make <i>Fights and story</i>.</p>
         {% for c in chapters %}{% set cid = "ch" ~ loop.index0 %}
         <div class="item tale-chapter">

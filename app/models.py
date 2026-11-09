@@ -594,12 +594,14 @@ class Recap(Timestamped, Base):
     status: Mapped[Status] = mapped_column(_enum(Status), default=Status.DRAFT)
     # Its narration (Listen, app/narration.py): the voice reading it, in file storage, made the first time it's asked for
     narration_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
+    narration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)  # how long it plays (Brett, Nov 9)
     # The full tale (Session Story, Nov 7): chapters, one per scene, [{"title", "at" (seconds into the recording, or
     # None), "kind" (fight | story | exploring | rest), "text" (Markdown)}]; and the awards Claude gave,
     # [{"award", "character", "why", "quote", "at"}] (app/session_story.py); the tale's own narration
     tale: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     awards: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     tale_narration_key: Mapped[str | None] = mapped_column(ForeignKey("stored_files.key"), nullable=True)
+    tale_narration_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
     session: Mapped[GameSession] = relationship(back_populates="recaps")
 
 

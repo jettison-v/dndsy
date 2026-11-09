@@ -120,3 +120,48 @@ def test_a_description_is_not_a_name():
     assert not mentions.proper("the captain") and not mentions.proper("a bard") and not mentions.proper("Al")
     find = mentions.finder([("Captain Captain", 1), ("the captain", 1), ("Captain Trager Grill", 2), ("Trah", 3)])
     assert find("Trah met Captain Trager Grill, then the captain.") == [3, 2]  # (the longer name claims its words)
+
+
+def mp3(seconds: int) -> bytes:
+    """An MP3 as OpenAI's voice sends it: MPEG-2 Layer III frames at 24 kHz, 64 kbit/s, mono (each 24 ms, 192 bytes)."""
+    frame = bytes([0xFF, 0xF3, 0x84, 0xC4]) + bytes(188)
+    return b"ID3\x04\x00\x00\x00\x00\x00\x02xx" + frame * round(seconds / 0.024)
+
+
+def test_an_mp3s_length_is_its_frames():
+    assert narration.mp3_seconds(mp3(30)) == 30 and narration.mp3_seconds(mp3(125) + mp3(5)[12:]) == 130  # (parts joined play as one)
+    assert narration.mp3_seconds(b"not audio") is None
+
+
+def test_listen_says_how_long_it_plays(player, admin, db, told, monkeypatch):
+    """Brett, Nov 9: ▶ Listen says how long it is; an estimate from the words until it's been recorded."""
+    s, _ = told
+    page = player.get("/c/main/").text
+    assert '▶ Listen <span class="listen-len"' in page and "≈ 1 min</span>" in page
+    monkeypatch.setattr(narration, "FETCH", lambda text: mp3(134))
+    player.post(f"/c/main/sessions/{s.id}/narrate")
+    db.expire_all()
+    assert db.scalar(select(Recap)).narration_seconds == 134
+    assert "2:14</span>" in player.get("/c/main/").text and "2:14</span>" in player.get("/c/main/?tab=sessions").text
+
+
+def test_a_narration_made_before_lengths_were_kept_is_measured_when_played(player, db, told, monkeypatch):
+    s, _ = told
+    monkeypatch.setattr(narration, "FETCH", lambda text: mp3(61))
+    player.post(f"/c/main/sessions/{s.id}/narrate")
+    recap = db.scalar(select(Recap))
+    recap.narration_seconds = None
+    db.flush()
+    assert player.get(f"/c/main/sessions/{s.id}/narration").status_code == 200
+    db.expire_all()
+    assert db.scalar(select(Recap)).narration_seconds == 61
+
+
+def test_the_full_tale_and_the_review_page_say_how_long_listen_plays(player, admin, db, told):
+    s, _ = told
+    recap = db.scalar(select(Recap))
+    recap.tale = [{"title": "The Climb", "kind": "exploring", "at": 0, "text": " ".join(["word"] * 540)}]
+    db.flush()
+    assert "▶ Listen to the full tale <span class=\"listen-len\"" in player.get(f"/c/main/sessions/{s.id}").text and "≈ 3 min</span>" in player.get(f"/c/main/sessions/{s.id}").text
+    review = admin.get(f"/c/main/manage/sessions/{s.id}").text
+    assert "Listen plays it in about 1 min" in review and "Listen: about 3 min" in review
