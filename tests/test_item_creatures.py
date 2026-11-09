@@ -58,6 +58,10 @@ def test_the_dm_sets_it_up_and_its_player_brings_commands_and_ends_it(dm, player
     from app import house_rules
 
     house_rules.invalidate()
+    for who in (player, dm):  # (Sheet's action list and Battle draw its Use: ASKDND-V2-R, Sheet failed on it)
+        for mode in ("", "/battle", "/plan"):
+            assert who.get(f"/characters/{cole.id}{mode}").status_code == 200, mode
+    assert f'/bring/{key}"' in player.get(f"/characters/{cole.id}").text
     win = player.get(f"/characters/{cole.id}/bring/{key}").text
     assert "Undead Wolf" in win and "Immune to necrotic damage, Frightened" in win and "Then spent until a Long Rest" in win
     r = player.post(f"/characters/{cole.id}/bring/{key}", data={"name": "Snap"})
