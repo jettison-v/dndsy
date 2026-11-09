@@ -617,7 +617,7 @@
   // (a panel as when it opened: panel:loaded). A button's own answer, such as a pin's or Wild Shape's, still swaps
   // just the box it changed.
   const PARTY = /^(\/c\/[^/]+)?\/(party|table)$/;  // (and askdnd's table: everyone on it)
-  let showWait = null, showing = false, again = false;
+  let showWait = null, showing = false, again = false, againNow = false;
   function showsAny(ids) {  // ids: character ids as text, or '*' for any
     const page = document.querySelector('main[data-character]');
     const mine = document.querySelector('[data-cond-dots]');  // your character's button in the menu bar shows its conditions
@@ -640,7 +640,16 @@
     const field = form && ('form[' + (form.getAttribute('hx-post') ? 'hx-post="' + form.getAttribute('hx-post') : 'action="' + form.getAttribute('action')) + '"] [name="' + a.name + '"]');
     const tabs = [...box.querySelectorAll('[role=tab][data-tab][aria-selected=true]')].map(t => t.dataset.tab);
     const searches = [...box.querySelectorAll('[data-list]')].map(r => [r.dataset.list, (r.querySelector('[data-ls-search]') || {}).value || '']).filter(([, q]) => q);
+    // A pop-up you opened (a condition's pill, + Condition, Concentration) stays open in the new copy, if it's still
+    // there (Nov 9: your own change landing on D&D Beyond closed the Exhaustion pill you had just opened)
+    const POPS = 'details.cond-pill, details.conc-pop', pops = [...box.querySelectorAll(POPS)];
+    const opened = pops.filter(d => d.open).map(d => d.classList.contains('cond-add') ? ['add'] : d.dataset.mark ? ['mark', d.dataset.mark] : ['at', pops.indexOf(d)]);
     return () => {
+      const now = [...box.querySelectorAll(POPS)];
+      opened.forEach(([how, k]) => {
+        const d = how === 'add' ? now.find(x => x.classList.contains('cond-add')) : how === 'mark' ? now.find(x => x.dataset.mark === k) : now[k];
+        if (d) d.open = true;
+      });
       tabs.forEach(id => { const t = box.querySelector('[role=tab][data-tab="' + id + '"]'); if (t) selectTab(t); });
       if (window.htmx) htmx.process(box);
       const sc = scroller(); if (sc) sc.scrollTop = y;
@@ -724,7 +733,9 @@
     panel.dispatchEvent(new CustomEvent('panel:loaded', { bubbles: true }));
   }
   function showInPlace(now) {
-    if (showing) { again = true; return; }
+    // (one asked for while another is on its way follows it, at once only if one of those asking said so: a change
+    // landing from elsewhere never inherits your own change's "at once" and closes what you opened, Nov 9)
+    if (showing) { again = true; againNow = againNow || !!now; return; }
     clearTimeout(showWait); showWait = null;
     const later = () => { showWait = setTimeout(() => showInPlace(), 2000); };
     if (!now && (busyHere() || document.visibilityState !== 'visible')) return later();
@@ -734,11 +745,13 @@
     Promise.all([get(location.pathname + location.search), ...open.map(l => get(l.panel.dataset.url))])
       .then(([page, ...panels]) => {
         showing = false;
-        if (!now && busyHere()) return later();
+        const queued = again, queuedNow = againNow;
+        again = againNow = false;
+        if (!now && busyHere()) return queuedNow ? showInPlace(true) : later();
         const main = document.querySelector('main');
         if (main && !typingIn(main)) swapMain(page);  // (askdnd:swapped measures Resources again)
         open.forEach((l, i) => { if (isOpen(l) && l.panel.dataset.url && !typingIn(l.panel)) swapPanel(l, panels[i]); });
-        if (again) { again = false; showInPlace(now); }
+        if (queued) showInPlace(queuedNow);
       })
       .catch(() => { showing = false; });
   }
