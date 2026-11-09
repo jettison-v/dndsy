@@ -90,6 +90,7 @@
   {% set full = x.text if section != "situational" else (x.related.text if x.related else "") %}
   {% if full and full != what %}<h3>{{ "Full description" if section in ("spells", "inventory") else "Full text and background" }}</h3><div class="detail-full">{{ full | terms(underline, seen) }}</div>{% endif %}
 
+  {% if bring %}{% include "_bring_setup.html" %}{% endif %}
   {% if can_correct and section != "basic" %}{# Correct this (docs/mockups/correction-flow.html): first answer wins, this campaign's correction first #}
   <section class="admin-move correct" aria-label="Correct this">
     <div class="admin-head"><b>Correct this</b> <span class="note">saves as you click</span></div>

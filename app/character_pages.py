@@ -24,7 +24,7 @@ from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
 from app import ddb, ddb_bridge, hit_points, house_rules, picks
-from app import class_rules, companions, creature_hp, creatures, initiative, pictures, player_notes, vtt
+from app import class_rules, companions, creature_hp, creatures, initiative, item_creatures, pictures, player_notes, vtt
 from app import spellbook as sb
 from app.preparing import books_to_prepare
 from app import wild_shape as ws
@@ -38,18 +38,20 @@ router = APIRouter()
 
 
 
-def _overrides(db: Session) -> dict[tuple[str, str], str]:
-    return house_rules.sheet_overrides(db)  # tool corrections, then the campaign's house rules
+def _overrides(db: Session, campaign_id: int | None = None) -> dict[tuple[str, str], str]:
+    return house_rules.sheet_overrides(db, campaign_id)  # tool corrections, then the campaign's house rules
 
 
 def _view(db: Session, ch: Character, user: dict) -> dict:
     snap = ch.snapshot
-    sheet = views.apply_overrides(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)), _overrides(db))  # with what's on its way
+    # with what's on its way; its own campaign's corrections (an admin looking at another campaign's character included)
+    sheet = views.apply_overrides(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)), _overrides(db, ch.campaign_id))
     now = listed(db, ch, sheet)
     if sheet:
         sheet["_item_choices"] = ch.item_choices
         if vtt.on(db.get(Campaign, ch.campaign_id) if ch.campaign_id else None, "creatures"):
             sheet["_familiar_options"] = companions.master_options(ch, sheet)  # (Your creatures: See through its eyes, Deliver a touch spell)
+            sheet["_item_creature_options"] = item_creatures.options(ch, sheet)  # (an item that brings a creature: Use, Command it)
         sheet["speed"] = cond.speed_now(sheet.get("speed"), now)  # (Exhaustion and Speed 0 conditions: slice 3 counts movement from it)
     mine = picks.picks(db, ch, user)
     druid = ws.druid(sheet)
@@ -61,6 +63,7 @@ def _view(db: Session, ch: Character, user: dict) -> dict:
         "error": snap.error if snap else "",
         "picks": mine,
         "can_pick": picks.can_edit(db, user, ch),
+        "can_bring": hit_points.can_apply(db, user, ch),  # an item that brings a creature (app/item_creatures.py): its player or the DM
         "can_use": picks.can_edit(db, user, ch) and ddb_bridge.on_for(db, ch),  # an item's button (app/item_use.py)
         "can_change_hp": ddb_bridge.on_for(db, ch) and hit_points.can_apply(db, user, ch),  # − and + on Battle's Hit points tile, and its Inspiration star
         "can_play": picks.can_edit(db, user, ch) and ddb_bridge.plays(db, ch),  # Cast, resources, rests (the VTT piece live_state)
@@ -393,13 +396,22 @@ def detail_panel(request: Request, character_id: int, ref: str, db: Session = De
     if stop:
         return stop
     ctx = _view(db, ch, user)
+    if ref.startswith("bring:"):  # (an item that brings a creature, or Command it: the item's own panel)
+        ref = ":".join(ref.split(":")[1:3])
     d = views.detail(ctx["sheet"] or {}, ref, ctx["picks"]["star"])
     if d is None:
         return HTMLResponse("", status_code=404)
     oref = d["opt"]["oref"] if d["opt"] else views.override_ref({**d["x"], "key": ref}, d["section"])
     item_actions = cond.item_actions(d["x"]) if d["section"] == "inventory" else []  # its Battle actions, to pin
     can_correct = can_set_house_rules(user, ch.campaign_id)
-    return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref, "oref": oref, "item_actions": item_actions,
+    bring = None  # what an item brings (app/item_creatures.py): the DM's setup, filled in from its words
+    if can_correct and d["section"] == "inventory" and ((cfg := item_creatures.setup(ctx["sheet"], d["x"])) or item_creatures.looks_like(d["x"])):
+        from app import rules_data
+
+        bring = {"cfg": cfg or item_creatures.read(d["x"].get("text") or ""), "set": bool(cfg), "id": d["x"]["key"],
+                 "names": sorted({m["name"] for m in rules_data.catalog("monster", db, ch.campaign_id)}),
+                 "costs": item_creatures.COSTS, "commands": item_creatures.COMMANDS, "backs": item_creatures.BACK}
+    return templates.TemplateResponse(request, "_panel_detail.html", {**ctx, **d, "ref": ref, "oref": oref, "item_actions": item_actions, "bring": bring,
                                       "can_correct": can_correct, "corrections": _corrections(db, ch, oref) if can_correct else {},
                                       "item_kinds": cond.item_options(d["x"]) if d["section"] == "inventory" else None,
                                       "item_kind": ch.item_choices.get(ref.split(":", 1)[1], "") if d["section"] == "inventory" else "",

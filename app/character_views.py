@@ -164,6 +164,8 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     _magic_action_familiar(sheet, add)
     for o in sheet.get("_familiar_options") or []:  # a familiar's, on its master's Battle (app/companions.py master_options)
         add(**o)
+    for o in sheet.get("_item_creature_options") or []:  # an item that brings a creature, and commanding it (app/item_creatures.py)
+        add(**o)
     for a in sheet.get("actions") or []:
         cost, from_text = _cost(a["activation"]), ""
         if cost == "Other" and a["activation"] in ("Special", None, "") and (said := stated_cost(a.get("text") or "")):

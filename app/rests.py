@@ -137,8 +137,11 @@ def window(request: Request, character_id: int, kind: str, db: Session = Depends
     from app import companions
 
     wild = companions.wild_leaving(ch, sheet) if kind == "long" else []  # (Wild Companion: gone at the Long Rest)
+    from app import item_creatures
+
+    items = item_creatures.ready_again(ch, sheet, kind)  # (an item that brings a creature: ready again)
     return templates.TemplateResponse(request, "_rest_window.html", {"c": ch, "kind": kind, "title": TITLE[kind], "p": p, "lines": lines(p, kind),
-                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare, "wild": wild})
+                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare, "wild": wild, "items": items})
 
 
 @router.post("/characters/{character_id:int}/rest")
@@ -162,6 +165,10 @@ def _make(request: Request, db: Session, character_id: int, kind: str, form) -> 
         from app import companions
 
         said += [f"{n} left (Wild Companion)" for n in companions.wild_leave(db, ch, sheet)]
+    if form.get("items_back"):  # an item that brings a creature: ready again (ticked: the DM may rule otherwise)
+        from app import item_creatures
+
+        said += [f"{n} ready again" for n in item_creatures.rest(ch, sheet, kind)]
     for c in p["counts"]:
         fk, arg = c["field"].split(":", 1)
         ddb_bridge.add(db, ch, "use", {"field": c["field"], "delta": -c["back"], "max": ddb_sheet.most(ch.snapshot.raw, fk, arg)}, f"{ch.name}: {c['name']} back")

@@ -3624,3 +3624,10 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .st-dot.st-claude, .st-dot.st-planned { background: var(--blue); }
 .st-dot.st-done { background: var(--green); }
 .st-dot.st-used { background: var(--violet); }
+
+/* An item that brings a creature (app/item_creatures.py): the DM's setup in the side panel, and its window's list */
+.bring-form { display: grid; gap: var(--sp-2); }
+.bring-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+.bring-form .field input, .bring-form .field select { width: 100%; }
+.bring-acts { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
+.bring-list { margin: 0; padding-left: 18px; display: grid; gap: var(--sp-1); font-size: var(--fs-sm); }

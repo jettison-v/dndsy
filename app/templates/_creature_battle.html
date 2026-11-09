@@ -19,6 +19,9 @@
       {% if k.where in ("here", "away") %}{# here or in the pocket dimension: either way it can be dismissed (feedback 23) #}
         <details class="cr-forever"><summary class="btn small link">Dismiss…</summary><div class="cr-forever-pop"><p class="note">{{ k.name }} goes until {{ c.name }} casts Find Familiar again, which brings it back, or another form.</p><button class="btn small" hx-post="{{ to }}" hx-vals='{"to": "gone"}' hx-swap="none">Dismiss</button></div></details>
       {% elif find_familiar and can_play %}<button type="button" class="btn small primary item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ find_familiar | urlencode }}">Cast {{ k.spell }}…</button>{% endif %}{% endif %}
+      {% endif %}{% if k.item %}{# brought by an item (app/item_creatures.py): how long it lasts; Dismiss ends it, the item spent #}
+      <span class="cr-where cr-where-here">From the {{ k.item }}{% if k.lasts %} · up to {{ k.lasts }}{% endif %}</span>
+      {% if can_bring %}<details class="cr-forever"><summary class="btn small link">Dismiss…</summary><div class="cr-forever-pop"><p class="note">{{ k.name }} goes, and the {{ k.item }} is spent until it comes back.</p><button class="btn small" hx-post="/characters/{{ c.id }}/bring/{{ k.item_key }}/dismiss" hx-swap="none">Dismiss</button></div></details>{% endif %}
       {% endif %}<a class="btn small" href="/characters/{{ c.id }}/battle" title="Back to {{ c.name }}'s Battle">← {{ c.name.split()[0] }}</a></div>
   </div>
   {% if k.cast and k.where == "away" %}<p class="note cr-where-note">In the pocket dimension: {{ k.name }} takes no turns. Anything it was wearing or carrying stayed where it was.</p>

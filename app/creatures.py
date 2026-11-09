@@ -160,7 +160,7 @@ def card(sheet: dict, c: dict, master: str = "") -> dict:
     elif rule:
         hp_max, hp_parts = rule, [(f"{grows[1]} ({grows[3]})", rule)]
     else:
-        hp_max, hp_parts = block_hp, [(f"{c['spell']} at level {c['level']}" if c.get("own") else "D&D Beyond's stat block", block_hp)]
+        hp_max, hp_parts = block_hp, [(f"{c['kind']}'s stat block" if c.get("item") else f"{c['spell']} at level {c['level']}" if c.get("own") else "D&D Beyond's stat block", block_hp)]
     if might:
         notes.append(f"{MIGHT}: its skills, saving throws and attack's to-hit and damage are {_signed(might)} "
                      f"(the stat block's numbers are for a Proficiency Bonus of +2; yours is {_signed(pb)}).")
@@ -204,8 +204,10 @@ def card(sheet: dict, c: dict, master: str = "") -> dict:
         "immune": b.get("condition_immunities") or [], "size": b.get("size") or "", "cr": b.get("cr_label") or "",
         "traits": [t for t in b.get("traits") or [] if t["name"] != MIGHT], "might": might,
         "columns": {k: {"shown": v, "all": v, "count": len(v), "items": [], "item_count": 0} for k, v in cols.items()},
-        "turn": c.get("turn_text") or TURN.get(group, OTHER_TURN), "turn_short": TURN_SHORT.get(group, ""), "role": ROLE.get(group, "creature"),
-        "own_initiative": group == FAMILIAR, "notes": notes,
+        "turn": c.get("turn_text") or TURN.get(group, OTHER_TURN), "turn_short": "Its own Initiative" if c.get("item") and c.get("own_initiative")
+        else TURN_SHORT.get(group, ""), "role": f"{c['item']}'s" if c.get("item") else ROLE.get(group, "creature"),
+        "own_initiative": group == FAMILIAR or bool(c.get("own_initiative")), "notes": notes,
+        "item": c.get("item") or "", "item_key": c.get("item_key") or "", "lasts": c.get("lasts") or "",
         "about": _first(c.get("about") or ""),
     }
 

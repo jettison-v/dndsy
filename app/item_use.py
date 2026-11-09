@@ -38,7 +38,7 @@ def _guard(db: Session, request: Request, character_id: int) -> tuple[Character,
 
 
 def _sheet(db: Session, ch: Character) -> dict:
-    sheet = views.apply_overrides(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)) or {}, house_rules.sheet_overrides(db)) or {}
+    sheet = views.apply_overrides(ddb_bridge.as_shown(db, ch, chars.character_summary(ch)) or {}, house_rules.sheet_overrides(db, ch.campaign_id)) or {}
     return {**sheet, "_item_choices": ch.item_choices}
 
 
