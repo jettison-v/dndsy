@@ -3631,3 +3631,19 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .bring-form .field input, .bring-form .field select { width: 100%; }
 .bring-acts { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
 .bring-list { margin: 0; padding-left: 18px; display: grid; gap: var(--sp-1); font-size: var(--fs-sm); }
+
+/* Table rolls' Roll button (Brett chose A, Nov 9, docs/mockups/find-checks/): a search over your character's checks */
+.rs-roll { color: var(--text); }
+.rs-pick { position: absolute; left: var(--sp-3); right: var(--sp-3); top: 52px; z-index: 6; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+  box-shadow: var(--lift); padding: var(--sp-2); display: grid; gap: var(--sp-2); max-height: min(70vh, 540px); overflow-y: auto; }
+.rs-pick-q { width: 100%; font-size: var(--fs-md); padding: 8px 10px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+.rs-pick .rc-group { display: grid; gap: 1px; margin-top: 0; }
+.rs-pick .rc-head { padding: var(--sp-1) var(--sp-2) 0; }
+.rs-pick .rc { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); width: 100%; border: 0; background: none; border-radius: var(--r-sm);
+  padding: 5px var(--sp-2); font-size: var(--fs-sm); color: var(--text); text-align: left; }
+.rs-pick .rc small { color: var(--muted); margin-left: 4px; }
+.rs-pick .rc b { font-variant-numeric: tabular-nums; }
+.rs-pick .rc:hover, .rs-pick .rc:focus-visible, .rs-pick .rc.first { background: var(--surface-2); outline: none; }
+.rs-pick .rc.prof span { font-weight: 600; }
+@media (max-width: 900px) { .rs-pick { position: fixed; top: auto; left: var(--sp-3); right: var(--sp-3); bottom: calc(72px + env(safe-area-inset-bottom, 0px)); max-height: 60vh; } }
+@media (max-width: 640px) { body.rolls-closed .rs-roll { display: none; } }

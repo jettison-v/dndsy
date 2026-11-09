@@ -1,22 +1,24 @@
-{# The sidebar's quick rolls for your own character (app/table_rolls.checks): each button is an
-   ordinary roll button, so it opens the same roll window. #}
+{# Table rolls' Roll button (app/table_rolls.checks; Brett chose A, Nov 9, docs/mockups/find-checks/): your character's
+   skills, saves, checks, Initiative, a Death save and a Hit Die, found by typing (data-find: the name and its ability).
+   Each is an ordinary roll button, so it opens the same roll window. #}
 {% from "_char.html" import roll_attrs %}
 {% if s %}
-<div data-roll-char="{{ c.id }}" data-roll-ctx='{{ ctx | tojson }}'>
-<div class="rc-group"><span class="rc-head">Checks</span>
-  {% for a in s.abilities %}<button type="button" class="rc" {{ roll_attrs("check", a.name ~ " check", a.label) }}>{{ a.short }} <b>{{ a.label }}</b></button>{% endfor %}
-</div>
+<div class="rs-pick-list" data-roll-char="{{ c.id }}" data-roll-ctx='{{ ctx | tojson }}'>
 <div class="rc-group"><span class="rc-head">Skills</span>
-  {% for sk in s.skills %}<button type="button" class="rc{{ ' prof' if sk.proficiency }}" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv) }}>{{ sk.name }} <b>{{ sk.label }}</b></button>{% endfor %}
+  {% for sk in s.skills %}<button type="button" class="rc{{ ' prof' if sk.proficiency }}" data-find="{{ (sk.name ~ ' ' ~ (sk.ability or '')) | lower }}" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv) }}><span>{{ sk.name }} <small>{{ sk.ability }}</small></span> <b>{{ sk.label }}</b></button>{% endfor %}
 </div>
 <div class="rc-group"><span class="rc-head">Saves</span>
-  {% for sv in s.saves %}<button type="button" class="rc{{ ' prof' if sv.proficient }}" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }}>{{ sv.short }} <b>{{ sv.label }}</b></button>{% endfor %}
-  <button type="button" class="rc" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }}>Initiative <b>{{ s.initiative }}</b></button>
+  {% for sv in s.saves %}<button type="button" class="rc{{ ' prof' if sv.proficient }}" data-find="{{ (sv.short ~ ' save ' ~ (sv.ability or '') ~ ' saving throw') | lower }}" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }}><span>{{ sv.short }} save</span> <b>{{ sv.label }}</b></button>{% endfor %}
 </div>
-<div class="rc-group"><span class="rc-head">At 0 HP and resting</span>
-  <button type="button" class="rc" data-roll="death" data-label="Death save" title="10 or higher succeeds; a 20 brings you back with 1 Hit Point; a 1 counts as two failures">Death save</button>
-  {% for d in ctx.hit_dice %}<button type="button" class="rc" data-roll="heal" data-label="Hit Die" data-dmg="1{{ d }}{{ '%+d' % ctx.con if ctx.con }}" title="Spend a Hit Die on a Short Rest: roll it and add your Constitution modifier">Hit Die <b>{{ d }}{{ "%+d" % ctx.con if ctx.con }}</b></button>{% endfor %}
+<div class="rc-group"><span class="rc-head">Checks</span>
+  {% for a in s.abilities %}<button type="button" class="rc" data-find="{{ (a.name ~ ' check ' ~ a.short) | lower }}" {{ roll_attrs("check", a.name ~ " check", a.label) }}><span>{{ a.name }} check</span> <b>{{ a.label }}</b></button>{% endfor %}
 </div>
+<div class="rc-group"><span class="rc-head">Other</span>
+  <button type="button" class="rc" data-find="initiative" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }}><span>Initiative</span> <b>{{ s.initiative }}</b></button>
+  <button type="button" class="rc" data-find="death save" data-roll="death" data-label="Death save" title="10 or higher succeeds; a 20 brings you back with 1 Hit Point; a 1 counts as two failures"><span>Death save</span> <b>d20</b></button>
+  {% for d in ctx.hit_dice %}<button type="button" class="rc" data-find="hit die hit point die rest" data-roll="heal" data-label="Hit Die" data-dmg="1{{ d }}{{ '%+d' % ctx.con if ctx.con }}" title="Spend a Hit Die on a Short Rest: roll it and add your Constitution modifier"><span>Hit Point Die</span> <b>{{ d }}{{ "%+d" % ctx.con if ctx.con }}</b></button>{% endfor %}
+</div>
+<p class="note rs-pick-none" hidden>Nothing by that name.</p>
 </div>
 {% else %}
 <p class="note">{{ "Ask an admin to link your character to see its checks here." if not c else "Your character's sheet isn't loaded yet." }}</p>

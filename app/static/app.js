@@ -1605,6 +1605,8 @@
   function openWin(anchor) {
     const prev = win && anchor && win.contains(anchor) ? win.getBoundingClientRect() : null;  // a follow-up takes the result's place
     closeWin();
+    const picker = document.getElementById('rs-pick');
+    if (picker && !picker.hidden) rsPick(false);  // (a roll chosen from Table rolls' Roll: its search closes)
     win = document.createElement('div');
     if (prev) win._r = { left: prev.left, top: prev.top, bottom: prev.top - 6 };
     win.className = 'roll-win';
@@ -1741,6 +1743,53 @@
     (w.querySelector('[data-go]') || w).focus();
   }
 
+  // ---------------------------------------------------------------- Table rolls' Roll button
+  // (Brett chose A, Nov 9: docs/mockups/find-checks/) A search over your character's skills, saves, checks, Initiative,
+  // a Death save and a Hit Point Die (app/table_rolls.checks): type ("ste" for Stealth, "dex" for everything Dexterity),
+  // Enter rolls the first; each row is an ordinary roll button, so it opens the roll window as anywhere else.
+  function rsPick(open) {
+    const pick = document.getElementById('rs-pick'), btn = document.querySelector('[data-rs-roll]');
+    if (!pick || !btn) return;
+    pick.hidden = !open;
+    btn.setAttribute('aria-expanded', open);
+    if (!open) return;
+    if (window.htmx) htmx.trigger(pick.querySelector('.rs-pick-body'), 'rsPick');
+    const q = pick.querySelector('.rs-pick-q');
+    q.value = ''; rsFilter(pick, '');
+    q.focus();
+  }
+  function rsFilter(pick, text) {
+    const t = text.trim().toLowerCase();
+    let first = null;
+    pick.querySelectorAll('.rc-group').forEach(g => {
+      let any = false;
+      g.querySelectorAll('.rc').forEach(b => {
+        const hit = !t || (b.dataset.find || '').split(' ').some(w => w.startsWith(t)) || (b.dataset.find || '').includes(t);
+        b.hidden = !hit; b.classList.remove('first');
+        if (hit) { any = true; if (!first) first = b; }
+      });
+      g.hidden = !any;
+    });
+    if (first && t) first.classList.add('first');
+    const none = pick.querySelector('.rs-pick-none');
+    if (none) none.hidden = !!first;
+    return first;
+  }
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-rs-roll]')) { const p = document.getElementById('rs-pick'); rsPick(!!p && p.hidden); return; }
+    const pick = document.getElementById('rs-pick');
+    if (!pick || pick.hidden) return;
+    if (e.target.closest('#rs-pick .rc')) { setTimeout(() => rsPick(false)); return; }  // (the roll window opens from the same click first)
+    if (!e.target.closest('#rs-pick')) rsPick(false);
+  }, true);  // (first: the roll's own handler stops the click once it opens the roll window)
+  document.addEventListener('input', e => { if (e.target.matches('.rs-pick-q')) rsFilter(e.target.closest('#rs-pick'), e.target.value); });
+  document.addEventListener('htmx:afterSwap', e => { const p = e.target.closest && e.target.closest('#rs-pick'); if (p) rsFilter(p, p.querySelector('.rs-pick-q').value); });
+  document.addEventListener('keydown', e => {
+    if (!e.target.matches || !e.target.matches('.rs-pick-q')) return;
+    if (e.key === 'Escape') { rsPick(false); document.querySelector('[data-rs-roll]')?.focus(); }
+    if (e.key === 'Enter') { e.preventDefault(); const f = rsFilter(e.target.closest('#rs-pick'), e.target.value); if (f) { f.click(); setTimeout(() => rsPick(false)); } }
+  });
+
   // ---------------------------------------------------------------- the roll card
   // (Labs `roll_card`; Brett chose the Roll Card Prototype, Nov 9: docs/mockups/roll-workflow/round-2.html) An attack
   // as its own moments, from its roll plan (app/roll_plan.py, data-plan on the to-hit): a choice first when it has one
@@ -1757,26 +1806,30 @@
     const ctx = ctxFor(spec.cid);
     // An attack spell (its recipe, app/roll_recipes.py): its damage at the level cast, a cantrip's at your level, with
     // the spellcasting modifier where it adds it. Several rays or beams, or a choice of effects, keep the roll window.
-    const rec = spec.recipe || null, hits = rec ? (rec.events || []).filter(x => x.on === 'hit') : [];
+    // A save spell (Fireball): the save and its DC said first, then its damage, and what a success takes
+    const save = !!plan.save && spec.kind !== 'attack';
+    const rec = spec.recipe || null, hits = rec ? (rec.events || []).filter(x => x.on !== 'rider' && (save ? x.on !== 'hit' : x.on === 'hit')) : [];
     const slot0 = rec && rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0;
+    let evi = 0;  // (which effect, where a spell has several: Toll the Dead's unhurt target or one missing Hit Points)
     const spellEv = level => {
       if (!hits.length) return null;
-      const ev = resolve(rec, hits[0], level, ctx.level);
+      const ev = resolve(rec, hits[evi] || hits[0], level, ctx.level);
       if (ev && ev.mod && ctx.spell_mod != null) ev.parts = ev.parts.concat([ascii(ctx.spell_mod) + ' spellcasting modifier']);
       return ev;
     };
-    if (rec && (hits.length > 1 || (spellEv(slot0) || {}).count > 1)) return chooser(anchor, spec);
+    if (rec && hits.some((x, i) => { evi = i; return (spellEv(slot0) || {}).count > 1; })) return chooser(anchor, spec);
+    evi = 0;
     const grows = !!(rec && rec.level && hits.some(x => (x.upcast || []).some(Boolean) || x.count_upcast));
     const w = openWin(anchor);
     w.classList.add('roll-card');
     const mods = plan.modifiers || [];
-    const st = { step: plan.choice ? 'choose' : 'attack', mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false,
+    const st = { step: save ? 'save' : plan.choice ? 'choose' : 'attack', mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false,
                  visOpen: false, entry: null, dmg: null, busy: false, hidden: !!spec.endsHidden, slot: slot0 };
     mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = !m.once; });  // (on by themselves while they last; once a turn: yours to tick)
-    const dmgText = () => (spellEv(st.slot) ? describe(spellEv(st.slot)) : '') || (plan.damage || []).map(p => (p.dice || '') + (p.flat || !p.dice ? (p.dice && p.flat > 0 ? '+' : '') + (p.flat || 0) : '') + (p.type ? ' ' + p.type : '')).join(' + ');
+    const dmgText = () => (spellEv(st.slot) ? describe({ ...spellEv(st.slot), on: 'hit' }) : '') || (plan.damage || []).map(p => (p.dice || '') + (p.flat || !p.dice ? (p.dice && p.flat > 0 ? '+' : '') + (p.flat || 0) : '') + (p.type ? ' ' + p.type : '')).join(' + ');
     const flat = (plan.damage || []).length && plan.damage.every(p => !p.dice) ? plan.damage.reduce((t, p) => t + (p.flat || 0), 0) : null;  // (no dice: it comes with the roll)
-    const steps = () => [...(plan.choice ? ['Choose'] : []), 'To hit', 'Damage'];
-    const at = () => ({ choose: 0, attack: plan.choice ? 1 : 0, result: plan.choice ? 1 : 0, damage: plan.choice ? 2 : 1, done: 9 })[st.step];
+    const steps = () => save ? ['The save', 'Damage'] : [...(plan.choice ? ['Choose'] : []), 'To hit', 'Damage'];
+    const at = () => save ? ({ save: 0, rolling: 1, saved: 9 })[st.step] : ({ choose: 0, attack: plan.choice ? 1 : 0, result: plan.choice ? 1 : 0, damage: plan.choice ? 2 : 1, done: 9 })[st.step];
     const pill = (attr, on, text, small) => '<button type="button" class="chip rcard-pill" ' + attr + ' aria-pressed="' + !!on + '">' + esc(text) + (small ? ' <small>' + esc(small) + '</small>' : '') + '</button>';
     const adder = target => '<div class="rcard-adder" data-adder="' + target + '">' + CARD_DICE.map(([v, t]) => '<button type="button" class="chip" data-add="' + v + '">' + t + '</button>').join('') + '</div>';
     const visLine = () => !spec.shared
@@ -1789,9 +1842,19 @@
     const riders = when => (plan.riders || []).filter(r => r.says && (r.when === 'miss') === (when === 'miss'));
     const riderList = when => riders(when).map(r => '<li><b>' + esc(r.name) + '</b> ' + esc(r.says) + (r.on && r.on !== 'mastery' ? ' <small>(' + esc(r.on) + ')</small>' : '') + '</li>').join('');
     function head() {
-      const sub = [plan.attack ? 'to hit ' + signed(plan.attack.bonus) : '', dmgText()].filter(Boolean).join(' · ');
+      const sub = [plan.attack ? 'to hit ' + signed(plan.attack.bonus) : save ? plan.save.ability + ' save, DC ' + plan.save.dc : '', dmgText()].filter(Boolean).join(' · ');
       return '<button type="button" class="rp-x" aria-label="Close">×</button><div class="rcard-head"><b>' + esc(plan.name) + '</b>' + (sub ? '<span class="rcard-sub">' + esc(sub) + '</span>' : '') + '</div>'
         + '<ol class="rcard-rail" aria-label="Steps">' + steps().map((n, i) => '<li class="' + (i < at() ? 'done' : i === at() ? 'now' : '') + '">' + n + '</li>').join('') + '</ol>';
+    }
+    function castAt() {
+      let h = '';
+      if (hits.length > 1) h += '<div class="rw-row rw-evs"><span class="rw-label">Which</span><span class="rw-ev-list">' + hits.map((x, i) =>
+        '<button type="button" class="chip" data-card-ev="' + i + '" aria-pressed="' + (i === evi) + '">' + esc(x.name) + '</button>').join('') + '</span></div>';
+      if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-card-slot aria-label="Spell slot level">'
+        + [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => l >= rec.level).map(l => '<option value="' + l + '"' + (l === st.slot ? ' selected' : '') + '>Level ' + l
+          + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
+      (rec && rec.house_rules || []).forEach(r => { h += '<p class="rw-note rw-house"><b>House rule</b> ' + esc(r.text) + (r.reason ? ' · ' + esc(r.reason) : '') + '</p>'; });
+      return h;
     }
     function hitLine() {
       const e = st.entry, adds = [...mods.filter(m => m.when === 'before' && st.pre[m.name]).map(m => m.adds), ...st.added];
@@ -1802,11 +1865,18 @@
       if (st.step === 'choose') {
         h += '<p class="rcard-q">' + esc(plan.choice.ask) + '</p><div class="rcard-choices">' + plan.choice.options.map(o =>
           '<button type="button" class="rcard-choice" data-choice="' + esc(o.key) + '"><b>' + esc(o.name) + '</b><small>' + esc(o.says) + '</small></button>').join('') + '</div>';
+      } else if (st.step === 'save') {
+        h += castAt();
+        const ok = { half: ': half damage on a success', none: ': no damage on a success' }[plan.save.success] || '';
+        h += '<p class="rcard-q">Each target makes a <b>' + esc(plan.save.ability) + ' save</b> against <b>DC ' + plan.save.dc + '</b>' + ok + '. The DM rolls them.</p>';
+        h += '<button type="button" class="btn primary rcard-go" data-roll-save>Roll damage <small>' + esc(dmgText()) + '</small></button>' + visLine();
+      } else if (st.step === 'saved') {
+        const e = st.entry, half = plan.save.success === 'half' ? Math.floor(e.total / 2) : plan.save.success === 'none' ? 0 : null;
+        h += '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">damage on a failed save</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
+          + (half != null ? '<p class="rcard-line">On a success: <b>' + (half ? half + '</b> (half)' : 'no damage</b>') + '</p>' : '')
+          + '<p class="rw-note">In Table rolls for the DM, who rolls the saves and applies it.</p><div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>';
       } else if (st.step === 'attack') {
-        if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-card-slot aria-label="Spell slot level">'
-          + [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => l >= rec.level).map(l => '<option value="' + l + '"' + (l === st.slot ? ' selected' : '') + '>Level ' + l
-            + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
-        (rec && rec.house_rules || []).forEach(r => { h += '<p class="rw-note rw-house"><b>House rule</b> ' + esc(r.text) + (r.reason ? ' · ' + esc(r.reason) : '') + '</p>'; });
+        h += castAt();
         h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + '</div>';
         const why = (spec.advWhy || '').split('\n').filter(Boolean).map(t => t.startsWith('!dis ') ? '<b>Disadvantage</b> ' + esc(t.slice(5))
           : t.startsWith('!note ') ? '<b>Note</b> ' + esc(t.slice(6)) : '<b>Advantage</b> ' + esc(t.replace(/^advantage\s*/i, '')));
@@ -1822,8 +1892,8 @@
         if (flat != null) h += flatNote(flat, plan.name);
         h += '<button type="button" class="btn primary rcard-go" data-roll-hit>Roll to hit <small>' + esc(hitLine()) + '</small></button>' + visLine();
       } else if (st.step === 'result' || st.step === 'rolling') {
-        h += st.step === 'rolling' ? '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling to hit</span></div>' : resultBox(st.entry, false);
-        if (st.step === 'result') {
+        h += st.step === 'rolling' ? '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">' + (save ? 'Rolling damage' : 'Rolling to hit') + '</span></div>' : resultBox(st.entry, false);
+        if (st.step === 'result' && !save) {
           const e = st.entry, c = e.can || {};
           const after = mods.filter(m => m.when === 'after_fail' && m.adds && (m.to || []).includes('attack'));
           const adjust = (c.reroll ? pill('data-reroll', false, 'Reroll', c.reroll) : '') + (c.bonus ? after.map(m => pill('data-after="' + esc(m.name) + '"', false, m.name, m.adds + ' after a miss')).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
@@ -1917,6 +1987,7 @@
       if (b.dataset.mode) { st.mode = b.dataset.mode; return draw(); }
       if (b.hasAttribute('data-vis-open')) { st.visOpen = true; return draw(); }
       if (b.hasAttribute('data-ends-hidden')) { st.hidden = !st.hidden; return draw(); }
+      if (b.dataset.cardEv != null) { evi = +b.dataset.cardEv; return draw(); }
       if (b.dataset.to) { to = b.dataset.to; store.set(TO, to); st.visOpen = false; return draw(); }
       if (b.dataset.pre) { st.pre[b.dataset.pre] = !st.pre[b.dataset.pre]; return draw(); }
       if (b.dataset.on) { st.on[b.dataset.on] = !st.on[b.dataset.on]; return draw(); }
@@ -1930,6 +2001,13 @@
         return draw();
       }
       if (b.hasAttribute('data-roll-hit')) return rollHit();
+      if (b.hasAttribute('data-roll-save')) {
+        const ev = spellEv(st.slot);
+        st.step = 'rolling'; draw();
+        return go({ kind: ev ? kindOf(ev) : spec.kind, mode: 'normal', extras: [], ...(ev ? { parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '',
+                                                                                                 label: spec.label + (hits.length > 1 ? ' · ' + hits[evi].name : '') } : {}) })
+          .then(e => { st.entry = e; st.step = 'saved'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'save'; if (w.isConnected) draw(); });
+      }
       if (b.hasAttribute('data-reroll')) return follow('reroll', { reason: st.entry.can.reroll });
       if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return follow('bonus', { extras: [m.name + ':+' + m.adds], bonusLabel: m.name, die: 4 }); }
       if (b.hasAttribute('data-roll-dmg')) return follow('damage', { extras: mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => m.name + ':+' + m.adds.replace(/^\+/, '').split(' ')[0]) });
@@ -2672,7 +2750,7 @@
     const spec = specFrom(el);
     // The roll card (Labs `roll_card`): weapon attacks and the Unarmed Strike first; an attack spell's damage depends on
     // its level and its cantrip's growth, which the roll window works out, so spells keep it for now
-    if (document.body.hasAttribute('data-roll-card') && el.dataset.plan && el.dataset.roll === 'attack' && !e.shiftKey) {
+    if (document.body.hasAttribute('data-roll-card') && el.dataset.plan && (el.dataset.roll === 'attack' || (el.dataset.roll === 'damage' && /"save": \{/.test(el.dataset.plan))) && !e.shiftKey) {
       let plan = null;
       try { plan = JSON.parse(el.dataset.plan); } catch (err) { plan = null; }
       if (plan) return card(el, spec, spec.shared ? plan : { ...plan, choice: null });  // (Grapple and Shove go to the table: yours only)

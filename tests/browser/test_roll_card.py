@@ -161,3 +161,52 @@ def test_an_attack_spell_on_the_card_at_its_level(people, server, browser_db):
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)
+
+
+def test_a_save_spell_on_the_card(people, server, browser_db):
+    """Save spells (Nov 9): the save and its DC first, Cast at when the level changes the dice (Cole's Moonbeam: 2d10 at
+    level 2, 3d10 at 3), then its damage and what a success takes."""
+    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    try:
+        player = people("player")
+        page = _battle_with(player, server, True)
+        page.locator('[data-panel-url*="/all/action"]').first.click()
+        page.locator('.peek [data-roll="damage"][data-label="Moonbeam"]').first.click()
+        card = page.locator(".roll-card")
+        card.locator("[data-roll-save]").wait_for()
+        assert "Con save, DC" in card.locator(".rcard-sub").inner_text() and "2d10" in card.locator(".rcard-sub").inner_text()
+        assert "half damage on a success" in card.inner_text()
+        card.locator("[data-card-slot]").select_option("3")
+        assert "3d10" in card.locator(".rcard-sub").inner_text()
+        card.locator("[data-roll-save]").click()
+        card.locator("[data-done]").wait_for(timeout=20000)
+        assert "damage on a failed save" in card.inner_text().lower() and "On a success" in card.inner_text()
+        assert player.errors == []
+    finally:
+        _pieces(browser_db, server, was)
+
+
+def test_the_roll_button_finds_a_check_by_typing(people, server):
+    """Checks and saves (Brett chose A, Nov 9, docs/mockups/find-checks/): Table rolls' Roll button opens a search over
+    the character's skills, saves and checks; typing narrows it, Enter rolls the first; Escape closes it."""
+    player = people("player")
+    page = battle(player, server)
+    if page.evaluate("document.body.classList.contains('rolls-closed')"):
+        page.locator(".rs-edge").click()
+    page.locator("[data-rs-roll]").click()
+    q = page.locator(".rs-pick-q")
+    page.locator("#rs-pick .rc").first.wait_for()
+    q.fill("ste")
+    shown = page.locator("#rs-pick .rc:not([hidden])")
+    assert shown.count() == 1 and "Stealth" in shown.first.inner_text()
+    q.fill("dex")
+    assert page.locator("#rs-pick .rc:not([hidden])").count() >= 3  # (its skills, the save and the check)
+    q.fill("stealth")
+    q.press("Enter")
+    page.locator(".roll-win").wait_for()
+    assert "Stealth check" in page.locator(".roll-win").inner_text()
+    assert page.locator("#rs-pick").is_hidden()
+    page.keyboard.press("Escape")
+    page.locator("[data-rs-roll]").click()
+    page.locator(".rs-pick-q").press("Escape")
+    assert page.locator("#rs-pick").is_hidden() and player.errors == []

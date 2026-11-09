@@ -216,8 +216,10 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         rollable(o, unarmed)
     from app.roll_plan import plan  # (the roll card's: an attack's steps and numbers, Labs `roll_card`, Nov 9)
 
-    for o in out:
-        if str(o.get("hit") or "")[:1] in "+-\u2212":
+    from app.roll_plan import SAVE
+
+    for o in out:  # (an attack's to-hit, or a save spell's damage: "Dex 15")
+        if str(o.get("hit") or "")[:1] in "+-\u2212" or SAVE.match(str(o.get("hit") or "")):
             o["plan"] = plan(sheet, o)
     return out
 
