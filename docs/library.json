@@ -846,6 +846,15 @@
   "link": "https://claude.ai/artifact/V2FUfi8ojtEPcYYf45jYa9"
  },
  {
+  "title": "Search Like Spotlight",
+  "kind": "design",
+  "status": "Chose A and A",
+  "date": "Nov 9",
+  "what": "One search for anything about your character, playable: a Search button in the menu bar, ⌘F or ⌘K, a box in the middle, results as you type grouped by kind (your character, checks and saves, rules, the story, pages), Enter does it; two choices: what Enter does, and whose things it finds.",
+  "source": "docs/mockups/search/index.html",
+  "link": "https://claude.ai/artifact/UicSP5TLT39bgR2cyrXqiE"
+ },
+ {
   "title": "Which Features Get Used",
   "kind": "design",
   "status": "Chose A and A (tagged by page)",

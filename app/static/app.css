@@ -556,7 +556,7 @@ body.tale-playing { overflow: hidden; }
 .tale-after { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-6); padding: 0 var(--sp-2); }
 .tale-after:has(> section:only-child) { grid-template-columns: minmax(0, 1fr); }
 .tale-label { margin: 0 0 var(--sp-3); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
-/* Session Story (Brett, Nov 7; docs/mockups/session-story/): Read the full tale at the recap's end, the session's own
+/* Session Story (Brett, Nov 7; docs/mockups/session-story/): Full Tale & Stats beside Listen (feedback 55, 56), the session's own
    page (its chapters, then awards and numbers), the award cards, Who talked's share rows and Fights and story's bar */
 .tale-more-link { display: flex; width: fit-content; margin: var(--sp-5) auto 0; }
 .tale-chapter + .tale-chapter { margin-top: var(--sp-6); }
@@ -3690,6 +3690,13 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
   .ft-row .ft-bar, .ft-row .ft-who { display: none; }
 }
 
+/* Full Tale & Stats beside ▶ Listen at a recap's top (feedback 55, 56: the awards and numbers were hidden at its end) */
+.tale-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); margin-top: var(--sp-2); }
+.tale-acts .tale-listen { margin-top: 0; }
+.tale-acts .tale-more-link { margin: 0; }
+.session-body > .tale-acts { justify-content: flex-start; margin-bottom: var(--sp-3); }
+/* The Admin menu's door: a gear, admins only (feedback 57: it needn't be found, and the bar needs the room) */
+.manage.admin > button.admin-gear { font-size: var(--fs-lg); padding: 0 10px; }
 /* An attack in Table rolls, one card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with
    its total on the right, as the damage row (.roll-dmg-line) already was; a replaced roll struck, what was applied in green */
 .roll-beat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }

@@ -1,0 +1,270 @@
+<title>Search Like Spotlight</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Brett, Nov 8-9 (roadmap step 7): one search that finds anything about your character, working like Spotlight on a Mac:
+   a Search button always in the menu bar, ⌘F (or Ctrl+F, taking over the browser's find) and ⌘K, a box in the middle,
+   results as you type grouped by kind, the best already highlighted, ↑ ↓ and Enter, which can also do the thing. Drawn at a
+   13-14" laptop's size with Cole's own spells and features; the story's names are made up. His answers are kept in the
+   page's store (db: answers/pick). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --gold: #e2b54a;
+  --blue-soft: rgba(126,166,224,.16); --green-soft: rgba(91,191,127,.15); --shadow: rgba(0,0,0,.5);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10;
+  --blue-soft: rgba(47,95,158,.12); --green-soft: rgba(47,125,76,.12); --shadow: rgba(40,30,10,.22); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10;
+  --blue-soft: rgba(47,95,158,.12); --green-soft: rgba(47,125,76,.12); --shadow: rgba(40,30,10,.22); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 30px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.3rem; }
+p { margin: 0; max-width: 74ch; }
+b { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lbl { font: 700 .68rem/1 var(--cond); letter-spacing: .11em; text-transform: uppercase; color: var(--muted); }
+.note { color: var(--muted); font-size: .86rem; }
+header, section { display: grid; gap: 12px; min-width: 0; }
+kbd { font: 600 .74rem/1 var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 2px 5px; background: var(--surface-2); color: var(--text); }
+.try { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 4px 11px; font-size: .82rem; cursor: pointer; }
+.chip:hover, .chip:focus-visible { border-color: var(--blue); outline: none; }
+
+/* a laptop's page: the menu bar with Search, and Battle under it */
+.screen { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg); min-height: 600px; }
+.mbar { display: flex; align-items: center; gap: 14px; padding: 10px 16px; border-bottom: 2px solid var(--red); background: var(--surface); font-size: .86rem; }
+.mbar .logo { width: 26px; height: 26px; border-radius: 7px; background: var(--red); display: grid; place-items: center; color: #fff; font-weight: 800; }
+.mbar .camp { font-weight: 700; color: var(--strong); }
+.mbar .grow { flex: 1; }
+.searchbtn { display: inline-flex; align-items: center; gap: 8px; min-width: 210px; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 6px 10px; color: var(--muted); cursor: pointer; }
+.searchbtn:hover, .searchbtn:focus-visible { border-color: var(--blue); color: var(--text); outline: none; }
+.searchbtn svg { flex: none; }
+.searchbtn kbd { margin-left: auto; }
+.page { padding: 18px 22px; display: grid; gap: 14px; opacity: .9; }
+.ch { display: flex; gap: 12px; align-items: center; }
+.port { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-weight: 800; color: var(--muted); }
+.cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.col { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; height: 300px; padding: 12px; font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.col:nth-child(1) { color: var(--red); } .col:nth-child(2) { color: var(--amber); } .col:nth-child(3) { color: var(--blue); }
+
+/* the search: a box in the middle of the screen */
+.veil { position: absolute; inset: 0; background: rgba(0,0,0,.45); display: grid; justify-items: center; align-items: start; padding-top: 70px; z-index: 5; }
+.veil[hidden] { display: none; }
+.spot { width: min(640px, calc(100% - 24px)); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 24px 60px var(--shadow); overflow: hidden; }
+.spot-q { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.spot-q input { flex: 1; border: 0; background: none; font-size: 1.15rem; color: var(--strong); outline: none; min-width: 0; }
+.spot-list { max-height: 400px; overflow-y: auto; padding: 6px; }
+.grp { padding: 8px 10px 4px; }
+.res { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 7px 10px; border-radius: 9px; cursor: pointer; }
+.res .ic { grid-row: span 2; width: 28px; height: 28px; border-radius: 7px; background: var(--surface-3); display: grid; place-items: center; font-size: .78rem; font-weight: 800; color: var(--muted); }
+.res b { font-size: .95rem; }
+.res small { color: var(--muted); font-size: .8rem; grid-column: 2; }
+.res .act { grid-row: span 2; font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.res.on { background: var(--blue-soft); box-shadow: inset 0 0 0 1px var(--blue); }
+.res.on .act { color: var(--strong); }
+.spot-foot { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 14px; border-top: 1px solid var(--line); font-size: .76rem; color: var(--muted); }
+.done { position: absolute; right: 14px; bottom: 14px; z-index: 6; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--green); border-radius: 12px; padding: 10px 12px; font-size: .86rem; max-width: 340px; box-shadow: 0 10px 24px var(--shadow); }
+.done[hidden] { display: none; }
+
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .88rem; }
+.pro > b:first-child { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 4px; color: var(--green); }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.aq { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 70px; font: 16px/1.45 var(--sans); color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; font-weight: 600; cursor: pointer; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+@media (max-width: 700px) { .searchbtn { min-width: 0; } .searchbtn span, .searchbtn kbd { display: none; } .cols { grid-template-columns: 1fr; } }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · Search · Nov 9</div>
+    <h1>Search, like Spotlight</h1>
+    <p>One search for anything about your character, from any page: <b>Search</b> in the menu bar (always there, so it's found without knowing the key), or <kbd>⌘</kbd> <kbd>F</kbd> (<kbd>Ctrl</kbd> <kbd>F</kbd> on Windows; it takes over the browser's find, which stays one step away) or <kbd>⌘</kbd> <kbd>K</kbd>. A box opens in the middle; results come as you type, grouped by kind, the best already highlighted. <kbd>↑</kbd> <kbd>↓</kbd> move, <kbd>Enter</kbd> acts, <kbd>Esc</kbd> closes.</p>
+    <p class="note">Drawn with Cole's own spells, features and numbers; the people and places of the story are made up.</p>
+  </header>
+
+  <section>
+    <h2>Try it</h2>
+    <div class="try"><span class="lbl">Type, or pick one</span>
+      <button type="button" class="chip" data-try="ste">ste</button><button type="button" class="chip" data-try="moon">moon</button><button type="button" class="chip" data-try="prone">prone</button>
+      <button type="button" class="chip" data-try="spider">spider</button><button type="button" class="chip" data-try="dex">dex</button><button type="button" class="chip" data-try="owl">owl</button>
+      <button type="button" class="chip" data-try="captain">captain</button><button type="button" class="chip" data-try="find">find</button></div>
+    <div class="screen" id="screen">
+      <div class="mbar"><span class="logo">a</span><span class="camp">The Adventure Begins</span><span>Story</span><span>Campaign</span><span>Table ↗</span><span class="grow"></span>
+        <button type="button" class="searchbtn" id="open" aria-label="Search (⌘F)"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Search</span><kbd>⌘F</kbd></button>
+        <span>Cole</span><span>Party ▾</span></div>
+      <div class="page"><div class="ch"><span class="port">C</span><div><b style="font-size:1.3rem">Cole</b><div class="note">Wood Elf · Druid 6 (Moon) / Monk 2 · level 8</div></div></div>
+        <div class="cols"><div class="col">◆ Action</div><div class="col">▲ Bonus Action</div><div class="col">↻ Reaction</div></div></div>
+      <div class="veil" id="veil" hidden>
+        <div class="spot" role="dialog" aria-label="Search">
+          <div class="spot-q"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input id="q" placeholder="Search your character, the rules and the story" autocomplete="off" aria-label="Search"></div>
+          <div class="spot-list" id="list" role="listbox"></div>
+          <div class="spot-foot"><span><kbd>↑</kbd> <kbd>↓</kbd> move</span><span><kbd>Enter</kbd> does it</span><span><kbd>⌘</kbd> <kbd>Enter</kbd> opens where it lives</span><span><kbd>⌘F</kbd> again: the browser's own find</span><span><kbd>Esc</kbd> closes</span></div>
+        </div>
+      </div>
+      <div class="done" id="done" hidden></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where each kind of result goes</h2>
+    <div class="pros">
+      <div class="pro"><b>Your character</b>Actions, spells, features, items, resources and conditions. Enter does it: rolls an attack or a check (the roll card), opens Cast for a spell, Use for an item. ⌘ Enter opens its row on Battle or its side panel instead.</div>
+      <div class="pro"><b>Checks, saves, skills</b>What Table rolls' Roll finds today, now from anywhere: "ste" rolls Stealth.</div>
+      <div class="pro"><b>Rules</b>Conditions and rule terms (the SRD's and the books your campaign has): Enter opens the rule in the side panel, as an underlined term does.</div>
+      <div class="pro"><b>The story</b>People, places and things in the World, key moments, awards and recaps, your notes. Enter opens it where it lives (the World entry, the recap at that moment).</div>
+      <div class="pro"><b>Pages</b>"party", "inbox", "dice": Enter goes there, as Spotlight opens an app.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Two choices for you</h2>
+    <div class="pros">
+      <div class="pro"><b>1. What Enter does · my pick: A</b><b>A</b>, the thing itself (roll, Cast, Use, open the page), with ⌘ Enter to open where it lives. <b>B</b>, always open where it lives first, and you press the roll there: one more step, never a surprise roll.</div>
+      <div class="pro"><b>2. Whose things · my pick: A</b><b>A</b>, your own character, the rules and the story everyone shares. <b>B</b>, the party's characters too (their spells and items, read only, as Party shows them).</div>
+    </div>
+    <form class="answer" id="answer">
+      <div class="aq"><b>1. What does Enter do?</b>
+        <div class="picks" role="radiogroup" aria-label="Enter">
+          <label class="pick"><input type="radio" name="enter" value="A">A. The thing itself</label>
+          <label class="pick"><input type="radio" name="enter" value="B">B. Open where it lives</label>
+        </div></div>
+      <div class="aq"><b>2. Whose things does it find?</b>
+        <div class="picks" role="radiogroup" aria-label="Whose">
+          <label class="pick"><input type="radio" name="whose" value="A">A. Mine, the rules, the story</label>
+          <label class="pick"><input type="radio" name="whose" value="B">B. The party's too</label>
+        </div></div>
+      <div class="aq"><b>Anything else</b> <span class="note">(optional)</span><textarea name="words" id="words"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Send to Claude</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  // [group, icon, name, what, Enter's action, the words it's found by]
+  const ALL = [
+    ["Your character", "◆", "Unarmed Strike", "+6 to hit · 1d6+3 bludgeoning", "Roll", "unarmed strike punch attack"],
+    ["Your character", "◆", "Starry Wisp", "cantrip · +7 · 2d8 radiant", "Roll", "starry wisp cantrip spell"],
+    ["Your character", "◆", "Moonbeam", "2nd level · Con save DC 15 · Concentration", "Cast", "moonbeam spell concentration"],
+    ["Your character", "◆", "Conjure Animals", "3rd level · Concentration", "Cast", "conjure animals spell summon"],
+    ["Your character", "▲", "Healing Word", "1st level · Bonus Action · heals 2d4", "Cast", "healing word spell heal"],
+    ["Your character", "▲", "Flurry of Blows", "1 Focus Point · two Unarmed Strikes", "Use", "flurry of blows monk focus"],
+    ["Your character", "▲", "Patient Defense", "1 Focus Point · Disengage and Dodge", "Use", "patient defense monk focus"],
+    ["Your character", "▲", "Step of the Wind", "1 Focus Point · Dash and Disengage", "Use", "step of the wind monk focus dash"],
+    ["Your character", "▲", "Wild Shape: Spider", "a known form · Bonus Action", "Shift", "wild shape spider beast form"],
+    ["Your character", "▲", "Wild Shape: Giant Octopus", "a known form · Bonus Action", "Shift", "wild shape giant octopus beast form"],
+    ["Your character", "↻", "Absorb Elements", "1st level · Reaction", "Cast", "absorb elements spell reaction"],
+    ["Your character", "✦", "Owlie", "your familiar · an Owl", "Open its Battle", "owlie owl familiar creature find familiar"],
+    ["Your character", "✦", "Find Familiar", "1st level · Ritual", "Cast", "find familiar spell ritual owl"],
+    ["Checks, saves, skills", "d", "Stealth", "check · +6 (Dex)", "Roll", "stealth skill dex hide"],
+    ["Checks, saves, skills", "d", "Dex save", "+3", "Roll", "dex save dexterity saving throw"],
+    ["Checks, saves, skills", "d", "Dexterity check", "+2", "Roll", "dexterity check dex"],
+    ["Checks, saves, skills", "d", "Acrobatics", "check · +3 (Dex)", "Roll", "acrobatics skill dex"],
+    ["Checks, saves, skills", "d", "Initiative", "+3", "Roll", "initiative"],
+    ["Rules", "§", "Prone", "condition", "Read it", "prone condition knocked down"],
+    ["Rules", "§", "Concentration", "how it ends; the save after damage", "Read it", "concentration rule save"],
+    ["Rules", "§", "Dash", "an action anyone can take", "Read it", "dash action move"],
+    ["The story", "◎", "Captain of the Guard", "a person · last seen in Session 4", "Open", "captain guard person npc"],
+    ["The story", "◎", "The Old Mill", "a place · Session 3", "Open", "old mill place"],
+    ["The story", "◎", "Find the missing heir", "a quest · open", "Open", "find missing heir quest"],
+    ["The story", "★", "Line of the Night", "an award · Session 4", "Open", "line of the night award"],
+    ["Pages", "→", "Party", "everyone at the table", "Go", "party page"],
+    ["Pages", "→", "Your dice", "how your rolls look", "Go", "your dice page"],
+  ];
+  const DONE = { "Roll": "The roll card opens for", "Cast": "Cast opens for", "Use": "Use opens for", "Shift": "The Shift window opens for",
+                 "Read it": "The side panel opens on", "Open": "Opens", "Go": "Goes to", "Open its Battle": "Opens the Battle of" };
+  const veil = $("#veil"), q = $("#q"), list = $("#list"), done = $("#done");
+  let shown = [], at = 0;
+
+  function score(r, t) {
+    if (!t) return 0;
+    const name = r[2].toLowerCase(), words = r[5];
+    if (name.startsWith(t)) return 3;
+    if (name.split(/[\s:]+/).some(w => w.startsWith(t))) return 2;
+    return words.split(" ").some(w => w.startsWith(t)) ? 1 : -1;
+  }
+  function draw() {
+    const t = q.value.trim().toLowerCase();
+    shown = t ? ALL.map(r => [r, score(r, t)]).filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).map(([r]) => r) : ALL.filter(r => r[0] === "Your character").slice(0, 5);
+    const groups = [...new Set(shown.map(r => r[0]))];
+    shown = groups.flatMap(g => shown.filter(r => r[0] === g));
+    at = Math.min(at, Math.max(0, shown.length - 1));
+    let i = 0;
+    list.innerHTML = shown.length ? groups.map(g => `<div class="grp lbl">${t ? g : "Pinned on Battle"}</div>` + shown.filter(r => r[0] === g).map(r =>
+      `<div class="res${i === at ? " on" : ""}" role="option" aria-selected="${i === at}" data-i="${i++}"><span class="ic">${r[1]}</span><b>${r[2]}</b><span class="act">${r[4]} ↵</span><small>${r[3]}</small></div>`).join("")).join("")
+      : `<div class="grp note">Nothing by that name. Enter finds “${q.value}” on this page instead (the browser's own find).</div>`;
+    list.querySelector(".on")?.scrollIntoView({ block: "nearest" });
+  }
+  function open(text) { veil.hidden = false; done.hidden = true; q.value = text || ""; at = 0; draw(); q.focus(); }
+  function close() { veil.hidden = true; }
+  function act(i, where) {
+    const r = shown[i];
+    if (!r) return;
+    close();
+    done.hidden = false;
+    done.innerHTML = where ? `<b>${r[2]}</b>: opens where it lives (its row on Battle, its side panel or its page).` : `<b>${DONE[r[4]] || "Opens"} ${r[2]}</b>${r[4] === "Roll" ? ": mode, pills, who sees it, then Roll." : "."}`;
+  }
+  $("#open").addEventListener("click", () => open(""));
+  document.querySelectorAll("[data-try]").forEach(b => b.addEventListener("click", () => open(b.dataset.try)));
+  q.addEventListener("input", () => { at = 0; draw(); });
+  list.addEventListener("click", e => { const r = e.target.closest("[data-i]"); if (r) act(+r.dataset.i, false); });
+  list.addEventListener("mousemove", e => { const r = e.target.closest("[data-i]"); if (r && +r.dataset.i !== at) { at = +r.dataset.i; draw(); } });
+  veil.addEventListener("click", e => { if (e.target === veil) close(); });
+  document.addEventListener("keydown", e => {
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && (e.key === "f" || e.key === "k")) {
+      if (!veil.hidden && e.key === "f") { close(); return; }  // (⌘F again: the browser's own find)
+      e.preventDefault(); open(""); return;
+    }
+    if (veil.hidden) return;
+    if (e.key === "Escape") { e.preventDefault(); close(); }
+    else if (e.key === "ArrowDown") { e.preventDefault(); at = Math.min(shown.length - 1, at + 1); draw(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); at = Math.max(0, at - 1); draw(); }
+    else if (e.key === "Enter") { e.preventDefault(); act(at, mod); }
+  });
+
+  const form = $("#answer"), said = $("#said"), send = $("#send");
+  let db = null;
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = "Open this page signed in to claude.ai to send it."; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try { await db.collection("answers").doc("pick").set({ enter: f.get("enter") || "", whose: f.get("whose") || "", words: (f.get("words") || "").trim(), at: new Date().toISOString() }); said.textContent = "Sent to Claude"; }
+    catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use("db"); } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const doc = await db.collection("answers").doc("pick").get();
+      if (!doc.exists) return;
+      const a = doc.data();
+      form.querySelectorAll("input[type=radio]").forEach(r => { r.checked = (r.name === "enter" && r.value === a.enter) || (r.name === "whose" && r.value === a.whose); });
+      $("#words").value = a.words || "";
+      said.textContent = "Sent earlier: change it and send again if you like";
+    } catch (err) { /* nothing yet */ }
+  })();
+})();
+</script>

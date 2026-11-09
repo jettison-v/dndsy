@@ -244,7 +244,7 @@
       <div id="t-recap" role="tabpanel"{% if tab != "recap" %} hidden{% endif %}>
       <section class="section" id="recap">
         <div class="section-head"><h2><span class="num">3</span>Recap</h2>{% if latest %}<button type="button" class="btn link" id="recap-edit" data-show="recap-form" data-hide="recap-view recap-edit">Edit</button>{% endif %}</div>
-        <p class="hint">This is what the table reads on Previously on…{% if chapters %} It ends with <b>Read the full tale</b>.{% endif %}</p>
+        <p class="hint">This is what the table reads on Previously on…{% if chapters %} Its Full Tale &amp; Stats sits beside Listen.{% endif %}</p>
         {% if not latest %}
         <div class="callout ready" id="draft-recap"><div class="row">
           {% set answered = done_questions | selectattr("kind", "equalto", "answer") | list | length %}<span class="grow"><b>Draft the recap.</b> Claude reads the session again with {% if answered %}your {{ answered }} answer{{ "s" if answered != 1 }} and {% endif %}the World as it is now{% if accepted_count %} ({{ accepted_count }} suggestion{{ "s" if accepted_count != 1 }} accepted){% endif %}, then writes the recap, the full tale, key moments and awards.
@@ -296,7 +296,7 @@
       <div id="t-tale" role="tabpanel"{% if tab != "tale" %} hidden{% endif %}>
       <section class="section" id="tale">
         <div class="section-head"><h2><span class="num">4</span>The full tale</h2><span class="count">{{ chapters | length }} chapters{% if listen_full and vtt_on("recap_listen") %} · Listen: {{ "about " ~ listen_full.says[2:] if listen_full.estimate else listen_full.says }}{% endif %}</span></div>
-        <p class="hint">The long telling, on the session's own page after <b>Read the full tale</b>. Each chapter is a scene; its kind and time make <i>Fights and story</i>.</p>
+        <p class="hint">The long telling, on the session's own page, from <b>Full Tale &amp; Stats</b>. Each chapter is a scene; its kind and time make <i>Fights and story</i>.</p>
         {% for c in chapters %}{% set cid = "ch" ~ loop.index0 %}
         <div class="item tale-chapter">
           <div id="{{ cid }}-view">
