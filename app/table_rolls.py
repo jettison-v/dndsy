@@ -271,11 +271,11 @@ def _part(r: TableRoll) -> dict:
                       for x in r.parts or []]}
 
 
-def detail_of(level: int = 0, why=(), riders=(), hidden="", via="") -> dict:
+def detail_of(level: int = 0, why=(), riders=(), hidden="", via="", own="") -> dict:
     """What else the roll card or window knew, checked and kept short (TableRoll.detail; Brett's round 2 note, Nov 10)."""
     clean = lambda xs, n: [" ".join(str(x).split())[:n] for x in xs if str(x).strip()][:6]  # noqa: E731
     out = {"level": level if 1 <= (level or 0) <= 9 else None, "why": clean(why, 120), "riders": clean(riders, 80),
-           "hidden": bool(hidden), "via": via if via in ("card", "window", "search") else None}
+           "hidden": bool(hidden), "via": via if via in ("card", "window", "search") else None, "self": bool(own)}
     return {k: v for k, v in out.items() if v}
 
 
@@ -524,7 +524,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
               die_size: int = Form(0, alias="die"), part: list[str] = Form([]), dmg_part: list[str] = Form([]),
               count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), token: int = Form(0),
               via: str = Form(""), level: int = Form(0), why: list[str] = Form([]), rider: list[str] = Form([]),
-              hidden: str = Form(""), db: Session = Depends(get_db)):
+              hidden: str = Form(""), own: str = Form("", alias="self"), db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -609,7 +609,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     who = (who if who in mine else ch.wild_shape or "")[:80] if ch else tok.name[:80] if tok else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who,
-                    detail=detail_of(level, why if mode != "normal" else [], rider, hidden, via), **result)
+                    detail=detail_of(level, why if mode != "normal" else [], rider, hidden, via, own), **result)
     db.add(row)
     db.flush()
     if kind == "attack" and (flat := flat_damage(damage)) and row.kept != 1:  # (flat: on a hit it's just this, feedback 25)

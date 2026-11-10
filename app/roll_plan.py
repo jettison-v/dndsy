@@ -228,7 +228,7 @@ def effects(recipe: dict | None, sheet: dict, name: str, attack: bool) -> dict:
                     "on": e["on"], "save": e.get("save") or "", "success": e.get("success") or "", "each": e.get("count_label") or "",
                     "once": bool(e.get("once")), "note": note, "repeat": e.get("repeat") or "", "at": at})
     return {"base": level, "levels": levels, "effects": out, "house_rules": recipe.get("house_rules") or [],
-            "unchecked": recipe.get("checked") == "D&D Beyond"}
+            "unchecked": recipe.get("checked") == "D&D Beyond", **({"self": True} if recipe.get("self") else {})}
 
 
 UNARMED_ROW = re.compile(r"\bUnarmed Strike\b|\bFlurry of Blows\b")
@@ -438,6 +438,7 @@ KNOWN_GAPS: dict[str, str] = {}  # (empty since Nov 9: every party gap has a rec
 #   "rolls": {"base", "levels", "effects"} from effects() (a spell's dice at each level), or absent
 #   "notes": words to show before the roll; "riders", "modifiers", "choice" as the option's plan has them
 #   "again": a button on the result that rolls the same again ("Roll another": a Hit Point Die, one at a time)
+#   "self": healing only the one who rolls it can take (Second Wind, a Hit Point Die): Apply to offers only them
 
 ABILITY_OF_SKILL = {"athletics": "str", "acrobatics": "dex", "sleight of hand": "dex", "stealth": "dex", "arcana": "int",
                     "history": "int", "investigation": "int", "nature": "int", "religion": "int", "animal handling": "wis",
@@ -464,7 +465,7 @@ def _int(text) -> int:
 
 
 def button(kind: str, label: str, mod="", dmg="", note: str = "", plan: dict | None = None, rolls: dict | None = None,
-           save: str = "", again: str = "") -> dict:
+           save: str = "", again: str = "", self_only: bool = False) -> dict:
     """The complete plan one roll button plays (see above). `plan`: the option's (plan()); `rolls`: its effects() for
     this button; `save`: a spell's "Dex 15" when the button has no plan saying so."""
     base = plan or {}
@@ -508,4 +509,5 @@ def button(kind: str, label: str, mod="", dmg="", note: str = "", plan: dict | N
         return {**out, "play": "save", "save": sv, "dmg": dmg}
     if note:
         out["notes"].append(note)
-    return {**out, "play": "single", "dmg": dmg, **({"again": again} if again else {})}
+    mine = self_only or bool((rolls or {}).get("self"))
+    return {**out, "play": "single", "dmg": dmg, **({"again": again} if again else {}), **({"self": True} if mine else {})}

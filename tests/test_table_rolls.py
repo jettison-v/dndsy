@@ -507,3 +507,18 @@ def test_each_roll_keeps_what_the_card_knew(table, db, monkeypatch):
     assert table["player"].get(f"/rolls?since={mid + 100}").status_code == 204
     shown = table["player"].get(f"/rolls?since={mid + 100}&also={mid}").text
     assert ">missed<" in shown and 'data-follow="damage"' not in shown  # (marked missed: no Roll damage offered)
+
+
+def test_healing_only_its_roller_takes_offers_only_them(table, db, monkeypatch):
+    """Brett's Roll Audit comment (Nov 10): Second Wind, Uncanny Metabolism, a Hit Point Die heal only the one who rolls
+    them, so Apply to offers only that character, not a choice of the table."""
+    from app import hit_points
+
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    monkeypatch.setattr(hit_points, "targets", lambda db, user, campaign_id: [cole, trah])  # (both reachable)
+    own = post(table["player"], character=cole.id, kind="heal", label="Hit Point Die", dmg="1d8+1", mode="normal", to="table", self="1")
+    assert db.get(TableRoll, own.json()["roll"]["id"]).detail == {"self": True}
+    other = post(table["player"], character=cole.id, kind="heal", label="Healing Word", dmg="2d4+4", mode="normal", to="table")
+    roots = [db.get(TableRoll, own.json()["roll"]["id"]), db.get(TableRoll, other.json()["roll"]["id"])]
+    info = hit_points.apply_info(db, {"email": "dm@example.com", "name": "DM"}, roots, [])
+    assert [t["name"] for t in info[roots[0].id]["to"]] == ["Cole"] and [t["name"] for t in info[roots[1].id]["to"]] == ["Cole", "Trah"]

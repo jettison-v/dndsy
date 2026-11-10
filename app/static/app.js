@@ -1952,7 +1952,8 @@ function feedbackBusy(e) {
       if (!e || !e.main) return '';
       if (single) {  // (one roll: its number, what it is, and where it goes next)
         const what = { heal: 'healing', temp: 'Temporary Hit Points', damage: 'damage' }[e.kind] || esc(e.label);
-        const next = e.kind === 'heal' || e.kind === 'temp' ? 'In Table rolls, <b>Apply to</b> gives it to a character.'
+        const next = (e.kind === 'heal' || e.kind === 'temp') && plan.self ? 'In Table rolls, <b>Apply to</b> adds it to your own Hit Points.'
+          : e.kind === 'heal' || e.kind === 'temp' ? 'In Table rolls, <b>Apply to</b> gives it to a character.'
           : e.kind === 'damage' ? 'In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.' : '';
         return '<div class="rcard-result' + (e.kind === 'heal' || e.kind === 'temp' ? ' rcard-heal' : e.kind === 'damage' ? ' rcard-dmg' : '') + '"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">' + what + '</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
           + (next ? '<p class="rw-note">' + next + '</p>' : '');
@@ -1994,7 +1995,7 @@ function feedbackBusy(e) {
       const d = dice(), was = st.step;
       st.step = 'rolling'; st.adding = false; draw();
       const label = plan.roll === 'dice' && !cast ? (st.forText.trim() || 'Dice') : spec.label + (d.parts && effs.length > 1 ? ' · ' + eff().name : '');
-      return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: single ? st.added.slice() : [], level: cast ? st.level : 0, ...d })
+      return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: single ? st.added.slice() : [], level: cast ? st.level : 0, self: !!plan.self, ...d })
         .then(e => { st.entry = e; st.step = next; if (w.isConnected) draw(); if (cast || save) turnUsed(anchor); }, () => { st.step = was; if (w.isConnected) draw(); });
     }
     function follow(action, o) {
@@ -2521,6 +2522,7 @@ function feedbackBusy(e) {
         : t.startsWith('!note ') ? t.slice(6) : 'Advantage: ' + t.replace(/^advantage\s*/i, '')));
       (go.riders || []).forEach(x => p.append('rider', x));
       if (go.endsHidden) p.set('hidden', 1);
+      if (go.self) p.set('self', 1);  // (healing only its roller takes: Apply to offers only them)
     }
     (go.extras || []).forEach(x => p.append('extra', x));
     if (go.via) p.set('via', go.via);  // (the roll card: counted as its own, app/usage.py)
