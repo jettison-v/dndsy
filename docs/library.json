@@ -866,7 +866,7 @@
  {
   "title": "Search in the Menu Bar",
   "kind": "design",
-  "status": "Waiting for Brett",
+  "status": "Chose A; built",
   "date": "Nov 9",
   "what": "The menu bar's Search, today a field-like button that opens a box in the middle, and three other ways (a button with ⌘F, the magnifier alone, a real field with results under it), each clickable at laptop width; Claude recommends the button with ⌘F.",
   "source": "docs/mockups/search/menu-button.html",
