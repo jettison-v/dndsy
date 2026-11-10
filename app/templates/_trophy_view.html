@@ -19,7 +19,7 @@
     <div><small>Natural 20s</small><b>{{ r.twenties }}</b></div>
     <div><small>Natural 1s</small><b>{{ r.ones }}</b></div>
     <div><small>Average d20</small><b>{{ r.average if r.average is not none else "—" }}</b><span class="note">the dice expect 10.5</span></div>
-    <div><small>Damage rolled</small><b>{{ "{:,}".format(r.damage) }}</b>{% if r.biggest %}<span class="note">biggest: {{ r.biggest.total }}, {{ r.biggest.label }}</span>{% endif %}</div>
+    <div><small>Damage rolled</small><b>{{ "{:,}".format(r.damage) }}</b>{% if r.biggest %}<span class="note">biggest: {{ r.biggest.total }}, {{ r.biggest.label }}{% if r.biggest.level %} at level {{ r.biggest.level }}{% endif %}{{ ", critical" if r.biggest.crit }}</span>{% endif %}</div>
     {% if not r.dm %}<div><small>Healing rolled</small><b>{{ r.healing }}</b></div>
     <div><small>Spells cast</small><b>{{ r.spells }}</b><span class="note">with a roll</span></div>
     <div><small>In key moments</small><b>{{ r.moments }}</b></div>{% endif %}

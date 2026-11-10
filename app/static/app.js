@@ -1744,7 +1744,7 @@ function feedbackBusy(e) {
         const fromRecipe = ev ? (spec.kind === 'attack' ? { dmgParts: ev.parts, count: ev.count, each: ev.count_label || '' }
           : { kind: kindOf(evs[evi]), parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '', label: spec.label + (evs.length > 1 ? ' · ' + evs[evi].name : '') }) : {};
         if (way) return roll(w, { ...spec, kind: 'dc', label: way, mod: '', dmg: '', mode: 'normal', extras: [], ctx });
-        const go = { ...spec, ...fromRecipe, mode, extras, label: spec.kind === 'dice' ? (forText || 'Dice') : (fromRecipe.label || spec.label), ctx,
+        const go = { ...spec, ...fromRecipe, mode, extras, label: spec.kind === 'dice' ? (forText || 'Dice') : (fromRecipe.label || spec.label), ctx, level: rec ? slot : 0,
                      die: +((w.querySelector('[data-die][aria-pressed=true]') || {}).dataset || {}).die || 6,
                      bonusLabel: ((w.querySelector('[data-bonus-label]') || {}).value || '').trim(),
                      endsHidden: !!(w.querySelector('[data-ends-hidden]') || {}).checked };
@@ -2163,7 +2163,8 @@ function feedbackBusy(e) {
       const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
       st.step = 'rolling'; st.adding = false; draw();
       const ev = spellEv(st.slot);
-      go({ kind: d20 ? spec.kind : 'attack', mode: st.mode, extras, endsHidden: st.hidden && !d20, ...(ev ? { dmgParts: ev.parts, count: ev.count || 1, each: ev.count_label || '' } : {}) }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
+      go({ kind: d20 ? spec.kind : 'attack', mode: st.mode, extras, endsHidden: st.hidden && !d20, level: rec ? st.slot : 0, riders: (plan.riders || []).map(r => r.name),
+           ...(ev ? { dmgParts: ev.parts, count: ev.count || 1, each: ev.count_label || '' } : {}) }).then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
     }
     function follow(action, o) {
       const was = st.step;
@@ -2181,7 +2182,10 @@ function feedbackBusy(e) {
       const b = ev.target.closest('button');
       if (!b || st.busy) return;
       if (b.classList.contains('rp-x') || b.hasAttribute('data-done')) return closeWin();
-      if (b.hasAttribute('data-missed')) { closeWin(); toast(plan.name + ': missed', null, 'info'); return; }
+      if (b.hasAttribute('data-missed')) {  // (kept with the roll: it missed; a damage roll marks a hit by itself)
+        if (spec.shared && st.entry && st.entry.id && st.entry.kind === 'attack') fetch('/rolls/' + st.entry.id + '/outcome', { method: 'POST', body: new URLSearchParams({ outcome: 'miss' }), headers: { 'X-Requested-With': 'fetch' } }).catch(() => {});
+        closeWin(); toast(plan.name + ': missed', null, 'info'); return;
+      }
       if (b.dataset.choice) {
         if (b.dataset.choice === 'damage') { st.step = 'attack'; return draw(); }
         st.step = 'rolling'; draw();
@@ -2210,14 +2214,14 @@ function feedbackBusy(e) {
         if (rec && hits.length && !ev) return;
         st.step = 'rolling'; st.adding = false; draw();
         const label = single === 'dice' ? (st.forText.trim() || 'Dice') : spec.label + (ev && hits.length > 1 ? ' · ' + hits[evi].name : '');
-        return go({ kind: ev ? kindOf(hits[evi] || hits[0]) : single, label, mode: 'normal', extras: st.added.slice(),
+        return go({ kind: ev ? kindOf(hits[evi] || hits[0]) : single, label, mode: 'normal', extras: st.added.slice(), level: rec ? st.slot : 0,
                     ...(ev ? { parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '' } : {}) })
           .then(e => { st.entry = e; st.step = 'done'; if (w.isConnected) draw(); if (rec) turnUsed(anchor); }, () => { st.step = 'single'; if (w.isConnected) draw(); });
       }
       if (b.hasAttribute('data-roll-save')) {
         const ev = spellEv(st.slot);
         st.step = 'rolling'; draw();
-        return go({ kind: ev ? kindOf(ev) : spec.kind, mode: 'normal', extras: [], ...(ev ? { parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '',
+        return go({ kind: ev ? kindOf(ev) : spec.kind, mode: 'normal', extras: [], level: rec ? st.slot : 0, ...(ev ? { parts: ev.parts, count: ev.count, once: !!ev.once, each: ev.count_label || '',
                                                                                                  label: spec.label + (hits.length > 1 ? ' · ' + hits[evi].name : '') } : {}) })
           .then(e => { st.entry = e; st.step = 'saved'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'save'; if (w.isConnected) draw(); });
       }
@@ -2710,6 +2714,13 @@ function feedbackBusy(e) {
                        count: go.count || 1, each: go.each || '', once: go.once ? 1 : '', who: go.who || '', token: go.token || '' }).forEach(([k, v]) => p.set(k, v));
       (go.parts || []).forEach(x => p.append('part', x));
       (go.dmgParts || []).forEach(x => p.append('dmg_part', x));
+      // What else the card or window knew, kept with the roll (Brett's round 2 note: every roll keeps its flavor as data):
+      // the level it was cast at, Advantage's or Disadvantage's reasons (kept only when the mode isn't Normal), riders, Hidden
+      if (go.level) p.set('level', go.level);
+      (go.advWhy || '').split('\n').filter(Boolean).forEach(t => p.append('why', t.startsWith('!dis ') ? 'Disadvantage: ' + t.slice(5)
+        : t.startsWith('!note ') ? t.slice(6) : 'Advantage: ' + t.replace(/^advantage\s*/i, '')));
+      (go.riders || []).forEach(x => p.append('rider', x));
+      if (go.endsHidden) p.set('hidden', 1);
     }
     (go.extras || []).forEach(x => p.append('extra', x));
     if (go.via) p.set('via', go.via);  // (the roll card: counted as its own, app/usage.py)

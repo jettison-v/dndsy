@@ -476,3 +476,29 @@ def test_grapple_and_shove_send_their_dc_to_the_table(table, db, sheet):
     assert gamelog.messages(db, db.get(TableRoll, r["roll"]["id"]), cole) == []
     assert "Prone" in post(table["player"], character=cole.id, kind="dc", label="Shove").json()["roll"]["main"]["formula"]
     assert post(table["player"], character=cole.id, kind="dc", label="Fireball").status_code == 400
+
+
+def test_each_roll_keeps_what_the_card_knew(table, db, monkeypatch):
+    """Brett's round 2 note (Nov 10, step 2 of finishing the roll card): every roll keeps its flavor as data: the level it
+    was cast at, Advantage's reasons (only when the mode isn't Normal), riders, Hidden, and hit or miss."""
+    monkeypatch.setattr(tr, "die", lambda sides: 12)
+    cole = char(db, "Cole")
+    r = post(table["player"], character=cole.id, kind="attack", label="Guiding Bolt", mod="+7", dmg="4d6", mode="adv", to="table",
+             level="3", why=["Advantage: Faerie Fire"], rider=["Sap", ""], hidden="1", via="card")
+    root = db.get(TableRoll, r.json()["roll"]["id"])
+    assert root.detail == {"level": 3, "why": ["Advantage: Faerie Fire"], "riders": ["Sap"], "hidden": True, "via": "card"}
+    assert "level 3" in r.json()["html"] and "ended Hidden" in r.json()["html"] and "Faerie Fire" in r.json()["html"]
+    plain = post(table["player"], character=cole.id, kind="save", label="Dex save", mod="+3", mode="normal", to="table", why=["Advantage: x"], level="12")
+    assert db.get(TableRoll, plain.json()["roll"]["id"]).detail == {}  # (Normal: no reasons; a level that isn't one dropped)
+    # Its damage rolled: it hit. Missed is kept by whoever rolled it, on an attack only
+    table["player"].post("/rolls", data={"parent": root.id, "action": "damage"})
+    db.expire_all()
+    assert db.get(TableRoll, root.id).detail["outcome"] == "hit"
+    miss = post(table["player"], character=cole.id, kind="attack", label="Longsword", mod="+5", dmg="1d8+3", mode="normal", to="table")
+    mid = miss.json()["roll"]["id"]
+    assert table["other"].post(f"/rolls/{mid}/outcome", data={"outcome": "miss"}).status_code == 404
+    assert table["player"].post(f"/rolls/{plain.json()['roll']['id']}/outcome", data={"outcome": "miss"}).status_code == 404
+    assert table["player"].post(f"/rolls/{mid}/outcome", data={"outcome": "miss"}).status_code == 204
+    db.expire_all()
+    assert db.get(TableRoll, mid).detail["outcome"] == "miss"
+    assert ">missed<" in table["player"].get("/rolls?since=-1").text

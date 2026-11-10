@@ -299,7 +299,9 @@ def dice(db: Session, session: GameSession) -> dict:
         out["damage"] = sorted(({"character": chars[c], "total": sum(v), "rolls": len(v)} for c, v in damage.items()),
                                key=lambda x: (-x["total"], x["character"].name))
         big = max((r for r in rolls if r.kind == "damage" and r.character_id in chars and r.total > 0), key=lambda r: (r.total, -r.id))
-        out["biggest"] = {"character": chars[big.character_id], "total": big.total, "label": big.label, "crit": big.crit}
+        src = next((x for x in rolls if x.id == big.parent_id), big)  # (the attack or spell it follows keeps the level cast)
+        out["biggest"] = {"character": chars[big.character_id], "total": big.total, "label": big.label, "crit": big.crit,
+                          "level": (src.detail or {}).get("level")}
     healing: dict[int, int] = {}
     for r in rolls:
         if r.kind == "heal" and r.character_id in chars and r.total > 0:
@@ -323,7 +325,7 @@ def night_numbers(db: Session, rolled: dict) -> dict:
     big = rolled.get("biggest")
     out = {"damage": bars(rolled.get("damage") or []),
            "healing": {"total": (rolled.get("healing") or {}).get("total", 0), "rows": bars((rolled.get("healing") or {}).get("by") or [])},
-           "biggest": {**person(big["character"]), "total": big["total"], "label": big["label"], "crit": big["crit"]} if big else None,
+           "biggest": {**person(big["character"]), "total": big["total"], "label": big["label"], "crit": big["crit"], "level": big.get("level")} if big else None,
            "spells": {"count": (rolled.get("spells") or {}).get("count", 0),
                       "rows": [{**person(r["character"]), "n": r["n"], "names": r["names"]} for r in (rolled.get("spells") or {}).get("by") or []]}}
     pictured(db, out["damage"], out["healing"]["rows"], out["spells"]["rows"], [out["biggest"]] if big else [])

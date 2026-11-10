@@ -836,6 +836,10 @@ class TableRoll(Base):
     # for several rays, each ray's attack roll
     parts: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # an attack's damage to roll next: {"parts": [...], "each": "ray"}
+    # What else the roll card or window knew, kept with it (Brett's round 2 note, Nov 10: every roll keeps its flavor as
+    # data): {"level": the slot it was cast at, "why": [Advantage's or Disadvantage's reasons], "riders": [what the attack
+    # carries], "hidden": it ended Hidden, "outcome": "hit" | "miss", "via": card | window | search}
+    detail: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # Rolled on D&D Beyond's own sheet and heard by the bridge (app/ddb_bridge.py): that roll's id there; askdnd's own have none
     ddb_roll_id: Mapped[str | None] = mapped_column(String(60), unique=True, index=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
