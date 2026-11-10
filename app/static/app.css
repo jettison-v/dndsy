@@ -1800,7 +1800,7 @@ body.at-table .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .roll-what { font-weight: 600; font-size: var(--fs-md); }
 .roll-what .roll-sub { font-weight: 400; }
 /* Dice still in the air: the row says what was rolled, its number shows as they land (app.js LANDING) */
-.roll-item.landing :is(.roll-total, .roll-dice, .roll-dmg-line b, .roll-flag) { visibility: hidden; }
+.roll-item.landing :is(.roll-total, .roll-dice, .roll-dmg-line > b, .roll-flag) { visibility: hidden; }
 .roll-what .roll-sub, .roll-dice { color: var(--muted); font-size: var(--fs-xs); }
 .roll-sub { color: var(--muted); }
 .roll-old s { color: var(--faint); }
@@ -1818,7 +1818,7 @@ body.at-table .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .roll-lock { color: var(--muted); display: grid; place-items: center; padding-top: 8px; }
 .hidden-roll .roll-what { color: var(--muted); font-weight: 400; }
 .roll-dmg-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }
-.roll-dmg-line b { font-size: var(--fs-lg); color: var(--text); font-variant-numeric: tabular-nums; }
+.roll-dmg-line > b { font-size: var(--fs-lg); color: var(--text); font-variant-numeric: tabular-nums; }
 .roll-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .roll-pending { border: 1px dashed var(--line); border-radius: var(--r-lg); padding: 10px 14px; color: var(--muted); font-size: var(--fs-sm); }
 .roll-empty { color: var(--muted); font-size: var(--fs-sm); padding: 6px 4px; }
@@ -3784,7 +3784,7 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .roll-beat .roll-dice { display: inline; }
 .roll-beat .roll-total { font-size: var(--fs-xl); color: var(--text-strong); white-space: nowrap; }  /* (several beams: "11 · 19" on one line) */
 .roll-beat.roll-old s { font-size: var(--fs-lg); }
-.roll-item.kind-attack .roll-dmg-line b { color: var(--red); font-size: var(--fs-xl); }
+.roll-item.kind-attack .roll-dmg-line > b { color: var(--red); font-size: var(--fs-xl); }
 .roll-applied.roll-beat { color: var(--green); }
 
 /* While dice are on screen, the roll window (or card) lets them show through (feedback 59: a die that landed behind the

@@ -2329,7 +2329,7 @@ function feedbackBusy(e) {
     const list = throwList({ ...t, kind: t.kind }, followUp ? 'damage' : null);
     if (!list.length) return Promise.reject(new Error('nothing to throw'));
     const name = li.querySelector('.roll-who b').textContent, what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
-    const total = followUp ? li.querySelector('.roll-dmg-line b').textContent : (li.querySelector('.roll-total') || {}).textContent;
+    const total = followUp ? li.querySelector('.roll-dmg-line > b').textContent : (li.querySelector('.roll-total') || {}).textContent;
     const nat = followUp ? null : li.classList.contains('nat20') ? 20 : li.classList.contains('nat1') ? 1 : null;
     const dice = diceOf(li);
     const swatch = '<i class="sw-' + esc(dice.set || 'white') + '"></i>';
@@ -2937,13 +2937,16 @@ function feedbackBusy(e) {
   }
   // Polling every 3 s; every 30 s while the live connection is up, which brings rolls the moment they're made
   let polls = 0;
+  let changedRoll = 0;
   window.askdndRolls = {
     wanted: () => atTable() && !loaded,
     poll: () => atTable() && loaded && document.visibilityState === 'visible' && (!(window.askdndLive || {}).up || ++polls % 10 === 0),
     since: () => (loaded ? lastId : -1),  // -1: the whole recent log
+    also: () => { const a = changedRoll; changedRoll = 0; return a; },  // (a roll that changed without a new row: its outcome)
   };
   document.addEventListener('askdnd:live', e => {
     if (e.detail.type === 'rolls' && atTable()) earlyThrow(e.detail.roll);
+    if (e.detail.type === 'rolls' && e.detail.changed) changedRoll = e.detail.changed;
     if ((e.detail.type === 'rolls' || e.detail.type === 'resync') && atTable() && loaded && log && window.htmx) htmx.trigger(log, 'rolls:load');
   });
   // A roll the whole table sees comes in the live message itself (app/table_rolls.py _live; Brett, 2026-10-29: every
@@ -2962,7 +2965,7 @@ function feedbackBusy(e) {
     li.querySelector('.roll-who b').textContent = t.name;
     li.querySelector('.roll-what').textContent = t.label + (t.kind === 'attack' ? ' to hit' : t.kind === 'damage' ? ' damage' : '');
     li.querySelector('.roll-total').textContent = t.total;
-    if (t.damage) li.querySelector('.roll-dmg-line b').textContent = t.damage.total;
+    if (t.damage) li.querySelector('.roll-dmg-line > b').textContent = t.damage.total;
     window.askdndThrowing.throwing(t.id);
     throwOthers(li).catch(() => {}).finally(() => window.askdndThrowing.landed(t.id));
   }
@@ -3023,8 +3026,8 @@ function feedbackBusy(e) {
     let d = null;
     if (total) {
       const d20 = D20.some(k => li.classList.contains('kind-' + k)), kept = li.querySelector('.roll-dice u');
-      const dmgLine = li.querySelector('.roll-dmg-line b') && +li.dataset.seq !== +li.dataset.id;
-      const v = d20 && kept && !dmgLine ? kept.textContent : (dmgLine ? li.querySelector('.roll-dmg-line b').textContent : total.textContent);
+      const dmgLine = li.querySelector('.roll-dmg-line > b') && +li.dataset.seq !== +li.dataset.id;
+      const v = d20 && kept && !dmgLine ? kept.textContent : (dmgLine ? li.querySelector('.roll-dmg-line > b').textContent : total.textContent);
       d = gem(d20 && !dmgLine ? 20 : sidesOf(li.querySelector('.roll-dice') && li.querySelector('.roll-dice').textContent), v,
               (dmgLine || li.classList.contains('kind-damage') ? 'ruby' : li.classList.contains('kind-heal') ? 'jade' : 'gold')
               + (li.classList.contains('nat20') && !dmgLine ? ' crit' : li.classList.contains('nat1') && !dmgLine ? ' fumble' : ''), 'tiny');
@@ -3032,7 +3035,7 @@ function feedbackBusy(e) {
       if (animate()) tumble(d, 150, 650); else { d.querySelector('.gem-n').textContent = v; d.classList.add('landed'); }
     }
     const what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
-    const dmg = li.querySelector('.roll-dmg-line b');
+    const dmg = li.querySelector('.roll-dmg-line > b');
     const t = document.createElement('span');
     t.innerHTML = !total ? '<b>' + esc(name) + '</b> ' + esc(what.charAt(0).toLowerCase() + what.slice(1))
       : dmg && +li.dataset.seq !== +li.dataset.id ? '<b>' + esc(name) + '</b> rolled <b>' + esc(dmg.textContent) + '</b> damage · ' + esc(what.replace(/ to hit$/, ''))

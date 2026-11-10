@@ -502,3 +502,8 @@ def test_each_roll_keeps_what_the_card_knew(table, db, monkeypatch):
     db.expire_all()
     assert db.get(TableRoll, mid).detail["outcome"] == "miss"
     assert ">missed<" in table["player"].get("/rolls?since=-1").text
+    # (the roll audit, Nov 10: a miss makes no new row, so pages asking for what's new never saw it; it's announced
+    # with the roll's id, and asked for again with `also`)
+    assert table["player"].get(f"/rolls?since={mid + 100}").status_code == 204
+    shown = table["player"].get(f"/rolls?since={mid + 100}&also={mid}").text
+    assert ">missed<" in shown and 'data-follow="damage"' not in shown  # (marked missed: no Roll damage offered)

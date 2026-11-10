@@ -336,7 +336,8 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
             if mine and newest_mine and not r.ddb_roll_id:  # (a roll made on D&D Beyond is only shown: its dice are D&D Beyond's)
                 ctx = mine_ctx or {}
                 e["can"] = {
-                    "damage": _damage_label(r) if r.kind == "attack" and (r.damage or r.spec) and not dmg and (nat != 1 or r.parts) else "",
+                    "damage": _damage_label(r) if r.kind == "attack" and (r.damage or r.spec) and not dmg and (nat != 1 or r.parts)
+                    and (r.detail or {}).get("outcome") != "miss" else "",  # (marked missed: no damage to roll)
                     "reroll": "" if rr or damage_rolled(dmg) or r.kind not in D20_KINDS else
                               "Luck" if ctx.get("halfling") and eff.kept == 1 else
                               "Heroic Inspiration" if ctx.get("inspiration") else "",
@@ -393,11 +394,12 @@ def render(request: Request, items: list[dict]) -> str:
 # ------------------------------------------------------------------ routes
 
 @router.get("/rolls")
-def roll_log(request: Request, since: int = -1, db: Session = Depends(get_db)):
+def roll_log(request: Request, since: int = -1, also: int = 0, db: Session = Depends(get_db)):
     """The table's rolls this viewer may see, newest activity first: the last LOG_SIZE (with a
     line when there are none), or only rolls with something new after `since` (pages poll
     every few seconds; nothing new is a 204, which htmx skips). A roll whose damage, reroll or
-    added die is new comes again, whole: the page replaces its old copy."""
+    added die is new comes again, whole: the page replaces its old copy. `also`: a roll that changed without a new row
+    (its outcome, the card's Missed), announced with its id, so every page shows it again."""
     user = current_user(request)
     if not user:
         return HTMLResponse("", status_code=401)
@@ -409,6 +411,8 @@ def roll_log(request: Request, since: int = -1, db: Session = Depends(get_db)):
     if since >= 0:
         touched = {pid or rid for rid, pid in db.execute(select(TableRoll.id, TableRoll.parent_id)
                                                           .where(TableRoll.campaign_id == campaign.id, TableRoll.id > since))}
+        if also:
+            touched.add(also)
         if not touched:
             return Response(status_code=204)
         q = q.where(TableRoll.id.in_(touched))
@@ -727,6 +731,7 @@ def roll_outcome(request: Request, roll_id: int, outcome: str = Form(""), db: Se
     if outcome not in ("hit", "miss"):
         return _error("Hit or miss.")
     row.detail = {**(row.detail or {}), "outcome": outcome}
+    realtime.announce(db, row.campaign_id, "rolls", changed=row.id)  # (no new row: every page asks for this one again)
     db.commit()
     return Response(status_code=204)
 
