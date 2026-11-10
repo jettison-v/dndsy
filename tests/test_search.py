@@ -74,3 +74,30 @@ def test_signed_out_finds_nothing(db):
     from app.main import app
 
     assert TestClient(app).get("/search/index").status_code == 401
+
+
+def test_in_a_wild_shape_form_search_finds_what_battle_shows(player, db, sheet):
+    """Battle in a form is the form's (app/wild_shape.py): Search too, its attacks, saves and Initiative, never what the
+    form can't do (character_pages.form_now, shared with Battle)."""
+    cole = char(db, "Cole")
+    before = player.get("/search/index").json()["rows"]
+    cole.wild_shape = "Polar Bear"
+    db.flush()
+    after = player.get("/search/index").json()["rows"]
+    battle = player.get(f"/characters/{cole.id}/battle").text
+    mine = [r for r in after if r["g"] == "Your character"]
+    assert any(r["n"] == "Rend" and r["a"] == "Roll" for r in mine) and "Rend" in battle
+    assert any(r["n"] == "Thorn Whip" for r in before) and not any(r["n"] == "Thorn Whip" for r in mine)  # (a spell the form can't cast)
+    save = lambda rows: next(r["roll"]["mod"] for r in rows if r["n"] == "Str save")
+    assert save(before) != save(after) and f'data-mod="{save(after)}"' in battle
+
+
+def test_a_roll_from_search_carries_the_conditions_and_hidden(player, db, sheet):
+    """A roll from Search on any page is Battle's roll: the conditions' reasons and Hidden go with it (app.js specFrom)."""
+    from app import hiding
+
+    cole = char(db, "Cole")
+    hiding.start(db, cole, 17)
+    db.flush()
+    ctx = player.get("/search/index").json()["ctx"]
+    assert ctx["hidden"] == 17 and ctx["condAdv"].get("attack")  # (Invisible: Advantage on attacks)

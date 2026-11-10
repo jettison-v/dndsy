@@ -88,3 +88,36 @@ def test_cast_opens_where_it_can_be_seen(people, server, browser_db):
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)
+
+
+def test_an_attack_from_search_off_battle_ends_hidden_as_battle_does(people, server, browser_db):
+    """The review (Nov 9): a roll from Search took its conditions and Hidden from Battle's page, so on Story an attack
+    didn't offer "This attack ends Hidden", nor end it. They come with the roll now, on any page."""
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:  # (Cole Hidden, as app/hiding.py keeps it: askdnd's Invisible with the DC to find him)
+        conn.execute(text("UPDATE characters SET conditions = CAST(:v AS jsonb) WHERE name = 'Cole'"),
+                     {"v": '[{"name": "Invisible", "source": "Hidden", "find": 17}]'})
+    try:
+        player = people("player")
+        page = player.open("/")
+        page.wait_for_load_state("networkidle")
+        ended = []
+        page.on("request", lambda r: ended.append(r.method) if r.url.endswith("/conditions/end") else None)
+        page.locator("[data-search-open]").click()
+        page.fill("#search-q", "unarmed strike")
+        page.locator(".search-res", has_text="Unarmed Strike").first.click()
+        win = page.locator(".roll-win")
+        win.wait_for()
+        assert "This attack ends Hidden" in win.inner_text() and "Invisible" in win.inner_text()  # (and its Advantage, with the reason)
+        win.locator("[data-go]").click()
+        for _ in range(20):
+            if ended:
+                break
+            page.wait_for_timeout(250)
+        assert ended == ["POST"] and player.errors == []
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE characters SET conditions = '[]'::jsonb WHERE name = 'Cole'"))
+        engine.dispose()

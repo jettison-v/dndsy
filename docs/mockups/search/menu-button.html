@@ -1,0 +1,214 @@
+<title>Search in the Menu Bar</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Brett, Nov 9 (after Search went live): the menu bar's Search is "a little large and slightly awkward that clicking on it
+   opens a separate bar even though it looks like an input box"; he likes that it says ⌘F opens it. Three ways to draw it,
+   each a menu bar at a 13-14" laptop's width with askdnd's own buttons beside it; click the search in a bar to see what
+   it opens. Claude recommends A. */
+:root {
+  --bg: #15171a; --bar: #0f1113; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #d64545; --green: #5bbf7f; --blue: #7ea6e0; --blue-soft: rgba(126,166,224,.16); --shadow: rgba(0,0,0,.5);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --bar: #fff; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --blue: #2f5f9e; --blue-soft: rgba(47,95,158,.12); --shadow: rgba(40,30,10,.22); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --bar: #fff; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --blue: #2f5f9e; --blue-soft: rgba(47,95,158,.12); --shadow: rgba(40,30,10,.22); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+button, input { font: inherit; color: inherit; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.25rem; }
+p { margin: 0; max-width: 76ch; }
+b { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.note { color: var(--muted); font-size: .86rem; }
+header, section { display: grid; gap: 12px; min-width: 0; }
+kbd { font: 600 .72rem/1 var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 2px 4px; background: var(--surface-2); color: var(--text); }
+.rec { display: inline-block; font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--green); border: 1px solid var(--green); border-radius: 999px; padding: 3px 8px; margin-left: 8px; vertical-align: middle; }
+
+/* one laptop screen's top: the menu bar as askdnd draws it, and a little page under it */
+.scroller { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+.screen { position: relative; width: 100%; min-width: 1120px; height: 330px; background: var(--bg); overflow: hidden; }
+.mbar { display: flex; align-items: center; gap: 10px; height: 56px; padding: 0 16px; background: var(--bar); border-bottom: 2px solid var(--red); font-size: .92rem; white-space: nowrap; }
+.logo { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--red); display: grid; place-items: center; color: var(--red); font-size: .7rem; font-weight: 800; }
+.word { font-weight: 800; color: var(--strong); margin-right: 8px; }
+.camp { font-weight: 700; color: var(--strong); }
+.sep { width: 1px; height: 24px; background: var(--line); margin: 0 4px; }
+.nav { padding: 6px 10px; border-radius: 6px; color: var(--muted); }
+.nav.on { background: var(--surface-2); color: var(--strong); }
+.bbtn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); }
+.round { width: 36px; padding: 0; justify-content: center; border-radius: 50%; }
+.sq { width: 36px; padding: 0; justify-content: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.av { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-size: .72rem; font-weight: 800; color: var(--muted); }
+.grow { flex: 1; }
+.page { padding: 22px 26px; display: grid; gap: 12px; }
+.page .h { font-size: 1.6rem; font-weight: 800; color: var(--strong); }
+.line { height: 12px; border-radius: 6px; background: var(--surface-2); }
+
+/* the search control, four ways */
+.s { cursor: pointer; }
+.s:hover, .s:focus-visible { border-color: var(--blue); color: var(--strong); outline: none; }
+.s svg { flex: none; }
+.s-now { width: 128px; background: var(--bg); color: var(--muted); }
+.s-now kbd { margin-left: auto; }
+.s-a { gap: 7px; }
+.s-a kbd { background: transparent; }
+.s-c { width: 128px; background: var(--bg); color: var(--muted); }
+.s-c kbd { margin-left: auto; }
+.tip { position: absolute; z-index: 4; transform: translateX(-50%); top: 62px; background: var(--surface-3); color: var(--strong); font-size: .8rem; padding: 5px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; }
+.tip[hidden] { display: none; }
+
+/* what a click opens: the box in the middle (now, A and B), or the field itself growing under the bar (C) */
+.veil { position: absolute; inset: 0; background: rgba(0,0,0,.4); display: grid; justify-items: center; align-items: start; padding-top: 60px; z-index: 5; }
+.veil[hidden], .drop[hidden] { display: none; }
+.box { width: 560px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 24px 60px var(--shadow); overflow: hidden; }
+.q { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.q input { flex: 1; min-width: 0; border: 0; background: none; color: var(--strong); font-size: 1.05rem; outline: none; }
+.res { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; padding: 7px 12px; margin: 4px 6px; border-radius: 8px; }
+.res b { font-size: .92rem; } .res small { color: var(--muted); font-size: .78rem; }
+.res span { grid-row: span 2; align-self: center; color: var(--muted); font-size: .76rem; }
+.res.on { background: var(--blue-soft); box-shadow: inset 0 0 0 1px var(--blue); }
+.grp { padding: 8px 14px 0; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.drop { position: absolute; z-index: 5; top: 10px; width: 520px; background: var(--surface); border: 1px solid var(--blue); border-radius: 10px; box-shadow: 0 24px 60px var(--shadow); overflow: hidden; }
+.drop .q { padding: 6px 10px; } .drop .q input { font-size: .95rem; }
+
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 10px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .88rem; }
+.pro > b:first-child { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.good > b:first-child { color: var(--green); } .bad > b:first-child { color: var(--red); }
+table.cmp { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 640px; }
+.cmp th, .cmp td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cmp th { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+</style>
+
+<div class="wrap">
+<header>
+  <span class="eyebrow">askdnd · the menu bar · Search</span>
+  <h1>Search in the menu bar: three ways</h1>
+  <p>Search lives at the right of the menu bar, between ⚙ and <b>?</b>, on every page. Today it's drawn like a text box
+    (<b>Search ⌘F</b>, 128 pixels wide), but clicking it opens a separate box in the middle of the screen. You like that it
+    says <kbd>⌘F</kbd> opens it; it's large, and it looks like something you'd type into. Below, today's and three others, each at a 13–14"
+    laptop's width with the buttons beside it. <b>Click the search in a bar</b> to see what it opens.</p>
+</header>
+
+<section>
+  <h2>Now: a field that isn't one</h2>
+  <div class="scroller"><div class="screen" data-screen="now">
+    <div class="mbar" data-bar></div>
+    <div class="page"><div class="h">Story</div><div class="line" style="width:60%"></div><div class="line" style="width:45%"></div></div>
+  </div></div>
+</section>
+
+<section>
+  <h2>A · A button that shows the key <span class="rec">Claude recommends</span></h2>
+  <p>A magnifier and <kbd>⌘F</kbd>, drawn as a button like Manage and ⚙, not as a field. Half the width (about 70 pixels), it
+    still tells you the key, and nothing about it says "type here", so the box opening in the middle is what a button does.
+    The box stays where it is: in the middle, as Spotlight does it.</p>
+  <div class="scroller"><div class="screen" data-screen="a">
+    <div class="mbar" data-bar></div>
+    <div class="page"><div class="h">Story</div><div class="line" style="width:60%"></div><div class="line" style="width:45%"></div></div>
+  </div></div>
+  <div class="pros">
+    <div class="pro good"><b>Good</b>Keeps the ⌘F hint you like, at half the width; looks like what it is, a button.</div>
+    <div class="pro bad"><b>Costs</b>The word "Search" goes (the magnifier and the hover tip say it).</div>
+  </div>
+</section>
+
+<section>
+  <h2>B · Just the magnifier</h2>
+  <p>A round button like <b>?</b> beside it, 36 pixels. The key shows on hover ("Search · ⌘F") and inside the box. The quietest
+    bar; the key is easy to forget, which matters because ⌘F is the quickest way in.</p>
+  <div class="scroller"><div class="screen" data-screen="b">
+    <div class="mbar" data-bar></div>
+    <div class="page"><div class="h">Story</div><div class="line" style="width:60%"></div><div class="line" style="width:45%"></div></div>
+    <div class="tip" data-tip hidden>Search · ⌘F</div>
+  </div></div>
+  <div class="pros">
+    <div class="pro good"><b>Good</b>Smallest; matches ? and the account picture.</div>
+    <div class="pro bad"><b>Costs</b>The ⌘F hint is only on hover. A new player may not know the key.</div>
+  </div>
+</section>
+
+<section>
+  <h2>C · Keep the field, and make it one</h2>
+  <p>It stays a field, and clicking it lets you type right there: it grows wider in place and the results open under it,
+    so nothing jumps to the middle. ⌘F does the same, from any page.</p>
+  <div class="scroller"><div class="screen" data-screen="c">
+    <div class="mbar" data-bar></div>
+    <div class="page"><div class="h">Story</div><div class="line" style="width:60%"></div><div class="line" style="width:45%"></div></div>
+  </div></div>
+  <div class="pros">
+    <div class="pro good"><b>Good</b>What you see is what it does: you type where you clicked.</div>
+    <div class="pro bad"><b>Costs</b>Still 128 pixels in the bar. Results sit at the right edge, far from the middle of the page, where the roll window then opens. More work: a second way to draw the box.</div>
+  </div>
+</section>
+
+<section>
+  <h2>Side by side</h2>
+  <div class="tablewrap"><table class="cmp">
+    <tr><th></th><th>Width in the bar</th><th>Shows ⌘F</th><th>Looks like</th><th>Opens</th></tr>
+    <tr><td><b>Now</b></td><td>128 px</td><td>Always</td><td>A text box</td><td>A box in the middle</td></tr>
+    <tr><td><b>A</b> (recommended)</td><td>~70 px</td><td>Always</td><td>A button</td><td>A box in the middle</td></tr>
+    <tr><td><b>B</b></td><td>36 px</td><td>On hover</td><td>An icon, like ?</td><td>A box in the middle</td></tr>
+    <tr><td><b>C</b></td><td>128 px, wider while open</td><td>Always</td><td>A text box</td><td>The field itself, results under it</td></tr>
+  </table></div>
+  <p class="note">On a phone all four are the magnifier alone (as today). Under 1240 pixels wide, A and the current one already drop the word; A would keep ⌘F down to about 1100.</p>
+</section>
+</div>
+
+<script>
+// One menu bar, drawn four times with a different search control (askdnd's own buttons around it)
+const ICON = '<svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+const SEARCH = {
+  now: '<button class="bbtn s s-now" data-s>' + ICON + 'Search<kbd>⌘F</kbd></button>',
+  a: '<button class="bbtn s s-a" data-s aria-label="Search (⌘F)">' + ICON + '<kbd>⌘F</kbd></button>',
+  b: '<button class="bbtn round s" data-s aria-label="Search">' + ICON + '</button>',
+  c: '<button class="bbtn s s-c" data-s>' + ICON + 'Search<kbd>⌘F</kbd></button>',
+};
+const RESULTS = '<div class="grp">Your character</div>'
+  + '<div class="res on"><b>Thorn Whip</b><span>Cast ↵</span><small>Action · +7 · 30 ft</small></div>'
+  + '<div class="res"><b>Stealth check</b><span>Roll ↵</span><small>skill · +5 (Dex)</small></div>'
+  + '<div class="grp">Rules</div><div class="res"><b>Prone</b><span>Read it ↵</span><small>condition</small></div>';
+document.querySelectorAll('[data-screen]').forEach(screen => {
+  const kind = screen.dataset.screen;
+  screen.querySelector('[data-bar]').innerHTML = '<span class="logo">a</span><span class="word">askdnd</span><span class="camp">The Adventure Begins ▾</span><span class="sep"></span>'
+    + '<span class="nav on">Story</span><span class="nav">Campaign</span><span class="nav">Table ↗</span><span class="sep"></span>'
+    + '<span class="bbtn"><span class="av">C</span>Cole</span><span class="bbtn">Party ▾</span><span class="grow"></span>'
+    + '<span class="bbtn"><span class="dot"></span>Connected</span><span class="bbtn">Manage ▾</span><span class="bbtn sq">⚙</span>'
+    + SEARCH[kind] + '<span class="bbtn round">?</span><span class="av">B</span>';
+  const btn = screen.querySelector('[data-s]');
+  if (kind === 'c') {
+    const drop = document.createElement('div');
+    drop.className = 'drop'; drop.hidden = true;
+    drop.innerHTML = '<div class="q">' + ICON + '<input placeholder="Your character, the rules, the story, a page" value="th"><kbd>esc</kbd></div>' + RESULTS;
+    screen.append(drop);
+    btn.addEventListener('click', () => {
+      const r = btn.getBoundingClientRect(), s = screen.getBoundingClientRect();
+      drop.style.left = Math.max(10, r.right - s.left - 520) + 'px';
+      drop.hidden = !drop.hidden;
+      if (!drop.hidden) drop.querySelector('input').focus();
+    });
+  } else {
+    const veil = document.createElement('div');
+    veil.className = 'veil'; veil.hidden = true;
+    veil.innerHTML = '<div class="box"><div class="q">' + ICON + '<input placeholder="Your character, the rules, the story, a page" value="th"></div>' + RESULTS + '</div>';
+    screen.append(veil);
+    btn.addEventListener('click', () => { veil.hidden = false; veil.querySelector('input').focus(); });
+    veil.addEventListener('click', e => { if (e.target === veil) veil.hidden = true; });
+  }
+  const tip = screen.querySelector('[data-tip]');
+  if (tip) {
+    btn.addEventListener('mouseenter', () => { const r = btn.getBoundingClientRect(), s = screen.getBoundingClientRect(); tip.style.left = (r.left - s.left + r.width / 2) + 'px'; tip.hidden = false; });
+    btn.addEventListener('mouseleave', () => { tip.hidden = true; });
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.veil, .drop').forEach(v => { v.hidden = true; }); });
+</script>
