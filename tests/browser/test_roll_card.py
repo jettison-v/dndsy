@@ -331,3 +331,36 @@ def test_the_card_lets_the_dice_show_through_while_they_are_thrown(people, serve
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)
+
+
+def test_healing_and_any_dice_are_one_step_on_the_card(people, server, browser_db):
+    """Finishing the card, step 1 (Brett, Nov 10): healing (a Hit Point Die, a spell), damage with no attack or save,
+    and any dice roll on the card in one step, Roll, with what to add, who sees it, and where it goes next."""
+    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    try:
+        player = people("player")
+        page = _battle_with(player, server, True)
+        if page.evaluate("document.body.classList.contains('rolls-closed')"):
+            page.locator(".rs-edge").click()
+        page.locator("[data-rs-roll]").click()
+        page.locator('#peek.open .rc[data-label="Hit Die"]').first.click()
+        card = page.locator(".roll-card")
+        card.locator("[data-roll-single]").wait_for()
+        assert card.locator(".rcard-rail li").count() == 1 and "Roll healing" in card.locator("[data-roll-single]").inner_text()
+        card.locator("[data-roll-single]").click()
+        card.locator("[data-done]").wait_for(timeout=20000)
+        assert card.locator(".rcard-what").inner_text().lower() == "healing" and "Apply to" in card.inner_text()
+        _sees(page, "Hit Die")
+        card.locator("[data-done]").click()
+
+        page.locator("[data-rs-roll]").click()
+        page.locator('#peek.open .dp-die:has-text("d6")').first.click()
+        page.locator("#peek.open [data-manual-roll]").click()
+        card.locator("[data-card-for]").fill("Falling into the pit")
+        card.locator("[data-roll-single]").click()
+        card.locator("[data-done]").wait_for(timeout=20000)
+        assert "falling into the pit" in card.inner_text().lower()
+        _sees(page, "Falling into the pit")
+        assert player.errors == []
+    finally:
+        _pieces(browser_db, server, was)

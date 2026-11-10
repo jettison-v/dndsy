@@ -1676,6 +1676,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rcard-result { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--sp-3); align-items: center; background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-1) var(--sp-3); }
 .rcard-big { grid-row: span 2; font-size: var(--fs-2xl); font-weight: 800; color: var(--text-strong); font-variant-numeric: tabular-nums; line-height: 1; }
 .rcard-dmg .rcard-big { color: var(--red); }
+.rcard-heal .rcard-big { color: var(--green); }  /* (healing and Temporary Hit Points: green, as Table rolls draws them) */
 .rcard-result.rolling .rcard-big { color: var(--muted); }
 .rcard-what { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .rcard-how { color: var(--muted); font-size: var(--fs-xs); }
