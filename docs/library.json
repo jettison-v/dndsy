@@ -848,7 +848,7 @@
  {
   "title": "Full Tale and Stats",
   "kind": "design",
-  "status": "Waiting for Brett",
+  "status": "Chose C, all four new numbers",
   "date": "Nov 9",
   "what": "A session's own page with its awards and the night's numbers forward: A the night first, B side by side with the tale (Claude's pick), C two tabs with awards revealed one by one; new numbers from Table rolls (damage dealt, biggest hit, healing given).",
   "source": "docs/mockups/full-tale/index.html",
@@ -857,7 +857,7 @@
  {
   "title": "Search Like Spotlight",
   "kind": "design",
-  "status": "Chose A and A",
+  "status": "Chose A and A; built",
   "date": "Nov 9",
   "what": "One search for anything about your character, playable: a Search button in the menu bar, ⌘F or ⌘K, a box in the middle, results as you type grouped by kind (your character, checks and saves, rules, the story, pages), Enter does it; two choices: what Enter does, and whose things it finds.",
   "source": "docs/mockups/search/index.html",

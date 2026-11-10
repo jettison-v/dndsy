@@ -43,6 +43,7 @@ from app.item_use import router as item_use_router
 from app.item_creatures import router as item_creatures_router
 from app.digest import router as digest_router
 from app.usage import router as usage_router
+from app.search import router as search_router
 from app.level_up import router as level_up_router
 from app.resources import router as resources_router
 from app.rests import router as rests_router
@@ -181,6 +182,7 @@ app.include_router(item_use_router)
 app.include_router(item_creatures_router)  # items that bring a creature (the Beasty Bone)
 app.include_router(digest_router)  # the Inbox digest email and Your account › Email
 app.include_router(usage_router)  # Admin › Features: which features get used
+app.include_router(search_router)  # Search, like Spotlight: what the search box can find
 app.include_router(casting_router)  # (through the bridge: on_for)
 app.include_router(resources_router)  # (through the bridge: on_for)
 app.include_router(rests_router)  # (through the bridge: on_for)

@@ -1,0 +1,136 @@
+"""Search, like Spotlight (Brett chose A and A, Nov 9; docs/mockups/search/): one search for anything about your
+character, from any page. The Search button in the menu bar, ⌘F or Ctrl+F (taking over the browser's find, which ⌘F
+again gives back) or ⌘K opens a box in the middle; results come as you type, grouped by kind, the best highlighted.
+
+`/search/index` is everything this person can find, once per page (app.js "Search" matches it as they type):
+
+- **Your character**: Battle's own rows (`character_views.options`, as Battle draws them, with their roll plans and
+  recipes), each with what Enter does (A): roll it (the roll card or window), Cast, Use, else its side panel. ⌘ Enter
+  opens its side panel instead.
+- **Checks, saves, skills**: what Table rolls' Roll finds (Enter rolls).
+- **Rules**: the rule terms (app/rules_terms.py), their words shown in the box.
+- **The story** (A: what everyone shares, not the party's characters): the World's entries a person may see (the
+  Campaign page's own rule: published, or any for the DM, reviewers and admins, those marked hidden), and the
+  published sessions.
+- **Pages**: Story, Campaign, Party, Your notes, Help and the Manage pages this person can open.
+"""
+
+import re
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
+from app import picks, web
+from app.auth import can_edit_entries, current_user
+from app.db import get_db
+from app.models import Entity, Status
+
+router = APIRouter()
+
+KINDS = {"pc": "a character", "npc": "a person", "place": "a place", "faction": "a faction", "item": "an item", "quest": "a quest",
+         "creature": "a creature", "event": "an event", "lore": "lore"}
+SAVE = re.compile(r"^(Str|Dex|Con|Int|Wis|Cha)\s+(\d+)$")
+
+
+def _words(*parts) -> str:
+    return " ".join(str(p or "") for p in parts).lower()
+
+
+def character_rows(db: Session, user: dict) -> tuple[int | None, list[dict], dict]:
+    """The person's own character's rows: Battle's options, then its checks, saves and skills."""
+    from app import table_rolls
+    from app.character_pages import _view
+
+    ch = picks.my_character(db, user)
+    if ch is None:
+        return None, [], {}
+    ctx = _view(db, ch, user)
+    sheet = ctx.get("sheet") or {}
+    if not sheet:
+        return ch.id, [], {}
+    from app import character_views as views
+
+    out = []
+    for o in views.options(sheet, ctx["picks"]["star"]):
+        hit = str(o.get("hit") or "").replace("−", "-")
+        panel = f"/characters/{ch.id}/detail?ref={o['key']}"
+        row = {"g": "Your character", "n": o["name"], "s": " · ".join(x for x in (o.get("cost") or "", hit, o.get("meta") or "") if x)[:140],
+               "find": _words(o["name"], o.get("cost"), " ".join(o.get("tags") or []), o.get("kind")), "panel": panel}
+        rec = o.get("recipe") if (o.get("recipe") or {}).get("events") else None
+        if o.get("cast") and ctx.get("can_play"):
+            row |= {"a": "Cast", "use": f"/characters/{ch.id}/cast?key={o['key']}"}
+        elif (o.get("use") or {}).get("id") and ctx.get("can_use"):
+            row |= {"a": o["use"].get("verb") or "Use", "use": f"/characters/{ch.id}/use/{o['use']['id']}"}
+        elif (o.get("bring") or {}).get("state") == "ready" and ctx.get("can_bring"):
+            row |= {"a": "Use", "use": f"/characters/{ch.id}/bring/{o['bring']['id']}"}
+        elif hit[:1] in "+-" and hit[1:2].isdigit():
+            row |= {"a": "Roll", "roll": {"roll": "attack", "label": o["name"], "mod": hit, "plan": o.get("plan"), "recipe": rec}}
+        elif (m := SAVE.match(hit)) and (rec or o.get("dice")):
+            row |= {"a": "Roll", "roll": {"roll": "damage", "label": o["name"], "dmg": "" if rec else o.get("dice"), "plan": o.get("plan"),
+                                          "recipe": rec, "note": f"Each target makes a {m.group(1)} {m.group(2)} save."}}
+        else:
+            row |= {"a": "Open", "go": panel, "panel_only": True}
+        out.append(row)
+    def roll(kind, label, mod, find, sub):
+        return {"g": "Checks, saves, skills", "n": label, "s": sub, "a": "Roll", "find": find, "roll": {"roll": kind, "label": label, "mod": mod}}
+    for sk in sheet.get("skills") or []:
+        out.append(roll("check", f"{sk['name']} check", sk["label"], _words(sk["name"], sk.get("ability"), "skill check"), f"skill · {sk['label']} ({sk.get('ability') or ''})"))
+    for sv in sheet.get("saves") or []:
+        out.append(roll("save", f"{sv['short']} save", sv["label"], _words(sv["short"], sv.get("ability"), "save saving throw"), sv["label"]))
+    for a in sheet.get("abilities") or []:
+        out.append(roll("check", f"{a['name']} check", a["label"], _words(a["name"], a.get("short"), "check"), a["label"]))
+    if sheet.get("initiative"):
+        out.append(roll("check", "Initiative", sheet["initiative"], "initiative", sheet["initiative"]))
+    return ch.id, out, table_rolls.roll_context(sheet)
+
+
+def story_rows(db: Session, user: dict) -> list[dict]:
+    """The World's entries this person may see (the Campaign page's rule) and the published sessions."""
+    from app.extraction import session_label, timeline
+
+    campaign = web.campaign(db)
+    if campaign is None:
+        return []
+    editor = can_edit_entries(user)
+    out = []
+    for e in db.scalars(select(Entity).options(selectinload(Entity.aliases)).where(Entity.campaign_id == campaign.id).order_by(Entity.name)):
+        hidden = e.status != Status.PUBLISHED
+        if hidden and not editor:
+            continue  # (hidden is as if it didn't exist: CLAUDE.md › Privacy)
+        kind = getattr(e.kind, "value", e.kind)
+        out.append({"g": "The story", "n": e.name, "s": KINDS.get(kind, kind) + (" · hidden" if hidden else ""), "a": "Open",
+                    "find": _words(e.name, " ".join(a.alias for a in e.aliases or []), kind), "go": f"{web.base()}/campaign?open={e.id}"})
+    for s in timeline(db, campaign.id):
+        if any(r.status == Status.PUBLISHED for r in s.recaps):
+            out.append({"g": "The story", "n": s.title or session_label(s), "s": f"{session_label(s)} · the full tale and stats", "a": "Open",
+                        "find": _words(s.title, session_label(s), "session recap tale"), "go": f"{web.base()}/sessions/{s.id}"})
+    return out
+
+
+def page_rows(user: dict, path: str) -> list[dict]:
+    from app.manage import pages_for
+
+    base = web.base()
+    out = [{"g": "Pages", "n": n, "s": s, "a": "Go", "find": _words(n, s), "go": h} for n, s, h in (
+        ("Story", "Previously on… and every session", f"{base}/"), ("Campaign", "the World, quests, relationships, the map", f"{base}/campaign"),
+        ("Party", "everyone at the table", "/party"), ("Your notes", "what happened to what you sent", "/your-notes"),
+        ("Help", "the FAQ and About askdnd", "/help"))]
+    out += [{"g": "Pages", "n": p["label"], "s": p.get("about") or "", "a": "Go", "find": _words(p["label"], p.get("about"), "manage"), "go": p["href"]}
+            for p in pages_for(user, path)]
+    return out
+
+
+@router.get("/search/index")
+def index(request: Request, db: Session = Depends(get_db)):
+    """Everything this person can find, for the search box (matched in the browser as they type)."""
+    user = current_user(request)
+    if not user:
+        return JSONResponse({}, status_code=401)
+    from app import rules_terms
+
+    cid, mine, ctx = character_rows(db, user)
+    rules = [{"g": "Rules", "n": t["name"], "s": t.get("kind") or "rule", "a": "Read it", "find": _words(t["name"], t.get("kind")), "text": t.get("text") or ""}
+             for t in rules_terms.as_json().values()]
+    return JSONResponse({"character": cid, "ctx": ctx, "rows": mine + rules + story_rows(db, user) + page_rows(user, request.url.path)})
