@@ -75,6 +75,7 @@ def gather(db: Session, campaign: Campaign) -> dict:
     for key, row in rows.items():
         row.update(key=key, awards=[], rolls=0, d20=[0] * 20, damage=0, biggest=None, healing=0, spells=0, downs=0, moments=0, played=set())
 
+    by_roll = {r.id: r for r in rolls}
     for r in rolls:
         row = rows.get(f"c{r.character_id}" if r.character_id else "dm")
         if row is None:
@@ -88,7 +89,8 @@ def gather(db: Session, campaign: Campaign) -> dict:
         if r.kind == "damage" and r.total > 0:
             row["damage"] += r.total
             if row["biggest"] is None or r.total > row["biggest"]["total"]:
-                row["biggest"] = {"total": r.total, "label": r.label}
+                src = by_roll.get(r.parent_id) or r  # (the attack or spell it follows keeps the level it was cast at)
+                row["biggest"] = {"total": r.total, "label": r.label, "level": (src.detail or {}).get("level"), "crit": r.crit}
         if r.kind == "heal" and r.total > 0:
             row["healing"] += r.total
     by_id = {c.id: c for c in chars}

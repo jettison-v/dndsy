@@ -271,6 +271,14 @@ def _part(r: TableRoll) -> dict:
                       for x in r.parts or []]}
 
 
+def detail_of(level: int = 0, why=(), riders=(), hidden="", via="") -> dict:
+    """What else the roll card or window knew, checked and kept short (TableRoll.detail; Brett's round 2 note, Nov 10)."""
+    clean = lambda xs, n: [" ".join(str(x).split())[:n] for x in xs if str(x).strip()][:6]  # noqa: E731
+    out = {"level": level if 1 <= (level or 0) <= 9 else None, "why": clean(why, 120), "riders": clean(riders, 80),
+           "hidden": bool(hidden), "via": via if via in ("card", "window", "search") else None}
+    return {k: v for k, v in out.items() if v}
+
+
 def _death(total: int, nat: int | None) -> str:
     if nat == 20:
         return "natural 20: you regain 1 Hit Point"
@@ -322,6 +330,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
                   "bonus": {"label": bonus.label, "formula": bonus.formula, "dice": list(bonus.dice), "total": bonus.total} if bonus else None,
                   "damage": _part(dmg) if dmg else None,
                   "outcome": _death(total, nat) if r.kind == "death" else "",
+                  "detail": dict(r.detail or {}) | ({"outcome": "hit"} if dmg and r.kind == "attack" else {}),
                   "short": {"death": "Death", "heal": "Heal", "damage": "Dmg", "dice": "Dice"}.get(r.kind) or r.label.split()[0][:5],
                   "can": {"damage": "", "reroll": "", "bonus": False}}
             if mine and newest_mine and not r.ddb_roll_id:  # (a roll made on D&D Beyond is only shown: its dice are D&D Beyond's)
@@ -510,7 +519,8 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
               to: str = Form("table"), extra: list[str] = Form([]), parent: int = Form(0), action: str = Form(""),
               die_size: int = Form(0, alias="die"), part: list[str] = Form([]), dmg_part: list[str] = Form([]),
               count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), token: int = Form(0),
-              via: str = Form(""), db: Session = Depends(get_db)):
+              via: str = Form(""), level: int = Form(0), why: list[str] = Form([]), rider: list[str] = Form([]),
+              hidden: str = Form(""), db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -594,7 +604,8 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     mine = {x["name"] for x in creatures.yours(chars.character_summary(ch))} if ch and who else set()
     who = (who if who in mine else ch.wild_shape or "")[:80] if ch else tok.name[:80] if tok else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
-                    mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who, **result)
+                    mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who,
+                    detail=detail_of(level, why if mode != "normal" else [], rider, hidden, via), **result)
     db.add(row)
     db.flush()
     if kind == "attack" and (flat := flat_damage(damage)) and row.kept != 1:  # (flat: on a hit it's just this, feedback 25)
@@ -671,6 +682,7 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
             rolled = roll_extras(extras, crit)
         result["total"] = max(result["total"] + sum(x["total"] for x in rolled), 0)
         row = TableRoll(**base, kind="damage", label=root.label, mode="normal", crit=crit, extras=rolled, **result)
+        root.detail = {**(root.detail or {}), "outcome": "hit"}  # (its damage rolled: it hit)
     elif action == "reroll":
         if root.kind not in D20_KINDS or "reroll" in kids or damage_rolled(kids.get("damage")) or label not in REROLLS or root.parts:
             return _error("That roll can't be rerolled now.", 409)
@@ -702,6 +714,21 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
     db.commit()
     db.refresh(root)
     return _reply(request, db, root, me_id, dm, new=row, death=death)
+
+
+@router.post("/rolls/{roll_id:int}/outcome")
+def roll_outcome(request: Request, roll_id: int, outcome: str = Form(""), db: Session = Depends(get_db)):
+    """An attack's outcome when no damage follows (the roll card's Missed): kept with the roll, by whoever rolled it."""
+    user = current_user(request)
+    me = picks.user_row(db, user) if user else None
+    row = db.get(TableRoll, roll_id)
+    if me is None or row is None or row.user_id != me.id or row.parent_id is not None or row.kind != "attack":
+        return _error("That roll isn't yours.", 404)
+    if outcome not in ("hit", "miss"):
+        return _error("Hit or miss.")
+    row.detail = {**(row.detail or {}), "outcome": outcome}
+    db.commit()
+    return Response(status_code=204)
 
 
 @router.get("/rolls/checks")

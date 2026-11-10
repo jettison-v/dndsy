@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 # Route → feature, first match wins (the route as the app declares it: /characters/{character_id}/cast)
 FEATURES: list[tuple[str, str]] = [
     (r"^/rolls$", "Rolls"),
+    (r"^/rolls/\{roll_id\}/outcome$", "Roll card: missed"),
     (r"^/characters/\{character_id\}/cast", "Cast"),
     (r"^/characters/\{character_id\}/(hp/apply|creatures/\{creature_id\}/hp)$", "Hit points"),
     (r"^/characters/\{character_id\}/(conditions|concentration)", "Conditions"),

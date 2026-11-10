@@ -14,7 +14,7 @@
   <div><small>Natural 1s</small><b>{{ rolled.ones }}</b></div>
   <div><small>Rolls the table saw</small><b>{{ rolled.rolls }}</b></div>
   <div><small>Spells cast</small><b>{{ night.spells.count }}</b></div>
-  {% if night.biggest %}<div class="night-big"><small>Biggest hit</small><b>{{ night.biggest.total }}</b><span class="night-by">{{ night.biggest.name }} · {{ night.biggest.label }}{{ " · critical" if night.biggest.crit }}</span></div>{% endif %}
+  {% if night.biggest %}<div class="night-big"><small>Biggest hit</small><b>{{ night.biggest.total }}</b><span class="night-by">{{ night.biggest.name }} · {{ night.biggest.label }}{% if night.biggest.level %} at level {{ night.biggest.level }}{% endif %}{{ " · critical" if night.biggest.crit }}</span></div>{% endif %}
   {% if night.healing.total %}<div class="night-big"><small>Healing</small><b>{{ night.healing.total }}</b>{% if night.healing.rows %}<span class="night-by">most by {{ night.healing.rows[0].name }}</span>{% endif %}</div>{% endif %}
 </div>
 {% endif %}
