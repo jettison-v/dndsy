@@ -924,6 +924,8 @@ details.feat > summary:hover { color: var(--text-strong); }
 .tabbar.cut-l.cut-r { mask-image: linear-gradient(to right, transparent, var(--bg) 36px, var(--bg) calc(100% - 36px), transparent); }
 .tabbar button { background: none; border: none; padding: 9px 13px; color: var(--muted); font-weight: 500; white-space: nowrap; min-height: 40px; }
 .tabbar button[aria-selected=true] { color: var(--text-strong); box-shadow: inset 0 -2px 0 var(--red); }
+/* A focused tab's ring inside it: the bar scrolls sideways (phones), so a ring outside is cut to a stray red bar between tabs (Brett, Nov 10: seen on every tab bar when a key was pressed, a screenshot's shortcut included) */
+.tabbar button:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; border-radius: var(--r-sm); }
 .tabbar .count { font-size: var(--fs-xs); }
 details.opt { border-top: 1px solid var(--line); }
 details.opt > summary { list-style: none; cursor: pointer; padding: 9px 0; display: flex; gap: 8px; align-items: baseline; }
@@ -3663,9 +3665,11 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .rs-roll { color: var(--text); }
 .roll-board { display: grid; gap: var(--sp-3); align-content: start; }
 .rb-q { width: 100%; font-size: var(--fs-md); padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--bg); color: var(--text); }
-.rb-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(230px, 1fr); gap: var(--sp-4); align-items: start; }
-.rb-abilities { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); align-items: start; }
-.rb-side { display: grid; gap: var(--sp-3); }
+/* one grid, so Other lines up with the first row of abilities and Any dice with the second (Brett, Nov 10) */
+.rb-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(230px, 1fr); gap: var(--sp-3); align-items: start; }
+.rb-abilities, .rb-side { display: contents; }
+.rb-side > .rb-box:first-child { grid-column: 4; grid-row: 1; }
+.rb-side > .rb-dice { grid-column: 4; grid-row: 2; }
 .rb-ability, .rb-box { display: grid; gap: 1px; padding: var(--sp-1); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg); margin: 0; }
 .rb-ability[hidden], .rb-box[hidden], .roll-board .rc[hidden] { display: none; }
 .rb-label { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: var(--sp-2) var(--sp-2) var(--sp-1); }
@@ -3689,8 +3693,8 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .roll-window > .tabbar { margin-bottom: 0; }
 .dice-picker.in-roll { display: grid; gap: var(--sp-4); }
 .dice-picker.in-roll .dp-save { justify-content: flex-start; }
-@media (max-width: 900px) { .rb-grid { grid-template-columns: minmax(0, 1fr); } }
-@media (max-width: 640px) { .rb-abilities { grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); } }
+@media (max-width: 900px) { .rb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rb-side > .rb-box:first-child, .rb-side > .rb-dice { grid-column: auto; grid-row: auto; } }
+@media (max-width: 640px) { .rb-grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); } }
 @media (max-width: 640px) { body.rolls-closed .rs-roll { display: none; } }
 
 /* Your account › Email (app/digest.py): a switch per campaign */
