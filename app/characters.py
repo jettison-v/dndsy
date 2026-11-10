@@ -194,7 +194,9 @@ def store(db: Session, character: Character, got: Read, over_sheet: bool = False
                 from app import companions  # (a familiar form askdnd added: tied to its new creature)
 
                 companions.adopt(db, character, summary, raw)
-        from app import level_up  # (its route reads characters through item_use)
+        from app import downs, level_up  # (level_up's route reads characters through item_use)
+
+        downs.seen(db, character, snap.summary, summary, got.at)  # (a drop to 0 or a death, for Trophy Case; Brett, Nov 10)
 
         if (news := level_up.changes(snap.summary, summary)):
             character.level_up = level_up.merged(character.level_up, news)
