@@ -110,6 +110,8 @@
       </div>
     </div>
     {% endif %}
+    {# Search, like Spotlight (app/search.py; Brett chose A and A, Nov 9): beside Help, a field-like button; ⌘F, Ctrl+F, ⌘K #}
+    <button type="button" class="search-btn" data-search-open aria-label="Search" title="Search: your character, the rules, the story"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="search-btn-word">Search</span><kbd class="search-btn-key" data-pc="Ctrl+F">⌘F</kbd></button>
     {# Help: one quiet icon instead of another word in the bar (Brett, 2026-10-23), opening the tour, What askdnd adds,
        the FAQ and About (2026-10-26; app/tour.py) #}
     <div class="help-menu" data-tour="help">
@@ -166,5 +168,14 @@
 {% endblock %}
 <footer class="site-foot"><a href="/help" data-no-peek>Help</a> · <a href="/help?tab=about" data-no-peek>About</a></footer>
 <div class="cards" id="cards" aria-live="polite"></div>{# corner cards (app.js) #}
+{% if user %}{# The search box (app.js "Search"): what /search/index can find, matched as you type #}
+<dialog class="search-box" id="search-box" aria-label="Search">
+  <div class="search-q"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input type="search" id="search-q" placeholder="Your character, the rules, the story, a page" autocomplete="off" aria-label="Search" aria-controls="search-list"></div>
+  <div class="search-list" id="search-list" role="listbox" aria-label="Results"></div>
+  <div class="search-read" id="search-read" hidden></div>
+  <div class="search-foot note"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>Enter</kbd> does it</span><span><kbd data-pc="Ctrl">⌘</kbd><kbd>Enter</kbd> opens where it lives</span><span><kbd data-pc="Ctrl+F">⌘F</kbd> again finds on the page</span></div>
+</dialog>
+{% endif %}
 </body>
 </html>

@@ -22,8 +22,9 @@ SECTIONS = [
         ("battle", "Battle", "Your plan for a fight by Action, Bonus action and Reaction: what you chose to put there, with See all "
                              "for everything else. + Add and the pin put things on it; open one for Pin, Remind me and "
                              "your note."),
-        ("rolling", "Rolling and Table rolls", "Click any number to roll it. Rolls go to Table rolls for everyone; DM only and Only me "
-                                               "keep a roll private. Apply to on the DM's damage changes your Hit Points."),
+        ("rolling", "Rolling and Table rolls", "Click any number to roll it, or find it with Search (⌘F). Rolls go to Table rolls for "
+                                               "everyone; DM only and Only me keep a roll private. Apply to on the DM's damage changes "
+                                               "your Hit Points."),
         ("dice", "Your dice", "Thrown 3D dice in the set you choose (account menu › Your dice); the table sees your rolls in them."),
         ("conditions", "Conditions and effects", "Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in "
                                                  "the roll window with its reason, and a reminder when one is due to end. The DM rules."),
@@ -111,6 +112,11 @@ STOPS = [
     {"group": "rolling", "title": "Table rolls", "page": None, "at": "#table-rolls .rs-head, .rs-edge",
      "what": "<b>Table rolls</b> is everyone's rolls, the DM's too, newest first, on every page. This opens it.",
      "why": "When the DM rolls damage or someone heals you, <b>Apply to</b> on that roll changes your Hit Points in one step."},
+    {"group": "rolling", "title": "Search", "page": None, "at": ".search-btn",
+     "what": "<b>Search</b> (or <b>⌘F</b>, Ctrl+F on Windows) finds anything about your character, a rule or the story "
+             "from any page, as you type.",
+     "why": "<b>Enter</b> does it: rolls a check or an attack, opens Cast for a spell, shows a rule's words. "
+            "<b>⌘F</b> again gives you the browser's own find."},
     {"group": "dice", "page": None, "at": ".avatar",
      "what": "<b>Your dice</b>, in your account menu here, picks the set your rolls are thrown in, and how others' rolls show "
              "for you.",
