@@ -1668,7 +1668,8 @@ function feedbackBusy(e) {
       evs = rec.events.filter(e => e.on !== 'rider' && (spec.kind === 'attack') === (e.on === 'hit'));
       const grows = rec.level && evs.some(e => (e.upcast || []).some(Boolean) || e.count_upcast);
       slot = rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0;
-      if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-slot aria-label="Spell slot level">'
+      if (grows && spec.cast) { slot = spec.cast; h += '<div class="rw-row"><span class="rw-label">Cast at</span><span>Level ' + slot + ' <small class="note">(cast: the slot is spent)</small></span></div>'; }
+      else if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-slot aria-label="Spell slot level">'
         + [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => l >= rec.level).map(l => '<option value="' + l + '"' + (l === slot ? ' selected' : '') + '>Level ' + l
           + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
       if (evs.length > 1) h += '<div class="rw-row rw-evs"><span class="rw-label">Which</span><span class="rw-ev-list">' + evs.map((e, i) =>
@@ -1752,6 +1753,8 @@ function feedbackBusy(e) {
       }
     });
     (w.querySelector('[data-go]') || w).focus();
+    // Cast and roll (the roll window, the card off): cast already, one effect to roll, not an attack: it rolls now
+    if (spec.cast && rec && spec.kind !== 'attack' && evs.length <= 1) w.querySelector('[data-go]').click();
   }
 
   // ---------------------------------------------------------------- Table rolls' Roll
@@ -1807,6 +1810,9 @@ function feedbackBusy(e) {
   function openRoll(el, spec, shift) {
     const plan = !shift && cardPlan(el, spec);
     if (plan) return card(el, spec, plan);
+    // The window keeps the same detail as the card: the attack's riders, from the button's plan (Nov 10: the comparison
+    // of the window and the card across the party's 302 roll buttons found only this apart)
+    if (!spec.riders && el.dataset && el.dataset.plan) { try { spec = { ...spec, riders: (JSON.parse(el.dataset.plan).riders || []).map(r => r.name) }; } catch (err) { /* no plan */ } }
     if (shift) { const w = openWin(el); roll(w, { ...spec, mode: spec.adv ? 'adv' : 'normal', extras: [], ctx: ctxFor(spec.cid) }); }
     else chooser(el, spec);
   }
@@ -1982,7 +1988,7 @@ function feedbackBusy(e) {
     const single = plan.single || '';  // (heal, temp, damage or dice: one step, Roll)
     const d20 = !!plan.d20;  // (a check or a save of your own: Stealth, a Dex save, Initiative; one step, Roll)
     const rec = spec.recipe || null, hits = rec ? (rec.events || []).filter(x => x.on !== 'rider' && (save || single ? x.on !== 'hit' : x.on === 'hit')) : [];
-    const slot0 = rec && rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0;
+    const slot0 = spec.cast || (rec && rec.level ? (spec.slot >= rec.level ? spec.slot : ((ctx.slots || []).find(l => l >= rec.level) || rec.level)) : 0);
     let evi = 0;  // (which effect, where a spell has several: Toll the Dead's unhurt target or one missing Hit Points)
     const spellEv = level => {
       if (!hits.length) return null;
@@ -2022,7 +2028,8 @@ function feedbackBusy(e) {
       let h = '';
       if (hits.length > 1) h += '<div class="rw-row rw-evs"><span class="rw-label">Which</span><span class="rw-ev-list">' + hits.map((x, i) =>
         '<button type="button" class="chip" data-card-ev="' + i + '" aria-pressed="' + (i === evi) + '">' + esc(x.name) + '</button>').join('') + '</span></div>';
-      if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-card-slot aria-label="Spell slot level">'
+      if (grows && spec.cast) h += '<div class="rw-row"><span class="rw-label">Cast at</span><span>Level ' + spec.cast + ' <small class="note">(cast: the slot is spent)</small></span></div>';
+      else if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-card-slot aria-label="Spell slot level">'
         + [1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => l >= rec.level).map(l => '<option value="' + l + '"' + (l === st.slot ? ' selected' : '') + '>Level ' + l
           + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
       (rec && rec.house_rules || []).forEach(r => { h += '<p class="rw-note rw-house"><b>House rule</b> ' + esc(r.text) + (r.reason ? ' · ' + esc(r.reason) : '') + '</p>'; });
@@ -2230,6 +2237,9 @@ function feedbackBusy(e) {
       if (b.hasAttribute('data-roll-dmg')) return follow('damage', { extras: mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => m.name + ':+' + m.adds.replace(/^\+/, '').split(' ')[0]) });
     });
     draw();
+    // Cast and roll: the spell is cast, so healing, damage or a save spell's damage rolls now (one effect to roll; a
+    // spell with a choice of effects asks Which first)
+    if (spec.cast && (single || save) && hits.length <= 1) (w.querySelector('[data-roll-single], [data-roll-save]') || { click() {} }).click();
   }
 
   // ---------------------------------------------------------------- rolling
@@ -2879,7 +2889,9 @@ function feedbackBusy(e) {
       if (roller) {
         const level = w.querySelector('select[name=way]')?.selectedOptions[0]?.dataset.level;
         if (level) roller.dataset.slot = level;
-        openRoll(roller, specFrom(roller));
+        // (cast: the slot is spent, so its level is fixed and there's nothing left to choose; healing and damage roll at
+        // once, an attack waits at its to-hit for Advantage; Brett, Nov 10: "Cast and roll" didn't roll)
+        openRoll(roller, { ...specFrom(roller), cast: +level || 0 });
       } else closeWin();
       turnUsed(w._anchor);
       if (j.roll) {

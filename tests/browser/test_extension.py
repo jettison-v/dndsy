@@ -164,7 +164,8 @@ def test_inspiration_asks_first_and_undo_takes_it_back(chrome, server):
 
 
 def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server):
-    """Brett, 2026-10-31 (docs/mockups/usability/): the slot is spent and the roll opens, at the table by default."""
+    """Brett, 2026-10-31 (docs/mockups/usability/): the slot is spent and the roll opens, at the table by default; and
+    Nov 10 ("Cast and roll" didn't roll): healing rolls at once at the level cast, with no second Cast at."""
     page = chrome.pages[0]
     page.goto(f"{server['base']}/characters/{server['cole']}/battle")
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
@@ -173,15 +174,14 @@ def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server
     page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
     page.click(".spellbook-btn")
     page.wait_for_selector(".sb-actions .item-go")
-    count = page.evaluate("document.querySelectorAll('.sb-actions .item-go').length")
-    for i in range(count):
-        page.evaluate("i => document.querySelectorAll('.sb-actions .item-go')[i].click()", i)
-        page.wait_for_selector(".roll-win .rw-title")
-        if page.locator(".roll-win [data-then-roll]").count():
-            break
+    page.evaluate("""() => [...document.querySelectorAll('.sb-actions .item-go')]
+        .find(b => /Healing Word/.test((b.closest('li, tr, .sb-row, [data-name]') || b).textContent)).click()""")
     page.locator(".roll-win [data-then-roll]").click()
-    page.locator('.roll-win [data-to="table"]').wait_for(timeout=5000)  # (only the character's own player gets the choice)
+    page.wait_for_function("(document.querySelector('.roll-win.result') || {}).textContent?.toLowerCase().includes('healing')", timeout=15000)  # (rolled at once)
+    assert page.locator(".roll-win [data-slot]").count() == 0
     page.locator("#cards > .card", has_text="Cast").wait_for(timeout=5000)
+    rolls = page.evaluate("fetch('/rolls?since=-1').then(r => r.text())")
+    assert "Healing Word" in rolls and "level 1" in rolls  # (at the table, at the level cast)
 
 
 def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):
