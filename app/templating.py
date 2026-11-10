@@ -1,10 +1,11 @@
 from pathlib import Path
 
 from fastapi import Request
+from markupsafe import Markup, escape
 
 from app import access, config, rules_data, vtt
 from app import conditions as cond
-from app.character_views import BASIC_ACTIONS
+from app.character_views import BASIC_ACTIONS, option_rolls, roll_data
 from app.creatures import short as creature_short
 from fastapi.templating import Jinja2Templates
 
@@ -316,6 +317,16 @@ def _dice(text: str) -> str:
 
 
 templates.env.filters["dice"] = _dice
+
+
+def _data_attrs(d: dict) -> Markup:
+    """data-* attributes from a dict (a roll's: character_views.roll_data), escaped."""
+    return Markup(" ".join(f'data-{k}="{escape(v)}"' for k, v in d.items()))
+
+
+templates.env.filters["data_attrs"] = _data_attrs
+templates.env.globals["roll_data"] = roll_data  # (every roll button's data: _char.html roll_attrs, and Search's rows)
+templates.env.globals["option_rolls"] = option_rolls  # (an option's rolls as Battle draws them: _char.html hit)
 
 
 def _combo_steps(turn: dict) -> list[dict]:

@@ -15,7 +15,6 @@ again gives back) or ⌘K opens a box in the middle; results come as you type, g
 - **Pages**: Story, Campaign, Party, Your notes, Help and the Manage pages this person can open.
 """
 
-import re
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Request
@@ -32,7 +31,6 @@ router = APIRouter()
 
 KINDS = {"pc": "a character", "npc": "a person", "place": "a place", "faction": "a faction", "item": "an item", "quest": "a quest",
          "creature": "a creature", "event": "an event", "lore": "lore"}
-SAVE = re.compile(r"^(Str|Dex|Con|Int|Wis|Cha)\s+(\d+)$")
 
 
 def _words(*parts) -> str:
@@ -69,35 +67,32 @@ def character_rows(db: Session, user: dict) -> tuple[int | None, list[dict], dic
         panel = f"/characters/{ch.id}/detail?ref={quote(o['key'])}"
         row = {"g": "Your character", "n": o["name"], "s": " · ".join(x for x in (o.get("cost") or "", hit, o.get("meta") or "") if x)[:140],
                "find": _words(o["name"], o.get("cost"), " ".join(o.get("tags") or []), o.get("kind")), "panel": panel}
-        rec = o.get("recipe") if (o.get("recipe") or {}).get("events") else None
+        first = next((p for p in views.option_rolls(o) if p["button"]), None)  # (Battle's own roll button: its first)
         if o.get("cast") and ctx.get("can_play"):
             row |= {"a": "Cast", "use": f"/characters/{ch.id}/cast?key={quote(o['key'])}"}
         elif (o.get("use") or {}).get("id") and ctx.get("can_use"):
             row |= {"a": o["use"].get("verb") or "Use", "use": f"/characters/{ch.id}/use/{o['use']['id']}"}
         elif (o.get("bring") or {}).get("state") == "ready" and ctx.get("can_bring"):
             row |= {"a": "Use", "use": f"/characters/{ch.id}/bring/{o['bring']['id']}"}
-        elif hit[:1] in "+-" and hit[1:2].isdigit():
-            row |= {"a": "Roll", "roll": {"roll": "attack", "label": o["name"], "mod": hit, "plan": o.get("plan"), "recipe": rec}}
-        elif (m := SAVE.match(hit)) and (rec or o.get("dice")):
-            row |= {"a": "Roll", "roll": {"roll": "damage", "label": o["name"], "dmg": "" if rec else o.get("dice"), "plan": o.get("plan"),
-                                          "recipe": rec, "note": f"Each target makes a {m.group(1)} {m.group(2)} save."}}
+        elif first:
+            row |= {"a": first["text"] if first["text"] == "Heal" else "Roll", "roll": first["attrs"]}
         else:
             row |= {"a": "Open", "go": panel, "panel_only": True}
         out.append(row)
 
-    def roll(kind, label, mod, find, sub):
-        return {"g": "Checks, saves, skills", "n": label, "s": sub, "a": "Roll", "find": find, "roll": {"roll": kind, "label": label, "mod": mod}}
+    def roll(kind, label, mod, find, sub, advs=()):  # (as the Sheet's and Table rolls' buttons: their Advantage too)
+        return {"g": "Checks, saves, skills", "n": label, "s": sub, "a": "Roll", "find": find, "roll": views.roll_data(kind, label, mod, advs=advs)}
     now = form or sheet
     for sk in now.get("skills") or []:
         ab = sk.get("ability") or next((x.get("ability") for x in sheet.get("skills") or [] if x["name"] == sk["name"]), "") or ""
-        out.append(roll("check", f"{sk['name']} check", sk["label"], _words(sk["name"], ab, "skill check"), f"skill · {sk['label']}" + (f" ({ab})" if ab else "")))
+        out.append(roll("check", f"{sk['name']} check", sk["label"], _words(sk["name"], ab, "skill check"), f"skill · {sk['label']}" + (f" ({ab})" if ab else ""), sk.get("adv")))
     for sv in now.get("saves") or []:
-        out.append(roll("save", f"{sv['short']} save", sv["label"], _words(sv["short"], ABILITY.get(sv["short"].lower()[:3]), "save saving throw"), sv["label"]))
+        out.append(roll("save", f"{sv['short']} save", sv["label"], _words(sv["short"], ABILITY.get(sv["short"].lower()[:3]), "save saving throw"), sv["label"], sv.get("adv")))
     for a in now.get("abilities") or []:
         name = a.get("name") or ABILITY.get(str(a.get("key") or a.get("short") or "").lower()[:3], a.get("short"))
         out.append(roll("check", f"{name} check", a["label"], _words(name, a.get("short"), "check"), a["label"]))
     if now.get("initiative"):
-        out.append(roll("check", "Initiative", now["initiative"], "initiative", now["initiative"]))
+        out.append(roll("check", "Initiative", now["initiative"], "initiative", now["initiative"], now.get("initiative_adv")))
     hidden = next((x["find"] for x in ctx.get("conditions") or [] if x.get("find")), None)
     return ch.id, out, table_rolls.roll_context(sheet) | {
         "condAdv": roll_effects([x for x in ctx.get("conditions") or [] if x["counts"]]), "hidden": hidden}

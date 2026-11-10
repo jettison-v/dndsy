@@ -2,6 +2,7 @@
 matched in the browser as they type. Your own character's rows come with what Enter does, the story only what the
 Campaign page shows that person, and every place a result goes opens without a redirect."""
 
+import pytest
 from sqlalchemy import select
 
 from app import characters
@@ -9,6 +10,7 @@ from app.importer import import_bundle
 from app.models import Campaign, Entity, EntityKind, Status
 from tests.roles import set_role
 from tests.table_setup import BUNDLE, char, owned_by
+from tests.test_party_sheets import PARTY, _as
 
 
 def _entries(db):
@@ -101,3 +103,41 @@ def test_a_roll_from_search_carries_the_conditions_and_hidden(player, db, sheet)
     db.flush()
     ctx = player.get("/search/index").json()["ctx"]
     assert ctx["hidden"] == 17 and ctx["condAdv"].get("attack")  # (Invisible: Advantage on attacks)
+
+
+def _buttons(page: str) -> list[dict]:
+    """Every roll button's data-* on a page, as app.js reads them."""
+    from html.parser import HTMLParser
+
+    found = []
+
+    class P(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            a = dict(attrs)
+            if "data-roll" in a:
+                found.append({k[5:]: v for k, v in a.items() if k.startswith("data-") and k[5:] in ROLL_KEYS})
+
+    P().feed(page)
+    return found
+
+
+ROLL_KEYS = {"roll", "label", "mod", "dmg", "adv", "adv-why", "note", "plan", "recipe", "slot"}
+
+
+@pytest.mark.parametrize("name", PARTY)
+def test_a_roll_from_search_is_the_button_battle_shows(player, db, sheet, name):
+    """The review (Nov 9): Search copied some of a roll button's details by hand and dropped the rest (War Caster's
+    Advantage on a Con save to keep Concentration). Both come from character_views.roll_data now: every roll Search
+    offers, on each of the party's saved sheets, is one of their own buttons on Battle, its side panels, Sheet or Table
+    rolls, detail for detail."""
+    cole, _ = _as(sheet, name, db)
+    shown = []
+    for page in ("", "/battle", "/all/action", "/all/bonus", "/all/reaction"):  # (Sheet, Battle and its side panels)
+        shown += _buttons(player.get(f"/characters/{cole.id}{page}").text)
+    shown += _buttons(player.get("/rolls/checks").text)  # (Table rolls' Roll: checks, skills, saves)
+    rolls = [r for r in player.get("/search/index").json()["rows"] if r.get("roll")]
+    assert rolls
+    for r in rolls:
+        same = [b for b in shown if b.get("label") == r["roll"]["label"]]
+        assert r["roll"] in same, (name, r["n"], r["roll"], same)
+    assert any(r["roll"].get("adv-why") for r in rolls) or name != "cole"  # (Advantage with its reasons comes along)
