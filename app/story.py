@@ -123,9 +123,9 @@ def story(request: Request, tab: str = "", order: str = "", db: Session = Depend
 
 @router.get("/sessions/{session_id:int}")
 def session_page(request: Request, session_id: int, db: Session = Depends(get_db)):
-    """A session's own page (Session Story, Brett chose B, Nov 7): the full tale in chapters, one per scene, then the
-    awards and the session in numbers, from the version the DM published. A session without a full tale (drafted
-    before) shows its recap instead."""
+    """A session's own page in two tabs (Brett chose C, Nov 9, docs/mockups/full-tale/): The Night first, its awards
+    face down until each is revealed and the night in numbers, then The Tale in chapters, one per scene, from the
+    version the DM published (`?tab=tale` opens it). A session without a full tale (drafted before) tells its recap."""
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
@@ -142,7 +142,8 @@ def session_page(request: Request, session_id: int, db: Session = Depends(get_db
     return templates.TemplateResponse(request, "story_session.html", {
         "s": s, "label": session_label(s), "recap_html": markdown_to_html(recap.body, lambda n: None),
         "chapters": [{**c, "html": markdown_to_html(c["text"], lambda n: None)} for c in session_story.chapters(recap)],
-        "awards": awards, "talked": talked, "rolled": rolled, "mix": session_story.mix(s, recap),
+        "awards": awards, "talked": talked, "rolled": rolled, "night": session_story.night_numbers(db, rolled), "mix": session_story.mix(s, recap),
+        "tab": "tale" if request.query_params.get("tab") == "tale" else "night", "version": recap.version,
         "length": f"{length // 3600} h {length % 3600 // 60} min" if length else "", "ln": _linker(db),
         "listen": narration.length(s, recap, campaign.name, "full") if recap.tale else None})
 

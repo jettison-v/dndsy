@@ -268,6 +268,7 @@ def _body_context(db: Session, s: GameSession, tab: str = "") -> dict:
         chapters=session_story.chapters(ctx["latest"]),
         awards=session_story.awards(db, s, ctx["latest"], rolled),
         rolled=rolled,
+        night=session_story.night_numbers(db, rolled),
         talked=session_story.who_talked(db, s, campaign),
         people=sorted(session_story.table(db, campaign).values(), key=lambda p: (not p["dm"], p["name"].casefold())),
         mix=session_story.mix(s, ctx["latest"]),

@@ -2,11 +2,12 @@
 {% from "_suggest_form.html" import suggest with context %}
 {% block title %}Story · askdnd{% endblock %}
 {% macro tale_link(item) %}{% if item.more %}<a class="btn tale-more-link" href="{{ cbase }}/sessions/{{ item.s.id }}">Full Tale &amp; Stats →</a>{% endif %}{% endmacro %}
-{% macro scroll(item, head=True, listen=False) %}{# A session's recap on its scroll: the rods, the parchment, its title, the DM's note #}
+{% macro scroll(item, listen=False, roll_up=False) %}{# A session's recap on its scroll: the rods, the parchment with its date and title, Listen and Full Tale & Stats, the DM's note. The same header on both tabs: on All sessions (roll_up) the open session's row hides and its scroll carries the title, with Roll up ▴ in its corner (docs/mockups/story-page/ Sessions board; Brett, Nov 10) #}
 <div class="scroll">
   <div class="story">
-    {% if head %}<header class="tale-head"><span class="tale-kicker">{{ item.label }}</span>{% if item.s.title %}<h2>{{ item.s.title }}</h2>{% endif %}
-      <span class="tale-acts">{% if listen %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen{% if item.listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if item.listen.estimate else 'How long it plays' }}">{{ item.listen.says }}</span>{% endif %}</button>{% endif %}{# the full tale, its awards and the night's numbers, at the top beside Listen (feedback 55, 56) #}{{ tale_link(item) }}</span></header>{% endif %}
+    {% if roll_up %}<button type="button" class="tale-roll-up" data-roll-up aria-expanded="true" aria-label="Roll up {{ item.s.title or item.label }}">Roll up ▴</button>{% endif %}
+    <header class="tale-head"><span class="tale-kicker">{{ item.label }}</span>{% if item.s.title %}<h2>{{ item.s.title }}</h2>{% endif %}
+      {% if listen or item.more %}<span class="tale-acts">{% if listen %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen{% if item.listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if item.listen.estimate else 'How long it plays' }}">{{ item.listen.says }}</span>{% endif %}</button>{% endif %}{# the full tale, its awards and the night's numbers, at the top beside Listen (feedback 55, 56) #}{{ tale_link(item) }}</span>{% endif %}</header>
     <div class="tale-text">{{ ln.html(item.html) }}</div>
     <div class="tale-end" aria-hidden="true">❦</div>
     {% if item.dm_notes %}
@@ -118,15 +119,14 @@
   <p class="subtitle" data-story-found hidden></p>
   {# Each session a rolled scroll, the newest open (the mockup's All sessions board) #}
   {% for item in items %}
-  <details class="section tale-roll" id="s{{ item.s.id }}" {% if loop.first or from_start %}open{% endif %}>
+  <details class="tale-roll" id="s{{ item.s.id }}" {% if loop.first or from_start %}open{% endif %}>
     <summary>
       <span class="tale-kicker">{{ item.label }}</span>
       <span class="tale-roll-text"><b>{{ item.s.title or item.label }}</b><span class="note">{{ item.html | striptags | truncate(140, True, "…") }}</span></span>
       <span class="note tale-roll-count">{% if item.events %}{{ item.events | length }} key moment{{ "s" if item.events | length != 1 }}{% endif %}</span>
     </summary>
     <div class="session-body">
-      <div class="tale-acts">{% if vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen{% if item.listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if item.listen.estimate else 'How long it plays' }}">{{ item.listen.says }}</span>{% endif %}</button>{% endif %}{# every session's own (feedback 37) #}{{ tale_link(item) }}</div>
-      {{ scroll(item, head=False) }}
+      {{ scroll(item, listen=vtt_on("recap_listen"), roll_up=True) }}{# Listen: every session's own (feedback 37) #}
       {{ after(item.events, [], [], few=3) }}
       {% if not item.events and not item.dm_notes %}<p class="note">No key moments recorded for this session.</p>{% endif %}
       {{ suggest("/sessions/" ~ item.s.id ~ "/suggest", "this session") }}

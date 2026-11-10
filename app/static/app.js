@@ -3423,17 +3423,28 @@ function feedbackBusy(e) {
   });
 })();
 
+// All sessions: an open session's row hides and its scroll carries its date and title (Brett, Nov 10); Roll up ▴ in
+// the scroll's corner rolls it back into its row, which keeps its place on the page and takes the focus
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-roll-up]'), d = b && b.closest('details.tale-roll');
+  if (!d) return;
+  d.open = false;
+  const row = d.querySelector('summary');
+  if (row.getBoundingClientRect().top < 0) row.scrollIntoView({ block: 'start' });
+  row.focus({ preventScroll: true });
+});
+
 // Story search (Brett, 2026-10-29): as you type, All sessions shows only the sessions whose recap, key moments or DM's
 // notes hold every word, opened, with the words marked; clearing the box shows them all again, as they were
 (function () {
   const box = document.querySelector('[data-story-search]');
   if (!box) return;
   const pane = document.getElementById('t-sessions'), found = pane.querySelector('[data-story-found]'), sub = pane.querySelector('[data-story-sub]');
-  const sessions = [...pane.querySelectorAll('details.section')], wasOpen = new Map(sessions.map(d => [d, d.open]));
+  const sessions = [...pane.querySelectorAll('details.tale-roll')], wasOpen = new Map(sessions.map(d => [d, d.open]));
   const unmark = () => pane.querySelectorAll('mark.story-hit').forEach(m => { const p = m.parentNode; m.replaceWith(m.textContent); p.normalize(); });
   function mark(el, words) {
     const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), nodes = [];
-    while (walk.nextNode()) if (walk.currentNode.nodeValue.trim() && !walk.currentNode.parentNode.closest('summary, form, .suggest')) nodes.push(walk.currentNode);
+    while (walk.nextNode()) if (walk.currentNode.nodeValue.trim() && !walk.currentNode.parentNode.closest('summary, form, .suggest, button, .btn')) nodes.push(walk.currentNode);
     const re = new RegExp('(' + words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
     nodes.forEach(n => {
       if (!re.test(n.nodeValue)) return;
@@ -3466,6 +3477,43 @@ function feedbackBusy(e) {
     sub.hidden = true; found.hidden = false;
     found.textContent = n ? n + ' session' + (n === 1 ? '' : 's') + ' mention' + (n === 1 ? 's' : '') + ' “' + box.value.trim() + '”' : 'No session mentions “' + box.value.trim() + '”';
   }
+})();
+
+// The Night's awards (a session's own page, Brett chose C, Nov 9, docs/mockups/full-tale/): each card starts face
+// down with its award's name; Reveal turns it over (Reveal all, every one), as at an awards night on a shared screen.
+// What's been revealed is remembered on this device, by session and published version (a new pick starts face down).
+(function () {
+  const key = box => 'askdnd-awards-' + box.dataset.awards;
+  const seen = box => { try { return JSON.parse(localStorage.getItem(key(box)) || '[]'); } catch (err) { return []; } };
+  const keep = box => { try { localStorage.setItem(key(box), JSON.stringify([...box.querySelectorAll('[data-award]:not(.face-down)')].map(c => c.dataset.award))); } catch (err) { /* private window */ } };
+  const all = box => box.closest('section') && box.closest('section').querySelector('[data-reveal-all]');
+  function show(card, now) {
+    card.classList.remove('face-down');
+    card.querySelector('.award-face').hidden = false;
+    const b = card.querySelector('[data-award-reveal]'); if (b) b.remove();
+    if (now) card.classList.add('revealed');
+  }
+  function sync(box) { const b = all(box); if (b) b.hidden = !box.querySelector('.face-down'); }
+  function setup() {
+    document.querySelectorAll('[data-awards]').forEach(box => {
+      const s = seen(box);
+      box.querySelectorAll('[data-award].face-down').forEach(c => { if (s.includes(c.dataset.award)) show(c, false); });
+      sync(box);
+    });
+  }
+  document.addEventListener('click', e => {
+    const one = e.target.closest('[data-award-reveal]'), every = !one && e.target.closest('[data-reveal-all]');
+    const box = one ? one.closest('[data-awards]') : every && every.closest('section').querySelector('[data-awards]');
+    if (!box) return;
+    const cards = one ? [one.closest('[data-award]')] : [...box.querySelectorAll('[data-award].face-down')];
+    cards.forEach(c => show(c, true));
+    keep(box);
+    sync(box);
+    if (one) cards[0].focus({ preventScroll: true });  // (its button is gone: focus stays on the card it turned over)
+    else { const next = box.querySelector('[data-award]'); if (next) next.focus({ preventScroll: true }); }
+  });
+  setup();
+  document.addEventListener('askdnd:swapped', setup);  // (a new copy of the page keeps what's been revealed)
 })();
 
 // Story and the Campaign page's Map tab (menu bar Option B). A [data-goto-tab] link shows that tab on this page

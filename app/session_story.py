@@ -15,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import files
-from app.characters import campaign_characters
+from app.characters import campaign_characters, character_summary
 from app.companion_story import TABLE_TIME
 from app.extraction import DM_AWARD
 from app.models import Campaign, CampaignMember, Character, GameSession, Recap, Role, TableRoll
@@ -176,13 +176,64 @@ def _rolls(db: Session, session: GameSession) -> list[TableRoll]:
                                                     TableRoll.created_at >= window[0], TableRoll.created_at < window[1])))
 
 
+CAST_KINDS = ("attack", "damage", "heal", "temp", "dice")  # (a save is the target's roll, never a cast)
+SAME_CAST = timedelta(minutes=2)  # (D&D Beyond's to-hit and damage arrive as two rolls: one cast)
+
+
+def spells_known(ch: Character) -> list[str]:
+    """The spells on a character's D&D Beyond sheet (its spell list and spellbook), longest name first, so a roll's
+    label is matched to the whole name ("Raulothim's Psychic Lance" before any shorter one it starts with)."""
+    s = character_summary(ch) or {}
+    names = {x.get("name") for x in s.get("spells") or [] if isinstance(x, dict)}
+    names |= {e.get("name") for c in s.get("spellbook") or [] for e in c.get("spells") or [] if isinstance(e, dict)}
+    return sorted((n for n in names if n), key=lambda n: (-len(n), n))
+
+
+def spell_of(label: str, names: list[str]) -> str | None:
+    """The spell a roll was made for, by its label: the spell's name itself or followed by more ("Fire Bolt (2nd
+    level)", "Magic Missile: Dart 2")."""
+    low = " ".join(label.split()).casefold()
+    for n in names:
+        f = n.casefold()
+        if low == f or (low.startswith(f) and low[len(f)] in " :(-·"):
+            return n
+    return None
+
+
+def _casts(rolls: list[TableRoll], chars: dict[int, Character]) -> dict:
+    """Spells cast that night, as far as the table's rolls show: a roll named for one of the roller's own spells (an
+    attack, damage, healing), the same spell by the same character within two minutes counted once. A spell with no
+    roll (Bless, Misty Step) isn't seen. {"count", "by": [{character, n, names}]}."""
+    known = {cid: spells_known(ch) for cid, ch in chars.items()}
+    last: dict[tuple[int, str], datetime] = {}
+    by: dict[int, list[str]] = {}
+    for r in sorted(rolls, key=lambda r: r.created_at):
+        if r.parent_id is not None or r.kind not in CAST_KINDS or r.character_id not in chars:
+            continue
+        spell = spell_of(r.label, known[r.character_id])
+        if not spell:
+            continue
+        key = (r.character_id, spell)
+        if key in last and r.created_at - last[key] <= SAME_CAST:
+            last[key] = r.created_at
+            continue
+        last[key] = r.created_at
+        by.setdefault(r.character_id, []).append(spell)
+    rows = sorted(({"character": chars[cid], "n": len(names), "names": list(dict.fromkeys(names))} for cid, names in by.items()),
+                  key=lambda x: (-x["n"], x["character"].name))
+    return {"count": sum(x["n"] for x in rows), "by": rows}
+
+
 def dice(db: Session, session: GameSession) -> dict:
-    """{"rolls", "twenties", "ones", "hardest_luck", "damage_king"} from the rolls the whole table saw that night (a
-    DM-only or private roll never counts). The two awards: {character, why} or None."""
+    """{"rolls", "twenties", "ones", "hardest_luck", "damage_king", "damage", "biggest", "healing", "spells"} from the
+    rolls the whole table saw that night (a DM-only or private roll never counts). The two awards: {character, why} or
+    None. The night's numbers (Brett chose all four, Nov 9, docs/mockups/full-tale/): damage rolled by each character,
+    the biggest single damage roll, healing rolled by each, and spells cast (`_casts`)."""
     rolls = _rolls(db, session)
     d20 = [r for r in rolls if r.kept is not None]
     out = {"rolls": sum(1 for r in rolls if r.parent_id is None), "twenties": sum(1 for r in d20 if r.kept == 20),
-           "ones": sum(1 for r in d20 if r.kept == 1), "hardest_luck": None, "damage_king": None}
+           "ones": sum(1 for r in d20 if r.kept == 1), "hardest_luck": None, "damage_king": None,
+           "damage": [], "biggest": None, "healing": {"total": 0, "by": []}, "spells": {"count": 0, "by": []}}
     chars = {r.character_id: r.character for r in rolls if r.character_id and r.character is not None}
     ones: dict[int, list[int]] = {}
     for r in d20:
@@ -200,6 +251,37 @@ def dice(db: Session, session: GameSession) -> dict:
         cid = max(damage, key=lambda c: sum(damage[c]))
         hits = len(damage[cid])
         out["damage_king"] = {"character": chars[cid], "why": f"{sum(damage[cid])} damage rolled, in {hits} roll{'s' if hits != 1 else ''}."}
+        out["damage"] = sorted(({"character": chars[c], "total": sum(v), "rolls": len(v)} for c, v in damage.items()),
+                               key=lambda x: (-x["total"], x["character"].name))
+        big = max((r for r in rolls if r.kind == "damage" and r.character_id in chars and r.total > 0), key=lambda r: (r.total, -r.id))
+        out["biggest"] = {"character": chars[big.character_id], "total": big.total, "label": big.label, "crit": big.crit}
+    healing: dict[int, int] = {}
+    for r in rolls:
+        if r.kind == "heal" and r.character_id in chars and r.total > 0:
+            healing[r.character_id] = healing.get(r.character_id, 0) + r.total
+    out["healing"] = {"total": sum(healing.values()),
+                      "by": sorted(({"character": chars[c], "total": t} for c, t in healing.items()), key=lambda x: (-x["total"], x["character"].name))}
+    out["spells"] = _casts(rolls, chars)
+    return out
+
+
+def night_numbers(db: Session, rolled: dict) -> dict:
+    """The night's numbers from `dice()` as the page draws them: each character as a row with its picture (damage and
+    healing with a bar's share of the most), the biggest hit and the spells cast."""
+    def person(ch: Character) -> dict:
+        return {"name": ch.name, "character_id": ch.id, "entity_id": ch.entity.id if ch.entity else None}
+
+    def bars(rows: list[dict]) -> list[dict]:
+        top = max((r["total"] for r in rows), default=0) or 1
+        return [{**person(r["character"]), "total": r["total"], "share": round(100 * r["total"] / top)} for r in rows]
+
+    big = rolled.get("biggest")
+    out = {"damage": bars(rolled.get("damage") or []),
+           "healing": {"total": (rolled.get("healing") or {}).get("total", 0), "rows": bars((rolled.get("healing") or {}).get("by") or [])},
+           "biggest": {**person(big["character"]), "total": big["total"], "label": big["label"], "crit": big["crit"]} if big else None,
+           "spells": {"count": (rolled.get("spells") or {}).get("count", 0),
+                      "rows": [{**person(r["character"]), "n": r["n"], "names": r["names"]} for r in (rolled.get("spells") or {}).get("by") or []]}}
+    pictured(db, out["damage"], out["healing"]["rows"], out["spells"]["rows"], [out["biggest"]] if big else [])
     return out
 
 
