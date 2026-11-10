@@ -244,6 +244,34 @@ def test_every_roll_button_plays_its_plan(people, server, browser_db, name, size
         played += 1
         page.keyboard.press("Escape")
 
+    # What's offered under the to-hit once it's seen (Guided Strike's +10, Favored by the Gods' +2d4): each pressed once,
+    # on an attack of its own, and sent as an added roll with its name (Brett's Roll Audit comment, Nov 10)
+    attack = "main [data-roll=attack][data-plan]"
+    pills = page.evaluate(f"""() => {{ const p = JSON.parse(document.querySelector('{attack}')?.dataset.plan || '{{}}');
+        return (p.modifiers || []).filter(m => ['after_fail', 'after_roll'].includes(m.when) && (m.to || []).includes('attack')).map(m => [m.name, m.short || m.name]); }}""")
+    for full, short in pills:
+        for _ in range(4):  # (a natural 20 offers nothing for a miss: roll again)
+            page.evaluate("window.__sent.length = 0")
+            page.locator(attack).first.evaluate("b => b.click()")
+            card = page.locator(".roll-card")
+            if card.locator('[data-choice="damage"]').count():
+                card.locator('[data-choice="damage"]').click()
+            card.locator("[data-roll-hit]").click()
+            card.locator(".rcard-result:not(.rolling)").wait_for(timeout=15000)
+            pill = card.locator(f'[data-after="{full}"]')
+            if pill.count():
+                pill.click()
+                page.wait_for_function("window.__sent.some(x => (x.action || [])[0] === 'bonus')", timeout=15000)
+                sent = page.evaluate("window.__sent.find(x => (x.action || [])[0] === 'bonus')")
+                if not any(e.startswith(short + ":+") for e in sent.get("extra", [])) or sent.get("refused"):
+                    bad.append(f"{full}: sent {sent}")
+                played += 1
+                page.keyboard.press("Escape")
+                break
+            page.keyboard.press("Escape")
+        else:
+            bad.append(f"{full}: never offered after four to-hit rolls")
+
     assert played > 40, f"only {played} roll buttons found for {name}"
     assert not bad, f"{name}: {len(bad)} of {played} roll buttons didn't play their plan:\n" + "\n".join(bad[:40])
     assert player.errors == []

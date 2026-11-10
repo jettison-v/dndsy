@@ -33,7 +33,7 @@
     <span class="roll-dice">{% if r.kind == "dc" %}{{ r.main.formula }}{% else %}{{ dline(r.main, r.kind in D20) }}{% endif %}</span>
     {% if r.rerolled %}<span class="roll-dice roll-old">Rerolled ({{ r.rerolled.reason }}): was <s>{{ r.rerolled.total }}</s> · {{ dline(r.rerolled, True) }}</span>{% endif %}
     {% endif %}
-    {% if r.bonus %}<span class="roll-dice">+ {{ r.bonus.label }} {{ r.bonus.total }} <span class="roll-x">({{ r.bonus.formula }})</span></span>{% endif %}
+    {% if r.bonus %}<span class="roll-dice">+ {{ r.bonus.label }} {{ r.bonus.total }}{% if r.bonus.dice %} <span class="roll-x">({{ r.bonus.formula }})</span>{% endif %}</span>{% endif %}
     {% if r.nat and r.kind != "death" %}<span class="roll-flag">natural {{ r.nat }}{% if r.kind == "attack" %}{{ ": critical hit" if r.nat == 20 else ": miss" }}{% endif %}</span>{% endif %}
     {% if (r.detail or {}).outcome == "miss" and r.nat != 1 %}<span class="roll-flag">missed</span>{% endif %}
     {% if r.damage %}<span class="roll-dmg-line"><span><span class="roll-sub">{{ "Critical damage" if r.damage.crit else "Damage" }}</span> {{ dline(r.damage, False) }}</span><b>{{ r.damage.total }}</b></span>{% endif %}

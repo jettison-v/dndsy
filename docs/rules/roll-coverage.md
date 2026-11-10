@@ -3,11 +3,11 @@
 Whether the roll card can play each thing on Battle, by `scripts/roll_coverage.py` from app/roll_plan.py for the party's saved sheets (tests/fixtures/ddb).
 Ready: every number from a checked recipe, the sheet or askdnd's rules. Unchecked: a number from D&D Beyond's data or read from its words. Gap: its words have dice the plan doesn't roll; each has its reason (app/roll_plan.py `KNOWN_GAPS`). Don't edit this file: run the script.
 
-**All together:** 72 ready · 0 unchecked · 0 gap · 81 no roll
+**All together:** 73 ready · 0 unchecked · 0 gap · 80 no roll
 
 ## Big C
 
-20 ready · 0 unchecked · 0 gap · 21 no roll
+21 ready · 0 unchecked · 0 gap · 20 no roll
 
 | Action | Cost | How it rolls | From | Status |
 |---|---|---|---|---|
@@ -29,6 +29,7 @@ Ready: every number from a checked recipe, the sheet or askdnd's rules. Unchecke
 | Hold Person | Action | Wis save DC 14 | the sheet | ready |
 | Spiritual Weapon | Bonus action | At what level · to hit +6 · 1d8 force | checked recipe, the sheet | ready |
 | Favored by the Gods | Other |  | checked recipe | ready |
+| Channel Divinity: Guided Strike | Other |  | checked recipe | ready |
 | Opportunity Attack | Reaction | to hit +11 | the sheet | ready |
 | Potion of Healing | Bonus action | 2d4+2 | checked recipe | ready |
 
