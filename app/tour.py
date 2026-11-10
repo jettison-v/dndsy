@@ -227,7 +227,7 @@ STOPS = [
      "why": "Bookmark a spell while you read about it; decide later what to prepare."},
     {"group": "party", "page": "party", "at": '[data-tour="party"]',
      "what": "<b>At a glance</b> has everyone's key numbers; <b>Spells</b> and <b>Items</b> pool the party's, filtered by what "
-             "they do and who has them.",
+             "they do and who has them; <b>Trophies</b> keeps everyone's awards and dice across the campaign.",
      "why": "See who carries which potions and scrolls, and what the party covers between you (healing, control…)."},
     {"group": "help", "page": None, "at": '[data-tour="help"]',
      "what": "<b>What askdnd adds</b> is this tour as a page to read, the <b>FAQ</b> explains each feature, and "

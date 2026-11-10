@@ -35,6 +35,16 @@
     {% else %}<p class="muted">No books are in askdnd yet, so lookups use the SRD alone.</p>{% endif %}
   </section>
 
+  {# Trophy Case (app/trophies.py; Brett, Nov 10): what Party's Trophies tab counts #}
+  <section class="section" id="trophy-case">
+    <h2>Trophy Case</h2>
+    <p class="hint">What Party's <b>Trophies</b> tab counts. A session's own time comes from its recording (the start the Processor sends, for the recording's length), or its evening when there's no start time. Choose every roll for a table that doesn't record its sessions.</p>
+    <form hx-post="{{ cbase }}/manage/settings/trophies" hx-swap="none" class="form-narrow">
+      {% for k, label in trophy_modes.items() %}<label class="check"><input type="radio" name="counts" value="{{ k }}"{{ ' checked' if trophy_mode == k }}> {{ label }}</label>{% endfor %}
+      <div class="row"><button class="btn primary" type="submit">Save</button></div>
+    </form>
+  </section>
+
   {# Art style (Brett, 2026-11-04, docs/mockups/pictures/ board 3; app/drawing.py): every picture drawn from a description in
      this campaign gets it. #}
   <section class="section" id="art-style">

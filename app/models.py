@@ -992,6 +992,20 @@ class Token(Timestamped, Base):
 from app import history  # noqa: E402,F401
 
 
+class CharacterDown(Base):
+    """A character dropping to 0 Hit Points ("down") or reaching three failed death saves ("dead"), seen when askdnd
+    reads its sheet (app/downs.py; Brett, Nov 10: recorded from then on, for Trophy Case). A test campaign's are left
+    out when they're read."""
+
+    __tablename__ = "character_downs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"), index=True)
+    kind: Mapped[str] = mapped_column(String(10))  # down | dead
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    character: Mapped[Character] = relationship()
+
+
 class UsageEvent(Base):
     """Something someone did in askdnd: its feature and the page it was done on (app/usage.py; Brett, Nov 9: "doing
     something", tagged with the page, to see what's used and where UX can improve). Who's left out (admins, test

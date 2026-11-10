@@ -1,0 +1,45 @@
+{# One person's trophies (app/trophies.py one; the mockup's view A, docs/mockups/player-page/): the shelf of awards,
+   their numbers, every d20 they rolled and their awards newest first, each opening its session. #}
+{% set r = row %}{% set s = r.sheet %}
+<div class="peek-head">
+  <div class="tr-head"><span class="roll-av hue{{ 5 if r.dm else (r.entity_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+    <div><div class="note">Trophies</div><h2 id="peek-title">{{ r.name }}</h2>
+      <span class="note">{% if s %}{% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %} · {% endif %}{{ r.played }} session{{ "s" if r.played != 1 }}</span></div></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body trophy-view">
+  <h3 class="tale-label">The shelf{% if r.awards %} · {{ r.awards | length }} award{{ "s" if r.awards | length != 1 }}{% endif %}</h3>
+  {% if r.shelf %}<div class="tr-shelf">
+    {% for a in r.shelf %}<div class="tr-trophy{{ ' dice' if a.dice }}"><span class="award-name">{{ a.award }}</span><b>×{{ a.n }}</b><span class="note">{{ a.sessions | join(", ") }}</span></div>{% endfor %}
+  </div>{% else %}<p class="muted">No awards yet. They come with each published recap.</p>{% endif %}
+
+  <h3 class="tale-label">Across the campaign</h3>
+  <div class="strip tr-tiles">
+    <div><small>Rolls</small><b>{{ r.rolls }}</b></div>
+    <div><small>Natural 20s</small><b>{{ r.twenties }}</b></div>
+    <div><small>Natural 1s</small><b>{{ r.ones }}</b></div>
+    <div><small>Average d20</small><b>{{ r.average if r.average is not none else "—" }}</b><span class="note">the dice expect 10.5</span></div>
+    <div><small>Damage rolled</small><b>{{ "{:,}".format(r.damage) }}</b>{% if r.biggest %}<span class="note">biggest: {{ r.biggest.total }}, {{ r.biggest.label }}</span>{% endif %}</div>
+    {% if not r.dm %}<div><small>Healing rolled</small><b>{{ r.healing }}</b></div>
+    <div><small>Spells cast</small><b>{{ r.spells }}</b><span class="note">with a roll</span></div>
+    <div><small>In key moments</small><b>{{ r.moments }}</b></div>{% endif %}
+    <div><small>{{ "The party dropped to 0" if r.dm else "Dropped to 0" }}</small><b>{{ r.downs }}</b><span class="note">since Nov 10</span></div>
+  </div>
+
+  <div class="tr-cols">
+    <section class="numbers-card">
+      <h3 class="tale-label">Every d20 {{ "the DM" if r.dm else r.name }} rolled</h3>
+      {% if r.rolls %}<div class="tr-hist" role="img" aria-label="How often each number came up: {% for b in r.d20_bars %}{{ b.face }}: {{ b.n }}{{ ', ' if not loop.last }}{% endfor %}">
+        {% for b in r.d20_bars %}<i class="{{ 'one' if b.face == 1 else 'twenty' if b.face == 20 else '' }}" style="height: {{ [b.share, 2] | max }}%" title="{{ b.face }}: {{ b.n }}"></i>{% endfor %}</div>
+      <div class="tr-axis" aria-hidden="true"><span>1</span><span>5</span><span>10</span><span>15</span><span>20</span></div>
+      {% else %}<p class="muted">No rolls counted yet.</p>{% endif %}
+    </section>
+    <section class="numbers-card">
+      <h3 class="tale-label">Awards, newest first</h3>
+      {% if r.awards %}<ul class="plain tr-awards-list">
+        {% for a in r.awards %}<li><a href="{{ cbase }}/sessions/{{ a.session }}"><span class="tag{{ ' dice' if a.dice }}">{{ a.award }}</span></a> <span>{% if a.quote %}<q>{{ a.quote }}</q> {% endif %}{{ a.why }}</span> <span class="note">{{ a.label }}</span></li>{% endfor %}
+      </ul>{% else %}<p class="muted">None yet.</p>{% endif %}
+    </section>
+  </div>
+  <p class="note">Counting {{ mode_says | lower }}, from the rolls everyone saw in Table rolls{% if r.dm %} with no character (the monsters'){% endif %}. Rolls made on paper or before askdnd's Table rolls aren't counted. For fun, never a ranking.</p>
+</div>

@@ -1,0 +1,19 @@
+{# Party's Trophies tab (app/trophies.py; Brett's notes on docs/mockups/player-page/, Nov 7): a row each, the DM's last,
+   by name (never by a number). A row opens that person's own view. For fun, never a ranking. #}
+{% if rows %}
+<section class="section trophies">
+  <div class="ls-rows pt-rows pt-trophies">
+    <div class="pt-row pt-headrow" aria-hidden="true"><span>Who</span><span>Awards</span><span class="n">Sessions</span><span class="n">Rolls</span><span class="n">Natural 20s</span><span class="n">Damage</span><span class="n">Healing</span><span class="n">Dropped to 0</span></div>
+    {% for r in rows %}
+    <div class="pt-row" data-modal-url="/party/trophies/{{ r.key }}" data-modal-size="large" tabindex="0" role="button" aria-label="{{ r.name }}: their trophies">
+      <span class="pt-nm tr-who"><span class="roll-av hue{{ 5 if r.dm else (r.entity_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span><b>{{ r.name }}</b></span>
+      <span class="tr-awards">{% for a in r.shelf[:2] %}<span class="tag{{ ' dice' if a.dice }}">{{ a.award }}{% if a.n > 1 %} ×{{ a.n }}{% endif %}</span> {% endfor %}{% if r.shelf | length > 2 %}<span class="note">+{{ r.shelf | length - 2 }} more</span>{% endif %}{% if not r.shelf %}<span class="note">None yet</span>{% endif %}</span>
+      <span class="n">{{ r.played }}</span><span class="n">{{ r.rolls }}</span><span class="n">{{ r.twenties }}</span><span class="n">{{ "{:,}".format(r.damage) }}</span><span class="n">{{ r.healing if not r.dm else "—" }}</span><span class="n">{{ r.downs }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="note">For fun, never a ranking. Counting {{ mode_says | lower }}{% if mode == "sessions" %} ({{ sessions }} published session{{ "s" if sessions != 1 }}){% endif %}, from the rolls everyone saw in Table rolls; the DM's row is the monsters' rolls and the party's drops to 0, recorded since Nov 10.{% if can_set %} <a href="{{ cbase }}/manage/settings#trophy-case">Change what counts</a>.{% endif %}</p>
+</section>
+{% else %}
+<p class="muted">Nobody at this table yet.</p>
+{% endif %}

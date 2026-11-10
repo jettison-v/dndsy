@@ -244,7 +244,7 @@ def spell_of(label: str, names: list[str]) -> str | None:
     return None
 
 
-def _casts(rolls: list[TableRoll], chars: dict[int, Character]) -> dict:
+def casts(rolls: list[TableRoll], chars: dict[int, Character]) -> dict:
     """Spells cast that night, as far as the table's rolls show: a roll named for one of the roller's own spells (an
     attack, damage, healing), the same spell by the same character within two minutes counted once. A spell with no
     roll (Bless, Misty Step) isn't seen. {"count", "by": [{character, n, names}]}."""
@@ -272,7 +272,7 @@ def dice(db: Session, session: GameSession) -> dict:
     """{"rolls", "twenties", "ones", "hardest_luck", "damage_king", "damage", "biggest", "healing", "spells"} from the
     rolls the whole table saw that night (a DM-only or private roll never counts). The two awards: {character, why} or
     None. The night's numbers (Brett chose all four, Nov 9, docs/mockups/full-tale/): damage rolled by each character,
-    the biggest single damage roll, healing rolled by each, and spells cast (`_casts`)."""
+    the biggest single damage roll, healing rolled by each, and spells cast (`casts`)."""
     rolls = _rolls(db, session)
     d20 = [r for r in rolls if r.kept is not None]
     out = {"rolls": sum(1 for r in rolls if r.parent_id is None), "twenties": sum(1 for r in d20 if r.kept == 20),
@@ -306,7 +306,7 @@ def dice(db: Session, session: GameSession) -> dict:
             healing[r.character_id] = healing.get(r.character_id, 0) + r.total
     out["healing"] = {"total": sum(healing.values()),
                       "by": sorted(({"character": chars[c], "total": t} for c, t in healing.items()), key=lambda x: (-x["total"], x["character"].name))}
-    out["spells"] = _casts(rolls, chars)
+    out["spells"] = casts(rolls, chars)
     return out
 
 

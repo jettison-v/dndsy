@@ -22,6 +22,7 @@
     <button role="tab" aria-selected="true" data-tab="t-glance">At a glance</button>
     <button role="tab" aria-selected="false" data-tab="t-spells">Spells <span class="count">{{ spells.rows | length }}</span></button>
     <button role="tab" aria-selected="false" data-tab="t-items">Items <span class="count">{{ items.rows | length }}</span></button>
+    <button role="tab" aria-selected="false" data-tab="t-trophies">Trophies</button>
   </div>
 
   <div id="t-glance">
@@ -108,6 +109,9 @@
     </div>
     {% endfor %}
   {% endcall %}
+
+  {# Trophy Case (app/trophies.py; Brett's notes, Nov 7): worked out once the tab is first shown #}
+  <div id="t-trophies" hidden><div hx-get="/party/trophies" hx-trigger="tab:shown from:#t-trophies once, intersect once" hx-swap="outerHTML"><p class="note">Counting…</p></div></div>
   </div>
 </main>
 {% endblock %}
