@@ -9,6 +9,7 @@ name is matched to someone at the table by their account's name, or once by an a
 the dice awards (Hardest Luck, Damage King) come from Table rolls on the night everyone could see.
 """
 
+import re
 from datetime import datetime, time, timedelta
 
 from sqlalchemy import select
@@ -30,10 +31,12 @@ NOT_HERE = 0  # Campaign.speakers: a name that's no one at the table ("Claude AI
 
 
 def keep(db: Session, session: GameSession, text: str, talk: dict | None = None) -> None:
-    """Keep what the Processor sent: the cleaned transcript in file storage, and who talked."""
+    """Keep what the Processor sent: the cleaned transcript in file storage, and who talked (a start set on the review
+    page stays when the Processor didn't send one)."""
     session.transcript_key = files.put(db, session.campaign_id, text.encode(), "text/plain")
     if talk:
-        session.talk = talk
+        start = (session.talk or {}).get("start")
+        session.talk = {**({"start": start} if start else {}), **talk}
 
 
 def text(session: GameSession) -> str | None:
@@ -47,8 +50,12 @@ def forget(session: GameSession) -> None:
     session.transcript_key = None
 
 
+START = re.compile(r"^([01]?\d|2[0-3]):[0-5]\d$")  # "18:32", the recording's start at the table's time
+
+
 def clean_talk(raw) -> dict:
-    """The Processor's who-talked numbers, checked: {"speakers": {name: seconds}, "length": seconds}."""
+    """The Processor's who-talked numbers, checked: {"speakers": {name: seconds}, "length": seconds, "start": "HH:MM"}
+    (when the recording began, at the table's time: Brett, Nov 10, so a session's numbers count only its own rolls)."""
     if not isinstance(raw, dict):
         return {}
     speakers = {" ".join(str(k).split())[:120]: round(float(v), 1) for k, v in (raw.get("speakers") or {}).items()
@@ -57,7 +64,24 @@ def clean_talk(raw) -> dict:
     out = {"speakers": speakers} if speakers else {}
     if isinstance(length, int | float) and 0 < length < 24 * 3600:
         out["length"] = round(float(length))
+    start = raw.get("start")
+    if isinstance(start, str) and START.match(start.strip()):
+        out["start"] = start.strip().zfill(5)
     return out
+
+
+def set_start(session: GameSession, start: str) -> None:
+    """When the recording began ("HH:MM", "" to forget it): from the Processor, or the review page for a session sent
+    before it asked (Brett, Nov 10)."""
+    talk = dict(session.talk or {})
+    start = (start or "").strip()
+    if not start:
+        talk.pop("start", None)
+    elif START.match(start):
+        talk["start"] = start.zfill(5)
+    else:
+        raise ValueError("A time like 18:30.")
+    session.talk = talk
 
 
 # ---------------------------------------------------------------- who talked
@@ -160,12 +184,32 @@ def mix(session: GameSession, recap: Recap | None) -> dict | None:
 # ---------------------------------------------------------------- the night's dice
 
 
+MARGIN = timedelta(minutes=15)  # (Initiative rolled just before the recording starts, a last roll after it stops)
+
+
 def night(session: GameSession) -> tuple[datetime, datetime] | None:
-    """The evening it was played, at the table's time: noon to six the next morning."""
+    """When the session was played, at the table's time: the recording, from its start (`talk["start"]`) for its length,
+    with MARGIN either side (Brett, Nov 10: only the session's own rolls); without a start, the evening: noon to six the
+    next morning."""
     if session.played_on is None:
         return None
+    talk = session.talk or {}
+    if talk.get("start") and talk.get("length"):
+        h, m = (int(x) for x in talk["start"].split(":"))
+        begin = datetime.combine(session.played_on, time(h, m), tzinfo=TABLE_TIME)
+        return begin - MARGIN, begin + timedelta(seconds=talk["length"]) + MARGIN
     start = datetime.combine(session.played_on, time(12), tzinfo=TABLE_TIME)
     return start, start + timedelta(hours=18)
+
+
+def window_says(session: GameSession) -> str:
+    """Which rolls a session's numbers count, in words, for the page's note."""
+    talk = session.talk or {}
+    if session.played_on and talk.get("start") and talk.get("length"):
+        a, b = night(session)
+        f = lambda t: t.strftime("%-I:%M %p").replace("AM", "am").replace("PM", "pm")  # noqa: E731
+        return f"during the session ({f(a + MARGIN)} to {f(b - MARGIN)}, with 15 minutes either side)"
+    return "that evening (no recording start time, so noon to 6 am)"
 
 
 def _rolls(db: Session, session: GameSession) -> list[TableRoll]:
@@ -233,7 +277,8 @@ def dice(db: Session, session: GameSession) -> dict:
     d20 = [r for r in rolls if r.kept is not None]
     out = {"rolls": sum(1 for r in rolls if r.parent_id is None), "twenties": sum(1 for r in d20 if r.kept == 20),
            "ones": sum(1 for r in d20 if r.kept == 1), "hardest_luck": None, "damage_king": None,
-           "damage": [], "biggest": None, "healing": {"total": 0, "by": []}, "spells": {"count": 0, "by": []}}
+           "damage": [], "biggest": None, "healing": {"total": 0, "by": []}, "spells": {"count": 0, "by": []},
+           "window": window_says(session)}
     chars = {r.character_id: r.character for r in rolls if r.character_id and r.character is not None}
     ones: dict[int, list[int]] = {}
     for r in d20:

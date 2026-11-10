@@ -148,3 +148,22 @@ def test_the_processor_names_itself_so_cloudflare_lets_it_through(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", urlopen)
     assert processor.send_transcript("2026-08-29", "text") == {"label": "Aug 29, 2026"}
     assert seen[0].get_header("User-agent") == "askdnd-processor/1.0" and seen[0].get_header("Authorization") == "Bearer key"
+
+
+def test_the_recording_start_goes_with_the_transcript(client, tmp_path, monkeypatch):
+    """Brett, Nov 10: when the recording began, so askdnd counts only the session's own rolls. Given at upload or on the
+    session's page before sending; a time that isn't one is dropped."""
+    add_session(client, started="18:32")
+    assert web.recording_start("2026-08-29") == "18:32"
+    client.post("/sessions/2026-08-29/filter")
+    wait_for_job(client, "2026-08-29")
+    client.post("/sessions/2026-08-29/save")
+    assert 'value="18:32"' in client.get("/sessions/2026-08-29").text  # (beside Send, to check or change)
+    client.post("/sessions/2026-08-29/start", data={"started": "19:05"})
+    sent = []
+    monkeypatch.setattr(web, "upload_settings", lambda: ("https://beta.example", "token"))
+    monkeypatch.setattr(web, "send_transcript", lambda stem, text, talk=None: sent.append(talk) or {"label": "Aug 29, 2026", "review_url": "https://beta.example/x"})
+    client.post("/sessions/2026-08-29/send")
+    assert sent[0]["start"] == "19:05" and sent[0]["length"] > 0
+    client.post("/sessions/2026-08-29/start", data={"started": "not a time"})
+    assert web.recording_start("2026-08-29") == ""

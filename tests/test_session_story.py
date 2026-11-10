@@ -364,6 +364,33 @@ def test_a_rolls_label_names_a_spell_only_by_its_whole_name():
     assert session_story.spell_of("Longsword", known) is None
 
 
+def test_with_the_recording_start_a_sessions_numbers_count_only_its_own_rolls(db, story, dm):
+    """Brett, Nov 10: the recording's start (from the Processor, or set on the review page) and its length make the
+    window, with 15 minutes either side; without it, the evening (noon to 6 am)."""
+    cole = char(db, "Cole")
+    roll(db, story, cole, kept=20, hour=18)  # (6 pm: before the session)
+    roll(db, story, cole, kept=1, hour=20)  # (8 pm: during it)
+    assert (session_story.dice(db, story)["twenties"], session_story.dice(db, story)["ones"]) == (1, 1)
+    assert "that evening" in session_story.dice(db, story)["window"]
+    assert session_story.clean_talk({"speakers": {"DM": 10}, "length": 7200, "start": "7:30"})["start"] == "07:30"
+    assert "start" not in session_story.clean_talk({"start": "25:99"})
+    story.talk = {**(story.talk or {}), "length": 2 * 3600}
+    read(db, story)
+    told(db, story)
+    r = dm.post(f"/c/main/manage/sessions/{story.id}/start", data={"start": "19:30"}, headers=HX)
+    assert "19:30" in r.headers["HX-Trigger"]
+    db.expire_all()
+    s = db.get(GameSession, story.id)
+    got = session_story.dice(db, s)
+    assert (s.talk["start"], got["twenties"], got["ones"]) == ("19:30", 0, 1)  # (7:15 pm to 9:45 pm)
+    assert "during the session (7:30 pm to 9:30 pm" in got["window"]
+    assert "Recording started at" in dm.get(f"/c/main/manage/sessions/{s.id}?tab=numbers").text
+    session_story.keep(db, s, "Again.", session_story.clean_talk({"speakers": {"DM": 5}, "length": 60}))
+    assert s.talk["start"] == "19:30"  # (sent again without a start: the one set here stays)
+    r = dm.post(f"/c/main/manage/sessions/{s.id}/start", data={"start": "half seven"}, headers=HX)
+    assert "A time like" in r.headers["HX-Trigger"]
+
+
 def test_the_reviewer_picks_who_an_award_goes_to_from_its_nominees(db, story, dm, player):
     s = publish(db, story)
     page = dm.get(f"/c/main/manage/sessions/{s.id}").text
