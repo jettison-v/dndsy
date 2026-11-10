@@ -956,7 +956,7 @@
  {
   "title": "Roll's Kinds of Roll",
   "kind": "design",
-  "status": "Waiting for your pick",
+  "status": "Chose A; built",
   "date": "Nov 10",
   "what": "Your note 58: Table rolls' Roll as a window that lays out every kind of roll, with any dice inside it, instead of a search box. A by ability as the sheet groups them (Claude's pick), B by kind in tabs, C a list beside the dice, beside today's; playable at laptop size with a phone switch, Cole's numbers. Three choices: the way, what a pick does, and the Manual roll fold.",
   "source": "docs/mockups/roll-kinds/index.html",

@@ -194,30 +194,52 @@ def test_a_save_spell_on_the_card(people, server, browser_db):
         _pieces(browser_db, server, was)
 
 
-def test_the_roll_button_finds_a_check_by_typing(people, server):
-    """Checks and saves (Brett chose A, Nov 9, docs/mockups/find-checks/): Table rolls' Roll button opens a search over
-    the character's skills, saves and checks; typing narrows it, Enter rolls the first; Escape closes it."""
+def test_the_roll_window_finds_a_check_by_typing_and_rolls_any_dice(people, server):
+    """Table rolls' Roll (Brett chose A, Nov 10, docs/mockups/roll-kinds/, his note 58): a window of the character's
+    rolls by ability, as the sheet groups them, and Any dice; typing narrows it, Enter opens the first's roll window and
+    the window closes behind it, with the focus on the roll so Enter rolls it; Escape closes it; Any dice rolls there; and
+    Your dice is its second tab (Brett, Nov 10), whose dice load only once the tab is shown."""
     player = people("player")
     page = battle(player, server)
     if page.evaluate("document.body.classList.contains('rolls-closed')"):
         page.locator(".rs-edge").click()
-    page.locator("[data-rs-roll]").click()
-    q = page.locator(".rs-pick-q")
-    page.locator("#rs-pick .rc").first.wait_for()
+
+    def open_roll():
+        page.locator("[data-rs-roll]").click()
+        page.locator("#peek.open .roll-board .rb-q").wait_for()  # (the new window, not the last one's hidden copy)
+        return page.locator("#peek.open .roll-board .rb-q")
+
+    q = open_roll()
+    assert page.locator("#peek.open .rb-ability").count() == 6 and page.locator("#peek.open .dp-die").count() >= 6
     q.fill("ste")
-    shown = page.locator("#rs-pick .rc:not([hidden])")
+    shown = page.locator("#peek.open .roll-board .rc:not([hidden])")
     assert shown.count() == 1 and "Stealth" in shown.first.inner_text()
     q.fill("dex")
-    assert page.locator("#rs-pick .rc:not([hidden])").count() >= 3  # (its skills, the save and the check)
+    assert page.locator("#peek.open .roll-board .rc:not([hidden])").count() >= 3  # (its skills, the save and the check)
     q.fill("stealth")
     q.press("Enter")
     page.locator(".roll-win").wait_for()
     assert "Stealth check" in page.locator(".roll-win").inner_text()
-    assert page.locator("#rs-pick").is_hidden()
+    page.locator("#peek.open").wait_for(state="detached")
+    assert page.evaluate("!!document.activeElement.closest('.roll-win')")  # (Enter now rolls it)
     page.keyboard.press("Escape")
-    page.locator("[data-rs-roll]").click()
-    page.locator(".rs-pick-q").press("Escape")
-    assert page.locator("#rs-pick").is_hidden() and player.errors == []
+
+    open_roll().press("Escape")
+    page.locator("#peek.open").wait_for(state="detached")
+
+    open_roll()
+    page.locator('#peek.open .dp-die:has-text("d6")').first.click()
+    page.locator("#peek.open [data-manual-roll]").click()
+    page.locator(".roll-win").wait_for()
+    assert "1d6" in page.locator(".roll-win").inner_text()
+    page.locator("#peek.open").wait_for(state="detached")
+    page.keyboard.press("Escape")
+
+    open_roll()
+    assert page.locator("[data-dice-preview] canvas").count() == 0
+    page.get_by_role("tab", name="Your dice").click()
+    page.locator("#peek.open .dice-picker.in-roll [name=material]").first.wait_for()
+    assert player.errors == []
 
 
 def test_a_save_and_a_check_on_the_card(people, server, browser_db):
@@ -239,9 +261,9 @@ def test_a_save_and_a_check_on_the_card(people, server, browser_db):
         if page.evaluate("document.body.classList.contains('rolls-closed')"):
             page.locator(".rs-edge").click()
         page.locator("[data-rs-roll]").click()
-        page.locator("#rs-pick .rc").first.wait_for()
-        page.locator(".rs-pick-q").fill("stealth")
-        page.locator(".rs-pick-q").press("Enter")
+        page.locator("#peek.open .roll-board .rb-q").wait_for()
+        page.locator("#peek.open .roll-board .rb-q").fill("stealth")
+        page.locator("#peek.open .roll-board .rb-q").press("Enter")
         page.locator(".roll-card [data-roll-hit]").wait_for()
         assert "Stealth check" in page.locator(".roll-card .rcard-head").inner_text()
         assert player.errors == []

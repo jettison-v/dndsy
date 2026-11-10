@@ -267,7 +267,13 @@ def test_quick_checks_for_your_character(table, db):
     characters.refresh(db, char(db, "Cole"))
     page = table["player"].get("/rolls/checks").text
     assert 'data-roll="check" data-label="Perception check"' in page and 'data-roll="death"' in page and 'data-label="Hit Die"' in page
-    assert "data-roll" not in table["dm"].get("/rolls/checks").text
+    # By ability, as the sheet groups them (Brett chose A, Nov 10, docs/mockups/roll-kinds/): Wisdom's check, its save, then its skills
+    wis = page.index('data-label="Wisdom check"')
+    assert wis < page.index('data-label="Wis save"') < page.index('data-label="Perception check"') < page.index('data-label="Charisma check"')
+    assert "Roll for Cole" in page and "data-manual" in page  # (and Any dice, the manual roll, in the same window)
+    assert 'data-tab="rb-dice"' in page and "data-dice-picker" in page and 'name="material"' in page  # (and Your dice, its second tab)
+    dm = table["dm"].get("/rolls/checks").text
+    assert "data-roll" not in dm and "Roll dice" in dm and "data-manual" in dm and "link your character" not in dm  # (the DM: Any dice)
 
 
 def test_the_log_shows_each_viewer_only_what_they_may_see(table, db, monkeypatch):
@@ -344,8 +350,11 @@ def test_the_sidebar_is_on_every_page_and_knows_your_character(table, db):
         page = table["player"].get(path).text
         assert 'id="table-rolls"' in page and f'data-mine="{cole.id}"' in page, path
     assert 'data-mine=""' in table["dm"].get("/party").text  # the DM has no character to roll for
-    assert "data-rs-roll" not in table["dm"].get("/party").text and "Manual roll" in table["dm"].get("/party").text  # (Roll: your character's)
-    assert "data-rs-roll" in table["player"].get("/party").text and "rs-checks" not in table["player"].get("/party").text  # (the fold it replaced)
+    # Roll for everyone at the table, its window holding Any dice (the sidebar's Manual roll fold retired, Brett, Nov 10)
+    for who in ("dm", "player"):
+        page = table[who].get("/party").text
+        assert "data-rs-roll" in page and 'data-modal-url="/rolls/checks"' in page and "Manual roll" not in page and "rs-fold" not in page
+        assert "rs-dice" not in page  # (Your dice: Roll's second tab, Brett Nov 10; still in the account menu)
 
 
 # ------------------------------------------------------------------ what can roll

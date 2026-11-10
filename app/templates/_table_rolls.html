@@ -6,23 +6,15 @@
   <div class="rs-head">
     <span class="rs-grip" aria-hidden="true"></span>
     <span class="rs-title">Table rolls</span>
-    {% if tn and tn.mine %}{# Roll (Brett chose A, Nov 9, docs/mockups/find-checks/): checks, skills, saves and the rest, by typing #}
-    <button type="button" class="btn small rs-roll" data-rs-roll aria-expanded="false" aria-controls="rs-pick" title="Roll a skill, save, check, Initiative, a Death save or a Hit Point Die">Roll</button>{% endif %}
+    {# Roll (Brett chose A, Nov 10, docs/mockups/roll-kinds/): a window with your character's rolls by ability and Any dice; the DM's, Any dice #}
+    <button type="button" class="btn small rs-roll" data-rs-roll data-modal-url="/rolls/checks" data-modal-size="large" title="{{ 'Roll a check, save, skill, Initiative, a Death save, a Hit Point Die or any dice, or choose your dice' if tn and tn.mine else 'Roll any dice, or choose your dice' }}">Roll</button>
     <span class="rs-latest" aria-live="off"></span>
     <button type="button" class="rs-toggle" aria-expanded="true" aria-controls="roll-log" title="Collapse or open the rolls"><span aria-hidden="true">«</span><span class="sr">Collapse or open the rolls</span></button>
   </div>
-  {% if tn and tn.mine %}<div class="rs-pick" id="rs-pick" role="dialog" aria-label="Roll for your character" hidden>
-    <input type="search" class="rs-pick-q" placeholder="Stealth, Dex save, Initiative…" aria-label="Find a roll" autocomplete="off">
-    <div class="rs-pick-body" hx-get="/rolls/checks" hx-trigger="rsPick once"><p class="note">Loading…</p></div>
-  </div>{% endif %}
   {# A phone's closed bar: one avatar per person with their latest roll (built by app.js from the log) #}
   <div class="rs-people" role="list" aria-label="Each person's latest roll"></div>
   <ol id="roll-log" class="rs-log" aria-live="polite" hx-get="/rolls" hx-swap="afterbegin"
       hx-trigger="load[window.askdndRolls && askdndRolls.wanted()], rolls:load, every 3s[window.askdndRolls && askdndRolls.poll()]" hx-vals="js:{since: askdndRolls.since()}"></ol>
-  <div class="rs-controls">
-    <details class="rs-fold"><summary>Manual roll</summary><div data-manual></div></details>
-    <a class="rs-row rs-dice" href="#" data-modal-url="/dice" data-modal-size="large">Your dice</a>{# set, material, sounds and the animation: all in its window (Brett, 2026-10-29) #}
-  </div>
 </aside>
 {# Closed on a wider screen: open it again #}
 <button type="button" class="rs-edge" aria-controls="table-rolls" aria-expanded="false" aria-label="Show the table's rolls" title="Table rolls"><svg width="18" height="18" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="15,8 21,19 9,19" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
