@@ -59,7 +59,7 @@
   </div>
   {% endif %}
 </div>
-{% if rolled.rolls %}<p class="note night-source">The dice, spells, damage and healing come from the rolls everyone saw that night in Table rolls, made in askdnd or heard from D&amp;D Beyond. Rolls only the DM saw or kept private aren't counted.</p>{% endif %}
+{% if rolled.rolls %}<p class="note night-source">The dice, spells, damage and healing come from the rolls everyone saw {{ rolled.window }} in Table rolls, made in askdnd or heard from D&amp;D Beyond. Rolls only the DM saw or kept private aren't counted.</p>{% endif %}
 {% else %}
 <p class="muted">No numbers for this session: it has no recording's speaker times, no scene times and no rolls seen by the table that night.</p>
 {% endif %}

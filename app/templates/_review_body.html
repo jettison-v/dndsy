@@ -397,6 +397,12 @@
       <section class="section" id="numbers">
         <div class="section-head"><h2><span class="num">7</span>The session in numbers</h2></div>
         {% include "_session_numbers.html" %}
+        {# When the recording began (Brett, Nov 10): the numbers count only the session's own rolls; the Processor sends it #}
+        <form class="row rec-start" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/start" {{ hx | safe }}>
+          <label class="grow">Recording started at <input type="time" name="start" value="{{ (s.talk or {}).get('start', '') }}" aria-label="When the recording started"></label>
+          <button class="btn small">Save</button>
+        </form>
+        <p class="note m-0">{% if (s.talk or {}).get("start") %}The rolls counted are the session's own, from 15 minutes before the recording to 15 minutes after.{% else %}Without it, the numbers count every roll that evening, from noon to 6 am. The Processor sends it with the transcript.{% endif %}</p>
         {% if talked.unmatched %}
         <div class="item">
           <p class="item-title">Who is this in the recording?</p>

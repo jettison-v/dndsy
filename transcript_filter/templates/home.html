@@ -16,7 +16,9 @@
   <h2 style="margin-top:0">Add a session</h2>
   <p>In MacWhisper, export <b>Segments</b> as <b>.json</b> (speaker names, timestamps and milliseconds on), then drop the file here.</p>
   <form method="post" action="/upload" enctype="multipart/form-data" id="upload">
-    <p><label>Session date: <input type="date" name="played_on" value="{{ today }}" required></label></p>
+    <p><label>Session date: <input type="date" name="played_on" value="{{ today }}" required></label>
+      <label>Recording started at: <input type="time" name="started"></label></p>
+    <p class="muted">The start time lets askdnd count only the rolls made during the session (from the recording's start, for its length). You can add it later on the session's page.</p>
     <p><input type="file" name="file" accept=".json,application/json" required id="file"></p>
     <p><label><input type="checkbox" name="replace" value="1"> Replace if this date already exists</label></p>
     <p><button class="primary" type="submit">Add session</button></p>

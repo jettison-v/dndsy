@@ -62,12 +62,16 @@
       <p><b>Step 3: Saved.</b> The final transcript (game content only) is saved on this Mac.
         <form class="inline" method="post" action="/sessions/{{ s.stem }}/reveal"><button type="submit">Show in Finder</button></form></p>
       {% if send_error %}<div class="card bad">{{ send_error }}</div>{% endif %}
+      {% if not sent %}<div>{# when the recording began (Brett, Nov 10): askdnd counts only the session's own rolls #}
+        <form class="inline" method="post" action="/sessions/{{ s.stem }}/start"><label>Recording started at: <input type="time" name="started" value="{{ start }}"></label> <button type="submit">Save</button></form>
+        {% if not start %}<span class="muted">Without it, askdnd counts every roll that evening.</span>{% endif %}</div>
+      {% else %}<p class="muted">{% if start %}Sent with the recording's start ({{ start }}).{% else %}Sent without the recording's start time.{% endif %} To set or change it now, use the Numbers step on askdnd's review page.</p>{% endif %}
       {% if sent %}
         <p><b>Step 4: Sent to askdnd</b> {{ sent.sent_at.replace("T", " at ") }}. Claude is drafting {{ sent.label }} (about a minute).</p>
         <p><a class="button primary" href="{{ sent.review_url }}" target="_blank">Review on askdnd</a>
           <form class="inline" method="post" action="/sessions/{{ s.stem }}/send"><button type="submit">Send again</button></form></p>
       {% else %}
-        <p><b>Step 4: Send to askdnd.</b> Sends only this filtered transcript; askdnd uses it to draft the session and doesn't keep it.</p>
+        <p><b>Step 4: Send to askdnd.</b> Sends only this filtered transcript, which askdnd keeps in private storage to draft the session, with who talked and when the recording started.</p>
         {% if not has_token %}<p class="card warn">Sending isn't set up on this Mac yet (no UPLOAD_TOKEN in .env).</p>{% endif %}
         <form method="post" action="/sessions/{{ s.stem }}/send"><button class="primary" type="submit" {% if not has_token %}disabled{% endif %}>Send to askdnd</button></form>
       {% endif %}

@@ -38,6 +38,23 @@ HOST, PORT = "127.0.0.1", 8765
 ROOT = Path(os.getenv("ASKDND_TRANSCRIPTS", Path(__file__).resolve().parent.parent / "transcripts"))
 RAW, WORK = ROOT / "raw", ROOT / "work"
 STEM = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+START = re.compile(r"^([01]?\d|2[0-3]):[0-5]\d$")  # "18:32": when the recording began, sent so a session's numbers count only its rolls
+
+
+def recording_start(stem: str) -> str:
+    """When the recording began ("HH:MM"), or "" when it wasn't given."""
+    m = paths(stem)["meta"]
+    try:
+        return json.loads(m.read_text()).get("start", "") if m.exists() else ""
+    except (OSError, ValueError):
+        return ""
+
+
+def keep_start(stem: str, start: str) -> None:
+    start = (start or "").strip()
+    m = paths(stem)["meta"]
+    m.parent.mkdir(parents=True, exist_ok=True)
+    m.write_text(json.dumps({"start": start.zfill(5)} if START.match(start) else {}))
 MAX_UPLOAD = 20_000_000
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
@@ -68,6 +85,7 @@ def paths(stem: str) -> dict[str, Path]:
         "final_json": work / "final.json",
         "final_txt": work / "final.txt",
         "sent": work / "sent.json",
+        "meta": work / "meta.json",  # {"start": "HH:MM"}: when the recording began (Brett, Nov 10)
     }
 
 
@@ -148,7 +166,7 @@ def looks_like_macwhisper(data) -> bool:
 
 
 @app.post("/upload")
-async def upload(file: UploadFile = File(...), played_on: str = Form(...), replace: str = Form("")):
+async def upload(file: UploadFile = File(...), played_on: str = Form(...), replace: str = Form(""), started: str = Form("")):
     raw = await file.read(MAX_UPLOAD + 1)
     if not STEM.match(played_on):
         return RedirectResponse("/?error=Pick+the+session+date.", status_code=303)
@@ -169,7 +187,16 @@ async def upload(file: UploadFile = File(...), played_on: str = Form(...), repla
     p["raw"].write_bytes(raw)
     for key in ("state", "stats", "final_json", "final_txt", "sent"):
         p[key].unlink(missing_ok=True)
+    keep_start(played_on, started)
     return RedirectResponse(f"/sessions/{played_on}", status_code=303)
+
+
+@app.post("/sessions/{stem}/start")
+def set_start(stem: str, started: str = Form("")):
+    """When the recording began, set or changed before sending."""
+    if paths(stem)["raw"].exists():
+        keep_start(stem, started)
+    return RedirectResponse(f"/sessions/{stem}#saved", status_code=303)
 
 
 def _filter_job(stem: str):
@@ -227,6 +254,7 @@ def session_page(request: Request, stem: str):
         "sent": json.loads(p["sent"].read_text()) if p["sent"].exists() else None,
         "send_error": send_errors.pop(stem, None),
         "has_token": bool(upload_settings()[1]),
+        "start": recording_start(stem),
     }
     if p["state"].exists() and summary["status"] != "filtering":
         segments = load_state(p["state"])
@@ -285,6 +313,8 @@ def send(stem: str):
         return RedirectResponse(f"/sessions/{stem}", status_code=303)
     try:
         talk = talk_times(load_state(p["state"])) if p["state"].exists() else None
+        if (start := recording_start(stem)):
+            talk = {**(talk or {}), "start": start}  # (askdnd counts the session's rolls from then, for the recording's length)
         reply = send_transcript(stem, p["final_txt"].read_text(), talk)
         p["sent"].write_text(json.dumps({**reply, "sent_at": datetime.now().isoformat(timespec="minutes")}))
     except RuntimeError as e:

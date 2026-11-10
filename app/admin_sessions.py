@@ -488,6 +488,20 @@ def match_speaker(request: Request, session_id: int, name: str = Form(...), user
     return _act(request, db, session_id, act)
 
 
+@router.post("/sessions/{session_id:int}/start")
+def recording_start(request: Request, session_id: int, start: str = Form(""), db: Session = Depends(get_db)):
+    """When the recording began, for a session sent before the Processor asked (Brett, Nov 10): its numbers then count
+    only the session's own rolls."""
+    def act(s):
+        try:
+            session_story.set_start(s, start)
+        except ValueError as e:
+            raise review.ReviewError(str(e)) from e
+        return f"The recording started at {start}" if start.strip() else "No start time: the numbers count that evening"
+
+    return _act(request, db, session_id, act)
+
+
 @router.post("/sessions/{session_id:int}/transcript/forget")
 def forget_transcript(request: Request, session_id: int, db: Session = Depends(get_db)):
     """An admin lets a session's kept transcript go (the nightly sweep deletes it once no backup needs it)."""
