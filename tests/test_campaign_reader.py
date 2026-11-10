@@ -250,7 +250,7 @@ def test_story_text_sits_on_a_faint_scroll(player, db):  # noqa: F811
     home = player.get("/c/main/").text
     assert '<div class="scroll">' in home and '<div class="tale-text">' in home and 'class="tale-end"' in home
     sessions = player.get("/c/main/?tab=sessions").text  # All sessions: each a rolled scroll, the newest open
-    assert '<details class="section tale-roll"' in sessions and 'class="tale-roll-text"' in sessions
+    assert '<details class="tale-roll"' in sessions and 'class="tale-roll-text"' in sessions
     assert '<div class="story">' in player.get(f"/campaign/{entry(db, 'Saltmarsh').id}/read").text
 
 
@@ -264,7 +264,7 @@ def test_all_sessions_reads_from_the_start_and_shows_a_few_key_moments(player, d
     newest = player.get("/c/main/?tab=sessions").text
     start = player.get("/c/main/?tab=sessions&order=start").text
     assert 'aria-current="true">Newest first' in newest and 'aria-current="true">From the start' in start
-    ids = lambda page: [m for m in __import__("re").findall(r'<details class="section tale-roll" id="s(\d+)"', page)]
+    ids = lambda page: [m for m in __import__("re").findall(r'<details class="tale-roll" id="s(\d+)"', page)]
     assert ids(start) == list(reversed(ids(newest))) and len(ids(start)) >= 2
     assert all(f'id="s{i}" open' in start for i in ids(start))  # every scroll open
     # A session's key moments past the first three sit behind Show all

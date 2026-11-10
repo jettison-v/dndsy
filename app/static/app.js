@@ -3423,17 +3423,28 @@ function feedbackBusy(e) {
   });
 })();
 
+// All sessions: an open session's row hides and its scroll carries its date and title (Brett, Nov 10); Roll up ▴ in
+// the scroll's corner rolls it back into its row, which keeps its place on the page and takes the focus
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-roll-up]'), d = b && b.closest('details.tale-roll');
+  if (!d) return;
+  d.open = false;
+  const row = d.querySelector('summary');
+  if (row.getBoundingClientRect().top < 0) row.scrollIntoView({ block: 'start' });
+  row.focus({ preventScroll: true });
+});
+
 // Story search (Brett, 2026-10-29): as you type, All sessions shows only the sessions whose recap, key moments or DM's
 // notes hold every word, opened, with the words marked; clearing the box shows them all again, as they were
 (function () {
   const box = document.querySelector('[data-story-search]');
   if (!box) return;
   const pane = document.getElementById('t-sessions'), found = pane.querySelector('[data-story-found]'), sub = pane.querySelector('[data-story-sub]');
-  const sessions = [...pane.querySelectorAll('details.section')], wasOpen = new Map(sessions.map(d => [d, d.open]));
+  const sessions = [...pane.querySelectorAll('details.tale-roll')], wasOpen = new Map(sessions.map(d => [d, d.open]));
   const unmark = () => pane.querySelectorAll('mark.story-hit').forEach(m => { const p = m.parentNode; m.replaceWith(m.textContent); p.normalize(); });
   function mark(el, words) {
     const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT), nodes = [];
-    while (walk.nextNode()) if (walk.currentNode.nodeValue.trim() && !walk.currentNode.parentNode.closest('summary, form, .suggest')) nodes.push(walk.currentNode);
+    while (walk.nextNode()) if (walk.currentNode.nodeValue.trim() && !walk.currentNode.parentNode.closest('summary, form, .suggest, button, .btn')) nodes.push(walk.currentNode);
     const re = new RegExp('(' + words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi');
     nodes.forEach(n => {
       if (!re.test(n.nodeValue)) return;

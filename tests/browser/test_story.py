@@ -21,7 +21,7 @@ def test_story_search_finds_the_sessions_that_mention_every_word(people, server,
     player = people("player")
     page = player.open("/c/main/")
     box = page.locator("[data-story-search]")
-    sessions = page.locator("#t-sessions details.section")
+    sessions = page.locator("#t-sessions details.tale-roll")
 
     box.fill("saltmarsh enemy")
     page.wait_for_selector("#t-sessions:not([hidden])")  # it opens All sessions
@@ -72,3 +72,38 @@ def test_the_nights_awards_start_face_down_and_stay_revealed_on_that_device(peop
     other.wait_for_function("location.search === '?tab=tale'")
     other.get_by_text("The fog closed in.").wait_for()
     assert player.errors == [] and dm.errors == []
+
+
+def test_an_open_session_carries_its_title_in_its_scroll_and_rolls_up(people, server, browser_db):
+    """All sessions (Brett, Nov 10; docs/mockups/story-page/ Sessions board): an open session's row hides and its
+    scroll carries its date and title, as on Previously on…; Roll up ▴ rolls it back into its row, which takes the focus."""
+    engine = create_engine(browser_db[0])
+    with Session(engine) as db:
+        for n in (1, 2):
+            s = GameSession(campaign_id=server["campaign"], number=n, source="notes", title=f"Night {n} at the Bell")
+            db.add(s)
+            db.flush()
+            db.add(Recap(session_id=s.id, version=1, body=f"Recap of night {n}.", author="brett", status=Status.PUBLISHED))
+        db.commit()
+    engine.dispose()
+
+    player = people("player")
+    page = player.open("/c/main/?tab=sessions")
+    sessions = page.locator("details.tale-roll")
+    first = sessions.first  # (the newest opens with its title in its scroll; other tests' sessions may be newer than these)
+    assert first.get_attribute("open") is not None and not first.locator(":scope > summary").is_visible()
+    assert first.locator(".scroll .tale-head h2").is_visible()
+    first.get_by_role("button", name="Roll up").click()
+    first.locator(":scope > summary").wait_for()
+    assert first.get_attribute("open") is None and page.evaluate("document.activeElement.tagName") == "SUMMARY"
+
+    two, one = sessions.filter(has_text="Night 2 at the Bell"), sessions.filter(has_text="Night 1 at the Bell")
+    for night, title in ((two, "Night 2 at the Bell"), (one, "Night 1 at the Bell")):
+        if night.get_attribute("open") is None:
+            night.locator(":scope > summary").click()
+        night.locator(".scroll .tale-head h2").wait_for()
+        assert night.locator(".scroll .tale-head h2").inner_text() == title and not night.locator(":scope > summary").is_visible()
+    two.get_by_role("button", name="Roll up Night 2 at the Bell").click()
+    two.locator(":scope > summary").wait_for()
+    assert one.get_attribute("open") is not None  # (rolling one up leaves the others as they are)
+    assert player.errors == []

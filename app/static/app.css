@@ -643,14 +643,14 @@ body.tale-playing { overflow: hidden; }
 .tale-threads li > .muted { flex-basis: 100%; font-size: var(--fs-sm); }
 .tale-theory i { color: var(--muted); }
 .tale-foot { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--sp-4); padding: 0 var(--sp-2); }
-details.tale-roll { background: none; border: 0; padding: 0; margin: 0; }
 details.tale-roll > summary { list-style: none; cursor: pointer; display: grid; grid-template-columns: 11em minmax(0, 1fr) auto; gap: var(--sp-4); align-items: baseline; padding: 22px var(--sp-6);
   border-radius: var(--r-sm); background: linear-gradient(180deg, var(--rod-hi), var(--rod-3)) top / 100% 9px no-repeat, linear-gradient(180deg, var(--rod-hi), var(--rod-3)) bottom / 100% 9px no-repeat, var(--parch-2); }
 details.tale-roll > summary::-webkit-details-marker { display: none; }
 details.tale-roll > summary:hover { background-color: var(--parch-1); }
-details.tale-roll[open] > summary { background: none; padding: 0 var(--sp-2); margin-bottom: var(--sp-3); }  /* open: its row is the scroll's title */
-details.tale-roll[open] .tale-roll-text .note { display: none; }
-details.tale-roll[open] .tale-roll-text b { font-size: var(--fs-lg); }
+details.tale-roll[open] > summary { display: none; }  /* open: the scroll carries its date and title, and Roll up ▴ (Brett, Nov 10) */
+.tale-roll-up { position: absolute; top: var(--sp-2); right: var(--sp-3); z-index: 1; background: none; border: 0; padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm); color: var(--story-cap); font: inherit; font-size: var(--fs-xs); font-weight: 600; letter-spacing: .04em; cursor: pointer; }
+.tale-roll-up:hover { color: var(--story-head); background: var(--parch-1); }
+.tale-roll-up:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
 .tale-roll-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .tale-roll-text b { color: var(--story-head); font-weight: 600; }
 .tale-roll-text .note { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -3723,7 +3723,6 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .tale-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); margin-top: var(--sp-2); }
 .tale-acts .tale-listen { margin-top: 0; }
 .tale-acts .tale-more-link { margin: 0; }
-.tale-head-acts .tale-acts { margin-top: 0; }  /* (All sessions: the open row is the title, the scroll's top keeps its buttons) */
 /* The Admin menu's door: a gear, admins only (feedback 57: it needn't be found, and the bar needs the room) */
 .manage.admin > button.admin-gear { font-size: var(--fs-lg); padding: 0 10px; }
 /* An attack in Table rolls, one card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with
