@@ -34,3 +34,24 @@ def test_ctrl_f_finds_and_enter_does_it(people, server):
     with page.expect_navigation():
         page.keyboard.press("Enter")
     assert page.url.endswith("/party") and player.errors == []
+
+
+def test_clicking_a_result_does_it_too(people, server):
+    """Brett, Nov 9: a click did nothing where Enter worked. What a click opens must not hear that same click as one
+    outside it (and close): a check's roll window stays open, a page opens."""
+    player = people("player")
+    page = player.open("/")
+    page.wait_for_load_state("networkidle")
+    page.locator("[data-search-open]").click()
+    page.locator("#search-box").wait_for(state="visible")
+    page.fill("#search-q", "stealth")
+    page.locator(".search-res", has_text="Stealth check").click()
+    page.locator(".roll-win", has_text="Stealth check").wait_for()
+    page.wait_for_timeout(300)  # (a moment later, still open)
+    assert page.locator(".roll-win", has_text="Stealth check").is_visible()
+    page.keyboard.press("Escape")
+    page.locator("[data-search-open]").click()
+    page.fill("#search-q", "party")
+    with page.expect_navigation():
+        page.locator(".search-res", has_text="Party").first.click()
+    assert page.url.endswith("/party") and player.errors == []
