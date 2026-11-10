@@ -1860,7 +1860,7 @@ function feedbackBusy(e) {
       let h = '';
       if (effs.length > 1) h += '<div class="rw-row rw-evs"><span class="rw-label">Which</span><span class="rw-ev-list">' + effs.map((x, i) =>
         '<button type="button" class="chip" data-card-ev="' + i + '" aria-pressed="' + (i === st.ev) + '">' + esc(x.name) + '</button>').join('') + '</span></div>';
-      if (grows && spec.cast) h += '<div class="rw-row"><span class="rw-label">Cast at</span><span>Level ' + spec.cast + ' <small class="note">(cast: the slot is spent)</small></span></div>';
+      if (grows && spec.cast) h += '<div class="rw-row"><span class="rw-label">Cast at</span><span>Level ' + spec.cast + ' <small class="note">(' + (spec.castFree ? 'cast without spending a slot' : 'cast: the slot is spent') + ')</small></span></div>';
       else if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-card-slot aria-label="Spell slot level">'
         + cast.levels.map(l => '<option value="' + l + '"' + (l === st.level ? ' selected' : '') + '>Level ' + l
           + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
@@ -2665,11 +2665,11 @@ function feedbackBusy(e) {
       // Cast and roll: the roll opens where the Cast window was, at the level just cast
       const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll');
       if (roller) {
-        const level = w.querySelector('select[name=way]')?.selectedOptions[0]?.dataset.level;
+        const way = w.querySelector('select[name=way]')?.selectedOptions[0], level = way?.dataset.level;
         if (level) roller.dataset.slot = level;
         // (cast: the slot is spent, so its level is fixed and there's nothing left to choose; healing and damage roll at
         // once, an attack waits at its to-hit for Advantage; Brett, Nov 10: "Cast and roll" didn't roll)
-        openRoll(roller, { ...specFrom(roller), cast: +level || 0 });
+        openRoll(roller, { ...specFrom(roller), cast: +level || 0, castFree: /^(none|ritual|free)/.test(way?.value || '') });
       } else closeWin();
       turnUsed(w._anchor);
       if (j.roll) {
@@ -2735,7 +2735,7 @@ function feedbackBusy(e) {
         place(win);
         return;
       }
-      const roller = win._use && e.target.closest('[data-roll]');  // (Cast's "Roll without spending a slot": the roll, where Cast was)
+      const roller = win._use && e.target.closest('[data-roll]');  // (a roll button inside a window: the roll, where the window was)
       if (roller) { e.preventDefault(); openRoll(roller, specFrom(roller), e.shiftKey); return; }
       return;
     }

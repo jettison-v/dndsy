@@ -12,7 +12,7 @@ where the bridge works and only for the character's own player, as with items:
 - **Undo** on the corner card gives the slot back and puts the earlier Concentration back.
 
 Casting isn't always a roll, and a roll isn't always a cast: a spell with something to roll offers Cast and roll, at the
-level picked (Brett, 2026-10-31), and Roll without spending a slot.
+level picked (Brett, 2026-10-31); No slot among the ways casts it without spending one (Brett, Nov 10: one way to do that).
 """
 
 import json
