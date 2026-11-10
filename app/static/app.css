@@ -3782,7 +3782,7 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .roll-beat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }
 .roll-beat > span { min-width: 0; }
 .roll-beat .roll-dice { display: inline; }
-.roll-beat .roll-total { font-size: var(--fs-xl); color: var(--text-strong); }
+.roll-beat .roll-total { font-size: var(--fs-xl); color: var(--text-strong); white-space: nowrap; }  /* (several beams: "11 · 19" on one line) */
 .roll-beat.roll-old s { font-size: var(--fs-lg); }
 .roll-item.kind-attack .roll-dmg-line b { color: var(--red); font-size: var(--fs-xl); }
 .roll-applied.roll-beat { color: var(--green); }
