@@ -1840,7 +1840,12 @@ function feedbackBusy(e) {
     const q = document.getElementById('search-q'), list = document.getElementById('search-list'), read = document.getElementById('search-read');
     const GROUPS = ['Your character', 'Checks, saves, skills', 'Rules', 'The story', 'Pages'];
     let index = null, shown = [], at = 0, findFree = 0;
-    const load = () => index || (index = fetch('/search/index', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : { rows: [] }).catch(() => { index = null; return { rows: [] }; }));
+    const mac = [navigator.userAgentData?.platform, navigator.platform, navigator.userAgent].some(x => /Mac|iPhone|iPad/i.test(x || ''));
+    const findKey = mac ? '⌘F' : 'Ctrl+F';
+    // (once a page, again after the character changes; a failed answer isn't kept: the next keypress asks again)
+    const load = () => index || (index = fetch('/search/index', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => { index = null; return { rows: [], failed: true }; }));
+    document.addEventListener('askdnd:live', e => { if (['character', 'resync'].includes(e.detail.type)) index = null; });
+    document.body.addEventListener('characterChanged', () => { index = null; });
     // The name itself, then a word of the name, then the words it's found by; several words match in any order.
     function score(r, t) {
       const n = r.n.toLowerCase();
@@ -1865,7 +1870,8 @@ function feedbackBusy(e) {
       list.innerHTML = shown.length ? order.filter(g => shown.some(r => r.g === g)).map(g => '<div class="search-grp">' + (t ? g : 'Your character') + '</div>'
         + shown.filter(r => r.g === g).map(r => { const k = i++; return '<div class="search-res' + (k === at ? ' on' : '') + '" role="option" id="sr-' + k + '" aria-selected="' + (k === at) + '" data-i="' + k + '">'
           + '<b>' + esc(r.n) + '</b><span class="search-act">' + esc(r.a) + ' ↵</span><small>' + esc(r.s || '') + '</small></div>'; }).join('')).join('')
-        : '<p class="note search-none">' + (t ? 'Nothing by that name. ⌘F again finds it on this page.' : 'Loading…') + '</p>';
+        : '<p class="note search-none">' + (data.failed ? 'Search can\'t reach askdnd right now. Type again in a moment.'
+          : t ? 'Nothing by that name. ' + findKey + ' again finds it on this page.' : data.rows ? 'Type a rule, an entry in the story or a page.' : 'Loading…') + '</p>';
       q.setAttribute('aria-activedescendant', shown.length ? 'sr-' + at : '');
       list.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
     }
@@ -1883,7 +1889,7 @@ function feedbackBusy(e) {
     function act(i, where) {
       const r = shown[i];
       if (!r) return;
-      if (r.a === 'Read it' && !where) { read.hidden = false; read.innerHTML = '<b>' + esc(r.n) + '</b> ' + esc(r.text || ''); return; }
+      if (r.a === 'Read it') { read.hidden = false; read.innerHTML = '<b>' + esc(r.n) + '</b> ' + esc(r.text || ''); return; }
       close();
       if ((where || r.panel_only) && r.panel) return window.askdndPanel ? window.askdndPanel(r.panel) : (location.href = r.panel);
       if (r.roll) {
@@ -1893,6 +1899,8 @@ function feedbackBusy(e) {
           holder.className = 'search-anchor';
           holder.dataset.rollChar = data.character || '';
           holder.dataset.rollCtx = JSON.stringify(data.ctx || {});
+          holder.dataset.condAdv = JSON.stringify((data.ctx || {}).condAdv || {});  // (as Battle's own: specFrom)
+          if ((data.ctx || {}).hidden) holder.dataset.hidden = data.ctx.hidden;
           const b = document.createElement('button');
           b.type = 'button';
           Object.entries({ roll: r.roll.roll, label: r.roll.label, mod: r.roll.mod || '', dmg: r.roll.dmg || '', note: r.roll.note || '' }).forEach(([k, v]) => { if (v) b.dataset[k] = v; });
@@ -1906,7 +1914,8 @@ function feedbackBusy(e) {
         return;
       }
       if (r.use) { const b = document.createElement('button'); b.dataset.useUrl = r.use; b.className = 'search-anchor'; document.body.append(b); openUse(b); setTimeout(() => b.remove(), 0); return; }
-      if (r.go) location.href = r.go;
+      if (r.go && /^https?:/.test(r.go)) window.open(r.go, '_blank', 'noopener');  // (D&D Beyond's VTT, as the menu bar's Table ↗)
+      else if (r.go) location.href = r.go;
     }
     document.addEventListener('click', e => { if (e.target.closest('[data-search-open]')) { e.preventDefault(); open(); } });
     searchBox.addEventListener('click', e => {
@@ -1915,17 +1924,18 @@ function feedbackBusy(e) {
       if (!row) return;
       // (after this click is done: what it opens would otherwise hear the same click as one outside it, and close)
       e.stopPropagation();
-      const i = +row.dataset.i, where = e.metaKey || e.ctrlKey;
+      const i = +row.dataset.i, where = mac ? e.metaKey : e.ctrlKey;
       setTimeout(() => act(i, where), 0);
     });
     list.addEventListener('mousemove', e => { const row = e.target.closest('[data-i]'); if (row && +row.dataset.i !== at) { at = +row.dataset.i; list.querySelectorAll('.search-res').forEach(x => { x.classList.toggle('on', +x.dataset.i === at); x.setAttribute('aria-selected', +x.dataset.i === at); }); } });
     q.addEventListener('input', () => { at = 0; redraw(); });
     document.addEventListener('keydown', e => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && !e.altKey && !e.shiftKey && (e.key === 'f' || e.key === 'k')) {
+      const mod = mac ? e.metaKey : e.ctrlKey;  // (on a Mac, Ctrl+F and Ctrl+K are a text box's own keys)
+      const key = (e.key || '').toLowerCase();  // (Caps Lock on)
+      if (mod && !e.altKey && !e.shiftKey && (key === 'f' || key === 'k')) {
         if (document.getElementById('fb-win')?.open) return;
-        if (e.key === 'f' && searchBox.open) { close(); findFree = Date.now(); return; }  // (the browser's own find, this time)
-        if (e.key === 'f' && Date.now() - findFree < 5000) return;
+        if (key === 'f' && searchBox.open) { close(); findFree = Date.now(); return; }  // (the browser's own find, this time)
+        if (key === 'f' && Date.now() - findFree < 5000) return;
         e.preventDefault();
         open();
         return;
@@ -1938,7 +1948,7 @@ function feedbackBusy(e) {
       } else if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); act(at, mod); }
     }, true);
     // ⌘ on a Mac, Ctrl elsewhere
-    if (![navigator.userAgentData?.platform, navigator.platform, navigator.userAgent].some(x => /Mac|iPhone|iPad/i.test(x || ''))) document.querySelectorAll('[data-pc]').forEach(k => { k.textContent = k.dataset.pc; });
+    if (!mac) document.querySelectorAll('[data-pc]').forEach(k => { k.textContent = k.dataset.pc; });
     window.askdndSearch = { open, close };
   }
 
@@ -2701,8 +2711,12 @@ function feedbackBusy(e) {
   }
   // Hidden ends with the attack (app/hiding.py), once it's rolled: the window's tick, which the DM may overrule
   function endHidden(go) {
-    if (go.endsHidden && !go.follow && go.cid && window.htmx && document.getElementById('battle-body')) {
+    if (!(go.endsHidden && !go.follow && go.cid)) return;
+    if (window.htmx && document.querySelector('#battle-body[data-character="' + go.cid + '"]')) {
       htmx.ajax('POST', '/characters/' + go.cid + '/conditions/end', { values: { name: 'Invisible' }, target: '#battle-body', swap: 'outerHTML' });
+    } else {  // (rolled away from Battle, from Search: the page and its open panels show the new copy)
+      fetch('/characters/' + go.cid + '/conditions/end', { method: 'POST', credentials: 'same-origin', body: new URLSearchParams({ name: 'Invisible' }) })
+        .then(r => { if (r.ok) document.body.dispatchEvent(new CustomEvent('characterChanged')); });
     }
   }
   // A death save marks itself on the sheet (app/death_saves.py; Brett, 2026-10-29): a roll at the table is marked by
@@ -2857,7 +2871,8 @@ function feedbackBusy(e) {
     let advWhy = el.dataset.advWhy || '';
     // On a creature's Battle (Your creatures) the roll is the creature's: it says so, and its master's conditions don't apply
     const whoEl = el.closest('[data-who]'), who = whoEl ? whoEl.dataset.who : (tokEl ? tokEl.dataset.name : '');
-    const body = cid && !who && document.querySelector('#battle-body[data-character="' + cid + '"]');
+    // (its conditions and Hidden: from the roll's own holder, as Search's carries them, else the character's Battle on this page)
+    const body = cid && !who && (el.closest('[data-cond-adv]') || document.querySelector('#battle-body[data-character="' + cid + '"]'));
     if (body) {
       let ca = {};
       try { ca = JSON.parse(body.dataset.condAdv || '{}'); } catch (err) { ca = {}; }

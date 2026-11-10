@@ -228,13 +228,8 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
         ctx["columns"] = views.battle_columns(ctx["sheet"], ctx["picks"]["star"], ctx["picks"]["order"], pinned_only=ctx["show_picks"])
         ctx["riders"] = sb.riders(ctx["sheet"], ch.concentration) + class_rules.turn(ctx["sheet"])["riders"]
         ctx["known_forms"] = ws.known_forms(ctx["sheet"], ctx["beasts"]) if ctx["druid"] else []
-        beast = ws.beast_for(ctx["sheet"], wild, ctx["beasts"]) if wild and ctx["druid"] else None
-        if beast:
-            ctx["form"] = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
-            slowed = cond.speed_now(ctx["form"]["speed_dict"], ctx["conditions"])  # (the form's speeds, as the character's)
-            if slowed is not ctx["form"]["speed_dict"]:
-                moves = {k: v for k, v in slowed.items() if k != "parts"}
-                ctx["form"] = {**ctx["form"], "speed_dict": moves, "speed": ws.speed_text(moves)}
+        ctx["form"] = form_now(ctx, ch, wild)
+        if ctx["form"]:
             own = ctx["columns"]  # (items stay: what a form's limbs can handle is the DM's to say)
             ctx["columns"] = {k: {**v, "items": own[k]["items"], "item_count": own[k]["item_count"]} for k, v in ctx["form"]["columns"].items()}
             ctx["columns"]["No action"] = own["No action"]
@@ -251,6 +246,21 @@ def _battle_ctx(db: Session, ch: Character, user: dict, shape: str | None = None
     ctx["con_save"] = sb.concentration_save((ctx["form"] or {}).get("saves") or (ctx["sheet"] or {}).get("saves") or [])
     ctx |= player_notes.page_context(db, ch, user, ctx["sheet"])
     return ctx
+
+
+def form_now(ctx: dict, ch: Character, wild: str | None = None) -> dict | None:
+    """The Wild Shape form the character is in (or `wild`, the tour's preview), as Battle and Search show it, from
+    `_view`'s context; None when it's in its own shape."""
+    wild = ch.wild_shape if wild is None else wild
+    beast = ws.beast_for(ctx["sheet"], wild, ctx["beasts"]) if wild and ctx.get("druid") and ctx.get("sheet") else None
+    if not beast:
+        return None
+    form = ws.shaped(ctx["sheet"], beast, keep=ws.chosen_keep(ctx["sheet"], ch.wild_shape_keep))
+    slowed = cond.speed_now(form["speed_dict"], ctx["conditions"])  # (the form's speeds, as the character's)
+    if slowed is not form["speed_dict"]:
+        moves = {k: v for k, v in slowed.items() if k != "parts"}
+        form = {**form, "speed_dict": moves, "speed": ws.speed_text(moves)}
+    return form
 
 
 def _in_form(ctx: dict, ch: Character) -> dict | None:
