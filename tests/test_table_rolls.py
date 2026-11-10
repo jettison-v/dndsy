@@ -266,7 +266,7 @@ def test_quick_checks_for_your_character(table, db):
 
     characters.refresh(db, char(db, "Cole"))
     page = table["player"].get("/rolls/checks").text
-    assert 'data-roll="check" data-label="Perception check"' in page and 'data-roll="death"' in page and 'data-label="Hit Die"' in page
+    assert 'data-roll="check" data-label="Perception check"' in page and 'data-roll="death"' in page and 'data-label="Hit Point Die"' in page
     # By ability, as the sheet groups them (Brett chose A, Nov 10, docs/mockups/roll-kinds/): Wisdom's check, its save, then its skills
     wis = page.index('data-label="Wisdom check"')
     assert wis < page.index('data-label="Wis save"') < page.index('data-label="Perception check"') < page.index('data-label="Charisma check"')

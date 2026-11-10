@@ -104,7 +104,7 @@ def test_every_roll_button_kind_gets_a_plan_the_card_can_play():
     assert b("check", "Stealth check", "+6")["adv_keys"] == ["check", "check:dex", "d20"] and b("check", "Stealth check", "+6")["bonus"] == 6
     assert b("check", "Initiative", "+3")["adv_keys"][0] == "initiative" and "Surprised" in b("check", "Initiative", "+3")["notes"][0]
     assert b("save", "Con save", "+2")["play"] == "d20" and "Concentration" in b("save", "Con save", "+2")["notes"][0]
-    assert b("death", "Death save")["play"] == "death" and b("heal", "Hit Die", "", "1d8+1")["play"] == "single"
+    assert b("death", "Death save")["play"] == "death" and b("heal", "Hit Point Die", "", "1d8+1")["play"] == "single"
     assert b("damage", "Fireball", save="Dex 15")["save"] == {"ability": "Dex", "dc": 15, "success": ""}
     assert b("attack", "Unarmed Strike", "+5", "1")["flat"] == 1 and b("dice", "Dice")["play"] == "single"
 
