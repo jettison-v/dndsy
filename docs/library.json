@@ -965,9 +965,9 @@
  {
   "title": "Roll Audit",
   "kind": "plan",
-  "status": "Waiting for Brett's audit",
+  "status": "Waiting for Brett's audit (after the rebuild)",
   "date": "Nov 10",
-  "what": "Every way a roll is made today, screen by screen with the roll card on (38 screens, 14 workflows), what to check on each, the eight things fixed while taking them, and what isn't covered. Comment on a screen to send Claude a note; the screenshots are the artifact's own files, never in the repo.",
+  "what": "Every way a roll is made, screen by screen, after the rebuild to one server plan per roll and one card (44 screens, 15 workflows and Cast): what to check on each, what the rebuild changed and what its every-button test found. Comment on a screen to send Claude a note; the screenshots are the artifact's own files, never in the repo.",
   "source": "docs/artifacts/roll-audit.html",
   "link": "https://claude.ai/artifact/S16McZJH6mbUGRvoZRTJMY"
  }

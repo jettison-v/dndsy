@@ -1649,7 +1649,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 /* The roll window (app.js): opens next to the roll button with Normal / Adv / Dis, situational
    bonuses and who sees it, then turns into the result in place. Above side panels and windows. */
 .roll-win { position: fixed; z-index: 20; width: min(360px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; box-shadow: var(--lift); font-size: var(--fs-sm); animation: roll-pop .14s ease-out; }
-/* The roll card (Labs roll_card; the Roll Card Prototype, Nov 9): an attack's moments, in the roll window's place */
+/* The roll card (the Roll Card Prototype, Nov 9; every roll since Nov 10): a roll's moments, from its plan */
 .roll-win.roll-card { width: min(400px, calc(100vw - 16px)); display: grid; gap: var(--sp-2); padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4); }  /* (compact steps, Brett Nov 9) */
 .rcard-head { display: grid; gap: 2px; padding-right: var(--sp-5); }
 .rcard-head b { font-size: var(--fs-lg); color: var(--text-strong); }

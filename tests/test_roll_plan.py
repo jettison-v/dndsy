@@ -81,9 +81,32 @@ def test_a_checked_recipe_decides_attack_or_save():
     assert "the 2024 rules make it a save" in p["notes"][0]
 
 
-def test_an_upcast_spell_asks_its_level_first(plans):
+def test_an_upcast_spell_has_its_levels_and_their_dice(plans):
+    """Cure Wounds at each slot Big C has: the levels are the card's Cast at, not a step of their own (the roll audit,
+    Nov 10: Spiritual Weapon's "At what level?" was played as Grapple's choice), and its dice at each level are worked
+    out on the server (`effects`), the same as the browser worked them out before (every recipe, every level)."""
     p = by(plans, "big_c", "Cure Wounds")
-    assert p["steps"][0] == "choose" and [o["name"] for o in p["choice"]["options"]] == ["1", "2", "3"] and p["heal"][0]["dice"] == "2d8"
+    assert "choose" not in p["steps"] and p["choice"] is None and p["levels"] == [1, 2, 3] and p["heal"][0]["dice"] == "2d8"
+    e = roll_plan.effects(roll_plan.rr.spell("Cure Wounds"), sheet("big_c"), "Cure Wounds", False)
+    assert [e["effects"][0]["at"][str(x)]["parts"][0] for x in (1, 2, 3)] == ["2d8", "4d8", "6d8"]
+    assert e["effects"][0]["at"]["1"]["parts"][-1] == "+3 spellcasting modifier"
+
+
+def test_a_cantrip_grows_with_the_character_and_true_strike_waits_for_5():
+    rec = {"level": 0, "events": [{"on": "hit", "parts": ["1d10 fire"], "cantrip": "dice"}, {"on": "hit", "parts": ["1d6 radiant"], "cantrip": "extra"}]}
+    assert [roll_plan.at_level(rec, rec["events"][0], 0, lv)["parts"] for lv in (1, 5, 11, 17)] == [["1d10 fire"], ["2d10 fire"], ["3d10 fire"], ["4d10 fire"]]
+    assert roll_plan.at_level(rec, rec["events"][1], 0, 4) is None and roll_plan.at_level(rec, rec["events"][1], 0, 11)["parts"] == ["2d6 radiant"]
+
+
+def test_every_roll_button_kind_gets_a_plan_the_card_can_play():
+    """Each kind of roll button (app/roll_plan.py `button`): what the card plays, decided here, never in the browser."""
+    b = roll_plan.button
+    assert b("check", "Stealth check", "+6")["adv_keys"] == ["check", "check:dex", "d20"] and b("check", "Stealth check", "+6")["bonus"] == 6
+    assert b("check", "Initiative", "+3")["adv_keys"][0] == "initiative" and "Surprised" in b("check", "Initiative", "+3")["notes"][0]
+    assert b("save", "Con save", "+2")["play"] == "d20" and "Concentration" in b("save", "Con save", "+2")["notes"][0]
+    assert b("death", "Death save")["play"] == "death" and b("heal", "Hit Die", "", "1d8+1")["play"] == "single"
+    assert b("damage", "Fireball", save="Dex 15")["save"] == {"ability": "Dex", "dc": 15, "success": ""}
+    assert b("attack", "Unarmed Strike", "+5", "1")["flat"] == 1 and b("dice", "Dice")["play"] == "single"
 
 
 def test_the_coverage_report_is_current():
@@ -139,3 +162,9 @@ def test_riders_are_only_the_ones_that_can_apply(plans):
     assert roll_plan.rider_fits("An artificer spell you cast through your arcane firearm (a wand, staff or rod)", "weapon") is None
     assert roll_plan.rider_fits("Every hit with a Strength attack (weapon or Unarmed Strike) while your Rage is active", "unarmed") == "hit"
     assert roll_plan.rider_fits("When you miss a creature", "weapon") == "miss"
+
+
+def test_a_spell_that_only_adds_to_hits_rolls_that_damage():
+    """The every-roll test (Nov 10): Hunter's Mark's and Absorb Elements' Roll had nothing to roll, and askdnd refused it."""
+    e = roll_plan.effects(roll_plan.rr.spell("Hunter's Mark"), sheet("no_name"), "Hunter's Mark", False)
+    assert e["effects"][0]["on"] == "rider" and e["effects"][0]["at"] == {"1": {"parts": ["1d6 force"], "count": 1, "text": "1d6 force"}}

@@ -30,16 +30,16 @@
     <div class="rb-side">
       <div class="rb-box rc-group"><span class="rb-label">Other</span>
         <button type="button" class="rc" data-find="initiative" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }}><span>Initiative</span> <b>{{ s.initiative }}</b></button>
-        <button type="button" class="rc" data-find="death save" data-roll="death" data-label="Death save" title="10 or higher succeeds; a 20 brings you back with 1 Hit Point; a 1 counts as two failures"><span>Death save</span> <b>d20</b></button>
-        {% for d in ctx.hit_dice %}<button type="button" class="rc" data-find="hit die hit point die rest" data-roll="heal" data-label="Hit Die" data-dmg="1{{ d }}{{ '%+d' % ctx.con if ctx.con }}" title="Spend a Hit Die on a Short Rest: roll it and add your Constitution modifier"><span>Hit Point Die</span> <b>{{ d }}{{ "%+d" % ctx.con if ctx.con }}</b></button>{% endfor %}
+        <button type="button" class="rc" data-find="death save" data-plan="{{ roll_plan('death', 'Death save') }}" data-roll="death" data-label="Death save" title="10 or higher succeeds; a 20 brings you back with 1 Hit Point; a 1 counts as two failures"><span>Death save</span> <b>d20</b></button>
+        {% for d in ctx.hit_dice %}<button type="button" class="rc" data-find="hit die hit point die rest" {% set hd = "1" ~ d ~ ("%+d" % ctx.con if ctx.con else "") %}data-plan="{{ roll_plan('heal', 'Hit Die', '', hd) }}" data-roll="heal" data-label="Hit Die" data-dmg="{{ hd }}" title="Spend a Hit Die on a Short Rest: roll it and add your Constitution modifier"><span>Hit Point Die</span> <b>{{ d }}{{ "%+d" % ctx.con if ctx.con }}</b></button>{% endfor %}
       </div>
-      <div class="rb-box rb-dice"><span class="rb-label">Any dice</span><div data-manual></div></div>
+      <div class="rb-box rb-dice"><span class="rb-label">Any dice</span><div data-manual data-plan="{{ roll_plan('dice', 'Dice') }}"></div></div>
     </div>
   </div>
   <p class="note rb-none" hidden>Nothing by that name. Any dice is still here.</p>
   {% else %}
   {% if c or not dm %}<p class="note">{{ "Your character's sheet isn't loaded yet." if c else "Ask an admin to link your character to see its checks here." }}</p>{% endif %}
-  <div class="rb-box rb-dice"><span class="rb-label">Any dice</span><div data-manual></div></div>
+  <div class="rb-box rb-dice"><span class="rb-label">Any dice</span><div data-manual data-plan="{{ roll_plan('dice', 'Dice') }}"></div></div>
   {% endif %}
 </div>
 <div id="rb-dice" hidden>{% with embedded=True %}{% include "_dice_form.html" %}{% endwith %}</div>

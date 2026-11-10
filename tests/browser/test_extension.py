@@ -177,8 +177,8 @@ def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server
     page.evaluate("""() => [...document.querySelectorAll('.sb-actions .item-go')]
         .find(b => /Healing Word/.test((b.closest('li, tr, .sb-row, [data-name]') || b).textContent)).click()""")
     page.locator(".roll-win [data-then-roll]").click()
-    page.wait_for_function("(document.querySelector('.roll-win.result') || {}).textContent?.toLowerCase().includes('healing')", timeout=15000)  # (rolled at once)
-    assert page.locator(".roll-win [data-slot]").count() == 0
+    page.locator(".roll-card .rcard-heal").wait_for(timeout=15000)  # (rolled at once: its healing)
+    assert page.locator(".roll-card [data-card-slot]").count() == 0  # (cast: its level is fixed, nothing to choose)
     page.locator("#cards > .card", has_text="Cast").wait_for(timeout=5000)
     rolls = page.evaluate("fetch('/rolls?since=-1').then(r => r.text())")
     assert "Healing Word" in rolls and "level 1" in rolls  # (at the table, at the level cast)
@@ -187,7 +187,7 @@ def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server
     page.evaluate("""() => [...document.querySelectorAll('.sb-actions .item-go')]
         .find(b => /Healing Word/.test((b.closest('li, tr, .sb-row, [data-name]') || b).textContent)).click()""")
     page.locator(".roll-win .cast-roll").click()
-    page.locator(".roll-win [data-go]").wait_for(timeout=5000)  # (the roll, nothing spent)
+    page.locator(".roll-card [data-card-slot]").wait_for(timeout=5000)  # (the roll with its own Cast at, nothing spent)
     assert page.locator(".roll-win [data-use-go]").count() == 0
 
 

@@ -10,8 +10,15 @@ from sqlalchemy import create_engine, text
 
 from tests.browser.test_table import LOG, battle, newest, save
 
-WINDOW = ".roll-win"
+WINDOW = ".roll-card"
 ONLY_ME = f'{WINDOW} [data-to="self"]'
+SEES = f"{WINDOW} .rcard-vis"
+
+
+def to(page, who: str):
+    """Who sees the roll: the card's one line, Change, then the choice (it closes again)."""
+    page.locator(f"{WINDOW} [data-vis-open]").click()
+    page.locator(f'{WINDOW} [data-to="{who}"]').click()
 
 
 def fight_starts(browser_db, server, fid):
@@ -40,7 +47,7 @@ def test_a_roll_goes_to_the_table_with_nothing_to_turn_on(people, server):
     dm.page.wait_for_selector(LOG, state="attached")
     page = battle(player, server)
     page.click(save("Dex"))
-    assert page.locator(f'{WINDOW} [data-to="table"]').get_attribute("aria-pressed") == "true"
+    expect(page.locator(SEES)).to_contain_text("The table sees this")
     page.keyboard.press("Enter")
     page.wait_for_function("document.querySelector('#roll-log > li')?.textContent.includes('Dex save')")
     dm.page.wait_for_function("document.querySelector('#roll-log > li')?.textContent.includes('Dex save')", timeout=12000)
@@ -52,12 +59,13 @@ def test_only_me_is_your_choice_and_stays_until_you_change_it(people, server):
     player = people("player")
     page = battle(player, server)
     page.click(save("Dex"))
-    page.locator(ONLY_ME).click()
+    to(page, "self")
+    expect(page.locator(SEES)).to_contain_text("Only you see this")
     page.keyboard.press("Escape")
     page = battle(player, server)  # another page, later
     page.click(save("Dex"))
-    assert page.locator(ONLY_ME).get_attribute("aria-pressed") == "true"
-    page.locator(f'{WINDOW} [data-to="table"]').click()
+    expect(page.locator(SEES)).to_contain_text("Only you see this")
+    to(page, "table")
     page.keyboard.press("Escape")
     assert player.errors == []
 
@@ -81,9 +89,9 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
     expect(note).to_be_hidden()  # no bridge here: nothing to say
     roll_with(log="sheet")
     expect(note).to_contain_text("your sheet isn't open")
-    page.locator(ONLY_ME).click()
+    to(page, "self")
     expect(note).to_be_hidden()  # it isn't going anywhere
-    page.locator(f'{WINDOW} [data-to="table"]').click()
+    to(page, "table")
     roll_with(log="on", logUntil=str(time.time() + 60))
     expect(note).to_contain_text("Also goes to D&D Beyond's Game Log")
     roll_with(log="on", logUntil=str(time.time() - 1))  # not heard for a while

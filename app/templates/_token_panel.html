@@ -26,7 +26,7 @@
   <p class="note">Players see: <b>{% if players_see == "numbers" %}its numbers{% elif players_see == "none" %}nothing of its Hit Points{% else %}{{ status or "Healthy" }}{% endif %}</b> <span class="faint">(battle settings)</span></p>
   {% if k %}
   <div class="tk-nums"><span><small>AC</small><b>{{ k.ac }}</b></span><span><small>Speed</small><b>{{ k.speed }}</b></span>{% if k.initiative %}<span><small>Initiative</small><b>{{ k.initiative }}</b></span>{% endif %}<span><small>CR</small><b>{{ k.cr }}</b></span></div>
-  <div class="tk-abil">{% for a in k.abilities %}<span><small>{{ a.short }}</small><b>{{ a.mod }}</b><button type="button" class="link-plain tk-save" data-roll="save" data-label="{{ a.short }} save" data-mod="{{ a.save | replace('−', '-') }}" title="Roll its {{ a.short }} save">save {{ a.save }}</button></span>{% endfor %}</div>
+  <div class="tk-abil">{% for a in k.abilities %}<span><small>{{ a.short }}</small><b>{{ a.mod }}</b><button type="button" class="link-plain tk-save" data-plan="{{ roll_plan('save', a.short ~ ' save', a.save) }}" data-roll="save" data-label="{{ a.short }} save" data-mod="{{ a.save | replace('−', '-') }}" title="Roll its {{ a.short }} save">save {{ a.save }}</button></span>{% endfor %}</div>
   {% if k.skills %}<p class="tk-line"><b>Skills</b> {{ k.skills }}</p>{% endif %}
   {% if k.resist %}<p class="tk-line"><b>Resistances</b> {{ k.resist }}</p>{% endif %}
   {% if k.immune %}<p class="tk-line"><b>Immunities</b> {{ k.immune }}</p>{% endif %}

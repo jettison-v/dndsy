@@ -4,7 +4,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>House rules</h1></div>
-  <p class="subtitle">Your rulings on how askdnd rolls and shows things{% if campaign %} in {{ campaign.name }}{% endif %}. They apply only to this campaign and never change askdnd's own rules data: remove one and the spell works as the 2024 rules say again. The roll window shows <b>House rule</b> wherever one applies. Only the DM and admins can change these.</p>
+  <p class="subtitle">Your rulings on how askdnd rolls and shows things{% if campaign %} in {{ campaign.name }}{% endif %}. They apply only to this campaign and never change askdnd's own rules data: remove one and the spell works as the 2024 rules say again. The roll card shows <b>House rule</b> wherever one applies. Only the DM and admins can change these.</p>
 
   <section class="section">
     <h2>This table's house rules</h2>
@@ -38,7 +38,7 @@
     </form>
     {% endif %}
     <h3>A ruling on a spell</h3>
-    <p class="hint">A short note the roll window shows whenever someone rolls this spell, e.g. "Fireball: the DM decides who is in the area on the Zoom map."</p>
+    <p class="hint">A short note the roll card shows whenever someone rolls this spell, e.g. "Fireball: the DM decides who is in the area on the Zoom map."</p>
     <form method="post" action="{{ cbase }}/manage/house-rules">
       <input type="hidden" name="field" value="note">
       <div class="form-row">

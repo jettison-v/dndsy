@@ -27,7 +27,7 @@ SECTIONS = [
                                                "your Hit Points."),
         ("dice", "Your dice", "Thrown 3D dice in the set you choose (account menu › Your dice); the table sees your rolls in them."),
         ("conditions", "Conditions and effects", "Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in "
-                                                 "the roll window with its reason, and a reminder when one is due to end. The DM rules."),
+                                                 "the roll card with its reason, and a reminder when one is due to end. The DM rules."),
     ]),
     ("With your D&D Beyond sheet", [
         ("live", "Live", "The Live pill says whether your D&D Beyond sheet is connected. Nothing to turn on."),

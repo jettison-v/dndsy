@@ -50,6 +50,8 @@ def says(p: dict) -> str:
     bits = []
     if p["choice"]:
         bits.append(p["choice"]["ask"].rstrip("?"))
+    elif p.get("levels"):
+        bits.append("At what level")
     if p["attack"]:
         bits.append(f"to hit {p['attack']['bonus']:+d}")
     if p["save"]:

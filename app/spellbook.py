@@ -11,6 +11,7 @@ ranks spells as "best".
 import re
 
 from app import house_rules
+from app import roll_recipes as rr
 
 EFFECTS = [("damage", "Damage"), ("heal", "Heal"), ("control", "Control"), ("support", "Support"), ("utility", "Utility")]
 ORD = {0: "cantrip", 1: "1st", 2: "2nd", 3: "3rd"}
@@ -38,59 +39,12 @@ def effect_of(sp: dict) -> str:
     return "utility"
 
 
-def _parse(part: str) -> dict | None:
-    m = PART.match((part or "").strip())
-    if not m:
-        return None
-    if m.group(4) is not None:
-        return {"n": 0, "s": 0, "flat": int(m.group(4)), "kind": m.group(5) or ""}
-    return {"n": int(m.group(1)), "s": int(m.group(2)), "flat": int(m.group(3) or 0), "kind": m.group(5) or ""}
-
-
-def _grow(part: str, extra: str, times: int) -> str:
-    p = _parse(part)
-    if not p or not extra or times <= 0:
-        return part
-    if re.fullmatch(r"[+-]\d+", extra):
-        p["flat"] += int(extra) * times
-    else:
-        e = _parse(extra)
-        if not e or e["s"] != p["s"]:
-            return part
-        p["n"] += e["n"] * times
-    return _text(p)
-
-
-def _text(p: dict) -> str:
-    dice = f"{p['n']}d{p['s']}" + (f"{p['flat']:+d}" if p["flat"] else "") if p["n"] else str(p["flat"])
-    return dice + (f" {p['kind']}" if p["kind"] else "")
-
-
-def _tier(level: int) -> int:
-    return 1 + (level >= 5) + (level >= 11) + (level >= 17)
-
-
 def resolve(recipe: dict, event: dict, slot: int, char_level: int) -> dict | None:
-    """An event's parts and count when cast at this slot level (app.js resolve())."""
-    level = recipe.get("level") or 0
-    e = {**event, "parts": list(event.get("parts") or []), "count": event.get("count") or 1}
-    if level and slot > level:
-        times = (slot - level) // (event.get("every") or 1)
-        e["parts"] = [_grow(p, (event.get("upcast") or [""] * 9)[i] if i < len(event.get("upcast") or []) else "", times)
-                      for i, p in enumerate(e["parts"])]
-        e["count"] += (event.get("count_upcast") or 0) * times
-    if not level and event.get("cantrip"):
-        t = _tier(char_level or 1)
-        base = lambda p: p.split(" ")[0].split("+")[0].split("-")[0]  # noqa: E731
-        if event["cantrip"] == "count":
-            e["count"] *= t
-        elif event["cantrip"] == "extra":
-            if t == 1:
-                return None
-            e["parts"] = [_grow(p, base(p), t - 2) for p in e["parts"]]
-        else:
-            e["parts"] = [_grow(p, base(p), t - 1) for p in e["parts"]]
-    return e
+    """An event's parts and count when cast at this slot level: app/roll_plan.py at_level, the one place it's worked out."""
+    from app.roll_plan import at_level
+
+    r = at_level(recipe, event, slot, char_level)
+    return {**event, **r} if r else None
 
 
 def _main_event(recipe: dict | None) -> dict | None:
@@ -109,13 +63,15 @@ def average(recipe: dict | None, slot: int, char_level: int, spell_mod: int = 0)
     e = resolve(recipe, ev, slot, char_level)
     if not e:
         return None
+    from app.roll_plan import _part_text
+
     total, shown = 0.0, []
     for p in e["parts"]:
-        x = _parse(p)
+        x = rr.parse_part(p)
         if not x:
             continue
-        total += x["n"] * (x["s"] + 1) / 2 + x["flat"]
-        shown.append(_text(x).replace(" or ", "/"))
+        total += x[0] * (x[1] + 1) / 2 + x[2]
+        shown.append(_part_text(*x).replace(" or ", "/"))
     if e.get("mod"):
         total += spell_mod
         shown.append(str(spell_mod))
@@ -135,15 +91,14 @@ def slot_levels(sheet: dict) -> list[dict]:
     return sorted(out, key=lambda s: s["level"])
 
 
-def _spell_mod(sheet: dict) -> int:
-    sc = (sheet.get("spellcasting") or [{}])[0]
-    return next((v for k, v in sc.get("dc_parts") or [] if k.endswith(" modifier")), 0)
+def _entry(sp: dict, sheet: dict, top: int, castable_in_form: set[str] | None = None) -> dict:
+    """One spell as a list row: its numbers per slot level (up to `top`), its filter values, and the plan each of its
+    roll buttons plays (app/roll_plan.py: the same plan as its row on Battle)."""
+    from app import roll_plan
 
-
-def _entry(sp: dict, char_level: int, mod: int, top: int, castable_in_form: set[str] | None = None) -> dict:
-    """One spell as a list row: its numbers per slot level (up to `top`) and its filter values."""
     recipe = house_rules.spell(sp["name"]) or sp.get("roll")
     level = sp.get("level") or 0
+    char_level, mod = sheet.get("level") or 1, roll_plan.spell_mod(sheet, sp["name"]) or 0
     avgs = {}
     for slot in ([0] if not level else range(level, max(level, top) + 1)):
         a = average(recipe, slot, char_level, mod)
@@ -164,6 +119,11 @@ def _entry(sp: dict, char_level: int, mod: int, top: int, castable_in_form: set[
     }
     e |= _facts(e, _main_event(e["recipe"]))
     e["f"] = facets(e)
+    if e["recipe"]:
+        o = {"name": sp["name"], "kind": "spell", "hit": e["attack"] or e["save"], "recipe": e["recipe"], "tags": [],
+             "meta": sp.get("summary") or "", "text": sp.get("text") or "", "summary": sp.get("summary") or ""}
+        e["plan"] = roll_plan.plan(sheet, o) if o["hit"] else None
+        e["rolls"] = {"hit": roll_plan.effects(e["recipe"], sheet, sp["name"], True), "other": roll_plan.effects(e["recipe"], sheet, sp["name"], False)}
     return e
 
 
@@ -192,9 +152,8 @@ def concentrating(e: dict, level: int) -> dict:
 
 def entries(sheet: dict, castable_in_form: set[str] | None = None) -> list[dict]:
     """Every spell the character can cast now, for the Spell Book."""
-    char_level, mod = sheet.get("level") or 1, _spell_mod(sheet)
     top = max([s["level"] for s in slot_levels(sheet)] or [0])
-    out = [_entry(sp, char_level, mod, top, castable_in_form) for sp in sheet.get("spells") or []]
+    out = [_entry(sp, sheet, top, castable_in_form) for sp in sheet.get("spells") or []]
     return sorted(out, key=lambda e: (e["level"], e["name"]))
 
 
@@ -208,7 +167,6 @@ def sheet_entries(sheet: dict) -> list[dict]:
     feats and items. Numbers at the spell's own level only (Sheet has no "Cast at")."""
     from app.character_views import granted_spells  # character_views imports this module's neighbours
 
-    char_level, mod = sheet.get("level") or 1, _spell_mod(sheet)
     books = sheet.get("spellbook") or []
     out, seen = [], set()
     for b in books:
@@ -216,13 +174,13 @@ def sheet_entries(sheet: dict) -> list[dict]:
             if sp["key"] in seen:
                 continue
             seen.add(sp["key"])
-            out.append(_entry(sp, char_level, mod, 0) | {
+            out.append(_entry(sp, sheet, 0) | {
                 "state": sp["state"], "from": b["class"] if len(books) > 1 else "", "source": b["class"],
                 "core": sp.get("core"), "book": sp.get("book") or ""})
     for sp in granted_spells(sheet):
         if sp["key"] not in seen:
             seen.add(sp["key"])
-            out.append(_entry(sp, char_level, mod, 0) | {
+            out.append(_entry(sp, sheet, 0) | {
                 "state": "granted", "from": ", ".join(sp.get("sources") or []), "source": "Species, feats and items",
                 "core": sp.get("core"), "book": sp.get("book") or "", "uses": sp.get("uses")})
     for e in out:

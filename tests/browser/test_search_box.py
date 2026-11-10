@@ -108,10 +108,10 @@ def test_an_attack_from_search_off_battle_ends_hidden_as_battle_does(people, ser
         page.locator("[data-search-open]").click()
         page.fill("#search-q", "unarmed strike")
         page.locator(".search-res", has_text="Unarmed Strike").first.click()
-        win = page.locator(".roll-win")
-        win.wait_for()
+        win = page.locator(".roll-card")
+        win.locator('[data-choice="damage"]').click()  # (an Unarmed Strike asks Damage, Grapple or Shove first)
         assert "This attack ends Hidden" in win.inner_text() and "Invisible" in win.inner_text()  # (and its Advantage, with the reason)
-        win.locator("[data-go]").click()
+        win.locator("[data-roll-hit]").click()
         for _ in range(20):
             if ended:
                 break

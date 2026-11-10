@@ -110,6 +110,127 @@ def _slot_levels(sheet: dict, level: int) -> list[int]:
     return sorted(x for x in have if x >= level)
 
 
+# ------------------------------------------------------------------ dice at each level
+# A recipe's effects worked out here, for every level the spell can be cast at (or the character's level, for a
+# cantrip), so the roll card only reads them (Brett, Nov 10: rolls driven by askdnd's own data, not worked out in the
+# browser). Ported from app.js's resolve(), which the card used before; tests/test_roll_plan.py keeps them equal.
+
+def _signed(n: int) -> str:
+    return f"+{n}" if n >= 0 else f"-{abs(n)}"
+
+
+def _part_text(n: int, s: int, flat: int, kind: str) -> str:
+    return (f"{n}d{s}" + (_signed(flat) if flat else "") if n else str(flat)) + (f" {kind}" if kind else "")
+
+
+def _grow(part: str, extra: str, times: int) -> str:
+    """A part with `extra` added `times` times: "2d4" + "2d4" x 1 -> "4d4"; "+1" adds to the flat bonus."""
+    p = rr.parse_part(part)
+    if not p or not extra or times <= 0:
+        return part
+    n, s, flat, kind = p
+    if re.fullmatch(r"[+-]\d+", extra):
+        return _part_text(n, s, flat + int(extra) * times, kind)
+    e = rr.parse_part(extra)
+    if not e or e[1] != s:
+        return part
+    return _part_text(n + e[0] * times, s, flat, kind)
+
+
+def tier(level: int) -> int:
+    """A cantrip's tier by character level: 1, then 2 at 5, 3 at 11, 4 at 17."""
+    return 1 + (level >= 5) + (level >= 11) + (level >= 17)
+
+
+def at_level(recipe: dict, ev: dict, slot: int, char_level: int) -> dict | None:
+    """One event's parts and count cast at `slot` (a cantrip: at the character's level); None when it rolls nothing yet
+    (True Strike's extra damage before level 5)."""
+    level = recipe.get("level") or 0
+    parts, count = list(ev.get("parts") or []), ev.get("count") or 1
+    if level and slot > level:
+        times = (slot - level) // (ev.get("every") or 1)
+        up = ev.get("upcast") or []
+        parts = [_grow(p, up[i] if i < len(up) else "", times) for i, p in enumerate(parts)]
+        count += (ev.get("count_upcast") or 0) * times
+    if not level and ev.get("cantrip"):
+        t = tier(char_level or 1)
+        base = lambda p: re.split(r"[+-]", p.split(" ")[0])[0]  # noqa: E731 - the part's dice alone, "1d10"
+        if ev["cantrip"] == "count":
+            count *= t
+        elif ev["cantrip"] == "extra":
+            if t == 1:
+                return None
+            parts = [_grow(p, base(p), t - 2) for p in parts]
+        else:
+            parts = [_grow(p, base(p), t - 1) for p in parts]
+    return {"parts": parts, "count": count}
+
+
+def dice_text(parts: list[str], count: int = 1, each: str = "", once: bool = False) -> str:
+    """How a roll's dice read: "2d4 + 4 (spellcasting modifier)", "3 darts × 1d4+1 force"."""
+    many = f"{count} {each or 'time'}s × " + ("one roll: " if once else "") if count > 1 else ""
+    out = ""
+    for i, p in enumerate(parts):
+        x = rr.parse_part(p)
+        shown = f"{abs(x[2])}" + (f" ({x[3]})" if x[3] else "") if x and not x[0] else p
+        out += ("" if not i else " − " if x and not x[0] and x[2] < 0 else " + ") + shown
+    return many + out
+
+
+def spell_mod(sheet: dict, name: str = "") -> int | None:
+    """The spellcasting modifier a spell adds ("plus your spellcasting modifier"): its own class's, else the first."""
+    blocks = sheet.get("spellcasting") or []
+    sp = next((x for x in sheet.get("spells") or [] if x.get("name") == name), None) if name else None
+    classes = set((sp or {}).get("sources") or [])
+    block = next((b for b in blocks if b.get("class") in classes), blocks[0] if blocks else None)
+    return next((v for k, v in (block or {}).get("dc_parts") or [] if k.endswith(" modifier")), None)
+
+
+SUCCESS = {"half": "half on a success", "none": "nothing on a success"}
+
+
+def effects(recipe: dict | None, sheet: dict, name: str, attack: bool) -> dict:
+    """What a recipe rolls from one button: on an attack, its damage on a hit; otherwise its other effects (a save's
+    damage, healing, Temporary Hit Points, a plain die). Each effect's dice at every level it can be cast at:
+    {"base": 1, "levels": [1, 2, …, 9], "effects": [{"name", "kind", "on", "save", "success", "each", "once", "note",
+    "repeat", "at": {"1": {"parts", "count", "text"} or None, …}}], "house_rules": […], "checked": …}"""
+    if not recipe or not recipe.get("events"):
+        return {}
+    level = recipe.get("level") or 0
+    evs = [e for e in recipe["events"] if e.get("on") != "rider" and (e.get("on") == "hit") == attack]
+    if not evs and not attack:  # (a spell that only adds to hits, Hunter's Mark: its button rolls that extra damage)
+        evs = [e for e in recipe["events"] if e.get("on") == "rider"]
+    if not evs:
+        return {}
+    grows = bool(level) and any(any(e.get("upcast") or []) or e.get("count_upcast") for e in evs)
+    levels = list(range(level, 10)) if grows else [level]
+    char_level = sheet.get("level") or 1
+    mod = spell_mod(sheet, name)
+    out = []
+    for e in evs:
+        at = {}
+        for lv in levels:
+            r = at_level(recipe, e, lv, char_level)
+            if r is None:
+                at[str(lv)] = None
+                continue
+            parts = [fill(p, sheet) for p in r["parts"]]
+            text = dice_text(parts, r["count"], e.get("count_label") or "", bool(e.get("once")))
+            if e.get("mod"):
+                if mod is not None:
+                    parts.append(f"{_signed(mod)} spellcasting modifier")
+                    text = dice_text(parts, r["count"], e.get("count_label") or "", bool(e.get("once")))
+                else:
+                    text += " + spellcasting modifier"
+            at[str(lv)] = {"parts": parts, "count": r["count"], "text": text}
+        note = e.get("note") or ("Rolled on a hit while it lasts, added to that hit's damage." if e["on"] == "rider" else "")
+        out.append({"name": e.get("name") or name, "kind": {"heal": "heal", "temp": "temp", "plain": "dice"}.get(e["on"], "damage"),
+                    "on": e["on"], "save": e.get("save") or "", "success": e.get("success") or "", "each": e.get("count_label") or "",
+                    "once": bool(e.get("once")), "note": note, "repeat": e.get("repeat") or "", "at": at})
+    return {"base": level, "levels": levels, "effects": out, "house_rules": recipe.get("house_rules") or [],
+            "unchecked": recipe.get("checked") == "D&D Beyond"}
+
+
 UNARMED_ROW = re.compile(r"\bUnarmed Strike\b|\bFlurry of Blows\b")
 
 
@@ -200,7 +321,7 @@ def plan(sheet: dict, o: dict) -> dict:
         if any(any(e.get("upcast") or []) or e.get("count_upcast") for e in events) and o.get("level"):
             levels = _slot_levels(sheet, o["level"])
             if len(levels) > 1:
-                out["choice"], src["choice"] = {"ask": "At what level?", "options": [{"key": f"l{x}", "name": f"{x}", "says": ""} for x in levels]}, "sheet"
+                out["levels"], src["levels"] = levels, "sheet"  # (the card's Cast at: the slot levels it has; never a choice step)
     elif recipe is not None and rsrc in ("checked", "correction"):
         pass  # (a checked recipe that rolls nothing: Shillelagh, Find Steed; never dice read from its words)
     elif o.get("dice"):
@@ -301,3 +422,89 @@ def plans(sheet: dict) -> list[dict]:
 # The gaps askdnd knows about on the table's sheets, each with what fills it (scripts/roll_coverage.py, Nov 9). A gap
 # not listed fails tests/test_roll_plan.py; one that's filled must come off the list (the test says so).
 KNOWN_GAPS: dict[str, str] = {}  # (empty since Nov 9: every party gap has a recipe, a modifier or a reason it isn't a roll)
+
+
+# ------------------------------------------------------------------ what one roll button plays
+# Every roll button carries one of these (character_views.roll_data puts it on as data-plan), and the roll card plays
+# it as it is: it decides nothing about the rules (Brett, Nov 10: "strongly metadata driven"). Battle's options start
+# from their plan above; checks, saves, death saves, a Hit Point Die and dice start from the button's own numbers.
+#
+#   "play": "attack" (to hit, then damage) | "save" (the targets save, then damage) | "d20" (a check or save of your
+#           own) | "single" (healing, Temporary Hit Points, damage or dice: one roll) | "death" (a death save)
+#   "roll": the kind of roll sent to Table rolls; "label": its name there
+#   "bonus": a d20's bonus; "adv_keys": which of the character's condition reasons apply (app/conditions.adv_reasons)
+#   "save": {"ability", "dc", "success"}; "dmg": a weapon's damage dice as the sheet gives them; "flat": damage that
+#   has no dice (it comes with the attack roll)
+#   "rolls": {"base", "levels", "effects"} from effects() (a spell's dice at each level), or absent
+#   "notes": words to show before the roll; "riders", "modifiers", "choice" as the option's plan has them
+
+ABILITY_OF_SKILL = {"athletics": "str", "acrobatics": "dex", "sleight of hand": "dex", "stealth": "dex", "arcana": "int",
+                    "history": "int", "investigation": "int", "nature": "int", "religion": "int", "animal handling": "wis",
+                    "insight": "wis", "medicine": "wis", "perception": "wis", "survival": "wis", "deception": "cha",
+                    "intimidation": "cha", "performance": "cha", "persuasion": "cha"}
+SAVE_AT = re.compile(r"\b(Str|Dex|Con|Int|Wis|Cha)\s+(\d+)\b")
+
+
+def ability_of(label: str) -> str:
+    """Which ability a roll uses, from its name ("Stealth", "Dex save", "Strength check"), for conditions."""
+    low = (label or "").lower()
+    skill = next((k for k in ABILITY_OF_SKILL if k in low), None)
+    if skill:
+        return ABILITY_OF_SKILL[skill]
+    m = re.search(r"\b(str|dex|con|int|wis|cha)", low)
+    return m.group(1) if m else ""
+
+
+def _int(text) -> int:
+    try:
+        return int(str(text or "0").replace("−", "-").replace("+", "").strip() or 0)
+    except ValueError:
+        return 0
+
+
+def button(kind: str, label: str, mod="", dmg="", note: str = "", plan: dict | None = None, rolls: dict | None = None,
+           save: str = "") -> dict:
+    """The complete plan one roll button plays (see above). `plan`: the option's (plan()); `rolls`: its effects() for
+    this button; `save`: a spell's "Dex 15" when the button has no plan saying so."""
+    base = plan or {}
+    out = {"name": base.get("name") or label, "label": label, "roll": kind, "notes": [], "riders": base.get("riders") or [],
+           "modifiers": base.get("modifiers") or [], "choice": base.get("choice")}
+    if rolls:
+        out["rolls"] = rolls
+        out["notes"] += [f"House rule: {r['text']}" + (f" · {r['reason']}" if r.get("reason") else "") for r in rolls.get("house_rules") or []]
+        if rolls.get("unchecked"):
+            out["notes"].append("From D&D Beyond's data: not checked against the rules text (askdnd's audit only covers the 2024 rules).")
+    if kind == "death":
+        return {**out, "play": "death", "bonus": 0, "adv_keys": ["d20"]}
+    if kind in ("check", "save"):
+        ab = "dex" if label == "Initiative" else ability_of(label)
+        keys = (["initiative", "check", "check:dex", "d20"] if label == "Initiative" else ["check", "check:" + ab, "d20"] if kind == "check"
+                else ["save:" + ab, "d20"])
+        if kind == "save" and (label.startswith("Con save") or label.startswith("Concentration")):
+            out["notes"].append("Concentration after damage: DC 10 or half the damage, whichever is higher (up to 30).")
+        if label == "Initiative":
+            out["notes"].append("Initiative: Disadvantage if you're Surprised, Advantage if you're Invisible.")
+        if note:
+            out["notes"].append(note)
+        return {**out, "play": "d20", "bonus": _int(mod), "adv_keys": keys}
+    if kind == "attack":
+        bonus = (base.get("attack") or {}).get("bonus")
+        damage = base.get("damage") or []
+        flat = sum(p.get("flat") or 0 for p in damage) if damage and all(not p.get("dice") for p in damage) else None
+        if flat is None and dmg and re.fullmatch(r"\+?\d+", str(dmg).replace(" ", "")):
+            flat = _int(dmg)
+        if note:
+            out["notes"].append(note)
+        return {**out, "play": "attack", "bonus": _int(mod) if bonus is None else bonus, "dmg": dmg, "flat": flat, "adv_keys": ["attack", "d20"]}
+    # healing, Temporary Hit Points, damage or dice: the targets' save first when there is one
+    ev = next((e for e in (rolls or {}).get("effects") or [] if e["on"] == "save"), None)
+    sv = base.get("save")
+    if not sv and (m := SAVE_AT.search(save or note or "")):
+        sv = {"ability": m.group(1), "dc": int(m.group(2)), "success": (ev or {}).get("success") or ""}
+    if sv and ev and not sv.get("success"):
+        sv = {**sv, "success": ev["success"]}
+    if sv and kind == "damage":
+        return {**out, "play": "save", "save": sv, "dmg": dmg}
+    if note:
+        out["notes"].append(note)
+    return {**out, "play": "single", "dmg": dmg}

@@ -1,6 +1,6 @@
-"""The roll card in real pages (Labs `roll_card`; Brett chose the Roll Card Prototype, Nov 9): Cole's Unarmed Strike asks
-first (Damage, Grapple or Shove), rolls to hit with an added die, then its damage, each into Table rolls; Grapple sends
-its DC; the DM sees the attack live; with the switch off, the roll window opens as before."""
+"""The roll card in real pages (Brett chose the Roll Card Prototype, Nov 9; every roll since Nov 10): Cole's Unarmed
+Strike asks first (Damage, Grapple or Shove), rolls to hit with an added die, then its damage, each into Table rolls;
+Grapple sends its DC; the DM sees the attack live. tests/browser/test_every_roll.py plays every roll button."""
 
 import json
 import time
@@ -21,14 +21,9 @@ def _pieces(browser_db, server, pieces):
     return was
 
 
-def _battle_with(person, server, on: bool):
-    """Battle once the page shows the switch as set (the server keeps a campaign's switches for a few seconds)."""
-    for _ in range(40):
-        page = battle(person, server)
-        if page.evaluate("document.body.hasAttribute('data-roll-card')") == on:
-            return page
-        time.sleep(0.5)
-    raise AssertionError("The roll card's switch never reached the page")
+def _battle_with(person, server, on: bool = True):
+    """Battle (the card has no switch since Nov 10: `on` is kept for the tests that still pass it)."""
+    return battle(person, server)
 
 
 def _sees(page, words: str, seconds: int = 20):
@@ -41,7 +36,7 @@ def _sees(page, words: str, seconds: int = 20):
 
 
 def test_an_attack_on_the_roll_card_and_the_dm_sees_it(people, server, browser_db):
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player, dm = people("player", "dm")
         page = _battle_with(player, server, True)
@@ -76,30 +71,15 @@ def test_an_attack_on_the_roll_card_and_the_dm_sees_it(people, server, browser_d
         _pieces(browser_db, server, was)
 
 
-def test_with_the_switch_off_the_roll_window_opens_as_before(people, server, browser_db):
-    was = _pieces(browser_db, server, ["sync"])
-    try:
-        player = people("player")
-        page = _battle_with(player, server, False)
-        page.locator(UNARMED).click()
-        page.locator(".roll-win").wait_for()
-        assert page.locator(".roll-card").count() == 0 and page.locator(".roll-win [data-go]").count() == 1
-        page.keyboard.press("Escape")
-        assert player.errors == []
-    finally:
-        _pieces(browser_db, server, was)
-
-
-
 def test_flat_damage_of_0_is_said_before_the_roll(people, server, browser_db):
     """Feedback (Nov 9): the roll window warns when an attack can only do 0 damage (1 + Strength −1); the card does too,
     and its header keeps the 0."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         page = _battle_with(player, server, True)
         page.locator(UNARMED).evaluate("""b => { const p = JSON.parse(b.dataset.plan);
-            p.damage = [{dice: '', flat: 0, type: 'bludgeoning', from: 'Unarmed Strike'}]; b.dataset.plan = JSON.stringify(p); }""")
+            p.damage = [{dice: '', flat: 0, type: 'bludgeoning', from: 'Unarmed Strike'}]; p.flat = 0; p.dmg = '0 bludgeoning'; b.dataset.plan = JSON.stringify(p); }""")
         page.locator(UNARMED).click()
         card = page.locator(".roll-card")
         card.locator('[data-choice="damage"]').click()
@@ -115,8 +95,9 @@ def test_flat_damage_of_0_is_said_before_the_roll(people, server, browser_db):
         card.locator('[data-add="-1d4"]').click()
         assert "-1d4" in card.locator("[data-roll-hit]").inner_text()
         card.locator("[data-roll-hit]").click()
-        card.locator("[data-riders]").wait_for()
-        assert "On a miss" in card.inner_text() and "Graze" in card.locator("[data-riders]").inner_text()
+        card.locator(".rcard-result:not(.rolling)").wait_for()
+        assert card.locator("[data-riders]").count() or "Natural 20" in card.inner_text(), card.inner_text()  # (a 20 always hits: nothing for a miss)
+        assert "Natural 20" in card.inner_text() or "On a miss" in card.inner_text() and "Graze" in card.locator("[data-riders]").inner_text()
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)
@@ -125,7 +106,7 @@ def test_flat_damage_of_0_is_said_before_the_roll(people, server, browser_db):
 def test_hidden_the_card_says_the_attack_ends_it_and_you_can_untick_it(people, server, browser_db):
     """Feedback (Nov 9): the card ended Hidden without a word, where the roll window offers "This attack ends Hidden"
     ticked (app/hiding.py; the DM may rule otherwise). Unticked, nothing ends."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         page = _battle_with(player, server, True)
@@ -150,7 +131,7 @@ def test_hidden_the_card_says_the_attack_ends_it_and_you_can_untick_it(people, s
 def test_an_attack_spell_on_the_card_at_its_level(people, server, browser_db):
     """Next slice (Nov 9): an attack spell's damage from its recipe, a cantrip's at the character's level (Cole's Starry
     Wisp: 2d8 at level 8), sent with the attack, so its damage rolls from the card."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         page = _battle_with(player, server, True)
@@ -174,7 +155,7 @@ def test_an_attack_spell_on_the_card_at_its_level(people, server, browser_db):
 def test_a_save_spell_on_the_card(people, server, browser_db):
     """Save spells (Nov 9): the save and its DC first, Cast at when the level changes the dice (Cole's Moonbeam: 2d10 at
     level 2, 3d10 at 3), then its damage and what a success takes."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         page = _battle_with(player, server, True)
@@ -218,8 +199,8 @@ def test_the_roll_window_finds_a_check_by_typing_and_rolls_any_dice(people, serv
     assert page.locator("#peek.open .roll-board .rc:not([hidden])").count() >= 3  # (its skills, the save and the check)
     q.fill("stealth")
     q.press("Enter")
-    page.locator(".roll-win").wait_for()
-    assert "Stealth check" in page.locator(".roll-win").inner_text()
+    page.locator(".roll-card").wait_for()
+    assert "Stealth check" in page.locator(".roll-card").inner_text()
     page.locator("#peek.open").wait_for(state="detached")
     assert page.evaluate("!!document.activeElement.closest('.roll-win')")  # (Enter now rolls it)
     page.keyboard.press("Escape")
@@ -230,8 +211,8 @@ def test_the_roll_window_finds_a_check_by_typing_and_rolls_any_dice(people, serv
     open_roll()
     page.locator('#peek.open .dp-die:has-text("d6")').first.click()
     page.locator("#peek.open [data-manual-roll]").click()
-    page.locator(".roll-win").wait_for()
-    assert "1d6" in page.locator(".roll-win").inner_text()
+    page.locator(".roll-card").wait_for()
+    assert "1d6" in page.locator(".roll-card").inner_text()
     page.locator("#peek.open").wait_for(state="detached")
     page.keyboard.press("Escape")
 
@@ -245,7 +226,7 @@ def test_the_roll_window_finds_a_check_by_typing_and_rolls_any_dice(people, serv
 def test_a_save_and_a_check_on_the_card(people, server, browser_db):
     """Checks and saves (Nov 9): a save on Battle's tiles and a skill from Table rolls' Roll open the card, one step,
     with the roll's own name on its result and Done (not "missed")."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         page = _battle_with(player, server, True)
@@ -274,7 +255,7 @@ def test_a_save_and_a_check_on_the_card(people, server, browser_db):
 def test_a_spell_from_the_spell_book_opens_the_card(people, server, browser_db):
     """Every roll button goes through one choice (app.js openRoll): a spell in the Spell Book has no plan of its own, so
     the card works one out from its recipe and the button's note (Cole's Moonbeam: a Con save, half on a success)."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         page = _battle_with(player, server, True)
@@ -293,7 +274,7 @@ def test_a_spell_from_the_spell_book_opens_the_card(people, server, browser_db):
 def test_several_rays_roll_a_to_hit_each(people, server, browser_db):
     """Scorching Ray, Eldritch Blast (Nov 9): one to-hit per ray on the card, then damage for each that isn't a 1.
     Cole's Starry Wisp is made a two-ray spell in the page."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         page = _battle_with(player, server, True)
@@ -301,8 +282,8 @@ def test_several_rays_roll_a_to_hit_each(people, server, browser_db):
         if not wisp.count():
             page.locator('[data-panel-url*="/all/action"]').first.click()
             wisp = page.locator('.peek [data-plan][data-label="Starry Wisp"] >> nth=0')
-        wisp.evaluate("""b => { const r = JSON.parse(b.dataset.recipe);
-            r.events.forEach(e => { if (e.on === 'hit') { e.count = 2; e.count_label = 'ray'; e.cantrip = ''; } }); b.dataset.recipe = JSON.stringify(r); }""")
+        wisp.evaluate("""b => { const p = JSON.parse(b.dataset.plan), e = p.rolls.effects[0];
+            e.each = 'ray'; Object.values(e.at).forEach(a => { if (a) a.count = 2; }); b.dataset.plan = JSON.stringify(p); }""")
         wisp.click()
         card = page.locator(".roll-card")
         card.locator("[data-roll-hit]").click()
@@ -315,7 +296,7 @@ def test_several_rays_roll_a_to_hit_each(people, server, browser_db):
 
 def test_the_card_lets_the_dice_show_through_while_they_are_thrown(people, server, browser_db):
     """Feedback 59 (Nov 9): a die that landed behind the card was hidden; while dice are on screen the card is see-through."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         player.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'on')")  # (after Person's own, which turns dice off)
@@ -336,7 +317,7 @@ def test_the_card_lets_the_dice_show_through_while_they_are_thrown(people, serve
 def test_healing_and_any_dice_are_one_step_on_the_card(people, server, browser_db):
     """Finishing the card, step 1 (Brett, Nov 10): healing (a Hit Point Die, a spell), damage with no attack or save,
     and any dice roll on the card in one step, Roll, with what to add, who sees it, and where it goes next."""
-    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    was = _pieces(browser_db, server, ["sync"])
     try:
         player = people("player")
         page = _battle_with(player, server, True)
