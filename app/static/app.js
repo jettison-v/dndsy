@@ -1909,7 +1909,11 @@ function feedbackBusy(e) {
     searchBox.addEventListener('click', e => {
       if (e.target === searchBox) return close();  // (outside the box: its backdrop)
       const row = e.target.closest('[data-i]');
-      if (row) act(+row.dataset.i, e.metaKey || e.ctrlKey);
+      if (!row) return;
+      // (after this click is done: what it opens would otherwise hear the same click as one outside it, and close)
+      e.stopPropagation();
+      const i = +row.dataset.i, where = e.metaKey || e.ctrlKey;
+      setTimeout(() => act(i, where), 0);
     });
     list.addEventListener('mousemove', e => { const row = e.target.closest('[data-i]'); if (row && +row.dataset.i !== at) { at = +row.dataset.i; list.querySelectorAll('.search-res').forEach(x => { x.classList.toggle('on', +x.dataset.i === at); x.setAttribute('aria-selected', +x.dataset.i === at); }); } });
     q.addEventListener('input', () => { at = 0; redraw(); });
