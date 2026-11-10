@@ -1,17 +1,42 @@
-{# The session in numbers (Session Story, Brett Nov 7; docs/mockups/session-story/ part 5): who talked, fights and story,
-   the night's dice. Needs talked, mix, chapters and rolled (app/session_story.py); on the session's Story page and its
-   review page. #}
+{# The session in numbers (Session Story, Brett Nov 7; docs/mockups/session-story/ part 5; Brett chose all four new
+   numbers, Nov 9, docs/mockups/full-tale/): a band of the night's dice, spells cast, the biggest hit and healing, then
+   damage rolled, who talked, fights and story, and who cast what. Needs talked, mix, chapters, rolled and night
+   (app/session_story.py `dice`, `night_numbers`); on the session's own page (The Night) and its review page. #}
+{% macro av(r) %}<span class="roll-av hue{{ 5 if r.dm else (r.entity_id or r.character_id or r.user_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endmacro %}
+{% macro bars(rows, kind, unit) %}<ul class="plain share-rows">
+  {% for r in rows %}<li class="share-row"><span class="share-who">{{ av(r) }}{{ r.name }}</span>
+    <span class="share-bar{{ ' ' ~ kind if kind }}" aria-hidden="true"><i style="width: {{ r.share }}%"></i></span><span class="share-n">{{ r.total if r.total is defined else r.share ~ "%" }}{{ unit }}</span></li>{% endfor %}
+</ul>{% endmacro %}
 {% if talked.rows or mix or rolled.rolls %}
+{% if rolled.rolls %}
+<div class="strip night-band">
+  <div><small>Natural 20s</small><b>{{ rolled.twenties }}</b></div>
+  <div><small>Natural 1s</small><b>{{ rolled.ones }}</b></div>
+  <div><small>Rolls the table saw</small><b>{{ rolled.rolls }}</b></div>
+  <div><small>Spells cast</small><b>{{ night.spells.count }}</b></div>
+  {% if night.biggest %}<div class="night-big"><small>Biggest hit</small><b>{{ night.biggest.total }}</b><span class="night-by">{{ night.biggest.name }} · {{ night.biggest.label }}{{ " · critical" if night.biggest.crit }}</span></div>{% endif %}
+  {% if night.healing.total %}<div class="night-big"><small>Healing</small><b>{{ night.healing.total }}</b>{% if night.healing.rows %}<span class="night-by">most by {{ night.healing.rows[0].name }}</span>{% endif %}</div>{% endif %}
+</div>
+{% endif %}
 <div class="numbers">
+  {% if night.damage %}
+  <div class="numbers-card">
+    <h3 class="tale-label">Damage rolled</h3>
+    {{ bars(night.damage, "dmg", "") }}
+    <p class="note">Each character's damage rolls that the table saw, added up.</p>
+  </div>
+  {% endif %}
+  {% if night.healing.rows | length > 1 %}
+  <div class="numbers-card">
+    <h3 class="tale-label">Healing rolled</h3>
+    {{ bars(night.healing.rows, "heal", "") }}
+    <p class="note">Each character's healing rolls that the table saw.</p>
+  </div>
+  {% endif %}
   {% if talked.rows %}
   <div class="numbers-card">
     <h3 class="tale-label">Who talked</h3>
-    <ul class="plain share-rows">
-      {% for r in talked.rows %}
-      <li class="share-row"><span class="share-who"><span class="roll-av hue{{ 5 if r.dm else (r.entity_id or r.user_id) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{{ r.name }}</span>
-        <span class="share-bar" aria-hidden="true"><i style="width: {{ r.share }}%"></i></span><span class="share-n">{{ r.share }}%</span></li>
-      {% endfor %}
-    </ul>
+    {{ bars(talked.rows, "", "") }}
     <p class="note">Each person's share of the talking, from the recording's speaker names.</p>
   </div>
   {% endif %}
@@ -24,14 +49,17 @@
     <p class="note">From the scenes of the full tale and when each began.</p>
   </div>
   {% endif %}
-  {% if rolled.rolls %}
+  {% if night.spells.rows %}
   <div class="numbers-card">
-    <h3 class="tale-label">Dice</h3>
-    <div class="strip numbers-dice"><div><small>Natural 20s</small><b>{{ rolled.twenties }}</b></div><div><small>Natural 1s</small><b>{{ rolled.ones }}</b></div><div><small>Rolls</small><b>{{ rolled.rolls }}</b></div></div>
-    <p class="note">The rolls everyone saw that night in Table rolls.</p>
+    <h3 class="tale-label">Spells cast</h3>
+    <ul class="plain night-spells">
+      {% for r in night.spells.rows %}<li><span class="share-who">{{ av(r) }}{{ r.name }}</span><span class="night-spell-names">{{ r.names | join(", ") }}{% if r.n > r.names | length %} <span class="note">({{ r.n }} casts)</span>{% endif %}</span></li>{% endfor %}
+    </ul>
+    <p class="note">Spells with a roll the table saw (an attack, damage or healing). A spell cast without one, like Bless, isn't counted.</p>
   </div>
   {% endif %}
 </div>
+{% if rolled.rolls %}<p class="note night-source">The dice, spells, damage and healing come from the rolls everyone saw that night in Table rolls, made in askdnd or heard from D&amp;D Beyond. Rolls only the DM saw or kept private aren't counted.</p>{% endif %}
 {% else %}
 <p class="muted">No numbers for this session: it has no recording's speaker times, no scene times and no rolls seen by the table that night.</p>
 {% endif %}

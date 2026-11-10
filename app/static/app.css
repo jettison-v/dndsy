@@ -573,6 +573,34 @@ body.tale-playing { overflow: hidden; }
 .award-who .roll-av { width: 30px; height: 30px; font-size: var(--fs-xs); }
 .award-line { font-family: var(--tale-cap, inherit); font-style: italic; color: var(--story-head); }
 .award-why { font-size: var(--fs-sm); }
+.award-face { display: contents; }
+.award-face[hidden] { display: none; }
+/* The Night (a session's own page, Brett chose C, Nov 9): an award face down until revealed */
+.award-card.face-down { border-top-color: var(--line); background: var(--surface-2); justify-content: space-between; min-height: 9.5rem; }
+.award-reveal { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-1); flex: 1; width: 100%; min-height: 6rem; border: 1px dashed var(--line); border-radius: var(--r-sm); background: transparent; color: var(--muted); font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; }
+.award-reveal:hover { color: var(--text); border-color: var(--amber); }
+.award-reveal small { font-size: inherit; }
+.award-q { font-family: var(--tale-cap, inherit); font-size: var(--fs-xl); line-height: 1; color: var(--amber); }
+.award-card.revealed { animation: award-turn .45s ease-out; }
+.award-card:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+@keyframes award-turn { from { transform: rotateY(90deg); opacity: .3; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .award-card.revealed { animation: none; } }
+@media (max-width: 640px) { .award-card.face-down { min-height: 0; } .award-reveal { min-height: 3.25rem; flex-direction: row; } }
+.session-top { margin-bottom: 0; }
+.session-top h1 { margin: 0; font-size: var(--fs-xl); font-weight: 600; color: var(--story-head); text-wrap: balance; }
+.tale > .tabbar { margin-bottom: calc(-1 * var(--sp-3)); }
+.night { display: flex; flex-direction: column; gap: var(--sp-6); }
+.night-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+.night-head .tale-label { margin-bottom: var(--sp-3); }
+.night-band { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); margin-bottom: var(--sp-4); }
+.night-band b { font-variant-numeric: tabular-nums; }
+.night-by { display: block; font-size: var(--fs-xs); color: var(--muted); overflow-wrap: anywhere; }
+.share-bar.dmg i { background: var(--red); }
+.share-bar.heal i { background: var(--green); }
+.night-spells { display: grid; gap: var(--sp-2); font-size: var(--fs-sm); }
+.night-spells li { display: grid; grid-template-columns: minmax(0, 9rem) 1fr; gap: var(--sp-2); align-items: baseline; }
+.night-spell-names { min-width: 0; }
+.night-source { margin: var(--sp-3) 0 0; }
 .award-nominees { max-height: none; margin-top: var(--sp-2); }  /* (the review page: pick who an award goes to) */
 /* The review as a wizard (Brett, Nov 7): the tab bar's tabs numbered in order, a tick on a finished step, Next at each one's end */
 .review-steps .step-n { color: var(--muted); font-weight: 700; margin-right: var(--sp-1); font-variant-numeric: tabular-nums; }
@@ -587,7 +615,8 @@ body.tale-playing { overflow: hidden; }
 .new-entry { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; padding: var(--sp-1) 0; }
 .new-entry .roll-av { width: 32px; height: 32px; }
 .new-entry .grow { min-width: 0; overflow-wrap: anywhere; }
-.numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--sp-4); }
+.numbers { columns: 2 260px; column-gap: var(--sp-4); }  /* (cards of any height flow down two columns, no holes) */
+.numbers > .numbers-card { break-inside: avoid; margin-bottom: var(--sp-4); }
 .numbers-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
 .numbers-card .tale-label { margin: 0; }
 .numbers-card .note { margin: 0; }

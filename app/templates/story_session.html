@@ -1,40 +1,54 @@
 {% extends "base.html" %}
 {% block title %}{{ s.title or label }} · Story · askdnd{% endblock %}
 {% block content %}
-{# A session's own page (Session Story, Brett chose B, Nov 7; docs/mockups/session-story/): the full tale in chapters,
-   then the awards and the session in numbers. Opened by Full Tale & Stats beside Listen on the recap's scroll and in All sessions. #}
+{# A session's own page in two tabs (Brett chose C, Nov 9, docs/mockups/full-tale/): The Night first, the awards face
+   down until each is revealed (as at an awards night, good on a shared screen) and the night in numbers, then The Tale
+   in chapters. Opened by Full Tale & Stats beside Listen on the recap's scroll and in All sessions; ?tab=tale opens
+   The Tale. #}
 <main class="page wide">
   <div class="crumbs"><a href="{{ cbase }}/">Story</a> › <a href="{{ cbase }}/?tab=sessions#s{{ s.id }}">All sessions</a> › {{ label }}</div>
   <div class="tale">
-    <div class="scroll">
-      <div class="story">
-        <header class="tale-head"><span class="tale-kicker">{{ label }}{% if length %} · {{ length }}{% endif %}</span>{% if s.title %}<h2>{{ s.title }}</h2>{% endif %}
-          {% if chapters and vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ s.id }}/full">▶ Listen to the full tale{% if listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if listen.estimate else 'How long it plays' }}">{{ listen.says }}</span>{% endif %}</button>{% endif %}</header>
-        {% if chapters %}
-        <div class="tale-text tale-chapters">
-          {% for c in chapters %}
-          <section class="tale-chapter" id="ch{{ loop.index }}">
-            <h3 class="tale-chapter-head"><span class="tale-chapter-n">{{ c.n }}</span>{{ c.title }}</h3>
-            {{ ln.html(c.html) }}
-          </section>
-          {% endfor %}
+    <header class="tale-head session-top"><span class="tale-kicker">{{ label }}{% if length %} · {{ length }}{% endif %}</span>{% if s.title %}<h1>{{ s.title }}</h1>{% endif %}
+      {% if chapters and vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ s.id }}/full">▶ Listen to the full tale{% if listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if listen.estimate else 'How long it plays' }}">{{ listen.says }}</span>{% endif %}</button>{% endif %}</header>
+    <div class="tabbar" role="tablist" data-tab-param>
+      <button role="tab" aria-selected="{{ 'true' if tab == 'night' else 'false' }}" data-tab="t-night">The Night</button>
+      <button role="tab" aria-selected="{{ 'true' if tab == 'tale' else 'false' }}" data-tab="t-tale">The Tale{% if chapters %} <span class="count">{{ chapters | length }}</span>{% endif %}</button>
+    </div>
+
+    <div id="t-night" class="night"{% if tab != "night" %} hidden{% endif %}>
+      {% if awards %}
+      <section class="tale-after-block">
+        <div class="night-head"><h2 class="tale-label">The awards</h2><button type="button" class="btn small" data-reveal-all>Reveal all</button></div>
+        {% set reveal = s.id ~ "-" ~ version %}
+        {% include "_award_cards.html" %}
+      </section>
+      {% endif %}
+      <section class="tale-after-block">
+        <h2 class="tale-label">The night in numbers</h2>
+        {% include "_session_numbers.html" %}
+      </section>
+      <a class="btn tale-more-link" href="?tab=tale" data-goto-tab="t-tale">Read the tale →</a>
+    </div>
+
+    <div id="t-tale"{% if tab != "tale" %} hidden{% endif %}>
+      <div class="scroll">
+        <div class="story">
+          {% if chapters %}
+          <div class="tale-text tale-chapters">
+            {% for c in chapters %}
+            <section class="tale-chapter" id="ch{{ loop.index }}">
+              <h3 class="tale-chapter-head"><span class="tale-chapter-n">{{ c.n }}</span>{{ c.title }}</h3>
+              {{ ln.html(c.html) }}
+            </section>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="tale-text">{{ ln.html(recap_html) }}</div>
+          {% endif %}
+          <div class="tale-end" aria-hidden="true">❦</div>
         </div>
-        {% else %}
-        <div class="tale-text">{{ ln.html(recap_html) }}</div>
-        {% endif %}
-        <div class="tale-end" aria-hidden="true">❦</div>
       </div>
     </div>
-    {% if awards %}
-    <section class="tale-after-block">
-      <h2 class="tale-label">Awards</h2>
-      {% include "_award_cards.html" %}
-    </section>
-    {% endif %}
-    <section class="tale-after-block">
-      <h2 class="tale-label">The session in numbers</h2>
-      {% include "_session_numbers.html" %}
-    </section>
   </div>
 </main>
 {% endblock %}

@@ -37,3 +37,38 @@ def test_story_search_finds_the_sessions_that_mention_every_word(people, server,
     page.wait_for_selector("[data-story-found]", state="hidden")
     assert all(s.is_visible() for s in sessions.all())
     assert player.errors == []
+
+
+def test_the_nights_awards_start_face_down_and_stay_revealed_on_that_device(people, server, browser_db):
+    """A session's own page, The Night (Brett chose C, Nov 9, docs/mockups/full-tale/): each award face down until
+    Reveal turns it over, remembered on that device; someone else's screen still has them face down."""
+    engine = create_engine(browser_db[0])
+    with Session(engine) as db:
+        s = GameSession(campaign_id=server["campaign"], number=7, source="transcript", title="The Bell")
+        db.add(s)
+        db.flush()
+        awards = [{"award": a, "character": "Cole", "why": f"Why {a}.", "quote": "", "at": 60} for a in ("Most Strategic", "Unsung Hero")]
+        db.add(Recap(session_id=s.id, version=1, body="Fog.", author="ai", status=Status.PUBLISHED, awards=awards,
+                     tale=[{"title": "The Reach", "kind": "story", "at": 0, "text": "The fog closed in."}]))
+        db.commit()
+        sid = s.id
+    engine.dispose()
+
+    player, dm = people("player", "dm")
+    page = player.open(f"/c/main/sessions/{sid}")
+    assert page.locator("[data-award].face-down").count() == 2 and not page.get_by_text("Why Most Strategic.").is_visible()
+    page.get_by_role("button", name="Reveal who won Most Strategic").click()
+    page.get_by_text("Why Most Strategic.").wait_for()  # (once it has turned over)
+    assert not page.get_by_text("Why Unsung Hero.").is_visible()
+    page.reload()
+    page.wait_for_selector("[data-award='0']:not(.face-down)")  # (remembered on this device)
+    assert page.locator("[data-award].face-down").count() == 1
+    page.get_by_role("button", name="Reveal all").click()
+    assert page.locator("[data-award].face-down").count() == 0 and page.get_by_role("button", name="Reveal all").is_hidden()
+
+    other = dm.open(f"/c/main/sessions/{sid}")
+    assert other.locator("[data-award].face-down").count() == 2  # (another screen reveals for itself)
+    other.get_by_role("tab", name="The Tale").click()
+    other.wait_for_function("location.search === '?tab=tale'")
+    other.get_by_text("The fog closed in.").wait_for()
+    assert player.errors == [] and dm.errors == []

@@ -253,6 +253,10 @@ def test_the_session_page_has_the_full_tale_awards_and_numbers_for_everyone_at_t
     assert "If it rings for the dead, it rings them home." in page and "The DM" in page and "DM Shining Moment" in page
     assert "Who talked" in page and "Fights and story" in page and "4 h 0 min" in page
     assert "You row into the fog." not in page  # (the transcript is shown on no page)
+    # Two tabs, The Night first (Brett chose C, Nov 9): its awards face down, The Tale a tab away (?tab=tale opens it)
+    assert 'aria-selected="true" data-tab="t-night"' in page and 'id="t-tale" hidden' in page and "data-award-reveal" in page
+    tale = player.get(f"/c/main/sessions/{s.id}?tab=tale").text
+    assert 'aria-selected="true" data-tab="t-tale"' in tale and 'id="t-night" class="night" hidden' in tale
     assert player.get(f"/sessions/{s.id}", follow_redirects=False).status_code == 404  # (one address: /c/<campaign>/…)
 
 
@@ -316,6 +320,48 @@ def test_the_nights_dice_and_their_awards_count_only_what_the_table_saw(db, stor
     assert got["hardest_luck"]["character"].name == "Trah"
     awards = session_story.awards(db, story, None, got)
     assert [(a["award"], a["who"], a["dice"]) for a in awards] == [("Hardest Luck", "Trah", True), ("Damage King", "Trah", True)]
+
+
+def test_the_nights_numbers_add_up_damage_healing_the_biggest_hit_and_spells_cast(db, story, monkeypatch):
+    """Brett chose all four, Nov 9 (docs/mockups/full-tale/): damage and healing rolled by each character, the biggest
+    single damage roll and spells cast, from what the table saw; a spell is a roll named for one of the roller's own."""
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    sheets = {cole.id: {"spells": [{"name": "Cure Wounds"}, {"name": "Thorn Whip"}]},
+              trah.id: {"spells": [{"name": "Fire Bolt"}, {"name": "Fire"}], "spellbook": [{"spells": [{"name": "Raulothim's Psychic Lance"}]}]}}
+    monkeypatch.setattr(session_story, "character_summary", lambda ch: sheets.get(ch.id))
+
+    def named(label, *a, minute=0, **k):
+        r = roll(db, story, *a, **k)
+        r.label, r.created_at = label, r.created_at.replace(minute=minute)
+        return r
+
+    hit = named("Fire Bolt", trah, kept=15, kind="attack")
+    named("Fire Bolt", trah, kind="damage", total=9, parent=hit.id)
+    named("Fire Bolt", trah, kind="damage", total=8, minute=1)  # (D&D Beyond's damage, heard apart: the same cast)
+    named("Fire Bolt (2nd level)", trah, kind="damage", total=11, minute=20)  # (another cast)
+    named("Raulothim's Psychic Lance", trah, kind="damage", total=17, minute=30)
+    named("Cure Wounds", cole, kind="heal", total=7)
+    named("Thorn Whip", cole, kind="damage", total=5, visibility="dm")  # (the DM's eyes only: no cast, no damage)
+    named("Longsword", cole, kind="attack", kept=12)  # (not a spell)
+    named("Wis save", cole, kept=9, kind="save")
+    got = session_story.dice(db, story)
+    assert [(d["character"].name, d["total"], d["rolls"]) for d in got["damage"]] == [("Trah", 45, 4)]
+    assert (got["biggest"]["character"].name, got["biggest"]["total"], got["biggest"]["label"]) == ("Trah", 17, "Raulothim's Psychic Lance")
+    assert got["healing"]["total"] == 7 and got["healing"]["by"][0]["character"].name == "Cole"
+    assert got["spells"]["count"] == 4
+    assert [(r["character"].name, r["n"], r["names"]) for r in got["spells"]["by"]] == [
+        ("Trah", 3, ["Fire Bolt", "Raulothim's Psychic Lance"]), ("Cole", 1, ["Cure Wounds"])]
+    night = session_story.night_numbers(db, got)
+    assert night["damage"][0]["share"] == 100 and night["spells"]["count"] == 4 and night["biggest"]["name"] == "Trah"
+
+
+def test_a_rolls_label_names_a_spell_only_by_its_whole_name():
+    known = ["Raulothim's Psychic Lance", "Fire Bolt", "Fire"]
+    assert session_story.spell_of("Fire Bolt", known) == "Fire Bolt"
+    assert session_story.spell_of("fire bolt (3rd level)", known) == "Fire Bolt"
+    assert session_story.spell_of("Magic Missile: Dart 2", ["Magic Missile"]) == "Magic Missile"
+    assert session_story.spell_of("Firebrand", known) is None and session_story.spell_of("Fire", known) == "Fire"
+    assert session_story.spell_of("Longsword", known) is None
 
 
 def test_the_reviewer_picks_who_an_award_goes_to_from_its_nominees(db, story, dm, player):

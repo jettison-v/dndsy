@@ -3468,6 +3468,43 @@ function feedbackBusy(e) {
   }
 })();
 
+// The Night's awards (a session's own page, Brett chose C, Nov 9, docs/mockups/full-tale/): each card starts face
+// down with its award's name; Reveal turns it over (Reveal all, every one), as at an awards night on a shared screen.
+// What's been revealed is remembered on this device, by session and published version (a new pick starts face down).
+(function () {
+  const key = box => 'askdnd-awards-' + box.dataset.awards;
+  const seen = box => { try { return JSON.parse(localStorage.getItem(key(box)) || '[]'); } catch (err) { return []; } };
+  const keep = box => { try { localStorage.setItem(key(box), JSON.stringify([...box.querySelectorAll('[data-award]:not(.face-down)')].map(c => c.dataset.award))); } catch (err) { /* private window */ } };
+  const all = box => box.closest('section') && box.closest('section').querySelector('[data-reveal-all]');
+  function show(card, now) {
+    card.classList.remove('face-down');
+    card.querySelector('.award-face').hidden = false;
+    const b = card.querySelector('[data-award-reveal]'); if (b) b.remove();
+    if (now) card.classList.add('revealed');
+  }
+  function sync(box) { const b = all(box); if (b) b.hidden = !box.querySelector('.face-down'); }
+  function setup() {
+    document.querySelectorAll('[data-awards]').forEach(box => {
+      const s = seen(box);
+      box.querySelectorAll('[data-award].face-down').forEach(c => { if (s.includes(c.dataset.award)) show(c, false); });
+      sync(box);
+    });
+  }
+  document.addEventListener('click', e => {
+    const one = e.target.closest('[data-award-reveal]'), every = !one && e.target.closest('[data-reveal-all]');
+    const box = one ? one.closest('[data-awards]') : every && every.closest('section').querySelector('[data-awards]');
+    if (!box) return;
+    const cards = one ? [one.closest('[data-award]')] : [...box.querySelectorAll('[data-award].face-down')];
+    cards.forEach(c => show(c, true));
+    keep(box);
+    sync(box);
+    if (one) cards[0].focus({ preventScroll: true });  // (its button is gone: focus stays on the card it turned over)
+    else { const next = box.querySelector('[data-award]'); if (next) next.focus({ preventScroll: true }); }
+  });
+  setup();
+  document.addEventListener('askdnd:swapped', setup);  // (a new copy of the page keeps what's been revealed)
+})();
+
 // Story and the Campaign page's Map tab (menu bar Option B). A [data-goto-tab] link shows that tab on this page
 // ("Earlier sessions"); /?tab=sessions#s12 opens that session. The map's frame loads when its tab is first shown,
 // and "Show on map" on the Campaign page recenters it there instead of loading the page again.
