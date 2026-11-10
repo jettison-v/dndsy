@@ -1615,7 +1615,10 @@ function feedbackBusy(e) {
     const picker = document.getElementById('rs-pick');
     if (picker && !picker.hidden) rsPick(false);  // (a roll chosen from Table rolls' Roll: its search closes)
     win = document.createElement('div');
+    // (where its anchor is now: a window whose words arrive later, as Cast's and Use's do, is placed there even once the
+    // anchor is gone, Search's made-for-the-moment button or a row the page has since redrawn)
     if (prev) win._r = { left: prev.left, top: prev.top, bottom: prev.top - 6 };
+    else if (anchor && anchor.isConnected) win._r = anchor.getBoundingClientRect();
     win.className = 'roll-win';
     win.setAttribute('role', 'dialog');
     win.setAttribute('aria-label', 'Roll');
