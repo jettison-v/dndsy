@@ -170,3 +170,16 @@ def test_a_spell_that_only_adds_to_hits_rolls_that_damage():
     """The every-roll test (Nov 10): Hunter's Mark's and Absorb Elements' Roll had nothing to roll, and askdnd refused it."""
     e = roll_plan.effects(roll_plan.rr.spell("Hunter's Mark"), sheet("no_name"), "Hunter's Mark", False)
     assert e["effects"][0]["on"] == "rider" and e["effects"][0]["at"] == {"1": {"parts": ["1d6 force"], "count": 1, "text": "1d6 force"}}
+
+
+def test_healing_that_only_heals_yourself_says_so(plans):
+    """Brett's Roll Audit comment (Nov 10): the plan of a heal only its roller takes carries `self`, so its roll offers
+    Apply to for that character alone."""
+    meta = next(p for p in roll_plan.plans(sheet("cole")) if p["name"] == "Uncanny Metabolism")
+    from app.character_views import option_rolls, options
+    o = next(o for o in options(sheet("cole"), set()) if o["name"] == "Uncanny Metabolism")
+    import json as _json
+    plan = _json.loads(option_rolls(o)[-1]["attrs"]["plan"])
+    assert plan["self"] is True and meta["heal"]
+    assert roll_plan.button("heal", "Hit Point Die", "", "1d8+1", self_only=True)["self"] is True
+    assert "self" not in roll_plan.button("heal", "Healing Word", "", "2d4+4")
