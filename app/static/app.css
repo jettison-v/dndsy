@@ -3723,7 +3723,7 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .tale-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-2); margin-top: var(--sp-2); }
 .tale-acts .tale-listen { margin-top: 0; }
 .tale-acts .tale-more-link { margin: 0; }
-.session-body > .tale-acts { justify-content: flex-start; margin-bottom: var(--sp-3); }
+.tale-head-acts .tale-acts { margin-top: 0; }  /* (All sessions: the open row is the title, the scroll's top keeps its buttons) */
 /* The Admin menu's door: a gear, admins only (feedback 57: it needn't be found, and the bar needs the room) */
 .manage.admin > button.admin-gear { font-size: var(--fs-lg); padding: 0 10px; }
 /* An attack in Table rolls, one card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with
