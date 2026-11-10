@@ -2,6 +2,12 @@
 ⌘F or Ctrl+F opens the box from any page, results come as you type with the best one highlighted, Enter does the thing
 (a check rolls in the roll window, a rule shows its words, a page opens), and ⌘F again gives the browser's own find."""
 
+import time
+
+from tests.browser.test_roll_card import _pieces
+
+SERVER_ENV = {"DDB_BRIDGE": "1"}  # (Cast is offered where the bridge runs: on beta and askdnd.ai)
+
 
 def test_ctrl_f_finds_and_enter_does_it(people, server):
     player = people("player")
@@ -55,3 +61,30 @@ def test_clicking_a_result_does_it_too(people, server):
     with page.expect_navigation():
         page.locator(".search-res", has_text="Party").first.click()
     assert page.url.endswith("/party") and player.errors == []
+
+
+def test_cast_opens_where_it_can_be_seen(people, server, browser_db):
+    """Brett, Nov 9: on Story a Cast result seemed to do nothing. Its window's words arrive after Search's button for the
+    moment is gone, so it was drawn at the foot of the page, out of sight on a long one; it opens under the box."""
+    was = _pieces(browser_db, server, ["sync"])  # (Cast is offered where askdnd plays the sheet)
+    try:
+        player = people("player")
+        for _ in range(20):  # (the server keeps a campaign's switches for a few seconds)
+            page = player.open("/")
+            page.wait_for_load_state("networkidle")
+            spell = page.evaluate("fetch('/search/index').then(r => r.json()).then(d => (d.rows.find(r => r.a === 'Cast') || {}).n)")
+            if spell:
+                break
+            time.sleep(0.5)
+        assert spell
+        page.locator("[data-search-open]").click()
+        page.fill("#search-q", spell)
+        page.locator(".search-res", has_text=spell).first.click()
+        win = page.locator(".roll-win", has_text=spell)
+        win.wait_for()
+        page.wait_for_timeout(300)
+        at = win.bounding_box()
+        assert at and 0 <= at["y"] < 200, at  # (just under where the box was, whatever the page's length)
+        assert player.errors == []
+    finally:
+        _pieces(browser_db, server, was)
