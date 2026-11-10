@@ -924,6 +924,8 @@ details.feat > summary:hover { color: var(--text-strong); }
 .tabbar.cut-l.cut-r { mask-image: linear-gradient(to right, transparent, var(--bg) 36px, var(--bg) calc(100% - 36px), transparent); }
 .tabbar button { background: none; border: none; padding: 9px 13px; color: var(--muted); font-weight: 500; white-space: nowrap; min-height: 40px; }
 .tabbar button[aria-selected=true] { color: var(--text-strong); box-shadow: inset 0 -2px 0 var(--red); }
+/* A focused tab's ring inside it: the bar scrolls sideways (phones), so a ring outside is cut to a stray red bar between tabs (Brett, Nov 10: seen on every tab bar when a key was pressed, a screenshot's shortcut included) */
+.tabbar button:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; border-radius: var(--r-sm); }
 .tabbar .count { font-size: var(--fs-xs); }
 details.opt { border-top: 1px solid var(--line); }
 details.opt > summary { list-style: none; cursor: pointer; padding: 9px 0; display: flex; gap: 8px; align-items: baseline; }
@@ -1720,8 +1722,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rw-mode .roll-modes button { flex: 1; padding: 7px 4px; font-size: var(--fs-sm); }
 .roll-win .roll-modes button[aria-pressed="true"] { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 0 0 0 1px var(--blue); font-weight: 700; border-radius: var(--r-pill); }  /* (rounded like its track) */
 .rw-add { margin: 8px 0; }
-.rw-add summary, .rs-fold summary { cursor: pointer; font-weight: 600; color: var(--text); font-size: var(--fs-sm); }
-.rw-add .dice-pick, .rs-fold .dice-pick { margin-top: 8px; }
+.rw-add summary { cursor: pointer; font-weight: 600; color: var(--text); font-size: var(--fs-sm); }
+.rw-add .dice-pick { margin-top: 8px; }
 /* The dice picker (roll window, Manual roll) */
 .dice-pick { display: flex; flex-direction: column; gap: 8px; }
 .dp-dice { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1819,7 +1821,6 @@ body.at-table .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .roll-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .roll-pending { border: 1px dashed var(--line); border-radius: var(--r-lg); padding: 10px 14px; color: var(--muted); font-size: var(--fs-sm); }
 .roll-empty { color: var(--muted); font-size: var(--fs-sm); padding: 6px 4px; }
-.rs-controls { border-top: 1px solid var(--line); padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; font-size: var(--fs-xs); color: var(--muted); max-height: 50%; overflow-y: auto; }
 .rs-row { display: flex; align-items: center; gap: 8px; }
 .rc-group { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 .rc-head { flex-basis: 100%; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--faint); }
@@ -2075,9 +2076,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   .rs-grip { display: block; position: absolute; top: 6px; left: calc(50% - 20px); width: 40px; height: 4px; border-radius: var(--r-xs); background: var(--line); }
   .rs-toggle span[aria-hidden] { display: inline-block; transform: rotate(-90deg); }
   body.rolls-closed .rs-toggle span[aria-hidden] { transform: rotate(90deg); }
-  body.rolls-closed :is(.rs-log, .rs-controls) { display: none; }
-  body.at-table.rolls-open:not(.rolls-full) .rs-controls { display: none; }
-  .rs-controls { max-height: none; }
+  body.rolls-closed .rs-log { display: none; }
   .roll-item { grid-template-columns: 32px minmax(0, 1fr) auto; padding: 8px 10px; }
   body.at-table.rolls-open:not(.rolls-full) .roll-item { background: none; border: 0; padding: 3px 0; align-items: center; }
   body.at-table.rolls-open:not(.rolls-full) :is(.roll-dice, .roll-flag, .roll-dmg-line, .roll-acts, .roll-who time) { display: none; }
@@ -3661,20 +3660,41 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .bring-acts { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
 .bring-list { margin: 0; padding-left: 18px; display: grid; gap: var(--sp-1); font-size: var(--fs-sm); }
 
-/* Table rolls' Roll button (Brett chose A, Nov 9, docs/mockups/find-checks/): a search over your character's checks */
+/* Table rolls' Roll (Brett chose A, Nov 10, docs/mockups/roll-kinds/): a window of your character's rolls by ability, as the
+   sheet groups them, with Other and Any dice beside them; typing narrows it */
 .rs-roll { color: var(--text); }
-.rs-pick { position: absolute; left: var(--sp-3); right: var(--sp-3); top: 52px; z-index: 6; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
-  box-shadow: var(--lift); padding: var(--sp-2); display: grid; gap: var(--sp-2); max-height: min(70vh, 540px); overflow-y: auto; }
-.rs-pick-q { width: 100%; font-size: var(--fs-md); padding: 8px 10px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--bg); color: var(--text); }
-.rs-pick .rc-group { display: grid; gap: 1px; margin-top: 0; }
-.rs-pick .rc-head { padding: var(--sp-1) var(--sp-2) 0; }
-.rs-pick .rc { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); width: 100%; border: 0; background: none; border-radius: var(--r-sm);
-  padding: 5px var(--sp-2); font-size: var(--fs-sm); color: var(--text); text-align: left; }
-.rs-pick .rc small { color: var(--muted); margin-left: 4px; }
-.rs-pick .rc b { font-variant-numeric: tabular-nums; }
-.rs-pick .rc:hover, .rs-pick .rc:focus-visible, .rs-pick .rc.first { background: var(--surface-2); outline: none; }
-.rs-pick .rc.prof span { font-weight: 600; }
-@media (max-width: 900px) { .rs-pick { position: fixed; top: auto; left: var(--sp-3); right: var(--sp-3); bottom: calc(72px + env(safe-area-inset-bottom, 0px)); max-height: 60vh; } }
+.roll-board { display: grid; gap: var(--sp-3); align-content: start; }
+.rb-q { width: 100%; font-size: var(--fs-md); padding: 8px 12px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+/* one grid, so Other lines up with the first row of abilities and Any dice with the second (Brett, Nov 10) */
+.rb-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(230px, 1fr); gap: var(--sp-3); align-items: start; }
+.rb-abilities, .rb-side { display: contents; }
+.rb-side > .rb-box:first-child { grid-column: 4; grid-row: 1; }
+.rb-side > .rb-dice { grid-column: 4; grid-row: 2; }
+.rb-ability, .rb-box { display: grid; gap: 1px; padding: var(--sp-1); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--bg); margin: 0; }
+.rb-ability[hidden], .rb-box[hidden], .roll-board .rc[hidden] { display: none; }
+.rb-label { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: var(--sp-2) var(--sp-2) var(--sp-1); }
+.roll-board .rc { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); width: 100%; border: 0; background: none; border-radius: var(--r-sm);
+  padding: 6px var(--sp-2); font-size: var(--fs-sm); color: var(--text); text-align: left; }
+.roll-board .rc b { font-variant-numeric: tabular-nums; color: var(--text-strong); }
+.roll-board .rc:hover, .roll-board .rc:focus-visible, .roll-board .rc.first { background: var(--surface-2); outline: none; }
+.roll-board .rc:focus-visible { box-shadow: inset 0 0 0 2px var(--blue); }
+.roll-board .rc.first { background: var(--selected-bg); }
+.roll-board .rc.prof span::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--amber); margin-right: var(--sp-2); vertical-align: 1px; }
+.roll-board .rc:not(.prof):not(.rb-head) span::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--line); margin-right: var(--sp-2); vertical-align: 1px; }
+.rb-box .rc span::before { display: none !important; }
+.roll-board .rb-head { font-weight: 700; }
+.roll-board .rb-head span { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.roll-board .rb-save { border-bottom: 1px solid var(--line-soft); border-radius: var(--r-sm) var(--r-sm) 0 0; }
+.rb-adv { font-style: normal; font-size: var(--fs-xs); font-weight: 700; padding: 1px 5px; border-radius: var(--r-xs); background: var(--green-line); color: var(--text-strong); margin-left: var(--sp-1); }
+.rb-dice { padding: var(--sp-1) var(--sp-2) var(--sp-2); }
+.rb-dice .rb-label { padding-left: 0; }
+.rb-none { margin: 0; }
+.roll-window { display: grid; gap: var(--sp-3); align-content: start; }
+.roll-window > .tabbar { margin-bottom: 0; }
+.dice-picker.in-roll { display: grid; gap: var(--sp-4); }
+.dice-picker.in-roll .dp-save { justify-content: flex-start; }
+@media (max-width: 900px) { .rb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rb-side > .rb-box:first-child, .rb-side > .rb-dice { grid-column: auto; grid-row: auto; } }
+@media (max-width: 640px) { .rb-grid { grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); } }
 @media (max-width: 640px) { body.rolls-closed .rs-roll { display: none; } }
 
 /* Your account › Email (app/digest.py): a switch per campaign */

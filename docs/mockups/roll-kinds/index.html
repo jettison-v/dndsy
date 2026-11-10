@@ -1,0 +1,441 @@
+<title>Roll's Kinds of Roll</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+<style>
+/* Brett's note 58 (Nov 9): Table rolls' Roll opens a window with the kinds of roll laid out, instead of a search box,
+   and manual rolls in the same window. Three ways beside today's, drawn at a 13-14" laptop's size (the design target)
+   with a phone switch; Cole's real numbers. His pick is kept in the page's store (db: answers/pick). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #3a3f46; --text: #ebe7df; --strong: #fff; --muted: #a29d93;
+  --red: #e5534b; --green: #5bbf7f; --amber: #e8b34b; --blue: #7ea6e0; --gold: #e2b54a;
+  --red-soft: rgba(229,83,75,.15); --blue-soft: rgba(126,166,224,.16); --green-soft: rgba(91,191,127,.15); --gold-soft: rgba(226,181,74,.16);
+  --shadow: rgba(0,0,0,.5); --scrim: rgba(8,9,11,.6);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; --cond: "Roboto Condensed", "Arial Narrow", sans-serif; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10;
+  --red-soft: rgba(184,50,50,.1); --blue-soft: rgba(47,95,158,.12); --green-soft: rgba(47,125,76,.12); --gold-soft: rgba(138,106,16,.13);
+  --shadow: rgba(40,30,10,.2); --scrim: rgba(40,35,25,.35); color-scheme: light; } }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #fff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #d4cec3; --text: #2a2723; --strong: #111; --muted: #6b655c;
+  --red: #b83232; --green: #2f7d4c; --amber: #8a5f06; --blue: #2f5f9e; --gold: #8a6a10;
+  --red-soft: rgba(184,50,50,.1); --blue-soft: rgba(47,95,158,.12); --green-soft: rgba(47,125,76,.12); --gold-soft: rgba(138,106,16,.13);
+  --shadow: rgba(40,30,10,.2); --scrim: rgba(40,35,25,.35); color-scheme: light; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); margin: 0; }
+button, input, textarea { font: inherit; color: inherit; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 36px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+h1, h2, h3 { margin: 0; color: var(--strong); text-wrap: balance; line-height: 1.2; }
+h1 { font-size: 2rem; } h2 { font-size: 1.3rem; }
+p { margin: 0; max-width: 74ch; }
+b { color: var(--strong); }
+.eyebrow { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.note { color: var(--muted); font-size: .86rem; }
+header, section { display: grid; gap: 12px; min-width: 0; }
+.badge { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 5px 9px; border-radius: 999px; background: var(--green-soft); color: var(--green); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.seg button { border: 0; background: none; border-radius: 8px; padding: 7px 12px; font-size: .88rem; font-weight: 600; cursor: pointer; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface-3); color: var(--strong); }
+.seg button:focus-visible, .btn:focus-visible, .r:focus-visible, .die:focus-visible, input:focus-visible, .ktab:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+.what { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; }
+.what[hidden] { display: none; }
+
+/* a laptop's slice of askdnd: Table rolls on the left, the page dimmed behind the window */
+.stage { display: grid; justify-items: center; overflow-x: auto; }
+.slice { container-type: inline-size; width: 100%; max-width: 1240px; height: 640px; position: relative; display: grid; grid-template-columns: 300px minmax(0, 1fr); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--bg); }
+.slice.phone { width: 390px; height: 760px; grid-template-columns: minmax(0, 1fr); }
+.rail { border-right: 1px solid var(--line); padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; min-height: 0; }
+.rail-h { display: flex; align-items: center; gap: 8px; }
+.rail-h .lbl { font: 700 .82rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--gold); flex: 1; }
+.rolls { display: grid; gap: 8px; align-content: start; overflow-y: auto; min-height: 0; flex: 1; }
+.roll { display: grid; grid-template-columns: 34px 1fr auto; gap: 1px 10px; align-items: center; background: var(--surface); border-radius: 12px; padding: 9px 10px; font-size: .8rem; }
+.roll .pic { grid-row: span 2; width: 34px; height: 34px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-size: .72rem; color: var(--muted); font-weight: 700; }
+.roll b { font-size: .88rem; }
+.roll small { color: var(--muted); font-size: .74rem; }
+.roll .tot { grid-row: span 2; font-weight: 800; font-size: 1.55rem; color: var(--strong); font-variant-numeric: tabular-nums; }
+.roll.new { animation: arrive .4s ease-out; }
+@keyframes arrive { from { transform: translateY(-6px); opacity: 0; } to { transform: none; opacity: 1; } }
+.foot { border-top: 1px solid var(--line); padding-top: 8px; display: grid; gap: 2px; font-size: .86rem; }
+.fold { font-weight: 600; display: flex; gap: 6px; align-items: center; }
+.fold::before { content: "▸"; font-size: .8rem; }
+.fold.gone { color: var(--muted); text-decoration: line-through; font-weight: 400; }
+.page { padding: 20px 24px; display: grid; align-content: start; gap: 12px; opacity: .55; min-width: 0; }
+.page .ph { height: 18px; border-radius: 6px; background: var(--surface-2); }
+.page .ph.big { height: 120px; border-radius: 12px; }
+.slice.phone .page { display: none; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 10px; padding: 7px 12px; font-size: .84rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--red); border-color: var(--red); color: #fff; }
+.btn:disabled { opacity: .45; cursor: default; }
+.x { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); cursor: pointer; display: grid; place-items: center; flex: none; }
+
+/* the window, over the page */
+.scrim { position: absolute; inset: 0; background: var(--scrim); display: grid; place-items: center; padding: 22px; z-index: 5; }
+.scrim[hidden] { display: none; }
+.win { width: min(900px, 100%); max-height: 100%; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 60px var(--shadow); min-height: 0; }
+.win-h { display: flex; align-items: center; gap: 12px; padding: 14px 16px 10px; }
+.win-h h3 { font-size: 1.05rem; flex: none; }
+.win-h .find { flex: 1; min-width: 0; }
+.find input { width: 100%; font-size: 16px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+.win-b { padding: 4px 16px 16px; overflow-y: auto; min-height: 0; }
+.win-f { border-top: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: .84rem; color: var(--muted); }
+.who { display: inline-flex; gap: 4px; }
+.who span { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); }
+.who span.on { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.kb { font: 600 .74rem/1 var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 2px 5px; color: var(--muted); }
+
+/* a roll in the window */
+.r { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 6px 8px; border-radius: 8px; text-align: left; cursor: pointer; font-size: .86rem; }
+.r:hover { background: var(--surface-2); }
+.r b { font-variant-numeric: tabular-nums; }
+.r .prof { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); display: inline-block; margin-right: 6px; vertical-align: 1px; }
+.r .noprof { width: 7px; height: 7px; border-radius: 50%; border: 1px solid var(--line); display: inline-block; margin-right: 6px; vertical-align: 1px; }
+.r .adv { font: 700 .62rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; padding: 3px 5px; border-radius: 5px; background: var(--green-soft); color: var(--green); margin-left: 6px; }
+.r.first { background: var(--blue-soft); }
+.r.dim { display: none; }
+.lbl2 { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 8px 8px 4px; }
+
+/* A: by ability */
+.a-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr); gap: 14px; }
+.abil { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-content: start; }
+.ab { border: 1px solid var(--line); border-radius: 12px; padding: 4px; display: grid; align-content: start; background: var(--bg); }
+.ab .r.head { font-weight: 700; color: var(--strong); }
+.ab .r.head span { font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--gold); }
+.ab .r.save { border-bottom: 1px solid var(--line); border-radius: 8px 8px 0 0; margin-bottom: 2px; }
+.side-col { display: grid; gap: 10px; align-content: start; }
+.box { border: 1px solid var(--line); border-radius: 12px; padding: 4px; background: var(--bg); display: grid; align-content: start; }
+
+/* any dice */
+.dice { padding: 4px 8px 8px; display: grid; gap: 8px; }
+.dice-row { display: flex; flex-wrap: wrap; gap: 5px; }
+.die { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 0; width: 46px; font-size: .82rem; font-weight: 600; cursor: pointer; position: relative; }
+.die .n { position: absolute; top: -7px; right: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: var(--red); color: #fff; font-size: .68rem; display: grid; place-items: center; padding: 0 4px; }
+.formula { font: 700 1.1rem/1.2 var(--sans); color: var(--strong); min-height: 1.3em; font-variant-numeric: tabular-nums; }
+.dice-go { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.dice-go input { width: 70px; font-size: 16px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
+
+/* B: by kind */
+.ktabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); padding: 0 16px; overflow-x: auto; }
+.ktab { border: 0; background: none; padding: 8px 12px; font-size: .88rem; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; }
+.ktab[aria-selected="true"] { color: var(--strong); border-bottom-color: var(--red); }
+.ktab small { color: var(--muted); font-weight: 500; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; padding-top: 10px; }
+.tiles .r { border: 1px solid var(--line); background: var(--bg); padding: 9px 10px; }
+
+/* C: a list beside the dice */
+.c-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 14px; }
+.c-list { columns: 2 220px; column-gap: 14px; }
+.c-list .grp { break-inside: avoid; margin-bottom: 6px; }
+
+/* today: the search under the button */
+.pop { position: absolute; left: 14px; top: 56px; width: 330px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px var(--shadow); padding: 12px; display: grid; gap: 8px; z-index: 5; max-height: 520px; }
+.pop[hidden] { display: none; }
+.pop .list { overflow-y: auto; max-height: 420px; }
+
+/* the roll window, after a pick (today's, unchanged) */
+.rw { position: absolute; left: 318px; top: 70px; width: 300px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px var(--shadow); padding: 14px; display: grid; gap: 10px; z-index: 6; }
+.rw[hidden] { display: none; }
+.rw h4 { margin: 0; color: var(--strong); font-size: 1rem; display: flex; justify-content: space-between; }
+.rw .modes { display: flex; gap: 4px; }
+.rw .modes button { flex: 1; border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 0; font-size: .8rem; cursor: pointer; }
+.rw .modes button[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.rw .why { font-size: .8rem; color: var(--green); }
+
+/* a phone: the window is a sheet from the bottom, one column */
+@container (max-width: 520px) {
+  .rail { border-right: 0; }
+  .scrim { padding: 0; place-items: end stretch; }
+  .win { width: 100%; max-height: 92%; border-radius: 16px 16px 0 0; }
+  .win-h { flex-wrap: wrap; }
+  .win-h .find { order: 3; flex-basis: 100%; }
+  .a-grid, .c-grid { grid-template-columns: minmax(0, 1fr); }
+  .abil { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .c-list { columns: 1; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pop { left: 8px; right: 8px; width: auto; }
+  .rw { left: 8px; right: 8px; width: auto; top: auto; bottom: 8px; }
+  .keys { display: none; }
+  .win-h h3 { flex: 1; }
+}
+
+.pros { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 10px; }
+.pro { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .88rem; }
+.pro > b:first-child { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+.pro.good > b:first-child { color: var(--green); } .pro.cost > b:first-child { color: var(--amber); }
+.answer { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 16px; }
+.aq { display: grid; gap: 8px; }
+.picks { display: flex; flex-wrap: wrap; gap: 8px; }
+label.pick { position: relative; display: inline-flex; align-items: center; min-height: 38px; padding: 6px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+label.pick input { position: absolute; opacity: 0; pointer-events: none; }
+label.pick:has(input:checked) { background: var(--strong); color: var(--bg); border-color: var(--strong); }
+label.pick:focus-within { outline: 2px solid var(--red); outline-offset: 2px; }
+textarea { width: 100%; min-height: 70px; font-size: 16px; line-height: 1.45; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.send-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+button.send { background: var(--red); color: #fff; border: 0; border-radius: 10px; padding: 11px 20px; font-weight: 600; cursor: pointer; }
+.said { color: var(--green); font-weight: 600; font-size: .9rem; }
+</style>
+
+<main class="wrap">
+  <header>
+    <div class="eyebrow">askdnd · Table rolls · your note 58 · Nov 10</div>
+    <h1>Roll's kinds of roll</h1>
+    <p>Where it lives: the <b>Roll</b> button beside <b>Table rolls</b>' title, on every page at the table. Today it drops a search box with a list under it, and dice for "roll 2d6" sit in a <b>Manual roll</b> fold at the sidebar's bottom. You asked for a window that lays the kinds of roll out instead, with the manual roll inside it. Three ways, drawn at laptop size with Cole's real numbers, plus today's for comparison. Press <b>Roll</b>, then anything in the window; type to narrow it; switch to a phone.</p>
+    <p class="note">Every way keeps typing: start typing in the window and it narrows, and Enter rolls the first match (lit blue), so ⌘F's Search and today's speed aren't lost. Picking a roll opens the roll window as it does now (Advantage, Guidance, who sees it); the last question asks whether it should.</p>
+  </header>
+
+  <section>
+    <div class="bar">
+      <div class="seg" role="group" aria-label="Which way">
+        <button type="button" data-way="today" aria-pressed="false">Today</button>
+        <button type="button" data-way="a" aria-pressed="true">A. By ability</button>
+        <button type="button" data-way="b" aria-pressed="false">B. By kind, in tabs</button>
+        <button type="button" data-way="c" aria-pressed="false">C. A list beside the dice</button>
+      </div>
+      <div class="seg" role="group" aria-label="Screen">
+        <button type="button" data-size="laptop" aria-pressed="true">Laptop</button>
+        <button type="button" data-size="phone" aria-pressed="false">Phone</button>
+      </div>
+    </div>
+    <div class="what" data-what="today" hidden><b>Today.</b> <span>Roll drops a search box and a list under the button; Manual roll is a fold at the bottom of the sidebar. Fast once you know to type, but nothing is laid out, and the dice are somewhere else.</span></div>
+    <div class="what" data-what="a"><div class="bar"><span class="badge">Claude's pick</span><b>A. By ability, as the sheet lays it out.</b></div><span>A window over the page: six blocks, one per ability, each with its check (the heading), its save and its skills, the way a character sheet groups them, so a player finds Stealth under Dexterity. Beside them, Initiative, a Death save, a Hit Point Die and <b>Any dice</b>. Everything in one look, one click away.</span></div>
+    <div class="what" data-what="b" hidden><b>B. By kind, in tabs.</b> <span>The same window with a tab per kind: Skills, Saves, Checks, Other and Any dice. Calmer, with big targets, but a save is a tab away from a skill, and the tab you need isn't always the one open.</span></div>
+    <div class="what" data-what="c" hidden><b>C. A list beside the dice.</b> <span>Today's list made bigger, grouped and in two columns, with the dice beside it. The smallest change: what players know, with room to breathe.</span></div>
+    <div class="stage"><div class="slice" id="slice">
+      <aside class="rail">
+        <div class="rail-h"><span class="lbl">Table rolls</span><button type="button" class="btn" data-open>Roll</button><span class="x" aria-hidden="true">«</span></div>
+        <div class="rolls" id="rolls">
+          <div class="roll"><span class="pic">C</span><b>Dex save</b><span class="tot">23</span><small>Cole · d20 20 +3 · natural 20</small></div>
+          <div class="roll"><span class="pic">T</span><b>Arcana check</b><span class="tot">17</span><small>Trah · d20 9 +8</small></div>
+          <div class="roll"><span class="pic">BC</span><b>Initiative</b><span class="tot">12</span><small>Big C · d20 11 +1</small></div>
+        </div>
+        <div class="foot"><span class="fold" id="manual-fold">Manual roll</span><span class="note">Your dice</span></div>
+      </aside>
+      <div class="page" aria-hidden="true"><div class="ph" style="width: 40%"></div><div class="ph big"></div><div class="ph" style="width: 70%"></div><div class="ph big"></div><div class="ph" style="width: 55%"></div></div>
+      <div class="pop" id="pop" hidden></div>
+      <div class="scrim" id="scrim" hidden></div>
+      <div class="rw" id="rw" hidden></div>
+    </div></div>
+  </section>
+
+  <section>
+    <h2>How they compare</h2>
+    <div class="pros">
+      <div class="pro good"><b>A, by ability</b>Finds things the way the sheet does: Stealth under Dexterity, beside the Dex save. All 30 rolls and the dice in one look; no tab to guess. The window is big, which suits a laptop; on a phone it's a tall sheet that scrolls.</div>
+      <div class="pro cost"><b>B, by kind</b>Each tab is short and clear, but you have to know a skill from a check from a save before you find it, which is what players couldn't find in the first place.</div>
+      <div class="pro cost"><b>C, a list beside the dice</b>The least to learn, and the dice finally sit beside the rest. Still a list to read down: 30 rows in two columns.</div>
+      <div class="pro good"><b>In all three</b>The window keeps typing (Enter rolls the first match) and holds the manual roll, so the sidebar's Manual roll fold can go. Proficient rolls carry a dot, and a roll with Advantage says so (Cole's Con save, War Caster).</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Your pick</h2>
+    <form class="answer" id="answer">
+      <div class="aq"><b>Which way?</b>
+        <div class="picks" role="radiogroup" aria-label="Which way">
+          <label class="pick"><input type="radio" name="way" value="A">A. By ability</label>
+          <label class="pick"><input type="radio" name="way" value="B">B. By kind, in tabs</label>
+          <label class="pick"><input type="radio" name="way" value="C">C. A list beside the dice</label>
+          <label class="pick"><input type="radio" name="way" value="today">Keep today's</label>
+        </div></div>
+      <div class="aq"><b>After you pick a roll in the window</b>
+        <div class="picks" role="radiogroup" aria-label="After a pick">
+          <label class="pick"><input type="radio" name="after" value="window">The roll window opens, as today (Claude's pick)</label>
+          <label class="pick"><input type="radio" name="after" value="now">It rolls at once; Advantage and who sees it sit in the window's footer</label>
+        </div></div>
+      <div class="aq"><b>The Manual roll fold at the sidebar's bottom</b>
+        <div class="picks" role="radiogroup" aria-label="Manual roll fold">
+          <label class="pick"><input type="radio" name="fold" value="retire">Retire it: the dice live in the window (Claude's pick)</label>
+          <label class="pick"><input type="radio" name="fold" value="keep">Keep it as well</label>
+        </div></div>
+      <div class="aq"><b>Anything else</b> <span class="note">(optional)</span><textarea name="words" id="words"></textarea></div>
+      <div class="send-row"><button class="send" type="submit" id="send">Send to Claude</button><span class="said" id="said" role="status"></span></div>
+    </form>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s), $$ = s => document.querySelectorAll(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  // Cole's numbers, from his sheet (level 8 Druid)
+  const AB = [["Str", "Strength", "−1"], ["Dex", "Dexterity", "+2"], ["Con", "Constitution", "+1"], ["Int", "Intelligence", "+0"], ["Wis", "Wisdom", "+4"], ["Cha", "Charisma", "+2"]];
+  const SAVES = { Str: ["+0"], Dex: ["+3"], Con: ["+2", "", "War Caster: Advantage to keep Concentration"], Int: ["+4", "p"], Wis: ["+8", "p"], Cha: ["+3"] };
+  const SKILLS = [["Athletics", "Str", "+0"], ["Acrobatics", "Dex", "+3"], ["Sleight of Hand", "Dex", "+3"], ["Stealth", "Dex", "+6", "p"],
+    ["Arcana", "Int", "+5"], ["History", "Int", "+1"], ["Investigation", "Int", "+1"], ["Nature", "Int", "+8", "p"], ["Religion", "Int", "+1"],
+    ["Animal Handling", "Wis", "+5"], ["Insight", "Wis", "+8", "p"], ["Medicine", "Wis", "+5"], ["Perception", "Wis", "+8", "p"], ["Survival", "Wis", "+8", "p"],
+    ["Deception", "Cha", "+3"], ["Intimidation", "Cha", "+3"], ["Performance", "Cha", "+3"], ["Persuasion", "Cha", "+3"]];
+  const OTHER = [["Initiative", "+3"], ["Death save", "d20", "", "10 or higher succeeds"], ["Hit Point Die", "d8+1", "", "Spend one on a Short Rest"]];
+  const r = (label, bonus, prof, adv, find) => `<button type="button" class="r" data-roll="${esc(label)}" data-bonus="${esc(bonus)}" data-find="${esc((find || label).toLowerCase())}"${adv ? ` data-adv="${esc(adv)}" title="${esc(adv)}"` : ""}><span>${prof === "p" ? '<i class="prof" title="Proficient"></i>' : prof === "-" ? "" : '<i class="noprof"></i>'}${esc(label)}${adv ? '<span class="adv">Adv</span>' : ""}</span><b>${esc(bonus)}</b></button>`;
+  const DICE = [4, 6, 8, 10, 12, 20, 100];
+  const diceBox = () => `<div class="dice" data-dice><div class="dice-row">${DICE.map(d => `<button type="button" class="die" data-die="${d}">d${d}</button>`).join("")}</div>
+    <div class="formula" data-formula aria-live="polite"></div>
+    <div class="dice-go"><label class="note">Bonus <input type="text" inputmode="numeric" placeholder="±0" data-bonusin></label><button type="button" class="btn" data-clear>Clear</button><button type="button" class="btn primary" data-dice-roll disabled>Roll</button></div></div>`;
+  const head = `<div class="win-h"><h3>Roll for Cole</h3><div class="find"><input type="search" placeholder="Type to narrow: ste, dex, init…" aria-label="Narrow the rolls" data-q></div><button type="button" class="x" data-close aria-label="Close">✕</button></div>`;
+  const foot = `<div class="win-f"><span>Goes to</span><span class="who"><span class="on">Table</span><span>DM only</span><span>Only me</span></span><span style="flex:1"></span><span class="keys"><span class="kb">Enter</span> rolls the first match · <span class="kb">Esc</span> closes</span></div>`;
+
+  function wayA() {
+    const heading = (k, name, mod) => `<button type="button" class="r head" data-roll="${esc(name)} check" data-bonus="${esc(mod)}" data-find="${esc((name + " check " + k).toLowerCase())}" title="${esc(name)} check"><span>${esc(name)}</span><b>${esc(mod)}</b></button>`;
+    const blocks = AB.map(([k, name, mod]) => `<div class="ab">${heading(k, name, mod)}
+      ${r(k + " save", SAVES[k][0], SAVES[k][1] || "", SAVES[k][2] || "", k + " save " + name + " saving throw").replace('class="r"', 'class="r save"')}
+      ${SKILLS.filter(s => s[1] === k).map(s => r(s[0], s[2], s[3] || "", "", s[0] + " " + k)).join("")}</div>`).join("");
+    return `<div class="win">${head}<div class="win-b"><div class="a-grid"><div class="abil">${blocks}</div>
+      <div class="side-col"><div class="box"><div class="lbl2">Other</div>${OTHER.map(o => r(o[0], o[1], "-", "", o[0] + " " + (o[3] || ""))).join("")}</div>
+      <div class="box"><div class="lbl2">Any dice</div>${diceBox()}</div></div></div></div>${foot}</div>`;
+  }
+  const KINDS = [
+    ["Skills", () => SKILLS.map(s => r(s[0], s[2], s[3] || "", "", s[0] + " " + s[1])).join("")],
+    ["Saves", () => AB.map(([k, name]) => r(k + " save", SAVES[k][0], SAVES[k][1] || "", SAVES[k][2] || "", k + " save " + name)).join("")],
+    ["Checks", () => AB.map(([k, name, mod]) => r(name + " check", mod, "-", "", name + " check " + k)).join("")],
+    ["Other", () => OTHER.map(o => r(o[0], o[1], "-")).join("")],
+    ["Any dice", () => `<div class="box" style="grid-column: 1 / -1">${diceBox()}</div>`],
+  ];
+  function wayB(open = 0) {
+    return `<div class="win">${head}<div class="ktabs" role="tablist">${KINDS.map(([n], i) => `<button type="button" role="tab" class="ktab" data-k="${i}" aria-selected="${i === open}">${n}${i < 3 ? ` <small>${[18, 6, 6][i]}</small>` : ""}</button>`).join("")}</div>
+      <div class="win-b"><div class="tiles">${KINDS[open][1]()}</div></div>${foot}</div>`;
+  }
+  function grouped() {
+    return [["Skills", SKILLS.map(s => r(s[0], s[2], s[3] || "", "", s[0] + " " + s[1]))], ["Saves", AB.map(([k, name]) => r(k + " save", SAVES[k][0], SAVES[k][1] || "", SAVES[k][2] || "", k + " save " + name))],
+      ["Checks", AB.map(([k, name, mod]) => r(name + " check", mod, "-", "", name + " check " + k))], ["Other", OTHER.map(o => r(o[0], o[1], "-"))]]
+      .map(([n, rows]) => `<div class="grp"><div class="lbl2">${n}</div>${rows.join("")}</div>`).join("");
+  }
+  function wayC() {
+    return `<div class="win">${head}<div class="win-b"><div class="c-grid"><div class="c-list">${grouped()}</div><div class="box" style="align-self: start"><div class="lbl2">Any dice</div>${diceBox()}</div></div></div>${foot}</div>`;
+  }
+  function today() {
+    return `<div class="find"><input type="search" placeholder="Stealth, Dex save, Initiative…" aria-label="Find a roll" data-q></div><div class="list">${grouped()}</div>`;
+  }
+
+  let way = "a", size = "laptop";
+  const slice = $("#slice"), scrim = $("#scrim"), pop = $("#pop"), rw = $("#rw"), rolls = $("#rolls");
+  function close() { scrim.hidden = true; pop.hidden = true; scrim.innerHTML = ""; pop.innerHTML = ""; }
+  function open() {
+    rw.hidden = true;
+    if (way === "today") { pop.innerHTML = today(); pop.hidden = false; wire(pop); }
+    else { scrim.innerHTML = way === "a" ? wayA() : way === "b" ? wayB() : wayC(); scrim.hidden = false; wire(scrim); }
+  }
+  function narrow(root) {
+    const q = root.querySelector("[data-q]"), words = q.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    let first = null;
+    root.querySelectorAll(".r").forEach(b => {
+      const hit = !words.length || words.every(w => b.dataset.find.split(/\s+/).some(t => t.startsWith(w)));
+      b.classList.toggle("dim", !hit); b.classList.remove("first");
+      if (hit && words.length && !first) first = b;
+    });
+    if (first) first.classList.add("first");
+    root.querySelectorAll(".ab, .box, .grp").forEach(g => { if (g.querySelector(".r")) g.style.display = [...g.querySelectorAll(".r")].some(b => !b.classList.contains("dim")) || !words.length ? "" : "none"; });
+    return first;
+  }
+  function wire(root) {
+    const q = root.querySelector("[data-q]");
+    setTimeout(() => q.focus({ preventScroll: true }), 0);
+    q.addEventListener("input", () => {
+      const tiles = root.querySelector(".tiles");
+      if (tiles) {  // B: typing searches every kind, not just the open tab; clearing it shows the tab again
+        const open = +(root.querySelector('.ktab[aria-selected="true"]') || { dataset: { k: 0 } }).dataset.k;
+        tiles.innerHTML = q.value.trim() ? KINDS.slice(0, 4).map(([, rows]) => rows()).join("") : KINDS[open][1]();
+        if (!q.value.trim()) { const d = tiles.querySelector("[data-dice]"); if (d) wireDice(d); }
+      }
+      narrow(root);
+    });
+    q.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); const f = narrow(root) || root.querySelector(".r:not(.dim)"); if (f) f.click(); } if (e.key === "Escape") close(); });
+    const dice = root.querySelector("[data-dice]");
+    if (dice) wireDice(dice);
+  }
+  function wireDice(box) {
+    const counts = {}, out = box.querySelector("[data-formula]"), go = box.querySelector("[data-dice-roll]"), bon = box.querySelector("[data-bonusin]");
+    const formula = () => { const t = Object.keys(counts).filter(k => counts[k]).sort((a, b) => b - a).map(d => counts[d] + "d" + d).join(" + "); const m = parseInt(bon.value, 10) || 0; return t ? t + (m ? (m > 0 ? " + " : " − ") + Math.abs(m) : "") : ""; };
+    const show = () => { out.textContent = formula(); go.disabled = !formula(); go.textContent = formula() ? "Roll " + formula() : "Roll"; box.querySelectorAll("[data-die]").forEach(b => { const n = counts[b.dataset.die]; b.innerHTML = "d" + b.dataset.die + (n ? `<span class="n">${n}</span>` : ""); }); };
+    box.addEventListener("click", e => {
+      const d = e.target.closest("[data-die]"); if (d) { counts[d.dataset.die] = (counts[d.dataset.die] || 0) + 1; show(); return; }
+      if (e.target.closest("[data-clear]")) { Object.keys(counts).forEach(k => delete counts[k]); bon.value = ""; show(); return; }
+      if (e.target.closest("[data-dice-roll]")) {
+        let total = parseInt(bon.value, 10) || 0; const parts = [];
+        Object.keys(counts).forEach(d => { for (let i = 0; i < counts[d]; i++) { const v = 1 + Math.floor(Math.random() * d); total += v; parts.push(v); } });
+        landed(formula(), total, "Dice · " + parts.join(" "));
+        Object.keys(counts).forEach(k => delete counts[k]); bon.value = ""; show(); close();
+      }
+    });
+    bon.addEventListener("input", show);
+    show();
+  }
+  function landed(label, total, how) {
+    const el = document.createElement("div");
+    el.className = "roll new";
+    el.innerHTML = `<span class="pic">C</span><b>${esc(label)}</b><span class="tot">${total}</span><small>Cole · ${esc(how)}</small>`;
+    rolls.prepend(el);
+  }
+  // picking a roll: the roll window opens beside Table rolls, as it does today (mode, pills, who sees), then Roll
+  function pick(b) {
+    close();
+    const label = b.dataset.roll, bonus = b.dataset.bonus, adv = b.dataset.adv;
+    rw.innerHTML = `<h4><span>${esc(label)}</span><span>${esc(bonus)}</span></h4>
+      <div class="modes" role="group" aria-label="Mode"><button type="button" aria-pressed="${!adv}">Normal</button><button type="button" aria-pressed="${!!adv}">Advantage</button><button type="button" aria-pressed="false">Disadvantage</button></div>
+      ${adv ? `<div class="why">${esc(adv)}</div>` : ""}<div class="note">Guidance and other pills, and who sees it, as today.</div>
+      <div style="display:flex; gap:8px; justify-content:flex-end"><button type="button" class="btn" data-rw-x>Cancel</button><button type="button" class="btn primary" data-rw-go>Roll</button></div>`;
+    rw.hidden = false;
+    rw.querySelector("[data-rw-go]").focus();
+    rw.onclick = e => {
+      const m = e.target.closest(".modes button"); if (m) { rw.querySelectorAll(".modes button").forEach(x => x.setAttribute("aria-pressed", x === m)); return; }
+      if (e.target.closest("[data-rw-x]")) { rw.hidden = true; return; }
+      if (!e.target.closest("[data-rw-go]")) return;
+      const mode = [...rw.querySelectorAll(".modes button")].findIndex(x => x.getAttribute("aria-pressed") === "true");
+      const d20 = () => 1 + Math.floor(Math.random() * 20);
+      if (/^d/.test(bonus)) { const sides = parseInt(bonus.slice(1), 10), plus = parseInt((bonus.split("+")[1] || "0"), 10), v = 1 + Math.floor(Math.random() * sides); landed(label, v + plus, bonus + " " + v + (plus ? " +" + plus : "")); }
+      else { const a = d20(), c = d20(), kept = mode === 1 ? Math.max(a, c) : mode === 2 ? Math.min(a, c) : a, n = parseInt(bonus.replace("−", "-"), 10); landed(label, kept + n, "d20 " + (mode ? a + " / " + c : a) + " " + bonus + (mode === 1 ? " · Adv" : mode === 2 ? " · Dis" : "")); }
+      rw.hidden = true;
+    };
+  }
+  slice.addEventListener("click", e => {
+    if (e.target.closest("[data-open]")) { (scrim.hidden && pop.hidden) ? open() : close(); return; }
+    if (e.target.closest("[data-close]")) { close(); return; }
+    if (e.target === scrim) { close(); return; }
+    const k = e.target.closest(".ktab");
+    if (k) { const q = scrim.querySelector("[data-q]").value; scrim.innerHTML = wayB(+k.dataset.k); wire(scrim); scrim.querySelector("[data-q]").value = q; narrow(scrim); return; }
+    const b = e.target.closest(".r");
+    if (b) pick(b);
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!rw.hidden) rw.hidden = true; else close(); } });
+  $$("[data-way]").forEach(b => b.addEventListener("click", () => {
+    way = b.dataset.way;
+    $$("[data-way]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    $$("[data-what]").forEach(w => { w.hidden = w.dataset.what !== way; });
+    $("#manual-fold").classList.toggle("gone", way !== "today");
+    $("#manual-fold").title = way === "today" ? "" : "In the window now";
+    close(); rw.hidden = true; open();
+  }));
+  $$("[data-size]").forEach(b => b.addEventListener("click", () => {
+    size = b.dataset.size;
+    $$("[data-size]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    slice.classList.toggle("phone", size === "phone");
+  }));
+  $("#manual-fold").classList.add("gone");
+  open();
+
+  // the answer (db: answers/pick)
+  const form = $("#answer"), said = $("#said"), send = $("#send");
+  let db = null;
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db) { said.textContent = "Open this page signed in to claude.ai to send it."; return; }
+    const f = new FormData(form);
+    send.disabled = true;
+    try { await db.collection("answers").doc("pick").set({ way: f.get("way") || "", after: f.get("after") || "", fold: f.get("fold") || "", words: (f.get("words") || "").trim(), at: new Date().toISOString() }); said.textContent = "Sent to Claude"; }
+    catch (err) { said.textContent = "Couldn't send it. Try again."; }
+    send.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use("db"); } catch (e) { db = null; }
+    if (!db) return;
+    try {
+      const doc = await db.collection("answers").doc("pick").get();
+      if (!doc.exists) return;
+      const a = doc.data();
+      form.querySelectorAll("input[type=radio]").forEach(x => { x.checked = a[x.name] === x.value; });
+      $("#words").value = a.words || "";
+      said.textContent = "Sent earlier: change it and send again if you like";
+    } catch (err) { /* nothing yet */ }
+  })();
+})();
+</script>

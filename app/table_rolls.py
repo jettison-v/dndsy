@@ -706,11 +706,15 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
 
 @router.get("/rolls/checks")
 def checks(request: Request, db: Session = Depends(get_db)):
-    """The sidebar's quick rolls for your own character: ability checks, skills, saves, a
-    Death save and a Hit Die. Empty for anyone without a character (the DM)."""
+    """Table rolls' Roll window (Brett chose A, Nov 10, docs/mockups/roll-kinds/): your own character's ability checks,
+    saves and skills by ability, Initiative, a Death save, a Hit Die, and Any dice; for anyone without a character (the
+    DM), Any dice alone; and a Your dice tab (Brett, Nov 10)."""
     user = current_user(request)
     if not user:
         return HTMLResponse("", status_code=401)
+    from app import dice  # (Your dice, the window's second tab)
+
     ch = picks.my_character(db, user)
     sheet = chars.character_summary(ch) if ch else None
-    return templates.TemplateResponse(request, "_roll_checks.html", {"c": ch, "s": sheet, "ctx": roll_context(sheet)})
+    return templates.TemplateResponse(request, "_roll_checks.html", {"c": ch, "s": sheet, "ctx": roll_context(sheet), "dm": is_dm(user),
+                                                                     "d": dice.prefs(picks.user_row(db, user)), "sets": dice.SETS, "materials": dice.MATERIALS})

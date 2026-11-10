@@ -1,25 +1,46 @@
-{# Table rolls' Roll button (app/table_rolls.checks; Brett chose A, Nov 9, docs/mockups/find-checks/): your character's
-   skills, saves, checks, Initiative, a Death save and a Hit Die, found by typing (data-find: the name and its ability).
-   Each is an ordinary roll button, so it opens the same roll window. #}
+{# Table rolls' Roll (app/table_rolls.checks; Brett chose A, Nov 10, docs/mockups/roll-kinds/, his note 58): a window
+   with every roll your character makes off Battle laid out by ability, as the sheet groups them (each ability's check,
+   its save and its skills), then Initiative, a Death save, a Hit Point Die, and Any dice (the manual roll, which left the
+   sidebar's fold), and a Your dice tab (Brett, Nov 10: one door; _dice_form.html). Typing narrows it and Enter rolls the first match (data-find: the name and its ability). Each roll is
+   an ordinary roll button, so it opens the roll window as anywhere else (app.js "Table rolls' Roll"). The DM, with no
+   character, gets Any dice. #}
 {% from "_char.html" import roll_attrs %}
-{% if s %}
-<div class="rs-pick-list" data-roll-char="{{ c.id }}" data-roll-ctx='{{ ctx | tojson }}'>
-<div class="rc-group"><span class="rc-head">Skills</span>
-  {% for sk in s.skills %}<button type="button" class="rc{{ ' prof' if sk.proficiency }}" data-find="{{ (sk.name ~ ' ' ~ (sk.ability or '')) | lower }}" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv) }}><span>{{ sk.name }} <small>{{ sk.ability }}</small></span> <b>{{ sk.label }}</b></button>{% endfor %}
+<div class="peek-head">
+  <div><div class="note">Table rolls</div><h2 id="peek-title">{% if s %}Roll for {{ c.name }}{% else %}Roll dice{% endif %}</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="rc-group"><span class="rc-head">Saves</span>
-  {% for sv in s.saves %}<button type="button" class="rc{{ ' prof' if sv.proficient }}" data-find="{{ (sv.short ~ ' save ' ~ (sv.ability or '') ~ ' saving throw') | lower }}" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }}><span>{{ sv.short }} save</span> <b>{{ sv.label }}</b></button>{% endfor %}
+<div class="peek-body roll-window">
+<div class="tabbar" role="tablist" aria-label="Roll or your dice">
+  <button type="button" role="tab" aria-selected="true" data-tab="rb-roll">Roll</button>
+  <button type="button" role="tab" aria-selected="false" data-tab="rb-dice">Your dice</button>
 </div>
-<div class="rc-group"><span class="rc-head">Checks</span>
-  {% for a in s.abilities %}<button type="button" class="rc" data-find="{{ (a.name ~ ' check ' ~ a.short) | lower }}" {{ roll_attrs("check", a.name ~ " check", a.label) }}><span>{{ a.name }} check</span> <b>{{ a.label }}</b></button>{% endfor %}
+<div id="rb-roll" class="roll-board{{ ' dice-only' if not s }}"{% if s %} data-roll-char="{{ c.id }}" data-roll-ctx='{{ ctx | tojson }}'{% endif %}>
+  {% if s %}
+  <input type="search" class="rb-q" placeholder="Type to narrow: ste, dex, init…" aria-label="Narrow the rolls" autocomplete="off">
+  <div class="rb-grid">
+    <div class="rb-abilities">
+      {% for a in s.abilities %}{% set sv = s.saves | selectattr("short", "equalto", a.short) | first %}
+      <div class="rb-ability rc-group">
+        <button type="button" class="rc rb-head" data-find="{{ (a.name ~ ' check ' ~ a.short) | lower }}" {{ roll_attrs("check", a.name ~ " check", a.label) }}><span>{{ a.name }}</span> <b>{{ a.label }}</b></button>
+        {% if sv %}<button type="button" class="rc rb-save{{ ' prof' if sv.proficient }}" data-find="{{ (sv.short ~ ' save ' ~ a.name ~ ' saving throw') | lower }}" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }}><span>{{ sv.short }} save{% if sv.adv %} <i class="rb-adv" title="{{ sv.adv | map(attribute='text') | select | join('; ') }}">Adv</i>{% endif %}</span> <b>{{ sv.label }}</b></button>{% endif %}
+        {% for sk in s.skills if sk.ability == a.short %}<button type="button" class="rc{{ ' prof' if sk.proficiency }}" data-find="{{ (sk.name ~ ' ' ~ a.short) | lower }}" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv) }}><span>{{ sk.name }}</span> <b>{{ sk.label }}</b></button>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="rb-side">
+      <div class="rb-box rc-group"><span class="rb-label">Other</span>
+        <button type="button" class="rc" data-find="initiative" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }}><span>Initiative</span> <b>{{ s.initiative }}</b></button>
+        <button type="button" class="rc" data-find="death save" data-roll="death" data-label="Death save" title="10 or higher succeeds; a 20 brings you back with 1 Hit Point; a 1 counts as two failures"><span>Death save</span> <b>d20</b></button>
+        {% for d in ctx.hit_dice %}<button type="button" class="rc" data-find="hit die hit point die rest" data-roll="heal" data-label="Hit Die" data-dmg="1{{ d }}{{ '%+d' % ctx.con if ctx.con }}" title="Spend a Hit Die on a Short Rest: roll it and add your Constitution modifier"><span>Hit Point Die</span> <b>{{ d }}{{ "%+d" % ctx.con if ctx.con }}</b></button>{% endfor %}
+      </div>
+      <div class="rb-box rb-dice"><span class="rb-label">Any dice</span><div data-manual></div></div>
+    </div>
+  </div>
+  <p class="note rb-none" hidden>Nothing by that name. Any dice is still here.</p>
+  {% else %}
+  {% if c or not dm %}<p class="note">{{ "Your character's sheet isn't loaded yet." if c else "Ask an admin to link your character to see its checks here." }}</p>{% endif %}
+  <div class="rb-box rb-dice"><span class="rb-label">Any dice</span><div data-manual></div></div>
+  {% endif %}
 </div>
-<div class="rc-group"><span class="rc-head">Other</span>
-  <button type="button" class="rc" data-find="initiative" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }}><span>Initiative</span> <b>{{ s.initiative }}</b></button>
-  <button type="button" class="rc" data-find="death save" data-roll="death" data-label="Death save" title="10 or higher succeeds; a 20 brings you back with 1 Hit Point; a 1 counts as two failures"><span>Death save</span> <b>d20</b></button>
-  {% for d in ctx.hit_dice %}<button type="button" class="rc" data-find="hit die hit point die rest" data-roll="heal" data-label="Hit Die" data-dmg="1{{ d }}{{ '%+d' % ctx.con if ctx.con }}" title="Spend a Hit Die on a Short Rest: roll it and add your Constitution modifier"><span>Hit Point Die</span> <b>{{ d }}{{ "%+d" % ctx.con if ctx.con }}</b></button>{% endfor %}
+<div id="rb-dice" hidden>{% with embedded=True %}{% include "_dice_form.html" %}{% endwith %}</div>
 </div>
-<p class="note rs-pick-none" hidden>Nothing by that name.</p>
-</div>
-{% else %}
-<p class="note">{{ "Ask an admin to link your character to see its checks here." if not c else "Your character's sheet isn't loaded yet." }}</p>
-{% endif %}
