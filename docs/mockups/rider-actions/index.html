@@ -1,0 +1,259 @@
+<title>Riders on a Hit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Riders on a hit (Brett, Nov 10, his Roll Audit comment: "a simple framework that accounts for variation, not something
+   completely new"). Dark only, in askdnd's own tokens, the roll card drawn as it is today. Laptop first: two cards side by
+   side, each playable (press a rider, then Roll damage), the framework under them, then two questions. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 34px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta { color: var(--muted); font-size: .92rem; max-width: 86ch; }
+header.top { display: grid; gap: 12px; }
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.where b { display: block; margin-bottom: 2px; }
+.boards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: start; }
+.board { display: grid; gap: 12px; }
+.board > p { color: var(--muted); font-size: .9rem; }
+/* the roll card, as it is today */
+.rcard { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; font-size: .9rem; max-width: 420px; }
+.rhead b { font-size: 1.1rem; display: block; }
+.rsub { color: var(--muted); }
+.rail { display: flex; gap: 14px; font-size: .85rem; color: var(--muted); }
+.rail .now { color: var(--strong); font-weight: 600; }
+.rail span::before { content: "●"; margin-right: 5px; color: var(--muted); }
+.rail .done::before { color: var(--green); } .rail .now::before { color: var(--red); }
+.res { background: var(--surface-2); border-radius: 10px; padding: 8px 12px; display: grid; grid-template-columns: auto 1fr; gap: 0 12px; align-items: center; }
+.res .big { font: 700 2rem/1 var(--sans); color: var(--strong); grid-row: span 2; }
+.res.dmg .big { color: var(--red); }
+.res small { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.res span:last-child { color: var(--muted); }
+.glbl { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.pill { font: inherit; font-size: .85rem; color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; text-align: left; }
+.pill small { color: var(--muted); }
+.pill[aria-pressed="true"] { border-color: var(--blue); background: var(--blue-soft); color: var(--strong); }
+.pill:focus-visible, .go:focus-visible, .btn:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.rider { display: grid; gap: 3px; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px 10px; }
+.rider .top { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.rider .kind { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; }
+.k-dice { color: var(--red); background: var(--red-soft); } .k-save { color: var(--amber); background: var(--amber-soft); }
+.k-change { color: var(--blue); background: var(--blue-soft); } .k-words { color: var(--muted); background: var(--line-soft); }
+.rider .says { color: var(--muted); font-size: .84rem; }
+.rider .cost { font-size: .82rem; color: var(--amber); }
+.rider select { font: inherit; font-size: .82rem; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+.acts { display: flex; gap: 8px; }
+.go { flex: 1; font: 600 .95rem/1.2 var(--sans); color: #fff; background: var(--red-btn); border: 0; border-radius: 10px; padding: 10px; cursor: pointer; }
+.go small { display: block; font-weight: 400; font-size: .8rem; opacity: .9; }
+.btn { font: 500 .9rem/1 var(--sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; }
+.note { color: var(--muted); font-size: .82rem; }
+.after { display: none; gap: 10px; }
+.board.rolled .after { display: grid; }
+.board.rolled .before { display: none; }
+.line { font-size: .86rem; } .line.save { color: var(--amber); } .line.spent { color: var(--muted); }
+.keep { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .86rem; }
+/* Table rolls' entry */
+.entry { background: var(--surface); border: 1px solid #6b5a33; border-radius: 14px; padding: 12px 16px; display: grid; gap: 6px; font-size: .88rem; max-width: 420px; }
+.entry .who { color: var(--muted); } .entry .who b { margin-right: 6px; }
+.beat { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding-top: 6px; color: var(--muted); }
+.beat b { font-size: 1.25rem; color: var(--strong); }
+.beat.dmg b { color: var(--red); } .beat.save b { color: var(--amber); font-size: 1rem; }
+/* the framework */
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-top: 1px solid var(--line-soft); }
+th { font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border-top: 0; }
+td:first-child { white-space: nowrap; }
+td .note { display: block; }
+.qs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 10px; }
+.opt { border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; display: grid; gap: 3px; }
+.opt.rec { border-color: rgba(91, 191, 127, .45); }
+.opt b small { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-left: 6px; }
+.opt span { color: var(--muted); font-size: .88rem; }
+@media (max-width: 900px) { .boards, .qs, .where { grid-template-columns: 1fr; } }
+</style>
+<div class="wrap">
+  <header class="top">
+    <span class="lbl">askdnd · the roll card</span>
+    <h1>Riders on a Hit</h1>
+    <p class="lead">What you can add once an attack hits, as things to press rather than words, using the card you already have. Each rider is one of <b>four kinds</b>, says <b>what it costs</b>, and goes into the same Roll damage. Both cards below are playable: press a rider, then <b>Roll damage</b>.</p>
+    <div class="where">
+      <div><b>Where</b>The roll card's result, after Roll to hit, under <b>On a hit</b>: the place Savage Attacker and Stunning Strike are written today.</div>
+      <div><b>What stays</b>The steps, the pills, Roll damage, Missed, and Guided Strike and Favored by the Gods under the to-hit. Only the riders change.</div>
+      <div><b>Where the data lives</b>Each rider already comes from askdnd's class rules; it gains a kind, a cost and its numbers, so the card plays it like everything else.</div>
+    </div>
+  </header>
+
+  <section class="boards">
+    <div class="board" id="nn">
+      <h2>No Name's Unarmed Strike</h2>
+      <p>Monk 6: Stunning Strike asks for a save; Empowered Strikes changes the damage type.</p>
+      <div class="rcard">
+        <div class="rhead"><b>Unarmed Strike</b><span class="rsub">to hit +7 · 1d8+4 bludgeoning</span></div>
+        <div class="rail"><span class="done">Choose</span><span class="now">To hit</span><span>Damage</span></div>
+        <div class="res"><span class="big">19</span><small>To hit</small><span>d20 12 +7</span></div>
+        <div class="before" style="display:grid; gap:10px">
+          <span class="glbl">On a hit</span>
+          <div class="rider">
+            <div class="top"><button type="button" class="pill" data-r="stun" aria-pressed="false">Stunning Strike</button><span class="kind k-save">Asks for a save</span></div>
+            <span class="says">Con save, DC 14, or Stunned until the start of your next turn; on a success, Speed halved and the next attack against it has Advantage.</span>
+            <span class="cost">1 Focus Point (6 left) · once per turn</span>
+          </div>
+          <div class="rider">
+            <div class="top"><button type="button" class="pill" data-r="emp" aria-pressed="false">Empowered Strikes</button><span class="kind k-change">Changes the damage</span></div>
+            <span class="says">Force damage instead of bludgeoning.</span>
+          </div>
+          <div class="acts"><button type="button" class="go" data-roll>Roll damage <small data-dmg>1d8+4 bludgeoning</small></button><button type="button" class="btn">Missed</button></div>
+        </div>
+        <div class="after">
+          <div class="res dmg"><span class="big">10</span><small>Damage</small><span data-dmg-done>1d8+4 bludgeoning: 6 +4</span></div>
+          <p class="line save" data-stun-line>Stunning Strike: the target makes a <b>Con save, DC 14</b>. It's in Table rolls for the DM.</p>
+          <p class="line spent" data-stun-spent>1 Focus Point spent on D&amp;D Beyond (Undo on its corner card).</p>
+          <div class="acts"><button type="button" class="go" data-again>Done</button></div>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="who"><b>No Name</b>now</div>
+        <b>Unarmed Strike</b>
+        <div class="beat"><span>To hit d20 12 +7</span><b>19</b></div>
+        <div class="beat dmg"><span data-entry-dmg>Damage 1d8+4 bludgeoning: 6 +4</span><b>10</b></div>
+        <div class="beat save" data-entry-stun><span>Stunning Strike · the target saves (the DM rolls)</span><b>Con DC 14</b></div>
+      </div>
+    </div>
+
+    <div class="board" id="bc">
+      <h2>Big C's Hammer of Thunderbolts</h2>
+      <p>Paladin 6: Divine Smite adds dice for a slot; Savage Attacker changes how the damage rolls.</p>
+      <div class="rcard">
+        <div class="rhead"><b>Hammer of Thunderbolts (Maul)</b><span class="rsub">to hit +11 · 2d6+8 bludgeoning</span></div>
+        <div class="rail"><span class="now">To hit</span><span>Damage</span></div>
+        <div class="res"><span class="big">22</span><small>To hit</small><span>d20 11 +11</span></div>
+        <div class="before" style="display:grid; gap:10px">
+          <div class="pills"><button type="button" class="pill" aria-pressed="false">Guided Strike <small>+10 after you see the roll</small></button><button type="button" class="pill" aria-pressed="false">Favored by the Gods <small>+2d4 after a miss</small></button></div>
+          <span class="glbl">On a hit</span>
+          <div class="rider">
+            <div class="top"><button type="button" class="pill" data-r="smite" aria-pressed="false">Divine Smite</button><span class="kind k-dice">Adds dice</span>
+              <select data-smite aria-label="Divine Smite's slot"><option value="1">1st-level (4 left)</option><option value="2">2nd-level (3 left)</option><option value="3">3rd-level (2 left)</option><option value="0">Free (Paladin's Smite, 1 left)</option></select></div>
+            <span class="says">+<span data-smite-dice>2d8</span> radiant, +1d8 more against a Fiend or Undead (the DM's call: a pill once pressed). Doubled on a critical.</span>
+            <span class="cost">A Bonus Action and the slot you pick</span>
+          </div>
+          <div class="rider">
+            <div class="top"><button type="button" class="pill" data-r="savage" aria-pressed="false">Savage Attacker</button><span class="kind k-change">Changes the damage</span></div>
+            <span class="says">Roll the weapon's damage dice twice and keep either.</span>
+            <span class="cost">Once per turn</span>
+          </div>
+          <div class="acts"><button type="button" class="go" data-roll>Roll damage <small data-dmg>2d6+8</small></button><button type="button" class="btn">Missed</button></div>
+        </div>
+        <div class="after">
+          <div class="res dmg"><span class="big" data-bc-total>15</span><small>Damage</small><span data-bc-dmg>2d6+8: 3 4 +8</span></div>
+          <div class="keep" data-savage-keep>Savage Attacker: <button type="button" class="pill" aria-pressed="true">Keep 3 4</button><button type="button" class="pill" aria-pressed="false">Keep 6 5</button></div>
+          <p class="line spent" data-smite-spent>1st-level slot spent on D&amp;D Beyond (Undo on its corner card).</p>
+          <div class="acts"><button type="button" class="go" data-again>Done</button></div>
+        </div>
+      </div>
+      <div class="entry">
+        <div class="who"><b>Big C</b>now</div>
+        <b>Hammer of Thunderbolts (Maul)</b>
+        <div class="beat"><span>To hit d20 11 +11</span><b>22</b></div>
+        <div class="beat dmg"><span data-bc-entry>Damage 2d6+8: 3 4 +8</span><b data-bc-entry-total>15</b></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:grid; gap:12px">
+    <span class="lbl">The framework</span>
+    <h2>Four kinds, one Roll damage</h2>
+    <div class="tbl"><table>
+      <thead><tr><th>Kind</th><th>Pressing it</th><th>When Roll damage is pressed</th><th>On the party now</th></tr></thead>
+      <tbody>
+        <tr><td><span class="rider" style="display:inline-block;padding:0;border:0;background:none"><span class="kind k-dice">Adds dice</span></span></td><td>Marks it; a level or slot to pick where the rider has one</td><td>Its dice join this hit's damage (doubled on a critical); its cost is spent</td><td>Divine Smite (Big C)<span class="note">and Sneak Attack, Hunter's Mark, Divine Strike, Elemental Fury when a character has them</span></td></tr>
+        <tr><td><span class="kind k-save">Asks for a save</span></td><td>Marks it</td><td>The save and DC go to Table rolls for the DM, in this attack's entry (as Grapple and Shove send theirs); its cost is spent</td><td>Stunning Strike (No Name)<span class="note">and Topple and other masteries that call for a save, Cunning Strike</span></td></tr>
+        <tr><td><span class="kind k-change">Changes the damage</span></td><td>Marks it</td><td>The damage rolls its way: a different type, rolled twice to keep either, a die rerolled</td><td>Empowered Strikes (No Name), Savage Attacker (Big C)<span class="note">and Great Weapon Fighting's rerolled 1s and 2s</span></td></tr>
+        <tr><td><span class="kind k-words">Words</span></td><td>Nothing to press</td><td>Nothing: it's said, the DM rules</td><td>Vex, Sap, Slow and Graze (a miss), as today</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta">Every rider says what it costs (a Focus Point, a slot, a use, once per turn). Where the D&amp;D Beyond sheet can't be reached, the cost line says so ("mark the Focus Point on D&amp;D Beyond") and the dice or the save still go to Table rolls. The every-button test presses each rider once per character, as it does Guided Strike now.</p>
+  </section>
+
+  <section style="display:grid; gap:12px">
+    <span class="lbl">Two choices</span>
+    <div class="qs">
+      <div class="q">
+        <h2>When is a rider's cost spent?</h2>
+        <div class="opt rec"><b>A · When Roll damage is pressed<small>Claude's pick</small></b><span>Pressing a rider only marks it, so changing your mind costs nothing; the Focus Point or slot goes once the damage is rolled, with Undo on its corner card.</span></div>
+        <div class="opt"><b>B · When the rider is pressed</b><span>Spent at once, as Cast spends a slot; pressing it again gives it back.</span></div>
+      </div>
+      <div class="q">
+        <h2>Where does a save rider's DC go?</h2>
+        <div class="opt rec"><b>A · In this attack's Table rolls entry<small>Claude's pick</small></b><span>A row under the damage ("Stunning Strike · Con DC 14"), so the DM sees the hit, its damage and the save together.</span></div>
+        <div class="opt"><b>B · An entry of its own</b><span>Its own row in Table rolls, like Grapple's DC today, after the attack.</span></div>
+      </div>
+    </div>
+    <p class="meta">Comment on either with your choice, or on anything above.</p>
+  </section>
+</div>
+<script>
+(function () {
+  // No Name: Stunning Strike (a save) and Empowered Strikes (the damage type)
+  const nn = document.getElementById('nn'), on = (b, k) => b.querySelector('[data-r="' + k + '"]').getAttribute('aria-pressed') === 'true';
+  function drawNN() {
+    const type = on(nn, 'emp') ? 'force' : 'bludgeoning';
+    nn.querySelector('[data-dmg]').textContent = '1d8+4 ' + type + (on(nn, 'stun') ? ' · then Con DC 14' : '');
+    nn.querySelector('[data-dmg-done]').textContent = '1d8+4 ' + type + ': 6 +4';
+    nn.querySelector('[data-entry-dmg]').textContent = 'Damage 1d8+4 ' + type + ': 6 +4';
+    nn.querySelector('[data-stun-line]').hidden = nn.querySelector('[data-stun-spent]').hidden = nn.querySelector('[data-entry-stun]').hidden = !on(nn, 'stun');
+  }
+  // Big C: Divine Smite (dice by slot) and Savage Attacker (two rolls, keep either)
+  const bc = document.getElementById('bc');
+  const smiteDice = () => { const l = +bc.querySelector('[data-smite]').value; return (1 + Math.max(l, 1)) + 'd8'; };
+  function drawBC() {
+    const smite = on(bc, 'smite'), d = smiteDice();
+    bc.querySelector('[data-smite-dice]').textContent = d;
+    bc.querySelector('[data-dmg]').textContent = '2d6+8' + (smite ? ' + ' + d + ' radiant' : '') + (on(bc, 'savage') ? ' · twice, keep either' : '');
+    const extra = smite ? { '2d8': [5, 7], '3d8': [5, 7, 2], '4d8': [5, 7, 2, 8] }[d] : [], sum = extra.reduce((a, b) => a + b, 0);
+    bc.querySelector('[data-bc-dmg]').textContent = '2d6+8: 3 4 +8' + (smite ? ' · Divine Smite ' + d + ': ' + extra.join(' ') : '');
+    bc.querySelector('[data-bc-total]').textContent = bc.querySelector('[data-bc-entry-total]').textContent = 15 + sum;
+    bc.querySelector('[data-bc-entry]').textContent = 'Damage 2d6+8: 3 4 +8' + (smite ? ' · Divine Smite ' + d + ' radiant: ' + extra.join(' ') : '');
+    bc.querySelector('[data-savage-keep]').hidden = !on(bc, 'savage');
+    const lvl = bc.querySelector('[data-smite]').value;
+    bc.querySelector('[data-smite-spent]').hidden = !smite;
+    bc.querySelector('[data-smite-spent]').textContent = (lvl === '0' ? 'Paladin\'s Smite used' : ['', '1st', '2nd', '3rd'][+lvl] + '-level slot spent') + ' on D&D Beyond (Undo on its corner card).';
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const board = b.closest('.board');
+    if (b.classList.contains('pill')) {
+      if (b.closest('[data-savage-keep]')) b.closest('[data-savage-keep]').querySelectorAll('.pill').forEach(x => x.setAttribute('aria-pressed', x === b));
+      else b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') !== 'true');
+    }
+    if (b.hasAttribute('data-roll')) board.classList.add('rolled');
+    if (b.hasAttribute('data-again')) board.classList.remove('rolled');
+    drawNN(); drawBC();
+  });
+  document.querySelector('[data-smite]').addEventListener('change', drawBC);
+  drawNN(); drawBC();
+})();
+</script>

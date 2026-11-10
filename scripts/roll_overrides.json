@@ -1514,6 +1514,17 @@
    ],
    "adds": "1d8 radiant",
    "once": "a turn"
+  },
+  "Channel Divinity: Guided Strike": {
+   "why": "Oath of Conquest (Xanathar's) and War Domain: +10 to an attack roll once you've seen it (Brett's Roll Audit comment, Nov 10: it's chosen with the to-hit, not after the hit)",
+   "when": "after_roll",
+   "to": [
+    "attack"
+   ],
+   "adds": "10",
+   "short": "Guided Strike",
+   "says": "after you see the roll",
+   "cost": "1 Channel Divinity"
   }
  }
 }

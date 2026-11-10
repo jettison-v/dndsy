@@ -1910,8 +1910,10 @@ function feedbackBusy(e) {
         if (st.step === 'result' && (attack || d20)) {
           const e = st.entry, c = e.can || {};
           const sure = attack && e.nat === 20;  // (a natural 20 hits: nothing for a miss; 2024 PHB)
-          const after = sure ? [] : mods.filter(m => m.when === 'after_fail' && m.adds && (m.to || []).includes(attack ? 'attack' : plan.roll));
-          const adjust = (c.reroll ? pill('data-reroll', false, 'Reroll', c.reroll) : '') + (c.bonus ? after.map(m => pill('data-after="' + esc(m.name) + '"', false, m.name, m.adds + (attack ? ' after a miss' : ' after a failure'))).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
+          // (what can be added once the roll is seen: Guided Strike, before you know if it hits; Favored by the Gods, after a miss)
+          const after = sure ? [] : mods.filter(m => (m.when === 'after_fail' || m.when === 'after_roll') && m.adds && (m.to || []).includes(attack ? 'attack' : plan.roll));
+          const adjust = (c.reroll ? pill('data-reroll', false, 'Reroll', c.reroll) : '') + (c.bonus ? after.map(m => pill('data-after="' + esc(m.name) + '"', false, m.short || m.name,
+            (/^\d/.test(m.adds) ? '+' : '') + m.adds + ' ' + (m.says || (attack ? 'after a miss' : 'after a failure')))).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
           if (adjust) h += '<div class="rcard-pills rcard-adjust">' + adjust + '</div>' + (st.adding ? adder('bonus') : '');
           if (attack && c.damage) {
             const hitMods = mods.filter(m => m.when === 'on_hit' && m.adds), said = riderList('hit');
@@ -1968,7 +1970,7 @@ function feedbackBusy(e) {
         : e.nat ? 'Natural ' + e.nat + (d20 ? '' : e.nat === 20 ? ': a critical hit, damage dice doubled' : ': it misses, whatever the bonus') : '';
       return '<div class="rcard-result"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">' + (d20 ? esc(spec.label || plan.name) : 'to hit') + '</span><span class="rcard-how">' + dline(e.main, true) + '</span></div>'
         + (e.rerolled ? '<p class="rcard-line">Rerolled (' + esc(e.rerolled.reason) + '): was <s>' + e.rerolled.total + '</s></p>' : '')
-        + (e.bonus ? '<p class="rcard-line">+ ' + esc(e.bonus.label) + ' ' + e.bonus.total + ' <span class="roll-x">(' + esc(e.bonus.formula) + ')</span></p>' : '')
+        + (e.bonus ? '<p class="rcard-line">+ ' + esc(e.bonus.label) + ' ' + e.bonus.total + ((e.bonus.dice || []).length ? ' <span class="roll-x">(' + esc(e.bonus.formula) + ')</span>' : '') + '</p>' : '')  // (a plain +10 isn't written twice)
         + (flag ? '<p class="rcard-flag">' + esc(flag) + '</p>' : '')
         + (e.damage && !dmg ? '<p class="' + (e.damage.total ? 'rcard-line' : 'rw-note rw-warn') + '" data-flat-dmg>On a hit: <b>' + e.damage.total + ' damage</b>' + (e.damage.total ? ', flat' : '') + ', with the roll' + (e.damage.total ? '' : '. The DM rules') + '.</p>' : '');
     }
@@ -2041,7 +2043,7 @@ function feedbackBusy(e) {
       if (b.hasAttribute('data-roll-single') || b.hasAttribute('data-again')) return rollOne('done');
       if (b.hasAttribute('data-roll-save')) return rollOne('saved');
       if (b.hasAttribute('data-reroll')) return follow('reroll', { reason: st.entry.can.reroll });
-      if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return follow('bonus', { extras: [m.name + ':+' + m.adds], bonusLabel: m.name, die: 4 }); }
+      if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return follow('bonus', { extras: [(m.short || m.name) + ':+' + m.adds], bonusLabel: m.short || m.name, die: 4 }); }
       if (b.hasAttribute('data-roll-dmg')) return follow('damage', { extras: mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => m.name + ':+' + m.adds.replace(/^\+/, '').split(' ')[0]) });
     });
     draw();
@@ -2118,7 +2120,7 @@ function feedbackBusy(e) {
   // Which dice a result shows: the d20s (both, with Advantage; one per ray), or every damage or healing die
   function diceFor(e, focus) {
     const heal = ['heal', 'temp'].includes(e.kind);
-    if (focus === 'bonus' && e.bonus) return [{ s: sidesOf(e.bonus.formula), v: e.bonus.dice[0], look: 'gold' }];
+    if (focus === 'bonus' && e.bonus) return (e.bonus.dice || []).length ? [{ s: sidesOf(e.bonus.formula), v: e.bonus.dice[0], look: 'gold' }] : [];  // (a plain +10, Guided Strike: no die to throw)
     const p = focus === 'damage' && e.damage ? e.damage : e.main;
     if (p === e.main && D20.includes(e.kind)) {
       const rays = (p.parts || []).filter(x => x.kept != null), src = rays.length > 1 ? rays : [p];

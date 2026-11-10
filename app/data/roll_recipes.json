@@ -338,6 +338,18 @@
    "when": "on_hit",
    "why": "Cleric: once a turn, extra radiant damage on a hit with a cantrip or weapon attack"
   },
+  "Channel Divinity: Guided Strike": {
+   "adds": "10",
+   "checked": "by hand",
+   "cost": "1 Channel Divinity",
+   "says": "after you see the roll",
+   "short": "Guided Strike",
+   "to": [
+    "attack"
+   ],
+   "when": "after_roll",
+   "why": "Oath of Conquest (Xanathar's) and War Domain: +10 to an attack roll once you've seen it (Brett's Roll Audit comment, Nov 10: it's chosen with the to-hit, not after the hit)"
+  },
   "Deflect Attack": {
    "checked": "by hand",
    "reduces": "1d10+{mod:dexterity}+{level:Monk}",

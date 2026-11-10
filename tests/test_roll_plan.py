@@ -157,7 +157,9 @@ def test_riders_are_only_the_ones_that_can_apply(plans):
     maul = next(p for p in plans["big_c"] if p["name"].startswith("Hammer of Thunderbolts"))
     when = {r["name"]: r["when"] for r in maul["riders"]}
     assert when.get("Savage Attacker") == "hit" and "Favored by the Gods" not in when
-    assert when.get("Guided Strike") in (None, "miss")
+    assert "Guided Strike" not in when  # (Brett's Roll Audit comment, Nov 10: chosen with the to-hit, so a pill there)
+    guided = next(m for m in maul["modifiers"] if m.get("short") == "Guided Strike")
+    assert guided["when"] == "after_roll" and guided["adds"] == "10"
     assert roll_plan.rider_fits("Once per turn, a hit with a weapon", "spell") is None
     assert roll_plan.rider_fits("An artificer spell you cast through your arcane firearm (a wand, staff or rod)", "weapon") is None
     assert roll_plan.rider_fits("Every hit with a Strength attack (weapon or Unarmed Strike) while your Rage is active", "unarmed") == "hit"

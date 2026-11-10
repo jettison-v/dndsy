@@ -970,5 +970,14 @@
   "what": "Every way a roll is made, step by step, as close-ups of the roll card and, once there's a result, the Table rolls entry it made (42 close-ups): what to check on each, what the rebuild changed and what was found. Comment on a screen to send Claude a note; the screenshots are the artifact's own files, never in the repo.",
   "source": "docs/artifacts/roll-audit.html",
   "link": "https://claude.ai/artifact/S16McZJH6mbUGRvoZRTJMY"
+ },
+ {
+  "title": "Riders on a Hit",
+  "kind": "design",
+  "status": "Waiting for Brett's two choices",
+  "date": "Nov 10",
+  "what": "Brett's Roll Audit comment: what you can add once an attack hits, as things to press in the roll card you have. Four kinds (adds dice, asks for a save, changes the damage, words), each with its cost; No Name's Stunning Strike and Empowered Strikes and Big C's Divine Smite and Savage Attacker playable. Two choices: when the cost is spent, and where a save's DC goes.",
+  "source": "docs/mockups/rider-actions/index.html",
+  "link": "https://claude.ai/artifact/B2tKmyRKRYwjVUxceqDu2P"
  }
 ]

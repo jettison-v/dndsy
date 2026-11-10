@@ -337,7 +337,7 @@ def plan(sheet: dict, o: dict) -> dict:
         for t in o.get("tags") or []:  # the weapon's mastery, if you've mastered it (character_views: "Mastery: Vex")
             if t.startswith("Mastery: ") and (m := t[9:]) in class_rules.MASTERIES:
                 out["riders"].append({"name": m, "when": "miss" if m == "Graze" else "hit", "says": class_rules.MASTERIES[m], "on": "mastery"})
-        pills = {m["name"] for m in out["modifiers"]}
+        pills = {m["name"].split(": ")[-1] for m in out["modifiers"]}  # ("Channel Divinity: Guided Strike" is Guided Strike's pill)
         made = "spell" if o.get("kind") == "spell" else "unarmed" if UNARMED_ROW.search(f"{o['name']} {o.get('meta') or ''}") else "weapon"
         for r in class_rules.turn(sheet)["riders"]:  # what you can add once it hits (Stunning Strike, Divine Smite…)
             if r["name"] not in pills and (when := rider_fits(r["when"], made)):  # (one already a pill isn't said twice)
