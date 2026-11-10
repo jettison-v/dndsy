@@ -332,6 +332,16 @@ def test_healing_and_any_dice_are_one_step_on_the_card(people, server, browser_d
         card.locator("[data-done]").wait_for(timeout=20000)
         assert card.locator(".rcard-what").inner_text().lower() == "healing" and "Apply to" in card.inner_text()
         _sees(page, "Hit Point Die")
+        # (Brett's Roll Audit comment, Nov 10: rolling another Hit Point Die from its result)
+        rolls = page.evaluate("fetch('/rolls?since=-1').then(r => r.text())").count("Hit Point Die")
+        card.locator("[data-again]").click()
+        card.locator("[data-done]").wait_for(timeout=20000)
+        for _ in range(20):
+            if page.evaluate("fetch('/rolls?since=-1').then(r => r.text())").count("Hit Point Die") > rolls:
+                break
+            page.wait_for_timeout(250)
+        else:
+            raise AssertionError("Roll another made no second roll")
         card.locator("[data-done]").click()
 
         page.locator("[data-rs-roll]").click()

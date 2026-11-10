@@ -1932,8 +1932,9 @@ function feedbackBusy(e) {
           : '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling damage</span></div>';
       } else if (st.step === 'pick') {  // (+ a die, pressed in Table rolls: which one)
         h += '<p class="rcard-q">Add a die or a bonus to this roll</p>' + adder('bonus');
-      } else if (st.step === 'done') {
-        h += resultBox(st.entry, false) + '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>';
+      } else if (st.step === 'done') {  // (a roll that can go again, a Hit Point Die: its plan's "again" button first)
+        h += resultBox(st.entry, false) + '<div class="rcard-acts">' + (plan.again ? '<button type="button" class="btn primary rcard-go" data-again>' + esc(plan.again) + '</button>' : '')
+          + '<button type="button" class="btn' + (plan.again ? '' : ' primary') + '" data-done>Done</button></div>';
       }
       w.innerHTML = h;
       w.classList.toggle('nat20', !!(st.entry && st.entry.nat === 20));
@@ -2037,7 +2038,7 @@ function feedbackBusy(e) {
         return draw();
       }
       if (b.hasAttribute('data-roll-hit')) return rollHit();
-      if (b.hasAttribute('data-roll-single')) return rollOne('done');
+      if (b.hasAttribute('data-roll-single') || b.hasAttribute('data-again')) return rollOne('done');
       if (b.hasAttribute('data-roll-save')) return rollOne('saved');
       if (b.hasAttribute('data-reroll')) return follow('reroll', { reason: st.entry.can.reroll });
       if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return follow('bonus', { extras: [m.name + ':+' + m.adds], bonusLabel: m.name, die: 4 }); }

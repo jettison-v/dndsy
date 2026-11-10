@@ -437,6 +437,7 @@ KNOWN_GAPS: dict[str, str] = {}  # (empty since Nov 9: every party gap has a rec
 #   has no dice (it comes with the attack roll)
 #   "rolls": {"base", "levels", "effects"} from effects() (a spell's dice at each level), or absent
 #   "notes": words to show before the roll; "riders", "modifiers", "choice" as the option's plan has them
+#   "again": a button on the result that rolls the same again ("Roll another": a Hit Point Die, one at a time)
 
 ABILITY_OF_SKILL = {"athletics": "str", "acrobatics": "dex", "sleight of hand": "dex", "stealth": "dex", "arcana": "int",
                     "history": "int", "investigation": "int", "nature": "int", "religion": "int", "animal handling": "wis",
@@ -463,7 +464,7 @@ def _int(text) -> int:
 
 
 def button(kind: str, label: str, mod="", dmg="", note: str = "", plan: dict | None = None, rolls: dict | None = None,
-           save: str = "") -> dict:
+           save: str = "", again: str = "") -> dict:
     """The complete plan one roll button plays (see above). `plan`: the option's (plan()); `rolls`: its effects() for
     this button; `save`: a spell's "Dex 15" when the button has no plan saying so."""
     base = plan or {}
@@ -507,4 +508,4 @@ def button(kind: str, label: str, mod="", dmg="", note: str = "", plan: dict | N
         return {**out, "play": "save", "save": sv, "dmg": dmg}
     if note:
         out["notes"].append(note)
-    return {**out, "play": "single", "dmg": dmg}
+    return {**out, "play": "single", "dmg": dmg, **({"again": again} if again else {})}
