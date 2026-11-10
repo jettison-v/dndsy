@@ -77,7 +77,7 @@ def test_reviewers_opt_in_and_the_stop_link_turns_it_off(db, sent, dm, campaign)
     db.commit()
     _suggest(db, c, at=_at(12))
     assert sorted(e for e, _ in digest.run_day(db, _at(18))) == ["dm@example.com", "other@example.com"]
-    stop = sent[0][1]["stop"]
+    stop = next(mail["stop"] for to, mail in sent if to == "dm@example.com")  # (the DM's own link: the order they go in isn't fixed)
     page = client.get(stop[len(config.PROD_URL):])
     assert page.status_code == 200 and "No more Inbox emails" in page.text
     db.expire_all()
