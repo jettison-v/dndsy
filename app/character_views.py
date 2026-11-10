@@ -2,6 +2,7 @@
 Character and Party pages show. Plain functions over the summary dicts, so
 they're easy to test without a browser."""
 
+import json
 import re
 from urllib.parse import quote
 
@@ -239,6 +240,75 @@ MAKES_UNARMED = re.compile(r"\bmake (?:one|two|three|an?) Unarmed Strikes?\b", r
 def _dice(text: str) -> str:
     m = re.search(DICE, text or "")
     return re.sub(r"\s+", "", m.group(1)).replace("\u2212", "-") if m else ""
+
+
+def roll_data(kind: str, label: str, mod="", dmg="", advs=(), note="", recipe=None, plan=None, slot=0) -> dict[str, str]:
+    """A roll button's data attributes (app.js "Rolls" reads them: data-roll, data-mod…), the one place they're made:
+    every roll button's template (_char.html `roll_attrs`) and Search's rows (app/search.py, copied whole onto the
+    button it makes), so a roll from Search is the button's own roll. `advs`: Advantage with its reasons, those
+    without a `when` always on."""
+    d = {}
+    if plan:
+        d["plan"] = json.dumps(plan)
+    if recipe:
+        d["recipe"] = json.dumps(recipe)
+    d |= {"roll": kind, "label": label}
+    if mod:
+        d["mod"] = str(mod).replace("\u2212", "-")
+    if dmg:
+        d["dmg"] = dmg
+    advs = list(advs or ())
+    if any(not a.get("when") for a in advs):
+        d["adv"] = "1"
+    if advs:
+        d["adv-why"] = "\n".join(a.get("text") or "" for a in advs)
+    if note:
+        d["note"] = note
+    if slot:
+        d["slot"] = str(slot)
+    return d
+
+
+def option_rolls(o: dict) -> list[dict]:
+    """An option's rolls as Battle draws them (_char.html `hit`): its to-hit ("hit", the attack, then damage), else
+    the roll its words or recipe make (a "chip": a save's damage, healing), with the hit's plain text between when it
+    isn't a to-hit (a save's "Dex 15"). Each part: `button` ("hit", "chip" or None for text), `attrs` (roll_data),
+    `title`, `text`. Search makes the first button's roll."""
+    hit = str(o.get("hit") or "")
+    to_hit = bool(hit) and hit[0] in "+-\u2212"
+    rec = o.get("recipe") if (o.get("recipe") or {}).get("events") else None
+    out = []
+    if rec:
+        hits = [e for e in rec["events"] if e.get("on") == "hit"]
+        first = next((e for e in rec["events"] if e.get("on") != "hit"), None)
+        if hits and to_hit:
+            out.append({"button": "hit", "title": "Roll to hit", "text": hit,
+                        "attrs": roll_data("attack", o["name"], hit, "", o.get("adv"), recipe=rec, plan=o.get("plan"))})
+        elif hit:
+            out.append({"button": None, "text": hit})
+        if first:
+            kind = {"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.get("on"), "damage")
+            save = bool(hit) and not to_hit
+            out.append({"button": "chip", "title": "Roll", "text": "Heal" if first.get("on") == "heal" else "Roll",
+                        "attrs": roll_data(kind, o["name"], note=f"Each target makes a {hit} save." if save else "", recipe=rec,
+                                           plan=o.get("plan") if save else None)})
+        return out
+    dmg = o["dice"] if "dice" in o else _dice(o.get("meta") or "")
+    heal = o["heal"] if "heal" in o else ("heals " in (o.get("meta") or "") or "healing" in (o.get("name") or "").lower())
+    kind = "heal" if heal else "damage"
+    word = "Heal" if heal else "Roll"
+    if to_hit:
+        out.append({"button": "hit", "title": "Roll to hit" + (" (then damage)" if dmg else ""), "text": hit,
+                    "attrs": roll_data("attack", o["name"], hit, dmg, o.get("adv"), plan=o.get("plan"))})
+    elif hit:
+        out.append({"button": None, "text": hit})
+        if dmg:
+            out.append({"button": "chip", "title": f"Roll {dmg}", "text": word,
+                        "attrs": roll_data(kind, o["name"], "", dmg, note=f"Each target makes a {hit} save; the spell says what a success does.",
+                                           plan=o.get("plan"))})
+    elif dmg:
+        out.append({"button": "chip", "title": f"Roll {dmg}", "text": word, "attrs": roll_data(kind, o["name"], "", dmg)})
+    return out
 
 
 def rollable(o: dict, unarmed: dict | None = None) -> dict:

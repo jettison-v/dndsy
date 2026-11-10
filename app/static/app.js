@@ -1846,6 +1846,11 @@ function feedbackBusy(e) {
     const load = () => index || (index = fetch('/search/index', { credentials: 'same-origin' }).then(r => r.ok ? r.json() : Promise.reject(r.status)).catch(() => { index = null; return { rows: [], failed: true }; }));
     document.addEventListener('askdnd:live', e => { if (['character', 'resync'].includes(e.detail.type)) index = null; });
     document.body.addEventListener('characterChanged', () => { index = null; });
+    // Loaded in the background once the page has settled, so the first ⌘F opens with everything there (only in a tab
+    // someone is looking at: a tab opened in the background loads it when it's first shown)
+    const early = () => { if (document.visibilityState === 'visible') (window.requestIdleCallback || (f => setTimeout(f, 1500)))(() => load(), { timeout: 4000 }); };
+    if (document.readyState === 'complete') early(); else addEventListener('load', early, { once: true });
+    document.addEventListener('visibilitychange', () => { if (!index) early(); });
     // The name itself, then a word of the name, then the words it's found by; several words match in any order.
     function score(r, t) {
       const n = r.n.toLowerCase();
@@ -1903,9 +1908,8 @@ function feedbackBusy(e) {
           if ((data.ctx || {}).hidden) holder.dataset.hidden = data.ctx.hidden;
           const b = document.createElement('button');
           b.type = 'button';
-          Object.entries({ roll: r.roll.roll, label: r.roll.label, mod: r.roll.mod || '', dmg: r.roll.dmg || '', note: r.roll.note || '' }).forEach(([k, v]) => { if (v) b.dataset[k] = v; });
-          if (r.roll.plan) b.dataset.plan = JSON.stringify(r.roll.plan);
-          if (r.roll.recipe) b.dataset.recipe = JSON.stringify(r.roll.recipe);
+          // (every detail Battle's own button carries, whole: character_views.roll_data makes both)
+          Object.entries(r.roll).forEach(([k, v]) => b.setAttribute('data-' + k, v));
           holder.append(b);
           document.body.append(holder);
           openRoll(b, specFrom(b));
