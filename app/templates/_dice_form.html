@@ -1,0 +1,28 @@
+{# Your dice's form (app/dice.py), shared by its own window (_dice_picker.html: the account menu, Manage › Settings) and
+   Table rolls' Roll window's Your dice tab (_roll_checks.html; Brett, Nov 10: one door from Table rolls). app.js throws
+   a d20 in the preview whenever the set or material changes, and only once its tab is shown; sound and the animation
+   are per device (localStorage), the rest is saved to you. Needs d, sets, materials. #}
+<form class="{{ 'dice-picker in-roll' if embedded else 'peek-form dice-picker' }}" hx-post="/dice" hx-swap="none" data-dice-picker>
+  {% if not embedded %}<div class="peek-body">{% endif %}<div class="dp-grid">
+    <div>
+      <h3>Dice set</h3>
+      <div class="dp-sets" role="radiogroup" aria-label="Dice set">
+        {% for k, n in sets %}<label class="dp-set"><input type="radio" name="set" value="{{ k }}"{{ ' checked' if d.set == k }}><i class="sw-{{ k }}" aria-hidden="true"></i>{{ n }}</label>{% endfor %}
+      </div>
+      <h3>Material</h3>
+      <div class="dp-mats" role="radiogroup" aria-label="Material">
+        {% for m in materials %}<label class="dp-mat"><input type="radio" name="material" value="{{ m }}"{{ ' checked' if d.material == m }}>{{ m | capitalize }}</label>{% endfor %}
+      </div>
+      <h3>Options</h3>
+      <div class="dp-opts">
+        <label class="check"><input type="checkbox" name="by_type" value="1"{{ ' checked' if d.by_type }}> Damage dice take their damage type's look (fire, cold, radiant…)</label>
+        <label class="check"><input type="checkbox" data-dice-anim> Dice animation <span class="note">(this device)</span></label>
+        <label class="check"><input type="checkbox" data-dice-sound> Dice sounds <span class="note">(this device)</span></label>
+        <label class="check"><input type="checkbox" name="tray" value="1"{{ ' checked' if d.tray }}> <span><b>Dice tray: less intrusive dice.</b> <span class="note">Your own rolls are still thrown across the screen. Others' rolls tumble in a small tray in the bottom-left corner instead, so they don't cover the page you're planning on; on askdnd's table every roll is thrown across the screen.</span></span></label>
+      </div>
+      <p class="note dp-about">Everyone sees your rolls in your dice. Turning the animation off on a device shows the numbers without throwing dice.</p>
+    </div>
+    <div class="dp-preview" data-dice-preview><span class="note dp-loading">Loading the dice…</span></div>
+  </div>{% if not embedded %}</div>{% endif %}
+  <div class="{{ 'dp-save row' if embedded else 'peek-foot row' }}"><button class="btn primary" type="submit">Save</button>{% if not embedded %}<button class="btn link peek-close" type="button">Cancel</button>{% endif %}</div>
+</form>

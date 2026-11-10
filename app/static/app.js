@@ -421,6 +421,9 @@ function feedbackBusy(e) {
     head.prepend(b);
   }
   window.askdndPanel = openPanel;
+  // Close the layer holding `el` (Table rolls' Roll window, behind the roll it just opened), without a click: a click
+  // elsewhere closes the roll window
+  window.askdndClosePanel = el => { const layer = Object.values(layers).find(l => l && l.panel === (el.closest && el.closest('.peek'))); if (layer) closeLayer(layer); };
   // ✕ closes its own layer. Delegated, so it still works after part of a panel is swapped in
   // (Wild Shape's "Kept in a form" boxes re-render the whole window).
   document.addEventListener('click', e => {
@@ -1612,8 +1615,6 @@ function feedbackBusy(e) {
   function openWin(anchor) {
     const prev = win && anchor && win.contains(anchor) ? win.getBoundingClientRect() : null;  // a follow-up takes the result's place
     closeWin();
-    const picker = document.getElementById('rs-pick');
-    if (picker && !picker.hidden) rsPick(false);  // (a roll chosen from Table rolls' Roll: its search closes)
     win = document.createElement('div');
     // (where its anchor is now: a window whose words arrive later, as Cast's and Use's do, is placed there even once the
     // anchor is gone, Search's made-for-the-moment button or a row the page has since redrawn)
@@ -1753,25 +1754,15 @@ function feedbackBusy(e) {
     (w.querySelector('[data-go]') || w).focus();
   }
 
-  // ---------------------------------------------------------------- Table rolls' Roll button
-  // (Brett chose A, Nov 9: docs/mockups/find-checks/) A search over your character's skills, saves, checks, Initiative,
-  // a Death save and a Hit Point Die (app/table_rolls.checks): type ("ste" for Stealth, "dex" for everything Dexterity),
-  // Enter rolls the first; each row is an ordinary roll button, so it opens the roll window as anywhere else.
-  function rsPick(open) {
-    const pick = document.getElementById('rs-pick'), btn = document.querySelector('[data-rs-roll]');
-    if (!pick || !btn) return;
-    pick.hidden = !open;
-    btn.setAttribute('aria-expanded', open);
-    if (!open) return;
-    if (window.htmx) htmx.trigger(pick.querySelector('.rs-pick-body'), 'rsPick');
-    const q = pick.querySelector('.rs-pick-q');
-    q.value = ''; rsFilter(pick, '');
-    q.focus();
-  }
-  function rsFilter(pick, text) {
+  // ---------------------------------------------------------------- Table rolls' Roll
+  // (Brett chose A, Nov 10: docs/mockups/roll-kinds/, his note 58) A window (app/table_rolls.checks) with your
+  // character's rolls by ability, as the sheet groups them, then Initiative, a Death save, a Hit Point Die and Any dice.
+  // Typing narrows it ("ste" for Stealth, "dex" for everything Dexterity) and Enter rolls the first match; each row is an
+  // ordinary roll button, so it opens the roll window (or card) where it was, and the window closes behind it.
+  function rbFilter(board, text) {
     const t = text.trim().toLowerCase();
     let first = null;
-    pick.querySelectorAll('.rc-group').forEach(g => {
+    board.querySelectorAll('.rc-group').forEach(g => {
       let any = false;
       g.querySelectorAll('.rc').forEach(b => {
         const hit = !t || (b.dataset.find || '').split(' ').some(w => w.startsWith(t)) || (b.dataset.find || '').includes(t);
@@ -1781,23 +1772,34 @@ function feedbackBusy(e) {
       g.hidden = !any;
     });
     if (first && t) first.classList.add('first');
-    const none = pick.querySelector('.rs-pick-none');
-    if (none) none.hidden = !!first;
+    const none = board.querySelector('.rb-none');
+    if (none) none.hidden = !!first || !t;
     return first;
   }
-  document.addEventListener('click', e => {
-    if (e.target.closest('[data-rs-roll]')) { const p = document.getElementById('rs-pick'); rsPick(!!p && p.hidden); return; }
-    const pick = document.getElementById('rs-pick');
-    if (!pick || pick.hidden) return;
-    if (e.target.closest('#rs-pick .rc')) { setTimeout(() => rsPick(false)); return; }  // (the roll window opens from the same click first)
-    if (!e.target.closest('#rs-pick') && !feedbackBusy(e)) rsPick(false);
-  }, true);  // (first: the roll's own handler stops the click once it opens the roll window)
-  document.addEventListener('input', e => { if (e.target.matches('.rs-pick-q')) rsFilter(e.target.closest('#rs-pick'), e.target.value); });
-  document.addEventListener('htmx:afterSwap', e => { const p = e.target.closest && e.target.closest('#rs-pick'); if (p) rsFilter(p, p.querySelector('.rs-pick-q').value); });
+  const rbClose = el => {  // (then Enter rolls it, as before: the focus goes to the roll window's own button, not back to Roll)
+    if (window.askdndClosePanel) window.askdndClosePanel(el);
+    const go = document.querySelector('.roll-win [data-go], .roll-card [data-roll-hit]');
+    if (go) go.focus({ preventScroll: true });
+  };
+  document.addEventListener('panel:loaded', e => {
+    const board = e.target.querySelector && e.target.querySelector('.roll-board');
+    if (!board) return;
+    board.querySelectorAll('[data-manual]').forEach(wireManual);
+    const q = board.querySelector('.rb-q');
+    if (q) q.focus({ preventScroll: true });
+  });
+  document.addEventListener('input', e => { if (e.target.matches('.rb-q')) rbFilter(e.target.closest('.roll-board'), e.target.value); });
   document.addEventListener('keydown', e => {
-    if (!e.target.matches || !e.target.matches('.rs-pick-q')) return;
-    if (e.key === 'Escape') { rsPick(false); document.querySelector('[data-rs-roll]')?.focus(); }
-    if (e.key === 'Enter') { e.preventDefault(); const f = rsFilter(e.target.closest('#rs-pick'), e.target.value); if (f) { f.click(); setTimeout(() => rsPick(false)); } }
+    if (!e.target.matches || !e.target.matches('.rb-q')) return;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (window.askdndClosePanel) window.askdndClosePanel(e.target); return; }
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const f = rbFilter(e.target.closest('.roll-board'), e.target.value);
+    if (f) f.click();
+  });
+  document.addEventListener('click', e => {  // a roll chosen: the roll window opens from the same click first, then this window closes
+    const b = e.target.closest('.roll-board .rc, .roll-board [data-manual-roll]');
+    if (b && !b.disabled) setTimeout(() => rbClose(b));
   });
 
   // A roll button pressed (anywhere: Battle, Sheet, the Spell Book, Cast's "Cast and roll", Table rolls' Roll): the roll
@@ -2548,7 +2550,10 @@ function feedbackBusy(e) {
     anim.checked = was ? was === 'on' : !calm.matches;
     anim.addEventListener('change', () => store.set('askdnd.rollsAnim', anim.checked ? 'on' : 'off'));
     form.addEventListener('change', ev2 => { if (ev2.target.name === 'set' || ev2.target.name === 'material') pickPreview(form); });
-    pickPreview(form);
+    // In Table rolls' Roll window, Your dice is its second tab: the dice load once that tab is shown, not with Roll
+    const tab = form.closest('[hidden]');
+    if (tab) tab.addEventListener('tab:shown', () => pickPreview(form), { once: true });
+    else pickPreview(form);
   });
 
   // ---------------------------------------------------------------- Dice tuning
@@ -2951,14 +2956,15 @@ function feedbackBusy(e) {
   addEventListener('resize', () => { if (win) place(win, win._anchor); });
   document.addEventListener('scroll', e => { if (win && !win.contains(e.target)) place(win, win._anchor); }, true);
 
-  // ---------------------------------------------------------------- the sidebar's Manual roll
-  const manual = side && side.querySelector('[data-manual]');
-  if (manual) {
+  // ---------------------------------------------------------------- Any dice (Roll's window; the sidebar's fold until Nov 10)
+  function wireManual(manual) {
+    if (manual.dataset.wired) return;
+    manual.dataset.wired = '1';
     manual.innerHTML = pickerHTML({ extra: '<button type="button" class="btn primary small" data-manual-roll disabled>Roll</button>' });
     const go = manual.querySelector('[data-manual-roll]');
     let pick = null;
     pick = wirePicker(manual.querySelector('.dice-pick'), () => { go.disabled = !pick || !pick.dice(); });
-    go.addEventListener('click', () => { if (pick.dice()) chooser(go, { kind: 'dice', label: '', dmg: pick.formula(), cid: side.dataset.mine, shared: atTable() }); });
+    go.addEventListener('click', () => { if (pick.dice()) chooser(go, { kind: 'dice', label: '', dmg: pick.formula(), cid: side && side.dataset.mine, shared: atTable() }); });
   }
 
   // ---------------------------------------------------------------- the sidebar's state

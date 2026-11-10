@@ -118,8 +118,8 @@ STOPS = [
      "why": "<b>Enter</b> does it: rolls a check or an attack, opens Cast for a spell, shows a rule's words. "
             "<b>⌘F</b> again gives you the browser's own find."},
     {"group": "dice", "page": None, "at": ".avatar",
-     "what": "<b>Your dice</b>, in your account menu here, picks the set your rolls are thrown in, and how others' rolls show "
-             "for you.",
+     "what": "<b>Your dice</b>, in your account menu here (and a tab in Table rolls' Roll), picks the set your rolls are thrown "
+             "in, and how others' rolls show for you.",
      "why": "The table sees your rolls in your dice."},
     {"group": "conditions", "page": "battle", "needs": "character", "at": "#battle-body .cond-add",
      "what": "<b>+ Condition</b> starts one, with how long it lasts. Each shows as a badge after your name, and the roll "
