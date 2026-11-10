@@ -221,48 +221,78 @@ def run(devices: list[str], seats: list[str]) -> list[str]:
     found_devices = simulators()
     missing = [d for d in devices if d not in found_devices]
     problems = [f"{d} · no simulator for it on the Mini (xcrun simctl list devices)" for d in missing]
-    env = {**os.environ, "PATH": f"{HERE / 'node' / 'bin'}:{os.environ.get('PATH', '')}", "APPIUM_HOME": str(HERE / "appium-home")}
-    with open(HERE / "logs" / "appium.log", "w") as log:
-        driver = subprocess.Popen([str(APPIUM), "-p", str(PORT)], stdout=log, stderr=subprocess.STDOUT, env=env)
+    driver = start_appium("w")
     try:
-        for _ in range(60):  # (Appium answering)
-            try:
-                urllib.request.urlopen(f"http://127.0.0.1:{PORT}/status", timeout=2)
-                break
-            except OSError:
-                time.sleep(1)
         with sync_playwright() as p:
             for kind in (d for d in devices if d in found_devices):
                 sim = found_devices[kind]
                 name = f"{kind} ({sim['name']})"
                 print(f"== {name}", flush=True)
-                sh("xcrun", "simctl", "boot", sim["udid"], check=False)  # (already booted is fine)
-                sh("xcrun", "simctl", "bootstatus", sim["udid"], "-b", check=False)
-                safari = None
-                try:
-                    safari = Safari(sim["udid"])
-                    for seat in seats:
-                        sign_in(safari, seat, p)
-                        safari.go(BASE + CAMPAIGN + "/")
-                        character = safari.js(MY_CHARACTER)
-                        for page in PAGES[seat]:
-                            if page.startswith("@") and not character:
-                                continue
-                            path = address(page, character)
-                            safari.go(BASE + path)
-                            shot = f"{kind}-{seat}-{path.strip('/').replace('/', '_').replace('?', '_') or 'story'}"
-                            got = check_page(safari, sim["udid"], name, seat, path, shot, layout)
-                            print(f"  {seat} {path}: {len(got) or 'ok'}", flush=True)
-                            problems += got
-                except Exception as e:  # noqa: BLE001 - one device failing says so and the next one runs
-                    problems.append(f"{name} · couldn't run: {type(e).__name__}: {str(e)[:200]}")
-                finally:
-                    if safari:
-                        safari.quit()
-                    sh("xcrun", "simctl", "shutdown", sim["udid"], check=False)
+                # A device that couldn't run (Appium or the simulator, not a page) gets one more try from a fresh start:
+                # Nov 10, Appium stopped on the small iPhone's last page one night, and the iPad's Safari didn't reach
+                # the debugger in 30 seconds the next morning. What a page shows is never tried again.
+                for attempt in (1, 2):
+                    found, failed = [], None
+                    sh("xcrun", "simctl", "boot", sim["udid"], check=False)  # (already booted is fine)
+                    sh("xcrun", "simctl", "bootstatus", sim["udid"], "-b", check=False)
+                    safari = None
+                    try:
+                        safari = Safari(sim["udid"])
+                        for seat in seats:
+                            sign_in(safari, seat, p)
+                            safari.go(BASE + CAMPAIGN + "/")
+                            character = safari.js(MY_CHARACTER)
+                            for page in PAGES[seat]:
+                                if page.startswith("@") and not character:
+                                    continue
+                                path = address(page, character)
+                                safari.go(BASE + path)
+                                shot = f"{kind}-{seat}-{path.strip('/').replace('/', '_').replace('?', '_') or 'story'}"
+                                got = check_page(safari, sim["udid"], name, seat, path, shot, layout)
+                                print(f"  {seat} {path}: {len(got) or 'ok'}", flush=True)
+                                found += got
+                    except Exception as e:  # noqa: BLE001 - one device failing says so and the next one runs
+                        failed = f"{name} · couldn't run: {type(e).__name__}: {str(e)[:200]}"
+                    finally:
+                        if safari:
+                            try:
+                                safari.quit()
+                            except Exception:  # noqa: BLE001 - (Appium may be the thing that stopped)
+                                pass
+                        sh("xcrun", "simctl", "shutdown", sim["udid"], check=False)
+                    if failed and attempt == 1:
+                        print(f"  {failed}\n  trying {kind} once more from a fresh start", flush=True)
+                        if not appium_answers():
+                            driver.terminate()
+                            driver = start_appium("a")
+                        continue
+                    problems += found + ([failed] if failed else [])
+                    if attempt == 2 and not failed:
+                        print(f"  {kind} ran on its second try", flush=True)
+                    break
     finally:
         driver.terminate()
     return problems
+
+
+def appium_answers() -> bool:
+    try:
+        urllib.request.urlopen(f"http://127.0.0.1:{PORT}/status", timeout=2)
+        return True
+    except OSError:
+        return False
+
+
+def start_appium(mode: str) -> subprocess.Popen:
+    """Appium's server, its output in logs/appium.log ("w" a fresh log, "a" added to it), once it answers."""
+    env = {**os.environ, "PATH": f"{HERE / 'node' / 'bin'}:{os.environ.get('PATH', '')}", "APPIUM_HOME": str(HERE / "appium-home")}
+    with open(HERE / "logs" / "appium.log", mode) as log:
+        driver = subprocess.Popen([str(APPIUM), "-p", str(PORT)], stdout=log, stderr=subprocess.STDOUT, env=env)
+    for _ in range(60):
+        if appium_answers():
+            break
+        time.sleep(1)
+    return driver
 
 
 def report(problems: list[str]) -> None:

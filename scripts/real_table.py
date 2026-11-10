@@ -333,12 +333,44 @@ def changes(before, after, path: str = "") -> list[tuple[str, object, object]]:
         return [c for k in sorted(set(before) | set(after))
                 if k not in ("dateModified", "providedFrom", "readonlyUrl", "definition", "choiceDefinitions", "optionIds")
                 for c in changes(before.get(k), after.get(k), f"{path}.{k}")]
+    if isinstance(before, list) and isinstance(after, list) and before and after and all(isinstance(x, dict) for x in before + after):
+        # (D&D Beyond's lists come in any order, ids not always unique. Entries are paired by what they are, so one that
+        # appears or goes is its own change, `{+}` or `{-}`, and a change inside another entry is still seen)
+        order = lambda x: (str(x.get("id")), json.dumps(x, sort_keys=True, default=str))
+        groups: dict = {}
+        for side, items in ((0, before), (1, after)):
+            for x in sorted(items, key=order):
+                groups.setdefault(_entry(x), ([], []))[side].append(x)
+        found = []
+        for key, (was, now) in sorted(groups.items(), key=lambda g: str(g[0])):
+            found += [c for i, (a, b) in enumerate(zip(was, now)) for c in changes(a, b, f"{path}[{key[2] or key[0]}#{i}]" if len(before) != len(after) else f"{path}[{i}]")]
+            found += [(f"{path}{{-}}", x, None) for x in was[len(now):]] + [(f"{path}{{+}}", None, x) for x in now[len(was):]]
+        if len(before) == len(after) and not any(p.endswith(("{-}", "{+}")) for p, _, _ in found):
+            # (the same entries: compared in order, as always, so paths stay the familiar [i])
+            return [c for i, (a, b) in enumerate(zip(sorted(before, key=order), sorted(after, key=order))) for c in changes(a, b, f"{path}[{i}]")]
+        return found
     if isinstance(before, list) and isinstance(after, list) and len(before) == len(after):
-        if all(isinstance(x, dict) for x in before + after):  # (D&D Beyond's lists come in any order, ids not always unique)
-            order = lambda x: (str(x.get("id")), json.dumps(x, sort_keys=True, default=str))
-            before, after = sorted(before, key=order), sorted(after, key=order)
         return [c for i, (a, b) in enumerate(zip(before, after)) for c in changes(a, b, f"{path}[{i}]")]
     return [] if before == after else [(path, before, after)]
+
+
+def _entry(x: dict) -> tuple:
+    """What a list entry is, for pairing: its id, and for a granted spell or action where it comes from."""
+    d = x.get("definition") if isinstance(x.get("definition"), dict) else {}
+    return (x.get("id"), d.get("id"), d.get("name"), x.get("componentId"), x.get("componentTypeId"))
+
+
+def _rebuilt(path: str) -> bool:
+    """D&D Beyond's own rebuilding, not a change anyone made (Nov 10: after any save, its record lists granted spells and
+    actions with more or fewer duplicate copies, Find Steed four times or two, and its lookup of choices' names gains or
+    loses entries; the sheet itself shows the same spells either way, and the two copies it serves for a while
+    disagree). A granted entry appearing or going under spells or actions, or a choice name looked up."""
+    return bool(re.match(r"\.(spells|actions)\.\w+\{[+-]\}$", path)) or path.startswith(".choices.definitionKeyNameMap.")
+
+
+def steady(diff: list) -> list:
+    """What a run changed: `diff` without D&D Beyond's own rebuilding (`_rebuilt`)."""
+    return [c for c in diff if not _rebuilt(c[0])]
 
 
 def show(diff: list) -> str:
@@ -352,15 +384,16 @@ def go(page: Page, opener) -> None:
 
 
 def changed(t: Table, sheet: Page, before: dict, what: str, seconds: float = SLOW) -> list:
-    """Waits for D&D Beyond's own record to differ from `before`."""
-    t.expect(what, lambda: bool(changes(before, record(sheet))), seconds)
-    diff = changes(before, record(sheet))
+    """Waits for D&D Beyond's own record to differ from `before` (by more than its own rebuilding: `steady`)."""
+    t.expect(what, lambda: bool(steady(changes(before, record(sheet)))), seconds)
+    diff = steady(changes(before, record(sheet)))
     print("  D&D Beyond:", show(diff), flush=True)
     return diff
 
 
 def undone(t: Table, sheet: Page, before: dict, what: str, seconds: float = SLOW) -> None:
-    t.expect(what, lambda: not changes(before, record(sheet)), seconds)
+    """Waits for D&D Beyond's own record to be `before` again, its own rebuilding aside (`steady`)."""
+    t.expect(what, lambda: not steady(changes(before, record(sheet))), seconds)
 
 
 def undo(page: Page) -> bool:
@@ -933,7 +966,7 @@ def wild_shape(t: Table, seat: str = "player4", twin_key: str = "") -> None:
     go(page, form)
     page.locator('[data-use-go][data-to="shift"]').first.click(timeout=8000)
     changed(t, sheet, before, "the use and the Temporary Hit Points land on D&D Beyond")
-    t.expect("both of them", lambda: len(changes(before, record(sheet))) >= 2, SLOW)
+    t.expect("both of them", lambda: len(steady(changes(before, record(sheet)))) >= 2, SLOW)
     t.expect(f"Battle is drawn as the {name}", lambda: page.locator(".ws-form").count() > 0, 15)
     if not undo(page):
         page.goto(page.url, wait_until="domcontentloaded")
@@ -1592,7 +1625,7 @@ def as_found(t: Table, before: dict) -> None:
     """Each test sheet is back as part 1 found it: what a run changes, it puts back (a miss here is a run that didn't)."""
     for seat, was in before.items():
         sheet = t.sheet(seat)
-        left = lambda: changes({k: v for k, v in was.items() if k not in KEPT}, {k: v for k, v in record(sheet).items() if k not in KEPT})
+        left = lambda: steady(changes({k: v for k, v in was.items() if k not in KEPT}, {k: v for k, v in record(sheet).items() if k not in KEPT}))
         if not t.expect(f"{seat}'s sheet is back as found", lambda: not left(), 20):  # (D&D Beyond can serve an older copy for a moment)
             print("  still changed:", show(left()), flush=True)
 
