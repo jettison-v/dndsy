@@ -63,7 +63,7 @@
         {% if x.time %}<p class="cond-lasts{{ ' soon' if x.time.soon }}"><b>{{ x.time.long }}</b>{% if x.source %} <span class="note">From {{ x.source }}.</span>{% endif %}</p>{% endif %}
         <p>{{ x.rules }}</p>
         {% if x.note %}<p class="note">{{ x.note }}</p>{% endif %}
-        <p class="note">askdnd lists what it changes in the roll window; the DM makes the call.</p>
+        <p class="note">askdnd lists what it changes in the roll card; the DM makes the call.</p>
         {% if can_pick and x.sync != "ending" and unreached and x.on_ddb %}<p class="unreached">{{ unreached_says(c, "end or change it") }}</p>
         {% elif can_pick and x.sync != "ending" %}<div class="row">
           {% if x.name == "Exhaustion" %}{% for lv in range(1, 7) %}<button class="btn small{{ ' primary' if lv == x.level }}" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": "Exhaustion", "level": lv, "source": x.source or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Exhaustion level {{ lv }}">{{ lv }}</button>{% endfor %}{% endif %}

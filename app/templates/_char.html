@@ -137,7 +137,7 @@
   <span class="ds-set" aria-label="{{ ds.success }} of 3 successes">{% for i in range(3) %}<i class="ds-pip{{ ' s' if i < ds.success }}"></i>{% endfor %}<span class="ds-k">✓</span></span>
   <span class="ds-set" aria-label="{{ ds.fail }} of 3 failures">{% for i in range(3) %}<i class="ds-pip{{ ' f' if i < ds.fail }}"></i>{% endfor %}<span class="ds-k">✗</span></span>
 </span>
-{%- if roll and dying_state(s) == "dying" %}<button type="button" class="roll-chip tile-roll" data-roll="death" data-label="Death save" title="Roll your death save: 10 or more a success, a 1 two failures, a 20 back with 1 Hit Point. It marks itself.">Roll</button>{% endif -%}
+{%- if roll and dying_state(s) == "dying" %}<button type="button" class="roll-chip tile-roll" data-plan="{{ roll_plan('death', 'Death save') }}" data-roll="death" data-label="Death save" title="Roll your death save: 10 or more a success, a 1 two failures, a 20 back with 1 Hit Point. It marks itself.">Roll</button>{% endif -%}
 {%- endmacro %}
 {# Rest, with a moon so it stands out from the chips around it (Brett, 2026-11-02): Battle's Resources row (the Status row on
    a phone) and Sheet's Hit dice line. It opens the rest window (app/rests.py), Short Rest first. #}
@@ -198,8 +198,8 @@
 {# Dice rolls (app.js "Rolls"): anything with data-roll rolls when clicked. data-mod is the bonus ("+7"),
    data-dmg the damage dice, data-adv="1" when Advantage always applies. Your own
    character's rolls go to the server as Table rolls (app/table_rolls.py); someone else's stay in this browser. #}
-{% macro roll_attrs(kind, label, mod="", dmg="", advs=(), note="", recipe=none, plan=none) -%}
-{{ roll_data(kind, label, mod, dmg, advs, note, recipe, plan) | data_attrs }}
+{% macro roll_attrs(kind, label, mod="", dmg="", advs=(), note="", rolls=none, plan=none, save="") -%}
+{{ roll_data(kind, label, mod, dmg, advs, note, rolls, plan, 0, save) | data_attrs }}
 {%- endmacro %}
 
 {# An option's to-hit number as a roll button (attacks), or a small Roll button for damage or healing
@@ -223,9 +223,9 @@
 {%- set rec = e.recipe -%}
 {%- set first = (rec.events | rejectattr("on", "in", ["hit", "rider"]) | list | first) if rec else none -%}
 {%- if e.attack and rec -%}
-<button type="button" class="{{ cls }}" {{ roll_attrs("attack", e.name, e.attack, "", (), recipe=rec) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll to hit {{ e.attack }}">{{ label or e.name }}</button>
+<button type="button" class="{{ cls }}" {{ roll_attrs("attack", e.name, e.attack, "", (), rolls=e.rolls.hit, plan=e.plan) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll to hit {{ e.attack }}">{{ label or e.name }}</button>
 {%- elif first -%}
-<button type="button" class="{{ cls }}" {{ roll_attrs({"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.on, "damage"), e.name, "", "", note=("Each target makes a " ~ e.save ~ " save." if e.save else ""), recipe=rec) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll {{ e.name }}">{{ label or e.name }}</button>
+<button type="button" class="{{ cls }}" {{ roll_attrs({"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.on, "damage"), e.name, "", "", rolls=e.rolls.other, plan=e.plan if e.save else none, save=e.save) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll {{ e.name }}">{{ label or e.name }}</button>
 {%- else -%}
 <button type="button" class="{{ cls }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" title="What {{ e.name }} does">{{ label or e.name }}</button>
 {%- endif -%}

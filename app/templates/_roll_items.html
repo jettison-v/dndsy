@@ -45,7 +45,7 @@
     {% if r.apply %}{% set ap = r.apply %}
     {% for line in ap.done %}<span class="roll-applied{{ ' roll-beat' if r.kind == 'attack' }}">✓ {{ line }}</span>{% endfor %}
     {% for cc in ap.conc %}<span class="roll-conc" data-roll-char="{{ cc.cid }}">Concentration ({{ cc.spell }}): Con save, DC {{ cc.dc }}
-      <button type="button" class="btn small" data-roll="save" data-label="Concentration ({{ cc.spell }}), DC {{ cc.dc }}" data-mod="{{ cc.label | replace('−', '-') }}"{% if cc.adv %} data-adv="1"{% endif %}{% if cc.why %} data-adv-why="{{ cc.why }}"{% endif %}>Roll the save</button></span>{% endfor %}
+      <button type="button" class="btn small" data-plan="{{ roll_plan('save', 'Concentration (' ~ cc.spell ~ '), DC ' ~ cc.dc, cc.label) }}" data-roll="save" data-label="Concentration ({{ cc.spell }}), DC {{ cc.dc }}" data-mod="{{ cc.label | replace('−', '-') }}"{% if cc.adv %} data-adv="1"{% endif %}{% if cc.why %} data-adv-why="{{ cc.why }}"{% endif %}>Roll the save</button></span>{% endfor %}
     {% if ap.to %}<span class="roll-acts roll-apply">
       {% if ap.to | length == 1 %}<button type="button" class="btn small" data-modal-url="/characters/{{ ap.to[0].id }}/hp?roll={{ r.id }}">Apply to {{ ap.to[0].name }}</button>
       {% else %}<details class="roll-apply-to"><summary class="btn small">Apply to…</summary><span class="roll-apply-list">{% for t in ap.to %}<button type="button" class="btn small" data-modal-url="/characters/{{ t.id }}/hp?roll={{ r.id }}">{{ t.name }}</button>{% endfor %}</span></details>{% endif %}

@@ -37,28 +37,30 @@ def test_the_main_pages_load_without_errors(people, server):
 def test_enter_rolls_and_esc_closes_whatever_was_clicked_last(people, server):
     player = people("player")
     page = battle(player, server)
-    win = page.locator(".roll-win")
+    win = page.locator(".roll-card")
+    done = win.locator(".rcard-result:not(.rolling)")
     # Advantage, then Enter: rolls (it used to press Advantage again)
     page.click(save("Dex"))
     win.locator("[data-mode=adv]").click()
     page.keyboard.press("Enter")
-    win.locator(".rw-result").wait_for()
+    done.wait_for()
     page.wait_for_function(f"document.querySelector('{LOG}') && document.querySelector('{LOG}').textContent.includes('Adv')")
     page.keyboard.press("Escape")
     assert win.count() == 0
     # A d4, then Enter: one d4 added, not two
     page.click(save("Dex"))
-    win.locator("summary").click()
-    win.locator("[data-add-die='4']").click()
+    win.locator("[data-adding]").click()
+    win.locator("[data-add='+1d4']").click()
     page.keyboard.press("Enter")
-    win.locator(".rw-result").wait_for()
-    page.wait_for_function(f"document.querySelector('{LOG}').textContent.includes('+1d4')")
+    done.wait_for()
+    page.wait_for_function(f"document.querySelector('{LOG}').textContent.includes('1d4')")
+    assert page.evaluate(f"(document.querySelector('{LOG}').textContent.match(/1d4/g) || []).length") == 1
     page.keyboard.press("Escape")
-    # Clicking the window's text leaves nothing focused: Enter still rolls
+    # Clicking the card's words leaves nothing focused: Enter still rolls
     page.click(save("Wis"))
-    win.locator(".rw-title").click()
+    win.locator(".rcard-head b").click()
     page.keyboard.press("Enter")
-    win.locator(".rw-result").wait_for()
+    done.wait_for()
     page.keyboard.press("Escape")
     # Over a side panel, Esc closes the roll window only
     page.locator('[data-panel-url$="/all/action?add=1"]').first.click()
@@ -101,7 +103,8 @@ def test_a_dm_only_roll_reaches_everyone_but_only_the_dm_sees_it(people, server)
     tops = {p: p.page.evaluate(newest_id) for p in (other, dm)}
     page = battle(player, server)
     page.click(save("Cha"))
-    page.locator(".roll-win [data-to=dm]").click()
+    page.locator(".roll-card [data-vis-open]").click()
+    page.locator(".roll-card [data-to=dm]").click()
     page.keyboard.press("Enter")
     for p in (other, dm):
         p.page.wait_for_function(f"([id]) => {newest_id} && {newest_id} !== id", arg=[tops[p]], timeout=5000)

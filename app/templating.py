@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from fastapi import Request
@@ -326,6 +327,16 @@ def _data_attrs(d: dict) -> Markup:
 
 templates.env.filters["data_attrs"] = _data_attrs
 templates.env.globals["roll_data"] = roll_data  # (every roll button's data: _char.html roll_attrs, and Search's rows)
+
+
+def _roll_plan(*a, **k) -> str:
+    """A hand-made roll button's data-plan (a death save, a Hit Point Die…): app/roll_plan.py `button`."""
+    from app.roll_plan import button
+
+    return json.dumps(button(*a, **k))
+
+
+templates.env.globals["roll_plan"] = _roll_plan
 templates.env.globals["option_rolls"] = option_rolls  # (an option's rolls as Battle draws them: _char.html hit)
 
 
