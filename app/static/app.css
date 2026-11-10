@@ -3706,3 +3706,8 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .roll-beat.roll-old s { font-size: var(--fs-lg); }
 .roll-item.kind-attack .roll-dmg-line b { color: var(--red); font-size: var(--fs-xl); }
 .roll-applied.roll-beat { color: var(--green); }
+
+/* While dice are on screen, the roll window (or card) lets them show through (feedback 59: a die that landed behind the
+   card was hidden); pointing at it makes it solid again, to read or press */
+.roll-win { transition: opacity .2s; }
+body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }

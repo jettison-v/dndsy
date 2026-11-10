@@ -289,3 +289,23 @@ def test_several_rays_roll_a_to_hit_each(people, server, browser_db):
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)
+
+
+def test_the_card_lets_the_dice_show_through_while_they_are_thrown(people, server, browser_db):
+    """Feedback 59 (Nov 9): a die that landed behind the card was hidden; while dice are on screen the card is see-through."""
+    was = _pieces(browser_db, server, ["sync", "labs", "roll_card"])
+    try:
+        player = people("player")
+        player.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'on')")  # (after Person's own, which turns dice off)
+        page = _battle_with(player, server, True)
+        page.locator(UNARMED).click()
+        page.locator('.roll-card [data-choice="damage"]').click()
+        page.mouse.move(2, 2)  # (not pointing at the card)
+        page.locator(".roll-card [data-roll-hit]").click()
+        page.mouse.move(2, 2)
+        page.wait_for_function("document.querySelector('.dice-throw.on')", timeout=10000)
+        page.wait_for_timeout(300)
+        assert float(page.evaluate("getComputedStyle(document.querySelector('.roll-win')).opacity")) < 0.6
+        assert player.errors == []
+    finally:
+        _pieces(browser_db, server, was)
