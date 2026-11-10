@@ -121,3 +121,21 @@ def test_what_changes_another_roll_is_a_modifier(plans):
     assert "Favored by the Gods" in [m["name"] for m in by(plans, "big_c", "Hammer of Thunderbolts (Maul)")["modifiers"]]
     deflect = by(plans, "no_name", "Deflect Attack")
     assert deflect["modifier"]["when"] == "damage_taken" and deflect["modifier"]["reduces"].startswith("1d10")
+
+
+def test_riders_are_only_the_ones_that_can_apply(plans):
+    """The roll audit (Nov 10): Eldritch Blast's card listed Savage Attacker, Stunning Strike and Empowered Strikes
+    (a weapon's or an Unarmed Strike's), and the Maul's listed Guided Strike and Favored by the Gods under On a hit.
+    Each rider applies where its own words say, at the time they say; one that's already a pill isn't said again."""
+    blast = {r["name"] for r in by(plans, "no_name", "Eldritch Blast")["riders"]}
+    assert not blast & {"Savage Attacker", "Stunning Strike", "Empowered Strikes"}
+    strike = {r["name"] for r in by(plans, "no_name", "Unarmed Strike")["riders"]}
+    assert {"Stunning Strike", "Empowered Strikes"} <= strike
+    maul = next(p for p in plans["big_c"] if p["name"].startswith("Hammer of Thunderbolts"))
+    when = {r["name"]: r["when"] for r in maul["riders"]}
+    assert when.get("Savage Attacker") == "hit" and "Favored by the Gods" not in when
+    assert when.get("Guided Strike") in (None, "miss")
+    assert roll_plan.rider_fits("Once per turn, a hit with a weapon", "spell") is None
+    assert roll_plan.rider_fits("An artificer spell you cast through your arcane firearm (a wand, staff or rod)", "weapon") is None
+    assert roll_plan.rider_fits("Every hit with a Strength attack (weapon or Unarmed Strike) while your Rage is active", "unarmed") == "hit"
+    assert roll_plan.rider_fits("When you miss a creature", "weapon") == "miss"

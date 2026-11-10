@@ -110,6 +110,28 @@ def _slot_levels(sheet: dict, level: int) -> list[int]:
     return sorted(x for x in have if x >= level)
 
 
+UNARMED_ROW = re.compile(r"\bUnarmed Strike\b|\bFlurry of Blows\b")
+
+
+def rider_fits(when: str, made: str) -> str | None:
+    """Whether a class or feat rider can apply to an attack made with a weapon, an Unarmed Strike or a spell, read
+    from its own words ("a hit with a weapon", "an Unarmed Strike hit", "an artificer spell"), and when: "hit", or
+    "miss" for one used after a miss or before the outcome is known (Studied Attacks, Guided Strike). None when it
+    can't (the roll audit, Nov 10: Savage Attacker and Stunning Strike were listed on Eldritch Blast)."""
+    w = when.lower()
+    if "spell" in w:
+        fits = made == "spell"
+    elif "unarmed strike" in w or "flurry of blows" in w:
+        fits = made == "unarmed" or ("weapon" in w and made == "weapon")
+    elif "weapon" in w or "strength attack" in w or "melee hit" in w:
+        fits = made in ("weapon", "unarmed") if ("strength attack" in w or "melee hit" in w) else made == "weapon"
+    else:
+        fits = True
+    if not fits:
+        return None
+    return "miss" if ("miss" in w or "before you know if it hits" in w) and "hit with" not in w else "hit"
+
+
 def plan(sheet: dict, o: dict) -> dict:
     """The roll plan for one Battle option (see the module's words)."""
     out = {"name": o["name"], "cost": o.get("cost", ""), "kind": o.get("kind", ""), "steps": [], "choice": None,
@@ -189,13 +211,16 @@ def plan(sheet: dict, o: dict) -> dict:
         (out["heal"] if o.get("heal") else out["damage"]).append(part)
         src["heal" if o.get("heal") else "damage"] = "sheet" if sheet_part else "text"
 
+    out["modifiers"] = modifiers_for(sheet, "attack" if out["attack"] else "save" if out["save"] else "")
     if out["attack"] or (out["damage"] and o.get("kind") == "attack"):
         for t in o.get("tags") or []:  # the weapon's mastery, if you've mastered it (character_views: "Mastery: Vex")
             if t.startswith("Mastery: ") and (m := t[9:]) in class_rules.MASTERIES:
                 out["riders"].append({"name": m, "when": "miss" if m == "Graze" else "hit", "says": class_rules.MASTERIES[m], "on": "mastery"})
+        pills = {m["name"] for m in out["modifiers"]}
+        made = "spell" if o.get("kind") == "spell" else "unarmed" if UNARMED_ROW.search(f"{o['name']} {o.get('meta') or ''}") else "weapon"
         for r in class_rules.turn(sheet)["riders"]:  # what you can add once it hits (Stunning Strike, Divine Smite…)
-            out["riders"].append({"name": r["name"], "when": "hit", "says": r["effect"], "on": r["when"]})
-    out["modifiers"] = modifiers_for(sheet, "attack" if out["attack"] else "save" if out["save"] else "")
+            if r["name"] not in pills and (when := rider_fits(r["when"], made)):  # (one already a pill isn't said twice)
+                out["riders"].append({"name": r["name"], "when": when, "says": r["effect"], "on": r["when"]})
 
     steps = (["choose"] if out["choice"] else []) + (["attack"] if out["attack"] else []) + (["save"] if out["save"] else [])
     if out["damage"]:

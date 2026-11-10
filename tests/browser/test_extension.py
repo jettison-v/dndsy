@@ -182,6 +182,13 @@ def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server
     page.locator("#cards > .card", has_text="Cast").wait_for(timeout=5000)
     rolls = page.evaluate("fetch('/rolls?since=-1').then(r => r.text())")
     assert "Healing Word" in rolls and "level 1" in rolls  # (at the table, at the level cast)
+    # (the roll audit, Nov 10: "Roll without spending a slot" in the Cast window did nothing)
+    page.keyboard.press("Escape")
+    page.evaluate("""() => [...document.querySelectorAll('.sb-actions .item-go')]
+        .find(b => /Healing Word/.test((b.closest('li, tr, .sb-row, [data-name]') || b).textContent)).click()""")
+    page.locator(".roll-win .cast-roll").click()
+    page.locator(".roll-win [data-go]").wait_for(timeout=5000)  # (the roll, nothing spent)
+    assert page.locator(".roll-win [data-use-go]").count() == 0
 
 
 def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):
