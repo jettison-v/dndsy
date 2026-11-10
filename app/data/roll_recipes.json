@@ -1140,10 +1140,11 @@
    "level": 8
   },
   "Eldritch Blast": {
-   "checked": "text",
+   "checked": "by hand",
    "events": [
     {
      "cantrip": "count",
+     "count_label": "beam",
      "name": "Eldritch Blast",
      "on": "hit",
      "parts": [

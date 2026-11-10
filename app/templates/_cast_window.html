@@ -1,5 +1,6 @@
 {# A spell's window, inside the roll window (app.js "using an item"; app/casting.py). With something to roll, Cast rolls at
-   the level picked here, in one step (Brett, 2026-10-31); Roll alone stays for a roll without spending anything. #}
+   the level picked here, in one step (Brett, 2026-10-31); No slot in Cast at casts it without spending one (Brett, Nov 10:
+   one way, not a second "Roll without spending a slot"). The hidden roll button is what Cast and roll plays. #}
 {% from "_char.html" import spell_roll %}
 {% set rolls = e.recipe and (e.attack or (e.recipe.events | rejectattr("on", "in", ["hit", "rider"]) | list)) %}
 <button type="button" class="rp-x" aria-label="Close">×</button>
@@ -33,7 +34,7 @@
 {% endif %}
 {% if offline %}<p class="use-what">{{ c.name }}'s D&amp;D Beyond sheet can't be reached, so only as a Ritual or without a slot. One coming back after 0 Hit Points: give it its Hit Points on D&amp;D Beyond.</p>{% endif %}
 {% if can_cast %}
-<div class="rw-row use-foot" data-character="{{ c.id }}">{% if rolls %}<button type="button" class="btn primary small" data-use-go data-then-roll>Cast and roll</button>{{ spell_roll(c, e, "Roll without spending a slot", "btn link small cast-roll", 0) }}{% else %}<button type="button" class="btn primary small" data-use-go>Cast</button>{% endif %}<button type="button" class="btn link small" data-use-close>Cancel</button></div>
+<div class="rw-row use-foot" data-character="{{ c.id }}">{% if rolls %}<button type="button" class="btn primary small" data-use-go data-then-roll>Cast and roll</button><span hidden>{{ spell_roll(c, e, "Roll", "cast-roll", 0) }}</span>{% else %}<button type="button" class="btn primary small" data-use-go>Cast</button>{% endif %}<button type="button" class="btn link small" data-use-close>Cancel</button></div>
 <p class="use-said" role="alert" hidden></p>
 {% else %}
 <p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to cast here, or spend the slot on D&amp;D Beyond (askdnd shows it within seconds).</p>

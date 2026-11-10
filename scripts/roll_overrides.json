@@ -324,6 +324,20 @@
     }
    ]
   },
+  "Eldritch Blast": {
+   "why": "a beam each: an attack roll per beam, more beams at character levels 5, 11 and 17 (named so the card and Table rolls say beams)",
+   "events": [
+    {
+     "name": "Eldritch Blast",
+     "on": "hit",
+     "parts": [
+      "1d10 force"
+     ],
+     "cantrip": "count",
+     "count_label": "beam"
+    }
+   ]
+  },
   "Enlarge/Reduce": {
    "why": "the 1d4 changes the target's weapon damage; it isn't a save",
    "events": [

@@ -1860,7 +1860,7 @@ function feedbackBusy(e) {
       let h = '';
       if (effs.length > 1) h += '<div class="rw-row rw-evs"><span class="rw-label">Which</span><span class="rw-ev-list">' + effs.map((x, i) =>
         '<button type="button" class="chip" data-card-ev="' + i + '" aria-pressed="' + (i === st.ev) + '">' + esc(x.name) + '</button>').join('') + '</span></div>';
-      if (grows && spec.cast) h += '<div class="rw-row"><span class="rw-label">Cast at</span><span>Level ' + spec.cast + ' <small class="note">(cast: the slot is spent)</small></span></div>';
+      if (grows && spec.cast) h += '<div class="rw-row"><span class="rw-label">Cast at</span><span>Level ' + spec.cast + ' <small class="note">(' + (spec.castFree ? 'cast without spending a slot' : 'cast: the slot is spent') + ')</small></span></div>';
       else if (grows) h += '<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" data-card-slot aria-label="Spell slot level">'
         + cast.levels.map(l => '<option value="' + l + '"' + (l === st.level ? ' selected' : '') + '>Level ' + l
           + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
@@ -1932,8 +1932,9 @@ function feedbackBusy(e) {
           : '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling damage</span></div>';
       } else if (st.step === 'pick') {  // (+ a die, pressed in Table rolls: which one)
         h += '<p class="rcard-q">Add a die or a bonus to this roll</p>' + adder('bonus');
-      } else if (st.step === 'done') {
-        h += resultBox(st.entry, false) + '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>';
+      } else if (st.step === 'done') {  // (a roll that can go again, a Hit Point Die: its plan's "again" button first)
+        h += resultBox(st.entry, false) + '<div class="rcard-acts">' + (plan.again ? '<button type="button" class="btn primary rcard-go" data-again>' + esc(plan.again) + '</button>' : '')
+          + '<button type="button" class="btn' + (plan.again ? '' : ' primary') + '" data-done>Done</button></div>';
       }
       w.innerHTML = h;
       w.classList.toggle('nat20', !!(st.entry && st.entry.nat === 20));
@@ -2037,7 +2038,7 @@ function feedbackBusy(e) {
         return draw();
       }
       if (b.hasAttribute('data-roll-hit')) return rollHit();
-      if (b.hasAttribute('data-roll-single')) return rollOne('done');
+      if (b.hasAttribute('data-roll-single') || b.hasAttribute('data-again')) return rollOne('done');
       if (b.hasAttribute('data-roll-save')) return rollOne('saved');
       if (b.hasAttribute('data-reroll')) return follow('reroll', { reason: st.entry.can.reroll });
       if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return follow('bonus', { extras: [m.name + ':+' + m.adds], bonusLabel: m.name, die: 4 }); }
@@ -2329,7 +2330,7 @@ function feedbackBusy(e) {
     const list = throwList({ ...t, kind: t.kind }, followUp ? 'damage' : null);
     if (!list.length) return Promise.reject(new Error('nothing to throw'));
     const name = li.querySelector('.roll-who b').textContent, what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
-    const total = followUp ? li.querySelector('.roll-dmg-line b').textContent : (li.querySelector('.roll-total') || {}).textContent;
+    const total = followUp ? li.querySelector('.roll-dmg-line > b').textContent : (li.querySelector('.roll-total') || {}).textContent;
     const nat = followUp ? null : li.classList.contains('nat20') ? 20 : li.classList.contains('nat1') ? 1 : null;
     const dice = diceOf(li);
     const swatch = '<i class="sw-' + esc(dice.set || 'white') + '"></i>';
@@ -2665,11 +2666,11 @@ function feedbackBusy(e) {
       // Cast and roll: the roll opens where the Cast window was, at the level just cast
       const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll');
       if (roller) {
-        const level = w.querySelector('select[name=way]')?.selectedOptions[0]?.dataset.level;
+        const way = w.querySelector('select[name=way]')?.selectedOptions[0], level = way?.dataset.level;
         if (level) roller.dataset.slot = level;
         // (cast: the slot is spent, so its level is fixed and there's nothing left to choose; healing and damage roll at
         // once, an attack waits at its to-hit for Advantage; Brett, Nov 10: "Cast and roll" didn't roll)
-        openRoll(roller, { ...specFrom(roller), cast: +level || 0 });
+        openRoll(roller, { ...specFrom(roller), cast: +level || 0, castFree: /^(none|ritual|free)/.test(way?.value || '') });
       } else closeWin();
       turnUsed(w._anchor);
       if (j.roll) {
@@ -2735,7 +2736,7 @@ function feedbackBusy(e) {
         place(win);
         return;
       }
-      const roller = win._use && e.target.closest('[data-roll]');  // (Cast's "Roll without spending a slot": the roll, where Cast was)
+      const roller = win._use && e.target.closest('[data-roll]');  // (a roll button inside a window: the roll, where the window was)
       if (roller) { e.preventDefault(); openRoll(roller, specFrom(roller), e.shiftKey); return; }
       return;
     }
@@ -2937,13 +2938,16 @@ function feedbackBusy(e) {
   }
   // Polling every 3 s; every 30 s while the live connection is up, which brings rolls the moment they're made
   let polls = 0;
+  let changedRoll = 0;
   window.askdndRolls = {
     wanted: () => atTable() && !loaded,
     poll: () => atTable() && loaded && document.visibilityState === 'visible' && (!(window.askdndLive || {}).up || ++polls % 10 === 0),
     since: () => (loaded ? lastId : -1),  // -1: the whole recent log
+    also: () => { const a = changedRoll; changedRoll = 0; return a; },  // (a roll that changed without a new row: its outcome)
   };
   document.addEventListener('askdnd:live', e => {
     if (e.detail.type === 'rolls' && atTable()) earlyThrow(e.detail.roll);
+    if (e.detail.type === 'rolls' && e.detail.changed) changedRoll = e.detail.changed;
     if ((e.detail.type === 'rolls' || e.detail.type === 'resync') && atTable() && loaded && log && window.htmx) htmx.trigger(log, 'rolls:load');
   });
   // A roll the whole table sees comes in the live message itself (app/table_rolls.py _live; Brett, 2026-10-29: every
@@ -2962,7 +2966,7 @@ function feedbackBusy(e) {
     li.querySelector('.roll-who b').textContent = t.name;
     li.querySelector('.roll-what').textContent = t.label + (t.kind === 'attack' ? ' to hit' : t.kind === 'damage' ? ' damage' : '');
     li.querySelector('.roll-total').textContent = t.total;
-    if (t.damage) li.querySelector('.roll-dmg-line b').textContent = t.damage.total;
+    if (t.damage) li.querySelector('.roll-dmg-line > b').textContent = t.damage.total;
     window.askdndThrowing.throwing(t.id);
     throwOthers(li).catch(() => {}).finally(() => window.askdndThrowing.landed(t.id));
   }
@@ -3023,8 +3027,8 @@ function feedbackBusy(e) {
     let d = null;
     if (total) {
       const d20 = D20.some(k => li.classList.contains('kind-' + k)), kept = li.querySelector('.roll-dice u');
-      const dmgLine = li.querySelector('.roll-dmg-line b') && +li.dataset.seq !== +li.dataset.id;
-      const v = d20 && kept && !dmgLine ? kept.textContent : (dmgLine ? li.querySelector('.roll-dmg-line b').textContent : total.textContent);
+      const dmgLine = li.querySelector('.roll-dmg-line > b') && +li.dataset.seq !== +li.dataset.id;
+      const v = d20 && kept && !dmgLine ? kept.textContent : (dmgLine ? li.querySelector('.roll-dmg-line > b').textContent : total.textContent);
       d = gem(d20 && !dmgLine ? 20 : sidesOf(li.querySelector('.roll-dice') && li.querySelector('.roll-dice').textContent), v,
               (dmgLine || li.classList.contains('kind-damage') ? 'ruby' : li.classList.contains('kind-heal') ? 'jade' : 'gold')
               + (li.classList.contains('nat20') && !dmgLine ? ' crit' : li.classList.contains('nat1') && !dmgLine ? ' fumble' : ''), 'tiny');
@@ -3032,7 +3036,7 @@ function feedbackBusy(e) {
       if (animate()) tumble(d, 150, 650); else { d.querySelector('.gem-n').textContent = v; d.classList.add('landed'); }
     }
     const what = li.querySelector('.roll-what').textContent.trim().replace(/\s+/g, ' ');
-    const dmg = li.querySelector('.roll-dmg-line b');
+    const dmg = li.querySelector('.roll-dmg-line > b');
     const t = document.createElement('span');
     t.innerHTML = !total ? '<b>' + esc(name) + '</b> ' + esc(what.charAt(0).toLowerCase() + what.slice(1))
       : dmg && +li.dataset.seq !== +li.dataset.id ? '<b>' + esc(name) + '</b> rolled <b>' + esc(dmg.textContent) + '</b> damage · ' + esc(what.replace(/ to hit$/, ''))

@@ -51,7 +51,7 @@ the script.
 | Dragon's Breath | 2 | Dragon's Breath: 3d6 (Dex save, half on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
 | Dream | 5 | Dream: 3d6 psychic (Wis save, nothing on a success) | read from the text; same dice as the 2024 PHB |
 | Earthquake | 8 | Collapsing structure: 12d6 bludgeoning (Dex save, half on a success) | by hand: the fissures and their depth are the DM's rolls; the damage is for creatures near a collapsing structure; same dice as the 2024 PHB |
-| Eldritch Blast | cantrip | Eldritch Blast: 1d10 force (on a hit); more beams at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
+| Eldritch Blast | cantrip | Eldritch Blast: 1d10 force (on a hit); more beams at levels 5, 11, 17 | by hand: a beam each: an attack roll per beam, more beams at character levels 5, 11 and 17 (named so the card and Table rolls say beams); same dice as the 2024 PHB |
 | Enlarge/Reduce | 2 | Enlarged: extra damage: 1d4 (no roll to hit) | by hand: the 1d4 changes the target's weapon damage; it isn't a save; same dice as the 2024 PHB |
 | Ensnaring Strike | 1 | Ensnaring Strike: 1d6 piercing (no roll to hit; again at the start of each of its turns); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
 | Faithful Hound | 4 | Faithful Hound: 4d8 force (Dex save, nothing on a success) | read from the text; same dice as the 2024 PHB |

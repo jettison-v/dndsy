@@ -324,14 +324,24 @@ def test_healing_and_any_dice_are_one_step_on_the_card(people, server, browser_d
         if page.evaluate("document.body.classList.contains('rolls-closed')"):
             page.locator(".rs-edge").click()
         page.locator("[data-rs-roll]").click()
-        page.locator('#peek.open .rc[data-label="Hit Die"]').first.click()
+        page.locator('#peek.open .rc[data-label="Hit Point Die"]').first.click()
         card = page.locator(".roll-card")
         card.locator("[data-roll-single]").wait_for()
         assert card.locator(".rcard-rail li").count() == 1 and "Roll healing" in card.locator("[data-roll-single]").inner_text()
         card.locator("[data-roll-single]").click()
         card.locator("[data-done]").wait_for(timeout=20000)
         assert card.locator(".rcard-what").inner_text().lower() == "healing" and "Apply to" in card.inner_text()
-        _sees(page, "Hit Die")
+        _sees(page, "Hit Point Die")
+        # (Brett's Roll Audit comment, Nov 10: rolling another Hit Point Die from its result)
+        rolls = page.evaluate("fetch('/rolls?since=-1').then(r => r.text())").count("Hit Point Die")
+        card.locator("[data-again]").click()
+        card.locator("[data-done]").wait_for(timeout=20000)
+        for _ in range(20):
+            if page.evaluate("fetch('/rolls?since=-1').then(r => r.text())").count("Hit Point Die") > rolls:
+                break
+            page.wait_for_timeout(250)
+        else:
+            raise AssertionError("Roll another made no second roll")
         card.locator("[data-done]").click()
 
         page.locator("[data-rs-roll]").click()
