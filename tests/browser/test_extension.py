@@ -138,13 +138,13 @@ def test_minus_on_hit_points_is_click_type_enter(chrome, server):
     page.locator(".roll-win .hp-go button[type=submit]:not([disabled])").wait_for(timeout=5000)
     held, sent = [], []  # the outside review's W1: a second Enter while the first is on its way mustn't take the damage twice
     page.on("request", lambda r: sent.append(r) if r.url.endswith("/hp/apply") else None)
-    page.route("**/hp/apply", held.append)
+    page.route("**/hp/apply", lambda route: held.append(route))
     with page.expect_request("**/hp/apply"):
         page.keyboard.press("Enter")
     page.keyboard.press("Enter")
     page.evaluate("1")
-    page.unroute("**/hp/apply")
     held[0].continue_()
+    page.unroute("**/hp/apply")
     page.locator("#cards > .card", has_text="took 5").wait_for(timeout=5000)  # the corner card: the window's close mustn't lose it
     page.wait_for_function("!document.querySelector('.roll-win input[name=amount]')", timeout=5000)
     page.wait_for_timeout(500)  # (HTMX would have sent a queued second press the moment the first answered)
