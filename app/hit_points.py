@@ -411,6 +411,7 @@ def apply_info(db: Session, user: dict | None, roots: list[TableRoll], kids: lis
             ch = db.get(Character, cid)
             if c and ch and picks.can_edit(db, user, ch):
                 conc.append({"cid": cid, "name": ch.name, **c})
-        out[r.id] = {"to": [{"id": c.id, "name": c.name} for c in mine[r.campaign_id] if c.id not in done],
+        only = r.character_id if (r.detail or {}).get("self") else None  # (Second Wind, a Hit Point Die: the roller's own)
+        out[r.id] = {"to": [{"id": c.id, "name": c.name} for c in mine[r.campaign_id] if c.id not in done and (only is None or c.id == only)],
                      "done": [k.label for k in done.values()], "conc": conc, "dm": is_dm(user, r.campaign_id)}
     return out

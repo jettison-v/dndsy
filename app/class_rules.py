@@ -47,6 +47,10 @@ class Rule:
     needs: str | None = None
     replaces: tuple[str, ...] = ()
     group: str = ""  # rules sharing a group: only the highest level applies (an upgrade replaces the original)
+    # What a rider does once pressed on the roll card (Riders on a Hit, Brett Nov 10): (("kind", "save"), ("save", "Con"),
+    # ("dc", "{dc_wis}"), ("spend", "Focus Points")) — kinds "dice" (adds dice to this hit: "adds"), "save" (the target's
+    # save goes to Table rolls), "change" (the damage's "type", or rolled "twice"); none: it stays words
+    act: tuple[tuple[str, str], ...] = ()
 
 
 def _ma(lv: int) -> int:
@@ -114,11 +118,13 @@ RULES: list[Rule] = [
       rider=("Once on each of your turns, right after you hit a target within 30 ft with a weapon", "+1 Psionic Energy Die + {mod_int} Force")),
     # ------------------------------------------------------------------ Monk
     R("Monk", 5, "Extra Attack", attacks=2),
-    R("Monk", 6, "Empowered Strikes", rider=("Every Unarmed Strike that deals damage", "It can deal Force damage instead of its normal type")),
+    R("Monk", 6, "Empowered Strikes", rider=("Every Unarmed Strike that deals damage", "It can deal Force damage instead of its normal type"),
+      act=(("kind", "change"), ("type", "force"))),
     R("Monk", 10, "Heightened Focus", note=("Bonus action", "Flurry of Blows makes three Unarmed Strikes instead of two (Heightened Focus)")),
     R("Monk", 5, "Stunning Strike", cost="1 Focus Point", replaces=("Stunning Strike",),
       rider=("Once per turn, a hit with a Monk weapon or Unarmed Strike",
-             "Con save DC {dc_wis} or Stunned until the start of your next turn; on a success its Speed is halved and the next attack against it has Advantage")),
+             "Con save DC {dc_wis} or Stunned until the start of your next turn; on a success its Speed is halved and the next attack against it has Advantage"),
+      act=(("kind", "save"), ("save", "Con"), ("dc", "{dc_wis}"), ("spend", "Focus Points"))),
     R("Monk", 3, "Hand of Harm", sub="Warrior of Mercy", cost="1 Focus Point",
       rider=("Once per turn, a hit with an Unarmed Strike that deals damage", "+{ma}+{mod_wis} Necrotic")),
     R("Monk", 3, "Open Hand Technique", sub="Warrior of the Open Hand",
@@ -195,7 +201,7 @@ RULES: list[Rule] = [
       note=("Action", "Potent Cantrip: a damaging cantrip that misses or is saved against still deals half damage")),
     R("Wizard", 10, "Empowered Evocation", sub="Evoker", note=("Action", "Empowered Evocation: +{mod_int} to one damage roll of your Evocation spells")),
     # ------------------------------------------------------------------ Feats
-    R("Feat", 1, "Savage Attacker", rider=("Once per turn, a hit with a weapon", "Roll the weapon's damage dice twice and use either roll")),
+    R("Feat", 1, "Savage Attacker", rider=("Once per turn, a hit with a weapon", "Roll the weapon's damage dice twice and use either roll"), act=(("kind", "change"), ("twice", "1"))),
     R("Feat", 1, "Great Weapon Master",
       rider=("A hit with a Heavy weapon as part of the Attack action", "+{pb} damage; after a Critical Hit or dropping a creature to 0 HP with a melee weapon, one more attack as a Bonus Action")),
     R("Feat", 1, "Polearm Master: Pole Strike", needs="Polearm Master", option=("Bonus action", "After the Attack action with a Quarterstaff, Spear or Heavy Reach weapon: one attack with the other end (1d4 Bludgeoning)")),
@@ -302,6 +308,7 @@ def turn(sheet: dict) -> dict:
             notes[r.note[0]].append(_fmt(r.note[1], v))
         if r.rider:
             riders.append({"name": r.name.split(" (")[0], "when": _fmt(r.rider[0], v), "effect": _fmt(r.rider[1], v),
+                           "act": {k: _fmt(x, v) for k, x in r.act},
                            "cost": r.cost, "source": r.sub or ("Feat" if r.cls == "Feat" else r.cls)})
         if r.option:
             options.append({"name": r.name.split(": ")[-1] if r.cls == "Feat" else r.name, "cost": r.option[0],

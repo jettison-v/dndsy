@@ -228,6 +228,16 @@ def _modifiers(sheet: dict, kind: str) -> list[dict]:
 templates.env.globals["roll_context"] = lambda sheet: json.dumps(roll_context(sheet))
 
 
+def spends(view: dict) -> str:
+    """Whether the roll card may spend a rider's cost on D&D Beyond for this character page's visitor (Riders on a Hit,
+    Nov 10): "play" (its player or the DM, live state on, the sheet reachable), "unreached" (said where it starts), or ""
+    (marked on D&D Beyond by hand)."""
+    return "" if not view.get("can_play") else "unreached" if view.get("unreached") else "play"
+
+
+templates.env.globals["roll_spends"] = spends
+
+
 # ------------------------------------------------------------------ who sees what
 
 def shown(roll: TableRoll, viewer_id: int | None, viewer_is_dm: bool) -> str | None:
@@ -271,11 +281,11 @@ def _part(r: TableRoll) -> dict:
                       for x in r.parts or []]}
 
 
-def detail_of(level: int = 0, why=(), riders=(), hidden="", via="") -> dict:
+def detail_of(level: int = 0, why=(), riders=(), hidden="", via="", own="") -> dict:
     """What else the roll card or window knew, checked and kept short (TableRoll.detail; Brett's round 2 note, Nov 10)."""
     clean = lambda xs, n: [" ".join(str(x).split())[:n] for x in xs if str(x).strip()][:6]  # noqa: E731
     out = {"level": level if 1 <= (level or 0) <= 9 else None, "why": clean(why, 120), "riders": clean(riders, 80),
-           "hidden": bool(hidden), "via": via if via in ("card", "window", "search") else None}
+           "hidden": bool(hidden), "via": via if via in ("card", "window", "search") else None, "self": bool(own)}
     return {k: v for k, v in out.items() if v}
 
 
@@ -322,13 +332,15 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
         if how == "full":
             k = {x.kind: x for x in by_root.get(r.id, [])}
             rr, dmg, bonus = k.get("reroll"), k.get("damage"), k.get("bonus")
+            saves = [{"label": x.label, "dc": x.total} for x in by_root.get(r.id, []) if x.kind == "dc"]  # (a rider's save)
             eff = rr or r
             nat = eff.kept if r.kind in D20_KINDS and eff.kept in (1, 20) else None
             total = eff.total + (bonus.total if bonus else 0)
             e |= {"label": r.label, "kind": r.kind, "total": total, "nat": nat, "main": _part(eff),
                   "rerolled": {**_part(r), "reason": rr.label} if rr else None,
                   "bonus": {"label": bonus.label, "formula": bonus.formula, "dice": list(bonus.dice), "total": bonus.total} if bonus else None,
-                  "damage": _part(dmg) if dmg else None,
+                  "damage": (_part(dmg) | ({"twice": (dmg.detail or {})["twice"]} if (dmg.detail or {}).get("twice") else {})) if dmg else None,
+                  "saves": saves,
                   "outcome": _death(total, nat) if r.kind == "death" else "",
                   "detail": dict(r.detail or {}) | ({"outcome": "hit"} if dmg and r.kind == "attack" else {}),
                   "short": {"death": "Death", "heal": "Heal", "damage": "Dmg", "dice": "Dice"}.get(r.kind) or r.label.split()[0][:5],
@@ -524,7 +536,8 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
               die_size: int = Form(0, alias="die"), part: list[str] = Form([]), dmg_part: list[str] = Form([]),
               count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), token: int = Form(0),
               via: str = Form(""), level: int = Form(0), why: list[str] = Form([]), rider: list[str] = Form([]),
-              hidden: str = Form(""), db: Session = Depends(get_db)):
+              hidden: str = Form(""), own: str = Form("", alias="self"), as_type: str = Form(""), twice: str = Form(""),
+              db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -541,7 +554,8 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     if extras is None:
         return _error("A bonus doesn't look right.")
     if parent:
-        return _follow_up(request, db, campaign.id, me.id, is_dm(user), parent, action, label, extras, die_size)
+        return _follow_up(request, db, campaign.id, me.id, is_dm(user), parent, action, label, extras, die_size,
+                          riders={"as_type": as_type.strip().lower(), "twice": bool(twice)})
 
     ch = db.get(Character, character) if character else None
     if character and (not ch or ch.campaign_id != campaign.id):
@@ -609,7 +623,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     who = (who if who in mine else ch.wild_shape or "")[:80] if ch else tok.name[:80] if tok else ("DM" if is_dm(user) else (me.name or "Someone").split()[0])
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who,
-                    detail=detail_of(level, why if mode != "normal" else [], rider, hidden, via), **result)
+                    detail=detail_of(level, why if mode != "normal" else [], rider, hidden, via, own), **result)
     db.add(row)
     db.flush()
     if kind == "attack" and (flat := flat_damage(damage)) and row.kept != 1:  # (flat: on a hit it's just this, feedback 25)
@@ -657,7 +671,48 @@ def _initiative(db: Session, campaign, ch: Character, me_id: int, row: TableRoll
     return made
 
 
-def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, extras, die_size):
+DAMAGE_TYPES = ("acid", "bludgeoning", "cold", "fire", "force", "lightning", "necrotic", "piercing", "poison", "psychic",
+                "radiant", "slashing", "thunder")
+
+
+def _retyped(parts: list[str], kind: str) -> list[str]:
+    """A hit's damage parts as another type (Empowered Strikes: Force): the dice kept, the type replaced."""
+    from app.roll_plan import _part_text
+
+    return [_part_text(*p[:3], kind) if (p := rr.parse_part(x)) else x for x in parts]
+
+
+def _twice(roll, twice: bool) -> dict:
+    """A damage roll, or with Savage Attacker the higher of two (the other kept as "other": its dice and total)."""
+    a = roll()
+    if not twice or a is None:
+        return a
+    b = roll()
+    keep, other = (a, b) if a["total"] >= b["total"] else (b, a)
+    return {**keep, "other": {"dice": list(other.get("dice") or []), "total": other["total"]}}
+
+
+def _rider_dc(db, root, label: str) -> int | None:
+    """The DC of a rider's save named "<rider>: <ability> save" for the attack's character, from its class rules."""
+    from app import class_rules
+    from app.roll_plan import rider_act
+
+    ch = db.get(Character, root.character_id) if root.character_id else None
+    sheet = chars.character_summary(ch) if ch else None
+    if not sheet:
+        return None
+    for r in class_rules.turn(sheet)["riders"]:
+        act = rider_act(sheet, r.get("act"))
+        if act and act["kind"] == "save" and label == f"{r['name']}: {act['save']} save":
+            return act["dc"]
+    return None
+
+
+def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, extras, die_size, riders=None):
+    """A roll's follow-up: its damage, a reroll, an added die, or a rider's save (Riders on a Hit, Nov 10). `riders`: what
+    the card's pressed riders ask of the damage (`as_type`, rolled `twice`) or the save's `dc`."""
+    riders = riders or {}
+    as_type = riders.get("as_type") if riders.get("as_type") in DAMAGE_TYPES else ""
     root = db.get(TableRoll, parent_id)
     if not root or root.campaign_id != campaign_id or root.user_id != me_id or root.parent_id is not None:
         return _error("That roll isn't yours to follow up.", 403)
@@ -673,7 +728,8 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
             hits = [x for x in rays if x["kept"] != 1]
             if not hits:
                 return _error("Every attack rolled a 1: no damage.", 409)
-            result = roll_parts(root.spec["parts"], crits=[x["kept"] == 20 for x in hits])
+            parts = _retyped(root.spec["parts"], as_type) if as_type else root.spec["parts"]
+            result = _twice(lambda: roll_parts(parts, crits=[x["kept"] == 20 for x in hits]), riders.get("twice"))
             for line, ray in zip(result["parts"], [r for r in hits for _ in root.spec["parts"]]):
                 line["label"] = ray["label"]
             crit = any(x["kept"] == 20 for x in hits)
@@ -682,10 +738,17 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
                 rolled += [{**x, "label": f"{ray['label']} · {x['label']}"} for x in roll_extras(extras, ray["kept"] == 20)]
         else:
             crit = eff.kept == 20
-            result = roll_parts(root.spec["parts"], crits=[crit]) if root.spec else roll_formula(root.damage, crit)
+            parts = _retyped(root.spec["parts"] if root.spec else [root.damage], as_type) if as_type else None
+            if parts and not all(rr.parse_part(p) for p in parts):
+                parts = None
+            result = _twice(lambda: roll_parts(parts, crits=[crit]) if parts else roll_parts(root.spec["parts"], crits=[crit]) if root.spec
+                            else roll_formula(root.damage, crit), riders.get("twice"))
             rolled = roll_extras(extras, crit)
+        other = result.pop("other", None)
         result["total"] = max(result["total"] + sum(x["total"] for x in rolled), 0)
         row = TableRoll(**base, kind="damage", label=root.label, mode="normal", crit=crit, extras=rolled, **result)
+        if other:  # (Savage Attacker: rolled twice, the higher kept; the other said)
+            row.detail = {"twice": other}
         root.detail = {**(root.detail or {}), "outcome": "hit"}  # (its damage rolled: it hit)
     elif action == "reroll":
         if root.kind not in D20_KINDS or "reroll" in kids or damage_rolled(kids.get("damage")) or label not in REROLLS or root.parts:
@@ -709,6 +772,12 @@ def _follow_up(request, db, campaign_id, me_id, dm, parent_id, action, label, ex
             dice, formula = [n], f"1d{die_size}"
         row = TableRoll(**base, kind="bonus", label=(" ".join(label.split())[:40] or "Added die"), mode="normal",
                         dice=dice, kept=None, modifier=0, total=n, formula=formula, extras=[])
+    elif action == "save":  # a rider's save on a hit (Stunning Strike: Con, DC 14), for the DM, in this attack's entry
+        name = " ".join(label.split())[:60]
+        dc = _rider_dc(db, root, name)  # (worked out by askdnd from the character's rules, never the page's number)
+        if root.kind != "attack" or not dc or any(k.label == name for k in _kids(db, [root]) if k.kind == "dc"):
+            return _error("That save can't be added now.", 409)
+        row = TableRoll(**base, kind="dc", label=name, mode="normal", dice=[], kept=None, modifier=0, total=dc, formula=f"DC {dc}", extras=[])
     else:
         return _error("That roll is missing something.")
     db.add(row)

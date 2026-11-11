@@ -109,7 +109,8 @@
       "1d10+{level:Fighter}"
      ]
     }
-   ]
+   ],
+   "self": true
   },
   "Uncanny Metabolism": {
    "checked": "by hand",
@@ -121,7 +122,8 @@
       "1{martial_arts}+{level:Monk}"
      ]
     }
-   ]
+   ],
+   "self": true
   },
   "Undead Steed: Ghostly Stride": {
    "checked": "by hand",
@@ -292,7 +294,8 @@
      ]
     }
    ],
-   "level": 0
+   "level": 0,
+   "self": true
   }
  },
  "modifiers": {
@@ -1101,7 +1104,8 @@
      ]
     }
    ],
-   "level": 1
+   "level": 1,
+   "on_hit": "a hit with a melee weapon or an Unarmed Strike"
   },
   "Dragon's Breath": {
    "checked": "text",
@@ -1226,7 +1230,8 @@
      ]
     }
    ],
-   "level": 1
+   "level": 1,
+   "self": true
   },
   "Find Steed": {
    "checked": "by hand (PHB)",

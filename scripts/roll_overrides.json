@@ -308,7 +308,8 @@
      ],
      "note": "+1d8 against a Fiend or an Undead. Added to a weapon hit: on a Critical Hit, roll it with the attack's damage (Add dice) so its dice double too"
     }
-   ]
+   ],
+   "on_hit": "a hit with a melee weapon or an Unarmed Strike"
   },
   "Earthquake": {
    "why": "the fissures and their depth are the DM's rolls; the damage is for creatures near a collapsing structure",
@@ -364,7 +365,8 @@
       "+5"
      ]
     }
-   ]
+   ],
+   "self": true
   },
   "Fire Shield": {
    "why": "a warm shield or a chill shield, not both",
@@ -1130,7 +1132,8 @@
       "1d10"
      ]
     }
-   ]
+   ],
+   "self": true
   },
   "Keoghtom's Ointment": {
    "why": "a dose heals 2d8 + 2 (the jar's 1d4 + 1 doses are counted when it's found)",
@@ -1299,7 +1302,8 @@
       "1d10+{level:Fighter}"
      ]
     }
-   ]
+   ],
+   "self": true
   },
   "Uncanny Metabolism": {
    "why": "Monk: regain a roll of your Martial Arts die + your Monk level (and your Focus Points)",
@@ -1311,7 +1315,8 @@
       "1{martial_arts}+{level:Monk}"
      ]
     }
-   ]
+   ],
+   "self": true
   },
   "Deflect Attack: Redirect Attack": {
    "why": "Monk: the target saves against your Monk DC or takes two rolls of your Martial Arts die + Dexterity, the attack's type; the reduction is Deflect Attacks'",

@@ -1681,6 +1681,18 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rcard-what { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .rcard-how { color: var(--muted); font-size: var(--fs-xs); }
 .rcard-line { margin: 0; color: var(--muted); font-size: var(--fs-xs); }
+/* Riders on a hit (docs/mockups/rider-actions/): a choice with its kind, its words and what it costs */
+.rcard-rider { display: grid; gap: 3px; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-sm); padding: var(--sp-1) var(--sp-2); }
+.rcard-rider-top { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+.rcard-kind { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 3px 7px; border-radius: var(--r-pill); }
+.rcard-kind.k-dice { color: var(--red); background: var(--red-soft); }
+.rcard-kind.k-save { color: var(--amber); background: var(--amber-soft); }
+.rcard-kind.k-change { color: var(--blue); background: var(--blue-soft); }
+.rcard-rider-says { color: var(--muted); font-size: var(--fs-xs); }
+.rcard-rider-cost { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); align-items: center; font-size: var(--fs-xs); color: var(--amber); }
+.rcard-rider-cost select { font-size: var(--fs-xs); }
+.rcard-rider-by-hand { color: var(--muted); }
+.rcard-save b { color: var(--amber); }
 .rcard-flag { margin: 0; font-weight: 600; }
 .roll-card.nat20 .rcard-flag { color: var(--amber); }
 .roll-card.nat1 .rcard-flag { color: var(--red); }
@@ -3782,7 +3794,8 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .roll-beat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }
 .roll-beat > span { min-width: 0; }
 .roll-beat .roll-dice { display: inline; }
-.roll-beat .roll-total { font-size: var(--fs-xl); color: var(--text-strong); white-space: nowrap; }  /* (several beams: "11 · 19" on one line) */
+.roll-beat .roll-total { font-size: var(--fs-xl); color: var(--text-strong); white-space: nowrap; }
+.roll-beat-save > b { color: var(--amber); white-space: nowrap; }  /* (a rider's save on a hit: Stunning Strike's DC, for the DM) */  /* (several beams: "11 · 19" on one line) */
 .roll-beat.roll-old s { font-size: var(--fs-lg); }
 .roll-item.kind-attack .roll-dmg-line > b { color: var(--red); font-size: var(--fs-xl); }
 .roll-applied.roll-beat { color: var(--green); }

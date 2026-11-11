@@ -170,3 +170,35 @@ def test_a_spell_that_only_adds_to_hits_rolls_that_damage():
     """The every-roll test (Nov 10): Hunter's Mark's and Absorb Elements' Roll had nothing to roll, and askdnd refused it."""
     e = roll_plan.effects(roll_plan.rr.spell("Hunter's Mark"), sheet("no_name"), "Hunter's Mark", False)
     assert e["effects"][0]["on"] == "rider" and e["effects"][0]["at"] == {"1": {"parts": ["1d6 force"], "count": 1, "text": "1d6 force"}}
+
+
+def test_healing_that_only_heals_yourself_says_so(plans):
+    """Brett's Roll Audit comment (Nov 10): the plan of a heal only its roller takes carries `self`, so its roll offers
+    Apply to for that character alone."""
+    meta = next(p for p in roll_plan.plans(sheet("cole")) if p["name"] == "Uncanny Metabolism")
+    from app.character_views import option_rolls, options
+    o = next(o for o in options(sheet("cole"), set()) if o["name"] == "Uncanny Metabolism")
+    import json as _json
+    plan = _json.loads(option_rolls(o)[-1]["attrs"]["plan"])
+    assert plan["self"] is True and meta["heal"]
+    assert roll_plan.button("heal", "Hit Point Die", "", "1d8+1", self_only=True)["self"] is True
+    assert "self" not in roll_plan.button("heal", "Healing Word", "", "2d4+4")
+
+
+def test_a_rider_with_a_kind_is_something_the_card_can_press(plans):
+    """Riders on a Hit (Brett, Nov 10, docs/mockups/rider-actions/): a rider is one of a few kinds the card plays (adds
+    dice, asks for a save, changes the damage), with what it costs; the rest stay words."""
+    strike = {r["name"]: r.get("act") for r in by(plans, "no_name", "Unarmed Strike")["riders"]}
+    stun = strike["Stunning Strike"]
+    assert stun["kind"] == "save" and stun["save"] == "Con" and isinstance(stun["dc"], int)
+    assert stun["spend"]["name"] == "Focus Points" and stun["spend"]["field"].startswith("uses:") and stun["spend"]["left"] >= 0
+    assert strike["Empowered Strikes"] == {"kind": "change", "type": "force"}
+    maul = next(p for p in plans["big_c"] if p["name"].startswith("Hammer of Thunderbolts"))
+    acts = {r["name"]: r.get("act") for r in maul["riders"]}
+    assert acts["Savage Attacker"] == {"kind": "change", "twice": True}
+    smite = acts["Divine Smite"]  # a spell cast right after a hit (its recipe's on_hit): its dice at the slots it can use
+    assert smite["kind"] == "dice" and smite["cast"]["time"] == "Bonus Action" and smite["cast"]["key"] == "spell:Divine Smite"
+    levels = {str(w["level"]) for w in smite["cast"]["ways"]}
+    assert levels and set(smite["rolls"]["effects"][0]["at"]) <= levels | {"1"}
+    assert smite["rolls"]["effects"][0]["at"]["2"]["parts"] == ["3d8 radiant"]
+    assert roll_plan.rider_act({}, {"kind": "words"}) is None and roll_plan.rider_act({}, {"kind": "save", "dc": "x"}) is None
