@@ -1496,6 +1496,30 @@ def party_fixes(t: Table, seat: str = "player4") -> None:
             undone(t, sheet, before, "Lay On Hands: the 3 given back on D&D Beyond")
 
 
+def free_cast(t: Table, seat: str = "player4") -> None:
+    """A spell's free use (Nov 10): Big C (twin)'s Hellish Rebuke (Fiendish Legacy, once a Long Rest) cast in askdnd with
+    its free use spends that use on D&D Beyond, as its sheet's own Use button does; Undo gives it back."""
+    from urllib.parse import quote
+
+    sseat, ddb, name, _ = TWINS["big-c-twin"]
+    sheet = t.sheet(sseat, ddb=ddb)
+    tidy(t, sseat, ddb)  # (a free use left spent by an earlier try)
+    page = t.battle_of(sseat, name)
+    connects(t, page)
+    cid = page.url.split("/characters/")[1].split("/")[0]
+    window = page.evaluate("u => fetch(u).then(r => r.text())", f"/characters/{cid}/cast?key=" + quote("spell:Hellish Rebuke"))
+    t.expect("Hellish Rebuke offers its free cast first", lambda: "Free: Fiendish Legacy" in window or "Free: " in window, 3)
+    before = record(sheet)
+    page.locator(".spellbook-btn").first.click(timeout=8000)
+    go(page, page.locator('.ls-row[data-ref="spell:Hellish Rebuke"] [data-use-url*="/cast?"]').first)
+    page.locator('select[name="way"]:visible').first.select_option("free")
+    page.locator("[data-use-go]:visible").first.click(timeout=8000)
+    changed(t, sheet, before, "Hellish Rebuke: its free use is spent on D&D Beyond")
+    if undo(page):
+        undone(t, sheet, before, "Undo gives the free use back on D&D Beyond")
+    page.keyboard.press("Escape")
+
+
 def riders(t: Table, seat: str = "player4") -> None:
     """Riders on a hit (Nov 10, PR 301), on the twins: No Name's Stunning Strike pressed on an Unarmed Strike's hit spends a
     Focus Point on D&D Beyond once Roll damage is pressed, and its Con save reaches Table rolls; Big C's Divine Smite on
@@ -1622,7 +1646,7 @@ def initiative(t: Table, seat: str = "player4") -> None:
         end_combat(vtt)
 
 
-RUNS = {"closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
+RUNS = {"free-cast": free_cast, "closed-sheet": closed_sheet, "game-log": game_log, "close-after-roll": close_after_roll, "hit-points": hit_points, "condition": condition,
         "cast": cast, "resource": resource, "coins": coins, "rests": rests, "temp-hp": temp_hp, "death-saves": death_saves,
         "inspiration": inspiration, "exhaustion": exhaustion, "inventory": inventory, "prepare": prepare, "give": give,
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
@@ -1742,7 +1766,9 @@ def tidy(t: Table, seat: str, ddb: int | None = None) -> list[str]:
         ["PUT", "spell/slots", {f"level{x['level']}": 0}] for x in d.get("spellSlots") or [] if x.get("used")] + [
         ["PUT", "spell/pact-magic", {f"level{x['level']}": 0}] for x in d.get("pactMagic") or [] if x.get("used")] + [
         ["PUT", "action/limited-use", {"id": str(x["id"]), "entityTypeId": str(x.get("entityTypeId")), "uses": 0}]
-        for g in d["actions"].values() for x in g or [] if (x.get("limitedUse") or {}).get("numberUsed")]
+        for g in d["actions"].values() for x in g or [] if (x.get("limitedUse") or {}).get("numberUsed")] + [
+        ["PUT", "action/limited-use", {"id": str(x["id"]), "entityTypeId": str(x.get("entityTypeId")), "uses": 0}]  # (a spell's free use)
+        for g in (d.get("spells") or {}).values() for x in g or [] if (x.get("limitedUse") or {}).get("maxUses") and (x.get("limitedUse") or {}).get("numberUsed")]
     if ops:
         print("  put right on D&D Beyond:", "; ".join(found), sheet.evaluate(TIDYING, [ddb or SHEETS[seat], ops]), flush=True)
     return found

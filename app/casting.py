@@ -6,8 +6,9 @@ where the bridge works and only for the character's own player, as with items:
 - **A slot** spends that level's spell slot or Pact Magic slot on D&D Beyond (a spell can always use a higher slot).
 - **As a Ritual** and **No slot** spend nothing: a Ritual for a spell that has the tag, No slot for anything else that
   pays for it (a feature, an item). askdnd doesn't decide which applies.
-- **A free use** a feat or species gives is listed first where the sheet counts it, in place of No slot. askdnd can't change
-  that count on D&D Beyond yet, so the corner card asks the player to mark it there.
+- **A free use** a feat, species or class feature gives (Fiendish Legacy, Fey Touched, Paladin's Smite) is listed first
+  where the sheet counts it, in place of No slot, and is spent on D&D Beyond as its own Use button does (`spelluse:<id>`,
+  Nov 10); where the sheet can't be reached, the corner card asks the player to mark it there.
 - **Concentration** starts by itself and ends the one before, as at the table; the window says so first.
 - **Undo** on the corner card gives the slot back and puts the earlier Concentration back.
 
@@ -187,7 +188,11 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         raise HTTPException(409, f"{e['name']}: that slot isn't left.")
     undo = {"key": key}
     said = f"Cast {e['name']}" + (f" as {chosen['name']}" if chosen and chosen["way"] == RITUAL else f" at {chosen['name']}" if chosen and chosen["name"] else "")
-    if chosen and chosen["way"] == FREE:
+    if chosen and chosen["way"] == FREE and e.get("use_id") and ddb_bridge.reachable(ch):  # (the free use spent on D&D Beyond, as its Use button does)
+        ddb_bridge.add(db, ch, "use", {"field": f"spelluse:{e['use_id']}", "delta": 1, "max": (e.get("uses") or {}).get("max")},
+                       f"{ch.name}: {e['name']}, its free use ({e['from']})")
+        undo["spent"] = f"spelluse:{e['use_id']}"
+    elif chosen and chosen["way"] == FREE:
         said += f": mark the use on D&D Beyond ({e['from']})"
     wild = bool(chosen and chosen.get("wild"))
     if wild:  # Wild Companion: always Fey, and gone at the next Long Rest
@@ -259,6 +264,9 @@ def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: 
         if (w := wild_use(sheet)):
             ddb_bridge.reach(ch)
             ddb_bridge.add(db, ch, "use", {"field": w["field"], "delta": -1}, f"{ch.name}: Wild Shape use back ({e['name']} undone)")
+    elif spent.startswith("spelluse:"):  # its free use back
+        ddb_bridge.reach(ch)
+        ddb_bridge.add(db, ch, "use", {"field": spent, "delta": -1}, f"{ch.name}: {e['name']} undone")
     elif spent.startswith(f"{SPEND}:uses:"):  # the class feature's resource back (Shadow Arts: the Focus Point)
         ddb_bridge.reach(ch)
         ddb_bridge.add(db, ch, "use", {"field": spent.removeprefix(f"{SPEND}:"), "delta": -max(1, min(int(n) if n.isdigit() else 1, 9))},

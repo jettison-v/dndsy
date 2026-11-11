@@ -2762,14 +2762,22 @@ function feedbackBusy(e) {
     document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver }));
     document.body.dispatchEvent(new CustomEvent('characterChanged'));
   }
+  // A Necklace of Prayer Beads' window: its button says "and roll" only for a bead whose spell rolls (Cure Wounds, Shining Smite)
+  document.addEventListener('change', e => {
+    if (!e.target.matches || !e.target.matches('[data-use-bead]')) return;
+    const go = e.target.closest('.roll-win') && e.target.closest('.roll-win').querySelector('[data-use-go][data-verb]');
+    const rolls = e.target.selectedOptions[0] && e.target.selectedOptions[0].dataset.rolls === '1';
+    if (go) { go.textContent = go.dataset.verb + (rolls ? ' and roll' : ''); go.toggleAttribute('data-then-roll', rolls); }
+  });
   function useItem(btn) {
     const w = win, said = w.querySelector('.use-said');
     w.querySelectorAll('button').forEach(b => { b.disabled = true; });
     const chosen = Object.fromEntries([...w.querySelectorAll('select[name], input[name]')].filter(s => !/^(checkbox|radio)$/.test(s.type) || s.checked).map(s => [s.name, s.value]));
     posted(w._use, { ...chosen, to: btn.dataset.to || '' }).then(j => {
       // Cast and roll: the roll opens where the Cast window was, at the level just cast
-      const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll, .use-roll');
-      if (roller && roller.matches('.use-roll')) openRoll(roller, { ...specFrom(roller), used: true });  // (Use and roll: used, so it rolls at once)
+      const bead = w.querySelector('[data-use-bead]');  // (a Necklace of Prayer Beads: the chosen bead's spell, at its level)
+      const roller = 'thenRoll' in btn.dataset && (bead ? w.querySelector('.use-roll[data-bead="' + bead.value + '"]') : w.querySelector('.cast-roll, .use-roll'));
+      if (roller && roller.matches('.use-roll')) openRoll(roller, { ...specFrom(roller), used: true, cast: +roller.dataset.castLevel || 0, castFree: true });  // (Use and roll: used, so it rolls at once)
       else if (roller) {
         const way = w.querySelector('select[name=way]')?.selectedOptions[0], level = way?.dataset.level;
         if (level) roller.dataset.slot = level;

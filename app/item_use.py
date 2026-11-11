@@ -100,7 +100,7 @@ def _drinks(o: dict) -> dict | None:
 
 
 @router.post("/characters/{character_id:int}/use/{item_id:int}")
-def use(request: Request, character_id: int, item_id: int, to: str = Form(""), db: Session = Depends(get_db)):
+def use(request: Request, character_id: int, item_id: int, to: str = Form(""), bead: str = Form(""), db: Session = Depends(get_db)):
     """Use one: the window's Drink, Read or Use, or Give (`to`: who, for the table to read)."""
     ch, user = _guard(db, request, character_id)
     ddb_bridge.reach(ch)
@@ -115,6 +115,9 @@ def use(request: Request, character_id: int, item_id: int, to: str = Form(""), d
     undo: dict | None = {"spent": how}
     verb = {"Drink": "Drank", "Read": "Read", "Use": "Used"}[o["use"]["verb"]]
     text = f"Gave {to} {it['name']}" if to else f"{verb} {it['name']}"
+    beads = ((o.get("recipe") or {}).get("use") or {}).get("beads") or []
+    if bead.isdigit() and int(bead) < len(beads):  # (a Necklace of Prayer Beads: the bead's spell, cast as a Bonus Action)
+        text += f": {beads[int(bead)]['name']}, {beads[int(bead)]['spell']}"
     row = None
     if drink := _drinks(o):  # (its dice from the plan its Heal button carries: one roll, however it's made)
         row = table_rolls.add_roll(db, ch, me.id, f"{it['name']} for {to}" if to else it["name"], drink["formula"])
