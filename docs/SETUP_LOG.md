@@ -1059,3 +1059,11 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **Why**: in a week, 16 of about 200 runs failed or needed a re-run. Every flake was a browser test: a timing deadline missed on GitHub's shared, slower machines, or a check that read a closed sidebar. Each one cost a full re-run of 5 minutes or more. Retrying just the one test costs seconds, and listing it keeps the flake visible so it gets fixed rather than ignored.
 
 **Reuse on a new project**: retry only the kind of test that is timing-sensitive (browser and UI tests), never your logic tests, and always report retries somewhere you'll see them. In tests, check that things happen in the right order or reach the right result, not that they finish within N seconds.
+
+## A deploy that was skipped twice (Nov 10)
+
+**What**: after the outside review's fixes merged, a flaky test failed main's run, so Railway didn't deploy it. The fix for that test changed only a test file, so Railway skipped that commit too (its watch paths say tests don't need a deploy), and the deploy script agreed because it only looked at the newest commit. askdnd.ai stayed on the version before until it was built from source. The deploy script now compares against what's actually deployed.
+
+**Why**: "skip a deploy when nothing that runs changed" is right per commit, but wrong once an earlier commit's deploy was skipped for a different reason.
+
+**Reuse on a new project**: after a deploy, check the live site's version (a /health address that reports the commit) rather than trusting that the pipeline ran, and decide "does this need a deploy" against what's live, not the previous commit.
