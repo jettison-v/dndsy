@@ -1544,24 +1544,6 @@ def bridge_closed(ddb_id: str, request: Request, db: Session = Depends(get_db)):
     return _json({"ok": True})
 
 
-@router.post("/bridge/drink/{character_id:int}/{item_id:int}")
-def bridge_drink(character_id: int, item_id: int, request: Request, db: Session = Depends(get_db)):
-    character, user = _mine(db, request, character_id)
-    if not picks.can_edit(db, user, character):
-        raise HTTPException(403, "Only the character's player drinks their potions.")
-    reach(character)
-    name = (numbers(character).get("names") or {}).get(item_id)
-    if name not in HEALING:
-        raise HTTPException(400, "That isn't a healing potion this character has.")
-    rolled = table_rolls.roll_formula(HEALING[name])
-    dying = _at_0(db, character)
-    add(db, character, "drink", {"item": item_id, "name": name, "heal": rolled["total"]},
-        f"{character.name} drank a {name} (rolled {rolled['total']}: {rolled['formula']})")
-    _back_up(db, character, dying, rolled["total"])
-    db.commit()
-    return _made(db, character, user)
-
-
 @router.post("/bridge/hp/{character_id:int}")
 def bridge_hp(character_id: int, request: Request, amount: int = Form(0), db: Session = Depends(get_db)):
     """Take damage or heal (+ heals, - damage), for trying the bridge on any character."""

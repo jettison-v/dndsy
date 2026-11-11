@@ -154,6 +154,8 @@ def test_riders_are_only_the_ones_that_can_apply(plans):
     assert not blast & {"Savage Attacker", "Stunning Strike", "Empowered Strikes"}
     strike = {r["name"] for r in by(plans, "no_name", "Unarmed Strike")["riders"]}
     assert {"Stunning Strike", "Empowered Strikes"} <= strike
+    assert "Stunning Strike" not in {r["name"] for r in by(plans, "no_name", "Dart")["riders"]}  # (not a Monk weapon)
+    assert "Stunning Strike" in {r["name"] for r in by(plans, "no_name", "Vicious Quarterstaff")["riders"]}
     maul = next(p for p in plans["big_c"] if p["name"].startswith("Hammer of Thunderbolts"))
     when = {r["name"]: r["when"] for r in maul["riders"]}
     assert when.get("Savage Attacker") == "hit" and "Favored by the Gods" not in when

@@ -312,6 +312,22 @@ def option_rolls(o: dict) -> list[dict]:
     return out
 
 
+def item_roll(o: dict) -> dict | None:
+    """An item's one roll as its button carries it (a potion's healing, Keoghtom's Ointment, a Soul Coin), for the Use
+    window: `attrs` (the button's, plan and all), `kind`, `formula` (its dice at the plan's own level, types left out).
+    The Use window rolls only this, so using an item and pressing its Roll are the same roll (Brett, Nov 10)."""
+    for r in option_rolls(o):
+        attrs = r.get("attrs") or {}
+        plan = json.loads(attrs.get("plan") or "null") or {}
+        rolls = plan.get("rolls") or {}
+        if r.get("button") != "chip" or plan.get("play") != "single" or not rolls.get("effects"):
+            continue
+        at = rolls["effects"][0]["at"].get(str(rolls.get("base", 0))) or next(iter(rolls["effects"][0]["at"].values()), None)
+        if at and at.get("parts"):
+            return {"attrs": attrs, "kind": attrs.get("roll"), "formula": "+".join(p.split(" ")[0] for p in at["parts"]), "text": at.get("text") or ""}
+    return None
+
+
 def rollable(o: dict, unarmed: dict | None = None) -> dict:
     """Sets o["dice"] (damage or healing dice, "" if none) and o["heal"]; gives a feature that
     makes Unarmed Strikes the Unarmed Strike's to-hit and damage."""

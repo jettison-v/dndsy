@@ -193,6 +193,29 @@ def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server
     page.locator(".roll-card .rcard-heal").wait_for(timeout=15000)  # (cast without a slot, rolled at once)
 
 
+def test_use_and_roll_spends_the_item_and_rolls_its_plan_at_once(chrome, server):
+    """Brett, Nov 10 (a Roll engine): an item whose plan rolls (a Soul Coin) has Use and roll, like Cast and roll: the
+    coin is spent and the card rolls the plan its button carries at once; a potion's Drink rolls its plan's healing."""
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    page.bring_to_front()
+    page.keyboard.press("Meta+k")
+    page.locator("#search-q").fill("soul coin")
+    page.wait_for_timeout(500)
+    page.locator("#search-q").press("Enter")
+    page.locator(".roll-win [data-then-roll]").click()
+    page.locator(".roll-card [data-done]").wait_for(timeout=15000)  # (rolled at once)
+    page.locator("#cards > .card", has_text="Used Soul Coin").wait_for(timeout=5000)
+    rolls = page.evaluate("fetch('/rolls?since=-1').then(r => r.text())")
+    assert "Soul Coin" in rolls and "1d10" in rolls  # (its plan's dice, in Table rolls)
+    page.keyboard.press("Escape")
+
+
 def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):
     """Brett, 2026-10-30: the DM didn't have it by accident, and nothing said so."""
     dm = people("dm")

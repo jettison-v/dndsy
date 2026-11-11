@@ -271,6 +271,13 @@ def rider_act(sheet: dict, act: dict | None) -> dict | None:
     return out
 
 
+def monk_weapon(sheet: dict, o: dict) -> bool:
+    """Whether an attack is with a Monk weapon (2024 PHB: Simple Melee weapons and Martial Melee weapons with Light), as
+    D&D Beyond marks the sheet's attacks (`martial_arts`). A row that isn't one weapon (an Opportunity Attack) may be."""
+    a = next((a for a in sheet.get("attacks") or [] if a.get("key") == o.get("key") or a.get("name") == o.get("name")), None)
+    return bool(a.get("martial_arts")) if a else True
+
+
 def spell_riders(sheet: dict, made: str) -> list[dict]:
     """Spells cast right after a hit that add to it (Divine Smite: its recipe's `on_hit`), as riders the card can press:
     their dice at each level they can be cast at, and the ways to cast them now (a slot, a free use)."""
@@ -384,6 +391,8 @@ def plan(sheet: dict, o: dict) -> dict:
         pills = {m["name"].split(": ")[-1] for m in out["modifiers"]}  # ("Channel Divinity: Guided Strike" is Guided Strike's pill)
         made = "spell" if o.get("kind") == "spell" else "unarmed" if UNARMED_ROW.search(f"{o['name']} {o.get('meta') or ''}") else "weapon"
         for r in class_rules.turn(sheet)["riders"]:  # what you can add once it hits (Stunning Strike, Divine Smite…)
+            if "Monk weapon" in r["when"] and made == "weapon" and not monk_weapon(sheet, o):
+                continue  # (Stunning Strike on a Dart: not a Monk weapon, 2024 PHB; D&D Beyond's own flag says which are)
             if r["name"] not in pills and (when := rider_fits(r["when"], made)):  # (one already a pill isn't said twice)
                 out["riders"].append({"name": r["name"], "when": when, "says": r["effect"], "on": r["when"],
                                       **({"act": act} if (act := rider_act(sheet, r.get("act"))) else {})})

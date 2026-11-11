@@ -339,9 +339,7 @@ def test_the_extension_signs_in_with_its_own_key(player, db, sheet):
 
 def test_only_the_player_changes_and_only_where_switched_on(player, dm, db, sheet, monkeypatch):
     cole = char(db, "Cole")
-    assert dm.post(f"/bridge/drink/{cole.id}/{POTION}").status_code == 403
     assert dm.post("/bridge/outbox/75423618").json() == {"batch": None}  # only the player's own browser writes the sheet
-    assert player.post(f"/bridge/drink/{cole.id}/12345").status_code == 400
     assert player.get(f"/characters/{cole.id}/bridge", follow_redirects=False).headers["location"] == f"/characters/{cole.id}/battle?live=1"
     db.get(Campaign, cole.campaign_id).vtt_pieces = []  # its campaign switched it off (Manage › Settings)
     db.flush()

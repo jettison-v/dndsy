@@ -1961,7 +1961,7 @@ function feedbackBusy(e) {
           + (tw ? '<p class="rcard-line">Rolled twice, the higher kept <span class="roll-x">(the other: ' + esc((tw.dice || []).join(' ')) + ' → ' + tw.total + ')</span></p>' : '')
           + ((st.entry && st.entry.saves) || []).map(sv => { const [who, what] = sv.label.split(': ');
             return '<p class="rcard-line rcard-save">' + esc(who) + ': the target makes a <b>' + esc(what || 'save') + ', DC ' + sv.dc + '</b>.' + (spec.shared ? ' The DM rolls it; it\'s in Table rolls.' : '') + '</p>'; }).join('')
-          + (riderList('hit') ? '<ul class="rw-notes" data-riders>' + riderList('hit') + '</ul>' : '') + '<p class="rw-note">In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.</p>'
+          + (riderList('hit') ? '<ul class="rw-notes" data-riders>' + riderList('hit') + '</ul>' : '') + '<p class="rw-note">' + (spec.shared ? 'In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.' : 'Only you see this roll.') + '</p>'
           + '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>'
           : '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling damage</span></div>';
       } else if (st.step === 'pick') {  // (+ a die, pressed in Table rolls: which one)
@@ -2036,7 +2036,8 @@ function feedbackBusy(e) {
       if (!e || !e.main) return '';
       if (single) {  // (one roll: its number, what it is, and where it goes next)
         const what = { heal: 'healing', temp: 'Temporary Hit Points', damage: 'damage' }[e.kind] || esc(e.label);
-        const next = (e.kind === 'heal' || e.kind === 'temp') && plan.self ? 'In Table rolls, <b>Apply to</b> adds it to your own Hit Points.'
+        const next = !spec.shared ? 'Only you see this roll.'
+          : (e.kind === 'heal' || e.kind === 'temp') && plan.self ? 'In Table rolls, <b>Apply to</b> adds it to your own Hit Points.'
           : e.kind === 'heal' || e.kind === 'temp' ? 'In Table rolls, <b>Apply to</b> gives it to a character.'
           : e.kind === 'damage' ? 'In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.' : '';
         return '<div class="rcard-result' + (e.kind === 'heal' || e.kind === 'temp' ? ' rcard-heal' : e.kind === 'damage' ? ' rcard-dmg' : '') + '"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">' + what + '</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
@@ -2144,7 +2145,7 @@ function feedbackBusy(e) {
     }
     // Cast and roll: the spell is cast, so healing, damage or a save spell's damage rolls now (one effect to roll; a
     // spell with a choice of effects asks Which first). Shift-click: the first roll at once, as it stands.
-    const auto = (spec.cast && (single || save) && effs.length <= 1) || (spec.shift && st.step !== 'choose');
+    const auto = ((spec.cast || spec.used) && (single || save) && effs.length <= 1) || (spec.shift && st.step !== 'choose');
     if (auto) (w.querySelector('[data-roll-single], [data-roll-save], [data-roll-hit]') || { click() {} }).click();
   }
 
@@ -2758,8 +2759,9 @@ function feedbackBusy(e) {
     const chosen = Object.fromEntries([...w.querySelectorAll('select[name], input[name]')].filter(s => !/^(checkbox|radio)$/.test(s.type) || s.checked).map(s => [s.name, s.value]));
     posted(w._use, { ...chosen, to: btn.dataset.to || '' }).then(j => {
       // Cast and roll: the roll opens where the Cast window was, at the level just cast
-      const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll');
-      if (roller) {
+      const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll, .use-roll');
+      if (roller && roller.matches('.use-roll')) openRoll(roller, { ...specFrom(roller), used: true });  // (Use and roll: used, so it rolls at once)
+      else if (roller) {
         const way = w.querySelector('select[name=way]')?.selectedOptions[0], level = way?.dataset.level;
         if (level) roller.dataset.slot = level;
         // (cast: the slot is spent, so its level is fixed and there's nothing left to choose; healing and damage roll at
