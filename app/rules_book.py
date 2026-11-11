@@ -124,9 +124,14 @@ def active(sheet: dict | None) -> list[dict]:
     subs = {c.get("name"): _norm(c.get("subclass")) for c in sheet.get("classes") or []}
     feats = {_norm(f["name"]) for f in sheet.get("features") or [] if f.get("source") == "Feat"}
     names = has_names(sheet)
+    carried = [_norm(n) for it in sheet.get("inventory") or [] for n in (it.get("name"), it.get("base_name")) if n]
     out = []
     for e in entries():
-        if e["kind"] == "feat":
+        if (e["kind"] == "item" and e.get("adds") and not any(": " in a["name"] for a in e["adds"])
+                and any(c.startswith(_norm(e["name"])) for c in carried)):
+            pass  # (a magic weapon's own adds, when the character carries one: Flame Tongue; one that needs its kind marked,
+            #      "Dragon-Touched Focus: Chromatic", goes by that name below)
+        elif e["kind"] == "feat":
             if _norm(e["name"]) not in feats and not (e.get("needs") and _norm(e["needs"]) in feats):
                 continue
         elif e.get("class"):
@@ -153,7 +158,7 @@ def adds(sheet: dict | None) -> list[dict]:
             filled = {k: fill(v, sheet, e.get("class")) if isinstance(v, str) and k in ("amount", "reduces", "says", "effect", "trigger", "dc") else v
                       for k, v in a.items()}
             out.append(filled | {"source": e.get("sub") or e.get("class") or ("Feat" if e["kind"] == "feat" else e["name"]),
-                                 "_kind": e["kind"]})
+                                 "_kind": e["kind"], **({"item": e["name"]} if e["kind"] == "item" else {})})
     return out
 
 

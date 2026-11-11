@@ -228,7 +228,7 @@ def traits(sheet: dict, o: dict, made: str) -> set[str]:
     Attack, a form's attack) counts as a melee weapon that may be a Monk weapon."""
     if made in ("spell", "unarmed"):
         return {made}
-    out = {"weapon"}
+    out = {"weapon", f"item:{rules_book._norm(o.get('name'))}"}  # (which weapon: a magic weapon's own adds, `this_item`)
     a = next((a for a in sheet.get("attacks") or [] if a.get("key") == o.get("key") or a.get("name") == o.get("name")), None)
     if a is None:
         return out | {"melee_weapon", "monk_weapon"}
@@ -242,7 +242,11 @@ def traits(sheet: dict, o: dict, made: str) -> set[str]:
 
 
 def applies(add: dict, have: set[str]) -> bool:
-    """Whether an add (or a spell cast after a hit) can go with this attack: its `with`, or any attack when it names none."""
+    """Whether an add (or a spell cast after a hit) can go with this attack: its `with`, or any attack when it names none;
+    `this_item`: only an attack made with the item it's from (Flame Tongue's 2d6 Fire, not the dagger's)."""
+    if "this_item" in (add.get("with") or []):
+        own = rules_book._norm(add.get("item") or "")
+        return bool(own) and any(t.startswith("item:") and t[5:].startswith(own) for t in have)
     return not add.get("with") or bool(set(add["with"]) & have)
 
 
@@ -350,8 +354,8 @@ def plan(sheet: dict, o: dict) -> dict:
         else:
             out["damage"] += parts
             if e["on"] == "save":
-                out["save"] = {"ability": e.get("save") or (out["save"] or {}).get("ability", ""),
-                               "dc": (out["save"] or {}).get("dc"), "success": e.get("success", "")}
+                out["save"] = {"ability": e.get("save") or (out["save"] or {}).get("ability", ""),  # (an item's own DC: Wand of Fireballs' 15)
+                               "dc": e.get("dc") or (out["save"] or {}).get("dc"), "success": e.get("success", "")}
                 src.setdefault("save", rsrc)
     if events and rsrc in ("checked", "correction"):  # the 2024 rules decide attack or save; the sheet only gives the numbers
         on = {e["on"] for e in events}

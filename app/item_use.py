@@ -57,12 +57,12 @@ def _others(db: Session, ch: Character) -> list[str]:
     return [r["name"] for r in live.rows_from(db) if r["id"] != ch.id]
 
 
-def _spend(db: Session, ch: Character, it: dict, how: str, back: bool = False) -> None:
+def _spend(db: Session, ch: Character, it: dict, how: str, back: bool = False, n: int = 1) -> None:
     item_id = int(it["key"].split(":", 1)[1])
-    label = f"{ch.name}: {it['name']}" + (" put back" if back else " used")
-    if how == "charges":
+    label = f"{ch.name}: {it['name']}" + (" put back" if back else " used") + (f" ({n} charges)" if n > 1 else "")
+    if how == "charges":  # (a wand's spell can take several: Wand of Fireballs at a higher level)
         most = ddb_sheet.most(ch.snapshot.raw, "charges", item_id)
-        ddb_bridge.add(db, ch, "use", {"field": f"charges:{item_id}", "delta": -1 if back else 1, "max": most}, label)
+        ddb_bridge.add(db, ch, "use", {"field": f"charges:{item_id}", "delta": -n if back else n, "max": most}, label)
     else:
         ddb_bridge.add(db, ch, "item", {"item": item_id, "delta": 1 if back else -1, "name": it["name"]}, label)
 
@@ -111,13 +111,17 @@ def use(request: Request, character_id: int, item_id: int, to: str = Form(""), b
         to = ""
     me = picks.user_row(db, user)
     how = cond.item_spends(it)
-    _spend(db, ch, it, how)
-    undo: dict | None = {"spent": how}
+    beads = ((o.get("recipe") or {}).get("use") or {}).get("beads") or ((o.get("recipe") or {}).get("use") or {}).get("spells") or []
+    pick = beads[int(bead)] if bead.isdigit() and int(bead) < len(beads) else None
+    n = int((pick or {}).get("charges") or 1) if how == "charges" else 1
+    if n > (o["use"]["left"] or 0):
+        raise HTTPException(409, f"{it['name']}: {n} charges, and {o['use']['left']} left.")
+    _spend(db, ch, it, how, n=n)
+    undo: dict | None = {"spent": how, **({"n": str(n)} if n > 1 else {})}
     verb = {"Drink": "Drank", "Read": "Read", "Use": "Used"}[o["use"]["verb"]]
     text = f"Gave {to} {it['name']}" if to else f"{verb} {it['name']}"
-    beads = ((o.get("recipe") or {}).get("use") or {}).get("beads") or []
-    if bead.isdigit() and int(bead) < len(beads):  # (a Necklace of Prayer Beads: the bead's spell, cast as a Bonus Action)
-        text += f": {beads[int(bead)]['name']}, {beads[int(bead)]['spell']}"
+    if pick:  # (a Necklace of Prayer Beads' bead, or a wand's or staff's spell)
+        text += f": {pick['name']}" + (f", {pick['spell']}" if pick["spell"] != pick["name"] else "")
     row = None
     if drink := _drinks(o):  # (its dice from the plan its Heal button carries: one roll, however it's made)
         row = table_rolls.add_roll(db, ch, me.id, f"{it['name']} for {to}" if to else it["name"], drink["formula"])
@@ -160,14 +164,14 @@ def mark_kind(request: Request, character_id: int, item_id: int, kind: str = For
 
 @router.post("/characters/{character_id:int}/use/{item_id:int}/undo")
 def undo_use(request: Request, character_id: int, item_id: int, spent: str = Form(""), heal: int = Form(0), roll: int = Form(0),
-             cond_name: str = Form("", alias="cond"), db: Session = Depends(get_db)):
-    """The corner card's Undo: the same changes the other way."""
+             cond_name: str = Form("", alias="cond"), n: int = Form(1), db: Session = Depends(get_db)):
+    """The corner card's Undo: the same changes the other way (`n`: the charges a wand's spell took)."""
     ch, _ = _guard(db, request, character_id)
     ddb_bridge.reach(ch)
     it = next((x for x in _sheet(db, ch).get("inventory") or [] if x["key"] == f"item:{item_id}"), None)
     if not it or spent not in ("charges", "item"):
         raise HTTPException(404)
-    _spend(db, ch, it, spent, back=True)
+    _spend(db, ch, it, spent, back=True, n=max(1, min(n, 10)) if spent == "charges" else 1)
     if heal > 0:
         ddb_bridge.add(db, ch, "hp", {"amount": -heal, "undo": True}, f"{ch.name}: {it['name']} undone")
     if cond_name in cond.KNOWN:

@@ -197,18 +197,30 @@ recipes; no book text). Their dice are checked against the offline copy when it'
 | Acid | Acid: 2d6 acid (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
 | Alchemist's Fire | Alchemist's Fire: 1d4 fire (Dex save, nothing on a success; again at the start of each of its turns while Burning) | SRD 5.2 adventuring gear; Burning deals 1d4 Fire at the start of each turn |
 | Basic Poison | Basic Poison: 1d4 poison (no roll to hit) | SRD 5.2 adventuring gear |
+| Bead of Force | Dex save: 5d4 force (Dex save, nothing on a success) | thrown: a 10-ft Sphere, Dex save DC 15 or 5d4 Force and trapped in a sphere of force |
 | Dust of Sneezing and Choking | no damage or healing roll | You and every creature in a 30-foot Emanation make a DC 15 Constitution save (2024 DMG) |
 | Hammer of Thunderbolts | no damage or healing roll | Spend 1 charge to throw it (20/60 ft); on a hit, the target and creatures within 30 feet make a DC 17 Constitution save (2024 DMG) |
 | Hat of Wizardry | no damage or healing roll | Unknown Spell: a DC 10 Intelligence (Arcana) check to cast a Wizard cantrip you don't know (2024 DMG) |
 | Holy Water | Holy Water: 2d8 radiant (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
+| Horn of Blasting | Con save: 5d8 thunder (Con save, nothing on a success) | a 30-ft Cone, Con save DC 15 or 5d8 Thunder and Deafened for 1 minute (a 20% chance it explodes: 10d6 Force to you) |
 | Hunting Trap | Hunting Trap: 1d4 piercing (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
+| Javelin of Lightning | Dex save: 4d6 lightning (Dex save, half on a success) | thrown with its command word: a 120-ft Line to the target, Dex save DC 13, 4d6 Lightning, half on a success |
 | Keoghtom's Ointment | Keoghtom's Ointment: 2d8+2 (healing) | a dose heals 2d8 + 2 (the jar's 1d4 + 1 doses are counted when it's found) |
+| Necklace of Fireballs | no damage or healing roll | thrown beads: Fireball (save DC 15), 1d6 more for each bead after the first (up to 12d6) |
 | Necklace of Prayer Beads | no damage or healing roll | Each bead casts its spell as a Bonus Action with your spell save DC, once until the next dawn; the DM sets the beads (2024 DMG) |
+| Potion of Fire Breath | Dex save: 4d6 fire (Dex save, half on a success) | after drinking, a Bonus Action exhale (up to three times in an hour): Dex save DC 13, 4d6 Fire, half on a success |
 | Potion of Healing | Healing: 2d4+2 (healing) | SRD 5.2 Potions of Healing table |
 | Potion of Healing (Greater) | Healing: 4d4+4 (healing) | SRD 5.2 Potions of Healing table |
 | Potion of Healing (Superior) | Healing: 8d4+8 (healing) | SRD 5.2 Potions of Healing table |
 | Potion of Healing (Supreme) | Healing: 10d4+20 (healing) | SRD 5.2 Potions of Healing table |
+| Potion of Poison | Damage: 4d6 poison (no roll to hit) | the drinker takes 4d6 Poison and makes a DC 13 Con save or is Poisoned for 1 hour |
 | Soul Coin | Drain Life: 1d10 (Temporary Hit Points) | Drain Life: Temporary Hit Points from the soul inside (a Bonus Action, 2024 DMG) |
+| Staff of Fire | no damage or healing roll | casts its spells with your spell save DC: Burning Hands (1 charge), Fireball (3), Wall of Fire (4) |
+| Staff of Frost | no damage or healing roll | casts its spells with your spell save DC: Cone of Cold (5 charges), Fog Cloud (1), Ice Storm (4), Wall of Ice (4) |
+| Staff of Healing | no damage or healing roll | casts Cure Wounds (1 charge per spell level, up to 4), Lesser Restoration (2), Mass Cure Wounds (5) |
+| Wand of Fireballs | no damage or healing roll | casts Fireball (save DC 15), 1 to 3 charges for its level |
+| Wand of Lightning Bolts | no damage or healing roll | casts Lightning Bolt (save DC 15), 1 to 3 charges for its level |
+| Wand of Magic Missiles | no damage or healing roll | casts Magic Missile, 1 to 3 charges for its level |
 
 ## Beast actions (Wild Shape)
 

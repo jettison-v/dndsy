@@ -551,6 +551,22 @@
    ],
    "level": 0
   },
+  "Bead of Force": {
+   "checked": "by hand",
+   "events": [
+    {
+     "dc": 15,
+     "name": "Dex save",
+     "on": "save",
+     "parts": [
+      "5d4 force"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
   "Dust of Sneezing and Choking": {
    "checked": "by hand",
    "level": 0,
@@ -599,6 +615,22 @@
    ],
    "level": 0
   },
+  "Horn of Blasting": {
+   "checked": "by hand",
+   "events": [
+    {
+     "dc": 15,
+     "name": "Con save",
+     "on": "save",
+     "parts": [
+      "5d8 thunder"
+     ],
+     "save": "Con",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
   "Hunting Trap": {
    "checked": "by hand",
    "events": [
@@ -615,6 +647,22 @@
    ],
    "level": 0
   },
+  "Javelin of Lightning": {
+   "checked": "by hand",
+   "events": [
+    {
+     "dc": 13,
+     "name": "Dex save",
+     "on": "save",
+     "parts": [
+      "4d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 0
+  },
   "Keoghtom's Ointment": {
    "checked": "by hand",
    "events": [
@@ -627,6 +675,49 @@
     }
    ],
    "level": 0
+  },
+  "Necklace of Fireballs": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "spells": [
+     {
+      "charges": 1,
+      "dc": 15,
+      "level": 3,
+      "name": "1 bead",
+      "spell": "Fireball"
+     },
+     {
+      "charges": 2,
+      "dc": 15,
+      "level": 4,
+      "name": "2 beads",
+      "spell": "Fireball"
+     },
+     {
+      "charges": 3,
+      "dc": 15,
+      "level": 5,
+      "name": "3 beads",
+      "spell": "Fireball"
+     },
+     {
+      "charges": 4,
+      "dc": 15,
+      "level": 6,
+      "name": "4 beads",
+      "spell": "Fireball"
+     },
+     {
+      "charges": 5,
+      "dc": 15,
+      "level": 7,
+      "name": "5 beads",
+      "spell": "Fireball"
+     }
+    ]
+   }
   },
   "Necklace of Prayer Beads": {
    "checked": "by hand",
@@ -665,6 +756,22 @@
      }
     ]
    }
+  },
+  "Potion of Fire Breath": {
+   "checked": "by hand",
+   "events": [
+    {
+     "dc": 13,
+     "name": "Dex save",
+     "on": "save",
+     "parts": [
+      "4d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 0
   },
   "Potion of Healing": {
    "checked": "by hand",
@@ -718,6 +825,20 @@
    ],
    "level": 0
   },
+  "Potion of Poison": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Damage",
+     "note": "And a DC 13 Con save or Poisoned for 1 hour",
+     "on": "auto",
+     "parts": [
+      "4d6 poison"
+     ]
+    }
+   ],
+   "level": 0
+  },
   "Soul Coin": {
    "checked": "by hand",
    "events": [
@@ -731,6 +852,192 @@
    ],
    "level": 0,
    "self": true
+  },
+  "Staff of Fire": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "spells": [
+     {
+      "charges": 1,
+      "level": 1,
+      "name": "Burning Hands",
+      "spell": "Burning Hands"
+     },
+     {
+      "charges": 3,
+      "level": 3,
+      "name": "Fireball",
+      "spell": "Fireball"
+     },
+     {
+      "charges": 4,
+      "level": 4,
+      "name": "Wall of Fire",
+      "spell": "Wall of Fire"
+     }
+    ]
+   }
+  },
+  "Staff of Frost": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "spells": [
+     {
+      "charges": 5,
+      "level": 5,
+      "name": "Cone of Cold",
+      "spell": "Cone of Cold"
+     },
+     {
+      "charges": 1,
+      "level": 1,
+      "name": "Fog Cloud",
+      "spell": "Fog Cloud"
+     },
+     {
+      "charges": 4,
+      "level": 4,
+      "name": "Ice Storm",
+      "spell": "Ice Storm"
+     },
+     {
+      "charges": 4,
+      "level": 6,
+      "name": "Wall of Ice",
+      "spell": "Wall of Ice"
+     }
+    ]
+   }
+  },
+  "Staff of Healing": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "spells": [
+     {
+      "charges": 1,
+      "level": 1,
+      "name": "Cure Wounds",
+      "spell": "Cure Wounds"
+     },
+     {
+      "charges": 2,
+      "level": 2,
+      "name": "Cure Wounds",
+      "spell": "Cure Wounds"
+     },
+     {
+      "charges": 3,
+      "level": 3,
+      "name": "Cure Wounds",
+      "spell": "Cure Wounds"
+     },
+     {
+      "charges": 4,
+      "level": 4,
+      "name": "Cure Wounds",
+      "spell": "Cure Wounds"
+     },
+     {
+      "charges": 2,
+      "level": 2,
+      "name": "Lesser Restoration",
+      "spell": "Lesser Restoration"
+     },
+     {
+      "charges": 5,
+      "level": 5,
+      "name": "Mass Cure Wounds",
+      "spell": "Mass Cure Wounds"
+     }
+    ]
+   }
+  },
+  "Wand of Fireballs": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "spells": [
+     {
+      "charges": 1,
+      "dc": 15,
+      "level": 3,
+      "name": "1 charge",
+      "spell": "Fireball"
+     },
+     {
+      "charges": 2,
+      "dc": 15,
+      "level": 4,
+      "name": "2 charges",
+      "spell": "Fireball"
+     },
+     {
+      "charges": 3,
+      "dc": 15,
+      "level": 5,
+      "name": "3 charges",
+      "spell": "Fireball"
+     }
+    ]
+   }
+  },
+  "Wand of Lightning Bolts": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "spells": [
+     {
+      "charges": 1,
+      "dc": 15,
+      "level": 3,
+      "name": "1 charge",
+      "spell": "Lightning Bolt"
+     },
+     {
+      "charges": 2,
+      "dc": 15,
+      "level": 4,
+      "name": "2 charges",
+      "spell": "Lightning Bolt"
+     },
+     {
+      "charges": 3,
+      "dc": 15,
+      "level": 5,
+      "name": "3 charges",
+      "spell": "Lightning Bolt"
+     }
+    ]
+   }
+  },
+  "Wand of Magic Missiles": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "spells": [
+     {
+      "charges": 1,
+      "level": 1,
+      "name": "1 charge",
+      "spell": "Magic Missile"
+     },
+     {
+      "charges": 2,
+      "level": 2,
+      "name": "2 charges",
+      "spell": "Magic Missile"
+     },
+     {
+      "charges": 3,
+      "level": 3,
+      "name": "3 charges",
+      "spell": "Magic Missile"
+     }
+    ]
+   }
   }
  },
  "spells": {

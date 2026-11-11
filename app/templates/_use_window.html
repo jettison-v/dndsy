@@ -4,8 +4,8 @@
 <p class="use-cost">{{ o.use.said or ("Mark its " ~ (o.use.mark | lower) ~ " in its side panel" if o.use.mark else "Its text doesn't say what it costs") }}{% if o.uses %} · {{ o.uses.left }} of {{ o.uses.max }} left{% elif o.use.left > 1 %} · {{ o.use.left }} left{% endif %}</p>
 {% if o.meta %}<p class="use-what">{{ o.meta }}</p>{% endif %}
 {% if starts %}<p class="use-what">Starts {{ starts }}.</p>{% endif %}
-{% if roll and roll.beads %}<div class="rw-row"><label class="rw-label" for="use-bead-{{ it.key }}">Which bead</label><select id="use-bead-{{ it.key }}" class="rw-slot" name="bead" data-use-bead>{% for b in roll.beads %}<option value="{{ loop.index0 }}" data-rolls="{{ 1 if b.attrs else 0 }}">{{ b.name }}: {{ b.spell }}{{ " (level " ~ b.level ~ ")" if b.level > 1 else "" }}</option>{% endfor %}</select></div>
-<p class="note">The DM sets which beads the necklace has; each is used once until the next dawn.</p>{% endif %}
+{% if roll and roll.beads %}<div class="rw-row"><label class="rw-label" for="use-bead-{{ it.key }}">{{ roll.ask }}</label><select id="use-bead-{{ it.key }}" class="rw-slot" name="bead" data-use-bead>{% for b in roll.beads %}<option value="{{ loop.index0 }}" data-rolls="{{ 1 if b.attrs else 0 }}">{{ b.name }}{{ ": " ~ b.spell if b.spell != b.name else "" }}{{ " (level " ~ b.level ~ ")" if b.level > 1 else "" }}{{ " · " ~ b.charges ~ " charges" if b.charges and b.charges > 1 else (" · 1 charge" if b.charges else "") }}</option>{% endfor %}</select></div>
+{% if roll.ask == "Which bead" %}<p class="note">The DM sets which beads the necklace has; each is used once until the next dawn.</p>{% endif %}{% endif %}
 {% if reachable %}
 <div class="rw-row use-foot">
   {% if roll and roll.beads %}<button type="button" class="btn primary small" data-use-go data-then-roll data-verb="{{ o.use.verb }}">{{ o.use.verb }}{{ " and roll" if roll.beads[0].attrs else "" }}</button><span hidden data-character="{{ c.id }}">{% for b in roll.beads if b.attrs %}<button type="button" class="use-roll" data-bead="{{ b.i }}" data-cast-level="{{ b.level }}" {{ b.attrs | data_attrs }}>Roll</button>{% endfor %}</span>

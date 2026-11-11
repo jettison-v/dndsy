@@ -167,7 +167,7 @@ def test_riders_are_only_the_ones_that_can_apply(plans):
     # (what it goes with is the rules book's `with`, matched against the attack's traits: no reading of words)
     nn = sheet("no_name")
     dart = next(o for o in options(nn, set()) if o["name"] == "Dart")
-    assert roll_plan.traits(nn, dart, "weapon") == {"weapon", "ranged_weapon", "finesse"} - {"ranged_weapon"} | {"melee_weapon"}
+    assert roll_plan.traits(nn, dart, "weapon") == {"weapon", "melee_weapon", "finesse", "item:dart"}  # (a thrown weapon is a melee weapon)
     assert roll_plan.applies({"with": ["melee_weapon", "unarmed"]}, {"unarmed"}) and not roll_plan.applies({"with": ["spell"]}, {"weapon"})
     assert roll_plan.applies({}, {"spell"})  # (no `with`: any attack)
 
