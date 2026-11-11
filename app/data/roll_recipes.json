@@ -263,6 +263,44 @@
    ],
    "level": 0
   },
+  "Necklace of Prayer Beads": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "beads": [
+     {
+      "level": 1,
+      "name": "Bead of Blessing",
+      "spell": "Bless"
+     },
+     {
+      "level": 2,
+      "name": "Bead of Curing",
+      "spell": "Cure Wounds"
+     },
+     {
+      "level": 5,
+      "name": "Bead of Favor",
+      "spell": "Greater Restoration"
+     },
+     {
+      "level": 2,
+      "name": "Bead of Smiting",
+      "spell": "Shining Smite"
+     },
+     {
+      "level": 4,
+      "name": "Bead of Summons",
+      "spell": "Guardian of Faith"
+     },
+     {
+      "level": 6,
+      "name": "Bead of Wind Walking",
+      "spell": "Wind Walk"
+     }
+    ]
+   }
+  },
   "Potion of Healing": {
    "checked": "by hand",
    "events": [

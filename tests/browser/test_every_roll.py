@@ -339,6 +339,13 @@ def _setup(browser_db, server, what: str) -> list[tuple[str, str, str]]:
     data = json.loads((ROOT_FIXTURES / "cole.json").read_text())["data"]
     if what == "creature":
         data = {**data, "creatures": [*data.get("creatures", []), _made_up_creature()]}
+    if what == "summon":  # (tests/test_summons.py: Moonbeam renamed Summon Beast, its made-up stat block as the book's)
+        data = json.loads(json.dumps(data).replace('"Moonbeam"', '"Summon Beast"'))
+    if what == "item creature":  # (tests/test_item_creatures.py: his first item reworded as one that brings a creature)
+        from tests.test_item_creatures import WORDS
+
+        data = json.loads(json.dumps(data))
+        data["inventory"][0]["definition"].update(name="Testing Tooth", description=f"<p>{WORDS}</p>")
     engine = create_engine(browser_db[0])
     out = []
     with Session(engine) as db:
@@ -353,6 +360,17 @@ def _setup(browser_db, server, what: str) -> list[tuple[str, str, str]]:
             out = [("player", f"/characters/{cid}/battle", form) for form in forms]
         elif what == "creature":
             out = [("player", f"/characters/{cid}/battle?creature={ZAP}", "")]
+        elif what == "summon":
+            from app import books
+            from tests.test_summons import BEAST
+
+            books.save(db, "phb-2024", "summon", BEAST)
+            out = [("player", f"/characters/{cid}/battle", "Summon Beast")]
+        elif what == "item creature":
+            from tests.roles import set_role
+
+            set_role(db, "dm@example.com", "dm")
+            out = [("player", f"/characters/{cid}/battle", "Testing Tooth")]
         else:  # the DM's rolls as a creature on askdnd's table (a token's side panel)
             p = Place(campaign_id=campaign.id, name="Test room", position=1, map_w=700, map_h=490, map_key=None,
                       grid={"size": 70, "x": 0, "y": 0}, fog={"on": False, "shown": []})
@@ -387,7 +405,44 @@ def _form(browser_db, form: str):
     engine.dispose()
 
 
-@pytest.mark.parametrize("what", ["forms", "creature", "token"])
+def _bring(people, browser_db, server, what: str, label: str) -> str:
+    """Puts the creature in play through askdnd's own routes, as its player (and the DM for an item's setup), and
+    returns its Battle's address."""
+    from app import creatures
+
+    cid = server["cole"]
+    player = people("player")
+    post = "([u, d]) => fetch(u, { method: 'POST', body: new URLSearchParams(d), headers: { 'X-Requested-With': 'fetch' } }).then(r => r.status)"
+    player.open(f"/characters/{cid}/battle")
+    engine = create_engine(browser_db[0])
+    if what == "summon":  # (as Cast does it: this test's server has no bridge, which Cast needs)
+        from app import characters, companions
+
+        with Session(engine) as db:
+            ch = char(db, "Cole")
+            entry = companions.summon_entry(db, ch, label)
+            assert entry, "no Summon Beast stat block"
+            companions.summon(ch, characters.character_summary(ch), entry, 2, "Land", "", "", db=db)
+            db.commit()
+    else:
+        with Session(engine) as db:
+            from app import characters
+
+            key = next(x["key"] for x in characters.character_summary(char(db, "Cole"))["inventory"] if x["name"] == label)
+        dm = people("dm")
+        dm.open(f"/characters/{cid}")
+        setup = {"creature": "Wolf", "type": "Undead", "immune": "necrotic damage", "cost": "Action", "range": "15", "init": "own",
+                 "command": "Bonus action", "command_range": "30", "lasts": "1 hour or until 0 Hit Points", "back": "Long Rest"}
+        assert dm.page.evaluate(post, [f"/characters/{cid}/bring/{key}/setup", setup]) == 204
+        assert player.page.evaluate(post, [f"/characters/{cid}/bring/{key}", {"name": "Snap"}]) == 200
+    with Session(engine) as db:
+        own = creatures.own(char(db, "Cole"))
+    engine.dispose()
+    assert own, f"{what}: nothing brought"
+    return f"/characters/{cid}/battle?creature={own[0]['id']}"
+
+
+@pytest.mark.parametrize("what", ["forms", "creature", "token", "summon", "item creature"])
 def test_every_roll_beyond_the_sheet_plays_its_plan(people, server, browser_db, what):
     """Brett, Nov 10 ("what's left to fully complete rolls"): the rolls that aren't the character's own sheet play their
     plans the same way: Cole in each of his Wild Shape forms, a creature of his on its own Battle, and the DM's rolls as a
@@ -402,6 +457,8 @@ def test_every_roll_beyond_the_sheet_plays_its_plan(people, server, browser_db, 
     for _, path, label in todo:
         if what == "forms":
             _form(browser_db, label)
+        if what in ("summon", "item creature"):
+            path = _bring(people, browser_db, server, what, label)
         if what == "token":
             who.open(path.rsplit("/table/", 1)[0] + "/table")
             page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
@@ -422,9 +479,9 @@ def test_every_roll_beyond_the_sheet_plays_its_plan(people, server, browser_db, 
             page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
             page.evaluate(RECORD)
             n, b = _play_all(page, "#battle-body [data-roll][data-plan]")
-            if what == "creature":
+            if what != "forms":
                 whos = page.evaluate("(window.__all || []).filter(x => !x.action).map(x => (x.who || [''])[0])")
-                if any(w != "Homunculus Servant" for w in whos):
+                if not whos or any(not w for w in whos):
                     b.append(f"a creature's roll wasn't sent as its (who {whos})")
         if not n:
             bad.append(f"{what} {label or path}: no roll buttons")

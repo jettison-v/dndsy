@@ -169,6 +169,7 @@ recipes; no book text). Their dice are checked against the offline copy when it'
 | Holy Water | Holy Water: 2d8 radiant (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
 | Hunting Trap | Hunting Trap: 1d4 piercing (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
 | Keoghtom's Ointment | Keoghtom's Ointment: 2d8+2 (healing) | a dose heals 2d8 + 2 (the jar's 1d4 + 1 doses are counted when it's found) |
+| Necklace of Prayer Beads | no damage or healing roll | Each bead casts its spell as a Bonus Action with your spell save DC, once until the next dawn; the DM sets the beads (2024 DMG) |
 | Potion of Healing | Healing: 2d4+2 (healing) | SRD 5.2 Potions of Healing table |
 | Potion of Healing (Greater) | Healing: 4d4+4 (healing) | SRD 5.2 Potions of Healing table |
 | Potion of Healing (Superior) | Healing: 8d4+8 (healing) | SRD 5.2 Potions of Healing table |

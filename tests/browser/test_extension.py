@@ -217,6 +217,38 @@ def test_use_and_roll_spends_the_item_and_rolls_its_plan_at_once(chrome, server)
     sheet.close()
 
 
+def test_a_prayer_bead_casts_its_spell_at_the_beads_level(chrome, server, browser_db):
+    """A Necklace of Prayer Beads (Nov 10): Which bead; the Bead of Curing's Use and roll rolls Cure Wounds at level 2
+    (4d8 + the spellcasting modifier) at once; a bead whose spell rolls nothing says just Use."""
+    from tests.browser.test_every_roll import _as
+
+    _as(browser_db, server, "big_c")
+    page = chrome.pages[0]
+    page.goto(f"{server['base']}/characters/{server['cole']}/battle")
+    page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    page.bring_to_front()
+    page.keyboard.press("ControlOrMeta+k")
+    page.locator("#search-q").fill("necklace of prayer")
+    page.wait_for_timeout(500)
+    page.locator("#search-q").press("Enter")
+    go = page.locator(".roll-win [data-use-go]")
+    go.first.wait_for()
+    assert go.first.inner_text().strip() == "Use"  # (Bead of Blessing: Bless rolls nothing)
+    page.locator(".roll-win [data-use-bead]").select_option("1")  # (Bead of Curing)
+    assert go.first.inner_text().strip() == "Use and roll"
+    go.first.click()
+    page.locator(".roll-card .rcard-heal").wait_for(timeout=15000)  # (rolled at once)
+    rolls = page.evaluate("fetch('/rolls?since=-1').then(r => r.text())")
+    assert "Cure Wounds" in rolls and "4d8" in rolls and "level 2" in rolls
+    page.keyboard.press("Escape")
+    sheet.close()
+    _as(browser_db, server, "cole")  # (Cole's own sheet back for the tests after this one)
+
+
 def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):
     """Brett, 2026-10-30: the DM didn't have it by accident, and nothing said so."""
     dm = people("dm")

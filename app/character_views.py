@@ -338,6 +338,19 @@ def use_roll(o: dict, sheet: dict, use: dict) -> dict | None:
     "rider": {name, save, dc, says}} (Hammer of Thunderbolts: its own attack, thrown, and on a hit a save for the DM).
     The numbers are the sheet's; the DC and words are the recipe's."""
     note = use.get("says") or ""
+    if beads := use.get("beads"):  # (a Necklace of Prayer Beads: which bead is the player's, the DM having set the beads)
+        from app import roll_recipes as rr
+        from app.roll_plan import effects
+
+        out = []
+        for i, b in enumerate(beads):
+            rec, attrs = rr.spell(b["spell"]), None
+            first = next((e for e in (rec or {}).get("events") or [] if e.get("on") not in ("hit", "rider")), None)
+            if first:
+                kind = {"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.get("on"), "damage")
+                attrs = roll_data(kind, b["spell"], rolls=effects(rec, sheet, b["spell"], False))
+            out.append({**b, "attrs": attrs, "i": i})
+        return {"attrs": None, "kind": "beads", "beads": out, "formula": "", "text": ""}
     if skill := use.get("check"):
         sk = next((x for x in sheet.get("skills") or [] if x["name"] == skill), None)
         if not sk:

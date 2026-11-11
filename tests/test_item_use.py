@@ -235,7 +235,8 @@ def test_every_usable_item_on_the_partys_sheets_rolls_its_plan():
     """Every item with a Use window on the party's saved sheets: one with a roll in its plan offers it (a potion rolls
     as it's drunk; anything else is Use and roll), and its dice are the plan's at the plan's own level. Using a Hat of
     Wizardry is an Arcana check, Dust of Sneezing and Choking your own Con save, a Hammer of Thunderbolts its own attack
-    thrown with Thunderclap's save on a hit (Brett, Nov 10: what's left to fully complete rolls)."""
+    thrown with Thunderclap's save on a hit, and a Necklace of Prayer Beads asks which bead and plays its spell's plan
+    (Brett, Nov 10: what's left to fully complete rolls)."""
     import json
     from pathlib import Path
 
@@ -249,6 +250,9 @@ def test_every_usable_item_on_the_partys_sheets_rolls_its_plan():
         for o in views.options(s, set()):
             if not o.get("use") or not (r := views.item_roll(o, s)):
                 continue
+            if r["kind"] == "beads":  # (a Necklace of Prayer Beads: each bead's spell its own plan, at the bead's level)
+                seen[o["name"]] = {b["name"]: json.loads(b["attrs"]["plan"])["rolls"]["effects"][0]["at"][str(b["level"])]["parts"] if b["attrs"] else None for b in r["beads"]}
+                continue
             plan = json.loads(r["attrs"]["plan"])
             if plan.get("rolls"):
                 at = plan["rolls"]["effects"][0]["at"][str(plan["rolls"]["base"])]
@@ -258,3 +262,25 @@ def test_every_usable_item_on_the_partys_sheets_rolls_its_plan():
     # (what using these rolls is the recipe's `use`; the numbers are the sheet's)
     assert seen["Hat of Wizardry"] == ("d20", 7, []) and seen["Dust of Sneezing and Choking"][:2] == ("d20", 2)
     assert seen["Hammer of Thunderbolts (Maul)"][0] == "attack" and "Thunderclap" in seen["Hammer of Thunderbolts (Maul)"][2]
+    beads = seen["Necklace of Prayer Beads"]  # (2024 DMG: Cure Wounds at level 2, Shining Smite; the rest roll nothing)
+    assert beads["Bead of Curing"][0] == "4d8" and beads["Bead of Smiting"] == ["2d6 radiant"] and beads["Bead of Blessing"] is None
+
+
+def test_a_necklace_of_prayer_beads_asks_which_bead_and_rolls_its_spell(player, db, sheet):
+    """The Necklace's window (Nov 10): which bead (the DM sets them), and a bead whose spell rolls (Curing, Smiting)
+    rolls that spell's plan at the bead's level once used; one use is spent whichever bead."""
+    import json
+    from pathlib import Path
+
+    sheet.clear()
+    sheet.update(json.loads((Path(__file__).parent / "fixtures" / "ddb" / "big_c.json").read_text())["data"])
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    db.commit()
+    neck = next(i["id"] for i in sheet["inventory"] if i["definition"]["name"] == "Necklace of Prayer Beads")
+    w = player.get(f"/characters/{cole.id}/use/{neck}").text
+    assert 'name="bead"' in w and w.count("<option") == 6 and "Bead of Curing: Cure Wounds (level 2)" in w
+    assert 'data-bead="1"' in w and 'data-bead="3"' in w and 'data-bead="0"' not in w and 'data-cast-level="2"' in w
+    assert 'data-verb="Use">Use<' in w  # (the first bead, Blessing, rolls nothing)
+    j = player.post(f"/characters/{cole.id}/use/{neck}", data={"bead": "1"}).json()
+    assert "Bead of Curing, Cure Wounds" in j["text"] and j["undo"]["spent"]

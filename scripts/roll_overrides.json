@@ -1175,6 +1175,43 @@
      "says": "the target and every creature within 30 feet of it other than you: Stunned until the end of your next turn on a failure"
     }
    }
+  },
+  "Necklace of Prayer Beads": {
+   "why": "Each bead casts its spell as a Bonus Action with your spell save DC, once until the next dawn; the DM sets the beads (2024 DMG)",
+   "use": {
+    "beads": [
+     {
+      "name": "Bead of Blessing",
+      "spell": "Bless",
+      "level": 1
+     },
+     {
+      "name": "Bead of Curing",
+      "spell": "Cure Wounds",
+      "level": 2
+     },
+     {
+      "name": "Bead of Favor",
+      "spell": "Greater Restoration",
+      "level": 5
+     },
+     {
+      "name": "Bead of Smiting",
+      "spell": "Shining Smite",
+      "level": 2
+     },
+     {
+      "name": "Bead of Summons",
+      "spell": "Guardian of Faith",
+      "level": 4
+     },
+     {
+      "name": "Bead of Wind Walking",
+      "spell": "Wind Walk",
+      "level": 6
+     }
+    ]
+   }
   }
  },
  "other_spells": {
