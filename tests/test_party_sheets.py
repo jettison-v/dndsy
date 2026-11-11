@@ -101,6 +101,33 @@ def test_a_free_cast_from_a_species_or_feat_is_offered_first(player, db, sheet, 
     assert re.findall(r"<option[^>]*>([^<]*)", window)[0].startswith(f"Free: {source}")  # first
 
 
+def test_a_free_cast_spends_its_use_on_d_and_d_beyond_and_undo_gives_it_back(player, db, sheet):
+    """Nov 10 (Brett: what's left of rolling): a free cast is spent on D&D Beyond as its sheet's own Use button does
+    (D&D Beyond's limited-use request with the spell entry's id, seen on a twin's sheet); askdnd no longer asks the
+    player to mark it there. Undo gives it back."""
+    from urllib.parse import quote
+
+    from sqlalchemy import select
+
+    from app import ddb_fields
+    from app.models import BridgeIntent
+
+    cole, _ = _as(sheet, "big_c", db)
+    url = f"/characters/{cole.id}/cast?key={quote('spell:Hellish Rebuke')}"
+    r = player.post(url, data={"way": "free"}).json()
+    assert r["undo"]["spent"].startswith("spelluse:") and "mark the use" not in r["text"]
+    field = r["undo"]["spent"]
+    sent = [i.data for i in db.scalars(select(BridgeIntent))]
+    assert {"field": field, "delta": 1} in [{k: p.get(k) for k in ("field", "delta")} for p in sent]
+    raw = sheet  # (D&D Beyond's own data: the request is its Use button's, and the field is one the bridge follows)
+    w = ddb_fields.write(int(cole.ddb_id), field, 1, raw)
+    assert w["path"].endswith("/action/limited-use") and w["body"]["uses"] == 1 and field in ddb_fields.tracked(raw)
+    assert ddb_fields.name(raw, field) == "Hellish Rebuke's free use"
+    player.post(r["undoUrl"], data=r["undo"])
+    sent = [i.data for i in db.scalars(select(BridgeIntent))]
+    assert {"field": field, "delta": -1} in [{k: p.get(k) for k in ("field", "delta")} for p in sent]
+
+
 def test_shadow_arts_darkness_spends_a_focus_point_and_undo_gives_it_back(player, db, sheet):
     """2024 PHB, Warrior of Shadow: Shadow Arts casts Darkness for 1 Focus Point, which D&D Beyond lists with no cost
     (Brett, Nov 5: nothing character-specific may break)."""

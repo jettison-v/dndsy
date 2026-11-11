@@ -113,7 +113,7 @@ def _entry(sp: dict, sheet: dict, top: int, castable_in_form: set[str] | None = 
         "ws": bool(castable_in_form and sp["name"] in castable_in_form),
         "rounds": rounds(sp.get("duration") or ""),
         # A free use (a species' or feat's spell, once per Long Rest) and where it's from: the Cast window offers it first
-        "uses": sp.get("uses"), "from": sp.get("free_from") or "",
+        "uses": sp.get("uses"), "from": sp.get("free_from") or "", "use_id": sp.get("use_id"),
         # A higher slot does more (its text says so, or its dice grow): else the Cast window says it changes nothing
         "higher": bool(HIGHER.search(sp.get("text") or "")) or len({str(v) for v in avgs.values()}) > 1,
     }

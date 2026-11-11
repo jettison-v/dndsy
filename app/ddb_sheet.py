@@ -819,6 +819,8 @@ class _Sheet:
             "always_prepared": bool(s.get("alwaysPrepared")),
             "uses_slot": s.get("usesSpellSlot") is not False,
             "uses": self.limited_use(s.get("limitedUse")),
+            # (a free use's own entry on D&D Beyond: the bridge spends it, `spelluse:<id>`, as D&D Beyond's Use button does)
+            "use_id": s.get("id") if self.limited_use(s.get("limitedUse")) else None,
             "concentration": bool(df.get("concentration")),
             "ritual": bool(df.get("ritual")),
             "components": comps,
@@ -868,7 +870,7 @@ class _Sheet:
                     if source not in prev["sources"]:
                         prev["sources"].append(source)
                     if sp["uses"] and not prev["uses"]:
-                        prev["uses"], prev["free_from"] = sp["uses"], source
+                        prev["uses"], prev["free_from"], prev["use_id"] = sp["uses"], source, sp["use_id"]
                     prev["uses_slot"] = prev["uses_slot"] or sp["uses_slot"]
                     prev["prepared"] |= sp["prepared"]
                     prev["always_prepared"] |= sp["always_prepared"]
@@ -1283,8 +1285,8 @@ def most(data: dict, kind: str, ref) -> int | None:
         slots = sh.spell_slots()
         rows = slots["slots"] if kind == "slot" else [slots["pact"]] if slots.get("pact") else []
         return next((r["max"] for r in rows if str(r["level"]) == str(ref)), None)
-    if kind == "uses":
-        a = next((a for group in (data.get("actions") or {}).values() for a in group or [] if str(a.get("id")) == str(ref)), None)
+    if kind in ("uses", "spelluse"):
+        a = next((a for group in (data.get("actions" if kind == "uses" else "spells") or {}).values() for a in group or [] if str(a.get("id")) == str(ref)), None)
         lu = sh.limited_use((a or {}).get("limitedUse"))
     elif kind == "charges":
         i = next((i for i in sh.items if str(i.get("id")) == str(ref)), None)

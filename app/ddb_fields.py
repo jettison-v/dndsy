@@ -110,6 +110,7 @@ def steps(field: str) -> list:
         "slot": ["spellSlots", {"level": arg}, "used", {"or": 0}],
         "pact": ["pactMagic", {"level": arg}, "used", {"or": 0}],
         "uses": ["actions", "*", {"id": arg}, "limitedUse", "numberUsed"],
+        "spelluse": ["spells", "*", {"id": arg}, "limitedUse", "numberUsed"],  # (a spell's free use: Fiendish Legacy, Paladin's Smite)
         "item": [*item, "quantity"],
         "equipped": [*item, "equipped"],
         "attuned": [*item, "isAttuned"],
@@ -222,6 +223,7 @@ def tracked(data: dict | None) -> dict:
     fs += [f"slot:{s['level']}" for s in data.get("spellSlots") or [] if isinstance(s, dict)]
     fs += [f"pact:{s['level']}" for s in data.get("pactMagic") or [] if isinstance(s, dict)]
     fs += [f"uses:{a['id']}" for a in pick(data, ["actions", "*"]) or [] if isinstance(a, dict) and a.get("limitedUse")]
+    fs += [f"spelluse:{s['id']}" for s in pick(data, ["spells", "*"]) or [] if isinstance(s, dict) and (s.get("limitedUse") or {}).get("maxUses")]
     for i in data.get("inventory") or []:
         if isinstance(i, dict) and i.get("id") is not None:
             fs += [f"{k}:{i['id']}" for k in ("item", "equipped", "container")]
@@ -275,6 +277,8 @@ def name(data: dict | None, field: str) -> str:
         return f"{((pick(data, ['classes', {'id': arg}]) or {}).get('definition') or {}).get('name') or 'Class'} Hit Dice"
     if kind == "uses":
         return (pick(data, ["actions", "*", {"id": arg}]) or {}).get("name") or "a use"
+    if kind == "spelluse":
+        return f"{((pick(data, ['spells', '*', {'id': arg}]) or {}).get('definition') or {}).get('name') or 'a spell'}'s free use"
     if kind.startswith("creature"):
         c = creature(data, arg)
         who = c.get("name") or (c.get("definition") or {}).get("name") or "a creature"
@@ -376,8 +380,8 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
         return req("POST", "character/rest/short", classHitDiceUsed={arg: v}, resetMaxHpModifier=False)
     if kind in ("slot", "pact"):
         return req("PUT", "spell/slots" if kind == "slot" else "spell/pact-magic", **{f"level{arg}": v})
-    if kind == "uses":
-        a = pick(data, ["actions", "*", {"id": arg}]) or {}
+    if kind in ("uses", "spelluse"):  # (a spell's free use is the same request, with the spell's own id: D&D Beyond's Use button)
+        a = pick(data, ["actions" if kind == "uses" else "spells", "*", {"id": arg}]) or {}
         return req("PUT", "action/limited-use", id=str(arg), entityTypeId=str(a.get("entityTypeId")), uses=v)
     if kind == "item":
         if v is None:

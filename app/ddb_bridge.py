@@ -951,7 +951,7 @@ def seen(db: Session, character: Character, before: dict | None, after: dict, su
     recent = db.scalars(select(BridgeBatch).where(BridgeBatch.character_id == character.id, BridgeBatch.sent_at > time.time() - 60)).all()
     wrote = {f: v for b in recent for f, v in b.target.items()}  # what askdnd wrote to each field this last minute
     rested = any(f.startswith("hitdice:") for f in wrote)  # askdnd's Short Rest restored what a Short Rest restores
-    ours = {f for f in now if rested and f.split(":")[0] in ("uses", "pact", "slot", "charges")}
+    ours = {f for f in now if rested and f.split(":")[0] in ("uses", "spelluse", "pact", "slot", "charges")}
     # (a field askdnd just wrote, now at anything else, was changed on D&D Beyond after it: the player's, Nov 3)
     ours |= {f for f, v in wrote.items() if now.get(f) == v}
     hp_max = ddb_fields.max_hp(summary)
@@ -1030,6 +1030,7 @@ def _every_change(n: dict) -> list[tuple[str, dict]]:
         return next((f for f, v in now.items() if f.startswith(prefix) and v is not None and ok(f, v)), None)
     for f in (first("slot:"), first("pact:", lambda f, v: (ddb_fields.pick(raw, ["pactMagic", {"level": f[5:]}]) or {}).get("available")),
               first("uses:", lambda f, v: ((ddb_fields.pick(raw, ["actions", "*", {"id": f[5:]}]) or {}).get("limitedUse") or {}).get("maxUses")),
+              first("spelluse:"),
               first("charges:", lambda f, v: ((ddb_fields.pick(raw, ["inventory", {"id": f[8:]}]) or {}).get("limitedUse") or {}).get("maxUses", 0) > 1)):
         if f:
             out.append(("use", {"field": f, "delta": -1 if now[f] else 1}))
@@ -1722,7 +1723,7 @@ def bridge_others_roll(ddb_id: str, request: Request, body=web.JsonBody, db: Ses
 
 
 SETS = {"inspiration": bool, "condition": bool, "exhaustion": int, "equipped": bool, "attuned": bool, "container": int}
-USES = ("slot", "pact", "uses", "charges", "coin", "hitdice")
+USES = ("slot", "pact", "uses", "spelluse", "charges", "coin", "hitdice")
 
 
 def _change(n: dict, body: dict) -> tuple[str, dict] | None:
@@ -1848,6 +1849,7 @@ CONNECTIONS = [
     ("Conditions and Exhaustion", ("condition", "exhaustion"), ("condition", "exhaustion"), "yes"),
     ("Spell and Pact Magic slots (Cast)", ("slot", "pact"), ("cast", "pact-cast", "cross-cast"), "yes"),
     ("Limited uses (Resources, Wild Shape)", ("uses",), ("resource", "wild-shape"), "yes"),
+    ("A spell's free use (a species' or feat's spell, Paladin's Smite)", ("spelluse",), ("free-cast",), "yes"),
     ("A Short Rest's Hit Point Dice", ("hitdice",), ("rests", "short-rest"), "yes"),
     ("Items: count, equipped, attuned, charges, moved", ("item", "equipped", "attuned", "charges", "container"), ("inventory", "give"), "yes"),
     ("Coins: carried and in bags, moved between them", ("coin", "bagcoin"), ("coins", "add-item"), "yes"),
