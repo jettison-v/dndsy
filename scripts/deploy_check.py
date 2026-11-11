@@ -112,10 +112,21 @@ def wait_deploy(service: str, sha: str, after: str = "", appear: int = 600) -> d
     sys.exit(f"{service}: still deploying after 30 minutes; look at the Railway dashboard.")
 
 
+def last_built(service: str) -> str:
+    """The commit of the service's newest successful deploy (what it runs now), or ""."""
+    ok = [d for d in deployments(service) if d.get("status") in ("SUCCESS", "SLEEPING", "REMOVED") and (d.get("meta") or {}).get("commitHash")]
+    return max(ok, key=lambda d: d["createdAt"])["meta"]["commitHash"] if ok else ""
+
+
 def changes_what_it_runs(service: str, sha: str) -> bool:
-    """Whether the commit changes a file the service's watch paths cover (what Railway builds it for)."""
+    """Whether anything since the commit the service last deployed changes a file its watch paths cover (what Railway
+    builds it for). Since its last deploy, not just this commit: Nov 10, PR 306's merge run failed a flaky test, the
+    fix after it changed only a test, and Railway skipped it, so 306 never reached prod until built from source."""
     watch = APP_WATCH if service == SERVICES[0] else BACKUP_WATCH
-    changed = run("git", "diff", "--name-only", f"{sha}~1", sha, check=False).split()
+    base = last_built(service)
+    if not base or subprocess.run(["git", "cat-file", "-e", f"{base}^{{commit}}"], capture_output=True).returncode:
+        base = f"{sha}~1"
+    changed = run("git", "diff", "--name-only", base, sha, check=False).split()
     return any(f == w or (w.endswith("/**") and f.startswith(w[:-2])) for f in changed for w in watch)
 
 
