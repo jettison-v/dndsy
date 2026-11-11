@@ -26,7 +26,7 @@ character at a table; tests/test_roll_plan.py keeps the party's sheets free of n
 
 import re
 
-from app import class_rules
+from app import class_rules, rules_book
 from app import roll_recipes as rr
 
 DICE = re.compile(r"\b(\d+)d(\d+)\b")
@@ -43,22 +43,9 @@ UNARMED = (("damage", "Damage", "an attack roll"), ("grapple", "Grapple", "the t
 
 
 def fill(part: str, sheet: dict) -> str:
-    """A recipe part's {tokens} from the sheet: {level:Fighter}, {mod:dexterity}, N{martial_arts} (the Monk's die),
-    {sneak} (Sneak Attack's d6s), {lands_aid} (Land's Aid's d6s), N{bardic} (the Bard's die)."""
-    lv = {c.get("name"): c.get("level") or 0 for c in sheet.get("classes") or []}
-    mods = {a["key"]: a.get("modifier") or 0 for a in sheet.get("abilities") or []}
-    monk, bard = lv.get("Monk", 0), lv.get("Bard", 0)
-    die = {"martial_arts": 0 if not monk else 6 if monk < 5 else 8 if monk < 11 else 10 if monk < 17 else 12,
-           "bardic": 0 if not bard else 6 if bard < 5 else 8 if bard < 10 else 10 if bard < 15 else 12}
-    part = re.sub(r"(\d*)\{(martial_arts|bardic)\}", lambda m: f"{m.group(1) or 1}d{die[m.group(2)]}" if die[m.group(2)] else "", part)
-    druid = lv.get("Druid", 0)
-    plain = {"sneak": str((lv.get("Rogue", 0) + 1) // 2), "lands_aid": str(2 + (druid >= 10) + (druid >= 14))}
-
-    def value(m):
-        k = m.group(1)
-        return str(lv.get(k[6:], 0)) if k.startswith("level:") else str(mods.get(k[4:], 0)) if k.startswith("mod:") else plain.get(k, "")
-    out = re.sub(r"\{([^}]+)\}", value, part).replace("+-", "-")
-    return re.sub(r"\+0\b(?!d)", "", out)
+    """A recipe part's {tokens} from the sheet: the rules book's one set (app/rules_book.py `fill`: {level:Fighter},
+    {mod:dexterity}, N{martial_arts}, {sneak}, {lands_aid}, N{bardic}…)."""
+    return rules_book.fill(part, sheet)
 
 
 def _part(text: str, src: str) -> dict | None:
@@ -234,23 +221,41 @@ def effects(recipe: dict | None, sheet: dict, name: str, attack: bool) -> dict:
 UNARMED_ROW = re.compile(r"\bUnarmed Strike\b|\bFlurry of Blows\b")
 
 
-def rider_fits(when: str, made: str) -> str | None:
-    """Whether a class or feat rider can apply to an attack made with a weapon, an Unarmed Strike or a spell, read
-    from its own words ("a hit with a weapon", "an Unarmed Strike hit", "an artificer spell"), and when: "hit", or
-    "miss" for one used after a miss or before the outcome is known (Studied Attacks, Guided Strike). None when it
-    can't (the roll audit, Nov 10: Savage Attacker and Stunning Strike were listed on Eldritch Blast)."""
-    w = when.lower()
-    if "spell" in w:
-        fits = made == "spell"
-    elif "unarmed strike" in w or "flurry of blows" in w:
-        fits = made == "unarmed" or ("weapon" in w and made == "weapon")
-    elif "weapon" in w or "strength attack" in w or "melee hit" in w:
-        fits = made in ("weapon", "unarmed") if ("strength attack" in w or "melee hit" in w) else made == "weapon"
-    else:
-        fits = True
-    if not fits:
-        return None
-    return "miss" if ("miss" in w or "before you know if it hits" in w) and "hit with" not in w else "hit"
+def traits(sheet: dict, o: dict, made: str) -> set[str]:
+    """What an attack is made with, as the rules data's `with` names it (app/data/rules: "melee_weapon",
+    "ranged_weapon", "finesse", "heavy_weapon", "monk_weapon", "unarmed", "spell"), from the sheet's own attack
+    (its range and properties, and D&D Beyond's Monk weapon flag). A row that isn't one weapon (an Opportunity
+    Attack, a form's attack) counts as a melee weapon that may be a Monk weapon."""
+    if made in ("spell", "unarmed"):
+        return {made}
+    out = {"weapon"}
+    a = next((a for a in sheet.get("attacks") or [] if a.get("key") == o.get("key") or a.get("name") == o.get("name")), None)
+    if a is None:
+        return out | {"melee_weapon", "monk_weapon"}
+    props = {p.lower() for p in a.get("properties") or []}
+    ranged = "(" in str(a.get("range") or "") and "thrown" not in props  # (a thrown weapon is still a melee weapon)
+    out.add("ranged_weapon" if ranged else "melee_weapon")
+    out |= {"finesse"} if "finesse" in props else set()
+    out |= {"heavy_weapon"} if "heavy" in props else set()
+    out |= {"monk_weapon"} if a.get("martial_arts") else set()
+    return out
+
+
+def applies(add: dict, have: set[str]) -> bool:
+    """Whether an add (or a spell cast after a hit) can go with this attack: its `with`, or any attack when it names none."""
+    return not add.get("with") or bool(set(add["with"]) & have)
+
+
+def _act(a: dict) -> dict | None:
+    """An add's op as what pressing it does on the card (rider_act's shape)."""
+    op = a.get("op")
+    if op == "save":
+        return {"kind": "save", "save": a["save"], "dc": a.get("dc", ""), **({"spend": a["spend"]} if a.get("spend") else {})}
+    if op == "type":
+        return {"kind": "change", "type": a["type"]}
+    if op == "twice":
+        return {"kind": "change", "twice": "1"}
+    return None
 
 
 def rider_act(sheet: dict, act: dict | None) -> dict | None:
@@ -271,14 +276,7 @@ def rider_act(sheet: dict, act: dict | None) -> dict | None:
     return out
 
 
-def monk_weapon(sheet: dict, o: dict) -> bool:
-    """Whether an attack is with a Monk weapon (2024 PHB: Simple Melee weapons and Martial Melee weapons with Light), as
-    D&D Beyond marks the sheet's attacks (`martial_arts`). A row that isn't one weapon (an Opportunity Attack) may be."""
-    a = next((a for a in sheet.get("attacks") or [] if a.get("key") == o.get("key") or a.get("name") == o.get("name")), None)
-    return bool(a.get("martial_arts")) if a else True
-
-
-def spell_riders(sheet: dict, made: str) -> list[dict]:
+def spell_riders(sheet: dict, have: set[str]) -> list[dict]:
     """Spells cast right after a hit that add to it (Divine Smite: its recipe's `on_hit`), as riders the card can press:
     their dice at each level they can be cast at, and the ways to cast them now (a slot, a free use)."""
     from app import casting, house_rules
@@ -286,7 +284,8 @@ def spell_riders(sheet: dict, made: str) -> list[dict]:
     out = []
     for sp in sheet.get("spells") or []:
         rec = house_rules.spell(sp["name"]) or sp.get("roll") or {}
-        if not rec.get("on_hit") or not rider_fits(rec["on_hit"], made):
+        after = (rules_book.entry("spell", sp["name"]) or {}).get("after_hit")
+        if not rec.get("on_hit") or not after or not applies(after, have):
             continue
         e = {"name": sp["name"], "key": sp["key"], "level": sp.get("level") or 0, "uses": sp.get("uses"), "from": sp.get("free_from") or "",
              "avgs": {}, "higher": True, "ritual": bool(sp.get("ritual"))}  # (what casting.ways reads of a Spell Book entry)
@@ -327,8 +326,10 @@ def plan(sheet: dict, o: dict) -> dict:
     recipe = rr.feature(o["name"]) if o.get("kind") == "feature" and rr.feature(o["name"]) is not None else o.get("recipe")
     rsrc = _recipe_source(o)
     events = (recipe or {}).get("events") or []
-    if not events and (mod := rr.modifier(o["name"])):  # it changes another roll: Guidance, Sneak Attack, Deflect Attacks
-        out["modifier"], src["modifier"] = _modifier(o["name"], mod, sheet), "checked"
+    mod = next((a for a in rules_book.adds(sheet) if a.get("op", "add") == "add" and (a.get("amount") or a.get("reduces"))
+                and rules_book._norm(o["name"]).endswith(rules_book._norm(a["name"]))), None) if not events else None
+    if mod:  # it changes another roll: Guidance, Sneak Attack, Deflect Attack ("Channel Divinity: Guided Strike" is Guided Strike's)
+        out["modifier"], src["modifier"] = _modifier(mod) | {"name": o["name"]}, "checked"
         out["steps"], out["status"] = ["modify"], "ready"
         out["modifiers"] = []
         return out
@@ -384,20 +385,23 @@ def plan(sheet: dict, o: dict) -> dict:
         src["heal" if o.get("heal") else "damage"] = "sheet" if sheet_part else "text"
 
     spell = {"level": o.get("level") or 0, "types": {p["type"] for p in out["damage"] if p.get("type")}} if o.get("kind") == "spell" and out["damage"] else None
-    out["modifiers"] = modifiers_for(sheet, "attack" if out["attack"] else "save" if out["save"] else "", spell)
+    made = "spell" if o.get("kind") == "spell" else "unarmed" if UNARMED_ROW.search(f"{o['name']} {o.get('meta') or ''}") else "weapon"
+    have = traits(sheet, o, made)
+    out["modifiers"] = modifiers_for(sheet, "attack" if out["attack"] else "save" if out["save"] else "", spell, have)
     if out["attack"] or (out["damage"] and o.get("kind") == "attack"):
         for t in o.get("tags") or []:  # the weapon's mastery, if you've mastered it (character_views: "Mastery: Vex")
             if t.startswith("Mastery: ") and (m := t[9:]) in class_rules.MASTERIES:
                 out["riders"].append({"name": m, "when": "miss" if m == "Graze" else "hit", "says": class_rules.MASTERIES[m], "on": "mastery"})
-        pills = {m["name"].split(": ")[-1] for m in out["modifiers"]}  # ("Channel Divinity: Guided Strike" is Guided Strike's pill)
-        made = "spell" if o.get("kind") == "spell" else "unarmed" if UNARMED_ROW.search(f"{o['name']} {o.get('meta') or ''}") else "weapon"
-        for r in class_rules.turn(sheet)["riders"]:  # what you can add once it hits (Stunning Strike, Divine Smite…)
-            if "Monk weapon" in r["when"] and made == "weapon" and not monk_weapon(sheet, o):
-                continue  # (Stunning Strike on a Dart: not a Monk weapon, 2024 PHB; D&D Beyond's own flag says which are)
-            if r["name"] not in pills and (when := rider_fits(r["when"], made)):  # (one already a pill isn't said twice)
-                out["riders"].append({"name": r["name"], "when": when, "says": r["effect"], "on": r["when"],
-                                      **({"act": act} if (act := rider_act(sheet, r.get("act"))) else {})})
-        out["riders"] += spell_riders(sheet, made)
+        # what you can add once it hits or misses that isn't dice (dice are the modifiers' pills): words, a save, a change
+        for a in rules_book.adds(sheet):
+            if a.get("op") not in ("words", "save", "type", "twice") or not applies(a, have):
+                continue
+            if a["when"] == "before":  # (chosen before the roll: Reckless Attack)
+                out["notes"].append(f"{a['name']}: {a.get('says') or ''}".rstrip(": "))
+                continue
+            out["riders"].append({"name": a["name"], "when": "miss" if a["when"] == "on_miss" else "hit", "says": a.get("says") or "",
+                                  "on": a.get("trigger") or "", **({"act": act} if (act := rider_act(sheet, _act(a))) else {})})
+        out["riders"] += spell_riders(sheet, have)
 
     steps = (["choose"] if out["choice"] else []) + (["attack"] if out["attack"] else []) + (["save"] if out["save"] else [])
     if out["damage"]:
@@ -411,47 +415,42 @@ def plan(sheet: dict, o: dict) -> dict:
     return out
 
 
-def _modifier(name: str, mod: dict, sheet: dict) -> dict:
-    out = {"name": name, **{k: v for k, v in mod.items() if k not in ("why", "checked")}, "why": mod.get("why", "")}
-    for k in ("adds", "reduces"):
-        if mod.get(k):
-            out[k] = fill(mod[k], sheet)
-    return out
+MODIFIER_WHEN = ("before", "after_roll", "after_fail", "on_hit", "on_damage", "damage_taken")
 
 
-def _has(sheet: dict) -> set[str]:
-    """The names of what the character has: features, actions, spells (what a modifier is named after), and an item
-    marked with its kind, as "<item>: <kind>" ("Dragon-Touched Focus: Chromatic", its player's mark)."""
-    names = {a.get("name") for a in sheet.get("actions") or []} | {s.get("name") for s in sheet.get("spells") or []}
-    names |= {f.get("name") for f in sheet.get("features") or [] if isinstance(f, dict)}
-    choices = sheet.get("_item_choices") or {}
-    for it in sheet.get("inventory") or []:
-        if (kind := choices.get(str(it.get("key", "")).split(":", 1)[-1])) and it.get("equipped"):
-            names.add(f"{(it.get('base_name') or it.get('name') or '').split(' (')[0]}: {kind}")
-    return {n for n in names if n}
+def _modifier(a: dict) -> dict:
+    """An add as the card's modifier (a pill): its `amount` as `adds`, its damage types as `types`."""
+    out = {("adds" if k == "amount" else "types" if k == "damage_types" else k): v for k, v in a.items()
+           if k not in ("trigger", "effect", "source", "_kind", "with", "op")}
+    return out | {"why": a.get("why", "")}
 
 
-def modifiers_for(sheet: dict, roll: str, spell: dict | None = None) -> list[dict]:
-    """What this character can do to a roll of this kind ("attack", "save", "check"): their own modifiers, each with
-    when it applies (before, after a failure, on a hit). Bless and the like, given by others, come from the table.
-    `spell` ({"level", "types"}): a spell's damage, which takes what adds to spell damage (Arcane Firearm; a Chromatic
-    Dragon-Touched Focus, only with a slot and only for its damage types; a type the caster picks counts)."""
+def modifiers_for(sheet: dict, roll: str, spell: dict | None = None, have: set[str] | None = None) -> list[dict]:
+    """What this character can do to a roll of this kind ("attack", "save", "check") that adds or takes away a number:
+    their own (app/rules_book.py `adds`: a class feature at its level, a feat, a spell or feature they have, a marked
+    item), each with when it applies (before, after the roll, after a failure, on a hit). Bless and the like, given by
+    others, come from the table. `have`: an attack's traits, for what applies only with some (Radiant Strikes: a melee
+    weapon or an Unarmed Strike). `spell` ({"level", "types"}): a spell's damage, which takes what adds to spell
+    damage (Arcane Firearm; a Chromatic Dragon-Touched Focus, only with a slot and only for its damage types)."""
     if not roll and spell is None:
         return []
-    has = _has(sheet)
     out = []
-    for name in sorted(has):
-        mod = rr.modifier(name)
-        if not mod or mod.get("gives") or mod.get("from"):
+    for a in sorted(rules_book.adds(sheet), key=lambda a: a["name"]):
+        if a.get("op", "add") != "add" or not (a.get("amount") or a.get("reduces")) or a.get("gives") or a.get("from"):
             continue
-        if roll and (roll in mod.get("to") or (roll == "attack" and mod.get("when") == "on_hit")):
-            out.append(_modifier(name, mod, sheet))
-        elif spell is not None and "spell damage" in (mod.get("to") or []):
-            if mod.get("slot") and not spell.get("level"):
-                continue  # (a cantrip uses no slot)
-            if mod.get("types") and spell.get("types") and not set(mod["types"]) & spell["types"]:
+        if a["when"] not in MODIFIER_WHEN:
+            continue
+        to = a.get("to") or []
+        if roll and (roll in to or (roll == "attack" and a["when"] == "on_hit")):
+            if roll == "attack" and have is not None and not applies(a, have):
                 continue
-            out.append(_modifier(name, mod, sheet))
+            out.append(_modifier(a))
+        elif spell is not None and "spell damage" in to:
+            if a.get("slot") and not spell.get("level"):
+                continue  # (a cantrip uses no slot)
+            if a.get("damage_types") and spell.get("types") and not set(a["damage_types"]) & spell["types"]:
+                continue
+            out.append(_modifier(a))
     return out
 
 

@@ -5,9 +5,11 @@ app/rules_data.py reads it (app/data/srd/).
 
 For each spell, the rules text is read sentence by sentence: every dice expression must end up in the
 recipe (damage, healing, Temporary Hit Points, upcasting, cantrip growth) or be marked as not a roll you
-make (durations, a target's bonus die such as Bless, numbers on a table). Recipes the reader can't get
-right on its own are written by hand in scripts/roll_overrides.json, each with the reason; those are
-checked against the same text. The report, docs/rules/rolls-audit.md, lists every spell, Beast attack
+make (durations, a target's bonus die such as Bless, numbers on a table). Everything written by hand is in
+app/data/rules/<book>.json, one file per book (the Roll Data Review, Nov 10: docs/artifacts/roll-data-review.html):
+each entry a spell, feature, item or the like, with what it rolls when used (`rolls`), what it adds to another roll
+(`adds`) and what using an item rolls (`use`), in askdnd's own words, never book text. Those are checked against the
+same text and compiled here into app/data/roll_recipes.json, the one file the app reads. The report, docs/rules/rolls-audit.md, lists every spell, Beast attack
 and item with its recipe and how it was checked.
 
     uv run python scripts/roll_audit.py              # rebuild
@@ -31,7 +33,41 @@ OUT = ROOT / "app" / "data" / "roll_recipes.json"
 # Extra damage added to each hit while the spell lasts, not damage dealt when it's cast (feedback 48, Nov 7: Hunter's Mark
 # rolled its 1d6 on casting). The 2024 smites ("As you hit the target") are cast on the hit, so they stay "auto".
 RIDER = re.compile(r"\bextra\b[^.]*\b(?:whenever you hit|on a hit|when (?:it|you) hits?)\b|\b(?:whenever you hit|on a hit)\b[^.]*\bextra\b", re.I)
-OVERRIDES = ROOT / "scripts" / "roll_overrides.json"
+BOOKS = ROOT / "app" / "data" / "rules"
+# An entry's `rolls` say how each resolves and what it does; the compiled recipe keeps one word for both (`on`)
+ON = {("attack", "damage", None): "hit", ("save", "damage", None): "save", ("none", "damage", None): "auto",
+      ("none", "heal", None): "heal", ("none", "temp", None): "temp", ("none", "dice", None): "plain", ("none", "damage", "on_hit"): "rider"}
+
+
+def _event(e: dict) -> dict:
+    out = {"name": e["name"], "on": ON[(e["resolve"], e["effect"], e.get("when"))], "parts": e["dice"]}
+    return out | {k: v for k, v in e.items() if k not in ("name", "resolve", "effect", "when", "dice")}
+
+
+def _recipe(e: dict) -> dict:
+    """An entry as the compiled recipe it was before the book files: events, its `on_hit` and the rest as they are."""
+    out = {k: v for k, v in e.items() if k not in ("kind", "name", "rolls", "after_hit", "adds", "book")}
+    if "rolls" in e:
+        out["events"] = [_event(x) for x in e["rolls"]]
+    if "after_hit" in e:  # (cast right after a hit: its words; app/rules_book.py reads what it goes with)
+        out["on_hit"] = e["after_hit"]["says"] if isinstance(e["after_hit"], dict) else e["after_hit"]
+    return out
+
+
+def from_books() -> dict:
+    """The book files (app/data/rules/*.json) as the hand-written recipes the build reads, by kind and book."""
+    hand = {"spells": {}, "phb_spells": {}, "other_spells": {}, "items": {}, "features": {}, "modifiers": {}}
+    for f in sorted(BOOKS.glob("*.json")):
+        data = json.loads(f.read_text())
+        for e in data["entries"]:
+            if e["kind"] == "spell" and ("rolls" in e or "after_hit" in e or e.get("why")):
+                where = {"srd-5.2.1": "spells", "phb-2024": "phb_spells"}.get(data["book"], "other_spells")
+                hand[where][e["name"]] = {"events": [], **_recipe(e)} | ({"book": e["book"]} if where == "other_spells" else {})
+            elif e["kind"] == "item" and ({"rolls", "use", "self"} & set(e)):
+                hand["items"][e["name"]] = _recipe(e)
+            elif e["kind"] in ("feature", "feat", "species") and "rolls" in e:  # (a feat's or species trait's roll is played as a feature's)
+                hand["features"][e["name"]] = _recipe(e)
+    return hand
 REPORT = ROOT / "docs" / "rules" / "rolls-audit.md"
 CREDIT = "Roll recipes for spells in the SRD 5.2.1 (attribution in app/data/srd/README.md), written by askdnd from the rules text."
 
@@ -213,7 +249,7 @@ def build() -> int:
     # the text the reader reads: the description and what a higher slot or level adds
     spells = [{"name": s["name"], "level": s["level"], "desc": s["text"], "higher_level": s["higher_levels"] or s["cantrip_upgrade"]}
               for s in rules_data.srd("spell")]
-    hand = json.loads(OVERRIDES.read_text()) if OVERRIDES.exists() else {}
+    hand = from_books()
     overrides = hand.get("spells") or {}
     out, report, problems = {}, [], 0
     for s in sorted(spells, key=lambda s: s["name"]):
@@ -244,8 +280,10 @@ def build() -> int:
         phb = phb_text(name)
         missing = [d for d in recipe_dice(recipe) if phb is not None and d not in dice_in(phb)]
         problems += bool(missing)
-        out[name] = {**recipe, "checked": "by hand (PHB)"}
-        phb_rows.append((name, recipe.get("level") or 0, recipe, f"by hand: {o['why']}" + (f"; **not in the PHB text: {missing}**" if missing else "")))
+        read = o.get("checked") == "read from the 2024 PHB"  # (scripts/rules_from_books.py: read like the SRD's, not by hand)
+        out[name] = {**recipe, "checked": "read from the 2024 PHB" if read else "by hand (PHB)"}
+        phb_rows.append((name, recipe.get("level") or 0, recipe, ("read from the 2024 PHB" if read else f"by hand: {o.get('why', '')}")
+                         + (f"; **not in the PHB text: {missing}**" if missing else "")))
     # spells from other books that the table's sheets have (Xanathar's, Tasha's, the 2014 PHB…): by hand, checked
     # against the spell's own words on the party's saved sheets (tests/fixtures/ddb)
     for name, o in sorted((hand.get("other_spells") or {}).items()):
@@ -264,8 +302,8 @@ def build() -> int:
     beasts = beast_rows()
     problems += sum(1 for r in beasts if r[3].startswith("**"))
     features = {n: {**{k: v for k, v in f.items() if k != "why"}, "checked": "by hand"} for n, f in (hand.get("features") or {}).items()}
-    modifiers = {n: {**m, "checked": "by hand"} for n, m in (hand.get("modifiers") or {}).items()}
-    OUT.write_text(json.dumps({"credit": CREDIT, "spells": out, "items": items, "features": features, "modifiers": modifiers},
+    # (what a spell or feature does to another roll, its `adds`, is read from the book files themselves: app/rules_book.py)
+    OUT.write_text(json.dumps({"credit": CREDIT, "spells": out, "items": items, "features": features},
                               indent=1, sort_keys=True) + "\n")
     write_report(report, phb_rows, [(n, 0, {k: v for k, v in o.items() if k != "why"}, o["why"]) for n, o in sorted((hand.get("items") or {}).items())],
                  beasts, campaign_rows(out) if "--campaign" in sys.argv else None)
@@ -343,7 +381,7 @@ def write_report(rows, phb_rows=(), item_rows=(), beast_rows_=(), campaign=None)
              "How askdnd rolls each SRD 5.2.1 spell that has dice, generated by `scripts/roll_audit.py` from the 2024 rules",
              "text (the SRD, CC-BY-4.0, in `app/data/srd/`). \"read from the text\": every dice expression in the description",
              "is used by the recipe or is not a roll you make (a target's bonus die, a duration). \"by hand\": written in",
-             "`scripts/roll_overrides.json` because the text needs judgment; the reason is given. Don't edit this file: run",
+             "`app/data/rules/<book>.json` because the text needs judgment; the reason is given. Don't edit this file: run",
              "the script.", "", "| Spell | Level | How it rolls | Checked |", "|---|---|---|---|"]
     for name, level, recipe, how in rows:
         lines.append(f"| {name} | {level or 'cantrip'} | {describe(recipe)} | {how} |")

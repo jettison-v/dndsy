@@ -1,0 +1,95 @@
+{
+ "book": "dmg-2024",
+ "about": "Dungeon Master's Guide (2024): mechanics only, in askdnd's own words; never book text",
+ "entries": [
+  {
+   "kind": "item",
+   "name": "Dust of Sneezing and Choking",
+   "why": "You and every creature in a 30-foot Emanation make a DC 15 Constitution save (2024 DMG)",
+   "use": {
+    "save": "Con",
+    "dc": 15,
+    "says": "you and every creature within 30 feet; on a failure, Incapacitated and suffocating, repeating the save at the end of each turn"
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Hammer of Thunderbolts",
+   "why": "Spend 1 charge to throw it (20/60 ft); on a hit, the target and creatures within 30 feet make a DC 17 Constitution save (2024 DMG)",
+   "use": {
+    "attack": true,
+    "says": "thrown: range 20/60 ft; it flies back to your hand",
+    "rider": {
+     "name": "Thunderclap",
+     "save": "Con",
+     "dc": 17,
+     "says": "the target and every creature within 30 feet of it other than you: Stunned until the end of your next turn on a failure"
+    }
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Hat of Wizardry",
+   "why": "Unknown Spell: a DC 10 Intelligence (Arcana) check to cast a Wizard cantrip you don't know (2024 DMG)",
+   "use": {
+    "check": "Arcana",
+    "dc": 10,
+    "says": "on a success you cast the cantrip; on a failure the action is wasted"
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Keoghtom's Ointment",
+   "why": "a dose heals 2d8 + 2 (the jar's 1d4 + 1 doses are counted when it's found)",
+   "rolls": [
+    {
+     "name": "Keoghtom's Ointment",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "2d8+2"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Necklace of Prayer Beads",
+   "why": "Each bead casts its spell as a Bonus Action with your spell save DC, once until the next dawn; the DM sets the beads (2024 DMG)",
+   "use": {
+    "beads": [
+     {
+      "name": "Bead of Blessing",
+      "spell": "Bless",
+      "level": 1
+     },
+     {
+      "name": "Bead of Curing",
+      "spell": "Cure Wounds",
+      "level": 2
+     },
+     {
+      "name": "Bead of Favor",
+      "spell": "Greater Restoration",
+      "level": 5
+     },
+     {
+      "name": "Bead of Smiting",
+      "spell": "Shining Smite",
+      "level": 2
+     },
+     {
+      "name": "Bead of Summons",
+      "spell": "Guardian of Faith",
+      "level": 4
+     },
+     {
+      "name": "Bead of Wind Walking",
+      "spell": "Wind Walk",
+      "level": 6
+     }
+    ]
+   }
+  }
+ ]
+}

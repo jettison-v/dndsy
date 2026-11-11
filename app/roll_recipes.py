@@ -62,14 +62,26 @@ def spell(name: str) -> dict | None:
 
 def feature(name: str) -> dict | None:
     """The recipe for a class feature's roll by its Battle name ("Second Wind"), parts with {tokens} the sheet fills in
-    (app/roll_plan.py): {level:Fighter}, {mod:dexterity}, {martial_arts}, {sneak}, {lands_aid}, {bardic}."""
-    return (recipes().get("features") or {}).get((name or "").replace("'", "’")) or (recipes().get("features") or {}).get(name or "")
+    (app/rules_book.py `fill`: {level:Fighter}, {mod:dexterity}, N{martial_arts}, {sneak}, {lands_aid}, {bardic}…). D&D
+    Beyond's own names match too: curly apostrophes, and the part after a prefix ("Channel Divinity: Divine Spark")."""
+    all_ = recipes().get("features") or {}
+    norm = lambda n: re.sub(r"\s+", " ", (n or "").replace("’", "'")).strip().lower()  # noqa: E731
+    keys = {norm(k): k for k in all_}
+    want = norm(name)
+    hit = keys.get(want) or (keys.get(want.split(": ", 1)[1]) if ": " in want else None)
+    return all_.get(hit) if hit else None
 
 
 def modifier(name: str) -> dict | None:
-    """What a feature or spell does to another roll (Bless, Guidance, Favored by the Gods, Sneak Attack, Deflect Attacks…):
-    when ("before", "after_fail", "on_hit", "on_damage", "damage_taken"), what it's for, what it adds or reduces."""
-    return (recipes().get("modifiers") or {}).get(name or "")
+    """What a feature or spell does to another roll by its name (Bless, Guidance, Sneak Attack, Deflect Attack…), as it
+    stands in the rules book (app/rules_book.py), its numbers not yet filled from a sheet: when, what it's for, what it
+    adds (`adds`) or reduces."""
+    from app import rules_book
+
+    want = rules_book._norm(name)
+    a = next((a for e in rules_book.entries() for a in e.get("adds") or []
+              if rules_book._norm(a["name"]) == want and a.get("op", "add") == "add" and (a.get("amount") or a.get("reduces"))), None)
+    return {("adds" if k == "amount" else "types" if k == "damage_types" else k): v for k, v in a.items() if k != "name"} if a else None
 
 
 def item(name: str) -> dict | None:

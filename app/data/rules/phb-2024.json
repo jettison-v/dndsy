@@ -1,0 +1,2551 @@
+{
+ "book": "phb-2024",
+ "about": "Player's Handbook (2024): mechanics only, in askdnd's own words, checked against Brett's offline copy; never book text",
+ "scales": {
+  "martial_arts": {
+   "by": "Monk",
+   "die": true,
+   "at": {
+    "1": 6,
+    "5": 8,
+    "11": 10,
+    "17": 12
+   },
+   "why": "the Martial Arts die"
+  },
+  "bardic": {
+   "by": "Bard",
+   "die": true,
+   "at": {
+    "1": 6,
+    "5": 8,
+    "10": 10,
+    "15": 12
+   },
+   "why": "the Bardic Inspiration die"
+  },
+  "sneak": {
+   "by": "Rogue",
+   "at": {
+    "1": 1,
+    "3": 2,
+    "5": 3,
+    "7": 4,
+    "9": 5,
+    "11": 6,
+    "13": 7,
+    "15": 8,
+    "17": 9,
+    "19": 10
+   },
+   "why": "Sneak Attack's d6s"
+  },
+  "rage": {
+   "by": "Barbarian",
+   "at": {
+    "1": 2,
+    "9": 3,
+    "16": 4
+   },
+   "why": "Rage Damage"
+  },
+  "lands_aid": {
+   "by": "Druid",
+   "at": {
+    "3": 2,
+    "10": 3,
+    "14": 4
+   },
+   "why": "Land's Aid's d6s (Circle of the Land)"
+  },
+  "psionic": {
+   "by": "Fighter",
+   "die": true,
+   "at": {
+    "3": 6,
+    "5": 8,
+    "11": 10,
+    "17": 12
+   },
+   "why": "the Psionic Energy die (Psi Warrior)"
+  },
+  "divine_spark": {
+   "by": "Cleric",
+   "at": {
+    "2": 1,
+    "7": 2,
+    "13": 3,
+    "18": 4
+   },
+   "why": "Divine Spark's d8s"
+  },
+  "starry": {
+   "by": "Druid",
+   "at": {
+    "3": 1,
+    "10": 2
+   },
+   "why": "Starry Form's Archer and Chalice d8s (2d8 from Twinkling Constellations)"
+  },
+  "superiority": {
+   "by": "Fighter",
+   "die": true,
+   "at": {
+    "3": 8,
+    "10": 10,
+    "18": 12
+   },
+   "why": "the Battle Master's Superiority Die"
+  },
+  "breath": {
+   "by": "character",
+   "at": {
+    "1": 1,
+    "5": 2,
+    "11": 3,
+    "17": 4
+   },
+   "why": "the Dragonborn's Breath Weapon d10s"
+  }
+ },
+ "entries": [
+  {
+   "kind": "feat",
+   "name": "Boon of Energy Resistance",
+   "why": "Epic Boon: a Reaction when you take your chosen damage type, a creature within 60 ft makes a Dex save (DC 8 + Con + PB) or takes 2d12 + Constitution of that type",
+   "rolls": [
+    {
+     "name": "Dex save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d12+{mod:constitution}"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Boon of Fate",
+   "why": "Epic Boon: when you or a creature within 60 ft succeeds or fails a D20 Test, roll 2d4 as a bonus or penalty (once per Initiative or Rest)",
+   "adds": [
+    {
+     "name": "Boon of Fate",
+     "when": "after_roll",
+     "to": [
+      "attack",
+      "save",
+      "check"
+     ],
+     "amount": "2d4",
+     "says": "after the roll, as a bonus or a penalty",
+     "cost": "once until you roll Initiative or rest"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Charger",
+   "adds": [
+    {
+     "name": "Charger",
+     "trigger": "Once per turn, a melee hit in the Attack action after moving 10+ ft straight at the target",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "melee_weapon"
+     ],
+     "amount": "1d8",
+     "once": "a turn",
+     "pressed": false,
+     "effect": "+1d8 damage, or push it 10 ft"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Grappler",
+   "adds": [
+    {
+     "name": "Grappler",
+     "trigger": "Once per turn, an Unarmed Strike hit in the Attack action",
+     "says": "Deal damage and also Grapple",
+     "when": "on_hit",
+     "with": [
+      "unarmed"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Great Weapon Master",
+   "adds": [
+    {
+     "name": "Great Weapon Master",
+     "trigger": "A hit with a Heavy weapon as part of the Attack action",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "heavy_weapon"
+     ],
+     "amount": "{pb}",
+     "effect": "+{pb} damage; after a Critical Hit or dropping a creature to 0 HP with a melee weapon, one more attack as a Bonus Action"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Interception",
+   "why": "Fighting Style: a Reaction when a creature hits another within 5 ft of you, reduce that damage by 1d10 + Proficiency Bonus",
+   "rolls": [
+    {
+     "name": "Reduces the damage by",
+     "resolve": "none",
+     "effect": "dice",
+     "dice": [
+      "1d10+{pb}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Mage Slayer",
+   "adds": [
+    {
+     "name": "Mage Slayer",
+     "trigger": "When you damage a concentrating creature",
+     "says": "It has Disadvantage on the save to keep Concentration",
+     "when": "on_damage",
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Savage Attacker",
+   "adds": [
+    {
+     "name": "Savage Attacker",
+     "trigger": "Once per turn, a hit with a weapon",
+     "says": "Roll the weapon's damage dice twice and use either roll",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "twice",
+     "once": "a turn"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Shield Master",
+   "adds": [
+    {
+     "name": "Shield Master",
+     "trigger": "A melee weapon hit in the Attack action on a creature within 5 ft (once per turn)",
+     "says": "Shield Bash: Str save DC {dc_str} or pushed 5 ft or Prone",
+     "when": "on_hit",
+     "with": [
+      "melee_weapon"
+     ],
+     "op": "save",
+     "save": "Str",
+     "dc": "{dc:strength}",
+     "once": "a turn"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Tavern Brawler",
+   "adds": [
+    {
+     "name": "Tavern Brawler",
+     "trigger": "Once per turn, an Unarmed Strike hit in the Attack action",
+     "says": "Deal damage and also push it 5 ft",
+     "when": "on_hit",
+     "with": [
+      "unarmed"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Assassinate",
+   "class": "Rogue",
+   "level": 3,
+   "sub": "Assassin",
+   "adds": [
+    {
+     "name": "Assassinate",
+     "trigger": "First round of combat",
+     "says": "Advantage against creatures that haven't acted; a Sneak Attack hit adds +{lv} damage",
+     "when": "on_hit",
+     "with": [
+      "finesse",
+      "ranged_weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Aura of Protection",
+   "class": "Paladin",
+   "level": 6,
+   "why": "you and allies in your aura add your Charisma modifier (at least +1) to saving throws",
+   "adds": [
+    {
+     "name": "Aura of Protection",
+     "when": "before",
+     "to": [
+      "save"
+     ],
+     "amount": "{mod:charisma}",
+     "says": "you and allies in the aura",
+     "pressed": true
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Bardic Inspiration",
+   "adds": [
+    {
+     "name": "Bardic Inspiration",
+     "why": "the creature can add the die to a D20 Test it fails (2024: after seeing it fail)",
+     "when": "after_fail",
+     "to": [
+      "attack",
+      "save",
+      "check"
+     ],
+     "amount": "1{bardic}",
+     "gives": true
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Brutal Strike",
+   "class": "Barbarian",
+   "level": 9,
+   "group": "brutal",
+   "adds": [
+    {
+     "name": "Brutal Strike",
+     "trigger": "One Strength attack you make with Reckless Attack, giving up its Advantage",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "melee_weapon",
+      "unarmed"
+     ],
+     "amount": "1d10",
+     "pressed": false,
+     "effect": "On a hit, +1d10 damage and a Brutal Strike effect (Forceful Blow or Hamstring Blow)"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Brutal Strike (2d10)",
+   "class": "Barbarian",
+   "level": 17,
+   "group": "brutal",
+   "adds": [
+    {
+     "name": "Brutal Strike (2d10)",
+     "trigger": "One Strength attack you make with Reckless Attack, giving up its Advantage",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "melee_weapon",
+      "unarmed"
+     ],
+     "amount": "2d10",
+     "pressed": false,
+     "effect": "On a hit, +2d10 damage and two different Brutal Strike effects"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Colossus Slayer",
+   "class": "Ranger",
+   "level": 3,
+   "sub": "Hunter",
+   "needs": "Colossus Slayer",
+   "adds": [
+    {
+     "name": "Colossus Slayer",
+     "trigger": "Once per turn, a hit with a weapon on a creature missing any Hit Points",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "1d8",
+     "once": "a turn",
+     "effect": "+1d8 damage"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Combat Superiority",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "adds": [
+    {
+     "name": "Combat Superiority",
+     "trigger": "When you attack or hit (depends on the maneuver)",
+     "cost": "1 Superiority Die",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "add",
+     "to": [
+      "damage"
+     ],
+     "amount": "1{superiority}",
+     "pressed": false,
+     "effect": "Use one of your maneuvers",
+     "says": "a maneuver that adds it to damage"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Cunning Strike",
+   "class": "Rogue",
+   "level": 5,
+   "adds": [
+    {
+     "name": "Cunning Strike",
+     "trigger": "When you deal Sneak Attack damage",
+     "says": "Give up Sneak Attack dice for an effect: Poison, Trip or Withdraw (1d6 each; save DC {dc_dex})",
+     "when": "on_hit",
+     "with": [
+      "finesse",
+      "ranged_weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Dark One's Own Luck",
+   "class": "Warlock",
+   "level": 6,
+   "sub": "Fiend Patron",
+   "why": "add 1d10 to an ability check or saving throw (Charisma modifier times a Long Rest)",
+   "adds": [
+    {
+     "name": "Dark One's Own Luck",
+     "when": "after_roll",
+     "to": [
+      "check",
+      "save"
+     ],
+     "amount": "1d10",
+     "says": "after you see the roll",
+     "cost": "a use"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Deflect Attack",
+   "adds": [
+    {
+     "name": "Deflect Attack",
+     "why": "Monk: reduce an attack's damage by 1d10 + Dexterity + Monk level",
+     "when": "damage_taken",
+     "to": [
+      "damage_taken"
+     ],
+     "reduces": "1d10+{mod:dexterity}+{level:Monk}"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Deflect Attack: Redirect Attack",
+   "why": "Monk: the target saves against your Monk DC or takes two rolls of your Martial Arts die + Dexterity, the attack's type; the reduction is Deflect Attacks'",
+   "rolls": [
+    {
+     "name": "Redirect Attack",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2{martial_arts}+{mod:dexterity}"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "note": "the same damage type as the attack you deflected"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Devious Strikes",
+   "class": "Rogue",
+   "level": 14,
+   "adds": [
+    {
+     "name": "Devious Strikes",
+     "trigger": "When you deal Sneak Attack damage",
+     "says": "Also Daze (2d6), Obscure (3d6) or Knock Out (6d6)",
+     "when": "on_hit",
+     "with": [
+      "finesse",
+      "ranged_weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Divine Fury",
+   "class": "Barbarian",
+   "level": 3,
+   "sub": "Path of the Zealot",
+   "adds": [
+    {
+     "name": "Divine Fury",
+     "trigger": "First creature you hit on each of your turns with a weapon or Unarmed Strike, while raging",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon",
+      "unarmed"
+     ],
+     "amount": "1d6+{half:Barbarian}",
+     "once": "a turn",
+     "effect": "+1d6+{half} Necrotic or Radiant"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Divine Spark",
+   "class": "Cleric",
+   "level": 2,
+   "why": "Channel Divinity: 1d8 + Wisdom (2d8 at 7, 3d8 at 13, 4d8 at 18) healing, or a Con save for that much Radiant or Necrotic damage, half on a success",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "{divine_spark}d8+{mod:wisdom}"
+     ]
+    },
+    {
+     "name": "Con save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "{divine_spark}d8+{mod:wisdom} radiant"
+     ],
+     "save": "Con",
+     "success": "half",
+     "note": "Radiant or Necrotic, your choice"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Divine Strike",
+   "class": "Cleric",
+   "level": 7,
+   "group": "divine-strike",
+   "needs": "Divine Strike",
+   "adds": [
+    {
+     "name": "Divine Strike",
+     "trigger": "Once on each of your turns, a hit with a weapon attack",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "1d8",
+     "once": "a turn",
+     "effect": "+1d8 Necrotic or Radiant"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Divine Strike (2d8)",
+   "class": "Cleric",
+   "level": 14,
+   "group": "divine-strike",
+   "needs": "Divine Strike",
+   "adds": [
+    {
+     "name": "Divine Strike (2d8)",
+     "trigger": "Once on each of your turns, a hit with a weapon attack",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "2d8",
+     "once": "a turn",
+     "effect": "+2d8 Necrotic or Radiant"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Dreadful Strike",
+   "class": "Ranger",
+   "level": 3,
+   "sub": "Gloom Stalker",
+   "adds": [
+    {
+     "name": "Dreadful Strike",
+     "trigger": "Once per turn, a hit with a weapon (uses equal to your Wisdom modifier per Long Rest)",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "2d6 psychic",
+     "once": "a turn",
+     "effect": "+2d6 Psychic"
+    }
+   ],
+   "group": "gloom-strike"
+  },
+  {
+   "kind": "feature",
+   "name": "Dreadful Strike (2d8)",
+   "class": "Ranger",
+   "level": 11,
+   "sub": "Gloom Stalker",
+   "group": "gloom-strike",
+   "adds": [
+    {
+     "name": "Dreadful Strike",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "2d8 psychic",
+     "once": "a turn",
+     "trigger": "Once per turn, a hit with a weapon (uses equal to your Wisdom modifier per Long Rest)",
+     "effect": "+2d8 Psychic (Stalker's Flurry); the target and creatures within 10 ft make a Wis save"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Dreadful Strikes",
+   "class": "Ranger",
+   "level": 3,
+   "sub": "Fey Wanderer",
+   "group": "fey-strikes",
+   "adds": [
+    {
+     "name": "Dreadful Strikes",
+     "trigger": "A hit with a weapon (each creature once per turn)",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "1d4 psychic",
+     "once": "a turn",
+     "effect": "+1d4 Psychic"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Dreadful Strikes (1d6)",
+   "class": "Ranger",
+   "level": 11,
+   "sub": "Fey Wanderer",
+   "group": "fey-strikes",
+   "adds": [
+    {
+     "name": "Dreadful Strikes (1d6)",
+     "trigger": "A hit with a weapon (each creature once per turn)",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "1d6 psychic",
+     "once": "a turn",
+     "effect": "+1d6 Psychic"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Eldritch Smite",
+   "class": "Warlock",
+   "level": 5,
+   "needs": "Eldritch Smite",
+   "adds": [
+    {
+     "name": "Eldritch Smite",
+     "trigger": "Once per turn, a hit with your pact weapon",
+     "says": "+1d8 Force plus 1d8 per slot level, and you can knock a Huge or smaller target Prone",
+     "cost": "1 Pact Magic slot",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Eldritch Strike",
+   "class": "Fighter",
+   "level": 10,
+   "sub": "Eldritch Knight",
+   "adds": [
+    {
+     "name": "Eldritch Strike",
+     "trigger": "A hit with a weapon",
+     "says": "The target has Disadvantage on its next save against your spell before the end of your next turn",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Elemental Affinity",
+   "class": "Sorcerer",
+   "level": 6,
+   "sub": "Draconic Sorcery",
+   "why": "add your Charisma modifier to one damage roll of a spell dealing your dragon's damage type",
+   "adds": [
+    {
+     "name": "Elemental Affinity",
+     "when": "on_damage",
+     "to": [
+      "spell damage"
+     ],
+     "amount": "{mod:charisma}",
+     "says": "a spell of your dragon's damage type"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Elemental Burst",
+   "class": "Monk",
+   "level": 6,
+   "sub": "Warrior of the Elements",
+   "why": "2 Focus Points: a 20-ft Sphere, Dex save, three rolls of your Martial Arts die of a chosen type, half on a success",
+   "rolls": [
+    {
+     "name": "Dex save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "3{martial_arts}"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "note": "Acid, Cold, Fire, Lightning or Thunder, your choice"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Elemental Empowered Strikes",
+   "class": "Monk",
+   "level": 17,
+   "sub": "Warrior of the Elements",
+   "adds": [
+    {
+     "name": "Elemental Empowered Strikes",
+     "trigger": "Once on each of your turns, a hit with an Unarmed Strike while Elemental Attunement is active",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "unarmed"
+     ],
+     "amount": "{martial_arts}",
+     "once": "a turn",
+     "pressed": false,
+     "effect": "+{ma} of the strike's damage type"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Empowered Evocation",
+   "class": "Wizard",
+   "level": 10,
+   "sub": "Evoker",
+   "why": "add your Intelligence modifier to one damage roll of a Wizard evocation spell",
+   "adds": [
+    {
+     "name": "Empowered Evocation",
+     "when": "on_damage",
+     "to": [
+      "spell damage"
+     ],
+     "amount": "{mod:intelligence}",
+     "says": "a Wizard evocation spell"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Empowered Strikes",
+   "class": "Monk",
+   "level": 6,
+   "adds": [
+    {
+     "name": "Empowered Strikes",
+     "trigger": "Every Unarmed Strike that deals damage",
+     "says": "It can deal Force damage instead of its normal type",
+     "when": "on_hit",
+     "with": [
+      "unarmed"
+     ],
+     "op": "type",
+     "type": "force"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Frenzy",
+   "class": "Barbarian",
+   "level": 3,
+   "sub": "Path of the Berserker",
+   "adds": [
+    {
+     "name": "Frenzy",
+     "trigger": "First target you hit on your turn with a Strength attack, while raging and using Reckless Attack",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "melee_weapon",
+      "unarmed"
+     ],
+     "amount": "{rage}d6",
+     "once": "a turn",
+     "effect": "+{rage}d6 damage"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Guided Strike",
+   "adds": [
+    {
+     "why": "War Domain: when you or a creature within 30 ft misses with an attack roll, +10 to that roll (2024 PHB); the Oath of Conquest's, chosen once the roll is seen, is in other-books (Xanathar's)",
+     "name": "Guided Strike",
+     "trigger": "When you (or, with your Reaction, a creature within 30 ft) miss with an attack roll",
+     "says": "after a miss",
+     "cost": "1 Channel Divinity",
+     "when": "after_fail",
+     "to": [
+      "attack"
+     ],
+     "amount": "10",
+     "short": "Guided Strike"
+    }
+   ],
+   "class": "Cleric",
+   "level": 3,
+   "sub": "War Domain"
+  },
+  {
+   "kind": "feature",
+   "name": "Hand of Harm",
+   "class": "Monk",
+   "level": 3,
+   "sub": "Warrior of Mercy",
+   "adds": [
+    {
+     "name": "Hand of Harm",
+     "trigger": "Once per turn, a hit with an Unarmed Strike that deals damage",
+     "cost": "1 Focus Point",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "unarmed"
+     ],
+     "amount": "{martial_arts}+{mod:wisdom}",
+     "once": "a turn",
+     "pressed": false,
+     "effect": "+{ma}+{mod_wis} Necrotic"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Hand of Healing",
+   "class": "Monk",
+   "level": 3,
+   "sub": "Warrior of Mercy",
+   "why": "1 Focus Point: restore a roll of your Martial Arts die + Wisdom",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "{martial_arts}+{mod:wisdom}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Hand of Ultimate Mercy",
+   "class": "Monk",
+   "level": 17,
+   "sub": "Warrior of Mercy",
+   "why": "5 Focus Points: a creature dead under 24 hours returns with 4d10 + Wisdom Hit Points",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "4d10+{mod:wisdom}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Healing Light",
+   "class": "Warlock",
+   "level": 3,
+   "sub": "Celestial Patron",
+   "why": "a Bonus Action: spend d6s from your pool (up to your Charisma modifier at once) to heal",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "{mod:charisma}d6"
+     ],
+     "note": "The most dice at once; spend fewer as you like"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Horde Breaker",
+   "class": "Ranger",
+   "level": 3,
+   "sub": "Hunter",
+   "needs": "Horde Breaker",
+   "adds": [
+    {
+     "name": "Horde Breaker",
+     "trigger": "Once on each of your turns, when you attack with a weapon",
+     "says": "One more attack with it against a different creature within 5 ft of the first",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Hurl Through Hell",
+   "class": "Warlock",
+   "level": 14,
+   "sub": "Fiend Patron",
+   "adds": [
+    {
+     "name": "Hurl Through Hell",
+     "trigger": "Once per turn, a hit with an attack roll (once per Long Rest, or spend a Pact Magic slot)",
+     "says": "Cha save DC {dc_cha} or 8d10 Psychic and Incapacitated until the end of your next turn",
+     "when": "on_hit",
+     "op": "save",
+     "save": "Cha",
+     "dc": "{dc:charisma}",
+     "once": "a turn"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Brutal Strike",
+   "class": "Barbarian",
+   "level": 13,
+   "adds": [
+    {
+     "name": "Improved Brutal Strike",
+     "trigger": "With Brutal Strike",
+     "says": "Also Staggering Blow or Sundering Blow",
+     "when": "on_hit",
+     "with": [
+      "melee_weapon",
+      "unarmed"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Cunning Strike",
+   "class": "Rogue",
+   "level": 11,
+   "adds": [
+    {
+     "name": "Improved Cunning Strike",
+     "trigger": "When you deal Sneak Attack damage",
+     "says": "Up to two Cunning Strike effects",
+     "when": "on_hit",
+     "with": [
+      "finesse",
+      "ranged_weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Warding Flare",
+   "class": "Cleric",
+   "level": 6,
+   "sub": "Light Domain",
+   "why": "with Warding Flare: the attack's target gains 2d6 + Wisdom Temporary Hit Points",
+   "rolls": [
+    {
+     "name": "Temporary Hit Points",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "2d6+{mod:wisdom}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Inspiring Smite",
+   "class": "Paladin",
+   "level": 3,
+   "sub": "Oath of Glory",
+   "why": "after Divine Smite, Channel Divinity: 2d8 + Paladin level Temporary Hit Points shared among creatures within 30 ft",
+   "rolls": [
+    {
+     "name": "Temporary Hit Points",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "2d8+{level:Paladin}"
+     ],
+     "note": "Shared among creatures of your choice within 30 ft, you included"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Land’s Aid: Damage",
+   "why": "Circle of the Land: a Con save in a 10-ft sphere, half on a success; 3d6 at Druid level 10, 4d6 at 14",
+   "rolls": [
+    {
+     "name": "Land's Aid",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "{lands_aid}d6 necrotic"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Land’s Aid: Heal",
+   "why": "Circle of the Land: one creature in the area regains the same dice",
+   "rolls": [
+    {
+     "name": "Land's Aid",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "{lands_aid}d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Lifedrinker",
+   "class": "Warlock",
+   "level": 9,
+   "needs": "Lifedrinker",
+   "adds": [
+    {
+     "name": "Lifedrinker",
+     "trigger": "Once per turn, a hit with your pact weapon",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "1d6",
+     "pressed": false,
+     "effect": "+1d6 Necrotic, Psychic or Radiant; you can spend a Hit Point Die to heal"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Lunar Form",
+   "class": "Druid",
+   "level": 14,
+   "sub": "Circle of the Moon",
+   "why": "once per turn, an extra 2d10 Radiant to a target hit with a Wild Shape form's attack",
+   "adds": [
+    {
+     "name": "Lunar Form",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "amount": "2d10 radiant",
+     "with": [
+      "weapon"
+     ],
+     "once": "a turn",
+     "pressed": false,
+     "says": "a Wild Shape form's attack"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Misty Escape",
+   "class": "Warlock",
+   "level": 6,
+   "sub": "Archfey Patron",
+   "why": "Dreadful Step: a Wis save or 2d10 Psychic for creatures within 5 ft of either space",
+   "rolls": [
+    {
+     "name": "Wis save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d10 psychic"
+     ],
+     "save": "Wis",
+     "success": "none"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Open Hand Technique",
+   "class": "Monk",
+   "level": 3,
+   "sub": "Warrior of the Open Hand",
+   "adds": [
+    {
+     "name": "Open Hand Technique",
+     "trigger": "Each hit from a Flurry of Blows attack",
+     "says": "Addle (no Opportunity Attacks), Push (Str save DC {dc_wis}, 15 ft) or Topple (Dex save DC {dc_wis}, Prone)",
+     "when": "on_hit",
+     "with": [
+      "unarmed"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Peerless Skill",
+   "class": "Bard",
+   "level": 14,
+   "sub": "College of Lore",
+   "why": "after a failed ability check or attack roll: spend Bardic Inspiration and add its die",
+   "adds": [
+    {
+     "name": "Peerless Skill",
+     "when": "after_fail",
+     "to": [
+      "check",
+      "attack"
+     ],
+     "amount": "1{bardic}",
+     "cost": "a Bardic Inspiration use"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Precision Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "why": "a maneuver: add a Superiority Die to an attack roll that missed",
+   "adds": [
+    {
+     "name": "Precision Attack",
+     "when": "after_fail",
+     "to": [
+      "attack"
+     ],
+     "amount": "1{superiority}",
+     "cost": "a Superiority Die"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Primal Strike",
+   "class": "Druid",
+   "level": 7,
+   "group": "primal-strike",
+   "needs": "Primal Strike",
+   "adds": [
+    {
+     "name": "Primal Strike",
+     "trigger": "Once on each of your turns, a hit with a weapon or a Wild Shape form's attack",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "1d8",
+     "once": "a turn",
+     "effect": "+1d8 Cold, Fire, Lightning or Thunder"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Primal Strike (2d8)",
+   "class": "Druid",
+   "level": 15,
+   "group": "primal-strike",
+   "needs": "Primal Strike",
+   "adds": [
+    {
+     "name": "Primal Strike (2d8)",
+     "trigger": "Once on each of your turns, a hit with a weapon or a Wild Shape form's attack",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "2d8",
+     "once": "a turn",
+     "effect": "+2d8 Cold, Fire, Lightning or Thunder"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Psionic Strike",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Psi Warrior",
+   "adds": [
+    {
+     "name": "Psionic Strike",
+     "trigger": "Once on each of your turns, right after you hit a target within 30 ft with a weapon",
+     "cost": "1 Psionic Energy Die",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "weapon"
+     ],
+     "amount": "{psionic}+{mod:intelligence}",
+     "once": "a turn",
+     "pressed": false,
+     "effect": "+1 Psionic Energy Die + {mod_int} Force"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Quivering Palm",
+   "class": "Monk",
+   "level": 17,
+   "sub": "Warrior of the Open Hand",
+   "adds": [
+    {
+     "name": "Quivering Palm",
+     "trigger": "A hit with an Unarmed Strike",
+     "says": "Start the vibrations; end them later by giving up one attack of an Attack action (Con save DC {dc_wis}, 10d12 Force)",
+     "cost": "4 Focus Points",
+     "when": "on_hit",
+     "with": [
+      "unarmed"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Radiance of the Dawn",
+   "class": "Cleric",
+   "level": 3,
+   "sub": "Light Domain",
+   "why": "Channel Divinity: a 30-ft Emanation, Con save, 2d10 + Cleric level Radiant, half on a success",
+   "rolls": [
+    {
+     "name": "Con save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d10+{level:Cleric} radiant"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Radiant Soul",
+   "class": "Warlock",
+   "level": 6,
+   "sub": "Celestial Patron",
+   "why": "once per turn, add your Charisma modifier to one target's damage from a spell dealing Radiant or Fire",
+   "adds": [
+    {
+     "name": "Radiant Soul",
+     "when": "on_damage",
+     "to": [
+      "spell damage"
+     ],
+     "amount": "{mod:charisma}",
+     "damage_types": [
+      "radiant",
+      "fire"
+     ],
+     "once": "a turn"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Radiant Strikes",
+   "class": "Paladin",
+   "level": 11,
+   "adds": [
+    {
+     "name": "Radiant Strikes",
+     "trigger": "Every hit with a melee weapon or Unarmed Strike",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "melee_weapon",
+      "unarmed"
+     ],
+     "amount": "1d8 radiant",
+     "effect": "+1d8 Radiant"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Rage Damage",
+   "class": "Barbarian",
+   "level": 1,
+   "adds": [
+    {
+     "name": "Rage Damage",
+     "trigger": "Every hit with a Strength attack (weapon or Unarmed Strike) while your Rage is active",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "melee_weapon",
+      "unarmed"
+     ],
+     "amount": "{rage}",
+     "pressed": false,
+     "effect": "+{rage} damage"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Reckless Attack",
+   "class": "Barbarian",
+   "level": 2,
+   "adds": [
+    {
+     "name": "Reckless Attack",
+     "trigger": "Your first attack roll on your turn",
+     "says": "Choose Advantage on Strength attack rolls until your next turn; attack rolls against you have Advantage too",
+     "when": "before",
+     "to": [
+      "attack"
+     ],
+     "with": [
+      "melee_weapon",
+      "unarmed"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Sacred Weapon",
+   "class": "Paladin",
+   "level": 3,
+   "sub": "Oath of Devotion",
+   "why": "Channel Divinity, with the Attack action: add your Charisma modifier (at least +1) to attack rolls with that melee weapon for 10 minutes",
+   "adds": [
+    {
+     "name": "Sacred Weapon",
+     "when": "before",
+     "to": [
+      "attack"
+     ],
+     "amount": "{mod:charisma}",
+     "with": [
+      "melee_weapon"
+     ],
+     "says": "while it lasts"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Sear Undead",
+   "class": "Cleric",
+   "level": 5,
+   "why": "with Turn Undead: a number of d8s equal to your Wisdom modifier (at least one), Radiant, to each Undead that fails its save",
+   "rolls": [
+    {
+     "name": "Undead that fail",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "{mod:wisdom}d8 radiant"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "note": "The Turn Undead save; at least 1d8"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Searing Vengeance",
+   "class": "Warlock",
+   "level": 14,
+   "sub": "Celestial Patron",
+   "why": "when you or an ally makes a death save: 2d8 + Charisma Radiant to creatures of your choice within 30 ft",
+   "rolls": [
+    {
+     "name": "Damage",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d8+{mod:charisma} radiant"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Second Wind",
+   "why": "Fighter: regain 1d10 + your Fighter level",
+   "rolls": [
+    {
+     "name": "Second Wind",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d10+{level:Fighter}"
+     ]
+    }
+   ],
+   "self": true
+  },
+  {
+   "kind": "feature",
+   "name": "Sneak Attack",
+   "adds": [
+    {
+     "why": "Rogue: once a turn, extra damage on a hit with a Finesse or ranged weapon, with Advantage or an ally beside the target",
+     "name": "Sneak Attack",
+     "trigger": "Once per turn, a hit with a Finesse or Ranged weapon if you have Advantage, or an ally is within 5 ft of the target (and you don't have Disadvantage)",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "finesse",
+      "ranged_weapon"
+     ],
+     "amount": "{sneak}d6",
+     "once": "a turn",
+     "effect": "+{sneak}d6"
+    }
+   ],
+   "class": "Rogue",
+   "level": 1
+  },
+  {
+   "kind": "feature",
+   "name": "Starry Form: Archer",
+   "class": "Druid",
+   "level": 3,
+   "sub": "Circle of the Stars",
+   "why": "a Bonus Action ranged spell attack, 1d8 + Wisdom Radiant (2d8 from level 10)",
+   "rolls": [
+    {
+     "name": "On a hit",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "{starry}d8+{mod:wisdom} radiant"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Starry Form: Chalice",
+   "class": "Druid",
+   "level": 3,
+   "sub": "Circle of the Stars",
+   "why": "when a slot spell heals: you or a creature within 30 ft also regains 1d8 + Wisdom (2d8 from level 10)",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "{starry}d8+{mod:wisdom}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Steps of the Fey: Refreshing Step",
+   "class": "Warlock",
+   "level": 3,
+   "sub": "Archfey Patron",
+   "why": "after Misty Step from this feature: you or a creature within 10 ft gains 1d10 Temporary Hit Points",
+   "rolls": [
+    {
+     "name": "Temporary Hit Points",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "1d10"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Studied Attacks",
+   "class": "Fighter",
+   "level": 13,
+   "adds": [
+    {
+     "name": "Studied Attacks",
+     "trigger": "When you miss a creature",
+     "says": "Advantage on your next attack roll against it before the end of your next turn",
+     "when": "on_miss",
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Stunning Strike",
+   "class": "Monk",
+   "level": 5,
+   "adds": [
+    {
+     "name": "Stunning Strike",
+     "trigger": "Once per turn, a hit with a Monk weapon or Unarmed Strike",
+     "says": "Con save DC {dc_wis} or Stunned until the start of your next turn; on a success its Speed is halved and the next attack against it has Advantage",
+     "cost": "1 Focus Point",
+     "when": "on_hit",
+     "with": [
+      "monk_weapon",
+      "unarmed"
+     ],
+     "op": "save",
+     "save": "Con",
+     "dc": "{dc:wisdom}",
+     "spend": "Focus Points",
+     "once": "a turn"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tactical Mind",
+   "adds": [
+    {
+     "name": "Tactical Mind",
+     "why": "Fighter: on a failed ability check, spend a Second Wind use to add 1d10 (kept if it still fails)",
+     "when": "after_fail",
+     "to": [
+      "check"
+     ],
+     "amount": "1d10",
+     "cost": "a Second Wind use"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tireless",
+   "class": "Ranger",
+   "level": 10,
+   "why": "a Magic action: 1d8 + Wisdom Temporary Hit Points (at least 1)",
+   "self": true,
+   "rolls": [
+    {
+     "name": "Temporary Hit Points",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "1d8+{mod:wisdom}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Uncanny Metabolism",
+   "why": "Monk: regain a roll of your Martial Arts die + your Monk level (and your Focus Points)",
+   "rolls": [
+    {
+     "name": "Uncanny Metabolism",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1{martial_arts}+{level:Monk}"
+     ]
+    }
+   ],
+   "self": true
+  },
+  {
+   "kind": "feature",
+   "name": "Unerring Strike",
+   "class": "Paladin",
+   "level": 20,
+   "sub": "Oath of Glory",
+   "adds": [
+    {
+     "name": "Unerring Strike",
+     "trigger": "Once on each of your turns while Living Legend is active, a weapon attack that misses",
+     "says": "It hits instead",
+     "when": "on_miss",
+     "with": [
+      "weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Vitality of the Tree: Life-Giving Force",
+   "class": "Barbarian",
+   "level": 3,
+   "sub": "Path of the World Tree",
+   "why": "while raging, at the start of your turn: a creature within 10 ft gains Temporary Hit Points, a number of d6s equal to your Rage Damage",
+   "rolls": [
+    {
+     "name": "Temporary Hit Points",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "{rage}d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Warping Implosion",
+   "class": "Sorcerer",
+   "level": 18,
+   "sub": "Aberrant Sorcery",
+   "why": "after teleporting: creatures within 30 ft of the space left make a Str save or take 3d10 Force",
+   "rolls": [
+    {
+     "name": "Str save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "3d10 force"
+     ],
+     "save": "Str",
+     "success": "none"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Warrior of the Gods",
+   "class": "Barbarian",
+   "level": 3,
+   "sub": "Path of the Zealot",
+   "why": "a Bonus Action: spend d12s from a pool of four (more at higher levels) to heal yourself",
+   "self": true,
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d12"
+     ],
+     "note": "One die per press; spend as many as you choose from the pool"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Wild Shape: Feral Forms",
+   "why": "the dice are the forms' own (their stat blocks: Wild Shape, app/wild_shape.py), not a roll of the Druid's",
+   "rolls": []
+  },
+  {
+   "kind": "feature",
+   "name": "Wild Shape: Guardian Forms",
+   "why": "the dice are the forms' own (their stat blocks: Wild Shape, app/wild_shape.py), not a roll of the Druid's",
+   "rolls": []
+  },
+  {
+   "kind": "feature",
+   "name": "Wrath of the Sea",
+   "class": "Druid",
+   "level": 3,
+   "sub": "Circle of the Sea",
+   "why": "a Con save against your spell save DC or a number of d6s equal to your Wisdom modifier Cold, pushed up to 15 ft",
+   "rolls": [
+    {
+     "name": "Con save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "{mod:wisdom}d6 cold"
+     ],
+     "save": "Con",
+     "success": "none",
+     "note": "At least one die"
+    }
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Breath Weapon",
+   "why": "Dragonborn: in place of an attack, a 15-ft Cone or 30-ft Line, Dex save (DC 8 + Con + PB), 1d10 of your ancestry's type (2d10 at character level 5, 3d10 at 11, 4d10 at 17), half on a success",
+   "rolls": [
+    {
+     "name": "Dex save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "{breath}d10"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "note": "Your Draconic Ancestry's damage type"
+    }
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Fire's Burn",
+   "why": "Goliath (Fire Giant): when you hit with an attack roll and deal damage, also 1d10 Fire (Proficiency Bonus times a Long Rest)",
+   "adds": [
+    {
+     "name": "Fire's Burn",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "amount": "1d10 fire",
+     "pressed": false,
+     "cost": "a use"
+    }
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Frost's Chill",
+   "why": "Goliath (Frost Giant): when you hit with an attack roll and deal damage, also 1d6 Cold and its Speed −10 ft",
+   "adds": [
+    {
+     "name": "Frost's Chill",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "amount": "1d6 cold",
+     "pressed": false,
+     "cost": "a use"
+    }
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Stone's Endurance",
+   "why": "Goliath (Stone Giant): a Reaction when you take damage, reduce it by 1d12 + Constitution",
+   "adds": [
+    {
+     "name": "Stone's Endurance",
+     "when": "damage_taken",
+     "to": [
+      "damage_taken"
+     ],
+     "reduces": "1d12+{mod:constitution}",
+     "cost": "a Reaction"
+    }
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Storm's Thunder",
+   "why": "Goliath (Storm Giant): a Reaction when a creature within 60 ft damages you, 1d8 Thunder to it",
+   "rolls": [
+    {
+     "name": "Damage",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d8 thunder"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Arms of Hadar",
+   "level": 1,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Arms of Hadar",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d6 necrotic"
+     ],
+     "save": "Str",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Aura of Vitality",
+   "level": 3,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "2d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Banishing Smite",
+   "level": 5,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Banishing Smite",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "5d10 force"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Blade Ward",
+   "level": 0,
+   "why": "an attacker subtracts 1d4 from attack rolls against you while it lasts: the attacker's roll (the DM's), not one you make"
+  },
+  {
+   "kind": "spell",
+   "name": "Blinding Smite",
+   "level": 3,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Blinding Smite",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "3d8 radiant"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Cloud of Daggers",
+   "level": 2,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Cloud of Daggers",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "4d4 slashing"
+     ],
+     "upcast": [
+      "2d4"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Conjure Barrage",
+   "level": 3,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Conjure Barrage",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "5d8 force"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Conjure Volley",
+   "level": 5,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Conjure Volley",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "8d8 force"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Cordon of Arrows",
+   "level": 2,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Cordon of Arrows",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d4 piercing"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Crusader's Mantle",
+   "level": 3,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Crusader's Mantle",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d4 radiant"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Destructive Wave",
+   "level": 5,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Destructive Wave",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "5d6 thunder",
+      "5d6 radiant or necrotic"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Elemental Weapon",
+   "level": 3,
+   "why": "a touched weapon deals an extra 1d4 of a chosen type (Acid, Cold, Fire, Lightning or Thunder) on each hit while it lasts, 2d4 with a level 5–6 slot and 3d4 with 7+; its +1 to attack rolls (+2, +3) is the weapon's own",
+   "rolls": [
+    {
+     "name": "Each hit",
+     "resolve": "none",
+     "effect": "damage",
+     "when": "on_hit",
+     "dice": [
+      "1d4"
+     ],
+     "upcast": [
+      "1d4"
+     ],
+     "every": 2,
+     "note": "Added to each hit with the weapon while it lasts; the type is the one chosen when cast"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Find Steed",
+   "why": "the steed attacks with its own stat block (app/summons.py), not the caster's dice",
+   "level": 2,
+   "rolls": []
+  },
+  {
+   "kind": "spell",
+   "name": "Fount of Moonlight",
+   "level": 4,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Fount of Moonlight",
+     "resolve": "none",
+     "effect": "damage",
+     "when": "on_hit",
+     "dice": [
+      "2d6 radiant"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Grasping Vine",
+   "level": 4,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Grasping Vine",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "4d8 bludgeoning"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Hail of Thorns",
+   "level": 1,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Hail of Thorns",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d10 piercing"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d10"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Hunger of Hadar",
+   "level": 3,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Damage",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d6 cold"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    },
+    {
+     "name": "Dex save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d6 acid"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Jallarzi's Storm of Radiance",
+   "level": 5,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Jallarzi's Storm of Radiance",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d10 radiant",
+      "2d10 thunder"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d10",
+      ""
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Lightning Arrow",
+   "level": 3,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Damage",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "4d8 lightning"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Dex save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d8 lightning"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Mind Sliver",
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Mind Sliver",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d6 psychic"
+     ],
+     "save": "Int",
+     "success": "none",
+     "cantrip": "dice",
+     "note": "On a failure it also subtracts 1d4 from its next save before the end of your next turn"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Staggering Smite",
+   "level": 4,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Staggering Smite",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "4d6 psychic"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Steel Wind Strike",
+   "level": 5,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Steel Wind Strike",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "6d10 force"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Summon Aberration",
+   "why": "its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing"
+  },
+  {
+   "kind": "spell",
+   "name": "Summon Beast",
+   "why": "its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing"
+  },
+  {
+   "kind": "spell",
+   "name": "Summon Celestial",
+   "why": "its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing"
+  },
+  {
+   "kind": "spell",
+   "name": "Summon Construct",
+   "why": "its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing"
+  },
+  {
+   "kind": "spell",
+   "name": "Summon Elemental",
+   "why": "its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing"
+  },
+  {
+   "kind": "spell",
+   "name": "Summon Fey",
+   "why": "its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing"
+  },
+  {
+   "kind": "spell",
+   "name": "Summon Fiend",
+   "why": "its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing"
+  },
+  {
+   "kind": "spell",
+   "name": "Summon Undead",
+   "why": "its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing"
+  },
+  {
+   "kind": "spell",
+   "name": "Synaptic Static",
+   "level": 5,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Synaptic Static",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "8d6 psychic"
+     ],
+     "save": "Int",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Thorn Whip",
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Thorn Whip",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "1d6 piercing"
+     ],
+     "cantrip": "dice",
+     "note": "A Large or smaller target can be pulled up to 10 ft closer"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Thunderclap",
+   "level": 0,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Thunderclap",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d6 thunder"
+     ],
+     "save": "Con",
+     "success": "none",
+     "cantrip": "dice"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Thunderous Smite",
+   "level": 1,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Thunderous Smite",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d6 thunder"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Toll the Dead",
+   "why": "1d8, or 1d12 if the target is missing Hit Points; not in the SRD, checked against the 2024 Player's Handbook",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Unhurt target",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d8 necrotic"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "cantrip": "dice"
+    },
+    {
+     "name": "Target missing Hit Points",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d12 necrotic"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "cantrip": "dice"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Witch Bolt",
+   "level": 1,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "On a hit",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "2d12 lightning"
+     ],
+     "upcast": [
+      "1d12"
+     ]
+    },
+    {
+     "name": "On a hit (later)",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "1d12 lightning"
+     ],
+     "repeat": "each of your subsequent turns",
+     "upcast": [
+      "1d12"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Word of Radiance",
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Word of Radiance",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d6 radiant"
+     ],
+     "save": "Con",
+     "success": "none",
+     "cantrip": "dice"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Wrathful Smite",
+   "level": 1,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Wrathful Smite",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d6 necrotic"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Yolande's Regal Presence",
+   "level": 5,
+   "checked": "read from the 2024 PHB",
+   "rolls": [
+    {
+     "name": "Yolande's Regal Presence",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "4d6 psychic"
+     ],
+     "save": "Wis",
+     "success": "half"
+    }
+   ]
+  }
+ ]
+}

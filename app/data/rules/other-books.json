@@ -1,0 +1,363 @@
+{
+ "book": "other-books",
+ "about": "Other books on the table's sheets (Xanathar's, Tasha's, Fizban's, the 2014 PHB…): each entry names its book",
+ "entries": [
+  {
+   "kind": "feature",
+   "name": "Arcane Firearm",
+   "book": "Tasha's",
+   "adds": [
+    {
+     "why": "Artillerist: add 1d8 to one damage roll of an artificer spell cast through it",
+     "name": "Arcane Firearm",
+     "trigger": "An artificer spell you cast through your arcane firearm (a wand, staff or rod)",
+     "when": "on_damage",
+     "to": [
+      "spell damage"
+     ],
+     "amount": "1d8",
+     "effect": "+1d8 to one of the spell's damage rolls"
+    }
+   ],
+   "class": "Artificer",
+   "level": 5,
+   "sub": "Artillerist"
+  },
+  {
+   "kind": "feature",
+   "name": "Create Eldritch Cannon",
+   "book": "Tasha's",
+   "why": "making the cannon rolls nothing; its options roll (Mending's 2d6 heals the cannon, not a roll of yours)",
+   "rolls": []
+  },
+  {
+   "kind": "feature",
+   "name": "Detonate Eldritch Cannon",
+   "book": "Tasha's",
+   "why": "Artillerist: a Dex save within 20 ft, half on a success",
+   "rolls": [
+    {
+     "name": "Detonate",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "3d8 force"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Eldritch Cannon: Flamethrower",
+   "book": "Tasha's",
+   "why": "Artillerist: a Dex save in a 15-ft cone, half on a success",
+   "rolls": [
+    {
+     "name": "Flamethrower",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d8 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Eldritch Cannon: Force Ballista",
+   "book": "Tasha's",
+   "why": "Artillerist: a ranged spell attack; pushed 5 ft on a hit",
+   "rolls": [
+    {
+     "name": "Force Ballista",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "2d8 force"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Eldritch Cannon: Protector",
+   "book": "Tasha's",
+   "why": "Artillerist: Temporary Hit Points to itself and each creature within 10 ft",
+   "rolls": [
+    {
+     "name": "Protector",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "1d8+{mod:intelligence}"
+     ],
+     "note": "minimum 1"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Favored by the Gods",
+   "book": "Xanathar's",
+   "adds": [
+    {
+     "why": "Divine Soul: add 2d4 to a failed saving throw or a missed attack roll",
+     "name": "Favored by the Gods",
+     "trigger": "A saving throw you fail or an attack roll you miss",
+     "cost": "once per Short or Long Rest",
+     "when": "after_fail",
+     "to": [
+      "attack",
+      "save"
+     ],
+     "amount": "2d4",
+     "effect": "+2d4 to the total, which can change the outcome"
+    }
+   ],
+   "class": "Sorcerer",
+   "level": 1,
+   "sub": "Divine Soul"
+  },
+  {
+   "kind": "feature",
+   "name": "Guided Strike",
+   "book": "Xanathar's",
+   "class": "Paladin",
+   "level": 3,
+   "sub": "Oath of Conquest",
+   "adds": [
+    {
+     "name": "Guided Strike",
+     "trigger": "An attack roll you make, after you see it and before you know if it hits",
+     "says": "after you see the roll",
+     "cost": "1 Channel Divinity",
+     "when": "after_roll",
+     "to": [
+      "attack"
+     ],
+     "amount": "10",
+     "short": "Guided Strike",
+     "why": "Oath of Conquest: +10 to an attack roll once you've seen it, before you know if it hits (Brett's Roll Audit comment, Nov 10)"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Undead Steed: Ghostly Stride",
+   "book": "another book",
+   "why": "the steed's own feature (its stat block, app/summons.py), not the rider's roll",
+   "rolls": []
+  },
+  {
+   "kind": "item",
+   "name": "Dragon-Touched Focus",
+   "book": "Fizban's",
+   "adds": [
+    {
+     "name": "Dragon-Touched Focus: Chromatic",
+     "why": "Stirring, Chromatic family: when you use a spell slot on a spell that deals acid, cold, fire, lightning or poison damage, roll a d6 and add it to one damage roll (Fizban's)",
+     "when": "on_damage",
+     "to": [
+      "spell damage"
+     ],
+     "amount": "1d6",
+     "slot": true,
+     "damage_types": [
+      "acid",
+      "cold",
+      "fire",
+      "lightning",
+      "poison"
+     ],
+     "short": "Dragon-Touched Focus"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Soul Coin",
+   "book": "Descent into Avernus",
+   "why": "Drain Life: Temporary Hit Points from the soul inside (a Bonus Action, 2024 DMG)",
+   "rolls": [
+    {
+     "name": "Drain Life",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "1d10"
+     ]
+    }
+   ],
+   "self": true
+  },
+  {
+   "kind": "spell",
+   "name": "Absorb Elements",
+   "book": "Xanathar's",
+   "why": "Xanathar's: resistance now, and the extra damage rides the first melee hit on your next turn",
+   "level": 1,
+   "rolls": [
+    {
+     "name": "Absorb Elements",
+     "resolve": "none",
+     "effect": "damage",
+     "when": "on_hit",
+     "dice": [
+      "1d6"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "the damage type is the one you absorbed; the first melee hit on your next turn"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Branding Smite",
+   "book": "PHB 2014",
+   "why": "the 2014 Player's Handbook's (the 2024 one has Shining Smite): extra damage on the next weapon hit, not rolled on casting",
+   "level": 2,
+   "rolls": [
+    {
+     "name": "Branding Smite",
+     "resolve": "none",
+     "effect": "damage",
+     "when": "on_hit",
+     "dice": [
+      "2d6 radiant"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "the next time you hit with a weapon attack before it ends"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Depth Charge",
+   "book": "another book",
+   "why": "7d6, or 9d6 for a creature submerged in a liquid: one or the other, never both",
+   "level": 3,
+   "rolls": [
+    {
+     "name": "Depth Charge",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "7d6 thunder"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ],
+     "alt": [
+      "9d6 thunder"
+     ],
+     "note": "9d6 instead for a creature submerged in a liquid"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Green-Flame Blade",
+   "book": "another book",
+   "why": "Tasha's: a melee weapon attack with the weapon's own damage, and fire that leaps to a second creature; both grow at levels 5, 11 and 17",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Green-Flame Blade",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "1d8 fire"
+     ],
+     "cantrip": "extra",
+     "note": "added to the weapon's own damage on a hit (from level 5)"
+    },
+    {
+     "name": "Leaping fire",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d8 fire"
+     ],
+     "mod": true,
+     "cantrip": "extra",
+     "note": "a second creature within 5 ft of the target; before level 5 it's just your spellcasting modifier"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Lightning Lure",
+   "book": "another book",
+   "why": "Tasha's: a Strength save; the damage only if pulled within 5 ft",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Lightning Lure",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d8 lightning"
+     ],
+     "save": "Str",
+     "success": "none",
+     "cantrip": "dice",
+     "note": "pulled up to 10 ft toward you on a failed save; the damage only if it ends within 5 ft"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Raulothim's Psychic Lance",
+   "book": "another book",
+   "why": "Fizban's: an Intelligence save, half on a success",
+   "level": 4,
+   "rolls": [
+    {
+     "name": "Raulothim's Psychic Lance",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "7d6 psychic"
+     ],
+     "save": "Int",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ],
+     "note": "Incapacitated until the start of your next turn on a failed save"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Sickening Radiance",
+   "book": "another book",
+   "why": "Xanathar's: a save each time a creature enters the light or starts its turn there",
+   "level": 4,
+   "rolls": [
+    {
+     "name": "Sickening Radiance",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "4d10 radiant"
+     ],
+     "save": "Con",
+     "success": "none",
+     "repeat": "a creature entering it or starting its turn there",
+     "note": "and a level of Exhaustion on a failed save, until the spell ends"
+    }
+   ]
+  }
+ ]
+}

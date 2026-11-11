@@ -693,18 +693,16 @@ def _twice(roll, twice: bool) -> dict:
 
 
 def _rider_dc(db, root, label: str) -> int | None:
-    """The DC of a rider's save named "<rider>: <ability> save" for the attack's character, from its class rules."""
-    from app import class_rules
-    from app.roll_plan import rider_act
+    """The DC of a rider's save named "<rider>: <ability> save" for the attack's character, from the rules book."""
+    from app import rules_book
 
     ch = db.get(Character, root.character_id) if root.character_id else None
     sheet = chars.character_summary(ch) if ch else None
     if not sheet:
         return None
-    for r in class_rules.turn(sheet)["riders"]:
-        act = rider_act(sheet, r.get("act"))
-        if act and act["kind"] == "save" and label == f"{r['name']}: {act['save']} save":
-            return act["dc"]
+    for a in rules_book.adds(sheet):  # (a class feature's or feat's save on a hit: Stunning Strike, Shield Master)
+        if a.get("op") == "save" and label == f"{a['name']}: {a['save']} save" and str(a.get("dc", "")).isdigit():
+            return int(a["dc"])
     from app import roll_recipes as rr
 
     for it in sheet.get("inventory") or []:  # an item's use with a save on a hit (Hammer of Thunderbolts' Thunderclap)

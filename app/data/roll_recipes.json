@@ -1,6 +1,35 @@
 {
  "credit": "Roll recipes for spells in the SRD 5.2.1 (attribution in app/data/srd/README.md), written by askdnd from the rules text.",
  "features": {
+  "Boon of Energy Resistance": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Dex save",
+     "on": "save",
+     "parts": [
+      "2d12+{mod:constitution}"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ]
+  },
+  "Breath Weapon": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Dex save",
+     "note": "Your Draconic Ancestry's damage type",
+     "on": "save",
+     "parts": [
+      "{breath}d10"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
   "Create Eldritch Cannon": {
    "checked": "by hand",
    "events": []
@@ -33,6 +62,30 @@
      "success": "half"
     }
    ]
+  },
+  "Divine Spark": {
+   "checked": "by hand",
+   "class": "Cleric",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "{divine_spark}d8+{mod:wisdom}"
+     ]
+    },
+    {
+     "name": "Con save",
+     "note": "Radiant or Necrotic, your choice",
+     "on": "save",
+     "parts": [
+      "{divine_spark}d8+{mod:wisdom} radiant"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ],
+   "level": 2
   },
   "Eldritch Cannon: Flamethrower": {
    "checked": "by hand",
@@ -73,6 +126,113 @@
     }
    ]
   },
+  "Elemental Burst": {
+   "checked": "by hand",
+   "class": "Monk",
+   "events": [
+    {
+     "name": "Dex save",
+     "note": "Acid, Cold, Fire, Lightning or Thunder, your choice",
+     "on": "save",
+     "parts": [
+      "3{martial_arts}"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 6,
+   "sub": "Warrior of the Elements"
+  },
+  "Hand of Healing": {
+   "checked": "by hand",
+   "class": "Monk",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "{martial_arts}+{mod:wisdom}"
+     ]
+    }
+   ],
+   "level": 3,
+   "sub": "Warrior of Mercy"
+  },
+  "Hand of Ultimate Mercy": {
+   "checked": "by hand",
+   "class": "Monk",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "4d10+{mod:wisdom}"
+     ]
+    }
+   ],
+   "level": 17,
+   "sub": "Warrior of Mercy"
+  },
+  "Healing Light": {
+   "checked": "by hand",
+   "class": "Warlock",
+   "events": [
+    {
+     "name": "Healing",
+     "note": "The most dice at once; spend fewer as you like",
+     "on": "heal",
+     "parts": [
+      "{mod:charisma}d6"
+     ]
+    }
+   ],
+   "level": 3,
+   "sub": "Celestial Patron"
+  },
+  "Improved Warding Flare": {
+   "checked": "by hand",
+   "class": "Cleric",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "on": "temp",
+     "parts": [
+      "2d6+{mod:wisdom}"
+     ]
+    }
+   ],
+   "level": 6,
+   "sub": "Light Domain"
+  },
+  "Inspiring Smite": {
+   "checked": "by hand",
+   "class": "Paladin",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "note": "Shared among creatures of your choice within 30 ft, you included",
+     "on": "temp",
+     "parts": [
+      "2d8+{level:Paladin}"
+     ]
+    }
+   ],
+   "level": 3,
+   "sub": "Oath of Glory"
+  },
+  "Interception": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Reduces the damage by",
+     "on": "plain",
+     "parts": [
+      "1d10+{pb}"
+     ]
+    }
+   ]
+  },
   "Land\u2019s Aid: Damage": {
    "checked": "by hand",
    "events": [
@@ -99,6 +259,72 @@
     }
    ]
   },
+  "Misty Escape": {
+   "checked": "by hand",
+   "class": "Warlock",
+   "events": [
+    {
+     "name": "Wis save",
+     "on": "save",
+     "parts": [
+      "2d10 psychic"
+     ],
+     "save": "Wis",
+     "success": "none"
+    }
+   ],
+   "level": 6,
+   "sub": "Archfey Patron"
+  },
+  "Radiance of the Dawn": {
+   "checked": "by hand",
+   "class": "Cleric",
+   "events": [
+    {
+     "name": "Con save",
+     "on": "save",
+     "parts": [
+      "2d10+{level:Cleric} radiant"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ],
+   "level": 3,
+   "sub": "Light Domain"
+  },
+  "Sear Undead": {
+   "checked": "by hand",
+   "class": "Cleric",
+   "events": [
+    {
+     "name": "Undead that fail",
+     "note": "The Turn Undead save; at least 1d8",
+     "on": "save",
+     "parts": [
+      "{mod:wisdom}d8 radiant"
+     ],
+     "save": "Wis",
+     "success": "none"
+    }
+   ],
+   "level": 5
+  },
+  "Searing Vengeance": {
+   "checked": "by hand",
+   "class": "Warlock",
+   "events": [
+    {
+     "name": "Damage",
+     "on": "auto",
+     "parts": [
+      "2d8+{mod:charisma} radiant"
+     ]
+    }
+   ],
+   "level": 14,
+   "sub": "Celestial Patron"
+  },
   "Second Wind": {
    "checked": "by hand",
    "events": [
@@ -110,6 +336,78 @@
      ]
     }
    ],
+   "self": true
+  },
+  "Starry Form: Archer": {
+   "checked": "by hand",
+   "class": "Druid",
+   "events": [
+    {
+     "name": "On a hit",
+     "on": "hit",
+     "parts": [
+      "{starry}d8+{mod:wisdom} radiant"
+     ]
+    }
+   ],
+   "level": 3,
+   "sub": "Circle of the Stars"
+  },
+  "Starry Form: Chalice": {
+   "checked": "by hand",
+   "class": "Druid",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "{starry}d8+{mod:wisdom}"
+     ]
+    }
+   ],
+   "level": 3,
+   "sub": "Circle of the Stars"
+  },
+  "Steps of the Fey: Refreshing Step": {
+   "checked": "by hand",
+   "class": "Warlock",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "on": "temp",
+     "parts": [
+      "1d10"
+     ]
+    }
+   ],
+   "level": 3,
+   "sub": "Archfey Patron"
+  },
+  "Storm's Thunder": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Damage",
+     "on": "auto",
+     "parts": [
+      "1d8 thunder"
+     ]
+    }
+   ]
+  },
+  "Tireless": {
+   "checked": "by hand",
+   "class": "Ranger",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "on": "temp",
+     "parts": [
+      "1d8+{mod:wisdom}"
+     ]
+    }
+   ],
+   "level": 10,
    "self": true
   },
   "Uncanny Metabolism": {
@@ -129,6 +427,55 @@
    "checked": "by hand",
    "events": []
   },
+  "Vitality of the Tree: Life-Giving Force": {
+   "checked": "by hand",
+   "class": "Barbarian",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "on": "temp",
+     "parts": [
+      "{rage}d6"
+     ]
+    }
+   ],
+   "level": 3,
+   "sub": "Path of the World Tree"
+  },
+  "Warping Implosion": {
+   "checked": "by hand",
+   "class": "Sorcerer",
+   "events": [
+    {
+     "name": "Str save",
+     "on": "save",
+     "parts": [
+      "3d10 force"
+     ],
+     "save": "Str",
+     "success": "none"
+    }
+   ],
+   "level": 18,
+   "sub": "Aberrant Sorcery"
+  },
+  "Warrior of the Gods": {
+   "checked": "by hand",
+   "class": "Barbarian",
+   "events": [
+    {
+     "name": "Healing",
+     "note": "One die per press; spend as many as you choose from the pool",
+     "on": "heal",
+     "parts": [
+      "1d12"
+     ]
+    }
+   ],
+   "level": 3,
+   "self": true,
+   "sub": "Path of the Zealot"
+  },
   "Wild Shape: Feral Forms": {
    "checked": "by hand",
    "events": []
@@ -136,6 +483,24 @@
   "Wild Shape: Guardian Forms": {
    "checked": "by hand",
    "events": []
+  },
+  "Wrath of the Sea": {
+   "checked": "by hand",
+   "class": "Druid",
+   "events": [
+    {
+     "name": "Con save",
+     "note": "At least one die",
+     "on": "save",
+     "parts": [
+      "{mod:wisdom}d6 cold"
+     ],
+     "save": "Con",
+     "success": "none"
+    }
+   ],
+   "level": 3,
+   "sub": "Circle of the Sea"
   }
  },
  "items": {
@@ -368,138 +733,6 @@
    "self": true
   }
  },
- "modifiers": {
-  "Arcane Firearm": {
-   "adds": "1d8",
-   "checked": "by hand",
-   "to": [
-    "spell damage"
-   ],
-   "when": "on_damage",
-   "why": "Artillerist: add 1d8 to one damage roll of an artificer spell cast through it"
-  },
-  "Bardic Inspiration": {
-   "adds": "1{bardic}",
-   "checked": "by hand",
-   "gives": true,
-   "to": [
-    "attack",
-    "save",
-    "check"
-   ],
-   "when": "after_fail",
-   "why": "the creature can add the die to a D20 Test it fails (2024: after seeing it fail)"
-  },
-  "Bless": {
-   "adds": "1d4",
-   "checked": "by hand",
-   "from": "another's spell",
-   "to": [
-    "attack",
-    "save"
-   ],
-   "when": "before",
-   "why": "up to three creatures add 1d4 to attack rolls and saving throws while the caster concentrates"
-  },
-  "Blessed Strikes": {
-   "adds": "1d8 radiant",
-   "checked": "by hand",
-   "once": "a turn",
-   "to": [
-    "damage"
-   ],
-   "when": "on_hit",
-   "why": "Cleric: once a turn, extra radiant damage on a hit with a cantrip or weapon attack"
-  },
-  "Channel Divinity: Guided Strike": {
-   "adds": "10",
-   "checked": "by hand",
-   "cost": "1 Channel Divinity",
-   "says": "after you see the roll",
-   "short": "Guided Strike",
-   "to": [
-    "attack"
-   ],
-   "when": "after_roll",
-   "why": "Oath of Conquest (Xanathar's) and War Domain: +10 to an attack roll once you've seen it (Brett's Roll Audit comment, Nov 10: it's chosen with the to-hit, not after the hit)"
-  },
-  "Deflect Attack": {
-   "checked": "by hand",
-   "reduces": "1d10+{mod:dexterity}+{level:Monk}",
-   "to": [
-    "damage_taken"
-   ],
-   "when": "damage_taken",
-   "why": "Monk: reduce an attack's damage by 1d10 + Dexterity + Monk level"
-  },
-  "Dragon-Touched Focus: Chromatic": {
-   "adds": "1d6",
-   "checked": "by hand",
-   "short": "Dragon-Touched Focus",
-   "slot": true,
-   "to": [
-    "spell damage"
-   ],
-   "types": [
-    "acid",
-    "cold",
-    "fire",
-    "lightning",
-    "poison"
-   ],
-   "when": "on_damage",
-   "why": "Stirring, Chromatic family: when you use a spell slot on a spell that deals acid, cold, fire, lightning or poison damage, roll a d6 and add it to one damage roll (Fizban's)"
-  },
-  "Favored by the Gods": {
-   "adds": "2d4",
-   "checked": "by hand",
-   "cost": "1 use",
-   "to": [
-    "attack",
-    "save"
-   ],
-   "when": "after_fail",
-   "why": "Divine Soul: add 2d4 to a failed saving throw or a missed attack roll"
-  },
-  "Guidance": {
-   "adds": "1d4",
-   "checked": "by hand",
-   "to": [
-    "check"
-   ],
-   "when": "before",
-   "why": "add 1d4 to one ability check you choose before rolling (2024 PHB)"
-  },
-  "Resistance": {
-   "adds": "1d4",
-   "checked": "by hand",
-   "to": [
-    "save"
-   ],
-   "when": "before",
-   "why": "add 1d4 to one saving throw"
-  },
-  "Sneak Attack": {
-   "adds": "{sneak}d6",
-   "checked": "by hand",
-   "once": "a turn",
-   "to": [
-    "damage"
-   ],
-   "when": "on_hit",
-   "why": "Rogue: once a turn, extra damage on a hit with a Finesse or ranged weapon, with Advantage or an ally beside the target"
-  },
-  "Tactical Mind": {
-   "adds": "1d10",
-   "checked": "by hand",
-   "cost": "a Second Wind use",
-   "to": [
-    "check"
-   ],
-   "when": "after_fail",
-   "why": "Fighter: on a failed ability check, spend a Second Wind use to add 1d10 (kept if it still fails)"
-  }
- },
  "spells": {
   "Absorb Elements": {
    "checked": "by hand (Xanathar's)",
@@ -625,6 +858,50 @@
    ],
    "level": 7
   },
+  "Arms of Hadar": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Arms of Hadar",
+     "on": "save",
+     "parts": [
+      "2d6 necrotic"
+     ],
+     "save": "Str",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Aura of Vitality": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Healing",
+     "on": "heal",
+     "parts": [
+      "2d6"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Banishing Smite": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Banishing Smite",
+     "on": "auto",
+     "parts": [
+      "5d10 force"
+     ]
+    }
+   ],
+   "level": 5
+  },
   "Befuddlement": {
    "checked": "text",
    "events": [
@@ -684,6 +961,11 @@
    ],
    "level": 6
   },
+  "Blade Ward": {
+   "checked": "by hand (PHB)",
+   "events": [],
+   "level": 0
+  },
   "Blight": {
    "checked": "text",
    "events": [
@@ -701,6 +983,22 @@
     }
    ],
    "level": 4
+  },
+  "Blinding Smite": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Blinding Smite",
+     "on": "auto",
+     "parts": [
+      "3d8 radiant"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 3
   },
   "Blink": {
    "checked": "by hand",
@@ -836,6 +1134,22 @@
    ],
    "level": 6
   },
+  "Cloud of Daggers": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Cloud of Daggers",
+     "on": "auto",
+     "parts": [
+      "4d4 slashing"
+     ],
+     "upcast": [
+      "2d4"
+     ]
+    }
+   ],
+   "level": 2
+  },
   "Cloudkill": {
    "checked": "text",
    "events": [
@@ -890,6 +1204,24 @@
      "success": "none",
      "upcast": [
       "1d10"
+     ]
+    }
+   ],
+   "level": 3
+  },
+  "Conjure Barrage": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Conjure Barrage",
+     "on": "save",
+     "parts": [
+      "5d8 force"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
      ]
     }
    ],
@@ -989,6 +1321,21 @@
    ],
    "level": 4
   },
+  "Conjure Volley": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Conjure Volley",
+     "on": "save",
+     "parts": [
+      "8d8 force"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ],
+   "level": 5
+  },
   "Conjure Woodland Beings": {
    "checked": "text",
    "events": [
@@ -1056,6 +1403,34 @@
    "events": [],
    "level": 8
   },
+  "Cordon of Arrows": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Cordon of Arrows",
+     "on": "save",
+     "parts": [
+      "2d4 piercing"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 2
+  },
+  "Crusader's Mantle": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Crusader's Mantle",
+     "on": "auto",
+     "parts": [
+      "1d4 radiant"
+     ]
+    }
+   ],
+   "level": 3
+  },
   "Cure Wounds": {
    "checked": "text",
    "events": [
@@ -1113,6 +1488,22 @@
     }
    ],
    "level": 3
+  },
+  "Destructive Wave": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Destructive Wave",
+     "on": "save",
+     "parts": [
+      "5d6 thunder",
+      "5d6 radiant or necrotic"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ],
+   "level": 5
   },
   "Dimension Door": {
    "checked": "text",
@@ -1257,6 +1648,24 @@
     }
    ],
    "level": 0
+  },
+  "Elemental Weapon": {
+   "checked": "by hand (PHB)",
+   "events": [
+    {
+     "every": 2,
+     "name": "Each hit",
+     "note": "Added to each hit with the weapon while it lasts; the type is the one chosen when cast",
+     "on": "rider",
+     "parts": [
+      "1d4"
+     ],
+     "upcast": [
+      "1d4"
+     ]
+    }
+   ],
+   "level": 3
   },
   "Enlarge/Reduce": {
    "checked": "by hand",
@@ -1480,6 +1889,19 @@
    ],
    "level": 6
   },
+  "Fount of Moonlight": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Fount of Moonlight",
+     "on": "rider",
+     "parts": [
+      "2d6 radiant"
+     ]
+    }
+   ],
+   "level": 4
+  },
   "Freezing Sphere": {
    "checked": "text",
    "events": [
@@ -1531,6 +1953,19 @@
    ],
    "level": 3
   },
+  "Grasping Vine": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Grasping Vine",
+     "on": "hit",
+     "parts": [
+      "4d8 bludgeoning"
+     ]
+    }
+   ],
+   "level": 4
+  },
   "Green-Flame Blade": {
    "checked": "by hand (another book)",
    "events": [
@@ -1567,6 +2002,24 @@
      ],
      "upcast": [
       "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Hail of Thorns": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Hail of Thorns",
+     "on": "save",
+     "parts": [
+      "1d10 piercing"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d10"
      ]
     }
    ],
@@ -1664,6 +2117,31 @@
     }
    ],
    "level": 1
+  },
+  "Hunger of Hadar": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Damage",
+     "on": "auto",
+     "parts": [
+      "2d6 cold"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    },
+    {
+     "name": "Dex save",
+     "on": "save",
+     "parts": [
+      "2d6 acid"
+     ],
+     "save": "Dex",
+     "success": "none"
+    }
+   ],
+   "level": 3
   },
   "Hunter's Mark": {
    "checked": "text",
@@ -1773,6 +2251,54 @@
     }
    ],
    "level": 5
+  },
+  "Jallarzi's Storm of Radiance": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Jallarzi's Storm of Radiance",
+     "on": "save",
+     "parts": [
+      "2d10 radiant",
+      "2d10 thunder"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d10",
+      ""
+     ]
+    }
+   ],
+   "level": 5
+  },
+  "Lightning Arrow": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Damage",
+     "on": "auto",
+     "parts": [
+      "4d8 lightning"
+     ],
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Dex save",
+     "on": "save",
+     "parts": [
+      "2d8 lightning"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    }
+   ],
+   "level": 3
   },
   "Lightning Bolt": {
    "checked": "text",
@@ -2412,6 +2938,24 @@
    ],
    "level": 2
   },
+  "Staggering Smite": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Staggering Smite",
+     "on": "save",
+     "parts": [
+      "4d6 psychic"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 4
+  },
   "Starry Wisp": {
    "checked": "text",
    "events": [
@@ -2425,6 +2969,19 @@
     }
    ],
    "level": 0
+  },
+  "Steel Wind Strike": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Steel Wind Strike",
+     "on": "hit",
+     "parts": [
+      "6d10 force"
+     ]
+    }
+   ],
+   "level": 5
   },
   "Storm of Vengeance": {
    "checked": "by hand",
@@ -2471,6 +3028,38 @@
    ],
    "level": 9
   },
+  "Summon Aberration": {
+   "checked": "by hand (PHB)",
+   "events": []
+  },
+  "Summon Beast": {
+   "checked": "by hand (PHB)",
+   "events": []
+  },
+  "Summon Celestial": {
+   "checked": "by hand (PHB)",
+   "events": []
+  },
+  "Summon Construct": {
+   "checked": "by hand (PHB)",
+   "events": []
+  },
+  "Summon Elemental": {
+   "checked": "by hand (PHB)",
+   "events": []
+  },
+  "Summon Fey": {
+   "checked": "by hand (PHB)",
+   "events": []
+  },
+  "Summon Fiend": {
+   "checked": "by hand (PHB)",
+   "events": []
+  },
+  "Summon Undead": {
+   "checked": "by hand (PHB)",
+   "events": []
+  },
   "Sunbeam": {
    "checked": "text",
    "events": [
@@ -2516,6 +3105,21 @@
    ],
    "level": 7
   },
+  "Synaptic Static": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Synaptic Static",
+     "on": "save",
+     "parts": [
+      "8d6 psychic"
+     ],
+     "save": "Int",
+     "success": "half"
+    }
+   ],
+   "level": 5
+  },
   "Teleport": {
    "checked": "by hand",
    "events": [
@@ -2544,6 +3148,38 @@
     }
    ],
    "level": 0
+  },
+  "Thunderclap": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "cantrip": "dice",
+     "name": "Thunderclap",
+     "on": "save",
+     "parts": [
+      "1d6 thunder"
+     ],
+     "save": "Con",
+     "success": "none"
+    }
+   ],
+   "level": 0
+  },
+  "Thunderous Smite": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Thunderous Smite",
+     "on": "auto",
+     "parts": [
+      "2d6 thunder"
+     ],
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
   },
   "Thunderwave": {
    "checked": "text",
@@ -2860,6 +3496,33 @@
    ],
    "level": 9
   },
+  "Witch Bolt": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "On a hit",
+     "on": "hit",
+     "parts": [
+      "2d12 lightning"
+     ],
+     "upcast": [
+      "1d12"
+     ]
+    },
+    {
+     "name": "On a hit (later)",
+     "on": "hit",
+     "parts": [
+      "1d12 lightning"
+     ],
+     "repeat": "each of your subsequent turns",
+     "upcast": [
+      "1d12"
+     ]
+    }
+   ],
+   "level": 1
+  },
   "Word of Radiance": {
    "checked": "by hand (PHB)",
    "events": [
@@ -2875,6 +3538,39 @@
     }
    ],
    "level": 0
+  },
+  "Wrathful Smite": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Wrathful Smite",
+     "on": "save",
+     "parts": [
+      "1d6 necrotic"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "upcast": [
+      "1d6"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  "Yolande's Regal Presence": {
+   "checked": "read from the 2024 PHB",
+   "events": [
+    {
+     "name": "Yolande's Regal Presence",
+     "on": "save",
+     "parts": [
+      "4d6 psychic"
+     ],
+     "save": "Wis",
+     "success": "half"
+    }
+   ],
+   "level": 5
   }
  }
 }

@@ -147,6 +147,8 @@ def test_what_changes_another_roll_is_a_modifier(plans):
 
 
 def test_riders_are_only_the_ones_that_can_apply(plans):
+    from app.character_views import options
+
     """The roll audit (Nov 10): Eldritch Blast's card listed Savage Attacker, Stunning Strike and Empowered Strikes
     (a weapon's or an Unarmed Strike's), and the Maul's listed Guided Strike and Favored by the Gods under On a hit.
     Each rider applies where its own words say, at the time they say; one that's already a pill isn't said again."""
@@ -162,10 +164,12 @@ def test_riders_are_only_the_ones_that_can_apply(plans):
     assert "Guided Strike" not in when  # (Brett's Roll Audit comment, Nov 10: chosen with the to-hit, so a pill there)
     guided = next(m for m in maul["modifiers"] if m.get("short") == "Guided Strike")
     assert guided["when"] == "after_roll" and guided["adds"] == "10"
-    assert roll_plan.rider_fits("Once per turn, a hit with a weapon", "spell") is None
-    assert roll_plan.rider_fits("An artificer spell you cast through your arcane firearm (a wand, staff or rod)", "weapon") is None
-    assert roll_plan.rider_fits("Every hit with a Strength attack (weapon or Unarmed Strike) while your Rage is active", "unarmed") == "hit"
-    assert roll_plan.rider_fits("When you miss a creature", "weapon") == "miss"
+    # (what it goes with is the rules book's `with`, matched against the attack's traits: no reading of words)
+    nn = sheet("no_name")
+    dart = next(o for o in options(nn, set()) if o["name"] == "Dart")
+    assert roll_plan.traits(nn, dart, "weapon") == {"weapon", "ranged_weapon", "finesse"} - {"ranged_weapon"} | {"melee_weapon"}
+    assert roll_plan.applies({"with": ["melee_weapon", "unarmed"]}, {"unarmed"}) and not roll_plan.applies({"with": ["spell"]}, {"weapon"})
+    assert roll_plan.applies({}, {"spell"})  # (no `with`: any attack)
 
 
 def test_a_spell_that_only_adds_to_hits_rolls_that_damage():
