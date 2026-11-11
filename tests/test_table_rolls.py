@@ -554,3 +554,22 @@ def test_riders_on_a_hit_change_the_damage_and_ask_for_a_save(table, db, monkeyp
     monkeypatch.setattr(tr, "die", seq(4))
     plain = post(table["player"], character=cid, kind="damage", label="Dice", dmg="1d6").json()["roll"]
     assert post(table["player"], parent=plain["id"], action="save", label="Stunning Strike: Con save").status_code == 409  # (an attack's only)
+
+
+def test_an_items_save_on_a_hit_comes_from_its_recipe(table, db, monkeypatch):
+    """A Hammer of Thunderbolts thrown (its Use): Thunderclap's Con save DC 17 joins the attack's entry, the DC from the
+    item's recipe, never the page's."""
+    import json
+    from pathlib import Path
+
+    from app import ddb
+
+    raw = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "big_c.json").read_text())["data"]
+    big_c = ddb.parse_character(ddb.sanitize(raw))
+    monkeypatch.setattr(tr.chars, "character_summary", lambda ch: big_c)
+    cid = char(db, "Cole").id
+    monkeypatch.setattr(tr, "die", seq(15, 3, 4))
+    attack = post(table["player"], character=cid, kind="attack", label="Hammer of Thunderbolts (Maul)", mod="11", dmg="2d6+8", to="table").json()["roll"]
+    post(table["player"], parent=attack["id"], action="damage")
+    r = post(table["player"], parent=attack["id"], action="save", label="Thunderclap: Con save").json()["roll"]
+    assert r["saves"] == [{"label": "Thunderclap: Con save", "dc": 17}]

@@ -1146,6 +1146,35 @@
      ]
     }
    ]
+  },
+  "Hat of Wizardry": {
+   "why": "Unknown Spell: a DC 10 Intelligence (Arcana) check to cast a Wizard cantrip you don't know (2024 DMG)",
+   "use": {
+    "check": "Arcana",
+    "dc": 10,
+    "says": "on a success you cast the cantrip; on a failure the action is wasted"
+   }
+  },
+  "Dust of Sneezing and Choking": {
+   "why": "You and every creature in a 30-foot Emanation make a DC 15 Constitution save (2024 DMG)",
+   "use": {
+    "save": "Con",
+    "dc": 15,
+    "says": "you and every creature within 30 feet; on a failure, Incapacitated and suffocating, repeating the save at the end of each turn"
+   }
+  },
+  "Hammer of Thunderbolts": {
+   "why": "Spend 1 charge to throw it (20/60 ft); on a hit, the target and creatures within 30 feet make a DC 17 Constitution save (2024 DMG)",
+   "use": {
+    "attack": true,
+    "says": "thrown: range 20/60 ft; it flies back to your hand",
+    "rider": {
+     "name": "Thunderclap",
+     "save": "Con",
+     "dc": 17,
+     "says": "the target and every creature within 30 feet of it other than you: Stunned until the end of your next turn on a failure"
+    }
+   }
   }
  },
  "other_spells": {
@@ -1530,6 +1559,23 @@
    "short": "Guided Strike",
    "says": "after you see the roll",
    "cost": "1 Channel Divinity"
+  },
+  "Dragon-Touched Focus: Chromatic": {
+   "why": "Stirring, Chromatic family: when you use a spell slot on a spell that deals acid, cold, fire, lightning or poison damage, roll a d6 and add it to one damage roll (Fizban's)",
+   "when": "on_damage",
+   "to": [
+    "spell damage"
+   ],
+   "adds": "1d6",
+   "slot": true,
+   "types": [
+    "acid",
+    "cold",
+    "fire",
+    "lightning",
+    "poison"
+   ],
+   "short": "Dragon-Touched Focus"
   }
  }
 }

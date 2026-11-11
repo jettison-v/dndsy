@@ -705,6 +705,12 @@ def _rider_dc(db, root, label: str) -> int | None:
         act = rider_act(sheet, r.get("act"))
         if act and act["kind"] == "save" and label == f"{r['name']}: {act['save']} save":
             return act["dc"]
+    from app import roll_recipes as rr
+
+    for it in sheet.get("inventory") or []:  # an item's use with a save on a hit (Hammer of Thunderbolts' Thunderclap)
+        rd = ((rr.item(it.get("base_name")) or rr.item(it.get("name")) or {}).get("use") or {}).get("rider")
+        if rd and label == f"{rd['name']}: {rd['save']} save":
+            return int(rd["dc"])
     return None
 
 

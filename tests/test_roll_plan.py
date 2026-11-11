@@ -154,6 +154,8 @@ def test_riders_are_only_the_ones_that_can_apply(plans):
     assert not blast & {"Savage Attacker", "Stunning Strike", "Empowered Strikes"}
     strike = {r["name"] for r in by(plans, "no_name", "Unarmed Strike")["riders"]}
     assert {"Stunning Strike", "Empowered Strikes"} <= strike
+    assert "Stunning Strike" not in {r["name"] for r in by(plans, "no_name", "Dart")["riders"]}  # (not a Monk weapon)
+    assert "Stunning Strike" in {r["name"] for r in by(plans, "no_name", "Vicious Quarterstaff")["riders"]}
     maul = next(p for p in plans["big_c"] if p["name"].startswith("Hammer of Thunderbolts"))
     when = {r["name"]: r["when"] for r in maul["riders"]}
     assert when.get("Savage Attacker") == "hit" and "Favored by the Gods" not in when
@@ -202,3 +204,16 @@ def test_a_rider_with_a_kind_is_something_the_card_can_press(plans):
     assert levels and set(smite["rolls"]["effects"][0]["at"]) <= levels | {"1"}
     assert smite["rolls"]["effects"][0]["at"]["2"]["parts"] == ["3d8 radiant"]
     assert roll_plan.rider_act({}, {"kind": "words"}) is None and roll_plan.rider_act({}, {"kind": "save", "dc": "x"}) is None
+
+
+def test_what_adds_to_a_spells_damage_is_offered_where_it_applies():
+    """Brett, Nov 10 (what's left to complete rolls): a modifier to spell damage (a Chromatic Dragon-Touched Focus, marked
+    by its player: a d6 when a slot is used on acid, cold, fire, lightning or poison damage) is on those spells' plans,
+    never a cantrip's or another damage type's; a type the caster picks (Chromatic Orb) counts."""
+    s = sheet("trah")
+    focus = next(i for i in s["inventory"] if "Dragon-Touched" in i["name"])
+    s["_item_choices"] = {focus["key"].split(":", 1)[1]: "Chromatic"}
+    got = {p["name"]: [m["name"] for m in p["modifiers"] if m["when"] == "on_damage"] for p in roll_plan.plans(s)}
+    assert all(got[n] == ["Dragon-Touched Focus: Chromatic"] for n in ("Fireball", "Burning Hands", "Chromatic Orb"))
+    assert got["Fire Bolt"] == [] and got["Magic Missile"] == [] and got["Raulothim's Psychic Lance"] == []
+    assert not any(m["when"] == "on_damage" for p in roll_plan.plans(sheet("trah")) for m in p["modifiers"])  # (unmarked: none)

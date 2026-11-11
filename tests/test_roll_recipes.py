@@ -22,6 +22,11 @@ def test_every_stored_recipe_is_well_formed():
     assert len(data["spells"]) >= 120 and data["items"]
     for name, recipe in list(data["spells"].items()) + list(data["items"].items()):
         assert recipe["checked"], name
+        if use := recipe.get("use"):  # (what using an item rolls: a check, a save, or its own attack with a save on a hit)
+            assert sum(k in use for k in ("check", "save", "attack")) == 1, name
+            assert isinstance(use.get("dc", 0), int) and (not use.get("rider") or {"name", "save", "dc"} <= set(use["rider"])), name
+            assert not recipe.get("events"), name
+            continue
         for e in recipe["events"]:
             assert e["on"] in ("hit", "save", "auto", "rider", "heal", "temp", "plain"), name
             assert e["parts"] and all(rr.parse_part(p) for p in e["parts"]), name

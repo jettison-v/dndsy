@@ -188,3 +188,73 @@ def test_only_the_characters_player_uses_it(dm, db, sheet):
     cole, pid = hurt(db, sheet)
     assert dm.post(f"/characters/{cole.id}/use/{pid}").status_code == 404
     assert not intents(db, cole)
+
+
+def _plan_of(page: str, label: str, cls: str = "") -> str | None:
+    """The data-plan of the roll button labelled `label` (with `cls` among its classes) on a page."""
+    import re
+
+    for tag in re.findall(r"<button\b[^>]*>", page):
+        if f'data-label="{label}"' in tag and (not cls or cls in tag):
+            m = re.search(r'data-plan="([^"]*)"', tag)
+            return m.group(1) if m else None
+    return None
+
+
+def test_using_an_item_rolls_the_plan_its_button_carries(player, db, sheet, monkeypatch):
+    """Brett, Nov 10 ("a Roll engine: changes are universal and mostly made with data"): the Use window has no dice of
+    its own. A Soul Coin's Use and roll opens the roll card on the very button its Roll is (the same plan), and a
+    potion's Drink rolls the dice its Heal button's plan says, so a change to the item's recipe changes both."""
+    import html
+    import json
+
+    from app import roll_recipes as rr
+
+    cole, pid = hurt(db, sheet)
+    coin = next(i["id"] for i in sheet["inventory"] if i["definition"]["name"] == "Soul Coin")
+    w = player.get(f"/characters/{cole.id}/use/{coin}").text
+    assert "Use and roll" in w
+    o = next(o for o in views.options(characters.character_summary(cole), set()) if o["name"] == "Soul Coin")
+    chip = next(r["attrs"] for r in views.option_rolls(o) if r["button"] == "chip")  # (its Roll where the bridge is off)
+    assert html.unescape(_plan_of(w, "Soul Coin", "use-roll")) == chip["plan"]
+
+    w = player.get(f"/characters/{cole.id}/use/{pid}").text
+    assert ">Drink<" in w and "and roll" not in w and "2d4+2" in w
+    real = rr.recipes()
+    items = {**real["items"], "Potion of Healing": {**real["items"]["Potion of Healing"], "events": [{"name": "Healing", "on": "heal", "parts": ["4d4+4"]}]}}
+    monkeypatch.setattr(rr, "recipes", lambda: {**real, "items": items})
+    assert "4d4+4" in player.get(f"/characters/{cole.id}/use/{pid}").text
+    j = player.post(f"/characters/{cole.id}/use/{pid}").json()
+    assert db.get(TableRoll, j["roll"]["id"]).formula == "4d4+4"
+    o = next(o for o in views.options(characters.character_summary(cole), set()) if o["name"] == "Potion of Healing")
+    chip = next(r["attrs"] for r in views.option_rolls(o) if r["button"] == "chip")
+    assert json.loads(chip["plan"])["rolls"]["effects"][0]["at"]["0"]["parts"] == ["4d4+4"]  # (and its Heal button)
+
+
+def test_every_usable_item_on_the_partys_sheets_rolls_its_plan():
+    """Every item with a Use window on the party's saved sheets: one with a roll in its plan offers it (a potion rolls
+    as it's drunk; anything else is Use and roll), and its dice are the plan's at the plan's own level. Using a Hat of
+    Wizardry is an Arcana check, Dust of Sneezing and Choking your own Con save, a Hammer of Thunderbolts its own attack
+    thrown with Thunderclap's save on a hit (Brett, Nov 10: what's left to fully complete rolls)."""
+    import json
+    from pathlib import Path
+
+    from app import ddb
+    from app.item_use import _drinks
+
+    seen = {}
+    for name in ("big_c", "cole", "no_name", "trah"):
+        raw = json.loads((Path(__file__).parent / "fixtures" / "ddb" / f"{name}.json").read_text())["data"]
+        s = ddb.parse_character(ddb.sanitize(raw))
+        for o in views.options(s, set()):
+            if not o.get("use") or not (r := views.item_roll(o, s)):
+                continue
+            plan = json.loads(r["attrs"]["plan"])
+            if plan.get("rolls"):
+                at = plan["rolls"]["effects"][0]["at"][str(plan["rolls"]["base"])]
+                assert r["formula"] == "+".join(p.split(" ")[0] for p in at["parts"]), (name, o["name"])
+            assert bool(_drinks(o)) == (o["use"]["gives"] and r["kind"] == "heal"), (name, o["name"])
+            seen[o["name"]] = (plan["play"], plan.get("bonus"), [x["name"] for x in plan.get("riders") or []])
+    # (what using these rolls is the recipe's `use`; the numbers are the sheet's)
+    assert seen["Hat of Wizardry"] == ("d20", 7, []) and seen["Dust of Sneezing and Choking"][:2] == ("d20", 2)
+    assert seen["Hammer of Thunderbolts (Maul)"][0] == "attack" and "Thunderclap" in seen["Hammer of Thunderbolts (Maul)"][2]

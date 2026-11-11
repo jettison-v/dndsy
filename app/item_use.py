@@ -88,7 +88,15 @@ def window(request: Request, character_id: int, item_id: int, db: Session = Depe
     ch, _ = _guard(db, request, character_id)
     it, o = _item(db, ch, item_id)
     return templates.TemplateResponse(request, "_use_window.html", {"c": ch, "it": it, "o": o, "others": _others(db, ch) if o["use"]["gives"] else [],
-                                                                    "reachable": ddb_bridge.reachable(ch), "starts": (cond.on_use(it) or {}).get("starts", "")})
+                                                                    "reachable": ddb_bridge.reachable(ch), "starts": (cond.on_use(it) or {}).get("starts", ""),
+                                                                    "roll": views.item_roll(o, _sheet(db, ch)), "drinks": _drinks(o)})
+
+
+def _drinks(o: dict) -> dict | None:
+    """A potion's healing (one you drink or give): rolled here as it's used, from its own roll's plan; any other item's
+    roll is the roll card's, opened by Use and roll."""
+    r = views.item_roll(o)
+    return r if r and o["use"]["gives"] and r["kind"] == "heal" else None
 
 
 @router.post("/characters/{character_id:int}/use/{item_id:int}")
@@ -108,8 +116,8 @@ def use(request: Request, character_id: int, item_id: int, to: str = Form(""), d
     verb = {"Drink": "Drank", "Read": "Read", "Use": "Used"}[o["use"]["verb"]]
     text = f"Gave {to} {it['name']}" if to else f"{verb} {it['name']}"
     row = None
-    if o["use"]["gives"] and o.get("heal") and o.get("dice"):
-        row = table_rolls.add_roll(db, ch, me.id, f"{it['name']} for {to}" if to else it["name"], o["dice"])
+    if drink := _drinks(o):  # (its dice from the plan its Heal button carries: one roll, however it's made)
+        row = table_rolls.add_roll(db, ch, me.id, f"{it['name']} for {to}" if to else it["name"], drink["formula"])
     if row and not to:
         w = hit_points.working(db, ch, "heal", [{"amount": row.total, "type": ""}])
         said = hit_points.make(db, ch, user, row, "heal", w)

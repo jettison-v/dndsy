@@ -967,7 +967,7 @@
   "kind": "plan",
   "status": "Waiting for Brett's audit (after the rebuild)",
   "date": "Nov 10",
-  "what": "Every way a roll is made, step by step, as close-ups of the roll card and, once there's a result, the Table rolls entry it made (49 close-ups): what to check on each, what the rebuild changed and what was found. Comment on a screen to send Claude a note; the screenshots are the artifact's own files, never in the repo.",
+  "what": "Every way a roll is made, step by step, as close-ups of the roll card and, once there's a result, the Table rolls entry it made (53 close-ups): what to check on each, what the rebuild changed and what was found. Comment on a screen to send Claude a note; the screenshots are the artifact's own files, never in the repo.",
   "source": "docs/artifacts/roll-audit.html",
   "link": "https://claude.ai/artifact/S16McZJH6mbUGRvoZRTJMY"
  },

@@ -1820,7 +1820,14 @@ function feedbackBusy(e) {
     mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = !m.once; });  // (on by themselves while they last; once a turn: yours to tick)
     const eff = () => effs[st.ev] || null;
     const now = () => (eff() ? eff().at[String(st.level)] : null);  // (the effect's dice at the level it's cast at)
-    const dmgText = () => (now() ? now().text : '') || plan.dmg || '';
+    const dmgText = () => ((now() ? now().text : '') || plan.dmg || '') + dmgModsText();
+    // What adds to the damage (Sneak Attack on a hit; Arcane Firearm, a Chromatic focus on a spell's damage): pills, the
+    // pressed ones rolled into the damage as extras
+    const dmgMods = () => mods.filter(m => (m.when === 'on_hit' || m.when === 'on_damage') && m.adds);
+    const dmgExtras = () => dmgMods().filter(m => st.on[m.name]).map(m => (m.short || m.name).slice(0, 40) + ':+' + m.adds.replace(/^\+/, '').split(' ')[0]);
+    const dmgModsText = () => (attack ? '' : dmgMods().filter(m => st.on[m.name]).map(m => ' + ' + m.adds).join(''));
+    const dmgPills = () => { const ms = dmgMods(); return ms.length ? '<div class="rcard-group"><span class="rcard-lbl">Adds to the damage</span><div class="rcard-pills">'
+      + ms.map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.short || m.name, m.adds + (m.once ? ' · once a turn' : '') + (m.slot ? ' · with a slot' : ''))).join('') + '</div></div>' : ''; };
     const steps = () => d20 || single ? ['Roll'] : save ? ['The save', 'Damage'] : [...(choice ? ['Choose'] : []), 'To hit', 'Damage'];
     const at = () => d20 || single ? (st.step === 'done' ? 9 : 0) : save ? ({ save: 0, rolling: 1, saved: 9 })[st.step]
       : ({ choose: 0, attack: choice ? 1 : 0, rolling: choice ? 1 : 0, result: choice ? 1 : 0, damage: choice ? 2 : 1, done: 9 })[st.step];
@@ -1914,13 +1921,14 @@ function feedbackBusy(e) {
         h += castAt();
         if (plan.roll === 'dice') h += '<div class="rw-row"><span class="rw-label">For</span><input type="text" class="rw-text" data-card-for placeholder="What the DM asked for (optional)" maxlength="60" value="' + esc(st.forText) + '"></div>';
         h += notes();
+        if (eff() && eff().kind === 'damage') h += dmgPills();
         h += '<div class="rcard-group"><span class="rcard-lbl">Adds to the roll</span><div class="rcard-pills">' + added() + plus('pre') + '</div>';
         h += '<button type="button" class="btn primary rcard-go" data-roll-single' + (cast && !now() ? ' disabled' : '') + '>' + ({ heal: 'Roll healing', temp: 'Roll Temporary Hit Points', damage: 'Roll damage' }[eff() ? eff().kind : plan.roll] || 'Roll')
           + ' <small>' + esc(singleText()) + '</small></button>' + visLine();
       } else if (st.step === 'save') {
         h += castAt() + notes();
         const ok = { half: ': half damage on a success', none: ': no damage on a success' }[plan.save.success] || '';
-        h += '<p class="rcard-q">Each target makes a <b>' + esc(plan.save.ability) + ' save</b> against <b>DC ' + plan.save.dc + '</b>' + ok + '. The DM rolls them.</p>';
+        h += '<p class="rcard-q">Each target makes a <b>' + esc(plan.save.ability) + ' save</b> against <b>DC ' + plan.save.dc + '</b>' + ok + '. The DM rolls them.</p>' + dmgPills();
         h += '<button type="button" class="btn primary rcard-go" data-roll-save' + (cast && !now() ? ' disabled' : '') + '>Roll damage <small>' + esc(dmgText()) + '</small></button>' + visLine();
       } else if (st.step === 'saved') {
         const e = st.entry, half = plan.save.success === 'half' ? Math.floor(e.total / 2) : plan.save.success === 'none' ? 0 : null;
@@ -1961,7 +1969,7 @@ function feedbackBusy(e) {
           + (tw ? '<p class="rcard-line">Rolled twice, the higher kept <span class="roll-x">(the other: ' + esc((tw.dice || []).join(' ')) + ' → ' + tw.total + ')</span></p>' : '')
           + ((st.entry && st.entry.saves) || []).map(sv => { const [who, what] = sv.label.split(': ');
             return '<p class="rcard-line rcard-save">' + esc(who) + ': the target makes a <b>' + esc(what || 'save') + ', DC ' + sv.dc + '</b>.' + (spec.shared ? ' The DM rolls it; it\'s in Table rolls.' : '') + '</p>'; }).join('')
-          + (riderList('hit') ? '<ul class="rw-notes" data-riders>' + riderList('hit') + '</ul>' : '') + '<p class="rw-note">In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.</p>'
+          + (riderList('hit') ? '<ul class="rw-notes" data-riders>' + riderList('hit') + '</ul>' : '') + '<p class="rw-note">' + (spec.shared ? 'In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.' : 'Only you see this roll.') + '</p>'
           + '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>'
           : '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling damage</span></div>';
       } else if (st.step === 'pick') {  // (+ a die, pressed in Table rolls: which one)
@@ -1985,21 +1993,21 @@ function feedbackBusy(e) {
       if (first) first.focus({ preventScroll: true });
     }
     function onHit() {  // what you can add once an attack hits: on-hit dice, riders to press, riders in words
-      const hitMods = mods.filter(m => m.when === 'on_hit' && m.adds), said = riderList('hit'), rows = acts();
+      const hitMods = dmgMods(), said = riderList('hit'), rows = acts();
       return hitMods.length || said || rows.length ? '<div class="rcard-group"><span class="rcard-lbl">On a hit</span>'
         + (hitMods.length ? '<div class="rcard-pills">' + hitMods.map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.name, m.adds + (m.once ? ' · once a turn' : ''))).join('') + '</div>' : '')
         + rows.map(rideRow).join('') + (said ? '<ul class="rw-notes" data-riders>' + said + '</ul>' : '') + '</div>' : '';
     }
     function dmgAdds() {
       const on = acts().filter(r => st.ride[r.name]), type = on.find(r => r.act.type), twice = on.some(r => r.act.twice);
-      return mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => ' + ' + m.adds).join('')
+      return dmgMods().filter(m => st.on[m.name]).map(m => ' + ' + m.adds).join('')
         + on.flatMap(rideDice).map(p => ' + ' + p).join('') + (type ? ' · as ' + type.act.type : '') + (twice ? ' · rolled twice' : '');
     }
     // Roll damage with what's pressed: on-hit dice and riders' dice in it, its type or rolled twice as a rider says; then
     // each save rider's DC into this attack's entry, then each rider's cost (a Focus Point, Divine Smite's slot), with Undo
     function rollDamage() {
       const on = acts().filter(r => st.ride[r.name]), type = on.find(r => r.act.type);
-      const extras = [...mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => m.name + ':+' + m.adds.replace(/^\+/, '').split(' ')[0]),
+      const extras = [...dmgExtras(),
                       ...on.flatMap(r => rideDice(r).map(p => { const [dice, type] = p.split(' '); return (type ? r.name + ' (' + type + ')' : r.name).slice(0, 40) + ':+' + dice; }))];
       return follow('damage', { extras, asType: type ? type.act.type : '', twice: on.some(r => r.act.twice) }).then(() => {
         if (!st.dmg) return;
@@ -2036,7 +2044,8 @@ function feedbackBusy(e) {
       if (!e || !e.main) return '';
       if (single) {  // (one roll: its number, what it is, and where it goes next)
         const what = { heal: 'healing', temp: 'Temporary Hit Points', damage: 'damage' }[e.kind] || esc(e.label);
-        const next = (e.kind === 'heal' || e.kind === 'temp') && plan.self ? 'In Table rolls, <b>Apply to</b> adds it to your own Hit Points.'
+        const next = !spec.shared ? 'Only you see this roll.'
+          : (e.kind === 'heal' || e.kind === 'temp') && plan.self ? 'In Table rolls, <b>Apply to</b> adds it to your own Hit Points.'
           : e.kind === 'heal' || e.kind === 'temp' ? 'In Table rolls, <b>Apply to</b> gives it to a character.'
           : e.kind === 'damage' ? 'In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.' : '';
         return '<div class="rcard-result' + (e.kind === 'heal' || e.kind === 'temp' ? ' rcard-heal' : e.kind === 'damage' ? ' rcard-dmg' : '') + '"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">' + what + '</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
@@ -2079,7 +2088,8 @@ function feedbackBusy(e) {
       const d = dice(), was = st.step;
       st.step = 'rolling'; st.adding = false; draw();
       const label = plan.roll === 'dice' && !cast ? (st.forText.trim() || 'Dice') : spec.label + (d.parts && effs.length > 1 ? ' · ' + eff().name : '');
-      return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: single ? st.added.slice() : [], level: cast ? st.level : 0, self: !!plan.self, ...d })
+      const adds = eff() && eff().kind === 'damage' ? dmgExtras() : [];
+      return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: [...(single ? st.added.slice() : []), ...adds], level: cast ? st.level : 0, self: !!plan.self, ...d })
         .then(e => { st.entry = e; st.step = next; if (w.isConnected) draw(); if (cast || save) turnUsed(anchor); }, () => { st.step = was; if (w.isConnected) draw(); });
     }
     function follow(action, o) {
@@ -2144,7 +2154,7 @@ function feedbackBusy(e) {
     }
     // Cast and roll: the spell is cast, so healing, damage or a save spell's damage rolls now (one effect to roll; a
     // spell with a choice of effects asks Which first). Shift-click: the first roll at once, as it stands.
-    const auto = (spec.cast && (single || save) && effs.length <= 1) || (spec.shift && st.step !== 'choose');
+    const auto = ((spec.cast || spec.used) && (single || save) && effs.length <= 1) || (spec.shift && st.step !== 'choose');
     if (auto) (w.querySelector('[data-roll-single], [data-roll-save], [data-roll-hit]') || { click() {} }).click();
   }
 
@@ -2758,8 +2768,9 @@ function feedbackBusy(e) {
     const chosen = Object.fromEntries([...w.querySelectorAll('select[name], input[name]')].filter(s => !/^(checkbox|radio)$/.test(s.type) || s.checked).map(s => [s.name, s.value]));
     posted(w._use, { ...chosen, to: btn.dataset.to || '' }).then(j => {
       // Cast and roll: the roll opens where the Cast window was, at the level just cast
-      const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll');
-      if (roller) {
+      const roller = 'thenRoll' in btn.dataset && w.querySelector('.cast-roll, .use-roll');
+      if (roller && roller.matches('.use-roll')) openRoll(roller, { ...specFrom(roller), used: true });  // (Use and roll: used, so it rolls at once)
+      else if (roller) {
         const way = w.querySelector('select[name=way]')?.selectedOptions[0], level = way?.dataset.level;
         if (level) roller.dataset.slot = level;
         // (cast: the slot is spent, so its level is fixed and there's nothing left to choose; healing and damage roll at

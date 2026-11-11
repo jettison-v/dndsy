@@ -163,6 +163,9 @@ recipes; no book text). Their dice are checked against the offline copy when it'
 | Acid | Acid: 2d6 acid (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
 | Alchemist's Fire | Alchemist's Fire: 1d4 fire (Dex save, nothing on a success; again at the start of each of its turns while Burning) | SRD 5.2 adventuring gear; Burning deals 1d4 Fire at the start of each turn |
 | Basic Poison | Basic Poison: 1d4 poison (no roll to hit) | SRD 5.2 adventuring gear |
+| Dust of Sneezing and Choking | no damage or healing roll | You and every creature in a 30-foot Emanation make a DC 15 Constitution save (2024 DMG) |
+| Hammer of Thunderbolts | no damage or healing roll | Spend 1 charge to throw it (20/60 ft); on a hit, the target and creatures within 30 feet make a DC 17 Constitution save (2024 DMG) |
+| Hat of Wizardry | no damage or healing roll | Unknown Spell: a DC 10 Intelligence (Arcana) check to cast a Wizard cantrip you don't know (2024 DMG) |
 | Holy Water | Holy Water: 2d8 radiant (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
 | Hunting Trap | Hunting Trap: 1d4 piercing (Dex save, nothing on a success) | SRD 5.2 adventuring gear |
 | Keoghtom's Ointment | Keoghtom's Ointment: 2d8+2 (healing) | a dose heals 2d8 + 2 (the jar's 1d4 + 1 doses are counted when it's found) |
