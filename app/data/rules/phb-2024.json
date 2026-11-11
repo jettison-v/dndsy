@@ -1,0 +1,293 @@
+{
+ "book": "phb-2024",
+ "about": "Player's Handbook (2024): mechanics only, in askdnd's own words, checked against Brett's offline copy; never book text",
+ "entries": [
+  {
+   "kind": "feature",
+   "name": "Bardic Inspiration",
+   "adds": [
+    {
+     "name": "Bardic Inspiration",
+     "why": "the creature can add the die to a D20 Test it fails (2024: after seeing it fail)",
+     "when": "after_fail",
+     "to": [
+      "attack",
+      "save",
+      "check"
+     ],
+     "amount": "1{bardic}",
+     "gives": true
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Blessed Strikes",
+   "adds": [
+    {
+     "name": "Blessed Strikes",
+     "why": "Cleric: once a turn, extra radiant damage on a hit with a cantrip or weapon attack",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "amount": "1d8 radiant",
+     "once": "a turn"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Channel Divinity: Guided Strike",
+   "adds": [
+    {
+     "name": "Channel Divinity: Guided Strike",
+     "why": "Oath of Conquest (Xanathar's) and War Domain: +10 to an attack roll once you've seen it (Brett's Roll Audit comment, Nov 10: it's chosen with the to-hit, not after the hit)",
+     "when": "after_roll",
+     "to": [
+      "attack"
+     ],
+     "amount": "10",
+     "short": "Guided Strike",
+     "says": "after you see the roll",
+     "cost": "1 Channel Divinity"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Deflect Attack",
+   "adds": [
+    {
+     "name": "Deflect Attack",
+     "why": "Monk: reduce an attack's damage by 1d10 + Dexterity + Monk level",
+     "when": "damage_taken",
+     "to": [
+      "damage_taken"
+     ],
+     "reduces": "1d10+{mod:dexterity}+{level:Monk}"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Deflect Attack: Redirect Attack",
+   "why": "Monk: the target saves against your Monk DC or takes two rolls of your Martial Arts die + Dexterity, the attack's type; the reduction is Deflect Attacks'",
+   "rolls": [
+    {
+     "name": "Redirect Attack",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2{martial_arts}+{mod:dexterity}"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "note": "the same damage type as the attack you deflected"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Land’s Aid: Damage",
+   "why": "Circle of the Land: a Con save in a 10-ft sphere, half on a success; 3d6 at Druid level 10, 4d6 at 14",
+   "rolls": [
+    {
+     "name": "Land's Aid",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "{lands_aid}d6 necrotic"
+     ],
+     "save": "Con",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Land’s Aid: Heal",
+   "why": "Circle of the Land: one creature in the area regains the same dice",
+   "rolls": [
+    {
+     "name": "Land's Aid",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "{lands_aid}d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Second Wind",
+   "why": "Fighter: regain 1d10 + your Fighter level",
+   "rolls": [
+    {
+     "name": "Second Wind",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d10+{level:Fighter}"
+     ]
+    }
+   ],
+   "self": true
+  },
+  {
+   "kind": "feature",
+   "name": "Sneak Attack",
+   "adds": [
+    {
+     "name": "Sneak Attack",
+     "why": "Rogue: once a turn, extra damage on a hit with a Finesse or ranged weapon, with Advantage or an ally beside the target",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "amount": "{sneak}d6",
+     "once": "a turn"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tactical Mind",
+   "adds": [
+    {
+     "name": "Tactical Mind",
+     "why": "Fighter: on a failed ability check, spend a Second Wind use to add 1d10 (kept if it still fails)",
+     "when": "after_fail",
+     "to": [
+      "check"
+     ],
+     "amount": "1d10",
+     "cost": "a Second Wind use"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Uncanny Metabolism",
+   "why": "Monk: regain a roll of your Martial Arts die + your Monk level (and your Focus Points)",
+   "rolls": [
+    {
+     "name": "Uncanny Metabolism",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1{martial_arts}+{level:Monk}"
+     ]
+    }
+   ],
+   "self": true
+  },
+  {
+   "kind": "feature",
+   "name": "Wild Shape: Feral Forms",
+   "why": "the dice are the forms' own (their stat blocks: Wild Shape, app/wild_shape.py), not a roll of the Druid's",
+   "rolls": []
+  },
+  {
+   "kind": "feature",
+   "name": "Wild Shape: Guardian Forms",
+   "why": "the dice are the forms' own (their stat blocks: Wild Shape, app/wild_shape.py), not a roll of the Druid's",
+   "rolls": []
+  },
+  {
+   "kind": "spell",
+   "name": "Find Steed",
+   "why": "the steed attacks with its own stat block (app/summons.py), not the caster's dice",
+   "level": 2,
+   "rolls": []
+  },
+  {
+   "kind": "spell",
+   "name": "Mind Sliver",
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Mind Sliver",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d6 psychic"
+     ],
+     "save": "Int",
+     "success": "none",
+     "cantrip": "dice",
+     "note": "On a failure it also subtracts 1d4 from its next save before the end of your next turn"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Thorn Whip",
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Thorn Whip",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "1d6 piercing"
+     ],
+     "cantrip": "dice",
+     "note": "A Large or smaller target can be pulled up to 10 ft closer"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Toll the Dead",
+   "why": "1d8, or 1d12 if the target is missing Hit Points; not in the SRD, checked against the 2024 Player's Handbook",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Unhurt target",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d8 necrotic"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "cantrip": "dice"
+    },
+    {
+     "name": "Target missing Hit Points",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d12 necrotic"
+     ],
+     "save": "Wis",
+     "success": "none",
+     "cantrip": "dice"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Word of Radiance",
+   "why": "not in the SRD; checked against the 2024 Player's Handbook",
+   "level": 0,
+   "rolls": [
+    {
+     "name": "Word of Radiance",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d6 radiant"
+     ],
+     "save": "Con",
+     "success": "none",
+     "cantrip": "dice"
+    }
+   ]
+  }
+ ]
+}

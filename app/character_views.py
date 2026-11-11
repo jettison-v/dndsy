@@ -333,7 +333,7 @@ def item_roll(o: dict, sheet: dict | None = None) -> dict | None:
 
 
 def use_roll(o: dict, sheet: dict, use: dict) -> dict | None:
-    """What using an item rolls, by its recipe's `use` (scripts/roll_overrides.json "items"): {"check": "Arcana", "dc": 10}
+    """What using an item rolls, by its recipe's `use` (app/data/rules/<book>.json): {"check": "Arcana", "dc": 10}
     (Hat of Wizardry), {"save": "Con", "dc": 15} (Dust of Sneezing and Choking: you roll yours too), {"attack": true,
     "rider": {name, save, dc, says}} (Hammer of Thunderbolts: its own attack, thrown, and on a hit a save for the DM).
     The numbers are the sheet's; the DC and words are the recipe's."""

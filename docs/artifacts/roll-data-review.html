@@ -1,0 +1,131 @@
+<title>Roll Data Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --bg: #f6f3ee; --surface: #fffdf9; --line: #e3ddd2; --text: #2b2724; --muted: #6c645b; --strong: #1a1714;
+  --red: #b23a32; --red-soft: #f6e3e0; --green: #2f7a4f; --green-soft: #e1f0e6; --amber: #9a6a12; --amber-soft: #f6ecd6;
+  --blue: #2f5f99; --blue-soft: #e2ebf6; --code: #f0ebe2;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15171a; --surface: #1f2226; --line: #34383e; --text: #d9d6d0; --muted: #9a958d; --strong: #f3f1ec;
+  --red: #e0675e; --red-soft: #3a2422; --green: #6cc28f; --green-soft: #1f3327; --amber: #e8b34b; --amber-soft: #3a2f1a;
+  --blue: #7ea6e0; --blue-soft: #1f2a3a; --code: #272b30; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #15171a; --surface: #1f2226; --line: #34383e; --text: #d9d6d0; --muted: #9a958d; --strong: #f3f1ec;
+  --red: #e0675e; --red-soft: #3a2422; --green: #6cc28f; --green-soft: #1f3327; --amber: #e8b34b; --amber-soft: #3a2f1a;
+  --blue: #7ea6e0; --blue-soft: #1f2a3a; --code: #272b30; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.6 var(--sans); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 36px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 32px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 600 1.02rem/1.3 var(--sans); }
+p { margin: 0; max-width: 72ch; }
+.lbl { font: 700 .74rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { font-size: 1.05rem; }
+.meta { color: var(--muted); font-size: .9rem; }
+section { display: grid; gap: 14px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card .n { font: 700 .72rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.card.rec { border-color: var(--green); }
+.tag { justify-self: start; font: 700 .7rem/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; }
+.t-bad { color: var(--red); background: var(--red-soft); } .t-ok { color: var(--green); background: var(--green-soft); }
+.t-warn { color: var(--amber); background: var(--amber-soft); }
+code { font: .86em var(--mono); background: var(--code); padding: 1px 5px; border-radius: 4px; }
+pre { margin: 0; background: var(--code); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: .82rem/1.55 var(--mono); }
+.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: .9rem; min-width: 640px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 700 .72rem/1.2 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+ol, ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 76ch; }
+.why { color: var(--muted); font-size: .9rem; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:12px">
+    <span class="lbl">askdnd · the roll engine's data · Nov 10</span>
+    <h1>Roll Data Review</h1>
+    <p class="lead">Before filling the engine from the whole 2024 Player's Handbook and Dungeon Master's Guide, a hard look at how its data is shaped. Today it's complete for the SRD and your table's sheets: 121 of the SRD's 125 spells with dice have a recipe (the other four are modifiers). But only 5 of the Player's Handbook's spells beyond the SRD do, 13 class features, 15 items and 12 modifiers, all chosen because someone at your table has them.</p>
+  </header>
+
+  <section>
+    <h2>Where roll data lives today</h2>
+    <div class="tablewrap"><table>
+      <tr><th>Place</th><th>Holds</th><th>Shape</th></tr>
+      <tr><td><code>app/data/srd/spells.json</code></td><td>The SRD's 339 spells</td><td>Read from the official PDF</td></tr>
+      <tr><td><code>scripts/roll_overrides.json</code> → <code>roll_recipes.json</code></td><td>Spell recipes in three lists by book; features, items, modifiers</td><td>JSON, keyed by name</td></tr>
+      <tr><td><code>app/class_rules.py</code></td><td>89 class and feat rules: attacks, Battle notes, options, <b>riders</b> and what a rider does when pressed</td><td>Python code</td></tr>
+      <tr><td><code>class_rules.MASTERIES</code></td><td>Weapon masteries</td><td>Python dict of words</td></tr>
+      <tr><td><code>app/data/item_actions.json</code></td><td>Battle options and effects that magic items give</td><td>JSON, keyed by name</td></tr>
+      <tr><td><code>roll_plan.fill</code></td><td>Scaling numbers: <code>{sneak}</code>, <code>{martial_arts}</code>, <code>{lands_aid}</code>…</td><td>Python, one function per token</td></tr>
+      <tr><td>Monsters, Wild Shape forms</td><td>SRD and the Monster Manual's stat blocks</td><td>Their actions read from their words</td></tr>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Devil's advocate: what breaks at the scale of two books</h2>
+    <div class="cards">
+      <div class="card"><span class="n">1</span><h3>Four ways to say "something is added to a roll"</h3><span class="tag t-bad">Biggest</span>
+        <p>A rider in Python (Stunning Strike), a modifier in JSON (Sneak Attack), a spell event marked <code>rider</code> or <code>on_hit</code> (Hunter's Mark, Divine Smite), an item's <code>use.rider</code> (Thunderclap). Each has its own code path. It already shows: <b>Radiant Strikes</b> (Paladin 11, +1d8 Radiant on every melee hit) is a rider in words only, so it's said but never rolled, while Sneak Attack, the same kind of thing, rolls.</p></div>
+      <div class="card"><span class="n">2</span><h3>When a rider applies is read from its words</h3><span class="tag t-bad">Fragile</span>
+        <p><code>"Once per turn, a hit with a Monk weapon or Unarmed Strike"</code> is matched with patterns to decide weapon, Unarmed Strike or spell; "Monk weapon" needed its own special case. Hundreds of features would each be a new pattern to get right.</p></div>
+      <div class="card"><span class="n">3</span><h3>Rules written as code</h3><span class="tag t-warn">Scale</span>
+        <p>89 class rules are Python. They can't be checked as a whole, generated from a book, or edited without touching code. Battle's notes (words for the page) sit beside mechanics (what rolls).</p></div>
+      <div class="card"><span class="n">4</span><h3>Scaling numbers need code</h3><span class="tag t-warn">Scale</span>
+        <p>Each scaling feature gets a named token and a Python function (<code>{sneak}</code>, <code>{lands_aid}</code>). The PHB has dozens: Rage damage, Bardic Inspiration's die, Martial Arts, Brutal Strike, Channel Divinity…</p></div>
+      <div class="card"><span class="n">5</span><h3>Keyed by display names</h3><span class="tag t-warn">Collisions</span>
+        <p>Curly apostrophes (<code>Land’s Aid</code>), suffixes stripped by hand (<code>Hammer of Thunderbolts (Maul)</code>), a <code>Use an item: </code> prefix, and a 2014 and a 2024 spell sharing one name. Every lookup has its own fallback.</p></div>
+      <div class="card"><span class="n">6</span><h3>Where it's from is in the file's layout</h3><span class="tag t-warn">Provenance</span>
+        <p>Spells sit in <code>spells</code>, <code>phb_spells</code>, <code>other_spells</code> by book; items and features don't say. Two books' worth needs the book on every entry, so a table without a book never gets its rules.</p></div>
+      <div class="card"><span class="n">7</span><h3>One field means two things</h3><span class="tag t-warn">Clarity</span>
+        <p>An event's <code>on</code> is both how it resolves (<code>hit</code>, <code>save</code>, <code>auto</code>) and what it does (<code>heal</code>, <code>temp</code>, <code>plain</code>), plus <code>rider</code>.</p></div>
+      <div class="card"><span class="n">8</span><h3>Items in two files</h3><span class="tag t-warn">Duplication</span>
+        <p>What an item rolls is in the recipes (with <code>use</code>); what it gives on Battle is in <code>item_actions.json</code>. A magic item from the DMG would be written twice.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>And against changing it</h2>
+    <div class="cards">
+      <div class="card"><h3>It works today</h3><p>Every roll on the party's sheets plays its plan, and about 350 buttons are tested on every push. A restructure risks that.</p><p class="why">Answer: the move is checked by the same tests plus a new one: every party plan is identical before and after.</p></div>
+      <div class="card"><h3>It's more to learn</h3><p>One general shape is more abstract than four specific ones.</p><p class="why">Answer: four shapes are more to learn, and the general one is what makes homebrew a matter of picking values (your note).</p></div>
+      <div class="card"><h3>Words still matter</h3><p>The DM rules, so riders' words stay what the player reads.</p><p class="why">Answer: every entry keeps its words (our own summary); structure decides only what the card offers and rolls.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Recommendation: one effect shape, one file per book</h2>
+    <div class="card rec"><span class="tag t-ok">Recommended</span>
+      <ol>
+        <li><b>One entry per rule thing</b> (spell, feature, feat, item, mastery) in a file per book: <code>app/data/rules/srd-5.2.1.json</code>, <code>phb-2024.json</code>, <code>dmg-2024.json</code>, <code>other-books.json</code>. Each entry names its book, its D&amp;D Beyond ids where known, and how it was checked. Mechanics and our own summaries only: never book text.</li>
+        <li><b>Two lists on every entry:</b> <code>rolls</code> (what it rolls when used: resolve <code>attack</code>/<code>save</code>/<code>none</code>, effect <code>damage</code>/<code>heal</code>/<code>temp</code>/<code>dice</code>) and <code>adds</code> (what it does to another roll). Riders, modifiers, on-hit spells and item riders all become <code>adds</code>, played by one code path.</li>
+        <li><b>When it applies is data:</b> <code>when</code> (before, after the roll, after a failure, on a hit, on a miss, on damage, on damage taken), <code>to</code> (attack, save, check, damage), <code>with</code> (melee weapon, ranged weapon, Monk weapon, Finesse, Unarmed Strike, spell, a damage type), <code>once</code> (a turn), <code>cost</code> (a resource, a slot, a free use).</li>
+        <li><b>Scaling is data:</b> a few generic tokens (<code>level:Class</code>, <code>mod:ability</code>, <code>pb</code>, <code>dc:ability</code>) and a <code>scale</code> table on the entry (<code>{"Druid": {"1": 2, "10": 3, "14": 4}}</code>) in place of a Python function per feature.</li>
+        <li><b>Battle's words stay in <code>class_rules</code> for now</b> (attacks per action, notes, options): they aren't rolls. Their riders move to data.</li>
+        <li><b>A schema and a test</b>: every entry checked on every push; a coverage report over the books (not only the sheets) says what each book's entries roll and what's left in words.</li>
+      </ol>
+      <pre>{"id": "phb-2024:feature:paladin:radiant-strikes", "kind": "feature", "name": "Radiant Strikes",
+ "class": "Paladin", "level": 11, "book": "phb-2024", "checked": "phb-2024",
+ "says": "Every hit with a melee weapon or Unarmed Strike deals an extra 1d8 Radiant",
+ "adds": [{"when": "on_hit", "to": ["damage"], "with": ["melee_weapon", "unarmed"],
+           "amount": "1d8 radiant", "always": true}]}</pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>Then the books</h2>
+    <ol>
+      <li><b>Move today's data</b> into the new shape with a converter; the party's plans must come out identical, and the every-roll test must pass.</li>
+      <li><b>Player's Handbook:</b> every spell beyond the SRD, every class and subclass feature and every feat that rolls or adds to a roll, checked against the offline copy.</li>
+      <li><b>Dungeon Master's Guide:</b> every magic item that rolls, asks for a save or adds to a roll.</li>
+      <li><b>A coverage report over the books</b>, and the every-roll test also plays a made-up character per class at levels 1, 5, 11 and 17, so the books' rules are played, not only listed.</li>
+    </ol>
+    <p class="meta">Monsters stay as they are: their stat blocks are already data, read from the SRD and your Monster Manual.</p>
+  </section>
+</div>

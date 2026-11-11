@@ -1,0 +1,1280 @@
+{
+ "book": "srd-5.2.1",
+ "about": "System Reference Document 5.2.1 (CC-BY-4.0, attribution in app/data/srd/README.md): hand-written recipes; the rest are read from its text by scripts/roll_audit.py",
+ "entries": [
+  {
+   "kind": "item",
+   "name": "Acid",
+   "why": "SRD 5.2 adventuring gear",
+   "rolls": [
+    {
+     "name": "Acid",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d6 acid"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "note": "DC 8 + your Dexterity modifier + Proficiency Bonus"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Alchemist's Fire",
+   "why": "SRD 5.2 adventuring gear; Burning deals 1d4 Fire at the start of each turn",
+   "rolls": [
+    {
+     "name": "Alchemist's Fire",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d4 fire"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "note": "DC 8 + your Dexterity modifier + Proficiency Bonus; on a failure it starts Burning",
+     "repeat": "start of each of its turns while Burning"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Basic Poison",
+   "why": "SRD 5.2 adventuring gear",
+   "rolls": [
+    {
+     "name": "Basic Poison",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d4 poison"
+     ],
+     "note": "Extra damage when the coated weapon or ammunition deals Piercing or Slashing damage"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Holy Water",
+   "why": "SRD 5.2 adventuring gear",
+   "rolls": [
+    {
+     "name": "Holy Water",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d8 radiant"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "note": "Only a Fiend or an Undead takes it; DC 8 + your Dexterity modifier + Proficiency Bonus"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Hunting Trap",
+   "why": "SRD 5.2 adventuring gear",
+   "rolls": [
+    {
+     "name": "Hunting Trap",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "1d4 piercing"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "note": "DC 13; on a failure its Speed is 0 until the start of its next turn"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Healing",
+   "why": "SRD 5.2 Potions of Healing table",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "2d4+2"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Healing (Greater)",
+   "why": "SRD 5.2 Potions of Healing table",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "4d4+4"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Healing (Superior)",
+   "why": "SRD 5.2 Potions of Healing table",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "8d4+8"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Healing (Supreme)",
+   "why": "SRD 5.2 Potions of Healing table",
+   "rolls": [
+    {
+     "name": "Healing",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "10d4+20"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Acid Arrow",
+   "why": "two moments: on the hit, and again at the end of the target's next turn; both upcast",
+   "rolls": [
+    {
+     "name": "On a hit",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "4d4 acid"
+     ],
+     "upcast": [
+      "1d4"
+     ],
+     "note": "On a miss: half of this initial damage only"
+    },
+    {
+     "name": "End of its next turn",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d4 acid"
+     ],
+     "upcast": [
+      "1d4"
+     ],
+     "repeat": "end of the target's next turn, after a hit"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Alter Self",
+   "why": "Natural Weapons: your Unarmed Strike with the growth, using your spellcasting modifier",
+   "rolls": [
+    {
+     "name": "Natural Weapons",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "1d6"
+     ],
+     "mod": true,
+     "note": "The damage type is the growth's (claws, fangs, horns or hooves)"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Animate Objects",
+   "why": "the objects attack with the Animated Object stat block's Slam, rolled from that block",
+   "rolls": []
+  },
+  {
+   "kind": "spell",
+   "name": "Arcane Hand",
+   "why": "two different damaging effects with different upcasting",
+   "rolls": [
+    {
+     "name": "Clenched Fist",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "5d8 force"
+     ],
+     "upcast": [
+      "2d8"
+     ]
+    },
+    {
+     "name": "Grasping Hand: crush",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "4d6 bludgeoning"
+     ],
+     "mod": true,
+     "upcast": [
+      "2d6"
+     ],
+     "note": "A Bonus Action while the hand grapples the target"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Arcane Sword",
+   "why": "damage 'equal to 4d12 plus your spellcasting ability modifier'",
+   "rolls": [
+    {
+     "name": "Arcane Sword",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "4d12 force"
+     ],
+     "mod": true,
+     "repeat": "Bonus Action on your later turns"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Bestow Curse",
+   "why": "the 1d8 is one of four curses you choose from, added when you damage the target",
+   "rolls": [
+    {
+     "name": "Curse: extra damage",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d8 necrotic"
+     ],
+     "note": "Only with this curse: whenever you deal damage to the target with an attack roll or a spell"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Bless",
+   "adds": [
+    {
+     "name": "Bless",
+     "why": "up to three creatures add 1d4 to attack rolls and saving throws while the caster concentrates",
+     "when": "before",
+     "to": [
+      "attack",
+      "save"
+     ],
+     "amount": "1d4",
+     "from": "another's spell"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Blink",
+   "why": "a plain d6 at the end of each of your turns",
+   "rolls": [
+    {
+     "name": "Blink roll",
+     "resolve": "none",
+     "effect": "dice",
+     "dice": [
+      "1d6"
+     ],
+     "note": "4 to 6: you vanish to the Ethereal Plane"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Call Lightning",
+   "why": "a storm you control adds a die",
+   "rolls": [
+    {
+     "name": "Call Lightning",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "3d10 lightning"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d10"
+     ],
+     "repeat": "Magic action on later turns",
+     "note": "Outdoors in a storm you control: +1d10"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Chain Lightning",
+   "why": "up to four targets save at the same time, so the damage is rolled once for all (2024 rules, Saving Throws and Damage)",
+   "rolls": [
+    {
+     "name": "Chain Lightning",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "10d8 lightning"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "note": "One roll for all four targets"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Chromatic Orb",
+   "why": "the leap is a new attack and a new damage roll",
+   "rolls": [
+    {
+     "name": "Chromatic Orb",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "3d8"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "note": "Two or more d8s the same: the orb leaps to another target within 30 ft, with a new attack roll and a new damage roll (as many leaps as the slot level)"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Confusion",
+   "why": "the 1d10 behavior and 1d4 direction are rolled for the confused creature",
+   "rolls": []
+  },
+  {
+   "kind": "spell",
+   "name": "Conjure Celestial",
+   "why": "two effects, each named, and both upcast (the reader misses Searing Light's); checked against the 2024 Player's Handbook",
+   "rolls": [
+    {
+     "name": "Healing Light",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "4d12"
+     ],
+     "mod": true,
+     "upcast": [
+      "1d12"
+     ]
+    },
+    {
+     "name": "Searing Light",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "6d12 radiant"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d12"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Conjure Elemental",
+   "why": "the Restrained target repeats the save each turn for less damage (checked against the 2024 Player's Handbook)",
+   "rolls": [
+    {
+     "name": "Conjure Elemental",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "8d8"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "upcast": [
+      "1d8"
+     ],
+     "note": "The spirit's damage type; on a failure the target is also Restrained"
+    },
+    {
+     "name": "Restrained target",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "4d8"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "upcast": [
+      "1d8"
+     ],
+     "repeat": "start of each of the Restrained target's turns"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Conjure Fey",
+   "why": "damage 'equal to 3d12 plus your spellcasting ability modifier'",
+   "rolls": [
+    {
+     "name": "Conjure Fey",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "3d12 psychic"
+     ],
+     "mod": true,
+     "upcast": [
+      "1d12"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Contact Other Plane",
+   "why": "the damage is to you, if you fail your own DC 15 Intelligence save",
+   "rolls": [
+    {
+     "name": "If you fail your DC 15 Int save",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "6d6 psychic"
+     ],
+     "note": "You take this damage"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Control Weather",
+   "why": "1d4 × 10 minutes is how long the change takes",
+   "rolls": []
+  },
+  {
+   "kind": "spell",
+   "name": "Delayed Blast Fireball",
+   "why": "the damage grows each turn the bead waits",
+   "rolls": [
+    {
+     "name": "Delayed Blast Fireball",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ],
+     "note": "+1d6 for each of your turns that ended before it exploded (add them with Add dice)"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Dissonant Whispers",
+   "why": "adds the note that a failed save spends the target's Reaction; checked against the 2024 Player's Handbook",
+   "rolls": [
+    {
+     "name": "Dissonant Whispers",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "3d6 psychic"
+     ],
+     "save": "Wis",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ],
+     "note": "On a failure it must use its Reaction to move away from you"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Divine Smite",
+   "why": "a Fiend or Undead adds a die; on a Critical Hit its dice double with the attack's",
+   "rolls": [
+    {
+     "name": "Divine Smite",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d8 radiant"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "note": "+1d8 against a Fiend or an Undead. Added to a weapon hit: on a Critical Hit, roll it with the attack's damage (Add dice) so its dice double too"
+    }
+   ],
+   "after_hit": "a hit with a melee weapon or an Unarmed Strike"
+  },
+  {
+   "kind": "spell",
+   "name": "Earthquake",
+   "why": "the fissures and their depth are the DM's rolls; the damage is for creatures near a collapsing structure",
+   "rolls": [
+    {
+     "name": "Collapsing structure",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 bludgeoning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Eldritch Blast",
+   "why": "a beam each: an attack roll per beam, more beams at character levels 5, 11 and 17 (named so the card and Table rolls say beams)",
+   "rolls": [
+    {
+     "name": "Eldritch Blast",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "1d10 force"
+     ],
+     "cantrip": "count",
+     "count_label": "beam"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Enlarge/Reduce",
+   "why": "the 1d4 changes the target's weapon damage; it isn't a save",
+   "rolls": [
+    {
+     "name": "Enlarged: extra damage",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d4"
+     ],
+     "note": "Added to an enlarged creature's weapon or Unarmed Strike hits. Reduce instead takes 1d4 from them (not below 1)"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "False Life",
+   "why": "upcasting adds a flat 5",
+   "rolls": [
+    {
+     "name": "Temporary Hit Points",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "2d4+4"
+     ],
+     "upcast": [
+      "+5"
+     ]
+    }
+   ],
+   "self": true
+  },
+  {
+   "kind": "spell",
+   "name": "Fire Shield",
+   "why": "a warm shield or a chill shield, not both",
+   "rolls": [
+    {
+     "name": "Warm shield",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d8 fire"
+     ],
+     "note": "To a creature within 5 ft that hits you with a melee attack"
+    },
+    {
+     "name": "Chill shield",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d8 cold"
+     ],
+     "note": "To a creature within 5 ft that hits you with a melee attack"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Flame Blade",
+   "why": "damage 'equal to 3d6 plus your spellcasting ability modifier'",
+   "rolls": [
+    {
+     "name": "Flame Blade",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "3d6 fire"
+     ],
+     "mod": true,
+     "upcast": [
+      "1d6"
+     ],
+     "repeat": "Magic action on later turns"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Flame Strike",
+   "why": "both damage types upcast",
+   "rolls": [
+    {
+     "name": "Flame Strike",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "5d6 fire",
+      "5d6 radiant"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d6",
+      "1d6"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Guidance",
+   "adds": [
+    {
+     "name": "Guidance",
+     "why": "add 1d4 to one ability check you choose before rolling (2024 PHB)",
+     "when": "before",
+     "to": [
+      "check"
+     ],
+     "amount": "1d4"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Heroes' Feast",
+   "why": "the Hit Point maximum (and Hit Points) go up by 2d10",
+   "rolls": [
+    {
+     "name": "Hit Point maximum",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "2d10"
+     ],
+     "note": "Each creature's Hit Point maximum increases by this much, and it gains the same Hit Points"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Magic Missile",
+   "why": "each dart deals its own 1d4 + 1",
+   "rolls": [
+    {
+     "name": "Dart",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d4+1 force"
+     ],
+     "count": 3,
+     "count_label": "dart",
+     "count_upcast": 1,
+     "note": "Each dart is rolled on its own; aim them at one creature or several"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Prismatic Spray",
+   "why": "a d8 picks each target's ray; then that color's damage",
+   "rolls": [
+    {
+     "name": "Ray color (each target)",
+     "resolve": "none",
+     "effect": "dice",
+     "dice": [
+      "1d8"
+     ],
+     "note": "1 red, 2 orange, 3 yellow, 4 green, 5 blue, 6 indigo, 7 violet, 8 two rays (roll twice more)"
+    },
+    {
+     "name": "Red",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Orange",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 acid"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Yellow",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Green",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 poison"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Blue",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 cold"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Prismatic Wall",
+   "why": "each layer a creature passes deals its own damage",
+   "rolls": [
+    {
+     "name": "Red layer",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 fire"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Orange layer",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 acid"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Yellow layer",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Green layer",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 poison"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Blue layer",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "12d6 cold"
+     ],
+     "save": "Dex",
+     "success": "half"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Reincarnate",
+   "why": "a table roll for the new body (the DM may choose instead)",
+   "rolls": []
+  },
+  {
+   "kind": "spell",
+   "name": "Resistance",
+   "why": "the 1d4 is rolled when the protected creature takes damage, to reduce it",
+   "rolls": [],
+   "adds": [
+    {
+     "name": "Resistance",
+     "why": "add 1d4 to one saving throw",
+     "when": "before",
+     "to": [
+      "save"
+     ],
+     "amount": "1d4"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Searing Smite",
+   "why": "the later damage happens before the save, which only ends the spell",
+   "rolls": [
+    {
+     "name": "On the hit",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d6 fire"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "note": "Extra damage from the attack: on a Critical Hit, add it to the attack's damage (Add dice) so it doubles"
+    },
+    {
+     "name": "Each of its turns",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d6 fire"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "repeat": "start of each of its turns",
+     "note": "Then it makes a Con save; a success ends the spell"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Shillelagh",
+   "why": "it changes your Club or Quarterstaff instead of rolling its own damage",
+   "rolls": [],
+   "note": "The weapon uses your spellcasting modifier for attack and damage, with a d8 damage die (d10 at level 5, d12 at 11, 2d6 at 17)"
+  },
+  {
+   "kind": "spell",
+   "name": "Sorcerous Burst",
+   "why": "an 8 lets you roll another d8, up to your spellcasting modifier in extra d8s",
+   "rolls": [
+    {
+     "name": "Sorcerous Burst",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "1d8"
+     ],
+     "cantrip": "dice",
+     "note": "For each 8 you roll, you can add another d8 (Add dice), up to your spellcasting modifier in extra d8s"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Spike Growth",
+   "why": "the damage is for every 5 feet moved",
+   "rolls": [
+    {
+     "name": "Each 5 feet moved",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d4 piercing"
+     ],
+     "note": "For every 5 feet a creature travels in the area"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Spirit Guardians",
+   "why": "Radiant or Necrotic by your alignment, not both",
+   "rolls": [
+    {
+     "name": "Spirit Guardians",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "3d8 radiant or necrotic"
+     ],
+     "save": "Wis",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ],
+     "note": "Radiant if you're good or neutral, Necrotic if you're evil",
+     "repeat": "when it enters or ends its turn in the Emanation"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Spiritual Weapon",
+   "why": "damage 'equal to 1d8 plus your spellcasting ability modifier'",
+   "rolls": [
+    {
+     "name": "Spiritual Weapon",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "1d8 force"
+     ],
+     "mod": true,
+     "upcast": [
+      "1d8"
+     ],
+     "repeat": "Bonus Action on your later turns"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Storm of Vengeance",
+   "why": "a different effect each turn",
+   "rolls": [
+    {
+     "name": "Turn 1: thunder",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "2d6 thunder"
+     ],
+     "save": "Con",
+     "success": "none"
+    },
+    {
+     "name": "Turn 2: acid rain",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "4d6 acid"
+     ]
+    },
+    {
+     "name": "Turn 3: six bolts",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "10d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half"
+    },
+    {
+     "name": "Turn 4: hail",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "2d6 bludgeoning"
+     ]
+    },
+    {
+     "name": "Turns 5 to 10: freezing rain",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d6 cold"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Teleport",
+   "why": "the GM rolls the outcome; this is the damage of a Mishap",
+   "rolls": [
+    {
+     "name": "Mishap",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "3d10 force"
+     ],
+     "note": "Each teleporting creature takes this on a Mishap"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Time Stop",
+   "why": "how many turns you take is a roll",
+   "rolls": [
+    {
+     "name": "Turns in a row",
+     "resolve": "none",
+     "effect": "dice",
+     "dice": [
+      "1d4+1"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "True Strike",
+   "why": "a weapon attack; extra Radiant damage only from level 5",
+   "rolls": [
+    {
+     "name": "Extra Radiant (level 5+)",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d6 radiant"
+     ],
+     "cantrip": "extra",
+     "note": "Added to the weapon's damage on a hit; the attack and damage use your spellcasting modifier"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Tsunami",
+   "why": "a smaller save-or-take for later rounds, shrinking each round",
+   "rolls": [
+    {
+     "name": "When it appears",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "6d10 bludgeoning"
+     ],
+     "save": "Str",
+     "success": "half"
+    },
+    {
+     "name": "Later rounds",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "5d10 bludgeoning"
+     ],
+     "save": "Str",
+     "success": "none",
+     "note": "1d10 less on each later round"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Vampiric Touch",
+   "why": "you also regain half the damage",
+   "rolls": [
+    {
+     "name": "Vampiric Touch",
+     "resolve": "attack",
+     "effect": "damage",
+     "dice": [
+      "3d6 necrotic"
+     ],
+     "upcast": [
+      "1d6"
+     ],
+     "repeat": "Magic action on later turns",
+     "note": "You regain Hit Points equal to half the Necrotic damage dealt"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Vitriolic Sphere",
+   "why": "only the initial damage upcasts; the later damage follows a failed save",
+   "rolls": [
+    {
+     "name": "Vitriolic Sphere",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "10d4 acid"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "2d4"
+     ],
+     "note": "A success takes half the initial damage only"
+    },
+    {
+     "name": "End of its next turn",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "5d4 acid"
+     ],
+     "repeat": "end of its next turn, after a failed save"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Wall of Fire",
+   "why": "the lingering damage has no save",
+   "rolls": [
+    {
+     "name": "When it appears",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "5d8 fire"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Burning side",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "5d8 fire"
+     ],
+     "upcast": [
+      "1d8"
+     ],
+     "repeat": "ends its turn within 10 ft of that side or in the wall, or enters it"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Wall of Ice",
+   "why": "the two damages upcast differently",
+   "rolls": [
+    {
+     "name": "When it appears",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "10d6 cold"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "2d6"
+     ]
+    },
+    {
+     "name": "Frigid air",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "5d6 cold"
+     ],
+     "save": "Con",
+     "success": "half",
+     "upcast": [
+      "1d6"
+     ],
+     "repeat": "first time on a turn a creature moves through it"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Wall of Thorns",
+   "why": "'Both types of damage increase by 1d8'",
+   "rolls": [
+    {
+     "name": "When it appears",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "7d8 piercing"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Entering the wall",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "7d8 slashing"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "upcast": [
+      "1d8"
+     ],
+     "repeat": "first time on a turn it enters, or ends its turn there"
+    }
+   ]
+  },
+  {
+   "kind": "spell",
+   "name": "Wish",
+   "why": "the stress damage is per level of each later spell; 2d4 days is a duration",
+   "rolls": [
+    {
+     "name": "Stress",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "1d10 necrotic"
+     ],
+     "note": "You take 1d10 per level of each spell you cast until a Long Rest: add dice for higher levels"
+    }
+   ]
+  }
+ ]
+}
