@@ -150,30 +150,35 @@ def active(sheet: dict | None) -> list[dict]:
     return [e for e in out if not e.get("group") or e.get("level", 0) == top[e["group"]]]
 
 
-_ADDS: dict = {}  # (a page asks once per Battle option: id(sheet) -> (what it was worked out from, the adds))
+_ADDS: dict = {}  # (a page asks once per Battle option: what it's worked out from -> the adds)
 
 
-def _fingerprint(sheet: dict) -> tuple:
-    return (len(sheet.get("features") or []), len(sheet.get("actions") or []), len(sheet.get("spells") or []),
-            len(sheet.get("inventory") or []), tuple((c.get("name"), c.get("level"), c.get("subclass")) for c in sheet.get("classes") or []),
+def _inputs(sheet: dict) -> tuple:
+    """Everything `_adds` reads from a sheet, and nothing else: the cache's key, so two sheets that agree on all of it
+    share one answer and any change to it is worked out again (the outside review's R8, Nov 10; tests/test_rules_books.py
+    changes each one). A new field `_adds` (or `active`, `fill`) reads goes here too."""
+    def names(k: str) -> tuple:
+        return tuple(x.get("name") or "" for x in sheet.get(k) or [] if isinstance(x, dict))
+
+    return (tuple((c.get("name"), c.get("level"), c.get("subclass")) for c in sheet.get("classes") or []),
+            names("features"), tuple(x.get("source") for x in sheet.get("features") or [] if isinstance(x, dict)), names("actions"), names("spells"),
+            tuple((x.get("name"), x.get("base_name"), x.get("key"), x.get("equipped")) for x in sheet.get("inventory") or [] if isinstance(x, dict)),
             tuple(sorted((sheet.get("_item_choices") or {}).items())), sheet.get("proficiency_bonus"),
-            tuple(a.get("modifier") for a in sheet.get("abilities") or []),
-            hash(tuple(x.get("name") or "" for k in ("features", "actions", "spells") for x in sheet.get(k) or [] if isinstance(x, dict))),
-            hash(tuple((x.get("name"), x.get("equipped")) for x in sheet.get("inventory") or [])))
+            tuple((a.get("key"), a.get("short"), a.get("modifier")) for a in sheet.get("abilities") or []))
 
 
 def adds(sheet: dict | None) -> list[dict]:
     """What this character can do to a roll, from every entry that applies: each add with its numbers filled in and
-    where it's from (`source`: a subclass, a class, "Feat", or the entry's own name). Worked out once per sheet (a Battle
-    asks for each of its options), again when the sheet's classes, things, marks or numbers change."""
+    where it's from (`source`: a subclass, a class, "Feat", or the entry's own name). Worked out once for what the sheet
+    says (a Battle asks for each of its options), again when its classes, things, marks or numbers change."""
     sheet = sheet or {}
-    key, fp = id(sheet), _fingerprint(sheet)
-    if (hit := _ADDS.get(key)) and hit[0] == fp:
-        return [dict(a) for a in hit[1]]
+    key = _inputs(sheet)
+    if (hit := _ADDS.get(key)) is not None:
+        return [dict(a) for a in hit]
     out = _adds(sheet)
     if len(_ADDS) > 256:
         _ADDS.clear()
-    _ADDS[key] = (fp, out)
+    _ADDS[key] = out
     return [dict(a) for a in out]
 
 

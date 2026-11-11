@@ -1452,6 +1452,10 @@ def bridge_delivered(batch_id: int, request: Request, body=web.JsonBody, db: Ses
     body = body if isinstance(body, dict) else {}
     b = db.get(BridgeBatch, batch_id)
     character = db.get(Character, b.character_id) if b else None
+    # only a browser the outbox could have given it to settles it (the outside review's C3, Nov 10): its own player's,
+    # or its DM's carrying it; anyone else signed in can't mark another's change made or failed
+    if not character or not (picks.can_edit(db, user, character) or is_dm(user, character.campaign_id)):
+        raise HTTPException(404, "askdnd doesn't know this change.")
     fresh = fresh_read(db, user, character, body.get("data")) if character else None
     delivered(db, batch_id, bool(body.get("ok")), str(body.get("error") or "")[:200], [str(c) for c in body.get("conflicts") or []], fresh)
     db.commit()

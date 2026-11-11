@@ -44,7 +44,8 @@
       "3d8 force"
      ],
      "save": "Dex",
-     "success": "half"
+     "success": "half",
+     "dc": "{dc:intelligence}"
     }
    ]
   },
@@ -62,7 +63,8 @@
       "2d8 fire"
      ],
      "save": "Dex",
-     "success": "half"
+     "success": "half",
+     "dc": "{dc:intelligence}"
     }
    ]
   },

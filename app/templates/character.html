@@ -3,8 +3,8 @@
 {% from "_cond_icons.html" import cond_badges with context %}
 {% set mode_label = {"battle": "Battle", "sheet": "Sheet", "plan": "Plan"}[mode] %}
 {% block title %}{{ c.name }} · {{ mode_label }} · askdnd{% endblock %}
-{% block head %}{% if mode != "sheet" %}<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" defer></script>{% endif %}
-{% if can_pick %}<script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js" defer></script>{% endif %}{% endblock %}
+{% block head %}{% if mode != "sheet" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}
+{% if can_pick %}<script src="{{ static('vendor/turndown-7.2.0/turndown.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
 {% set s = sheet %}
 <main class="page wide char-page mode-{{ mode }}{{ ' sheet' if mode in ('sheet', 'plan') }}" data-character="{{ c.id }}" data-roll-ctx="{{ roll_context(s) }}" data-spends="{{ roll_spends({"unreached": unreached, "can_play": can_play}) }}">

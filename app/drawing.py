@@ -97,9 +97,31 @@ def _portrait(db: Session, character_id: str) -> bytes | None:
         return None
 
 
+PORTRAIT_HOSTS = ("www.dndbeyond.com", "media.dndbeyond.com")  # (only D&D Beyond's own image server, as with token art)
+
+
+def _theirs(url: str) -> bool:
+    from urllib.parse import urlparse
+
+    u = urlparse(url or "")
+    return u.scheme == "https" and (u.hostname or "") in PORTRAIT_HOSTS
+
+
+class _OnlyTheirs(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not _theirs(newurl):
+            raise ValueError("A portrait is read only from D&D Beyond.")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _read(url: str) -> bytes:
+    """A character's D&D Beyond portrait. The address comes from the sheet, which its player writes, so it's read only
+    from D&D Beyond's own hosts, redirects included (the outside review's W3, Nov 10): never another site, never askdnd's
+    own network."""
+    if not _theirs(url):
+        raise ValueError("A portrait is read only from D&D Beyond.")
     req = urllib.request.Request(url, headers={"User-Agent": "askdnd"})
-    with urllib.request.urlopen(req, timeout=15) as r:
+    with urllib.request.build_opener(_OnlyTheirs).open(req, timeout=15) as r:
         return r.read(8_000_000)
 
 

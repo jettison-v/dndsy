@@ -246,6 +246,20 @@ def phb_text(name: str) -> str | None:
 
 
 def build() -> int:
+    data, report, phb_rows, hand, beasts, problems = compile_all()
+    OUT.write_text(json.dumps(data, indent=1, sort_keys=True) + "\n")
+    write_report(report, phb_rows, [(n, 0, {k: v for k, v in o.items() if k != "why"}, o["why"]) for n, o in sorted((hand.get("items") or {}).items())],
+                 beasts, campaign_rows(data["spells"]) if "--campaign" in sys.argv else None)
+    print(f"{len(data['spells'])} spell recipes, {len(data['items'])} items, {len(beasts)} Beast actions; {problems} to check")
+    return 1 if problems else 0
+
+
+def compiled() -> dict:
+    """app/data/roll_recipes.json as the book files make it now (tests/test_rules_books.py: the stored file is this)."""
+    return compile_all()[0]
+
+
+def compile_all() -> tuple:
     # the text the reader reads: the description and what a higher slot or level adds
     spells = [{"name": s["name"], "level": s["level"], "desc": s["text"], "higher_level": s["higher_levels"] or s["cantrip_upgrade"]}
               for s in rules_data.srd("spell")]
@@ -303,12 +317,7 @@ def build() -> int:
     problems += sum(1 for r in beasts if r[3].startswith("**"))
     features = {n: {**{k: v for k, v in f.items() if k != "why"}, "checked": "by hand"} for n, f in (hand.get("features") or {}).items()}
     # (what a spell or feature does to another roll, its `adds`, is read from the book files themselves: app/rules_book.py)
-    OUT.write_text(json.dumps({"credit": CREDIT, "spells": out, "items": items, "features": features},
-                              indent=1, sort_keys=True) + "\n")
-    write_report(report, phb_rows, [(n, 0, {k: v for k, v in o.items() if k != "why"}, o["why"]) for n, o in sorted((hand.get("items") or {}).items())],
-                 beasts, campaign_rows(out) if "--campaign" in sys.argv else None)
-    print(f"{len(out)} spell recipes, {len(items)} items, {len(beasts)} Beast actions; {problems} to check")
-    return 1 if problems else 0
+    return {"credit": CREDIT, "spells": out, "items": items, "features": features}, report, phb_rows, hand, beasts, problems
 
 
 def beast_rows() -> list[tuple]:

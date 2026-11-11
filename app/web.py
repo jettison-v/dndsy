@@ -143,3 +143,21 @@ async def _body_form(request: Request):
 # has to wait, and a plain route runs on a worker thread, so its database work never holds up everyone's live connection.
 JsonBody = Depends(_body_json)
 FormBody = Depends(_body_form)
+
+
+def seal(fields: dict, salt: str) -> str:
+    """A signature over what a page hands back later (an Undo's fields), so the page can't change it on the way: only
+    askdnd's own answer, untouched, passes `sealed` (the outside review's W2, Nov 10: a cast's Undo restored a familiar's
+    story and removed a World entry from what the browser sent)."""
+    from itsdangerous import Signer
+
+    from app import config
+
+    body = json.dumps({k: str(v) for k, v in sorted(fields.items()) if k != "sig" and v not in (None, "")}, sort_keys=True)
+    return Signer(config.SESSION_SECRET, salt=salt).get_signature(body).decode()
+
+
+def sealed(fields: dict, salt: str, sig: str) -> bool:
+    import hmac
+
+    return bool(sig) and hmac.compare_digest(seal(fields, salt), sig)

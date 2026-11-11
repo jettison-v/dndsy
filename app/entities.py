@@ -173,7 +173,12 @@ def build_describe_messages(db: Session, entity: Entity) -> list[dict]:
 
 def regenerate(db: Session, entity: Entity, client_factory: Callable[[], anthropic.Anthropic] | None = None) -> str:
     """Ask Claude for a new summary and keep it as the entity's draft for a
-    reviewer to accept, edit or discard. Recorded as an ExtractionRun ("entity")."""
+    reviewer to accept, edit or discard. Recorded as an ExtractionRun ("entity").
+
+    A standing rule (Brett, Nov 6: hidden is as if it didn't exist): a hidden entry never goes to Claude, so it can't be
+    regenerated until the DM shows it (the outside review's A1)."""
+    if entity.status == "draft":
+        raise EntityError("A hidden entry never goes to Claude: show it to the table first, or write its description yourself.")
     run = ExtractionRun(entity_id=entity.id, source="entity", model=MODEL, status="running")
     db.add(run)
     db.commit()

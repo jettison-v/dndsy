@@ -623,6 +623,9 @@ def test_a_familiar_gets_a_world_entry_that_keeps_its_story(player, dm, db, labs
     assert pip.name == "Pip" and pip.status == Status.PUBLISHED and first["undo"]["made"] == str(pip.id)
     assert db.scalar(select(EntityRelation).where(EntityRelation.from_entity_id == pip.id, EntityRelation.type == "serves",
                                                   EntityRelation.to_entity_id == labs.membership.entity_id))
+    for changed in ({"made": str(labs.membership.entity_id)}, {"story": "{\"familiar\": {}}"}, {"sig": ""}):  # (the outside review's W2: only
+        assert player.post(first["undoUrl"], data={**first["undo"], **changed}).status_code == 409  # what askdnd gave)
+    assert db.get(Entity, labs.membership.entity_id) is not None
     assert player.post(first["undoUrl"], data=first["undo"]).status_code == 200  # (Undo: no familiar, no entry)
     db.expire_all()
     assert db.get(Entity, pip.id) is None and not labs.creature_story

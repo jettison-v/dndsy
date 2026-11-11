@@ -572,6 +572,18 @@ function feedbackBusy(e) {
       if (note) note.hidden = false;
     }, 0);
   });
+  // One press, one change (the outside review's W1, Nov 10): HTMX queues a second request from the same element while
+  // the first is on its way and sends it after, so a double press of Apply took the damage twice. A press (a submit or
+  // a click) that would change something is dropped while that element's last one hasn't answered; typing (input,
+  // change) still queues, so a preview always ends on what was typed last.
+  const inFlight = new WeakSet();
+  document.addEventListener('htmx:confirm', e => {
+    const d = e.detail, t = d.triggeringEvent && d.triggeringEvent.type;
+    if (d.verb === 'get' || (t !== 'submit' && t !== 'click')) return;
+    if (inFlight.has(d.elt)) e.preventDefault();
+  });
+  document.addEventListener('htmx:beforeRequest', e => { if (e.detail.requestConfig && e.detail.requestConfig.verb !== 'get') inFlight.add(e.detail.elt); });
+  document.addEventListener('htmx:afterRequest', e => inFlight.delete(e.detail.elt));
   // Coming back with the browser's Back button shows the page as it was left: undo busy states.
   window.addEventListener('pageshow', () => document.querySelectorAll('button.busy').forEach(b => {
     b.classList.remove('busy'); b.disabled = false; if (b.dataset.label) b.textContent = b.dataset.label;

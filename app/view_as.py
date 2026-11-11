@@ -30,11 +30,13 @@ FEEDBACK = "/feedback"  # (a note for Claude is the admin's own, sent while view
 
 
 def viewing(session: dict | None) -> dict | None:
-    """The person being viewed as ({"email", "name"}), when the real person signed in is an admin."""
+    """The person being viewed as ({"email", "name"}), when the real person signed in may still view as them: every
+    request asks `refusal` again (the outside review's C10, Nov 10), so an admin made the DM of a campaign that person
+    plays in stops seeing as them at once, not when they stop viewing."""
     session = session or {}
     target = session.get("view_as") or {}
     real = (session.get("real_user") or session.get("user") or {}).get("email")
-    if not target.get("email") or access.level(real) != access.ADMIN or access.level(target["email"]) is None:
+    if not target.get("email") or not real or refusal(real, target["email"]):
         return None
     return target
 

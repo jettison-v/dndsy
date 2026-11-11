@@ -370,6 +370,8 @@ def apply(request: Request, character_id: int, form=web.FormBody, db: Session = 
     ddb_bridge.reach(ch)
     mode, parts, off, take = _read(form)
     r = _roll(db, int(form.get("roll") or 0), ch)
+    if r:  # the roll's row is held until this commits, so two presses at once apply it once (the outside review's W1)
+        db.execute(select(TableRoll.id).where(TableRoll.id == r.id).with_for_update())
     if r and applied(db, r).get(ch.id):
         raise HTTPException(409, f"This roll was already applied to {ch.name}.")
     w = working(db, ch, mode, parts, off, take, form.get("crit") == "1")

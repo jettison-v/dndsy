@@ -129,7 +129,7 @@ def test_drag_and_drop_order_is_saved_for_the_player_only(player, admin, db):
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     page = player.get(f"/characters/{cole.id}/battle").text
-    assert 'data-sort-column="Action"' in page and "sortablejs@1.15.2" in page
+    assert 'data-sort-column="Action"' in page and "vendor/sortablejs-1.15.2" in page
     keys = ["spell:Thorn Whip", "attack:unarmed", "spell:Starry Wisp"]
     from app import picks
     for k in keys:  # Battle shows what the player pinned

@@ -74,7 +74,7 @@ Ready: every number from a checked recipe, the sheet or askdnd's rules. Unchecke
 | Flurry of Blows | Bonus action | to hit +7 · 1d8+4 bludgeoning | the sheet | ready |
 | Uncanny Metabolism | Other | 1d8+6 | checked recipe | ready |
 | Deflect Attack | Reaction |  | checked recipe | ready |
-| Deflect Attack: Redirect Attack | Reaction | Dex save DC 14 · 2d8+4 | checked recipe, the sheet | ready |
+| Deflect Attack: Redirect Attack | Reaction | Dex save DC 14 · 2d8+4 | checked recipe | ready |
 | Opportunity Attack | Reaction | to hit +7 | the sheet | ready |
 | Soul Coin | Action | 1d10 | checked recipe | ready |
 | Potion of Healing | Bonus action | 2d4+2 | checked recipe | ready |

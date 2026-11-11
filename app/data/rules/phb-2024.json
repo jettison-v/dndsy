@@ -122,7 +122,8 @@
       "2d12+{mod:constitution}"
      ],
      "save": "Dex",
-     "success": "none"
+     "success": "none",
+     "dc": "{dc:constitution}"
     }
    ]
   },
@@ -505,7 +506,8 @@
      ],
      "save": "Dex",
      "success": "none",
-     "note": "the same damage type as the attack you deflected"
+     "note": "the same damage type as the attack you deflected",
+     "dc": "{dc:wisdom}"
     }
    ]
   },
@@ -576,7 +578,8 @@
      ],
      "save": "Con",
      "success": "half",
-     "note": "Radiant or Necrotic, your choice"
+     "note": "Radiant or Necrotic, your choice",
+     "dc": "{dc:wisdom}"
     }
    ]
   },
@@ -799,7 +802,8 @@
      ],
      "save": "Dex",
      "success": "half",
-     "note": "Acid, Cold, Fire, Lightning or Thunder, your choice"
+     "note": "Acid, Cold, Fire, Lightning or Thunder, your choice",
+     "dc": "{dc:wisdom}"
     }
    ]
   },
@@ -1118,7 +1122,8 @@
       "{lands_aid}d6 necrotic"
      ],
      "save": "Con",
-     "success": "half"
+     "success": "half",
+     "dc": "{dc:wisdom}"
     }
    ]
   },
@@ -1200,7 +1205,8 @@
       "2d10 psychic"
      ],
      "save": "Wis",
-     "success": "none"
+     "success": "none",
+     "dc": "{dc:charisma}"
     }
    ]
   },
@@ -1371,7 +1377,8 @@
       "2d10+{level:Cleric} radiant"
      ],
      "save": "Con",
-     "success": "half"
+     "success": "half",
+     "dc": "{dc:wisdom}"
     }
    ]
   },
@@ -1503,7 +1510,8 @@
      ],
      "save": "Wis",
      "success": "none",
-     "note": "The Turn Undead save; at least 1d8"
+     "note": "The Turn Undead save; at least 1d8",
+     "dc": "{dc:wisdom}"
     }
    ]
   },
@@ -1761,7 +1769,8 @@
       "3d10 force"
      ],
      "save": "Str",
-     "success": "none"
+     "success": "none",
+     "dc": "{dc:charisma}"
     }
    ]
   },
@@ -1814,7 +1823,8 @@
      ],
      "save": "Con",
      "success": "none",
-     "note": "At least one die"
+     "note": "At least one die",
+     "dc": "{dc:wisdom}"
     }
    ]
   },
@@ -1832,7 +1842,8 @@
      ],
      "save": "Dex",
      "success": "half",
-     "note": "Your Draconic Ancestry's damage type"
+     "note": "Your Draconic Ancestry's damage type",
+     "dc": "{dc:constitution}"
     }
    ]
   },

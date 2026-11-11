@@ -188,6 +188,20 @@ def test_regenerate_description_accept_and_undo(admin, db, monkeypatch):
     assert latest_questions(db, s) == []
 
 
+def test_a_standing_rule_a_hidden_entry_is_never_regenerated(admin, db, monkeypatch):
+    """A standing rule (Brett, Nov 6: hidden is as if it didn't exist; CLAUDE.md › Privacy): Regenerate never sends a
+    hidden entry to Claude, for an admin too, and its button isn't offered (the outside review's A1, Nov 10)."""
+    import_bundle(db, BUNDLE)
+    e = lillippi(db)
+    e.status = "draft"
+    db.commit()  # (a refused action rolls back what isn't committed)
+    seen = []
+    monkeypatch.setattr(entities.anthropic, "Anthropic", fake_claude("Never.", seen))
+    r = admin.post(f"/campaign/{e.id}/description/regenerate", headers=HX)
+    assert seen == [] and "never goes to Claude" in r.headers["HX-Trigger"] and "Regenerate description" not in r.text
+    assert db.scalar(select(ExtractionRun).where(ExtractionRun.source == "entity")) is None
+
+
 def test_discard_description(admin, db):
     import_bundle(db, BUNDLE)
     e = lillippi(db)
