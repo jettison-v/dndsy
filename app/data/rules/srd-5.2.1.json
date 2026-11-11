@@ -57,6 +57,178 @@
   },
   {
    "kind": "item",
+   "name": "Bead of Force",
+   "why": "thrown: a 10-ft Sphere, Dex save DC 15 or 5d4 Force and trapped in a sphere of force",
+   "rolls": [
+    {
+     "name": "Dex save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "5d4 force"
+     ],
+     "save": "Dex",
+     "success": "none",
+     "dc": 15
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dagger of Venom",
+   "why": "a Bonus Action coats it (once a dawn): the next creature it hits makes a DC 15 Con save or takes 2d10 Poison and is Poisoned for 1 minute",
+   "adds": [
+    {
+     "name": "Dagger of Venom",
+     "when": "on_hit",
+     "with": [
+      "this_item"
+     ],
+     "op": "save",
+     "save": "Con",
+     "dc": "15",
+     "says": "or 2d10 Poison and Poisoned for 1 minute (while coated)"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dragon Slayer",
+   "why": "an extra 3d6 of the weapon's type when the target is a Dragon",
+   "adds": [
+    {
+     "name": "Dragon Slayer",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "3d6",
+     "says": "against a Dragon",
+     "pressed": false
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dwarven Thrower",
+   "why": "thrown: an extra 1d8 Force (2d8 against a Giant)",
+   "adds": [
+    {
+     "name": "Dwarven Thrower",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "1d8 force",
+     "says": "thrown; 2d8 against a Giant",
+     "pressed": false
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Flame Tongue",
+   "why": "while ablaze (a Bonus Action to light it), an extra 2d6 Fire on a hit",
+   "adds": [
+    {
+     "name": "Flame Tongue",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "2d6 fire",
+     "says": "while it's ablaze",
+     "pressed": false
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Frost Brand",
+   "why": "an extra 1d6 Cold on every hit",
+   "adds": [
+    {
+     "name": "Frost Brand",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "1d6 cold",
+     "says": "",
+     "pressed": true
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Giant Slayer",
+   "why": "an extra 2d6 of the weapon's type against a Giant, which also makes a DC 15 Str save or falls Prone",
+   "adds": [
+    {
+     "name": "Giant Slayer",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "2d6",
+     "says": "against a Giant",
+     "pressed": false
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Gloves of Missile Snaring",
+   "why": "a Reaction when a Ranged or Thrown weapon hits you, with a free hand: reduce the damage by 1d10 + Dexterity",
+   "adds": [
+    {
+     "name": "Gloves of Missile Snaring",
+     "when": "damage_taken",
+     "to": [
+      "damage_taken"
+     ],
+     "reduces": "1d10+{mod:dexterity}",
+     "cost": "a Reaction"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Holy Avenger",
+   "why": "an extra 2d10 Radiant against a Fiend or an Undead",
+   "adds": [
+    {
+     "name": "Holy Avenger",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "2d10 radiant",
+     "says": "against a Fiend or Undead",
+     "pressed": false
+    }
+   ]
+  },
+  {
+   "kind": "item",
    "name": "Holy Water",
    "why": "SRD 5.2 adventuring gear",
    "rolls": [
@@ -75,6 +247,24 @@
   },
   {
    "kind": "item",
+   "name": "Horn of Blasting",
+   "why": "a 30-ft Cone, Con save DC 15 or 5d8 Thunder and Deafened for 1 minute (a 20% chance it explodes: 10d6 Force to you)",
+   "rolls": [
+    {
+     "name": "Con save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "5d8 thunder"
+     ],
+     "save": "Con",
+     "success": "none",
+     "dc": 15
+    }
+   ]
+  },
+  {
+   "kind": "item",
    "name": "Hunting Trap",
    "why": "SRD 5.2 adventuring gear",
    "rolls": [
@@ -88,6 +278,108 @@
      "save": "Dex",
      "success": "none",
      "note": "DC 13; on a failure its Speed is 0 until the start of its next turn"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Javelin of Lightning",
+   "why": "thrown with its command word: a 120-ft Line to the target, Dex save DC 13, 4d6 Lightning, half on a success",
+   "rolls": [
+    {
+     "name": "Dex save",
+     "resolve": "save",
+     "effect": "damage",
+     "dice": [
+      "4d6 lightning"
+     ],
+     "save": "Dex",
+     "success": "half",
+     "dc": 13
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Mace of Disruption",
+   "why": "an extra 2d6 Radiant against a Fiend or an Undead; at 25 Hit Points or fewer it makes a DC 15 Wis save or is destroyed",
+   "adds": [
+    {
+     "name": "Mace of Disruption",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "2d6 radiant",
+     "says": "against a Fiend or Undead",
+     "pressed": false
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Necklace of Fireballs",
+   "why": "thrown beads: Fireball (save DC 15), 1d6 more for each bead after the first (up to 12d6)",
+   "use": {
+    "spells": [
+     {
+      "name": "1 bead",
+      "spell": "Fireball",
+      "level": 3,
+      "charges": 1,
+      "dc": 15
+     },
+     {
+      "name": "2 beads",
+      "spell": "Fireball",
+      "level": 4,
+      "charges": 2,
+      "dc": 15
+     },
+     {
+      "name": "3 beads",
+      "spell": "Fireball",
+      "level": 5,
+      "charges": 3,
+      "dc": 15
+     },
+     {
+      "name": "4 beads",
+      "spell": "Fireball",
+      "level": 6,
+      "charges": 4,
+      "dc": 15
+     },
+     {
+      "name": "5 beads",
+      "spell": "Fireball",
+      "level": 7,
+      "charges": 5,
+      "dc": 15
+     }
+    ]
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Oathbow",
+   "why": "an extra 3d6 Piercing against your sworn enemy",
+   "adds": [
+    {
+     "name": "Oathbow",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "3d6 piercing",
+     "says": "against your sworn enemy",
+     "pressed": false
     }
    ]
   },
@@ -150,6 +442,295 @@
      ]
     }
    ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Poison",
+   "why": "the drinker takes 4d6 Poison and makes a DC 13 Con save or is Poisoned for 1 hour",
+   "rolls": [
+    {
+     "name": "Damage",
+     "resolve": "none",
+     "effect": "damage",
+     "dice": [
+      "4d6 poison"
+     ],
+     "note": "And a DC 13 Con save or Poisoned for 1 hour"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Fire",
+   "why": "casts its spells with your spell save DC: Burning Hands (1 charge), Fireball (3), Wall of Fire (4)",
+   "use": {
+    "spells": [
+     {
+      "name": "Burning Hands",
+      "spell": "Burning Hands",
+      "level": 1,
+      "charges": 1
+     },
+     {
+      "name": "Fireball",
+      "spell": "Fireball",
+      "level": 3,
+      "charges": 3
+     },
+     {
+      "name": "Wall of Fire",
+      "spell": "Wall of Fire",
+      "level": 4,
+      "charges": 4
+     }
+    ]
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Frost",
+   "why": "casts its spells with your spell save DC: Cone of Cold (5 charges), Fog Cloud (1), Ice Storm (4), Wall of Ice (4)",
+   "use": {
+    "spells": [
+     {
+      "name": "Cone of Cold",
+      "spell": "Cone of Cold",
+      "level": 5,
+      "charges": 5
+     },
+     {
+      "name": "Fog Cloud",
+      "spell": "Fog Cloud",
+      "level": 1,
+      "charges": 1
+     },
+     {
+      "name": "Ice Storm",
+      "spell": "Ice Storm",
+      "level": 4,
+      "charges": 4
+     },
+     {
+      "name": "Wall of Ice",
+      "spell": "Wall of Ice",
+      "level": 6,
+      "charges": 4
+     }
+    ]
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Healing",
+   "why": "casts Cure Wounds (1 charge per spell level, up to 4), Lesser Restoration (2), Mass Cure Wounds (5)",
+   "use": {
+    "spells": [
+     {
+      "name": "Cure Wounds",
+      "spell": "Cure Wounds",
+      "level": 1,
+      "charges": 1
+     },
+     {
+      "name": "Cure Wounds",
+      "spell": "Cure Wounds",
+      "level": 2,
+      "charges": 2
+     },
+     {
+      "name": "Cure Wounds",
+      "spell": "Cure Wounds",
+      "level": 3,
+      "charges": 3
+     },
+     {
+      "name": "Cure Wounds",
+      "spell": "Cure Wounds",
+      "level": 4,
+      "charges": 4
+     },
+     {
+      "name": "Lesser Restoration",
+      "spell": "Lesser Restoration",
+      "level": 2,
+      "charges": 2
+     },
+     {
+      "name": "Mass Cure Wounds",
+      "spell": "Mass Cure Wounds",
+      "level": 5,
+      "charges": 5
+     }
+    ]
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Striking",
+   "why": "an extra 1d6 Force for each charge spent on a hit (up to 3)",
+   "adds": [
+    {
+     "name": "Staff of Striking",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "1d6 force",
+     "says": "per charge spent, up to 3",
+     "pressed": false,
+     "cost": "a charge each"
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sun Blade",
+   "why": "an extra 1d8 Radiant against an Undead",
+   "adds": [
+    {
+     "name": "Sun Blade",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "1d8 radiant",
+     "says": "against an Undead",
+     "pressed": false
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sword of Wounding",
+   "why": "an extra 2d6 Necrotic on a hit, and a DC 15 Con save or no regaining Hit Points for 1 hour",
+   "adds": [
+    {
+     "name": "Sword of Wounding",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "2d6 necrotic",
+     "says": "",
+     "pressed": true
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Vicious Weapon",
+   "why": "an extra 2d6 damage to any creature it hits",
+   "adds": [
+    {
+     "name": "Vicious Weapon",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "with": [
+      "this_item"
+     ],
+     "amount": "2d6",
+     "says": "",
+     "pressed": true
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Fireballs",
+   "why": "casts Fireball (save DC 15), 1 to 3 charges for its level",
+   "use": {
+    "spells": [
+     {
+      "name": "1 charge",
+      "spell": "Fireball",
+      "level": 3,
+      "charges": 1,
+      "dc": 15
+     },
+     {
+      "name": "2 charges",
+      "spell": "Fireball",
+      "level": 4,
+      "charges": 2,
+      "dc": 15
+     },
+     {
+      "name": "3 charges",
+      "spell": "Fireball",
+      "level": 5,
+      "charges": 3,
+      "dc": 15
+     }
+    ]
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Lightning Bolts",
+   "why": "casts Lightning Bolt (save DC 15), 1 to 3 charges for its level",
+   "use": {
+    "spells": [
+     {
+      "name": "1 charge",
+      "spell": "Lightning Bolt",
+      "level": 3,
+      "charges": 1,
+      "dc": 15
+     },
+     {
+      "name": "2 charges",
+      "spell": "Lightning Bolt",
+      "level": 4,
+      "charges": 2,
+      "dc": 15
+     },
+     {
+      "name": "3 charges",
+      "spell": "Lightning Bolt",
+      "level": 5,
+      "charges": 3,
+      "dc": 15
+     }
+    ]
+   }
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Magic Missiles",
+   "why": "casts Magic Missile, 1 to 3 charges for its level",
+   "use": {
+    "spells": [
+     {
+      "name": "1 charge",
+      "spell": "Magic Missile",
+      "level": 1,
+      "charges": 1
+     },
+     {
+      "name": "2 charges",
+      "spell": "Magic Missile",
+      "level": 2,
+      "charges": 2
+     },
+     {
+      "name": "3 charges",
+      "spell": "Magic Missile",
+      "level": 3,
+      "charges": 3
+     }
+    ]
+   }
   },
   {
    "kind": "spell",

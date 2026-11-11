@@ -215,6 +215,9 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     unarmed = attacks.get("Unarmed Strike")
     for o in out:
         rollable(o, unarmed)
+        first = next(iter(((o.get("recipe") or {}).get("events") or [])), None)
+        if o.get("kind") == "item" and not o.get("hit") and first and first.get("on") == "save" and first.get("dc"):
+            o["hit"] = f"{first['save']} {first['dc']}"  # (an item's save with its own DC: Potion of Fire Breath's Dex 13)
     from app.roll_plan import SAVE, effects, plan  # (the roll card's: what each roll button plays, app/roll_plan.py)
 
     for o in out:
@@ -324,7 +327,7 @@ def item_roll(o: dict, sheet: dict | None = None) -> dict | None:
         attrs = r.get("attrs") or {}
         plan = json.loads(attrs.get("plan") or "null") or {}
         rolls = plan.get("rolls") or {}
-        if r.get("button") != "chip" or plan.get("play") != "single" or not rolls.get("effects"):
+        if r.get("button") != "chip" or plan.get("play") not in ("single", "save") or not rolls.get("effects"):
             continue
         at = rolls["effects"][0]["at"].get(str(rolls.get("base", 0))) or next(iter(rolls["effects"][0]["at"].values()), None)
         if at and at.get("parts"):
@@ -338,9 +341,9 @@ def use_roll(o: dict, sheet: dict, use: dict) -> dict | None:
     "rider": {name, save, dc, says}} (Hammer of Thunderbolts: its own attack, thrown, and on a hit a save for the DM).
     The numbers are the sheet's; the DC and words are the recipe's."""
     note = use.get("says") or ""
-    if beads := use.get("beads"):  # (a Necklace of Prayer Beads: which bead is the player's, the DM having set the beads)
+    if beads := use.get("beads") or use.get("spells"):  # (a Necklace's bead, the DM having set them; a wand's or staff's spell)
         from app import roll_recipes as rr
-        from app.roll_plan import effects
+        from app.roll_plan import _spell_dc, effects
 
         out = []
         for i, b in enumerate(beads):
@@ -348,9 +351,12 @@ def use_roll(o: dict, sheet: dict, use: dict) -> dict | None:
             first = next((e for e in (rec or {}).get("events") or [] if e.get("on") not in ("hit", "rider")), None)
             if first:
                 kind = {"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.get("on"), "damage")
-                attrs = roll_data(kind, b["spell"], rolls=effects(rec, sheet, b["spell"], False))
+                # (a save with the item's own DC, Wand of Fireballs' 15; else the caster's: a staff "using your spell save DC")
+                dc = b.get("dc") or _spell_dc(sheet)
+                save = f"{first['save']} {dc}" if first.get("on") == "save" and first.get("save") and dc else ""
+                attrs = roll_data(kind, b["spell"], rolls=effects(rec, sheet, b["spell"], False), save=save)
             out.append({**b, "attrs": attrs, "i": i})
-        return {"attrs": None, "kind": "beads", "beads": out, "formula": "", "text": ""}
+        return {"attrs": None, "kind": "beads", "beads": out, "formula": "", "text": "", "ask": "Which bead" if use.get("beads") else "Which spell"}
     if skill := use.get("check"):
         sk = next((x for x in sheet.get("skills") or [] if x["name"] == skill), None)
         if not sk:

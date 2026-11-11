@@ -284,3 +284,29 @@ def test_a_necklace_of_prayer_beads_asks_which_bead_and_rolls_its_spell(player, 
     assert 'data-verb="Use">Use<' in w  # (the first bead, Blessing, rolls nothing)
     j = player.post(f"/characters/{cole.id}/use/{neck}", data={"bead": "1"}).json()
     assert "Bead of Curing, Cure Wounds" in j["text"] and j["undo"]["spent"]
+
+
+def test_the_dmgs_magic_items_roll_from_the_rules_book():
+    """Brett, Nov 10 ("all of the book"): a magic weapon's extra damage is a pill for attacks with that weapon only
+    (Flame Tongue's 2d6 Fire, not the dagger's); a wand casts its spell at its own DC and charges (Wand of Fireballs,
+    DC 15, 1 to 3 charges for levels 3 to 5); an item's own save says its DC (Bead of Force, Dex 15)."""
+    import json
+    from pathlib import Path
+
+    from app import ddb, roll_plan, rules_book
+    from app import roll_recipes as rr
+
+    raw = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "big_c.json").read_text())["data"]
+    s = ddb.parse_character(ddb.sanitize(raw))
+    s["inventory"] = [*s["inventory"], {"key": "item:1", "name": "Flame Tongue Longsword", "base_name": "Longsword", "equipped": True}]
+    flame = next(a for a in rules_book.adds(s) if a["name"] == "Flame Tongue")
+    assert flame["amount"] == "2d6 fire" and flame["item"] == "Flame Tongue" and flame["pressed"] is False
+    assert roll_plan.applies(flame, {"weapon", "item:flame tongue longsword"}) and not roll_plan.applies(flame, {"weapon", "item:dagger"})
+    wand = {"name": "Wand of Fireballs", "recipe": rr.item("Wand of Fireballs"), "use": {"gives": False}}
+    r = views.item_roll(wand, s)
+    plans = [json.loads(b["attrs"]["plan"]) for b in r["beads"]]
+    assert r["ask"] == "Which spell" and [b["charges"] for b in r["beads"]] == [1, 2, 3] and [b["level"] for b in r["beads"]] == [3, 4, 5]
+    assert all((p["play"], p["save"]["ability"], p["save"]["dc"]) == ("save", "Dex", 15) for p in plans) and plans[2]["rolls"]["effects"][0]["at"]["5"]["parts"][0].startswith("10d6")
+    bead = {"name": "Bead of Force", "kind": "item", "recipe": rr.item("Bead of Force"), "use": {"gives": False}, "meta": ""}
+    views.rollable(bead)
+    assert roll_plan.plan(s, {**bead, "hit": "Dex 15"})["save"] == {"ability": "Dex", "dc": 15, "success": "none"}
