@@ -37,6 +37,8 @@
     {% if r.nat and r.kind != "death" %}<span class="roll-flag">natural {{ r.nat }}{% if r.kind == "attack" %}{{ ": critical hit" if r.nat == 20 else ": miss" }}{% endif %}</span>{% endif %}
     {% if (r.detail or {}).outcome == "miss" and r.nat != 1 %}<span class="roll-flag">missed</span>{% endif %}
     {% if r.damage %}<span class="roll-dmg-line"><span><span class="roll-sub">{{ "Critical damage" if r.damage.crit else "Damage" }}</span> {{ dline(r.damage, False) }}</span><b>{{ r.damage.total }}</b></span>{% endif %}
+    {% if r.damage and r.damage.twice %}<span class="roll-dice roll-old">Rolled twice, the higher kept (the other: {{ r.damage.twice.dice | join(" ") }} → {{ r.damage.twice.total }})</span>{% endif %}
+    {% for sv in r.saves or [] %}{% set said = sv.label.partition(": ") %}<span class="roll-beat roll-beat-save"><span><span class="roll-sub">{{ said[0] }}:</span> the target makes a {{ said[2] or "save" }}; the DM rolls it</span><b>DC {{ sv.dc }}</b></span>{% endfor %}
     {% if r.can.damage or r.can.reroll or r.can.bonus %}<span class="roll-acts">
       {% if r.can.damage %}<button type="button" class="btn small roll-follow" data-follow="damage" data-parent="{{ r.id }}" data-dmg="{{ r.can.damage }}" data-label="{{ r.label }}" data-crit="{{ '1' if r.nat == 20 }}">Roll {{ "critical " if r.nat == 20 }}damage</button>{% endif %}
       {% if r.can.reroll %}<button type="button" class="btn small roll-follow" data-follow="reroll" data-parent="{{ r.id }}" data-reason="{{ r.can.reroll }}">Reroll ({{ r.can.reroll }})</button>{% endif %}

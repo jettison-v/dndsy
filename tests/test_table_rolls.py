@@ -522,3 +522,35 @@ def test_healing_only_its_roller_takes_offers_only_them(table, db, monkeypatch):
     roots = [db.get(TableRoll, own.json()["roll"]["id"]), db.get(TableRoll, other.json()["roll"]["id"])]
     info = hit_points.apply_info(db, {"email": "dm@example.com", "name": "DM"}, roots, [])
     assert [t["name"] for t in info[roots[0].id]["to"]] == ["Cole"] and [t["name"] for t in info[roots[1].id]["to"]] == ["Cole", "Trah"]
+
+
+def test_riders_on_a_hit_change_the_damage_and_ask_for_a_save(table, db, monkeypatch):
+    """Riders on a Hit (Brett, Nov 10, docs/mockups/rider-actions/): pressed on the roll card, Empowered Strikes rolls the
+    hit's damage as Force, Savage Attacker rolls it twice and keeps the higher (the other said), and Stunning Strike's
+    save goes into this attack's own entry for the DM, its DC worked out by askdnd from the character's rules."""
+    import json
+
+    from pathlib import Path
+
+    from app import ddb
+
+    raw = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "no_name.json").read_text())["data"]
+    no_name = ddb.parse_character(ddb.sanitize(raw))
+    monkeypatch.setattr(tr.chars, "character_summary", lambda ch: no_name)  # (a Monk with Stunning Strike)
+    cid = char(db, "Cole").id
+    monkeypatch.setattr(tr, "die", seq(15, 2, 5))  # the d20, then the damage die twice
+    attack = post(table["player"], character=cid, kind="attack", label="Unarmed Strike", mod="5", dmg="1d6+3", to="table").json()["roll"]
+    r = post(table["player"], parent=attack["id"], action="damage", as_type="force", twice="1").json()["roll"]
+    d = r["damage"]
+    assert d["total"] == 8 and d["twice"] == {"dice": [2], "total": 5}
+    assert "force" in json.dumps(d).lower() and "Rolled twice, the higher kept" in table["player"].get("/rolls").text
+    assert post(table["player"], parent=attack["id"], action="save", label="Stunning Strike: Wis save").status_code == 409  # (not its save)
+    r = post(table["player"], parent=attack["id"], action="save", label="Stunning Strike: Con save", dc="40").json()["roll"]
+    assert r["saves"] == [{"label": "Stunning Strike: Con save", "dc": 14}]  # (askdnd's DC, not the page's)
+    assert post(table["player"], parent=attack["id"], action="save", label="Stunning Strike: Con save").status_code == 409  # once
+    assert post(table["other"], parent=attack["id"], action="save", label="Stunning Strike: Con save").status_code == 403
+    log = table["dm"].get("/rolls").text
+    assert "the target makes a Con save" in log and "DC 14" in log
+    monkeypatch.setattr(tr, "die", seq(4))
+    plain = post(table["player"], character=cid, kind="damage", label="Dice", dmg="1d6").json()["roll"]
+    assert post(table["player"], parent=plain["id"], action="save", label="Stunning Strike: Con save").status_code == 409  # (an attack's only)

@@ -1420,9 +1420,14 @@ function feedbackBusy(e) {
         d.extras = rays.flatMap(r => rollExtras(opts.extras || [], r.kept === 20).map(x => ({ ...x, label: r.label + ' · ' + x.label })));
         d.crit = rays.some(r => r.kept === 20);
       } else {
-        const crit = e.nat === 20;
-        d = e.spec ? rollParts(e.spec.parts, [crit], '', true) : rollFormula(e.dmg, crit, true);
+        const crit = e.nat === 20, as = opts.asType, retype = p => p.replace(/\s+(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)$/i, '') + ' ' + as;
+        const once = () => (e.spec || as ? rollParts((e.spec ? e.spec.parts : [e.dmg]).map(p => as ? retype(p) : p), [crit], '', true) : rollFormula(e.dmg, crit, true));
+        d = once();
         if (!d) return e;
+        if (opts.twice) {  // (Savage Attacker: rolled twice, the higher kept, as the server does)
+          const d2 = once();
+          if (d2) { const [hi, lo] = d2.total > d.total ? [d2, d] : [d, d2]; d = hi; d.twice = { dice: lo.dice, total: lo.total }; }
+        }
         d.extras = rollExtras(opts.extras || [], crit);
         d.crit = crit;
       }
@@ -1518,7 +1523,7 @@ function feedbackBusy(e) {
   }
   function ctxFor(cid) {
     const el = cid && document.querySelector('[data-roll-char="' + cid + '"], [data-character="' + cid + '"][data-roll-ctx]');
-    try { return el ? JSON.parse(el.dataset.rollCtx) : {}; } catch (e) { return {}; }
+    try { return el ? { ...JSON.parse(el.dataset.rollCtx), ...(el.dataset.spends != null ? { spends: el.dataset.spends } : {}) } : {}; } catch (e) { return {}; }
   }
   function characterOf(el) {
     const holder = el.closest('[data-roll-char]') || el.closest('[data-character]');
@@ -1553,8 +1558,8 @@ function feedbackBusy(e) {
   }
   function place(w) {
     if (!w || !w.isConnected) return;
-    const m = 8, pw = w.offsetWidth, ph = w.offsetHeight, vw = innerWidth, vh = innerHeight;
-    if (phone.matches) { w.style.left = m + 'px'; w.style.top = Math.max(m, vh - ph - m) + 'px'; return; }
+    const m = 8, pw = w.offsetWidth, ph = Math.max(w.offsetHeight, w._reserve || 0), vw = innerWidth, vh = innerHeight;
+    if (phone.matches) { w.style.left = m + 'px'; w.style.top = Math.max(m, vh - w.offsetHeight - m) + 'px'; return; }  // (on a phone it sits on the bottom edge)
     if (!w._want) {
       const r = w._row, b = w._btn;
       if (!r) w._want = { left: (vw - pw) / 2, top: Math.max(m, (vh - ph) / 3) };
@@ -1811,7 +1816,7 @@ function feedbackBusy(e) {
     const level0 = !cast ? 0 : spec.cast || (spec.slot >= cast.base ? spec.slot : ((ctx.slots || []).find(l => l >= cast.base) || cast.base));
     const st = { step: from ? (from.action === 'bonus' ? 'pick' : 'rolling') : attack ? (choice ? 'choose' : 'attack') : save ? 'save' : single ? 'single' : 'attack', forText: '',
                  mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false, visOpen: false, entry: from ? from.entry : null,
-                 dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0 };
+                 dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {} };
     mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = !m.once; });  // (on by themselves while they last; once a turn: yours to tick)
     const eff = () => effs[st.ev] || null;
     const now = () => (eff() ? eff().at[String(st.level)] : null);  // (the effect's dice at the level it's cast at)
@@ -1831,7 +1836,33 @@ function feedbackBusy(e) {
       + (to !== 'self' && logNote() ? '<p class="rw-note" data-log-note>' + logNote() + '</p>' : '');
     // What it does on a hit (or Graze, on a miss): a weapon's mastery and a class's riders, in words (they're yours to use)
     const riders = when => (plan.riders || []).filter(r => r.says && (r.when === 'miss') === (when === 'miss'));
-    const riderList = when => riders(when).map(r => '<li><b>' + esc(r.name) + '</b> ' + esc(r.says) + (r.on && r.on !== 'mastery' ? ' <small>(' + esc(r.on) + ')</small>' : '') + '</li>').join('');
+    // Riders on a hit (Brett, Nov 10, docs/mockups/rider-actions/): one with a kind (its plan's `act`) is a choice under
+    // On a hit (adds dice, asks for a save, changes the damage); the rest stay words. Its cost is spent once Roll damage is
+    // pressed (A: nothing lost by changing your mind), and a save's DC joins this attack's entry in Table rolls (A).
+    const acts = () => riders('hit').filter(r => r.act);
+    const RIDE_KIND = { dice: 'Adds dice', save: 'Asks for a save', change: 'Changes the damage' };
+    function rideDice(r) {  // the dice a pressed rider adds, at the way it's cast (Divine Smite's slot)
+      const a = r.act;
+      if (a.kind !== 'dice') return [];
+      if (!a.rolls) return a.adds ? [a.adds] : [];
+      const w = ((a.cast || {}).ways || [])[st.way[r.name] || 0], eff = (a.rolls.effects || [])[0] || { at: {} };
+      const at = eff.at[String(w ? w.level : a.rolls.base)] || eff.at[String(a.rolls.base)];
+      return at ? at.parts : [];
+    }
+    function rideRow(r) {
+      const a = r.act, on = !!st.ride[r.name];
+      let cost = '';
+      if (a.cast) cost = (a.cast.time ? esc(a.cast.time) + ' · ' : '') + (a.cast.ways.length ? '<select class="rw-slot" data-ride-way="' + esc(r.name) + '" aria-label="' + esc(r.name) + ': how to cast it">'
+        + a.cast.ways.map((w, i) => '<option value="' + i + '"' + (i === (st.way[r.name] || 0) ? ' selected' : '') + '>' + esc(w.label) + '</option>').join('') + '</select>'
+        : esc('No slot left: mark it on D&D Beyond'));
+      else if (a.spend) cost = esc('1 ' + a.spend.name.replace(/s$/, '') + (a.spend.left != null ? ' (' + a.spend.left + ' left)' : ''));
+      if (cost && ctx.spends !== 'play') cost += '<span class="rcard-rider-by-hand">' + (ctx.spends === 'unreached' ? "The D&amp;D Beyond sheet can't be reached: mark it there." : 'Mark it on D&amp;D Beyond.') + '</span>';
+      const says = a.kind === 'dice' ? '+' + rideDice(r).join(' + ') + (r.says ? '; ' + r.says : '') : r.says;
+      return '<div class="rcard-rider"><div class="rcard-rider-top">' + pill('data-ride="' + esc(r.name) + '"', on, r.name)
+        + '<span class="rcard-kind k-' + esc(a.kind) + '">' + RIDE_KIND[a.kind] + '</span></div>'
+        + '<span class="rcard-rider-says">' + esc(says) + '</span>' + (cost ? '<span class="rcard-rider-cost">' + cost + '</span>' : '') + '</div>';
+    }
+    const riderList = when => riders(when).filter(r => !r.act).map(r => '<li><b>' + esc(r.name) + '</b> ' + esc(r.says) + (r.on && r.on !== 'mastery' ? ' <small>(' + esc(r.on) + ')</small>' : '') + '</li>').join('');
     // Before the roll: the plan's own notes, then the moment's (the conditions' reasons, Luck, Heroic Inspiration)
     function notes() {
       const out = (spec.advWhy || '').split('\n').filter(Boolean).map(t => t.startsWith('!dis ') ? '<b>Disadvantage</b> ' + esc(t.slice(5))
@@ -1916,11 +1947,7 @@ function feedbackBusy(e) {
             (/^\d/.test(m.adds) ? '+' : '') + m.adds + ' ' + (m.says || (attack ? 'after a miss' : 'after a failure')))).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
           if (adjust) h += '<div class="rcard-pills rcard-adjust">' + adjust + '</div>' + (st.adding ? adder('bonus') : '');
           if (attack && c.damage) {
-            const hitMods = mods.filter(m => m.when === 'on_hit' && m.adds), said = riderList('hit');
-            if (hitMods.length || said) h += '<div class="rcard-group"><span class="rcard-lbl">On a hit</span>'
-              + (hitMods.length ? '<div class="rcard-pills">' + hitMods.map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.name, m.adds + (m.once ? ' · once a turn' : ''))).join('') + '</div>' : '')
-              + (said ? '<ul class="rw-notes" data-riders>' + said + '</ul>' : '') + '</div>';
-            h += '<div class="rcard-acts"><button type="button" class="btn primary rcard-go" data-roll-dmg>Roll ' + (e.nat === 20 ? 'critical ' : '') + 'damage <small>' + esc(c.damage) + dmgAdds() + '</small></button>'
+            h += onHit() + '<div class="rcard-acts"><button type="button" class="btn primary rcard-go" data-roll-dmg>Roll ' + (e.nat === 20 ? 'critical ' : '') + 'damage <small>' + esc(c.damage) + dmgAdds() + '</small></button>'
               + (sure ? '' : '<button type="button" class="btn" data-missed>Missed</button>') + '</div>';
           } else {
             h += d20 ? '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>'
@@ -1929,7 +1956,12 @@ function feedbackBusy(e) {
           if (attack && !sure && riderList('miss')) h += '<div class="rcard-group"><span class="rcard-lbl">On a miss</span><ul class="rw-notes" data-riders>' + riderList('miss') + '</ul></div>';
         }
       } else if (st.step === 'damage') {
-        h += st.dmg ? resultBox(st.entry, true) + (riderList('hit') ? '<ul class="rw-notes" data-riders>' + riderList('hit') + '</ul>' : '') + '<p class="rw-note">In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.</p>'
+        const tw = st.dmg && st.dmg.twice;
+        h += st.dmg ? resultBox(st.entry, true)
+          + (tw ? '<p class="rcard-line">Rolled twice, the higher kept <span class="roll-x">(the other: ' + esc((tw.dice || []).join(' ')) + ' → ' + tw.total + ')</span></p>' : '')
+          + ((st.entry && st.entry.saves) || []).map(sv => { const [who, what] = sv.label.split(': ');
+            return '<p class="rcard-line rcard-save">' + esc(who) + ': the target makes a <b>' + esc(what || 'save') + ', DC ' + sv.dc + '</b>.' + (spec.shared ? ' The DM rolls it; it\'s in Table rolls.' : '') + '</p>'; }).join('')
+          + (riderList('hit') ? '<ul class="rw-notes" data-riders>' + riderList('hit') + '</ul>' : '') + '<p class="rw-note">In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.</p>'
           + '<div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>'
           : '<div class="rcard-result rolling"><span class="rcard-big">…</span><span class="rcard-what">Rolling damage</span></div>';
       } else if (st.step === 'pick') {  // (+ a die, pressed in Table rolls: which one)
@@ -1939,14 +1971,66 @@ function feedbackBusy(e) {
           + '<button type="button" class="btn' + (plan.again ? '' : ' primary') + '" data-done>Done</button></div>';
       }
       w.innerHTML = h;
+      if (w._reserve == null) {  // (room kept from the start for the On a hit block a later step adds: the card never moves)
+        const more = attack ? onHit() : '';
+        let t = null;
+        if (more) { t = document.createElement('div'); t.innerHTML = more; w.append(t); }
+        w._reserve = more ? w.offsetHeight : 0;
+        if (t) t.remove();
+      }
       w.classList.toggle('nat20', !!(st.entry && st.entry.nat === 20));
       w.classList.toggle('nat1', !!(st.entry && st.entry.nat === 1));
       place(w);
       const first = w.querySelector('.rcard-go:not([disabled]), .rcard-choice, [data-done], [data-missed]');
       if (first) first.focus({ preventScroll: true });
     }
+    function onHit() {  // what you can add once an attack hits: on-hit dice, riders to press, riders in words
+      const hitMods = mods.filter(m => m.when === 'on_hit' && m.adds), said = riderList('hit'), rows = acts();
+      return hitMods.length || said || rows.length ? '<div class="rcard-group"><span class="rcard-lbl">On a hit</span>'
+        + (hitMods.length ? '<div class="rcard-pills">' + hitMods.map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.name, m.adds + (m.once ? ' · once a turn' : ''))).join('') + '</div>' : '')
+        + rows.map(rideRow).join('') + (said ? '<ul class="rw-notes" data-riders>' + said + '</ul>' : '') + '</div>' : '';
+    }
     function dmgAdds() {
-      return mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => ' + ' + m.adds).join('');
+      const on = acts().filter(r => st.ride[r.name]), type = on.find(r => r.act.type), twice = on.some(r => r.act.twice);
+      return mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => ' + ' + m.adds).join('')
+        + on.flatMap(rideDice).map(p => ' + ' + p).join('') + (type ? ' · as ' + type.act.type : '') + (twice ? ' · rolled twice' : '');
+    }
+    // Roll damage with what's pressed: on-hit dice and riders' dice in it, its type or rolled twice as a rider says; then
+    // each save rider's DC into this attack's entry, then each rider's cost (a Focus Point, Divine Smite's slot), with Undo
+    function rollDamage() {
+      const on = acts().filter(r => st.ride[r.name]), type = on.find(r => r.act.type);
+      const extras = [...mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => m.name + ':+' + m.adds.replace(/^\+/, '').split(' ')[0]),
+                      ...on.flatMap(r => rideDice(r).map(p => { const [dice, type] = p.split(' '); return (type ? r.name + ' (' + type + ')' : r.name).slice(0, 40) + ':+' + dice; }))];
+      return follow('damage', { extras, asType: type ? type.act.type : '', twice: on.some(r => r.act.twice) }).then(() => {
+        if (!st.dmg) return;
+        if (!spec.shared) {  // (a private roll: the save said on the card alone, nothing spent)
+          st.entry.saves = on.filter(r => r.act.kind === 'save').map(r => ({ label: r.name + ': ' + r.act.save + ' save', dc: r.act.dc }));
+          if (w.isConnected) draw();
+          return;
+        }
+        let chain = Promise.resolve();
+        on.filter(r => r.act.kind === 'save').forEach(r => {
+          chain = chain.then(() => sendRoll({ ...spec, ctx, via: 'card', follow: 'save', parent: st.entry.id, entry: st.entry, extras: [], label: r.name + ': ' + r.act.save + ' save' })
+            .then(e => { st.entry = e; if (w.isConnected) draw(); }, err => toast(r.name + ': ' + err.message, null, 'warn')));
+        });
+        return chain.then(() => on.forEach(spendRider));
+      });
+    }
+    function spendRider(r) {
+      const a = r.act, cid = spec.cid;
+      if (ctx.spends !== 'play' || !cid) return;  // (marked by hand on D&D Beyond: the cost line said so)
+      let url, data;
+      if (a.cast) {
+        const way = a.cast.ways[st.way[r.name] || 0];
+        if (!way) return;
+        url = '/characters/' + cid + '/cast?key=' + encodeURIComponent(a.cast.key); data = { way: way.way };
+      } else if (a.spend && a.spend.field) {
+        url = '/characters/' + cid + '/count?field=' + encodeURIComponent(a.spend.field); data = { to: 'use' };
+      } else return;
+      posted(url, data).then(j => {
+        toast(j.text, j.undo ? { label: 'Undo', run: () => posted(j.undoUrl, j.undo).then(u => { toast(u.text); itemChanged(u); }).catch(err => toast(err.message, null, 'warn')) } : null);
+        itemChanged(j);
+      }).catch(err => toast(r.name + ': ' + err.message, null, 'warn'));
     }
     function resultBox(e, dmg) {
       if (!e || !e.main) return '';
@@ -2008,7 +2092,10 @@ function feedbackBusy(e) {
         if (w.isConnected) draw();
       }, () => { st.step = was; if (w.isConnected) draw(); });
     }
-    w.addEventListener('change', ev => { if (ev.target.matches('[data-card-slot]')) { st.level = +ev.target.value; draw(); } });
+    w.addEventListener('change', ev => {
+      if (ev.target.matches('[data-card-slot]')) { st.level = +ev.target.value; draw(); }
+      if (ev.target.matches('[data-ride-way]')) { st.way[ev.target.dataset.rideWay] = +ev.target.value; draw(); }
+    });
     w.addEventListener('input', ev => { if (ev.target.matches('[data-card-for]')) st.forText = ev.target.value; });  // (kept as you type, not redrawn)
     w.addEventListener('click', ev => {
       const b = ev.target.closest('button');
@@ -2045,7 +2132,8 @@ function feedbackBusy(e) {
       if (b.hasAttribute('data-roll-save')) return rollOne('saved');
       if (b.hasAttribute('data-reroll')) return follow('reroll', { reason: st.entry.can.reroll });
       if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return follow('bonus', { extras: [(m.short || m.name) + ':+' + m.adds], bonusLabel: m.short || m.name, die: 4 }); }
-      if (b.hasAttribute('data-roll-dmg')) return follow('damage', { extras: mods.filter(m => m.when === 'on_hit' && m.adds && st.on[m.name]).map(m => m.name + ':+' + m.adds.replace(/^\+/, '').split(' ')[0]) });
+      if (b.dataset.ride) { st.ride[b.dataset.ride] = !st.ride[b.dataset.ride]; return draw(); }
+      if (b.hasAttribute('data-roll-dmg')) return rollDamage();
     });
     draw();
     // A follow-up from Table rolls: what was pressed there happens now (damage, a reroll), or + a die opens its dice
@@ -2510,6 +2598,8 @@ function feedbackBusy(e) {
       p.set('parent', go.parent); p.set('action', go.follow);
       if (go.follow === 'reroll') p.set('label', go.reason);
       if (go.follow === 'bonus') { p.set('die', go.die); p.set('label', go.bonusLabel || 'Added die'); }
+      if (go.follow === 'damage') { if (go.asType) p.set('as_type', go.asType); if (go.twice) p.set('twice', 1); }  // (riders: Empowered Strikes, Savage Attacker)
+      if (go.follow === 'save') p.set('label', go.label);  // (a rider's save: Stunning Strike; askdnd works out its DC)
     } else {
       Object.entries({ character: go.cid || '', kind: go.kind, label: go.label, mod: go.mod || '', dmg: go.dmg || '', mode: go.mode, to,
                        count: go.count || 1, each: go.each || '', once: go.once ? 1 : '', who: go.who || '', token: go.token || '' }).forEach(([k, v]) => p.set(k, v));
@@ -2534,7 +2624,7 @@ function feedbackBusy(e) {
   function sendRoll(go) {
     if (!go.shared) {
       const before = go.follow ? go.entry._death : undefined;
-      const e = go.follow ? privateFollow(go.entry, go.follow, { extras: go.extras, reason: go.reason, die: go.die, label: go.bonusLabel, ctx: go.ctx })
+      const e = go.follow ? privateFollow(go.entry, go.follow, { extras: go.extras, reason: go.reason, die: go.die, label: go.bonusLabel, ctx: go.ctx, twice: go.twice, asType: go.asType })
                           : privateRoll(go);
       if (!e) return Promise.reject(Object.assign(new Error("Those dice don't look right."), { said: true, local: true }));
       if (e.kind === 'death' && go.follow !== 'damage') deathPrivate(go.cid, e, before);

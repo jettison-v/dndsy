@@ -1104,7 +1104,8 @@
      ]
     }
    ],
-   "level": 1
+   "level": 1,
+   "on_hit": "a hit with a melee weapon or an Unarmed Strike"
   },
   "Dragon's Breath": {
    "checked": "text",

@@ -253,6 +253,50 @@ def rider_fits(when: str, made: str) -> str | None:
     return "miss" if ("miss" in w or "before you know if it hits" in w) and "hit with" not in w else "hit"
 
 
+def rider_act(sheet: dict, act: dict | None) -> dict | None:
+    """What pressing a rider does (Riders on a Hit, Brett Nov 10), ready for the card: its kind and numbers, and what it
+    costs as the card spends it ("Focus Points": the sheet's count of them, `uses:<id>`, with how many are left)."""
+    if not act or act.get("kind") not in ("dice", "save", "change"):
+        return None
+    out = {k: v for k, v in act.items() if k != "spend"}
+    if "twice" in out:
+        out["twice"] = True
+    if act.get("kind") == "save":
+        out["dc"] = int(act["dc"]) if str(act.get("dc", "")).isdigit() else None
+        if out["dc"] is None:
+            return None
+    if name := act.get("spend"):
+        a = next((a for a in sheet.get("actions") or [] if a.get("name") == name and a.get("uses")), None)
+        out["spend"] = {"name": name, "field": f"uses:{a['id']}", "left": a["uses"]["left"]} if a else {"name": name, "field": "", "left": None}
+    return out
+
+
+def spell_riders(sheet: dict, made: str) -> list[dict]:
+    """Spells cast right after a hit that add to it (Divine Smite: its recipe's `on_hit`), as riders the card can press:
+    their dice at each level they can be cast at, and the ways to cast them now (a slot, a free use)."""
+    from app import casting, house_rules
+
+    out = []
+    for sp in sheet.get("spells") or []:
+        rec = house_rules.spell(sp["name"]) or sp.get("roll") or {}
+        if not rec.get("on_hit") or not rider_fits(rec["on_hit"], made):
+            continue
+        e = {"name": sp["name"], "key": sp["key"], "level": sp.get("level") or 0, "uses": sp.get("uses"), "from": sp.get("free_from") or "",
+             "avgs": {}, "higher": True, "ritual": bool(sp.get("ritual"))}  # (what casting.ways reads of a Spell Book entry)
+        rolls = effects(rec, sheet, e["name"], False)
+        ways = [{"way": w["way"], "level": w["level"], "label": w["label"]} for w in casting.ways(sheet, e)
+                if w["way"].startswith(("slot:", "pact:")) or w["way"] == casting.FREE]
+        if ways:  # (its dice only at the levels it can be cast at now; the spell's own level stays for its words)
+            keep = {str(w["level"]) for w in ways} | {str(rolls.get("base"))}
+            for ef in rolls.get("effects") or []:
+                ef["at"] = {k: v for k, v in ef["at"].items() if k in keep}
+        note = ((rolls.get("effects") or [{}])[0].get("note") or "").split(". ")[0]
+        time = (sp.get("casting_time") or "").split(",")[0].strip().title()
+        out.append({"name": e["name"], "when": "hit", "on": rec["on_hit"], "says": note,
+                    "act": {"kind": "dice", "rolls": rolls, "cast": {"key": e["key"], "ways": ways, "time": time}}})
+    return out
+
+
 def plan(sheet: dict, o: dict) -> dict:
     """The roll plan for one Battle option (see the module's words)."""
     out = {"name": o["name"], "cost": o.get("cost", ""), "kind": o.get("kind", ""), "steps": [], "choice": None,
@@ -341,7 +385,9 @@ def plan(sheet: dict, o: dict) -> dict:
         made = "spell" if o.get("kind") == "spell" else "unarmed" if UNARMED_ROW.search(f"{o['name']} {o.get('meta') or ''}") else "weapon"
         for r in class_rules.turn(sheet)["riders"]:  # what you can add once it hits (Stunning Strike, Divine Smite…)
             if r["name"] not in pills and (when := rider_fits(r["when"], made)):  # (one already a pill isn't said twice)
-                out["riders"].append({"name": r["name"], "when": when, "says": r["effect"], "on": r["when"]})
+                out["riders"].append({"name": r["name"], "when": when, "says": r["effect"], "on": r["when"],
+                                      **({"act": act} if (act := rider_act(sheet, r.get("act"))) else {})})
+        out["riders"] += spell_riders(sheet, made)
 
     steps = (["choose"] if out["choice"] else []) + (["attack"] if out["attack"] else []) + (["save"] if out["save"] else [])
     if out["damage"]:

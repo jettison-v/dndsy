@@ -7,7 +7,7 @@
 {% if can_pick %}<script src="https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js" defer></script>{% endif %}{% endblock %}
 {% block content %}
 {% set s = sheet %}
-<main class="page wide char-page mode-{{ mode }}{{ ' sheet' if mode in ('sheet', 'plan') }}" data-character="{{ c.id }}" data-roll-ctx="{{ roll_context(s) }}">
+<main class="page wide char-page mode-{{ mode }}{{ ' sheet' if mode in ('sheet', 'plan') }}" data-character="{{ c.id }}" data-roll-ctx="{{ roll_context(s) }}" data-spends="{{ roll_spends({"unreached": unreached, "can_play": can_play}) }}">
   {% include "_fight_band.html" %}
   {# The same header in every mode: who this is, and the mode switch. Switch characters from the menu bar. On a phone the
      name, ↗ and ⓘ share a row with the tabs, and the line about the character opens from ⓘ (Brett chose B, Nov 4,

@@ -308,7 +308,8 @@
      ],
      "note": "+1d8 against a Fiend or an Undead. Added to a weapon hit: on a Critical Hit, roll it with the attack's damage (Add dice) so its dice double too"
     }
-   ]
+   ],
+   "on_hit": "a hit with a melee weapon or an Unarmed Strike"
   },
   "Earthquake": {
    "why": "the fissures and their depth are the DM's rolls; the damage is for creatures near a collapsing structure",

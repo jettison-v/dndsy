@@ -95,7 +95,7 @@ def character_rows(db: Session, user: dict) -> tuple[int | None, list[dict], dic
         out.append(roll("check", "Initiative", now["initiative"], "initiative", now["initiative"], now.get("initiative_adv")))
     hidden = next((x["find"] for x in ctx.get("conditions") or [] if x.get("find")), None)
     return ch.id, out, table_rolls.roll_context(sheet) | {
-        "condAdv": roll_effects([x for x in ctx.get("conditions") or [] if x["counts"]]), "hidden": hidden}
+        "condAdv": roll_effects([x for x in ctx.get("conditions") or [] if x["counts"]]), "hidden": hidden, "spends": table_rolls.spends(ctx)}
 
 
 def story_rows(db: Session, user: dict) -> list[dict]:

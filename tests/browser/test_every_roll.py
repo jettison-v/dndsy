@@ -272,6 +272,49 @@ def test_every_roll_button_plays_its_plan(people, server, browser_db, name, size
         else:
             bad.append(f"{full}: never offered after four to-hit rolls")
 
+    # Riders on a hit that do something (docs/mockups/rider-actions/, Nov 10): each pressed once on an attack that has it,
+    # then Roll damage; what's sent is what the rider says (its dice in the damage, Force, rolled twice, its save)
+    riders = page.evaluate(f"""() => {{ const seen = {{}};
+        document.querySelectorAll('{attack}').forEach((b, i) => (JSON.parse(b.dataset.plan || '{{}}').riders || [])
+          .filter(r => r.act && r.when === 'hit' && !(r.name in seen)).forEach(r => {{ seen[r.name] = [i, r.name, r.act]; }}));
+        return Object.values(seen); }}""")
+    for i, rider, act in riders:
+        for _ in range(6):  # (a natural 1 has no damage: roll again)
+            page.evaluate("window.__sent.length = 0")
+            page.locator(attack).nth(i).evaluate("b => b.click()")
+            card = page.locator(".roll-card")
+            if card.locator('[data-choice="damage"]').count():
+                card.locator('[data-choice="damage"]').click()
+            card.locator("[data-roll-hit]").click()
+            card.locator(".rcard-result:not(.rolling)").wait_for(timeout=15000)
+            pill = card.locator(f'[data-ride="{rider}"]')
+            if not pill.count():
+                page.keyboard.press("Escape")
+                continue
+            pill.click()
+            card.locator("[data-roll-dmg]").click()
+            want = "save" if act["kind"] == "save" else "damage"
+            page.wait_for_function(f"window.__sent.some(x => (x.action || [])[0] === '{want}')", timeout=15000)
+            page.wait_for_timeout(300)
+            sent = page.evaluate("window.__sent")
+            dmg = next((x for x in sent if x.get("action") == ["damage"]), {})
+            ok = dmg and not any(x.get("refused") for x in sent)
+            if act["kind"] == "dice":
+                ok = ok and any(e.startswith(rider) for e in dmg.get("extra", []))
+            if act.get("type"):
+                ok = ok and dmg.get("as_type") == [act["type"]]
+            if act.get("twice"):
+                ok = ok and dmg.get("twice") == ["1"]
+            if act["kind"] == "save":
+                ok = ok and any(x.get("action") == ["save"] and x.get("label") == [f"{rider}: {act['save']} save"] for x in sent)
+            if not ok:
+                bad.append(f"rider {rider}: sent {sent}")
+            played += 1
+            page.keyboard.press("Escape")
+            break
+        else:
+            bad.append(f"rider {rider}: never offered after six to-hit rolls")
+
     assert played > 40, f"only {played} roll buttons found for {name}"
     assert not bad, f"{name}: {len(bad)} of {played} roll buttons didn't play their plan:\n" + "\n".join(bad[:40])
     assert player.errors == []
