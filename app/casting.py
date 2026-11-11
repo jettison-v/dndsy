@@ -230,6 +230,7 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         ch.concentration = sb.concentrating(e, chosen["level"] if chosen else e["level"]) | ({"was": {k: v for k, v in was.items() if k != "was"}} if was else {})
         said += f": Concentrating on {e['name']}" + (f", {was['spell']} ended" if was and was.get("key") != key else "")
     db.commit()
+    undo["sig"] = web.seal(undo, f"cast-undo:{ch.id}")  # (Undo gets back exactly this, for this character)
     out = {"text": said, "undo": undo, "undoUrl": f"/characters/{ch.id}/cast/undo", "deliver": web.deliver_now(ch)}
     from app import areas, rules_data
 
@@ -245,10 +246,14 @@ def _spend(ch: Character, db: Session, way: str, delta: int, label: str) -> None
 
 @router.post("/characters/{character_id:int}/cast/undo")
 def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: str = Form(""), companions_were: str = Form("", alias="companions"),
-              healed: str = Form(""), added: str = Form(""), story: str = Form(""), made: str = Form(""), n: str = Form("1"),
-              db: Session = Depends(get_db)):
-    """The corner card's Undo: the slot back, Concentration as it was, and a familiar where it was."""
+              healed: str = Form(""), added: str = Form(""), story: str = Form(""), made: str = Form(""), n: str = Form(""),
+              sig: str = Form(""), db: Session = Depends(get_db)):
+    """The corner card's Undo: the slot back, Concentration as it was, and a familiar where it was. Only what the cast
+    answered, as it was (`sig`)."""
     ch, _ = _guard(db, request, character_id)
+    sent = {"key": key, "spent": spent, "companions": companions_were, "healed": healed, "added": added, "story": story, "made": made, "n": n}
+    if not web.sealed(sent, f"cast-undo:{ch.id}", sig):
+        raise HTTPException(409, "That Undo isn't one askdnd gave: cast again, or change it on the sheet.")
     _, e = _spell(db, ch, key)
     if companions_were or healed or added:  # (a familiar where it was; a summon or steed as it was; a new form not added)
         companions.uncast(db, ch, companions_were, healed, added)

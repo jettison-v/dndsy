@@ -5,6 +5,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:constitution}",
      "name": "Dex save",
      "on": "save",
      "parts": [
@@ -19,6 +20,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:constitution}",
      "name": "Dex save",
      "note": "Your Draconic Ancestry's damage type",
      "on": "save",
@@ -38,6 +40,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:wisdom}",
      "name": "Redirect Attack",
      "note": "the same damage type as the attack you deflected",
      "on": "save",
@@ -53,6 +56,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:intelligence}",
      "name": "Detonate",
      "on": "save",
      "parts": [
@@ -75,6 +79,7 @@
      ]
     },
     {
+     "dc": "{dc:wisdom}",
      "name": "Con save",
      "note": "Radiant or Necrotic, your choice",
      "on": "save",
@@ -91,6 +96,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:intelligence}",
      "name": "Flamethrower",
      "on": "save",
      "parts": [
@@ -131,6 +137,7 @@
    "class": "Monk",
    "events": [
     {
+     "dc": "{dc:wisdom}",
      "name": "Dex save",
      "note": "Acid, Cold, Fire, Lightning or Thunder, your choice",
      "on": "save",
@@ -237,6 +244,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:wisdom}",
      "name": "Land's Aid",
      "on": "save",
      "parts": [
@@ -264,6 +272,7 @@
    "class": "Warlock",
    "events": [
     {
+     "dc": "{dc:charisma}",
      "name": "Wis save",
      "on": "save",
      "parts": [
@@ -281,6 +290,7 @@
    "class": "Cleric",
    "events": [
     {
+     "dc": "{dc:wisdom}",
      "name": "Con save",
      "on": "save",
      "parts": [
@@ -298,6 +308,7 @@
    "class": "Cleric",
    "events": [
     {
+     "dc": "{dc:wisdom}",
      "name": "Undead that fail",
      "note": "The Turn Undead save; at least 1d8",
      "on": "save",
@@ -447,6 +458,7 @@
    "class": "Sorcerer",
    "events": [
     {
+     "dc": "{dc:charisma}",
      "name": "Str save",
      "on": "save",
      "parts": [
@@ -489,6 +501,7 @@
    "class": "Druid",
    "events": [
     {
+     "dc": "{dc:wisdom}",
      "name": "Con save",
      "note": "At least one die",
      "on": "save",
@@ -508,6 +521,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:dexterity}",
      "name": "Acid",
      "note": "DC 8 + your Dexterity modifier + Proficiency Bonus",
      "on": "save",
@@ -524,6 +538,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:dexterity}",
      "name": "Alchemist's Fire",
      "note": "DC 8 + your Dexterity modifier + Proficiency Bonus; on a failure it starts Burning",
      "on": "save",
@@ -603,6 +618,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": "{dc:dexterity}",
      "name": "Holy Water",
      "note": "Only a Fiend or an Undead takes it; DC 8 + your Dexterity modifier + Proficiency Bonus",
      "on": "save",
@@ -635,6 +651,7 @@
    "checked": "by hand",
    "events": [
     {
+     "dc": 13,
      "name": "Hunting Trap",
      "note": "DC 13; on a failure its Speed is 0 until the start of its next turn",
      "on": "save",

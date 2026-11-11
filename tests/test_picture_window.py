@@ -187,3 +187,16 @@ def test_a_player_draws_their_own_characters_picture_and_no_one_elses(player, dm
     assert dm.get(f"/pictures?for=entity:{theirs.id}").status_code == 200  # (the DM's, as before)
     page = player.get(f"/c/main/campaign?open={mine.id}").text
     assert f"/pictures?for=entity:{mine.id}" in page
+
+
+def test_a_portrait_is_read_only_from_d_and_d_beyond():
+    """The outside review's W3 (Nov 10): a portrait's address comes from the sheet, which its player writes, so askdnd
+    reads it only from D&D Beyond's own hosts (never another site, never its own network), redirects included."""
+
+    for url in ("http://www.dndbeyond.com/a.png", "https://169.254.169.254/latest/meta-data", "https://evil.example.com/a.png",
+                "https://www.dndbeyond.com.evil.example.com/a.png", "file:///etc/passwd", ""):
+        with pytest.raises(ValueError):
+            drawing._read(url)
+    assert drawing._theirs("https://www.dndbeyond.com/avatars/1/2.png") and drawing._theirs("https://media.dndbeyond.com/x.jpeg")
+    with pytest.raises(ValueError):  # a redirect from D&D Beyond to anywhere else
+        drawing._OnlyTheirs().redirect_request(None, None, 302, "Found", {}, "http://localhost:8000/")

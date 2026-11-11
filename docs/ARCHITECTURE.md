@@ -60,8 +60,12 @@ extension follows the fight (order, round, whose turn) and reports it; askdnd on
   VTT page reports each turn, and two saved at once doubled reminders (Nov 2).
 - **Routes that use the database are plain `def`** and run on worker threads, so the one event loop stays free for
   the live connections. The pool is 10 connections plus 20 more when busy; beta's Postgres allows 100.
-- **More than one copy of the app works**: the live connection goes through Postgres, locks are in Postgres, and the
-  in-memory caches (roles for 10 seconds, D&D Beyond's item and spell lists) expire on their own.
+- **askdnd runs one copy of the app** (the outside review's C7, Nov 10). Much of it would work with more: the live
+  connection goes through Postgres, locks are in Postgres, the unwatched-sheets loop and the Inbox digest take an
+  advisory lock, and the in-memory caches (roles for 10 seconds, D&D Beyond's item and spell lists) expire on their
+  own. Two pieces assume one copy: the bridge's awake timers and health live in memory (a second copy would disagree
+  for a while), and drafting runs in the server's own background, guarded in memory against a second draft of the
+  same session. During a deploy's overlap the two copies can disagree for about a minute.
 
 ## The stack
 

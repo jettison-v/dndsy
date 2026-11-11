@@ -49,7 +49,7 @@
 
   <section class="section" id="about">
     <div class="section-head"><h2>About</h2>
-      {% if can_edit and not e.draft_summary %}
+      {% if can_edit and not e.draft_summary and e.status != "draft" %}
       <form class="inline" hx-post="/campaign/{{ e.id }}/description/regenerate" {{ hx | safe }} hx-indicator="#regen-wait" hx-disabled-elt="find button"><button class="btn link">Regenerate description</button></form>
       {% endif %}
     </div>

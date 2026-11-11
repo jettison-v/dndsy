@@ -83,6 +83,13 @@ def _spell_dc(sheet: dict) -> int | None:
     return max(dcs) if dcs else None
 
 
+def _dc(dc, sheet: dict) -> int | None:
+    """A save's DC as the data gives it: a number (an item's own 15) or a token ({dc:constitution}: 8 + its modifier + PB)."""
+    if isinstance(dc, str):
+        dc = fill(dc, sheet)
+    return int(dc) if str(dc or "").isdigit() else None
+
+
 def _spell_attack(sheet: dict) -> int | None:
     bonuses = [b for sp in sheet.get("spells") or [] if (b := _bonus(sp.get("attack") or "")) is not None]
     return max(bonuses) if bonuses else None
@@ -355,7 +362,7 @@ def plan(sheet: dict, o: dict) -> dict:
             out["damage"] += parts
             if e["on"] == "save":
                 out["save"] = {"ability": e.get("save") or (out["save"] or {}).get("ability", ""),  # (an item's own DC: Wand of Fireballs' 15)
-                               "dc": e.get("dc") or (out["save"] or {}).get("dc"), "success": e.get("success", "")}
+                               "dc": _dc(e.get("dc"), sheet) or (out["save"] or {}).get("dc"), "success": e.get("success", "")}
                 src.setdefault("save", rsrc)
     if events and rsrc in ("checked", "correction"):  # the 2024 rules decide attack or save; the sheet only gives the numbers
         on = {e["on"] for e in events}
@@ -368,10 +375,10 @@ def plan(sheet: dict, o: dict) -> dict:
             out["save"] = None
         if "hit" in on and not out["attack"] and (b := _spell_attack(sheet)) is not None:
             out["attack"], src["attack"] = {"bonus": b}, "sheet"
-    if out["save"] and not out["save"].get("dc"):  # a feature's: its words say the DC ("DC 14"), else it's the spell save DC
-        said = re.search(r"\bDC (\d+)", f"{o.get('text') or ''} {o.get('summary') or ''} {o.get('meta') or ''}")
-        out["save"]["dc"] = int(said.group(1)) if said else _spell_dc(sheet)
-        src["save"] = "sheet"
+    if out["save"] and not out["save"].get("dc"):  # its words say the DC ("DC 14"); a spell's is the spell save DC; a
+        said = re.search(r"\bDC (\d+)", f"{o.get('text') or ''} {o.get('summary') or ''} {o.get('meta') or ''}")  # feature's
+        out["save"]["dc"] = int(said.group(1)) if said else _spell_dc(sheet) if o.get("kind") == "spell" else None  # is in its data
+        src["save"] = "sheet"  # (never guessed: the outside review's R3, Nov 10, a Breath Weapon's DC is Con's, not a spell's)
     if events:
         src["damage" if out["damage"] or out["riders"] else "heal"] = rsrc
         if any(any(e.get("upcast") or []) or e.get("count_upcast") for e in events) and o.get("level"):
@@ -472,6 +479,8 @@ def _judge(out: dict, o: dict, rsrc: str | None) -> None:
         unrolled = sorted(_dice_in(text) - rolled - {"1d20"})
         if unrolled:
             out["gaps"].append(f"its words have {', '.join(unrolled)}, which the plan doesn't roll")
+    if out["save"] and not out["save"].get("dc"):
+        out["gaps"].append("it calls for a save, and neither its data nor its words say the DC")
     if (out["attack"] or out["save"]) and not out["damage"] and not out["heal"] and re.search(r"\d+d\d+[^.]{0,40}damage", text):
         out["gaps"].append("it attacks or calls for a save, and its words deal damage the plan doesn't have")
     if out["gaps"]:

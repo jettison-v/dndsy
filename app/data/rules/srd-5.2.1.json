@@ -16,7 +16,8 @@
      ],
      "save": "Dex",
      "success": "none",
-     "note": "DC 8 + your Dexterity modifier + Proficiency Bonus"
+     "note": "DC 8 + your Dexterity modifier + Proficiency Bonus",
+     "dc": "{dc:dexterity}"
     }
    ]
   },
@@ -35,7 +36,8 @@
      "save": "Dex",
      "success": "none",
      "note": "DC 8 + your Dexterity modifier + Proficiency Bonus; on a failure it starts Burning",
-     "repeat": "start of each of its turns while Burning"
+     "repeat": "start of each of its turns while Burning",
+     "dc": "{dc:dexterity}"
     }
    ]
   },
@@ -241,7 +243,8 @@
      ],
      "save": "Dex",
      "success": "none",
-     "note": "Only a Fiend or an Undead takes it; DC 8 + your Dexterity modifier + Proficiency Bonus"
+     "note": "Only a Fiend or an Undead takes it; DC 8 + your Dexterity modifier + Proficiency Bonus",
+     "dc": "{dc:dexterity}"
     }
    ]
   },
@@ -277,7 +280,8 @@
      ],
      "save": "Dex",
      "success": "none",
-     "note": "DC 13; on a failure its Speed is 0 until the start of its next turn"
+     "note": "DC 13; on a failure its Speed is 0 until the start of its next turn",
+     "dc": 13
     }
    ]
   },

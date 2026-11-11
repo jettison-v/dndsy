@@ -1,0 +1,613 @@
+
+<title>askdnd Outside Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column, a ledger of findings; each finding is a row with an id, a severity mark and four fixed fields. */
+:root {
+  --bg: #f3f5f4; --surface: #ffffff; --ink: #18222b; --muted: #55636e; --line: #d5dcdb;
+  --accent: #0f6466; --high: #a8321f; --med: #8a5a00; --low: #3d5a73; --note: #5b6470; --good: #1f6b3a;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12181c; --surface: #1a2227; --ink: #e6ecec; --muted: #9babb3; --line: #2e3a40;
+  --accent: #5cc3c0; --high: #ff8d78; --med: #e6b450; --low: #8fb8d8; --note: #a3adb6; --good: #74c990; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12181c; --surface: #1a2227; --ink: #e6ecec; --muted: #9babb3; --line: #2e3a40;
+  --accent: #5cc3c0; --high: #ff8d78; --med: #e6b450; --low: #8fb8d8; --note: #a3adb6; --good: #74c990; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 16px/1.55 var(--sans); padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+main { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+h1 { font-size: 30px; line-height: 1.15; margin: 0; text-wrap: balance; font-weight: 600; }
+h2 { font-size: 20px; margin: 0 0 12px; font-weight: 600; text-wrap: balance; }
+h3 { font-size: 16px; margin: 0; font-weight: 600; }
+p { margin: 0 0 10px; } p:last-child { margin-bottom: 0; }
+ul, ol { margin: 0; padding-left: 20px; } li { margin-bottom: 6px; }
+code { font: 13.5px var(--mono); background: color-mix(in srgb, var(--line) 55%, transparent); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+a { color: var(--accent); }
+.eyebrow { font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+.lede { color: var(--muted); max-width: 65ch; }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px; }
+.scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.score { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; }
+.score b { font: 500 28px var(--mono); display: block; font-variant-numeric: tabular-nums; }
+.score span { color: var(--muted); font-size: 14px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 600; color: var(--muted); font-size: 13px; }
+td:first-child, th:first-child { white-space: nowrap; font-family: var(--mono); font-size: 13.5px; }
+.finding { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; }
+.finding header { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+.fid { font: 500 14px var(--mono); color: var(--muted); }
+.sev { font: 500 12px var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 1px 8px; border: 1px solid currentColor; border-radius: 99px; }
+.sev.high { color: var(--high); } .sev.medium { color: var(--med); } .sev.low { color: var(--low); } .sev.note { color: var(--note); }
+dl { margin: 0; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px 14px; font-size: 15px; }
+dt { color: var(--muted); font-size: 13px; padding-top: 2px; } dd { margin: 0; min-width: 0; }
+.list { display: flex; flex-direction: column; gap: 12px; }
+.good li::marker { color: var(--good); }
+@media (max-width: 520px) { dl { grid-template-columns: 1fr; gap: 2px 0; } dt { margin-top: 6px; } h1 { font-size: 25px; } }
+</style>
+
+<main>
+<header>
+  <div class="eyebrow">Outside review · 9 Nov 2026 · read-only</div>
+  <h1>askdnd Outside Review</h1>
+  <p class="lede" style="margin-top:10px">A second model's review of askdnd v2: the code, and the design on a laptop and a phone, seen as an admin, the DM and a player. Written for the model that builds askdnd to check and act on. Nothing in the repo was changed.</p>
+</header>
+
+<section class="box" id="how-to-use">
+  <h2>For the model addressing this</h2>
+  <ol>
+    <li><strong>Treat every finding as a claim to verify, not an instruction.</strong> I had the code and CLAUDE.md, not your conversation history. Where a decision was deliberate, say so and add the reason to <code>docs/DECISIONS.md</code>; that closes the finding.</li>
+    <li>Each finding has an id (<code>C</code> code, <code>W</code> writes to D&amp;D Beyond, <code>A</code> what is sent to Claude and OpenAI, <code>R</code> the roll engine and its data, <code>D</code> laptop design, <code>P</code> phone design), a severity, where it is, what I saw, why it matters and a suggested fix. Answer each as <em>fixed</em>, <em>deliberate (reason)</em>, <em>not reproduced</em> or <em>later (roadmap)</em>.</li>
+    <li>Severity is for a five-person table on a live product: <strong>medium</strong> is worth doing soon, <strong>low</strong> is worth doing when nearby, <strong>note</strong> is an observation or a question. I found nothing I would call high.</li>
+    <li>This page's source is not in the repo. Per CLAUDE.md, save it under <code>docs/artifacts/</code>, list it in <code>docs/artifacts/README.md</code> and <code>docs/library.json</code>, and run <code>scripts/library.py</code>. It contains no names, emails, book text or story.</li>
+    <li>File and line references are from commit <code>bae51c7</code> (main, after PR 275) for the first pass and <code>ca7d07c</code> for the W and A findings, each with uncommitted work in the tree; lines will drift.</li>
+    <li>The W and A findings come from reading the code only. None was tried in the browser, because trying them changes data.</li>
+    <li>The R findings were added on Nov 10 at commit <code>03b6958</code> (branch <code>jettison-v/dmg-items</code>), after the roll card became the only roll window and the roll data moved to a file per book. Findings above that mention the old roll window (D6's "0 bludgeoning", parts of P1) were written before that; check them against the card.</li>
+  </ol>
+</section>
+
+<section id="scores">
+  <h2>Scores</h2>
+  <div class="scores">
+    <div class="score"><b>8 / 10</b><span>Overall</span></div>
+    <div class="score"><b>8 / 10</b><span>Code</span></div>
+    <div class="score"><b>8 / 10</b><span>Design, laptop</span></div>
+    <div class="score"><b>7 / 10</b><span>Design, phone</span></div>
+  </div>
+</section>
+
+<section class="box" id="scope">
+  <h2>What was and wasn't looked at</h2>
+  <div class="tablewrap"><table>
+    <tr><th>Depth</th><th>What</th></tr>
+    <tr><td>Read in full</td><td><code>access.py</code>, <code>auth.py</code>, <code>main.py</code>, <code>config.py</code>, <code>db.py</code>, <code>realtime.py</code>, <code>web.py</code>, <code>campaign_paths.py</code>, <code>view_as.py</code>, <code>api.py</code>; the extension's <code>manifest.json</code>, <code>askdnd.js</code>, <code>background.js</code></td></tr>
+    <tr><td>Second pass, in full</td><td>Writes to D&amp;D Beyond: <code>casting.py</code>, <code>rests.py</code>, <code>coins.py</code>, <code>giving.py</code>, <code>item_use.py</code>, <code>resources.py</code>, <code>inventory.py</code>, <code>creature_hp.py</code>, <code>death_saves.py</code>, the item browser's add, the hit points routes, and the bridge's engine in <code>ddb_bridge.py</code> (planner, outbox, catching up, settling, reading back) and <code>characters.py</code> (read and store). Sent to Claude and OpenAI: <code>extraction.py</code> (prompts, what is gathered, storing), <code>conversation.py</code>, the description rewrite in <code>entities.py</code>, <code>narration.py</code>, <code>drawing.py</code>, <code>spending.py</code>.</td></tr>
+    <tr><td>Read in part</td><td><code>ddb_bridge.py</code> (the planner, settling a batch, every route), <code>table_rolls.py</code> (making a roll, who sees it, the live payload), <code>files.py</code>, <code>feedback.py</code>, <code>errors.py</code>, <code>picks.py</code>, <code>narration.py</code>, <code>item_browser.py</code>, <code>table_creatures.py</code>, <code>drawing.py</code>, <code>ddb-page.js</code>, <code>app.js</code> (errors, the roll window, every <code>innerHTML</code> site listed), <code>tests/test_refusals.py</code>, <code>tests/conftest.py</code>, the workflow</td></tr>
+    <tr><td>Measured</td><td>All 118 Python files by script: 335 routes, 1,843 functions, function lengths, imports inside functions, GET routes that commit, foreign keys without an index, <code>| safe</code> and <code>Markup</code> uses. Ruff: clean. Server tests: 1,076 passed in 35 s, 92% branch coverage.</td></tr>
+    <tr><td>Looked at</td><td>Local copy of beta at 1440×800 and 375×812, as admin, the DM and a player: Story, a session's page, Campaign (World, Quests), Battle, Sheet, Plan, Party, Manage (Needs you, Inbox, Sessions, a session's review, Table, Settings, DM guide), Your notes, Help, the side panel, the roll window, the More menu</td></tr>
+    <tr><td>Not looked at</td><td>Some feature modules line by line (creatures, companions and summons beyond what casting calls, preparing, shifting, Wild Shape, the roll plan, the Processor, <code>ddb_fields.py</code>'s request shapes). The browser tests were not run. A running fight, askdnd's own table, the bridge against the real D&amp;D Beyond, a real iPhone, View as, staging. The uncommitted email digest (<code>app/digest.py</code>) was not reviewed.</td></tr>
+  </table></div>
+</section>
+
+<section class="box" id="strengths">
+  <h2>What is strong, and should not regress</h2>
+  <ul class="good">
+    <li><strong>The refusal sweep.</strong> <code>tests/test_refusals.py</code> takes every changing route from the app's own list and fingerprints every table before and after. A new route is covered the day it is added. This is the single best thing in the repo.</li>
+    <li><strong>One list of rules.</strong> <code>access.allows()</code> is the only place roles are decided, and the chart on Manage › Table is drawn from it.</li>
+    <li><strong>The live connection's design.</strong> Messages say what changed, not the change; announces go out after commit and are dropped on rollback; each page keeps at most one of each message. The one exception (a table roll's dice) is narrow and documented.</li>
+    <li><strong>Event-loop discipline.</strong> Plain <code>def</code> routes, <code>LoopSession</code>, and a test that fails on an async route taking <code>db</code>, each traced to a real incident.</li>
+    <li><strong>The extension is conservative.</strong> Two permissions, a write allowlist checked on both sides, the key held in session storage, origin checks on the messages that matter, only followed games reported.</li>
+    <li><strong>The bridge's engine.</strong> A change is refused up front when the sheet can't be reached; what a page asks for is checked against the sheet (<code>_change</code>), with limits worked out from the sheet and never the page; the extension compares each value just before writing; askdnd counts a change only after reading it back; a Give removes the giver's copy only once the receiver's exists. Coins are all-or-nothing and the Undo for them is validated (<code>coins.checked</code>).</li>
+    <li><strong>What leaves for Claude and OpenAI is narrow.</strong> Players' private notes are never gathered. Narration sends only a published recap's words. Drawing sends only the description, the style and its pictures. Every call checks the spending limit first. The transcript is kept in file storage, not the database.</li>
+    <li><strong>Privacy held everywhere I pushed.</strong> As the DM, a player's Plan tab is absent and its address forwards to Sheet; pins and reminders are not drawn. As a player, Manage answers 403 with a plain message. Sentry scrubbing, the document sandbox and <code>back_to()</code> are careful.</li>
+    <li><strong>Escaping.</strong> The roll window and corner cards build HTML by hand but pass every value I traced through <code>esc</code>.</li>
+    <li><strong>Battle's shape.</strong> Action, Bonus Action and Reaction as columns, pins on top, resources as pips. It matches how a turn is thought about.</li>
+    <li><strong>Words.</strong> Empty states, refusals and status lines are plain and specific ("Manage is for the DM, reviewers and admins").</li>
+  </ul>
+</section>
+
+<section id="code">
+  <h2>Code findings</h2>
+  <div class="list">
+
+  <article class="finding" id="C1" data-severity="medium" data-area="security">
+    <header><span class="fid">C1</span><span class="sev medium">medium</span><h3>Ordinary pages send no browser security headers</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/main.py</code> (no header middleware). Only <code>documents.py</code>, <code>files.py</code> and one feedback route set any.</dd>
+      <dt>Seen</dt><dd>No <code>Content-Security-Policy</code>, <code>frame-ancestors</code> or <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code> or <code>Referrer-Policy</code> on HTML pages.</dd>
+      <dt>Why</dt><dd>askdnd can change a real D&amp;D Beyond sheet through the bridge. Another site can frame askdnd and trick a click (SameSite=Lax does not stop framing of a top-level navigation in every browser path), and any escaping slip has nothing behind it.</dd>
+      <dt>Suggest</dt><dd>One middleware: <code>frame-ancestors 'none'</code>, <code>nosniff</code>, <code>Referrer-Policy: same-origin</code> now. Then a script policy in report-only mode (pages have one inline script in <code>base.html</code>, so it needs a nonce), reported through the existing <code>/errors/page</code> path, enforced once quiet.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C2" data-severity="medium" data-area="security reliability">
+    <header><span class="fid">C2</span><span class="sev medium">medium</span><h3>HTMX is loaded from unpkg.com with no integrity check</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/templates/base.html:18</code>; Google Fonts on line 16.</dd>
+      <dt>Why</dt><dd>Every button that saves depends on HTMX. If unpkg is slow or down on game night, the app is read-only; if the file there were ever altered, it runs with each person's session. The dice library is already vendored, so this looks like an oversight.</dd>
+      <dt>Suggest</dt><dd>Put <code>htmx.min.js</code> in <code>app/static/vendor/</code> and serve it with <code>static()</code>. Fonts can stay (they use <code>display=optional</code>) or be self-hosted for the same reason.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C3" data-severity="low" data-area="permissions">
+    <header><span class="fid">C3</span><span class="sev low">low</span><h3><code>/bridge/delivered</code> doesn't check whose batch it is</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/ddb_bridge.py</code>, <code>bridge_delivered</code> (about line 1447). Compare <code>bridge_outbox</code> and <code>_intent_of</code>, which do check.</dd>
+      <dt>Seen</dt><dd>It calls <code>_signed_in</code> only, then <code>delivered(db, batch_id, …)</code>. Any signed-in person can report any character's batch as made, failed or conflicting. <code>fresh_read</code> does refuse their sheet data.</dd>
+      <dt>Why</dt><dd>The read-back from D&amp;D Beyond decides the outcome, so the worst case is a batch replanned, retried or stopped by someone else. Small, but it is the one changing bridge route without an ownership check, and the refusal sweep can't see it (the batch id it tries is not in state "sending").</dd>
+      <dt>Suggest</dt><dd>Require <code>picks.can_edit</code> for the batch's character, or the campaign's DM when it was offered <code>by="dm"</code>, or an admin. Add a case to the refusal tests with a batch that is "sending".</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C4" data-severity="medium" data-area="maintainability">
+    <header><span class="fid">C4</span><span class="sev medium">medium</span><h3>All page behaviour is one 340 KB script and one 329 KB stylesheet</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/static/app.js</code> (5,081 lines, lines up to 438 characters, one closure, 242 listeners), <code>app/static/app.css</code> (3,649 lines, 181 over 200 characters).</dd>
+      <dt>Why</dt><dd>The Python side has a linter, 92% coverage and small functions (10 of 1,843 over 80 lines). The browser side has none of that: no linter, no unit tests, and it holds real rules (measuring a move, areas, the roll card's steps) mirrored by hand from Python. Browser tests cover flows, slowly. This is where a silent regression is most likely, and every edit makes a model re-read a very large file.</dd>
+      <dt>Suggest</dt><dd>In order of value: (1) add a JavaScript linter to the Server tests job, errors only at first; (2) split by the section headings the file already has into ES modules loaded with <code>type="module"</code>, no bundler needed; (3) for logic mirrored from Python (<code>measure</code>, <code>areas</code>), one shared table of cases run against both sides. Split the CSS the same way, by component.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C5" data-severity="low" data-area="maintainability">
+    <header><span class="fid">C5</span><span class="sev low">low</span><h3>Light static checking; modules import each other in circles</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>pyproject.toml</code> (<code>select = ["F"]</code>); 303 <code>import</code> statements inside functions across <code>app/</code>.</dd>
+      <dt>Why</dt><dd>Only unused and undefined names are caught. Imports inside functions are how circular dependencies are being worked around (<code>web</code> ↔ <code>ddb_bridge</code>, <code>table_rolls</code> ↔ <code>hiding</code>, <code>initiative</code>, <code>table_fight</code>…), so a broken import shows only when that line runs.</dd>
+      <dt>Suggest</dt><dd>Add ruff's <code>B</code> (likely bugs) and <code>UP</code> rules, then a type checker on the pure-logic modules first (<code>hit_points</code>, <code>measure</code>, <code>roll_plan</code>, <code>coins</code>). Don't chase the cycles wholesale; when a module is next touched, move shared helpers down a layer.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C6" data-severity="low" data-area="security">
+    <header><span class="fid">C6</span><span class="sev low">low</span><h3>Cross-site protection rests on the cookie's SameSite setting alone</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/main.py</code> (<code>same_site="lax"</code>); no Origin check on POST. The WebSocket already has one (<code>realtime._same_site</code>).</dd>
+      <dt>Why</dt><dd>Lax is a good default and probably enough. A second, cheap layer costs a few lines and removes the dependence on browser behaviour.</dd>
+      <dt>Suggest</dt><dd>Middleware: for POST, PUT and DELETE carrying the session cookie, refuse when <code>Origin</code> is present and isn't the request's own host. Exempt requests authenticated by <code>X-Askdnd-Bridge</code>, the upload token or the feedback key.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C7" data-severity="note" data-area="architecture">
+    <header><span class="fid">C7</span><span class="sev note">note</span><h3>Several things assume one copy of the app</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>ddb_bridge._health</code> and <code>_carry_read</code>, <code>errors._recent</code>, <code>admin_sessions.busy()</code>, <code>access.invalidate()</code> (clears this copy's cache only; others catch up within 10 s).</dd>
+      <dt>Why</dt><dd>Fine today. During a deploy two copies overlap, and a second replica would make the bridge's health and the "Claude is busy" guard disagree between copies. The live connection and the unwatched-sheets loop were already built for several copies, so the assumption is uneven.</dd>
+      <dt>Suggest</dt><dd>Record "one replica" as a decision in <code>docs/ARCHITECTURE.md</code> with this list, so it is a known step if a second copy is ever added.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C8" data-severity="note" data-area="trust">
+    <header><span class="fid">C8</span><span class="sev note">note</span><h3>A roll's modifier, damage and label come from the browser</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/table_rolls.py</code>, <code>make_roll</code>: <code>mod</code>, <code>dmg</code>, <code>label</code>, <code>adv</code> are form fields, bounded by <code>MAX_MOD</code> and the formula parser.</dd>
+      <dt>Why</dt><dd>A player can send "Fire Bolt +12". Among friends this is the same trust as physical dice, and manual rolls need it. I expect it is deliberate; I didn't find it written down.</dd>
+      <dt>Suggest</dt><dd>If deliberate, one line in DECISIONS.md. Optionally mark a roll in Table rolls when its numbers differ from the character's roll plan, which informs the DM without policing anyone.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C9" data-severity="note" data-area="privacy">
+    <header><span class="fid">C9</span><span class="sev note">note</span><h3>A feedback note can carry a player's private notes to an admin</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/feedback.py</code>, <code>send</code>: keeps the page's HTML and a picture of the screen.</dd>
+      <dt>Seen</dt><dd>A note sent from Plan, or from Battle with reminders showing, includes the things the campaign's DM must never see. The queue is read by admins.</dd>
+      <dt>Why</dt><dd>Only matters if an admin is also that campaign's DM, now or later. The rule "never the campaign's DM, even an admin" is enforced on pages and in View as, but not here.</dd>
+      <dt>Suggest</dt><dd>Either refuse to show a note's page and picture to an admin who is the DM of the campaign it was sent from, or confirm that the DM is never an admin and record it.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C10" data-severity="low" data-area="permissions">
+    <header><span class="fid">C10</span><span class="sev low">low</span><h3>View as checks the DM rule only when it starts</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/view_as.py</code>: <code>refusal()</code> runs in <code>start</code>; <code>viewing()</code>, run on every request, checks only admin and "can sign in".</dd>
+      <dt>Why</dt><dd>An admin made a campaign's DM while already viewing as one of its players keeps seeing that player's notes until they stop. A narrow window, but the rule it protects is a standing one.</dd>
+      <dt>Suggest</dt><dd>Have <code>viewing()</code> return None when <code>refusal(real, target)</code> is non-empty. Roles are already in memory, so it costs nothing.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C11" data-severity="low" data-area="tests">
+    <header><span class="fid">C11</span><span class="sev low">low</span><h3>No sweep for reading, to match the sweep for changing</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>tests/test_refusals.py</code> covers POST, PUT, DELETE. <code>tests/test_links.py</code> opens pages as people who may.</dd>
+      <dt>Seen</dt><dd>I found per-feature tests of who can read what, but no test that asks every GET route, from the app's own list, as someone who must not read it (signed out; a member of another campaign; the DM for notes).</dd>
+      <dt>Suggest</dt><dd>The same harness: every GET with ids that exist, as another campaign's player, expecting 401, 403, 404 or a redirect, with an explicit list of pages any member may read. If this exists and I missed it, ignore.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C12" data-severity="low" data-area="tests">
+    <header><span class="fid">C12</span><span class="sev low">low</span><h3>The least-tested files are askdnd's own table</h3></header>
+    <dl>
+      <dt>Where</dt><dd>Branch coverage: <code>drawing.py</code> 69%, <code>table_page.py</code> 75%, <code>places.py</code> 79%, <code>table_fight.py</code> 79%, <code>entities.py</code> 80%, <code>tokens.py</code> 83%, <code>scene_notes.py</code> 84%.</dd>
+      <dt>Why</dt><dd>The total (92%) hides that the piece heading for a one-time cutover is the thinnest. Hidden tokens, fog and the DM-only scene notes are visibility rules.</dd>
+      <dt>Suggest</dt><dd>Before the cutover, bring these to the level of the rest, starting with what a player's page must never receive.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C13" data-severity="note" data-area="reliability">
+    <header><span class="fid">C13</span><span class="sev note">note</span><h3>Settling a batch sleeps on a worker thread; drafting runs inside the web server</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>ddb_bridge.delivered</code>: up to three <code>time.sleep(1)</code> between read-backs after taking <code>_lock</code>. <code>admin_sessions</code>: drafts on daemon threads.</dd>
+      <dt>Why</dt><dd>Both are understood trade-offs (the first follows a real D&amp;D Beyond quirk; the second is handled by "Interrupted, draft it again" on restart). They are the two places a busy night and a deploy interact. Worth a line each in ARCHITECTURE.md so they aren't rediscovered.</dd>
+      <dt>Suggest</dt><dd>No change needed now. If drafts get longer, don't deploy while <code>busy()</code>, or let <code>deploy_check.py</code> warn.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C14" data-severity="note" data-area="data">
+    <header><span class="fid">C14</span><span class="sev note">note</span><h3>Some foreign keys have no index</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/models.py</code>: about 30 foreign-key columns without <code>index=True</code> (some are covered by a unique constraint or a composite index I didn't trace).</dd>
+      <dt>Why</dt><dd>Irrelevant at one table's size. It matters for deletes that cascade and for per-campaign queries if campaigns multiply.</dd>
+      <dt>Suggest</dt><dd>Nothing now. Check <code>table_rolls</code> by campaign and <code>bridge_intents</code> by character first if a page ever feels slow.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C15" data-severity="low" data-area="process">
+    <header><span class="fid">C15</span><span class="sev low">low</span><h3>CLAUDE.md is 12,900 words and loaded into every session</h3></header>
+    <dl>
+      <dt>Why</dt><dd>It is an excellent record, and it is also the project's largest single point of drift: one paragraph per feature, each several hundred words, edited by every change. It costs tokens on every turn of every session and makes "what are the rules" hard to separate from "how does feature X work".</dd>
+      <dt>Suggest</dt><dd>Keep in CLAUDE.md only what must hold in every session: working with the owner, privacy and product rules, conventions, the before-done checklist, and a one-line index of areas. Move each "Where things are" paragraph to <code>docs/areas/&lt;name&gt;.md</code>, read when that area is touched. A test can check every <code>app/*.py</code> is named in exactly one area file, as <code>test_deploy.py</code> does for watch paths.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="C16" data-severity="note" data-area="correction">
+    <header><span class="fid">C16</span><span class="sev note">note</span><h3>Correction to my first pass: no paid action is reachable by a plain link</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>My first summary to the owner said re-recording a narration could be triggered by a GET. That was wrong: <code>narrate_route</code> is a POST. The ten GET routes that commit only keep bookkeeping (what was seen, a narration's measured length, the bridge going to sleep).</dd>
+      <dt>Suggest</dt><dd>Nothing to fix. If you want it guarded, a test that no GET route changes a table outside a small bookkeeping list would mirror the refusal sweep.</dd>
+    </dl>
+  </article>
+
+  </div>
+</section>
+
+<section id="writes">
+  <h2>Findings: writes to D&amp;D Beyond</h2>
+  <div class="list">
+
+  <article class="finding" id="W1" data-severity="medium" data-area="hit points">
+    <header><span class="fid">W1</span><span class="sev medium">medium</span><h3>A fast double press on Apply can take the damage twice</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/templates/_hp_form.html:2</code> (the form posts to <code>/hp/apply</code> with no <code>hx-disabled-elt</code> or <code>hx-sync</code>); <code>hit_points.apply</code>.</dd>
+      <dt>Seen</dt><dd>Each apply adds a relative change (<code>{"amount": -N}</code>). From a roll, a second apply is refused only once the first has committed (<code>applied()</code> is checked, then inserted, with no lock or unique index). From − and + on the tile there is no roll, so nothing refuses a second one at all. Enter takes the form, and the window closes only when the answer arrives.</dd>
+      <dt>Why</dt><dd>Two Enters, or a double tap on a slow connection, is 2×N on the real sheet. The item window disables its buttons on send and the World forms use <code>hx-disabled-elt</code>, so this form looks missed.</dd>
+      <dt>Suggest</dt><dd><code>hx-disabled-elt="find button"</code> and <code>hx-sync="this:drop"</code> on the form. For the roll case, a partial unique index on <code>table_rolls (parent_id, character_id) where kind = 'applied'</code>. A browser test that submits twice quickly would hold it. The same check is worth a minute on the creature Hit Points form.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="W2" data-severity="low" data-area="undo">
+    <header><span class="fid">W2</span><span class="sev low">low</span><h3>Some Undo cards send back state the server stores without checking it</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>casting.undo_cast</code> → <code>companions.uncast</code> (the <code>companions</code> form field is parsed as JSON and merged into <code>Character.companions</code>) and <code>companion_story.restore</code> (the <code>story</code> field replaces <code>Character.creature_story</code>).</dd>
+      <dt>Seen</dt><dd>The undo payload is made by the server, held by the browser, and trusted on the way back. Only the character's own player can post it. Any JSON object is accepted: values of the wrong shape would then be read by Battle, Party and the fight for everyone at the table. In two posts a player can also set a story whose <code>made</code> names another entry, then undo with that id: <code>restore</code> deletes it if it is a Creature entry in the campaign with no summary and nothing added. That is a narrow case, but it is a delete reached through client-held state.</dd>
+      <dt>Suggest</dt><dd>Sign the undo payload (<code>itsdangerous</code> is already a dependency) or keep it server-side under an id, as a short-lived row. <code>coins.checked</code> is the model where the payload must stay in the browser.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="W3" data-severity="low" data-area="security">
+    <header><span class="fid">W3</span><span class="sev low">low</span><h3>A character's portrait address is fetched by the server with no host check</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/drawing.py</code>, <code>_portrait</code> → <code>_read(url)</code>.</dd>
+      <dt>Seen</dt><dd>The address comes from the parsed sheet. Since extension 0.9.9 a sheet can be the JSON a player's browser sends (<code>ddb_bridge.fresh_read</code>), so a player can make it any address, and the server will request it when someone draws with that portrait as a style picture.</dd>
+      <dt>Why</dt><dd>A blind request to an address of the player's choosing from inside Railway. Low among five friends. <code>fight.py</code> and <code>giving.py</code> already allow pictures only from D&amp;D Beyond's own hosts.</dd>
+      <dt>Suggest</dt><dd>The same host allowlist in <code>_read</code>, https only, no redirects to other hosts.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="W4" data-severity="note" data-area="casting">
+    <header><span class="fid">W4</span><span class="sev note">note</span><h3>askdnd's half of a cast stays when the D&amp;D Beyond half doesn't go through</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>casting.cast</code>: the slot is a bridge change; Concentration, a familiar or a summon are set on the character in the same request.</dd>
+      <dt>Seen</dt><dd>If the slot change later stops ("Didn't go through") and is undone from the card or the Live window, <code>ddb_bridge.dismiss</code> only marks that change. Concentration and the creature stay. The cast's own Undo handles both, but only from its corner card.</dd>
+      <dt>Suggest</dt><dd>Probably right under "remind, don't automate". If so, have the stopped change's card say what askdnd still shows ("still Concentrating on Bless"). Verify I read the flow correctly.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="W5" data-severity="note" data-area="rules">
+    <header><span class="fid">W5</span><span class="sev note">note</span><h3>A Short Rest's "at least 1" is applied to the total, not to each die</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>rests._make</code>: <code>at_least = max(row.total, number of dice)</code>, from one formula such as <code>2d8-2</code>.</dd>
+      <dt>Seen</dt><dd>The 2024 rule gives each Hit Point Die's roll plus Constitution a minimum of 1. With a negative Constitution modifier, dice of 1 and 6 heal 1 + 5 = 6 by the rule and 5 here. Only characters with Constitution under 10 are affected.</dd>
+      <dt>Suggest</dt><dd>Roll each die as its own part and floor each at 1, or note it as known in <code>docs/rules/</code>.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="W6" data-severity="note" data-area="trust">
+    <header><span class="fid">W6</span><span class="sev note">note</span><h3>More places that trust the player's browser, to record with C8</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>A private death save posts its own result (<code>POST /characters/&lt;id&gt;/death</code> with <code>result=nat20</code> brings the character back with 1 Hit Point on D&amp;D Beyond). The sheet as the extension read it is kept as the character's copy. An item Undo posts how much healing to take back. Each is limited to the player's own character.</dd>
+      <dt>Suggest</dt><dd>The same answer as C8: if this is the table's trust model, say so once in DECISIONS.md so later reviews stop raising it.</dd>
+    </dl>
+  </article>
+
+  </div>
+</section>
+
+<section id="ai">
+  <h2>Findings: what is sent to Claude and OpenAI</h2>
+  <div class="list">
+
+  <article class="finding" id="A1" data-severity="medium" data-area="hidden entries">
+    <header><span class="fid">A1</span><span class="sev medium">medium</span><h3>Regenerate description on a hidden entry sends that entry to Claude</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/templates/_entity_body.html:52</code> offers the button whenever <code>can_edit</code>; <code>entity_pages.regenerate</code> → <code>entities.regenerate</code> → <code>build_describe_messages</code>, none of which looks at the entry's status.</dd>
+      <dt>Seen</dt><dd>For an entry with status draft (hidden), its name, summary, aliases and merged facts go in the request. CLAUDE.md's rule says a hidden entry, its facts and relationships "never go to Claude (drafts, questions, suggestions, descriptions, conversations)". The standing-rule test checks describing <em>another</em> entry, not the hidden one itself.</dd>
+      <dt>Why</dt><dd>It takes the DM or a reviewer pressing the button on their own secret, so it may be meant. As written, the code and the rule disagree.</dd>
+      <dt>Suggest</dt><dd>Refuse in <code>entities.regenerate</code> when the entry isn't published and hide the button, with a line saying why; or amend the rule to "unless the DM asks for it herself". Either way add the case to <code>test_a_standing_rule_a_hidden_entry…</code>.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="A2" data-severity="low" data-area="hidden entries">
+    <header><span class="fid">A2</span><span class="sev low">low</span><h3>A key moment's own words can still name a hidden entry</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>tests/test_extraction.py</code>, the last assertion of the standing-rule test: <code>"Veiled Duke&lt;/a&gt;" not in page</code>. <code>entities.moments</code> feeds moments' text to <code>build_describe_messages</code>.</dd>
+      <dt>Seen</dt><dd>The test proves the name isn't a link. Its docstring, and CLAUDE.md, say the name never shows on a key moment. I found no code that drops or masks a published moment whose text names a hidden entry, on Story or in what Regenerate sends for the other entries that moment mentions. I did not trace every template, so verify.</dd>
+      <dt>Why</dt><dd>A recap drafted from a transcript where the DM said the name aloud will contain it; the reviewer's read before publishing is the only gate.</dd>
+      <dt>Suggest</dt><dd>Decide which is true and make the test say it: either hold back a moment linked to a hidden entry until it is shown (the link row already exists, <code>EventEntity</code>), or reword the rule to "never linked, and the reviewer checks the words".</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="A3" data-severity="low" data-area="prompts">
+    <header><span class="fid">A3</span><span class="sev low">low</span><h3>The drafting prompts are written for one table, in code</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>extraction.SYSTEM_PROMPT</code> and <code>build_messages</code>: "four players and a Dungeon Master who play over Zoom", the owner by first name as the reviewer, "the notes are written from <em>one character's</em> point of view", and <code>&lt;clarifications_from_…&gt;</code> tags carrying his name.</dd>
+      <dt>Why</dt><dd>Campaigns, roles and reviewers are per campaign everywhere else. A second campaign, or the DM reviewing, gets a prompt that states the wrong reviewer and the wrong narrator. It also puts a person's name in a public repo's source, which the repo's own rule asks to avoid for the table (the owner's may be an accepted exception).</dd>
+      <dt>Suggest</dt><dd>Fill these from the campaign: the reviewer's name from who pressed Draft, the point of view from the notes source's character, the table's size from its members. Use role words in the tags.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="A4" data-severity="note" data-area="privacy">
+    <header><span class="fid">A4</span><span class="sev note">note</span><h3>Every draft sends each player's real name and the DM's</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>extraction._known_world</code>: "Dungeon Master: <em>name</em>" and "Player characters (character — player)", the player being <code>player_name</code> or, without one, the name on their Google account.</dd>
+      <dt>Why</dt><dd>It helps map a transcript's speaker labels to characters, and nothing in the privacy rules forbids it. It is the one piece of personal data that goes out on every call, including <code>conversation.check</code> and the cheap revise pass that has no transcript to map.</dd>
+      <dt>Suggest</dt><dd>Record it as intended, or send first names only, and leave players out of the passes that don't read a transcript.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="A5" data-severity="note" data-area="usage">
+    <header><span class="fid">A5</span><span class="sev note">note</span><h3>Usage prices a call as Opus whichever model answered</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>extraction.MODEL</code>, <code>PRICES</code>, <code>_cost</code>; calls pass <code>fallbacks="default"</code> and <code>_usage</code> records <code>response.model</code>.</dd>
+      <dt>Seen</dt><dd>The model that answered is kept on the run, but the cost is always worked out with one price table. The spending limit is checked before a call and can't see that call's size, which is fine at these amounts.</dd>
+      <dt>Suggest</dt><dd>A price table keyed by model, falling back to the dearest when the model is unknown, so the limit errs on the safe side.</dd>
+    </dl>
+  </article>
+
+  </div>
+</section>
+
+<section id="rolls">
+  <h2>Findings: the roll engine and its data (Nov 10)</h2>
+  <div class="box">
+    <p><strong>What was reviewed.</strong> The Roll Data Review page (<code>docs/artifacts/roll-data-review.html</code>) against the code: <code>rules_book.py</code> and <code>roll_plan.py</code> in full, the four files in <code>app/data/rules/</code> by script, <code>scripts/roll_audit.py</code> and <code>rules_from_books.py</code> in part, <code>tests/test_rules_books.py</code>. All 91 Player's Handbook feature, feat and species entries were read against the 2024 rules from memory, not against the book.</p>
+    <p><strong>What held.</strong> 360 roll-engine server tests pass and ruff is clean. <code>tests/browser/test_every_roll.py</code> and <code>test_roll_card.py</code>: 23 passed, none on a second try. Running <code>scripts/roll_audit.py</code> rewrote <code>roll_recipes.json</code> byte for byte, so the compiled file matches the book files today. In the 91 entries I found no wrong dice, scaling table or save ability. On a party Sheet all 36 roll buttons carried a plan and the card opened beside its button. The shape (<code>rolls</code>, <code>adds</code>, <code>when</code>, <code>to</code>, <code>with</code>, book-level <code>scales</code>) is a real improvement on four code paths, and the direction is right.</p>
+    <p><strong>The short version.</strong> The page's "Built · Done" card says more than the code does. The parts of its own recommendation that would prove coverage are the parts not built. Build those before filling in more of the books.</p>
+  </div>
+  <div class="list">
+
+  <article class="finding" id="R1" data-severity="medium" data-area="coverage">
+    <header><span class="fid">R1</span><span class="sev medium">medium</span><h3>"Done" isn't the whole Player's Handbook</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>app/data/rules/phb-2024.json</code>: 76 features, 10 feats, 5 species traits, 39 spells. <code>dmg-2024.json</code>: 8 items.</dd>
+      <dt>Seen</dt><dd>The page says class and subclass features, species traits and feats "that roll or add a number" are in. None of these appear in the book files, <code>class_rules.py</code> or the compiled recipes: Cutting Words, Bend Luck, Portent, Cosmic Omen, Agonizing Blast, Potent Spellcasting, Disciple of Life, Psi-Bolstered Knack, Homing Strikes, Fanatical Focus, Death Strike, Mantle of Inspiration, Protective Field, Bastion of Law, Overchannel, Wholeness of Body; the feats Poisoner, Chef, Healer, Piercer, Heavy Armor Master, Telekinetic, Inspiring Leader, Boon of Recovery, Boon of Irresistible Offense; the spell Chaos Bolt. "169 spell recipes" is the total across every book, not the PHB's spells beyond the SRD.</dd>
+      <dt>Why</dt><dd>Agonizing Blast and Potent Spellcasting change the commonest roll a Warlock or Cleric makes. A table that isn't this one would meet these on its first night. The list is from my memory of the book, so treat it as examples, not the full gap.</dd>
+      <dt>Suggest</dt><dd>Change the page's card to say what is in (counts per kind) and that coverage is unmeasured until R2 exists. Then fill from the report, not from memory.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="R2" data-severity="medium" data-area="coverage">
+    <header><span class="fid">R2</span><span class="sev medium">medium</span><h3>Nothing can show what a book still lacks</h3></header>
+    <dl>
+      <dt>Where</dt><dd>The page's recommendation 6 and "Then the books" step 4. <code>scripts/roll_coverage.py</code> covers the party's sheets only.</dd>
+      <dt>Seen</dt><dd>No coverage report over the books, and no made-up character per class at levels 1, 5, 11 and 17 in the every-roll test. <code>test_rules_books.py</code> checks each entry's shape, which is good, but not that a book's rules are present or played.</dd>
+      <dt>Suggest</dt><dd>Build this next, before more entries. From the offline books, list every feature, feat, trait and item whose words hold dice, a save or a bonus to a roll, and mark each as rolled, in words on purpose (with the reason), or missing. Commit only names and statuses. The made-up characters then play what the report says is rolled.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="R3" data-severity="medium" data-area="correctness">
+    <header><span class="fid">R3</span><span class="sev medium">medium</span><h3>A non-spell feature's save DC isn't in the data</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>roll_plan.plan</code>: a save with no <code>dc</code> takes "DC n" from the option's words, else <code>_spell_dc(sheet)</code>. Only four rolls in the book files carry <code>dc</code>, all items.</dd>
+      <dt>Seen</dt><dd>With no words: Elemental Burst, Deflect Attack: Redirect Attack, Breath Weapon and Boon of Energy Resistance got DC 12 on a Monk 6 / Warlock 2 (the Warlock's spell save DC; the rules give 8 + the feature's own ability + Proficiency Bonus). With no spells at all the DC is <code>None</code> and <code>_judge</code> still says "ready". On the party's real sheets D&amp;D Beyond's words supply the number (Redirect Attack: 14), so nothing is wrong at the table today.</dd>
+      <dt>Why</dt><dd>The made-up characters of R2 have no D&amp;D Beyond words, so they would play wrong DCs and pass. So would any feature whose words D&amp;D Beyond writes as a formula.</dd>
+      <dt>Suggest</dt><dd>Put <code>dc</code> on each such roll as a token (<code>{dc:dexterity}</code>, <code>{dc:constitution}</code>; a spellcasting feature can say <code>spell</code>). Prefer the data over the words. A plan with a save and no DC is a gap, not ready.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="R4" data-severity="low" data-area="shape">
+    <header><span class="fid">R4</span><span class="sev low">low</span><h3>Half the recommended entry shape isn't there</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>No entry has an <code>id</code> or a D&amp;D Beyond id. <code>checked</code> is on 24 of 241. Entries are found by display name through four cleaners that differ slightly: <code>rules_book._norm</code>, the lambda in <code>roll_recipes.feature</code>, <code>roll_recipes.item</code> (lowercase, strip "Use an item: ", cut at " ("), and <code>class_rules._norm</code>. That is the page's own problem 5, still open. <code>rules_book.active(sheet)</code> never sees the campaign, so a DMG item's rules apply whether or not the campaign lists the book (problem 6).</dd>
+      <dt>Suggest</dt><dd>One <code>norm()</code> used everywhere now. Ids when the next book is added, with the D&amp;D Beyond definition id where the sheet gives one, so a 2014 and a 2024 thing of the same name can't collide. Pass the campaign's books to <code>active</code> for item entries.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="R5" data-severity="low" data-area="architecture">
+    <header><span class="fid">R5</span><span class="sev low">low</span><h3>The engine still plays the old shape, compiled from the new one</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>scripts/roll_audit.py</code> <code>from_books</code>, <code>_event</code>: <code>rolls</code> (<code>resolve</code>, <code>effect</code>) are turned back into <code>events</code> with <code>on</code> in <code>app/data/roll_recipes.json</code>, which <code>roll_plan</code> reads (<code>e["on"]</code>). <code>rules_from_books.py</code> has the same map the other way.</dd>
+      <dt>Seen</dt><dd>Two formats and two hand-kept maps between them. No test fails when a book file changes and the compiled file isn't rebuilt; only the coverage report is checked that way (<code>test_roll_plan.py</code>). They match today.</dd>
+      <dt>Suggest</dt><dd>Now: a test that compiles the hand entries from the book files and compares them with the committed file (the part that needs no offline book). Later: have <code>roll_plan</code> read <code>rolls</code> directly and drop <code>on</code>, which closes the page's problem 7 in the engine as well as the data.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="R6" data-severity="low" data-area="rules">
+    <header><span class="fid">R6</span><span class="sev low">low</span><h3>Who has a feature is decided by class and level, not by the sheet</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>rules_book.active</code>: an entry with <code>class</code> applies at its <code>level</code> (and <code>sub</code>), unless it has <code>needs</code>.</dd>
+      <dt>Seen</dt><dd>A character built on a 2014 class would be given the 2024 class's adds (Radiant Strikes for an Improved Divine Smite Paladin, with a different rule). The table has 2014 subclasses. On the four party sheets every class-and-level entry is also named on the sheet, so nothing is wrong today.</dd>
+      <dt>Suggest</dt><dd>Where the sheet lists its class features (D&amp;D Beyond's do), require the name there too, as <code>needs</code> already does. Keep class and level alone for the made-up characters.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="R7" data-severity="low" data-area="data">
+    <header><span class="fid">R7</span><span class="sev low">low</span><h3>Small points in the entries</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>
+        <ul>
+          <li><code>{mod:wisdom}d8</code> fills to "0d8" at +0 and "-1d6" below it (Sear Undead, Wrath of the Sea, Healing Light); the rules give at least one die.</li>
+          <li>Aura of Protection and Sacred Weapon use the Charisma modifier with no minimum of +1.</li>
+          <li>Lifedrinker has no <code>once</code>. The Gloom Stalker's Dreadful Strike has no limited uses and starts pressed.</li>
+          <li>Charger's <code>with</code> leaves out an Unarmed Strike. Rage Damage's leaves out a thrown weapon attacked with Strength.</li>
+          <li>A magic weapon's add shows when the item is carried (<code>active</code> reads <code>inventory</code>), not when it is attuned or in hand.</li>
+          <li><code>cost</code> is free text ("a Superiority Die", "a use"), so the card can only say it; only Stunning Strike's <code>spend</code> is something it can spend.</li>
+          <li>Warrior of the Gods and Healing Light are pools of dice; each is one fixed roll here.</li>
+        </ul>
+      </dd>
+      <dt>Suggest</dt><dd>A <code>min</code> on a filled token (or <code>{mod:wisdom|1}</code>). Make <code>cost</code> a field the card can spend, in the shape <code>spend</code> already has, with the words kept for display. The rest are one-line data fixes.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="R8" data-severity="note" data-area="cache public repo">
+    <header><span class="fid">R8</span><span class="sev note">note</span><h3>Two things to decide on purpose</h3></header>
+    <dl>
+      <dt>Seen</dt><dd><strong>The adds cache.</strong> <code>rules_book._ADDS</code> is keyed by <code>id(sheet)</code> and trusted when a hand-written fingerprint matches. Ids are reused across requests, so its correctness rests on the fingerprint naming everything <code>active</code> and <code>fill</code> read. It does today. A new input (attunement, for R7) must be added to it or the cache serves another moment's answer.<br><strong>The public repo.</strong> The book files now hold PHB and DMG mechanics beyond the free rules, in askdnd's own words. That fits CLAUDE.md's rule as written (no book text), and the amount is about to grow from a table's worth to two books' worth.</dd>
+      <dt>Suggest</dt><dd>A test that changes each input <code>active</code> reads and expects different adds. For the repo: record the decision in DECISIONS.md, or keep the non-SRD book files out of git as the Monster Manual's entries are.</dd>
+    </dl>
+  </article>
+
+  </div>
+</section>
+
+<section id="design-laptop">
+  <h2>Design findings, laptop (1440×800)</h2>
+  <div class="list">
+
+  <article class="finding" id="D1" data-severity="medium" data-area="battle">
+    <header><span class="fid">D1</span><span class="sev medium">medium</span><h3>Battle's columns start more than two thirds of the way down the first screen</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>For a Druid with Wild Shape, with Table rolls open: name row, Resources, the number tiles, the Advantage line, Wild Shape's forms (two lines), + Condition and the Spell Book bar come first. About two options per column are visible without scrolling. A Wizard with no forms shows three.</dd>
+      <dt>Why</dt><dd>The columns are the page. On your turn the question is "what can I do", and the answer is below the fold.</dd>
+      <dt>Suggest</dt><dd>On a laptop, fold Wild Shape's forms behind "Forms 6" as the phone already does, and move + Condition into the Resources row beside Rest. That returns roughly 90 px, one more option per column.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="D2" data-severity="medium" data-area="dm review">
+    <header><span class="fid">D2</span><span class="sev medium">medium</span><h3>The DM's session review is squeezed to a narrow column</h3></header>
+    <dl>
+      <dt>Where</dt><dd><code>/c/&lt;campaign&gt;/manage/sessions/&lt;id&gt;</code>, as the DM, Table rolls open.</dd>
+      <dt>Seen</dt><dd>Four columns share the width: Table rolls, Manage's list, the step, and the Review checklist. The recap reads at about 40 characters a line. The step tabs are cut off after "4 Full tale"; Key moments, Awards and Numbers need a sideways scroll with nothing to show they are there. The checklist on the right lists the same seven steps.</dd>
+      <dt>Why</dt><dd>This is the DM's and reviewer's main working page, and the longest reading on it gets the least room.</dd>
+      <dt>Suggest</dt><dd>Make the right-hand checklist the step switcher and drop the tab row on this page, or keep the tabs and move Publish under the title. Separately, consider Table rolls closed by default on Manage pages (see P2).</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="D3" data-severity="low" data-area="labels">
+    <header><span class="fid">D3</span><span class="sev low">low</span><h3>Labels are cut off at laptop width</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>Battle's Hit Points tile reads "Hit p…" or "Hit …" because − and + share its label row (the tile is yours or the DM's). Sheet's tiles read "Passive Perce…" and "Heroic Inspirat…". Sheet › Actions in two columns cuts descriptions to "Soul coins are a…" and "You create a vine-like whip cov…". The campaign's name is shortened in the menu bar when the Live pill's text is long and the Admin menu is present.</dd>
+      <dt>Suggest</dt><dd>Use the short labels the phone already has ("HP", "PP") whenever the tile is narrower than its label, by container query. In Sheet › Actions, drop the description from the row (it is in the side panel) or let it wrap to a second line. Cap the Live pill's width instead of the campaign's name.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="D4" data-severity="low" data-area="system">
+    <header><span class="fid">D4</span><span class="sev low">low</span><h3>"Selected" is red in some controls and blue in others</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>Battle / Sheet / Plan: red fill. The character and creature switch, Normal form, All / Last session, Table / DM only / Only me, Normal / Advantage: blue outline. Red is also the primary button (Roll, Publish, Save) and the menu bar's Manage door.</dd>
+      <dt>Why</dt><dd>Red means "the main action" and "where you are" at once, so the page's own tabs look like a button.</dd>
+      <dt>Suggest</dt><dd>One selected style for every segmented control (the blue one), keeping red for primary actions and the campaign's Manage colour. Add it to Manage › askdnd › Design system as the rule.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="D5" data-severity="low" data-area="accessibility">
+    <header><span class="fid">D5</span><span class="sev low">low</span><h3>The faintest grey and the red button are under the usual contrast minimum</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>On Battle: text <code>rgb(111,107,100)</code> on <code>rgb(31,34,38)</code> is 3.0:1 and on <code>rgb(21,23,26)</code> is 3.4:1 (seven places, some at 14 px). White on the primary red <code>rgb(214,69,69)</code> is 4.4:1. The usual minimum for body text is 4.5:1.</dd>
+      <dt>Suggest</dt><dd>Lift that grey token to about <code>rgb(140,136,128)</code> and darken the red a step. Then add a contrast check to <code>layout_check.js</code>, which already walks every page.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="D6" data-severity="note" data-area="consistency">
+    <header><span class="fid">D6</span><span class="sev note">note</span><h3>Small inconsistencies</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>Page titles: "Sessions · Manage · askdnd" but "Inbox · askdnd" and "Review Nov 6, 2026 · askdnd". A character with Strength 8 shows "Unarmed Strike · 5 ft · 0 bludgeoning", which reads like a fault until the roll window explains it. The menu's link to your character opens Sheet for one person and Battle for another (it may remember the last tab; if so, fine).</dd>
+      <dt>Suggest</dt><dd>One title pattern for Manage pages. Say "no damage" in place of "0 bludgeoning" on the row.</dd>
+    </dl>
+  </article>
+
+  </div>
+</section>
+
+<section id="design-phone">
+  <h2>Design findings, phone (375×812)</h2>
+  <div class="list">
+
+  <article class="finding" id="P1" data-severity="medium" data-area="touch">
+    <header><span class="fid">P1</span><span class="sev medium">medium</span><h3>The most-pressed controls are too small for a thumb</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>On Battle, 24 of 75 visible controls are under 32 px in one direction. Hit Points − and + are 24×24. A reminder's × is 21×19. "+ Add" is 22 high. The common actions (Dash, Dodge, Hide…) are 26 high and sit close together. ↗ and ⓘ by the name are 24×24.</dd>
+      <dt>Why</dt><dd>Hit Points changes more than anything else in a fight, and − sits right beside +. Apple's guidance is 44 pt.</dd>
+      <dt>Suggest</dt><dd>On touch screens make the whole Hit Points tile the button (it opens the small window either way), or give − and + a 44 px hit area. Add a minimum target size to the touch branch of <code>layout_check.js</code>, beside the existing 16 px input rule, so it stays fixed.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="P2" data-severity="low" data-area="table rolls">
+    <header><span class="fid">P2</span><span class="sev low">low</span><h3>Once opened, Table rolls covers the bottom third of every page</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>Open or closed is one setting per device (<code>askdnd.rollsSide</code>). Opened on Battle, it is still open on Story, Campaign and the DM's review page, where it covers about 35% of the screen above the bottom bar. Closed, it is the thin line and works well.</dd>
+      <dt>Suggest</dt><dd>On a phone, remember "open" only for character pages and Party, or close it on navigation and let a fight reopen it as it already does.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="P3" data-severity="low" data-area="sheet">
+    <header><span class="fid">P3</span><span class="sev low">low</span><h3>Sheet's first screen is eight large tiles</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>Hit points, Armor class, Speed, Initiative, Proficiency, Passive Perception, Spell DC and Heroic Inspiration fill two columns and the whole first screen. Battle shows five of the same numbers in one row.</dd>
+      <dt>Suggest</dt><dd>Reuse Battle's compact strip at the top of Sheet on a phone, so the tabs (Actions, Spells, Inventory…) are on the first screen.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="P4" data-severity="note" data-area="loading">
+    <header><span class="fid">P4</span><span class="sev note">note</span><h3>The Spell Book showed a dimmed page with nothing in it for over a second</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>Once, on the local copy, as a Wizard: tapping Spell Book dimmed the page, and a second later the window still wasn't drawn and there was no sign of loading. I didn't repeat it, so treat this as "check", not "broken".</dd>
+      <dt>Suggest</dt><dd>If a large window can take more than about 300 ms, draw its frame and title at once and fill the list when it arrives.</dd>
+    </dl>
+  </article>
+
+  <article class="finding" id="P5" data-severity="note" data-area="battle">
+    <header><span class="fid">P5</span><span class="sev note">note</span><h3>Battle is about four screens tall</h3></header>
+    <dl>
+      <dt>Seen</dt><dd>3,125 px for a Druid. The Action / Bonus / Reaction tabs are a good answer to the columns. Reminders, written as full sentences, then take a screen of their own.</dd>
+      <dt>Suggest</dt><dd>On a phone, show each reminder's first line and open the rest on tap, as Resources already folds.</dd>
+    </dl>
+  </article>
+
+  </div>
+</section>
+
+<section class="box" id="questions">
+  <h2>Questions where a recorded reason would close the finding</h2>
+  <ul>
+    <li><strong>C2:</strong> Is there a reason HTMX stayed on a CDN when the dice library was vendored?</li>
+    <li><strong>C7:</strong> Is "one copy of the app" a decision, and is the deploy overlap accounted for in the bridge's health?</li>
+    <li><strong>C8:</strong> Is trusting the browser's modifier on a roll deliberate?</li>
+    <li><strong>C9:</strong> Can the DM ever be an admin? If never, is that enforced or only true today?</li>
+    <li><strong>W4:</strong> Is leaving Concentration and a familiar in place, when the slot's change is undone, the intended behaviour?</li>
+    <li><strong>W6:</strong> Is trusting a private death save's result, and the sheet as the extension read it, part of the same decision as C8?</li>
+    <li><strong>A1:</strong> May the DM send her own hidden entry to Claude by pressing Regenerate, or does "never" mean never?</li>
+    <li><strong>A4:</strong> Are players' and the DM's real names meant to go to Claude on every call?</li>
+    <li><strong>R1:</strong> Was "every feature and feat that rolls or adds a number" meant as done, or as the goal the card describes?</li>
+    <li><strong>R5:</strong> Is compiling the new shape back into the old one a step on the way, or where it stays?</li>
+    <li><strong>R8:</strong> Are two books' mechanics, in askdnd's words, meant to live in the public repo?</li>
+    <li><strong>D4:</strong> Was red for Battle / Sheet / Plan chosen on purpose, to mark the page's own tabs apart from choices within it?</li>
+    <li><strong>P2:</strong> Was one open-or-closed setting for every page a choice, from the "Table rolls is on every page" decision?</li>
+  </ul>
+</section>
+
+<section class="box" id="order">
+  <h2>If only eight things are done</h2>
+  <ol>
+    <li><a href="#R2">R2</a> then <a href="#R3">R3</a>: a coverage report over the books and made-up characters, before any more roll data; and save DCs in the data.</li>
+    <li><a href="#W1">W1</a>: stop a double press on Apply taking damage twice.</li>
+    <li><a href="#A1">A1</a>: make Regenerate and the hidden-entry rule agree.</li>
+    <li><a href="#P1">P1</a>: thumb-sized Hit Points buttons, with a layout check to keep them.</li>
+    <li><a href="#C2">C2</a> and <a href="#C1">C1</a>: HTMX in the repo, and the three simple headers.</li>
+    <li><a href="#D1">D1</a>: one more option per column on Battle's first screen.</li>
+    <li><a href="#D2">D2</a>: room to read on the DM's review page.</li>
+    <li><a href="#C4">C4</a>, first step only: a JavaScript linter in the checks.</li>
+  </ol>
+</section>
+</main>

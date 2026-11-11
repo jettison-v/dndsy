@@ -154,6 +154,16 @@ def test_www_goes_to_askdnd_ai():
     assert TestClient(app, base_url="https://askdnd.ai").get("/login", follow_redirects=False).status_code == 200
 
 
+def test_every_answer_says_the_safe_headers(db):
+    """The outside review's C1 (Nov 10): every page, file and refusal says nosniff, framing only by askdnd itself, and
+    only askdnd's address to other sites; a route's own headers win (Documents' sealed frame)."""
+    from app.main import SAFE_HEADERS
+
+    c = TestClient(app, base_url="https://askdnd.ai")
+    for r in (c.get("/login", follow_redirects=False), c.get("/static/app.css"), c.get("/no/such/page"), c.get("/c/main/", follow_redirects=False)):
+        assert all(r.headers.get(k) == v for k, v in SAFE_HEADERS.items()), r.url
+
+
 def test_a_page_opened_signed_out_opens_again_after_signing_in(monkeypatch, db):
     """Brett, 2026-11-05: askdnd.ai/twin (a page since retired), opened signed out, landed on the Story page after signing in."""
     from fastapi.testclient import TestClient

@@ -84,6 +84,23 @@ def test_a_change_counts_only_once_d_and_d_beyond_has_it(player, db, sheet):
     assert st["log"][0] == {**st["log"][0], "state": "live", "text": "Cole drank a Potion of Healing"}
 
 
+def test_only_a_browser_the_change_went_to_settles_it(player, db, sheet, monkeypatch):
+    """The outside review's C3 (Nov 10): another player at the table can't mark Cole's change made or failed; his own
+    player can."""
+    from tests.table_setup import sign_in
+
+    cole = char(db, "Cole")
+    owned_by(db, char(db, "Trah"), "other@example.com")
+    set_role(db, "other@example.com", "player", campaign=db.get(Campaign, cole.campaign_id))
+    drink(db, cole)
+    batch = ddb_bridge.outbox(db, cole)
+    other = sign_in(monkeypatch, db, "other@example.com")
+    assert other.post(f"/bridge/delivered/{batch['id']}", json={"ok": False, "error": "no"}).status_code == 404
+    assert {i.state for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == cole.id))} == {"sending"}
+    make(sheet, batch)
+    assert player.post(f"/bridge/delivered/{batch['id']}", json={"ok": True}).status_code == 200
+
+
 def test_a_change_is_built_on_what_d_and_d_beyond_has_when_it_goes(db, sheet, monkeypatch):
     """An intent, not a number: hit points changed on D&D Beyond after the drink was asked for are built on, not lost.
     askdnd's copy of the sheet is read again first when it's more than a minute old (ddb_bridge.COPY_SECONDS)."""

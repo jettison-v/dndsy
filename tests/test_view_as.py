@@ -72,8 +72,12 @@ def test_only_admins_and_never_a_dm_into_their_players_notes(setup, monkeypatch)
     player.post("/view-as", data={"email": "dm@example.com"})
     assert "Viewing as" not in player.get("/").text
 
-    set_role(db, "brett@example.com", "dm", name="Brett")  # the admin is this campaign's DM
     admin = client_for(monkeypatch, db, "brett@example.com")
+    admin.post("/view-as", data={"email": "mark@example.com"})
+    assert "Viewing as <b>Mark</b>" in admin.get("/").text
+    set_role(db, "brett@example.com", "dm", name="Brett")  # the admin becomes this campaign's DM while viewing as Mark:
+    assert "Viewing as" not in admin.get("/").text  # it stops at once (the outside review's C10)
+    admin.post("/view-as/stop")
     admin.post("/view-as", data={"email": "mark@example.com"})
     assert "Viewing as" not in admin.get("/").text  # would show the DM their player's notes
     assert 'action="/view-as"' not in admin.get("/manage/accounts").text.split("mark@example.com")[1].split("</div>")[0]

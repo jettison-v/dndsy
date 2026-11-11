@@ -167,6 +167,11 @@ app.add_middleware(
 )
 
 
+# Every answer says these unless its route said otherwise (the outside review's C1, Nov 10): a file is what its type
+# says, no other site frames askdnd's pages, and another site sees only askdnd's address, never which page you were on.
+SAFE_HEADERS = {"X-Content-Type-Options": "nosniff", "X-Frame-Options": "SAMEORIGIN", "Referrer-Policy": "strict-origin-when-cross-origin"}
+
+
 @app.middleware("http")  # (added last, so it runs first)
 async def one_address(request: Request, call_next):
     """askdnd.ai, never www.askdnd.ai (Brett, 2026-11-02: askdnd.ai moves to v2): one address, so one sign-in and one
@@ -174,7 +179,10 @@ async def one_address(request: Request, call_next):
     if request.headers.get("host", "").lower().startswith("www."):
         query = f"?{request.url.query}" if request.url.query else ""
         return RedirectResponse(f"https://{request.headers['host'][4:]}{request.url.path}{query}", status_code=308)
-    return await call_next(request)
+    response = await call_next(request)
+    for k, v in SAFE_HEADERS.items():
+        response.headers.setdefault(k, v)
+    return response
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.include_router(auth_router)
 app.include_router(view_as_router)
