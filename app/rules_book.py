@@ -26,8 +26,9 @@ def books() -> dict:
     return {f.stem: json.loads(f.read_text()) for f in sorted(BOOKS.glob("*.json"))}
 
 
-def entries() -> list[dict]:
-    return [e | {"_book": b} for b, data in books().items() for e in data["entries"]]
+@cache
+def entries() -> tuple[dict, ...]:
+    return tuple(e | {"_book": b, "_norm": _norm(e["name"])} for b, data in books().items() for e in data["entries"])
 
 
 @cache
@@ -128,18 +129,18 @@ def active(sheet: dict | None) -> list[dict]:
     out = []
     for e in entries():
         if (e["kind"] == "item" and e.get("adds") and not any(": " in a["name"] for a in e["adds"])
-                and any(c.startswith(_norm(e["name"])) for c in carried)):
+                and any(c.startswith(e["_norm"]) for c in carried)):
             pass  # (a magic weapon's own adds, when the character carries one: Flame Tongue; one that needs its kind marked,
             #      "Dragon-Touched Focus: Chromatic", goes by that name below)
         elif e["kind"] == "feat":
-            if _norm(e["name"]) not in feats and not (e.get("needs") and _norm(e["needs"]) in feats):
+            if e["_norm"] not in feats and not (e.get("needs") and _norm(e["needs"]) in feats):
                 continue
         elif e.get("class"):
             if lv.get(e["class"], 0) < e.get("level", 1) or (e.get("sub") and subs.get(e["class"]) != _norm(e["sub"])):
                 continue
             if e.get("needs") and not _has(sheet, e["needs"]):
                 continue
-        elif _norm(e["name"]) not in names and not any(_norm(a["name"]) in names for a in e.get("adds") or []):
+        elif e["_norm"] not in names and not any(_norm(a["name"]) in names for a in e.get("adds") or []):
             continue
         out.append(e)
     top = {}
@@ -149,9 +150,34 @@ def active(sheet: dict | None) -> list[dict]:
     return [e for e in out if not e.get("group") or e.get("level", 0) == top[e["group"]]]
 
 
+_ADDS: dict = {}  # (a page asks once per Battle option: id(sheet) -> (what it was worked out from, the adds))
+
+
+def _fingerprint(sheet: dict) -> tuple:
+    return (len(sheet.get("features") or []), len(sheet.get("actions") or []), len(sheet.get("spells") or []),
+            len(sheet.get("inventory") or []), tuple((c.get("name"), c.get("level"), c.get("subclass")) for c in sheet.get("classes") or []),
+            tuple(sorted((sheet.get("_item_choices") or {}).items())), sheet.get("proficiency_bonus"),
+            tuple(a.get("modifier") for a in sheet.get("abilities") or []),
+            hash(tuple(x.get("name") or "" for k in ("features", "actions", "spells") for x in sheet.get(k) or [] if isinstance(x, dict))),
+            hash(tuple((x.get("name"), x.get("equipped")) for x in sheet.get("inventory") or [])))
+
+
 def adds(sheet: dict | None) -> list[dict]:
     """What this character can do to a roll, from every entry that applies: each add with its numbers filled in and
-    where it's from (`source`: a subclass, a class, "Feat", or the entry's own name)."""
+    where it's from (`source`: a subclass, a class, "Feat", or the entry's own name). Worked out once per sheet (a Battle
+    asks for each of its options), again when the sheet's classes, things, marks or numbers change."""
+    sheet = sheet or {}
+    key, fp = id(sheet), _fingerprint(sheet)
+    if (hit := _ADDS.get(key)) and hit[0] == fp:
+        return [dict(a) for a in hit[1]]
+    out = _adds(sheet)
+    if len(_ADDS) > 256:
+        _ADDS.clear()
+    _ADDS[key] = (fp, out)
+    return [dict(a) for a in out]
+
+
+def _adds(sheet: dict) -> list[dict]:
     out = []
     for e in active(sheet):
         for a in e.get("adds") or []:
@@ -164,4 +190,4 @@ def adds(sheet: dict | None) -> list[dict]:
 
 def entry(kind: str, name: str) -> dict | None:
     want = _norm(name)
-    return next((e for e in entries() if e["kind"] == kind and _norm(e["name"]) == want), None)
+    return next((e for e in entries() if e["kind"] == kind and e["_norm"] == want), None)
