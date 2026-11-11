@@ -307,8 +307,8 @@ def test_the_card_lets_the_dice_show_through_while_they_are_thrown(people, serve
         page.locator(".roll-card [data-roll-hit]").click()
         page.mouse.move(2, 2)
         page.wait_for_function("document.querySelector('.dice-throw.on')", timeout=10000)
-        page.wait_for_timeout(300)
-        assert float(page.evaluate("getComputedStyle(document.querySelector('.roll-win')).opacity")) < 0.6
+        # (the outcome, not a deadline: a slow machine is still part way through the fade at 300ms, Nov 10)
+        page.wait_for_function("parseFloat(getComputedStyle(document.querySelector('.roll-win')).opacity) < 0.6", timeout=5000)
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)
