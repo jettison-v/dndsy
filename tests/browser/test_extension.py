@@ -204,7 +204,7 @@ def test_use_and_roll_spends_the_item_and_rolls_its_plan_at_once(chrome, server)
     sheet.goto(SHEET)
     page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
     page.bring_to_front()
-    page.keyboard.press("Meta+k")
+    page.keyboard.press("ControlOrMeta+k")  # (Ctrl+K on Linux, where GitHub runs it)
     page.locator("#search-q").fill("soul coin")
     page.wait_for_timeout(500)
     page.locator("#search-q").press("Enter")
@@ -214,6 +214,7 @@ def test_use_and_roll_spends_the_item_and_rolls_its_plan_at_once(chrome, server)
     rolls = page.evaluate("fetch('/rolls?since=-1').then(r => r.text())")
     assert "Soul Coin" in rolls and "1d10" in rolls  # (its plan's dice, in Table rolls)
     page.keyboard.press("Escape")
+    sheet.close()
 
 
 def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_link(people, server):

@@ -312,10 +312,14 @@ def option_rolls(o: dict) -> list[dict]:
     return out
 
 
-def item_roll(o: dict) -> dict | None:
+def item_roll(o: dict, sheet: dict | None = None) -> dict | None:
     """An item's one roll as its button carries it (a potion's healing, Keoghtom's Ointment, a Soul Coin), for the Use
     window: `attrs` (the button's, plan and all), `kind`, `formula` (its dice at the plan's own level, types left out).
-    The Use window rolls only this, so using an item and pressing its Roll are the same roll (Brett, Nov 10)."""
+    The Use window rolls only this, so using an item and pressing its Roll are the same roll (Brett, Nov 10). An item
+    whose recipe says what using it rolls (`use`: a check, a save, the weapon's own attack with a save on a hit) gets that
+    roll, made from the sheet's own numbers (`use_roll`)."""
+    if sheet is not None and (use := (o.get("recipe") or {}).get("use")):
+        return use_roll(o, sheet, use)
     for r in option_rolls(o):
         attrs = r.get("attrs") or {}
         plan = json.loads(attrs.get("plan") or "null") or {}
@@ -325,6 +329,43 @@ def item_roll(o: dict) -> dict | None:
         at = rolls["effects"][0]["at"].get(str(rolls.get("base", 0))) or next(iter(rolls["effects"][0]["at"].values()), None)
         if at and at.get("parts"):
             return {"attrs": attrs, "kind": attrs.get("roll"), "formula": "+".join(p.split(" ")[0] for p in at["parts"]), "text": at.get("text") or ""}
+    return None
+
+
+def use_roll(o: dict, sheet: dict, use: dict) -> dict | None:
+    """What using an item rolls, by its recipe's `use` (scripts/roll_overrides.json "items"): {"check": "Arcana", "dc": 10}
+    (Hat of Wizardry), {"save": "Con", "dc": 15} (Dust of Sneezing and Choking: you roll yours too), {"attack": true,
+    "rider": {name, save, dc, says}} (Hammer of Thunderbolts: its own attack, thrown, and on a hit a save for the DM).
+    The numbers are the sheet's; the DC and words are the recipe's."""
+    note = use.get("says") or ""
+    if skill := use.get("check"):
+        sk = next((x for x in sheet.get("skills") or [] if x["name"] == skill), None)
+        if not sk:
+            return None
+        note = f"DC {use['dc']}" + (f": {note}" if note else "") if use.get("dc") else note
+        attrs = roll_data("check", f"{skill} check", sk["label"], note=note, advs=sk.get("adv"))
+        return {"attrs": attrs, "kind": "check", "formula": "", "text": f"{skill} {sk['label']}" + (f" · DC {use['dc']}" if use.get("dc") else "")}
+    if ab := use.get("save"):
+        sv = next((x for x in sheet.get("saves") or [] if x["short"].lower() == ab.lower()), None)
+        if not sv:
+            return None
+        note = f"DC {use['dc']}" + (f": {note}" if note else "") if use.get("dc") else note
+        attrs = roll_data("save", f"{sv['short']} save", sv["label"], note=note, advs=sv.get("adv"))
+        return {"attrs": attrs, "kind": "save", "formula": "", "text": f"{sv['short']} save {sv['label']}" + (f" · DC {use['dc']}" if use.get("dc") else "")}
+    if use.get("attack"):
+        weapon = next((x for x in options(sheet, set()) if x.get("kind") == "attack" and x["name"] == o["name"]), None)
+        hit = next((r for r in option_rolls(weapon) if r.get("button") == "hit"), None) if weapon else None
+        if not hit:
+            return None
+        attrs = dict(hit["attrs"])
+        plan = json.loads(attrs["plan"])
+        if rd := use.get("rider"):
+            plan["riders"] = [*(plan.get("riders") or []), {"name": rd["name"], "when": "hit", "says": rd.get("says", ""), "on": "item",
+                                                           "act": {"kind": "save", "save": rd["save"], "dc": int(rd["dc"])}}]
+        if note:
+            plan["notes"] = [*(plan.get("notes") or []), note]
+        attrs["plan"] = json.dumps(plan)
+        return {"attrs": attrs, "kind": "attack", "formula": "", "text": f"{weapon.get('hit')} to hit"}
     return None
 
 

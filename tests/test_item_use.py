@@ -233,20 +233,28 @@ def test_using_an_item_rolls_the_plan_its_button_carries(player, db, sheet, monk
 
 def test_every_usable_item_on_the_partys_sheets_rolls_its_plan():
     """Every item with a Use window on the party's saved sheets: one with a roll in its plan offers it (a potion rolls
-    as it's drunk; anything else is Use and roll), and its dice are the plan's at the plan's own level."""
+    as it's drunk; anything else is Use and roll), and its dice are the plan's at the plan's own level. Using a Hat of
+    Wizardry is an Arcana check, Dust of Sneezing and Choking your own Con save, a Hammer of Thunderbolts its own attack
+    thrown with Thunderclap's save on a hit (Brett, Nov 10: what's left to fully complete rolls)."""
     import json
     from pathlib import Path
 
     from app import ddb
     from app.item_use import _drinks
 
+    seen = {}
     for name in ("big_c", "cole", "no_name", "trah"):
         raw = json.loads((Path(__file__).parent / "fixtures" / "ddb" / f"{name}.json").read_text())["data"]
         s = ddb.parse_character(ddb.sanitize(raw))
         for o in views.options(s, set()):
-            if not o.get("use") or not (r := views.item_roll(o)):
+            if not o.get("use") or not (r := views.item_roll(o, s)):
                 continue
             plan = json.loads(r["attrs"]["plan"])
-            at = plan["rolls"]["effects"][0]["at"][str(plan["rolls"]["base"])]
-            assert r["formula"] == "+".join(p.split(" ")[0] for p in at["parts"]), (name, o["name"])
+            if plan.get("rolls"):
+                at = plan["rolls"]["effects"][0]["at"][str(plan["rolls"]["base"])]
+                assert r["formula"] == "+".join(p.split(" ")[0] for p in at["parts"]), (name, o["name"])
             assert bool(_drinks(o)) == (o["use"]["gives"] and r["kind"] == "heal"), (name, o["name"])
+            seen[o["name"]] = (plan["play"], plan.get("bonus"), [x["name"] for x in plan.get("riders") or []])
+    # (what using these rolls is the recipe's `use`; the numbers are the sheet's)
+    assert seen["Hat of Wizardry"] == ("d20", 7, []) and seen["Dust of Sneezing and Choking"][:2] == ("d20", 2)
+    assert seen["Hammer of Thunderbolts (Maul)"][0] == "attack" and "Thunderclap" in seen["Hammer of Thunderbolts (Maul)"][2]

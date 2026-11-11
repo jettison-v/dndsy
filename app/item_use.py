@@ -89,7 +89,7 @@ def window(request: Request, character_id: int, item_id: int, db: Session = Depe
     it, o = _item(db, ch, item_id)
     return templates.TemplateResponse(request, "_use_window.html", {"c": ch, "it": it, "o": o, "others": _others(db, ch) if o["use"]["gives"] else [],
                                                                     "reachable": ddb_bridge.reachable(ch), "starts": (cond.on_use(it) or {}).get("starts", ""),
-                                                                    "roll": views.item_roll(o), "drinks": _drinks(o)})
+                                                                    "roll": views.item_roll(o, _sheet(db, ch)), "drinks": _drinks(o)})
 
 
 def _drinks(o: dict) -> dict | None:

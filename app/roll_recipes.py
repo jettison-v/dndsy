@@ -75,7 +75,12 @@ def modifier(name: str) -> dict | None:
 def item(name: str) -> dict | None:
     """The recipe for an item by name ("Potion of Healing (Superior)"), any capitalization."""
     want = (name or "").removeprefix("Use an item: ").strip().lower()
-    return next((r for n, r in (recipes().get("items") or {}).items() if n.lower() == want), None)
+    items = recipes().get("items") or {}
+    found = next((r for n, r in items.items() if n.lower() == want), None)
+    if found is None and " (" in want:  # (a magic weapon named with its base: "Hammer of Thunderbolts (Maul)")
+        base = want.split(" (")[0]
+        found = next((r for n, r in items.items() if n.lower() == base), None)
+    return found
 
 
 def parse_part(part: str) -> tuple[int, int, int, str] | None:

@@ -383,7 +383,8 @@ def plan(sheet: dict, o: dict) -> dict:
         (out["heal"] if o.get("heal") else out["damage"]).append(part)
         src["heal" if o.get("heal") else "damage"] = "sheet" if sheet_part else "text"
 
-    out["modifiers"] = modifiers_for(sheet, "attack" if out["attack"] else "save" if out["save"] else "")
+    spell = {"level": o.get("level") or 0, "types": {p["type"] for p in out["damage"] if p.get("type")}} if o.get("kind") == "spell" and out["damage"] else None
+    out["modifiers"] = modifiers_for(sheet, "attack" if out["attack"] else "save" if out["save"] else "", spell)
     if out["attack"] or (out["damage"] and o.get("kind") == "attack"):
         for t in o.get("tags") or []:  # the weapon's mastery, if you've mastered it (character_views: "Mastery: Vex")
             if t.startswith("Mastery: ") and (m := t[9:]) in class_rules.MASTERIES:
@@ -419,16 +420,23 @@ def _modifier(name: str, mod: dict, sheet: dict) -> dict:
 
 
 def _has(sheet: dict) -> set[str]:
-    """The names of what the character has: features, actions, spells (what a modifier is named after)."""
+    """The names of what the character has: features, actions, spells (what a modifier is named after), and an item
+    marked with its kind, as "<item>: <kind>" ("Dragon-Touched Focus: Chromatic", its player's mark)."""
     names = {a.get("name") for a in sheet.get("actions") or []} | {s.get("name") for s in sheet.get("spells") or []}
     names |= {f.get("name") for f in sheet.get("features") or [] if isinstance(f, dict)}
+    choices = sheet.get("_item_choices") or {}
+    for it in sheet.get("inventory") or []:
+        if (kind := choices.get(str(it.get("key", "")).split(":", 1)[-1])) and it.get("equipped"):
+            names.add(f"{(it.get('base_name') or it.get('name') or '').split(' (')[0]}: {kind}")
     return {n for n in names if n}
 
 
-def modifiers_for(sheet: dict, roll: str) -> list[dict]:
+def modifiers_for(sheet: dict, roll: str, spell: dict | None = None) -> list[dict]:
     """What this character can do to a roll of this kind ("attack", "save", "check"): their own modifiers, each with
-    when it applies (before, after a failure, on a hit). Bless and the like, given by others, come from the table."""
-    if not roll:
+    when it applies (before, after a failure, on a hit). Bless and the like, given by others, come from the table.
+    `spell` ({"level", "types"}): a spell's damage, which takes what adds to spell damage (Arcane Firearm; a Chromatic
+    Dragon-Touched Focus, only with a slot and only for its damage types; a type the caster picks counts)."""
+    if not roll and spell is None:
         return []
     has = _has(sheet)
     out = []
@@ -436,7 +444,13 @@ def modifiers_for(sheet: dict, roll: str) -> list[dict]:
         mod = rr.modifier(name)
         if not mod or mod.get("gives") or mod.get("from"):
             continue
-        if roll in mod.get("to") or (roll == "attack" and mod.get("when") == "on_hit"):
+        if roll and (roll in mod.get("to") or (roll == "attack" and mod.get("when") == "on_hit")):
+            out.append(_modifier(name, mod, sheet))
+        elif spell is not None and "spell damage" in (mod.get("to") or []):
+            if mod.get("slot") and not spell.get("level"):
+                continue  # (a cantrip uses no slot)
+            if mod.get("types") and spell.get("types") and not set(mod["types"]) & spell["types"]:
+                continue
             out.append(_modifier(name, mod, sheet))
     return out
 

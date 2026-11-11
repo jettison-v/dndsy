@@ -186,6 +186,38 @@
    ],
    "level": 0
   },
+  "Dust of Sneezing and Choking": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "dc": 15,
+    "save": "Con",
+    "says": "you and every creature within 30 feet; on a failure, Incapacitated and suffocating, repeating the save at the end of each turn"
+   }
+  },
+  "Hammer of Thunderbolts": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "attack": true,
+    "rider": {
+     "dc": 17,
+     "name": "Thunderclap",
+     "save": "Con",
+     "says": "the target and every creature within 30 feet of it other than you: Stunned until the end of your next turn on a failure"
+    },
+    "says": "thrown: range 20/60 ft; it flies back to your hand"
+   }
+  },
+  "Hat of Wizardry": {
+   "checked": "by hand",
+   "level": 0,
+   "use": {
+    "check": "Arcana",
+    "dc": 10,
+    "says": "on a success you cast the cantrip; on a failure the action is wasted"
+   }
+  },
   "Holy Water": {
    "checked": "by hand",
    "events": [
@@ -361,6 +393,24 @@
    ],
    "when": "damage_taken",
    "why": "Monk: reduce an attack's damage by 1d10 + Dexterity + Monk level"
+  },
+  "Dragon-Touched Focus: Chromatic": {
+   "adds": "1d6",
+   "checked": "by hand",
+   "short": "Dragon-Touched Focus",
+   "slot": true,
+   "to": [
+    "spell damage"
+   ],
+   "types": [
+    "acid",
+    "cold",
+    "fire",
+    "lightning",
+    "poison"
+   ],
+   "when": "on_damage",
+   "why": "Stirring, Chromatic family: when you use a spell slot on a spell that deals acid, cold, fire, lightning or poison damage, roll a d6 and add it to one damage roll (Fizban's)"
   },
   "Favored by the Gods": {
    "adds": "2d4",

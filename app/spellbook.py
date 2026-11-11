@@ -120,7 +120,7 @@ def _entry(sp: dict, sheet: dict, top: int, castable_in_form: set[str] | None = 
     e |= _facts(e, _main_event(e["recipe"]))
     e["f"] = facets(e)
     if e["recipe"]:
-        o = {"name": sp["name"], "kind": "spell", "hit": e["attack"] or e["save"], "recipe": e["recipe"], "tags": [],
+        o = {"name": sp["name"], "kind": "spell", "level": sp.get("level") or 0, "hit": e["attack"] or e["save"], "recipe": e["recipe"], "tags": [],
              "meta": sp.get("summary") or "", "text": sp.get("text") or "", "summary": sp.get("summary") or ""}
         e["plan"] = roll_plan.plan(sheet, o) if o["hit"] else None
         e["rolls"] = {"hit": roll_plan.effects(e["recipe"], sheet, sp["name"], True), "other": roll_plan.effects(e["recipe"], sheet, sp["name"], False)}

@@ -33,6 +33,7 @@ RECORD = """() => {
       const d = {};
       for (const [k, v] of new URLSearchParams(opts.body)) (d[k] = d[k] || []).push(v);
       window.__sent.push(d);
+      (window.__all = window.__all || []).push(d);  // (every roll this page sent, across buttons)
       return real(url, opts).then(r => { if (!r.ok) r.clone().text().then(t => { d.refused = r.status + ' ' + t.slice(0, 200); }); return r; });
     }
     return real(url, opts);
@@ -317,4 +318,147 @@ def test_every_roll_button_plays_its_plan(people, server, browser_db, name, size
 
     assert played > 40, f"only {played} roll buttons found for {name}"
     assert not bad, f"{name}: {len(bad)} of {played} roll buttons didn't play their plan:\n" + "\n".join(bad[:40])
+    assert player.errors == []
+
+
+ZAP = 990001
+
+
+def _made_up_creature() -> dict:
+    """A familiar-like creature on Cole's sheet, in D&D Beyond's shape, with made-up words (tests/test_creatures.py)."""
+    from tests.test_creatures import made_up
+
+    return made_up(cid=ZAP)
+
+
+def _setup(browser_db, server, what: str) -> list[tuple[str, str, str]]:
+    """Cole's place at the table set up for `what`; returns (who, page, roll buttons) to play."""
+    from app import characters, rules_data
+    from app.models import Campaign, Character, Place, Token
+
+    data = json.loads((ROOT_FIXTURES / "cole.json").read_text())["data"]
+    if what == "creature":
+        data = {**data, "creatures": [*data.get("creatures", []), _made_up_creature()]}
+    engine = create_engine(browser_db[0])
+    out = []
+    with Session(engine) as db:
+        cole = char(db, "Cole")
+        characters.refresh(db, cole, lambda _id: data)
+        campaign = db.get(Campaign, cole.campaign_id)
+        campaign.vtt_pieces = ["sync", "labs", "creatures", "vtt", "vtt_table"]
+        cid = cole.id
+        if what == "forms":
+            forms = [c["definition"]["name"] for c in data.get("creatures") or [] if c.get("groupId") == 4 or "Wild Shape" in str(c.get("group"))]
+            forms = forms or [c["name"] for c in characters.character_summary(cole).get("creatures") or [] if c.get("group") == "Wild Shape form"]
+            out = [("player", f"/characters/{cid}/battle", form) for form in forms]
+        elif what == "creature":
+            out = [("player", f"/characters/{cid}/battle?creature={ZAP}", "")]
+        else:  # the DM's rolls as a creature on askdnd's table (a token's side panel)
+            p = Place(campaign_id=campaign.id, name="Test room", position=1, map_w=700, map_h=490, map_key=None,
+                      grid={"size": 70, "x": 0, "y": 0}, fog={"on": False, "shown": []})
+            db.add(p)
+            db.flush()
+            campaign.shown_place_id = p.id
+            for name in ("Goblin Warrior", "Bandit Captain", "Brown Bear"):
+                e = rules_data.find("monster", name, db, campaign.id)
+                if not e:
+                    continue
+                t = Token(campaign_id=campaign.id, place_id=p.id, kind="monster", name=e["name"],
+                          monster={"key": e["key"], "name": e["name"], "source": e.get("source", "")},
+                          hp={"current": int(e.get("hp") or 1), "max": int(e.get("hp") or 1), "temp": 0}, x=0, y=0, size=1)
+                db.add(t)
+                db.flush()
+                out.append(("dm", f"/c/{campaign.slug}/table/tokens/{t.id}", e["name"]))
+        db.commit()
+        db.expire_all()
+        assert db.get(Character, cid)
+    engine.dispose()
+    return out
+
+
+def _form(browser_db, form: str):
+    from app.models import Character
+
+    engine = create_engine(browser_db[0])
+    with Session(engine) as db:
+        ch = char(db, "Cole")
+        db.get(Character, ch.id).wild_shape = form
+        db.commit()
+    engine.dispose()
+
+
+@pytest.mark.parametrize("what", ["forms", "creature", "token"])
+def test_every_roll_beyond_the_sheet_plays_its_plan(people, server, browser_db, what):
+    """Brett, Nov 10 ("what's left to fully complete rolls"): the rolls that aren't the character's own sheet play their
+    plans the same way: Cole in each of his Wild Shape forms, a creature of his on its own Battle, and the DM's rolls as a
+    creature on askdnd's table (its side panel's saves and actions, sent with the token, so Table rolls says it's the
+    creature's)."""
+    todo = _setup(browser_db, server, what)
+    assert todo, f"nothing set up for {what}"
+    who = people(todo[0][0])
+    page = who.page
+    page.set_viewport_size({"width": 1440, "height": 900})
+    played, bad = 0, []
+    for _, path, label in todo:
+        if what == "forms":
+            _form(browser_db, label)
+        if what == "token":
+            who.open(path.rsplit("/table/", 1)[0] + "/table")
+            page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
+            page.evaluate(RECORD)
+            sel = "#peek.open .tk-panel [data-roll][data-plan]"
+
+            def panel(path=path):
+                if not page.locator(".tk-panel").count():
+                    page.evaluate("p => window.askdndPanel(p)", path)
+                    page.locator(".tk-panel").first.wait_for(timeout=8000)
+            panel()
+            n, b = _play_all(page, sel, panel)
+            sent_tokens = page.evaluate("(window.__all || []).filter(x => !x.action).map(x => (x.token || [''])[0])")  # (a follow-up is its attack's)
+            if any(t != path.rsplit("/", 1)[1] for t in sent_tokens):
+                b.append(f"{label}: a roll wasn't sent as the creature's (token {sent_tokens})")
+        else:
+            who.open(path)
+            page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
+            page.evaluate(RECORD)
+            n, b = _play_all(page, "#battle-body [data-roll][data-plan]")
+            if what == "creature":
+                whos = page.evaluate("(window.__all || []).filter(x => !x.action).map(x => (x.who || [''])[0])")
+                if any(w != "Homunculus Servant" for w in whos):
+                    b.append(f"a creature's roll wasn't sent as its (who {whos})")
+        if not n:
+            bad.append(f"{what} {label or path}: no roll buttons")
+        played, bad = played + n, bad + [f"{label}: {x}" for x in b]
+    assert not bad, f"{what}: {len(bad)} of {played} roll buttons didn't play their plan:\n" + "\n".join(bad[:40])
+    assert who.errors == []
+
+
+def test_what_adds_to_a_spells_damage_is_pressed_and_rolled(people, server, browser_db):
+    """A modifier to a spell's damage (Trah's Dragon-Touched Focus, marked Chromatic): a pill above Roll damage on a
+    save spell, sent with the damage when pressed (Brett, Nov 10: what's left to complete rolls)."""
+    _as(browser_db, server, "trah")
+    data = json.loads((ROOT_FIXTURES / "trah.json").read_text())["data"]
+    focus = next(i for i in data["inventory"] if "Dragon-Touched" in i["definition"]["name"])
+    engine = create_engine(browser_db[0])
+    with Session(engine) as db:
+        char(db, "Cole").item_choices = {str(focus["id"]): "Chromatic"}
+        db.commit()
+    engine.dispose()
+    player = people("player")
+    page = player.page
+    page.set_viewport_size({"width": 1440, "height": 900})
+    player.open(f"/characters/{server['cole']}/battle")
+    page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
+    page.evaluate(RECORD)
+    page.locator(".spellbook-btn").first.click()
+    page.locator('.sb-actions [data-roll][data-label="Burning Hands"]').first.evaluate("b => b.click()")
+    card = page.locator(".roll-card")
+    pill = card.locator('[data-on="Dragon-Touched Focus: Chromatic"]')
+    pill.wait_for(timeout=5000)
+    pill.click()
+    assert "1d6" in card.locator("[data-roll-save]").inner_text()
+    card.locator("[data-roll-save]").click()
+    page.wait_for_function("window.__sent.length > 0", timeout=15000)
+    sent = page.evaluate("window.__sent[0]")
+    assert "Dragon-Touched Focus:+1d6" in sent.get("extra", []) and not sent.get("refused"), sent
     assert player.errors == []

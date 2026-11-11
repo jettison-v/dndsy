@@ -1496,6 +1496,47 @@ def party_fixes(t: Table, seat: str = "player4") -> None:
             undone(t, sheet, before, "Lay On Hands: the 3 given back on D&D Beyond")
 
 
+def riders(t: Table, seat: str = "player4") -> None:
+    """Riders on a hit (Nov 10, PR 301), on the twins: No Name's Stunning Strike pressed on an Unarmed Strike's hit spends a
+    Focus Point on D&D Beyond once Roll damage is pressed, and its Con save reaches Table rolls; Big C's Divine Smite on
+    the Hammer spends a spell slot. Each is given back by its corner card's Undo."""
+    for key, weapon, rider in (("no-name-twin", "Unarmed Strike", "Stunning Strike"), ("big-c-twin", "Hammer of Thunderbolts", "Divine Smite")):
+        seat, ddb, name, _ = TWINS[key]
+        sheet = t.sheet(seat, ddb=ddb)
+        page = t.battle_of(seat, name)
+        connects(t, page)
+        cid = page.url.split("/characters/")[1].split("/")[0]
+        page.goto(page.url.split("/characters/")[0] + f"/characters/{cid}", wait_until="domcontentloaded")  # (Sheet: every attack)
+        page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
+        for _ in range(6):  # (a natural 1 offers no damage: roll again)
+            page.locator(f'main [data-roll="attack"][data-label^="{weapon}"]').first.evaluate("b => b.click()")
+            card = page.locator(".roll-card")
+            card.wait_for(timeout=8000)
+            if card.locator('[data-choice="damage"]').count():
+                card.locator('[data-choice="damage"]').click()
+            card.locator("[data-roll-hit]").click()
+            card.locator(".rcard-result:not(.rolling)").wait_for(timeout=15000)
+            if card.locator(f'[data-ride="{rider}"]').count():
+                break
+            page.keyboard.press("Escape")
+        before = record(sheet)
+        card.locator(f'[data-ride="{rider}"]').click()
+        way = card.locator(f'[data-ride-way="{rider}"]')
+        if way.count():  # (a slot, not a free use: askdnd can't spend a free use on D&D Beyond yet, the card says to mark it)
+            labels = way.locator("option").all_inner_texts()
+            print(f"   {rider}'s ways: {labels}", flush=True)
+            pick = next((i for i, x in enumerate(labels) if not x.startswith("Free")), 0)
+            way.select_option(index=pick)
+        t.expect(f"{rider}: nothing is spent until Roll damage", lambda: not steady(changes(before, record(sheet))), 3)
+        card.locator("[data-roll-dmg]").click()
+        changed(t, sheet, before, f"{rider}: its cost is spent on D&D Beyond once Roll damage is pressed")
+        if rider == "Stunning Strike":
+            t.expect("its Con save is in Table rolls for the DM", lambda: "the target makes a Con save" in page.evaluate("fetch('/rolls?since=-1').then(r => r.text())"), 8)
+        if undo(page):
+            undone(t, sheet, before, f"{rider}: Undo gives it back on D&D Beyond")
+        page.keyboard.press("Escape")
+
+
 VTT = "https://www.dndbeyond.com/games/8224496"
 EXTENSION = "obpgemimnhngpcckodjkcihiahoaefpl"  # (the askdnd bridge from the Chrome Web Store, in every seat)
 
@@ -1611,6 +1652,7 @@ def _every_run(key: str):
 
 TWIN_OF = {f"{k}-every": k for k in PARTY_TWINS} | {"cole-twin-wild-shape": "cole-twin"}  # (each run's twin, for tidying)
 RUNS["party-fixes"] = party_fixes
+RUNS["riders"] = riders
 RUNS |= {f"{k}-every": _every_run(k) for k in PARTY_TWINS}
 RUNS["cole-twin-wild-shape"] = lambda t, seat="player2": wild_shape(t, seat, "cole-twin")
 # Runs about the player's own open sheet itself (its pill, its Game Log, the DM stepping in when it closes): --via-dm leaves them out
