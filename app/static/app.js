@@ -1817,7 +1817,9 @@ function feedbackBusy(e) {
     const st = { step: from ? (from.action === 'bonus' ? 'pick' : 'rolling') : attack ? (choice ? 'choose' : 'attack') : save ? 'save' : single ? 'single' : 'attack', forText: '',
                  mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false, visOpen: false, entry: from ? from.entry : null,
                  dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {} };
-    mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = !m.once; });  // (on by themselves while they last; once a turn: yours to tick)
+    // (on by themselves while they last, Radiant Strikes; once a turn, or only sometimes (`pressed: false`, Rage Damage): yours to tick)
+    mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = m.pressed != null ? !!m.pressed : !m.once; });
+    mods.forEach(m => { if (m.when === 'before' && m.adds && m.pressed) st.pre[m.name] = true; });  // (Aura of Protection: always, unless the DM says)
     const eff = () => effs[st.ev] || null;
     const now = () => (eff() ? eff().at[String(st.level)] : null);  // (the effect's dice at the level it's cast at)
     const dmgText = () => ((now() ? now().text : '') || plan.dmg || '') + dmgModsText();

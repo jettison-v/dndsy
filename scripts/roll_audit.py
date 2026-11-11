@@ -49,8 +49,8 @@ def _recipe(e: dict) -> dict:
     out = {k: v for k, v in e.items() if k not in ("kind", "name", "rolls", "after_hit", "adds", "book")}
     if "rolls" in e:
         out["events"] = [_event(x) for x in e["rolls"]]
-    if "after_hit" in e:
-        out["on_hit"] = e["after_hit"]
+    if "after_hit" in e:  # (cast right after a hit: its words; app/rules_book.py reads what it goes with)
+        out["on_hit"] = e["after_hit"]["says"] if isinstance(e["after_hit"], dict) else e["after_hit"]
     return out
 
 
@@ -60,16 +60,13 @@ def from_books() -> dict:
     for f in sorted(BOOKS.glob("*.json")):
         data = json.loads(f.read_text())
         for e in data["entries"]:
-            if e["kind"] == "spell" and ("rolls" in e or "after_hit" in e):
+            if e["kind"] == "spell" and ("rolls" in e or "after_hit" in e or e.get("why")):
                 where = {"srd-5.2.1": "spells", "phb-2024": "phb_spells"}.get(data["book"], "other_spells")
-                hand[where][e["name"]] = _recipe(e) | ({"book": e["book"]} if where == "other_spells" else {})
+                hand[where][e["name"]] = {"events": [], **_recipe(e)} | ({"book": e["book"]} if where == "other_spells" else {})
             elif e["kind"] == "item" and ({"rolls", "use", "self"} & set(e)):
                 hand["items"][e["name"]] = _recipe(e)
-            elif e["kind"] == "feature" and ("rolls" in e or e.get("why")):
+            elif e["kind"] in ("feature", "feat", "species") and "rolls" in e:  # (a feat's or species trait's roll is played as a feature's)
                 hand["features"][e["name"]] = _recipe(e)
-            for a in e.get("adds") or []:  # (what it does to another roll: the compiled `modifiers`, by its own name)
-                hand["modifiers"][a["name"]] = {("adds" if k == "amount" else "types" if k == "damage_types" else k): v
-                                                for k, v in a.items() if k != "name"}
     return hand
 REPORT = ROOT / "docs" / "rules" / "rolls-audit.md"
 CREDIT = "Roll recipes for spells in the SRD 5.2.1 (attribution in app/data/srd/README.md), written by askdnd from the rules text."
@@ -283,8 +280,10 @@ def build() -> int:
         phb = phb_text(name)
         missing = [d for d in recipe_dice(recipe) if phb is not None and d not in dice_in(phb)]
         problems += bool(missing)
-        out[name] = {**recipe, "checked": "by hand (PHB)"}
-        phb_rows.append((name, recipe.get("level") or 0, recipe, f"by hand: {o['why']}" + (f"; **not in the PHB text: {missing}**" if missing else "")))
+        read = o.get("checked") == "read from the 2024 PHB"  # (scripts/rules_from_books.py: read like the SRD's, not by hand)
+        out[name] = {**recipe, "checked": "read from the 2024 PHB" if read else "by hand (PHB)"}
+        phb_rows.append((name, recipe.get("level") or 0, recipe, ("read from the 2024 PHB" if read else f"by hand: {o.get('why', '')}")
+                         + (f"; **not in the PHB text: {missing}**" if missing else "")))
     # spells from other books that the table's sheets have (Xanathar's, Tasha's, the 2014 PHB…): by hand, checked
     # against the spell's own words on the party's saved sheets (tests/fixtures/ddb)
     for name, o in sorted((hand.get("other_spells") or {}).items()):
@@ -303,8 +302,8 @@ def build() -> int:
     beasts = beast_rows()
     problems += sum(1 for r in beasts if r[3].startswith("**"))
     features = {n: {**{k: v for k, v in f.items() if k != "why"}, "checked": "by hand"} for n, f in (hand.get("features") or {}).items()}
-    modifiers = {n: {**m, "checked": "by hand"} for n, m in (hand.get("modifiers") or {}).items()}
-    OUT.write_text(json.dumps({"credit": CREDIT, "spells": out, "items": items, "features": features, "modifiers": modifiers},
+    # (what a spell or feature does to another roll, its `adds`, is read from the book files themselves: app/rules_book.py)
+    OUT.write_text(json.dumps({"credit": CREDIT, "spells": out, "items": items, "features": features},
                               indent=1, sort_keys=True) + "\n")
     write_report(report, phb_rows, [(n, 0, {k: v for k, v in o.items() if k != "why"}, o["why"]) for n, o in sorted((hand.get("items") or {}).items())],
                  beasts, campaign_rows(out) if "--campaign" in sys.argv else None)

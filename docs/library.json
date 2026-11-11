@@ -983,7 +983,7 @@
  {
   "title": "Roll Data Review",
   "kind": "plan",
-  "status": "Recommended · being built",
+  "status": "Recommended · built for the PHB; DMG next",
   "date": "Nov 10",
   "what": "Brett: build roll data from the whole 2024 PHB and DMG, after a devil's-advocate look at its structure. Where roll data lives today (seven places, four ways to say something is added to a roll), what breaks at the scale of two books, the case against changing it, and the recommendation: one effect shape (rolls and adds) in a file per book, when it applies as data, scaling as data, a schema and a coverage report over the books.",
   "source": "docs/artifacts/roll-data-review.html",

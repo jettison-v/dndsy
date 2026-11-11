@@ -143,11 +143,45 @@ recipes; no book text). Their dice are checked against the offline copy when it'
 
 | Spell | Level | How it rolls | Checked |
 |---|---|---|---|
+| Arms of Hadar | 1 | Arms of Hadar: 2d6 necrotic (Str save, half on a success); +1d6 per slot level | read from the 2024 PHB |
+| Aura of Vitality | 3 | Healing: 2d6 (healing) | read from the 2024 PHB |
+| Banishing Smite | 5 | Banishing Smite: 5d10 force (no roll to hit) | read from the 2024 PHB |
+| Blade Ward | cantrip | no damage or healing roll | by hand: an attacker subtracts 1d4 from attack rolls against you while it lasts: the attacker's roll (the DM's), not one you make |
+| Blinding Smite | 3 | Blinding Smite: 3d8 radiant (no roll to hit); +1d8 per slot level | read from the 2024 PHB |
+| Cloud of Daggers | 2 | Cloud of Daggers: 4d4 slashing (no roll to hit); +2d4 per slot level | read from the 2024 PHB |
+| Conjure Barrage | 3 | Conjure Barrage: 5d8 force (Dex save, half on a success); +1d8 per slot level | read from the 2024 PHB |
+| Conjure Volley | 5 | Conjure Volley: 8d8 force (Dex save, half on a success) | read from the 2024 PHB |
+| Cordon of Arrows | 2 | Cordon of Arrows: 2d4 piercing (Dex save, nothing on a success) | read from the 2024 PHB |
+| Crusader's Mantle | 3 | Crusader's Mantle: 1d4 radiant (no roll to hit) | read from the 2024 PHB |
+| Destructive Wave | 5 | Destructive Wave: 5d6 thunder + 5d6 radiant or necrotic (Con save, half on a success) | read from the 2024 PHB |
+| Elemental Weapon | 3 | Each hit: 1d4 (added to each hit while it lasts); +1d4 per slot level (every two) | by hand: a touched weapon deals an extra 1d4 of a chosen type (Acid, Cold, Fire, Lightning or Thunder) on each hit while it lasts, 2d4 with a level 5–6 slot and 3d4 with 7+; its +1 to attack rolls (+2, +3) is the weapon's own |
 | Find Steed | 2 | no damage or healing roll | by hand: the steed attacks with its own stat block (app/summons.py), not the caster's dice |
+| Fount of Moonlight | 4 | Fount of Moonlight: 2d6 radiant (added to each hit while it lasts) | read from the 2024 PHB |
+| Grasping Vine | 4 | Grasping Vine: 4d8 bludgeoning (on a hit) | read from the 2024 PHB |
+| Hail of Thorns | 1 | Hail of Thorns: 1d10 piercing (Dex save, half on a success); +1d10 per slot level | read from the 2024 PHB |
+| Hunger of Hadar | 3 | Damage: 2d6 cold (no roll to hit); +1d6 per slot level · Dex save: 2d6 acid (Dex save, nothing on a success) | read from the 2024 PHB |
+| Jallarzi's Storm of Radiance | 5 | Jallarzi's Storm of Radiance: 2d10 radiant + 2d10 thunder (Con save, half on a success); +1d10 per slot level | read from the 2024 PHB |
+| Lightning Arrow | 3 | Damage: 4d8 lightning (no roll to hit); +1d8 per slot level · Dex save: 2d8 lightning (Dex save, half on a success); +1d8 per slot level | read from the 2024 PHB |
 | Mind Sliver | cantrip | Mind Sliver: 1d6 psychic (Int save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: not in the SRD; checked against the 2024 Player's Handbook |
+| Staggering Smite | 4 | Staggering Smite: 4d6 psychic (Wis save, nothing on a success); +1d6 per slot level | read from the 2024 PHB |
+| Steel Wind Strike | 5 | Steel Wind Strike: 6d10 force (on a hit) | read from the 2024 PHB |
+| Summon Aberration | cantrip | no damage or healing roll | by hand: its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing |
+| Summon Beast | cantrip | no damage or healing roll | by hand: its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing |
+| Summon Celestial | cantrip | no damage or healing roll | by hand: its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing |
+| Summon Construct | cantrip | no damage or healing roll | by hand: its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing |
+| Summon Elemental | cantrip | no damage or healing roll | by hand: its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing |
+| Summon Fey | cantrip | no damage or healing roll | by hand: its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing |
+| Summon Fiend | cantrip | no damage or healing roll | by hand: its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing |
+| Summon Undead | cantrip | no damage or healing roll | by hand: its dice are the summoned spirit's own stat block, worked out for the level cast (app/summons.py); casting it rolls nothing |
+| Synaptic Static | 5 | Synaptic Static: 8d6 psychic (Int save, half on a success) | read from the 2024 PHB |
 | Thorn Whip | cantrip | Thorn Whip: 1d6 piercing (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: not in the SRD; checked against the 2024 Player's Handbook |
+| Thunderclap | cantrip | Thunderclap: 1d6 thunder (Con save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | read from the 2024 PHB |
+| Thunderous Smite | 1 | Thunderous Smite: 2d6 thunder (no roll to hit); +1d6 per slot level | read from the 2024 PHB |
 | Toll the Dead | cantrip | Unhurt target: 1d8 necrotic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 · Target missing Hit Points: 1d12 necrotic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: 1d8, or 1d12 if the target is missing Hit Points; not in the SRD, checked against the 2024 Player's Handbook |
+| Witch Bolt | 1 | On a hit: 2d12 lightning (on a hit); +1d12 per slot level · On a hit (later): 1d12 lightning (on a hit; again at the each of your subsequent turns); +1d12 per slot level | read from the 2024 PHB |
 | Word of Radiance | cantrip | Word of Radiance: 1d6 radiant (Con save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: not in the SRD; checked against the 2024 Player's Handbook |
+| Wrathful Smite | 1 | Wrathful Smite: 1d6 necrotic (Wis save, nothing on a success); +1d6 per slot level | read from the 2024 PHB |
+| Yolande's Regal Presence | 5 | Yolande's Regal Presence: 4d6 psychic (Wis save, half on a success) | read from the 2024 PHB |
 | Absorb Elements | 1 | Absorb Elements: 1d6 (added to each hit while it lasts); +1d6 per slot level | by hand (Xanathar's): Xanathar's: resistance now, and the extra damage rides the first melee hit on your next turn |
 | Branding Smite | 2 | Branding Smite: 2d6 radiant (added to each hit while it lasts); +1d6 per slot level | by hand (PHB 2014): the 2014 Player's Handbook's (the 2024 one has Shining Smite): extra damage on the next weapon hit, not rolled on casting |
 | Depth Charge | 3 | Depth Charge: 7d6 thunder (Con save, half on a success); +1d6 per slot level | by hand (another book): 7d6, or 9d6 for a creature submerged in a liquid: one or the other, never both |

@@ -119,5 +119,12 @@ def test_every_rule_names_a_real_column_and_fills_its_placeholders():
             assert r.note[0] in ("Action", "Bonus action", "Reaction"), r.name
         if r.option:
             assert r.option[0] in ("Action", "Bonus action", "Reaction"), r.name
-        for text in (r.note or ("", ""))[1:] + (r.rider or ("", "")) + (r.option or ("", ""))[1:]:
+        for text in (r.note or ("", ""))[1:] + (r.option or ("", ""))[1:]:
             assert "{" not in cr._fmt(text, cr._values(sheet, 20)), (r.name, text)
+    from app import rules_book  # (the riders: the rules book's adds, every token filled from a level-20 sheet)
+
+    for e in rules_book.entries():
+        for a in e.get("adds") or []:
+            for k in ("trigger", "effect", "says", "amount", "dc"):
+                if isinstance(a.get(k), str):
+                    assert "{" not in rules_book.fill(a[k], sheet, e.get("class")), (e["name"], k, a[k])

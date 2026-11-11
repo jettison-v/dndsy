@@ -8,15 +8,20 @@
    "book": "Tasha's",
    "adds": [
     {
-     "name": "Arcane Firearm",
      "why": "Artillerist: add 1d8 to one damage roll of an artificer spell cast through it",
+     "name": "Arcane Firearm",
+     "trigger": "An artificer spell you cast through your arcane firearm (a wand, staff or rod)",
      "when": "on_damage",
      "to": [
       "spell damage"
      ],
-     "amount": "1d8"
+     "amount": "1d8",
+     "effect": "+1d8 to one of the spell's damage rolls"
     }
-   ]
+   ],
+   "class": "Artificer",
+   "level": 5,
+   "sub": "Artillerist"
   },
   {
    "kind": "feature",
@@ -100,15 +105,43 @@
    "book": "Xanathar's",
    "adds": [
     {
-     "name": "Favored by the Gods",
      "why": "Divine Soul: add 2d4 to a failed saving throw or a missed attack roll",
+     "name": "Favored by the Gods",
+     "trigger": "A saving throw you fail or an attack roll you miss",
+     "cost": "once per Short or Long Rest",
      "when": "after_fail",
      "to": [
       "attack",
       "save"
      ],
      "amount": "2d4",
-     "cost": "1 use"
+     "effect": "+2d4 to the total, which can change the outcome"
+    }
+   ],
+   "class": "Sorcerer",
+   "level": 1,
+   "sub": "Divine Soul"
+  },
+  {
+   "kind": "feature",
+   "name": "Guided Strike",
+   "book": "Xanathar's",
+   "class": "Paladin",
+   "level": 3,
+   "sub": "Oath of Conquest",
+   "adds": [
+    {
+     "name": "Guided Strike",
+     "trigger": "An attack roll you make, after you see it and before you know if it hits",
+     "says": "after you see the roll",
+     "cost": "1 Channel Divinity",
+     "when": "after_roll",
+     "to": [
+      "attack"
+     ],
+     "amount": "10",
+     "short": "Guided Strike",
+     "why": "Oath of Conquest: +10 to an attack roll once you've seen it, before you know if it hits (Brett's Roll Audit comment, Nov 10)"
     }
    ]
   },

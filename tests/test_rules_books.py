@@ -16,6 +16,7 @@ RESOLVE = {"attack", "save", "none"}
 EFFECT = {"damage", "heal", "temp", "dice"}
 WHEN = {"before", "after_roll", "after_fail", "on_hit", "on_miss", "on_damage", "damage_taken"}
 TO = {"attack", "save", "check", "damage", "spell damage", "damage_taken"}
+WITH = {"weapon", "melee_weapon", "ranged_weapon", "monk_weapon", "finesse", "heavy_weapon", "unarmed", "spell"}  # (roll_plan.traits)
 
 
 def entries():
@@ -43,12 +44,14 @@ def test_every_entry_has_a_shape_the_engine_plays(book, e):
             assert r.get("save") and r.get("success") in ("half", "none")
     for a in e.get("adds") or []:
         assert a["name"] and a["when"] in WHEN and set(a.get("to") or []) <= TO
-        assert a.get("amount") or a.get("reduces"), "an add says what it adds or takes away"
+        assert a.get("amount") or a.get("reduces") or a.get("op") in ("words", "save", "type", "twice"), "an add says what it does"
+        assert a.get("op", "add") in ("add", "words", "save", "type", "twice")
+        assert set(a.get("with") or []) <= WITH, a.get("with")
 
 
 def test_names_are_unique_within_a_kind():
     seen = {}
     for book, e in entries():
-        key = (e["kind"], e["name"].replace("’", "'"))
+        key = (e["kind"], e["name"].replace("’", "'"), e.get("class"), e.get("sub"))  # (Guided Strike: a War Domain's and a Conquest Paladin's)
         assert key not in seen, f"{key} is in {seen[key]} and {book}"
         seen[key] = book
