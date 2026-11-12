@@ -91,8 +91,11 @@ def test_what_the_card_sends_is_checked_before_its_kept():
     assert len(long["bonus"]) == 8 and len(long["bonus"][0]["what"]) == 70
 
 
-def test_a_roll_keeps_its_parts_in_table_rolls(table):
+def test_a_roll_keeps_its_parts_in_table_rolls(table, monkeypatch):
     """B: the parts sent with a roll come back on its entry, as rolled, for whoever sees the roll (the DM too)."""
+    from app import table_rolls
+
+    monkeypatch.setattr(table_rolls, "die", lambda sides: 12 if sides == 20 else 4)  # (a hit: a natural 1 has no damage to roll)
     cid = table["cole"].id
     bonus = [{"n": 2, "what": "Dexterity modifier (Martial Arts)", "src": "sheet"}, {"n": 3, "what": "Proficiency Bonus", "src": "sheet"},
              {"n": 1, "what": "Insignia of Claws", "src": "sheet"}]
@@ -111,7 +114,7 @@ def test_a_roll_keeps_its_parts_in_table_rolls(table):
     assert 'class="math-n"' in log and "Insignia of Claws" in log and "Martial Arts die (Monk 2)" in log
 
 
-def test_a_roll_without_parts_still_says_its_die_and_bonus(table):
+def test_a_roll_without_parts_still_says_its_die_and_bonus(table, monkeypatch):
     r = table["player"].post("/rolls", data={"character": table["cole"].id, "kind": "check", "label": "Stealth check", "mod": "+6", "to": "table"})
     rows = r.json()["roll"]["math"]["hit"]["rows"]
     assert [x["what"] for x in rows] == ["the d20", "Bonus"] and rows[1]["n"] == 6

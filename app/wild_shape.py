@@ -693,7 +693,8 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
         "temp_why": (f"3 × Druid level {d['level']} (Circle Forms)" if d["moon"] else f"your Druid level ({d['level']})") if d.get("temp_hp") else "",
         "initiative_adv": advantage.initiative(advs), "save_adv_all": advantage.all_saves(advs), "speed_parts": speed_parts,
         "kept": kp,
-        "columns": {k: {"shown": v, "all": v, "count": len(v)} for k, v in ((k, views.planned(sheet, v, "form")) for k, v in cols.items())},
+        # (ready to roll as any Battle's rows; lite, the list of forms, needs only the numbers)
+        "columns": {k: {"shown": v, "all": v, "count": len(v)} for k, v in ((k, v if lite else views.planned(sheet, v, "form")) for k, v in cols.items())},
         "traits": beast.get("traits") or [], "notes": notes, "castable": castable,
         "magic_action": bool(castable) or d.get("beast_spells", False),
     }
