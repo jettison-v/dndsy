@@ -589,7 +589,8 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
               "dmg": roll_math.rows([(f"Martial Arts die (Monk {monk})", f"1d{die}", "rules")] if martial else [("Unarmed Strike", 1, "rules")])
               + roll_math.rows([u_ability] + kept_dmg), "dice": "rules" if martial else "form"}
     unarmed = {"name": "Unarmed Strike", "hit": u_hit, "tags": ["Yours"], "uses": None, "spends": [], "starred": False, "source": "unarmed",
-               "math": u_math,
+               "math": u_math, "unarmed_dc": u_dc,  # (Grapple and Shove's DC, from the form's own Strength or Dexterity)
+               "unarmed_from": f"8 + the form's {'Dexterity' if martial and dex_m > str_m else 'Strength'} modifier ({_signed(um)}) + Proficiency Bonus ({_signed(pb)})",
                "adv": advantage.for_attack(advs, melee=True),
                "meta": f"reach 5 ft · {u_dmg} · or Grapple / Shove (DC {u_dc} Str or Dex save)",
                "text": "A punch, kick, head-butt or similar with the form's body. Choose Damage, Grapple or Shove each time."
@@ -692,7 +693,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
         "temp_why": (f"3 × Druid level {d['level']} (Circle Forms)" if d["moon"] else f"your Druid level ({d['level']})") if d.get("temp_hp") else "",
         "initiative_adv": advantage.initiative(advs), "save_adv_all": advantage.all_saves(advs), "speed_parts": speed_parts,
         "kept": kp,
-        "columns": {k: {"shown": v, "all": v, "count": len(v)} for k, v in cols.items()},
+        "columns": {k: {"shown": v, "all": v, "count": len(v)} for k, v in ((k, views.planned(sheet, v, "form")) for k, v in cols.items())},
         "traits": beast.get("traits") or [], "notes": notes, "castable": castable,
         "magic_action": bool(castable) or d.get("beast_spells", False),
     }
