@@ -202,6 +202,24 @@ def test_a_characters_initiative_before_start_combat_sets_its_number_and_rolls_i
     assert {s["key"] for s in table.fight["sets"]} == {"t-cole", "t-owl"}
 
 
+def test_a_test_copy_sharing_the_sheet_never_takes_the_characters_token(player, db, table, monkeypatch):
+    """A test campaign can hold a test copy sharing its original's D&D Beyond id, and which one a token named came down
+    to the database's order (found looking into the Mini's initiative run, Nov 12): the original's, and its own roll
+    is queued for the VTT."""
+    from app import characters
+
+    cole = char(db, "Cole")
+    characters.test_copy(db, cole, table.id)  # (a later id: the one a plain lookup by D&D Beyond id kept)
+    monkeypatch.setattr(fight, "creatures_here", lambda db, campaign: [])
+    player.post(f"/bridge/fight/{GAME}", json={"fight": heard(cole_ini=11)})
+    db.refresh(table)
+    assert next(x for x in table.fight["order"] if x["key"] == "t-cole")["character"] == cole.id
+    player.post("/rolls", data={"character": cole.id, "kind": "check", "label": "Initiative", "mod": "+2"}, headers={"X-Requested-With": "fetch"})
+    db.refresh(table)
+    assert [s["key"] for s in table.fight.get("sets") or []] in (["t-cole"], [])  # ([] only if it rolled the 11 it has)
+    assert next(x for x in table.fight["order"] if x["key"] == "t-cole")["initiative"] == db.query(TableRoll).order_by(TableRoll.id.desc()).first().total
+
+
 def test_after_start_combat_a_roll_changes_nothing(player, db, table, monkeypatch):
     """The table's way (Brett, Nov 4, board 4): after Start Combat the order is the DM's."""
     cole = char(db, "Cole")
