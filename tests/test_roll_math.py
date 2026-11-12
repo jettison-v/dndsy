@@ -128,6 +128,69 @@ def test_check_your_numbers(table):
     assert 'data-modal-url="/characters/%d/numbers"' % cid in table["player"].get(f"/characters/{cid}/battle").text
 
 
+def _battles(name: str):
+    """Every Battle a party sheet has: the character's own, each Wild Shape form it knows, each of its creatures."""
+    from app import creatures
+    from app import wild_shape as ws
+
+    s = sheet(name)
+    yield f"{name}", options(s, set())
+    beasts = ws.beasts()
+    for kf in ws.known_forms(s, beasts):
+        f = ws.shaped(s, ws.beast_for(s, kf["name"], beasts), keep=ws.chosen_keep(s, None))
+        yield f"{name} as {kf['name']}", [o for col in f["columns"].values() for o in col["all"]]
+    for c in creatures.yours(s):
+        if c.get("block"):
+            yield f"{name}'s {c['name']}", [o for col in creatures.card(s, c)["columns"].values() for o in col["all"]]
+
+
+@pytest.mark.parametrize("name", PARTY)
+def test_every_row_on_every_battle_is_ready_the_same_way(name):
+    """Brett, Nov 12 ("applies as globally as possible to avoid any future oversights"): a form's Unarmed Strike had no
+    parts and no Grapple or Shove, because a form's rows skipped the step Battle's own rows go through. Every row that
+    rolls, on every Battle a party sheet has, now has its plan (character_views.planned), parts that add up to its
+    to-hit, and an Unarmed Strike always offers Damage, Grapple and Shove with its DC."""
+    seen = 0
+    for where, rows in _battles(name):
+        for o in rows:
+            hit = str(o.get("hit") or "")
+            if not hit or hit[0] not in "+-−":
+                continue
+            seen += 1
+            p, m = o.get("plan") or {}, o.get("math") or {}
+            assert p.get("attack") or p.get("save"), (where, o["name"], "no roll plan")
+            if p.get("attack"):  # (a sheet's attack the 2024 rules make a save, Inflict Wounds, rolls the save instead)
+                assert m.get("bonus") and roll_math.adds_up(m["bonus"], p["attack"]["bonus"]), (where, o["name"], hit, m.get("bonus"))
+            if o["name"].startswith("Unarmed Strike"):
+                said = [x["key"] for x in (p.get("choice") or {}).get("options") or []]
+                assert said == ["damage", "grapple", "shove"], (where, o["name"])
+                assert "DC None" not in str(p["choice"]), (where, o["name"])
+    assert seen
+
+
+def test_a_creatures_rows_take_none_of_its_masters_extras(cole):
+    """A familiar's attack is its own: no Stunning Strike, no Bless pills from its master's sheet."""
+    from app import creatures
+
+    for c in creatures.yours(cole):
+        if c.get("block"):
+            for col in creatures.card(cole, c)["columns"].values():
+                for o in col["all"]:
+                    if o.get("plan"):
+                        assert not o["plan"]["modifiers"] and not [r for r in o["plan"]["riders"] if r.get("on") != "mastery"], (c["name"], o["name"])
+
+
+def test_a_forms_grapple_dc_is_the_forms(cole):
+    from app import wild_shape as ws
+
+    beasts = ws.beasts()
+    bear = ws.shaped(cole, ws.beast_for(cole, "Polar Bear", beasts), keep=[])
+    u = next(o for o in bear["columns"]["Action"]["all"] if o["name"] == "Unarmed Strike")
+    assert u["unarmed_dc"] == 8 + 5 + 3 and f"DC {u['unarmed_dc']}" in str(u["plan"]["choice"])  # (the bear's Strength +5, not Cole's −1)
+    rend = next(o for o in bear["columns"]["Action"]["all"] if o["name"] == "Rend")
+    assert "monk_weapon" not in str(rend["plan"]) and not [r for r in rend["plan"]["riders"] if "Stunning" in r["name"]]
+
+
 def test_every_wild_shape_attack_says_its_parts(cole):
     """Brett, Nov 12: a form's Unarmed Strike showed only "Bonus". Every attack in each of Cole's forms has parts that
     add up: the form's Strength (or Dexterity with Martial Arts), his Proficiency Bonus and what he keeps."""

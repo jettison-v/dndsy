@@ -175,6 +175,7 @@ def card(sheet: dict, c: dict, master: str = "") -> dict:
     cols = {"Action": [], "Bonus action": [], "Reaction": []}
     for cost, key in (("Action", "actions"), ("Bonus action", "bonus_actions"), ("Reaction", "reactions")):
         cols[cost] = [_option(c, e, cost, d) for e in b.get(key) or []]
+    from app.character_views import planned  # (its rows ready to roll as any Battle's, none of its master's extras)
     group = c.get("group_id")
     if group in (INFUSION, DEFENDER):
         cols["Action"].append({"key": f"creature:{c['id']}:dodge", "name": "Dodge", "cost": "Action", "hit": "", "tags": [], "uses": None,
@@ -204,7 +205,8 @@ def card(sheet: dict, c: dict, master: str = "") -> dict:
         "abilities": abilities, "saves": saves, "skills": skills, "senses": ws.senses_text(b), "passive": passive,
         "immune": b.get("condition_immunities") or [], "size": b.get("size") or "", "cr": b.get("cr_label") or "",
         "traits": [t for t in b.get("traits") or [] if t["name"] != MIGHT], "might": might,
-        "columns": {k: {"shown": v, "all": v, "count": len(v), "items": [], "item_count": 0} for k, v in cols.items()},
+        "columns": {k: {"shown": v, "all": v, "count": len(v), "items": [], "item_count": 0}
+                    for k, v in ((k, planned(sheet, v, "creature")) for k, v in cols.items())},
         "turn": c.get("turn_text") or TURN.get(group, OTHER_TURN), "turn_short": "Its own Initiative" if c.get("item") and c.get("own_initiative")
         else TURN_SHORT.get(group, ""), "role": f"{c['item']}'s" if c.get("item") else ROLE.get(group, "creature"),
         "own_initiative": group == FAMILIAR or bool(c.get("own_initiative")), "notes": notes,

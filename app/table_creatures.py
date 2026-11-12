@@ -11,6 +11,7 @@ Rename and Take off the map. Players get only its name, size, kind and what the 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
+from app.character_views import planned
 from app import creatures, places, rules_data, table_fight, tokens
 from app import wild_shape as ws
 from app.db import get_db
@@ -34,7 +35,8 @@ def card(entry: dict) -> dict:
                   "save": _signed(saves.get(k, (scores.get(k, 10) - 10) // 2))} for k, _, short in ws.ABILITIES]
     cols = []
     for cost, key in COSTS:
-        rows = [ws._entry({**e, "text": creatures.modern(e["text"])}, cost, {}) for e in entry.get(key) or []]
+        rows = planned({}, [{**ws._entry({**e, "text": creatures.modern(e["text"])}, cost, {}), "source": "creature"} for e in entry.get(key) or []],
+                       "creature")  # (ready to roll as any Battle's rows: app/character_views.py `planned`)
         if rows:
             cols.append({"cost": cost, "rows": rows, "intro": entry.get("legendary_uses") if key == "legendary_actions" else ""})
     return {"name": entry["name"], "size": entry.get("size") or "", "type": entry.get("type") or "", "ac": entry.get("ac"),

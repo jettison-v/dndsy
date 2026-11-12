@@ -16,7 +16,7 @@ import re
 SOURCES = {"sheet": "Sheet", "rules": "2024 rules", "dm": "Your DM", "form": "The form", "block": "Stat block",
            "ddb": "D&D Beyond's data", "read": "Its words", "added": "Added"}
 # Where a roll plan's dice come from (app/roll_plan.py `sources`), as a part's source
-FROM_PLAN = {"correction": "dm", "checked": "rules", "sheet": "sheet", "rule": "rules", "ddb": "ddb", "text": "read"}
+FROM_PLAN = {"correction": "dm", "checked": "rules", "sheet": "sheet", "rule": "rules", "ddb": "ddb", "text": "read", "block": "block"}
 DIE = re.compile(r"^\d{1,2}d\d{1,3}$")
 MAX_ROWS = 8
 
@@ -104,7 +104,7 @@ def option_math(sheet: dict, o: dict, plan: dict | None) -> dict:
     plan = plan or {}
     srcs = plan.get("sources") or {}
     bonus = (plan.get("attack") or {}).get("bonus")
-    if bonus is None:
+    if bonus is None and not plan:  # (a plan without an attack rolls none: Inflict Wounds is a 2024 save, whatever the sheet says)
         bonus = _signed_int(o.get("hit"))
     if bonus is not None and "bonus" not in out:
         a = _sheet_attack(sheet, o) if o.get("kind") != "spell" else None

@@ -597,7 +597,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     if kind == "dc":
         from app.character_views import unarmed_choices
 
-        u = unarmed_choices(chars.character_summary(ch) or {}, {"name": "Unarmed Strike"})
+        u = unarmed_choices(chars.character_summary(ch) or {}, _unarmed_row(db, ch))
         if label not in UNARMED_WAYS or not u:
             return _error("That roll is missing something.")
         result = {"dice": [], "kept": None, "modifier": 0, "total": u["dc"], "parts": [],
@@ -662,6 +662,19 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     if also:
         out["also"] = [reply_body(request, db, x, me.id, is_dm(user)) | {"who": x.who} for x in also]
     return JSONResponse(out)
+
+
+def _unarmed_row(db: Session, ch: Character) -> dict:
+    """The Unarmed Strike a Grapple or Shove is made with: in a Wild Shape form the form's own (its Strength or Dexterity
+    sets the DC, app/wild_shape.py), else the character's."""
+    from app import wild_shape as ws
+
+    sheet = chars.character_summary(ch) or {}
+    beast = ws.beast_for(sheet, ch.wild_shape, ws.beasts(db, ch.campaign_id)) if ch and ch.wild_shape else None
+    if beast:
+        form = ws.shaped(sheet, beast, lite=True, keep=ws.chosen_keep(sheet, ch.wild_shape_keep))
+        return next((o for o in form["columns"]["Action"]["all"] if o["name"] == "Unarmed Strike"), {"name": "Unarmed Strike"})
+    return {"name": "Unarmed Strike"}
 
 
 def _initiative(db: Session, campaign, ch: Character, me_id: int, row: TableRoll) -> list[TableRoll]:

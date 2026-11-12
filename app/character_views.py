@@ -218,17 +218,30 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         first = next(iter(((o.get("recipe") or {}).get("events") or [])), None)
         if o.get("kind") == "item" and not o.get("hit") and first and first.get("on") == "save" and first.get("dc"):
             o["hit"] = f"{first['save']} {first['dc']}"  # (an item's save with its own DC: Potion of Fire Breath's Dex 13)
+    return planned(sheet, out)
+
+
+def planned(sheet: dict, rows: list[dict], scope: str = "own") -> list[dict]:
+    """Every row on a Battle made ready to roll the same way, whoever's Battle it is (Brett, Nov 12: "applies as
+    globally as possible"): the character's own (options), a Wild Shape form's (app/wild_shape.py `shaped`), a
+    creature's (app/creatures.py, app/table_creatures.py). Each row with a to-hit or a save gets its roll plan
+    (app/roll_plan.py: an Unarmed Strike's Damage, Grapple or Shove, the riders and modifiers its `scope` allows), its
+    dice at every level, and how its numbers add up (Show the Math, app/roll_math.py). A row that already has a plan
+    (one of the character's own, copied onto a form's Battle) keeps it. tests/test_roll_math.py walks every form and
+    creature of the party's sheets."""
     from app.roll_math import option_math
     from app.roll_plan import SAVE, effects, plan  # (the roll card's: what each roll button plays, app/roll_plan.py)
 
-    for o in out:
+    for o in rows:
+        if "plan" in o:
+            continue
         if str(o.get("hit") or "")[:1] in "+-\u2212" or SAVE.match(str(o.get("hit") or "")):  # (a to-hit, or a save spell's "Dex 15")
-            o["plan"] = plan(sheet, o)
+            o["plan"] = plan(sheet, o, scope)
         rec = o.get("recipe") if (o.get("recipe") or {}).get("events") else None
-        if rec:  # (its dice at every level it can be cast at, for each of its buttons)
+        if rec and "rolls" not in o:  # (its dice at every level it can be cast at, for each of its buttons)
             o["rolls"] = {"hit": effects(rec, sheet, o["name"], True), "other": effects(rec, sheet, o["name"], False)}
         o["math"] = option_math(sheet, o, o.get("plan"))  # (how its numbers add up: Show the Math, app/roll_math.py)
-    return out
+    return rows
 
 
 # What an option rolls (the roll buttons: _char.html hit()): its to-hit, else dice in its details,
@@ -587,6 +600,8 @@ def unarmed_choices(sheet: dict, x: dict) -> dict | None:
     out: 8 + Strength modifier + Proficiency Bonus, or Dexterity for a Monk's Martial Arts."""
     if not (x.get("name") or "").startswith("Unarmed Strike"):
         return None
+    if x.get("unarmed_dc"):  # (a Wild Shape form's own: the form's Strength or Dexterity, app/wild_shape.py)
+        return {"dc": x["unarmed_dc"], "from": x.get("unarmed_from") or ""}
     mods = {a["key"]: a.get("modifier") or 0 for a in sheet.get("abilities") or []}
     pb = sheet.get("proficiency_bonus") or 2
     monk = any(a.get("martial_arts") for a in sheet.get("attacks") or [] if a["name"] == "Unarmed Strike")
