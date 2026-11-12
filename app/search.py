@@ -80,19 +80,21 @@ def character_rows(db: Session, user: dict) -> tuple[int | None, list[dict], dic
             row |= {"a": "Open", "go": panel, "panel_only": True}
         out.append(row)
 
-    def roll(kind, label, mod, find, sub, advs=()):  # (as the Sheet's and Table rolls' buttons: their Advantage too)
-        return {"g": "Checks, saves, skills", "n": label, "s": sub, "a": "Roll", "find": find, "roll": views.roll_data(kind, label, mod, advs=advs)}
+    def roll(kind, label, mod, find, sub, advs=(), parts=None):  # (as the Sheet's and Table rolls' buttons: their Advantage and parts too)
+        return {"g": "Checks, saves, skills", "n": label, "s": sub, "a": "Roll", "find": find,
+                "roll": views.roll_data(kind, label, mod, advs=advs, parts=parts)}
     now = form or sheet
     for sk in now.get("skills") or []:
         ab = sk.get("ability") or next((x.get("ability") for x in sheet.get("skills") or [] if x["name"] == sk["name"]), "") or ""
-        out.append(roll("check", f"{sk['name']} check", sk["label"], _words(sk["name"], ab, "skill check"), f"skill · {sk['label']}" + (f" ({ab})" if ab else ""), sk.get("adv")))
+        out.append(roll("check", f"{sk['name']} check", sk["label"], _words(sk["name"], ab, "skill check"), f"skill · {sk['label']}" + (f" ({ab})" if ab else ""), sk.get("adv"), sk.get("parts")))
     for sv in now.get("saves") or []:
-        out.append(roll("save", f"{sv['short']} save", sv["label"], _words(sv["short"], ABILITY.get(sv["short"].lower()[:3]), "save saving throw"), sv["label"], sv.get("adv")))
+        out.append(roll("save", f"{sv['short']} save", sv["label"], _words(sv["short"], ABILITY.get(sv["short"].lower()[:3]), "save saving throw"), sv["label"], sv.get("adv"), sv.get("parts")))
     for a in now.get("abilities") or []:
         name = a.get("name") or ABILITY.get(str(a.get("key") or a.get("short") or "").lower()[:3], a.get("short"))
-        out.append(roll("check", f"{name} check", a["label"], _words(name, a.get("short"), "check"), a["label"]))
+        check = a.get("check_label") or a["label"]
+        out.append(roll("check", f"{name} check", check, _words(name, a.get("short"), "check"), check, parts=a.get("check_parts") or [(f"{name} modifier", a["label"])]))
     if now.get("initiative"):
-        out.append(roll("check", "Initiative", now["initiative"], "initiative", now["initiative"], now.get("initiative_adv")))
+        out.append(roll("check", "Initiative", now["initiative"], "initiative", now["initiative"], now.get("initiative_adv"), now.get("initiative_parts")))
     hidden = next((x["find"] for x in ctx.get("conditions") or [] if x.get("find")), None)
     return ch.id, out, table_rolls.roll_context(sheet) | {
         "condAdv": roll_effects([x for x in ctx.get("conditions") or [] if x["counts"]]), "hidden": hidden, "spends": table_rolls.spends(ctx)}

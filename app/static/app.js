@@ -1295,6 +1295,58 @@ function feedbackBusy(e) {
   const num = s => parseInt(String(s || '0').replace('−', '-'), 10) || 0;
   const signed = n => (n >= 0 ? '+' : '−') + Math.abs(n);
   function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+  // ---------------------------------------------------------------- Show the Math
+  // (Brett chose A, B, D and E, Nov 12; docs/mockups/show-the-math/): a number with dots under it (`.math-n`) opens its
+  // parts, each with where it came from, on hover, keyboard focus or a tap. The parts ride on the number's own button
+  // (`data-math`: app/roll_math.py's rows, put there by _math.html `math_num` or mathNum here), so its text is the number
+  // alone; one pop shows them over everything (fixed, so a window's or panel's edge never cuts it), beside the number.
+  const MATH_SRC = { sheet: 'Sheet', rules: '2024 rules', dm: 'Your DM', form: 'The form', ddb: "D&D Beyond's data", read: 'Its words', added: 'Added' };
+  function mathBox(m) {  // m: {rows, total, why?, note?, label} as app/roll_math.py makes them
+    const n = (r, i) => typeof r.n === 'string' ? r.n : i ? signed(r.n) : String(r.n).replace('-', '−');
+    return m.rows.map((r, i) => '<span class="m-row"><span class="m-n">' + esc(n(r, i)) + '</span><span class="m-what">' + esc(r.what)
+      + '</span>' + (MATH_SRC[r.src] ? '<span class="src s-' + r.src + '">' + MATH_SRC[r.src] + '</span>' : '<span></span>') + '</span>').join('')
+      + '<span class="m-sum"><span>' + esc(m.label || '') + '</span><b>' + esc(String(m.total)) + '</b></span>'
+      + (m.why ? '<span class="m-note">' + esc(m.why) + '</span>' : '') + (m.note ? '<span class="m-note">' + esc(m.note) + '</span>' : '');
+  }
+  function mathNum(text, m, label) {  // a number that opens its parts (carried on it, so its text is the number alone)
+    if (!m || !(m.rows || []).length) return esc(String(text));
+    const data = JSON.stringify({ ...m, label }).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return '<button type="button" class="math-n" aria-expanded="false" title="How it adds up" data-math="' + data + '">' + esc(String(text)) + '</button>';
+  }
+  let mathPop = null, mathFor = null, mathTimer = null;
+  function mathShow(el) {
+    let m; try { m = JSON.parse(el.dataset.math || 'null'); } catch (err) { m = null; }
+    if (!m || !(m.rows || []).length) return;
+    mathHide();
+    mathPop = Object.assign(document.createElement('div'), { className: 'math-pop', role: 'tooltip', id: 'math-pop', innerHTML: mathBox(m) });
+    document.body.appendChild(mathPop); mathFor = el;
+    el.setAttribute('aria-expanded', 'true'); el.setAttribute('aria-describedby', 'math-pop');
+    const r = el.getBoundingClientRect(), w = mathPop.offsetWidth, h = mathPop.offsetHeight;
+    mathPop.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+    mathPop.style.top = (r.bottom + h + 8 < window.innerHeight || r.top < h + 8 ? Math.min(r.bottom + 6, window.innerHeight - h - 8) : r.top - h - 6) + 'px';
+  }
+  function mathHide() {
+    clearTimeout(mathTimer);
+    if (mathFor) { mathFor.setAttribute('aria-expanded', 'false'); mathFor.removeAttribute('aria-describedby'); }
+    if (mathPop) mathPop.remove();
+    mathPop = null; mathFor = null;
+  }
+  document.addEventListener('mouseover', e => {
+    const el = e.target.closest && e.target.closest('.math-n');
+    if (el === mathFor || (mathPop && mathPop.contains(e.target))) return;
+    clearTimeout(mathTimer);
+    if (el) mathTimer = setTimeout(() => mathShow(el), 200);
+    else if (mathFor && !mathFor.matches(':focus')) mathTimer = setTimeout(mathHide, 150);
+  });
+  document.addEventListener('click', e => {
+    const el = e.target.closest && e.target.closest('.math-n');
+    if (!el) { if (mathPop && !mathPop.contains(e.target)) mathHide(); return; }
+    e.preventDefault(); e.stopPropagation();  // (a number's parts, never the roll or the row under it)
+    if (mathFor === el) mathHide(); else mathShow(el);
+  }, true);
+  document.addEventListener('focusin', e => { const el = e.target.closest && e.target.closest('.math-n'); if (el && el.matches(':focus-visible')) mathShow(el); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && mathPop) { e.stopPropagation(); mathHide(); } }, true);
+  window.addEventListener('scroll', e => { if (mathPop && !mathPop.contains(e.target)) mathHide(); }, true);
   const atTable = () => document.body.classList.contains('at-table');
   // The animation switch: on or off as chosen on this device; until then, off only if the device asks for less motion
   const animate = () => { const v = store.get(ANIM); return v ? v === 'on' : !calm.matches; };
@@ -1917,6 +1969,7 @@ function feedbackBusy(e) {
         + cast.levels.map(l => '<option value="' + l + '"' + (l === st.level ? ' selected' : '') + '>Level ' + l
           + (ctx.slots && ctx.slots.length && !ctx.slots.includes(l) ? ' (no slot left)' : '') + '</option>').join('') + '</select></div>';
       if (cast && !now()) h += '<p class="rw-note rw-warn">Nothing extra at your level yet.</p>';
+      if (now() && now().why) h += '<p class="rw-note math-why" data-why>' + esc(now().why) + '</p>';  // (Show the Math, D: how the dice grew)
       const e = eff();
       if (e && e.repeat) h += '<p class="rw-note">Again: ' + esc(e.repeat) + '</p>';
       if (e && e.note) h += '<p class="rw-note">' + esc(e.note) + '</p>';
@@ -1942,11 +1995,11 @@ function feedbackBusy(e) {
       } else if (st.step === 'save') {
         h += castAt() + notes();
         const ok = { half: ': half damage on a success', none: ': no damage on a success' }[plan.save.success] || '';
-        h += '<p class="rcard-q">Each target makes a <b>' + esc(plan.save.ability) + ' save</b> against <b>DC ' + plan.save.dc + '</b>' + ok + '. The DM rolls them.</p>' + dmgPills();
+        h += '<p class="rcard-q">Each target makes a <b>' + esc(plan.save.ability) + ' save</b> against <b>DC ' + mathNum(plan.save.dc, (plan.math || {}).dc ? { rows: plan.math.dc, total: plan.save.dc } : null, 'Save DC') + '</b>' + ok + '. The DM rolls them.</p>' + dmgPills();
         h += '<button type="button" class="btn primary rcard-go" data-roll-save' + (cast && !now() ? ' disabled' : '') + '>Roll damage <small>' + esc(dmgText()) + '</small></button>' + visLine();
       } else if (st.step === 'saved') {
         const e = st.entry, half = plan.save.success === 'half' ? Math.floor(e.total / 2) : plan.save.success === 'none' ? 0 : null;
-        h += '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">damage on a failed save</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
+        h += '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + mathNum(e.total, (e.math || {}).dmg, 'Damage') + '</span><span class="rcard-what">damage on a failed save</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
           + (half != null ? '<p class="rcard-line">On a success: <b>' + (half ? half + '</b> (half)' : 'no damage</b>') + '</p>' : '')
           + '<p class="rw-note">In Table rolls for the DM, who rolls the saves and applies it.</p><div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>';
       } else if (st.step === 'attack') {
@@ -2062,11 +2115,11 @@ function feedbackBusy(e) {
           : (e.kind === 'heal' || e.kind === 'temp') && plan.self ? 'In Table rolls, <b>Apply to</b> adds it to your own Hit Points.'
           : e.kind === 'heal' || e.kind === 'temp' ? 'In Table rolls, <b>Apply to</b> gives it to a character.'
           : e.kind === 'damage' ? 'In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.' : '';
-        return '<div class="rcard-result' + (e.kind === 'heal' || e.kind === 'temp' ? ' rcard-heal' : e.kind === 'damage' ? ' rcard-dmg' : '') + '"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">' + what + '</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
+        return '<div class="rcard-result' + (e.kind === 'heal' || e.kind === 'temp' ? ' rcard-heal' : e.kind === 'damage' ? ' rcard-dmg' : '') + '"><span class="rcard-big">' + mathNum(e.total, (e.math || {}).dmg, what.replace(/<[^>]+>/g, '')) + '</span><span class="rcard-what">' + what + '</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
           + (next ? '<p class="rw-note">' + next + '</p>' : '');
       }
       if (e.kind === 'dc') return '<div class="rcard-result"><span class="rcard-big">DC ' + e.total + '</span><span class="rcard-what">' + esc(e.label) + '</span><span class="rcard-how">The target picks Strength or Dexterity; the DM rolls its save. It\'s in Table rolls.</span></div>';
-      if (dmg && e.damage) return '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + e.damage.total + '</span><span class="rcard-what">' + (e.damage.crit ? 'critical damage' : 'damage') + '</span><span class="rcard-how">' + dline(e.damage, false) + '</span></div>'
+      if (dmg && e.damage) return '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + mathNum(e.damage.total, (e.math || {}).dmg, 'Damage') + '</span><span class="rcard-what">' + (e.damage.crit ? 'critical damage' : 'damage') + '</span><span class="rcard-how">' + dline(e.damage, false) + '</span></div>'
         + '<p class="rcard-line">To hit <b>' + e.total + '</b> · ' + dline(e.main, true) + '</p>';
       const rays = ((e.main && e.main.parts) || []).filter(x => x.kept != null);
       if (rays.length > 1) {  // (one to-hit per ray; the DM says which hit)
@@ -2076,7 +2129,7 @@ function feedbackBusy(e) {
       }
       const flag = e.kind === 'death' ? (e.outcome ? title(e.outcome) : '')
         : e.nat ? 'Natural ' + e.nat + (d20 ? '' : e.nat === 20 ? ': a critical hit, damage dice doubled' : ': it misses, whatever the bonus') : '';
-      return '<div class="rcard-result"><span class="rcard-big">' + e.total + '</span><span class="rcard-what">' + (d20 ? esc(spec.label || plan.name) : 'to hit') + '</span><span class="rcard-how">' + dline(e.main, true) + '</span></div>'
+      return '<div class="rcard-result"><span class="rcard-big">' + mathNum(e.total, (e.math || {}).hit, d20 ? (spec.label || plan.name) : 'To hit') + '</span><span class="rcard-what">' + (d20 ? esc(spec.label || plan.name) : 'to hit') + '</span><span class="rcard-how">' + dline(e.main, true) + '</span></div>'
         + (e.rerolled ? '<p class="rcard-line">Rerolled (' + esc(e.rerolled.reason) + '): was <s>' + e.rerolled.total + '</s></p>' : '')
         + (e.bonus ? '<p class="rcard-line">+ ' + esc(e.bonus.label) + ' ' + e.bonus.total + ((e.bonus.dice || []).length ? ' <span class="roll-x">(' + esc(e.bonus.formula) + ')</span>' : '') + '</p>' : '')  // (a plain +10 isn't written twice)
         + (flag ? '<p class="rcard-flag">' + esc(flag) + '</p>' : '')
@@ -2088,13 +2141,23 @@ function feedbackBusy(e) {
       return sendRoll({ ...spec, ctx, ...o, via: 'card' }).then(e => { st.busy = false; return (animate() ? throwMine(e, o.follow).catch(() => stage(e, o.follow)) : Promise.resolve()).then(() => { landed(e.id); return e; }); })
         .catch(err => { st.busy = false; toast((err.said ? err.message : "Couldn't reach askdnd") + ': not rolled.', null, 'warn'); throw err; });
     }
+    // How its numbers add up, sent with the roll and kept with it (Show the Math, app/roll_math.py `clean`): the plan's
+    // parts, where its dice come from, and how a spell's dice grew at the level it's cast at
+    function sentMath() {
+      const m = plan.math || {}, out = {};
+      if (m.bonus) out.bonus = m.bonus;
+      if (m.dmg) out.dmg = m.dmg;
+      if (m.dice) out.dice = m.dice;
+      if (now() && now().why) out.why = now().why;
+      return Object.keys(out).length ? out : null;
+    }
     // What's sent for each roll is what the plan says, at the level and effect chosen (tests/browser/test_every_roll.py)
     const dice = () => (now() ? { parts: now().parts, count: now().count, once: !!eff().once, each: eff().each || '' } : {});
     function rollHit() {
       const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
       st.step = 'rolling'; st.adding = false; draw();
       const d = dice();
-      go({ kind: attack ? 'attack' : plan.roll, mode: st.mode, extras, endsHidden: st.hidden && attack, level: cast ? st.level : 0, riders: (plan.riders || []).map(r => r.name),
+      go({ kind: attack ? 'attack' : plan.roll, mode: st.mode, extras, endsHidden: st.hidden && attack, level: cast ? st.level : 0, riders: (plan.riders || []).map(r => r.name), math: sentMath(),
            ...(attack && d.parts ? { dmgParts: d.parts, count: d.count || 1, each: d.each } : {}) })
         .then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
     }
@@ -2103,7 +2166,7 @@ function feedbackBusy(e) {
       st.step = 'rolling'; st.adding = false; draw();
       const label = plan.roll === 'dice' && !cast ? (st.forText.trim() || 'Dice') : spec.label + (d.parts && effs.length > 1 ? ' · ' + eff().name : '');
       const adds = eff() && eff().kind === 'damage' ? dmgExtras() : [];
-      return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: [...(single ? st.added.slice() : []), ...adds], level: cast ? st.level : 0, self: !!plan.self, ...d })
+      return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: [...(single ? st.added.slice() : []), ...adds], level: cast ? st.level : 0, self: !!plan.self, math: sentMath(), ...d })
         .then(e => { st.entry = e; st.step = next; if (w.isConnected) draw(); if (cast || save) turnUsed(anchor); }, () => { st.step = was; if (w.isConnected) draw(); });
     }
     function follow(action, o) {
@@ -2637,6 +2700,7 @@ function feedbackBusy(e) {
       (go.riders || []).forEach(x => p.append('rider', x));
       if (go.endsHidden) p.set('hidden', 1);
       if (go.self) p.set('self', 1);  // (healing only its roller takes: Apply to offers only them)
+      if (go.math) p.set('math', JSON.stringify(go.math));  // (how its numbers add up, kept with it: Show the Math, app/roll_math.py)
     }
     (go.extras || []).forEach(x => p.append('extra', x));
     if (go.via) p.set('via', go.via);  // (the roll card: counted as its own, app/usage.py)

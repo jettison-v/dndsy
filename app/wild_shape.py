@@ -255,9 +255,12 @@ def _entry(e: dict, cost: str, d: dict) -> dict:
     hit = _signed(int(att.group(2).replace("−", "-")) + d.get("attack_bonus", 0)) if att else (
         f"DC {save.group(2)} {save.group(1)[:3]}" if save else "")
     adv = (advantage.for_attack(d.get("advs") or [], melee=att.group(1).startswith("Melee")) + advantage.in_attack(e["name"], text)) if att else []
+    math = {"bonus": [{"n": int(att.group(2).replace("−", "-")), "what": "The form's stat block", "src": "form"}]
+                     + [{"n": v, "what": f"{n} (kept by your DM's ruling)", "src": "dm"} for n, v in d.get("attack_by") or []],
+            "dice": "form"} if att else {}
     return {"key": f"beast:{e['name']}", "name": e["name"], "cost": cost, "hit": hit, "meta": " · ".join(meta) or _clip(text),
             "text": text, "tags": ["Form"], "uses": None, "spends": [], "starred": False, "source": "form", "adv": adv,
-            "recipe": recipe}
+            "recipe": recipe, **({"math": math} if math else {})}
 
 
 def _clip(text: str, n: int = 110) -> str:
@@ -457,7 +460,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     changes. Each number says where it comes from."""
     d = druid(sheet) or {"level": 0, "moon": False, "temp_hp": 0, "lunar_radiance": False, "toughness": False, "uses": None, "hours": 0}
     kp = kept(sheet, keep)
-    d = {**d, "attack_bonus": kp["total"]["attack"], "damage_bonus": kp["total"]["damage"]}
+    d = {**d, "attack_bonus": kp["total"]["attack"], "damage_bonus": kp["total"]["damage"], "attack_by": kp["by"]["attack"]}
     pb = sheet.get("proficiency_bonus") or 2
     mine = {a["key"][:3]: a["score"] for a in sheet.get("abilities") or []}
     scores = {k: (mine.get(k, 10) if k in KEPT else (beast.get("abilities") or {}).get(k, 10)) for k, _, _ in ABILITIES}
@@ -493,7 +496,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
         stat = (beast.get("saves") or {}).get(k)
         use_form = stat is not None and stat > yours
         saves.append({"key": k, "short": short, "bonus": stat if use_form else yours, "label": _signed(stat if use_form else yours),
-                      "proficient": prof, "adv": advantage.for_save(advs, k),
+                      "proficient": prof, "adv": advantage.for_save(advs, k), "parts": [("The form's stat block", stat)] if use_form else parts,
                       "from": f"The form's stat block {_signed(stat)} (higher than yours: {says(parts)})" if use_form else says(parts)})
 
     my_skills = {s["name"]: s for s in sheet.get("skills") or []}
@@ -513,6 +516,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
             continue
         use_form = stat is not None and stat > yours
         skills.append({"name": name, "bonus": stat if use_form else yours, "label": _signed(stat if use_form else yours),
+                       "parts": [("The form's stat block", stat)] if use_form else parts,
                        "level": level or ("form" if stat is not None else ""), "adv": advantage.for_check(advs, name, ab),
                        "from": f"The form's stat block {_signed(stat)} (higher than yours: {says(parts)})" if use_form else says(parts)})
     perception = next((s["bonus"] for s in skills if s["name"] == "Perception"), _mod(scores["wis"]) + kp["total"]["checks"])
@@ -532,9 +536,15 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
         ac_parts.append((f"Unarmored Defense (kept): 10 + the form's Dexterity ({_signed(_mod(scores['dex']))}) + "
                          f"{ud.get('ability', 'wis').title()} ({_signed(extra)}) = {ud_ac}", ud_ac))
         ac = max(ac, ud_ac)
+    best = ac  # (Show the Math, D: a short line under the number a form changed, saying why)
+    moon_won = d["moon"] and 13 + wis == best and best > beast["ac"]
+    ac_why = (f"Circle Forms (form's {beast['ac']})" if moon_won else "Unarmored Defense, kept" if ud and best > beast["ac"] else "the form's")
+    ac_says = f"Circle Forms: 13 + your Wisdom modifier ({_signed(wis)}) = {best}, higher than the {beast['name']}'s own AC of {beast['ac']}" if moon_won else ""
     for name, v in kp["by"]["ac"]:
         ac_parts.append((f"{name} (worn): {_signed(v)}", v))
         ac += v
+        ac_why += f" {_signed(v)} worn"
+        ac_says += f"; {name} (worn) {_signed(v)}"
     speed = dict(beast.get("speed") or {})
     um = kp["features"].get("unarmored-movement")
     for k in speed:
@@ -665,6 +675,9 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
         "beast": beast, "druid": d, "ac": ac, "ac_parts": ac_parts, "temp_hp": d["temp_hp"], "hp": hp,
         "speed": speed_text(speed), "speed_dict": speed, "senses": senses_text(beast), "abilities": abilities, "saves": saves, "skills": skills,
         "passive_perception": 10 + perception, "initiative": _signed(sum(v for _, v in init_parts)), "initiative_parts": init_parts,
+        "ac_why": ac_why, "ac_says": ac_says or ac_why, "initiative_why": "form's Dex" + (" + kept" if len(init_parts) > 1 else ""),
+        "initiative_says": " + ".join(f"{n} {_signed(v)}" for n, v in init_parts),
+        "temp_why": (f"3 × Druid level {d['level']} (Circle Forms)" if d["moon"] else f"your Druid level ({d['level']})") if d.get("temp_hp") else "",
         "initiative_adv": advantage.initiative(advs), "save_adv_all": advantage.all_saves(advs), "speed_parts": speed_parts,
         "kept": kp,
         "columns": {k: {"shown": v, "all": v, "count": len(v)} for k, v in cols.items()},

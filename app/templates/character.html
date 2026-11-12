@@ -21,7 +21,7 @@
           <a href="/characters/{{ c.id }}/battle"{% if not creature %} aria-current="page"{% endif %}>{{ c.name.split()[0] }}</a>
           {%- for x in my_creatures %}<a href="/characters/{{ c.id }}/battle?creature={{ x.id }}"{% if creature and creature.id == x.id %} aria-current="page"{% endif %} title="{{ x.name }} ({{ x.group_name }})">{{ x.name | creature_short }}</a>{% endfor %}
         </nav>{% endif %}</div>
-      {% if s %}<div class="muted char-sub" id="char-sub">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{% if k.subclass %} ({{ k.subclass }}){% endif %}{{ " / " if not loop.last }}{% endfor %} · level {{ s.level }}{% if s.background %} · {{ s.background }}{% endif %}{% if c.player_name %} · played by {{ c.player_name }}{% endif %}{% if s.sheet_url %}{% endif %}</div>
+      {% if s %}<div class="muted char-sub" id="char-sub">{{ s.species }} · {% for k in s.classes %}{{ k.name }} {{ k.level }}{% if k.subclass %} ({{ k.subclass }}){% endif %}{{ " / " if not loop.last }}{% endfor %} · level {{ s.level }}{% if s.background %} · {{ s.background }}{% endif %}{% if c.player_name %} · played by {{ c.player_name }}{% endif %} · <button type="button" class="link-plain cn-open" data-modal-url="/characters/{{ c.id }}/numbers" data-modal-size="large">Check the numbers</button></div>
       {% if failed %}<div class="note"><span class="quiet-warn">The latest refresh from D&amp;D Beyond didn't work, so this is the last good copy, from {{ fetched_at | ago }}. {{ error }}</span></div>{% endif %}{% endif %}
     </div>
     <nav class="modes" aria-label="Mode">

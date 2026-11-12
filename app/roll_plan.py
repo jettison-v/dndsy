@@ -160,6 +160,36 @@ def at_level(recipe: dict, ev: dict, slot: int, char_level: int) -> dict | None:
     return {"parts": parts, "count": count}
 
 
+def _times(part: str, k: int) -> str:
+    """An upcast part taken k times: "1d10" x 2 -> "2d10", "+1" x 3 -> "+3"."""
+    if re.fullmatch(r"[+-]\d+", part):
+        return _signed(int(part) * k)
+    p = rr.parse_part(part)
+    return _part_text(p[0] * k, p[1], p[2] * k, p[3]) if p else part
+
+
+def _why(recipe: dict, ev: dict, slot: int, char_level: int) -> str:
+    """How a spell's dice came to be what they are at this level (Show the Math, option D: upcasting said where it
+    changes the dice): "2d10 at level 2, +1d10 for the level-3 slot"; a cantrip's, by character level."""
+    level = recipe.get("level") or 0
+    first = (ev.get("parts") or [""])[0].split(" ")[0]
+    if level and slot > level:
+        times = (slot - level) // (ev.get("every") or 1)
+        if times <= 0:
+            return ""
+        adds = [_times(u.split(" ")[0], times) for u in ev.get("upcast") or [] if u]
+        if ev.get("count_upcast"):
+            adds.append(f"+{ev['count_upcast'] * times} {ev.get('count_label') or 'time'}{'s' if ev['count_upcast'] * times > 1 else ''}")
+        if not adds:
+            return ""
+        each = "" if (ev.get("every") or 1) == 1 else f" (one step for every {ev['every']} levels above)"
+        return f"{first} at level {level}, " + ", ".join(a if a.startswith(("+", "-")) else "+" + a for a in adds) + f" for the level-{slot} slot{each}"
+    if not level and ev.get("cantrip") and tier(char_level or 1) > 1:
+        t = tier(char_level)
+        return f"{first} for a cantrip at first, more from character level {(5, 11, 17)[t - 2]} (you're level {char_level}; cantrips grow at 5, 11 and 17)"
+    return ""
+
+
 def dice_text(parts: list[str], count: int = 1, each: str = "", once: bool = False) -> str:
     """How a roll's dice read: "2d4 + 4 (spellcasting modifier)", "3 darts × 1d4+1 force"."""
     many = f"{count} {each or 'time'}s × " + ("one roll: " if once else "") if count > 1 else ""
@@ -216,7 +246,7 @@ def effects(recipe: dict | None, sheet: dict, name: str, attack: bool) -> dict:
                     text = dice_text(parts, r["count"], e.get("count_label") or "", bool(e.get("once")))
                 else:
                     text += " + spellcasting modifier"
-            at[str(lv)] = {"parts": parts, "count": r["count"], "text": text}
+            at[str(lv)] = {"parts": parts, "count": r["count"], "text": text, **({"why": w} if (w := _why(recipe, e, lv, char_level)) else {})}
         note = e.get("note") or ("Rolled on a hit while it lasts, added to that hit's damage." if e["on"] == "rider" else "")
         out.append({"name": e.get("name") or name, "kind": {"heal": "heal", "temp": "temp", "plain": "dice"}.get(e["on"], "damage"),
                     "on": e["on"], "save": e.get("save") or "", "success": e.get("success") or "", "each": e.get("count_label") or "",
@@ -546,12 +576,13 @@ def _int(text) -> int:
 
 
 def button(kind: str, label: str, mod="", dmg="", note: str = "", plan: dict | None = None, rolls: dict | None = None,
-           save: str = "", again: str = "", self_only: bool = False) -> dict:
+           save: str = "", again: str = "", self_only: bool = False, math: dict | None = None) -> dict:
     """The complete plan one roll button plays (see above). `plan`: the option's (plan()); `rolls`: its effects() for
-    this button; `save`: a spell's "Dex 15" when the button has no plan saying so."""
+    this button; `save`: a spell's "Dex 15" when the button has no plan saying so; `math`: how its numbers add up
+    (app/roll_math.py: the to-hit's or check's parts, the save's DC, a weapon's damage)."""
     base = plan or {}
     out = {"name": base.get("name") or label, "label": label, "roll": kind, "notes": [], "riders": base.get("riders") or [],
-           "modifiers": base.get("modifiers") or [], "choice": base.get("choice")}
+           "modifiers": base.get("modifiers") or [], "choice": base.get("choice"), **({"math": math} if math else {})}
     if rolls:
         out["rolls"] = rolls
         out["notes"] += [f"House rule: {r['text']}" + (f" · {r['reason']}" if r.get("reason") else "") for r in rolls.get("house_rules") or []]

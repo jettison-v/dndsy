@@ -106,7 +106,7 @@ def post(c, **data):
 
 
 def numbers(html):
-    return re.findall(r'class="roll-total">(\d+)<', html)
+    return re.findall(r'class="roll-total">(?:<button[^>]*>)?(\d+)<', html)
 
 
 def test_a_player_rolls_for_their_own_character_on_the_server(table, db, monkeypatch):

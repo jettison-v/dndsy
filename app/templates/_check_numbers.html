@@ -1,0 +1,55 @@
+{# Check your numbers (Show the Math, option E; app/check_numbers.py): a large window with every roll the character makes,
+   askdnd's number, how it adds up (each part with where it comes from) and what it was checked against. #}
+{% from "_math.html" import math_num, MATH_SRC %}
+{% macro parts(rows) -%}
+{%- for r in rows %}<span class="cn-part"><b>{% if r.n is string %}{{ r.n }}{% elif loop.first %}{{ "−" if r.n < 0 }}{{ r.n | abs }}{% else %}{{ "+" if r.n >= 0 else "−" }}{{ r.n | abs }}{% endif %}</b> {{ r.what }}{% if MATH_SRC.get(r.src) %} <span class="src s-{{ r.src }}">{{ MATH_SRC[r.src] }}</span>{% endif %}</span>{% endfor -%}
+{%- endmacro %}
+{% macro verdict(r) -%}
+{%- set v = verdicts[r.verdict] -%}
+<span class="cn-v cn-{{ v[1] }}" title="{{ v[2] }}">{{ v[0] }}</span>{% if r.why %}<span class="cn-why">{{ r.why }}</span>{% endif %}{% for h in r.house if h %}<span class="cn-why">{{ h }}</span>{% endfor %}
+{%- endmacro %}
+<div class="peek-head">
+  <div><div class="note">{{ c.name }} · Show the math</div><h2 id="peek-title">Check {{ c.name.split()[0] }}'s numbers</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body check-numbers">
+  <p class="note">Every roll askdnd makes for {{ c.name.split()[0] }}, how each number adds up, and what it was checked against. Point at a number for its parts.
+    The sheet's numbers come from D&amp;D Beyond, read {{ fetched_at | ago if fetched_at else "recently" }}; askdnd adds them up itself.</p>
+  <p class="cn-counts">{% for k, n in counts.items() if n %}<span class="cn-v cn-{{ verdicts[k][1] }}">{{ verdicts[k][0] }} {{ n }}</span>{% endfor %}</p>
+  <div class="tabbar" role="tablist" aria-label="Kinds of roll">
+    <button type="button" role="tab" aria-selected="true" data-tab="cn-rolls">Attacks, spells and items</button>
+    {% if forms %}<button type="button" role="tab" aria-selected="false" data-tab="cn-forms">Wild Shape</button>{% endif %}
+    <button type="button" role="tab" aria-selected="false" data-tab="cn-d20">Checks and saves</button>
+  </div>
+  <div id="cn-rolls" role="tabpanel">
+    {% for g, rows in groups %}
+    <h3 class="divider">{{ g }}</h3>
+    <div class="table-scroll"><table class="list cn-table">
+      <thead><tr><th>Roll</th><th>askdnd rolls</th><th>How it adds up</th><th>Checked against</th></tr></thead>
+      <tbody>{% for r in rows %}
+        <tr><td><b>{{ r.name }}</b><span class="cn-why">{{ r.cost }}</span></td>
+          <td class="cn-num">{% if r.to_hit %}{{ math_num(r.to_hit.text, r.to_hit.m, "To hit") }} to hit{% endif %}{% if r.dc %}{{ math_num(r.dc.text, r.dc.m, "Save DC") }}{% endif %}{% if r.dice %}{% if r.to_hit or r.dc %}<br>{% endif %}{{ r.dice }}{% endif %}</td>
+          <td>{% if r.to_hit and r.to_hit.m.rows %}{{ parts(r.to_hit.m.rows) }}{% endif %}{% if r.dc and r.dc.m.rows %}{{ parts(r.dc.m.rows) }}{% endif %}{% if r.dmg %}<span class="cn-sub">Damage</span>{{ parts(r.dmg) }}{% endif %}{% if r.grows %}<span class="cn-why">{{ r.grows }}</span>{% endif %}</td>
+          <td>{{ verdict(r) }}</td></tr>{% endfor %}
+      </tbody></table></div>
+    {% else %}<p class="note">Nothing on the sheet rolls yet.</p>{% endfor %}
+  </div>
+  {% if forms %}<div id="cn-forms" role="tabpanel" hidden>
+    <div class="table-scroll"><table class="list cn-table">
+      <thead><tr><th>Form</th><th>AC</th><th>Temporary HP</th><th>Initiative</th><th>Its attacks</th></tr></thead>
+      <tbody>{% for f in forms %}
+        <tr><td><b>{{ f.name }}</b></td><td class="cn-num">{{ f.ac }}<span class="cn-why">{{ f.ac_why }}</span></td>
+          <td class="cn-num">{{ f.temp }}<span class="cn-why">{{ f.temp_why }}</span></td>
+          <td class="cn-num">{{ math_num(f.initiative, {"rows": f.init_rows, "total": f.initiative}, "Initiative") }}</td>
+          <td>{% for a in f.attacks %}<span class="cn-part"><b>{{ math_num(a.hit, a.m, "To hit") }}</b> {{ a.name }}</span>{% else %}<span class="note">none</span>{% endfor %}</td></tr>{% endfor %}
+      </tbody></table></div>
+    <p class="note">In a form, Strength, Dexterity and Constitution are the form's; what you keep (your DM's ruling) is in each number. The form's own page has every part: open it from Battle's forms.</p>
+  </div>{% endif %}
+  <div id="cn-d20" role="tabpanel" hidden>
+    <div class="table-scroll"><table class="list cn-table">
+      <thead><tr><th>Roll</th><th>askdnd rolls</th><th>How it adds up</th></tr></thead>
+      <tbody>{% for r in d20 %}
+        <tr><td>{{ r.name }}</td><td class="cn-num">{{ math_num(r.label, {"rows": r.rows, "total": r.label}, r.name) }}</td><td>{{ parts(r.rows) }}</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+</div>

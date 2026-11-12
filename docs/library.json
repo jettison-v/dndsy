@@ -1001,7 +1001,7 @@
  {
   "title": "Show the Math",
   "kind": "design",
-  "status": "Your pick",
+  "status": "Chose A, B, D, E; built",
   "date": "Nov 12",
   "what": "Brett: let a player check askdnd's roll math (stats, bonuses, Wild Shape, upcasting) without cluttering the page. Five options with Cole's real numbers: a number's parts on the roll card (A), on each Table rolls entry (B), a Show the math setting (C), Wild Shape and upcasting said where they change a number (D), a Check my numbers page per character (E).",
   "source": "docs/mockups/show-the-math/index.html",

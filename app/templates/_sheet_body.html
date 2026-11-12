@@ -104,12 +104,12 @@
     <div class="skill-groups">
       {% for a in s.abilities if by.get(a.short) %}
       <div class="skill-group">
-        <div class="skill-head"><span>{{ a.name }}</span><button type="button" class="roll-hit" {{ roll_attrs("check", a.name ~ " check", a.label) }} title="Roll a {{ a.name }} check">{{ a.label }}</button></div>
+        <div class="skill-head"><span>{{ a.name }}</span><button type="button" class="roll-hit" {{ roll_attrs("check", a.name ~ " check", a.check_label or a.label, parts=a.check_parts or [(a.name ~ " modifier", a.label)]) }} title="Roll a {{ a.name }} check">{{ a.check_label or a.label }}</button></div>
         {% for sk in by[a.short] %}
         <div class="skill {{ sk.proficiency }}" data-panel-url="/characters/{{ c.id }}/vital/skill-{{ sk.name | lower | replace(' ', '-') }}" tabindex="0" role="button">
           <span class="pm {{ sk.proficiency }}" aria-label="{{ sk.proficiency or 'not proficient' }}">{{ {"proficient": "●", "expertise": "◆", "half": "◐"}.get(sk.proficiency, "○") }}</span>
           <span class="skill-name">{{ sk.name }} {{ adv(sk.adv) }}</span>
-          <button type="button" class="roll-hit skill-bonus" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv) }} title="Roll {{ sk.name }}">{{ sk.label }}</button>
+          <button type="button" class="roll-hit skill-bonus" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv, parts=sk.parts) }} title="Roll {{ sk.name }}">{{ sk.label }}</button>
         </div>
         {% endfor %}
       </div>
