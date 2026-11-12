@@ -13,8 +13,8 @@ them per character."""
 import json
 import re
 
-SOURCES = {"sheet": "Sheet", "rules": "2024 rules", "dm": "Your DM", "form": "The form", "ddb": "D&D Beyond's data",
-           "read": "Its words", "added": "Added"}
+SOURCES = {"sheet": "Sheet", "rules": "2024 rules", "dm": "Your DM", "form": "The form", "block": "Stat block",
+           "ddb": "D&D Beyond's data", "read": "Its words", "added": "Added"}
 # Where a roll plan's dice come from (app/roll_plan.py `sources`), as a part's source
 FROM_PLAN = {"correction": "dm", "checked": "rules", "sheet": "sheet", "rule": "rules", "ddb": "ddb", "text": "read"}
 DIE = re.compile(r"^\d{1,2}d\d{1,3}$")
@@ -34,9 +34,12 @@ def _src_of(what: str, src: str) -> str:
 
 
 def rows(parts, src: str = "sheet") -> list[dict]:
-    """[(what, amount)] as the sheet reader gives them (app/ddb_sheet.py) into rows; a zero part says nothing."""
+    """[(what, amount)] as the sheet reader gives them (app/ddb_sheet.py), or (what, amount, source), into rows; a zero
+    part says nothing."""
     out = []
     for p in parts or []:
+        if not isinstance(p, dict) and len(p) > 2:
+            p = {"what": p[0], "n": p[1], "src": p[2]}
         what, n = (p["what"], p["n"]) if isinstance(p, dict) else (p[0], p[1])
         if isinstance(n, str) and (v := _signed_int(n)) is not None:
             n = v  # (a label, "+2")

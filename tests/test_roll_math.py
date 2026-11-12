@@ -126,3 +126,21 @@ def test_check_your_numbers(table):
     assert "Checks and saves" in page and "Stone of Good Luck (Luckstone)" in page
     assert table["dm"].get(f"/characters/{cid}/numbers").status_code == 200
     assert 'data-modal-url="/characters/%d/numbers"' % cid in table["player"].get(f"/characters/{cid}/battle").text
+
+
+def test_every_wild_shape_attack_says_its_parts(cole):
+    """Brett, Nov 12: a form's Unarmed Strike showed only "Bonus". Every attack in each of Cole's forms has parts that
+    add up: the form's Strength (or Dexterity with Martial Arts), his Proficiency Bonus and what he keeps."""
+    from app import wild_shape as ws
+
+    beasts = ws.beasts()
+    for kf in ws.known_forms(cole, beasts):
+        f = ws.shaped(cole, ws.beast_for(cole, kf["name"], beasts), keep=ws.chosen_keep(cole, None))
+        for o in (o for col in f["columns"].values() for o in col["all"]):
+            if o.get("hit") and str(o["hit"])[0] in "+-−":
+                rows = (o.get("math") or {}).get("bonus")
+                assert rows and roll_math.adds_up(rows, o["hit"]), (kf["name"], o["name"], o["hit"], rows)
+    bear = ws.shaped(cole, ws.beast_for(cole, "Polar Bear", beasts), keep=["item:Insignia of Claws"])
+    u = next(o for o in bear["columns"]["Action"]["all"] if o["name"] == "Unarmed Strike")
+    assert [r["src"] for r in u["math"]["bonus"]][:2] == ["form", "sheet"] and u["math"]["dmg"][0]["n"] == "1d6"
+

@@ -16,7 +16,7 @@ inform; the DM makes every ruling (e.g. which other class features work in a for
 import re
 from functools import cache
 
-from app import advantage, books, rules_data
+from app import advantage, books, roll_math, rules_data
 from app import character_views as views
 
 ABILITIES = (("str", "Strength", "Str"), ("dex", "Dexterity", "Dex"), ("con", "Constitution", "Con"),
@@ -255,9 +255,12 @@ def _entry(e: dict, cost: str, d: dict) -> dict:
     hit = _signed(int(att.group(2).replace("−", "-")) + d.get("attack_bonus", 0)) if att else (
         f"DC {save.group(2)} {save.group(1)[:3]}" if save else "")
     adv = (advantage.for_attack(d.get("advs") or [], melee=att.group(1).startswith("Melee")) + advantage.in_attack(e["name"], text)) if att else []
-    math = {"bonus": [{"n": int(att.group(2).replace("−", "-")), "what": "The form's stat block", "src": "form"}]
-                     + [{"n": v, "what": f"{n} (kept by your DM's ruling)", "src": "dm"} for n, v in d.get("attack_by") or []],
-            "dice": "form"} if att else {}
+    # (Show the Math: the to-hit's parts, its stat block's number and what's added to it; a creature's says it's its own)
+    what, src = d.get("block") or ("Its stat block", "block")
+    rows = [{"n": int(att.group(2).replace("−", "-")), "what": what, "src": src}] if att else []
+    rows += [{"n": v, "what": f"{n} (kept by your DM's ruling)", "src": "dm"} for n, v in d.get("attack_by") or []]
+    rows += [{"n": v, "what": n, "src": s} for n, v, s in d.get("attack_parts") or []]
+    math = {"bonus": roll_math.checked(rows, hit), "dice": src} if att else {}
     return {"key": f"beast:{e['name']}", "name": e["name"], "cost": cost, "hit": hit, "meta": " · ".join(meta) or _clip(text),
             "text": text, "tags": ["Form"], "uses": None, "spends": [], "starred": False, "source": "form", "adv": adv,
             "recipe": recipe, **({"math": math} if math else {})}
@@ -460,7 +463,8 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     changes. Each number says where it comes from."""
     d = druid(sheet) or {"level": 0, "moon": False, "temp_hp": 0, "lunar_radiance": False, "toughness": False, "uses": None, "hours": 0}
     kp = kept(sheet, keep)
-    d = {**d, "attack_bonus": kp["total"]["attack"], "damage_bonus": kp["total"]["damage"], "attack_by": kp["by"]["attack"]}
+    d = {**d, "attack_bonus": kp["total"]["attack"], "damage_bonus": kp["total"]["damage"], "attack_by": kp["by"]["attack"],
+         "block": ("The form's stat block", "form")}
     pb = sheet.get("proficiency_bonus") or 2
     mine = {a["key"][:3]: a["score"] for a in sheet.get("abilities") or []}
     scores = {k: (mine.get(k, 10) if k in KEPT else (beast.get("abilities") or {}).get(k, 10)) for k, _, _ in ABILITIES}
@@ -577,7 +581,15 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     if d.get("lunar_radiance"):
         u_dmg += " (or Radiant)"
     u_dc = 8 + um + pb
+    # (Show the Math: the form's Strength, or Dexterity with Martial Arts, your Proficiency Bonus, what you keep)
+    u_ability = ("Dexterity modifier (the form's, Martial Arts)" if martial and dex_m > str_m else "Strength modifier (the form's)", um, "form")
+    kept_hit = [(f"{n} (kept by your DM's ruling)", v, "dm") for n, v in kp["by"]["attack"]]
+    kept_dmg = [(f"{n} (kept by your DM's ruling)", v, "dm") for n, v in kp["by"]["damage"]]
+    u_math = {"bonus": roll_math.checked(roll_math.rows([u_ability, ("Your Proficiency Bonus", pb, "sheet")] + kept_hit), u_hit),
+              "dmg": roll_math.rows([(f"Martial Arts die (Monk {monk})", f"1d{die}", "rules")] if martial else [("Unarmed Strike", 1, "rules")])
+              + roll_math.rows([u_ability] + kept_dmg), "dice": "rules" if martial else "form"}
     unarmed = {"name": "Unarmed Strike", "hit": u_hit, "tags": ["Yours"], "uses": None, "spends": [], "starred": False, "source": "unarmed",
+               "math": u_math,
                "adv": advantage.for_attack(advs, melee=True),
                "meta": f"reach 5 ft · {u_dmg} · or Grapple / Shove (DC {u_dc} Str or Dex save)",
                "text": "A punch, kick, head-butt or similar with the form's body. Choose Damage, Grapple or Shove each time."

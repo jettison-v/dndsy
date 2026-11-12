@@ -1300,7 +1300,7 @@ function feedbackBusy(e) {
   // parts, each with where it came from, on hover, keyboard focus or a tap. The parts ride on the number's own button
   // (`data-math`: app/roll_math.py's rows, put there by _math.html `math_num` or mathNum here), so its text is the number
   // alone; one pop shows them over everything (fixed, so a window's or panel's edge never cuts it), beside the number.
-  const MATH_SRC = { sheet: 'Sheet', rules: '2024 rules', dm: 'Your DM', form: 'The form', ddb: "D&D Beyond's data", read: 'Its words', added: 'Added' };
+  const MATH_SRC = { sheet: 'Sheet', rules: '2024 rules', dm: 'Your DM', form: 'The form', block: 'Stat block', ddb: "D&D Beyond's data", read: 'Its words', added: 'Added' };
   function mathBox(m) {  // m: {rows, total, why?, note?, label} as app/roll_math.py makes them
     const n = (r, i) => typeof r.n === 'string' ? r.n : i ? signed(r.n) : String(r.n).replace('-', '−');
     return m.rows.map((r, i) => '<span class="m-row"><span class="m-n">' + esc(n(r, i)) + '</span><span class="m-what">' + esc(r.what)

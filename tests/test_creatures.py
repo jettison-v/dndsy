@@ -59,6 +59,9 @@ def test_its_numbers_grow_with_its_master(db, labs):
     assert next(s["label"] for s in k["saves"] if s["key"] == "dex") == "+6"  # (Dex +2, proficient +2, Might +2)
     assert k["skills"] == [{"name": "Perception", "label": "+6"}] and k["immune"] == ["Poisoned"] and k["walk"] == 20
     assert "Right after its master's turn" in k["turn"] and [o["name"] for o in k["columns"]["Action"]["all"]] == ["Zap", "Dodge"]
+    # (Show the Math: its own stat block's +4, then Might of the Master's +2, adding up to its +6)
+    assert [(r["n"], r["src"]) for r in zap["math"]["bonus"]] == [(4, "block"), (2, "rules")]
+    assert zap["math"]["bonus"][0]["what"] == "Its stat block" and "Might of the Master" in zap["math"]["bonus"][1]["what"]
     low = creatures.card(master(level=2, intelligence=10, pb=2), c)
     assert low["hp"]["max"] == 3 and low["columns"]["Action"]["all"][0]["hit"] == "+4"  # (level 2: +4 as the stat block says)
 

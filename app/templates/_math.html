@@ -1,7 +1,7 @@
 {# Show the Math (Brett chose A, B, D and E, Nov 12; docs/mockups/show-the-math/): a number that opens its parts, each
    with where it came from. `m`: {rows, total, why?} from app/roll_math.py, carried on the number's own button
    (`data-math`), so its text stays the number alone; app.js "Show the Math" draws them in one pop. No rows: the number. #}
-{% set MATH_SRC = {"sheet": "Sheet", "rules": "2024 rules", "dm": "Your DM", "form": "The form", "ddb": "D&D Beyond's data", "read": "Its words", "added": "Added"} %}
+{% set MATH_SRC = {"sheet": "Sheet", "rules": "2024 rules", "dm": "Your DM", "form": "The form", "block": "Stat block", "ddb": "D&D Beyond's data", "read": "Its words", "added": "Added"} %}
 {% macro math_num(text, m, label) -%}
 {%- if m and m.rows %}<button type="button" class="math-n" aria-expanded="false" title="How it adds up" data-math='{{ {"rows": m.rows, "total": m.total, "why": m.why or "", "label": label} | tojson }}'>{{ text }}</button>{% else %}{{ text }}{% endif -%}
 {%- endmacro %}
