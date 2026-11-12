@@ -113,9 +113,12 @@ def heard(db: Session, campaign: Campaign, fight: dict | None) -> bool:
     lock(db, campaign)
     if (campaign.fight or {}).get("source") == "askdnd":
         return False
+    # A token is its D&D Beyond id's own character, before a test copy sharing its sheet (the bridge never works on one;
+    # a test campaign holding only the copy still has it): which of the two it named came down to the database's order
     characters = {c.ddb_id: c.id for c in db.scalars(
         select(Character).join(CampaignCharacter, CampaignCharacter.character_id == Character.id)
-        .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None), Character.ddb_id.is_not(None)))}
+        .where(CampaignCharacter.campaign_id == campaign.id, CampaignCharacter.left_on.is_(None), Character.ddb_id.is_not(None))
+        .order_by(Character.copy_of_id.is_(None), Character.id))}  # (the last kept wins: originals last)
     now, prev = _clean(fight, characters), campaign.fight
     if now is not None:  # (numbers askdnd asked the VTT for and it doesn't show yet: app/initiative.py)
         initiative.overlay(now, prev)

@@ -400,11 +400,14 @@ def undo(page: Page) -> bool:
     """The corner card's Undo, if its card is still up: a card with a button stays 20 seconds (app.js), and D&D Beyond
     can take longer than that to show the change. False when it's gone, and the run puts the change back another way."""
     button = page.locator('#cards button:has-text("Undo")')
-    if not button.count():
-        print("  (Undo's card had gone: put back another way)", flush=True)
-        return False
-    button.last.click(timeout=8000)
-    return True
+    try:  # (counted while the card was up, it can go before the press lands: riders, Nov 9 to 12)
+        if button.count():
+            button.last.click(timeout=3000)
+            return True
+    except Exception:
+        pass
+    print("  (Undo's card had gone: put back another way)", flush=True)
+    return False
 
 
 def spell_window(page: Page) -> None:
@@ -1165,7 +1168,10 @@ def owl_as(d: dict, oid: int) -> tuple:
 def caught_up(t: Table, page: Page, sheet: Page, oid: int) -> None:
     """Through the DM, askdnd reads D&D Beyond's public copy, which trails a change by minutes; the run before put the
     Owl back behind askdnd's back, so askdnd could still hold it as Fey and named Pip and send nothing (the nightly's
-    misses, Nov 5 to 7). Waits for the public copy to show the sheet as it is, then has askdnd read it again."""
+    misses, Nov 5 to 7). Waits for the public copy to show the sheet as it is, then has askdnd read it again, once
+    askdnd takes a public read again: for characters.PUBLIC_TRAILS (3 minutes) after the DM's browser read the sheet
+    itself, the run before's changes, askdnd keeps that read (Nov 8), so the Owl it held as Fey stayed Fey and the
+    first try missed every night from Nov 9 to 12 (the retry, minutes later, passed)."""
     if not t.via_dm:
         return
     import urllib.request
@@ -1182,7 +1188,8 @@ def caught_up(t: Table, page: Page, sheet: Page, oid: int) -> None:
     while public() != want and time.time() - start < 300:
         page.wait_for_timeout(10000)
     cid = page.url.split("/characters/")[1].split("/")[0]
-    page.wait_for_timeout(21000)  # (askdnd's Refresh now reads at most every 20 seconds)
+    page.wait_for_timeout(max(21, 190 - (time.time() - start)) * 1000)  # (PUBLIC_TRAILS since the run before; Refresh
+    #                                                                     now also reads at most every 20 seconds)
     page.request.post(f"{page.url.split('/characters/')[0]}/live/refresh/{cid}")
     page.goto(page.url, wait_until="domcontentloaded")
     print(f"  askdnd's copy caught up with D&D Beyond in {int(time.time() - start)} seconds", flush=True)
@@ -1625,23 +1632,56 @@ def initiative(t: Table, seat: str = "player4") -> None:
     t.expect("the DM's VTT lists Levi waiting", lambda: "Levi" in sidebar(vtt), 20)
     party.reload()
     t.expect("askdnd hears who's waiting: Roll for Initiative", lambda: "Roll for Initiative" in " ".join(party.locator(".fight-band").all_text_contents()), 30)
+    frames: list[str] = []  # (what the sheet sends and hears on its Game Log connection)
+    t.sheet(seat, frames=frames)
     page = t.battle(seat)
     connects(t, page)
-    page.click('[data-roll="check"][data-label="Initiative"]', modifiers=["Shift"])
+    sent: list[str] = []  # (what askdnd named each roll for the Game Log: "Initiative" only before Start Combat)
+
+    def roll() -> float | None:
+        """Levi's Initiative, from its own answer: the press also rolls for each familiar of his that's here, and the
+        newest roll in Table rolls was sometimes the Owl's (the run read its 18 as Levi's, Nov 12)."""
+        frames.clear()
+        with page.expect_response(lambda r: r.request.method == "POST" and r.url.split("?")[0].endswith("/rolls"), timeout=10000) as got:
+            page.click('[data-roll="check"][data-label="Initiative"]', modifiers=["Shift"])
+        j = got.value.json()
+        sent.append(", ".join(str((m.get("data") or {}).get("action")) for m in (j.get("gamelog") or {}).get("messages") or []) or "(none)")
+        return (j.get("roll") or {}).get("total")
+
+    def said() -> str:
+        """What each side knew at a miss: the VTT's sidebar, the name askdnd gave the roll, what the sheet sent, what the
+        extension on the DM's VTT heard (its badge) and askdnd's own order (Party's rows, * on its way)."""
+        on_log = [re.search(r'"action":\s*"([^"]*)"', f).group(1) for f in frames if '"action"' in f and "Initiative" in f]
+        badge = vtt.evaluate("(document.getElementById('askdnd-vtt')?.shadowRoot?.textContent || '').trim()")
+        party.goto(party.url, wait_until="domcontentloaded")
+        rows = party.evaluate("""[...document.querySelectorAll('tr[data-ft-name]')].map(r => r.dataset.ftName.split(' ')[0] + ' '
+            + ((r.querySelector('.ft-init')?.textContent || '').trim().split(/\\s/)[0]) + (r.querySelector('.ft-pending') ? '*' : '')).join(', ')""")
+        band = " ".join(party.locator(".fight-band").all_text_contents()).split()[:8]
+        return (f"the sidebar: {sidebar(vtt)}; askdnd named it {sent}; the sheet sent {on_log or 'nothing about Initiative'}; "
+                f"the VTT's badge: {badge!r}; askdnd's order: {rows or '(none)'}; askdnd's band: {' '.join(band)!r}")
+    total = float(roll())
     page.wait_for_timeout(2500)
     page.keyboard.press("Escape")
-    total = float(page.locator("#roll-log > li .roll-total").first.text_content())
-    t.expect(f"Levi's {total:g} fills in the VTT's sidebar", lambda: sidebar(vtt).get("Levi") == total, SLOW)
+    if not t.expect(f"Levi's {total:g} fills in the VTT's sidebar", lambda: sidebar(vtt).get("Levi") == total, SLOW):
+        print(f"  {said()}", flush=True)
     party.goto(party.url, wait_until="domcontentloaded")
     key = party.locator('tr[data-ft-name^="Levi"]').first.get_attribute("data-ft-key")
     party.evaluate("k => fetch('/fight/initiative', {method: 'POST', body: new URLSearchParams({key: k, to: '17.5'}), headers: {'X-Requested-With': 'fetch'}})", key)
     t.expect("the DM's change in askdnd reaches the VTT", lambda: sidebar(vtt).get("Levi") == 17.5, SLOW)
     vtt.get_by_role("button", name="Start Combat").click()
-    vtt.wait_for_timeout(2000)
-    page.click('[data-roll="check"][data-label="Initiative"]', modifiers=["Shift"])
+
+    def started() -> bool:
+        party.goto(party.url, wait_until="domcontentloaded")
+        return "Waiting for Start Combat" not in " ".join(party.locator(".fight-band").all_text_contents())
+    # (the roll after it waited 2 seconds, and askdnd heard Start Combat from the DM's VTT 1 to 3 seconds after the
+    # press: rolled first, it was still Initiative before Start Combat, Nov 9 to 12. A player rolls once they see it)
+    t.expect("askdnd hears Start Combat", started, 30)
+    sent.clear()
+    roll()
     page.wait_for_timeout(8000)
     page.keyboard.press("Escape")
-    t.expect("after Start Combat a roll changes nothing", lambda: sidebar(vtt).get("Levi") == 17.5, 1)
+    if not t.expect("after Start Combat a roll changes nothing", lambda: sidebar(vtt).get("Levi") == 17.5, 1):
+        print(f"  {said()}", flush=True)
     if not fighting:  # (as found)
         end_combat(vtt)
 

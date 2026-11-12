@@ -166,15 +166,30 @@ class Safari:
             pass
 
 
+_SIGNED_IN: dict[str, dict] = {}
+
+
+def seat_cookie(seat: str, playwright) -> dict:
+    """The seat's askdnd sign-in cookie, read from its Chrome once, before any simulator starts, and the connection
+    closed: a connection per device and seat was left open, and on Nov 10 and 12 the seat's Chrome stopped answering
+    part way (the large iPhone's and the iPad's "couldn't run")."""
+    if seat not in _SIGNED_IN:
+        browser = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{SEATS[seat]}", timeout=60_000)
+        try:
+            got = [c for c in browser.contexts[0].cookies(BASE) if c["name"] == "askdnd_session"]
+        finally:
+            browser.close()  # (connected over CDP: closes the connection, not the seat's Chrome)
+        if not got:
+            raise RuntimeError(f"{seat}'s Chrome isn't signed in to askdnd")
+        _SIGNED_IN[seat] = got[0]
+    return _SIGNED_IN[seat]
+
+
 def sign_in(safari: Safari, seat: str, playwright) -> None:
     """The seat's askdnd sign-in, copied from its Chrome into Safari (the cookie only; never shown)."""
-    ctx = playwright.chromium.connect_over_cdp(f"http://127.0.0.1:{SEATS[seat]}").contexts[0]
-    got = [c for c in ctx.cookies(BASE) if c["name"] == "askdnd_session"]
-    if not got:
-        raise RuntimeError(f"{seat}'s Chrome isn't signed in to askdnd")
+    c = seat_cookie(seat, playwright)
     safari.go(BASE + "/health")
     safari.call("DELETE", "/cookie")  # (a page of askdnd's own, so the cookie is askdnd's)
-    c = got[0]
     safari.call("POST", "/cookie", {"cookie": {"name": c["name"], "value": c["value"], "path": "/", "secure": True, "httpOnly": True}})
 
 
@@ -224,6 +239,11 @@ def run(devices: list[str], seats: list[str]) -> list[str]:
     driver = start_appium("w")
     try:
         with sync_playwright() as p:
+            for seat in seats:  # (every seat's sign-in first, while the Mini isn't running a simulator)
+                try:
+                    seat_cookie(seat, p)
+                except Exception as e:  # noqa: BLE001 - a device then says it couldn't sign in
+                    print(f"  {seat}'s sign-in couldn't be read: {type(e).__name__}", flush=True)
             for kind in (d for d in devices if d in found_devices):
                 sim = found_devices[kind]
                 name = f"{kind} ({sim['name']})"
