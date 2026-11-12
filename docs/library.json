@@ -997,5 +997,14 @@
   "what": "An outside chat's code review of askdnd and the plan for standardizing rolls: findings on security headers, access checks, double submits, hidden entries, the roll data's coverage of the PHB, design and phones; each checked against the code and history, with what Brett chose to fix now, put on the roadmap or leave.",
   "source": "docs/artifacts/outside-review.html",
   "link": "https://claude.ai/artifact/BNPQtprWhtZRD4Q5p78wUy"
+ },
+ {
+  "title": "Show the Math",
+  "kind": "design",
+  "status": "Chose A, B, D, E; built",
+  "date": "Nov 12",
+  "what": "Brett: let a player check askdnd's roll math (stats, bonuses, Wild Shape, upcasting) without cluttering the page. Five options with Cole's real numbers: a number's parts on the roll card (A), on each Table rolls entry (B), a Show the math setting (C), Wild Shape and upcasting said where they change a number (D), a Check my numbers page per character (E).",
+  "source": "docs/mockups/show-the-math/index.html",
+  "link": "https://claude.ai/artifact/SCdVqcfRB1RYNxZGxcCedA"
  }
 ]

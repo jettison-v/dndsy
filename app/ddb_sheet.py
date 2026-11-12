@@ -445,10 +445,12 @@ class _Sheet:
         general = self.total_bonus("saving-throws")
         for _, key, name, short in ABILITIES:
             prof = self.proficient(f"{key}-saving-throws")
+            parts = [(f"{name} modifier", self.mods[key])] + ([("Proficiency Bonus", self.pb)] if prof else [])
+            parts += self.bonus_parts("saving-throws") + self.bonus_parts(f"{key}-saving-throws")
             total = self.mods[key] + (self.pb if prof else 0) + general + self.total_bonus(f"{key}-saving-throws")
             adv = bool(self.mods_of("advantage", f"{key}-saving-throws"))
             notes = [_adv_note(m) for m in self.mods_of("advantage", f"{key}-saving-throws")]
-            out.append({"ability": name, "short": short, "bonus": total, "label": _signed(total), "proficient": prof, "advantage": adv,
+            out.append({"ability": name, "short": short, "bonus": total, "label": _signed(total), "proficient": prof, "advantage": adv, "parts": parts,
                         "notes": notes, "adv": [a for a in advs if a["on"] == "save" and a["target"] == short.lower()],
                         "kept_parts": self.kept_parts("saving-throws") + self.kept_parts(f"{key}-saving-throws")})
         return out
@@ -471,6 +473,16 @@ class _Sheet:
             out.append({"name": name, "ability": ability[:3].title(), "bonus": total, "label": _signed(total), "proficiency": level or ("half" if half else ""),
                         "notes": notes, "parts": parts, "adv": adv, "kept_parts": self.kept_parts("ability-checks") + self.kept_parts(sub)})
         return out
+
+    def ability_check(self, key: str, name: str) -> dict:
+        """A plain ability check (a Strength check): the modifier, half the Proficiency Bonus with Jack of All Trades, and
+        what adds to every ability check (a Stone of Good Luck). Show the Math found the Luckstone missing, Nov 12."""
+        parts = [(f"{name} modifier", self.mods[key])]
+        if self.mods_of("half-proficiency", "ability-checks"):
+            parts.append(("Half your Proficiency Bonus (Jack of All Trades)", self.pb // 2))
+        parts += self.bonus_parts("ability-checks") + self.bonus_parts(f"{key}-ability-checks")
+        total = sum(v for _, v in parts)
+        return {"check": total, "check_label": _signed(total), "check_parts": parts}
 
     def initiative(self) -> int:
         return sum(v for _, v in self.initiative_parts())
@@ -1057,7 +1069,14 @@ class _Sheet:
             if monk_weapon and m and int(m.group(1)) == 1 and int(m.group(2)) < die:
                 dice = f"1d{die}"
             dmg_bonus = mod + magic
-            rng = f"{df.get('range')} ({df.get('longRange')}) ft" if df.get("longRange") and df.get("longRange") != df.get("range") else (
+            # how each number adds up (Show the Math, Brett Nov 12: the roll card and Table rolls say each part)
+            why = ("Finesse" if "Finesse" in props else "Martial Arts") if mod == dex_mod != str_mod and not ranged else ""
+            ability = f"{'Dexterity' if ranged or why else 'Strength'} modifier" + (f" ({why})" if why else "")
+            hit_parts = [[ability, mod]] + ([["Proficiency Bonus", self.pb]] if self.weapon_proficient(df) else [])
+            magic_part = [[f"{df.get('name')} (magic)", magic]] if magic else []
+            hit_parts += magic_part
+            die_from = f"Martial Arts die (Monk {self.monk_level()})" if dice != (_d(df, "damage", "diceString") or "") else df.get("name") or ""
+            rng =f"{df.get('range')} ({df.get('longRange')}) ft" if df.get("longRange") and df.get("longRange") != df.get("range") else (
                 "5 ft" if not ranged else f"{df.get('range')} ft")
             out.append({
                 "key": f"attack:{i.get('id')}",
@@ -1068,12 +1087,19 @@ class _Sheet:
                 "properties": sorted(props),
                 "base": df.get("type") or "",
                 "martial_arts": monk_weapon,
+                "hit_parts": hit_parts,
+                "damage_parts": ([[die_from, dice]] if dice else []) + [hit_parts[0]] + magic_part,
             })
-        natural = sum(int(m.get("value") or 0) for m in self.mods_of("bonus", "natural-attacks"))
+        naturals = [[self.source_name(m), int(m.get("value") or 0)] for m in self.mods_of("bonus", "natural-attacks") if m.get("value")]
+        natural = sum(v for _, v in naturals)
         mod = max(str_mod, dex_mod) if die else str_mod
         base = f"1d{die}{'+' if mod + natural >= 0 else '−'}{abs(mod + natural)}" if die else str(max(0, 1 + mod + natural))
+        ability = ["Dexterity modifier (Martial Arts)" if die and dex_mod > str_mod else "Strength modifier", mod]
         out.append({"key": "attack:unarmed", "name": "Unarmed Strike", "to_hit": _signed(mod + self.pb + natural),
-                    "damage": f"{base} bludgeoning", "range": "5 ft", "properties": [], "martial_arts": bool(die)})
+                    "damage": f"{base} bludgeoning", "range": "5 ft", "properties": [], "martial_arts": bool(die),
+                    "hit_parts": [ability, ["Proficiency Bonus", self.pb]] + naturals,
+                    "damage_parts": ([[f"Martial Arts die (Monk {self.monk_level()})", f"1d{die}"]] if die else [["Unarmed Strike", 1]])
+                    + [ability] + naturals})
         return out
 
     # situational ------------------------------------------------------
@@ -1332,7 +1358,8 @@ def parse_character(data: dict) -> dict:
             "level": sh.level,
             "proficiency_bonus": sh.pb,
             "abilities": [
-                {"key": key, "name": name, "short": short, "score": sh.scores[key], "modifier": sh.mods[key], "label": _signed(sh.mods[key])}
+                {"key": key, "name": name, "short": short, "score": sh.scores[key], "modifier": sh.mods[key], "label": _signed(sh.mods[key]),
+                 **sh.ability_check(key, name)}
                 for _, key, name, short in ABILITIES
             ],
             "hit_points": sh.hit_points(),

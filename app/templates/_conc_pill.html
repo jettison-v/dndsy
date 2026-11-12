@@ -20,7 +20,7 @@
           <dt>Bonus</dt><dd>Con {{ con_save.label }}</dd>
           {% if con_save.adv %}<dt>Advantage</dt><dd>{% for a in con_save.adv %}{{ a.source or a.text }}{{ ", " if not loop.last }}{% endfor %}</dd>{% endif %}
         </dl>
-        <button type="button" class="btn primary conc-roll" data-conc-roll {{ roll_attrs("save", "Con save (Concentration on " ~ cn.spell ~ ")", con_save.label, "", con_save.adv, note="DC 10") }}>Roll Con save{% if con_save.adv %} · Adv{% endif %}</button>
+        <button type="button" class="btn primary conc-roll" data-conc-roll {{ roll_attrs("save", "Con save (Concentration on " ~ cn.spell ~ ")", con_save.label, "", con_save.adv, note="DC 10", parts=con_save.parts) }}>Roll Con save{% if con_save.adv %} · Adv{% endif %}</button>
       </div>
     </details>
     {% endif %}

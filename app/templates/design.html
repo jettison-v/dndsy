@@ -3,6 +3,7 @@
 {% from "_lists.html" import search_box, chip_group, view_switch %}
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
+{% from "_math.html" import math_num %}
 {% block title %}Design system · Manage · askdnd{% endblock %}
 {# The living component page (roadmap step 9): every token and component with the app's own classes and
    macros, so it changes when they do. Made-up content only. DESIGN.md explains when to use each. #}
@@ -186,6 +187,16 @@
     <div class="ds-row">{{ pips({"max": 4, "left": 3}) }} {{ pips({"max": 2, "left": 0}) }} {{ pips({"max": 10, "left": 3}) }}</div>
     {{ ds("What it uses up", "_char.html spends()", "On an option: the resource and how many are left.") }}
     <div class="ds-row">{{ spends([{"label": "1 Focus Point", "uses": {"max": 2, "left": 2}}, {"label": "1st-level", "of": "Spell slots", "uses": {"max": 4, "left": 0}}]) }}</div>
+  </section>
+
+  <section class="section" id="math">
+    <h2>Show the math</h2>
+    {{ ds("A number that adds up", "_math.html math_num(), app.js mathNum()", "Dots under a number that askdnd worked out (a roll's total, a to-hit, a DC): pointing at it or tapping it opens its parts, each with where it came from (app/roll_math.py's rows). Its text stays the number alone.") }}
+    <div class="ds-row">{{ math_num(23, {"rows": [{"n": 17, "what": "the d20", "src": ""}, {"n": 2, "what": "Dexterity modifier", "src": "sheet"}, {"n": 3, "what": "Proficiency Bonus", "src": "sheet"}, {"n": 1, "what": "A magic item", "src": "sheet"}], "total": 23}, "To hit") }} <span class="note">point at it</span></div>
+    {{ ds("Where a part comes from", ".src.s-sheet / s-rules / s-dm / s-form / s-added", "The D&D Beyond sheet, askdnd's checked 2024 rules, the DM's correction, a Wild Shape form, or something added on the roll card.") }}
+    <div class="ds-row"><span class="src s-sheet">Sheet</span> <span class="src s-rules">2024 rules</span> <span class="src s-dm">Your DM</span> <span class="src s-form">The form</span> <span class="src">D&amp;D Beyond's data</span> <span class="src s-added">Added</span></div>
+    {{ ds("Why a number changed", ".math-why", "One short line under a number Wild Shape changed, or under a spell's dice cast above its level; the whole of it on hover.") }}
+    <div class="ds-row"><div class="nt"><span class="nt-lab"><small>Armor class</small></span><span class="nt-val"><b>17</b></span><span class="nt-foot"><span class="math-why">Circle Forms (form's 12)</span></span></div></div>
   </section>
 
   <section class="section" id="help">

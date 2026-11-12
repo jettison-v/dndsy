@@ -38,7 +38,7 @@
 {% macro saves_block(saves, adv_all=(), cls="") -%}
 <div class="saves-block {{ cls }}">
   <div class="saves-list">{% for sv in saves %}
-    <div class="save-row{{ ' prof' if sv.proficient }}" tabindex="0" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }} title="Roll a {{ sv.short }} save{{ ': ' ~ sv.from if sv.from }}">
+    <div class="save-row{{ ' prof' if sv.proficient }}" tabindex="0" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv, parts=sv.parts) }} title="Roll a {{ sv.short }} save{{ ': ' ~ sv.from if sv.from }}">
       <span class="pm{{ ' prof' if sv.proficient }}" aria-label="{{ 'proficient' if sv.proficient else 'not proficient' }}">{{ "●" if sv.proficient else "○" }}</span>
       <span class="save-name">{{ sv.short }}</span><b>{{ sv.label }}</b><span class="save-adv">{{ adv(sv.adv) }}</span>
     </div>{% endfor %}</div>
@@ -198,8 +198,8 @@
 {# Dice rolls (app.js "Rolls"): anything with data-roll rolls when clicked. data-mod is the bonus ("+7"),
    data-dmg the damage dice, data-adv="1" when Advantage always applies. Your own
    character's rolls go to the server as Table rolls (app/table_rolls.py); someone else's stay in this browser. #}
-{% macro roll_attrs(kind, label, mod="", dmg="", advs=(), note="", rolls=none, plan=none, save="") -%}
-{{ roll_data(kind, label, mod, dmg, advs, note, rolls, plan, 0, save) | data_attrs }}
+{% macro roll_attrs(kind, label, mod="", dmg="", advs=(), note="", rolls=none, plan=none, save="", parts=none) -%}
+{{ roll_data(kind, label, mod, dmg, advs, note, rolls, plan, 0, save, parts=parts) | data_attrs }}
 {%- endmacro %}
 
 {# An option's to-hit number as a roll button (attacks), or a small Roll button for damage or healing
@@ -240,14 +240,16 @@
 {%- set fcls = "in-form" if f else "" -%}
 <div class="strip compact">
   {{ hp_tile(s, c, change=change_hp) }}
-  {{ ntile(s, fa if f else tile(c, "ac"), '<span class="ph-full">Armor class</span><span class="ph-short">AC</span>' | safe, ("<b>%s</b>" | format(f.ac if f else s.armor_class)) | safe, cls=fcls) }}
+  {%- set ac_foot %}{% if f %}<span class="math-why ph-hide" title="{{ f.ac_says }}">{{ f.ac_why }}</span>{% endif %}{% endset %}
+  {{ ntile(s, fa if f else tile(c, "ac"), '<span class="ph-full">Armor class</span><span class="ph-short">AC</span>' | safe, ("<b>%s</b>" | format(f.ac if f else s.armor_class)) | safe, foot=ac_foot, cls=fcls) }}
   {%- set sp = f.speed_dict if f else s.speed %}
   {%- set extra = sp.items() | rejectattr(0, "in", ["walk", "parts", "notes"]) | list %}
   {%- set sp_foot %}{% if extra %}<span class="note ph-hide">{{ extra | map("join", " ") | join(", ") }}</span>{% endif %}{% endset %}
   {{ ntile(s, fa if f else tile(c, "speed"), "Speed", ("<b>%s ft</b>" | format(sp.walk or 0)) | safe, foot=sp_foot, cls=fcls) }}
-  {%- set ini, ini_adv = (f.initiative, f.initiative_adv) if f else (s.initiative, s.initiative_adv) %}
-  {%- set init %}<button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", ini, "", ini_adv, note=init_note) }} title="Roll Initiative">{{ ini }}</button>{% endset %}
-  {{ ntile(s, fa if f else tile(c, "initiative"), '<span class="ph-full">Initiative</span><span class="ph-short">Init.</span>' | safe, init, foot=adv(ini_adv), cls=fcls) }}
+  {%- set ini, ini_adv, ini_parts = (f.initiative, f.initiative_adv, f.initiative_parts) if f else (s.initiative, s.initiative_adv, s.initiative_parts) %}
+  {%- set init %}<button type="button" class="roll-hit tile-hit" {{ roll_attrs("check", "Initiative", ini, "", ini_adv, note=init_note, parts=ini_parts) }} title="Roll Initiative">{{ ini }}</button>{% endset %}
+  {%- set ini_foot %}{{ adv(ini_adv) }}{% if f %}<span class="math-why ph-hide" title="{{ f.initiative_says }}">{{ f.initiative_why }}</span>{% endif %}{% endset %}
+  {{ ntile(s, fa if f else tile(c, "initiative"), '<span class="ph-full">Initiative</span><span class="ph-short">Init.</span>' | safe, init, foot=ini_foot, cls=fcls) }}
   {% for sc in s.spellcasting[:1] %}{{ ntile(s, tile(c, "spell"), '<span class="tile-full">Spell DC / attack</span><span class="tile-short"><span class="ph-full">Spell DC</span><span class="ph-short">Spell</span></span>' | safe, ("<b>%s</b><span class=\"note ph-hide\"> / %s</span>" | format(sc.save_dc, sc.attack)) | safe) }}{% endfor %}
 </div>
 {%- endmacro %}
@@ -263,7 +265,7 @@
    proficient, Adv when something gives Advantage. Advantage on every save is said once after the row. #}
 {% macro save_tiles(saves, adv_all=()) -%}
 <div class="save-tiles" role="list" aria-label="Saving throws">{% for sv in saves %}
-  <div class="st{{ ' prof' if sv.proficient }}" role="listitem" tabindex="0" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }} title="Roll a {{ sv.short }} save{{ ': ' ~ sv.from if sv.from }}"><small>{{ sv.short }}</small><b>{{ sv.label }}</b>{{ adv(sv.adv) }}</div>{% endfor %}
+  <div class="st{{ ' prof' if sv.proficient }}" role="listitem" tabindex="0" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv, parts=sv.parts) }} title="Roll a {{ sv.short }} save{{ ': ' ~ sv.from if sv.from }}"><small>{{ sv.short }}</small><b>{{ sv.label }}</b>{{ adv(sv.adv) }}</div>{% endfor %}
 </div>
 {% if adv_all %}<p class="note save-all">{{ adv(adv_all) }} on every save {% for a in adv_all %}{{ a.when }} ({{ a.source }}){{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
 {%- endmacro %}

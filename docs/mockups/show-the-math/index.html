@@ -1,0 +1,388 @@
+<title>Show the Math</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Show the math (Brett, Nov 12: "a player is going to want confidence… let them audit without cluttering the UI"). Five
+   options to pick from, each drawn where it would live in askdnd, with Cole's real numbers. Dark only, in askdnd's own
+   tokens (as every askdnd mockup). Laptop first: a board per option, its picture on the left and what it means on the
+   right; one column on a phone. Every number shown can be hovered, focused or tapped, as it would be in askdnd. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 38px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 78ch; font-size: 1.04rem; }
+.meta { color: var(--muted); font-size: .92rem; max-width: 86ch; }
+header.top { display: grid; gap: 14px; }
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.where b { display: block; margin-bottom: 2px; }
+/* where a number comes from: the same four marks everywhere */
+.src { display: inline-flex; align-items: center; gap: 5px; font: 600 .74rem/1 var(--sans); padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.src::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.s-sheet { color: var(--blue); background: var(--blue-soft); }
+.s-rules { color: var(--green); background: var(--green-soft); }
+.s-dm { color: var(--amber); background: var(--amber-soft); }
+.s-askdnd { color: var(--muted); background: var(--surface-2); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: .86rem; color: var(--muted); }
+/* a board per option */
+.board { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.board .say { display: grid; gap: 12px; min-width: 0; }
+.board .say .meta { font-size: .9rem; }
+.cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); }
+.cost span { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px 10px; }
+.stage { display: grid; gap: 12px; min-width: 0; }
+.stage > .cap { color: var(--muted); font-size: .84rem; }
+/* the roll card, as it is today */
+.rcard { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; font-size: .9rem; max-width: 440px; }
+.rhead b { font-size: 1.1rem; display: block; }
+.rsub { color: var(--muted); }
+.rail { display: flex; gap: 14px; font-size: .85rem; color: var(--muted); flex-wrap: wrap; }
+.rail .now { color: var(--strong); font-weight: 600; }
+.rail span::before { content: "●"; margin-right: 5px; color: var(--muted); }
+.rail .done::before { color: var(--green); } .rail .now::before { color: var(--red); }
+.res { background: var(--surface-2); border-radius: 10px; padding: 9px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; }
+.res .big { font: 700 2rem/1 var(--sans); color: var(--strong); grid-row: span 2; font-variant-numeric: tabular-nums; }
+.res.dmg .big { color: var(--red); }
+.res.heal .big { color: var(--green); }
+.res small { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.res .how { color: var(--muted); }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { font: 600 .9rem/1 var(--sans); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; }
+.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+/* a number you can open: dotted underline, the breakdown beside it */
+.math { position: relative; display: inline-block; }
+.math > button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: help; text-decoration: underline dotted var(--muted); text-underline-offset: 5px; text-decoration-thickness: 2px; }
+.math > button:focus-visible, .btn:focus-visible, .switch:focus-visible, .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 4px; }
+.pop { position: absolute; left: 0; top: calc(100% + 8px); z-index: 5; width: 330px; max-width: calc(100vw - 48px); background: #2d3137; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; box-shadow: 0 12px 30px rgba(0,0,0,.45); display: grid; gap: 6px; font: 400 .85rem/1.4 var(--sans); color: var(--text); text-align: left; }
+.pop[hidden] { display: none; }
+.pop .row { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.pop .row .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 600; }
+.pop .sum { border-top: 1px solid var(--line); padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; color: var(--muted); }
+.pop .sum b { font-variant-numeric: tabular-nums; }
+.pop .note { color: var(--muted); font-size: .8rem; }
+.pop .note b { color: var(--text); }
+/* option C: the math under each number, always */
+.inline { display: grid; gap: 4px; font-size: .8rem; color: var(--muted); }
+.inline .chips { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.inline .chips i { font-style: normal; color: var(--text); }
+.setting { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; max-width: 440px; }
+.setting .t { display: grid; gap: 2px; min-width: 0; }
+.setting .t span { color: var(--muted); font-size: .84rem; }
+.switch { flex: none; width: 44px; height: 24px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); position: relative; cursor: pointer; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: transform .15s; }
+.switch[aria-checked="true"] { background: var(--green-soft); border-color: var(--green); }
+.switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--green); }
+/* Table rolls' entry, as today */
+.tr { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; max-width: 330px; font-size: .88rem; }
+.tr .who { display: flex; gap: 10px; align-items: center; }
+.tr .ava { width: 34px; height: 34px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #7a6a55, #3b3127); flex: none; }
+.tr .who b { display: block; font-size: 1rem; }
+.tr .who span { color: var(--muted); font-size: .8rem; }
+.beat { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; border-top: 1px solid var(--line-soft); padding-top: 8px; }
+.beat .k { color: var(--muted); }
+.beat .v { font: 700 1.5rem/1 var(--sans); color: var(--strong); font-variant-numeric: tabular-nums; }
+.beat .v.dmg { color: var(--red); }
+.beat .math .pop { left: auto; right: 0; }
+/* option D: Battle's top row in a form, and an upcast spell's card */
+.strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; max-width: 560px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; display: grid; gap: 3px; min-width: 0; }
+.tile.form { border-color: rgba(91, 191, 127, .55); }
+.tile small { color: var(--muted); font-size: .78rem; }
+.tile .v { font: 700 1.35rem/1.1 var(--sans); color: var(--strong); font-variant-numeric: tabular-nums; }
+.tile .why { font-size: .74rem; color: var(--green); line-height: 1.3; }
+.wsband { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; max-width: 560px; background: var(--green-soft); border: 1px solid rgba(91, 191, 127, .4); border-radius: 10px; padding: 8px 12px; font-size: .88rem; }
+.wsband b { color: var(--green); }
+/* option E: Check my numbers */
+.check { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.check .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.check .hd span { color: var(--muted); font-size: .86rem; }
+.tabs { display: flex; gap: 2px; padding: 0 12px; border-bottom: 1px solid var(--line); }
+.tab { font: 600 .86rem/1 var(--sans); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 10px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--strong); border-bottom-color: var(--red); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: .86rem; }
+th { text-align: left; font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--line); }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.st { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; white-space: nowrap; }
+.st.ok { color: var(--green); } .st.ex { color: var(--blue); } .st.dm { color: var(--amber); }
+td .why { color: var(--muted); font-size: .8rem; margin-top: 3px; }
+/* the end: a pick list */
+.pick { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.pick ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+@media (max-width: 900px) {
+  .board { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .where { grid-template-columns: minmax(0, 1fr); }
+  .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  h1 { font-size: 1.8rem; }
+  .pop { position: static; width: auto; max-width: none; margin-top: 8px; }
+  .beat .math .pop { position: static; }
+}
+@media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lbl">Rolls · trusting the numbers</div>
+    <h1>Show the math</h1>
+    <p class="lead">A new player wants to know askdnd added things up the way they would. Every number on a roll button already comes with where it's from; these options show that, and the parts that make the number, without putting more on the page by default. Five options; pick any mix. Every example is Cole's sheet as it is today.</p>
+    <div class="where">
+      <div><b>Where it lives</b>The roll card (opened from Battle, Sheet, the Spell Book, Search and Table rolls' Roll), each entry in Table rolls, Battle's top row in a Wild Shape form, and one new page per character.</div>
+      <div><b>Who sees it</b>Whoever sees the number: the player for their own rolls, everyone at the table for a roll the table sees, the DM for all of them.</div>
+      <div><b>What's new underneath</b>askdnd knows where each number comes from, but not yet its parts (Dexterity +2, Proficiency +3). Working out the parts, and checking they add up to D&amp;D Beyond's number, is the main build for every option.</div>
+    </div>
+    <div class="legend"><span>Where a part comes from, the same mark everywhere:</span>
+      <span class="src s-sheet">D&amp;D Beyond sheet</span><span class="src s-rules">2024 rules</span><span class="src s-dm">Your DM</span><span class="src s-askdnd">askdnd's reading</span></div>
+  </header>
+
+  <!-- A -->
+  <section class="board" aria-labelledby="a-h">
+    <div class="stage">
+      <div class="rcard" aria-label="Cole's Unarmed Strike on the roll card">
+        <div class="rhead"><b>Unarmed Strike</b><span class="rsub">Cole · Bonus Action · 5 ft</span></div>
+        <div class="rail"><span class="done">Choose</span><span class="done">To hit</span><span class="now">Damage</span></div>
+        <div class="res"><span class="big"><span class="math"><button type="button" aria-expanded="false" aria-controls="a1">23</button>
+          <span class="pop" id="a1" role="tooltip" hidden>
+            <span class="row"><span class="n">17</span><span>the d20</span><span></span></span>
+            <span class="row"><span class="n">+2</span><span>Dexterity (Martial Arts)</span><span class="src s-sheet">Sheet</span></span>
+            <span class="row"><span class="n">+3</span><span>Proficiency</span><span class="src s-sheet">Sheet</span></span>
+            <span class="row"><span class="n">+1</span><span>Insignia of Claws</span><span class="src s-rules">2024 rules</span></span>
+            <span class="sum"><span>To hit</span><b>23</b></span>
+            <span class="note">D&amp;D Beyond's own Unarmed Strike line says <b>+5</b>: it leaves out the Insignia of Claws, which adds +1 to an Unarmed Strike's attack and damage.</span>
+          </span></span></span>
+          <small>To hit</small><span class="how">d20 17 +6</span></div>
+        <div class="res dmg"><span class="big"><span class="math"><button type="button" aria-expanded="false" aria-controls="a2">7</button>
+          <span class="pop" id="a2" role="tooltip" hidden>
+            <span class="row"><span class="n">4</span><span>1d6, the Martial Arts die at Monk 2</span><span class="src s-rules">2024 rules</span></span>
+            <span class="row"><span class="n">+2</span><span>Dexterity</span><span class="src s-sheet">Sheet</span></span>
+            <span class="row"><span class="n">+1</span><span>Insignia of Claws</span><span class="src s-rules">2024 rules</span></span>
+            <span class="sum"><span>Bludgeoning</span><b>7</b></span>
+          </span></span></span>
+          <small>Damage</small><span class="how">1d6 4 +3 bludgeoning</span></div>
+        <div class="btns"><button type="button" class="btn primary">Apply to…</button><button type="button" class="btn">Done</button></div>
+      </div>
+      <p class="cap">Point at 23 or 7 (tap on a phone).</p>
+    </div>
+    <div class="say">
+      <div class="lbl">Option A</div>
+      <h2>The math behind each number on the roll card</h2>
+      <p>Each total the card shows is underlined with dots. Pointing at it (or tapping it) opens its parts, each with where it came from, and a line when askdnd's number differs from D&amp;D Beyond's own.</p>
+      <ul class="meta">
+        <li>Nothing new on the card until you ask, so it never adds clutter.</li>
+        <li>Covers every roll at once: the card draws every number the same way.</li>
+        <li>The Insignia of Claws line is real. Cole's sheet on D&amp;D Beyond says +5 for his Unarmed Strike, and askdnd rolls +6. Without this, a sharp-eyed player sees +6 and thinks askdnd is wrong.</li>
+      </ul>
+      <div class="cost"><span>Build: M (the parts, for every kind of number)</span><span>Clutter: none</span></div>
+    </div>
+  </section>
+
+  <!-- B -->
+  <section class="board" aria-labelledby="b-h">
+    <div class="stage">
+      <div class="tr" aria-label="Cole's attack in Table rolls">
+        <div class="who"><span class="ava" aria-hidden="true"></span><div><b>Cole</b><span>Unarmed Strike · 1 min</span></div></div>
+        <div class="beat"><span class="k">To hit · d20 17 +6</span><span class="v"><span class="math"><button type="button" aria-expanded="false" aria-controls="b1">23</button>
+          <span class="pop" id="b1" role="tooltip" hidden>
+            <span class="row"><span class="n">17</span><span>the d20</span><span></span></span>
+            <span class="row"><span class="n">+2</span><span>Dexterity (Martial Arts)</span><span class="src s-sheet">Sheet</span></span>
+            <span class="row"><span class="n">+3</span><span>Proficiency</span><span class="src s-sheet">Sheet</span></span>
+            <span class="row"><span class="n">+1</span><span>Insignia of Claws</span><span class="src s-rules">2024 rules</span></span>
+            <span class="sum"><span>To hit</span><b>23</b></span>
+            <span class="note">As it was when Cole rolled it. A sheet that changes later doesn't change this.</span>
+          </span></span></span></div>
+        <div class="beat"><span class="k">Damage · 1d6 4 +3</span><span class="v dmg"><span class="math"><button type="button" aria-expanded="false" aria-controls="b2">7</button>
+          <span class="pop" id="b2" role="tooltip" hidden>
+            <span class="row"><span class="n">4</span><span>1d6, Martial Arts at Monk 2</span><span class="src s-rules">2024 rules</span></span>
+            <span class="row"><span class="n">+2</span><span>Dexterity</span><span class="src s-sheet">Sheet</span></span>
+            <span class="row"><span class="n">+1</span><span>Insignia of Claws</span><span class="src s-rules">2024 rules</span></span>
+            <span class="sum"><span>Bludgeoning</span><b>7</b></span>
+          </span></span></span></div>
+      </div>
+      <p class="cap">Point at 23 or 7.</p>
+    </div>
+    <div class="say">
+      <div class="lbl">Option B</div>
+      <h2>The same parts on every Table rolls entry</h2>
+      <p>Each roll already keeps what its card knew (its level, Advantage's reasons, riders). It would also keep its parts, so pointing at a total in Table rolls shows them, for anyone who sees the roll, the DM included.</p>
+      <ul class="meta">
+        <li>Lets the DM check a player's roll after the fact without asking out loud.</li>
+        <li>Kept as rolled: a level-up or a new item later doesn't rewrite old rolls.</li>
+        <li>Rides on A: the same parts, saved with the roll.</li>
+      </ul>
+      <div class="cost"><span>Build: S once A is built</span><span>Clutter: none</span></div>
+    </div>
+  </section>
+
+  <!-- C -->
+  <section class="board" aria-labelledby="c-h">
+    <div class="stage">
+      <div class="setting"><div class="t"><b>Show the math</b><span>The parts under every number on the roll card. In Your dice.</span></div>
+        <button type="button" class="switch" role="switch" aria-checked="true" aria-label="Show the math" id="c-switch"></button></div>
+      <div class="rcard" aria-label="The roll card with Show the math on">
+        <div class="rhead"><b>Unarmed Strike</b><span class="rsub">Cole · Bonus Action · 5 ft</span></div>
+        <div class="rail"><span class="done">Choose</span><span class="done">To hit</span><span class="now">Damage</span></div>
+        <div class="res"><span class="big">23</span><small>To hit</small><span class="how">d20 17 +6</span></div>
+        <div class="inline" data-c><div class="chips"><i>+2</i><span class="src s-sheet">Dexterity</span><i>+3</i><span class="src s-sheet">Proficiency</span><i>+1</i><span class="src s-rules">Insignia of Claws</span></div></div>
+        <div class="res dmg"><span class="big">7</span><small>Damage</small><span class="how">1d6 4 +3 bludgeoning</span></div>
+        <div class="inline" data-c><div class="chips"><i>1d6</i><span class="src s-rules">Martial Arts, Monk 2</span><i>+2</i><span class="src s-sheet">Dexterity</span><i>+1</i><span class="src s-rules">Insignia of Claws</span></div></div>
+      </div>
+      <p class="cap">Switch it off to see the card as it is today.</p>
+    </div>
+    <div class="say">
+      <div class="lbl">Option C</div>
+      <h2>A "Show the math" setting</h2>
+      <p>One switch in Your dice, each person's own. On, the card shows the parts under each number all the time, so nothing needs pointing at. Off, the card is as it is today (and A still works).</p>
+      <ul class="meta">
+        <li>Could start <b>on</b> for someone new to askdnd and say once, on their first roll, that it can be switched off. Players who already trust it never see it.</li>
+        <li>Makes the card taller by a line per number; the card already reserves its room as it opens, so it still never moves.</li>
+      </ul>
+      <div class="cost"><span>Build: S once A is built</span><span>Clutter: only for whoever turns it on</span></div>
+    </div>
+  </section>
+
+  <!-- D -->
+  <section class="board" aria-labelledby="d-h">
+    <div class="stage">
+      <div class="wsband"><b>Brown Bear</b><span>Wild Shape · Cole's Hit Points 51 of 51 under the form's 18 Temporary</span></div>
+      <div class="strip" aria-label="Battle's top row in a form">
+        <div class="tile form"><small>Armor Class</small><span class="v">17</span><span class="why">13 + Wis 4, Circle Forms (the bear's own is 11)</span></div>
+        <div class="tile form"><small>Temporary HP</small><span class="v">18</span><span class="why">3 × Druid level 6</span></div>
+        <div class="tile form"><small>Speed</small><span class="v">40 ft</span><span class="why">the bear's · climb 30</span></div>
+        <div class="tile form"><small>Bite</small><span class="v">+5</span><span class="why">the bear's · 1d8+3</span></div>
+      </div>
+      <div class="rcard" aria-label="Moonbeam cast at level 3">
+        <div class="rhead"><b>Moonbeam · level 3</b><span class="rsub">Cole · Con save DC 15 · half on a success</span></div>
+        <div class="res dmg"><span class="big">16</span><small>Damage</small><span class="how">3d10 radiant: 2d10 at level 2, +1d10 for the level-3 slot</span></div>
+      </div>
+      <div class="rcard" aria-label="Cure Wounds cast at level 3">
+        <div class="rhead"><b>Cure Wounds · level 3</b><span class="rsub">Cole · Touch</span></div>
+        <div class="res heal"><span class="big">31</span><small>Healing</small><span class="how">6d8 +4: 2d8 at level 1, +2d8 for each level above · Wis +4</span></div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Option D</div>
+      <h2>Wild Shape and upcasting said where they change a number</h2>
+      <p>The two places a player most expects askdnd to slip get a short line in plain sight, with no pointing: under each number a form changes on Battle's top row, and in a spell's card when it's cast above its level.</p>
+      <ul class="meta">
+        <li>Answers the question before it's asked: why 17 when a Brown Bear is AC 11, and why 3d10.</li>
+        <li>The form's lines are already worked out by askdnd (Circle Forms, 3 × Druid level); this only says them.</li>
+        <li>Short enough to sit under a tile; A's breakdown still opens for the rest.</li>
+      </ul>
+      <div class="cost"><span>Build: S</span><span>Clutter: a line where a number changed</span></div>
+    </div>
+  </section>
+
+  <!-- E -->
+  <section class="board" aria-labelledby="e-h">
+    <div class="stage">
+      <div class="check">
+        <div class="hd"><h3>Check Cole's numbers</h3><span>askdnd's numbers beside D&amp;D Beyond's · read 2 minutes ago</span></div>
+        <div class="tabs" role="tablist" aria-label="Kinds of roll">
+          <button type="button" class="tab" role="tab" aria-selected="true">Attacks</button>
+          <button type="button" class="tab" role="tab" aria-selected="false">Spells</button>
+          <button type="button" class="tab" role="tab" aria-selected="false">Wild Shape</button>
+          <button type="button" class="tab" role="tab" aria-selected="false">Checks and saves</button>
+        </div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>Roll</th><th>askdnd</th><th>D&amp;D Beyond</th><th>Where askdnd's comes from</th><th>Agrees?</th></tr></thead>
+            <tbody>
+              <tr><td><b>Unarmed Strike</b></td><td class="num">+6 · 1d6+3</td><td class="num">+5 · 3</td>
+                <td><span class="src s-sheet">Dex, Proficiency</span> <span class="src s-rules">Insignia of Claws</span></td>
+                <td><span class="st ex">Explained</span><div class="why">D&amp;D Beyond's line leaves out the Insignia's +1 and the Martial Arts die</div></td></tr>
+              <tr><td><b>Heat Metal</b></td><td class="num">DC 15 · 2d8</td><td class="num">DC 15 · 2d8</td>
+                <td><span class="src s-sheet">Spell save DC</span> <span class="src s-rules">2024 PHB</span></td>
+                <td><span class="st ok">Matches</span></td></tr>
+              <tr><td><b>Moonbeam</b></td><td class="num">DC 15 · 2d10</td><td class="num">DC 15 · 2d10</td>
+                <td><span class="src s-sheet">Spell save DC</span> <span class="src s-rules">2024 PHB</span></td>
+                <td><span class="st ok">Matches</span></td></tr>
+              <tr><td><b>Cure Wounds</b></td><td class="num">2d8+4</td><td class="num">2d8+4</td>
+                <td><span class="src s-rules">2024 PHB</span> <span class="src s-sheet">Wis</span></td>
+                <td><span class="st ok">Matches</span></td></tr>
+              <tr><td><b>Ring of Invisibility</b></td><td class="num">no roll</td><td class="num">no roll</td>
+                <td><span class="src s-askdnd">its words</span></td>
+                <td><span class="st ok">Matches</span></td></tr>
+              <tr><td><b>Example: a homebrew dagger</b></td><td class="num">+7 · 1d4+5</td><td class="num">+7 · 1d4+3</td>
+                <td><span class="src s-dm">DM's correction</span></td>
+                <td><span class="st dm">Your DM's ruling</span><div class="why">+2 damage set in Manage › House rules</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="cap">The last row is made up, to show a DM's correction.</p>
+    </div>
+    <div class="say">
+      <div class="lbl">Option E</div>
+      <h2>A "Check my numbers" page per character</h2>
+      <p>Every attack, spell, Wild Shape form, check and save on one page: askdnd's number, D&amp;D Beyond's, where askdnd's comes from, and whether they agree. A difference always says why, or that it's the DM's ruling.</p>
+      <ul class="meta">
+        <li>For a player's first session, or the DM checking a new character: one look instead of rolling everything.</li>
+        <li>It's the coverage report askdnd already makes for its own tests, written for people.</li>
+        <li>Opened from the character's ⓘ line and from Help; also a natural place for "Report a wrong number", which sends a feedback note.</li>
+      </ul>
+      <div class="cost"><span>Build: M</span><span>Clutter: none, a page of its own</span></div>
+    </div>
+  </section>
+
+  <section class="pick" aria-labelledby="pick-h">
+    <div class="lbl">To pick</div>
+    <h2 id="pick-h">Which ones?</h2>
+    <p class="meta">They work together; none needs another except B and C, which reuse A's parts. My recommendation, in the order I'd build them:</p>
+    <ol>
+      <li><b>A and D together:</b> every number can be checked where it's rolled, and the two places most likely to surprise someone explain themselves without asking.</li>
+      <li><b>B:</b> small once A exists, and it gives the DM the same view after the fact.</li>
+      <li><b>E:</b> the best answer for a new player's first session, and it doubles as the books coverage report's page for people.</li>
+      <li><b>C:</b> only if new players don't find A on their own; start it on for new players if so.</li>
+    </ol>
+    <p class="meta">Reply with the letters you want (for example "A, B, D"), or comment on any board.</p>
+  </section>
+</div>
+
+<script>
+  // A number's breakdown: opens on hover or focus, and on a tap; Escape or a tap elsewhere closes it
+  const maths = [...document.querySelectorAll('.math')];
+  const show = (m, on) => { const b = m.querySelector('button'), p = m.querySelector('.pop'); p.hidden = !on; b.setAttribute('aria-expanded', on); };
+  for (const m of maths) {
+    const b = m.querySelector('button');
+    m.addEventListener('mouseenter', () => show(m, true));
+    m.addEventListener('mouseleave', () => { if (document.activeElement !== b) show(m, false); });
+    b.addEventListener('focus', () => show(m, true));
+    b.addEventListener('blur', () => show(m, false));
+    b.addEventListener('click', e => { e.stopPropagation(); show(m, m.querySelector('.pop').hidden); });
+  }
+  document.addEventListener('click', () => maths.forEach(m => show(m, false)));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') maths.forEach(m => show(m, false)); });
+  // C: the switch shows or hides the parts under each number
+  const sw = document.getElementById('c-switch');
+  sw.addEventListener('click', () => {
+    const on = sw.getAttribute('aria-checked') !== 'true';
+    sw.setAttribute('aria-checked', on);
+    document.querySelectorAll('[data-c]').forEach(x => { x.hidden = !on; });
+  });
+  // E: the tabs only show which is picked (the mockup draws Attacks)
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () =>
+    document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t))));
+</script>

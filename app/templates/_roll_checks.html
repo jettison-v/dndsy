@@ -21,15 +21,15 @@
     <div class="rb-abilities">
       {% for a in s.abilities %}{% set sv = s.saves | selectattr("short", "equalto", a.short) | first %}
       <div class="rb-ability rc-group">
-        <button type="button" class="rc rb-head" data-find="{{ (a.name ~ ' check ' ~ a.short) | lower }}" {{ roll_attrs("check", a.name ~ " check", a.label) }}><span>{{ a.name }}</span> <b>{{ a.label }}</b></button>
-        {% if sv %}<button type="button" class="rc rb-save{{ ' prof' if sv.proficient }}" data-find="{{ (sv.short ~ ' save ' ~ a.name ~ ' saving throw') | lower }}" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv) }}><span>{{ sv.short }} save{% if sv.adv %} <i class="rb-adv" title="{{ sv.adv | map(attribute='text') | select | join('; ') }}">Adv</i>{% endif %}</span> <b>{{ sv.label }}</b></button>{% endif %}
-        {% for sk in s.skills if sk.ability == a.short %}<button type="button" class="rc{{ ' prof' if sk.proficiency }}" data-find="{{ (sk.name ~ ' ' ~ a.short) | lower }}" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv) }}><span>{{ sk.name }}</span> <b>{{ sk.label }}</b></button>{% endfor %}
+        <button type="button" class="rc rb-head" data-find="{{ (a.name ~ ' check ' ~ a.short) | lower }}" {{ roll_attrs("check", a.name ~ " check", a.check_label or a.label, parts=a.check_parts or [(a.name ~ " modifier", a.label)]) }}><span>{{ a.name }}</span> <b>{{ a.check_label or a.label }}</b></button>
+        {% if sv %}<button type="button" class="rc rb-save{{ ' prof' if sv.proficient }}" data-find="{{ (sv.short ~ ' save ' ~ a.name ~ ' saving throw') | lower }}" {{ roll_attrs("save", sv.short ~ " save", sv.label, "", sv.adv, parts=sv.parts) }}><span>{{ sv.short }} save{% if sv.adv %} <i class="rb-adv" title="{{ sv.adv | map(attribute='text') | select | join('; ') }}">Adv</i>{% endif %}</span> <b>{{ sv.label }}</b></button>{% endif %}
+        {% for sk in s.skills if sk.ability == a.short %}<button type="button" class="rc{{ ' prof' if sk.proficiency }}" data-find="{{ (sk.name ~ ' ' ~ a.short) | lower }}" {{ roll_attrs("check", sk.name ~ " check", sk.label, "", sk.adv, parts=sk.parts) }}><span>{{ sk.name }}</span> <b>{{ sk.label }}</b></button>{% endfor %}
       </div>
       {% endfor %}
     </div>
     <div class="rb-side">
       <div class="rb-box rc-group"><span class="rb-label">Other</span>
-        <button type="button" class="rc" data-find="initiative" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv) }}><span>Initiative</span> <b>{{ s.initiative }}</b></button>
+        <button type="button" class="rc" data-find="initiative" {{ roll_attrs("check", "Initiative", s.initiative, "", s.initiative_adv, parts=s.initiative_parts) }}><span>Initiative</span> <b>{{ s.initiative }}</b></button>
         <button type="button" class="rc" data-find="death save" data-plan="{{ roll_plan('death', 'Death save') }}" data-roll="death" data-label="Death save" title="10 or higher succeeds; a 20 brings you back with 1 Hit Point; a 1 counts as two failures"><span>Death save</span> <b>d20</b></button>
         {% for d in ctx.hit_dice %}<button type="button" class="rc" data-find="hit die hit point die rest" {% set hd = "1" ~ d ~ ("%+d" % ctx.con if ctx.con else "") %}data-plan="{{ roll_plan('heal', 'Hit Point Die', '', hd, again='Roll another', self_only=True) }}" data-roll="heal" data-label="Hit Point Die" data-dmg="{{ hd }}" title="Roll one Hit Point Die plus your Constitution modifier; it spends nothing. To spend them on a Short Rest, use Rest on Battle"><span>Hit Point Die</span> <b>{{ d }}{{ "%+d" % ctx.con if ctx.con }}</b></button>{% endfor %}
       </div>

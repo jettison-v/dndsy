@@ -170,7 +170,8 @@ def card(sheet: dict, c: dict, master: str = "") -> dict:
     saves = [{"key": k, "short": short, "label": _signed(_mod(scores.get(k, 10)) + (2 + might if k in (b.get("block_saves") or []) else 0)),
               "proficient": k in (b.get("block_saves") or [])} for k, _, short in ws.ABILITIES]
     skills = [{"name": n, "label": _signed(v + might)} for n, v in (b.get("block_skills") or {}).items()]
-    d = {"attack_bonus": might, "damage_bonus": might}
+    d = {"attack_bonus": might, "damage_bonus": might, "block": ("Its stat block", "block"),
+         "attack_parts": [(f"{MIGHT} (your Proficiency Bonus − 2)", might, "rules")] if might else []}
     cols = {"Action": [], "Bonus action": [], "Reaction": []}
     for cost, key in (("Action", "actions"), ("Bonus action", "bonus_actions"), ("Reaction", "reactions")):
         cols[cost] = [_option(c, e, cost, d) for e in b.get(key) or []]

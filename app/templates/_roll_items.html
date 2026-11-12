@@ -16,6 +16,7 @@
 {%- else -%}{{ p.formula }}: {{ p.dice | join(" ") }}{% if p.modifier %} {{ "+" if p.modifier > 0 else "−" }}{{ p.modifier | abs }}{% endif %}{%- endif -%}
 {%- for x in p.extras %} · {{ x.label }} {{ "+" if x.total >= 0 else "−" }}{{ x.total | abs }}{% if x.dice %} <span class="roll-x">({{ x.formula | replace("-", "−") }})</span>{% endif %}{% endfor -%}
 {%- endmacro %}
+{% from "_math.html" import math_num %}
 {% set D20 = ("save", "check", "attack", "death") %}
 {% for r in rolls %}
 <li class="roll-item hue{{ r.hue }}{{ ' mine' if r.mine }}{{ ' hidden-roll' if r.hidden }}{{ ' nat20' if r.nat == 20 }}{{ ' nat1' if r.nat == 1 }} kind-{{ r.kind }}" data-id="{{ r.id }}"{% if not r.hidden %} data-dice='{{ r.dice | tojson }}' data-throw='{{ {"kind": r.kind, "main": r.main, "dmg": r.damage, "bonus": r.bonus} | tojson }}'{% endif %} data-seq="{{ r.seq }}" data-person="{{ 'c' ~ r.character_id if r.character_id else 'w-' ~ r.name }}"{% if r.mine %} data-mine="1"{% endif %}>
@@ -28,7 +29,7 @@
     {% if r.kind == "attack" %}{# One card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with its total: to hit, its damage, what was applied #}
     {% set rays = r.main.parts | selectattr("kept", "defined") | list if r.main and r.main.parts else [] %}
     {% if r.rerolled %}<span class="roll-beat roll-old"><span><span class="roll-sub">To hit, rerolled ({{ r.rerolled.reason }})</span> {{ dline(r.rerolled, True) }}</span><s>{{ r.rerolled.total }}</s></span>{% endif %}
-    <span class="roll-beat roll-beat-hit"{% if (r.detail or {}).why %} title="{{ r.detail.why | join('; ') }}"{% endif %}><span><span class="roll-sub">To hit</span> <span class="roll-dice">{{ dline(r.main, True) }}</span></span><b class="roll-total">{% if rays | length > 1 %}{{ rays | map(attribute="total") | join(" · ") }}{% else %}{{ r.total }}{% endif %}</b></span>
+    <span class="roll-beat roll-beat-hit"{% if (r.detail or {}).why %} title="{{ r.detail.why | join('; ') }}"{% endif %}><span><span class="roll-sub">To hit</span> <span class="roll-dice">{{ dline(r.main, True) }}</span></span><b class="roll-total">{% if rays | length > 1 %}{{ rays | map(attribute="total") | join(" · ") }}{% else %}{{ math_num(r.total, (r.math or {}).hit, "To hit") }}{% endif %}</b></span>
     {% else %}
     <span class="roll-dice">{% if r.kind == "dc" %}{{ r.main.formula }}{% else %}{{ dline(r.main, r.kind in D20) }}{% endif %}</span>
     {% if r.rerolled %}<span class="roll-dice roll-old">Rerolled ({{ r.rerolled.reason }}): was <s>{{ r.rerolled.total }}</s> · {{ dline(r.rerolled, True) }}</span>{% endif %}
@@ -36,7 +37,7 @@
     {% if r.bonus %}<span class="roll-dice">+ {{ r.bonus.label }} {{ r.bonus.total }}{% if r.bonus.dice %} <span class="roll-x">({{ r.bonus.formula }})</span>{% endif %}</span>{% endif %}
     {% if r.nat and r.kind != "death" %}<span class="roll-flag">natural {{ r.nat }}{% if r.kind == "attack" %}{{ ": critical hit" if r.nat == 20 else ": miss" }}{% endif %}</span>{% endif %}
     {% if (r.detail or {}).outcome == "miss" and r.nat != 1 %}<span class="roll-flag">missed</span>{% endif %}
-    {% if r.damage %}<span class="roll-dmg-line"><span><span class="roll-sub">{{ "Critical damage" if r.damage.crit else "Damage" }}</span> {{ dline(r.damage, False) }}</span><b>{{ r.damage.total }}</b></span>{% endif %}
+    {% if r.damage %}<span class="roll-dmg-line"><span><span class="roll-sub">{{ "Critical damage" if r.damage.crit else "Damage" }}</span> {{ dline(r.damage, False) }}</span><b>{{ math_num(r.damage.total, (r.math or {}).dmg, "Damage") }}</b></span>{% endif %}
     {% if r.damage and r.damage.twice %}<span class="roll-dice roll-old">Rolled twice, the higher kept (the other: {{ r.damage.twice.dice | join(" ") }} → {{ r.damage.twice.total }})</span>{% endif %}
     {% for sv in r.saves or [] %}{% set said = sv.label.partition(": ") %}<span class="roll-beat roll-beat-save"><span><span class="roll-sub">{{ said[0] }}:</span> the target makes a {{ said[2] or "save" }}; the DM rolls it</span><b>DC {{ sv.dc }}</b></span>{% endfor %}
     {% if r.can.damage or r.can.reroll or r.can.bonus %}<span class="roll-acts">
@@ -56,7 +57,7 @@
     {% endif %}
   </span>
   {% if r.hidden %}<span class="roll-lock" role="img" aria-label="Hidden from the table"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg></span>
-  {% elif r.kind != "attack" %}{% set rays = r.main.parts | selectattr("kept", "defined") | list if r.main and r.main.parts else [] %}<b class="roll-total">{% if rays | length > 1 %}{{ rays | map(attribute="total") | join(" · ") }}{% else %}{{ r.total }}{% endif %}</b>{% endif %}
+  {% elif r.kind != "attack" %}{% set rays = r.main.parts | selectattr("kept", "defined") | list if r.main and r.main.parts else [] %}<b class="roll-total">{% if rays | length > 1 %}{{ rays | map(attribute="total") | join(" · ") }}{% else %}{{ math_num(r.total, (r.math or {}).hit or (r.math or {}).dmg, {"heal": "Healing", "temp": "Temporary Hit Points", "damage": "Damage"}.get(r.kind, r.label)) }}{% endif %}</b>{% endif %}
 </li>
 {% else %}
 <li class="roll-empty">No rolls yet. Your saves, checks, attacks and the dice below roll here for the table.</li>
