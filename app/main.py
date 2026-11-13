@@ -167,8 +167,10 @@ app.add_middleware(
     same_site="lax",
     https_only=config.IS_PRODUCTION,
 )
+from app.same_site import SameSite
 from app.timing import Stopwatch
 
+app.add_middleware(SameSite)  # a change made with the sign-in cookie comes from askdnd's own pages (app/same_site.py)
 app.add_middleware(Stopwatch)  # (added after the rest, so it's around them all: the session and the sign-in check count)
 
 

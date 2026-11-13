@@ -11,11 +11,11 @@ remembering it, and a place in the order of work (`docs/DECISIONS.md`, Nov 13): 
 
 ## The foundations, in order (F)
 
-1. Dependency and code scanning: Dependabot, pip-audit, CodeQL, secret scanning.
-2. A strict Content Security Policy and a cross-site (Origin) check on every change.
-3. Migrations run up and down in CI on a fresh database, and the models match it.
+1. Dependency and code scanning: Dependabot, pip-audit, CodeQL, secret scanning. **Built** (#326).
+2. A strict Content Security Policy and a cross-site (Origin) check on every change. **Built** (#329 the policy, #331 the Origin check and blocks reported to Sentry).
+3. Migrations run up and down in CI on a fresh database, and the models match it. **Built** (#330).
 4. Linters: ruff's bugbear, simplify, pyupgrade and security rules; ESLint for app.js (no redeclared or implicit
-   globals, the bug of Nov 13); Stylelint for app.css; djLint for templates.
+   globals, the bug of Nov 13); Stylelint for app.css; djLint for templates. **Ruff built** (#331); the other three next.
 5. A preview for each pull request on Railway (Brett switches it on in Railway's dashboard; Claude wires the rest).
 6. The automated code review at high effort on every PR before it merges, its findings fixed.
 
