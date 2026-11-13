@@ -127,12 +127,37 @@ def _no_nul(value):
     return value
 
 
-async def _body_json(request: Request):
+# The most a compressed body may grow to (Nov 12: the bridge sends a sheet gzipped, about a tenth of its 540 KB; a body
+# that would grow past this is refused, so a small upload can't unpack into something huge)
+MAX_JSON_BYTES = 8 * 1024 * 1024
+
+
+def gunzip(raw: bytes, limit: int = MAX_JSON_BYTES) -> bytes:
+    """A gzip body unpacked, refused (ValueError) past `limit` bytes or if it isn't gzip."""
+    import zlib
+
+    d = zlib.decompressobj(wbits=31)
     try:
-        body = await request.json()
+        out = d.decompress(raw, limit)
+    except zlib.error as e:
+        raise ValueError("not gzip") from e
+    if d.unconsumed_tail or not d.eof:
+        raise ValueError("too big, or cut short")
+    return out
+
+
+async def _body_json(request: Request):
+    raw = await request.body()
+    if "gzip" in request.headers.get("content-encoding", "").lower():  # (the bridge's sheets: app/ddb_bridge.py)
+        try:
+            raw = gunzip(raw)
+        except ValueError:
+            return None
+    try:
+        body = json.loads(raw) if raw else None
     except ValueError:
         return None  # (not JSON: the route's own check turns it away)
-    return _no_nul(body) if b"\\u0000" in await request.body() else body
+    return _no_nul(body) if b"\\u0000" in raw else body
 
 
 async def _body_form(request: Request):

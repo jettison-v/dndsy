@@ -166,6 +166,9 @@ app.add_middleware(
     same_site="lax",
     https_only=config.IS_PRODUCTION,
 )
+from app.timing import Stopwatch  # noqa: E402 (where a slow request's time went, app/timing.py)
+
+app.add_middleware(Stopwatch)  # (added after the rest, so it's around them all: the session and the sign-in check count)
 
 
 # Every answer says these unless its route said otherwise (the outside review's C1, Nov 10): a file is what its type
