@@ -213,7 +213,9 @@ class Person:
         cut_short = ("htmx:sendError", "htmx:afterRequest") if webkit else ()
         # (and WebKit logs a fetch of askdnd's own it cancelled, leaving a page mid-load, as "access control checks":
         # seen once tests ran side by side, Nov 13; askdnd only fetches its own address, so it's never a real one)
-        cancelled = (lambda t: "due to access control checks" in t and "Fetch API cannot load" in t) if webkit else (lambda t: False)
+        # (its words vary: "Fetch API cannot load <address> …", or the address alone, Nov 13 on /search/index)
+        own = server["base"].split("://", 1)[-1]
+        cancelled = (lambda t: "due to access control checks" in t and own in t) if webkit else (lambda t: False)
         self.page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and m.text not in cut_short and not cancelled(m.text)
                      and self.errors.append(m.text))
         self.page.on("response", lambda r: r.status >= 400 and self.errors.append(f"{r.status} {r.url.replace(server['base'], '')}"))
