@@ -20,7 +20,7 @@
 {% set D20 = ("save", "check", "attack", "death") %}
 {% for r in rolls %}
 <li class="roll-item hue{{ r.hue }}{{ ' mine' if r.mine }}{{ ' hidden-roll' if r.hidden }}{{ ' nat20' if r.nat == 20 }}{{ ' nat1' if r.nat == 1 }} kind-{{ r.kind }}" data-id="{{ r.id }}"{% if not r.hidden %} data-dice='{{ r.dice | tojson }}' data-throw='{{ {"kind": r.kind, "main": r.main, "dmg": r.damage, "bonus": r.bonus} | tojson }}'{% endif %} data-seq="{{ r.seq }}"{% if r.dramatic %} data-dramatic="1"{% endif %} data-person="{{ 'c' ~ r.character_id if r.character_id else 'w-' ~ r.name }}"{% if r.mine %} data-mine="1"{% endif %}>
-  <span class="roll-av" aria-hidden="true">{{ r.initial }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+  <span class="roll-av" aria-hidden="true">{{ r.initial }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>
   <span class="roll-main">
     <span class="roll-who"><b>{{ r.name }}</b> <time datetime="{{ r.at }}" data-at="{{ r.at }}">{{ r.ago }}</time>{% if r.to == "dm" and not r.hidden %} <span class="roll-to">DM only</span>{% elif r.to == "self" %} <span class="roll-to">just you</span>{% endif %}{% if r.by_dm %} <span class="roll-to">the DM</span>{% endif %}{% if r.dramatic %} <span class="roll-to roll-drama" title="Made dramatic: the table watched it in slow motion">🎬</span>{% endif %}{% if r.ddb %} <span class="roll-to">on D&amp;D Beyond</span>{% endif %}</span>
     {% if r.hidden %}<span class="roll-what">{{ r.hidden_text }}</span>

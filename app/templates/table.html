@@ -87,7 +87,7 @@
               style="left: {{ g.x + t.x * g.size }}px; top: {{ g.y + t.y * g.size }}px; width: {{ t.size * g.size }}px; height: {{ t.size * g.size }}px"
               data-token="{{ t.id }}" data-x="{{ t.x }}" data-y="{{ t.y }}" data-sq="{{ t.size }}"{% if t.moves %} data-moves{% endif %} data-name="{{ t.name }}" data-reach="{{ t.reach }}"{% if t.kind == "character" %} data-character="{{ t.character }}"{% endif %}{% if t.foe %} data-foe{% endif %}{% if t.down %} data-down{% endif %} data-panel-url="{{ t.panel }}"
               aria-label="{{ t.name }}{{ ' (hidden from the players)' if t.hidden }}{{ ' · ' ~ t.status if t.status }}" title="{{ t.name }}{{ ' · ' ~ t.status if t.status }}{% if t.conds %} · {{ t.conds | join(', ') }}{% endif %}">
-        <span class="tok-face">{% if t.picture %}<img src="{{ t.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" draggable="false" onerror="this.remove()">{% endif %}<i>{{ t.name[:2] }}</i></span>
+        <span class="tok-face">{% if t.picture %}<img src="{{ t.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" draggable="false" data-hide-broken>{% endif %}<i>{{ t.name[:2] }}</i></span>
         {% if t.hp is not none %}<span class="tok-hp"><i style="width: {{ t.hp }}%"{% if t.hp * 2 <= 100 %} class="low"{% endif %}></i></span>{% endif %}
         {% if t.status == "Bloodied" and t.hp is none %}<span class="tok-blood" aria-hidden="true"></span>{% endif %}
         {% if t.conds %}<span class="tok-conds">{% for c in t.conds[:3] %}<i data-cond="{{ cond_slug(c) }}"></i>{% endfor %}</span>{% endif %}

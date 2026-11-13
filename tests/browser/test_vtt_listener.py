@@ -7,6 +7,15 @@ import json
 from pathlib import Path
 
 LISTENER = Path(__file__).parent.parent.parent / "extension/askdnd-bridge/vtt-page.js"
+VTT = "https://www.dndbeyond.com/games/1"  # (a stand-in at D&D Beyond's address: the listener runs there, never on askdnd)
+
+
+def vtt_page(page):
+    """The listener on a stand-in VTT page, as the extension runs it on D&D Beyond's (not on askdnd's pages, whose
+    Content Security Policy rightly refuses a socket to D&D Beyond)."""
+    page.context.route(VTT, lambda r: r.fulfill(status=200, content_type="text/html", body="<!doctype html><title>VTT</title><main>Stand-in VTT</main>"))
+    page.context.add_init_script(path=str(LISTENER))
+    page.goto(VTT)
 
 
 def sync():
@@ -26,8 +35,7 @@ def act(kind, payload=None):
 
 def test_the_listener_follows_the_fight_as_the_vtt_does(people):
     page = people("player").page
-    page.context.add_init_script(path=str(LISTENER))
-    page.reload()
+    vtt_page(page)
     page.evaluate("""() => {
         window.told = [];
         addEventListener('message', e => { if (e.data && e.data.askdndBridge === 'from-vtt') window.told.push(e.data.fight); });
@@ -81,8 +89,7 @@ def test_on_the_dms_page_a_number_askdnd_hands_it_goes_out_as_the_pages_own(peop
     """0.12.0 (captured on the Mac Mini, Nov 4): the VTT takes UPDATE_INITIATIVE only with the connection's own client id,
     the one its CONNECT message carried; a number askdnd hands the page goes out so, and nothing goes before that."""
     page = people("player").page
-    page.context.add_init_script(path=str(LISTENER))
-    page.reload()
+    vtt_page(page)
     page.evaluate("""() => {
         window.sent = [];
         WebSocket.prototype.send = function (d) { window.sent.push(String(d)); };

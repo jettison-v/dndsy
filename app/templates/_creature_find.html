@@ -3,7 +3,7 @@
 {% for e in found %}
 <form class="tbl-crit" hx-post="{{ cbase }}/table/places/{{ place }}/creatures" hx-swap="none">
   <input type="hidden" name="key" value="{{ e.key }}">
-  <span class="tk-pic foe" aria-hidden="true">{% if e.image %}<img src="{{ e.image }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ e.name[:2] }}</span>
+  <span class="tk-pic foe" aria-hidden="true">{% if e.image %}<img src="{{ e.image }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ e.name[:2] }}</span>
   <span class="tbl-crit-name"><b>{{ e.name }}</b><small>{{ e.size }} {{ e.type }} · CR {{ e.cr_label }} · HP {{ e.hp }} · AC {{ e.ac }}{% if e.source %} · {{ e.source }}{% endif %}</small></span>
   <label class="tbl-crit-n"><span class="sr">How many {{ e.name }}</span><input type="number" name="count" value="1" min="1" max="12"></label>
   <label class="check tbl-crit-hid"><input type="checkbox" name="hidden" value="1"{{ ' checked' if settings.new == 'hidden' }}> Hidden</label>

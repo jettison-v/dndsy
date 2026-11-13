@@ -2,7 +2,7 @@
    their numbers, every d20 they rolled and their awards newest first, each opening its session. #}
 {% set r = row %}{% set s = r.sheet %}
 <div class="peek-head">
-  <div class="tr-head"><span class="roll-av hue{{ 5 if r.dm else (r.entity_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+  <div class="tr-head"><span class="roll-av hue{{ 5 if r.dm else (r.entity_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>
     <div><div class="note">Trophies</div><h2 id="peek-title">{{ r.name }}</h2>
       <span class="note">{% if s %}{% for k in s.classes %}{{ k.name }} {{ k.level }}{{ " / " if not loop.last }}{% endfor %} · {% endif %}{{ r.played }} session{{ "s" if r.played != 1 }}</span></div></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>

@@ -2100,7 +2100,14 @@ function feedbackBusy(e) {
           const adjust = (c.reroll ? pill('data-reroll', false, 'Reroll', c.reroll) : '') + (c.bonus ? after.map(m => pill('data-after="' + esc(m.name) + '"', false, m.short || m.name,
             (/^\d/.test(m.adds) ? '+' : '') + m.adds + ' ' + (m.says || (attack ? 'after a miss' : 'after a failure')))).join('') + '<button type="button" class="chip rcard-pill rcard-plus" data-adding>+ a die</button>' : '');
           if (adjust) h += '<div class="rcard-pills rcard-adjust">' + adjust + '</div>' + (st.adding ? adder('bonus') : '');
-          if (attack && c.damage) {
+          // A natural 1 misses whatever the bonus (2024 PHB), and with several rays only those that aren't: when nothing
+          // can hit there's no damage to roll (Nov 13: every Eldritch Blast ray rolled a 1, the card offered damage and
+          // askdnd refused it), only It misses
+          const rayRolls = ((e.main && e.main.parts) || []).filter(x => x.kept != null);
+          const allMiss = attack && (rayRolls.length > 1 ? rayRolls.every(x => x.kept === 1) : e.nat === 1);
+          if (attack && c.damage && allMiss) {
+            h += '<div class="rcard-acts"><button type="button" class="btn" data-missed>It misses</button></div>';
+          } else if (attack && c.damage) {
             h += onHit() + '<div class="rcard-acts"><button type="button" class="btn primary rcard-go" data-roll-dmg>Roll ' + (e.nat === 20 ? 'critical ' : '') + 'damage <small>' + esc(c.damage) + dmgAdds() + '</small></button>'
               + (sure ? '' : '<button type="button" class="btn" data-missed>Missed</button>') + '</div>';
           } else {
@@ -3278,6 +3285,19 @@ function feedbackBusy(e) {
     since: () => (loaded ? lastId : -1),  // -1: the whole recent log
     also: () => { const a = changedRoll; changedRoll = 0; return a; },  // (a roll that changed without a new row: its outcome)
   };
+  // Its first load, its polling and what each request asks for, here rather than in htmx's hx-trigger filters and
+  // hx-vals="js:…", which evaluate text as code (the Content Security Policy runs only askdnd's own files, Nov 13)
+  if (log && window.htmx) {
+    log.addEventListener('htmx:configRequest', e => {
+      if (e.detail.elt !== log) return;
+      e.detail.parameters.since = window.askdndRolls.since();
+      e.detail.parameters.also = window.askdndRolls.also();
+    });
+    // (its first load once htmx has set the page up: app.js runs before htmx's own start, a trigger then is lost)
+    const first = () => setTimeout(() => { if (window.askdndRolls.wanted()) htmx.trigger(log, 'rolls:load'); });
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', first, { once: true }); else first();
+    setInterval(() => { if (window.askdndRolls.poll()) htmx.trigger(log, 'rolls:load'); }, 3000);
+  }
   document.addEventListener('askdnd:live', e => {
     if (e.detail.type === 'rolls' && atTable()) earlyThrow(e.detail.roll);
     if (e.detail.type === 'rolls' && e.detail.changed) changedRoll = e.detail.changed;
@@ -5463,4 +5483,26 @@ document.addEventListener('askdnd:mention', e => {
       (j.cards || []).forEach(c => window.askdndToast && window.askdndToast(c.text, { label: 'See it', run: () => { location.href = c.href; } }, 'info'));
     })
     .catch(() => {});
+})();
+
+// ---------------------------------------------------------------- markers instead of inline handlers
+// (Nov 13: no inline handlers or evaluated text, so the Content Security Policy can run only askdnd's own files)
+//   data-confirm="…" on a form     asks before it's sent (once each form's onsubmit="return confirm(…)")
+//   data-reset-after on an htmx form  empties it once its request succeeded (once hx-on::after-request)
+//   data-ds-toast="…" (-kind, -undo)  the Design system page's sample corner cards
+(function () {
+  document.addEventListener('submit', e => {
+    const f = e.target.closest && e.target.closest('form[data-confirm]');
+    if (f && !confirm(f.dataset.confirm)) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  document.body.addEventListener('htmx:afterRequest', e => {
+    const f = e.detail.elt && e.detail.elt.closest && e.detail.elt.closest('form[data-reset-after]');
+    if (f && e.detail.successful) f.reset();
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('[data-ds-toast]');
+    if (!b || !window.askdndToast) return;
+    const undo = b.dataset.dsUndo;
+    window.askdndToast(b.dataset.dsToast, undo ? { label: 'Undo', run: () => window.askdndToast(undo) } : null, b.dataset.dsKind || undefined);
+  });
 })();

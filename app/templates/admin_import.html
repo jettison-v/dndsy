@@ -92,7 +92,7 @@
     <div class="table-scroll"><table class="list">{% for b in imports %}
       <tr><td><b>{{ b.at | clock(date=True) }}</b><div class="note">{{ b.actor or "someone" }} · {{ b.changes }} change{{ "s" if b.changes != 1 }} to {{ b.things }} thing{{ "s" if b.things != 1 }}</div></td>
         <td class="end"><a class="btn small" href="/manage/history?batch={{ b.batch }}">See changes</a>
-          <form method="post" action="/manage/history/undo-import" class="inline" onsubmit="return confirm('Undo this import? Its changes are put back to how they were before.')">
+          <form method="post" action="/manage/history/undo-import" class="inline" data-confirm="Undo this import? Its changes are put back to how they were before.">
             <input type="hidden" name="batch" value="{{ b.batch }}"><button class="btn small">Undo</button></form></td></tr>
     {% endfor %}</table></div>
   </section>
