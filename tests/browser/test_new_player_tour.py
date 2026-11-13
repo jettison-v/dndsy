@@ -6,7 +6,6 @@ import pytest
 
 from tests.browser.pages import click_item
 
-
 # Is the top of what a stop lights covered by something stuck across the page (the menu bar, Sheet's tabs)? Looks
 # at what's drawn just inside its top edge, left of the card: the name of the cover, or "" when the target shows.
 TOP_HIDDEN = """sel => { const t = [...document.querySelectorAll(sel)].find(e => e.getBoundingClientRect().height > 0);

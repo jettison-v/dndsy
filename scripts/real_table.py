@@ -1896,7 +1896,7 @@ def history(t: Table, names: list[str], versions: dict, via_dm: bool, deployed: 
 
     os.makedirs("logs", exist_ok=True)
     with open("logs/results.jsonl", "a") as f:
-        f.write(json.dumps({"at": datetime.now().isoformat(timespec="seconds"), "via_dm": via_dm, "after_deploy": deployed or None, "runs": names,
+        f.write(json.dumps({"at": datetime.now().astimezone().isoformat(timespec="seconds"), "via_dm": via_dm, "after_deploy": deployed or None, "runs": names,
                             "extension": versions, "checks": t.checks}) + "\n")
 
 

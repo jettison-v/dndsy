@@ -14,41 +14,41 @@ from app.live import rows_from
 # Help › What askdnd adds: sections, each a list of groups (a group key starts the tour there; None has no stops yet)
 SECTIONS = [
     ("Before you play", [
-        ("previously", "Previously on…", "Where Campaign opens: the last session's recap, key moments and open threads; every "
-                                                "session is under Sessions."),
-        ("memory", "The campaign's memory", "People, places, quests and how everyone is connected, built from each session and kept right by "
-                                            "the DM. Suggest a correction sends a fix to the DM."),
+        ("previously", "Previously on…", ("Where Campaign opens: the last session's recap, key moments and open threads; every "
+                                                "session is under Sessions.")),
+        ("memory", "The campaign's memory", ("People, places, quests and how everyone is connected, built from each session and kept right by "
+                                            "the DM. Suggest a correction sends a fix to the DM.")),
     ]),
     ("On your turn", [
-        ("battle", "Battle", "Your plan for a fight by Action, Bonus action and Reaction: what you chose to put there, with See all "
+        ("battle", "Battle", ("Your plan for a fight by Action, Bonus action and Reaction: what you chose to put there, with See all "
                              "for everything else. + Add and the pin put things on it; open one for Pin, Remind me and "
-                             "your note."),
-        ("rolling", "Rolling and Table rolls", "Click any number to roll it, or find it with Search (⌘F). Rolls go to Table rolls for "
+                             "your note.")),
+        ("rolling", "Rolling and Table rolls", ("Click any number to roll it, or find it with Search (⌘F). Rolls go to Table rolls for "
                                                "everyone; DM only and Only me keep a roll private. Apply to on the DM's damage changes "
-                                               "your Hit Points."),
+                                               "your Hit Points.")),
         ("dice", "Your dice", "Thrown 3D dice in the set you choose (account menu › Your dice); the table sees your rolls in them."),
-        ("conditions", "Conditions and effects", "Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in "
-                                                 "the roll card with its reason, and a reminder when one is due to end. The DM rules."),
+        ("conditions", "Conditions and effects", ("Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in "
+                                                 "the roll card with its reason, and a reminder when one is due to end. The DM rules.")),
     ]),
     ("With your D&D Beyond sheet", [
         ("live", "Live", "The Live pill says whether your D&D Beyond sheet is connected. Nothing to turn on."),
-        ("sync", "Playing on your D&D Beyond sheet", "Hit points, Cast, resources and rests changed in askdnd change your D&D Beyond "
-                                                     "sheet too, within seconds (where your campaign syncs with D&D Beyond)."),
+        ("sync", "Playing on your D&D Beyond sheet", ("Hit points, Cast, resources and rests changed in askdnd change your D&D Beyond "
+                                                     "sheet too, within seconds (where your campaign syncs with D&D Beyond).")),
     ]),
     ("Spells and shapes", [
-        ("spellbook", "Spell Book", "Your prepared spells with filters, each one's average damage or healing, and Cast at for a higher "
-                             "slot. An average informs; it doesn't decide."),
-        ("creatures", "Your creatures", "A familiar, Homunculus, steed or summon: Battle as the creature, its own card on Party and, "
-                                        "for a familiar or steed, its own World entry."),
-        ("wildshape", "Wild Shape", "You as the beast: your numbers and actions worked out for the form, its full page, and Normal to "
-                             "come back (druids)."),
+        ("spellbook", "Spell Book", ("Your prepared spells with filters, each one's average damage or healing, and Cast at for a higher "
+                             "slot. An average informs; it doesn't decide.")),
+        ("creatures", "Your creatures", ("A familiar, Homunculus, steed or summon: Battle as the creature, its own card on Party and, "
+                                        "for a familiar or steed, its own World entry.")),
+        ("wildshape", "Wild Shape", ("You as the beast: your numbers and actions worked out for the form, its full page, and Normal to "
+                             "come back (druids).")),
     ]),
     ("Your character", [
-        ("character", "Reminders, Sheet and Inventory", "The bell puts anything you tend to forget in your Reminders on Battle; Sheet is "
+        ("character", "Reminders, Sheet and Inventory", ("The bell puts anything you tend to forget in your Reminders on Battle; Sheet is "
                                                         "your whole character from D&D Beyond, laid out for play; Inventory has your purse "
-                                                        "and + Add item."),
-        ("plan", "Plan", "Battle combos, leveling strategy, personal quests, notes and shortlists. Nothing is lost when you unprepare. "
-                         "The DM never sees your notes."),
+                                                        "and + Add item.")),
+        ("plan", "Plan", ("Battle combos, leveling strategy, personal quests, notes and shortlists. Nothing is lost when you unprepare. "
+                         "The DM never sees your notes.")),
         ("party", "Party", "Everyone's numbers at a glance, and the party's spells and items pooled, filtered by what they do and who has them."),
     ]),
 ]

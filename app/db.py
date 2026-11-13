@@ -3,8 +3,8 @@
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine
-from sqlalchemy.pool import NullPool
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.pool import NullPool
 
 from app import config
 

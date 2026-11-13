@@ -97,7 +97,7 @@ def test_flat_damage_of_0_is_said_before_the_roll(people, server, browser_db):
         card.locator("[data-roll-hit]").click()
         card.locator(".rcard-result:not(.rolling)").wait_for()
         assert card.locator("[data-riders]").count() or "Natural 20" in card.inner_text(), card.inner_text()  # (a 20 always hits: nothing for a miss)
-        assert "Natural 20" in card.inner_text() or "On a miss" in card.inner_text() and "Graze" in card.locator("[data-riders]").inner_text()
+        assert "Natural 20" in card.inner_text() or ("On a miss" in card.inner_text() and "Graze" in card.locator("[data-riders]").inner_text())
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)

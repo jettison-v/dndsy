@@ -9,15 +9,13 @@ reviewed recap. One that leaves (dismissed forever) keeps its entry.
 A summon spirit isn't kept: a new one comes each casting and goes with Concentration."""
 
 from datetime import date, datetime
-from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import relations
+from app.config import TABLE_TIME
 from app.models import Character, Entity, EntityAlias, EntityKind, EntityPicture, EntityRelation, EventEntity, Fact, GameSession, Status
-
-TABLE_TIME = ZoneInfo("America/Los_Angeles")  # (the table's evening: the server's clock is UTC, already tomorrow by then)
 
 FAMILIAR, STEED = "familiar", "steed"
 ROLES = {FAMILIAR: "familiar", STEED: "steed"}

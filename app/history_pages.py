@@ -94,7 +94,7 @@ def _present(db: Session, r: Revision, people: dict[int, str]) -> dict:
     """A change in words people recognize (Brett, 2026-10-23): who plays a character by name, not account number;
     Wild Shape keeps by item name, as what was added or removed; a removed house rule as the ruling it was."""
     if r.field == "owner_id":
-        name = lambda v: people.get(v, ("someone", ""))[0] if v else "Nobody"  # noqa: E731
+        name = lambda v: people.get(v, ("someone", ""))[0] if v else "Nobody"
         old, new = name(r.old), name(r.new)
         if old == new and r.old and r.new:  # two accounts with one name (an old and a new sign-in): say which
             old, new = f"{old} ({people[r.old][1]})", f"{new} ({people[r.new][1]})"
@@ -102,7 +102,7 @@ def _present(db: Session, r: Revision, people: dict[int, str]) -> dict:
     if r.field == "wild_shape_keep":
         cc = db.get(CampaignCharacter, r.row_id)
         sheet = chars.character_summary(cc.character) if cc and cc.character else None
-        label = lambda ref: ((views.find(sheet, ref) or {}).get("name") if sheet else None) or ref.split(":", 1)[-1].replace("-", " ").capitalize()  # noqa: E731
+        label = lambda ref: ((views.find(sheet, ref) or {}).get("name") if sheet else None) or ref.split(":", 1)[-1].replace("-", " ").capitalize()
         before, after = set(r.old or []), set(r.new or [])
         bits = [f"Added {', '.join(sorted(label(x) for x in after - before))}" if after - before else "",
                 f"removed {', '.join(sorted(label(x) for x in before - after))}" if before - after else ""]

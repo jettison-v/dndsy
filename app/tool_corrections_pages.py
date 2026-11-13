@@ -8,8 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import character_views as views
-from app import rules_terms as terms
 from app import characters as chars
+from app import rules_terms as terms
 from app.admin import _guard
 from app.db import get_db
 from app.models import Character, ToolCorrection

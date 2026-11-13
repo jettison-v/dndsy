@@ -3,9 +3,8 @@
 import pytest
 from sqlalchemy import select
 
-from app import access
+from app import access, characters, homebrew, house_rules, rules_book
 from app import character_views as views
-from app import characters, homebrew, house_rules, rules_book
 from app.models import CampaignContent
 from tests.menu import items
 from tests.roles import set_role

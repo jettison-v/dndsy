@@ -14,27 +14,26 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, config, narration, session_story, web
+from app import access, config, narration, review, session_story, web
 from app import db as dbmod
-from app import review
 from app.admin import _reviewer_guard as _guard
 from app.auth import current_user, is_admin
 from app.db import get_db
 from app.extraction import (
-    revise_suggestions,
     ExtractionError,
     Source,
     extract_session,
     latest_campaign_notes,
     notes_source_for,
+    revise_suggestions,
     session_label,
     split_notes,
     timeline,
 )
-from app.models import NON_DRAFTING_SOURCES, Campaign, EntityKind, ExtractionRun, GameSession, Proposal
 from app.linking import entity_linker
-from app.suggestions import waiting_count
+from app.models import NON_DRAFTING_SOURCES, Campaign, EntityKind, ExtractionRun, GameSession, Proposal
 from app.render import markdown_to_html
+from app.suggestions import waiting_count
 from app.templating import templates
 
 router = APIRouter(prefix="/manage")  # under the campaign: /c/<campaign>/manage/sessions/…

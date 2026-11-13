@@ -48,8 +48,8 @@ CR_VALUES = {"1/8": 0.125, "1/4": 0.25, "1/2": 0.5}
 NOTES: list[str] = []  # things worth a look, printed at the end
 # Misprints in the PDF that the stat block itself shows to be wrong, put right here (and only these)
 CORRECTIONS = {
-    ("Young White Dragon", "saves", "int"): (-2, "the SAVE column prints “2” beside a −2 modifier; the dragon "
-                                                 "isn't proficient in Intelligence saves"),
+    ("Young White Dragon", "saves", "int"): (-2, ("the SAVE column prints “2” beside a −2 modifier; the dragon "
+                                                 "isn't proficient in Intelligence saves")),
 }
 
 
@@ -455,7 +455,7 @@ def fields(lines: list[Line]) -> tuple[dict[str, str], dict, dict]:
         f = x.first
         if "SC700" in f[0] or (f[0] == "GillSans-Bold" and f[1] == 9.8):
             t = re.sub(r"[\s\t]+", "", "".join(s[2] for s in x.spans))
-            for ab, score, mod, save in re.findall(r"(?i)(str|dex|con|int|wis|cha)(\d+)([+−-]\d+)([+−-]?\d+)", t):
+            for ab, score, _mod, save in re.findall(r"(?i)(str|dex|con|int|wis|cha)(\d+)([+−-]\d+)([+−-]?\d+)", t):
                 scores[ab.lower()], saves[ab.lower()] = int(score), _num(save)
             continue
         if f[0] == "GillSans":
@@ -624,7 +624,7 @@ def monsters(lines: list[Line], text: Text) -> list[dict]:
     out = []
     group = ""
     blocks = split_blocks(part)
-    starts = {a: b for a, b in blocks}
+    starts = dict(blocks)
     for i, x in enumerate(part):
         if x.is_("GillSans-SemiBold", 18.0):
             group = heading(x)
@@ -794,7 +794,7 @@ def main() -> None:
     for n in NOTES:
         print("note:", n)
     if args.compare:
-        import srd_compare  # noqa: PLC0415 - only for the check
+        import srd_compare
 
         srd_compare.report(mons, sp, items)
 

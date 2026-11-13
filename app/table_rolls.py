@@ -221,7 +221,7 @@ def _modifiers(sheet: dict, kind: str) -> list[dict]:
 
     try:
         return modifiers_for(sheet, kind)
-    except Exception:  # noqa: BLE001 - a sheet the plan can't read: no pills, the roll still works
+    except Exception:
         return []
 
 
@@ -284,7 +284,7 @@ def _part(r: TableRoll) -> dict:
 def detail_of(level: int = 0, why=(), riders=(), hidden="", via="", own="", math: dict | None = None, dramatic: bool = False) -> dict:
     """What else the roll card or window knew, checked and kept short (TableRoll.detail; Brett's round 2 note, Nov 10),
     and how its numbers add up (`math`, already checked by app/roll_math.py `clean`: Show the Math, Nov 12)."""
-    clean = lambda xs, n: [" ".join(str(x).split())[:n] for x in xs if str(x).strip()][:6]  # noqa: E731
+    clean = lambda xs, n: [" ".join(str(x).split())[:n] for x in xs if str(x).strip()][:6]
     out = {"level": level if 1 <= (level or 0) <= 9 else None, "why": clean(why, 120), "riders": clean(riders, 80),
            "hidden": bool(hidden), "via": via if via in ("card", "window", "search") else None, "self": bool(own), "math": math or None,
            "dramatic": bool(dramatic)}  # (Make it dramatic: every screen throws it big and slow, its damage too; only a roll the table sees)

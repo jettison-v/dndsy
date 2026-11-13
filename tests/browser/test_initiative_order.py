@@ -10,7 +10,7 @@ from sqlalchemy import create_engine, text
 
 def test_the_dm_moves_a_fighter_and_everyone_sees_the_new_order(people, server, browser_db):
     engine = create_engine(browser_db[0])
-    row = lambda key, name, ini, kind="monster", character=None, active=False: {  # noqa: E731
+    row = lambda key, name, ini, kind="monster", character=None, active=False: {
         "key": key, "name": name, "kind": kind, "character": character, "initiative": ini, "hidden": False, "active": active,
         "image": None, "monster": None, "group": "Enemy" if kind == "monster" else "Party Member", "gkey": key}
     fight = {"round": 1, "turn": 1, "seq": 0, "id": "f1", "reminders": [],

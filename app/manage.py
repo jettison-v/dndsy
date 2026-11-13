@@ -213,9 +213,8 @@ def needs_you(request: Request, db: Session = Depends(get_db)):
 def counts(request: Request, db: Session = Depends(get_db)):
     """What's waiting, for the counts beside Needs you and Inbox (asked for when the Manage menu opens, and by Manage
     pages, so no other page waits for them)."""
-    from app.suggestions import waiting_count
-
     from app import feedback
+    from app.suggestions import waiting_count
 
     user = current_user(request)
     mine = {"feedback": feedback.for_you(db)} if is_admin(user) else {}  # (notes waiting for an admin: to approve, or Claude's questions)
@@ -243,8 +242,8 @@ def overview(request: Request, db: Session = Depends(get_db)):
         "usage": (f"${u['month']:.2f} of ${u['limit']:.2f} this month" if u["limit"] is not None else f"${u['month']:.2f} this month",
                   "warn" if u["limit_reached"] else "ok"),
         "backups": (b["text"], "warn" if b["attention"] else "ok"),
-        "accounts": (f"{_plural(sum(1 for p in people if p in (access.MEMBER, access.ADMIN)), 'person', 'people')}, "
-                     f"{_plural(sum(1 for p in people if p == access.ADMIN), 'admin')}", ""),
+        "accounts": ((f"{_plural(sum(1 for p in people if p in (access.MEMBER, access.ADMIN)), 'person', 'people')}, "
+                     f"{_plural(sum(1 for p in people if p == access.ADMIN), 'admin')}"), ""),
         "campaigns": (f"{_plural(len(camps), 'campaign')}" + (f", {sum(1 for c in camps if c.is_test)} test" if any(c.is_test for c in camps) else ""), ""),
         "corrections": (f"{fixes} to build into askdnd" if fixes else "Nothing to build in", "warn" if fixes else "ok"),
         "documents": (_plural(len(documents.library()), "document"), ""),

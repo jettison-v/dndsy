@@ -17,11 +17,9 @@ from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import files, web
-from app import config
+from app import config, files, web
 from app.admin import _guard as _admin_guard
-from app.auth import can_see_character_notes, is_admin
-from app.auth import oauth
+from app.auth import can_see_character_notes, is_admin, oauth
 from app.db import get_db
 from app.gdocs import (
     DOCS_URL,

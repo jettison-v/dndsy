@@ -10,7 +10,7 @@ from app.importer import import_bundle
 from app.models import Entity, ExtractionRun, Fact, GameSession, Status
 from app.review import publish
 from tests.roles import set_role
-from tests.test_entities import BUNDLE, HX, admin, lillippi, player, published_events  # noqa: F401
+from tests.test_entities import BUNDLE, HX, admin, lillippi, player, published_events
 from tests.test_suggestions import client_for
 
 QUESTS = {"campaign": {"slug": "main", "name": "Main"}, "entities": [
@@ -37,7 +37,7 @@ def quest_moment(db, number, text):
     db.flush()
 
 
-def test_world_is_the_reader_without_quests(player, db):  # noqa: F811
+def test_world_is_the_reader_without_quests(player, db):
     import_bundle(db, BUNDLE)
     import_bundle(db, QUESTS)
     published_events(db)
@@ -60,7 +60,7 @@ def test_world_is_the_reader_without_quests(player, db):  # noqa: F811
     assert 'class="reader-article ep" data-shape="portrait"' in page and "<dt>Key moments</dt>" in page
 
 
-def test_the_quest_board(player, db):  # noqa: F811
+def test_the_quest_board(player, db):
     import_bundle(db, BUNDLE)
     import_bundle(db, QUESTS)
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": n, "played_on": f"2026-02-0{n}"} for n in range(3, 8)]})
@@ -103,7 +103,7 @@ def test_the_quest_board(player, db):  # noqa: F811
     assert f'class="ql-item open sel" data-ql-id="{quest.id}"' in page
 
 
-def test_player_characters_are_people_in_world(player, db):  # noqa: F811
+def test_player_characters_are_people_in_world(player, db):
     """Characters have relationships too, so World lists them under People and opens them there (Brett, 2026-10-23)."""
     from app.models import CampaignCharacter
 
@@ -117,7 +117,7 @@ def test_player_characters_are_people_in_world(player, db):  # noqa: F811
     assert 'data-noun="entry" data-nouns="entries"' in page  # "43 entries shown", not names
 
 
-def test_relationships_and_connections(player, db, monkeypatch):  # noqa: F811
+def test_relationships_and_connections(player, db, monkeypatch):
     import_bundle(db, BUNDLE)
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [{"kind": "npc", "name": "Mo"}, {"kind": "faction", "name": "Harpers"}]})
     lil, mo, harpers = lillippi(db), entry(db, "Mo"), entry(db, "Harpers")
@@ -141,7 +141,7 @@ def test_relationships_and_connections(player, db, monkeypatch):  # noqa: F811
     assert f'data-modal-url="/c/main/campaign/{lil.id}/connections">See the connections map' in reader and 'class="cx-diagram"' not in reader
 
 
-def test_an_entry_has_its_own_address_and_swaps_in(player, db):  # noqa: F811
+def test_an_entry_has_its_own_address_and_swaps_in(player, db):
     import_bundle(db, BUNDLE)
     salt = entry(db, "Saltmarsh")
     page = player.get(f"/c/main/campaign?open={salt.id}").text
@@ -200,7 +200,7 @@ def _alias_queries(db, client, path):
     return n[0]
 
 
-def test_more_entries_dont_mean_more_queries(player, db):  # noqa: F811
+def test_more_entries_dont_mean_more_queries(player, db):
     """The Campaign page loads its entries' other names together (Nov 2: one query per entry, 47 on beta's copy and
     growing every session). Ten more entries, each with another name (what the search box matches), take no more
     queries for them. (Only those are counted: the page's other queries vary by one as caches refill, Nov 2.)"""
@@ -218,7 +218,7 @@ def test_more_entries_dont_mean_more_queries(player, db):  # noqa: F811
     assert _alias_queries(db, player, "/c/main/campaign") == before
 
 
-def test_an_entry_without_a_picture_asks_whoever_can_add_one(admin, player, db, monkeypatch):  # noqa: F811
+def test_an_entry_without_a_picture_asks_whoever_can_add_one(admin, player, db, monkeypatch):
     """World Entries by Kind (Brett, Nov 5): the DM's side sees the picture's place, in its kind's shape, with Draw one
     (when Describe it can draw) and Upload; a player sees no empty box, only a badge with the initials."""
     from app import drawing
@@ -242,7 +242,7 @@ def test_an_entry_without_a_picture_asks_whoever_can_add_one(admin, player, db, 
     assert "ep-slot" not in mine and "No picture yet" not in mine and 'class="ep-initials" data-kind="npc"' in mine
 
 
-def test_story_text_sits_on_a_faint_scroll(player, db):  # noqa: F811
+def test_story_text_sits_on_a_faint_scroll(player, db):
     """Brett, Nov 5 (board 5: Umber, Inter, Faint): a session's recap on the scroll with its rods; an entry's story the
     parchment alone."""
     import_bundle(db, BUNDLE)
@@ -254,7 +254,7 @@ def test_story_text_sits_on_a_faint_scroll(player, db):  # noqa: F811
     assert '<div class="story">' in player.get(f"/campaign/{entry(db, 'Saltmarsh').id}/read").text
 
 
-def test_all_sessions_reads_from_the_start_and_shows_a_few_key_moments(player, db, monkeypatch):  # noqa: F811
+def test_all_sessions_reads_from_the_start_and_shows_a_few_key_moments(player, db, monkeypatch):
     """Brett, Nov 5: All sessions shows a session's first few key moments and Show all for the rest, and every recap
     can be read in order, the first session first, all of them open."""
     from app import story as story_mod
@@ -264,7 +264,7 @@ def test_all_sessions_reads_from_the_start_and_shows_a_few_key_moments(player, d
     newest = player.get("/c/main/?tab=sessions").text
     start = player.get("/c/main/?tab=sessions&order=start").text
     assert 'aria-current="true">Newest first' in newest and 'aria-current="true">From the start' in start
-    ids = lambda page: [m for m in __import__("re").findall(r'<details class="tale-roll" id="s(\d+)"', page)]
+    ids = lambda page: list(__import__("re").findall(r'<details class="tale-roll" id="s(\d+)"', page))
     assert ids(start) == list(reversed(ids(newest))) and len(ids(start)) >= 2
     assert all(f'id="s{i}" open' in start for i in ids(start))  # every scroll open
     # A session's key moments past the first three sit behind Show all

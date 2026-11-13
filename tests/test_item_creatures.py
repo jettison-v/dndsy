@@ -5,7 +5,9 @@ Made-up item words only: a campaign's homebrew text never goes in the repo."""
 
 import pytest
 
-from app import characters, character_views as views, creatures, item_creatures as ic
+from app import character_views as views
+from app import characters, creatures
+from app import item_creatures as ic
 from app.models import Campaign
 from tests.table_setup import char
 

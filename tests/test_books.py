@@ -13,7 +13,7 @@ from app import wild_shape as ws
 from app.models import BookEntry, Campaign
 from scripts import book_load
 from tests.table_setup import char, owned_by
-from tests.test_wild_shape import cole  # noqa: F401
+from tests.test_wild_shape import cole
 
 pytestmark = pytest.mark.usefixtures("no_network")
 
@@ -96,7 +96,7 @@ def test_a_bad_book_entry_is_refused_on_save_and_skipped_on_read(db):
     assert rules_data.find("monster", "Old Beast", db, ours.id) is None  # saved before a schema change: left out
 
 
-def test_wild_shape_offers_the_books_beasts_labelled_and_switchable(db, cole, player, dm):  # noqa: F811
+def test_wild_shape_offers_the_books_beasts_labelled_and_switchable(db, cole, player, dm):
     books.save(db, "mm-2024", "monster", made_up_beast(), page=12)
     url = f"/characters/{cole.id}"
     page = player.get(url).text  # Sheet › Wild Shape: every form Cole could learn

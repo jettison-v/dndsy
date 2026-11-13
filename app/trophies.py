@@ -20,8 +20,8 @@ from sqlalchemy.orm import Session
 
 from app import review, session_story, web
 from app.auth import can_edit_settings, current_user
-from app.db import get_db
 from app.characters import campaign_characters, character_summary
+from app.db import get_db
 from app.extraction import session_label
 from app.models import Campaign, CharacterDown, GameSession, Status, StoryEvent, TableRoll
 from app.templating import templates

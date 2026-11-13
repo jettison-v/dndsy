@@ -1,7 +1,8 @@
 """Magic items on Battle (app/conditions.py): item actions, conditions and their Advantage."""
 
-import pytest
 import json
+
+import pytest
 
 from app import characters, live
 from app import conditions as cd
@@ -68,7 +69,7 @@ def test_only_the_player_turns_invisible_and_everyone_sees_it(player, admin, dm,
 def test_the_edge_takes_the_newest_three_conditions_own_colours():
     """Brett, 2026-10-28 (docs/mockups/conditions-on-battle.html): the page's edge shows each of the newest three in its
     own colour, so several conditions show as several colours; Blinded or Unconscious also darken the page's edges."""
-    edge = lambda *names: cd.edge([{"name": n} for n in names])  # noqa: E731
+    edge = lambda *names: cd.edge([{"name": n} for n in names])
     assert edge() == [] and edge("Prone") == ["prone"]
     assert edge("Grappled", "Prone", "Poisoned", "Water Breathing") == ["water-breathing", "poisoned", "prone"]  # newest first
     assert cd.darkens([{"name": "Unconscious"}]) and not cd.darkens([{"name": "Prone"}])

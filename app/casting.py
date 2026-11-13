@@ -27,7 +27,8 @@ from app import companion_story, companions, ddb_bridge, ddb_sheet, web
 from app import spellbook as sb
 from app.character_views import ordinal
 from app.db import get_db
-from app.item_use import _guard as _player, _sheet
+from app.item_use import _guard as _player
+from app.item_use import _sheet
 from app.models import Character
 from app.templating import templates
 

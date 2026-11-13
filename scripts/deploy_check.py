@@ -40,7 +40,7 @@ BACKUP_WATCH = ["scripts/backup_db.py", "app/__init__.py", "app/backup.py", "app
 # or the other, so something new the app needs can't be left out by accident. --set-app-watch copies it to Railway.
 APP_WATCH = ["app/**", "migrations/**", "scripts/**", "extension/**", "transcript_filter/**", "pyproject.toml", "uv.lock",
              ".python-version", "Procfile", "alembic.ini"]
-NOT_RUN = ["docs/", "tests/", ".github/", ".claude/", "CLAUDE.md", "README.md", ".gitignore", ".env.example"]
+NOT_RUN = ["docs/", "tests/", ".github/", ".claude/", "CLAUDE.md", "README.md", ".gitignore", ".gitattributes", ".env.example"]
 BETA = "https://beta.askdnd.ai/login"
 DONE = {"SUCCESS", "SLEEPING", "FAILED", "CRASHED", "REMOVED", "SKIPPED"}
 # Railway's build machines failing, not our code: worth building again
@@ -63,7 +63,7 @@ def run(*cmd: str, check: bool = True) -> str:
 
 
 def say(text: str) -> None:
-    print(f"[{datetime.now():%H:%M:%S}] {text}", flush=True)
+    print(f"[{datetime.now().astimezone():%H:%M:%S}] {text}", flush=True)
 
 
 def deployments(service: str) -> list[dict]:

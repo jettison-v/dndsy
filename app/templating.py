@@ -2,13 +2,13 @@ import json
 from pathlib import Path
 
 from fastapi import Request
+from fastapi.templating import Jinja2Templates
 from markupsafe import Markup, escape
 
 from app import access, config, rules_data, vtt
 from app import conditions as cond
 from app.character_views import BASIC_ACTIONS, option_rolls, roll_data
 from app.creatures import short as creature_short
-from fastapi.templating import Jinja2Templates
 
 
 def _page_context(request: Request) -> dict:
@@ -322,7 +322,7 @@ templates.env.filters["dice"] = _dice
 
 def _data_attrs(d: dict) -> Markup:
     """data-* attributes from a dict (a roll's: character_views.roll_data), escaped."""
-    return Markup(" ".join(f'data-{k}="{escape(v)}"' for k, v in d.items()))
+    return Markup(" ".join(f'data-{k}="{escape(v)}"' for k, v in d.items()))  # noqa: S704
 
 
 templates.env.filters["data_attrs"] = _data_attrs

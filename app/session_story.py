@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from app import files
 from app.characters import campaign_characters, character_summary
-from app.companion_story import TABLE_TIME
+from app.config import TABLE_TIME
 from app.extraction import DM_AWARD
 from app.models import Campaign, CampaignMember, Character, GameSession, Recap, Role, TableRoll
 
@@ -172,13 +172,13 @@ def mix(session: GameSession, recap: Recap | None) -> dict | None:
     end = max(length, times[-1])
     if end <= times[0]:
         return None
-    spans: dict[str, int] = {k: 0 for k in KINDS}
+    spans: dict[str, int] = dict.fromkeys(KINDS, 0)
     for i, c in enumerate(recap.tale):
         stop = times[i + 1] if i + 1 < len(times) else end
         spans[c.get("kind") if c.get("kind") in KINDS else "story"] += max(0, stop - times[i])
     whole = sum(spans.values()) or 1
     return {"parts": [{"kind": k, "label": KINDS[k], "seconds": v, "share": round(100 * v / whole)} for k, v in spans.items()],
-            "length": end - times[0] if not length else length}
+            "length": length if length else end - times[0]}
 
 
 # ---------------------------------------------------------------- the night's dice
@@ -207,7 +207,7 @@ def window_says(session: GameSession) -> str:
     talk = session.talk or {}
     if session.played_on and talk.get("start") and talk.get("length"):
         a, b = night(session)
-        f = lambda t: t.strftime("%-I:%M %p").replace("AM", "am").replace("PM", "pm")  # noqa: E731
+        f = lambda t: t.strftime("%-I:%M %p").replace("AM", "am").replace("PM", "pm")
         return f"during the session ({f(a + MARGIN)} to {f(b - MARGIN)}, with 15 minutes either side)"
     return "that evening (no recording start time, so noon to 6 am)"
 

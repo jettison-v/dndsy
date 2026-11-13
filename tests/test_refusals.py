@@ -74,7 +74,7 @@ def fingerprint(db) -> dict[str, str]:
         if t.name in BOOKKEEPING_TABLES:
             continue
         row = "to_jsonb(x)" + "".join(f" - '{c}'" for c in BOOKKEEPING.get(t.name, ()))
-        out[t.name] = db.execute(text(f'SELECT md5(coalesce(string_agg(({row})::text, \'|\' ORDER BY ({row})::text), \'\')) FROM "{t.name}" x')).scalar()
+        out[t.name] = db.execute(text(f'SELECT md5(coalesce(string_agg(({row})::text, \'|\' ORDER BY ({row})::text), \'\')) FROM "{t.name}" x')).scalar()  # noqa: S608
     return out
 
 

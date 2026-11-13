@@ -10,6 +10,7 @@ the DM moves to another.
 
 import base64
 import io
+import itertools
 import json
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
@@ -126,7 +127,7 @@ def _factor(w: int, h: int) -> float:
 def _points(line, scale: float) -> list[list[float]]:
     """A Universal VTT polyline as wall segments in squares: [[x1, y1, x2, y2], …]."""
     pts = [(float(q.get("x", 0)) * scale, float(q.get("y", 0)) * scale) for q in line or [] if isinstance(q, dict)]
-    return [[round(a[0], 3), round(a[1], 3), round(b[0], 3), round(b[1], 3)] for a, b in zip(pts, pts[1:])]
+    return [[round(a[0], 3), round(a[1], 3), round(b[0], 3), round(b[1], 3)] for a, b in itertools.pairwise(pts)]
 
 
 def read_map(raw: bytes, filename: str) -> dict:

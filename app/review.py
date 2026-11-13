@@ -8,19 +8,18 @@ tested on its own.
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
-from app.characters import campaign_characters
-
 from app import extraction, relations
+from app.characters import campaign_characters
 from app.models import (
+    NON_DRAFTING_SOURCES,
     Correction,
     Entity,
     EntityAlias,
-    EntityRelation,
     EntityKind,
+    EntityRelation,
     EventKind,
     ExtractionRun,
     GameSession,
-    NON_DRAFTING_SOURCES,
     GlossaryTerm,
     Proposal,
     Recap,

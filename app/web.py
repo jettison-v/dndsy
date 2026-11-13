@@ -77,7 +77,7 @@ def require(request: Request, allow: Callable[[dict], bool] | None = None,
     return user, None
 
 
-def changed(character, toast: str = "", closePanel: bool = False, deliver: bool = False, **more) -> str:  # noqa: N803 (the event's name in app.js)
+def changed(character, toast: str = "", closePanel: bool = False, deliver: bool = False, **more) -> str:
     """The HX-Trigger header for "you changed something of this character's" (a pin, reminder, note, a change for D&D
     Beyond): the page and its open side panels show their new copy (app.js "characterChanged", the one way every page
     shows a new copy). `toast` says so; `closePanel` closes the window the form was in first; `deliver`: a change for

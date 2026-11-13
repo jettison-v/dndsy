@@ -75,7 +75,7 @@ def test_transcript_text_is_not_stored(client, db, monkeypatch):
 
     tables = [r[0] for r in db.execute(sql("select tablename from pg_tables where schemaname='public'"))]
     for t in tables:
-        hits = db.execute(sql(f'select count(*) from "{t}" where cast("{t}".* as text) like :m'), {"m": "%SECRET-TRANSCRIPT-MARKER%"}).scalar()
+        hits = db.execute(sql(f'select count(*) from "{t}" where cast("{t}".* as text) like :m'), {"m": "%SECRET-TRANSCRIPT-MARKER%"}).scalar()  # noqa: S608
         assert hits == 0, t
 
 

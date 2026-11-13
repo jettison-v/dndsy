@@ -4,7 +4,7 @@ from app import review
 from app.extraction import store_result
 from app.importer import import_bundle
 from app.models import Correction, ExtractionRun, GameSession
-from tests.test_entities import HX, admin, login, player  # noqa: F401  (fixtures)
+from tests.test_entities import HX, admin, login, player
 
 BUNDLE = {
     "campaign": {"slug": "main", "name": "Main", "dm_name": "Robin"},
@@ -41,7 +41,7 @@ def test_ask_options_and_names(db):
     assert "robin" in review.names_for(db, {"email": "dm@example.com", "name": "Robin Smith"})
 
 
-def test_ask_moves_question_to_waiting_and_publishing_still_works(admin, db):  # noqa: F811
+def test_ask_moves_question_to_waiting_and_publishing_still_works(admin, db):
     s = drafted(db)
     r = admin.post(f"/manage/sessions/{s.id}/questions/ask", data={"q": QUESTIONS[0], "person": " Jo ", "note": "You were there"}, headers=HX)
     assert "Waiting on Jo" in r.text and "You were there" in r.text and "1 waiting" in r.text
@@ -76,7 +76,7 @@ def test_askee_answers_from_previously_on(monkeypatch, db):
     assert review.unused_answer_count(db, s) == 1  # the redraft prompt counts it like a reviewer's answer
 
 
-def test_reviewer_records_answer_on_behalf(admin, db):  # noqa: F811
+def test_reviewer_records_answer_on_behalf(admin, db):
     s = drafted(db)
     review.ask_question(db, s, QUESTIONS[0], "Robin", "", "Brett")
     db.flush()

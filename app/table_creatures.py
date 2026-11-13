@@ -11,9 +11,9 @@ Rename and Take off the map. Players get only its name, size, kind and what the 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.character_views import planned
 from app import creatures, places, rules_data, table_fight, tokens
 from app import wild_shape as ws
+from app.character_views import planned
 from app.db import get_db
 from app.models import Place, Token
 from app.templating import templates

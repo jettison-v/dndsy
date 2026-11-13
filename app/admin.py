@@ -9,8 +9,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import web
-from app import import_preview
+from app import import_preview, web
 from app.auth import is_admin, is_reviewer
 from app.db import get_db
 from app.importer import BundleError, import_bundle
@@ -36,7 +35,6 @@ def import_form(request: Request, db: Session = Depends(get_db)):
     if denied:
         return denied
     from app.history_pages import recent_imports
-
     from app.manage import backup_status
     from app.models import JobRun
 

@@ -14,7 +14,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, object_session
 
 from app import spending
-from app.traits import TRAITS, clean_traits, has_traits, traits_line  # noqa: F401  (re-exported)
 from app.extraction import MODEL, ExtractionError, _cost, _norm, session_label, timeline
 from app.models import (
     NEW_CHARACTER,
@@ -29,6 +28,7 @@ from app.models import (
     Status,
     StoryEvent,
 )
+from app.traits import TRAITS, clean_traits, has_traits, traits_line  # noqa: F401  (re-exported)
 
 
 class EntityError(ValueError):
@@ -115,7 +115,7 @@ def moments(db: Session, entity: Entity) -> list[dict]:
         return []
     order = {s.id: i for i, s in enumerate(timeline(db, entity.campaign_id))}
     events.sort(key=lambda e: (order.get(e.session_id, 10**6), e.position, e.id))
-    short = lambda s: f"Session {s.number}" if s.number is not None else session_label(s)  # noqa: E731
+    short = lambda s: f"Session {s.number}" if s.number is not None else session_label(s)
     return [{"e": e, "label": session_label(e.session), "short": short(e.session)} for e in events]
 
 

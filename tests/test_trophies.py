@@ -8,14 +8,14 @@ from sqlalchemy import select
 from app import review, session_story, trophies
 from app.models import Campaign, CharacterDown
 from tests.table_setup import char
-from tests.test_session_story import publish, roll, story  # noqa: F401 (the fixture)
+from tests.test_session_story import publish, roll, story
 
 
 def campaign(db):
     return db.scalar(select(Campaign))
 
 
-def test_trophies_count_only_what_happened_during_sessions_unless_asked(db, story):  # noqa: F811
+def test_trophies_count_only_what_happened_during_sessions_unless_asked(db, story):
     s = publish(db, story)
     s.talk = {**(s.talk or {}), "start": "19:00", "length": 3 * 3600}
     cole, trah = char(db, "Cole"), char(db, "Trah")
@@ -37,7 +37,7 @@ def test_trophies_count_only_what_happened_during_sessions_unless_asked(db, stor
     assert (rows[f"c{trah.id}"]["ones"], rows[f"c{trah.id}"]["downs"]) == (1, 1)
 
 
-def test_awards_go_on_each_persons_shelf(db, story):  # noqa: F811
+def test_awards_go_on_each_persons_shelf(db, story):
     s = publish(db, story)
     rows = {r["key"]: r for r in trophies.gather(db, campaign(db))["rows"]}
     shown = session_story.awards(db, s, review.published_recap(s))
@@ -48,7 +48,7 @@ def test_awards_go_on_each_persons_shelf(db, story):  # noqa: F811
     assert all(x["n"] >= 1 for x in rows[f"c{cole.id}"]["shelf"])
 
 
-def test_the_tab_and_a_persons_view_for_everyone_at_the_table(db, story, player, dm):  # noqa: F811
+def test_the_tab_and_a_persons_view_for_everyone_at_the_table(db, story, player, dm):
     publish(db, story)
     cole = char(db, "Cole")
     assert 'data-tab="t-trophies"' in player.get("/party").text
@@ -60,7 +60,7 @@ def test_the_tab_and_a_persons_view_for_everyone_at_the_table(db, story, player,
     assert player.get("/party/trophies/c999999").status_code == 404
 
 
-def test_only_the_dm_or_an_admin_sets_what_trophy_case_counts(db, story, player, dm):  # noqa: F811
+def test_only_the_dm_or_an_admin_sets_what_trophy_case_counts(db, story, player, dm):
     assert player.post("/c/main/manage/settings/trophies", data={"counts": "all"}).status_code == 404
     assert trophies.mode(campaign(db)) == "sessions"
     dm.post("/c/main/manage/settings/trophies", data={"counts": "all"})

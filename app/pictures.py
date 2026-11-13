@@ -10,10 +10,9 @@ portrait.
 
 import io
 import warnings
-
-from PIL import Image, ImageOps, UnidentifiedImageError
 from dataclasses import dataclass
 
+from PIL import Image, ImageOps, UnidentifiedImageError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, load_only
 
@@ -34,8 +33,8 @@ class PictureError(Exception):
 # image (just showing the head)"): the framing added to a description, OpenAI's size for it, and where the square version
 # is cut (faces sit high; anything else in the middle). One rule for every place a picture shows.
 FRAMES = {
-    "portrait": ("A head-and-shoulders portrait: the whole head and shoulders in frame, the face in the upper middle, "
-                 "looking toward the viewer.", "1024x1024", (0.5, 0.35)),
+    "portrait": (("A head-and-shoulders portrait: the whole head and shoulders in frame, the face in the upper middle, "
+                 "looking toward the viewer."), "1024x1024", (0.5, 0.35)),
     "creature": ("The whole creature, centred, seen from a little above eye level, nothing cut off.", "1024x1024", (0.5, 0.45)),
     "item": ("The whole object, centred and complete with nothing cut off, on a plain background, evenly lit.", "1024x1024", (0.5, 0.5)),
     "place": ("A wide view of the place at eye level, as a traveller first sees it; no people up close.", "1536x1024", (0.5, 0.5)),
@@ -322,7 +321,7 @@ def relatives(db: Session, entity: Entity | None, user: dict | None) -> list[dic
     return sorted(({**x, "pic": pics[i]["thumb"]} for i, x in out.items() if i in pics), key=lambda x: x["name"].casefold())
 
 
-def named(db: Session, o: "Owner", name: str, user: dict | None) -> Entity | None:
+def named(db: Session, o: Owner, name: str, user: dict | None) -> Entity | None:
     """The entry an @ name picked, if it has a picture this person may see and send (not the picture's own entry)."""
     if not o.campaign_id or not name.strip():
         return None
@@ -334,7 +333,7 @@ def named(db: Session, o: "Owner", name: str, user: dict | None) -> Entity | Non
     return e
 
 
-def usable(db: Session, o: "Owner", ids: list[int], user: dict | None) -> list[Entity]:
+def usable(db: Session, o: Owner, ids: list[int], user: dict | None) -> list[Entity]:
     """The ticked entries, as checked again here: this campaign's, seen by this person, with a picture."""
     sees = _sees(user)
     out = [e for e in (db.get(Entity, i) for i in dict.fromkeys(ids)) if e is not None and e.campaign_id == o.campaign_id

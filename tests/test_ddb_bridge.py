@@ -919,7 +919,7 @@ def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_
     """The Live pill answers one question (docs/mockups/table-without-modes.html): connected while the bridge hears your
     sheet, something to make by hand when a change couldn't be made, else what to do to connect."""
     cole = char(db, "Cole")
-    pill = lambda: player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
+    pill = lambda: player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]
     cole.sheet_heard_at = None  # no extension yet
     db.flush()
     assert tone(pill()) == "bad"
@@ -1051,7 +1051,7 @@ def test_someone_with_no_character_sees_how_many_sheets_are_connected(player, dm
 
     set_role(db, "dm@example.com", "dm")
     player.post("/bridge/closed/75423618")
-    pill = lambda: dm.get("/c/main/").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
+    pill = lambda: dm.get("/c/main/").text.split('id="live-pill"')[1].split("</button>")[0]
     assert "1 of 2 connected" in pill() and 'live-ago sr">Connected<' not in pill() and " step" not in pill().split(">")[0]
     player.post("/bridge/heard/75423618?pull=1")
     assert 'live-ago sr">Connected<' in pill() and " step dot" in pill().split(">")[0]  # every sheet: the dot alone
@@ -1264,7 +1264,7 @@ def test_a_change_says_how_it_stands_the_same_everywhere(player, db, sheet, monk
     drink(db, cole)
     db.commit()
     upto = web.deliver_now(cole)["upto"]
-    follow = lambda: player.get(f"/bridge/follow/{cole.id}?upto={upto}").json()  # noqa: E731
+    follow = lambda: player.get(f"/bridge/follow/{cole.id}?upto={upto}").json()
     assert follow()["says"] == "On its way"
     batch = ddb_bridge.outbox(db, cole)
     ddb_bridge.delivered(db, batch["id"], False, "D&D Beyond answered 500.")

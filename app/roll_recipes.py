@@ -65,7 +65,7 @@ def feature(name: str) -> dict | None:
     (app/rules_book.py `fill`: {level:Fighter}, {mod:dexterity}, N{martial_arts}, {sneak}, {lands_aid}, {bardic}…). D&D
     Beyond's own names match too: curly apostrophes, and the part after a prefix ("Channel Divinity: Divine Spark")."""
     all_ = recipes().get("features") or {}
-    norm = lambda n: re.sub(r"\s+", " ", (n or "").replace("’", "'")).strip().lower()  # noqa: E731
+    norm = lambda n: re.sub(r"\s+", " ", (n or "").replace("’", "'")).strip().lower()
     keys = {norm(k): k for k in all_}
     want = norm(name)
     hit = keys.get(want) or (keys.get(want.split(": ", 1)[1]) if ": " in want else None)

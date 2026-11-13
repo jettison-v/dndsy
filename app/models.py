@@ -127,7 +127,7 @@ class Campaign(Timestamped, Base):
     table_settings: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # A recording's speaker names matched to people (Session Story): {name: user id, or 0 for no one at the table}
     speakers: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
-    members: Mapped[list["CampaignMember"]] = relationship(back_populates="campaign")
+    members: Mapped[list[CampaignMember]] = relationship(back_populates="campaign")
 
 
 class ToolSetting(Base):
@@ -179,7 +179,7 @@ class Entity(Timestamped, Base):
     # Who wrote the description last: "claude", a person's name, or "" (not known). A person's words are kept: Claude's
     # later updates arrive as marked-up edits of them (content workflows step 3).
     summary_by: Mapped[str] = mapped_column(String(200), default="", server_default="")
-    aliases: Mapped[list["EntityAlias"]] = relationship(cascade="all, delete-orphan")
+    aliases: Mapped[list[EntityAlias]] = relationship(cascade="all, delete-orphan")
 
     @property
     def written_by_person(self) -> str:
@@ -187,7 +187,7 @@ class Entity(Timestamped, Base):
         return "" if self.summary_by in ("", "claude") else self.summary_by
 
     @property
-    def display_aliases(self) -> list["EntityAlias"]:
+    def display_aliases(self) -> list[EntityAlias]:
         """Real other names only (nicknames, former names); misspellings hidden."""
         return [a for a in self.aliases if not a.misspelling]
 
@@ -346,13 +346,13 @@ class Character(Timestamped, Base):
     # tonight says so loudly (app/live.py `dropped`, _conn_band.html; Brett, Nov 13)
     sheet_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     owner: Mapped[User | None] = relationship()
-    snapshot: Mapped["CharacterSnapshot | None"] = relationship(back_populates="character", uselist=False, passive_deletes=True)
-    memberships: Mapped[list["CampaignCharacter"]] = relationship(
+    snapshot: Mapped[CharacterSnapshot | None] = relationship(back_populates="character", uselist=False, passive_deletes=True)
+    memberships: Mapped[list[CampaignCharacter]] = relationship(
         back_populates="character", order_by="CampaignCharacter.id", cascade="all, delete-orphan", passive_deletes=True,
         lazy="selectin")
 
     @property
-    def membership(self) -> "CampaignCharacter | None":
+    def membership(self) -> CampaignCharacter | None:
         """The campaign it's in now (at most one, like on D&D Beyond)."""
         return next((m for m in self.memberships if m.left_on is None), None)
 
@@ -362,7 +362,7 @@ class Character(Timestamped, Base):
         return m.campaign_id if m else None
 
     @property
-    def entity(self) -> "Entity | None":
+    def entity(self) -> Entity | None:
         """Its story page in the campaign it's in now."""
         m = self.membership
         return m.entity if m else None
@@ -576,13 +576,13 @@ class GameSession(Timestamped, Base):
     # Who talked (app/session_story.py): {"speakers": {recording's name: seconds}, "length": seconds}, counted on Brett's Mac
     talk: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # Children are deleted with the session (the database cascades; passive_deletes lets it).
-    recaps: Mapped[list["Recap"]] = relationship(
+    recaps: Mapped[list[Recap]] = relationship(
         back_populates="session", order_by="Recap.version", cascade="all, delete-orphan", passive_deletes=True
     )
-    events: Mapped[list["StoryEvent"]] = relationship(
+    events: Mapped[list[StoryEvent]] = relationship(
         back_populates="session", order_by="StoryEvent.position", cascade="all, delete-orphan", passive_deletes=True
     )
-    messages: Mapped[list["SessionMessage"]] = relationship(
+    messages: Mapped[list[SessionMessage]] = relationship(
         order_by="SessionMessage.id", cascade="all, delete-orphan", passive_deletes=True
     )
 
@@ -690,7 +690,7 @@ class NoteSource(Timestamped, Base):
     character_id: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"))
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     character: Mapped[Character | None] = relationship()
-    snapshots: Mapped[list["NoteSnapshot"]] = relationship(
+    snapshots: Mapped[list[NoteSnapshot]] = relationship(
         back_populates="source", order_by="NoteSnapshot.id", cascade="all, delete-orphan"
     )
 
@@ -704,7 +704,7 @@ class NoteSnapshot(Timestamped, Base):
     content_hash: Mapped[str] = mapped_column(String(64))
     text: Mapped[str] = mapped_column(Text)  # Markdown-ish; images appear as [image: name]
     source: Mapped[NoteSource] = relationship(back_populates="snapshots")
-    images: Mapped[list["NoteImage"]] = relationship(cascade="all, delete-orphan")
+    images: Mapped[list[NoteImage]] = relationship(cascade="all, delete-orphan")
 
 
 class NoteImage(Base):
@@ -996,7 +996,7 @@ class Token(Timestamped, Base):
     conditions: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # a monster's: [{"name", "source"}]
     group: Mapped[str | None] = mapped_column(String(80), nullable=True)  # creatures added together roll one Initiative
 
-from app import history  # noqa: E402,F401
+from app import history  # noqa: F401
 
 
 class CharacterDown(Base):

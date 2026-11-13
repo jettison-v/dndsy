@@ -91,7 +91,7 @@ def load(conn: Connection, data: dict) -> dict[str, int]:
         counts[t.name] = len(rows)
         pk = list(t.primary_key.columns)
         if len(pk) == 1 and pk[0].autoincrement and rows and conn.dialect.name == "postgresql":
-            conn.execute(text(f"select setval(pg_get_serial_sequence('{t.name}', '{pk[0].name}'), "
+            conn.execute(text(f"select setval(pg_get_serial_sequence('{t.name}', '{pk[0].name}'), "  # noqa: S608
                               f"coalesce((select max({pk[0].name}) from {t.name}), 1))"))
     return counts
 

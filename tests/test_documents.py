@@ -4,6 +4,7 @@ opened from the repo's copy in a sealed frame."""
 import json
 import re
 from pathlib import Path
+from typing import ClassVar
 
 from app import documents
 
@@ -78,7 +79,7 @@ def test_the_roadmaps_tags_all_close():
     from html.parser import HTMLParser
 
     class Tags(HTMLParser):
-        VOID = {"br", "img", "input", "meta", "link", "hr", "col", "source", "wbr"}
+        VOID: ClassVar[set] = {"br", "img", "input", "meta", "link", "hr", "col", "source", "wbr"}
 
         def __init__(self):
             super().__init__()

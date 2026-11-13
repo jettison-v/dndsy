@@ -8,8 +8,8 @@ from sqlalchemy import select
 from app import access, characters, vtt
 from app.models import Campaign, Character, CharacterSnapshot, User
 from tests.roles import set_role
-from tests.test_campaigns import sign_in, two  # noqa: F401
 from tests.table_setup import char
+from tests.test_campaigns import sign_in, two
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
@@ -33,7 +33,7 @@ def test_features_and_labs():
     assert all(f.roadmap and f.about for f in vtt.FEATURES)  # each says what it does and where it is
 
 
-def test_the_switches_on_settings(two, db, monkeypatch):  # noqa: F811
+def test_the_switches_on_settings(two, db, monkeypatch):
     admin, main = two["admin"], two["main"]
     page = admin.get("/c/main/manage/settings").text
     assert '<section class="section" id="features">' in page and "Sync with D&amp;D Beyond" in page
@@ -63,7 +63,7 @@ def test_the_switches_on_settings(two, db, monkeypatch):  # noqa: F811
     assert db.scalar(select(Campaign).where(Campaign.name == "VTT test")).is_test
 
 
-def test_test_copies_leave_the_real_characters_alone(two, db):  # noqa: F811
+def test_test_copies_leave_the_real_characters_alone(two, db):
     admin, main, strahd = two["admin"], two["main"], two["strahd"]
     cole = char(db, "Cole")
     cole.owner_id = db.scalar(select(User.id).where(User.email == "pat@example.com"))  # Pat plays Cole at the table

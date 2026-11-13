@@ -7,12 +7,12 @@ from starlette.websockets import WebSocketDisconnect
 from app import characters, realtime
 from app import table_rolls as tr
 from tests.table_setup import char
-from tests.test_table_rolls import post, table  # noqa: F401
+from tests.test_table_rolls import post, table
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
 
-def test_a_roll_reaches_every_page_at_the_table_without_its_number(table, db, monkeypatch):  # noqa: F811
+def test_a_roll_reaches_every_page_at_the_table_without_its_number(table, db, monkeypatch):
     monkeypatch.setattr(tr, "die", lambda sides: 11)
     cole, sent, publish = char(db, "Cole"), [], realtime.publish
     monkeypatch.setattr(realtime, "publish", lambda *a, **k: (sent.append(a), publish(*a, **k)))
@@ -25,7 +25,7 @@ def test_a_roll_reaches_every_page_at_the_table_without_its_number(table, db, mo
     assert realtime.connected(cole.campaign_id) == 0
 
 
-def test_only_your_own_campaigns_and_only_signed_in(table, db):  # noqa: F811
+def test_only_your_own_campaigns_and_only_signed_in(table, db):
     from fastapi.testclient import TestClient
 
     from app.main import app
@@ -95,7 +95,7 @@ def test_whatever_the_table_sees_of_a_character_announces_itself_however_its_mad
     assert len(sent) == 1
 
 
-def test_other_sites_pages_are_refused(table, db):  # noqa: F811
+def test_other_sites_pages_are_refused(table, db):
     cole = char(db, "Cole")
     with table["other"].websocket_connect(f"/live/connect?c={cole.campaign_id}", headers={"origin": "https://elsewhere.example"}) as ws:
         with pytest.raises(WebSocketDisconnect) as refused:
@@ -105,7 +105,7 @@ def test_other_sites_pages_are_refused(table, db):  # noqa: F811
         assert realtime.connected(cole.campaign_id) == 1  # askdnd's own page
 
 
-def test_someone_removed_from_the_campaign_is_cut_off(table, db, monkeypatch):  # noqa: F811
+def test_someone_removed_from_the_campaign_is_cut_off(table, db, monkeypatch):
     cole = char(db, "Cole")
     monkeypatch.setattr(realtime, "RECHECK_SECONDS", 0.05)
     with table["other"].websocket_connect(f"/live/connect?c={cole.campaign_id}") as ws:

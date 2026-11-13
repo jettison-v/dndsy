@@ -146,7 +146,7 @@ def _clean_rows(raw, limit: int = MAX_ROWS) -> list[dict]:
         if not isinstance(r, dict):
             continue
         n = r.get("n")
-        if isinstance(n, bool) or not (isinstance(n, int) and abs(n) <= 99 or isinstance(n, str) and DIE.match(n)):
+        if isinstance(n, bool) or not ((isinstance(n, int) and abs(n) <= 99) or (isinstance(n, str) and DIE.match(n))):
             continue
         what = " ".join(str(r.get("what") or "").split())[:70]
         if what:

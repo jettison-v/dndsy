@@ -1,11 +1,11 @@
 """Ready kept on Battle (app/readying.py; feedback 14, docs/mockups/hide-ready.html): what and when, at the top of the
 Reaction column, until it's used, let go or its character's turn starts."""
 
+import pytest
+
 from app import fight
 from app.models import Campaign
 from tests.table_setup import char, owned_by
-
-import pytest
 
 pytestmark = pytest.mark.usefixtures("no_network")
 

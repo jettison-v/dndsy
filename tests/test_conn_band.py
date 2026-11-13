@@ -7,7 +7,7 @@ import re
 from datetime import UTC, datetime, timedelta
 
 from app import live
-from tests.test_dm_backup import carry, table  # noqa: F401 (the fixture: Cole's sheet closed, the DM as a backup on)
+from tests.test_dm_backup import carry, table
 
 
 def band(html: str) -> str:
@@ -22,7 +22,7 @@ def test_the_band_says_so_when_your_sheets_connection_gets_worse_and_goes_once_i
     """A standing rule (Brett, Nov 13: "a reasonably invasive notification when a connection gets worse"): amber while
     the DM's browser still reaches the sheet, red when nothing does, gone when the sheet is heard again."""
     cole = table
-    page = lambda: player.get(f"/characters/{cole.id}/battle").text  # noqa: E731
+    page = lambda: player.get(f"/characters/{cole.id}/battle").text
     assert band(page()) == ""  # never connected tonight: the pill says what to do, as before
 
     player.post("/bridge/heard/75423618?pull=1")

@@ -10,9 +10,9 @@ import shutil
 
 import pytest
 from playwright.sync_api import expect
+from sqlalchemy import create_engine, text
 
 from tests.browser.pages import tone, wait_tone
-from sqlalchemy import create_engine, text
 
 ITEMS = os.path.join(os.path.dirname(__file__), "..", "fixtures", "ddb", "items.json")
 SERVER_ENV = {"DDB_BRIDGE": "1", "DDB_ITEMS_URL": "file://" + os.path.abspath(ITEMS)}  # (the item browser's list: made up)

@@ -77,8 +77,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
 from app import access, config, ddb, ddb_fields, ddb_sheet, live, picks, realtime, table_rolls, timing, web
-from app import conditions as cond
 from app import characters as chars
+from app import conditions as cond
 from app.auth import current_user, is_admin, is_dm
 from app.db import get_db
 from app.models import BridgeBatch, BridgeIntent, BridgeKey, BridgeLog, Campaign, Character, TableRoll, ToolSetting
@@ -507,7 +507,7 @@ def _note_stopped(n: dict | None, intents: list[BridgeIntent], quiet: bool) -> N
         fields = list(plan([d], n, every=True)[0])
         before = plan(done, n, every=True)[0] if done else {}
         after, _, impossible, _ = plan(done + [d], n, every=True)
-        if impossible and impossible[-1][0] is d or not fields:
+        if (impossible and impossible[-1][0] is d) or not fields:
             continue  # (one that can't happen any more has no end result: it stays until Try again or Undo)
         it.data = {**it.data, "was": {f: before.get(f, _value(n, f)) for f in fields}, "want": {f: after[f] for f in fields}, "quiet": quiet}
         done.append(d)
@@ -1035,7 +1035,7 @@ def _every_change(n: dict) -> list[tuple[str, dict]]:
               first("charges:", lambda f, v: ((ddb_fields.pick(raw, ["inventory", {"id": f[8:]}]) or {}).get("limitedUse") or {}).get("maxUses", 0) > 1)):
         if f:
             out.append(("use", {"field": f, "delta": -1 if now[f] else 1}))
-    canequip = lambda f, v: ((ddb_fields.pick(raw, ["inventory", {"id": f[9:]}]) or {}).get("definition") or {}).get("canEquip")  # noqa: E731
+    canequip = lambda f, v: ((ddb_fields.pick(raw, ["inventory", {"id": f[9:]}]) or {}).get("definition") or {}).get("canEquip")
     for f in (first("equipped:", canequip), first("attuned:")):
         if f:
             out.append(("set", {"field": f, "value": not now[f]}))

@@ -12,8 +12,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, books, vtt, web
-from app import drawing, picture_window, trophies
+from app import access, books, drawing, picture_window, trophies, vtt, web
 from app import characters as chars
 from app.auth import can_edit_settings, is_admin
 from app.db import get_db

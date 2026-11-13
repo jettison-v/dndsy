@@ -13,9 +13,7 @@ from markupsafe import escape
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import web
-from app import entities
-from app import access
+from app import access, entities, web
 from app.auth import can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError, session_label

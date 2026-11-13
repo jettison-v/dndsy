@@ -21,7 +21,8 @@ asking is in apply.
 import copy
 import re
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
+from types import MappingProxyType
 
 from sqlalchemy import select
 
@@ -120,7 +121,7 @@ class Corrections(dict):
     came from."""
 
     campaign: set = frozenset()
-    homebrew: dict = {}  # the campaign's homebrew items, by name (app/homebrew.py): character_views.apply_overrides carries them
+    homebrew: Mapping = MappingProxyType({})  # read-only until set; the campaign's homebrew items, by name (app/homebrew.py): character_views.apply_overrides carries them
 
 
 def sheet_overrides(db, campaign_id: int | None = None) -> Corrections:

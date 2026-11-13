@@ -26,9 +26,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy import create_engine
 
-from app import backup  # noqa: E402
+from app import backup
 
 
 def arg(name: str) -> str | None:

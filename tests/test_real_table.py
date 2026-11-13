@@ -5,7 +5,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
-import real_table as rt  # noqa: E402
+import real_table as rt
 
 
 def spell(name: str, component: int, used: int = 0) -> dict:

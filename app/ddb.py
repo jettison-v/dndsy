@@ -13,11 +13,11 @@ can't work out is left out rather than guessed.
 
 import json
 import re
-import socket
 import time
 import urllib.error
 import urllib.request
 from html.parser import HTMLParser
+from typing import ClassVar
 
 # With the player's custom items, as the sheet itself and the extension read it (Nov 5: without them, every read that
 # alternated with the extension's logged Cole's seven custom items as removed on D&D Beyond, then added, all evening)
@@ -61,7 +61,7 @@ def fetch_character_json(ddb_id: str, timeout: float = TIMEOUT_SECONDS) -> dict:
         if e.code == 404:
             raise DdbError("D&D Beyond has no character with that id.") from e
         raise DdbError(f"D&D Beyond answered with an error ({e.code}). Try again later.") from e
-    except (TimeoutError, socket.timeout) as e:
+    except TimeoutError as e:
         raise DdbError("D&D Beyond took too long to answer. Try again later.") from e
     except urllib.error.URLError as e:
         raise DdbError("Couldn't reach D&D Beyond. Try again later.") from e
@@ -88,10 +88,10 @@ def _get_json(url: str, timeout: float) -> dict:
 
 
 CLASS_SPELLS_URLS = (  # what a class can prepare: leveled spells, then cantrips
-    "https://character-service.dndbeyond.com/character/v5/game-data/always-known-spells"
-    "?classId={class_id}&classLevel={level}&sharingSetting=2",
-    "https://character-service.dndbeyond.com/character/v5/game-data/spells"
-    "?classId={class_id}&classLevel={level}&sharingSetting=2",
+    ("https://character-service.dndbeyond.com/character/v5/game-data/always-known-spells"
+    "?classId={class_id}&classLevel={level}&sharingSetting=2"),
+    ("https://character-service.dndbeyond.com/character/v5/game-data/spells"
+    "?classId={class_id}&classLevel={level}&sharingSetting=2"),
 )
 SPELL_FIELDS = ("id", "name", "level", "school", "duration", "activation", "range", "concentration", "ritual",
                 "components", "componentsDescription", "saveDcAbilityId", "requiresAttackRoll", "requiresSavingThrow",
@@ -186,7 +186,7 @@ SIZES = {1: "Tiny", 2: "Tiny", 3: "Small", 4: "Medium", 5: "Large", 6: "Huge", 7
 def item_notes(data: dict) -> list[dict]:
     """Players' notes on items, from the raw D&D Beyond data (before sanitize drops them):
     [{"ref": "item:<id>" | "custom:<id>", "name", "note"}]. Stored apart (CharacterItemNote)."""
-    rows = lambda key: [x for x in data.get(key) or [] if isinstance(x, dict)]  # noqa: E731 (odd data: skip, don't fail)
+    rows = lambda key: [x for x in data.get(key) or [] if isinstance(x, dict)]
     inventory = {str(i.get("id")): _d(i, "definition", "name", default="") for i in rows("inventory")}
     custom = {str(c.get("id")): c for c in rows("customItems")}
     out: dict[str, dict] = {}
@@ -227,7 +227,7 @@ def sanitize(data: dict) -> dict:
 
 
 class _Text(HTMLParser):
-    BLOCK = {"p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "table", "ul", "ol"}
+    BLOCK: ClassVar[set] = {"p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "table", "ul", "ol"}
 
     def __init__(self):
         super().__init__()
@@ -290,7 +290,7 @@ def render_template(text: str, values: dict) -> str:
             arithmetic = re.sub(r"[a-z]+(?::[a-z]+)?", var, body.replace(" ", ""))
             if not re.fullmatch(r"[\d+\-*/().]+", arithmetic):
                 raise ValueError(body)
-            n = eval(arithmetic, {"__builtins__": {}})  # digits and + - * / ( ) only (checked above)
+            n = eval(arithmetic, {"__builtins__": {}})  # noqa: S307  # digits and + - * / ( ) only (checked above)
         except (KeyError, ValueError, SyntaxError, ZeroDivisionError):
             return "(see D&D Beyond)"
         n = int(-(-n // 1)) if "roundup" in rules else int(n // 1)
@@ -318,4 +318,4 @@ def _signed(n: int) -> str:
 
 
 # The parser lives in app/ddb_sheet.py; these names stay available here (ddb.parse_character…)
-from app.ddb_sheet import _Sheet, parse_character  # noqa: E402,F401
+from app.ddb_sheet import _Sheet, parse_character  # noqa: F401

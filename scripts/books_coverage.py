@@ -306,16 +306,16 @@ def write() -> None:
         st, w = where(r, known)
         by[st].append((r, w))
     lines = ["# The books' coverage", "",
-             "What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every class feature, subclass feature, feat, "
+             ("What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every class feature, subclass feature, feat, "
              "species trait and magic item whose words hold dice, a saving throw or a bonus to a roll. Written by "
-             "`scripts/books_coverage.py` from the offline books (names only); `tests/test_books_coverage.py` checks it.", "",
-             f"**{len(rows)} entries**: {len(by['played'])} played, {len(by['partly'])} partly, {len(by['sheet'])} the sheet's numbers, "
+             "`scripts/books_coverage.py` from the offline books (names only); `tests/test_books_coverage.py` checks it."), "",
+             (f"**{len(rows)} entries**: {len(by['played'])} played, {len(by['partly'])} partly, {len(by['sheet'])} the sheet's numbers, "
              f"{len(by['save only'])} a save with nothing for the character to roll, {len(by['on purpose'])} in words on purpose, "
-             f"{len(by['missing'])} missing.", "",
-             "**Played** means askdnd's data has it: an `add` plays on every roll it changes; a `rolls` entry plays on the Battle "
+             f"{len(by['missing'])} missing."), "",
+             ("**Played** means askdnd's data has it: an `add` plays on every roll it changes; a `rolls` entry plays on the Battle "
              "row D&D Beyond lists for it (activated features are listed as actions). **Save only**: the target rolls the save; "
              "its DC is the sheet's. Magic items are listed for reference: an item's rolls are added as the table's characters "
-             "carry it.", ""]
+             "carry it."), ""]
     for kind, title in (("feature", "Class and subclass features"), ("option", "Options a feature picks from"), ("feat", "Feats"), ("species", "Species traits"), ("item", "Magic items (DMG)")):
         lines += [f"## {title}", "", "| Name | Where | Has | askdnd |", "|---|---|---|---|"]
         for st in ("missing", "partly", "save only", "sheet", "on purpose", "played"):

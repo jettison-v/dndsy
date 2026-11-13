@@ -1,0 +1,3 @@
+# Logs every branch adds to at the end: a merge keeps both sides instead of stopping on a conflict
+docs/DECISIONS.md merge=union
+docs/SETUP_LOG.md merge=union

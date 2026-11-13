@@ -103,7 +103,7 @@ def inside(a: dict, tokens: list[dict]) -> list[dict]:
     for t in tokens:
         if a["shape"] == "emanation" and a.get("token") == t["id"]:
             continue
-        span = max(1, int(round(t.get("size") or 1)))
+        span = max(1, round(t.get("size") or 1))
         if any(covers(a, t["x"] + i + 0.5, t["y"] + j + 0.5) for i in range(span) for j in range(span)):
             out.append(t)
     return out

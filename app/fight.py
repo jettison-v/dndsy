@@ -401,7 +401,6 @@ def for_person(db: Session, campaign: Campaign | None, email: str | None) -> dic
     if f:  # a character's picture is its portrait, as on its own page; a creature's, its token's, else its Monster
         from app import characters as chars  # Manual art (rules_data.pictures, by D&D Beyond's monster id)
         from app import rules_data
-
         from app import wild_shape as ws
 
         ids = {x["character"] for x in f["order"] if x.get("character")}

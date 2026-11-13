@@ -3,9 +3,8 @@ browser's For <character> section and each row's icon. Items in the catalog's sh
 a book's words would be."""
 
 from app import item_fit
-from tests.table_setup import COLE
-
 from app.ddb_sheet import parse_character
+from tests.table_setup import COLE
 
 SHEET = parse_character(COLE)  # (Cole: Druid 6 / Monk 2, Strength 8, Dexterity 15, Wisdom 19, AC 16 by Unarmored Defense)
 
