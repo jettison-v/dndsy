@@ -79,7 +79,8 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "mine": [f for f in facts if f.author_email.lower() == email] if not moderator else [],
         "done_facts": sorted((f for f in facts if f.status != "pending"), key=lambda f: f.updated_at, reverse=True) if moderator else [],
         "finished": [f for f in facts if f.status == "done"],  # worked into the description or marked Done
-        "relations": relations.lines_for(db, entity),
+        # (a hidden entry is as if it didn't exist for the table, its ties too: Brett, Nov 6; only the DM, reviewers and admins see them)
+        "relations": [l for l in relations.lines_for(db, entity) if l.other.status == Status.PUBLISHED or reviewer],
         # The quests it's part of, and its connections drawn around it (the Reader; Brett 2026-10-22, R2)
         "part_of": campaign_views.part_of(db, entity, lambda e: e.status == Status.PUBLISHED or reviewer),
         "cx": campaign_views.connections(db, entity, lambda e: e.status == Status.PUBLISHED or reviewer),
