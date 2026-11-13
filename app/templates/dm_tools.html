@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{# DM Tools (app/homebrew.py; Brett chose 1B, Nov 13, docs/mockups/homebrew-items/): the things a DM makes, apart from
+   Manage (settings, review, rules). Items first; the other kinds are listed as planned until they're built. #}
+{% block title %}DM Tools · askdnd{% endblock %}
+{% block content %}
+<main class="page dm-tools">
+  <nav class="dm-side" aria-label="DM Tools">
+    <span class="manage-sec">The campaign's own</span>
+    <a href="{{ cbase }}/dm" class="on" aria-current="page">Items</a>
+    {% for key, label, about in planned %}<span class="dm-planned" title="{{ about }}">{{ label }} <small>planned</small></span>{% endfor %}
+    <span class="manage-sec">Rules</span>
+    <a href="{{ cbase }}/manage/house-rules">House rules</a>
+  </nav>
+  <div class="dm-main">
+    <div class="title-row"><h1>DM Tools</h1><a class="btn primary" href="{{ cbase }}/dm/items/new">+ New item</a></div>
+    <p class="subtitle">What you make for this campaign. <b>Items</b>: its own magic items, with what each does in play built from what askdnd already plays (a roll, a bonus to another roll, charges). A character who carries an item of that name on their D&amp;D Beyond sheet plays it on Battle. Players see one only once it's theirs.</p>
+
+    <section class="section">
+      <h2>The campaign's items{% if items %} · {{ items | length }}{% endif %}</h2>
+      {% if items %}
+      <ul class="records dm-items">
+        {% for i in items %}
+        <li class="record">
+          <div class="record-main"><b><a href="{{ cbase }}/dm/items/{{ i.key }}">{{ i.name }}</a></b>
+            <span class="note">{{ i.data.category or "Wondrous Item" }} · {{ (i.data.rarity or "") | lower }}{% if i.data.attunement %} · attunement{% endif %}{% if i.who %} · {{ i.who | join(", ") }} {{ "has" if i.who | length == 1 else "have" }} it{% else %} · no one has it yet{% endif %}</span>
+            {% if i.says %}<span class="note dm-says">{{ i.says | join(" · ") }}</span>{% else %}<span class="note">Nothing set for play yet: its words only.</span>{% endif %}</div>
+          <span class="tag{{ ' ok' if i.who }}">{{ "In play" if i.who else "Ready" }}</span>
+          <a class="btn small" href="{{ cbase }}/dm/items/{{ i.key }}">Open</a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}<p class="muted">No homebrew items yet. <a href="{{ cbase }}/dm/items/new">Make the first one</a>{% if customs %}, or start from one already on a sheet below{% endif %}.</p>{% endif %}
+    </section>
+
+    {% if customs %}
+    <section class="section">
+      <h2>Custom items on the table's sheets</h2>
+      <p class="hint">Made up on D&amp;D Beyond and not a homebrew item here yet. Make one into a homebrew item to set what it does in play.</p>
+      <ul class="records">
+        {% for c in customs %}
+        <li class="record"><div class="record-main"><b>{{ c.name }}</b><span class="note">on {{ c.who }}'s sheet</span></div>
+          <a class="btn small" href="{{ cbase }}/dm/items/new?name={{ c.name | urlencode }}">Make it homebrew</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    {% if retired %}
+    <section class="section">
+      <h2>Retired</h2>
+      <ul class="records">
+        {% for i in retired %}
+        <li class="record"><div class="record-main"><b>{{ i.name }}</b><span class="note">Not in play: its rolls and bonuses are off.</span></div>
+          <form method="post" action="{{ cbase }}/dm/items/{{ i.key }}/retire" class="record-actions"><button class="btn small" type="submit">Bring back</button></form></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

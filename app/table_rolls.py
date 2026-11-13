@@ -739,7 +739,7 @@ def _rider_dc(db, root, label: str) -> int | None:
     from app import roll_recipes as rr
 
     for it in sheet.get("inventory") or []:  # an item's use with a save on a hit (Hammer of Thunderbolts' Thunderclap)
-        rd = ((rr.item(it.get("base_name")) or rr.item(it.get("name")) or {}).get("use") or {}).get("rider")
+        rd = ((rr.item_for(sheet, it.get("base_name")) or rr.item_for(sheet, it.get("name")) or {}).get("use") or {}).get("rider")
         if rd and label == f"{rd['name']}: {rd['save']} save":
             return int(rd["dc"])
     return None

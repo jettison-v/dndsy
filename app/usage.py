@@ -62,6 +62,7 @@ FEATURES: list[tuple[str, str]] = [
     (r"^/manage/sessions/", "Session Story review"),
     (r"^/manage/table", "Manage › Table"),
     (r"^/manage/(settings|house-rules)", "Manage › Settings and house rules"),
+    (r"^/dm/items", "DM Tools: homebrew items"),
     (r"^/manage/", "Admin pages"),
     (r"^/dice$", "Your dice"),
     (r"^/feedback$", "Feedback for Claude"),

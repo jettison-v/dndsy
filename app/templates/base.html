@@ -88,6 +88,7 @@
        either lists the rest down the left. #}
     {% set camp_pages = manage_pages | selectattr("group", "equalto", "campaign") | list %}
     {% set admin_pages = manage_pages | selectattr("group", "equalto", "askdnd") | list %}
+    {% if dm_tools_ok(user, here) %}<a class="dm-door{{ ' active' if path == '/dm' or path.startswith('/dm/') }}" href="{{ cbase }}/dm" title="DM Tools: what you make for this campaign, its homebrew items" aria-label="DM Tools">DM<span class="dm-door-more"> Tools</span></a>{% endif %}
     {% if camp_pages %}{% set on_camp = camp_pages | selectattr("here") | list %}
     <div class="manage">
       <button class="{{ 'active' if on_camp }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
@@ -156,6 +157,7 @@
   <a href="/your-notes" class="{{ 'active' if path == '/your-notes' }}">Your notes <span class="notes-count" data-notes-count hidden></span></a>
   <a href="#" data-modal-url="/dice" data-modal-size="large">Your dice</a>
   {% set camp_home = manage_pages | selectattr("group", "equalto", "campaign") | first %}{% set admin_home = manage_pages | selectattr("group", "equalto", "askdnd") | first %}
+  {% if dm_tools_ok(user, here) %}<a href="{{ cbase }}/dm" class="{{ 'active' if path == '/dm' or path.startswith('/dm/') }}">DM Tools<small>What you make for {{ here.name }}</small></a>{% endif %}
   {% if camp_home %}<a href="{{ camp_home.href }}" class="{{ 'active' if camp_home.group == 'campaign' and (manage_pages | selectattr('group', 'equalto', 'campaign') | selectattr('here') | list) }}">Manage<small>Running {{ here.name if here else "the campaign" }}</small></a>{% endif %}
   {% if admin_home %}<a href="{{ admin_home.href }}" class="{{ 'active' if manage_pages | selectattr('group', 'equalto', 'askdnd') | selectattr('here') | list }}">⚙ Admin<small>askdnd, for every campaign</small></a>{% endif %}
   {% if feedback_menu(request) %}<a href="#" data-fb-open>Feedback for Claude<small>A note for Claude about this page</small></a>{% endif %}

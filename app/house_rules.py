@@ -120,15 +120,22 @@ class Corrections(dict):
     came from."""
 
     campaign: set = frozenset()
+    homebrew: dict = {}  # the campaign's homebrew items, by name (app/homebrew.py): character_views.apply_overrides carries them
 
 
 def sheet_overrides(db, campaign_id: int | None = None) -> Corrections:
     """{(ref, field): value} for regrouping sheet items and rules terms: the tool corrections, then the campaign's
-    house rules on the same thing (kind "sheet"), which win."""
+    house rules on the same thing (kind "sheet"), which win; and the campaign's homebrew items (`homebrew`)."""
+    from app import homebrew
     from app.models import ToolCorrection
 
     out = Corrections(((o.ref, o.field), o.value) for o in db.scalars(select(ToolCorrection)))
     out.campaign = set()
+    if campaign_id is None:
+        from app import access
+
+        campaign_id = access.current_campaign_id()
+    out.homebrew = homebrew.for_campaign(db, campaign_id)
     for (kind, key), fields in rules(campaign_id).items():
         if kind == "sheet":
             out.update({(key, f): r["value"] for f, r in fields.items()})

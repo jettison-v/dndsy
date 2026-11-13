@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{# A homebrew item in DM Tools (app/homebrew.py; docs/mockups/homebrew-items/ board 1): its book fields and words, then
+   what it does in play, from what askdnd already plays: a roll, a bonus to another roll, charges. #}
+{% block title %}{{ item.name or "New item" }} · DM Tools · askdnd{% endblock %}
+{% block content %}
+<main class="page dm-tools dm-item">
+  <nav class="dm-side" aria-label="DM Tools">
+    <span class="manage-sec">The campaign's own</span>
+    <a href="{{ cbase }}/dm" class="on" aria-current="page">Items</a>
+    <span class="manage-sec">Rules</span>
+    <a href="{{ cbase }}/manage/house-rules">House rules</a>
+  </nav>
+  <div class="dm-main">
+    <p class="note"><a href="{{ cbase }}/dm">← DM Tools</a></p>
+    <div class="title-row"><h1>{{ item.name or "New item" }}</h1></div>
+    {% if errors %}<div class="card bad" role="alert">{% for e in errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+    <form method="post" action="{{ cbase }}/dm/items" class="dm-form">
+      <input type="hidden" name="key" value="{{ key }}">
+      <section class="section">
+        <h2>The item</h2>
+        <div class="dm-grid">
+          <label class="field">Name<input type="text" name="name" value="{{ item.name or '' }}" maxlength="80" required></label>
+          <label class="field">Kind<select name="category">{% for c in categories %}<option{% if c == item.category %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></label>
+          <label class="field">Rarity<select name="rarity">{% for r in rarities %}<option{% if r == item.rarity %} selected{% endif %}>{{ r }}</option>{% endfor %}</select></label>
+          <label class="field dm-check"><input type="checkbox" name="attunement" value="1"{% if item.attunement %} checked{% endif %}> Needs attunement</label>
+          <label class="field">Cost<input type="text" name="cost" value="{{ item.cost or '' }}" maxlength="40" placeholder="500 GP, or —"></label>
+          <label class="field">Weight<input type="text" name="weight" value="{{ item.weight or '' }}" maxlength="40" placeholder="1 lb"></label>
+        </div>
+        <label class="field">Its words (what the table reads)<textarea name="text" rows="4" maxlength="4000">{{ item.text if item.text != "A homebrew item." else "" }}</textarea></label>
+      </section>
+
+      <section class="section">
+        <h2>What it does in play</h2>
+        <p class="hint">Each part is something askdnd already plays. A character carrying an item of this name gets it on Battle and the roll card; leave a part empty if it doesn't apply. askdnd plays the numbers you set; the DM rules on the rest.</p>
+
+        <h3>A roll</h3>
+        {% for r in rolls %}{% set i = loop.index0 %}
+        <fieldset class="dm-piece">
+          <legend>Roll {{ i + 1 }}</legend>
+          <div class="dm-grid">
+            <label class="field">Called<input type="text" name="roll{{ i }}_name" value="{{ r.name or '' }}" maxlength="60" placeholder="{{ item.name or 'Its name' }}"></label>
+            <label class="field">Dice<input type="text" name="roll{{ i }}_dice" value="{{ (r.dice or [''])[0] }}" maxlength="40" placeholder="2d6 force"></label>
+            <label class="field">How<select name="roll{{ i }}_resolve">{% for k, v in resolve.items() %}<option value="{{ k }}"{% if k == (r.resolve or 'none') %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+            <label class="field">What it does<select name="roll{{ i }}_effect">{% for k, v in effect.items() %}<option value="{{ k }}"{% if k == (r.effect or 'damage') %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+            <label class="field">Save<select name="roll{{ i }}_save"><option value="">—</option>{% for s in saves %}<option{% if s == r.save %} selected{% endif %}>{{ s }}</option>{% endfor %}</select></label>
+            <label class="field">DC<input type="text" name="roll{{ i }}_dc" value="{{ r.dc or '' }}" inputmode="numeric" maxlength="2" placeholder="14"></label>
+            <label class="field dm-check"><input type="checkbox" name="roll{{ i }}_half" value="1"{% if r.success == 'half' %} checked{% endif %}> Half on a success</label>
+            <label class="field dm-wide">A note (shown with the roll)<input type="text" name="roll{{ i }}_note" value="{{ r.note or '' }}" maxlength="160"></label>
+          </div>
+        </fieldset>
+        {% endfor %}
+
+        <h3>A bonus to another roll</h3>
+        {% for a in adds %}{% set i = loop.index0 %}
+        <fieldset class="dm-piece">
+          <legend>Bonus {{ i + 1 }}</legend>
+          <div class="dm-grid">
+            <label class="field">Called<input type="text" name="add{{ i }}_name" value="{{ a.name or '' }}" maxlength="60" placeholder="{{ item.name or 'Its name' }}"></label>
+            <label class="field">Adds<input type="text" name="add{{ i }}_amount" value="{{ a.amount or '' }}" maxlength="30" placeholder="+1, 1d4 or 1d6 fire"></label>
+            <label class="field">When<select name="add{{ i }}_when">{% for k, v in when.items() %}<option value="{{ k }}"{% if k == (a.when or 'before') %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+            <label class="field">To<select name="add{{ i }}_to">{% for k, v in to.items() %}<option value="{{ k }}"{% if k == ((a.to or ['attack'])[0]) %} selected{% endif %}>{{ v }}</option>{% endfor %}</select></label>
+            <label class="field dm-check"><input type="checkbox" name="add{{ i }}_this" value="1"{% if 'this_item' in (a.with or []) %} checked{% endif %}> Only with this item (a weapon)</label>
+            <label class="field dm-wide">Says<input type="text" name="add{{ i }}_says" value="{{ a.says or '' }}" maxlength="120" placeholder="against a Fiend"></label>
+          </div>
+        </fieldset>
+        {% endfor %}
+
+        <h3>Charges</h3>
+        <div class="dm-grid">
+          <label class="field">How many<input type="text" name="charges" value="{{ charges.count or '' }}" inputmode="numeric" maxlength="2" placeholder="3"></label>
+          <label class="field">Back at<select name="charges_back">{% for b in back %}<option value="{{ b }}"{% if b == charges.back %} selected{% endif %}>{{ b or "—" }}</option>{% endfor %}</select></label>
+          <label class="field">How many come back<input type="text" name="charges_regain" value="{{ charges.regain or '' }}" maxlength="20" placeholder="1d3"></label>
+        </div>
+        <p class="hint">Said on the item; the count itself is D&amp;D Beyond's, as for any item.</p>
+      </section>
+
+      <div class="btns dm-go"><button class="btn primary" type="submit">Save</button><a class="btn link" href="{{ cbase }}/dm">Cancel</a></div>
+    </form>
+    {% if key %}
+    <form method="post" action="{{ cbase }}/dm/items/{{ key }}/retire" class="dm-retire"><button class="btn link small danger" type="submit">{{ "Bring back" if item.retired else "Retire" }}</button>
+      <span class="note">{{ "It's retired: its rolls and bonuses are off." if item.retired else "Retiring takes it out of play; it's kept, with Bring back." }}</span></form>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}
