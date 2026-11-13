@@ -198,3 +198,5 @@ def test_a_standing_rule_a_hidden_entry_is_as_if_it_did_not_exist(db, player):
     db.expire_all()
     page = player.get("/c/main/").text
     assert "Mara Quill</a>" in page and "Veiled Duke</a>" not in page
+    reader = player.get(f"/c/main/campaign?open={shown.id}").text  # her entry's Connections (Nov 13: a tie to it showed its name)
+    assert "Mara Quill" in reader and "Veiled Duke</a>" not in reader  # (a published moment may say its name; nothing links to it)

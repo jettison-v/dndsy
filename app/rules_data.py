@@ -176,6 +176,12 @@ class MagicItem(_Shape):
     monsters: list[Key] = []  # monsters it makes that have their own stat block (keys)
     creatures: list[SummonedCreature] = []
     source: str
+    # A campaign's homebrew item (app/homebrew.py, DM Tools): its price and weight as the DM writes them, what it does in
+    # play (rolls, adds, charges: the rules books' shapes) and whether it's retired
+    cost: str = ""
+    weight: str = ""
+    play: dict = {}
+    retired: bool = False
 
 
 class GlossaryEntry(_Shape):

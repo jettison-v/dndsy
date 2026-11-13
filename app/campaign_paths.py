@@ -109,9 +109,9 @@ def is_page_visit(scope) -> bool:
 
 def is_campaign_page(path: str) -> bool:
     """A page that belongs to one campaign, opened without /c/<campaign>: its address is the prefixed one only."""
-    if path in ("/story", "/sessions", "/map", "/campaign", "/manage", "/table") or re.fullmatch(r"/(?:campaign/(?:glossary/)?|sessions/)\d+", path):
+    if path in ("/story", "/sessions", "/map", "/campaign", "/manage", "/table", "/dm") or re.fullmatch(r"/(?:campaign/(?:glossary/)?|sessions/)\d+", path):
         return True
-    return any(path == p or path.startswith(p + "/") for p in MANAGE) and "/images/" not in path
+    return (any(path == p or path.startswith(p + "/") for p in MANAGE) or path.startswith("/dm/items")) and "/images/" not in path  # (DM Tools: app/homebrew.py)
 
 
 def _header(scope, name: bytes) -> bool:
