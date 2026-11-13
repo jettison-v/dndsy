@@ -128,6 +128,12 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
 .menu { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 6px; display: grid; gap: 2px; max-width: 280px; font-size: .86rem; }
 .menu div { padding: 7px 10px; border-radius: 6px; }
 .menu div.hl { background: var(--amber-soft); color: var(--amber); }
+.modes { align-items: center; }
+.drama-wrap { position: relative; margin-left: auto; display: inline-flex; }
+.drama { width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font-size: 1rem; line-height: 1; cursor: pointer; opacity: .7; }
+.drama:hover, .drama:focus-visible { opacity: 1; }
+.drama[aria-pressed="true"] { opacity: 1; border-color: var(--amber); background: var(--amber-soft); box-shadow: 0 0 0 2px var(--amber-soft); }
+.drama-wrap .tip { position: absolute; bottom: calc(100% + 8px); right: 0; width: max-content; max-width: 220px; background: var(--surface-3); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: .78rem; color: var(--text); box-shadow: 0 6px 18px rgba(0,0,0,.4); pointer-events: none; }
 </style>
 
 <div class="wrap">
@@ -148,17 +154,16 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
         <div class="hd"><b>Eldritch Blast</b><span class="x">×</span></div>
         <div class="sub">No Name · to hit +7 · 2 beams</div>
         <div class="rail"><span class="now">To hit</span><span>Damage</span></div>
-        <div class="btns"><span class="chip" aria-pressed="false">Normal</span><span class="chip" aria-pressed="true">Advantage</span><span class="chip" aria-pressed="false">Disadvantage</span></div>
-        <div class="pills"><button class="chip" aria-pressed="true" type="button">🎬 Make it dramatic <small>the table watches</small></button></div>
-        <div class="btns"><button class="btn primary" type="button">Roll to hit · dramatic</button></div>
-        <div class="sub">The table sees this · in slow motion on every screen</div>
+        <div class="btns modes"><span class="chip" aria-pressed="false">Normal</span><span class="chip" aria-pressed="true">Advantage</span><span class="chip" aria-pressed="false">Disadvantage</span><span class="drama-wrap"><button class="drama" aria-pressed="true" type="button" aria-label="Make it dramatic" title="Make it dramatic: the whole table watches this roll in slow motion">🎬</button><span class="tip" role="tooltip">Make it dramatic: the whole table watches this roll in slow motion</span></span></div>
+        <div class="btns"><button class="btn primary" type="button">Roll to hit</button></div>
+        <div class="sub">The table sees this</div>
       </div>
-      <p class="cap">A press on the card, beside Advantage. It's for this roll only and never sticks.</p>
+      <p class="cap">Just an icon at the end of the Advantage row: no extra line on the card. Pointing at it says what it does (shown here as if pointed at); pressed, it lights. For this roll only, never sticks.</p>
     </div>
     <div class="say">
       <div class="lbl">Option A</div>
       <h2>A press on the roll card</h2>
-      <p>"Make it dramatic" sits with the roll's other choices. Pressed, the roll goes to the table as usual, but on every screen the dice are thrown big and slow in the middle, the roller's name and what's at stake above them, and the number shows only once the die lands (about four seconds, against about one now).</p>
+      <p>A small 🎬 icon at the end of the Advantage row, for players to discover: pointing at it says what it does, and it takes no room of its own (your note, Nov 13). Pressed, the roll goes to the table as usual, but on every screen the dice are thrown big and slow in the middle, the roller's name and what's at stake above them, and the number shows only once the die lands (about four seconds, against about one now).</p>
       <ul class="meta">
         <li>Only for the table's rolls: a DM-only or private roll stays quiet.</li>
         <li>Works with the dice tray off or on: a dramatic roll always takes the middle of the screen, even for people who use the tray.</li>
@@ -236,9 +241,87 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
   </section>
 
   <section class="pick" aria-labelledby="pick-h">
-    <div class="lbl">To pick</div>
-    <h2 id="pick-h">Which ones?</h2>
-    <p class="meta">My recommendation: <b>A with B</b> (the press, and several dice one at a time), and <b>C</b>, since the DM knows best when a roll matters. Then <b>D</b>'s death saves. Limits only if it gets overused.</p>
-    <p class="meta">Reply with the letters you want, or comment on any board.</p>
+    <div class="lbl">Your pick</div>
+    <h2 id="pick-h">Which to build?</h2>
+    <p class="meta">My recommendation: <b>A with B</b> (the press, and several dice one at a time), and <b>C</b>, since the DM knows best when a roll matters. Then <b>D</b>'s death saves. Limits only if it gets overused. Tick yours below and Save; you can come back and change it.</p>
+    <form class="decide">
+      <fieldset data-q="build" data-kind="many"><legend>Which ones</legend><div class="choices">
+        <label class="choice many"><input type="checkbox" name="build" value="A">A · A press on the roll card <span class="mine-tag">My pick</span></label>
+        <label class="choice many"><input type="checkbox" name="build" value="B">B · Several rolls, one at a time <span class="mine-tag">My pick</span></label>
+        <label class="choice many"><input type="checkbox" name="build" value="C">C · The DM calls it <span class="mine-tag">My pick</span></label>
+        <label class="choice many"><input type="checkbox" name="build" value="D">D · Death saves, and the table&#x27;s limits</label>
+      </div></fieldset>
+      <fieldset><legend>Your notes</legend><textarea name="notes" aria-label="Your notes" placeholder="Anything to change, an order, a question"></textarea></fieldset>
+      <div class="save-row"><button type="submit">Save</button><span class="saved" role="status">Loading…</span></div>
+    </form>
   </section>
 </div>
+
+<style>
+.decide { display: grid; gap: 16px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.decide legend { font-weight: 600; color: var(--strong); padding: 0; margin-bottom: 8px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 14px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; color: var(--text); }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice::before { content: ""; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--muted); flex: none; }
+.choice.one::before { border-radius: 50%; }
+.choice:has(input:checked) { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.choice:has(input:checked)::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--surface-2); }
+.choice:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+.choice .mine-tag { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.decide textarea { width: 100%; min-height: 84px; box-sizing: border-box; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font: 400 1rem/1.4 var(--sans); resize: vertical; }
+.save-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.save-row button { background: var(--red-btn); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: 600 .95rem/1 var(--sans); cursor: pointer; }
+.save-row button:disabled { opacity: .6; cursor: default; }
+.saved { color: var(--muted); font-size: .88rem; }
+.saved.ok { color: var(--green); }
+</style>
+<script>
+(() => {
+  const form = document.querySelector('form.decide');
+  if (!form) return;
+  const said = form.querySelector('.saved'), btn = form.querySelector('button');
+  let db = null;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle('ok', !!ok); };
+  const collect = () => {
+    const out = {};
+    form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+      const picked = [...fs.querySelectorAll('input:checked')].map(i => i.value);
+      out[fs.dataset.q] = fs.dataset.kind === 'one' ? (picked[0] || '') : picked;
+    });
+    return out;
+  };
+  form.addEventListener('change', () => show('Not saved yet'));
+  form.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') show('Not saved yet'); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString();
+    try {
+      await db.collection('answers').doc('pick').set({ answers: collect(), notes: form.querySelector('textarea').value.trim(), at });
+      show('Saved ' + when(at) + ' · Claude reads it from here', true);
+    } catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) { show('Nothing saved yet'); return; }
+      const a = d.data(), ans = a.answers || {};
+      form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+        const v = ans[fs.dataset.q], vs = Array.isArray(v) ? v : [v];
+        fs.querySelectorAll('input').forEach(i => { i.checked = vs.includes(i.value); });
+      });
+      form.querySelector('textarea').value = a.notes || '';
+      show('Saved ' + when(a.at) + ' · change anything and Save again', true);
+    } catch (err) { show('Nothing saved yet'); }
+  })();
+})();
+</script>

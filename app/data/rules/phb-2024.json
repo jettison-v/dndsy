@@ -106,6 +106,17 @@
     "17": 4
    },
    "why": "the Dragonborn's Breath Weapon d10s"
+  },
+  "soulknife": {
+   "by": "Rogue",
+   "die": true,
+   "at": {
+    "3": 6,
+    "5": 8,
+    "11": 10,
+    "17": 12
+   },
+   "why": "the Psionic Energy die (Soulknife)"
   }
  },
  "entries": [
@@ -169,6 +180,30 @@
   },
   {
    "kind": "feat",
+   "name": "Chef",
+   "why": "Replenishing Meal: 1d8 extra healing on a Hit Point Die after a Short Rest; Bolstering Treats: Temporary Hit Points equal to your Proficiency Bonus",
+   "rolls": [
+    {
+     "name": "Replenishing Meal",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d8"
+     ],
+     "note": "Extra, when a Hit Point Die is spent at the end of the Short Rest"
+    },
+    {
+     "name": "Bolstering Treats",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "{pb}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
    "name": "Grappler",
    "adds": [
     {
@@ -199,6 +234,22 @@
      ],
      "amount": "{pb}",
      "effect": "+{pb} damage; after a Critical Hit or dropping a creature to 0 HP with a melee weapon, one more attack as a Bonus Action"
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Heavy Armor Master",
+   "why": "while wearing Heavy armor, Bludgeoning, Piercing and Slashing damage from an attack is reduced by your Proficiency Bonus",
+   "adds": [
+    {
+     "name": "Heavy Armor Master",
+     "when": "damage_taken",
+     "to": [
+      "damage_taken"
+     ],
+     "reduces": "{pb}",
+     "says": "Bludgeoning, Piercing or Slashing from an attack, in Heavy armor"
     }
    ]
   },
@@ -279,6 +330,46 @@
       "unarmed"
      ],
      "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Agonizing Blast",
+   "class": "Warlock",
+   "level": 2,
+   "needs": "Agonizing Blast",
+   "why": "an invocation: add your Charisma modifier to the damage of the Warlock cantrip you chose",
+   "adds": [
+    {
+     "name": "Agonizing Blast",
+     "when": "on_damage",
+     "to": [
+      "spell damage"
+     ],
+     "amount": "{mod:charisma}",
+     "says": "the Warlock cantrip you chose for it (usually Eldritch Blast)"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Ambush",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Ambush",
+   "why": "a maneuver: add a Superiority Die to a Dexterity (Stealth) check or an Initiative roll",
+   "adds": [
+    {
+     "name": "Ambush",
+     "when": "before",
+     "to": [
+      "check"
+     ],
+     "amount": "1{superiority}",
+     "cost": "a Superiority Die",
+     "says": "Stealth or Initiative"
     }
    ]
   },
@@ -413,6 +504,26 @@
   },
   {
    "kind": "feature",
+   "name": "Combat Inspiration",
+   "class": "Bard",
+   "level": 3,
+   "sub": "College of Valor",
+   "why": "a creature with your Bardic Inspiration die can add it to a hit's damage, or to its AC against an attack that hits it",
+   "adds": [
+    {
+     "name": "Combat Inspiration",
+     "when": "on_hit",
+     "to": [
+      "damage"
+     ],
+     "amount": "1{bardic}",
+     "gives": true,
+     "says": "or, as a Reaction when hit, add it to AC against that attack"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Combat Superiority",
    "class": "Fighter",
    "level": 3,
@@ -434,6 +545,27 @@
      "pressed": false,
      "effect": "Use one of your maneuvers",
      "says": "a maneuver that adds it to damage"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Commanding Presence",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Commanding Presence",
+   "why": "a maneuver: add a Superiority Die to a Charisma (Intimidation, Performance or Persuasion) check",
+   "adds": [
+    {
+     "name": "Commanding Presence",
+     "when": "before",
+     "to": [
+      "check"
+     ],
+     "amount": "1{superiority}",
+     "cost": "a Superiority Die",
+     "says": "Intimidation, Performance or Persuasion"
     }
    ]
   },
@@ -474,6 +606,29 @@
      "amount": "1d10",
      "says": "after you see the roll",
      "cost": "a use"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Death Strike",
+   "class": "Rogue",
+   "level": 17,
+   "sub": "Assassin",
+   "why": "a Sneak Attack hit in the first round of a combat: Con save or the attack's damage is doubled",
+   "adds": [
+    {
+     "name": "Death Strike",
+     "trigger": "A Sneak Attack hit on the first round of a combat",
+     "says": "Con save or the attack's damage is doubled against it",
+     "when": "on_hit",
+     "with": [
+      "finesse",
+      "ranged_weapon"
+     ],
+     "op": "save",
+     "save": "Con",
+     "dc": "{dc:dexterity}"
     }
    ]
   },
@@ -527,6 +682,50 @@
       "ranged_weapon"
      ],
      "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Disarming Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Disarming Attack",
+   "why": "a maneuver: add a Superiority Die to the damage; Str save or drops one object it holds, of your choice",
+   "adds": [
+    {
+     "name": "Disarming Attack",
+     "trigger": "A hit, spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "Str save against your maneuver DC (Strength or Dexterity) or drops one object it holds, of your choice",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Distracting Strike",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Distracting Strike",
+   "why": "a maneuver: the next attack on the target by someone else before your next turn has Advantage",
+   "adds": [
+    {
+     "name": "Distracting Strike",
+     "trigger": "Spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "the next attack on the target by someone else before your next turn has Advantage",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
     }
    ]
   },
@@ -871,6 +1070,49 @@
   },
   {
    "kind": "feature",
+   "name": "Envenom Weapons",
+   "class": "Rogue",
+   "level": 13,
+   "sub": "Assassin",
+   "why": "Cunning Strike's Poison option also deals 2d6 Poison on a failed save, ignoring Resistance",
+   "adds": [
+    {
+     "name": "Envenom Weapons",
+     "trigger": "Cunning Strike's Poison option",
+     "says": "the target also takes 2d6 Poison on a failed save (ignores Resistance)",
+     "when": "on_hit",
+     "with": [
+      "finesse",
+      "ranged_weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Feinting Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Feinting Attack",
+   "why": "a maneuver: a Bonus Action first: Advantage on your next attack against a creature within 5 ft; the die adds on a hit",
+   "adds": [
+    {
+     "name": "Feinting Attack",
+     "trigger": "Spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "a Bonus Action first: Advantage on your next attack against a creature within 5 ft; the die adds on a hit",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Frenzy",
    "class": "Barbarian",
    "level": 3,
@@ -890,6 +1132,28 @@
      "amount": "{rage}d6",
      "once": "a turn",
      "effect": "+{rage}d6 damage"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Goading Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Goading Attack",
+   "why": "a maneuver: add a Superiority Die to the damage; Wis save or Disadvantage on attacks against anyone but you until the end of your next turn",
+   "adds": [
+    {
+     "name": "Goading Attack",
+     "trigger": "A hit, spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "Wis save against your maneuver DC (Strength or Dexterity) or Disadvantage on attacks against anyone but you until the end of your next turn",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
     }
    ]
   },
@@ -992,6 +1256,26 @@
       "{mod:charisma}d6"
      ],
      "note": "The most dice at once; spend fewer as you like"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Homing Strikes",
+   "class": "Rogue",
+   "level": 9,
+   "sub": "Soulknife",
+   "why": "Soul Blades: after a Psychic Blade misses, add a Psionic Energy Die to the attack roll (spent only if it then hits)",
+   "adds": [
+    {
+     "name": "Homing Strikes",
+     "when": "after_fail",
+     "to": [
+      "attack"
+     ],
+     "amount": "1{soulknife}",
+     "cost": "a Psionic Energy Die, only if it then hits",
+     "says": "a Psychic Blade attack"
     }
    ]
   },
@@ -1191,6 +1475,72 @@
   },
   {
    "kind": "feature",
+   "name": "Lunging Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Lunging Attack",
+   "why": "a maneuver: a Bonus Action Dash first; the die adds to a melee hit after moving 5 ft straight",
+   "adds": [
+    {
+     "name": "Lunging Attack",
+     "trigger": "Spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "a Bonus Action Dash first; the die adds to a melee hit after moving 5 ft straight",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Maneuvering Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Maneuvering Attack",
+   "why": "a maneuver: a willing ally can use its Reaction to move half its Speed without provoking from the target",
+   "adds": [
+    {
+     "name": "Maneuvering Attack",
+     "trigger": "Spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "a willing ally can use its Reaction to move half its Speed without provoking from the target",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Menacing Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Menacing Attack",
+   "why": "a maneuver: add a Superiority Die to the damage; Wis save or Frightened until the end of your next turn",
+   "adds": [
+    {
+     "name": "Menacing Attack",
+     "trigger": "A hit, spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "Wis save against your maneuver DC (Strength or Dexterity) or Frightened until the end of your next turn",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Misty Escape",
    "class": "Warlock",
    "level": 6,
@@ -1231,6 +1581,27 @@
   },
   {
    "kind": "feature",
+   "name": "Parry",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Parry",
+   "why": "a maneuver: a Reaction when a melee attack damages you, reduce it by a Superiority Die + Strength or Dexterity",
+   "adds": [
+    {
+     "name": "Parry",
+     "when": "damage_taken",
+     "to": [
+      "damage_taken"
+     ],
+     "reduces": "1{superiority}+{mod:dexterity}",
+     "cost": "a Superiority Die",
+     "says": "Strength or Dexterity modifier, your choice (Dexterity shown)"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Peerless Skill",
    "class": "Bard",
    "level": 14,
@@ -1246,6 +1617,44 @@
      ],
      "amount": "1{bardic}",
      "cost": "a Bardic Inspiration use"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Potent Spellcasting",
+   "class": "Cleric",
+   "level": 7,
+   "needs": "Potent Spellcasting",
+   "why": "Blessed Strikes' second option: add your Wisdom modifier to a Cleric cantrip's damage",
+   "adds": [
+    {
+     "name": "Potent Spellcasting",
+     "when": "on_damage",
+     "to": [
+      "spell damage"
+     ],
+     "amount": "{mod:wisdom}",
+     "says": "a Cleric cantrip"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Potent Spellcasting",
+   "class": "Druid",
+   "level": 7,
+   "needs": "Potent Spellcasting",
+   "why": "Elemental Fury's second option: add your Wisdom modifier to a Druid cantrip's damage",
+   "adds": [
+    {
+     "name": "Potent Spellcasting",
+     "when": "on_damage",
+     "to": [
+      "spell damage"
+     ],
+     "amount": "{mod:wisdom}",
+     "says": "a Druid cantrip"
     }
    ]
   },
@@ -1318,6 +1727,45 @@
   },
   {
    "kind": "feature",
+   "name": "Protective Field",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Psi Warrior",
+   "why": "Psionic Power: a Reaction when you or a creature within 30 ft takes damage, spend a Psionic Energy Die to reduce it by the roll + Intelligence",
+   "adds": [
+    {
+     "name": "Protective Field",
+     "when": "damage_taken",
+     "to": [
+      "damage_taken"
+     ],
+     "reduces": "1{psionic}+{mod:intelligence}",
+     "cost": "a Psionic Energy Die"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Psi-Bolstered Knack",
+   "class": "Rogue",
+   "level": 3,
+   "sub": "Soulknife",
+   "why": "Psionic Power: after failing a check with a skill or tool you're proficient with, add a Psionic Energy Die (spent only if it succeeds)",
+   "adds": [
+    {
+     "name": "Psi-Bolstered Knack",
+     "when": "after_fail",
+     "to": [
+      "check"
+     ],
+     "amount": "1{soulknife}",
+     "cost": "a Psionic Energy Die, only if it then succeeds",
+     "says": "a check with a skill or tool you're proficient with"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Psionic Strike",
    "class": "Fighter",
    "level": 3,
@@ -1338,6 +1786,29 @@
      "once": "a turn",
      "pressed": false,
      "effect": "+1 Psionic Energy Die + {mod_int} Force"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Pushing Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Pushing Attack",
+   "why": "a maneuver: add a Superiority Die to the damage; Str save or pushed up to 15 ft away (Large or smaller)",
+   "adds": [
+    {
+     "name": "Pushing Attack",
+     "trigger": "A hit, spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "Str save against your maneuver DC (Strength or Dexterity) or pushed up to 15 ft away (Large or smaller)",
+     "when": "on_hit",
+     "with": [
+      "weapon",
+      "unarmed"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
     }
    ]
   },
@@ -1452,6 +1923,25 @@
   },
   {
    "kind": "feature",
+   "name": "Rally",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Rally",
+   "why": "a maneuver: a Bonus Action, an ally gains a Superiority Die + half your Fighter level Temporary Hit Points",
+   "rolls": [
+    {
+     "name": "Temporary Hit Points",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "1{superiority}+{half:Fighter}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Reckless Attack",
    "class": "Barbarian",
    "level": 2,
@@ -1469,6 +1959,51 @@
       "unarmed"
      ],
      "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Rend Mind",
+   "class": "Rogue",
+   "level": 17,
+   "sub": "Soulknife",
+   "why": "Sneak Attack with a Psychic Blade: Wis save or Stunned for 1 minute (repeats each turn)",
+   "adds": [
+    {
+     "name": "Rend Mind",
+     "trigger": "Sneak Attack damage with a Psychic Blade (once per Long Rest, or 3 Psionic Energy Dice)",
+     "says": "Wis save or Stunned for 1 minute, repeating the save at the end of each of its turns",
+     "when": "on_hit",
+     "with": [
+      "finesse",
+      "ranged_weapon"
+     ],
+     "op": "save",
+     "save": "Wis",
+     "dc": "{dc:dexterity}"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Riposte",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Riposte",
+   "why": "a maneuver: a Reaction when a creature misses you with a melee attack: attack it; the die adds on a hit",
+   "adds": [
+    {
+     "name": "Riposte",
+     "trigger": "Spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "a Reaction when a creature misses you with a melee attack: attack it; the die adds on a hit",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
     }
    ]
   },
@@ -1575,6 +2110,45 @@
   },
   {
    "kind": "feature",
+   "name": "Spell Breaker",
+   "class": "Wizard",
+   "level": 10,
+   "sub": "Abjurer",
+   "why": "add your Proficiency Bonus to Dispel Magic's ability check",
+   "adds": [
+    {
+     "name": "Spell Breaker",
+     "when": "before",
+     "to": [
+      "check"
+     ],
+     "amount": "{pb}",
+     "says": "Dispel Magic's ability check"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Stalker's Flurry",
+   "class": "Ranger",
+   "level": 11,
+   "sub": "Gloom Stalker",
+   "why": "with Dreadful Strike: another attack on a creature within 5 ft, or a Wis save for the target and creatures within 10 ft or Frightened",
+   "adds": [
+    {
+     "name": "Stalker's Flurry",
+     "trigger": "When you use Dreadful Strike",
+     "says": "Sudden Strike: another attack with the same weapon on a different creature within 5 ft of the target; or Mass Fear: the target and creatures within 10 ft make a Wis save or are Frightened until the start of your next turn",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "words"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Starry Form: Archer",
    "class": "Druid",
    "level": 3,
@@ -1668,6 +2242,45 @@
   },
   {
    "kind": "feature",
+   "name": "Superior Hunter's Prey",
+   "class": "Ranger",
+   "level": 11,
+   "sub": "Hunter",
+   "why": "once per turn, Hunter's Mark's extra damage also reaches a different creature within 30 ft of the first",
+   "adds": [
+    {
+     "name": "Superior Hunter's Prey",
+     "trigger": "Once per turn, damage to a creature marked by your Hunter's Mark",
+     "says": "deal the spell's extra damage to a different creature you can see within 30 ft of it too",
+     "when": "on_hit",
+     "op": "words",
+     "once": "a turn"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tactical Assessment",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Tactical Assessment",
+   "why": "a maneuver: add a Superiority Die to an Intelligence (History or Investigation) or Wisdom (Insight) check",
+   "adds": [
+    {
+     "name": "Tactical Assessment",
+     "when": "before",
+     "to": [
+      "check"
+     ],
+     "amount": "1{superiority}",
+     "cost": "a Superiority Die",
+     "says": "History, Investigation or Insight"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Tactical Mind",
    "adds": [
     {
@@ -1679,6 +2292,28 @@
      ],
      "amount": "1d10",
      "cost": "a Second Wind use"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Telekinetic Thrust",
+   "class": "Fighter",
+   "level": 7,
+   "sub": "Psi Warrior",
+   "why": "Telekinetic Adept: when Psionic Strike deals damage, a Str save or the target is knocked Prone or pushed 10 ft",
+   "adds": [
+    {
+     "name": "Telekinetic Thrust",
+     "trigger": "After Psionic Strike deals damage",
+     "says": "Str save or Prone, or pushed up to 10 ft",
+     "when": "on_hit",
+     "with": [
+      "weapon"
+     ],
+     "op": "save",
+     "save": "Str",
+     "dc": "{dc:intelligence}"
     }
    ]
   },
@@ -1697,6 +2332,29 @@
      "dice": [
       "1d8+{mod:wisdom}"
      ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Trip Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "needs": "Trip Attack",
+   "why": "a maneuver: add a Superiority Die to the damage; Str save or Prone (Large or smaller)",
+   "adds": [
+    {
+     "name": "Trip Attack",
+     "trigger": "A hit, spending a Superiority Die (Combat Superiority adds the die to the damage)",
+     "says": "Str save against your maneuver DC (Strength or Dexterity) or Prone (Large or smaller)",
+     "when": "on_hit",
+     "with": [
+      "weapon",
+      "unarmed"
+     ],
+     "op": "words",
+     "cost": "a Superiority Die"
     }
    ]
   },
@@ -1796,6 +2454,25 @@
   },
   {
    "kind": "feature",
+   "name": "Wholeness of Body",
+   "class": "Monk",
+   "level": 6,
+   "sub": "Warrior of the Open Hand",
+   "why": "a Bonus Action: regain a roll of your Martial Arts die + Wisdom (at least 1), Wisdom-modifier times per Long Rest",
+   "self": true,
+   "rolls": [
+    {
+     "name": "Wholeness of Body",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1{martial_arts}+{mod:wisdom}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Wild Shape: Feral Forms",
    "why": "the dice are the forms' own (their stat blocks: Wild Shape, app/wild_shape.py), not a roll of the Druid's",
    "rolls": []
@@ -1825,6 +2502,22 @@
      "success": "none",
      "note": "At least one die",
      "dc": "{dc:wisdom}"
+    }
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Adrenaline Rush",
+   "why": "Orc: Dash as a Bonus Action and gain Temporary Hit Points equal to your Proficiency Bonus",
+   "self": true,
+   "rolls": [
+    {
+     "name": "Temporary Hit Points",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "{pb}"
+     ]
     }
    ]
   },
@@ -1878,6 +2571,21 @@
      "amount": "1d6 cold",
      "pressed": false,
      "cost": "a use"
+    }
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Healing Hands",
+   "why": "Aasimar: a Magic action, touch a creature: it regains Proficiency Bonus d4s, once per Long Rest",
+   "rolls": [
+    {
+     "name": "Healing Hands",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "{pb}d4"
+     ]
     }
    ]
   },

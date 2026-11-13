@@ -1,6 +1,19 @@
 {
  "credit": "Roll recipes for spells in the SRD 5.2.1 (attribution in app/data/srd/README.md), written by askdnd from the rules text.",
  "features": {
+  "Adrenaline Rush": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "on": "temp",
+     "parts": [
+      "{pb}"
+     ]
+    }
+   ],
+   "self": true
+  },
   "Boon of Energy Resistance": {
    "checked": "by hand",
    "events": [
@@ -29,6 +42,26 @@
      ],
      "save": "Dex",
      "success": "half"
+    }
+   ]
+  },
+  "Chef": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Replenishing Meal",
+     "note": "Extra, when a Hit Point Die is spent at the end of the Short Rest",
+     "on": "heal",
+     "parts": [
+      "1d8"
+     ]
+    },
+    {
+     "name": "Bolstering Treats",
+     "on": "temp",
+     "parts": [
+      "{pb}"
+     ]
     }
    ]
   },
@@ -181,6 +214,18 @@
    "level": 17,
    "sub": "Warrior of Mercy"
   },
+  "Healing Hands": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Healing Hands",
+     "on": "heal",
+     "parts": [
+      "{pb}d4"
+     ]
+    }
+   ]
+  },
   "Healing Light": {
    "checked": "by hand",
    "class": "Warlock",
@@ -302,6 +347,22 @@
    ],
    "level": 3,
    "sub": "Light Domain"
+  },
+  "Rally": {
+   "checked": "by hand",
+   "class": "Fighter",
+   "events": [
+    {
+     "name": "Temporary Hit Points",
+     "on": "temp",
+     "parts": [
+      "1{superiority}+{half:Fighter}"
+     ]
+    }
+   ],
+   "level": 3,
+   "needs": "Rally",
+   "sub": "Battle Master"
   },
   "Sear Undead": {
    "checked": "by hand",
@@ -487,6 +548,22 @@
    "level": 3,
    "self": true,
    "sub": "Path of the Zealot"
+  },
+  "Wholeness of Body": {
+   "checked": "by hand",
+   "class": "Monk",
+   "events": [
+    {
+     "name": "Wholeness of Body",
+     "on": "heal",
+     "parts": [
+      "1{martial_arts}+{mod:wisdom}"
+     ]
+    }
+   ],
+   "level": 6,
+   "self": true,
+   "sub": "Warrior of the Open Hand"
   },
   "Wild Shape: Feral Forms": {
    "checked": "by hand",
