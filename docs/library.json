@@ -1116,6 +1116,15 @@
   "link": ""
  },
  {
+  "title": "Engineering practices",
+  "kind": "plan",
+  "status": "Current",
+  "date": "Nov 13",
+  "what": "Brett's note, Nov 13 (follow every best practice; breaking costs more than robustness): every game thing by ID, UI by marker, a string catalog, app.js as modules, types, linters, migration tests, CSP and CSRF, dependency scanning, accessibility checks, factories, property and visual tests, query budgets, PR previews, code review before merge, budgets and a load test, each with the check that enforces it and its place in the order of work.",
+  "source": "docs/plans/2026-11-13-engineering-practices.md",
+  "link": ""
+ },
+ {
   "title": "The Three Menus",
   "kind": "design",
   "status": "For you to pick",
