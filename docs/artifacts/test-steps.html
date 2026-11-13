@@ -1,0 +1,261 @@
+<title>askdnd Test Steps</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Brett's test steps for each change Claude builds (Nov 13: "a dynamic artifact that contains test steps that I should
+   complete... I can mark them off as they are tested"). Claude writes the changes and their steps into the page's
+   store (collections `groups`, `steps`); Brett's marks and notes go to `results` (one per step), which Claude reads
+   back. Kept in the repo as docs/artifacts/test-steps.html. askdnd's own colours and faces, dark first. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93;
+  --red: #d64545; --red-text: #f08a8a; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd; --line-soft: #e8e4dc;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c;
+  --red: #b83232; --red-text: #a62a2a; --red-soft: rgba(184, 50, 50, .1);
+  --green: #2f7d4c; --green-soft: rgba(47, 125, 76, .12);
+  --amber: #9a6a07; --amber-soft: rgba(201, 145, 30, .14);
+  --blue: #2f5f9e;
+  color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd; --line-soft: #e8e4dc;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c;
+  --red: #b83232; --red-text: #a62a2a; --red-soft: rgba(184, 50, 50, .1);
+  --green: #2f7d4c; --green-soft: rgba(47, 125, 76, .12);
+  --amber: #9a6a07; --amber-soft: rgba(201, 145, 30, .14);
+  --blue: #2f5f9e;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93;
+  --red: #d64545; --red-text: #f08a8a; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+main { max-width: 900px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { border-bottom: 2px solid var(--red); padding-bottom: 16px; margin-bottom: 18px; display: grid; gap: 8px; }
+.eyebrow { font: 700 12px/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--red-text); }
+h1 { font: 700 32px/1.1 var(--cond); color: var(--strong); margin: 0; }
+.lead { color: var(--muted); margin: 0; max-width: 64ch; }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding: 10px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line-soft); margin-bottom: 16px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs button { font: 600 13px/1 var(--sans); color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 7px 12px; cursor: pointer; white-space: nowrap; }
+.tabs button[aria-pressed="true"] { color: var(--strong); background: var(--surface-2); border-color: var(--muted); }
+.tabs .n { font-variant-numeric: tabular-nums; margin-left: 4px; opacity: .8; }
+.counts { margin-left: auto; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.group { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+.ghead { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 14px 16px; align-items: start; }
+.ghead h2 { font: 700 19px/1.25 var(--cond); color: var(--strong); margin: 0; text-wrap: balance; }
+.gmeta { color: var(--muted); font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+.gmeta a { color: var(--red-text); }
+.prog { font: 700 12px/1 var(--cond); letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 5px 9px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.prog.done { background: var(--green-soft); color: var(--green); }
+.prog.bad { background: var(--red-soft); color: var(--red-text); }
+.gnote { padding: 0 16px 10px; color: var(--muted); font-size: 14px; margin: 0; }
+ol.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; }
+.step { counter-increment: s; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 4px 12px; padding: 12px 16px; border-top: 1px solid var(--line-soft); }
+.step::before { content: counter(s); font: 700 14px/26px var(--cond); text-align: center; width: 26px; height: 26px; border-radius: 50%; background: var(--surface-2); color: var(--strong); }
+.step.pass::before { content: "✓"; background: var(--green-soft); color: var(--green); }
+.step.fail::before { content: "✕"; background: var(--red-soft); color: var(--red-text); }
+.step.skip::before { content: "–"; color: var(--muted); }
+.step .do { color: var(--text); }
+.step .do a { color: var(--red-text); word-break: break-all; }
+.step .see { color: var(--muted); font-size: 14px; }
+.step .see b { color: var(--text); font-weight: 600; }
+.step .as { font: 700 11px/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); background: var(--amber-soft); border-radius: 999px; padding: 3px 7px; margin-right: 6px; vertical-align: 2px; white-space: nowrap; }
+.marks { grid-column: 2; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+.marks button { font: 600 13px/1 var(--sans); border-radius: 8px; padding: 7px 11px; cursor: pointer; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); min-height: 34px; }
+.marks button[data-m="pass"][aria-pressed="true"] { background: var(--green-soft); border-color: var(--green); color: var(--green); }
+.marks button[data-m="fail"][aria-pressed="true"] { background: var(--red-soft); border-color: var(--red); color: var(--red-text); }
+.marks button[data-m="skip"][aria-pressed="true"] { border-color: var(--muted); color: var(--strong); }
+.marks .when { color: var(--muted); font-size: 12px; }
+.note { grid-column: 2; width: 100%; min-height: 64px; margin-top: 6px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 400 16px/1.4 var(--sans); resize: vertical; }
+.note:focus { outline: 2px solid var(--blue); outline-offset: 1px; }
+.reply { grid-column: 2; font-size: 14px; color: var(--text); background: var(--surface-2); border-left: 3px solid var(--blue); border-radius: 6px; padding: 6px 10px; margin-top: 6px; }
+.empty, .status { color: var(--muted); padding: 24px 0; }
+footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
+@media (max-width: 560px) { .counts { margin-left: 0; width: 100%; } .ghead { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<main>
+  <header>
+    <div class="eyebrow">askdnd · try it yourself</div>
+    <h1>Test Steps</h1>
+    <p class="lead">Every change Claude builds lands here with the steps to try it, newest first. Mark each one <b>Passed</b>, <b>Failed</b> (say what you saw; Claude reads it and fixes it) or <b>Skip</b>. Your marks are saved as you go.</p>
+  </header>
+  <div class="bar">
+    <div class="tabs" role="group" aria-label="Show">
+      <button type="button" data-tab="todo" aria-pressed="true">To test<span class="n" data-n="todo"></span></button>
+      <button type="button" data-tab="fail" aria-pressed="false">Failed<span class="n" data-n="fail"></span></button>
+      <button type="button" data-tab="done" aria-pressed="false">Done<span class="n" data-n="done"></span></button>
+      <button type="button" data-tab="all" aria-pressed="false">All</button>
+    </div>
+    <span class="counts" id="counts"></span>
+  </div>
+  <div id="list"><p class="status" id="status">Loading the steps…</p></div>
+  <footer>Kept in the repo at <code>docs/artifacts/test-steps.html</code>. Claude adds each change's steps when it's built and reads your marks back.</footer>
+</main>
+
+<script>
+(() => {
+  const list = document.getElementById('list');
+  const state = { groups: [], steps: [], results: {}, tab: 'todo', loaded: { g: false, s: false, r: false } };
+  let db = null;
+  try { const t = localStorage.getItem('ts-tab'); if (t) state.tab = t; } catch (e) { /* (no storage: start on To test) */ }
+
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const markOf = id => (state.results[id] || {}).state || '';
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+
+  // A step's words: plain text, with links written as <url> made clickable (never HTML from the store)
+  function words(node, text) {
+    String(text || '').split(/(https?:\/\/[^\s)]+)/).forEach((part, i) => {
+      if (i % 2) { const a = el('a', null, part); a.href = part; a.target = '_blank'; a.rel = 'noopener'; node.append(a); }
+      else node.append(document.createTextNode(part));
+    });
+  }
+
+  function groupState(g) {
+    const steps = state.steps.filter(s => s.group === g.id);
+    const marks = steps.map(s => markOf(s.id));
+    return { steps, failed: marks.filter(m => m === 'fail').length, open: marks.filter(m => !m).length, total: steps.length,
+             done: marks.filter(m => m === 'pass' || m === 'skip').length };
+  }
+
+  function render() {
+    if (!(state.loaded.g && state.loaded.s && state.loaded.r)) return;
+    const groups = [...state.groups].sort((a, b) => (b.order || 0) - (a.order || 0));
+    const n = { todo: 0, fail: 0, done: 0 };
+    const all = state.steps.map(s => markOf(s.id));
+    groups.forEach(g => { const st = groupState(g); if (st.failed) n.fail++; else if (st.open) n.todo++; else if (st.total) n.done++; });
+    for (const k in n) document.querySelector(`[data-n="${k}"]`).textContent = n[k] ? ` ${n[k]}` : '';
+    document.getElementById('counts').textContent = state.steps.length
+      ? `${all.filter(m => m === 'pass').length} passed · ${all.filter(m => m === 'fail').length} failed · ${all.filter(m => !m).length} to test` : '';
+    document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === state.tab)));
+    const shown = groups.filter(g => {
+      const st = groupState(g);
+      return state.tab === 'all' || (state.tab === 'fail' && st.failed) || (state.tab === 'todo' && !st.failed && st.open)
+        || (state.tab === 'done' && !st.failed && !st.open && st.total);
+    });
+    const keep = document.activeElement && document.activeElement.classList.contains('note') ? document.activeElement.dataset.id : null;
+    list.replaceChildren();
+    if (!shown.length) {
+      list.append(el('p', 'empty', state.tab === 'todo' ? 'Nothing waiting to be tested.' : state.tab === 'fail' ? 'Nothing failed.' : 'Nothing here yet.'));
+      return;
+    }
+    for (const g of shown) {
+      const st = groupState(g);
+      const box = el('section', 'group');
+      const head = el('div', 'ghead');
+      const left = el('div');
+      left.append(el('h2', null, g.title || 'A change'));
+      const meta = el('div', 'gmeta');
+      if (g.when) meta.append(el('span', null, g.when));
+      if (g.where) meta.append(el('span', null, g.where));
+      if (g.pr) { const a = el('a', null, 'Pull request'); a.href = g.pr; a.target = '_blank'; a.rel = 'noopener'; meta.append(a); }
+      left.append(meta);
+      const prog = el('span', 'prog' + (st.failed ? ' bad' : !st.open && st.total ? ' done' : ''),
+        st.failed ? `${st.failed} failed` : !st.open && st.total ? 'Done' : `${st.done} of ${st.total}`);
+      head.append(left, prog);
+      box.append(head);
+      if (g.about) { const p = el('p', 'gnote'); words(p, g.about); box.append(p); }
+      const ol = el('ol', 'steps');
+      for (const s of st.steps.sort((a, b) => (a.order || 0) - (b.order || 0))) {
+        const r = state.results[s.id] || {};
+        const li = el('li', 'step ' + (r.state || ''));
+        const body = el('div');
+        const doLine = el('div', 'do');
+        if (s.as) doLine.append(el('span', 'as', s.as));
+        words(doLine, s.text);
+        body.append(doLine);
+        if (s.expect) { const see = el('div', 'see'); see.append(el('b', null, 'You should see: ')); words(see, s.expect); body.append(see); }
+        li.append(body);
+        const marks = el('div', 'marks');
+        for (const [m, label] of [['pass', 'Passed'], ['fail', 'Failed'], ['skip', 'Skip']]) {
+          const b = el('button', null, label); b.type = 'button'; b.dataset.m = m; b.dataset.id = s.id;
+          b.setAttribute('aria-pressed', String(r.state === m)); marks.append(b);
+        }
+        if (r.at) marks.append(el('span', 'when', when(r.at)));
+        li.append(marks);
+        if (r.state === 'fail' || r.note) {
+          const t = el('textarea', 'note'); t.dataset.id = s.id; t.placeholder = 'What did you see? Claude reads this.';
+          t.setAttribute('aria-label', 'What you saw'); t.value = r.note || ''; li.append(t);
+        }
+        if (r.reply) { const rp = el('div', 'reply'); rp.append(el('b', null, 'Claude: ')); words(rp, r.reply); li.append(rp); }
+        ol.append(li);
+      }
+      box.append(ol);
+      list.append(box);
+    }
+    if (keep) { const t = list.querySelector(`.note[data-id="${CSS.escape(keep)}"]`); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }
+  }
+
+  const writing = {};
+  async function save(id, patch) {
+    if (!db) return;
+    const next = { ...(state.results[id] || {}), ...patch, at: new Date().toISOString() };
+    state.results[id] = next;
+    render();
+    if (writing[id]) { writing[id].again = next; return; }
+    writing[id] = {};
+    try {
+      let doc = next;
+      while (doc) { await db.collection('results').doc(id).set(doc); doc = writing[id].again; writing[id].again = null; }
+    } catch (e) {
+      document.getElementById('counts').textContent = "Couldn't save that mark. Try again.";
+    }
+    delete writing[id];
+  }
+
+  list.addEventListener('click', e => {
+    const b = e.target.closest('.marks button'); if (!b) return;
+    const id = b.dataset.id, m = b.dataset.m;
+    save(id, { state: markOf(id) === m ? '' : m });
+  });
+  const typed = {};
+  list.addEventListener('input', e => {
+    const t = e.target.closest('.note'); if (!t) return;
+    const id = t.dataset.id;
+    (state.results[id] = state.results[id] || {}).note = t.value;
+    clearTimeout(typed[id]);
+    typed[id] = setTimeout(() => save(id, { note: t.value }), 800);
+  });
+  document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+    state.tab = b.dataset.tab; try { localStorage.setItem('ts-tab', state.tab); } catch (e) { /* (no storage) */ }
+    render();
+  }));
+
+  (async () => {
+    const status = document.getElementById('status');
+    const timer = setTimeout(() => { if (!state.loaded.s) status.textContent = 'The steps are taking a while to load. They will appear here when they arrive.'; }, 10000);
+    db = await claude.use('db');
+    if (!db) { clearTimeout(timer); status.textContent = 'Open this page on claude.ai, signed in, to see and mark the steps.'; return; }
+    const fail = () => { clearTimeout(timer); status.textContent = "The steps couldn't be loaded right now."; };
+    db.collection('groups').onSnapshot(snap => { state.groups = snap.docs.map(d => ({ id: d.id, ...d.data() })); state.loaded.g = true; clearTimeout(timer); render(); }, fail);
+    db.collection('steps').onSnapshot(snap => { state.steps = snap.docs.map(d => ({ id: d.id, ...d.data() })); state.loaded.s = true; render(); }, fail);
+    db.collection('results').onSnapshot(snap => {
+      const typing = document.activeElement && document.activeElement.classList.contains('note') ? document.activeElement.dataset.id : null;
+      const next = {}; snap.docs.forEach(d => { next[d.id] = d.data(); });
+      if (typing && state.results[typing]) next[typing] = { ...next[typing], note: state.results[typing].note };
+      state.results = next; state.loaded.r = true; render();
+    }, fail);
+  })();
+})();
+</script>

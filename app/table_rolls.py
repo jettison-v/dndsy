@@ -281,12 +281,13 @@ def _part(r: TableRoll) -> dict:
                       for x in r.parts or []]}
 
 
-def detail_of(level: int = 0, why=(), riders=(), hidden="", via="", own="", math: dict | None = None) -> dict:
+def detail_of(level: int = 0, why=(), riders=(), hidden="", via="", own="", math: dict | None = None, dramatic: bool = False) -> dict:
     """What else the roll card or window knew, checked and kept short (TableRoll.detail; Brett's round 2 note, Nov 10),
     and how its numbers add up (`math`, already checked by app/roll_math.py `clean`: Show the Math, Nov 12)."""
     clean = lambda xs, n: [" ".join(str(x).split())[:n] for x in xs if str(x).strip()][:6]  # noqa: E731
     out = {"level": level if 1 <= (level or 0) <= 9 else None, "why": clean(why, 120), "riders": clean(riders, 80),
-           "hidden": bool(hidden), "via": via if via in ("card", "window", "search") else None, "self": bool(own), "math": math or None}
+           "hidden": bool(hidden), "via": via if via in ("card", "window", "search") else None, "self": bool(own), "math": math or None,
+           "dramatic": bool(dramatic)}  # (Make it dramatic: every screen throws it big and slow, its damage too; only a roll the table sees)
     return {k: v for k, v in out.items() if v}
 
 
@@ -344,6 +345,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
                   "saves": saves,
                   "outcome": _death(total, nat) if r.kind == "death" else "",
                   "detail": {k: v for k, v in (r.detail or {}).items() if k != "math"} | ({"outcome": "hit"} if dmg and r.kind == "attack" else {}),
+                  "dramatic": bool((r.detail or {}).get("dramatic")),
                   "math": _math(r, eff, dmg, bonus),
                   "short": {"death": "Death", "heal": "Heal", "damage": "Dmg", "dice": "Dice"}.get(r.kind) or r.label.split()[0][:5],
                   "can": {"damage": "", "reroll": "", "bonus": False}}
@@ -467,7 +469,7 @@ def _entries(db: Session, user: dict, roots: list[TableRoll], viewer_id: int | N
     return items
 
 
-LIVE_FIELDS = ("id", "seq", "name", "label", "kind", "main", "damage", "bonus", "dice", "total", "nat")
+LIVE_FIELDS = ("id", "seq", "name", "label", "kind", "main", "damage", "bonus", "dice", "total", "nat", "dramatic")
 
 
 def _live(db: Session, root: TableRoll) -> dict:
@@ -553,7 +555,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
               count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), token: int = Form(0),
               via: str = Form(""), level: int = Form(0), why: list[str] = Form([]), rider: list[str] = Form([]),
               hidden: str = Form(""), own: str = Form("", alias="self"), as_type: str = Form(""), twice: str = Form(""),
-              math: str = Form(""), db: Session = Depends(get_db)):
+              math: str = Form(""), dramatic: str = Form(""), db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -640,7 +642,8 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
     row = TableRoll(campaign_id=campaign.id, character_id=ch.id if ch else None, user_id=me.id, label=label, kind=kind,
                     mode=mode, visibility=to, damage=damage, spec=spec, extras=rolled, who=who,
                     detail=detail_of(level, why if mode != "normal" else [], rider, hidden, via, own,
-                                     roll_math.clean(math[:4000], result["modifier"] if kind in D20_KINDS else None)), **result)
+                                     roll_math.clean(math[:4000], result["modifier"] if kind in D20_KINDS else None),
+                                     dramatic=bool(dramatic) and to == "table"), **result)
     db.add(row)
     db.flush()
     if kind == "attack" and (flat := flat_damage(damage)) and row.kept != 1:  # (flat: on a hit it's just this, feedback 25)
