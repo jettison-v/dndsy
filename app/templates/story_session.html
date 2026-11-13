@@ -11,8 +11,8 @@
     <header class="tale-head session-top"><span class="tale-kicker">{{ label }}{% if length %} · {{ length }}{% endif %}</span>{% if s.title %}<h1>{{ s.title }}</h1>{% endif %}
       {% if chapters and vtt_on("recap_listen") %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ s.id }}/full">▶ Listen to the full tale{% if listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if listen.estimate else 'How long it plays' }}">{{ listen.says }}</span>{% endif %}</button>{% endif %}</header>
     <div class="tabbar" role="tablist" data-tab-param>
-      <button role="tab" aria-selected="{{ 'true' if tab == 'night' else 'false' }}" data-tab="t-night">The Night</button>
-      <button role="tab" aria-selected="{{ 'true' if tab == 'tale' else 'false' }}" data-tab="t-tale">The Tale{% if chapters %} <span class="count">{{ chapters | length }}</span>{% endif %}</button>
+      <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'night' else 'false' }}" data-tab="t-night">The Night</button>
+      <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'tale' else 'false' }}" data-tab="t-tale">The Tale{% if chapters %} <span class="count">{{ chapters | length }}</span>{% endif %}</button>
     </div>
 
     <div id="t-night" class="night"{% if tab != "night" %} hidden{% endif %}>

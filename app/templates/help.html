@@ -7,9 +7,9 @@
   <div class="title-row"><h1>Help</h1></div>
   <p class="subtitle">How askdnd works, so nothing comes as a surprise. The DM's own guide is under Manage.</p>
   <div class="tabbar" role="tablist" data-tab-param>
-    <button role="tab" aria-selected="{{ 'true' if tab == 'adds' else 'false' }}" data-tab="t-adds">What askdnd adds</button>
-    <button role="tab" aria-selected="{{ 'true' if tab == 'faq' else 'false' }}" data-tab="t-faq">FAQ</button>
-    <button role="tab" aria-selected="{{ 'true' if tab == 'about' else 'false' }}" data-tab="t-about">About</button>
+    <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'adds' else 'false' }}" data-tab="t-adds">What askdnd adds</button>
+    <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'faq' else 'false' }}" data-tab="t-faq">FAQ</button>
+    <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'about' else 'false' }}" data-tab="t-about">About</button>
   </div>
   <div id="t-adds" class="adds"{% if tab != "adds" %} hidden{% endif %}>
     <p class="hint">You build and level your character on D&amp;D Beyond as always. askdnd is for playing it: what it adds,

@@ -77,8 +77,8 @@
   <div class="title-row"><h1>Your notes</h1></div>
   <p class="subtitle">What you sent and what happened to it. Notes <b>about the story</b> go to the DM; notes <b>about askdnd</b> go to Brett, then Claude.</p>
   {% if askdnd %}<div class="tabbar" role="tablist" data-tab-param>
-    <button role="tab" aria-selected="{{ 'true' if tab == 'story' else 'false' }}" data-tab="t-story">About the story <span class="count{{ ' notes-tab-new' if news.story }}" data-notes-tab="story">{% if news.story %}{{ news.story }} new{% else %}{{ lists.story | length }}{% endif %}</span></button>
-    <button role="tab" aria-selected="{{ 'true' if tab == 'askdnd' else 'false' }}" data-tab="t-askdnd">About askdnd <span class="count{{ ' notes-tab-new' if news.askdnd }}" data-notes-tab="askdnd">{% if news.askdnd %}{{ news.askdnd }} new{% else %}{{ lists.askdnd | length }}{% endif %}</span></button>
+    <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'story' else 'false' }}" data-tab="t-story">About the story <span class="count{{ ' notes-tab-new' if news.story }}" data-notes-tab="story">{% if news.story %}{{ news.story }} new{% else %}{{ lists.story | length }}{% endif %}</span></button>
+    <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'askdnd' else 'false' }}" data-tab="t-askdnd">About askdnd <span class="count{{ ' notes-tab-new' if news.askdnd }}" data-notes-tab="askdnd">{% if news.askdnd %}{{ news.askdnd }} new{% else %}{{ lists.askdnd | length }}{% endif %}</span></button>
   </div>{% endif %}
 
   <section id="t-story" class="notes-tab"{% if tab != "story" %} hidden{% endif %}>

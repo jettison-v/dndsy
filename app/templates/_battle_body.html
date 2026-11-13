@@ -9,8 +9,8 @@
         {% if can_use and o.use %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button></span>{% endif %}{% if not (can_use and o.use and o.use.gives and o.heal) and not (can_play and o.cast) %}{{ hit(o) }}{% endif %}{% if can_play and o.cast %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ o.key | urlencode }}">Cast</button></span>{% endif %}{% if can_bring and o.bring and o.bring.state == "ready" %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/bring/{{ o.bring.id }}">{{ o.bring.verb }}</button></span>{% endif %}
         {% if pin %}{{ pick_btn(c, "star", o.key, false, can_pick) }}{% endif %}{% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}{% set st = (s.sync or {}) %}<b{% if o.use %}{{ sync_attrs(st.get("item:" ~ o.use.id) or st.get("charges:" ~ o.use.id)) }}{% endif %}>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
-        {% if can_pick and o.starts and o.starts not in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item, "note": o.note or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Shows {{ o.starts }} under the header for the whole table">{{ o.name }}</button>
-        {% elif can_pick and o.ends and o.ends in active_conditions %}<button class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>{% endif %}
+        {% if can_pick and o.starts and o.starts not in active_conditions %}<button type="submit" class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item, "note": o.note or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Shows {{ o.starts }} under the header for the whole table">{{ o.name }}</button>
+        {% elif can_pick and o.ends and o.ends in active_conditions %}<button type="submit" class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>{% endif %}
         {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
       </div>
 {% endmacro %}
@@ -64,9 +64,9 @@
         <p class="note">askdnd lists what it changes in the roll card; the DM makes the call.</p>
         {% if can_pick and x.sync != "ending" and unreached and x.on_ddb %}<p class="unreached">{{ unreached_says(c, "end or change it") }}</p>
         {% elif can_pick and x.sync != "ending" %}<div class="row">
-          {% if x.name == "Exhaustion" %}{% for lv in range(1, 7) %}<button class="btn small{{ ' primary' if lv == x.level }}" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": "Exhaustion", "level": lv, "source": x.source or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Exhaustion level {{ lv }}">{{ lv }}</button>{% endfor %}{% endif %}
-          <button class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ "Hidden" if x.find else x.name }}</button>
-          {% if x.due %}<button class="btn small link" hx-post="/characters/{{ c.id }}/conditions/keep" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="The DM says it lasts: until it's ended">Keep</button>{% endif %}</div>{% endif %}
+          {% if x.name == "Exhaustion" %}{% for lv in range(1, 7) %}<button type="submit" class="btn small{{ ' primary' if lv == x.level }}" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": "Exhaustion", "level": lv, "source": x.source or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Exhaustion level {{ lv }}">{{ lv }}</button>{% endfor %}{% endif %}
+          <button type="submit" class="btn small" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">End {{ "Hidden" if x.find else x.name }}</button>
+          {% if x.due %}<button type="submit" class="btn small link" hx-post="/characters/{{ c.id }}/conditions/keep" hx-vals='{{ {"name": x.name} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="The DM says it lasts: until it's ended">Keep</button>{% endif %}</div>{% endif %}
       </div>
     </details>
     {% endfor %}
@@ -97,9 +97,9 @@
           {% if not ff %}<p class="note" data-lasts-for="endnext startnext rounds save" hidden>Counted by the turns of a fight in D&amp;D Beyond's VTT; none is heard now.</p>{% endif %}
         </div>
         <div class="ls-label">Conditions</div>
-        <div class="ls-chips">{% for n in all_conditions if n not in active_conditions %}<button class="ls-chip"{% if unreached %} disabled title="The D&amp;D Beyond sheet can't be reached"{% endif %} hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n, "level": 1} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
+        <div class="ls-chips">{% for n in all_conditions if n not in active_conditions %}<button type="submit" class="ls-chip"{% if unreached %} disabled title="The D&amp;D Beyond sheet can't be reached"{% endif %} hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n, "level": 1} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
         <div class="ls-label mt-2">Effects</div>
-        <div class="ls-chips">{% for n in all_effects if n not in active_conditions %}<button class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
+        <div class="ls-chips">{% for n in all_effects if n not in active_conditions %}<button type="submit" class="ls-chip" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": n} | tojson }}' hx-include="closest .cond-box" hx-target="#battle-body" hx-swap="outerHTML">{{ n }}</button>{% endfor %}</div>
       </div>
     </details>
     {% endif %}

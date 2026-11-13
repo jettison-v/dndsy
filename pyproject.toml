@@ -26,6 +26,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "djlint>=1.50.0",
     "httpx2>=2.13.1",
     "playwright>=1.64.1",
     "pytest>=9.1.1",
@@ -66,3 +67,14 @@ ignore = [
 # Helpers defined inside a loop and called within the same step (never kept past it): B023 can't see that
 "app/ddb_sheet.py" = ["B023"]
 "scripts/real_table.py" = ["B023"]
+
+[tool.djlint]
+# djLint for the templates (foundations F4): only what catches mistakes, here a button without a type (inside a
+# form it submits it) and a tag left unclosed. Off, with why:
+# J004, J018: Flask's url_for/static (askdnd's pages are FastAPI's; addresses come from web.base() and static())
+# H021: inline styles (a few computed ones are deliberate: a bar's width, a token's position)
+# H015, H023: a line break after a heading, entity references (formatting)
+# H020: an empty tag pair (askdnd fills some from app.js: a counter, a slot)
+profile = "jinja"
+ignore = "J004,J018,H021,H015,H023,H020"
+extension = "html"

@@ -46,7 +46,7 @@
   {% if user and here %}
   {% if my_campaigns | length > 1 %}
   <div class="campaign-switch">
-    <button class="campaign-name" data-menu="campaign-menu" aria-haspopup="true" aria-label="Campaign: {{ here.name }}{{ ' (test)' if here.is_test }}. Switch campaign">{{ here.name }}{% if here.is_test %} <span class="tag draft campaign-test" title="A test campaign: it holds test data">Test</span>{% endif %} ▾</button>
+    <button type="button" class="campaign-name" data-menu="campaign-menu" aria-haspopup="true" aria-label="Campaign: {{ here.name }}{{ ' (test)' if here.is_test }}. Switch campaign">{{ here.name }}{% if here.is_test %} <span class="tag draft campaign-test" title="A test campaign: it holds test data">Test</span>{% endif %} ▾</button>
     <div class="menu" id="campaign-menu" data-door="campaign" hidden>
       <div class="menu-group">Your campaigns</div>
       {% for c in my_campaigns %}<a data-item="campaign:{{ c.slug }}" href="/c/{{ c.slug }}{{ switch_path }}" class="{{ 'active' if c.id == here.id }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}{% if c.id == here.id %}<small>You're here</small>{% elif campaign_role(c.id) %}<small>{{ campaign_role(c.id) }}</small>{% endif %}</a>{% endfor %}
@@ -85,7 +85,7 @@
     {% if camp_pages %}{% set on_camp = camp_pages | selectattr("here") | list %}
     <div class="manage">
       {% set on_dm = path == '/dm' or path.startswith('/dm/') %}
-      <button class="{{ 'active' if on_camp or on_dm }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
+      <button type="button" class="{{ 'active' if on_camp or on_dm }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
       <div class="menu manage-menu" id="manage-menu" data-door="manage" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head camp"><b>{{ here.name if here else "This campaign" }}</b><span>This campaign</span></div>
         {# DM Tools joins Manage (Brett, Nov 13: one door for the DM; The DM's Workspace decides its page) #}
@@ -100,7 +100,7 @@
     {% endif %}
     {% if admin_pages %}{% set on_admin = admin_pages | selectattr("here") | list %}
     <div class="manage admin">
-      <button class="admin-gear{{ ' active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true" aria-label="Admin" title="Admin: askdnd, for every campaign"><span aria-hidden="true">⚙</span></button>{# a gear: admins only, it needn't be found (feedback 57) #}
+      <button type="button" class="admin-gear{{ ' active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true" aria-label="Admin" title="Admin: askdnd, for every campaign"><span aria-hidden="true">⚙</span></button>{# a gear: admins only, it needn't be found (feedback 57) #}
       <div class="menu manage-menu" id="admin-menu" data-door="admin" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head tool"><b>askdnd admin</b><span>Every campaign</span></div>
         {% for p in admin_pages if p.menu %}<a href="{{ p.href }}" data-item="{{ p.key }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
@@ -120,7 +120,7 @@
       </div>
     </div>
     <div class="account">
-      <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}<span class="notes-dot-badge" data-notes-count hidden></span></button>
+      <button type="button" class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}<span class="notes-dot-badge" data-notes-count hidden></span></button>
       <div class="menu" id="account-menu" data-door="account" hidden>
         <a href="#" class="menu-me" tabindex="-1" data-item="me">{{ user.name }}<small>{{ user.email }}</small></a>
         <a href="/your-notes" data-item="notes" class="{{ 'active' if path == '/your-notes' }}">Your notes <span class="notes-count" data-notes-count hidden></span><small>What happened to what you sent</small></a>
