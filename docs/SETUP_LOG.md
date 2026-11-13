@@ -1067,3 +1067,11 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **Why**: "skip a deploy when nothing that runs changed" is right per commit, but wrong once an earlier commit's deploy was skipped for a different reason.
 
 **Reuse on a new project**: after a deploy, check the live site's version (a /health address that reports the commit) rather than trusting that the pipeline ran, and decide "does this need a deploy" against what's live, not the previous commit.
+
+## Dependency and code scanning (Nov 13)
+
+**What was set up:** GitHub now watches askdnd's code and its dependencies for security problems. Secret scanning and push protection stop a key or password from being committed by mistake (GitHub refuses the push). Dependabot opens a pull request at once when a dependency has a known security fix, and weekly for ordinary updates (`.github/dependabot.yml`), each tested like any change. CodeQL reads the Python and the pages' JavaScript for security mistakes on every pull request (`.github/workflows/codeql.yml`), and pip-audit fails the tests when a Python dependency has a known vulnerability. The first run found one (opentelemetry-api), upgraded in the same change.
+
+**Why:** askdnd's code is public and it holds the table's data; problems are cheaper caught by a machine on every change than found later.
+
+**For a new project:** turn on secret scanning, push protection and Dependabot in the repo's Settings › Code security on day one (free for public repos), add a `dependabot.yml`, and add CodeQL and a dependency audit to CI before the first feature.

@@ -60,6 +60,8 @@ jobs:
       - run: uv sync --frozen
       - name: Lint (unused imports, undefined names)
         run: uv run ruff check app scripts tests
+      - name: Known vulnerabilities in the Python dependencies (pip-audit)
+        run: uv run --with pip-audit pip-audit
       - name: Tests, with how much of the app they reach
         run: uv run pytest -q --durations=15 --ignore=tests/browser --cov=app --cov-branch --cov-report= --cov-fail-under=90
       - name: Coverage on the run's summary page
