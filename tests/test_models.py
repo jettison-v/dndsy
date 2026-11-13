@@ -1,4 +1,5 @@
 import subprocess
+import sys
 
 import pytest
 from sqlalchemy import select
@@ -85,18 +86,41 @@ def test_user_email_unique(db):
         db.flush()
 
 
-def test_migrations_match_models(db_engine):
-    """Fails if someone changes app/models.py without adding a migration."""
+STAIRS = """
+from alembic import command
+from alembic.config import Config
+from alembic.script import ScriptDirectory
+
+cfg = Config("alembic.ini")
+revs = [r.revision for r in ScriptDirectory.from_config(cfg).walk_revisions("base", "heads")]
+for rev in reversed(revs):
+    command.upgrade(cfg, rev)
+    command.downgrade(cfg, "-1")
+    command.upgrade(cfg, rev)
+command.downgrade(cfg, "base")
+command.upgrade(cfg, "heads")
+command.check(cfg)
+command.downgrade(cfg, "base")
+"""
+
+
+def test_migrations_go_down_and_up_and_match_models(db_engine):
+    """Each migration, from an empty database: up, down one, up again; then all the way down and up,
+    and the models match the migrations (fails if app/models.py changes without a migration).
+
+    A downgrade that fails, or an upgrade that can't run twice after its own downgrade, is
+    caught here before a deploy needs it (foundations F3, docs/plans/2026-11-13-engineering-practices.md).
+    """
+    import os
+
     url = db_engine.url.render_as_string(hide_password=False)
-    env = {"DATABASE_URL": url, "PATH": __import__("os").environ["PATH"]}
+    env = {"DATABASE_URL": url, "PATH": os.environ["PATH"]}
     from app.db import Base
 
     Base.metadata.drop_all(db_engine)
     try:
-        up = subprocess.run(["alembic", "upgrade", "head"], env=env, capture_output=True, text=True)
-        assert up.returncode == 0, up.stderr
-        check = subprocess.run(["alembic", "check"], env=env, capture_output=True, text=True)
-        assert check.returncode == 0, check.stdout + check.stderr
+        run = subprocess.run([sys.executable, "-c", STAIRS], env=env, capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr[-4000:]
     finally:
         subprocess.run(["alembic", "downgrade", "base"], env=env, capture_output=True)
         Base.metadata.create_all(db_engine)
