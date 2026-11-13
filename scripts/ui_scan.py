@@ -19,7 +19,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from layout_sweep import CHECK, ROOT, pages_from  # noqa: E402
+from layout_sweep import CHECK, ROOT, pages_from
 
 OUT = ROOT / "private" / "ui-scan"
 OPENERS = "[data-modal-url]:visible, [data-use-url]:visible, [data-panel-url]:visible"

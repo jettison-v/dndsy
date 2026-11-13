@@ -114,7 +114,7 @@ def test_dev_login_opens_the_page_asked_for_on_this_site_only(monkeypatch):
     monkeypatch.setattr(config, "DEV_LOGIN_EMAIL", "player@example.com")
     monkeypatch.setattr(config, "ALLOWED_EMAILS", parse_allowlist("player@example.com"))
     c = TestClient(app)
-    where = lambda nxt: c.get("/dev/login", params={"next": nxt}, follow_redirects=False).headers["location"]  # noqa: E731
+    where = lambda nxt: c.get("/dev/login", params={"next": nxt}, follow_redirects=False).headers["location"]
     assert where("/characters/1/battle") == "/characters/1/battle"
     for bad in ("https://evil.example", "//evil.example", "/\\evil.example", "battle"):
         assert where(bad) == "/", bad

@@ -215,7 +215,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
     unarmed = attacks.get("Unarmed Strike")
     for o in out:
         rollable(o, unarmed)
-        first = next(iter(((o.get("recipe") or {}).get("events") or [])), None)
+        first = next(iter((o.get("recipe") or {}).get("events") or []), None)
         if o.get("kind") == "item" and not o.get("hit") and first and first.get("on") == "save" and first.get("dc"):
             o["hit"] = f"{first['save']} {first['dc']}"  # (an item's save with its own DC: Potion of Fire Breath's Dex 13)
     return planned(sheet, out)
@@ -757,9 +757,7 @@ def pooled_items(rows: list[dict]) -> list[tuple[str, list[dict]]]:
             ch = it["charges"]
             if "healing" in it["name"].lower() or "regain" in it["summary"].lower()[:120]:
                 group = "Healing"
-            elif ch and ch["reset"] == "Used up":
-                group = "One use"
-            elif it["type"] in ("Potion", "Scroll"):
+            elif (ch and ch["reset"] == "Used up") or it["type"] in ("Potion", "Scroll"):
                 group = "One use"
             elif it["attunement"] == "required":
                 group = "Needs attunement"
@@ -911,7 +909,7 @@ def feature_rows(sheet: dict, opts: list[dict]) -> list[dict]:
     """Sheet › Features as list rows (_feature_list.html): what each feature is used as on a turn (from the
     options it gives, matched by name: "Wild Shape", "Wild Shape: Circle Forms"…) and its limited uses."""
     def mine(name: str, n: str) -> bool:
-        return name == n or name.startswith(n + ":") or name.startswith(n + " (")
+        return name == n or name.startswith((n + ":", n + " ("))
     out = []
     for f in sheet.get("features") or []:
         n = f["name"]
@@ -932,7 +930,7 @@ def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
     if not sheet:
         return sheet
     sheet = dict(sheet)
-    get = lambda x, section, field: overrides.get((override_ref(x, section), field))  # noqa: E731
+    get = lambda x, section, field: overrides.get((override_ref(x, section), field))
     for section in ("features", "situational", "inventory", "creatures", "attacks", "actions", "spells"):
         sheet[section] = [x for x in sheet.get(section) or [] if get(x, section, "hide") != "hide"]
     sheet["spellbook"] = [{**b, "spells": [x for x in b["spells"] if get(x, "spells", "hide") != "hide"]}

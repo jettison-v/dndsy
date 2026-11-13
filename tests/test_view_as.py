@@ -9,7 +9,7 @@ from app.config import parse_allowlist
 from app.db import get_db
 from app.importer import import_bundle
 from app.main import app
-from app.models import Fact, Entity
+from app.models import Entity, Fact
 from tests.roles import set_role
 
 BUNDLE = {"campaign": {"slug": "main", "name": "Main"}, "entities": [{"kind": "npc", "name": "Kieran", "summary": "A sailor."}],

@@ -38,7 +38,7 @@ def covered(p: Place | None, x: float, y: float, size: float = 1) -> bool:
     """Whether a token there is all under fog (fog on, and not one of its squares shown)."""
     if not on(p):
         return False
-    seen, span = shown(p), max(1, int(round(size)))
+    seen, span = shown(p), max(1, round(size))
     return not any(f"{int(x) + i},{int(y) + j}" in seen for i in range(span) for j in range(span))
 
 

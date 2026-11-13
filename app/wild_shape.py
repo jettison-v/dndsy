@@ -486,7 +486,7 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
 
     my_saves = {s["short"].lower(): s for s in sheet.get("saves") or []}
     saves = []
-    for k, name, short in ABILITIES:
+    for k, _name, short in ABILITIES:
         mine_sv = my_saves.get(k) or {}
         prof = bool(mine_sv.get("proficient"))
         parts = [(f"{short} modifier ({'yours' if k in KEPT else 'form'})", _mod(scores[k]))]
@@ -537,8 +537,8 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
     if ud:
         extra = _mod(scores.get(ud.get("ability", "wis"), 10))
         ud_ac = 10 + _mod(scores["dex"]) + extra
-        ac_parts.append((f"Unarmored Defense (kept): 10 + the form's Dexterity ({_signed(_mod(scores['dex']))}) + "
-                         f"{ud.get('ability', 'wis').title()} ({_signed(extra)}) = {ud_ac}", ud_ac))
+        ac_parts.append(((f"Unarmored Defense (kept): 10 + the form's Dexterity ({_signed(_mod(scores['dex']))}) + "
+                         f"{ud.get('ability', 'wis').title()} ({_signed(extra)}) = {ud_ac}"), ud_ac))
         ac = max(ac, ud_ac)
     best = ac  # (Show the Math, D: a short line under the number a form changed, saying why)
     moon_won = d["moon"] and 13 + wis == best and best > beast["ac"]
@@ -650,8 +650,8 @@ def shaped(sheet: dict, beast: dict, lite: bool = False, keep=None) -> dict:
          f"You can't cast spells, except your Circle of the Moon Spells ({', '.join(d['moon_spells'])}): those you can cast in a form."
          if d.get("moon_spells") else "You can't cast spells.")
         + " Shape-shifting doesn't break Concentration on a spell you already cast.",
-        "Strength, Dexterity and Constitution are the form's; Intelligence, Wisdom and Charisma stay yours. You keep your skill and "
-        "saving throw proficiencies (with your Proficiency Bonus) and use the form's modifier where it's higher.",
+        ("Strength, Dexterity and Constitution are the form's; Intelligence, Wisdom and Charisma stay yours. You keep your skill and "
+        "saving throw proficiencies (with your Proficiency Bonus) and use the form's modifier where it's higher."),
         "Your equipment falls, merges into the form (no effect) or is worn by it, your choice; the DM decides what the form can wear.",
     ]
     if d["lunar_radiance"]:

@@ -22,8 +22,8 @@ from sqlalchemy.orm import Session
 
 from app import character_views as views
 from app import characters as chars
-from app import ddb_bridge, picks, readying, web
 from app import conditions as cond
+from app import ddb_bridge, picks, readying, web
 from app.auth import current_user
 from app.db import get_db
 from app.models import Campaign, Character

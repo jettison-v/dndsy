@@ -93,7 +93,7 @@ def hurt(db, sheet, removed=20, count=2):
 def test_items_follow_pinning_and_the_rest_are_in_the_side_panel(player, db, sheet):
     """Brett, 2026-10-30: their own section, under the rules of pinning, so the list doesn't grow too long."""
     cole, pid = hurt(db, sheet)
-    bonus = lambda page: page.split('data-econ-col="bonus"')[1].split('data-econ-col="reaction"')[0]  # noqa: E731
+    bonus = lambda page: page.split('data-econ-col="bonus"')[1].split('data-econ-col="reaction"')[0]
     page = bonus(player.get(f"/characters/{cole.id}/battle").text)
     assert "Items" in page and "All items (2)" in page and "/use/" not in page  # no item pinned yet (Cast shows: Sync is on)
     picks.toggle(db, cole, "star", f"item:{pid}", "Potion of Healing")

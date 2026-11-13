@@ -58,7 +58,6 @@ def move(db: Session, character: Character, campaign_id: int | None) -> Campaign
     """Move a character to another campaign (or out of every campaign): its membership ends today and its story,
     events and recaps stay with the old campaign. In the new one it gets its story page from an earlier stay, or a
     new one; the DM's Wild Shape ruling starts empty there (it's a ruling per campaign)."""
-    from datetime import date
 
     from app.models import Status
 
@@ -66,7 +65,7 @@ def move(db: Session, character: Character, campaign_id: int | None) -> Campaign
     if old is not None and old.campaign_id == campaign_id:
         return old
     if old is not None:
-        old.left_on = date.today()
+        old.left_on = config.table_today()
         db.flush()
     if campaign_id is None:
         return None

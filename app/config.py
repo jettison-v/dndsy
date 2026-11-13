@@ -2,6 +2,8 @@
 
 import os
 import secrets
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 
 def parse_allowlist(raw: str | None) -> frozenset[str]:
@@ -84,3 +86,12 @@ DATABASE_URL = sqlalchemy_url(os.getenv("DATABASE_URL")) or (
 FILE_STORAGE = os.getenv("FILE_STORAGE", "").strip() or ("s3" if IS_PRODUCTION else "private/files")
 AWS_S3_BUCKET_NAME = os.getenv("AWS_S3_BUCKET_NAME", "").strip()
 AWS_REGION = os.getenv("AWS_REGION", "").strip()
+
+
+# The table's own clock (Pacific): the server's is UTC, already tomorrow by the table's evening. Every date a person
+# sees as "today" comes from table_today(), never date.today().
+TABLE_TIME = ZoneInfo("America/Los_Angeles")
+
+
+def table_today() -> date:
+    return datetime.now(TABLE_TIME).date()

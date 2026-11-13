@@ -6,14 +6,24 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app import web
-from app import campaign_views, narration, review, session_story
+from app import campaign_views, narration, review, session_story, web
 from app.auth import can_edit_entries, can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
 from app.linking import Linker, entity_linker
-from app.models import (Campaign, Correction, Entity, EntityKind, EventEntity, EventKind, GameSession, GlossaryTerm, Status, StoryEvent,
-                        Suggestion)
+from app.models import (
+    Campaign,
+    Correction,
+    Entity,
+    EntityKind,
+    EventEntity,
+    EventKind,
+    GameSession,
+    GlossaryTerm,
+    Status,
+    StoryEvent,
+    Suggestion,
+)
 from app.render import markdown_to_html
 from app.suggestions import waiting_count
 from app.templating import templates
@@ -205,7 +215,7 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
         return RedirectResponse("/login", status_code=303)
     campaign = web.campaign(db)
     editor = can_edit_entries(user)  # the DM, reviewers and admins also see hidden entries, and get "+ New"
-    visible = lambda e: e.status == Status.PUBLISHED or editor  # noqa: E731
+    visible = lambda e: e.status == Status.PUBLISHED or editor
     quests, done, groups, glossary, seen, latest, selected, board, fams, tie = [], [], [], [], {}, None, None, [], [], {}
     asked = None
     if campaign:

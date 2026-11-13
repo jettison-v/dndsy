@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app import drawing, pictures, spending
 from app.importer import import_bundle
 from app.models import Campaign, EntityPicture, ExtractionRun
-from tests.test_pictures import BUNDLE, entity, people, png  # noqa: F401 (people is a fixture)
+from tests.test_pictures import BUNDLE, entity, people, png
 from tests.test_suggestions import HX
 
 

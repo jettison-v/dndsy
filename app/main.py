@@ -7,85 +7,85 @@ from pathlib import Path
 
 from fastapi import FastAPI, Query, Request
 from fastapi.exception_handlers import http_exception_handler
-from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import update
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
-from app import config
+from app import characters, config, errors, realtime
 from app.admin import router as admin_router
-from app.ddb_bridge import router as ddb_bridge_router
-from app.death_saves import router as death_saves_router
-from app.table_page import router as table_router
-from app.turn_bar import router as turn_bar_router
-from app.places import router as places_router
-from app.tokens import router as tokens_router
-from app.scene_notes import router as scene_notes_router
-from app.table_fight import router as table_fight_router
-from app.table_creatures import router as table_creatures_router
-from app.fog import router as fog_router
-from app.areas import router as areas_router
-from app.initiative import router as initiative_router
-from app.shifting import router as shifting_router
-from app.your_notes import router as your_notes_router
-from app.feedback import router as feedback_router
-from app.hit_points import router as hit_points_router
-from app.casting import router as casting_router
-from app.inventory import router as inventory_router
-from app.preparing import router as preparing_router
-from app.giving import router as giving_router
-from app.item_browser import router as item_browser_router
-from app.creature_hp import router as creature_hp_router
-from app.companions import router as companions_router
-from app.picture_window import router as picture_window_router
-from app.item_use import router as item_use_router
-from app.item_creatures import router as item_creatures_router
-from app.digest import router as digest_router
-from app.usage import router as usage_router
-from app.search import router as search_router
-from app.trophies import router as trophies_router
-from app.level_up import router as level_up_router
-from app.resources import router as resources_router
-from app.rests import router as rests_router
 from app.admin_notes import router as admin_notes_router
-from app.manage_table import router as manage_table_router
-from app.manage_accounts import router as manage_accounts_router
-from app.tool_corrections_pages import router as tool_corrections_router
 from app.admin_sessions import router as admin_sessions_router
 from app.admin_usage import router as admin_usage_router
 from app.api import router as api_router
+from app.areas import router as areas_router
 from app.atlas import router as atlas_router
 from app.auth import ReturnAfterSignIn, back_to, current_user
 from app.auth import router as auth_router
-from app.view_as import ViewAs
-from app.view_as import router as view_as_router
+from app.campaign_paths import CampaignPaths
+from app.campaigns_admin import router as campaigns_router
+from app.casting import router as casting_router
 from app.character_pages import router as character_router
 from app.check_numbers import router as check_numbers_router
-from app.help_pages import router as help_router
-from app.readying import router as readying_router
-from app.live import router as live_router
-from app.table_rolls import router as table_rolls_router
-from app.manage import router as manage_router
-from app.player_notes import router as notes_router
-from app.history_pages import router as history_router
-from app.house_rules_pages import router as house_rules_router
-from app.homebrew import router as homebrew_router
-from app.campaigns_admin import router as campaigns_router
-from app.dice import router as dice_router
-from app.documents import router as documents_router
-from app.narration import router as narration_router
-from app import characters, errors, realtime
-from app.errors import router as errors_router
-from app.realtime import router as realtime_router
-from app.entity_pages import router as entity_router
+from app.companions import router as companions_router
+from app.creature_hp import router as creature_hp_router
 from app.db import SessionLocal
 from app.db import engine as db_engine
+from app.ddb_bridge import router as ddb_bridge_router
+from app.death_saves import router as death_saves_router
+from app.dice import router as dice_router
+from app.digest import router as digest_router
+from app.documents import router as documents_router
+from app.entity_pages import router as entity_router
+from app.errors import router as errors_router
+from app.feedback import router as feedback_router
+from app.fog import router as fog_router
+from app.giving import router as giving_router
+from app.help_pages import router as help_router
+from app.history_pages import router as history_router
+from app.hit_points import router as hit_points_router
+from app.homebrew import router as homebrew_router
+from app.house_rules_pages import router as house_rules_router
+from app.initiative import router as initiative_router
+from app.inventory import router as inventory_router
+from app.item_browser import router as item_browser_router
+from app.item_creatures import router as item_creatures_router
+from app.item_use import router as item_use_router
+from app.level_up import router as level_up_router
+from app.live import router as live_router
+from app.manage import router as manage_router
+from app.manage_accounts import router as manage_accounts_router
+from app.manage_table import router as manage_table_router
 from app.models import ExtractionRun
+from app.narration import router as narration_router
+from app.picture_window import router as picture_window_router
+from app.places import router as places_router
+from app.player_notes import router as notes_router
+from app.preparing import router as preparing_router
+from app.readying import router as readying_router
+from app.realtime import router as realtime_router
+from app.resources import router as resources_router
+from app.rests import router as rests_router
+from app.scene_notes import router as scene_notes_router
+from app.search import router as search_router
+from app.shifting import router as shifting_router
 from app.story import router as story_router
 from app.suggestions import router as suggestions_router
-from app.campaign_paths import CampaignPaths
+from app.table_creatures import router as table_creatures_router
+from app.table_fight import router as table_fight_router
+from app.table_page import router as table_router
+from app.table_rolls import router as table_rolls_router
 from app.templating import templates
+from app.tokens import router as tokens_router
+from app.tool_corrections_pages import router as tool_corrections_router
+from app.trophies import router as trophies_router
+from app.turn_bar import router as turn_bar_router
+from app.usage import router as usage_router
+from app.view_as import ViewAs
+from app.view_as import router as view_as_router
+from app.your_notes import router as your_notes_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -94,7 +94,7 @@ async def lifespan(app: FastAPI):
         from app import files
 
         files.storage()
-    except Exception:  # noqa: BLE001 - storage problems show where files are read, not at startup
+    except Exception:
         pass
     # The live table connection: this copy hears every copy's changes through Postgres (app/realtime.py)
     listener = asyncio.create_task(realtime.listen()) if db_engine is not None and db_engine.dialect.name == "postgresql" else None
@@ -153,7 +153,7 @@ async def not_found_page(request: Request, exc: StarletteHTTPException):
 
         return not_found(request, "There's no page at this address. If it's an old bookmark, open the page from the menu and save it again.")
     return await http_exception_handler(request, exc)
-from app.usage import Recorder  # noqa: E402 (which features get used: after each action, app/usage.py)
+from app.usage import Recorder
 
 app.add_middleware(Recorder)  # innermost: it sees the route that ran, and who's asking
 app.add_middleware(CampaignPaths)  # inside the session middleware (added last), so it knows who's asking
@@ -167,8 +167,10 @@ app.add_middleware(
     same_site="lax",
     https_only=config.IS_PRODUCTION,
 )
-from app.timing import Stopwatch  # noqa: E402 (where a slow request's time went, app/timing.py)
+from app.same_site import SameSite
+from app.timing import Stopwatch
 
+app.add_middleware(SameSite)  # a change made with the sign-in cookie comes from askdnd's own pages (app/same_site.py)
 app.add_middleware(Stopwatch)  # (added after the rest, so it's around them all: the session and the sign-in check count)
 
 

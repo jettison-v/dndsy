@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app import access, dice
 from app.models import User
-from tests.test_campaigns import two  # noqa: F401
+from tests.test_campaigns import two
 
 
 def test_defaults_differ_by_person_and_bad_values_fall_back():
@@ -17,7 +17,7 @@ def test_defaults_differ_by_person_and_bad_values_fall_back():
     assert dice.prefs(a) == {"set": dice.DEFAULTS[1], "material": "glass", "by_type": False, "tray": False}
 
 
-def test_choose_your_dice(two, db):  # noqa: F811
+def test_choose_your_dice(two, db):
     pat = two["pat"]
     page = pat.get("/dice").text
     assert page.count('name="set"') == len(dice.SETS) and "Dice sounds" in page
@@ -30,7 +30,7 @@ def test_choose_your_dice(two, db):  # noqa: F811
     assert 'data-modal-url="/dice"' in pat.get("/c/main/").text  # Your dice, in the account menu
 
 
-def test_the_dice_tray_is_each_persons_own(two, db):  # noqa: F811
+def test_the_dice_tray_is_each_persons_own(two, db):
     """Brett, 2026-11-03: others' rolls are thrown across the whole screen; the dice tray (in Your dice; out of Labs Nov 5) is each
     person's choice to have them tumble in the corner instead (app.js reads `tray` from the page's data-dice)."""
     pat, sam = two["pat"], two["sam"]
@@ -52,7 +52,7 @@ def test_tuning_is_kept_in_range():
         assert sorted(k for _, keys in groups for k in keys) == sorted(dice.TUNING[place])
 
 
-def test_admins_tune_the_dice_for_everyone(two, db):  # noqa: F811
+def test_admins_tune_the_dice_for_everyone(two, db):
     admin, pat = two["admin"], two["pat"]
     assert pat.get("/manage/dice").status_code == 403
     assert pat.post("/manage/dice", data={"mine.gravity": "200"}).status_code == 403

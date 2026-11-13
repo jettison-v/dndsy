@@ -162,7 +162,7 @@ class Recorder:
             headers = dict(scope.get("headers") or [])
             where = (headers.get(b"hx-current-url") or headers.get(b"referer") or b"").decode("latin-1")
             await run_in_threadpool(_keep, email.lower(), route, feature, page_of(where), scope.get("path", ""))
-        except Exception:  # noqa: BLE001 - counting must never break a use
+        except Exception:
             log.warning("A use wasn't counted", exc_info=True)
 
 
@@ -199,7 +199,7 @@ def summary(db, campaign_id: int | None, days: int, now=None) -> dict:
 
     from sqlalchemy import select
 
-    from app.companion_story import TABLE_TIME
+    from app.config import TABLE_TIME
     from app.models import CampaignCharacter, CampaignMember, Character, Role, User
 
     now = now or datetime.now(UTC)
@@ -279,8 +279,8 @@ def chart(daily: list[int], releases: list[tuple[int, str]], start, w: int = 640
     left, right, top, bottom = 36, 10, 14, 24
     n, peak = len(daily), max(daily or [0]) or 1
     peak = int(peak * 1.1) + 1
-    x = lambda i: left + (w - left - right) * (i / max(1, n - 1))  # noqa: E731
-    y = lambda v: top + (h - top - bottom) * (1 - v / peak)  # noqa: E731
+    x = lambda i: left + (w - left - right) * (i / max(1, n - 1))
+    y = lambda v: top + (h - top - bottom) * (1 - v / peak)
     line = " ".join(f"{'M' if i == 0 else 'L'}{x(i):.1f} {y(v):.1f}" for i, v in enumerate(daily))
     return {"w": w, "h": h, "line": line, "area": f"{line} L{x(n - 1):.1f} {h - bottom} L{left} {h - bottom} Z",
             "ticks": [(round(y(t), 1), t) for t in (0, peak // 2, peak)], "left": left, "right": w - right, "base": h - bottom, "top": top,
@@ -289,9 +289,9 @@ def chart(daily: list[int], releases: list[tuple[int, str]], start, w: int = 640
             "releases": [{"x": round(x(i), 1), "label": f"Deploy {label}", "end": x(i) > w - 120} for i, label in releases]}
 
 
-from fastapi import APIRouter, Depends, Request  # noqa: E402
+from fastapi import APIRouter, Depends, Request
 
-from app.db import get_db  # noqa: E402
+from app.db import get_db
 
 router = APIRouter()
 

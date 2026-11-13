@@ -7,7 +7,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import spending, web
+from app import config, spending, web
 from app.admin import _guard
 from app.db import get_db
 from app.extraction import session_label
@@ -81,7 +81,7 @@ def usage_page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(
         request,
         "admin_usage.html",
-        {"u": usage_summary(db), "rows": rows, "topups": topups, "today_iso": date.today().isoformat(), "toast": request.session.pop("toast", None)},
+        {"u": usage_summary(db), "rows": rows, "topups": topups, "today_iso": config.table_today().isoformat(), "toast": request.session.pop("toast", None)},
     )
 
 

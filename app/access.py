@@ -146,7 +146,7 @@ def campaigns_for(email: str | None, rows: dict | None = None) -> list[dict]:
         return []
     if level(email, rows) == ADMIN:
         return every
-    mine = set(((rows.get(email) or {}).get("roles") or {}))
+    mine = set((rows.get(email) or {}).get("roles") or {})
     if not mine and (config.is_allowed(email, config.ALLOWED_EMAILS) or config.is_allowed(email, config.REVIEWER_EMAILS)):
         return every[:1]
     return [c for c in every if c["id"] in mine]

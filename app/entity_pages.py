@@ -13,8 +13,7 @@ from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import web
-from app import access, atlas, campaign_views, companion_story, drawing, entities, pictures, relations
+from app import access, atlas, campaign_views, companion_story, drawing, entities, pictures, relations, web
 from app.auth import can_edit_entries, can_moderate, current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.extraction import ExtractionError

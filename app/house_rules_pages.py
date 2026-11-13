@@ -5,9 +5,9 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import character_views as views
 from app import house_rules, web
 from app import roll_recipes as rr
-from app import character_views as views
 from app.auth import can_set_house_rules
 from app.db import get_db
 from app.models import HouseRule

@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 
 from app import coins, ddb_bridge, web
 from app.db import get_db
-from app.item_use import _guard as _player, _sheet
+from app.item_use import _guard as _player
+from app.item_use import _sheet
 from app.templating import templates
 
 router = APIRouter()

@@ -29,7 +29,7 @@ from sqlalchemy.orm import Session
 
 from app import config, web
 from app.auth import current_user, is_admin
-from app.companion_story import TABLE_TIME
+from app.config import TABLE_TIME
 from app.db import get_db
 from app.models import Campaign, CampaignMember, Entity, Fact, Role, Suggestion, User
 from app.templating import templates
@@ -119,7 +119,7 @@ def _resend(to: str, mail: dict) -> bool:
                        "headers": {"List-Unsubscribe": f"<{mail['stop']}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"}}).encode()
     req = urllib.request.Request(RESEND, data=body, method="POST", headers={"Authorization": f"Bearer {config.RESEND_API_KEY}",
                                                                            "Content-Type": "application/json", "User-Agent": "askdnd"})
-    with urllib.request.urlopen(req, timeout=20) as r:  # noqa: S310 (Resend's own address, above)
+    with urllib.request.urlopen(req, timeout=20) as r:
         return 200 <= r.status < 300
 
 
@@ -150,7 +150,7 @@ def run_day(db: Session, now: datetime | None = None) -> list[tuple[str, str]]:
             if counts["table"] + counts["drafts"]:
                 try:
                     ok = SEND(user.email, compose(campaign, counts, user, roles.get(user.id)))
-                except Exception:  # noqa: BLE001 - Resend away for a moment: the next look tries again
+                except Exception:
                     log.warning("The Inbox digest didn't go out this time", exc_info=True)
                     continue
                 if not ok:
@@ -185,7 +185,7 @@ async def loop() -> None:
         await asyncio.sleep(TICK)
         try:
             await asyncio.to_thread(run_once)
-        except Exception:  # noqa: BLE001 - the database away for a moment: the next look tries again
+        except Exception:
             log.warning("The Inbox digest's look failed this time", exc_info=True)
 
 

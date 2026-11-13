@@ -167,8 +167,8 @@ def _armor(sheet, item, who, lines, catches, goods, cmp):
         lines.append(("ok", f"Trained: {ARMOR[item['armor_type']]}."))
         goods.append(f"Trained: {ARMOR[item['armor_type']]}")
     else:
-        lines.append(("warn", f"No {ARMOR[item['armor_type']]} training. Wearing it: Disadvantage on every D20 Test that uses "
-                              "Strength or Dexterity, and no spellcasting."))
+        lines.append(("warn", (f"No {ARMOR[item['armor_type']]} training. Wearing it: Disadvantage on every D20 Test that uses "
+                              "Strength or Dexterity, and no spellcasting.")))
         catches.append(f"Not trained: {ARMOR[item['armor_type']]}")
     dex = _mod(_scores(sheet).get("dexterity", 10))
     add = dex if item["armor_type"] == 1 else min(dex, 2) if item["armor_type"] == 2 else 0

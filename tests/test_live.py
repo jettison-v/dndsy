@@ -1,9 +1,10 @@
 """One Character page with Play / Sheet / Plan modes, the menu bar's characters (your character, Party ▾), and
 the Live control (each sheet and refreshing). D&D Beyond is never called (fake fetch)."""
 
-import pytest
 import json
 import re
+
+import pytest
 
 from app import characters, live
 from app.importer import import_bundle
@@ -59,7 +60,7 @@ def test_party_menu_keeps_the_mode(player, db):
     cole, trah = char(db, "Cole"), char(db, "Trah")
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
-    menu = lambda path: party_menu(player.get(path).text)  # noqa: E731
+    menu = lambda path: party_menu(player.get(path).text)
     assert f'href="/characters/{trah.id}/plan"' in menu(f"/characters/{cole.id}/plan")
     assert f'href="/characters/{trah.id}"' in menu(f"/characters/{cole.id}")
     # Each character with class and level, and HP when known; "You" on your own
@@ -79,7 +80,7 @@ def test_your_character_opens_in_the_mode_you_used_last(player, db):
     import_bundle(db, BUNDLE)
     cole, trah = char(db, "Cole"), char(db, "Trah")
     owned_by(db, cole, "player@example.com")
-    mine = lambda path: topbar(player.get(path).text).split('class="char-btn')[0].rsplit("<a ", 1)[1]  # noqa: E731
+    mine = lambda path: topbar(player.get(path).text).split('class="char-btn')[0].rsplit("<a ", 1)[1]
     assert f'href="/characters/{cole.id}/battle"' in mine("/party")  # Battle until you've used another mode
     player.get(f"/characters/{trah.id}/plan")
     assert f'href="/characters/{cole.id}/plan"' in mine("/party")  # the mode you used last, on any character
@@ -206,7 +207,7 @@ def test_plan_shortlists_filter_like_sheet(player, db):
     for ref in ("spell:Barkskin", "form:Polar Bear"):
         player.post(f"{url}/pick", data={"kind": "fav", "ref": ref})
     sheet, plan = player.get(url).text, player.get(f"{url}/plan").text
-    part = lambda page, start, end: page.split(f'id="{start}"')[1].split(f'id="{end}"')[0] if end else page.split(f'id="{start}"')[1]  # noqa: E731
+    part = lambda page, start, end: page.split(f'id="{start}"')[1].split(f'id="{end}"')[0] if end else page.split(f'id="{start}"')[1]
     spells = part(plan, "t-spell-list", "t-form-list")
     assert 'data-list="plan-spells"' in spells and 'data-ls-group="prep"' in spells and "Barkskin" in spells  # the shared list
     assert 'data-list="sheet-spells"' in part(sheet, "t-spells", "t-forms")  # the same rows and filters as Sheet

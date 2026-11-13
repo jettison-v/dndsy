@@ -18,7 +18,7 @@ from app.importer import import_bundle
 from app.models import Campaign, Entity, EntityPicture, NoteImage, NoteSnapshot, NoteSource, StoredFile
 from app.notes_sync import store_export
 from tests.test_notes_sync import make_zip
-from tests.test_pictures import BUNDLE, entity, people, png  # noqa: F401  (people is a fixture)
+from tests.test_pictures import BUNDLE, entity, people, png
 from tests.test_suggestions import HX
 
 ROOT = Path(__file__).parent.parent
@@ -139,7 +139,7 @@ def test_storage_is_s3_on_beta_once_its_key_is_set(monkeypatch):
     assert files.from_config().root == ROOT / "private" / "files"
 
 
-def test_an_uploaded_picture_is_stored_and_served_through_askdnd(people, db, file_store):  # noqa: F811
+def test_an_uploaded_picture_is_stored_and_served_through_askdnd(people, db, file_store):
     import_bundle(db, BUNDLE)
     dm, player = people["dm"], people["player"]
     k = entity(db, "Kieran")
@@ -156,7 +156,7 @@ def test_an_uploaded_picture_is_stored_and_served_through_askdnd(people, db, fil
         assert player.get(f"/files/{key}").status_code == 404
 
 
-def test_pictures_are_read_only_from_storage(people, db, file_store):  # noqa: F811
+def test_pictures_are_read_only_from_storage(people, db, file_store):
     import_bundle(db, BUNDLE)
     k = entity(db, "Kieran")
     key = files.put(db, k.campaign_id, b"RIFF full", "image/webp")
@@ -169,7 +169,7 @@ def test_pictures_are_read_only_from_storage(people, db, file_store):  # noqa: F
     assert player.get(url["full"]).status_code == 404
 
 
-def test_a_storage_outage_shows_pictures_missing_and_is_reported_once(people, db, file_store, monkeypatch, caplog):  # noqa: F811
+def test_a_storage_outage_shows_pictures_missing_and_is_reported_once(people, db, file_store, monkeypatch, caplog):
     """S3 not answering: each picture is Not found rather than an error page, and the outage is one report, not one per
     picture."""
     import_bundle(db, BUNDLE)
@@ -188,7 +188,7 @@ def test_a_storage_outage_shows_pictures_missing_and_is_reported_once(people, db
     assert [r.levelname for r in caplog.records if "didn't answer" in r.getMessage()] == ["ERROR"]
 
 
-def test_without_storage_a_picture_is_refused_not_lost(people, db, monkeypatch):  # noqa: F811
+def test_without_storage_a_picture_is_refused_not_lost(people, db, monkeypatch):
     monkeypatch.setattr(files, "storage", lambda: None)
     import_bundle(db, BUNDLE)
     k = entity(db, "Kieran")

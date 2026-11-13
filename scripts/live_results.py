@@ -49,7 +49,7 @@ def main() -> None:
                 row["seconds"].append((n["at"], c["seconds"]))
     shaky = sorted(((r["missed"] / (r["ok"] + r["missed"]), k, r) for k, r in seen.items() if r["missed"]), reverse=True)
     print("\nDidn't pass every time (first try):" if shaky else "\nEvery check passed on its first try.")
-    for share, k, r in shaky:
+    for _share, k, r in shaky:
         print(f"  {r['missed']} of {r['ok'] + r['missed']} missed, {r['again']} passed on a second try   {k}")
     slower = []
     for k, r in seen.items():

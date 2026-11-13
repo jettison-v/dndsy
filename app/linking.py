@@ -37,7 +37,7 @@ class Linker:
     def html(self, html: str | Markup) -> Markup:
         """Link names in already-safe HTML, skipping tags and existing links."""
         if not self.pattern or not html:
-            return Markup(html or "")
+            return Markup(html or "")  # noqa: S704
         out, in_link = [], 0
         for part in TAG.split(str(html)):
             if part.startswith("<"):
@@ -51,7 +51,7 @@ class Linker:
                 out.append(part)
             else:
                 out.append(self.pattern.sub(self._replace, part))
-        return Markup("".join(out))
+        return Markup("".join(out))  # noqa: S704
 
     def text(self, text: str | None) -> Markup:
         """Escape plain text, then link names in it."""

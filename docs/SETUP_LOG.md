@@ -1083,3 +1083,8 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **Why:** if anyone ever slipped a script into a page (a name, a note), the browser refuses to run it. It's the strongest single protection a website has against that kind of attack.
 
 **For a new project:** set the policy (the `Content-Security-Policy` header) on the first day, with no inline scripts allowed, and keep scripts in files from the start; adding it later means finding and moving every inline bit first, as here.
+
+## Linting that catches bugs (Nov 13)
+**What:** ruff, the Python checker, went from catching only leftovers (unused imports) to a curated set of rules that catch likely bugs: a closure reading a loop variable, a shared mutable default, `eval` or SQL built from text, a date taken from the server's clock, a missing comma that silently joins two strings. Style-only rules stay off. It runs in the same place as before (`uv run ruff check`, and on every push).
+**Why:** each rule is a bug class that's cheap to rule out forever. On its first run it found one real bug: the date someone left the table, and Usage's default date, came from the server's clock, which is UTC and already tomorrow during the table's evening.
+**Reuse:** start a project with a linter in CI from day one, pick rules that catch bugs rather than enforce taste, and turn new ones on a few at a time, fixing what each finds before moving on.

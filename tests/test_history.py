@@ -4,10 +4,9 @@ restored, a whole import can be undone, and players' notes stay private."""
 import pytest
 from sqlalchemy import select
 
-from app import history
+from app import characters, history
 from app.importer import import_bundle
 from app.models import Entity, PlayerNote, Revision
-from app import characters
 from tests.table_setup import BUNDLE, char, owned_by
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
@@ -107,11 +106,11 @@ def test_key_moments_names_and_relationships_are_kept_when_deleted(db):
                        "sessions": [{"number": 19, "title": "Journey"}]})
     myna, trah = entity(db, "Myna"), entity(db, "Trah")
     gs = db.scalar(select(GameSession))
-    ev = StoryEvent(session_id=gs.id, position=1, kind=EventKind("reveal") if "reveal" in EventKind._value2member_map_ else list(EventKind)[0],
+    ev = StoryEvent(session_id=gs.id, position=1, kind=EventKind("reveal") if "reveal" in EventKind._value2member_map_ else next(iter(EventKind)),
                     text="Trah's holy water frees Myna.")
     ev.entities = [myna, trah]
     db.add(ev)
-    relations.add(db, trah, "allied_with" if "allied_with" in relations.TYPES else list(relations.TYPES)[0], myna, "")
+    relations.add(db, trah, "allied_with" if "allied_with" in relations.TYPES else next(iter(relations.TYPES)), myna, "")
     db.flush()
 
     ev.text = "Trah's holy water frees Myna from the cult."

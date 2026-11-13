@@ -21,7 +21,8 @@ HTML = """<html><head><style>.c1{color:red}</style><title>t</title></head><body>
 <table><tr><td>A</td><td>B</td></tr></table></body></html>"""
 
 
-def make_zip(html=HTML, images={"images/image1.png": b"\x89PNG fake"}):
+def make_zip(html=HTML, images=None):
+    images = {"images/image1.png": b"\x89PNG fake"} if images is None else images
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as z:
         z.writestr("Notes.html", html)
@@ -246,7 +247,7 @@ def test_add_source_and_sync(admin_client, db, monkeypatch):
     export_html = '<p><img src="images/image1.png"></p><p><img src="images/image2.png">Family Tree</p>'
     export_zip = make_zip(html=export_html, images={"images/image1.png": b"one", "images/image2.png": b"tree"})
 
-    async def fake_get(url, token=None, timeout=None):
+    async def fake_get(url, token=None, timeout=None):  # noqa: ASYNC109  (the real function's signature)
         if "docs.googleapis.com" in url:
             return Resp(json_data=DOCS_JSON)
         if "img.example" in url:
@@ -285,7 +286,7 @@ def test_google_errors_explained_and_shown_in_red(admin_client, db, monkeypatch)
     async def drive_token(request):
         return {"userinfo": {"email": "admin@example.com"}, "scope": admin_notes.DRIVE_READONLY}
 
-    async def fake_get(url, token=None, timeout=None):
+    async def fake_get(url, token=None, timeout=None):  # noqa: ASYNC109  (the real function's signature)
         return Resp(status=403, json_data={"error": {"code": 403, "message": "API not used", "errors": [{"reason": "accessNotConfigured"}]}})
 
     monkeypatch.setattr(admin_notes.oauth.google_drive, "authorize_access_token", drive_token)

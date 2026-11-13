@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
+from app import tour
 from app.auth import current_user
 from app.db import get_db
 from app.live import SYNC_SECONDS
-from app import tour
 from app.templating import templates
 
 router = APIRouter()

@@ -96,7 +96,7 @@ def test_a_number_shows_at_once_on_its_way_and_is_made_once_the_vtt_shows_it(pla
     f = copy.deepcopy(table.fight)
     assert initiative.want(f, "t-owl", 14) is True
     owl = next(x for x in f["order"] if x["key"] == "t-owl")
-    assert owl["initiative"] == 14 and owl["pending"] and [x["key"] for x in f["order"]][0] == "t-owl"
+    assert owl["initiative"] == 14 and owl["pending"] and next(x["key"] for x in f["order"]) == "t-owl"
     assert initiative.due(f) == [{"id": f["sets"][0]["id"], "group": "Party Member", "key": "25982053", "initiative": 14}]
     assert initiative.due(f) == []  # (handed out: again only after RESEND)
     table.fight = f

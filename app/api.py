@@ -9,8 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import web
-from app import admin_sessions, config, files, session_story
+from app import admin_sessions, config, files, session_story, web
 from app.db import get_db
 from app.extraction import session_label
 from app.models import Campaign, GameSession

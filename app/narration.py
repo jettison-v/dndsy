@@ -206,7 +206,7 @@ def tale(db: Session, session: GameSession, recap: Recap, campaign_name: str, pa
     entries, find = _names(db, session.campaign_id)
     named = [[entries[i] for i in find(line)] for line in lines]
     shown = pictures.urls(db, {e.id for es in named for e in es})
-    pic = lambda e: {"src": shown[e.id]["full"], "pos": shown[e.id].get("pos") or "50% 30%", "name": e.name}  # noqa: E731
+    pic = lambda e: {"src": shown[e.id]["full"], "pos": shown[e.id].get("pos") or "50% 30%", "name": e.name}
     counts = {}
     for es in named:
         for e in es:

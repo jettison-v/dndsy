@@ -177,7 +177,7 @@ def put(data: dict, field: str, v) -> None:
     if kind == "bagcoin":  # (a container that has never held coins has none at all on D&D Beyond)
         row = pick(data, ["inventory", {"id": arg.partition(":")[0]}])
         if isinstance(row, dict):
-            row["currency"] = {**{c: 0 for c in COINS}, **(row.get("currency") or {}), arg.partition(":")[2]: v}
+            row["currency"] = {**dict.fromkeys(COINS, 0), **(row.get("currency") or {}), arg.partition(":")[2]: v}
         return
     if kind in ("condition", "exhaustion"):  # a condition is there or not; Exhaustion is one with a level
         cid = EXHAUSTION if kind == "exhaustion" else int(arg)

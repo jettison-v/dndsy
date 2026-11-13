@@ -149,7 +149,7 @@ def at_level(recipe: dict, ev: dict, slot: int, char_level: int) -> dict | None:
         count += (ev.get("count_upcast") or 0) * times
     if not level and ev.get("cantrip"):
         t = tier(char_level or 1)
-        base = lambda p: re.split(r"[+-]", p.split(" ")[0])[0]  # noqa: E731 - the part's dice alone, "1d10"
+        base = lambda p: re.split(r"[+-]", p.split(" ")[0])[0]
         if ev["cantrip"] == "count":
             count *= t
         elif ev["cantrip"] == "extra":
@@ -541,7 +541,7 @@ def _judge(out: dict, o: dict, rsrc: str | None) -> None:
         out["gaps"].append("it attacks or calls for a save, and its words deal damage the plan doesn't have")
     if out["gaps"]:
         out["status"] = "gap"
-    elif not out["steps"] or out["steps"] == ["choose"] and o.get("name") != "Unarmed Strike":
+    elif not out["steps"] or (out["steps"] == ["choose"] and o.get("name") != "Unarmed Strike"):
         out["status"] = "no roll"
     elif all(s in TRUSTED for s in out["sources"].values()):
         out["status"] = "ready"
@@ -620,7 +620,7 @@ def button(kind: str, label: str, mod="", dmg="", note: str = "", plan: dict | N
         ab = "dex" if label == "Initiative" else ability_of(label)
         keys = (["initiative", "check", "check:dex", "d20"] if label == "Initiative" else ["check", "check:" + ab, "d20"] if kind == "check"
                 else ["save:" + ab, "d20"])
-        if kind == "save" and (label.startswith("Con save") or label.startswith("Concentration")):
+        if kind == "save" and (label.startswith(("Con save", "Concentration"))):
             out["notes"].append("Concentration after damage: DC 10 or half the damage, whichever is higher (up to 30).")
         if label == "Initiative":
             out["notes"].append("Initiative: Disadvantage if you're Surprised, Advantage if you're Invisible.")

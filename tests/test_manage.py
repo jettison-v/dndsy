@@ -7,10 +7,10 @@ import pytest
 from sqlalchemy import select, update
 
 from app import config
-from app.importer import import_bundle
-from app.models import Campaign, Entity, GameSession, JobRun, User
 from app.config import parse_allowlist
+from app.importer import import_bundle
 from app.main import app
+from app.models import Campaign, Entity, GameSession, JobRun, User
 from tests.menu import door, has_door, items
 from tests.test_suggestions import client_for
 

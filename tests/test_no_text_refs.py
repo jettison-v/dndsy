@@ -25,7 +25,7 @@ KINDS = {
 SELF = {"tests/test_no_text_refs.py"}
 
 # The work left (Nov 13). Lower a number when you convert some; never raise it.
-BASELINE = {"browser tests": 123, "server tests": 90, "app logic": 10, "app.js": 1}
+BASELINE = {"browser tests": 123, "server tests": 90, "app logic": 8, "app.js": 1}
 
 
 def count(kind: str) -> tuple[int, dict[str, int]]:

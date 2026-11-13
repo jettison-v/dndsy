@@ -31,7 +31,7 @@ ASKDND = ("/manage/askdnd", "/manage/campaigns", "/manage/accounts", "/manage/to
 
 
 def is_story(path: str) -> bool:
-    return path in ("/", "/story") or any(path == p or path.startswith(p + "/") or path.startswith(p + "?") for p in STORY)
+    return path in ("/", "/story") or any(path == p or path.startswith((p + "/", p + "?")) for p in STORY)
 
 
 def in_campaign(path: str) -> bool:

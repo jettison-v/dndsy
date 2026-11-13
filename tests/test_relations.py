@@ -6,7 +6,7 @@ from app.extraction import _known_world, store_result
 from app.importer import import_bundle
 from app.models import Campaign, Entity, EntityRelation, ExtractionRun, GameSession, Proposal
 from app.review import ReviewError, accept_proposal, undo_proposal
-from tests.test_entities import HX, admin, player  # noqa: F401  (fixtures)
+from tests.test_entities import HX, admin, player
 
 FAMILY = {
     "campaign": {"slug": "main", "name": "Main"},
@@ -129,14 +129,14 @@ def test_accept_relationship_after_its_entity_and_undo(db):
     assert rel_p.status == "pending"
 
 
-def test_review_page_shows_relationship_suggestion(admin, db):  # noqa: F811
+def test_review_page_shows_relationship_suggestion(admin, db):
     family(db)
     s = drafted(db, [{"from": "Tomas", "type": "enemy_of", "to": "Tidewardens", "note": ""}])
     page = admin.get(f"/c/main/manage/sessions/{s.id}").text
     assert "Relationship" in page and "enemy of" in page
 
 
-def test_entity_page_relationship_editing(admin, player, db):  # noqa: F811
+def test_entity_page_relationship_editing(admin, player, db):
     E = family(db)
     page = admin.get(f"/campaign/{E['Kiera'].id}/edit").text
     assert "Child of" in page and "Add relationship" in page

@@ -8,15 +8,27 @@ is left out rather than guessed.
 """
 
 import re
+from typing import ClassVar
 
 from app import books
-from app.conditions import from_sheet as ddb_conditions
 from app.advantage import ABILITY as ABILITY_WORDS
 from app.advantage import KEPT_SOURCES
+from app.conditions import from_sheet as ddb_conditions
 from app.ddb import (
-    ABBR, ALIGNMENTS, ITEM_NOTE_VALUE_TYPE, PARSER_VERSION, SHEET_URL, SIZES, DdbError, _d, _signed, _source_ids, html_to_text,
+    ABBR,
+    ALIGNMENTS,
+    ITEM_NOTE_VALUE_TYPE,
+    PARSER_VERSION,
+    SHEET_URL,
+    SIZES,
+    DdbError,
+    _d,
+    _signed,
+    _source_ids,
+    html_to_text,
     render_template,
 )
+
 
 def _clip(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rsplit(" ", 1)[0] + "…"
@@ -26,7 +38,7 @@ def _story(data: dict) -> dict:
     """The Background tab: who the character is, in the player's words."""
     traits = data.get("traits") if isinstance(data.get("traits"), dict) else {}
     notes = data.get("notes") if isinstance(data.get("notes"), dict) else {}
-    text = lambda v: html_to_text(v) if isinstance(v, str) else ""  # noqa: E731
+    text = lambda v: html_to_text(v) if isinstance(v, str) else ""
     looks = [("Alignment", ALIGNMENTS.get(data.get("alignmentId"), "")), ("Gender", data.get("gender")), ("Eyes", data.get("eyes")),
              ("Size", SIZES.get(_d(data, "race", "sizeId"), "")), ("Height", data.get("height")), ("Faith", data.get("faith")),
              ("Hair", data.get("hair")), ("Skin", data.get("skin")), ("Age", data.get("age")),
@@ -654,7 +666,7 @@ class _Sheet:
             rules = _d(c, "definition", "spellRules") or _d(c, "subclassDefinition", "spellRules") or {}
             rows = rules.get("levelSpellSlots") or []
             lvl = c.get("level") or 0
-            return [n for n in (rows[lvl] if lvl < len(rows) else [])]
+            return list(rows[lvl] if lvl < len(rows) else [])
 
         slots: list[int] = []
         if len(regular) == 1:
@@ -1172,7 +1184,7 @@ class _Sheet:
 
     # What a druid might keep in Wild Shape, if the DM allows it (app/wild_shape.py):
     # worn magic items that change numbers a form uses, and class features that do.
-    FORM_ITEM_EFFECTS = {
+    FORM_ITEM_EFFECTS: ClassVar[dict] = {
         ("bonus", "saving-throws"): "saves", ("bonus", "ability-checks"): "checks", ("bonus", "initiative"): "initiative",
         ("bonus", "armor-class"): "ac", ("bonus", "natural-attacks"): "attack", ("damage", "natural-attacks"): "damage",
         ("bonus", "speed"): "speed", ("bonus", "speed-walking"): "speed",

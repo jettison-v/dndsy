@@ -122,7 +122,7 @@ def families(db: Session, campaign_id: int, visible: Visible) -> list[Family]:
     for a, b in pairs["married_to"] + pairs["sibling_of"]:
         link[a].add(b)
         link[b].add(a)
-    name = lambda pid: people[pid].name.casefold()  # noqa: E731
+    name = lambda pid: people[pid].name.casefold()
     gen: dict[int, int] = {}
 
     def generation(pid: int, path=()) -> int:
@@ -252,7 +252,7 @@ def connections(db: Session, entity: Entity, visible: Visible) -> dict:
         for i, (t, _, o, label) in enumerate(items):
             nodes.append(Node(o, label, _group(t), x, y0 + i * 58))
 
-    pick = lambda f: [l for l in lines if f(l)]  # noqa: E731
+    pick = lambda f: [l for l in lines if f(l)]
     above = pick(lambda l: l[0] == "parent_of" and not l[1])
     below = pick(lambda l: l[0] == "parent_of" and l[1])
     sibs, spouses = pick(lambda l: l[0] == "sibling_of"), pick(lambda l: l[0] == "married_to")
@@ -281,7 +281,7 @@ def connections(db: Session, entity: Entity, visible: Visible) -> dict:
     nodes = [Node(n.entity, n.label, n.group, n.x - x0, n.y - y0) for n in nodes]
     heads = [(t, x - x0, y - y0) for t, x, y in heads]
     cx, cy = cx - x0, cy - y0
-    pct = lambda x, y: (round(100 * x / width, 2), round(100 * y / height, 2))  # noqa: E731
+    pct = lambda x, y: (round(100 * x / width, 2), round(100 * y / height, 2))
     # Each one's picture beside the name, which always shows (feedback 34, Nov 7: players won't know every face yet)
     pics = {i: u["thumb"] for i, u in pictures.urls(db, [entity.id] + [n.entity.id for n in nodes]).items() if u.get("thumb")}
     return {"e": entity, "nodes": nodes, "heads": heads, "w": round(width), "h": round(height), "cx": cx, "cy": cy, "pct": pct,

@@ -1,9 +1,9 @@
 """Tool corrections and house rules (data organization step 3): a campaign's rulings point at the tool's knowledge
 and never edit it; the effective value is tool knowledge, then a tool correction, then the house rule."""
 
-import pytest
 import itertools
 
+import pytest
 from sqlalchemy import select
 
 from app import characters, history, house_rules

@@ -12,6 +12,7 @@ import re
 import zipfile
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
+from typing import ClassVar
 
 DOC_ID = re.compile(r"/document/d/([A-Za-z0-9_-]{20,})")
 EXPORT_URL = "https://www.googleapis.com/drive/v3/files/{id}/export?mimeType=application/zip"
@@ -42,7 +43,7 @@ class ExportedDoc:
 
 
 class _ToText(HTMLParser):
-    BLOCK = {"p", "div", "br", "tr", "table", "ul", "ol"}
+    BLOCK: ClassVar[set] = {"p", "div", "br", "tr", "table", "ul", "ol"}
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -176,7 +177,7 @@ def docs_json_to_text(doc: dict) -> tuple[str, list[dict]]:
                 objects.append({"name": name, "kind": "image" if uri else "drawing", "uri": uri})
                 return f" [image: {name}] "
 
-            def para_text(p: dict, as_html: bool = False) -> str:
+            def para_text(p: dict, as_html: bool = False, positioned=positioned) -> str:
                 text = _runs_text(p.get("elements", []), placeholder, as_html)
                 for pid in p.get("positionedObjectIds", []):
                     text += placeholder(pid, positioned, "positionedObjectProperties")
@@ -277,6 +278,6 @@ def shrink_image(content_type: str, data: bytes) -> tuple[str, bytes]:
     return candidate if len(candidate[1]) < len(data) else (content_type, data)
 
 
-def export_image_order(export: "ExportedDoc") -> list[str]:
+def export_image_order(export: ExportedDoc) -> list[str]:
     """Image file names in the order they appear in an export's text."""
     return re.findall(r"\[image: ([^\]]+)\]", export.text)

@@ -62,9 +62,9 @@ def essentials(s: dict) -> list[str]:
 
 
 def main() -> int:
-    from app import characters, ddb
-
     import fixtures  # (the saved sheets are locked: unlocked on first use; FIXTURES_KEY is the workflow's secret)
+
+    from app import characters, ddb
 
     fixtures.ready()
     copies: dict = {}

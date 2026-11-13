@@ -26,8 +26,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import roll_recipes as rr  # noqa: E402
-from app import rules_data  # noqa: E402
+from app import roll_recipes as rr
+from app import rules_data
 
 OUT = ROOT / "app" / "data" / "roll_recipes.json"
 # Extra damage added to each hit while the spell lasts, not damage dealt when it's cast (feedback 48, Nov 7: Hunter's Mark
@@ -35,7 +35,8 @@ OUT = ROOT / "app" / "data" / "roll_recipes.json"
 RIDER = re.compile(r"\bextra\b[^.]*\b(?:whenever you hit|on a hit|when (?:it|you) hits?)\b|\b(?:whenever you hit|on a hit)\b[^.]*\bextra\b", re.I)
 BOOKS = ROOT / "app" / "data" / "rules"
 # An entry's `rolls` say how each resolves and what it does; the compiled recipe keeps one word for both (`on`)
-from app.roll_recipes import ON, event as _event  # noqa: E402,F401 (the one map, shared with homebrew items)
+from app.roll_recipes import ON  # noqa: F401 (the one map, shared with homebrew items)
+from app.roll_recipes import event as _event
 
 
 def _recipe(e: dict) -> dict:
@@ -155,7 +156,7 @@ def read_spell(s: dict) -> tuple[dict, list[str], list[str]]:
                 e["every"] = 2
         if not targets:
             notes.append(f"upcast with nothing to apply to: {m.group(0)}")
-    for m in MORE.finditer(higher):
+    for _m in MORE.finditer(higher):
         for e in events:
             if e.get("count"):
                 e["count_upcast"] = 1

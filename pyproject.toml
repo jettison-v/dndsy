@@ -45,6 +45,24 @@ addopts = "-n auto --dist loadgroup"
 line-length = 140
 
 [tool.ruff.lint]
-# Catch leftovers: unused imports and variables, redefinitions, undefined names
-select = ["F"]
-per-file-ignores = { "tests/*" = ["F401", "F811"] }  # pytest fixtures are shared by importing them
+# Rules that catch bugs or keep the code one way (foundations F4, docs/plans/2026-11-13-engineering-practices.md):
+# leftovers (F), errors (E, W, PLE), likely bugs (B, RUF, PIE), the table's clock (DTZ: never the server's date),
+# nothing blocking on the event loop (ASYNC), eval/SQL/Markup used only where checked (S307, S608, S704),
+# imports in one order (I), and every implicit string join in parentheses so a missing comma can't hide (ISC).
+select = ["F", "E", "W", "PLE", "B", "RUF", "PIE", "DTZ", "ASYNC", "S307", "S608", "S704", "I", "ISC", "UP", "C4", "SIM", "T10", "EXE", "LOG"]
+ignore = [
+    "E501",  # line length: line-length above is the formatter's guide, long data lines are fine
+    "E731", "E741", "E402",  # small lambdas, short names in maths, imports placed after a setup step
+    "B008",  # FastAPI's Depends(...) in defaults is how it's meant to be used
+    "B905",  # zip(): lists that differ in length are trimmed on purpose where it's used
+    "RUF001", "RUF002", "RUF003",  # askdnd's words use real typography: ’ × − …
+    "RUF005", "RUF059", "UP031",
+    "SIM102", "SIM105", "SIM108", "SIM115", "SIM117",  # style only
+    "ISC001",  # joined on one line by the formatter's own rule
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["F401", "F811"]  # pytest fixtures are shared by importing them
+# Helpers defined inside a loop and called within the same step (never kept past it): B023 can't see that
+"app/ddb_sheet.py" = ["B023"]
+"scripts/real_table.py" = ["B023"]

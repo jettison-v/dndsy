@@ -104,6 +104,6 @@ def test_a_change_made_while_the_rows_load_stays_due(monkeypatch):
     access.invalidate()
     access._rows()
     assert access._cache["at"] == 0.0
-    monkeypatch.setattr(access, "loader", lambda: {})
+    monkeypatch.setattr(access, "loader", dict)
     access._rows()
     assert access._cache["at"] > 0

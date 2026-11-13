@@ -162,7 +162,7 @@ class Safari:
     def quit(self) -> None:
         try:
             self.call("DELETE", "")
-        except Exception:  # noqa: BLE001 - closing anyway
+        except Exception:
             pass
 
 
@@ -242,7 +242,7 @@ def run(devices: list[str], seats: list[str]) -> list[str]:
             for seat in seats:  # (every seat's sign-in first, while the Mini isn't running a simulator)
                 try:
                     seat_cookie(seat, p)
-                except Exception as e:  # noqa: BLE001 - a device then says it couldn't sign in
+                except Exception as e:
                     print(f"  {seat}'s sign-in couldn't be read: {type(e).__name__}", flush=True)
             for kind in (d for d in devices if d in found_devices):
                 sim = found_devices[kind]
@@ -271,13 +271,13 @@ def run(devices: list[str], seats: list[str]) -> list[str]:
                                 got = check_page(safari, sim["udid"], name, seat, path, shot, layout)
                                 print(f"  {seat} {path}: {len(got) or 'ok'}", flush=True)
                                 found += got
-                    except Exception as e:  # noqa: BLE001 - one device failing says so and the next one runs
+                    except Exception as e:
                         failed = f"{name} · couldn't run: {type(e).__name__}: {str(e)[:200]}"
                     finally:
                         if safari:
                             try:
                                 safari.quit()
-                            except Exception:  # noqa: BLE001 - (Appium may be the thing that stopped)
+                            except Exception:
                                 pass
                         sh("xcrun", "simctl", "shutdown", sim["udid"], check=False)
                     if failed and attempt == 1:

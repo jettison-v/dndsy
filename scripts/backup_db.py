@@ -21,10 +21,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy import create_engine  # noqa: E402
-from sqlalchemy.orm import Session  # noqa: E402
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
 
-from app import backup, files  # noqa: E402
+from app import backup, files
 
 
 def engine_url() -> str:
@@ -40,7 +40,7 @@ def record(engine, started, status: str, detail: str) -> None:
     try:
         with engine.begin() as conn:
             conn.execute(JobRun.__table__.insert().values(name="backup", status=status, detail=detail[:2000], started_at=started))
-    except Exception as e:  # noqa: BLE001 - the backup itself matters more than the note
+    except Exception as e:
         print(f"Couldn't record the run: {e}")
 
 

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from app import areas, fog, measure
 from app.models import Campaign, Token
 from tests.table_setup import char
-from tests.test_table_places import table  # noqa: F401  (the fixture: main with askdnd's VTT on and a place with a map)
+from tests.test_table_places import table
 
 
 # ------------------------------------------------------------------ measuring, as the 2024 rules count
