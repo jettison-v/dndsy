@@ -58,12 +58,6 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
-<<<<<<< HEAD
-      - name: Lint (unused imports, undefined names)
-        run: uv run ruff check app scripts tests
-      - name: Known vulnerabilities in the Python dependencies (pip-audit)
-        run: uv run --with pip-audit pip-audit
-=======
       - name: Lint Python (likely bugs, one import order; pyproject.toml)
         run: uv run ruff check app scripts tests transcript_filter
       - name: Lint askdnd's JavaScript (likely bugs; tools/lint/eslint.config.mjs)
@@ -72,7 +66,8 @@ jobs:
         run: tools/lint/node_modules/.bin/stylelint --config tools/lint/stylelint.config.mjs "app/static/**/*.css"
       - name: Lint the templates (a button's type, unclosed tags; pyproject.toml [tool.djlint])
         run: uv run djlint app/templates --lint
->>>>>>> origin/main
+      - name: Known vulnerabilities in the Python dependencies (pip-audit)
+        run: uv run --with pip-audit pip-audit
       - name: Tests, with how much of the app they reach
         run: uv run pytest -q --durations=15 --ignore=tests/browser --cov=app --cov-branch --cov-report= --cov-fail-under=90
       - name: Coverage on the run's summary page

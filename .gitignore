@@ -53,3 +53,6 @@ tests/fixtures/ddb/*.json
 
 # the linters' own tools (tools/lint), installed by npm ci
 node_modules/
+
+# Claude's scratch work (worktrees, notes): never part of the repo
+scratchpad/
