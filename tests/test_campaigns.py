@@ -56,7 +56,7 @@ def two(monkeypatch, db):
 def test_story_pages_live_at_their_campaigns_address(two, db):
     pat, sam = two["pat"], two["sam"]
     r = pat.get("/", follow_redirects=False)
-    assert r.status_code == 307 and r.headers["location"] == "/c/main/"
+    assert r.status_code == 307 and r.headers["location"] == "/c/main/campaign"
     assert pat.get("/campaign", follow_redirects=False).status_code == 404  # only at the campaign's address (2026-10-23)
     assert sam.get("/c/main/campaign", follow_redirects=False).status_code == 404  # not one of Sam's campaigns
     assert "Ireena" in sam.get("/c/strahd/campaign").text and "Ireena" not in pat.get("/c/main/campaign").text
@@ -74,7 +74,7 @@ def test_the_switcher_lists_your_campaigns_and_remembers_the_last(two, db):
     set_role(db, "admin@example.com", "dm", campaign=two["strahd"])
     access.invalidate()
     page = admin.get("/c/main/").text
-    assert 'id="campaign-menu"' in page and 'href="/c/strahd/"' in page and 'href="/c/main/campaign"' in page
+    assert 'id="campaign-menu"' in page and 'href="/c/strahd/campaign"' in page and 'href="/c/main/campaign"' in page
     menu = page.split('id="campaign-menu"')[1].split("</div>\n  </div>")[0]
     assert "Main<small>You're here</small>" in menu and "Curse of Strahd<small>DM</small>" in menu  # your role elsewhere
     one = pat.get("/c/main/").text
@@ -82,7 +82,7 @@ def test_the_switcher_lists_your_campaigns_and_remembers_the_last(two, db):
     assert '<span class="campaign-name" title="The campaign you\'re in">Main</span>' in one  # …but its name is shown
     admin.get("/c/strahd/party")  # opening a campaign makes it the current one
     assert db.scalar(select(User).where(User.email == "admin@example.com")).current_campaign_id == two["strahd"].id
-    assert admin.get("/", follow_redirects=False).headers["location"] == "/c/strahd/"
+    assert admin.get("/", follow_redirects=False).headers["location"] == "/c/strahd/campaign"
     assert "Curse of Strahd" in admin.get("/admin/people").text  # Manage pages show the current campaign
 
 
@@ -128,7 +128,7 @@ def test_manage_campaigns_creates_and_moves_and_table_adds(two, db):
     page = admin.get("/manage/campaigns").text
     assert "Curse of Strahd" in page and "/c/strahd" in page and "Move" in page
     # Switch on every campaign but the one you're in (like the campaign menu)
-    assert page.count(">Switch</a>") == 1 and '<a class="btn small" href="/c/strahd/"' in page and "Main <span class=\"tag faint\">You're here" in page
+    assert page.count(">Switch</a>") == 1 and '<a class="btn small" href="/c/strahd/campaign"' in page and "Main <span class=\"tag faint\">You're here" in page
     r = admin.post("/manage/campaigns", data={"name": "Curse of Strahd", "dm_name": "Mary"}, follow_redirects=False)
     assert r.headers["location"] == "/c/curse-of-strahd/manage/table"  # straight to its people and characters
     assert db.scalar(select(Campaign).where(Campaign.slug == "curse-of-strahd")).dm_name == "Mary"

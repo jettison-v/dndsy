@@ -68,9 +68,8 @@ def test_party_menu_keeps_the_mode(player, db):
     bar = topbar(player.get("/party").text)
     assert ">Everyone at a glance<small>" in bar and 'href="/party"' in bar
     assert bar.index("Everyone at a glance") < bar.index('class="party-row')  # first, above the characters (Brett, 2026-10-26)
-    for label in ("Story", "Campaign"):
-        assert f">{label}</a>" in bar
-    for gone in ("Recap", "Sessions", "Map", "Previously on…", "Battle"):
+    assert ">Campaign</a>" in bar  # (Story joined Campaign, Nov 13: Campaign opens on Previously on…)
+    for gone in ("Story", "Recap", "Sessions", "Map", "Previously on…", "Battle"):
         assert f">{gone}</a>" not in bar
     assert 'aria-label="Switch character"' not in bar and 'id="char-menu"' not in bar
 
@@ -95,10 +94,10 @@ def test_the_dm_has_no_character_button(dm, db):
     char(db, "Trah").owner_id = None
     db.flush()
     page = dm.get("/party").text
-    assert 'title="Your character"' not in topbar(page) and 'class="bn-char' not in page
+    assert 'title="Your character' not in topbar(page) and 'class="bn-char' not in page
     assert 'data-menu="party-menu"' in topbar(page) and ">Cole<" in party_menu(page)
     bottom = page.split('class="bottom-nav"')[1].split("</nav>")[0]
-    assert re.findall(r">(Story|Campaign|Party|More)<", bottom) == ["Story", "Campaign", "Party", "More"]
+    assert re.findall(r">(Story|Campaign|Party|More)<", bottom) == ["Campaign", "Party", "More"]
 
 
 def test_bottom_bar_on_phones(player, db):
@@ -107,7 +106,7 @@ def test_bottom_bar_on_phones(player, db):
     owned_by(db, cole, "player@example.com")
     page = player.get("/party").text
     bottom = page.split('class="bottom-nav"')[1].split("</nav>")[0]
-    assert re.findall(r">(Story|Campaign|Cole|Party|More)<", bottom) == ["Story", "Campaign", "Cole", "Party", "More"]
+    assert re.findall(r">(Story|Campaign|Cole|Party|More)<", bottom) == ["Campaign", "Cole", "Party", "More"]
     assert f'href="/characters/{cole.id}/battle"' in bottom and 'data-menu="party-menu-m"' in bottom
     assert ">Everyone at a glance<small>" in page.split('id="party-menu-m"')[1]
     more = page.split('id="more-menu"')[1].split("</div>")[0]

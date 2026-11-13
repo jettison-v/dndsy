@@ -68,14 +68,14 @@ def _page_context(request: Request) -> dict:
             "my_id": (lambda: access.user_id(user.get("email"))) if user else (lambda: None)}  # your dice and everyone's tuning (app/dice.py), for thrown rolls
 
 
-# Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on Story)
-SWITCH_KEEPS = ("/", "/campaign", "/party", "/your-notes", "/manage", "/manage/inbox",
+# Pages that make sense in any campaign: switching campaigns keeps you on them (else you land on Campaign)
+SWITCH_KEEPS = ("/campaign", "/party", "/your-notes", "/manage", "/manage/inbox",
                 "/manage/sessions", "/manage/sessions/doc", "/manage/table", "/manage/house-rules", "/manage/history",
                 "/manage/settings", "/manage/dm-guide")
 
 
 def switch_path(path: str) -> str:
-    return path if path in SWITCH_KEEPS else "/"
+    return path if path in SWITCH_KEEPS else "/campaign"
 
 
 def _my_dice() -> dict:

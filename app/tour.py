@@ -14,7 +14,8 @@ from app.live import rows_from
 # Help › What askdnd adds: sections, each a list of groups (a group key starts the tour there; None has no stops yet)
 SECTIONS = [
     ("Before you play", [
-        ("previously", "Previously on…", "The last session's recap, key moments and open threads; every session is under All sessions."),
+        ("previously", "Previously on…", "Where Campaign opens: the last session's recap, key moments and open threads; every "
+                                                "session is under Sessions."),
         ("memory", "The campaign's memory", "People, places, quests and how everyone is connected, built from each session and kept right by "
                                             "the DM. Suggest a correction sends a fix to the DM."),
     ]),
@@ -58,7 +59,7 @@ GROUP_NAMES["help"] = "Help, any time"
 ADD = '[data-tour="battle"] [data-econ-col="action"] .head-add'
 SPELLBOOK = "#spell-bar .spellbook-btn"  # opens the Spell Book, full window (it only reads)
 
-# The stops, in order. page: story, campaign, battle, sheet, plan, party, or None (wherever you are).
+# The stops, in order. page: campaign, battle, sheet, plan, party, or None (wherever you are).
 # open: selectors clicked in turn first (a tab; + Add, then a row). panel: the stop shows the side panel the tour
 # opened (other stops close it). example: an example row on Battle, only on the page ("pin", or "note" with a note).
 # swap: Battle shown in a Wild Shape form ("form", the first the druid knows) or as it really is ("own"), from
@@ -68,13 +69,14 @@ SPELLBOOK = "#spell-bar .spellbook-btn"  # opens the Spell Book, full window (it
 # sheet: ddb_bridge.plays); without it, the stop is left out. "sync+caster" needs both.
 # all: light every match of `at` together (a column: its heading and each row's cell).
 STOPS = [
-    {"group": "previously", "page": "story", "open": '[data-tab="t-previously"]', "at": '[data-tour="previously"]',
-     "what": "Last session's recap, its key moments and the threads still open. <b>All sessions</b> has every session so"
-             " far.",
+    {"group": "previously", "page": "campaign", "open": '[data-tab="t-previously"]', "at": '[data-tour="previously"]',
+     "what": "Campaign opens on last session's recap, its key moments and the threads still open. <b>Sessions</b> has every"
+             " session so far.",
      "why": "Sessions can be weeks apart, and D&D Beyond doesn't remember the story. A minute here before you play "
             "catches you up."},
-    {"group": "memory", "page": "campaign", "at": '[data-tour="campaign"]',
-     "what": "Everyone and everywhere the party has met, plus Quests, Relationships, the Glossary and the Map.",
+    {"group": "memory", "page": "campaign", "open": '[data-tab="t-world"]', "at": '[data-tour="campaign"]',
+     "what": "Its other tabs: <b>World</b>, everyone and everywhere the party has met, plus Quests, Relationships, the"
+             " Glossary and the Map.",
      "why": "askdnd builds it from each session and the DM checks it. Spot a mistake? <b>Suggest a correction</b> on "
             "any entry sends it to the DM."},
     {"group": "battle", "title": "Battle: your turn on one screen", "page": "battle", "needs": "character",
@@ -247,7 +249,7 @@ def stops_for(db: Session, user: dict | None) -> list[dict]:
     email = ((user or {}).get("email") or "").lower()
     mine = next((r for r in rows_from(db) if email and r["owner"] == email), None)
     cbase = web.base()
-    pages = {"story": f"{cbase}/", "campaign": f"{cbase}/campaign", "party": "/party", None: None}
+    pages = {"campaign": f"{cbase}/campaign", "party": "/party", None: None}
     has = set()
     swaps = {}
     if mine:

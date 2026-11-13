@@ -19,19 +19,29 @@
 {% elif p.failed %}{% set tone = "warn" %}
 {% elif ours and (playing or p.dropped) %}{% set tone = "bad" %}{# (a sheet that was connected tonight: red, as its band) #}
 {% else %}{% set tone = "" %}{% endif %}
-<button type="button" id="live-pill" class="live-pill{{ ' ' + tone if tone }}" data-menu="live-menu" aria-haspopup="dialog" aria-controls="live-menu"
+{%- set alone = tone == "step" and ((party and tn.connected == tn.connectable) or (p.step and p.mine)) %}
+<button type="button" id="live-pill" class="live-pill{{ ' ' + tone if tone }}{{ ' dot' if alone }}" data-menu="live-menu" aria-haspopup="dialog" aria-controls="live-menu"
   hx-get="/live{{ '?c=%s' % fid if fid }}" hx-target="#live-menu" hx-trigger="click" data-focus="{{ fid }}" data-every="{{ tn.every }}"{% if tn.connectable %} data-wants-bridge="1"{% endif %}{% if m and m.in_game %} data-log="{{ 'on' if m.step else 'sheet' }}" data-log-until="{{ m.step_until }}" data-sheet="https://www.dndbeyond.com/characters/{{ m.ddb_id }}"{% else %} data-log="" data-log-until="0"{% endif %}{% if oob %} hx-swap-oob="true"{% endif %}
   title="{% if p.by_hand %}{{ p.name }}: {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} didn't go through to D&amp;D Beyond: Try again or Undo in this window{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif party %}How many of the party's D&amp;D Beyond sheets are connected{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd change together (the bridge){% elif p.via %}{{ p.name }}'s sheet is closed, so the DM's D&amp;D Beyond makes the changes. Open it so rolls reach D&amp;D Beyond's Game Log too{% elif ours %}Open {{ p.name }}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge{% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
-  <span class="live-dot" aria-hidden="true"></span><span class="live-ago">
-  {%- if p.by_hand -%}{{ p.by_hand }} didn't go through
-  {%- elif party and tn.via -%}{{ tn.connected + tn.via }} of {{ tn.connectable }} connected · {{ tn.via }} through {{ "you" if tn.dm else "the DM" }}
-  {%- elif party -%}{{ tn.connected }} of {{ tn.connectable }} sheets connected
-  {%- elif p.step and p.mine -%}Connected
-  {%- elif p.step -%}{{ p.name }} is connected
-  {%- elif p.via and p.mine -%}Through the DM · open your sheet
-  {%- elif p.via -%}{{ p.name }}: through the DM
-  {%- elif ours -%}Open your sheet to connect
-  {%- elif tn.party_pill -%}Slowest sheet {{ (p.fetched_at | ago) or "never" }}
-  {%- else -%}Updated {{ (p.fetched_at | ago) or "never" }}{%- endif -%}
-  </span><span class="live-noext">Add the askdnd bridge</span><span class="live-word">{{ "Connected" if tone == "step" else "Through the DM" if tone == "via" and not party else "Live" }}</span></button>
+  {#- Its words (Brett chose Menu Bar by Person, Nov 13, docs/mockups/menu-bar-people/ › The Live pill): connected is the
+      green dot alone; every other state says what to do. `.lw-long` gives way to `.lw-short` below 1100px (the collapse
+      order, docs/DESIGN.md › Navigation), never to a bare "Live". -#}
+  {%- set words = none %}{% set short = none %}
+  {%- if p.by_hand %}{% set words = "%d didn't go through" % p.by_hand %}
+  {%- elif party and tn.connected == tn.connectable %}{% set words = "" %}
+  {%- elif party and tn.via %}{% set words = "%d of %d · %d via %s" % (tn.connected + tn.via, tn.connectable, tn.via, "you" if tn.dm else "the DM") %}{% set short = "%d of %d" % (tn.connected + tn.via, tn.connectable) %}
+  {%- elif party and tn.connected %}{% set words = "%d of %d connected" % (tn.connected, tn.connectable) %}{% set short = "%d of %d" % (tn.connected, tn.connectable) %}
+  {%- elif party %}{% set words = "None connected" %}
+  {%- elif p.step and p.mine %}{% set words = "" %}
+  {%- elif p.step %}{% set words = "%s connected" % p.name %}
+  {%- elif p.via and p.mine %}{% set words = "Via the DM · open your sheet" %}{% set short = "Open your sheet" %}
+  {%- elif p.via %}{% set words = "%s: via the DM" % p.name %}
+  {%- elif p.failed %}{% set words = "D&D Beyond not answering" %}{% set short = "Not answering" %}
+  {%- elif ours and tone == "bad" %}{% set words = "Open your sheet" %}
+  {%- elif ours %}{% set words = "Not connected" %}
+  {%- elif tn.party_pill %}{% set words = "Slowest sheet " ~ ((p.fetched_at | ago) or "never") %}
+  {%- else %}{% set words = "Updated " ~ ((p.fetched_at | ago) or "never") %}{% endif %}
+  <span class="live-dot" aria-hidden="true"></span>
+  {%- if words %}<span class="live-ago"><span class="lw-long">{{ words }}</span>{% if short %}<span class="lw-short">{{ short }}</span>{% endif %}</span>
+  {%- else %}<span class="live-ago sr">Connected</span>{% endif %}<span class="live-noext">Add the bridge</span></button>
 {% endif %}

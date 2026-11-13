@@ -10,7 +10,7 @@
     <ul class="records">
       {% for x in campaigns %}{% set c = x.c %}
       <li class="record"><span class="record-main"><b>{{ c.name }}{% if c.is_test %} <span class="tag draft" title="A test campaign: it holds test data">Test</span>{% endif %}{% if here and c.id == here.id %} <span class="tag faint">You're here</span>{% endif %}</b>
-          <span class="note"><a href="/c/{{ c.slug }}/">/c/{{ c.slug }}</a> · {% if x.dms %}DM {{ x.dms | join(", ") }}{% else %}no DM yet{% endif %} · {{ x.people }} {{ "person" if x.people == 1 else "people" }} · {{ x.characters | map(attribute="name") | join(", ") or "no characters yet" }}{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}{% if c.is_test %} · every VTT piece shows here{% endif %}</span></span>
+          <span class="note"><a href="/c/{{ c.slug }}/campaign">/c/{{ c.slug }}</a> · {% if x.dms %}DM {{ x.dms | join(", ") }}{% else %}no DM yet{% endif %} · {{ x.people }} {{ "person" if x.people == 1 else "people" }} · {{ x.characters | map(attribute="name") | join(", ") or "no characters yet" }}{% if c.ddb_campaign_id %} · D&amp;D Beyond: {{ x.ddb_name or c.ddb_campaign_id }}{% endif %}{% if c.is_test %} · every VTT piece shows here{% endif %}</span></span>
         <span class="record-actions">{% if not (here and c.id == here.id) %}<a class="btn small" href="/c/{{ c.slug }}{{ switch_path }}" title="Make {{ c.name }} your current campaign (like the campaign menu)">Switch</a>{% endif %}<a class="btn small" href="/c/{{ c.slug }}/manage/settings">Settings</a><a class="btn small" href="/c/{{ c.slug }}/manage/table">Table</a></span></li>
       {% endfor %}
     </ul>

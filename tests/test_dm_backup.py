@@ -168,7 +168,7 @@ def test_the_live_pill_is_yellow_through_the_dm_red_while_playing_grey_otherwise
     table plays, grey when no one is connected."""
     cole = table
     page = player.get(f"/characters/{cole.id}").text
-    assert 'class="live-pill"' in page and "Open your sheet to connect" in page  # grey: no one's connected
+    assert 'class="live-pill"' in page and ">Not connected<" in page  # grey: no one's connected
 
     other = next(c for c in db.scalars(select(Character)) if c.id != cole.id and c.ddb_id)
     other.sheet_heard_at = datetime.now(UTC)  # someone at the table is
@@ -177,11 +177,11 @@ def test_the_live_pill_is_yellow_through_the_dm_red_while_playing_grey_otherwise
 
     carry(dm)
     page = player.get(f"/characters/{cole.id}").text
-    assert 'class="live-pill via"' in page and "Through the DM · open your sheet" in page
+    assert 'class="live-pill via"' in page and "Via the DM · open your sheet" in page
     window = player.get(f"/live?c={cole.id}").text
     assert "the DM's D&amp;D Beyond is making your changes" in window and "Open sheet ↗" in window
     assert "Through you · their sheet is closed" in dm.get("/live").text
 
     cole.sheet_heard_at = datetime.now(UTC)
     db.flush()
-    assert 'class="live-pill step"' in player.get(f"/characters/{cole.id}").text
+    assert 'class="live-pill step dot"' in player.get(f"/characters/{cole.id}").text

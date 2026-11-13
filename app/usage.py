@@ -77,8 +77,8 @@ IGNORED = re.compile(r"^/(bridge/|api/|errors/page$|live/|logout$|email/stop$|ch
 PAGES: list[tuple[str, str]] = [
     (r"^/characters/\d+/battle", "Battle"), (r"^/characters/\d+/plan", "Plan"), (r"^/characters/\d+(/sheet)?/?$", "Sheet"),
     (r"^/characters/\d+", "Character (other)"), (r"^/party", "Party"), (r"^/c/[^/]+/table", "askdnd's table"),
-    (r"^/c/[^/]+/manage", "Manage"), (r"^/manage", "Admin"), (r"^/c/[^/]+/campaign", "Campaign"), (r"^/c/[^/]+/sessions", "Story"),
-    (r"^/c/[^/]+/?$", "Story"), (r"^/your-notes", "Your notes"), (r"^/help", "Help"),
+    (r"^/c/[^/]+/manage", "Manage"), (r"^/manage", "Admin"), (r"^/c/[^/]+/campaign", "Campaign"), (r"^/c/[^/]+/sessions", "Campaign"),
+    (r"^/c/[^/]+/?$", "Campaign"), (r"^/your-notes", "Your notes"), (r"^/help", "Help"),
 ]
 _FEATURES = [(re.compile(p), f) for p, f in FEATURES]
 _PAGES = [(re.compile(p), n) for p, n in PAGES]

@@ -48,7 +48,7 @@ def test_allowed_user_signs_in(client, monkeypatch):
     assert response.headers["location"] == "/"
     home = client.get("/")
     assert home.status_code == 200
-    assert "Previously on" in home.text
+    assert "<title>Campaign · askdnd</title>" in home.text  # (no campaign yet: the home page is Campaign, empty)
 
 
 def test_unlisted_user_is_rejected(client, monkeypatch):

@@ -23,7 +23,7 @@ def test_every_action_route_is_a_feature_or_bookkeeping():
 def test_the_page_comes_from_the_address():
     assert usage.page_of("https://askdnd.ai/characters/3/battle?creature=9") == "Battle"
     assert usage.page_of("https://askdnd.ai/characters/3") == "Sheet" and usage.page_of("https://askdnd.ai/characters/3/plan") == "Plan"
-    assert usage.page_of("https://askdnd.ai/c/main/table") == "askdnd's table" and usage.page_of("https://askdnd.ai/c/main/") == "Story"
+    assert usage.page_of("https://askdnd.ai/c/main/table") == "askdnd's table" and usage.page_of("https://askdnd.ai/c/main/") == "Campaign"
     assert usage.page_of("https://askdnd.ai/party") == "Party" and usage.page_of("") == ""
 
 

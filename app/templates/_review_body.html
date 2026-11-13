@@ -292,7 +292,7 @@
       </div>
 
       {% if chapters %}
-      {# 4. The full tale (Session Story, Brett Nov 7): the session's own page on Story, a chapter per scene #}
+      {# 4. The full tale (Session Story, Brett Nov 7): the session's own page (from Campaign › Sessions), a chapter per scene #}
       <div id="t-tale" role="tabpanel"{% if tab != "tale" %} hidden{% endif %}>
       <section class="section" id="tale">
         <div class="section-head"><h2><span class="num">4</span>The full tale</h2><span class="count">{{ chapters | length }} chapters{% if listen_full and vtt_on("recap_listen") %} · Listen: {{ "about " ~ listen_full.says[2:] if listen_full.estimate else listen_full.says }}{% endif %}</span></div>

@@ -1,0 +1,48 @@
+{# Story's pieces, shared by Campaign's first two tabs (Brett chose Story and Campaign as one, Nov 13,
+   docs/mockups/menu-bar-people/): a session's recap on its scroll, a key moment, what came of it. #}
+{% macro tale_link(item) %}{% if item.more %}<a class="btn tale-more-link" href="{{ cbase }}/sessions/{{ item.s.id }}">Full Tale &amp; Stats →</a>{% endif %}{% endmacro %}
+{% macro scroll(item, listen=False, roll_up=False) %}{# A session's recap on its scroll: the rods, the parchment with its date and title, Listen and Full Tale & Stats, the DM's note. The same header on both tabs: on All sessions (roll_up) the open session's row hides and its scroll carries the title, with Roll up ▴ in its corner (docs/mockups/story-page/ Sessions board; Brett, Nov 10) #}
+<div class="scroll">
+  <div class="story">
+    {% if roll_up %}<button type="button" class="tale-roll-up" data-roll-up aria-expanded="true" aria-label="Roll up {{ item.s.title or item.label }}">Roll up ▴</button>{% endif %}
+    <header class="tale-head"><span class="tale-kicker">{{ item.label }}</span>{% if item.s.title %}<h2>{{ item.s.title }}</h2>{% endif %}
+      {% if listen or item.more %}<span class="tale-acts">{% if listen %}<button type="button" class="btn tale-listen" data-listen="{{ cbase }}/sessions/{{ item.s.id }}">▶ Listen{% if item.listen %} <span class="listen-len" title="{{ 'About how long it plays: it hasn\'t been recorded yet' if item.listen.estimate else 'How long it plays' }}">{{ item.listen.says }}</span>{% endif %}</button>{% endif %}{# the full tale, its awards and the night's numbers, at the top beside Listen (feedback 55, 56) #}{{ tale_link(item) }}</span>{% endif %}</header>
+    <div class="tale-text">{{ sln.html(item.html) }}</div>
+    <div class="tale-end" aria-hidden="true">❦</div>
+    {% if item.dm_notes %}
+    <div class="tale-dm" role="note"><b>From the DM</b>{% for x in item.dm_notes %}<p>{% if x.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ sln.text(x.text) }}</p>{% endfor %}</div>
+    {% endif %}
+  </div>
+</div>
+{% endmacro %}
+{% macro moment(e) %}<li class="ev {{ e.kind.value }}"><span class="note kind {{ e.kind.value }}">{{ e.kind.value | capitalize }}</span><div class="ev-text">{{ sln.text(e.text) }}{% set shown = e.entities | selectattr("status.value", "equalto", "published") | list %}{% if shown %}<small>{% for x in shown %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>{% endmacro %}
+{% macro after(events, quests, threads, few=8) %}{# What came of it: key moments, the major ones (or, drafted before they were marked, the first `few`: 8 on Previously on…, 3 on All sessions) with the rest behind Show all (Brett, Nov 5; feedback 40, Nov 7), and (the latest session) open threads #}
+{% if events or quests or threads %}
+<div class="tale-after">
+  {% if events %}
+  <section>
+    <h3 class="tale-label">Key moments</h3>
+    {% set ranked = events | selectattr("major") | list %}
+    {% set top = (ranked if ranked else events)[:few] %}
+    {% set shown = top if events | length > top | length + 1 else events %}
+    {% set rest = events | reject("in", shown) | list %}
+    <ol class="moment-line tale-moments">{% for e in shown %}{{ moment(e) }}{% endfor %}</ol>
+    {% if rest %}
+    <details class="tale-more"><summary>Show the other {{ rest | length }} key moments</summary>
+      <ol class="moment-line tale-moments">{% for e in rest %}{{ moment(e) }}{% endfor %}</ol>
+    </details>
+    {% endif %}
+  </section>
+  {% endif %}
+  {% if quests or threads %}
+  <section>
+    <h3 class="tale-label">Open threads</h3>
+    <ul class="plain tale-threads">
+      {% for q in quests %}<li><b>{{ q.name }}</b> <span class="note">· Quest</span>{% if q.summary %}<span class="muted">{{ sln.text(q.summary) }}</span>{% endif %}</li>{% endfor %}
+      {% for t in threads %}<li class="tale-theory"><i>{{ t.text }}</i> <span class="note">· Theory</span></li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}

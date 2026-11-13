@@ -1,0 +1,36 @@
+{# Campaign › Sessions (Story's All sessions until Nov 13): every published session, newest first, each a rolled scroll;
+   From the start reads them all in order. Story search (app.js) filters them. #}
+{% from "_story_macros.html" import scroll, after with context %}{% from "_suggest_form.html" import suggest with context %}
+{% set items = st["items"] %}
+  <div class="tale">
+    {% if items %}{# Search the story (Brett, 2026-10-29): every published session's recap, key moments and the DM's notes, here on
+       the page (app.js "Story search") #}
+    <div class="ls-search story-search tale-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="search" placeholder="Search the story" aria-label="Search the story" data-story-search></div>{% endif %}
+  <div class="tale-order" data-story-sub>
+    <p class="subtitle">{{ "Every recap in order, from the first session." if from_start else "Every session the DM has published, newest first. Each opens into its scroll." }}</p>
+    <nav class="seg" aria-label="Order">{# read them all, the first first and every scroll open (Brett, Nov 5) #}
+      <a href="{{ cbase }}/campaign?tab=sessions"{% if not from_start %} aria-current="true"{% endif %}>Newest first</a>
+      <a href="{{ cbase }}/campaign?tab=sessions&amp;order=start"{% if from_start %} aria-current="true"{% endif %}>From the start</a>
+    </nav>
+  </div>
+  <p class="subtitle" data-story-found hidden></p>
+  {# Each session a rolled scroll, the newest open (the mockup's All sessions board) #}
+  {% for item in items %}
+  <details class="tale-roll" id="s{{ item.s.id }}" {% if loop.first or from_start %}open{% endif %}>
+    <summary>
+      <span class="tale-kicker">{{ item.label }}</span>
+      <span class="tale-roll-text"><b>{{ item.s.title or item.label }}</b><span class="note">{{ item.html | striptags | truncate(140, True, "…") }}</span></span>
+      <span class="note tale-roll-count">{% if item.events %}{{ item.events | length }} key moment{{ "s" if item.events | length != 1 }}{% endif %}</span>
+    </summary>
+    <div class="session-body">
+      {{ scroll(item, listen=vtt_on("recap_listen"), roll_up=True) }}{# Listen: every session's own (feedback 37) #}
+      {{ after(item.events, [], [], few=3) }}
+      {% if not item.events and not item.dm_notes %}<p class="note">No key moments recorded for this session.</p>{% endif %}
+      {{ suggest("/sessions/" ~ item.s.id ~ "/suggest", "this session") }}
+    </div>
+  </details>
+  {% else %}
+  <p class="muted">Nothing published yet.</p>
+  {% endfor %}
+  </div>

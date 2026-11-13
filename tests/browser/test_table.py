@@ -24,7 +24,7 @@ def newest(page) -> str:
 
 def test_the_main_pages_load_without_errors(people, server):
     admin = people("admin")
-    for path in ("/c/main/", "/c/main/?tab=sessions", "/c/main/campaign", "/c/main/campaign?tab=quests",
+    for path in ("/c/main/campaign", "/c/main/campaign?tab=sessions", "/c/main/campaign?tab=world", "/c/main/campaign?tab=quests",
                  f"/characters/{server['cole']}/battle", f"/characters/{server['cole']}",
                  f"/characters/{server['cole']}/plan", "/c/main/party", "/c/main/manage", "/c/main/manage/settings",
                  "/manage/campaigns", "/manage/dice", "/manage/design", "/help"):
@@ -127,7 +127,7 @@ def test_a_pages_javascript_error_is_sent_home(people, server):
     assert answered.value.status == 204
     page.wait_for_function("window.__sent.length")
     got = page.evaluate("window.__sent")
-    assert got and all("/static/app.js" in g["source"] and g["page"] == "/c/main/" and g["message"] for g in got)
+    assert got and all("/static/app.js" in g["source"] and g["page"] == "/c/main/campaign" and g["message"] for g in got)
     assert len({(g["message"], g["line"]) for g in got}) == len(got)  # each distinct error once
     assert player.errors  # (the error itself, expected here)
 

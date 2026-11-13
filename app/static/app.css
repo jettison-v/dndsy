@@ -2,7 +2,7 @@
 :root {
   /* Colors. Pages use these names only; a test fails on a color typed anywhere else (tests/test_design_system.py). */
   --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-strong: #4a4f57; --chrome: #0f1113;
-  --text: #ebe7df; --text-strong: #fff; --muted: #a29d93; --faint: #6f6b64; --link: #f08a8a;
+  --text: #ebe7df; --text-strong: #fff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
   --story-bg: #221f1a; --story-line: #3b3428; --story-text: #e2dccf;
   /* The faint scroll behind story text (Brett, 2026-11-05: Umber, Inter, Faint): its parchment, the rods of a recap's, the first letter and the fleuron */
   --parch-1: #211e19; --parch-2: #1f1c18; --parch-3: #1a1916; --rod-1: #2f2920; --rod-2: #221e18; --rod-3: #1a1714;
@@ -94,15 +94,17 @@ body[data-staging] .brand-word { display: none; }  /* (the label takes the word'
 .nav a { display: inline-flex; align-items: center; min-height: var(--bar-h); color: var(--muted); text-decoration: none; font-weight: 500; font-size: var(--fs-md); padding: 0 12px; border-radius: var(--r-sm); }
 .nav a:hover { color: var(--text); background: var(--surface); }
 .nav a.active { color: var(--text-strong); background: var(--surface); }
-/* Menu bar (Brett, 2026-10-22, Option B): the campaign's name | Story, Campaign | your character, Party ▾ | Live, Manage, you */
+/* Menu bar (Brett, 2026-10-22, Option B; by person, Nov 13, docs/mockups/menu-bar-people/): the logo, the campaign's name |
+   Campaign, Table | your character, Party ▾, Search's bar | Live, Manage, ⚙, ?, you. docs/DESIGN.md › Navigation */
 .nav-sep { width: 1px; height: 24px; background: var(--line); flex: none; }
 .campaign-name { font-weight: 600; font-size: var(--fs-md); color: var(--text-strong); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 .campaign-switch { position: relative; min-width: 0; }
 .campaign-switch > button { min-height: var(--bar-h); background: none; border: none; padding: 0 8px; border-radius: var(--r-sm); display: block; max-width: 100%; }
 .campaign-switch > button:hover { background: var(--surface); }
 .campaign-switch .menu { left: 0; right: auto; }
-/* When the bar runs short, nothing wraps onto two lines: the Live pill shortens first (below), then the campaign's
-   name gives up room (it's the one item that shrinks, with "…") */
+/* When the bar runs short, nothing wraps onto two lines, and things give way in one order (Brett, Nov 13): Search's bar
+   first, always (it takes only the room that's free); below 1360px the word askdnd; 1200px your character's name;
+   1100px the Live pill's short words; 1000px the campaign's name, with "…"; 900px the phone layout */
 .nav a, .char-btn, .bar-end > * { white-space: nowrap; flex-shrink: 0; }
 .topbar .menu { white-space: normal; }  /* the menus they open wrap as usual (the Live popover's text) */
 .nav, .table-nav, .bar-end { flex-shrink: 0; }
@@ -115,7 +117,12 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .char-av { position: relative; width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; overflow: hidden; background: var(--line-strong); color: var(--text); font-size: var(--fs-xs); font-weight: 700; }
 .char-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .party-switch { position: relative; }
-@media (max-width: 1100px) { .brand-word { display: none; } }
+@media (max-width: 1360px) { .brand-word { display: none; } }  /* step 1: the logo stays and opens the campaign */
+.campaign-switch, span.campaign-name { flex-shrink: 0; }  /* the campaign's name gives way last */
+@media (max-width: 1200px) { a.char-btn .char-name { display: none; } a.char-btn { padding-right: 5px; } }  /* step 2: your character's picture, its name on hover */
+@media (max-width: 1100px) { .topbar-inner { gap: 8px; } .bar-end { gap: 6px; } .nav a { padding: 0 9px; } }  /* (with step 3: the bar's own spacing tightens, so the name stays whole) */
+@media (max-width: 1000px) { .campaign-switch, span.campaign-name { flex-shrink: 1; min-width: 72px; } .table-nav { gap: 4px; } }  /* step 4: the name shortens with "…" */
+@media (max-width: 999px) { .campaign-switch, span.campaign-name { min-width: 48px; } .topbar .search-btn { min-width: var(--bar-h); padding: 0; justify-content: center; } .topbar .search-btn kbd { display: none; } }  /* below the narrowest laptop (a tablet): Search keeps its box, the magnifier alone */
 .menu.party-menu { left: auto; right: 0; width: 290px; max-width: calc(100vw - 24px); }  /* opens leftward: Party sits right of center, so it never runs off the screen */
 .menu a.party-row { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
 .party-row .char-av { grid-row: span 2; width: 32px; height: 32px; font-size: var(--fs-sm); }
@@ -147,9 +154,9 @@ button.help-btn { background: none; cursor: pointer; padding: 0; font-family: in
 .live-pill { display: inline-flex; align-items: center; gap: 8px; min-height: var(--bar-h); background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 0 12px; font-size: var(--fs-sm); white-space: nowrap; }
 .live-pill:hover { color: var(--text); }
 .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
-.live-word, .live-noext, .live-noext-box { display: none; }
+.live-noext, .live-noext-box, .lw-short { display: none; }
+.live-pill.dot { width: var(--bar-h); padding: 0; justify-content: center; }  /* connected: the green dot alone (Menu Bar by Person, Nov 13) */
 body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-noext { display: inline; }  /* the extension isn't in this browser (app.js), and this campaign has the bridge: say so, with the steps in the window */
-body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-word { display: none; }
 body.no-bridge .live-noext-box { display: grid; gap: var(--sp-3); }
 .bridge-head { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
 .bridge-head img { border-radius: var(--r-md); display: block; }
@@ -175,7 +182,7 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { 
 .live-pill.bad { border-color: var(--red-line); color: var(--text); }
 .live-pill.bad .live-dot { background: var(--red); }
 body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-noext { display: none; }  /* (a phone: the DM carries it, no nag) */
-body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-word { display: inline; }
+body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-ago { display: inline; }
 .live-pill.htmx-request { opacity: .7; }
 /* The connection band (Brett chose B, Nov 13, docs/mockups/connection-drops/; _conn_band.html): under the menu bar while
    your own sheet's connection is worse than it was tonight, in the Live pill's colour; leaves by itself once it's back.
@@ -194,11 +201,7 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-wo
 body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-bridge { display: revert; }
 body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-tx.cb-bridge { display: block; }
 @media (max-width: 900px) { .conn-band { display: none; } }  /* a phone never holds the sheet's connection */
-@media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live" or "● Game on"; the dot's colour says in step or to make by hand, the window the rest */
-@media (max-width: 1240px) {  /* without the extension too: "Add the askdnd bridge" pushed the menu bar past a 1000px window (the layout sweep, Nov 2); the window still has the steps */
-  body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-noext { display: none; }
-  body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-word { display: inline; }
-}
+@media (max-width: 1100px) { .live-ago:has(.lw-short) .lw-long { display: none; } .lw-short { display: inline; } }  /* step 3 of the collapse order: just what to do, never a bare "Live" */
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
 .live-menu:empty { display: none; }
 .live-pop { padding: 14px 16px; display: grid; gap: 12px; font-size: var(--fs-sm); }
@@ -703,6 +706,7 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 #t-sessions .tale { gap: var(--sp-4); }
 .tale-order { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); }
 .tale-order .subtitle { margin: 0; }
+.tale-search { width: min(320px, 100%); margin-left: auto; }  /* Story search, at the top of Campaign › Sessions */
 .seg a { display: inline-flex; align-items: center; border-radius: var(--r-sm); color: var(--muted); padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 6px); font-size: var(--fs-sm); font-weight: 500; text-decoration: none; white-space: nowrap; }
 .seg a:hover { color: var(--text); }
 .seg a[aria-current=true] { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 0 0 0 1px var(--blue); }
@@ -865,8 +869,8 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .menu.sheet-menu { position: fixed; z-index: 40; top: auto; left: auto; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); max-height: calc(100vh - 140px); overflow-y: auto; }
   body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
   .mobile-bar { bottom: calc(60px + env(safe-area-inset-bottom)) !important; }
-  .live-ago { display: none; }
-  .live-word { display: inline; }
+  .live-ago:has(.lw-short) .lw-long { display: none; }
+  .lw-short { display: inline; }
   .live .menu.live-menu { position: fixed; top: 64px; right: 12px; }
   .topbar-inner { gap: 10px; padding: 0 16px; }
   .page { padding: 24px 16px 120px; }
@@ -3916,16 +3920,23 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 /* Search, like Spotlight (app/search.py; Brett chose A and A, Nov 9): the menu bar's button beside Help, the magnifier and
    its key, drawn as a button like Manage and the gear, not a field (Brett chose A, Nov 9: docs/mockups/search/menu-button.html) */
-.search-btn { display: inline-flex; align-items: center; gap: 7px; min-height: var(--bar-h); padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-sm);
-  background: var(--surface); color: var(--text); white-space: nowrap; cursor: pointer; flex: none; }
+.search-btn { display: inline-flex; align-items: center; gap: 8px; height: var(--bar-h); flex: 0 100 380px; min-width: 78px; margin-right: auto; padding: 0 6px 0 11px;
+  container-type: inline-size; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--muted); font: 400 var(--fs-sm)/1 var(--sans); cursor: pointer; text-align: left; }
+.search-btn svg, .search-btn kbd { flex: none; }
+.search-btn kbd { margin-left: auto; }
+.search-ph { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-short { display: none; }
+@container (max-width: 240px) { .search-btn .sp-long { display: none; } .search-btn .sp-short { display: inline; } }  /* the same box, shorter words */
+@container (max-width: 100px) { .search-btn .search-ph { display: none; } }  /* then the magnifier and ⌘F */
 .search-btn:hover, .search-btn:focus-visible { color: var(--text-strong); border-color: var(--blue); }
 .search-btn kbd, .search-foot kbd { font: 600 var(--fs-xs)/1 var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--r-xs); padding: 1px 4px; background: var(--surface-2); color: var(--text); }
-.search-btn kbd { background: transparent; color: var(--muted); }
-@media (max-width: 1100px) { .search-btn { padding: 0; width: var(--bar-h); justify-content: center; } .search-btn .search-btn-key { display: none; } }
-/* the box: in the middle, over everything (a modal dialog) */
+.search-btn kbd { background: transparent; color: var(--muted); padding: 2px 5px; }
+@media (max-width: 900px) { .search-btn { flex: none; width: var(--bar-h); min-width: 0; margin: 0; padding: 0; justify-content: center; } .search-btn .search-ph, .search-btn kbd { display: none; } }  /* a phone: the magnifier */
+/* the box: under Search's bar, else in the middle; over everything (a modal dialog) */
 .search-box { width: min(640px, calc(100vw - 24px)); max-height: min(70vh, 560px); margin: 10vh auto auto; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg);
   background: var(--surface); color: var(--text); box-shadow: var(--lift); overflow: hidden; display: none; flex-direction: column; }
 .search-box[open] { display: flex; }
+.search-box.at-bar { position: fixed; margin: 0; top: var(--sb-top); left: var(--sb-left); max-height: min(70vh, calc(100vh - var(--sb-top) - 16px)); }  /* under Search's bar (app.js `place`) */
 .search-box::backdrop { background: var(--backdrop-soft); }
 .search-q { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); color: var(--muted); }
 .search-q input { flex: 1; min-width: 0; border: 0; background: none; color: var(--text-strong); font-size: var(--fs-lg); outline: none; }
