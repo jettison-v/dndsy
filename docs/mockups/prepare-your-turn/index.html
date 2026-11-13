@@ -120,6 +120,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
 .slot .k { font: 700 .74rem/1.1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
 .slot .w b { display: block; } .slot .w span { color: var(--muted); font-size: .82rem; }
 .slot.doing { outline: 2px solid var(--red); }
+.slot.rolled .w span { color: var(--green); }
 .slot.done { opacity: .55; }
 .slot.done .w b { text-decoration: line-through; }
 .card { background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; max-width: 360px; font-size: .88rem; }
@@ -130,59 +131,57 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
   <header class="top">
     <div class="lbl">askdnd's table · fights</div>
     <h1>Prepare for your turn</h1>
-    <p class="lead">Your note (Nov 5): fights slow down when each player starts thinking only once their turn comes. While others take theirs, a player sketches their own: what they'll do with their Action, Bonus Action and movement, and the Reaction they're keeping. When their turn comes, they play it a step at a time, or do something else.</p>
+    <p class="lead">Your note (Nov 5): fights slow down when each player starts thinking only once their turn comes. While others take theirs, a player sketches their own: what they'll do with their Action, Bonus Action and movement, and the Reaction they're keeping. When their turn comes, each planned thing has its own Roll: roll what they want, in any order.</p>
     <div class="where">
       <div><b>Where it lives</b>Your turn's bar on askdnd's table (under the map), with the same plan on your Battle. It builds on Battle Combos, which already split a turn into these parts.</div>
       <div><b>Who sees it</b>Only you, the player: it's a plan, not a promise. The DM sees only that you're ready (option D), never what you planned.</div>
-      <div><b>What it never does</b>Play itself. Each step is a press, the roll card as always, and anything can change when the fight does.</div>
+      <div><b>What it never does</b>Play itself. Each roll is a press, the roll card as always, and anything can change when the fight does.</div>
     </div>
   </header>
 
   <section class="board">
     <div class="stage">
       <div class="band" aria-label="The fight's turn bar">
-        <span class="p now"><span class="av b">B</span>Big C</span><span class="p"><span class="av e">E</span>Cultist 1</span><span class="p"><span class="av c">C</span>Cole <span class="ready">● plan ready</span></span><span class="p"><span class="av n">N</span>No Name <span class="think">● planning</span></span>
+        <span class="p now"><span class="av b">B</span>Big C</span><span class="p"><span class="av e">E</span>Cultist 1</span><span class="p"><span class="av c">C</span>Cole</span><span class="p"><span class="av n">N</span>No Name</span>
       </div>
       <div class="plan" aria-label="Cole's next turn, planned during Big C's turn">
-        <div class="hd"><b>Your next turn</b><span class="sub">2 turns away · Big C is up</span></div>
-        <div class="slot set"><span class="k k-bonus">Bonus</span><span class="w"><b>Flurry of Blows</b><span>2 Unarmed Strikes · 1 Focus Point (2 left)</span></span><span class="btn small link">Change</span></div>
-        <div class="slot set"><span class="k k-action">Action</span><span class="w"><b>Attack: Unarmed Strike</b><span>+6 · 1d6+3 bludgeoning</span></span><span class="btn small link">Change</span></div>
-        <div class="slot set"><span class="k" style="color:var(--green)">Move</span><span class="w"><b>Up to 45 ft</b><span>to the cultist by the altar</span></span><span class="btn small link">Change</span></div>
-        <div class="slot"><span class="k k-reaction">Reaction</span><span class="w"><span>Keep it for… (optional)</span></span><span class="btn small">+ Pick</span></div>
-        <div class="btns"><span class="chip">From a combo ▾</span><span class="btn link small">Clear</span></div>
+        <div class="hd"><b>Your scratch pad</b><span class="sub">2 turns away · Big C is up</span></div>
+        <div class="slot set"><span class="k k-bonus">Bonus</span><span class="w"><b>Flurry of Blows</b><span>1 Focus Point (2 left)</span></span><span class="btn small link">✕</span></div>
+        <div class="slot set"><span class="k k-action">Action</span><span class="w"><b>Attack: Unarmed Strike</b><span>+6 · 1d6+3 bludgeoning</span></span><span class="btn small link">✕</span></div>
+        <div class="slot set"><span class="k k-reaction">Reaction</span><span class="w"><b>Absorb Elements</b><span>if the cultist casts</span></span><span class="btn small link">✕</span></div>
+        <div class="btns"><span class="btn small">+ Add</span><span class="btn link small">Clear</span></div>
       </div>
-      <p class="cap">Each empty slot's + Pick lists what you have for it, from your Battle (your pins first).</p>
+      <p class="cap">+ Add lists your Battle (your pins first); pick anything, in any order. A short note on any line if you like.</p>
     </div>
     <div class="say">
       <div class="lbl">Option A</div>
-      <h2>A plan in your turn's bar</h2>
-      <p>Your turn's bar has <b>Your next turn</b> while others play: four slots, Action, Bonus Action, Move and the Reaction you're keeping, each filled from your Battle with one press. A short note on Move says where you mean to go.</p>
+      <h2>A scratch pad in your turn's bar</h2>
+      <p>While others play, your turn's bar has <b>Your scratch pad</b>: a short list you jot from your Battle with + Add (an attack, a spell, a Bonus Action, a Reaction to keep). No slots to fill and nothing required (your note, Nov 13: start simple, then grow it from the table's feedback).</p>
       <ul class="meta">
-        <li>What a slot costs is shown as you plan (1 Focus Point, 2 left), so you don't plan what you can't afford.</li>
-        <li>It's kept until your turn ends, then cleared.</li>
+        <li>What each line costs is shown as you jot it (1 Focus Point, 2 left), so you don't plan what you can't afford.</li>
+        <li>It's cleared when your turn ends.</li>
       </ul>
-      <div class="cost"><span>Build: M (the slots reuse Battle Combos and the turn bar)</span></div>
+      <div class="cost"><span>Build: S–M (a list of Battle rows in the turn bar)</span></div>
     </div>
   </section>
 
   <section class="board">
     <div class="stage">
       <div class="plan" aria-label="Cole's turn, playing the plan">
-        <div class="hd"><b>Your turn · your plan</b><span class="sub">Round 3</span></div>
-        <div class="slot set done"><span class="k k-bonus">Bonus</span><span class="w"><b>Flurry of Blows</b><span>14 to hit, 7 damage · 9, missed</span></span><span class="tag ok">Done</span></div>
-        <div class="slot set doing"><span class="k k-action">Action</span><span class="w"><b>Attack: Unarmed Strike</b><span>+6 · 1d6+3</span></span><span class="btn primary small">Roll</span></div>
-        <div class="slot set"><span class="k" style="color:var(--green)">Move</span><span class="w"><b>Up to 45 ft</b><span>30 ft left</span></span><span class="btn small">Moved</span></div>
-        <div class="slot"><span class="k k-reaction">Reaction</span><span class="w"><span>Absorb Elements, kept</span></span><span class="tag">Ready</span></div>
-        <div class="btns"><span class="btn small">Skip this step</span><span class="btn small link">Do something else</span><span class="btn small">End turn</span></div>
+        <div class="hd"><b>Your turn · your scratch pad</b><span class="sub">Round 3</span></div>
+        <div class="slot set rolled"><span class="k k-bonus">Bonus</span><span class="w"><b>Flurry of Blows</b><span>Rolled: 14 to hit, 7 damage · 9, missed</span></span><span class="btn small">Roll</span></div>
+        <div class="slot set"><span class="k k-action">Action</span><span class="w"><b>Attack: Unarmed Strike</b><span>+6 · 1d6+3</span></span><span class="btn primary small">Roll</span></div>
+        <div class="slot set"><span class="k k-reaction">Reaction</span><span class="w"><b>Absorb Elements</b><span>if the cultist casts</span></span><span class="btn small">Cast</span></div>
+        <div class="btns"><span class="btn small">End turn</span></div>
       </div>
     </div>
     <div class="say">
       <div class="lbl">Option B</div>
-      <h2>Your turn plays the plan, a step at a time</h2>
-      <p>When your turn begins, the plan is the bar: the next step lit, with its button (Roll opens the roll card as always). A step done is ticked with what happened. Skip a step, or Do something else to put the plan aside and play from Battle.</p>
+      <h2>Your turn: the pad, each with Roll</h2>
+      <p>When your turn begins, the pad is just there, each thing you jotted with its own Roll (or Cast) button, which opens the roll card as always. No order, nothing to skip, nothing to finish: roll what you want, in any order, and End turn when you're done (your note, Nov 13). What you rolled shows its result on its line.</p>
       <ul class="meta">
-        <li>The order is yours: drag a step up to do it first (Flurry before the attack, or after).</li>
-        <li>What a step used is ticked on your turn's bar as today (Action used, 15 ft moved).</li>
+        <li>Battle stays one click away for anything you didn't plan.</li>
+        <li>What a roll used is marked on your turn's bar as today (Action used).</li>
       </ul>
       <div class="cost"><span>Build: S, once A exists</span></div>
     </div>
@@ -218,12 +217,12 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
   <section class="pick" aria-labelledby="pick-h">
     <div class="lbl">Your pick</div>
     <h2 id="pick-h">Which to build?</h2>
-    <p class="meta">My recommendation: <b>A and B</b> together (plan, then play it), with <b>C</b>'s nudge. <b>D</b> is your call: it helps the pace, and some tables like it, others feel watched. Tick yours below and Save; you can come back and change it.</p>
+    <p class="meta">My recommendation: <b>A and B</b> together, a scratch pad you roll from, to start simple (your note). <b>C</b> and <b>D</b> later, if the table's feedback asks for them. Tick yours below and Save; you can come back and change it.</p>
     <form class="decide">
       <fieldset data-q="build" data-kind="many"><legend>Which ones</legend><div class="choices">
-        <label class="choice many"><input type="checkbox" name="build" value="A">A · A plan in your turn&#x27;s bar <span class="mine-tag">My pick</span></label>
-        <label class="choice many"><input type="checkbox" name="build" value="B">B · Your turn plays the plan <span class="mine-tag">My pick</span></label>
-        <label class="choice many"><input type="checkbox" name="build" value="C">C · A nudge when you&#x27;re next <span class="mine-tag">My pick</span></label>
+        <label class="choice many"><input type="checkbox" name="build" value="A">A · A scratch pad in your turn&#x27;s bar <span class="mine-tag">My pick</span></label>
+        <label class="choice many"><input type="checkbox" name="build" value="B">B · The pad, each with Roll <span class="mine-tag">My pick</span></label>
+        <label class="choice many"><input type="checkbox" name="build" value="C">C · A nudge when you&#x27;re next</label>
         <label class="choice many"><input type="checkbox" name="build" value="D">D · The DM sees who&#x27;s ready</label>
       </div></fieldset>
       <fieldset><legend>Your notes</legend><textarea name="notes" aria-label="Your notes" placeholder="Anything to change, an order, a question"></textarea></fieldset>
