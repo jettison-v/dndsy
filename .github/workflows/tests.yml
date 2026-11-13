@@ -97,11 +97,12 @@ jobs:
           enable-cache: true
       - run: uv python install
       - run: uv sync --frozen
-      # One server per file: these run one after another (-n 0), in the order they're written. A test that fails is
-      # tried once more (tests/browser/conftest.py); each second try is listed on the run's summary page, to be fixed
+      # Side by side (Nov 13: one at a time took 8 minutes for flows): each file on a worker of its own with its own server
+      # and database, a long file's cases spread (tests/conftest.py SPREAD). A test that fails is tried once more
+      # (tests/browser/conftest.py); each second try is listed on the run's summary page, to be fixed
       - name: Tests
         shell: bash
-        run: uv run pytest -q --durations=5 -n 0 -rR ${{ matrix.files }} | tee pytest.out
+        run: uv run pytest -q --durations=5 -n 4 -rR ${{ matrix.files }} | tee pytest.out
       - name: Passed only on a second try (on the run's summary page)
         if: always()
         run: |

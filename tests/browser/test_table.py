@@ -402,6 +402,8 @@ def test_the_dms_table_tools_work_after_a_map_is_added(people, server, browser_d
         page.keyboard.press("a")
         page.locator("#tbl-area input[name=label]").fill("Fireball")
         page.locator("#tbl-area button[type=submit]").click()
+        page.locator("#tbl-area").wait_for(state="hidden")  # (the window closes, then the map takes the click)
+        page.locator("#tmap").wait_for(state="visible")
         m = page.locator("#tmap").bounding_box()
         page.mouse.click(m["x"] + m["width"] / 2, m["y"] + m["height"] / 2)
         page.locator(".tmap-area", has_text="Fireball").wait_for()
