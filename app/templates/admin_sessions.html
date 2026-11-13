@@ -16,11 +16,11 @@
         <div class="note">One at a time works best: draft the oldest, review and publish it, and the next one drafts by itself. Each draft then knows the people and places you accepted, so it doesn't suggest them again. About 13¢ a session.</div></div>
       <form method="post" action="{{ cbase }}/manage/sessions/draft">
         <input type="hidden" name="session_ids" value="{{ missing[0] }}">
-        <button class="btn primary" data-busy="Starting the draft…">Draft the next one</button>
+        <button type="submit" class="btn primary" data-busy="Starting the draft…">Draft the next one</button>
       </form>
       {% if missing | length > 1 %}<form method="post" action="{{ cbase }}/manage/sessions/draft" title="Drafts them all now; later drafts won't know what you accept in earlier ones">
         {% for id in missing %}<input type="hidden" name="session_ids" value="{{ id }}">{% endfor %}
-        <button class="btn link small" data-busy="Starting drafts…">Draft all {{ missing | length }} at once</button>
+        <button type="submit" class="btn link small" data-busy="Starting drafts…">Draft all {{ missing | length }} at once</button>
       </form>{% endif %}
     </div>
   </section>
@@ -38,7 +38,7 @@
         <td class="note">{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="tag error">Failed</span>{% elif r.last_run.status == "done" %}{{ "%.0f" | format(r.last_run.cost_usd * 100) }}¢{% endif %}{% endif %}</td>
         <td class="end">
           {% if r.has_notes and r.status == "no draft" and not running %}
-          <form method="post" action="{{ cbase }}/manage/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button class="btn" data-busy="Starting…">Draft from notes</button></form>
+          <form method="post" action="{{ cbase }}/manage/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button type="submit" class="btn" data-busy="Starting…">Draft from notes</button></form>
           {% elif r.status != "no draft" %}<a class="btn" href="{{ cbase }}/manage/sessions/{{ r.s.id }}">Review</a>
           {% elif r.s.source == "transcript" %}<span class="note">Send from the Processor</span>
           {% elif r.s.source in ("account", "manual") %}<a class="btn" href="{{ cbase }}/manage/sessions/{{ r.s.id }}">Continue</a>{% endif %}

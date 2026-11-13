@@ -2,9 +2,7 @@
 
 // Feedback for Claude's window, or its Point at (Brett, Nov 9: "clicking Point at closes all modals"): a click or Escape
 // there belongs to it, so whatever is open on the page (the roll window, a side panel, a picker) stays open to point at.
-function feedbackBusy(e) {
-  return !!(e && e.target && e.target.closest && e.target.closest('#fb-win')) || document.body.classList.contains('fb-pointing');
-}
+const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.closest('#fb-win')) || document.body.classList.contains('fb-pointing');
 
 (function () {
   const $ = (s, el = document) => el.querySelector(s);
@@ -137,10 +135,10 @@ function feedbackBusy(e) {
       if (s && s.state === 'failed') {
         el.className = 'card k-warn'; el.setAttribute('role', 'alert'); if (ic) ic.textContent = '!';
         sub.textContent = (s.failed || []).length ? "Didn't go through" + (s.error ? ': ' + s.error : '') : s.says;
-        const ids = (s.failed || []).map(f => f.id), act = (path, then) => () => Promise.all(ids.map(id => fetch(path + id, { method: 'POST', headers: { Accept: 'application/json' } }))).then(then);
+        const ids = (s.failed || []).map(f => f.id), postEach = (path, then) => () => Promise.all(ids.map(id => fetch(path + id, { method: 'POST', headers: { Accept: 'application/json' } }))).then(then);
         const row = Object.assign(document.createElement('span'), { className: 'card-acts card-follow-acts' });
-        [['Try again', act('/bridge/retry/', () => { row.remove(); el.className = 'card k-ok following'; if (ic) ic.textContent = '↻'; sub.textContent = 'Trying again'; el._following = true; clearTimeout(el._hide); told(); setTimeout(tick, 1500); })],
-         ['Undo', act('/bridge/dismiss/', () => { row.remove(); sub.textContent = 'Undone in askdnd'; told(); settle(4000); })]].forEach(([label, run]) => {
+        [['Try again', postEach('/bridge/retry/', () => { row.remove(); el.className = 'card k-ok following'; if (ic) ic.textContent = '↻'; sub.textContent = 'Trying again'; el._following = true; clearTimeout(el._hide); told(); setTimeout(tick, 1500); })],
+         ['Undo', postEach('/bridge/dismiss/', () => { row.remove(); sub.textContent = 'Undone in askdnd'; told(); settle(4000); })]].forEach(([label, run]) => {
           const b = Object.assign(document.createElement('button'), { type: 'button', className: 'card-act', textContent: label });
           b.addEventListener('click', run);
           row.append(b);
@@ -207,7 +205,7 @@ function feedbackBusy(e) {
   // letters suggests entity names (incl. aliases and known misspellings);
   // choosing one inserts the canonical name in place of "@letters".
   const mention = { box: null, field: null, start: 0, items: [], active: 0, timer: null, seq: 0 };
-  const TRIGGER = /(?:^|[\s(\["'\u201c\u2018])@([\p{L}\p{N}'\u2019-][\p{L}\p{N}'\u2019 -]{0,39})$/u;
+  const TRIGGER = /(?:^|[\s(["'\u201c\u2018])@([\p{L}\p{N}'\u2019-][\p{L}\p{N}'\u2019 -]{0,39})$/u;
   const isMentionField = el => el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.hasAttribute('data-mention')));
 
   function closeMention() {
@@ -1838,9 +1836,9 @@ function feedbackBusy(e) {
     // where there's no bar to grow from (a phone's magnifier, a bar off screen) it opens in the middle as before
     function placeBox() {
       const bar = document.querySelector('.search-btn'), r = bar && bar.getBoundingClientRect();
-      const at = r && r.width > 120 && r.bottom > 0;
-      searchBox.classList.toggle('at-bar', !!at);
-      if (!at) return;
+      const inView = r && r.width > 120 && r.bottom > 0;
+      searchBox.classList.toggle('at-bar', !!inView);
+      if (!inView) return;
       const w = Math.min(640, innerWidth - 24);
       searchBox.style.setProperty('--sb-top', Math.round(r.bottom + 6) + 'px');
       searchBox.style.setProperty('--sb-left', Math.round(Math.max(12, Math.min(r.left, innerWidth - w - 12))) + 'px');
@@ -1991,15 +1989,15 @@ function feedbackBusy(e) {
       const a = r.act;
       if (a.kind !== 'dice') return [];
       if (!a.rolls) return a.adds ? [a.adds] : [];
-      const w = ((a.cast || {}).ways || [])[st.way[r.name] || 0], eff = (a.rolls.effects || [])[0] || { at: {} };
-      const at = eff.at[String(w ? w.level : a.rolls.base)] || eff.at[String(a.rolls.base)];
-      return at ? at.parts : [];
+      const way = ((a.cast || {}).ways || [])[st.way[r.name] || 0], first = (a.rolls.effects || [])[0] || { at: {} };
+      const atLevel = first.at[String(way ? way.level : a.rolls.base)] || first.at[String(a.rolls.base)];
+      return atLevel ? atLevel.parts : [];
     }
     function rideRow(r) {
       const a = r.act, on = !!st.ride[r.name];
       let cost = '';
       if (a.cast) cost = (a.cast.time ? esc(a.cast.time) + ' · ' : '') + (a.cast.ways.length ? '<select class="rw-slot" data-ride-way="' + esc(r.name) + '" aria-label="' + esc(r.name) + ': how to cast it">'
-        + a.cast.ways.map((w, i) => '<option value="' + i + '"' + (i === (st.way[r.name] || 0) ? ' selected' : '') + '>' + esc(w.label) + '</option>').join('') + '</select>'
+        + a.cast.ways.map((way, i) => '<option value="' + i + '"' + (i === (st.way[r.name] || 0) ? ' selected' : '') + '>' + esc(way.label) + '</option>').join('') + '</select>'
         : esc('No slot left: mark it on D&D Beyond'));
       else if (a.spend) cost = esc('1 ' + a.spend.name.replace(/s$/, '') + (a.spend.left != null ? ' (' + a.spend.left + ' left)' : ''));
       if (cost && ctx.spends !== 'play') cost += '<span class="rcard-rider-by-hand">' + (ctx.spends === 'unreached' ? "The D&amp;D Beyond sheet can't be reached: mark it there." : 'Mark it on D&amp;D Beyond.') + '</span>';
@@ -2161,8 +2159,8 @@ function feedbackBusy(e) {
     function rollDamage() {
       const on = acts().filter(r => st.ride[r.name]), type = on.find(r => r.act.type);
       const extras = [...dmgExtras(),
-                      ...on.flatMap(r => rideDice(r).map(p => { const [dice, type] = p.split(' '); return (type ? r.name + ' (' + type + ')' : r.name).slice(0, 40) + ':+' + dice; }))];
-      return follow('damage', { extras, asType: type ? type.act.type : '', twice: on.some(r => r.act.twice) }).then(() => {
+                      ...on.flatMap(r => rideDice(r).map(p => { const [dice, dtype] = p.split(' '); return (dtype ? r.name + ' (' + dtype + ')' : r.name).slice(0, 40) + ':+' + dice; }))];
+      return followUp('damage', { extras, asType: type ? type.act.type : '', twice: on.some(r => r.act.twice) }).then(() => {
         if (!st.dmg) return;
         if (!spec.shared) {  // (a private roll: the save said on the card alone, nothing spent)
           st.entry.saves = on.filter(r => r.act.kind === 'save').map(r => ({ label: r.name + ': ' + r.act.save + ' save', dc: r.act.dc }));
@@ -2255,7 +2253,7 @@ function feedbackBusy(e) {
       return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: [...(single ? st.added.slice() : []), ...adds], level: cast ? st.level : 0, self: !!plan.self, math: sentMath(), ...d })
         .then(e => { st.entry = e; st.step = next; if (w.isConnected) draw(); if (cast || save) turnUsed(anchor); }, () => { st.step = was; if (w.isConnected) draw(); });
     }
-    function follow(action, o) {
+    function followUp(action, o) {
       const was = st.step;
       if (action === 'damage') { st.step = 'damage'; st.dmg = null; draw(); }
       return go({ follow: action, parent: st.entry.id, entry: st.entry, extras: [], ...o }).then(e => {
@@ -2297,23 +2295,23 @@ function feedbackBusy(e) {
       if (b.dataset.add) {
         const v = b.dataset.add, list = b.closest('[data-adder]').dataset.adder, x = 'Added:' + (v.startsWith('-') ? v : '+' + v.replace(/^\+/, ''));
         st.adding = false;
-        if (list === 'bonus') return follow('bonus', { extras: [x], bonusLabel: 'Added', die: 4 });
+        if (list === 'bonus') return followUp('bonus', { extras: [x], bonusLabel: 'Added', die: 4 });
         st.added.push(x);
         return draw();
       }
       if (b.hasAttribute('data-roll-hit')) return rollHit();
       if (b.hasAttribute('data-roll-single') || b.hasAttribute('data-again')) return rollOne('done');
       if (b.hasAttribute('data-roll-save')) return rollOne('saved');
-      if (b.hasAttribute('data-reroll')) return follow('reroll', { reason: st.entry.can.reroll });
-      if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return follow('bonus', { extras: [(m.short || m.name) + ':+' + m.adds], bonusLabel: m.short || m.name, die: 4 }); }
+      if (b.hasAttribute('data-reroll')) return followUp('reroll', { reason: st.entry.can.reroll });
+      if (b.dataset.after) { const m = mods.find(x => x.name === b.dataset.after); return followUp('bonus', { extras: [(m.short || m.name) + ':+' + m.adds], bonusLabel: m.short || m.name, die: 4 }); }
       if (b.dataset.ride) { st.ride[b.dataset.ride] = !st.ride[b.dataset.ride]; return draw(); }
       if (b.hasAttribute('data-roll-dmg')) return rollDamage();
     });
     draw();
     // A follow-up from Table rolls: what was pressed there happens now (damage, a reroll), or + a die opens its dice
     if (from) {
-      if (from.action === 'damage') follow('damage', {});
-      else if (from.action === 'reroll') follow('reroll', { reason: (from.entry.can || {}).reroll || '' });
+      if (from.action === 'damage') followUp('damage', {});
+      else if (from.action === 'reroll') followUp('reroll', { reason: (from.entry.can || {}).reroll || '' });
       return;
     }
     // Cast and roll: the spell is cast, so healing, damage or a save spell's damage rolls now (one effect to roll; a
@@ -2445,8 +2443,8 @@ function feedbackBusy(e) {
                  mine: { strength: 1.4, gravity: 300, size: 95, shadows: true, light: 0.7, dim: 55, blur: 2, fade_in: 0.2, stay: 3.2, fade_out: 0.3 },
                  tray: { strength: 1, gravity: 400, size: 60, shadows: false, light: 0.7, slide: 0.3, stay: 2.6 },
                  vtt: { strength: 1.4, gravity: 300, size: 95, shadows: true, light: 0.7, dim: 35, blur: 0, fade_in: 0.2, stay: 3.2, fade_out: 0.3 } };
-  const tuning = place => { let t = {}; try { t = JSON.parse(document.body.dataset.diceTuning || '{}'); } catch (e) { /* askdnd's own */ } return { ...TUNE[place], ...(t[place] || {}) }; };
-  const sleep = s => new Promise(res => setTimeout(res, s * 1000));
+  const tuning = where => { let t = {}; try { t = JSON.parse(document.body.dataset.diceTuning || '{}'); } catch (e) { /* askdnd's own */ } return { ...TUNE[where], ...(t[where] || {}) }; };
+  const sleep = s => new Promise(res => { setTimeout(res, s * 1000); });
   // Every die a result shows, with its real sides and value, and the damage type it belongs to
   function throwList(e, focus) {
     const sides = f => +((/d(\d+)/.exec(f || '') || [])[1] || 6);
@@ -2481,8 +2479,8 @@ function feedbackBusy(e) {
   // a fixed number of points across, small on a big display and big on a phone). Dice tuning's Size is the size at
   // 900 points of room (a 1440×900 window), scaled by the box's shorter side, from 0.55× (phones) to 1.8×.
   const roomFor = host => {
-    const side = Math.min(host.clientWidth || innerWidth, host.clientHeight || innerHeight);
-    return Math.round(Math.min(1.8, Math.max(0.55, side / 900)) * 20) / 20;  // in steps of 5%, so a small resize doesn't rebuild
+    const squareSide = Math.min(host.clientWidth || innerWidth, host.clientHeight || innerHeight);
+    return Math.round(Math.min(1.8, Math.max(0.55, squareSide / 900)) * 20) / 20;  // in steps of 5%, so a small resize doesn't rebuild
   };
   function diceBox(host, opts, tune, relative) {
     if (!host.id) host.id = 'dice-box-' + Math.random().toString(36).slice(2);
@@ -2695,8 +2693,8 @@ function feedbackBusy(e) {
     snd.checked = soundOn();
     snd.addEventListener('change', () => store.set('askdnd.diceSound', snd.checked ? 'on' : 'off'));
     // Dice animation on this device (it was at the bottom of Table rolls; Table rolls reads the same setting)
-    const calm = window.matchMedia('(prefers-reduced-motion: reduce)'), was = store.get('askdnd.rollsAnim');
-    anim.checked = was ? was === 'on' : !calm.matches;
+    const calmQ = window.matchMedia('(prefers-reduced-motion: reduce)'), was = store.get('askdnd.rollsAnim');
+    anim.checked = was ? was === 'on' : !calmQ.matches;
     anim.addEventListener('change', () => store.set('askdnd.rollsAnim', anim.checked ? 'on' : 'off'));
     form.addEventListener('change', ev2 => { if (ev2.target.name === 'set' || ev2.target.name === 'material') pickPreview(form); });
     // In Table rolls' Roll window, Your dice is its second tab: the dice load once that tab is shown, not with Roll
@@ -2714,9 +2712,9 @@ function feedbackBusy(e) {
     adv: { what: 'Shillelagh to hit · Advantage', list: [{ s: 20, v: 19 }, { s: 20, v: 6 }], total: 26, nat: 'Natural 19' },
     fireball: { what: 'Fireball damage', list: [6, 2, 5, 4, 3, 6, 1, 5].map(v => ({ s: 6, v, type: 'fire' })), total: 32, nat: '' } };
   function tuner(root) {
-    const form = root.querySelector('form'), stage = root.querySelector('.tn-stage'), layer = stage.querySelector('.tn-layer');
-    const trayEl = stage.querySelector('.tn-tray'), read = root.querySelector('[data-read]');
-    let place = 'mine', full = false, dirty = false;
+    const form = root.querySelector('form'), tnStage = root.querySelector('.tn-stage'), layer = tnStage.querySelector('.tn-layer');
+    const tnTray = tnStage.querySelector('.tn-tray'), read = root.querySelector('[data-read]');
+    let tnPlace = 'mine', full = false, dirty = false;
     const rows = () => [...form.querySelectorAll('.tn-row')];
     const value = row => row.querySelector('.switch') ? row.querySelector('.switch').getAttribute('aria-checked') === 'true' : +row.querySelector('input[type=range]').value;
     function set(row, v) {
@@ -2747,61 +2745,61 @@ function feedbackBusy(e) {
     window.addEventListener('beforeunload', e => { if (dirty) e.preventDefault(); });
     form.querySelectorAll('[data-place]').forEach(a => a.addEventListener('click', e => {
       e.preventDefault();
-      place = stage.dataset.stage = a.dataset.place;
+      tnPlace = tnStage.dataset.stage = a.dataset.place;
       form.querySelectorAll('[data-place]').forEach(x => x.classList.toggle('on', x === a));
-      form.querySelectorAll('[data-place-panel]').forEach(p => { p.hidden = p.dataset.placePanel !== place; });
+      form.querySelectorAll('[data-place-panel]').forEach(p => { p.hidden = p.dataset.placePanel !== tnPlace; });
       read.innerHTML = '<span>Press Throw to time it.</span>';
     }));
     // The preview: the same dice and steps as the real throws above, with the sliders' values
-    const pageBox = diceBox(stage.querySelector('.tn-dice'), {}, values('mine'), true), trayBox = diceBox(stage.querySelector('#tn-dice-tray'), {}, values('tray'));
-    const loading = stage.querySelector('.tn-loading');
+    const pageBox = diceBox(tnStage.querySelector('.tn-dice'), {}, values('mine'), true), tnTrayBox = diceBox(tnStage.querySelector('#tn-dice-tray'), {}, values('tray'));
+    const loading = tnStage.querySelector('.tn-loading');
     pageBox.ready.then(() => loading.remove(), () => { loading.textContent = "The dice couldn't load in this browser."; });
     const timed = (parts) => { read.innerHTML = parts.map(([w, s]) => '<span>' + w + ' <b>' + s.toFixed(1) + ' s</b></span>').join(''); };
     let t0 = 0;
     function throwPreview(key) {
-      const r = TUNE_ROLLS[key], p = place, t = values(p), big = full, mine = diceOf(document.body);
+      const r = TUNE_ROLLS[key], p = tnPlace, t = values(p), big = full, mine = diceOf(document.body);
       const dice = p === 'mine' ? mine : { set: 'starynight', material: 'glass', by_type: true };
       if (p === 'tray') {
-        return trayBox.throw(r.list, dice, async () => {
-          stage.classList.toggle('full', big);
-          trayEl.querySelector('.dtr-foot').innerHTML = '<i class="sw-starynight"></i><span class="dtr-what"><b>Ilsa</b> · ' + esc(r.what) + '</span><b class="dtr-total">…</b>';
-          trayEl.style.setProperty('--dtr-slide', t.slide + 's');
-          trayEl.classList.add('up');
+        return tnTrayBox.throw(r.list, dice, async () => {
+          tnStage.classList.toggle('full', big);
+          tnTray.querySelector('.dtr-foot').innerHTML = '<i class="sw-starynight"></i><span class="dtr-what"><b>Ilsa</b> · ' + esc(r.what) + '</span><b class="dtr-total">…</b>';
+          tnTray.style.setProperty('--dtr-slide', t.slide + 's');
+          tnTray.classList.add('up');
           await sleep(t.slide);
           t0 = performance.now();
         }, async () => {
-          const settle = (performance.now() - t0) / 1000;
-          trayEl.querySelector('.dtr-total').textContent = r.total;
-          timed([['Dice settled in', settle], ['Total up for', t.stay], ['On screen in all', t.slide * 2 + settle + t.stay]]);
+          const settleSecs = (performance.now() - t0) / 1000;
+          tnTray.querySelector('.dtr-total').textContent = r.total;
+          timed([['Dice settled in', settleSecs], ['Total up for', t.stay], ['On screen in all', t.slide * 2 + settleSecs + t.stay]]);
           await sleep(t.stay);
-          trayEl.classList.remove('up');
+          tnTray.classList.remove('up');
           await sleep(t.slide + 0.05);
-          trayBox.clear();
-          stage.classList.remove('full');
+          tnTrayBox.clear();
+          tnStage.classList.remove('full');
         }, t);
       }
       return pageBox.throw(r.list, dice, () => {
-        stage.classList.toggle('full', big);
+        tnStage.classList.toggle('full', big);
         [['--dt-in', t.fade_in + 's'], ['--dt-out', t.fade_out + 's'], ['--dt-dim', t.dim + '%'], ['--dt-blur', t.blur + 'px']].forEach(([k, v]) => layer.style.setProperty(k, v));
         layer.querySelector('.tn-who span').textContent = r.what;
         layer.classList.remove('landed');
         layer.classList.add('on');
         t0 = performance.now();
       }, async () => {
-        const settle = (performance.now() - t0) / 1000;
+        const settleSecs = (performance.now() - t0) / 1000;
         layer.querySelector('.tn-card').innerHTML = '<span class="ds-what">' + (p === 'vtt' ? 'Ilsa · ' : '') + esc(r.what) + '</span><b class="ds-total">' + r.total + '</b>'
           + (r.nat ? '<span class="ds-what">' + r.nat + '</span>' : '');
         layer.classList.add('landed');
-        timed([['Dice settled in', settle], ['Result up for', t.stay], ['On screen in all', t.fade_in + settle + t.stay + t.fade_out]]);
+        timed([['Dice settled in', settleSecs], ['Result up for', t.stay], ['On screen in all', t.fade_in + settleSecs + t.stay + t.fade_out]]);
         await sleep(t.stay);
         layer.classList.remove('on', 'landed');
         await sleep(t.fade_out + 0.1);
         pageBox.clear();
-        stage.classList.remove('full');
+        tnStage.classList.remove('full');
       }, t);
     }
     root.querySelectorAll('[data-throw]').forEach(b => b.addEventListener('click', () => throwPreview(b.dataset.throw).catch(() => {
-      read.innerHTML = "<span>The dice couldn't be thrown in this browser.</span>"; stage.classList.remove('full'); })));
+      read.innerHTML = "<span>The dice couldn't be thrown in this browser.</span>"; tnStage.classList.remove('full'); })));
     const fullBtn = root.querySelector('[data-full]');
     fullBtn.addEventListener('click', () => { full = !full; fullBtn.setAttribute('aria-pressed', full); });
   }
@@ -3364,7 +3362,7 @@ function feedbackBusy(e) {
     [...log.querySelectorAll('.roll-item[data-seq]')].reverse().forEach(li => {
       if (+li.dataset.seq > before) fresh.add(li.dataset.person);
       if (+li.dataset.seq > before && !li.dataset.mine) {
-        if (thrownEarly.delete(li.dataset.seq)) {}  // (its dice started from the live message)
+        if (thrownEarly.delete(li.dataset.seq)) { /* its dice started from the live message */ }
         else if (away.on) away.rolls++;  // (they happened without you: no dice, no card)
         else if (animate() && !li.classList.contains('hidden-roll')) { window.askdndThrowing.throwing(li.dataset.id); throwOthers(li).catch(() => notice(li)).finally(() => window.askdndThrowing.landed(li.dataset.id)); }  // thrown dice (Brett, 2026-10-23)
         else notice(li);
@@ -3881,8 +3879,8 @@ document.addEventListener('click', e => {
     const res = await fetch(url, { headers: { 'HX-Request': 'true' } });
     const cur = document.getElementById('battle-body');
     if (!res.ok || !cur) return;
-    const box = document.createElement('div'); box.innerHTML = await res.text();
-    const next = box.querySelector('#battle-body');
+    const tmpBox = document.createElement('div'); tmpBox.innerHTML = await res.text();
+    const next = tmpBox.querySelector('#battle-body');
     if (!next) return;
     cur.replaceWith(next);
     if (window.htmx) htmx.process(next);
@@ -3918,11 +3916,11 @@ document.addEventListener('click', e => {
   // numbers, an empty box mid-page)
   const covered = () => {
     if (!lit || bars.some(el => el.contains(lit))) return 0;
-    const end = lit.getBoundingClientRect().bottom;
+    const litBottom = lit.getBoundingClientRect().bottom;
     return bars.reduce((m, el) => {
       if (lit.contains(el)) return m;
       const r = el.getBoundingClientRect();
-      return r.top < end && r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.75 ? Math.max(m, r.bottom) : m;  // (a bar that fills over half a short window)
+      return r.top < litBottom && r.top < innerHeight * 0.3 && r.bottom < innerHeight * 0.75 ? Math.max(m, r.bottom) : m;  // (a bar that fills over half a short window)
     }, 0);
   };
   function rect() {
@@ -3956,7 +3954,7 @@ document.addEventListener('click', e => {
     card.style.top = top + 'px'; card.style.left = left + 'px';
   }
   async function waitFor(sel, ms) {  // the side panel loads after a click
-    for (const t0 = Date.now(); Date.now() - t0 < ms; await new Promise(r => setTimeout(r, 80))) { const el = visible(sel); if (el) return el; }
+    for (const t0 = Date.now(); Date.now() - t0 < ms; await new Promise(r => { setTimeout(r, 80); })) { const el = visible(sel); if (el) return el; }
     return null;
   }
   // Get the page ready for a stop: click what it opens, in turn, and add its example row
@@ -3976,8 +3974,8 @@ document.addEventListener('click', e => {
       }
       if (s.panel) {  // let the panel finish sliding in: until it stays put for a moment
         const el = await waitFor(s.at, 4000), panel = el && el.closest('.peek');
-        for (let k = 0, x = NaN; panel && k < 25; k++) {  // (it can wait a frame or two before it starts to move)
-          await new Promise(r => setTimeout(r, 60));
+        for (let k = 0, x = NaN; k < (panel ? 25 : 0); k++) {  // (it can wait a frame or two before it starts to move)
+          await new Promise(res => { setTimeout(res, 60); });
           const r = panel.getBoundingClientRect(), at = r.left + ',' + r.top;  // sliding in from the side, or up on phones
           if (at === x && r.left < innerWidth - 40 && r.top < innerHeight - 40) break; x = at;
         }
@@ -5063,9 +5061,9 @@ document.addEventListener('click', e => {
   }
   const tokensOn = m => [...m.querySelectorAll('.tok-m')].map(el => ({ el, id: +el.dataset.token, name: el.dataset.name, x: +el.dataset.x, y: +el.dataset.y,
     size: +el.dataset.sq || 1, reach: +el.dataset.reach || STEP, foe: el.hasAttribute('data-foe'), down: el.hasAttribute('data-down'), character: +el.dataset.character || 0 }));
-  function leaves(m, mover, end) {
+  function leaves(m, mover, endAt) {
     return tokensOn(m).filter(o => o.id !== mover.id && o.foe !== mover.foe && !o.down)
-      .filter(o => apart(mover, o) <= o.reach && o.reach < apart({ ...mover, ...end }, o)).map(o => o.name);
+      .filter(o => apart(mover, o) <= o.reach && o.reach < apart({ ...mover, ...endAt }, o)).map(o => o.name);
   }
 
   // ------------------------------------------------ areas: app/areas.py's shapes, the same here

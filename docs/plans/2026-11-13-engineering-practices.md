@@ -15,8 +15,8 @@ remembering it, and a place in the order of work (`docs/DECISIONS.md`, Nov 13): 
 2. A strict Content Security Policy and a cross-site (Origin) check on every change. **Built** (#329 the policy, #331 the Origin check and blocks reported to Sentry).
 3. Migrations run up and down in CI on a fresh database, and the models match it. **Built** (#330).
 4. Linters: ruff's bugbear, simplify, pyupgrade and security rules; ESLint for app.js (no redeclared or implicit
-   globals, the bug of Nov 13); Stylelint for app.css; djLint for templates. **Ruff built** (#331); the other three next.
-5. A preview for each pull request on Railway (Brett switches it on in Railway's dashboard; Claude wires the rest).
+   globals, the bug of Nov 13); Stylelint for app.css; djLint for templates. **Built**: ruff (#331); ESLint, Stylelint and djLint (tools/lint, pyproject.toml).
+5. A preview for each pull request on Railway (Brett switches it on in Railway's dashboard; Claude wires the rest). **Skipped** (Nov 13): a preview's random address can't use Google sign-in, starts with an empty database, and with no base environment copies production (the legacy app and the nightly backup job, which could save an empty backup that a staging refresh then loads). Local first and staging.askdnd.ai cover it. Revisit only with Base Environment = staging, Focused PR Environments on, and a way to sign in.
 6. The automated code review at high effort on every PR before it merges, its findings fixed.
 
 Each lands as its own pull request, with its check on in CI the day it lands.

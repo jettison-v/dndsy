@@ -23,7 +23,7 @@
     {% if can_pick and known %}
     <form method="post" action="/characters/{{ c.id }}/wild-shape">
       <input type="hidden" name="form" value="{{ '' if current else b.name }}">
-      <button class="btn{{ '' if current else ' primary' }}">{{ "Back to normal form" if current else "Shift into it on Battle" }}</button>
+      <button type="submit" class="btn{{ '' if current else ' primary' }}">{{ "Back to normal form" if current else "Shift into it on Battle" }}</button>
     </form>
     {% endif %}
     <button class="btn link peek-close" type="button" aria-label="Close">✕</button>

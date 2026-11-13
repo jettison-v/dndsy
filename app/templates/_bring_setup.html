@@ -6,7 +6,7 @@
   <form class="bring-form" hx-post="/characters/{{ c.id }}/bring/{{ bring.id }}/setup" hx-swap="none">
     {% set f = bring.cfg %}
     <label class="field"><span>The creature</span><input type="text" name="creature" list="bring-names-{{ bring.id }}" value="{{ f.creature }}" placeholder="Which one? (its words don't say)" autocomplete="off"></label>
-    <datalist id="bring-names-{{ bring.id }}">{% for n in bring.names %}<option value="{{ n }}">{% endfor %}</datalist>
+    <datalist id="bring-names-{{ bring.id }}">{% for n in bring.names %}<option value="{{ n }}"></option>{% endfor %}</datalist>
     <div class="bring-grid">
       <label class="field"><span>Its type becomes</span><input type="text" name="type" value="{{ f.type }}" placeholder="unchanged" maxlength="40"></label>
       <label class="field"><span>Immune to</span><input type="text" name="immune" value="{{ f.immune }}" placeholder="none" maxlength="200"></label>

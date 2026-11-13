@@ -37,13 +37,13 @@
     <span class="note">These are {{ c.name }}'s own numbers; Battle shows the form's. What the form can't do is greyed, with why: the DM rules.</span></div>
     <div class="ws-form-acts"><a class="btn small" href="/characters/{{ c.id }}/battle">Battle</a></div></div>{% endif %}
   <div class="tabbar" role="tablist">
-    <button role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
-    {% if s.spells or s.spellbook %}<button role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
-    {% if druid %}<button role="tab" aria-selected="false" data-tab="t-forms">Wild Shape</button>{% elif s.creatures %}<button role="tab" aria-selected="false" data-tab="t-forms">Forms</button>{% endif %}
-    <button role="tab" aria-selected="false" data-tab="t-items">Inventory</button>
-    <button role="tab" aria-selected="false" data-tab="t-features">Features</button>
-    <button role="tab" aria-selected="false" data-tab="t-skills">Skills &amp; situational</button>
-    {% if s.story %}<button role="tab" aria-selected="false" data-tab="t-story">Background</button>{% endif %}
+    <button type="submit" role="tab" aria-selected="true" data-tab="t-actions">Actions</button>
+    {% if s.spells or s.spellbook %}<button type="submit" role="tab" aria-selected="false" data-tab="t-spells">Spells</button>{% endif %}
+    {% if druid %}<button type="submit" role="tab" aria-selected="false" data-tab="t-forms">Wild Shape</button>{% elif s.creatures %}<button type="submit" role="tab" aria-selected="false" data-tab="t-forms">Forms</button>{% endif %}
+    <button type="submit" role="tab" aria-selected="false" data-tab="t-items">Inventory</button>
+    <button type="submit" role="tab" aria-selected="false" data-tab="t-features">Features</button>
+    <button type="submit" role="tab" aria-selected="false" data-tab="t-skills">Skills &amp; situational</button>
+    {% if s.story %}<button type="submit" role="tab" aria-selected="false" data-tab="t-story">Background</button>{% endif %}
   </div>
 
   <div id="t-actions">
