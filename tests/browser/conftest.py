@@ -199,11 +199,11 @@ class Person:
         webkit = browser.browser_type.name == "webkit"
         self.context.set_default_timeout(20_000 if webkit else 10_000)  # a page that's working answers well within this (WebKit is slower)
         self.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'off'); if (!sessionStorage.getItem('fresh')) { sessionStorage.setItem('fresh', '1'); localStorage.setItem('askdnd.rollsSide', 'open'); }")
-        # Anything the Content Security Policy blocks (app/main.py CSP) is said on the console, and fails the test at its end
-        self.context.add_init_script("document.addEventListener('securitypolicyviolation', e => console.error('CSP blocked: ' + e.violatedDirective + ' ' + (e.blockedURI || 'inline')))")
         # Outside sites a page frames (Campaign › Map's atlas) get a stand-in: the tests never depend on another site,
         # which may answer GitHub's machines differently (aidedd.org refused to be framed there, Nov 13)
         self.context.route("https://www.aidedd.org/**", lambda route: route.fulfill(status=200, content_type="text/html", body="<p>atlas</p>"))
+        # Anything the Content Security Policy blocks (app/main.py CSP) is said on the console, and fails the test at its end
+        self.context.add_init_script("document.addEventListener('securitypolicyviolation', e => console.error('CSP blocked: ' + e.violatedDirective + ' ' + (e.blockedURI || 'inline')))")
         self.page = self.context.new_page()
         self.page.on("console", lambda m: m.text.startswith("CSP blocked:") and self.csp.append(m.text))
         self.page.on("pageerror", lambda e: self.errors.append(str(e)))
