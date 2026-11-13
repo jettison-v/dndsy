@@ -212,7 +212,6 @@ class Person:
             print(f"[{who} {'ignored ' if ignored else ''}{source}] {text}")
             if not ignored:
                 self.errors.append(text)
-        self.note = note
         # The console's "Failed to load resource" doesn't say which: record the failing address instead
         # (Safari's engine says a request cut short by leaving the page failed to send, which htmx reports; a real failure
         # still shows as its response below)
@@ -224,8 +223,8 @@ class Person:
         cancelled = (lambda t: "due to access control checks" in t and own in t) if webkit else (lambda t: False)
         self.page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and m.text not in cut_short
                      and note("console", m.text, ignored=cancelled(m.text)))
-        # (a fetch WebKit cancelled can also arrive as the page's own error, the same words; a real one shows as its answer)
-        self.page.on("pageerror", lambda e: note("pageerror", str(e), ignored=cancelled(str(e))))
+        # (an error the page didn't catch is never ignored: it's a bug real browsers hit too)
+        self.page.on("pageerror", lambda e: note("pageerror", str(e)))
         self.page.on("response", lambda r: r.status >= 400 and note("response", f"{r.status} {r.url.replace(server['base'], '')}"))
         # (a fresh browser's first page, WebKit's especially, can take longer: Nov 2, 10 seconds ran out on a busy machine)
         self.page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}", timeout=30_000)
