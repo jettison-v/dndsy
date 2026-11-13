@@ -204,7 +204,7 @@
           <h3>New in the World <span class="count">{{ new_entries | length }}</span></h3>
           <ul class="plain">
             {% for e in new_entries %}{% set pic = new_pictures.get(e.id) %}
-            <li class="new-entry"><span class="roll-av hue{{ e.id % 6 }}" aria-hidden="true">{{ e.name[:1] }}{% if pic %}<img src="{{ pic.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+            <li class="new-entry"><span class="roll-av hue{{ e.id % 6 }}" aria-hidden="true">{{ e.name[:1] }}{% if pic %}<img src="{{ pic.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>
               <a href="{{ entry_url(e.id) }}" class="grow">{{ e.name }}</a><span class="tag">{{ {"npc": "NPC"}.get(e.kind.value, e.kind.value | capitalize) }}</span>
               {% if can_draw %}<button type="button" class="btn small{{ ' primary' if not pic }}" data-modal-url="/pictures?for=entity:{{ e.id }}&amp;tab=draw">✦ Draw</button>{% endif %}
               <button type="button" class="btn small" data-modal-url="/pictures?for=entity:{{ e.id }}">{{ "Change" if pic else "Upload" }}</button></li>

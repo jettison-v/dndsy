@@ -55,7 +55,7 @@
   {% if o.ddb_art %}<div id="pw-ddb" hidden>
     <form hx-post="/pictures/ddb" hx-swap="none" class="pw-form">
       <input type="hidden" name="for" value="{{ o.ref }}">
-      <div class="pw-ddb"><img src="{{ o.ddb_art }}" alt="D&amp;D Beyond's art" referrerpolicy="no-referrer" onerror="this.remove()"><p class="note">Shown from D&amp;D Beyond: askdnd keeps a link, never a copy.</p></div>
+      <div class="pw-ddb"><img src="{{ o.ddb_art }}" alt="D&amp;D Beyond's art" referrerpolicy="no-referrer" data-hide-broken><p class="note">Shown from D&amp;D Beyond: askdnd keeps a link, never a copy.</p></div>
       <div class="pw-foot"><button class="btn primary" type="submit">Use D&amp;D Beyond's</button></div>
     </form>
   </div>{% endif %}

@@ -19,7 +19,7 @@
     {% if x.creature %}{% set k = x.creature %}{# one of a character's creatures (app/fight.py with_creatures; Your creatures, slice 3) #}
     <tr class="ft-creature{{ ' now' if x.active }}{{ ' pet' if x.sub }}"{{ row_ft(f, x) }}>
       {{ ini_cell(f, x) }}
-      <td><a class="ft-who" href="/characters/{{ k.master }}/battle?creature={{ k.id }}" data-no-peek title="{{ x.whose }}: its Battle"><span class="roll-av pt-cr-av" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b> <span class="tag ft-whose">{{ x.whose }}</span></a></td>
+      <td><a class="ft-who" href="/characters/{{ k.master }}/battle?creature={{ k.id }}" data-no-peek title="{{ x.whose }}: its Battle"><span class="roll-av pt-cr-av" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b> <span class="tag ft-whose">{{ x.whose }}</span></a></td>
       <td>{{ k.hp.current }} / {{ k.hp.max }}</td>
       <td>{{ k.ac }}</td>
       <td class="ft-conds"><span class="note">{% if x.missing %}Its own Initiative: not in D&amp;D Beyond's order yet{% else %}{{ k.turn }}{% endif %}</span></td>
@@ -27,7 +27,7 @@
     {% else %}
     <tr class="{{ 'now' if x.active }}{{ ' enemy' if x.kind == 'monster' }}"{{ row_ft(f, x) }}{% if r %} data-panel-url="/characters/{{ r.c.id }}/brief" tabindex="0" role="button" aria-label="{{ x.name }}: a short version"{% endif %}>
       {{ ini_cell(f, x) }}
-      <td><span class="ft-who"><span class="roll-av hue{{ (x.character or loop.index) % 6 }}{{ ' enemy' if x.kind == 'monster' }}" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b>{% if x.form %} <span class="tag ft-form" title="In Wild Shape">{{ x.form }}</span>{% endif %}{% if r %}{{ cond_badges(r.conditions, r.c, true) }}{% endif %}{% if x.hidden %} <span class="tag draft" title="Hidden from the players on D&amp;D Beyond">Hidden</span>{% endif %}</span></td>
+      <td><span class="ft-who"><span class="roll-av hue{{ (x.character or loop.index) % 6 }}{{ ' enemy' if x.kind == 'monster' }}" aria-hidden="true">{% if x.picture %}<img src="{{ x.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ x.name[:1] }}</span><b>{{ x.name }}</b>{% if x.form %} <span class="tag ft-form" title="In Wild Shape">{{ x.form }}</span>{% endif %}{% if r %}{{ cond_badges(r.conditions, r.c, true) }}{% endif %}{% if x.hidden %} <span class="tag draft" title="Hidden from the players on D&amp;D Beyond">Hidden</span>{% endif %}</span></td>
       <td>{% if hp %}<button type="button" class="pt-hp{{ ' low' if hp.max and hp.current * 2 <= hp.max }}" data-panel-url="/characters/{{ r.c.id }}/vital/hp" title="Open Hit points">{{ hp.current }} / {{ hp.max }}</button>{% else %}<span class="note">—</span>{% endif %}</td>
       <td>{% if r and r.form %}{{ r.form.ac }}{% elif r and r.sheet %}{{ r.sheet.armor_class }}{% else %}<span class="note">—</span>{% endif %}</td>
       <td class="ft-conds">{% if r %}{% for k in r.conditions %}<span class="nowrap">{{ k.name }}{% if k.name == "Concentration" and k.spell %} ({{ k.spell }}){% endif %}</span>{{ ", " if not loop.last }}{% endfor %}
