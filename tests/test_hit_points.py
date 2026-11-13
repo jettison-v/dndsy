@@ -3,7 +3,7 @@ function, the DM's rolls heard from D&D Beyond's game log, and Apply from Table 
 
 from sqlalchemy import select
 
-from app import ddb_bridge, hit_points
+from app import characters, ddb_bridge, hit_points
 from app.models import BridgeIntent, TableRoll
 from tests.roles import set_role
 from tests.table_setup import char
@@ -157,7 +157,8 @@ def test_typing_an_amount_starts_keep_or_take_again_on_the_higher(player, db, sh
     cole = char(db, "Cole")
     work = lambda **f: player.post(f"/characters/{cole.id}/hp/work", data={"mode": "temp", **f}).text
     assert "Set 5 temp" in work(amount="5", take="0", take_for="0")  # (typed after the window opened)
-    assert "Set 0 temp" in work(amount="5", take="0", take_for="5")  # kept on purpose
+    kept = work(amount="5", take="0", take_for="5")  # kept on purpose: it says nothing changes, not a silent Set 0 (feedback 62)
+    assert "Nothing to change" in kept and "Choose Take 5 to give them" in kept
     assert player.post(f"/characters/{cole.id}/hp/apply", data={"mode": "temp", "amount": "5", "take": "0", "take_for": "0"}).status_code == 200
     it = db.scalar(select(BridgeIntent).where(BridgeIntent.character_id == cole.id))
     assert (it.kind, it.data) == ("temp", {"value": 5})
@@ -239,3 +240,17 @@ def test_without_a_reachable_sheet_inspiration_stays_as_it_is(player, db, sheet)
     assert "can't be reached" in player.get(f"/characters/{cole.id}/inspiration").text
     assert player.post(f"/characters/{cole.id}/inspiration", data={"to": "gain"}).status_code == 409
 
+
+
+def test_healing_someone_at_full_says_so(player, db, sheet):
+    """Feedback 62 (Brett, Nov 10): healing rolled when no one was hurt, and Apply to's window offered a Heal 0 that did
+    nothing. It says why, and Apply to's list shows each one's Hit Points; an empty box (the − and + window, before
+    typing) only waits."""
+    cole = char(db, "Cole")
+    hp = characters.character_summary(cole)["hit_points"]
+    w = hit_points.work({"current": hp["max"], "max": hp["max"], "temp": 0}, "heal", [{"amount": 7}], [], set())
+    assert w["nothing"].startswith("Already at full Hit Points") and w["hp_after"] == hp["max"]
+    assert hit_points.work({"current": 10, "max": 20, "temp": 0}, "heal", [{"amount": 0}], [], set()).get("empty")
+    assert not hit_points.work({"current": 10, "max": 20, "temp": 0}, "heal", [{"amount": 0}], [], set()).get("nothing")
+    assert "nothing" not in hit_points.work({"current": 10, "max": 20, "temp": 0}, "heal", [{"amount": 3}], [], set())
+    assert hit_points._hp_now(cole) == {"hp": f"{hp['current']}/{hp['max']}", "full": hp["current"] >= hp["max"]}

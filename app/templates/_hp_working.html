@@ -22,10 +22,12 @@
   {% elif not reachable %}
   <div class="hp-blocked"><b>{{ c.name }}'s D&amp;D Beyond sheet can't be reached</b>
     <span>To change it from askdnd, open the sheet in Chrome with the askdnd bridge. Or make it on D&amp;D Beyond: askdnd shows it within seconds.</span></div>
+  {% elif w.nothing %}{# (it would change nothing: said, not a silent disabled button; feedback 62) #}
+  <p class="hp-blocked" data-hp-nothing>{{ w.nothing }}</p>
   {% endif %}
   <div class="hp-go">
     {% set label = ("Take " ~ w.taken if w.taken else "No damage") if w.mode == "damage" else ("Heal " ~ (w.hp_after - w.hp_before)) if w.mode == "heal" else ("Set " ~ w.temp_after ~ " temp") %}
-    <button class="btn primary" type="submit"{{ " disabled" if done or not reachable or (w.mode == "damage" and not w.amount and not w.parts | sum(attribute="amount")) or (w.mode == "heal" and w.hp_after == w.hp_before) or (w.mode == "temp" and w.temp_after == w.temp_before) }}>{{ label }}</button>
+    <button class="btn primary" type="submit"{{ " disabled" if done or not reachable or w.nothing or w.empty }}>{{ "Nothing to change" if w.nothing else label }}</button>
     <button class="btn peek-close" type="button">Cancel</button>
   </div>
   <p class="note">Made on {{ c.name }}'s D&amp;D Beyond sheet through the bridge; until D&amp;D Beyond has it, Hit points shows it waiting. askdnd informs; the DM rules.</p>
