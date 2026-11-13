@@ -1,2 +1,2 @@
 {# A picture Describe it can go by (feedback 34, 36): a relative's, unticked, or an entry picked with @, ticked. #}
-<label class="pw-ref" data-pw-ref="{{ r.id }}"><input type="checkbox" name="{{ field }}" value="{{ r.id }}"{% if on %} checked{% endif %}><img src="{{ r.pic }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><span><b>{{ r.name }}</b> <span class="note">{{ r.label }}</span></span></label>
+<label class="pw-ref" data-pw-ref="{{ r.id }}"><input type="checkbox" name="{{ field }}" value="{{ r.id }}"{% if on %} checked{% endif %}><img src="{{ r.pic }}" alt="" referrerpolicy="no-referrer" data-hide-broken><span><b>{{ r.name }}</b> <span class="note">{{ r.label }}</span></span></label>

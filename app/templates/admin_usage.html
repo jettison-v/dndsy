@@ -30,7 +30,7 @@
       <p class="hint">What you've bought in the Anthropic Console, for the balance estimate.</p>
       {% if topups %}<ul class="records">{% for t in topups %}
         <li class="record"><span class="record-main"><b>${{ "%.2f" | format(t.amount_usd) }}</b><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
-          <form class="record-actions" method="post" action="/manage/usage/topups/{{ t.id }}/delete" onsubmit="return confirm('Remove this top-up?')"><button class="btn link danger small">Remove</button></form></li>
+          <form class="record-actions" method="post" action="/manage/usage/topups/{{ t.id }}/delete" data-confirm="Remove this top-up?"><button class="btn link danger small">Remove</button></form></li>
       {% endfor %}</ul>{% endif %}
       <form method="post" action="/manage/usage/topups" class="form-row">
         <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
