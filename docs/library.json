@@ -1006,5 +1006,86 @@
   "what": "Brett: let a player check askdnd's roll math (stats, bonuses, Wild Shape, upcasting) without cluttering the page. Five options with Cole's real numbers: a number's parts on the roll card (A), on each Table rolls entry (B), a Show the math setting (C), Wild Shape and upcasting said where they change a number (D), a Check my numbers page per character (E).",
   "source": "docs/mockups/show-the-math/index.html",
   "link": "https://claude.ai/artifact/SCdVqcfRB1RYNxZGxcCedA"
+ },
+ {
+  "title": "Make It Dramatic",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "Brett, Nov 12: a separate Roll for when the roll matters, the dice in slow motion and the table watching; ways to call it and how it plays.",
+  "source": "docs/mockups/make-it-dramatic/index.html",
+  "link": "https://claude.ai/artifact/JBStw7V7FbEzWQ6CjYGwG8"
+ },
+ {
+  "title": "Prepare Your Turn",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "Brett, Nov 5: a player sketches their turn (Action, Bonus Action, movement, the Reaction kept) while others take theirs, then plays it a step at a time; plan (A), play (B), a nudge (C), the table seeing it (D).",
+  "source": "docs/mockups/prepare-your-turn/index.html",
+  "link": "https://claude.ai/artifact/39A1jeUiUW5cCT2Hq1Wbhc"
+ },
+ {
+  "title": "The DM's Creatures in Play",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "Two things the DM does every fight that askdnd's table doesn't help with yet: one roll that hits several of the party at once (a Fireball, a breath weapon), and playing a creature's own turn.",
+  "source": "docs/mockups/dm-creatures-in-play/index.html",
+  "link": "https://claude.ai/artifact/8qfS3KYY3UXNsot4wM2jtX"
+ },
+ {
+  "title": "Homebrew Items",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "Brett, Nov 10, after setting up Trah's Beasty Bone: the DM makes and manages the campaign's own items in askdnd, what each does in play picked from what askdnd already plays.",
+  "source": "docs/mockups/homebrew-items/index.html",
+  "link": "https://claude.ai/artifact/N4aDw8QCRoDy2aZBYJrp2V"
+ },
+ {
+  "title": "Spell Components",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "Brett, Nov 8: askdnd says when a spell's component is missing (one with a cost, or any without a pouch or focus) and uses up a consumed one; it never stops a cast, the DM rules.",
+  "source": "docs/mockups/spell-components/index.html",
+  "link": "https://claude.ai/artifact/XcZH7zu7NLiDRmgw9bvDmz"
+ },
+ {
+  "title": "Changing Your Options",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "Choices still made only on D&D Beyond (Wild Shape forms, weapon masteries, cantrips and the spellbook) as askdnd windows, and maximum Hit Points (Aid).",
+  "source": "docs/mockups/choices-in-askdnd/index.html",
+  "link": "https://claude.ai/artifact/6e1EiM8AbvBWNKpeuY72PL"
+ },
+ {
+  "title": "Compare",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "From the UI pass: tick two to four spells or Wild Shape forms and see them side by side, as a table (A) or cards (B); facts only.",
+  "source": "docs/mockups/compare/index.html",
+  "link": "https://claude.ai/artifact/SDDFeyPUDHzogAo8XzKJZE"
+ },
+ {
+  "title": "Design Grade Fixes",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "Brett, Nov 12: the design grade's four fixes, each today beside with the fix: the faint grey, a quiet Battle and Party, the campaign's name in the menu bar, and leaning on askdnd's own look.",
+  "source": "docs/mockups/design-grade-fixes/index.html",
+  "link": "https://claude.ai/artifact/LQfEyaQ4nohv5S4a3DXqND"
+ },
+ {
+  "title": "Use Window",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 12",
+  "what": "Brett's Roll Audit note, Nov 12: one window that spends a feature's pool or count, picks who and applies (Lay on Hands, Second Wind, Font of Magic), made from its data.",
+  "source": "docs/mockups/use-window/index.html",
+  "link": "https://claude.ai/artifact/KNJZvV2qX66j1AxucK9ewx"
  }
 ]

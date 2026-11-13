@@ -1,0 +1,219 @@
+<meta charset="utf-8">
+<title>DM's Creatures in Play</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups (Nov 12 round): dark, in askdnd's own tokens; laptop first, a board per option (its picture
+   left, what it means right), one column on a phone; the table's own characters. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --k-action: #ef6b6b; --k-bonus: #e8b34b; --k-reaction: #6fa8ff;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 38px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+ul, ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta, .note { color: var(--muted); font-size: .9rem; }
+header.top { display: grid; gap: 14px; }
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.where b { display: block; margin-bottom: 2px; }
+.board { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.board.wide { grid-template-columns: minmax(0, 1fr); }
+.say { display: grid; gap: 12px; min-width: 0; }
+.say .meta { font-size: .9rem; }
+.stage { display: grid; gap: 12px; min-width: 0; }
+.cap { color: var(--muted); font-size: .84rem; }
+.cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); }
+.cost span { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px 10px; }
+.mine { color: var(--green); font-weight: 600; }
+/* askdnd's pieces */
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; font-size: .9rem; max-width: 460px; box-shadow: 0 14px 34px rgba(0,0,0,.35); }
+.win.large { max-width: none; }
+.win .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.win .hd b { font-size: 1.1rem; }
+.win .x { color: var(--muted); }
+.sub { color: var(--muted); font-size: .86rem; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { font: 600 .88rem/1 var(--sans); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+.btn:focus-visible, .chip:focus-visible, .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.chip { font: 600 .8rem/1 var(--sans); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chip small { color: var(--muted); font-weight: 500; }
+.tag { font: 600 .72rem/1 var(--sans); padding: 3px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
+.tag.warn { background: var(--amber-soft); color: var(--amber); }
+.tag.ok { background: var(--green-soft); color: var(--green); }
+.tag.dm { background: var(--amber-soft); color: var(--amber); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line-soft); }
+.row:first-child { border-top: 0; }
+.row .nm b { display: block; }
+.row .nm span { color: var(--muted); font-size: .84rem; }
+.hit { font: 700 .95rem/1 var(--sans); color: var(--strong); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+.res { background: var(--surface-2); border-radius: 10px; padding: 9px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; }
+.res .big { font: 700 2rem/1 var(--sans); color: var(--strong); grid-row: span 2; font-variant-numeric: tabular-nums; }
+.res.dmg .big { color: var(--red); } .res.heal .big { color: var(--green); }
+.res small { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.res .how { color: var(--muted); }
+.rail { display: flex; gap: 14px; font-size: .85rem; color: var(--muted); flex-wrap: wrap; }
+.rail .now { color: var(--strong); font-weight: 600; }
+.rail span::before { content: "●"; margin-right: 5px; color: var(--muted); }
+.rail .done::before { color: var(--green); } .rail .now::before { color: var(--red); }
+.section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.econ { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; }
+.k-action { color: var(--k-action); } .k-bonus { color: var(--k-bonus); } .k-reaction { color: var(--k-reaction); }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { font: 600 .86rem/1 var(--sans); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 10px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--strong); border-bottom-color: var(--red); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+th { text-align: left; font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 9px 10px; border-bottom: 1px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 600; white-space: nowrap; }
+.field { display: grid; gap: 4px; font-size: .84rem; color: var(--muted); }
+.input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--text); font: 400 .9rem/1.3 var(--sans); }
+.av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: inline-grid; place-items: center; font: 700 .8rem/1 var(--sans); color: #1b1b1b; }
+.av.c { background: #8fb39a; } .av.b { background: #e0b878; } .av.n { background: #b39ad8; } .av.t { background: #90b4e0; } .av.e { background: #d88f8f; }
+.pick { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.pick ol { padding-left: 20px; gap: 8px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.before, .after { display: grid; gap: 8px; min-width: 0; }
+.before > .lbl { color: var(--muted); } .after > .lbl { color: var(--green); }
+@media (max-width: 900px) {
+  .board, .split { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .where { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) { h1 { font-size: 1.8rem; } }
+</style>
+<style>
+.map { position: relative; border-radius: 12px; border: 1px solid var(--line); background:
+  linear-gradient(rgba(255,255,255,.07) 1px, transparent 1px) 0 0 / 28px 28px,
+  linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px) 0 0 / 28px 28px, #1a1d1a; aspect-ratio: 16 / 10; overflow: hidden; }
+.map .area { position: absolute; left: 36%; top: 24%; width: 40%; aspect-ratio: 1; border-radius: 50%; background: rgba(255,122,89,.18); border: 2px solid #ff7a59; }
+.map .tok { position: absolute; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 .72rem/1 var(--sans); color: #1b1b1b; border: 2px solid #111; }
+.map .lab { position: absolute; font-size: .7rem; color: var(--text); background: rgba(0,0,0,.55); padding: 1px 5px; border-radius: 4px; }
+.tlist { display: grid; gap: 0; }
+.trow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: .88rem; }
+.trow:first-child { border-top: 0; }
+.trow .sv { font-variant-numeric: tabular-nums; color: var(--muted); }
+.trow .take { font-weight: 700; color: var(--red); font-variant-numeric: tabular-nums; min-width: 2.5em; text-align: right; }
+.trow .take.half { color: var(--amber); }
+.cbar { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid #d88f8f; border-radius: 12px; padding: 10px 12px; }
+.cbar .top { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cbar .used { display: flex; gap: 6px; flex-wrap: wrap; }
+.cbar .used span { font-size: .78rem; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.cbar .used span.on { background: var(--red-soft); color: var(--red); }
+.cbar .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lbl">askdnd's table · the DM's side</div>
+    <h1>The DM's creatures in play</h1>
+    <p class="lead">Two things the DM does every fight that askdnd's table doesn't help with yet: one roll that hits several of the party at once (a Fireball, a breath weapon), and playing a creature's own turn. Both before the table moves to askdnd's VTT.</p>
+    <div class="where">
+      <div><b>Where it lives</b>Table rolls (the creature's damage roll), the map (who's in the area), and the bar under the map on the creature's turn.</div>
+      <div><b>Who uses it</b>The campaign's DM only. Players see their own character's save and what they took, never a creature's Hit Points.</div>
+      <div><b>What's already there</b>Areas on the map know who's inside; a creature's side panel rolls as it; the hit points window applies one roll to one character.</div>
+    </div>
+  </header>
+
+  <section class="board">
+    <div class="stage">
+      <div class="map" aria-label="A Fireball's area on the map">
+        <div class="area"></div>
+        <span class="tok" style="left:47%;top:38%;background:#e0b878">B</span><span class="lab" style="left:47%;top:46%">Big C</span>
+        <span class="tok" style="left:58%;top:56%;background:#90b4e0">T</span><span class="lab" style="left:58%;top:64%">Trah</span>
+        <span class="tok" style="left:44%;top:63%;background:#d88f8f">E</span><span class="lab" style="left:41%;top:71%">Cultist 1</span>
+        <span class="tok" style="left:16%;top:30%;background:#8fb39a">C</span><span class="lab" style="left:15%;top:38%">Cole</span>
+        <span class="tok" style="left:84%;top:20%;background:#d88f8f">M</span><span class="lab" style="left:78%;top:28%">Cult mage</span>
+      </div>
+      <div class="win large" aria-label="Apply to everyone in the area">
+        <div class="hd"><b>Cult mage · Fireball · 28 fire</b><span class="x">×</span></div>
+        <div class="sub">Dex save, DC 15 · half on a success · 3 in the area</div>
+        <div class="tlist">
+          <div class="trow"><span class="av b">B</span><span><b>Big C</b> <span class="sub">rolls his own</span></span><span class="sv">waiting…</span><span class="tag">player</span><span class="take">?</span></div>
+          <div class="trow"><span class="av t">T</span><span><b>Trah</b></span><span class="sv">Dex 17 ✓</span><span class="tag ok">saved</span><span class="take half">14</span></div>
+          <div class="trow"><span class="av e">E</span><span><b>Cultist 1</b> <span class="sub">yours</span></span><span class="sv">Dex 6 ✗</span><span class="tag">rolled for you</span><span class="take">28</span></div>
+        </div>
+        <div class="btns"><button class="btn primary" type="button">Apply to all 3</button><span class="btn small">Roll the creatures' saves</span><span class="sub">Defenses (resistance, Evasion) are worked out for each</span></div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Option A · a roll that hits several</div>
+      <h2>Apply to everyone in the area</h2>
+      <p>The DM's damage roll with a save offers <b>Apply to everyone in the area</b>, filled from the area on the map (or picked by hand without one). Each player rolls their own save from their Table rolls; the DM's creatures' saves are rolled for the DM in one press. Each line shows the save, half or full, and what each actually takes after their defenses; one press applies them all.</p>
+      <ul class="meta">
+        <li>A player who hasn't rolled yet holds only their own line; the rest can go at once.</li>
+        <li>Players see their own line; a creature's damage and Hit Points stay the DM's.</li>
+      </ul>
+      <div class="cost"><span>Build: M (the hit points window, once per target, in one list)</span></div>
+    </div>
+  </section>
+
+  <section class="board">
+    <div class="stage">
+      <div class="win large" aria-label="Apply one at a time">
+        <div class="hd"><b>Cult mage · Fireball · 28 fire</b><span class="x">×</span></div>
+        <div class="sub">Next: Trah · 2 of 3</div>
+        <div class="res dmg"><span class="big">14</span><small>Trah takes</small><span class="how">Dex save 17 against DC 15: half</span></div>
+        <div class="btns"><button class="btn primary" type="button">Apply to Trah, then next</button><span class="btn small">Skip</span></div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Option B · the same, simpler</div>
+      <h2>One at a time</h2>
+      <p>The same roll walks the DM through each target in turn, in the hit points window as it is today: save, half or full, Apply, next. Less to see at once, more presses.</p>
+      <div class="cost"><span>Build: S</span></div>
+    </div>
+  </section>
+
+  <section class="board">
+    <div class="stage">
+      <div class="cbar" aria-label="The bar under the map on a creature's turn">
+        <div class="top"><span class="av e">M</span><b>Cult mage's turn</b><span class="sub">HP 31 of 40 · AC 12 · Speed 30 ft</span></div>
+        <div class="used"><span class="on">Action</span><span>Bonus Action</span><span>Reaction</span><span>Moved 10 of 30 ft</span></div>
+        <div class="acts"><span class="hit">Dagger +4</span><span class="btn small">Fireball · 3rd (2 left)</span><span class="btn small">Misty Step · Bonus</span><span class="btn small">Shield · Reaction</span></div>
+        <div class="btns"><span class="btn small primary">Next turn</span><span class="btn small link">Its full stat block</span></div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Option C · the creature's turn</div>
+      <h2>The bar under the map becomes the creature's</h2>
+      <p>On a creature's turn the DM's bar shows that creature as a player's shows their own: its actions to roll, its spell slots or recharges, what it's used this turn, how far it's moved, and Next turn. A group of the same creatures goes one after another, each with its own Hit Points.</p>
+      <ul class="meta">
+        <li>Hidden from players: they see whose turn it is, as today.</li>
+        <li>Recharge (a breath weapon's 5–6) rolls itself at the start of the creature's turn and says so.</li>
+      </ul>
+      <div class="cost"><span>Build: M</span></div>
+    </div>
+  </section>
+
+  <section class="pick" aria-labelledby="pick-h">
+    <div class="lbl">To pick</div>
+    <h2 id="pick-h">Which ones?</h2>
+    <p class="meta">My recommendation: <b>A</b> for a roll that hits several (B only if A feels like too much on one screen), and <b>C</b>. Both before the switch to askdnd's VTT. Reply with the letters, or comment on a board.</p>
+  </section>
+</div>

@@ -1,0 +1,207 @@
+<meta charset="utf-8">
+<title>Compare Spells and Forms</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups (Nov 12 round): dark, in askdnd's own tokens; laptop first, a board per option (its picture
+   left, what it means right), one column on a phone; the table's own characters. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --k-action: #ef6b6b; --k-bonus: #e8b34b; --k-reaction: #6fa8ff;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 38px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+ul, ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta, .note { color: var(--muted); font-size: .9rem; }
+header.top { display: grid; gap: 14px; }
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.where b { display: block; margin-bottom: 2px; }
+.board { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.board.wide { grid-template-columns: minmax(0, 1fr); }
+.say { display: grid; gap: 12px; min-width: 0; }
+.say .meta { font-size: .9rem; }
+.stage { display: grid; gap: 12px; min-width: 0; }
+.cap { color: var(--muted); font-size: .84rem; }
+.cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); }
+.cost span { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px 10px; }
+.mine { color: var(--green); font-weight: 600; }
+/* askdnd's pieces */
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; font-size: .9rem; max-width: 460px; box-shadow: 0 14px 34px rgba(0,0,0,.35); }
+.win.large { max-width: none; }
+.win .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.win .hd b { font-size: 1.1rem; }
+.win .x { color: var(--muted); }
+.sub { color: var(--muted); font-size: .86rem; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { font: 600 .88rem/1 var(--sans); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+.btn:focus-visible, .chip:focus-visible, .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.chip { font: 600 .8rem/1 var(--sans); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chip small { color: var(--muted); font-weight: 500; }
+.tag { font: 600 .72rem/1 var(--sans); padding: 3px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
+.tag.warn { background: var(--amber-soft); color: var(--amber); }
+.tag.ok { background: var(--green-soft); color: var(--green); }
+.tag.dm { background: var(--amber-soft); color: var(--amber); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line-soft); }
+.row:first-child { border-top: 0; }
+.row .nm b { display: block; }
+.row .nm span { color: var(--muted); font-size: .84rem; }
+.hit { font: 700 .95rem/1 var(--sans); color: var(--strong); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+.res { background: var(--surface-2); border-radius: 10px; padding: 9px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; }
+.res .big { font: 700 2rem/1 var(--sans); color: var(--strong); grid-row: span 2; font-variant-numeric: tabular-nums; }
+.res.dmg .big { color: var(--red); } .res.heal .big { color: var(--green); }
+.res small { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.res .how { color: var(--muted); }
+.rail { display: flex; gap: 14px; font-size: .85rem; color: var(--muted); flex-wrap: wrap; }
+.rail .now { color: var(--strong); font-weight: 600; }
+.rail span::before { content: "●"; margin-right: 5px; color: var(--muted); }
+.rail .done::before { color: var(--green); } .rail .now::before { color: var(--red); }
+.section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.econ { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; }
+.k-action { color: var(--k-action); } .k-bonus { color: var(--k-bonus); } .k-reaction { color: var(--k-reaction); }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { font: 600 .86rem/1 var(--sans); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 10px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--strong); border-bottom-color: var(--red); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+th { text-align: left; font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 9px 10px; border-bottom: 1px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 600; white-space: nowrap; }
+.field { display: grid; gap: 4px; font-size: .84rem; color: var(--muted); }
+.input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--text); font: 400 .9rem/1.3 var(--sans); }
+.av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: inline-grid; place-items: center; font: 700 .8rem/1 var(--sans); color: #1b1b1b; }
+.av.c { background: #8fb39a; } .av.b { background: #e0b878; } .av.n { background: #b39ad8; } .av.t { background: #90b4e0; } .av.e { background: #d88f8f; }
+.pick { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.pick ol { padding-left: 20px; gap: 8px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.before, .after { display: grid; gap: 8px; min-width: 0; }
+.before > .lbl { color: var(--muted); } .after > .lbl { color: var(--green); }
+@media (max-width: 900px) {
+  .board, .split { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .where { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) { h1 { font-size: 1.8rem; } }
+</style>
+<style>
+.listx { display: grid; gap: 0; }
+.lx { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line-soft); font-size: .88rem; }
+.lx:first-child { border-top: 0; }
+.box { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--muted); display: inline-block; }
+.box.on { background: var(--blue); border-color: var(--blue); }
+.tray { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--blue-soft); border: 1px solid var(--blue); border-radius: 10px; padding: 8px 12px; font-size: .86rem; }
+.cmp th { white-space: nowrap; } .cmp td:first-child { white-space: nowrap; }
+.cmp td.best { color: var(--strong); }
+.cmp tr.k td:first-child { color: var(--muted); font-size: .8rem; }
+.cards3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cardx { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; font-size: .86rem; }
+.cardx .pic { height: 60px; border-radius: 8px; background: radial-gradient(circle at 40% 35%, #6d8a6a, #2a3a2a); }
+.cardx dl { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; }
+.cardx dt { color: var(--muted); } .cardx dd { margin: 0; color: var(--strong); font-variant-numeric: tabular-nums; }
+@media (max-width: 760px) { .cards3 { grid-template-columns: minmax(0, 1fr); } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lbl">Plan · choosing between things</div>
+    <h1>Compare</h1>
+    <p class="lead">From the UI pass (Nov 2): tick two to four spells, or Wild Shape forms, and see them side by side, as on a store's compare page. Facts only, never marked "best": askdnd informs, the player chooses.</p>
+    <div class="where">
+      <div><b>Where it lives</b>Plan › Shortlist (where you already bookmark spells and forms to weigh up), the Spell Book, and Sheet › Wild Shape: a tick on each row and a Compare bar.</div>
+      <div><b>Who uses it</b>The character's player; the DM too, on anyone's.</div>
+      <div><b>What it shows</b>Spells: casting time, range, area, damage or healing at your level, save or attack, Concentration, your notes. Forms: AC, Hit Points, speeds, attacks and damage per turn, senses.</div>
+    </div>
+  </header>
+
+  <section class="board">
+    <div class="stage">
+      <div class="section" aria-label="Plan › Shortlist, ticking spells">
+        <div class="econ" style="color:var(--blue)">Plan › Shortlist · spells</div>
+        <div class="listx">
+          <div class="lx"><span class="box on"></span><span><b>Moonbeam</b> <span class="sub">2nd · 2d10 radiant · Con save</span></span><span class="tag">Conc.</span></div>
+          <div class="lx"><span class="box on"></span><span><b>Flaming Sphere</b> <span class="sub">2nd · 2d6 fire · Dex save</span></span><span class="tag">Conc.</span></div>
+          <div class="lx"><span class="box on"></span><span><b>Heat Metal</b> <span class="sub">2nd · 2d8 fire · Con save</span></span><span class="tag">Conc.</span></div>
+          <div class="lx"><span class="box"></span><span><b>Healing Spirit</b> <span class="sub">2nd · heals 1d6</span></span><span class="tag">Conc.</span></div>
+        </div>
+        <div class="tray"><b>3 ticked</b><span class="btn small primary">Compare</span><span class="btn small link">Clear</span></div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Picking</div>
+      <h2>Tick, then Compare</h2>
+      <p>A tick on each row of the Shortlist, the Spell Book and Wild Shape's list; a bar at the bottom counts them and opens Compare (two to four at once).</p>
+    </div>
+  </section>
+
+  <section class="board">
+    <div class="stage">
+      <div class="win large" aria-label="Compare as a table">
+        <div class="hd"><b>Compare · 3 spells · Cole</b><span class="x">×</span></div>
+        <div class="scroll"><table class="cmp">
+          <thead><tr><th></th><th>Moonbeam</th><th>Flaming Sphere</th><th>Heat Metal</th></tr></thead>
+          <tbody>
+            <tr class="k"><td>Casting</td><td>Action</td><td>Action</td><td>Bonus Action</td></tr>
+            <tr class="k"><td>Range · area</td><td>120 ft · 5-ft cylinder</td><td>60 ft · 5-ft sphere</td><td>60 ft · one object</td></tr>
+            <tr class="k"><td>Each turn</td><td>2d10 radiant (avg 11)</td><td>2d6 fire (avg 7)</td><td>2d8 fire (avg 9)</td></tr>
+            <tr class="k"><td>Save · DC 15</td><td>Con, half</td><td>Dex, half</td><td>Con, none · drop it or Disadvantage</td></tr>
+            <tr class="k"><td>Moves</td><td>60 ft, Magic action</td><td>30 ft, Bonus Action</td><td>no</td></tr>
+            <tr class="k"><td>Higher level</td><td>+1d10 a level</td><td>+1d6 a level</td><td>+1d8 a level</td></tr>
+            <tr class="k"><td>In a form</td><td>✓ Circle spell</td><td>—</td><td>—</td></tr>
+            <tr class="k"><td>Your notes</td><td>Great on shapechangers</td><td>—</td><td>Their armor!</td></tr>
+          </tbody></table></div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Option A</div>
+      <h2>A table, row by row</h2>
+      <p>One row per fact, a column per spell or form: easy to read across a row (which one reaches farther, which does more on average). Built for a laptop; on a phone it scrolls sideways inside the window.</p>
+      <div class="cost"><span>Build: M</span></div>
+    </div>
+  </section>
+
+  <section class="board">
+    <div class="stage">
+      <div class="cards3" aria-label="Compare as cards">
+        <div class="cardx"><div class="pic"></div><b>Polar Bear</b><dl><dt>AC</dt><dd>17 (Circle Forms)</dd><dt>Temp HP</dt><dd>18</dd><dt>Speed</dt><dd>40, swim 40</dd><dt>A turn</dt><dd>2 × Rend, ~19</dd><dt>Senses</dt><dd>Darkvision 60</dd></dl></div>
+        <div class="cardx"><div class="pic"></div><b>Giant Octopus</b><dl><dt>AC</dt><dd>17 (Circle Forms)</dd><dt>Temp HP</dt><dd>18</dd><dt>Speed</dt><dd>10, swim 60</dd><dt>A turn</dt><dd>Tentacles, ~10, grapples</dd><dt>Senses</dt><dd>Darkvision 60</dd></dl></div>
+        <div class="cardx"><div class="pic"></div><b>Dire Wolf</b><dl><dt>AC</dt><dd>17 (Circle Forms)</dd><dt>Temp HP</dt><dd>18</dd><dt>Speed</dt><dd>50</dd><dt>A turn</dt><dd>Bite, ~10, Prone</dd><dt>Senses</dt><dd>Darkvision 60</dd></dl></div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Option B</div>
+      <h2>Cards side by side</h2>
+      <p>Each one as a card in a row, its picture on top, the same facts in the same order. Friendlier for forms (their pictures help), harder to read across for spells. On a phone the cards stack.</p>
+      <div class="cost"><span>Build: M</span></div>
+    </div>
+  </section>
+
+  <section class="pick" aria-labelledby="pick-h">
+    <div class="lbl">To pick</div>
+    <h2 id="pick-h">Want it, and which?</h2>
+    <p class="meta">My recommendation: <b>A for spells, B for forms</b> (one Compare, drawn the way each reads best). Or skip it: Plan's Shortlist already puts what you're weighing in one list. Reply with A, B, both, or "not now".</p>
+  </section>
+</div>
