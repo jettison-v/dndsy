@@ -2833,12 +2833,25 @@ function feedbackBusy(e) {
     return fetch(url, { method: 'POST', body: new URLSearchParams(fields), headers: { 'X-Requested-With': 'fetch' } })
       .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || j.error || "askdnd couldn't do that"); return j; }));
   }
+  // Your scratch pad's + Add (app/turn_bar.py): opens upward from the bar, or downward when there isn't room above it
+  // (under the menu bar), and never taller than the room it has
+  document.addEventListener('toggle', e => {
+    const d = e.target;
+    if (!(d.matches && d.matches('.tbar-add')) || !d.open) return;
+    const m = d.querySelector('.tbar-add-menu'), r = d.getBoundingClientRect();
+    const top = (document.querySelector('.topbar') || { getBoundingClientRect: () => ({ bottom: 64 }) }).getBoundingClientRect().bottom;
+    const above = r.top - top - 12, below = innerHeight - r.bottom - 12;
+    const down = above < 220 && below > above;
+    m.classList.toggle('down', down);
+    m.style.maxHeight = Math.max(160, Math.min(320, down ? below : above)) + 'px';
+  }, true);
   // Your turn's bar on askdnd's table (app/turn_bar.py): a roll, Cast or Use made from one of its rows marks that row's
   // Action, Bonus Action or Reaction used (pressing the mark unticks it); askdnd counts, never stops you
   function turnUsed(anchor) {
     const it = anchor && anchor.closest && anchor.closest('[data-turn-cost]'), bar = it && it.closest('#turn-bar');
     if (!bar) return;
-    fetch('/characters/' + bar.dataset.character + '/turn', { method: 'POST', body: new URLSearchParams({ what: 'use', cost: it.dataset.turnCost, n: '1' }), headers: { 'X-Requested-With': 'fetch' } })
+    // (rolled from your scratch pad: its line is ticked too)
+    fetch('/characters/' + bar.dataset.character + '/turn', { method: 'POST', body: new URLSearchParams({ what: 'use', cost: it.dataset.turnCost, n: '1', pad: it.dataset.padKey || '' }), headers: { 'X-Requested-With': 'fetch' } })
       .then(r => { if (r.ok) document.body.dispatchEvent(new CustomEvent('characterChanged')); });
   }
   function itemChanged(j) {
