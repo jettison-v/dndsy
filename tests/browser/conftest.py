@@ -166,6 +166,9 @@ class Person:
         webkit = browser.browser_type.name == "webkit"
         self.context.set_default_timeout(20_000 if webkit else 10_000)  # a page that's working answers well within this (WebKit is slower)
         self.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'off'); if (!sessionStorage.getItem('fresh')) { sessionStorage.setItem('fresh', '1'); localStorage.setItem('askdnd.rollsSide', 'open'); }")
+        # Outside sites a page frames (Campaign › Map's atlas) get a stand-in: the tests never depend on another site,
+        # which may answer GitHub's machines differently (aidedd.org refused to be framed there, Nov 13)
+        self.context.route("https://www.aidedd.org/**", lambda route: route.fulfill(status=200, content_type="text/html", body="<p>atlas</p>"))
         self.page = self.context.new_page()
         self.page.on("pageerror", lambda e: self.errors.append(str(e)))
         # The console's "Failed to load resource" doesn't say which: record the failing address instead
