@@ -11,6 +11,7 @@ from sqlalchemy import select
 from app import characters, config, ddb, ddb_bridge, ddb_fields, ddb_sheet
 from app.importer import import_bundle
 from app.models import BridgeIntent, Campaign, Character
+from tests.menu import tone
 from tests.roles import set_role
 from tests.table_setup import BUNDLE, COLE, char, owned_by
 
@@ -911,7 +912,7 @@ def test_the_pages_tick_draws_the_pill_while_your_sheet_isnt_connected(player, d
     cole = char(db, "Cole")
     cole.sheet_heard_at = None
     db.flush()
-    assert ">Open your sheet<" in player.post(f"/live/sync?c={cole.id}").text
+    assert tone(player.post(f"/live/sync?c={cole.id}").text) == "bad"  # (the pill's own answer, from the page's tick)
 
 
 def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_make_by_hand(player, db, sheet):
@@ -921,9 +922,9 @@ def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_
     pill = lambda: player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]
     cole.sheet_heard_at = None  # no extension yet
     db.flush()
-    assert ">Open your sheet<" in pill() and " dot" not in pill().split(">")[0]
+    assert tone(pill()) == "bad"
     player.post("/bridge/heard/75423618?pull=1")  # the extension's pull: the sheet can be reached
-    assert 'live-ago sr">Connected<' in pill() and " step dot" in pill().split(">")[0]  # connected: the dot alone (Nov 13)
+    assert tone(pill()) == "step" and " dot" in pill().split(">")[0]  # connected: the dot alone (Nov 13)
     drink(db, cole)
     db.scalar(select(BridgeIntent)).state = "not_yet"
     db.flush()
@@ -1035,7 +1036,7 @@ def test_a_closed_sheet_tells_open_pages_at_once(player, db, sheet, monkeypatch)
     player.post("/bridge/closed/75423618")
     assert ("character", {"id": cole.id}) in sent and not ddb_bridge.reachable(cole)
     pill = player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]
-    assert ">Open your sheet<" in pill
+    assert tone(pill) == "bad"
     sent.clear()
     player.post("/bridge/heard/75423618?pull=1")  # back: said once
     assert ("character", {"id": cole.id}) in sent

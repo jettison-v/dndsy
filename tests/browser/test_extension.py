@@ -12,6 +12,8 @@ import pytest
 from playwright.sync_api import expect
 from sqlalchemy import create_engine, text
 
+from tests.browser.pages import tone, wait_tone
+
 ITEMS = os.path.join(os.path.dirname(__file__), "..", "fixtures", "ddb", "items.json")
 SERVER_ENV = {"DDB_BRIDGE": "1", "DDB_ITEMS_URL": "file://" + os.path.abspath(ITEMS)}  # (the item browser's list: made up)
 SHEET = "https://www.dndbeyond.com/characters/75423618"
@@ -75,16 +77,16 @@ def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server)
     page.goto(f"{server['base']}/characters/{server['cole']}/battle")
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     page.wait_for_function("!document.body.classList.contains('no-bridge')")
-    assert "Not connected" in page.locator(PILL).inner_text()  # (grey: no one at the table is connected yet)
+    assert tone(page) == "none"  # (grey: no one at the table is connected yet)
     # which extension this browser has (0.9.9 on), for feedback and support
     assert page.evaluate("document.body.dataset.bridgeVersion") == json.load(open(os.path.join(SOURCE, "manifest.json")))["version"]
 
     sheet = chrome.new_page()
     sheet.goto(SHEET)
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
 
     sheet.close()
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet')", timeout=8000)
+    wait_tone(page, "bad", "none", timeout=8000)
     # The connection band (Brett chose B, Nov 13, docs/mockups/connection-drops/): it got worse tonight, so it says so
     band = page.locator("#conn-band")
     expect(band).to_be_visible()
@@ -100,7 +102,7 @@ def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server)
     page.keyboard.press("Escape")
     sheet = chrome.new_page()
     sheet.goto(SHEET)  # back: the band leaves by itself
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
     expect(page.locator("#conn-band")).to_have_attribute("hidden", "")
 
 
@@ -112,13 +114,13 @@ def test_a_sheet_closed_right_after_it_saved_stays_closed(chrome, server):
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     sheet = chrome.new_page()
     sheet.goto(SHEET)
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
     sheet.evaluate("window.postMessage({ askdndBridge: 'from-page', type: 'saved', characterId: '75423618', path: '/x' }, location.origin)")
     sheet.wait_for_timeout(300)
     sheet.close()
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet')", timeout=8000)
+    wait_tone(page, "bad", "none", timeout=8000)
     page.wait_for_timeout(8000)  # (past the two reads after a save)
-    assert "Open your sheet" in page.locator(PILL).inner_text()
+    assert tone(page) in ("bad", "none")  # (not connected: red once it was tonight)
 
 
 def test_cast_spends_through_the_window_and_undo_takes_it_back(chrome, server):
@@ -128,7 +130,7 @@ def test_cast_spends_through_the_window_and_undo_takes_it_back(chrome, server):
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     sheet = chrome.new_page()
     sheet.goto(SHEET)
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
     page.click('.res-row .res-go >> nth=0')
     page.locator(".roll-win [data-use-go]").first.click(timeout=5000)
     card = page.locator("#cards > .card", has_text="left")
@@ -144,7 +146,7 @@ def test_minus_on_hit_points_is_click_type_enter(chrome, server):
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     sheet = chrome.new_page()
     sheet.goto(SHEET)
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
     page.bring_to_front()
     page.click(".hp-btn[aria-label=Damage]")
     field = page.locator(".roll-win input[name=amount]")
@@ -174,7 +176,7 @@ def test_inspiration_asks_first_and_undo_takes_it_back(chrome, server):
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     sheet = chrome.new_page()
     sheet.goto(SHEET)
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
     page.bring_to_front()
     page.click(".res-row .res-insp")
     page.locator(".roll-win [data-use-close]").click(timeout=5000)
@@ -197,7 +199,7 @@ def test_cast_and_roll_is_one_step_and_the_roll_stays_the_players(chrome, server
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     sheet = chrome.new_page()
     sheet.goto(SHEET)
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
     page.click(".spellbook-btn")
     page.wait_for_selector(".sb-actions .item-go")
     page.evaluate("""() => [...document.querySelectorAll('.sb-actions .item-go')]
@@ -228,7 +230,7 @@ def test_use_and_roll_spends_the_item_and_rolls_its_plan_at_once(chrome, server)
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     sheet = chrome.new_page()
     sheet.goto(SHEET)
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
     page.bring_to_front()
     page.keyboard.press("ControlOrMeta+k")  # (Ctrl+K on Linux, where GitHub runs it)
     page.locator("#search-q").fill("soul coin")
@@ -256,7 +258,7 @@ def test_a_prayer_bead_casts_its_spell_at_the_beads_level(chrome, server, browse
         page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
         sheet = chrome.new_page()
         sheet.goto(SHEET)
-        page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+        wait_tone(page, "step", timeout=45000)
         page.bring_to_front()
         page.keyboard.press("ControlOrMeta+k")
         page.locator("#search-q").fill("necklace of prayer")
@@ -461,7 +463,7 @@ def cole_at_the_table(chrome, server, browser_db):
     sheet = chrome.new_page()
     sheet.goto(SHEET)
     page.bring_to_front()
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    wait_tone(page, "step", timeout=45000)
     return page, sheet, held, rules
 
 
