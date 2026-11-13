@@ -24,6 +24,7 @@
   </style>
 </head>
 <body>
+{% if stale() %}<div class="card warn" role="alert"><b>The Processor was updated since it opened.</b> Press Quit on its home page and open askdnd Processor again before sending, so it sends with the newest code.</div>{% endif %}
 {% block content %}{% endblock %}
 </body>
 </html>

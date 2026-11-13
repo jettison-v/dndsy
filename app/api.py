@@ -74,3 +74,29 @@ def upload_transcript(
         {"session_id": session.id, "label": session_label(session), "review_url": review_url, "status": "reading"},
         status_code=202,
     )
+
+
+class TalkUpload(BaseModel):
+    played_on: date
+    campaign: str | None = None
+    talk: dict
+
+
+@router.post("/transcripts/talk")
+def upload_talk(body: TalkUpload, authorization: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Who talked, for a session already sent (Brett, Nov 13: Terra in the Observatory went from a Processor that was
+    opened before it counted speaking times). Only the numbers: the transcript, its read and the drafts stay as they are."""
+    if not config.UPLOAD_TOKEN:
+        return JSONResponse({"error": "Uploads aren't set up on the server (UPLOAD_TOKEN)."}, status_code=503)
+    if not _authorized(authorization):
+        return JSONResponse({"error": "Wrong or missing upload token."}, status_code=401)
+    campaign = db.scalar(select(Campaign).where(Campaign.slug == body.campaign)) if body.campaign else web.first_campaign(db)
+    session = campaign and db.scalar(select(GameSession).where(GameSession.campaign_id == campaign.id, GameSession.played_on == body.played_on))
+    if not session:
+        return JSONResponse({"error": "No session from that day: send the transcript first."}, status_code=404)
+    talk = session_story.clean_talk(body.talk)
+    if not talk.get("speakers"):
+        return JSONResponse({"error": "No speaking times in what was sent."}, status_code=422)
+    session.talk = {**(session.talk or {}), **talk}  # (a start set on the review page stays unless this one has its own)
+    db.commit()
+    return JSONResponse({"session_id": session.id, "label": session_label(session), "speakers": len(talk["speakers"])})

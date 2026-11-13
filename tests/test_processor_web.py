@@ -167,3 +167,38 @@ def test_the_recording_start_goes_with_the_transcript(client, tmp_path, monkeypa
     assert sent[0]["start"] == "19:05" and sent[0]["length"] > 0
     client.post("/sessions/2026-08-29/start", data={"started": "not a time"})
     assert web.recording_start("2026-08-29") == ""
+
+
+def test_a_processor_opened_before_its_code_changed_says_so_and_wont_send(client, monkeypatch):
+    """Brett, Nov 13: the Processor ran from Nov 6 and sent Nov 8's transcript without who talked (added Nov 7): a running
+    app keeps the code it started with. Once the code on disk is newer, every page says to reopen it and Send waits."""
+    add_session(client)
+    client.post("/sessions/2026-08-29/filter")
+    wait_for_job(client, "2026-08-29")
+    client.post("/sessions/2026-08-29/save")
+    sent = []
+    monkeypatch.setattr(web, "upload_settings", lambda: ("https://beta.example", "token"))
+    monkeypatch.setattr(web, "send_transcript", lambda stem, text, talk=None: sent.append(talk) or {"label": "x", "review_url": "https://beta.example/x"})
+    assert "was updated since it opened" not in client.get("/").text
+    monkeypatch.setattr(web, "STARTED", web.code_stamp() - 60)
+    assert "was updated since it opened" in client.get("/").text
+    assert "Quit" in client.get("/sessions/2026-08-29").text
+    client.post("/sessions/2026-08-29/send")
+    assert sent == [] and "was updated since it opened" in client.get("/sessions/2026-08-29").text
+
+
+def test_who_talked_follows_a_transcript_sent_without_it(client, tmp_path, monkeypatch):
+    """A session sent without who talked offers Send who talked: only the seconds per speaker name, then says it went."""
+    add_session(client)
+    client.post("/sessions/2026-08-29/filter")
+    wait_for_job(client, "2026-08-29")
+    client.post("/sessions/2026-08-29/save")
+    (web.WORK / "2026-08-29" / "sent.json").write_text(json.dumps({"label": "Aug 29", "review_url": "https://x", "sent_at": "2026-11-08T19:30"}))
+    assert "Send who talked" in client.get("/sessions/2026-08-29").text
+    sent = []
+    monkeypatch.setattr(web, "send_talk", lambda stem, talk: sent.append((stem, talk)) or {"speakers": 3})
+    client.post("/sessions/2026-08-29/talk")
+    stem, talk = sent[0]
+    assert stem == "2026-08-29" and set(talk["speakers"]) == {"A", "B", "DM"} and "text" not in talk
+    page = client.get("/sessions/2026-08-29").text
+    assert "Sent with who talked" in page and "Send who talked" not in page

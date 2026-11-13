@@ -22,7 +22,8 @@
   {% elif not reachable %}
   <div class="hp-blocked"><b>{{ c.name }}'s D&amp;D Beyond sheet can't be reached</b>
     <span>To change it from askdnd, open the sheet in Chrome with the askdnd bridge. Or make it on D&amp;D Beyond: askdnd shows it within seconds.</span></div>
-  {% elif w.nothing %}{# (it would change nothing: said, not a silent disabled button; feedback 62) #}
+  {% endif %}
+  {% if w.nothing and not done %}{# (it would change nothing: said, not a silent disabled button; feedback 62), whether or not the sheet can be reached #}
   <p class="hp-blocked" data-hp-nothing>{{ w.nothing }}</p>
   {% endif %}
   <div class="hp-go">
