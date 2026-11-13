@@ -19,12 +19,12 @@ def test_story_search_finds_the_sessions_that_mention_every_word(people, server,
     engine.dispose()
 
     player = people("player")
-    page = player.open("/c/main/")
+    page = player.open("/c/main/campaign?tab=sessions")  # (the box is at the top of Campaign › Sessions since Nov 13)
     box = page.locator("[data-story-search]")
     sessions = page.locator("#t-sessions details.tale-roll")
 
     box.fill("saltmarsh enemy")
-    page.wait_for_selector("#t-sessions:not([hidden])")  # it opens All sessions
+    page.wait_for_selector("#t-sessions:not([hidden])")
     page.wait_for_function("document.querySelectorAll('mark.story-hit').length >= 2")
     assert [s.is_visible() for s in sessions.all()] == [False, True]  # newest first: only Session 1 says both
     assert "1 session mentions" in page.locator("[data-story-found]").inner_text()
@@ -88,7 +88,7 @@ def test_an_open_session_carries_its_title_in_its_scroll_and_rolls_up(people, se
     engine.dispose()
 
     player = people("player")
-    page = player.open("/c/main/?tab=sessions")
+    page = player.open("/c/main/campaign?tab=sessions")
     sessions = page.locator("details.tale-roll")
     first = sessions.first  # (the newest opens with its title in its scroll; other tests' sessions may be newer than these)
     assert first.get_attribute("open") is not None and not first.locator(":scope > summary").is_visible()

@@ -134,11 +134,6 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .manage > button { min-height: var(--bar-h); background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-sm); padding: 0 12px; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; }
 .manage > button.active { border-color: var(--red); }
 /* DM Tools' door (app/homebrew.py): beside Manage, the DM's own (Brett chose 1B, Nov 13) */
-.dm-door { display: inline-flex; align-items: center; min-height: var(--bar-h); background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-sm); padding: 0 12px; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; text-decoration: none; }
-.dm-door:hover { border-color: var(--line-strong); }
-.dm-door.active { border-color: var(--amber); }
-@media (max-width: 1439px) { .dm-door-more { display: none; } }  /* ("DM" on a laptop: the campaign's name keeps its room) */
-@media (max-width: 1100px) { .bar-end .dm-door { display: none; } }  /* (under More on narrower screens) */
 .menu { position: absolute; right: 0; top: 44px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px; width: 240px; box-shadow: var(--lift); }
 .menu a { display: block; color: var(--text); text-decoration: none; padding: 8px 10px; border-radius: var(--r-sm); }
 .menu .menu-me { pointer-events: none; }  /* the account menu's name and email: a label, not a link */
@@ -3942,7 +3937,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .search-box { width: min(640px, calc(100vw - 24px)); max-height: min(70vh, 560px); margin: 10vh auto auto; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg);
   background: var(--surface); color: var(--text); box-shadow: var(--lift); overflow: hidden; display: none; flex-direction: column; }
 .search-box[open] { display: flex; }
-.search-box.at-bar { position: fixed; margin: 0; top: var(--sb-top); left: var(--sb-left); max-height: min(70vh, calc(100vh - var(--sb-top) - 16px)); }  /* under Search's bar (app.js `place`) */
+.search-box.at-bar { position: fixed; margin: 0; top: var(--sb-top); left: var(--sb-left); max-height: min(70vh, calc(100vh - var(--sb-top) - 16px)); }  /* under Search's bar (app.js `placeBox`) */
 .search-box::backdrop { background: var(--backdrop-soft); }
 .search-q { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); color: var(--muted); }
 .search-q input { flex: 1; min-width: 0; border: 0; background: none; color: var(--text-strong); font-size: var(--fs-lg); outline: none; }

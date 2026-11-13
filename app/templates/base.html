@@ -92,12 +92,14 @@
        either lists the rest down the left. #}
     {% set camp_pages = manage_pages | selectattr("group", "equalto", "campaign") | list %}
     {% set admin_pages = manage_pages | selectattr("group", "equalto", "askdnd") | list %}
-    {% if dm_tools_ok(user, here) %}<a class="dm-door{{ ' active' if path == '/dm' or path.startswith('/dm/') }}" href="{{ cbase }}/dm" title="DM Tools: what you make for this campaign, its homebrew items" aria-label="DM Tools">DM<span class="dm-door-more"> Tools</span></a>{% endif %}
     {% if camp_pages %}{% set on_camp = camp_pages | selectattr("here") | list %}
     <div class="manage">
-      <button class="{{ 'active' if on_camp }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
+      {% set on_dm = path == '/dm' or path.startswith('/dm/') %}
+      <button class="{{ 'active' if on_camp or on_dm }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
       <div class="menu manage-menu" id="manage-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head camp"><b>{{ here.name if here else "This campaign" }}</b><span>This campaign</span></div>
+        {# DM Tools joins Manage (Brett, Nov 13: one door for the DM; The DM's Workspace decides its page) #}
+        {% if dm_tools_ok(user, here) %}<a href="{{ cbase }}/dm" class="{{ 'active' if on_dm }}" title="What you make for this campaign: its homebrew items">DM Tools<small>What you make: homebrew items</small></a>{% endif %}
         {% for p in camp_pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
         {% set more = camp_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
         {% set others = my_campaigns | rejectattr("id", "equalto", here.id if here else none) | list %}{% set others = others if is_admin else (others | selectattr("id", "in", managed_ids) | list) %}

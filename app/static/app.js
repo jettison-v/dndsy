@@ -1823,9 +1823,9 @@ function feedbackBusy(e) {
       list.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
     }
     const redraw = () => load().then(draw);
-    // The box opens under the menu bar's Search, at its left edge, so it seems to grow out of it (Brett chose D, Nov 13);
+    // The box opens under the menu bar's Search, at its left edge, so it seems to grow out of it (Brett chose D, Nov 13; `placeBox`, not `place`: that's the roll card's);
     // where there's no bar to grow from (a phone's magnifier, a bar off screen) it opens in the middle as before
-    function place() {
+    function placeBox() {
       const bar = document.querySelector('.search-btn'), r = bar && bar.getBoundingClientRect();
       const at = r && r.width > 120 && r.bottom > 0;
       searchBox.classList.toggle('at-bar', !!at);
@@ -1837,7 +1837,7 @@ function feedbackBusy(e) {
     function open() {
       if (searchBox.open) return;
       if (win) closeWin();
-      place();
+      placeBox();
       searchBox.showModal();
       q.value = ''; at = 0; read.hidden = true;
       redraw();
