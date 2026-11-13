@@ -84,6 +84,28 @@ def modifier(name: str) -> dict | None:
     return {("adds" if k == "amount" else "types" if k == "damage_types" else k): v for k, v in a.items() if k != "name"} if a else None
 
 
+# A rules-book entry's rolls as the engine's events (app/data/rules/<book>.json `rolls` -> roll_recipes.json `events`):
+# the one map, used by scripts/roll_audit.py to compile the books and by a campaign's homebrew items (app/homebrew.py)
+ON = {("attack", "damage", None): "hit", ("save", "damage", None): "save", ("none", "damage", None): "auto",
+      ("none", "heal", None): "heal", ("none", "temp", None): "temp", ("none", "dice", None): "plain", ("none", "damage", "on_hit"): "rider"}
+
+
+def event(e: dict) -> dict:
+    out = {"name": e["name"], "on": ON[(e["resolve"], e["effect"], e.get("when"))], "parts": e["dice"]}
+    return out | {k: v for k, v in e.items() if k not in ("name", "resolve", "effect", "when", "dice")}
+
+
+def item_for(sheet: dict | None, name: str) -> dict | None:
+    """An item's recipe for this character: the campaign's homebrew item of that name first (app/homebrew.py, carried
+    on the sheet as `_homebrew` by character_views.apply_overrides), then the books' (`item`)."""
+    hb = (sheet or {}).get("_homebrew") or {}
+    want = " ".join((name or "").removeprefix("Use an item: ").replace("’", "'").lower().split())
+    e = hb.get(want) or (hb.get(want.split(" (")[0]) if " (" in want else None)
+    if e and e.get("rolls"):
+        return {"checked": "homebrew", "level": 0, "events": [event(r) for r in e["rolls"]]}
+    return item(name)
+
+
 def item(name: str) -> dict | None:
     """The recipe for an item by name ("Potion of Healing (Superior)"), any capitalization."""
     want = (name or "").removeprefix("Use an item: ").strip().lower()

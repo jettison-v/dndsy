@@ -127,7 +127,7 @@ def active(sheet: dict | None) -> list[dict]:
     names = has_names(sheet)
     carried = [_norm(n) for it in sheet.get("inventory") or [] for n in (it.get("name"), it.get("base_name")) if n]
     out = []
-    for e in entries():
+    for e in (*entries(), *homebrew(sheet)):
         if (e["kind"] == "item" and e.get("adds") and not any(": " in a["name"] for a in e["adds"])
                 and any(c.startswith(e["_norm"]) for c in carried)):
             pass  # (a magic weapon's own adds, when the character carries one: Flame Tongue; one that needs its kind marked,
@@ -150,6 +150,12 @@ def active(sheet: dict | None) -> list[dict]:
     return [e for e in out if not e.get("group") or e.get("level", 0) == top[e["group"]]]
 
 
+def homebrew(sheet: dict) -> list[dict]:
+    """The campaign's homebrew items with a bonus to another roll (app/homebrew.py; the sheet carries them as `_homebrew`),
+    as entries: they apply as a book's item does, to a character who carries one by that name."""
+    return [{**e, "_norm": _norm(e["name"])} for e in (sheet.get("_homebrew") or {}).values() if e.get("adds")]
+
+
 _ADDS: dict = {}  # (a page asks once per Battle option: what it's worked out from -> the adds)
 
 
@@ -164,7 +170,8 @@ def _inputs(sheet: dict) -> tuple:
             names("features"), tuple(x.get("source") for x in sheet.get("features") or [] if isinstance(x, dict)), names("actions"), names("spells"),
             tuple((x.get("name"), x.get("base_name"), x.get("key"), x.get("equipped")) for x in sheet.get("inventory") or [] if isinstance(x, dict)),
             tuple(sorted((sheet.get("_item_choices") or {}).items())), sheet.get("proficiency_bonus"),
-            tuple((a.get("key"), a.get("short"), a.get("modifier")) for a in sheet.get("abilities") or []))
+            tuple((a.get("key"), a.get("short"), a.get("modifier")) for a in sheet.get("abilities") or []),
+            json.dumps(sheet.get("_homebrew") or {}, sort_keys=True, default=str))  # (a homebrew item's bonus: app/homebrew.py)
 
 
 def adds(sheet: dict | None) -> list[dict]:

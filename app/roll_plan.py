@@ -72,7 +72,7 @@ def _recipe_source(o: dict) -> str | None:
     recipe = o.get("recipe")
     if not recipe:
         return None
-    if recipe.get("house_rules"):
+    if recipe.get("house_rules") or recipe.get("checked") == "homebrew":  # (the campaign's own: a house rule, a homebrew item)
         return "correction"
     checked = rr.spell(o["name"]) if o.get("kind") == "spell" else rr.item(o["name"]) if o.get("kind") == "item" else None
     return "checked" if checked else "ddb"

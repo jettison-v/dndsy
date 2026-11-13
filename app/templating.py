@@ -349,6 +349,17 @@ def _combo_steps(turn: dict) -> list[dict]:
 templates.env.filters["combo_steps"] = _combo_steps
 # The D&D Beyond bridge (app/ddb_bridge.py) may run here (DDB_BRIDGE=1); pages also ask vtt_on("ddb_bridge")
 templates.env.globals["bridge_on"] = config.DDB_BRIDGE
+
+
+def _dm_tools_ok(user, here) -> bool:
+    """DM Tools' door in the menu bar (app/homebrew.py): whoever sets the campaign's house rules (its DM, admins)."""
+    from app.auth import can_set_house_rules
+
+    cid = here.get("id") if isinstance(here, dict) else getattr(here, "id", None)
+    return bool(user and cid) and can_set_house_rules(user, cid)
+
+
+templates.env.globals["dm_tools_ok"] = _dm_tools_ok
 templates.env.globals["staging"] = config.STAGING  # (base.html: the Staging label and the amber menu bar)
 templates.env.globals["bridge_extension_url"] = config.BRIDGE_EXTENSION_URL
 templates.env.globals["lasts_times"], templates.env.globals["lasts_abilities"] = cond.TIMES, cond.ABILITIES  # + Condition's Lasts

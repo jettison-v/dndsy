@@ -209,7 +209,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             tags=([said] if said and said.lower() != cost.lower() and cost != "No action" else []) + ([f"×{left}"] if left > 1 and not uses else []),
             meta=(kind or {}).get("what") or (first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…"),
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower(),
-            recipe=rr.item(it["base_name"]) or rr.item(it["name"]), cost_from=conditions.cost_source(it, choice),
+            recipe=rr.item_for(sheet, it["base_name"]) or rr.item_for(sheet, it["name"]), cost_from=conditions.cost_source(it, choice),
             use={"mark": (kinds or {}).get("label", "") if not kind else "", "id": it["key"].split(":", 1)[1], "left": left, "said": said, "verb": {"Potion": "Drink", "Scroll": "Read"}.get(it["type"], "Use"),
                  "gives": it["type"] == "Potion", "back": ch["reset_phrase"] if ch else ""})
     unarmed = attacks.get("Unarmed Strike")
@@ -637,7 +637,7 @@ def detail(sheet: dict, ref: str, starred: set[str] = frozenset()) -> dict | Non
     if roll is None and x["section"] in ("spells", "inventory", "attacks", "actions", "features", "creatures"):
         weapon = next((a for a in sheet.get("attacks") or [] if a["name"] == x.get("name")), None)
         effect = x.get("damage") or (f"heals {x['healing']}" if x.get("healing") else "")
-        recipe = house_rules.spell(x.get("name") or "") or x.get("roll") if x["section"] == "spells" else rr.item(x.get("name") or "")
+        recipe = house_rules.spell(x.get("name") or "") or x.get("roll") if x["section"] == "spells" else rr.item_for(sheet, x.get("name") or "")
         roll = rollable({"name": x.get("name") or "", "kind": "spell" if x["section"] == "spells" else "item", "recipe": recipe,
                          "hit": x.get("attack") or x.get("save") or (weapon or {}).get("to_hit", ""), "meta": effect if isinstance(effect, str) else "",
                          "summary": x.get("summary") or "", "text": x.get("text") or "", "adv": []})
@@ -942,9 +942,11 @@ def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
     sheet["situational"] = [{**x, "in_numbers": (x["kind"] == "bonus") if get(x, "situational", "situ_group") is None
                              else get(x, "situational", "situ_group") == "in_numbers"} for x in sheet["situational"]]
     items = []
+    hb = getattr(overrides, "homebrew", None) or {}  # (a homebrew item that rolls is a Battle item: app/homebrew.py)
+    rolls = {n for n, e in hb.items() if e.get("rolls")}
     for it in sheet["inventory"]:
         group = get(it, "inventory", "item_group") or (
-            "battle" if it["battle"] else "equipped" if it["equipped"]
+            "battle" if it["battle"] or " ".join((it.get("name") or "").replace("’", "'").lower().split()) in rolls else "equipped" if it["equipped"]
             else TYPE_GROUPS.get(it.get("type") or "") or CATEGORY_GROUPS.get(it.get("category"), "Gear"))
         items.append({**it, "group": group, "battle": group == "battle",
                       # the Inventory list's filter values (_item_list.html)
@@ -954,4 +956,5 @@ def apply_overrides(sheet: dict, overrides: dict[tuple[str, str], str]) -> dict:
     sheet["inventory"] = items
     sheet["_overrides"] = {f"{r}|{fld}": v for (r, fld), v in overrides.items()}
     sheet["_campaign_corrections"] = {f"{r}|{fld}" for r, fld in getattr(overrides, "campaign", ())}
+    sheet["_homebrew"] = getattr(overrides, "homebrew", None) or {}  # (the campaign's homebrew items: app/homebrew.py)
     return sheet
