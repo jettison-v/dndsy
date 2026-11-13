@@ -26,6 +26,16 @@ function feedbackBusy(e) {
     try { navigator.sendBeacon('/errors/page', new Blob([body], { type: 'application/json' })); } catch (e) { /* never break the page over it */ }
   }
   addEventListener('error', e => { if (e.error || e.message) reportError(e.message, e.filename, e.lineno, e.colno, e.error && e.error.stack); });
+  // Something the Content Security Policy blocked (app/main.py SAFE_HEADERS) raises no error of its own, so it comes home
+  // the same way: the rule it broke and only the origin of what it blocked (never a path or query). Blocks a browser
+  // extension caused are its own business.
+  document.addEventListener('securitypolicyviolation', e => {
+    const ext = /^(chrome|moz|safari(-web)?)-extension:/;
+    if (ext.test(e.blockedURI || '') || ext.test(e.sourceFile || '')) return;
+    let what = e.blockedURI || '';
+    try { what = /^https?:/.test(what) ? new URL(what).origin : what; } catch (err) { /* keep the word (inline, eval) */ }
+    reportError('Blocked by the page\'s rules: ' + e.effectiveDirective + ' ' + what, location.href, e.lineNumber || 0, e.columnNumber || 0, '');
+  });
   addEventListener('unhandledrejection', e => {
     const r = e.reason || {}, at = /(https?:\/\/[^\s)]+?):(\d+):(\d+)/.exec(String(r.stack || ''));
     reportError('Unhandled: ' + (r.message || String(r)).slice(0, 300), at ? at[1] : '', at ? +at[2] : 0, at ? +at[3] : 0, r.stack);
