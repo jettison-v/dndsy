@@ -15,7 +15,7 @@
   --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
   --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
   --k-action: #ef6b6b; --k-bonus: #e8b34b; --k-reaction: #6fa8ff;
-  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --serif: Inter, system-ui, -apple-system, sans-serif;  /* askdnd uses three fonts (DESIGN.md › Fonts): headings in Inter too */
   --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
   color-scheme: dark;
@@ -121,7 +121,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
 .busy span { border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; font-size: .74rem; background: var(--surface-2); color: var(--muted); }
 .calm { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .calm div { display: grid; gap: 1px; } .calm small { color: var(--muted); font-size: .72rem; } .calm b { font-size: 1.05rem; }
-.scrollish { background: linear-gradient(#221f1a, #1a1916); border: 1px solid #3b3428; border-radius: 12px; padding: 12px 14px; font-family: var(--serif); color: #e2dccf; font-size: .92rem; }
+.scrollish { background: linear-gradient(#221f1a, #1a1916); border: 1px solid #3b3428; border-radius: 12px; padding: 12px 14px; font-family: var(--sans); line-height: 1.7; color: #e2dccf; font-size: .92rem; }
 .contrast { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; align-items: center; font-size: .86rem; }
 .contrast .ratio { font-variant-numeric: tabular-nums; font-weight: 700; }
 .bad { color: var(--red); } .good { color: var(--green); }

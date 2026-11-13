@@ -79,3 +79,30 @@ def test_every_table_scrolls_in_its_own_frame():
         for m in re.finditer(r"<table\b", f.read_text()):
             before = f.read_text()[max(0, m.start() - 120):m.start()]
             assert 'class="table-scroll' in before, f"{f.name}: a <table> outside <div class=\"table-scroll\">"
+
+
+FONTS = {"--sans": "Inter", "--cond": "Roboto Condensed", "--tale-cap": "Cormorant Garamond"}
+
+
+def test_only_askdnds_three_fonts():
+    """A standing rule (Brett, Nov 13, on the design grade's mockup: "limit the number of fonts used to the ones we
+    have selected"; docs/DESIGN.md › Fonts): Inter for everything, Roboto Condensed for the logo and small uppercase
+    labels, Cormorant Garamond for the tale's flourishes. The serif that quoted answers used was hard to read and is
+    gone. A font is set only through these three tokens, and the pages load only these three."""
+    root = re.search(r":root\s*\{([^}]*)\}", CSS).group(1)
+    families = dict(re.findall(r"(--[\w-]+)\s*:\s*\"?([A-Z][\w ]+?)\"?,", root))
+    assert {k: v for k, v in families.items() if k in FONTS or re.search(r"serif|Inter|Garamond|Palatino", v)} == FONTS
+    css = _without_tokens(CSS)
+    stray = [v.strip() for v in re.findall(r"font-family:\s*([^;}]+)", css) if not re.fullmatch(r"(var\((--sans|--cond|--tale-cap)(, inherit)?\)|inherit)", v.strip())]
+    stray += [v.strip() for v in re.findall(r"(?<![-\w])font:\s*([^;}]+)", css)
+              if not re.search(r"(var\((--sans|--cond|--tale-cap)\)|inherit)\s*$", v.strip())]
+    assert not stray, f"A font outside askdnd's three in app.css: {stray}. Use var(--sans), var(--cond) or var(--tale-cap)."
+    app = Path(__file__).parent.parent / "app"
+    for p in [*(app / "templates").rglob("*.html"), app / "static" / "app.js"]:
+        if "email" in p.parts:
+            continue  # an email can't load web fonts: it names Inter with the system's own after it
+        text = p.read_text()
+        assert not re.search(r"font-family\s*:|(?<![-\w.])font\s*:\s*[^;\"']*\b(serif|sans-serif|monospace)\b", text), f"{p.name} sets a font itself: use the tokens in app.css"
+        for link in re.findall(r"fonts\.googleapis\.com/css2\?([^\"']+)", text):
+            loaded = {f.replace("+", " ").split(":")[0] for f in re.findall(r"family=([^&]+)", link)}
+            assert loaded == set(FONTS.values()), f"{p.name} loads {sorted(loaded)}"
