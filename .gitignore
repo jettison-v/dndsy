@@ -50,3 +50,6 @@ logs/
 
 # The saved D&D Beyond sheets, readable copies: never committed (the books' words); tests/fixtures/ddb.locked holds them (scripts/fixtures.py)
 tests/fixtures/ddb/*.json
+
+# the linters' own tools (tools/lint), installed by npm ci
+node_modules/

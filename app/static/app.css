@@ -2686,8 +2686,6 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   font-size: var(--fs-xs); font-weight: 600; line-height: 1.4; border-radius: var(--r-sm); pointer-events: none; box-shadow: 0 4px 14px var(--shadow); }
 /* Toast options on the design page (demo until one is chosen) */
 [data-inline-ok].is-done { color: var(--green); border-color: var(--green-line); background: var(--green-soft); }
-  border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--lift); transform: translateY(12px); }
-  border-radius: var(--r-md); box-shadow: var(--lift); font-weight: 500; }
 
 /* One line, then the rest on click (app.js): long summary lines on class cards */
 .clamp { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
