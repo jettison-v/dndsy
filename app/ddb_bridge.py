@@ -263,7 +263,7 @@ def sheet_is_open(db: Session, character: Character) -> None:
     """The extension heard this sheet: it can be reached now. Open pages hear when that starts, so the pill and the roll
     window say so at once; hearing it every 30 seconds after that isn't news."""
     was = own_sheet(character)
-    character.sheet_heard_at = datetime.fromtimestamp(time.time(), UTC)
+    character.sheet_heard_at = character.sheet_seen_at = datetime.fromtimestamp(time.time(), UTC)
     if not was:
         realtime.announce(db, character.campaign_id, "character", id=character.id)
 

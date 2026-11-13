@@ -603,7 +603,7 @@ function feedbackBusy(e) {
     const pill = document.getElementById('live-pill');
     if (!window.htmx || !pill) return;
     htmx.ajax('POST', '/live/sync' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' })
-      .then(() => { liveWindowAgain(); if (!live.up) showInPlace(); });
+      .then(() => { liveWindowAgain(); document.dispatchEvent(new Event('askdnd:pill')); if (!live.up) showInPlace(); });
   }
   // Someone else's character changed (a read found it): only the pill catches up, reading nothing from D&D Beyond
   // (Sentry ASKDND-V2-7, Nov 6: asking /live/sync here had every open page re-read the party on every change)
@@ -611,7 +611,7 @@ function feedbackBusy(e) {
     const pill = document.getElementById('live-pill');
     if (!window.htmx || !pill) return;
     htmx.ajax('GET', '/live/pill' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-pill', swap: 'outerHTML' })
-      .then(liveWindowAgain);
+      .then(() => { liveWindowAgain(); document.dispatchEvent(new Event('askdnd:pill')); });
   }
   // The Live window, while it's open, says what the pill says (Bridge Review, Nov 3: an open window said "Not connected"
   // under a pill saying Connected): it's fetched again whenever the pill is
@@ -620,6 +620,30 @@ function feedbackBusy(e) {
     if (!window.htmx || !menu || menu.hidden || !pill) return;
     htmx.ajax('GET', '/live' + (pill.dataset.focus ? '?c=' + pill.dataset.focus : ''), { target: '#live-menu', swap: 'innerHTML' });
   }
+  // The connection band (_conn_band.html; Brett chose B, Nov 13): under the menu bar while your sheet's connection is
+  // worse than it was tonight. It comes and goes with the pill (the server sends it beside the pill; showInPlace copies
+  // it). Not now hides it on this computer for 30 minutes, for that state only: worse again (amber to red, another
+  // character) is a new key, so it shows at once.
+  const LATER = 'askdnd.band.later', LATER_MS = 30 * 60 * 1000;
+  function bandApply() {
+    const b = document.getElementById('conn-band');
+    if (!b) return;
+    let later = null;
+    try { later = JSON.parse(localStorage.getItem(LATER) || 'null'); } catch (e) { later = null; }
+    b.classList.toggle('later', !!(b.dataset.bandKey && later && later.key === b.dataset.bandKey && Date.now() < later.until));
+  }
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-band-later]')) {
+      const b = document.getElementById('conn-band');
+      try { localStorage.setItem(LATER, JSON.stringify({ key: b.dataset.bandKey, until: Date.now() + LATER_MS })); } catch (err) { /* private window */ }
+      b.classList.add('later');
+    } else if (e.target.closest('[data-band-live]')) {
+      const pill = document.getElementById('live-pill');
+      if (pill) pill.click();
+    }
+  });
+  document.body.addEventListener('htmx:afterSettle', bandApply);  // (an out-of-band swap from the pill's answer)
+  bandApply();
   // ?live=1 opens it (the panel beside a D&D Beyond sheet links here: each change's Try again and Undo are in it)
   if (new URLSearchParams(location.search).get('live')) {
     const url = new URL(location.href);
@@ -734,6 +758,9 @@ function feedbackBusy(e) {
     });
     const pill = document.getElementById('live-pill'), newPill = doc.getElementById('live-pill');
     if (pill && newPill) { pill.className = newPill.className; pill.title = newPill.title; pill.innerHTML = newPill.innerHTML; Object.assign(pill.dataset, newPill.dataset); liveWindowAgain(); }
+    const band = document.getElementById('conn-band'), newBand = doc.getElementById('conn-band');  // (the connection band beside it)
+    if (band && newBand) { band.replaceWith(document.importNode(newBand, true)); bandApply(); }
+    document.dispatchEvent(new Event('askdnd:pill'));
     // Your character's conditions on its menu bar button, outside main
     const dots = doc.querySelectorAll('[data-cond-dots]');
     document.querySelectorAll('[data-cond-dots]').forEach((d, i) => { if (dots[i]) { d.innerHTML = dots[i].innerHTML; if (dots[i].title) d.title = dots[i].title; else d.removeAttribute('title'); } });
@@ -1357,15 +1384,33 @@ function feedbackBusy(e) {
   const animate = () => { const v = store.get(ANIM); return v ? v === 'on' : !calm.matches; };
   // Whether a roll of yours reaches D&D Beyond's Game Log, for the roll window; "" where it never would (the Live pill's
   // data-log: your sheet is connected, closed, or your character isn't in a D&D Beyond game)
+  // Said loudly (amber, with the button) when a roll that would have reached it won't: your sheet isn't open on this
+  // computer (Brett, Nov 13, docs/mockups/connection-drops/: a player's rolls stopped reaching the DM and nothing told them)
   function logNote() {
     const d = (document.getElementById('live-pill') || { dataset: {} }).dataset, state = d.log;
-    if (state && document.body.classList.contains('no-bridge')) return "Not in D&D Beyond's Game Log: the askdnd bridge isn't in this browser.";
+    const wont = "The DM won't see this roll in D&D Beyond's Game Log: ";
+    if (state && document.body.classList.contains('no-bridge')) return phone.matches ? "Not in D&D Beyond's Game Log: that needs Chrome on a computer." : { warn: wont + "the askdnd bridge isn't in this browser." };
     // (past `data-log-until` the sheet hasn't been heard: a closed tab whose word never came, or a pill not redrawn yet)
     if (state === 'on' && Date.now() / 1000 < Number(d.logUntil)) return "Also goes to D&D Beyond's Game Log.";
-    if (state === 'on') return "Not in D&D Beyond's Game Log: your sheet isn't open.";
-    if (state === 'sheet') return "Not in D&D Beyond's Game Log: " + (phone.matches ? 'that needs Chrome on a computer.' : "your sheet isn't open.");
+    if (state === 'on' || state === 'sheet') return phone.matches ? "Not in D&D Beyond's Game Log: that needs Chrome on a computer." : { warn: wont + "your sheet isn't open.", sheet: d.sheet };
     return '';
   }
+  // The roll card's line for it: plain, or amber with Open your sheet
+  function logLine() {
+    const n = logNote();
+    if (!n) return '';
+    if (typeof n === 'string') return '<p class="rw-note" data-log-note>' + n + '</p>';
+    return '<p class="rw-note rw-log-warn" data-log-note><b aria-hidden="true">!</b><span>' + n.warn
+      + (n.sheet ? ' <a href="' + n.sheet + '" target="_blank" rel="noopener">Open your sheet ↗</a>' : '') + '</span></p>';
+  }  // An open card's line follows the connection as it changes (Brett, Nov 13: the warning shouldn't wait for the card to
+  // open again): the pill was drawn again (its own answer, or a page's new copy), or this browser's bridge answered
+  const logAgain = () => document.querySelectorAll('[data-log-note]').forEach(n => {
+    const now = logLine();
+    if (!now) n.remove(); else if (n.outerHTML !== now) n.outerHTML = now;
+  });
+  document.addEventListener('askdnd:pill', logAgain);
+  document.body.addEventListener('htmx:afterSettle', e => { if (e.detail.target && ['live-pill', 'conn-band'].includes(e.detail.target.id)) logAgain(); });
+
   const KIND_WORDS = { attack: ' to hit', damage: ' damage', heal: ' healing' };  // (the thrown dice's tag)
 
   // ---------------------------------------------------------------- dice (private rolls; the server rolls table rolls the same way)
@@ -1911,7 +1956,7 @@ function feedbackBusy(e) {
       : (st.visOpen
       ? '<div class="rcard-vis rcard-vis-open"><span class="rw-label">Who sees it</span>' + seg('To', [['table', 'The table'], ['dm', 'DM only'], ['self', 'Just you']], to) + '</div>'
       : '<div class="rcard-vis"><span>' + ({ table: 'The table sees this', dm: 'Only the DM sees this', self: 'Only you see this' }[to] || '') + '</span><button type="button" class="btn small link" data-vis-open>Change</button></div>')
-      + (to !== 'self' && logNote() ? '<p class="rw-note" data-log-note>' + logNote() + '</p>' : '');
+      + (to !== 'self' ? logLine() : '');
     // What it does on a hit (or Graze, on a miss): a weapon's mastery and a class's riders, in words (they're yours to use)
     const riders = when => (plan.riders || []).filter(r => r.says && (r.when === 'miss') === (when === 'miss'));
     // Riders on a hit (Brett, Nov 10, docs/mockups/rider-actions/): one with a kind (its plan's `act`) is a choice under
@@ -4037,11 +4082,13 @@ document.addEventListener('click', e => {
       heard = true;
       document.body.dataset.bridgeVersion = e.data.version || 'before 0.9.9';  // which extension this browser has (0.9.9 on says)
       document.body.classList.remove('no-bridge');
+      document.dispatchEvent(new Event('askdnd:pill'));  // (an open roll card's Game Log line)
     });
     window.postMessage({ askdndBridge: 'ping' }, location.origin);
     setTimeout(() => {
       if (heard) return;
       document.body.classList.add('no-bridge');
+      document.dispatchEvent(new Event('askdnd:pill'));  // (an open roll card's Game Log line)
       if (!/Chrome\//.test(navigator.userAgent)) document.body.classList.add('bridge-elsewhere');  // (Safari, Firefox: it can't be added here)
     }, 1500);
   }

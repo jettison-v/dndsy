@@ -139,7 +139,7 @@
     </div>
   </div>
   {% endif %}
-</div></header>
+</div>{% if user %}{% include "_conn_band.html" %}{% endif %}</header>
 {% if user %}
 {# Phones: the same groups in a bottom bar (Story · Campaign · your character · Party · More); the rest under More. #}
 <nav class="bottom-nav" aria-label="Main">

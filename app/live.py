@@ -41,6 +41,7 @@ SYNC_SECONDS = 150  # the page asks every 2.5 minutes…
 AUTO_MIN_AGE = timedelta(seconds=110)  # …and the server fetches at most this often per character
 MANUAL_MIN_AGE = timedelta(seconds=20)  # "Refresh now"
 REACH = timedelta(seconds=90)  # a sheet heard by the bridge this recently can be reached (its extension pulls every 30 seconds)
+DROPPED = timedelta(hours=2)  # a sheet heard this recently that can't be now: its connection got worse tonight (_conn_band.html)
 
 # /characters/5 is Sheet, /characters/5/battle is Battle, /characters/5/plan is Plan
 CHARACTER_PAGE = re.compile(r"^/characters/(\d+)(/battle|/plan)?/?$")
@@ -72,9 +73,9 @@ def rows_from(db: Session) -> list[dict]:
                                     .where(BridgeIntent.kind == "set", BridgeIntent.state.in_(("waiting", "sending")))
                                     .order_by(BridgeIntent.id)):
             on_way.setdefault(cid, []).append(data)
-    reach = datetime.now(UTC) - REACH
+    reach, lately = datetime.now(UTC) - REACH, datetime.now(UTC) - DROPPED
     summary = CharacterSnapshot.summary
-    q = (select(Character.id, Character.name, User.email, Character.ddb_id, Character.copy_of_id, Character.sheet_heard_at,
+    q = (select(Character.id, Character.name, User.email, Character.ddb_id, Character.copy_of_id, Character.sheet_heard_at, Character.sheet_seen_at,
                 CharacterSnapshot.fetched_at, CharacterSnapshot.status, CharacterSnapshot.error,
                 summary["portrait"].astext, summary["classes"], summary["hit_points"]["current"].astext,
                 summary["hit_points"]["max"].astext, Character.conditions, summary["conditions"], Character.concentration,
@@ -93,11 +94,13 @@ def rows_from(db: Session) -> list[dict]:
              "connects": bool(bridge and ddb_id and copy_of is None), "in_game": bool(bridge and ddb_id and copy_of is None and game),
              "via": bool(bridge and ddb_id and copy_of is None and not (heard and heard >= reach) and dm_here
                          and ddb_bridge.in_its_game(campaign, ddb_game)),
+             # Its own sheet was connected tonight and isn't now (Brett, Nov 13, docs/mockups/connection-drops/): the band says so
+             "dropped": bool(bridge and ddb_id and copy_of is None and seen and seen >= lately and not (heard and heard >= reach)),
              "step_until": int((heard + REACH).timestamp()) if heard and bridge and ddb_id and copy_of is None else 0,
              "by_hand": by_hand.get(cid, 0) if bridge and copy_of is None else 0,
              # the menu bar's dots: what it's under now (D&D Beyond's with what's on its way and askdnd's own, as on Battle)
              "conditions": ["Concentration"] * bool(conc) + [x["name"] for x in cond.shown(own, cond.with_changes(on_sheet, on_way.get(cid, ())), bool(bridge and copy_of is None))]}
-            for cid, name, email, ddb_id, copy_of, heard, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet, conc, game,
+            for cid, name, email, ddb_id, copy_of, heard, seen, fetched, status, error, portrait, classes, hp, hp_max, own, on_sheet, conc, game,
             ddb_game in db.execute(q)]
 
 
@@ -180,13 +183,15 @@ def refresh_party(db: Session, user: dict, focus_id: int | None) -> None:
 
 
 def pill(db: Session, user: dict, focus_id: int | None) -> str:
-    """The pill's HTML on its own (the page's tick swaps it in): no page around it, so it brings the fight itself."""
+    """The pill's HTML on its own (the page's tick swaps it in), with the connection band out of band: no page around
+    it, so it brings the fight itself."""
     from app import fight
 
     here = access.current_campaign()
-    return templates.get_template("_live_pill.html").render(
-        tn=table(user, "", rows_from(db), focus_id),
-        fight_now=lambda: fight.loader(here["id"], user.get("email")) if here else None)
+    tn = table(user, "", rows_from(db), focus_id)
+    # (and the connection band under the menu bar, swapped in beside it: _conn_band.html)
+    return (templates.get_template("_live_pill.html").render(tn=tn, fight_now=lambda: fight.loader(here["id"], user.get("email")) if here else None)
+            + templates.get_template("_conn_band.html").render(tn=tn, oob=True))
 
 
 def changes(db: Session, user: dict, rows: list[dict]) -> dict[int, list[dict]]:

@@ -146,6 +146,30 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
 .saved { color: var(--muted); font-size: .88rem; }
 .saved.ok { color: var(--green); }
 
+/* Search's styles (Brett, Nov 13: "a few different style options") */
+.search-btn .mag, .search-field .mag, .search-cmd .mag { flex: none; }
+.search-btn { color: var(--text); }
+.search-btn .sw { font-weight: 500; font-size: .95rem; }
+.search-field, .search-cmd { display: inline-flex; align-items: center; gap: 8px; height: var(--bar-h); padding: 0 6px 0 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); font-size: .9rem; }
+.search-field { width: 220px; flex: 0 100 auto; min-width: 150px; }  /* gives way before the campaign's name */
+.bar-end:has(.search-field) { flex-shrink: 100; min-width: 0; } .bar-end > .search-field { flex-shrink: 100; }
+.search-field .ph, .search-cmd .ph { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-field kbd, .search-cmd kbd, .search-key kbd { font: 600 .75rem/1 var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 2px 5px; color: var(--muted); flex: none; }
+.search-cmd { flex: 0 100 380px; min-width: 78px; margin: 0 auto 0 4px; white-space: nowrap; container-type: inline-size; }  /* always right after Party; only its length changes */
+.ph-short { display: none; }
+@container (max-width: 240px) { .search-cmd .ph-long { display: none; } .search-cmd .ph-short { display: inline; } }  /* the same box: its words shorten */
+@container (max-width: 100px) { .search-cmd .ph { display: none; } .search-cmd { justify-content: space-between; } }  /* then the magnifier and ⌘F alone */
+.search-key { display: inline-flex; align-items: center; gap: 8px; min-height: var(--bar-h); padding: 0 12px 0 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--text); font-weight: 500; font-size: .95rem; }
+.search-key kbd { background: var(--surface-3); color: var(--strong); border-color: var(--line-strong); font-size: .8rem; padding: 3px 6px; }
+.searchopts .opt { display: grid; gap: 12px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.searchopts .opt .screen { background: var(--bg); }
+.searchopts .campaign-name { flex-shrink: 0; }
+.frame:has(.search-cmd):not(.c3) .campaign-name { flex-shrink: 0; }  /* Search's bar gives way first (Brett chose D, Nov 13) */  /* the name gives way last (step 4 of the collapse order) */
+.opt-say { display: grid; gap: 6px; max-width: 86ch; }
+.opt-tag { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; vertical-align: 2px; margin-left: 6px; }
+.opt-tag.mine { color: var(--amber); border-color: var(--amber); }
+.narrows { color: var(--muted); font-size: .88rem; }
+
 @media (max-width: 900px) {
   .where, .states { grid-template-columns: minmax(0, 1fr); }
   .srow { grid-template-columns: minmax(0, 1fr); gap: 6px; }
@@ -184,8 +208,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-          <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span>Cole</span><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill step dot" title="Connected"><span class="live-dot"></span></span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">P</span></div>
+          <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span>Cole</span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill step dot" title="Connected"><span class="live-dot"></span></span><span class="avatar">P</span></div>
         </div></div>
       </div></div>
       <p class="fits" data-fits></p>
@@ -213,8 +237,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-          <nav class="table-nav"><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>3 of 4 · 1 via you</span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">D</span></div>
+          <nav class="table-nav"><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>3 of 4 · 1 via you</span><span class="mbtn">Manage ▾</span><span class="avatar">D</span></div>
         </div></div>
       </div></div>
       <p class="fits" data-fits></p>
@@ -242,8 +266,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-          <nav class="table-nav"><span class="char-btn mine"><span class="char-av b">B</span>Big C</span><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill bad"><span class="live-dot"></span>Open your sheet</span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar open">A</span></div>
+          <nav class="table-nav"><span class="char-btn mine"><span class="char-av b">B</span>Big C</span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill bad"><span class="live-dot"></span>Open your sheet</span><span class="mbtn">Manage ▾</span><span class="avatar open">A</span></div>
         </div></div>
         <div class="menu" style="right: 24px">
           <a class="me">An admin<small>Signed in with Google</small></a>
@@ -267,10 +291,10 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
     <div class="say"><div class="lbl">4 · As the window narrows</div><h2>What gives way first, and in what order</h2><p>Your note: the word "askdnd" should be the first thing to go. Here is the full order, drawn on the fullest bar there is: an admin who also plays, with the Live pill's longest words. Each step happens only below its width, and the logo and Search's ⌘F stay at every laptop width. Each bar measures itself.</p></div>
     <ol class="order">
       <li><span class="w">1 · 1360px</span><span><b>The word "askdnd" goes</b>; its logo stays and still opens the campaign. Most laptops are narrower than 1360px, so most people never see the word.</span></li>
-      <li><span class="w">2 · 1200px</span><span><b>Your character's name goes</b>, leaving their picture (pointing at it says the name). Party ▾ keeps its word.</span></li>
+            <li><span class="w">2 · 1200px</span><span><b>Your character's name goes</b>, leaving their picture (pointing at it says the name). Party ▾ keeps its word.</span></li>
       <li><span class="w">3 · 1100px</span><span><b>The Live pill says only what to do</b>: "Via the DM · open your sheet" becomes "Open your sheet", "D&amp;D Beyond not answering" becomes "Not answering", "3 of 4 · 1 via you" becomes "3 of 4". Its colour still says which state it is, and the Live window has the rest. It's never a bare "Live".</span></li>
       <li><span class="w">4 · 1000px</span><span><b>The campaign's name shortens with "…"</b>, down to about 120px. Pointing at it shows the whole name. Until here it's always whole: it's the last thing to give way.</span></li>
-      <li class="keep"><span class="w">Never</span><span>The logo, Campaign, Table, Party ▾, the Live pill (its short words from step 3 on), Manage ▾, Search with ⌘F and your picture all stay at every laptop width.</span></li>
+      <li class="keep"><span class="w">Never</span><span>The logo, Campaign, Table, Party ▾, the Live pill (its short words from step 3 on), Manage ▾, Search with ⌘F (in the same place and the same box) and your picture all stay at every laptop width.</span></li>
       <li><span class="w">900px</span><span><b>The phone layout</b>, as today: the bar keeps the logo, the campaign's name and the Live pill, and the bottom bar takes Campaign, your character, Party and More.</span></li>
     </ol>
       <div class="state"><span class="lbl"><b>1440px</b> · everything shown</span>
@@ -279,8 +303,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="brand"><i class="logo"></i><span class="brand-word">askdnd</span></span><span class="nav-sep"></span>
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">A</span></div>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="avatar">A</span></div>
         </div></div>
       </div></div>
       <p class="fits" data-fits></p></div>
@@ -290,8 +314,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="brand"><i class="logo"></i><span class="brand-word">askdnd</span></span><span class="nav-sep"></span>
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">A</span></div>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="avatar">A</span></div>
         </div></div>
       </div></div>
       <p class="fits" data-fits></p></div>
@@ -301,8 +325,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="brand"><i class="logo"></i><span class="brand-word">askdnd</span></span><span class="nav-sep"></span>
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">A</span></div>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="avatar">A</span></div>
         </div></div>
       </div></div>
       <p class="fits" data-fits></p></div>
@@ -312,8 +336,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="brand"><i class="logo"></i><span class="brand-word">askdnd</span></span><span class="nav-sep"></span>
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">A</span></div>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="avatar">A</span></div>
         </div></div>
       </div></div>
       <p class="fits" data-fits></p></div>
@@ -323,8 +347,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="brand"><i class="logo"></i><span class="brand-word">askdnd</span></span><span class="nav-sep"></span>
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">A</span></div>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span><span class="lw-long">Via the DM · open your sheet</span><span class="lw-short">Open your sheet</span></span><span class="mbtn">Manage ▾</span><span class="avatar">A</span></div>
         </div></div>
       </div></div>
       <p class="fits" data-fits></p></div>
@@ -359,8 +383,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
         <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
         <span class="campaign-name">The Adventure Begins</span>
         <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
-        <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span>Cole</span><span class="char-btn">Party ▾</span></nav>
-        <div class="bar-end"><span class="live-pill step dot"><span class="live-dot"></span></span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">P</span></div>
+        <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span>Cole</span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+        <div class="bar-end"><span class="live-pill step dot"><span class="live-dot"></span></span><span class="avatar">P</span></div>
       </div></div>
       <div class="page">
         <div class="tabs"><span class="tab on new">Previously on…</span><span class="tab new">Sessions</span><span class="tab">World</span><span class="tab">Quests</span><span class="tab">Relationships</span><span class="tab">Glossary</span><span class="tab">Map</span></div>
@@ -368,6 +392,136 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
       </div>
     </div></div>
     <p class="cap">The first two tabs come from Story. Everything else on the page is Campaign as it is today. On a phone the bottom bar's Story button becomes Campaign as well.</p>
+  </section>
+
+  <section class="board searchopts" id="search">
+    <div class="say"><div class="lbl">7 · Search</div><h2>Five ways to draw Search, each keeping ⌘F in sight</h2><p>Your note: a few different styles for Search. Each is drawn on the two bars that matter: a player's (the most room) and an admin who plays with the Live pill's longest words (the least). Whichever you pick, ⌘F, Ctrl F and ⌘K open it from any page, and the box it opens is the same: everything you can find, matched as you type.</p></div>
+    <div class="opt" id="search-a">
+      <div class="opt-say"><h3>A · Today: the magnifier and its key <span class="opt-tag">Today</span></h3><p>The button you chose on Nov 9: a magnifier and ⌘F (Ctrl F on Windows) in a box like Manage's. Compact, and the key is always in sight. Nothing in it says the word, so a new player learns what it is from the magnifier or by pointing at it.</p><p class="narrows">Narrows: never; under 900px it's the magnifier alone, as today.</p></div>
+      <div class="state"><span class="lbl">Cole's player · 1280px, connected</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span><span class="char-name">Cole</span></span><span class="char-btn">Party ▾</span></nav>
+          <div class="bar-end"><span class="live-pill step dot" title="Connected"><span class="live-dot"></span></span><span class="search-btn"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><kbd>⌘F</kbd></span><span class="avatar">P</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+      <div class="state"><span class="lbl">An admin who plays · 1280px, the longest Live words</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>Via the DM · open your sheet</span><span class="mbtn">Manage ▾</span><span class="search-btn"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><kbd>⌘F</kbd></span><span class="avatar">A</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+    </div>
+    <div class="opt" id="search-b">
+      <div class="opt-say"><h3>B · The word and the key</h3><p>The same button with the word Search between the magnifier and ⌘F. A new player reads what it is, and still sees the key every time they look at it. About 55px wider than A.</p><p class="narrows">Narrows: the word goes at step 2 (1200px), with your character's name; the magnifier and ⌘F stay.</p></div>
+      <div class="state"><span class="lbl">Cole's player · 1280px, connected</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span><span class="char-name">Cole</span></span><span class="char-btn">Party ▾</span></nav>
+          <div class="bar-end"><span class="live-pill step dot" title="Connected"><span class="live-dot"></span></span><span class="search-btn worded"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sw">Search</span><kbd>⌘F</kbd></span><span class="avatar">P</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+      <div class="state"><span class="lbl">An admin who plays · 1280px, the longest Live words</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>Via the DM · open your sheet</span><span class="mbtn">Manage ▾</span><span class="search-btn worded"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="sw">Search</span><kbd>⌘F</kbd></span><span class="avatar">A</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+    </div>
+    <div class="opt" id="search-c">
+      <div class="opt-say"><h3>C · A box at the right</h3><p>Shaped like a search box, 220px, with Search… and ⌘F at its end. It reads as search at a glance, the way most sites draw it. Clicking it opens the same box in the middle as today: it only looks like a field (the thing you moved away from on Nov 9, because it seemed you could type in it).</p><p class="narrows">Narrows: shrinks toward 150px from step 2, then becomes B's button at step 4.</p></div>
+      <div class="state"><span class="lbl">Cole's player · 1280px, connected</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span><span class="char-name">Cole</span></span><span class="char-btn">Party ▾</span></nav>
+          <div class="bar-end"><span class="live-pill step dot" title="Connected"><span class="live-dot"></span></span><span class="search-field"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph">Search…</span><kbd>⌘F</kbd></span><span class="avatar">P</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+      <div class="state"><span class="lbl">An admin who plays · 1280px, the longest Live words</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>Via the DM · open your sheet</span><span class="mbtn">Manage ▾</span><span class="search-field"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph">Search…</span><kbd>⌘F</kbd></span><span class="avatar">A</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+    </div>
+    <div class="opt" id="search-d">
+      <div class="opt-say"><h3>D · A command bar <span class="opt-tag mine">You chose this</span></h3><p>A wide bar right after Party, taking the menu bar's free room and saying what it finds: your character, the rules, the story. Pressing it, or ⌘F, opens the box right where the bar is, so the box seems to grow out of it. The most prominent way to say "search everything", like the bar at the top of GitHub or Linear.</p><p class="narrows">Narrows: it stays in the same place, right after Party, and keeps the same box; only its length changes. It takes only the room that's free (up to 380px), so it's always the first thing to shrink. As it does, its words go from "Search your character, the rules, the story" to "Search", and at its shortest (78px) it shows just the magnifier and ⌘F.</p></div>
+      <div class="state"><span class="lbl">Cole's player · 1280px, connected</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span><span class="char-name">Cole</span></span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill step dot" title="Connected"><span class="live-dot"></span></span><span class="avatar">P</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+      <div class="state"><span class="lbl">An admin who plays · 1280px, the longest Live words</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav><span class="search-cmd"><svg class="mag" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="ph"><span class="ph-long">Search your character, the rules, the story</span><span class="ph-short">Search</span></span><kbd>⌘F</kbd></span>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>Via the DM · open your sheet</span><span class="mbtn">Manage ▾</span><span class="avatar">A</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+    </div>
+    <div class="opt" id="search-e">
+      <div class="opt-say"><h3>E · The key first</h3><p>The key leads, in a bright key cap, with the word after it: the button teaches ⌘F (your note: the key matters most). It's the same size as B, and pointing at it says "Press ⌘F on any page".</p><p class="narrows">Narrows: the word goes at step 2 (1200px), the key stays.</p></div>
+      <div class="state"><span class="lbl">Cole's player · 1280px, connected</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine"><span class="char-av">C</span><span class="char-name">Cole</span></span><span class="char-btn">Party ▾</span></nav>
+          <div class="bar-end"><span class="live-pill step dot" title="Connected"><span class="live-dot"></span></span><span class="search-key"><kbd>⌘F</kbd><span class="sw">Search</span></span><span class="avatar">P</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+      <div class="state"><span class="lbl">An admin who plays · 1280px, the longest Live words</span>
+      <div class="screen"><div class="frame">
+        <div class="topbar"><div class="topbar-inner">
+          <span class="brand" title="askdnd"><i class="logo"></i></span><span class="nav-sep"></span>
+          <span class="campaign-name">The Adventure Begins</span>
+          <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
+          <nav class="table-nav"><span class="char-btn mine" title="Big C"><span class="char-av b">B</span><span class="char-name">Big C</span></span><span class="char-btn">Party ▾</span></nav>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>Via the DM · open your sheet</span><span class="mbtn">Manage ▾</span><span class="search-key"><kbd>⌘F</kbd><span class="sw">Search</span></span><span class="avatar">A</span></div>
+        </div></div>
+      </div></div>
+      <p class="fits" data-fits></p></div>
+    </div>
+    <p class="cap"><b>You chose D</b> (Nov 13), and every other bar on this page now draws it. It's the only style that says what Search finds, it keeps ⌘F in sight, and it uses room the bar already has free, so it costs nothing: it gives way before anything else and becomes B's button when room runs out. Its catch is the one you raised on Nov 9 (a box that looks like you can type in it), which D answers by opening the search box right where you clicked. If you'd rather keep the bar quiet, B is the smallest change from today that still says the word.</p>
   </section>
 
   <section class="pick" aria-labelledby="pick-h">
@@ -387,6 +541,13 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
         <label class="choice one"><input type="radio" name="opens" value="last">The tab you used last</label>
         <label class="choice one"><input type="radio" name="opens" value="world">World</label>
       </div></fieldset>
+      <fieldset data-q="search" data-kind="one"><legend>Search's style</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="search" value="a">A · Today</label>
+        <label class="choice one"><input type="radio" name="search" value="b">B · The word and the key</label>
+        <label class="choice one"><input type="radio" name="search" value="c">C · A box at the right</label>
+        <label class="choice one"><input type="radio" name="search" value="d">D · A command bar <span class="mine-tag">You chose this</span></label>
+        <label class="choice one"><input type="radio" name="search" value="e">E · The key first</label>
+      </div></fieldset>
       <fieldset><legend>Your notes</legend><textarea name="notes" aria-label="Your notes" placeholder="Anything to change, a word on the pill, a question"></textarea></fieldset>
       <div class="save-row"><button type="submit">Save</button><span class="saved" role="status">Loading…</span></div>
     </form>
@@ -405,12 +566,14 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
     const n = st.querySelector('.campaign-name'), out = st.querySelector('[data-fits]');
     if (!n || !out) return;
     const sc = st.querySelector('.screen'), W = +sc.dataset.w || 1280, s = sc.clientWidth / W;
-    if (n.scrollWidth > n.clientWidth + 1) {
-      out.innerHTML = '<span class="cut">The name is cut</span> to ' + Math.round(n.clientWidth / s) + 'px of the ' + Math.round(n.scrollWidth / s) + 'px it needs at ' + W + 'px.';
+    if (n.scrollWidth > n.clientWidth) {
+      out.innerHTML = '<span class="cut">The name is cut</span> to ' + n.clientWidth + 'px of the ' + n.scrollWidth + 'px it needs at ' + W + 'px.';
     } else {
       const nav = st.querySelector('.table-nav').getBoundingClientRect(), end = st.querySelector('.bar-end').getBoundingClientRect();
       out.innerHTML = '<span class="ok">The whole name fits</span> at ' + W + 'px, with ' + Math.round((end.left - nav.right) / s - 14) + 'px to spare.';
     }
+    const cmd = st.querySelector('.search-cmd, .search-field');
+    if (cmd) out.innerHTML = (n.scrollWidth > n.clientWidth ? out.innerHTML : '<span class="ok">The whole name fits</span> at ' + W + 'px.') + ' Search is ' + Math.round(cmd.getBoundingClientRect().width / s) + 'px wide here.';
   });
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(say); setTimeout(say, 1500);
 

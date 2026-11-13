@@ -1,0 +1,25 @@
+{# The connection band (Brett chose B, Nov 13, docs/mockups/connection-drops/): under the menu bar on every page while
+   your own sheet's connection is worse than it was tonight (app/live.py `dropped`: heard in the last two hours, not
+   now). It says what stopped and what still works, in the Live pill's colour (amber: the DM's browser still reaches the
+   sheet; red: nothing does), and leaves by itself once the sheet is heard again. Swapped with the pill (`oob`: /live/pill
+   and /live/sync; app.js showInPlace). Not now hides it on this computer for 30 minutes, and sooner if it gets worse
+   (`data-band-key`, app.js "the connection band"). Never on a phone: a phone never holds the sheet's connection.
+   Without the bridge in this browser (body.no-bridge) it says that instead: opening the sheet wouldn't help. #}
+{% set p = tn.pill if tn else None %}
+{% set band = p and p.mine and p.dropped %}
+{% set tone = "via" if band and p.via else "bad" %}
+<div id="conn-band" class="conn-band{{ ' ' + tone if band }}"{% if band %} role="status" data-band-key="{{ p.id }}:{{ tone }}"{% else %} hidden{% endif %}{% if oob %} hx-swap-oob="true"{% endif %}>
+{%- if band %}
+  <span class="cb-ic" aria-hidden="true">!</span>
+  <div class="cb-tx cb-sheet">
+    {% if tone == "via" %}<b>Your D&amp;D Beyond sheet closed.</b> <span>Your rolls no longer reach the DM's Game Log. Changes to {{ p.name }} still reach D&amp;D Beyond through the DM's browser.</span>
+    {% else %}<b>{{ p.name }} isn't connected to D&amp;D Beyond.</b> <span>Your sheet closed and the DM's browser can't reach it. Changes to {{ p.name }} can't be made from askdnd, and rolls stay in askdnd.</span>{% endif %}
+  </div>
+  <div class="cb-tx cb-bridge">
+    <b>The askdnd bridge isn't running in this browser.</b> <span>{% if tone == "via" %}Changes to {{ p.name }} go through the DM's browser, but your rolls no longer reach the DM's Game Log.{% else %}askdnd can't reach {{ p.name }}'s sheet: changes can't be made from askdnd, and rolls stay in askdnd.{% endif %} Turn it back on in Chrome's Extensions.</span>
+  </div>
+  <a class="btn small cb-go cb-sheet" href="https://www.dndbeyond.com/characters/{{ p.ddb_id }}" target="_blank" rel="noopener">Open {{ p.name }}'s sheet ↗</a>
+  <button type="button" class="btn small cb-go cb-bridge" data-band-live>How to turn it on</button>
+  <button type="button" class="btn small link cb-later" data-band-later>Not now</button>
+{%- endif %}
+</div>
