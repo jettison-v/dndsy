@@ -28,16 +28,16 @@
       <form class="stack" id="{{ key }}-actions" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/accept">
         {{ reply_field(x) }}
         <div class="row">
-        <button class="btn primary">Accept</button>
+        <button type="submit" class="btn primary">Accept</button>
         <button type="button" class="btn" data-show="{{ key }}-edit" data-hide="{{ key }}-actions {{ key }}-text">Edit</button>
-        <button class="btn" formaction="{{ cbase }}/suggestions/facts/{{ x.id }}/claude" data-busy="Claude is drafting…">Ask Claude to work it in</button>
-        <button class="btn link" formaction="{{ cbase }}/suggestions/facts/{{ x.id }}/dismiss">Dismiss</button>
+        <button type="submit" class="btn" formaction="{{ cbase }}/suggestions/facts/{{ x.id }}/claude" data-busy="Claude is drafting…">Ask Claude to work it in</button>
+        <button type="submit" class="btn link" formaction="{{ cbase }}/suggestions/facts/{{ x.id }}/dismiss">Dismiss</button>
         </div>
       </form>
       <form class="stack" id="{{ key }}-edit" method="post" action="{{ cbase }}/suggestions/facts/{{ x.id }}/edit" hidden>
         <textarea name="text" rows="3" required aria-label="The fact, as it will show on {{ it.label }}">{{ x.text }}</textarea>
         {{ reply_field(x) }}
-        <div class="row"><button class="btn primary">Accept with my changes</button>
+        <div class="row"><button type="submit" class="btn primary">Accept with my changes</button>
           <button type="button" class="btn link" data-cancel="{{ key }}-edit" data-restore="{{ key }}-actions {{ key }}-text">Cancel</button></div>
       </form>
       {% elif it.type == "session" %}
@@ -45,9 +45,9 @@
         {{ reply_field(x) }}
         <div class="row">
         <a class="btn primary" href="{{ it.href }}#recap">Edit the recap</a>
-        {% if it.redraft %}<button class="btn" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/claude">Ask Claude to work it in</button>{% endif %}
-        <button class="btn">I fixed it</button>
-        <button class="btn link" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/dismiss">Dismiss</button>
+        {% if it.redraft %}<button type="submit" class="btn" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/claude">Ask Claude to work it in</button>{% endif %}
+        <button type="submit" class="btn">I fixed it</button>
+        <button type="submit" class="btn link" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/dismiss">Dismiss</button>
         </div>
       </form>
       <p class="note">{% if it.redraft %}Ask Claude redrafts the session with it; you review and publish again.{% else %}Edit the recap yourself, then press I fixed it.{% endif %}</p>
@@ -56,8 +56,8 @@
         {{ reply_field(x) }}
         <div class="row">
         <button type="button" class="btn primary" data-show="{{ key }}-edit" data-hide="{{ key }}-actions">{{ "Edit the term" if t else "Add the term" }}</button>
-        {% if t %}<button class="btn" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/done">I fixed it</button>{% endif %}
-        <button class="btn link">Dismiss</button>
+        {% if t %}<button type="submit" class="btn" formaction="{{ cbase }}/admin/suggestions/{{ x.id }}/done">I fixed it</button>{% endif %}
+        <button type="submit" class="btn link">Dismiss</button>
         </div>
       </form>
       <form class="stack" id="{{ key }}-edit" method="post" action="{{ cbase }}/admin/suggestions/{{ x.id }}/glossary" hidden>
@@ -65,7 +65,7 @@
         <label class="field">What it is <textarea name="description" rows="2">{{ t.description if t }}</textarea></label>
         <label class="field">Misheard as <input type="text" name="misheard_as" value="{{ t.misheard_as | join(', ') if t }}" placeholder="Spellings a transcript might use, separated by commas"></label>
         {{ reply_field(x) }}
-        <div class="row"><button class="btn primary">{{ "Save and accept" if t else "Add and accept" }}</button>
+        <div class="row"><button type="submit" class="btn primary">{{ "Save and accept" if t else "Add and accept" }}</button>
           <button type="button" class="btn link" data-cancel="{{ key }}-edit" data-restore="{{ key }}-actions">Cancel</button></div>
       </form>
       {% endif %}

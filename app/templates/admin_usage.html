@@ -22,7 +22,7 @@
       {% if u.limit_reached %}<div class="flash warn">Reached: new drafts are paused until the 1st or until you raise the limit.</div>{% endif %}
       <form method="post" action="/manage/usage/limit" class="form-row">
         <label class="field">Limit per month<input type="text" name="amount" inputmode="decimal" placeholder="None" value="{% if u.limit is not none %}{{ "%.2f" | format(u.limit) }}{% endif %}"></label>
-        <button class="btn">Save limit</button>
+        <button type="submit" class="btn">Save limit</button>
       </form>
     </section>
     <section class="section">
@@ -30,13 +30,13 @@
       <p class="hint">What you've bought in the Anthropic Console, for the balance estimate.</p>
       {% if topups %}<ul class="records">{% for t in topups %}
         <li class="record"><span class="record-main"><b>${{ "%.2f" | format(t.amount_usd) }}</b><span class="note">{{ t.added_on.strftime("%b %-d, %Y") }}{% if t.note %} · {{ t.note }}{% endif %}</span></span>
-          <form class="record-actions" method="post" action="/manage/usage/topups/{{ t.id }}/delete" data-confirm="Remove this top-up?"><button class="btn link danger small">Remove</button></form></li>
+          <form class="record-actions" method="post" action="/manage/usage/topups/{{ t.id }}/delete" data-confirm="Remove this top-up?"><button type="submit" class="btn link danger small">Remove</button></form></li>
       {% endfor %}</ul>{% endif %}
       <form method="post" action="/manage/usage/topups" class="form-row">
         <label class="field">Amount<input type="text" name="amount" inputmode="decimal" placeholder="$20.00" required></label>
         <label class="field">Date bought<input type="date" name="added_on" value="{{ today_iso }}" required></label>
         <label class="field grow">Note<input type="text" name="note" placeholder="Optional, e.g. Initial funding"></label>
-        <button class="btn">Add top-up</button>
+        <button type="submit" class="btn">Add top-up</button>
       </form>
     </section>
   </div>

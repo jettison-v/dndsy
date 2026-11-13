@@ -16,7 +16,7 @@
   {% else %}
   <section class="section">
     <div class="section-head"><h2>Synced doc</h2>
-      {% if sources %}<form method="post" action="{{ cbase }}/manage/sessions/doc/sync"><button class="btn primary" data-busy="Opening Google…">Sync now</button></form>{% endif %}</div>
+      {% if sources %}<form method="post" action="{{ cbase }}/manage/sessions/doc/sync"><button type="submit" class="btn primary" data-busy="Opening Google…">Sync now</button></form>{% endif %}</div>
     {% if sources %}
     <div class="table-scroll"><table class="list">
       {% for s in sources %}{% set st = stats[s.id] %}
@@ -25,7 +25,7 @@
           <div class="note">Campaign notes · visible to the table</div></td>
         <td class="note">{% if st.latest %}Synced {{ s.last_synced_at | clock(date=True) }}<br>{{ "{:,}".format(st.words) }} words · {{ st.images }} images{% else %}Not synced yet{% endif %}</td>
         <td class="end">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View</a>{% endif %}
-          <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" data-confirm="Remove this doc? Its synced copies are deleted too."><button class="btn link danger">Remove</button></form></td>
+          <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" data-confirm="Remove this doc? Its synced copies are deleted too."><button type="submit" class="btn link danger">Remove</button></form></td>
       </tr>
       {% endfor %}
     </table></div>
@@ -35,7 +35,7 @@
     <h2>Add a doc</h2>
     <form method="post" action="{{ cbase }}/manage/sessions/doc/sources" class="form-row">
       <input type="url" name="url" placeholder="Paste a Google Docs link" aria-label="Google Docs link" required>
-      <button class="btn">Add</button>
+      <button type="submit" class="btn">Add</button>
     </form>
   </section>
   {% if retired %}
@@ -46,7 +46,7 @@
       {% for s in retired %}{% set st = stats[s.id] %}
       <tr><td><b>{{ s.title or s.google_doc_id }}</b><div class="note">{{ s.character.name if s.character else "A character" }}'s notes</div></td>
         <td class="end">{% if st.latest %}<a class="btn" href="{{ cbase }}/manage/sessions/doc/snapshots/{{ st.latest.id }}">View last copy</a>{% endif %}
-          <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" data-confirm="Remove this doc and its saved copies?"><button class="btn link danger">Remove</button></form></td></tr>
+          <form class="inline" method="post" action="{{ cbase }}/manage/sessions/doc/sources/{{ s.id }}/delete" data-confirm="Remove this doc and its saved copies?"><button type="submit" class="btn link danger">Remove</button></form></td></tr>
       {% endfor %}
     </table></div>
   </section>

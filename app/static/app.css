@@ -80,10 +80,10 @@ button { font: inherit; cursor: pointer; }
 img { max-width: 100%; }
 
 /* Top bar */
-.topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 6; }
+.topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 6; container: bar / inline-size; }
 /* The menu bar gives way by its own width, not the window's (Brett, Nov 13: with Table rolls open beside the page it has
    340px less, and its contents centre over the page): the collapse order's widths are the bar's (docs/DESIGN.md › Navigation) */
-.topbar { container: bar / inline-size; }  /* (over Table rolls, 5, so its menus open over it) */
+/* (over Table rolls, 5, so its menus open over it) */
 /* Staging (docs/SETUP_LOG.md › A staging copy): an amber menu bar and a Staging label, so it's never taken for the table's askdnd */
 body[data-staging] .topbar { background: var(--staging-bar); border-bottom-color: var(--staging-edge); }
 body[data-staging] .bottom-nav { background: var(--staging-bar); border-top: 2px solid var(--staging-edge); }
@@ -248,9 +248,8 @@ a.live-row:hover .live-go { color: var(--text); }
 .use-foot { justify-content: flex-start; }
 .count-n { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--muted); }  /* a pool's How many (Lay On Hands) */
 .count-n input { width: 5.5em; }
-.cond-rest { display: inline-flex; align-items: center; min-height: var(--chip-h); padding: 0 var(--sp-3); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--r-pill); color: var(--muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
+.cond-rest { display: inline-flex; align-items: center; min-height: var(--chip-h); padding: 0 var(--sp-3); background: var(--surface-2); border: 1px dashed var(--line); border-radius: var(--r-pill); font: inherit; font-size: var(--fs-sm); cursor: pointer; gap: var(--sp-1); border-style: solid; color: var(--text); }
 .cond-rest:hover { color: var(--text-strong); border-color: var(--muted); }
-.cond-rest { gap: var(--sp-1); border-style: solid; color: var(--text); }
 .cond-rest svg { color: var(--amber); flex: none; }  /* (a moon: Rest stands out from the chips beside it, Brett 2026-11-02) */
 .sheet-hd { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-2); }  /* Sheet: Rest, then Hit dice */
 .planner-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-2) var(--sp-3); flex-wrap: wrap; }
@@ -859,7 +858,7 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .layout { grid-template-columns: minmax(0, 1fr); }
   .aside { position: static; }
   .aside .publish-block { display: none; }
-  .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--chrome); border-top: 2px solid var(--red); gap: 12px; align-items: center; z-index: 4; }
+  .mobile-bar { display: flex; position: fixed; left: 0; right: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--chrome); border-top: 2px solid var(--red); gap: 12px; align-items: center; z-index: 4; bottom: calc(60px + env(safe-area-inset-bottom)) !important; }
   .mobile-bar .btn.primary { flex: 1; min-height: 48px; }
   .nav, .nav-sep, .table-nav, .manage, .account, .brand-word { display: none; }
   .campaign-name { max-width: none; font-size: var(--fs-sm); }
@@ -872,7 +871,6 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .bn-char > span:not(.char-av, .cond-dots) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
   .menu.sheet-menu { position: fixed; z-index: 40; top: auto; left: auto; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); max-height: calc(100vh - 140px); overflow-y: auto; }
   body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
-  .mobile-bar { bottom: calc(60px + env(safe-area-inset-bottom)) !important; }
   .live-ago:has(.lw-short) .lw-long { display: none; }
   .lw-short { display: inline; }
   .live .menu.live-menu { position: fixed; top: 64px; right: 12px; }
@@ -1528,7 +1526,6 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); }
 .sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; }
 .sub-tabs a.on { color: var(--text-strong); border-bottom: 2px solid var(--red); }
-.tag.faint { background: transparent; border: 1px solid var(--line); color: var(--faint); }
 
 /* Player notes (Plan, Battle combos, and the note form) */
 .note-mech { margin: 4px 0 8px; }
@@ -1653,10 +1650,8 @@ a.sheet-ref { text-decoration-style: dotted; }
 .st small { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; }
 .st.prof small { color: var(--text); }
 .st.prof small::before { content: "● "; color: var(--green); font-size: var(--fs-xs); }
-.st b { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; margin-left: auto; white-space: nowrap; }  /* ("+4" never splits: the feedback picture split it, note 11) */
+.st b { font-size: var(--fs-lg); font-variant-numeric: tabular-nums; margin-left: auto; white-space: nowrap; order: 2; }  /* ("+4" never splits: the feedback picture split it, note 11) */
 .st .adv-badge { font-size: var(--fs-xs); padding: 0 4px; line-height: 1.35; order: 1; }  /* inside its tile, before the number (the UI pass, 2026-11-02) */
-.st b { order: 2; }
-.save-all { margin: 6px 0 0; }
 @media (max-width: 640px) { .save-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 640px) {
   .strip.compact { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
@@ -1693,14 +1688,13 @@ a.sheet-ref { text-decoration-style: dotted; }
 .save-row[data-roll]:hover b { color: var(--amber); }
 .rc[data-roll], .skill .roll-hit { cursor: pointer; }
 .roll-modes { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: var(--r-pill); }  /* (a track, as .seg) */
-.roll-modes button { border-radius: var(--r-pill); }
-.roll-modes button { font: inherit; font-size: var(--fs-xs); background: none; border: 0; color: var(--muted); padding: 2px 8px; cursor: pointer; }
+.roll-modes button { border-radius: var(--r-pill); font: inherit; font-size: var(--fs-xs); background: none; border: 0; color: var(--muted); padding: 2px 8px; cursor: pointer; }
 .roll-modes button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); }
 .skill-head .roll-hit { font-size: inherit; }
 
 /* The roll window (app.js): opens next to the roll button with Normal / Adv / Dis, situational
    bonuses and who sees it, then turns into the result in place. Above side panels and windows. */
-.roll-win { position: fixed; z-index: 20; width: min(360px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; box-shadow: var(--lift); font-size: var(--fs-sm); animation: roll-pop .14s ease-out; }
+.roll-win { position: fixed; z-index: 20; width: min(360px, calc(100vw - 16px)); max-height: calc(100vh - 16px); overflow-y: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; box-shadow: var(--lift); font-size: var(--fs-sm); animation: roll-pop .14s ease-out; transition: opacity .2s; }
 /* The roll card (the Roll Card Prototype, Nov 9; every roll since Nov 10): a roll's moments, from its plan */
 .roll-win.roll-card { width: min(400px, calc(100vw - 16px)); display: grid; gap: var(--sp-2); padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4); }  /* (compact steps, Brett Nov 9) */
 .rcard-head { display: grid; gap: 2px; padding-right: var(--sp-5); }
@@ -2686,8 +2680,6 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   font-size: var(--fs-xs); font-weight: 600; line-height: 1.4; border-radius: var(--r-sm); pointer-events: none; box-shadow: 0 4px 14px var(--shadow); }
 /* Toast options on the design page (demo until one is chosen) */
 [data-inline-ok].is-done { color: var(--green); border-color: var(--green-line); background: var(--green-soft); }
-  border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--lift); transform: translateY(12px); }
-  border-radius: var(--r-md); box-shadow: var(--lift); font-weight: 500; }
 
 /* One line, then the rest on click (app.js): long summary lines on class cards */
 .clamp { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
@@ -2803,7 +2795,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ep-top.has-pic { grid-template-columns: 200px minmax(0, 1fr) 260px; grid-template-areas: "pic head glance"; }
 .ep-side { grid-area: pic; }
 .ep-head { grid-area: head; min-width: 0; }
-.ep-glance { grid-area: glance; }
+.ep-glance { grid-area: glance; margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); font-size: var(--fs-sm); }
 .ep-title { display: flex; gap: var(--sp-3); align-items: center; }
 .ep-title h2 { font-size: var(--fs-xl); margin: 2px 0; }
 .ep-head .story { margin: var(--sp-4) 0 0 -22px; padding: 16px 22px; }  /* its words line up with the name; the parchment reaches into the gap */
@@ -2832,7 +2824,6 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ep-mark { flex: none; width: 72px; height: 72px; object-fit: cover; border-radius: var(--r-md); border: 1px solid var(--line); }
 .ep-mark-empty { display: grid; place-items: center; padding: 0; background: none; border: 1.5px dashed var(--line-strong); cursor: pointer; }
 .ep-mark-empty .ep-outline { width: 36px; height: 36px; }
-.ep-glance { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2) var(--sp-3); padding: var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); font-size: var(--fs-sm); }
 .ep-glance dt { color: var(--muted); }
 .ep-glance dd { margin: 0; min-width: 0; }
 .ep-glance dt:has(+ dd.part-of) { grid-column: 1 / -1; margin-bottom: calc(-1 * var(--sp-1)); }
@@ -3055,7 +3046,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 
 /* Party (party.html; Brett, 2026-10-26, docs/mockups/party.html): a card per character with Battle's number tiles,
    then the party's spells and items in the shared list, who has each by portrait */
-.pt-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); }
+.pt-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); grid-auto-flow: row dense; }
 .pt-card { margin: 0; padding: 20px 22px; display: grid; gap: var(--sp-3); align-content: start; }
 .pt-card[data-modal-url] { cursor: pointer; }
 .pt-card[data-modal-url]:hover { background: var(--surface-2); }
@@ -3184,7 +3175,6 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 /* A character with creatures on Party: one card in parts on a row of its own, theirs then each creature's, a dashed line
    between and the creature's half tinted (Brett, Nov 4, docs/mockups/creatures-as-characters/ board 8, C); the others fill in
    around it. The master's portrait carries the creature's picture; the creature's whole half opens its Battle. */
-.pt-cards { grid-auto-flow: row dense; }
 .pt-pair { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(var(--parts, 2), minmax(0, 1fr)); border: 1px solid color-mix(in srgb, var(--green) 45%, var(--line)); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); }
 .pt-pair > .pt-card { margin: 0; border-radius: 0; }
 .pt-creature-card { position: relative; background: color-mix(in srgb, var(--green) 7%, var(--surface)); border-left: 1px dashed color-mix(in srgb, var(--green) 60%, var(--line)); }
@@ -3653,7 +3643,6 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .fb-st.review { background: var(--amber-soft); color: var(--amber); }  /* the table's note, waiting for an admin */
 .fb-st.planned { background: var(--blue-soft); color: var(--blue); }
 .fb-st.done { background: var(--green-soft); color: var(--green); }
-.fb-st.deleted { background: var(--surface-2); color: var(--muted); }
 /* Your feedback (a sender's own notes) */
 .fb-st.deleted { background: var(--surface-3); color: var(--muted); }
 .fb-open { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-3) var(--sp-2) var(--sp-4) calc(72px + var(--sp-5)); background: var(--surface); }
@@ -3921,21 +3910,19 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 
 /* While dice are on screen, the roll window (or card) lets them show through (feedback 59: a die that landed behind the
    card was hidden); pointing at it makes it solid again, to read or press */
-.roll-win { transition: opacity .2s; }
 body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 /* Search, like Spotlight (app/search.py; Brett chose A and A, Nov 9): the menu bar's button beside Help, the magnifier and
    its key, drawn as a button like Manage and the gear, not a field (Brett chose A, Nov 9: docs/mockups/search/menu-button.html) */
 .search-btn { display: inline-flex; align-items: center; gap: 8px; height: var(--bar-h); flex: 0 100 380px; min-width: 94px; margin-right: auto; padding: 0 6px 0 11px;
   container-type: inline-size; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--muted); font: 400 var(--fs-sm)/1 var(--sans); cursor: pointer; text-align: left; }
 .search-btn svg, .search-btn kbd { flex: none; }
-.search-btn kbd { margin-left: auto; }
 .search-ph { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sp-short { display: none; }
 @container (max-width: 240px) { .search-btn .sp-long { display: none; } .search-btn .sp-short { display: inline; } }  /* the same box, shorter words */
 @container (max-width: 110px) { .search-btn .search-ph { display: none; } }  /* then the magnifier and ⌘F (Ctrl+F) */
 .search-btn:hover, .search-btn:focus-visible { color: var(--text-strong); border-color: var(--blue); }
 .search-btn kbd, .search-foot kbd { font: 600 var(--fs-xs)/1 var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--r-xs); padding: 1px 4px; background: var(--surface-2); color: var(--text); }
-.search-btn kbd { background: transparent; color: var(--muted); padding: 2px 5px; }
+.search-btn kbd { margin-left: auto; background: transparent; color: var(--muted); padding: 2px 5px; }
 @media (max-width: 900px) { .search-btn { flex: none; width: var(--bar-h); min-width: 0; margin: 0; padding: 0; justify-content: center; } .search-btn .search-ph, .search-btn kbd { display: none; } }  /* a phone: the magnifier */
 /* the box: under Search's bar, else in the middle; over everything (a modal dialog) */
 .search-box { width: min(640px, calc(100vw - 24px)); max-height: min(70vh, 560px); margin: 10vh auto auto; padding: 0; border: 1px solid var(--line); border-radius: var(--r-lg);

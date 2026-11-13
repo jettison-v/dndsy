@@ -62,13 +62,13 @@
                 <div class="row tight"><button type="button" class="btn small" data-close-details>Keep {{ conc.spell }}</button>
                   <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
                     <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
-                    <button class="btn small danger">Switch to {{ e.name }}</button></form></div>
+                    <button type="submit" class="btn small danger">Switch to {{ e.name }}</button></form></div>
               </div>
             </details>
             {% else %}
             <form class="inline" hx-post="/characters/{{ c.id }}/concentration" hx-target="#battle-body" hx-swap="outerHTML">
               <input type="hidden" name="key" value="{{ e.key }}"><input type="hidden" name="level" value="{{ e.level }}" data-sb-level>
-              <button class="row-act conc-act" data-tip="Concentrate on {{ e.name }} ({{ 'spends no slot' if can_play else 'spend the slot on D&amp;D Beyond' }})" aria-label="Concentrate on {{ e.name }}">{{ cond_icon("Concentration") }}</button>
+              <button type="submit" class="row-act conc-act" data-tip="Concentrate on {{ e.name }} ({{ 'spends no slot' if can_play else 'spend the slot on D&amp;D Beyond' }})" aria-label="Concentrate on {{ e.name }}">{{ cond_icon("Concentration") }}</button>
             </form>
             {% endif %}
             {% endif %}

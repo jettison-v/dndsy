@@ -15,8 +15,8 @@
       </div>
       <label class="field">Title <span class="note">(optional)</span><input type="text" name="title" placeholder="e.g. Boarding the Leviathan"></label>
       <label class="field">What happened<textarea name="account" rows="14" required placeholder="Type or paste everything you remember: where the party went, who they met, fights, decisions, loot, how it ended. Rough notes are fine."></textarea></label>
-      <div class="row"><button class="btn primary" name="mode" value="manual">Save as the recap</button>
-        <button class="btn" name="mode" value="ask">Save and ask Claude</button><a class="btn link" href="{{ cbase }}/manage/sessions">Cancel</a>
+      <div class="row"><button type="submit" class="btn primary" name="mode" value="manual">Save as the recap</button>
+        <button type="submit" class="btn" name="mode" value="ask">Save and ask Claude</button><a class="btn link" href="{{ cbase }}/manage/sessions">Cancel</a>
         <span class="note">Saving as the recap uses your words as written; Claude's check costs about 2–5¢.</span></div>
     </form>
   </section>

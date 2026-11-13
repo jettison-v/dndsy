@@ -16,7 +16,7 @@
         <label class="field" for="{{ fid }}">Your answer</label>
         <textarea id="{{ fid }}" name="answer" rows="2" required placeholder="What you remember… (type @ to insert a name)"></textarea>
         <label class="check"><input type="checkbox" name="remember" value="1"> Use in every future draft (for lasting facts like name spellings)</label>
-        <div><button class="btn {{ 'primary' if questions | length == 1 }}">Send answer</button></div>
+        <div><button type="submit" class="btn {{ 'primary' if questions | length == 1 }}">Send answer</button></div>
       </form>
     </div>
     {% endfor %}

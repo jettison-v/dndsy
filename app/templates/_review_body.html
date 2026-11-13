@@ -30,13 +30,13 @@
     {% if auto_check and last and last.role == "reviewer" %}<div hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/check" hx-trigger="load" {{ hx | safe }} hx-indicator="#thinking"></div>{% endif %}
     <form class="stack" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/messages" {{ hx | safe }} hx-indicator="#thinking" hx-disabled-elt="find button">
       <textarea name="body" rows="4" placeholder="Answer Claude's questions, add details, or correct anything…" required></textarea>
-      <div class="row"><button class="btn">Send</button>
+      <div class="row"><button type="submit" class="btn">Send</button>
         {% if last and last.role == "reviewer" %}<button class="btn link" type="button" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/check" {{ hx | safe }} hx-indicator="#thinking">Ask Claude to check again</button>{% endif %}</div>
     </form>
     {% if not latest %}
     <div class="callout{{ ' ready' if last and last.ready }}"><div class="row">
       <span class="grow">{% if last and last.ready %}<b>Claude has enough to draft.</b>{% else %}<b>Ready when you are.</b> You can draft any time, even with questions open.{% endif %}</span>
-      <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/draft-account" {{ hx | safe }}><button class="btn primary" {% if drafting %}disabled{% endif %}>Draft this session</button></form>
+      <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/draft-account" {{ hx | safe }}><button type="submit" class="btn primary" {% if drafting %}disabled{% endif %}>Draft this session</button></form>
       <span class="note">≈ 12¢</span></div></div>
     {% endif %}
   </{{ "details" if latest else "section" }}>
@@ -53,7 +53,7 @@
   <div class="layout">
     <div>
       <div class="tabbar review-steps" role="tablist" data-tab-param aria-label="Review steps">
-        {% for x in steps %}<button role="tab" aria-selected="{{ 'true' if tab == x.key else 'false' }}" data-tab="t-{{ x.key }}"><span class="step-n">{{ x.n }}</span>{{ x.label }}{% if x.left and x.key != "recap" %} <span class="count notes-tab-new">{{ x.left }}</span>{% elif x.count is defined %} <span class="count">{{ x.count }}</span>{% elif not x.left %} <span class="step-done" aria-label="done">✓</span>{% endif %}</button>{% endfor %}
+        {% for x in steps %}<button type="submit" role="tab" aria-selected="{{ 'true' if tab == x.key else 'false' }}" data-tab="t-{{ x.key }}"><span class="step-n">{{ x.n }}</span>{{ x.label }}{% if x.left and x.key != "recap" %} <span class="count notes-tab-new">{{ x.left }}</span>{% elif x.count is defined %} <span class="count">{{ x.count }}</span>{% elif not x.left %} <span class="step-done" aria-label="done">✓</span>{% endif %}</button>{% endfor %}
       </div>
       {# 1. Questions #}
       <div id="t-questions" role="tabpanel"{% if tab != "questions" %} hidden{% endif %}>
@@ -66,21 +66,21 @@
           <div class="row" id="{{ qid }}-buttons">
             <button type="button" class="btn" data-show="{{ qid }}-form" data-hide="{{ qid }}-buttons">Answer</button>
             <button type="button" class="btn link" data-show="{{ qid }}-ask" data-hide="{{ qid }}-buttons">Ask…</button>
-            <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/skip" {{ hx | safe }}><input type="hidden" name="q" value="{{ q }}"><button class="btn link">Skip</button></form>
+            <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/skip" {{ hx | safe }}><input type="hidden" name="q" value="{{ q }}"><button type="submit" class="btn link">Skip</button></form>
           </div>
           <form id="{{ qid }}-ask" class="stack" hidden hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/ask" {{ hx | safe }}>
             <input type="hidden" name="q" value="{{ q }}">
             <label class="field">Who should answer?
               <input type="text" name="person" list="ask-people" required autocomplete="off" placeholder="Pick or type a name"></label>
             <label class="field">Note <span class="note">(optional)</span><textarea name="note" rows="2" placeholder="Anything that helps them answer…"></textarea></label>
-            <div class="row"><button class="btn primary">Ask</button><button type="button" class="btn link" data-cancel="{{ qid }}-ask" data-restore="{{ qid }}-buttons">Cancel</button>
+            <div class="row"><button type="submit" class="btn primary">Ask</button><button type="button" class="btn link" data-cancel="{{ qid }}-ask" data-restore="{{ qid }}-buttons">Cancel</button>
               <span class="note">They'll see it on Previously on… once they sign in. You can still publish meanwhile.</span></div>
           </form>
           <form id="{{ qid }}-form" class="stack" hidden hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/answer" {{ hx | safe }}>
             <input type="hidden" name="q" value="{{ q }}">
             <textarea name="answer" rows="2" placeholder="Your answer…" required></textarea>
             <label class="check"><input type="checkbox" name="remember" value="1"> Use in every future draft (for lasting facts like name spellings)</label>
-            <div class="row"><button class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ qid }}-form" data-restore="{{ qid }}-buttons">Cancel</button></div>
+            <div class="row"><button type="submit" class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ qid }}-form" data-restore="{{ qid }}-buttons">Cancel</button></div>
           </form>
         </div>
         {% else %}
@@ -98,13 +98,13 @@
             <div class="row" id="{{ wid }}-buttons">
               <span class="tag draft">Waiting</span>
               <button type="button" class="btn link" data-show="{{ wid }}-form" data-hide="{{ wid }}-buttons">Record their answer</button>
-              <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button class="btn link">Stop waiting</button></form>
+              <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button type="submit" class="btn link">Stop waiting</button></form>
             </div>
             <form id="{{ wid }}-form" class="stack" hidden hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/answer" {{ hx | safe }}>
               <input type="hidden" name="q" value="{{ c.before }}"><input type="hidden" name="on_behalf_of" value="{{ c.asked_of }}">
               <textarea name="answer" rows="2" placeholder="{{ c.asked_of }}'s answer…" required></textarea>
               <label class="check"><input type="checkbox" name="remember" value="1"> Use in every future draft (for lasting facts like name spellings)</label>
-              <div class="row"><button class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ wid }}-form" data-restore="{{ wid }}-buttons">Cancel</button></div>
+              <div class="row"><button type="submit" class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ wid }}-form" data-restore="{{ wid }}-buttons">Cancel</button></div>
             </form>
           </div>
           {% endfor %}
@@ -118,20 +118,20 @@
             <p class="item-title" {% if c.kind == "skip" %}style="color:var(--muted)"{% endif %}>{{ c.before }}</p>
             {% if c.kind == "skip" %}
             <div class="row"><span class="tag">Skipped</span>
-              <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button class="btn link">Answer instead</button></form></div>
+              <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button type="submit" class="btn link">Answer instead</button></form></div>
             {% else %}
             <div id="{{ did }}-view">
               <p class="answer">{{ c.after }}</p>
               {% if c.answered_by %}<p class="note byline">Answered by {{ c.answered_by }}</p>{% endif %}
               <div class="row">{% if c.standing_instruction %}<span class="tag">Used in every future draft</span>{% endif %}
                 <button type="button" class="btn link" data-show="{{ did }}-form" data-hide="{{ did }}-view">Edit</button>
-                <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button class="btn link danger">Remove answer</button></form></div>
+                <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/reopen" {{ hx | safe }}><input type="hidden" name="q" value="{{ c.before }}"><button type="submit" class="btn link danger">Remove answer</button></form></div>
             </div>
             <form id="{{ did }}-form" class="stack" hidden hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/questions/answer" {{ hx | safe }}>
               <input type="hidden" name="q" value="{{ c.before }}">
               <textarea name="answer" rows="2" required>{{ c.after }}</textarea>
               <label class="check"><input type="checkbox" name="remember" value="1" {% if c.standing_instruction %}checked{% endif %}> Use in every future draft (for lasting facts like name spellings)</label>
-              <div class="row"><button class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ did }}-form" data-restore="{{ did }}-view">Cancel</button></div>
+              <div class="row"><button type="submit" class="btn primary">Save answer</button><button type="button" class="btn link" data-cancel="{{ did }}-form" data-restore="{{ did }}-view">Cancel</button></div>
             </form>
             {% endif %}
           </div>
@@ -150,7 +150,7 @@
         {% if answers_for_suggestions and not drafting %}
         <div class="callout" id="suggestions-update"><div class="row">
           <span class="grow"><b>{{ answers_for_suggestions }} answer{{ "s" if answers_for_suggestions != 1 }} since these were written.</b> Claude puts {{ "them" if answers_for_suggestions != 1 else "it" }} in by itself once the last question is settled: names, spellings, who someone is. Or now:</span>
-          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/suggestions/update" {{ hx | safe }}><button class="btn primary" {% if anything_drafting %}disabled{% endif %}>Update the suggestions</button></form>
+          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/suggestions/update" {{ hx | safe }}><button type="submit" class="btn primary" {% if anything_drafting %}disabled{% endif %}>Update the suggestions</button></form>
           <span class="note">under a minute · ≈ 10¢</span>
         </div></div>
         {% endif %}
@@ -168,9 +168,9 @@
             <p class="flash bad">The description changed since this draft{% if now.written_by_person %} ({{ now.written_by_person }} edited it){% endif %}. Use <b>Edit</b> to combine the two. Now: <i>{{ now.summary or "(none)" }}</i></p>
             {% endif %}
             <div class="row">
-              <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/accept" {{ hx | safe }}><button class="btn primary">Accept</button></form>
+              <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/accept" {{ hx | safe }}><button type="submit" class="btn primary">Accept</button></form>
               <button type="button" class="btn" data-show="p{{ p.id }}-form" data-hide="p{{ p.id }}-view">Edit</button>
-              <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/reject" {{ hx | safe }}><button class="btn link">Reject</button></form>
+              <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/reject" {{ hx | safe }}><button type="submit" class="btn link">Reject</button></form>
             </div>
           </div>
           <form id="p{{ p.id }}-form" class="stack" hidden hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/accept" {{ hx | safe }}>
@@ -180,17 +180,17 @@
               <label class="field grow">Class<input type="text" name="class" value="{{ (d.traits or {})['class'] or '' }}" maxlength="60" placeholder="Wizard, or what they do"></label></div>{% endif %}
             {% if d.entity_id %}<p class="note m-0">A new name keeps the old one as another name, so links still find it.</p>{% else %}<p class="note m-0">If Claude misheard it, its spelling is kept as a misspelling so later drafts spell it your way.</p>{% endif %}
             <textarea name="summary" rows="3" required aria-label="Description">{{ d.summary }}</textarea>
-            <div class="row"><button class="btn primary">Save and accept</button><button type="button" class="btn link" data-cancel="p{{ p.id }}-form" data-restore="p{{ p.id }}-view">Cancel</button></div>
+            <div class="row"><button type="submit" class="btn primary">Save and accept</button><button type="button" class="btn link" data-cancel="p{{ p.id }}-form" data-restore="p{{ p.id }}-view">Cancel</button></div>
           </form>
           {% elif p.kind == "relationship" %}
           <div class="row">
-            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/accept" {{ hx | safe }}><button class="btn primary">Accept</button></form>
-            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/reject" {{ hx | safe }}><button class="btn link">Reject</button></form>
+            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/accept" {{ hx | safe }}><button type="submit" class="btn primary">Accept</button></form>
+            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/reject" {{ hx | safe }}><button type="submit" class="btn link">Reject</button></form>
           </div>
           {% else %}
           <div class="row">
-            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/accept" {{ hx | safe }}><button class="btn primary">Add to glossary</button></form>
-            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/reject" {{ hx | safe }}><button class="btn link">Skip</button></form>
+            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/accept" {{ hx | safe }}><button type="submit" class="btn primary">Add to glossary</button></form>
+            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/reject" {{ hx | safe }}><button type="submit" class="btn link">Skip</button></form>
           </div>
           {% endif %}
         </div>
@@ -224,14 +224,14 @@
                 <div class="after"><span>Now in askdnd</span>{{ d.summary }}</div>
               </div>
               <div class="row"><button type="button" class="btn link" data-show="dp{{ p.id }}-form" data-hide="dp{{ p.id }}-view">Edit</button>
-                <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/undo" {{ hx | safe }}><button class="btn link">Undo</button></form></div>
+                <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/undo" {{ hx | safe }}><button type="submit" class="btn link">Undo</button></form></div>
             </div>
             <form id="dp{{ p.id }}-form" class="stack" hidden hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/edit" {{ hx | safe }}>
               <textarea name="summary" rows="3" required>{{ d.summary }}</textarea>
-              <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="dp{{ p.id }}-form" data-restore="dp{{ p.id }}-view">Cancel</button></div>
+              <div class="row"><button type="submit" class="btn primary">Save</button><button type="button" class="btn link" data-cancel="dp{{ p.id }}-form" data-restore="dp{{ p.id }}-view">Cancel</button></div>
             </form>
             {% else %}
-            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/undo" {{ hx | safe }}><button class="btn link">Undo</button></form>
+            <form class="inline" hx-post="{{ cbase }}/manage/proposals/{{ p.id }}/undo" {{ hx | safe }}><button type="submit" class="btn link">Undo</button></form>
             {% endif %}
           </div>
           {% endfor %}
@@ -249,7 +249,7 @@
         <div class="callout ready" id="draft-recap"><div class="row">
           {% set answered = done_questions | selectattr("kind", "equalto", "answer") | list | length %}<span class="grow"><b>Draft the recap.</b> Claude reads the session again with {% if answered %}your {{ answered }} answer{{ "s" if answered != 1 }} and {% endif %}the World as it is now{% if accepted_count %} ({{ accepted_count }} suggestion{{ "s" if accepted_count != 1 }} accepted){% endif %}, then writes the recap, the full tale, key moments and awards.
             {% if open_questions or open_proposals %}<br><span class="note">Still open: {% if open_questions %}{{ open_questions | length }} question{{ "s" if open_questions | length != 1 }}{% endif %}{% if open_questions and open_proposals %} and {% endif %}{% if open_proposals %}{{ open_proposals | length }} suggestion{{ "s" if open_proposals | length != 1 }}{% endif %}. You can draft anyway.</span>{% endif %}</span>
-          {% if s.transcript_key %}<form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn primary" {% if drafting or anything_drafting %}disabled{% endif %}>Draft the recap</button></form>
+          {% if s.transcript_key %}<form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button type="submit" class="btn primary" {% if drafting or anything_drafting %}disabled{% endif %}>Draft the recap</button></form>
           <span class="note">a few minutes · ≈ $1</span>
           {% else %}<span class="note">askdnd doesn't have this session's transcript any more. Send it again from the Processor.</span>{% endif %}
         </div></div>
@@ -259,15 +259,15 @@
           <p class="item-title">Claude redrafted {{ who }}{{ "'s" if person_version.author_name }} version (version {{ person_version.version }}). What it changed:</p>
           <div class="markup recap-markup">{{ person_version.body | diff(latest.body) }}</div>
           <div class="row"><span class="note">Struck-through words are {{ who }}{{ "'s" if person_version.author_name }}, which Claude would remove; highlighted ones are Claude's.</span>
-            <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/recap/keep-mine" {{ hx | safe }}><button class="btn">Keep {{ who }}{{ "'s" if person_version.author_name }} version</button></form></div>
+            <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/recap/keep-mine" {{ hx | safe }}><button type="submit" class="btn">Keep {{ who }}{{ "'s" if person_version.author_name }} version</button></form></div>
         </div>
         {% endif %}
         {% if (unused_answers or world_changes) and s.source in ("notes", "transcript", "account") %}
         <div class="callout" id="draft-update"><div class="row">
           <span class="grow"><b>{% if unused_answers %}{{ unused_answers }} new answer{{ "s" if unused_answers > 1 }}{% endif %}{% if unused_answers and world_changes %} and {% endif %}{% if world_changes %}{{ world_changes }} suggestion{{ "s" if world_changes > 1 }} accepted{% endif %} since this draft.</b>
             {% if s.source == "transcript" %}Update the draft: Claude keeps the recap, the full tale, key moments and awards as they are and changes only what these show.{% else %}Redraft so the recap, the full tale and key moments use {{ "them" if (unused_answers + world_changes) > 1 else "it" }}.{% endif %}</span>
-          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn primary" {% if drafting or anything_drafting %}disabled{% endif %}>{{ "Update the draft" if s.source == "transcript" else "Redraft" }}</button></form>
-          {% if s.source == "transcript" %}<form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><input type="hidden" name="fresh" value="1"><button class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Start over</button></form>{% endif %}
+          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button type="submit" class="btn primary" {% if drafting or anything_drafting %}disabled{% endif %}>{{ "Update the draft" if s.source == "transcript" else "Redraft" }}</button></form>
+          {% if s.source == "transcript" %}<form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><input type="hidden" name="fresh" value="1"><button type="submit" class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Start over</button></form>{% endif %}
           <span class="note">{{ "≈ 35¢ within an hour of the last draft, else ≈ $1" if s.source == "transcript" else "≈ 12¢" }} · your current version stays until you publish again</span>
         </div></div>
         {% endif %}
@@ -276,14 +276,14 @@
           <textarea name="body" rows="12" required>{{ latest.body }}</textarea>
           <input type="text" name="note" placeholder="Optional: what did Claude get wrong? (e.g. player banter is never story)">
           <label class="check"><input type="checkbox" name="standing" value="1"> Apply this lesson to every future draft</label>
-          <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="recap-form" data-restore="recap-view recap-edit">Cancel</button>
+          <div class="row"><button type="submit" class="btn primary">Save</button><button type="button" class="btn link" data-cancel="recap-form" data-restore="recap-view recap-edit">Cancel</button>
             <span class="note">Use **double asterisks** for bold names.</span></div>
         </form>
         <p class="meta">Version {{ latest.version }} by {{ "Claude" if latest.author == "ai" else (latest.author_name or "a person") }}{% if told %} · drafting cost {% if told.cost_usd >= 1 %}${{ "%.2f" | format(told.cost_usd) }}{% else %}{{ "%.0f" | format(told.cost_usd * 100) }}¢{% endif %}{% endif %}{% if published and published.id != latest.id %} · the table still sees version {{ published.version }}{% endif %}{% if listen and vtt_on("recap_listen") %} · Listen plays it in {{ "about " ~ listen.says[2:] if listen.estimate else listen.says }}{% endif %}</p>
         {% if s.source == "transcript" and s.transcript_key and not (unused_answers or world_changes) %}
         <div class="row" id="draft-again"><span class="note">Something to change?</span>
-          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Update the draft</button></form>
-          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><input type="hidden" name="fresh" value="1"><button class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Start over</button></form>
+          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><button type="submit" class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Update the draft</button></form>
+          <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/redraft" {{ hx | safe }}><input type="hidden" name="fresh" value="1"><button type="submit" class="btn link" {% if drafting or anything_drafting %}disabled{% endif %}>Start over</button></form>
           <span class="note">≈ 35¢ within an hour of the last draft, else ≈ $1 · your current version stays until you publish again</span></div>
         {% endif %}
         {% endif %}
@@ -308,7 +308,7 @@
             <div class="row"><label class="field grow">Title<input type="text" name="title" value="{{ c.title }}" maxlength="120"></label>
               <label class="field">Kind<select name="kind">{% for k, label in chapter_kinds.items() %}<option value="{{ k }}"{{ " selected" if k == c.kind }}>{{ label }}</option>{% endfor %}</select></label></div>
             <textarea name="text" rows="10" required>{{ c.text }}</textarea>
-            <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="{{ cid }}-form" data-restore="{{ cid }}-view">Cancel</button></div>
+            <div class="row"><button type="submit" class="btn primary">Save</button><button type="button" class="btn link" data-cancel="{{ cid }}-form" data-restore="{{ cid }}-view">Cancel</button></div>
           </form>
         </div>
         {% endfor %}
@@ -325,7 +325,7 @@
         <ul class="events">
           {% for ev in events %}
           <li class="ev {{ 'theory' if ev.kind.value == 'theory' }}" id="ev{{ ev.id }}-view">
-            <form class="ev-major" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/events/{{ ev.id }}/major" {{ hx | safe }}><button class="btn link{{ ' on' if ev.major }}" aria-pressed="{{ 'true' if ev.major else 'false' }}" title="{{ 'Major: Story shows it first' if ev.major else 'Mark major: Story shows it first' }}">{{ "★" if ev.major else "☆" }}</button></form>
+            <form class="ev-major" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/events/{{ ev.id }}/major" {{ hx | safe }}><button type="submit" class="btn link{{ ' on' if ev.major }}" aria-pressed="{{ 'true' if ev.major else 'false' }}" title="{{ 'Major: Story shows it first' if ev.major else 'Mark major: Story shows it first' }}">{{ "★" if ev.major else "☆" }}</button></form>
             <span class="kind {{ ev.kind.value }}">{{ ev.kind.value }}</span>
             <div class="ev-text">{{ ln.text(ev.text) }}{% if ev.entities %}<small>{% for x in ev.entities %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div>
             <button type="button" class="btn link" data-show="ev{{ ev.id }}-form" data-hide="ev{{ ev.id }}-view">Edit</button>
@@ -335,7 +335,7 @@
               <input type="hidden" name="event_id" value="{{ ev.id }}">
               <select name="kind">{% for k in event_kinds %}<option value="{{ k }}" {% if k == ev.kind.value %}selected{% endif %}>{{ k | capitalize }}</option>{% endfor %}</select>
               <textarea name="text" rows="2" required>{{ ev.text }}</textarea>
-              <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="ev{{ ev.id }}-form" data-restore="ev{{ ev.id }}-view">Cancel</button>
+              <div class="row"><button type="submit" class="btn primary">Save</button><button type="button" class="btn link" data-cancel="ev{{ ev.id }}-form" data-restore="ev{{ ev.id }}-view">Cancel</button>
                 <button type="button" class="btn link danger push" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/events/{{ ev.id }}/delete" {{ hx | safe }} hx-confirm="Delete this key moment?">Delete</button></div>
             </form>
           </li>
@@ -344,7 +344,7 @@
             <form class="ev-form" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/events" {{ hx | safe }}>
               <select name="kind">{% for k in event_kinds %}<option value="{{ k }}">{{ k | capitalize }}</option>{% endfor %}</select>
               <textarea name="text" rows="2" placeholder="What happened?" required></textarea>
-              <div class="row"><button class="btn primary">Add</button><button type="button" class="btn link" data-cancel="ev-new">Cancel</button></div>
+              <div class="row"><button type="submit" class="btn primary">Add</button><button type="button" class="btn link" data-cancel="ev-new">Cancel</button></div>
             </form>
           </li>
         </ul>
@@ -366,7 +366,7 @@
             <div class="row"><span class="tag">{{ a.award }}</span><b class="grow">{{ a.who }}</b>
               {% if a.dice %}<span class="note">From Table rolls</span>{% else %}
               <button type="button" class="btn link" data-show="{{ aid }}-form" data-hide="{{ aid }}-view">Edit</button>
-              <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/awards/{{ a.index }}/drop" {{ hx | safe }}><button class="btn link danger">Take away</button></form>{% endif %}</div>
+              <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/awards/{{ a.index }}/drop" {{ hx | safe }}><button type="submit" class="btn link danger">Take away</button></form>{% endif %}</div>
             {% if a.nominees | length > 1 %}
             <form class="rw-choices award-nominees" role="radiogroup" aria-label="Who {{ a.award }} goes to" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/awards/{{ a.index }}/pick" hx-trigger="change" {{ hx | safe }}>
               {% for n in a.nominees %}<label class="rw-choice"><input type="radio" name="nominee" value="{{ loop.index0 }}"{{ " checked" if loop.index0 == a.pick }}><span><b>{{ n.who }}</b> · {% if n.quote %}“{{ n.quote }}” {% endif %}{{ n.why }}</span><small>{{ n.clock }}</small></label>{% endfor %}
@@ -381,7 +381,7 @@
             <label class="field">Goes to<input type="text" name="character" value="{{ a.character }}" required maxlength="120"></label>
             <label class="field">Why<textarea name="why" rows="2">{{ a.why }}</textarea></label>
             {% if a.award == "Line of the Night" %}<label class="field">The line<textarea name="quote" rows="2">{{ a.quote }}</textarea></label>{% else %}<input type="hidden" name="quote" value="{{ a.quote }}">{% endif %}
-            <div class="row"><button class="btn primary">Save</button><button type="button" class="btn link" data-cancel="{{ aid }}-form" data-restore="{{ aid }}-view">Cancel</button></div>
+            <div class="row"><button type="submit" class="btn primary">Save</button><button type="button" class="btn link" data-cancel="{{ aid }}-form" data-restore="{{ aid }}-view">Cancel</button></div>
           </form>
           {% endif %}
         </div>
@@ -400,7 +400,7 @@
         {# When the recording began (Brett, Nov 10): the numbers count only the session's own rolls; the Processor sends it #}
         <form class="row rec-start" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/start" {{ hx | safe }}>
           <label class="grow">Recording started at <input type="time" name="start" value="{{ (s.talk or {}).get('start', '') }}" aria-label="When the recording started"></label>
-          <button class="btn small">Save</button>
+          <button type="submit" class="btn small">Save</button>
         </form>
         <p class="note m-0">{% if (s.talk or {}).get("start") %}The rolls counted are the session's own, from 15 minutes before the recording to 15 minutes after.{% else %}Without it, the numbers count every roll that evening, from noon to 6 am. The Processor sends it with the transcript.{% endif %}</p>
         {% if talked.unmatched %}
@@ -411,7 +411,7 @@
           <form class="row" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/speakers" {{ hx | safe }}>
             <input type="hidden" name="name" value="{{ name }}"><b class="grow">{{ name }}</b>
             <select name="user_id" aria-label="Who {{ name }} is">{% for p in people %}<option value="{{ p.user_id }}">{{ p.name }}{% if p.person and p.person != p.name %} ({{ p.person }}){% endif %}</option>{% endfor %}<option value="0">No one at the table</option></select>
-            <button class="btn small">Match</button>
+            <button type="submit" class="btn small">Match</button>
           </form>
           {% endfor %}
         </div>
@@ -436,7 +436,7 @@
           <span class="note">Next: {{ n.label }}</span>
           {% if n.drafted %}<a class="btn" href="{{ cbase }}/manage/sessions/{{ n.s.id }}">Review next session</a>
           {% elif n.has_notes %}<form method="post" action="{{ cbase }}/manage/sessions/draft"><input type="hidden" name="session_ids" value="{{ n.s.id }}">
-            <button class="btn" {% if anything_drafting %}disabled{% endif %}>Draft next session</button></form>
+            <button type="submit" class="btn" {% if anything_drafting %}disabled{% endif %}>Draft next session</button></form>
             <span class="note">Publish this one first so the next draft learns from your changes.</span>
           {% endif %}
         </div>
@@ -444,7 +444,7 @@
       </div>
       <p class="source">{{ {"transcript": "From a transcript", "account": "From a written account"}.get(s.source, "From the campaign notes") }}{% if s.source != "transcript" and is_admin %} · <a href="{{ cbase }}/manage/sessions/doc">campaign doc</a>{% endif %}</p>
       {% if s.source == "transcript" %}<p class="note">{% if s.transcript_key %}askdnd keeps the cleaned transcript for drafting; no page shows it.{% if is_admin %}
-        <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/transcript/forget" {{ hx | safe }} hx-confirm="Let this session's transcript go? Redrafting then needs it sent again from the Processor."><button class="btn link danger">Let it go</button></form>{% endif %}
+        <form class="inline" hx-post="{{ cbase }}/manage/sessions/{{ s.id }}/transcript/forget" {{ hx | safe }} hx-confirm="Let this session's transcript go? Redrafting then needs it sent again from the Processor."><button type="submit" class="btn link danger">Let it go</button></form>{% endif %}
         {% else %}askdnd doesn't keep this session's transcript; send it again from the Processor to redraft.{% endif %}</p>{% endif %}
     </aside>
   </div>
