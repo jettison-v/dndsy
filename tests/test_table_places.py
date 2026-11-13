@@ -201,6 +201,56 @@ def test_your_turns_bar_counts_and_never_stops_you(player, db, table):
     assert player.post(f"/characters/{other.id}/turn", data={"what": "move", "n": "5"}).status_code == 404
 
 
+def test_your_scratch_pad_is_jotted_off_your_turn_and_rolled_on_it(player, db, table):
+    """Prepare your turn (Brett chose A and B, Nov 13: "keep it simple to start, like an executable scratch pad"): lines
+    jotted from your Battle in any order, a note each, every line with its own Roll; your turn's start keeps them (a line
+    rolled from it is ticked), its end clears them. Only from your own Battle, at most eight, and only your own pad."""
+    from app import character_views as views
+    from app import characters as chars
+    from app import fight
+
+    cole = char(db, "Cole")
+    rows = [o for o in views.options(chars.character_summary(cole), set()) if o.get("cost") in ("Action", "Bonus action")][:2]
+    url = f"/characters/{cole.id}/turn"
+    for o in rows:
+        assert player.post(url, data={"what": "pad_add", "key": o["key"]}).status_code == 204
+    player.post(url, data={"what": "pad_add", "key": rows[0]["key"]})  # (once each)
+    assert player.post(url, data={"what": "pad_add", "key": "nothing:of-mine"}).status_code == 422
+    player.post(url, data={"what": "pad_note", "key": rows[1]["key"], "note": "  if the   cultist casts "})
+    db.refresh(cole)
+    assert cole.turn["pad"] == [{"key": rows[0]["key"]}, {"key": rows[1]["key"], "note": "if the cultist casts"}]
+    page = player.get("/c/main/table").text
+    assert "Your scratch pad" in page and rows[0]["name"] in page and 'value="if the cultist casts"' in page
+    assert page.count(f'data-pad-key="{rows[0]["key"]}"') == 1  # (its own Roll, Cast or Use, as on Battle)
+    # Rolled from the pad: its cost used and its line ticked; the turn's own Start over keeps the pad
+    player.post(url, data={"what": "use", "cost": "action", "n": "1", "pad": rows[0]["key"]})
+    db.refresh(cole)
+    assert cole.turn["pad"][0]["done"] is True and cole.turn["used"] == ["action"]
+    assert "tbar-pad-line done" in player.get("/c/main/table").text
+    player.post(url, data={"what": "start"})
+    db.refresh(cole)
+    assert cole.turn == {"pad": [{"key": rows[0]["key"]}, {"key": rows[1]["key"], "note": "if the cultist casts"}]}
+    # A fight: your turn beginning keeps the pad, its end clears it
+    now = {"round": 1, "order": [{"key": "c", "character": cole.id}, {"key": "g", "character": None}]}
+    fight.starts_over(db, "c", now)
+    assert cole.turn["pad"]
+    fight.starts_over(db, "g", now, "c")
+    assert not (cole.turn or {}).get("pad")
+    # At most eight; Clear empties it; someone else's pad isn't yours
+    for o in views.options(chars.character_summary(cole), set())[:10]:
+        player.post(url, data={"what": "pad_add", "key": o["key"]})
+    db.refresh(cole)
+    assert len(cole.turn["pad"]) == 8
+    player.post(url, data={"what": "pad_remove", "key": cole.turn["pad"][0]["key"]})
+    db.refresh(cole)
+    assert len(cole.turn["pad"]) == 7
+    player.post(url, data={"what": "pad_clear"})
+    db.refresh(cole)
+    assert not (cole.turn or {}).get("pad")
+    other = db.scalar(select(Character).where(Character.name == "Trah"))
+    assert player.post(f"/characters/{other.id}/turn", data={"what": "pad_clear"}).status_code == 404
+
+
 def _goblin(dm, db, p, at=(4, 1), hidden=False):
     dm.post(f"/c/main/table/places/{p.id}/creatures", data={"key": "goblin-warrior", "count": "1", "x": str(at[0]), "y": str(at[1]),
                                                             **({"hidden": "1"} if hidden else {})})

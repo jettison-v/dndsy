@@ -142,17 +142,24 @@ def settle(db: Session, campaign: Campaign, prev: dict | None, now: dict | None)
         if began:
             follow(db, campaign, ended, began, now)
             creature_turns(db, campaign, ended, began, now)
-            starts_over(db, began, now)
+            starts_over(db, began, now, ended)
     campaign.fight, campaign.fight_at = now, datetime.now(UTC)
 
 
-def starts_over(db: Session, began: str, now: dict) -> None:
+def starts_over(db: Session, began: str, now: dict, ended: str | None = None) -> None:
     """A character's turn began: its turn's bar starts over (app/turn_bar.py: movement, Action, Bonus Action and
-    Reaction; the 2024 rules give a Reaction back at the start of your turn)."""
-    who = next((x.get("character") for x in now.get("order") or [] if x.get("key") == began), None)
+    Reaction; the 2024 rules give a Reaction back at the start of your turn), keeping its scratch pad (Prepare your turn,
+    Nov 13), which is for this turn; the turn that ended clears its own scratch pad."""
+    key_of = {x.get("key"): x.get("character") for x in now.get("order") or []}
+    if ended and (gone := key_of.get(ended)) and gone != key_of.get(began):
+        ch = db.get(Character, gone)
+        if ch is not None and (ch.turn or {}).get("pad"):
+            ch.turn = {k: v for k, v in ch.turn.items() if k != "pad"} or None
+    who = key_of.get(began)
     ch = db.get(Character, who) if who else None
     if ch is not None and ch.turn:
-        ch.turn = None
+        lines = [{k: v for k, v in p.items() if k != "done"} for p in ch.turn.get("pad") or [] if isinstance(p, dict)]
+        ch.turn = {"pad": lines} if lines else None
 
 
 def turn_begun(prev: dict | None, now: dict) -> tuple[str | None, str | None]:

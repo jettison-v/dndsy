@@ -415,3 +415,37 @@ def test_the_dms_table_tools_work_after_a_map_is_added(people, server, browser_d
         labs(False)
         engine.dispose()
     assert admin.errors == []
+
+
+def test_your_scratch_pad_jots_from_battle_and_rolls_from_the_bar(people, server, browser_db):
+    """Prepare your turn (Brett chose A and B, Nov 13): on askdnd's table, + Add in your turn's bar jots a row from your
+    Battle onto your scratch pad, and the line's own Roll opens the roll card, as from Battle; ✕ takes it off."""
+    from sqlalchemy import create_engine, text
+
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE campaigns SET vtt_pieces = CAST(:p AS JSONB) WHERE id = :c"), {"p": json.dumps(["labs", "vtt"]), "c": server["campaign"]})
+    try:
+        player = people("player")
+        page = player.open("/c/main/table")
+        bar = page.locator("#turn-bar")
+        bar.locator(".tbar-add > summary").click()
+        first = bar.locator(".tbar-add-it").first
+        name = first.inner_text().replace("pinned", "").strip()
+        first.click()
+        line = bar.locator(".tbar-pad-line").first
+        line.wait_for()
+        assert name in line.inner_text()
+        roll = line.locator("[data-plan], .roll-chip").first
+        if roll.count():
+            roll.click()
+            page.locator(".roll-win, #peek.open").first.wait_for(timeout=10000)
+            page.keyboard.press("Escape")
+        line.locator(".tbar-pad-x").click()
+        page.wait_for_function("!document.querySelector('.tbar-pad-line')")
+        assert player.errors == []
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("UPDATE campaigns SET vtt_pieces = CAST('[]' AS JSONB) WHERE id = :c"), {"c": server["campaign"]})
+            conn.execute(text("UPDATE characters SET turn = NULL"))
+        engine.dispose()

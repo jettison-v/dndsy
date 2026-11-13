@@ -1,10 +1,12 @@
 {# Your turn's bar (app/turn_bar.py; askdnd's table, slice 2, docs/mockups/table-slices/ Turn-bar): under the middle of
    the table page. Movement left this turn, what you've used of your Action, Bonus Action and Reaction (press one to
    untick it), and your Battle pins by cost, each with its own Roll, Cast or Use. Off your turn in a fight, only your
-   Reactions and a readied action. `tb`: turn_bar.context. On a phone it's one line until pulled up (slice 4). #}
+   Reactions and a readied action. `tb`: turn_bar.context. On a phone it's one line until pulled up (slice 4).
+   Your scratch pad (Prepare your turn, Brett chose A and B, Nov 13): jotted from your Battle while others play, each
+   line with its own Roll, Cast or Use on your turn; a line rolled from it is ticked. #}
 {% from "_char.html" import hit, pips %}
-{% macro bar_item(o, cost) -%}
-<div class="tbar-it" data-turn-cost="{{ cost }}" data-panel-url="/characters/{{ tb.c.id }}/detail?ref={{ o.key | urlencode }}" tabindex="0" role="button">
+{% macro bar_item(o, cost, pad="") -%}
+<div class="tbar-it" data-turn-cost="{{ cost }}"{% if pad %} data-pad-key="{{ pad }}"{% endif %} data-panel-url="/characters/{{ tb.c.id }}/detail?ref={{ o.key | urlencode }}" tabindex="0" role="button">
   <b>{{ o.name }}</b>{% if o.uses %} {{ pips(o.uses) }}{% endif %}
   {% if o.meta %}<small>{{ o.meta }}</small>{% endif %}
   <span class="tbar-go">{% if tb.can_use and o.use %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ tb.c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button>{% endif %}{% if tb.can_play and o.cast %}<button type="button" class="roll-chip item-go" data-use-url="/characters/{{ tb.c.id }}/cast?key={{ o.key | urlencode }}">Cast</button>{% elif not (tb.can_use and o.use) %}{{ hit(o) }}{% endif %}</span>
@@ -34,6 +36,19 @@
       {% endfor %}
     </div>
     {% endif %}
+    <div class="tbar-pad">
+      <div class="tbar-pad-head"><span class="lbl">Your scratch pad</span>
+        <span class="tbar-pad-acts">{% if not tb.pad_full and tb.pad_pick %}<details class="tbar-add"><summary class="btn small">+ Add</summary>
+          <div class="tbar-add-menu" role="group" aria-label="Add to your scratch pad">{% for g in tb.pad_pick %}<span class="lbl">{{ g.label }}</span>{% for o in g.rows %}<button type="button" class="tbar-add-it" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{{ {"what": "pad_add", "key": o.key} | tojson }}' hx-swap="none">{{ o.name }}{% if o.starred %} <small>pinned</small>{% endif %}</button>{% endfor %}{% endfor %}</div></details>{% endif %}
+        {% if tb.pad %}<button type="button" class="btn small link" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{"what": "pad_clear"}' hx-swap="none">Clear</button>{% endif %}</span></div>
+      {% if tb.pad %}<div class="tbar-pad-lines">{% for p in tb.pad %}
+        <div class="tbar-pad-line{{ ' done' if p.done }}">{{ bar_item(p.o, p.cost, p.o.key) }}
+          <input type="text" class="tbar-pad-note" name="note" value="{{ p.note }}" placeholder="+ a note" maxlength="60" aria-label="A note for {{ p.o.name }}" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{{ {"what": "pad_note", "key": p.o.key} | tojson }}' hx-trigger="change" hx-swap="none">
+          {% if p.done %}<span class="tbar-pad-done" title="Rolled from the pad this turn">✓</span>{% endif %}
+          <button type="button" class="btn small link tbar-pad-x" hx-post="/characters/{{ tb.c.id }}/turn" hx-vals='{{ {"what": "pad_remove", "key": p.o.key} | tojson }}' hx-swap="none" aria-label="Take {{ p.o.name }} off the pad">✕</button></div>
+      {% endfor %}</div>
+      {% else %}<p class="note">{% if tb.on_turn %}Nothing jotted for this turn.{% else %}While others play, jot what you mean to do: + Add picks it from your Battle, and on your turn each has its own Roll.{% endif %}</p>{% endif %}
+    </div>
     <div class="tbar-slots">
       {% if tb.readied and tb.readied.option %}<div class="tbar-grp"><span class="lbl k-reaction">Readied · {{ tb.readied.trigger }}</span><div class="tbar-items">{{ bar_item(tb.readied.option, "reaction") }}</div></div>{% endif %}
       {% for g in tb.groups %}

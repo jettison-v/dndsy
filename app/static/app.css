@@ -307,7 +307,7 @@ body.pt-rows .pt-with-track { display: none; }
 .tbar-use.used { opacity: .5; text-decoration: line-through; }
 .tbar-use.used i { background: none; box-shadow: inset 0 0 0 1.5px currentColor; }
 .tbar-slots { display: flex; gap: var(--sp-3); flex: 1; min-width: 0; overflow-x: auto; }
-.tbar-grp { display: grid; gap: var(--sp-1); align-content: start; min-width: 0; }
+.tbar-grp { display: grid; gap: var(--sp-1); align-content: start; min-width: 0; flex: none; }  /* (its own width: the row scrolls, cards never overlap) */
 .tbar-grp.used .tbar-items { opacity: .5; }
 .tbar-grp .lbl { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
 .lbl.k-action { color: var(--k-action); } .lbl.k-bonus { color: var(--k-bonus); } .lbl.k-reaction { color: var(--k-reaction); }
@@ -319,6 +319,29 @@ body.pt-rows .pt-with-track { display: none; }
 .tbar-go { display: flex; gap: var(--sp-1); flex-wrap: wrap; }
 .tbar-end { display: grid; gap: var(--sp-1); align-content: center; justify-items: end; width: 170px; flex: none; text-align: right; }
 .tbar-end .note { font-size: var(--fs-xs); }
+/* Your scratch pad (Prepare your turn, Brett chose A and B, Nov 13): a short list beside what you've used, each line a
+   Battle row with its own Roll; + Add opens upward (the bar sits at the bottom of the page) */
+.tbar-pad { display: grid; gap: var(--sp-1); align-content: start; width: 300px; flex: none; min-width: 0; }
+.tbar-pad-head { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+.tbar-pad-head .lbl { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); white-space: nowrap; }
+.tbar-pad-acts { display: flex; align-items: center; gap: var(--sp-1); }
+.tbar-pad-lines { display: grid; gap: var(--sp-1); max-height: 200px; overflow-y: auto; }
+.tbar-pad-line { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 2px var(--sp-1); align-items: center; }
+.tbar-pad-line .tbar-it { max-width: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.tbar-pad-line.done .tbar-it { border-color: var(--green); }
+.tbar-pad-note { grid-column: 1 / -1; grid-row: 2; height: 22px; width: 100%; min-width: 0; background: transparent; border: 0; border-bottom: 1px dashed var(--line); color: var(--muted); font: 400 var(--fs-xs)/1.4 var(--sans); padding: 2px 4px; }
+.tbar-pad-note:focus { outline: none; border-bottom-color: var(--amber); color: var(--text); }
+.tbar-pad-done { color: var(--green); font-weight: 700; }
+.tbar-pad .note { font-size: var(--fs-xs); margin: 0; }
+.tbar-add { position: relative; }
+.tbar-add > summary { list-style: none; }
+.tbar-add > summary::-webkit-details-marker { display: none; }
+.tbar-add-menu { position: absolute; right: 0; bottom: calc(100% + 6px); z-index: 6; width: 260px; max-height: 320px; overflow-y: auto; display: grid; gap: 2px; padding: var(--sp-2); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--lift); }
+.tbar-add-menu.down { bottom: auto; top: calc(100% + 6px); }
+.tbar-add-menu .lbl { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: var(--sp-2) var(--sp-1) 2px; }
+.tbar-add-it { text-align: left; background: none; border: 0; border-radius: var(--r-sm); padding: 6px var(--sp-2); color: var(--text); font: 500 var(--fs-sm)/1.3 var(--sans); cursor: pointer; }
+.tbar-add-it:hover, .tbar-add-it:focus-visible { background: var(--surface-2); }
+.tbar-add-it small { color: var(--muted); font-size: var(--fs-xs); }
 @media (max-width: 900px) {
   /* (above Table rolls' line, which sits on the bottom bar; above its sheet while it's open) */
   .tbar { position: fixed; z-index: 5; left: 0; right: 0; bottom: calc(105px + env(safe-area-inset-bottom)); margin: 0; border-radius: var(--r-md) var(--r-md) 0 0; }
@@ -328,6 +351,7 @@ body.pt-rows .pt-with-track { display: none; }
   .tbar-body { display: none; flex-direction: column; gap: var(--sp-3); max-height: 60vh; overflow-y: auto; }
   .tbar.open .tbar-body { display: flex; }
   .tbar-move { width: auto; }
+  .tbar-pad { width: auto; }
   .tbar-econ { display: flex; gap: var(--sp-3); }
   .tbar-slots { flex-direction: column; overflow: visible; }
   .tbar-items { flex-direction: column; }
