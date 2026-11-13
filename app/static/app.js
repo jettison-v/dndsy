@@ -1311,7 +1311,8 @@ function feedbackBusy(e) {
 (function () {
   const toast = (...a) => window.askdndToast(...a);  // (the corner cards live in the block above)
   const SIDE = 'askdnd.rollsSide', ANIM = 'askdnd.rollsAnim', TO = 'askdnd.rollsTo';
-  const WIDE = 1100;  // narrower than this, the sidebar starts closed and opens over the page
+  const WIDE = 1241;  // narrower than this, the sidebar starts closed and opens over the page (1240: the menu bar keeps its room
+  // beside an open sidebar from 1241 up, Nov 13; app.css and base.html's first script say the same)
   const D20 = ['save', 'check', 'attack', 'death'];
   const phone = matchMedia('(max-width: 900px)'), calm = matchMedia('(prefers-reduced-motion: reduce)');
   const side = document.getElementById('table-rolls'), log = document.getElementById('roll-log');
@@ -2067,8 +2068,10 @@ function feedbackBusy(e) {
       } else if (st.step === 'attack') {
         if (attack) h += castAt();
         // Make it dramatic (Brett chose A, Nov 13, docs/mockups/make-it-dramatic/): an icon at the end of this row, for
-        // players to find by pointing at it; pressed, every screen throws this roll big and slow. A roll the table sees only.
-        const drama = spec.shared && to === 'table' && play !== 'death'
+        // players to find by pointing at it; pressed, every screen throws this roll big and slow. On every roll of your own
+        // character's (Brett, Nov 13: his device remembered Just you, so it never showed): pressed while the roll was
+        // Just you or DM only, it goes to the table, said on the card's Who sees it line like any choice there.
+        const drama = spec.shared && play !== 'death'
           ? '<button type="button" class="rcard-drama" data-drama aria-pressed="' + st.drama + '" aria-label="Make it dramatic" title="Make it dramatic: the whole table watches this roll in slow motion">🎬</button>' : '';
         h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + drama + '</div>' + notes();
         const pre = mods.filter(m => m.when === 'before' && m.adds);
@@ -2265,7 +2268,7 @@ function feedbackBusy(e) {
         return go({ kind: 'dc', label: name, mod: '', dmg: '', mode: 'normal', extras: [] }).then(e => { st.entry = e; st.step = 'done'; if (w.isConnected) draw(); }, () => { st.step = 'choose'; draw(); });
       }
       if (b.dataset.mode) { st.mode = b.dataset.mode; return draw(); }
-      if (b.hasAttribute('data-drama')) { st.drama = !st.drama; return draw(); }
+      if (b.hasAttribute('data-drama')) { st.drama = !st.drama; if (st.drama && to !== 'table') { to = 'table'; store.set(TO, to); } return draw(); }
       if (b.hasAttribute('data-vis-open')) { st.visOpen = true; return draw(); }
       if (b.hasAttribute('data-ends-hidden')) { st.hidden = !st.hidden; return draw(); }
       if (b.dataset.cardEv != null) { st.ev = +b.dataset.cardEv; return draw(); }
