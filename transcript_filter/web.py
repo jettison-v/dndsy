@@ -61,6 +61,25 @@ ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 
 app = FastAPI(title="askdnd Processor", docs_url=None, redoc_url=None)
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
+HERE = Path(__file__).resolve().parent
+
+
+def code_stamp() -> float:
+    """When the Processor's own code last changed on disk (its .py files and pages)."""
+    return max((f.stat().st_mtime for f in [*HERE.glob("*.py"), *HERE.glob("templates/*.html")]), default=0.0)
+
+
+STARTED = code_stamp()  # (what this running copy was loaded from)
+
+
+def stale() -> bool:
+    """Whether the code on disk changed since this Processor opened: a running app keeps the code it started with
+    (Brett, Nov 13: it ran from Nov 6 and sent Nov 8's transcript without who talked, which came on Nov 7)."""
+    return code_stamp() > STARTED + 1
+
+
+STALE = "The Processor was updated since it opened. Quit it (Quit, on its home page) and open askdnd Processor again, then send."
+templates.env.globals["stale"] = stale
 jobs: dict[str, dict] = {}
 send_errors: dict[str, str] = {}
 
@@ -100,12 +119,30 @@ def upload_settings() -> tuple[str, str]:
 def send_transcript(stem: str, text: str, talk: dict | None = None) -> dict:
     """POST the final transcript to askdnd, with who talked (seconds per speaker, from talk_times). Returns the
     server's JSON reply."""
+    return _post("/api/transcripts", {"played_on": stem, "text": text, **({"talk": talk} if talk else {})})
+
+
+def send_talk(stem: str, talk: dict) -> dict:
+    """POST only who talked, for a session already sent (askdnd keeps its transcript and drafts as they are)."""
+    return _post("/api/transcripts/talk", {"played_on": stem, "talk": talk})
+
+
+def talk_for(stem: str) -> dict | None:
+    """Who talked and when the recording began, as askdnd takes them."""
+    p = paths(stem)
+    talk = talk_times(load_state(p["state"])) if p["state"].exists() else None
+    if (start := recording_start(stem)):
+        talk = {**(talk or {}), "start": start}  # (askdnd counts the session's rolls from then, for the recording's length)
+    return talk
+
+
+def _post(path: str, body: dict) -> dict:
     url, token = upload_settings()
     if not token:
         raise RuntimeError("No UPLOAD_TOKEN in your local .env yet.")
     req = urllib.request.Request(
-        f"{url}/api/transcripts",
-        data=json.dumps({"played_on": stem, "text": text, **({"talk": talk} if talk else {})}).encode(),
+        f"{url}{path}",
+        data=json.dumps(body).encode(),
         # Its own name: Cloudflare, in front of askdnd since Nov 2, refuses Python's default one (error 1010, a 403)
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}", "User-Agent": "askdnd-processor/1.0"},
         method="POST",
@@ -311,12 +348,34 @@ def send(stem: str):
     p = paths(stem)
     if not p["final_txt"].exists():
         return RedirectResponse(f"/sessions/{stem}", status_code=303)
+    if stale():
+        send_errors[stem] = STALE
+        return RedirectResponse(f"/sessions/{stem}#saved", status_code=303)
     try:
-        talk = talk_times(load_state(p["state"])) if p["state"].exists() else None
-        if (start := recording_start(stem)):
-            talk = {**(talk or {}), "start": start}  # (askdnd counts the session's rolls from then, for the recording's length)
+        talk = talk_for(stem)
         reply = send_transcript(stem, p["final_txt"].read_text(), talk)
-        p["sent"].write_text(json.dumps({**reply, "sent_at": datetime.now().isoformat(timespec="minutes")}))
+        p["sent"].write_text(json.dumps({**reply, "sent_at": datetime.now().isoformat(timespec="minutes"),
+                                         "talk": bool(talk and talk.get("speakers"))}))
+    except RuntimeError as e:
+        send_errors[stem] = str(e)
+    return RedirectResponse(f"/sessions/{stem}#saved", status_code=303)
+
+
+@app.post("/sessions/{stem}/talk")
+def send_who_talked(stem: str):
+    """Send only who talked for a session already sent without it (Terra in the Observatory, Nov 13)."""
+    p = paths(stem)
+    if stale():
+        send_errors[stem] = STALE
+        return RedirectResponse(f"/sessions/{stem}#saved", status_code=303)
+    talk = talk_for(stem)
+    if not (talk and talk.get("speakers")):
+        send_errors[stem] = "This recording has no speaker names to count."
+        return RedirectResponse(f"/sessions/{stem}#saved", status_code=303)
+    try:
+        send_talk(stem, talk)
+        sent = json.loads(p["sent"].read_text()) if p["sent"].exists() else {}
+        p["sent"].write_text(json.dumps({**sent, "talk": True}))
     except RuntimeError as e:
         send_errors[stem] = str(e)
     return RedirectResponse(f"/sessions/{stem}#saved", status_code=303)

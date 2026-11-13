@@ -123,9 +123,11 @@ a { color: var(--red-text); }
   <ul class="fixes">
     <li><b>"No UPLOAD_TOKEN in your local .env yet"</b>: the key the Processor sends with is missing. Ask Claude; it's set with <code>scripts/set-secret.sh UPLOAD_TOKEN</code>, the same value on askdnd and your Mac.</li>
     <li><b>"Couldn't reach askdnd"</b>: check the internet, then press <span class="btn">Send to askdnd</span> again. Nothing was lost.</li>
+    <li><b>"The Processor was updated since it opened"</b>: it keeps the code it started with, so after askdnd changes it says so and won't send. Press <span class="btn">Quit</span> on its home page, open askdnd Processor again, then send.</li>
+    <li><b>A session sent without who talked</b> (Terra in the Observatory, sent from a Processor opened before it counted): its page has <span class="btn">Send who talked</span>, which sends only the seconds per speaker; the transcript and Claude's drafts stay as they are.</li>
     <li><b>The filter seems stuck</b>: its progress is in the log above. If it has stopped, open the session and press <span class="btn">Filter again</span>.</li>
   </ul>
 
 
-  <footer>Kept in the repo at <code>docs/artifacts/recording-to-recap.html</code> and updated when the Processor or drafting changes. Last updated Nov 10, 2026.</footer>
+  <footer>Kept in the repo at <code>docs/artifacts/recording-to-recap.html</code> and updated when the Processor or drafting changes. Last updated Nov 13, 2026.</footer>
 </main>

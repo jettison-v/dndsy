@@ -125,8 +125,8 @@ def work(hp: dict, mode: str, parts: list[dict], defs: list[dict], off: set[str]
     if mode == "heal":
         n = sum(max(0, int(p.get("amount") or 0)) for p in parts)
         out.update(amount=n, hp_after=min(top, cur + n))
-        out["steps"].append({"title": "Healing", "value": f"+{out['hp_after'] - cur}", "why": f"Restores your own Hit Points, up to {top}; "
-                             "never Temporary ones." + (f" {n - (out['hp_after'] - cur)} more would go past your maximum." if cur + n > top else "")})
+        out["steps"].append({"title": "Healing", "value": f"+{out['hp_after'] - cur}", "why": f"Restores Hit Points, up to the maximum of {top}; "
+                             "never Temporary ones." + (f" {n - (out['hp_after'] - cur)} more would go past the maximum." if cur + n > top else "")})
         if not n:
             out["empty"] = True  # (nothing typed yet: the button waits, nothing to say)
         elif out["hp_after"] == cur:  # (feedback 62: a disabled Heal 0 looked broken; say why nothing happens)

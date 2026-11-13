@@ -70,6 +70,9 @@
         <p><b>Step 4: Sent to askdnd</b> {{ sent.sent_at.replace("T", " at ") }}. Claude is drafting {{ sent.label }} (about a minute).</p>
         <p><a class="button primary" href="{{ sent.review_url }}" target="_blank">Review on askdnd</a>
           <form class="inline" method="post" action="/sessions/{{ s.stem }}/send"><button type="submit">Send again</button></form></p>
+        {% if sent.talk %}<p class="muted">Sent with who talked.</p>
+        {% else %}<p>Who talked wasn't sent with it. <form class="inline" method="post" action="/sessions/{{ s.stem }}/talk"><button type="submit">Send who talked</button></form>
+          <span class="muted">Only the seconds per speaker name; the transcript and Claude's drafts stay as they are.</span></p>{% endif %}
       {% else %}
         <p><b>Step 4: Send to askdnd.</b> Sends only this filtered transcript, which askdnd keeps in private storage to draft the session, with who talked and when the recording started.</p>
         {% if not has_token %}<p class="card warn">Sending isn't set up on this Mac yet (no UPLOAD_TOKEN in .env).</p>{% endif %}

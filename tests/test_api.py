@@ -77,3 +77,22 @@ def test_transcript_text_is_not_stored(client, db, monkeypatch):
     for t in tables:
         hits = db.execute(sql(f'select count(*) from "{t}" where cast("{t}".* as text) like :m'), {"m": "%SECRET-TRANSCRIPT-MARKER%"}).scalar()
         assert hits == 0, t
+
+
+def test_who_talked_reaches_a_session_already_sent_and_nothing_else(client, db, monkeypatch):
+    """Brett, Nov 13: Terra in the Observatory went from a Processor opened before it counted speaking times. Its
+    numbers can follow on their own: the session's talk is filled (a start set on the review page kept), no read starts."""
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"played_on": "2026-08-29", "source": "transcript"}]})
+    s = db.scalar(select(GameSession))
+    s.talk = {"start": "18:32"}
+    db.commit()
+    monkeypatch.setattr(admin_sessions, "read_transcript_in_background", lambda *a: pytest.fail("no read for who talked"))
+    talk = {"speakers": {"A": 120.5, "B": 60}, "length": 3600}
+    h = {"Authorization": f"Bearer {TOKEN}"}
+    assert client.post("/api/transcripts/talk", json={"played_on": "2026-08-29", "talk": talk}).status_code == 401
+    r = client.post("/api/transcripts/talk", json={"played_on": "2026-08-29", "talk": talk}, headers=h)
+    assert r.status_code == 200 and r.json()["speakers"] == 2
+    db.refresh(s)
+    assert s.talk == {"start": "18:32", "speakers": {"A": 120.5, "B": 60.0}, "length": 3600}
+    assert client.post("/api/transcripts/talk", json={"played_on": "2026-09-01", "talk": talk}, headers=h).status_code == 404
+    assert client.post("/api/transcripts/talk", json={"played_on": "2026-08-29", "talk": {}}, headers=h).status_code == 422
