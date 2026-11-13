@@ -342,6 +342,9 @@ class Character(Timestamped, Base):
     creature_story: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     # When its player's askdnd extension last heard its D&D Beyond sheet (app/ddb_bridge.py): the sheet can be reached
     sheet_heard_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # When it was last heard, kept after the sheet closes (sheet_heard_at is cleared then): a connection that got worse
+    # tonight says so loudly (app/live.py `dropped`, _conn_band.html; Brett, Nov 13)
+    sheet_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     owner: Mapped[User | None] = relationship()
     snapshot: Mapped["CharacterSnapshot | None"] = relationship(back_populates="character", uselist=False, passive_deletes=True)
     memberships: Mapped[list["CampaignCharacter"]] = relationship(

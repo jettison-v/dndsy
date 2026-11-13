@@ -1107,6 +1107,15 @@
   "link": "https://claude.ai/artifact/6LWSngz4ushCgvS3kNjsPV"
  },
  {
+  "title": "Menu bar build plan",
+  "kind": "plan",
+  "status": "Current",
+  "date": "Nov 13",
+  "what": "Brett's picks on Menu Bar by Person, built as one change: Campaign takes Story in, the bar for each person, the Live pill's words, Search as a bar that keeps its place, the order things give way, and every page, person and width it reaches.",
+  "source": "docs/plans/2026-11-13-menu-bar-build.md",
+  "link": ""
+ },
+ {
   "title": "Use Window",
   "kind": "design",
   "status": "For you to pick",

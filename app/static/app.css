@@ -10,6 +10,7 @@
   --red: #d64545; --red-hover: #e35a5a; --red-soft: rgba(214, 69, 69, .14);
   --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
   --staging-bar: #3a2a08; --staging-edge: var(--amber); --staging-ink: #1a1204;  /* staging's menu bar and label */
+  --on-amber: #1b1b1b;  /* text on an amber fill: the connection band's button and mark */
   --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
   --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
   --surface-3: #30353b; --line-soft: #2c3036; --row-hover: #20242a; --bg-glass: rgba(21, 23, 26, .97);
@@ -176,6 +177,23 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { 
 body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-noext { display: none; }  /* (a phone: the DM carries it, no nag) */
 body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-word { display: inline; }
 .live-pill.htmx-request { opacity: .7; }
+/* The connection band (Brett chose B, Nov 13, docs/mockups/connection-drops/; _conn_band.html): under the menu bar while
+   your own sheet's connection is worse than it was tonight, in the Live pill's colour; leaves by itself once it's back.
+   A band for a state that lasts, beside corner cards for messages you read and dismiss (docs/DESIGN.md › Components › Band). */
+.conn-band { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) 24px; font-size: var(--fs-sm); line-height: 1.4; color: var(--text); border-top: 1px solid var(--k); --k: var(--amber); background: color-mix(in srgb, var(--k) 16%, var(--chrome)); }
+.conn-band.bad { --k: var(--red); background: color-mix(in srgb, var(--k) 18%, var(--chrome)); }
+.conn-band[hidden], .conn-band.later { display: none; }
+.cb-ic { width: 24px; height: 24px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--k); color: var(--on-amber); font-weight: 800; font-size: var(--fs-sm); }
+.conn-band.bad .cb-ic { color: var(--text-strong); }
+.cb-tx { flex: 1; min-width: 0; }
+.cb-tx b { color: var(--text-strong); font-weight: 600; }
+.conn-band .cb-go { flex: none; background: var(--k); border-color: var(--k); color: var(--on-amber); font-weight: 600; white-space: nowrap; }
+.conn-band.bad .cb-go { color: var(--text-strong); }
+.conn-band .cb-later { flex: none; white-space: nowrap; }
+.conn-band .cb-bridge, body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-sheet { display: none; }
+body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-bridge { display: revert; }
+body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-tx.cb-bridge { display: block; }
+@media (max-width: 900px) { .conn-band { display: none; } }  /* a phone never holds the sheet's connection */
 @media (max-width: 1240px) { .live-ago { display: none; } .live-word { display: inline; } }  /* "● Live" or "● Game on"; the dot's colour says in step or to make by hand, the window the rest */
 @media (max-width: 1240px) {  /* without the extension too: "Add the askdnd bridge" pushed the menu bar past a 1000px window (the layout sweep, Nov 2); the window still has the steps */
   body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-noext { display: none; }
@@ -1729,6 +1747,10 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rcard-vis span:first-child { flex: 1; }
 .rcard-vis-open { display: grid; }
 .roll-card .rw-row, .roll-card .rw-notes, .roll-card .rw-note { margin: 0; }
+/* A roll that won't reach D&D Beyond's Game Log although it would have: said in amber, with the sheet (connection-drops) */
+.rw-note.rw-log-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2); align-items: start; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--amber-soft); border: 1px solid var(--amber); color: var(--text); }
+.rw-log-warn b { color: var(--amber); font-weight: 800; }
+.rw-log-warn a { color: var(--amber); font-weight: 600; white-space: nowrap; }
 .roll-win.nat20 { border-color: var(--green); } .roll-win.nat1, .roll-win.failed { border-color: var(--red); }
 /* An item on Battle (Brett, 2026-10-30): its section in a column, its button, its window */
 .seeall.items-all { margin-top: 0; }

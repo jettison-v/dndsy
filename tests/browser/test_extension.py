@@ -9,6 +9,7 @@ import re
 import shutil
 
 import pytest
+from playwright.sync_api import expect
 from sqlalchemy import create_engine, text
 
 ITEMS = os.path.join(os.path.dirname(__file__), "..", "fixtures", "ddb", "items.json")
@@ -84,8 +85,23 @@ def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server)
 
     sheet.close()
     page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet to connect')", timeout=8000)
+    # The connection band (Brett chose B, Nov 13, docs/mockups/connection-drops/): it got worse tonight, so it says so
+    band = page.locator("#conn-band")
+    expect(band).to_be_visible()
+    expect(band).to_contain_text("Cole isn't connected to D&D Beyond")
+    expect(band.locator("a.cb-go")).to_have_attribute("href", "https://www.dndbeyond.com/characters/75423618")
+    band.locator("[data-band-later]").click()  # Not now: hidden on this computer, a page later too
+    expect(band).to_be_hidden()
+    page.reload()
+    page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
+    expect(page.locator("#conn-band")).to_be_hidden()
     page.click('[data-roll=save][data-label="Dex save"]:visible >> nth=0')
     assert page.locator(".roll-win").count() == 1
+    page.keyboard.press("Escape")
+    sheet = chrome.new_page()
+    sheet.goto(SHEET)  # back: the band leaves by itself
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
+    expect(page.locator("#conn-band")).to_have_attribute("hidden", "")
 
 
 def test_a_sheet_closed_right_after_it_saved_stays_closed(chrome, server):

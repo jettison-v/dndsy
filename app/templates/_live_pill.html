@@ -17,10 +17,10 @@
 {% elif p.step %}{% set tone = "step" %}
 {% elif p.via %}{% set tone = "via" %}
 {% elif p.failed %}{% set tone = "warn" %}
-{% elif ours and playing %}{% set tone = "bad" %}
+{% elif ours and (playing or p.dropped) %}{% set tone = "bad" %}{# (a sheet that was connected tonight: red, as its band) #}
 {% else %}{% set tone = "" %}{% endif %}
 <button type="button" id="live-pill" class="live-pill{{ ' ' + tone if tone }}" data-menu="live-menu" aria-haspopup="dialog" aria-controls="live-menu"
-  hx-get="/live{{ '?c=%s' % fid if fid }}" hx-target="#live-menu" hx-trigger="click" data-focus="{{ fid }}" data-every="{{ tn.every }}"{% if tn.connectable %} data-wants-bridge="1"{% endif %}{% if m and m.in_game %} data-log="{{ 'on' if m.step else 'sheet' }}" data-log-until="{{ m.step_until }}"{% else %} data-log="" data-log-until="0"{% endif %}{% if oob %} hx-swap-oob="true"{% endif %}
+  hx-get="/live{{ '?c=%s' % fid if fid }}" hx-target="#live-menu" hx-trigger="click" data-focus="{{ fid }}" data-every="{{ tn.every }}"{% if tn.connectable %} data-wants-bridge="1"{% endif %}{% if m and m.in_game %} data-log="{{ 'on' if m.step else 'sheet' }}" data-log-until="{{ m.step_until }}" data-sheet="https://www.dndbeyond.com/characters/{{ m.ddb_id }}"{% else %} data-log="" data-log-until="0"{% endif %}{% if oob %} hx-swap-oob="true"{% endif %}
   title="{% if p.by_hand %}{{ p.name }}: {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} didn't go through to D&amp;D Beyond: Try again or Undo in this window{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif party %}How many of the party's D&amp;D Beyond sheets are connected{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd change together (the bridge){% elif p.via %}{{ p.name }}'s sheet is closed, so the DM's D&amp;D Beyond makes the changes. Open it so rolls reach D&amp;D Beyond's Game Log too{% elif ours %}Open {{ p.name }}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge{% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
   <span class="live-dot" aria-hidden="true"></span><span class="live-ago">
   {%- if p.by_hand -%}{{ p.by_hand }} didn't go through

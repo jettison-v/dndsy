@@ -3,6 +3,7 @@ table with nothing to turn on, Only me is remembered, a fight opens Table rolls 
 roll reaches D&D Beyond's Game Log."""
 
 import json
+import re
 import time
 
 from playwright.sync_api import expect
@@ -87,8 +88,16 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
 
     roll_with()
     expect(note).to_be_hidden()  # no bridge here: nothing to say
-    roll_with(log="sheet")
+    roll_with(log="sheet", sheet="https://www.dndbeyond.com/characters/75423618")
     expect(note).to_contain_text("your sheet isn't open")
+    expect(note).to_have_class(re.compile("rw-log-warn"))  # said loudly, with the way to fix it (connection-drops, Nov 13)
+    expect(note.locator("a")).to_have_attribute("href", "https://www.dndbeyond.com/characters/75423618")
+    # The sheet connects while the card is open: its line follows at once (Brett, Nov 13), the card stays where it is
+    top = page.locator(WINDOW).bounding_box()["y"]
+    page.evaluate("until => { Object.assign(document.getElementById('live-pill').dataset, { log: 'on', logUntil: until }); document.dispatchEvent(new Event('askdnd:pill')); }", str(time.time() + 60))
+    expect(note).to_contain_text("Also goes to D&D Beyond's Game Log")
+    expect(note).not_to_have_class(re.compile("rw-log-warn"))
+    assert page.locator(WINDOW).bounding_box()["y"] == top
     to(page, "self")
     expect(note).to_be_hidden()  # it isn't going anywhere
     to(page, "table")

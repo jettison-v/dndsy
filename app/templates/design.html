@@ -21,7 +21,7 @@
     <a href="#" class="ds-top" data-ds-top>↑ Top</a>
     {% for id, label in [("colors", "Colors"), ("type", "Fonts and sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
-                         ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("conditions", "Conditions"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
+                         ("help", "Help and empty states"), ("panels", "Panels, toasts and bands"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("conditions", "Conditions"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
   </nav>
 
   <section class="section" id="colors">
@@ -217,7 +217,7 @@
   </section>
 
   <section class="section" id="panels">
-    <h2>Panels and toasts</h2>
+    <h2>Panels, toasts and bands</h2>
     {{ ds("Three sizes", "--panel-w · --modal-w · --modal-lg-w", "Pick by what's inside, never by page. On phones every one is a sheet from the bottom.") }}
     <div class="table-scroll ds-sizes"><table class="list">
       <thead><tr><th>Size</th><th>Desktop</th><th>For</th><th>Open with</th><th></th></tr></thead>
@@ -242,6 +242,9 @@
       <button class="btn" type="button" onclick="askdndToast('Couldn\'t save the order.', null, 'error')">Error</button>
       <button class="btn" type="button" onclick="askdndToast('Drank Potion of Healing', { label: 'Undo', run: () => askdndToast('Put back') }, 'info')">With a button</button></div>
     {{ ds("Card with a button", "toast(message, {label, run}, kind)", "When the message offers one thing to do (Undo, Keep going, Try again). It stays 20 seconds, and the button closes it. Someone's roll (with the dice animation off) is a card too, its die as the icon.") }}
+    {{ ds("Band", ".conn-band.via | .bad · _conn_band.html", "A state that lasts and needs you (Brett chose B, Nov 13, docs/mockups/connection-drops/): under the menu bar, in the Live pill's colour, what stopped and what still works, the one button that fixes it and Not now. It leaves by itself once the cause is gone; never on a phone. Today: your sheet's connection got worse tonight.") }}
+    <div class="ds-sample"><div class="conn-band via"><span class="cb-ic" aria-hidden="true">!</span><div class="cb-tx"><b>Your D&amp;D Beyond sheet closed.</b> <span>Your rolls no longer reach the DM's Game Log. Changes to Cole still reach D&amp;D Beyond through the DM's browser.</span></div><a class="btn small cb-go" href="#panels">Open Cole's sheet ↗</a><button type="button" class="btn small link cb-later">Not now</button></div></div>
+    <div class="ds-sample"><div class="conn-band bad"><span class="cb-ic" aria-hidden="true">!</span><div class="cb-tx"><b>Cole isn't connected to D&amp;D Beyond.</b> <span>Your sheet closed and the DM's browser can't reach it. Changes to Cole can't be made from askdnd, and rolls stay in askdnd.</span></div><a class="btn small cb-go" href="#panels">Open Cole's sheet ↗</a><button type="button" class="btn small link cb-later">Not now</button></div></div>
   </section>
 
   <section class="section" id="narrow">
