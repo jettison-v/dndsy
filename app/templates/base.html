@@ -42,7 +42,7 @@
    then the people at the table (your character, Party ▾), then Live, Manage and you. #}
 {% macro avatar(r) %}<span class="char-av" aria-hidden="true">{{ r.name[:1] | upper }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endmacro %}
 {% macro party_menu(id, tn, cls="") %}
-<div class="menu party-menu {{ cls }}" id="{{ id }}" hidden>
+<div class="menu party-menu {{ cls }}" id="{{ id }}" data-door="party" hidden>
   {# The Party page first: the whole party matters more than any one character (Brett, 2026-10-26) #}
   <a href="/party" class="party-all{{ ' active' if path.startswith('/party') }}">Everyone at a glance<small>Numbers, spells and items</small></a>
   <div class="menu-group">Characters</div>
@@ -57,9 +57,9 @@
   {% if my_campaigns | length > 1 %}
   <div class="campaign-switch">
     <button class="campaign-name" data-menu="campaign-menu" aria-haspopup="true" aria-label="Campaign: {{ here.name }}{{ ' (test)' if here.is_test }}. Switch campaign">{{ here.name }}{% if here.is_test %} <span class="tag draft campaign-test" title="A test campaign: it holds test data">Test</span>{% endif %} ▾</button>
-    <div class="menu" id="campaign-menu" hidden>
+    <div class="menu" id="campaign-menu" data-door="campaign" hidden>
       <div class="menu-group">Your campaigns</div>
-      {% for c in my_campaigns %}<a href="/c/{{ c.slug }}{{ switch_path }}" class="{{ 'active' if c.id == here.id }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}{% if c.id == here.id %}<small>You're here</small>{% elif campaign_role(c.id) %}<small>{{ campaign_role(c.id) }}</small>{% endif %}</a>{% endfor %}
+      {% for c in my_campaigns %}<a data-item="campaign:{{ c.slug }}" href="/c/{{ c.slug }}{{ switch_path }}" class="{{ 'active' if c.id == here.id }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}{% if c.id == here.id %}<small>You're here</small>{% elif campaign_role(c.id) %}<small>{{ campaign_role(c.id) }}</small>{% endif %}</a>{% endfor %}
     </div>
   </div>
   {% else %}<span class="campaign-name" title="The campaign you're in">{{ here.name }}{% if here.is_test %} <span class="tag draft campaign-test" title="A test campaign: it holds test data">Test</span>{% endif %}</span>{% endif %}
@@ -96,25 +96,25 @@
     <div class="manage">
       {% set on_dm = path == '/dm' or path.startswith('/dm/') %}
       <button class="{{ 'active' if on_camp or on_dm }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
-      <div class="menu manage-menu" id="manage-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
+      <div class="menu manage-menu" id="manage-menu" data-door="manage" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head camp"><b>{{ here.name if here else "This campaign" }}</b><span>This campaign</span></div>
         {# DM Tools joins Manage (Brett, Nov 13: one door for the DM; The DM's Workspace decides its page) #}
-        {% if dm_tools_ok(user, here) %}<a href="{{ cbase }}/dm" class="{{ 'active' if on_dm }}" title="What you make for this campaign: its homebrew items">DM Tools<small>What you make: homebrew items</small></a>{% endif %}
-        {% for p in camp_pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
-        {% set more = camp_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
+        {% if dm_tools_ok(user, here) %}<a href="{{ cbase }}/dm" data-item="dm-tools" class="{{ 'active' if on_dm }}" title="What you make for this campaign: its homebrew items">DM Tools<small>What you make: homebrew items</small></a>{% endif %}
+        {% for p in camp_pages if p.menu %}<a href="{{ p.href }}" data-item="{{ p.key }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
+        {% set more = camp_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" data-item="{{ p.key }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
         {% set others = my_campaigns | rejectattr("id", "equalto", here.id if here else none) | list %}{% set others = others if is_admin else (others | selectattr("id", "in", managed_ids) | list) %}
         {% if others %}<div class="menu-group">Your other campaigns</div>
-        {% for c in others %}<a href="/c/{{ c.slug }}{{ switch_path if on_camp else '/manage' }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}{% if campaign_role(c.id) %}<small>{{ campaign_role(c.id) }}</small>{% endif %}</a>{% endfor %}{% endif %}
+        {% for c in others %}<a data-item="campaign:{{ c.slug }}" href="/c/{{ c.slug }}{{ switch_path if on_camp else '/manage' }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}{% if campaign_role(c.id) %}<small>{{ campaign_role(c.id) }}</small>{% endif %}</a>{% endfor %}{% endif %}
       </div>
     </div>
     {% endif %}
     {% if admin_pages %}{% set on_admin = admin_pages | selectattr("here") | list %}
     <div class="manage admin">
       <button class="admin-gear{{ ' active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true" aria-label="Admin" title="Admin: askdnd, for every campaign"><span aria-hidden="true">⚙</span></button>{# a gear: admins only, it needn't be found (feedback 57) #}
-      <div class="menu manage-menu" id="admin-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
+      <div class="menu manage-menu" id="admin-menu" data-door="admin" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head tool"><b>askdnd admin</b><span>Every campaign</span></div>
-        {% for p in admin_pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
-        {% set more = admin_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
+        {% for p in admin_pages if p.menu %}<a href="{{ p.href }}" data-item="{{ p.key }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
+        {% set more = admin_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" data-item="{{ p.key }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
       </div>
     </div>
     {% endif %}
@@ -122,23 +122,23 @@
        the FAQ and About (2026-10-26; app/tour.py) #}
     <div class="help-menu" data-tour="help">
       <button type="button" class="help-btn{{ ' active' if path == '/help' }}" data-menu="help-menu" aria-haspopup="true" aria-controls="help-menu" aria-label="Help" data-tip="Help">?</button>
-      <div class="menu" id="help-menu" hidden>
-        <a href="#" data-tour-start>Take the tour<small>A few minutes: what askdnd adds, and why</small></a>
-        <a href="/help?tab=adds" data-no-peek>What askdnd adds<small>The same, to read</small></a>
-        <a href="/help" data-no-peek>FAQ<small>How each feature works</small></a>
-        <a href="/help?tab=about" data-no-peek>About<small>What askdnd keeps, and who sees it</small></a>
+      <div class="menu" id="help-menu" data-door="help" hidden>
+        <a href="#" data-tour-start data-item="tour">Take the tour<small>A few minutes: what askdnd adds, and why</small></a>
+        <a href="/help?tab=adds" data-no-peek data-item="adds">What askdnd adds<small>The same, to read</small></a>
+        <a href="/help" data-no-peek data-item="faq">FAQ<small>How each feature works</small></a>
+        <a href="/help?tab=about" data-no-peek data-item="about">About<small>What askdnd keeps, and who sees it</small></a>
       </div>
     </div>
     <div class="account">
       <button class="avatar" data-menu="account-menu" aria-label="Account">{% if user.picture %}<img src="{{ user.picture }}" alt="" referrerpolicy="no-referrer">{% else %}{{ (user.name or user.email)[:1] | upper }}{% endif %}<span class="notes-dot-badge" data-notes-count hidden></span></button>
-      <div class="menu" id="account-menu" hidden>
-        <a href="#" class="menu-me" tabindex="-1">{{ user.name }}<small>{{ user.email }}</small></a>
-        <a href="/your-notes" class="{{ 'active' if path == '/your-notes' }}">Your notes <span class="notes-count" data-notes-count hidden></span><small>What happened to what you sent</small></a>
-        <a href="#" data-modal-url="/dice" data-modal-size="large">Your dice<small>How your rolls look to the table</small></a>
-        {% if can_moderate %}<a href="#" data-modal-url="/email">Email<small>The Inbox's daily digest</small></a>{% endif %}
-        {% if feedback_menu(request) %}<a href="#" data-fb-open>Feedback for Claude <kbd>\</kbd><small>A note for Claude about this page</small></a>{% endif %}
-        <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
-        <form method="post" action="/logout"><button type="submit">Sign out</button></form>
+      <div class="menu" id="account-menu" data-door="account" hidden>
+        <a href="#" class="menu-me" tabindex="-1" data-item="me">{{ user.name }}<small>{{ user.email }}</small></a>
+        <a href="/your-notes" data-item="notes" class="{{ 'active' if path == '/your-notes' }}">Your notes <span class="notes-count" data-notes-count hidden></span><small>What happened to what you sent</small></a>
+        <a href="#" data-modal-url="/dice" data-modal-size="large" data-item="dice">Your dice<small>How your rolls look to the table</small></a>
+        {% if can_moderate %}<a href="#" data-modal-url="/email" data-item="email">Email<small>The Inbox's daily digest</small></a>{% endif %}
+        {% if feedback_menu(request) %}<a href="#" data-fb-open data-item="feedback">Feedback for Claude <kbd>\</kbd><small>A note for Claude about this page</small></a>{% endif %}
+        <a href="/help" data-item="help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
+        <form method="post" action="/logout" data-item="signout"><button type="submit">Sign out</button></form>
       </div>
     </div>
   </div>
@@ -153,19 +153,19 @@
   <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/manage') or path.startswith('/admin') or path == '/your-notes' }}"><span class="notes-dot-badge" data-notes-count hidden></span>More</button>
 </nav>
 {{ party_menu("party-menu-m", tn, "sheet-menu") }}
-<div class="menu more-menu sheet-menu" id="more-menu" hidden>
+<div class="menu more-menu sheet-menu" id="more-menu" data-door="more" hidden>
   {% if my_campaigns | length > 1 %}{% for c in my_campaigns if not (here and c.id == here.id) %}<a href="/c/{{ c.slug }}{{ switch_path }}">{{ c.name }}{% if c.is_test %} <span class="tag draft campaign-test">Test</span>{% endif %}<small>Switch campaign</small></a>{% endfor %}{% endif %}
   {% if table_url and table_url.startswith('/') %}<a href="{{ table_url }}" class="{{ 'active' if path == '/table' }}">Table<small>askdnd's table</small></a>
   {% elif table_url %}<a href="{{ table_url }}" target="_blank" rel="noopener">Table ↗<small>D&amp;D Beyond's VTT</small></a>{% endif %}
-  <a href="/your-notes" class="{{ 'active' if path == '/your-notes' }}">Your notes <span class="notes-count" data-notes-count hidden></span></a>
-  <a href="#" data-modal-url="/dice" data-modal-size="large">Your dice</a>
+  <a href="/your-notes" data-item="notes" class="{{ 'active' if path == '/your-notes' }}">Your notes <span class="notes-count" data-notes-count hidden></span></a>
+  <a href="#" data-modal-url="/dice" data-modal-size="large" data-item="dice">Your dice</a>
   {% set camp_home = manage_pages | selectattr("group", "equalto", "campaign") | first %}{% set admin_home = manage_pages | selectattr("group", "equalto", "askdnd") | first %}
-  {% if dm_tools_ok(user, here) %}<a href="{{ cbase }}/dm" class="{{ 'active' if path == '/dm' or path.startswith('/dm/') }}">DM Tools<small>What you make for {{ here.name }}</small></a>{% endif %}
-  {% if camp_home %}<a href="{{ camp_home.href }}" class="{{ 'active' if camp_home.group == 'campaign' and (manage_pages | selectattr('group', 'equalto', 'campaign') | selectattr('here') | list) }}">Manage<small>Running {{ here.name if here else "the campaign" }}</small></a>{% endif %}
-  {% if admin_home %}<a href="{{ admin_home.href }}" class="{{ 'active' if manage_pages | selectattr('group', 'equalto', 'askdnd') | selectattr('here') | list }}">⚙ Admin<small>askdnd, for every campaign</small></a>{% endif %}
-  {% if feedback_menu(request) %}<a href="#" data-fb-open>Feedback for Claude<small>A note for Claude about this page</small></a>{% endif %}
-  <a href="/help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
-  <form method="post" action="/logout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>
+  {% if dm_tools_ok(user, here) %}<a href="{{ cbase }}/dm" data-item="dm-tools" class="{{ 'active' if path == '/dm' or path.startswith('/dm/') }}">DM Tools<small>What you make for {{ here.name }}</small></a>{% endif %}
+  {% if camp_home %}<a href="{{ camp_home.href }}" data-item="manage" class="{{ 'active' if camp_home.group == 'campaign' and (manage_pages | selectattr('group', 'equalto', 'campaign') | selectattr('here') | list) }}">Manage<small>Running {{ here.name if here else "the campaign" }}</small></a>{% endif %}
+  {% if admin_home %}<a href="{{ admin_home.href }}" data-item="admin" class="{{ 'active' if manage_pages | selectattr('group', 'equalto', 'askdnd') | selectattr('here') | list }}">⚙ Admin<small>askdnd, for every campaign</small></a>{% endif %}
+  {% if feedback_menu(request) %}<a href="#" data-fb-open data-item="feedback">Feedback for Claude<small>A note for Claude about this page</small></a>{% endif %}
+  <a href="/help" data-item="help" class="{{ 'active' if path == '/help' }}" data-no-peek>Help<small>The FAQ and About askdnd</small></a>
+  <form method="post" action="/logout" data-item="signout"><button type="submit">Sign out <small class="note">{{ user.email }}</small></button></form>
 </div>
 {% include "_table_rolls.html" %}
 {% if feedback_send(request) %}{% include "_feedback_window.html" %}{% endif %}

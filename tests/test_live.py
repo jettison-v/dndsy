@@ -7,6 +7,7 @@ import re
 
 from app import characters, live
 from app.importer import import_bundle
+from tests.menu import door, items
 from tests.roles import set_role
 from tests.table_setup import BUNDLE, char, down, owned_by
 
@@ -109,8 +110,7 @@ def test_bottom_bar_on_phones(player, db):
     assert re.findall(r">(Story|Campaign|Cole|Party|More)<", bottom) == ["Campaign", "Cole", "Party", "More"]
     assert f'href="/characters/{cole.id}/battle"' in bottom and 'data-menu="party-menu-m"' in bottom
     assert ">Everyone at a glance<small>" in page.split('id="party-menu-m"')[1]
-    more = page.split('id="more-menu"')[1].split("</div>")[0]
-    assert "/sessions" not in more and "/map" not in more and "Sign out" in more
+    assert "signout" in items(page, "more") and "/sessions" not in door(page, "more") and "/map" not in door(page, "more")
 
 
 def test_live_pill_replaces_the_refresh_buttons(player, db):

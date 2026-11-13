@@ -7,6 +7,7 @@ from app import access
 from app import character_views as views
 from app import characters, homebrew, house_rules, rules_book
 from app.models import CampaignContent
+from tests.menu import items
 from tests.roles import set_role
 from tests.table_setup import char
 
@@ -38,10 +39,10 @@ def _carry(db, data, name="Leviathan Compass"):
 def test_dm_tools_is_the_dms_and_admins(dm, admin, player, db, sheet):
     """Whoever sets the campaign's house rules (its DM, admins): the door in the menu bar and the page. Players never see
     the campaign's homebrew items (3A: only once the DM gives one)."""
-    assert dm.get("/c/main/dm").status_code == 200 and "DM Tools" in dm.get("/c/main/story").text
+    assert dm.get("/c/main/dm").status_code == 200 and "dm-tools" in items(dm.get("/c/main/campaign").text, "manage")
     assert admin.get("/c/main/dm").status_code == 200
     assert player.get("/c/main/dm").status_code == 403
-    assert 'href="/c/main/dm"' not in player.get("/c/main/story").text
+    assert 'href="/c/main/dm"' not in player.get("/c/main/campaign").text
     assert player.post("/c/main/dm/items", data=FORM).status_code == 403
     assert db.scalar(select(CampaignContent)) is None
 

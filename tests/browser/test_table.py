@@ -139,7 +139,7 @@ def test_the_menu_bars_menus_fit_their_text(people, server):
     page = admin.open(f"/characters/{server['cole']}/battle")
     page.click("#live-pill")
     page.wait_for_selector("#live-menu .live-pop")
-    for menu in ("live-menu", "manage-menu", "help-menu", "account-menu"):
+    for menu in ["live-menu"] + page.eval_on_selector_all(".topbar [data-door]", "ms => ms.map(m => m.id)"):  # every door's menu
         spill = page.evaluate(f"""() => {{ const m = document.getElementById('{menu}'), was = m.hidden; m.hidden = false;
           const s = m.scrollWidth - m.clientWidth; m.hidden = was; return s; }}""")
         assert spill <= 1, f"{menu} is {spill}px wider than its box"
