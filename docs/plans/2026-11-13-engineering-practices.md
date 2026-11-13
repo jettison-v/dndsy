@@ -5,9 +5,21 @@ we should also include? I am not concerned about the token spend or development 
 Things breaking take more time than more robust development would have."
 
 Each practice below gets **a check that enforces it** (a test, a linter, a CI step), so it holds without anyone
-remembering it, and a place in the order of work (`docs/DECISIONS.md`, Nov 13): **F** test foundations (now),
+remembering it, and a place in the order of work (`docs/DECISIONS.md`, Nov 13): **F** foundations (now: Brett, Nov 13, "Yes, foundations first"; every practice marked F before the structure lock),
 **S** structure lock, **C** component library, **D** design review, **R** code review, **H** test hardening,
 **N** net-new features. What askdnd already does is marked *have*.
+
+## The foundations, in order (F)
+
+1. Dependency and code scanning: Dependabot, pip-audit, CodeQL, secret scanning.
+2. A strict Content Security Policy and a cross-site (Origin) check on every change.
+3. Migrations run up and down in CI on a fresh database, and the models match it.
+4. Linters: ruff's bugbear, simplify, pyupgrade and security rules; ESLint for app.js (no redeclared or implicit
+   globals, the bug of Nov 13); Stylelint for app.css; djLint for templates.
+5. A preview for each pull request on Railway (Brett switches it on in Railway's dashboard; Claude wires the rest).
+6. The automated code review at high effort on every PR before it merges, its findings fixed.
+
+Each lands as its own pull request, with its check on in CI the day it lands.
 
 ## 1. Identity: everything has a key, nothing is found by its words
 
@@ -21,9 +33,8 @@ remembering it, and a place in the order of work (`docs/DECISIONS.md`, Nov 13): 
   name" count that only goes down.
 - **UI by marker** (F, *started*): `data-*` on every piece a test or script refers to; tests/menu.py and
   tests/browser/pages.py. Check: tests/test_no_text_refs.py.
-- **Translatable** (after C): every word people see moves into a string catalog (Jinja's i18n with Babel for
-  templates and Python, a key-to-string table for app.js), dates and numbers through one formatter (the table's time
-  zone, *have*). Check: a test that fails on a literal word in a template outside the catalog.
+- **Not translation** (Brett, Nov 13: not needed now; the point is never referencing text): no string catalog for
+  now. If askdnd is ever translated, keys and markers already make it a matter of the words alone.
 
 ## 2. Code structure
 
