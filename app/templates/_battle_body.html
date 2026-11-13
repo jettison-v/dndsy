@@ -22,15 +22,13 @@
     {% if s %}{% call resource_row(s, slots=not spellbar, skip=(["Wild Shape"] if known_forms else []), c=c if can_play else none) %}{{ insp_mark(s, c, can_change_hp) }}{% if can_play %}{{ rest_btn(c) }}{% endif %}{% endcall %}{% endif %}
     {# Short names before the page is drawn, when the whole ones need two lines: the same rule as app.js fitRes, which
        takes over (Nov 7: done only after the first paint, the row shrank and moved Battle's tiles; the layout test's flake) #}
-    <script>(function (r) { try { if (!r || matchMedia('(max-width: 640px)').matches) return;
-      var i = r.querySelector('.res-insp'), line = (i && i.offsetHeight) || 28; if (r.offsetHeight > line * 1.5) r.classList.add('short');
-    } catch (e) { /* app.js fits it */ } })(document.currentScript.parentElement.querySelector('.res-row:not(.slots)'));</script>
+    <script src="{{ static('fit-res.js') }}"></script>
     {# In a Wild Shape form (Brett, 2026-11-03; docs/mockups/wild-shape-play/ Main): a band names the form, with its full
        page and Leave, and the usual top row shows the form's AC, Speed, Initiative and saves (green) with your own Hit
        Points, − and + included: you play in a form as you do out of one. #}
     {% if form %}{% set fb = form.beast %}
     <div class="ws-form">
-      {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+      {% if fb.image %}<img class="ws-pic" src="{{ fb.image }}" alt="" referrerpolicy="no-referrer" data-hide-broken>{% endif %}
       <div class="ws-form-main"><b>In Wild Shape: {{ fb.name }}</b>{% if previewing %} <span class="tag">Preview: nothing changes</span>{% endif %} <span class="note">CR {{ fb.cr_label }} · {{ fb.size }}{% if druid %} · up to {{ druid.hours }} h{% endif %}</span>
         <span class="note ws-form-note">{% if form.temp_why %}{{ form.temp_hp }} Temporary Hit Points: {{ form.temp_why }}. {% endif %}Your Hit Points, Int, Wis, Cha, feats and class features stay yours. {% if form.castable %}Spells: only {{ form.castable | join(", ") }}.{% else %}No spellcasting in this form.{% endif %}</span></div>
       <div class="ws-form-acts"><button type="button" class="btn small" data-modal-url="/characters/{{ c.id }}/form?name={{ fb.name | urlencode }}" data-modal-size="large">Full form</button>
@@ -48,7 +46,7 @@
     {# A pill opens the Shift window (app/shifting.py): the form's cost and Temporary Hit Points, then Shift; Normal opens Leave #}
     <button type="button" class="ws-chip{{ ' on' if not form }}"{% if form %} data-use-url="/characters/{{ c.id }}/wild-shape"{% endif %} aria-pressed="{{ 'false' if form else 'true' }}">Normal</button>
     {% for kf in known_forms %}{% set here = form and form.beast.name == kf.name %}<button type="button" class="ws-chip{{ ' on' if here }}"{% if loop.first %} data-tour="ws-form"{% endif %}{% if not here %} data-use-url="/characters/{{ c.id }}/wild-shape?form={{ kf.name | urlencode }}"{% endif %}
-      aria-pressed="{{ 'true' if here else 'false' }}" title="CR {{ kf.cr }}">{% if kf.image %}<img src="{{ kf.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ kf.name }}</button>{% endfor %}
+      aria-pressed="{{ 'true' if here else 'false' }}" title="CR {{ kf.cr }}">{% if kf.image %}<img src="{{ kf.image }}" alt="" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ kf.name }}</button>{% endfor %}
     {% elif form %}<span class="ws-chip on">{{ form.beast.name }}</span>{% else %}<span class="note">Normal form</span>{% endif %}
   </div>
   {% endif %}

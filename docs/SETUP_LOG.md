@@ -1075,3 +1075,11 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **Why:** askdnd's code is public and it holds the table's data; problems are cheaper caught by a machine on every change than found later.
 
 **For a new project:** turn on secret scanning, push protection and Dependabot in the repo's Settings › Code security on day one (free for public repos), add a `dependabot.yml`, and add CodeQL and a dependency audit to CI before the first feature.
+
+## A Content Security Policy (Nov 13)
+
+**What was set up:** every page now tells the browser exactly what it may run and load: only askdnd's own script files (nothing written into a page, nothing evaluated as code), pictures from askdnd, D&D Beyond and Google, Google's fonts, and the aidedd.org map. Before it could go on, about 45 small bits of code written into the pages (hide a broken picture, confirm a delete) moved into askdnd's own scripts, marked in the page with a `data-` attribute instead. The browser tests now fail on anything the policy blocks, so a page that needs something new can't break quietly.
+
+**Why:** if anyone ever slipped a script into a page (a name, a note), the browser refuses to run it. It's the strongest single protection a website has against that kind of attack.
+
+**For a new project:** set the policy (the `Content-Security-Policy` header) on the first day, with no inline scripts allowed, and keep scripts in files from the start; adding it later means finding and moving every inline bit first, as here.

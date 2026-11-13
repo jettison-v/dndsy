@@ -17,22 +17,12 @@
   <link rel="stylesheet" href="{{ static('app.css') }}">
   {# our own copy (the outside review's C2, Nov 10: a CDN's file runs with everyone's sign-in; vendored like the dice) #}
   <script src="{{ static('vendor/htmx-2.0.4/htmx.min.js') }}" defer></script>
+  <meta name="htmx-config" content='{"allowEval": false}'>{# no text evaluated as code (the CSP) #}
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
 {% set fr = fight_now() %}<body{% if staging %} data-staging{% endif %}{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if feedback_send(request) %} data-feedback{% endif %}{% endif %}>
-{% if user %}<script>
-/* The Table rolls sidebar's place, before the page is drawn, so pages don't shift sideways as they load (Brett,
-   2026-10-26). The same rules as app.js "the sidebar's state", which takes over once it runs: at the table in a
-   campaign (body.at-table, drawn above); closed until opened on this device (a fight opens it once), and closed between
-   901 and 1240px, where it opens over the page. */
-(function (b) { try {
-  if (!b.classList.contains('at-table')) return;
-  var ls = localStorage, phone = matchMedia('(max-width: 900px)').matches;
-  var side = ls.getItem('askdnd.rollsSide'), closed = phone ? side !== 'open' : innerWidth < 1241 || side !== 'open';
-  b.classList.add('rolls-on', closed ? 'rolls-closed' : 'rolls-open');
-} catch (e) { /* private window: app.js places it */ } })(document.body);
-</script>{% endif %}
+<script src="{{ static('early.js') }}"></script>{# the sidebar's place and broken pictures, before anything is drawn #}
 {% block body %}
 {% if viewing_as %}{# View as (app/view_as.py): who you're seeing askdnd as, read-only #}
 <div class="view-as-bar" role="status"><span>Viewing as <b>{{ viewing_as.name }}</b>{% if viewing_role %}, {{ viewing_role }}{% if here %} in {{ here.name }}{% endif %}{% elif here %}, no role in {{ here.name }}{% endif %} · read-only</span>
@@ -40,7 +30,7 @@
 {% endif %}
 {# The menu bar (Option B, Brett 2026-10-22; docs/mockups/menu-bar.html): the campaign (its name, Story, Campaign),
    then the people at the table (your character, Party ▾), then Live, Manage and you. #}
-{% macro avatar(r) %}<span class="char-av" aria-hidden="true">{{ r.name[:1] | upper }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endmacro %}
+{% macro avatar(r) %}<span class="char-av" aria-hidden="true">{{ r.name[:1] | upper }}{% if r.portrait %}<img src="{{ r.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>{% endmacro %}
 {% macro party_menu(id, tn, cls="") %}
 <div class="menu party-menu {{ cls }}" id="{{ id }}" hidden>
   {# The Party page first: the whole party matters more than any one character (Brett, 2026-10-26) #}
