@@ -1098,6 +1098,15 @@
   "link": "https://claude.ai/artifact/MZKwvhfJZGAFz3WFJFTTFt"
  },
  {
+  "title": "When the Connection Drops",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 13",
+  "what": "Brett's note, Nov 13: a player closed their D&D Beyond sheet mid-session and their rolls silently stopped reaching the Game Log. What askdnd shows the moment a connection gets worse: a corner card, a band under the menu bar or a window, the roll card's note, the tab title, the DM's card with Remind, and Connected again.",
+  "source": "docs/mockups/connection-drops/index.html",
+  "link": "https://claude.ai/artifact/6LWSngz4ushCgvS3kNjsPV"
+ },
+ {
   "title": "Use Window",
   "kind": "design",
   "status": "For you to pick",
