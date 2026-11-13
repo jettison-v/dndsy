@@ -17,7 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from app import ddb, roll_plan  # noqa: E402
+from app import ddb, roll_plan
 
 PARTY = {"Big C": "big_c", "Cole": "cole", "No Name": "no_name", "Trah": "trah"}
 SOURCES = {"correction": "a correction", "checked": "checked recipe", "sheet": "the sheet", "rule": "askdnd's rule",
@@ -66,9 +66,9 @@ def main() -> None:
     lines = ["# Roll coverage", "",
              "Whether the roll card can play each thing on Battle, by `scripts/roll_coverage.py` from app/roll_plan.py "
              + ("for every character at a table (the local copy of beta)." if table else "for the party's saved sheets (tests/fixtures/ddb)."),
-             "Ready: every number from a checked recipe, the sheet or askdnd's rules. Unchecked: a number from D&D Beyond's data "
+             ("Ready: every number from a checked recipe, the sheet or askdnd's rules. Unchecked: a number from D&D Beyond's data "
              "or read from its words. Gap: its words have dice the plan doesn't roll; each has its reason (app/roll_plan.py "
-             "`KNOWN_GAPS`). Don't edit this file: run the script.", ""]
+             "`KNOWN_GAPS`). Don't edit this file: run the script."), ""]
     total = Counter()
     for name, sheet in sheets(table):
         ps = roll_plan.plans(sheet)

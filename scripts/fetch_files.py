@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from app import backup, files  # noqa: E402
+from app import backup, files
 
 
 def fetch(keys: list[str], source, target: files.LocalFolder) -> int:

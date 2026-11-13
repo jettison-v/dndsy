@@ -2,8 +2,8 @@
 
 # The party's saved D&D Beyond sheets are locked in the repository (scripts/fixtures.py; Nov 9): unlocked here, before
 # anything reads them, with FIXTURES_KEY from .env or the Actions secret
-import importlib.util as _iu  # noqa: E402
-from pathlib import Path as _P  # noqa: E402
+import importlib.util as _iu
+from pathlib import Path as _P
 
 _spec = _iu.spec_from_file_location("askdnd_fixtures", _P(__file__).resolve().parents[1] / "scripts" / "fixtures.py")
 _fx = _iu.module_from_spec(_spec)
@@ -105,7 +105,7 @@ def _ensure_database(url) -> None:
 @pytest.fixture(scope="session")
 def db_engine():
     """Fresh schema in the local test database. Skips if Postgres isn't running."""
-    import app.models  # noqa: F401
+    import app.models
     from app.db import Base
 
     engine = create_engine(TEST_DATABASE_URL)
@@ -157,10 +157,10 @@ def _access_rows(monkeypatch):
     the local dev database: no rows unless the test uses `db`, and no caching."""
     from app import access, fight, house_rules, live
 
-    monkeypatch.setattr(access, "loader", lambda: {})
+    monkeypatch.setattr(access, "loader", dict)
     monkeypatch.setattr(fight, "loader", lambda campaign_id, email: None)
-    monkeypatch.setattr(live, "loader", lambda: [])
-    monkeypatch.setattr(house_rules, "loader", lambda: {})
+    monkeypatch.setattr(live, "loader", list)
+    monkeypatch.setattr(house_rules, "loader", dict)
     monkeypatch.setattr(access, "CACHE_SECONDS", -1)
     monkeypatch.setattr(house_rules, "CACHE_SECONDS", -1)
     access.invalidate()
@@ -173,7 +173,7 @@ def _count_writes(conn) -> list[int]:
 
     @event.listens_for(conn, "before_cursor_execute")
     def _count(conn, cursor, statement, *args):
-        if not statement.lstrip()[:6].upper() == "SELECT":
+        if statement.lstrip()[:6].upper() != "SELECT":
             writes[0] += 1
 
     return writes

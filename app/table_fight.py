@@ -148,9 +148,7 @@ def rolled(db: Session, campaign: Campaign, ch: Character, creature: str, total)
         return False
     hit = False
     for x in f["order"]:
-        if creature and x["kind"] == "companion" and x["name"] == creature and _master(db, x) == ch.id:
-            x["initiative"], hit = total, True
-        elif not creature and x.get("character") == ch.id:
+        if (creature and x["kind"] == "companion" and x["name"] == creature and _master(db, x) == ch.id) or (not creature and x.get("character") == ch.id):
             x["initiative"], hit = total, True
     if hit:
         f["order"] = _sorted(f["order"])

@@ -78,7 +78,7 @@ def test_battle_shows_only_pins_to_players_and_the_usual_options_to_the_dm(playe
     characters.refresh(db, cole)
     owned_by(db, cole, "player@example.com")
     owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
-    action = lambda page: page.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]  # noqa: E731
+    action = lambda page: page.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]
     assert "Pin what you use most" in player.get(f"/characters/{cole.id}/battle").text
     picks.toggle(db, cole, "star", "spell:Heat Metal", "Heat Metal")
     mine = action(player.get(f"/characters/{cole.id}/battle").text)
@@ -179,7 +179,7 @@ def test_options_show_what_they_spend():
     assert not any(o["name"] == "Wild Shape: Circle Forms" for o in views.options(cole))  # part of Wild Shape, not its own action
     assert spends("Wild Resurgence: Regain Wild Shape", cole) == []  # it gives a use back
     assert spends("Unarmed Strike", cole) == [] and spends("Thorn Whip", cole) == []
-    load = lambda n: json.loads((Path(__file__).parent / "fixtures" / "ddb" / f"{n}.json").read_text())["data"]  # noqa: E731
+    load = lambda n: json.loads((Path(__file__).parent / "fixtures" / "ddb" / f"{n}.json").read_text())["data"]
     big_c, no_name = ddb.parse_character(load("big_c")), ddb.parse_character(load("no_name"))
     assert next(o for o in views.options(no_name) if o["name"] == "Hunter's Mark")["tags"][0] == "1st"  # free cast only: level pill stays
     assert spends("Channel Divinity: Divine Sense", big_c) == [("1 use of Channel Divinity", 2, 2)]
@@ -273,8 +273,8 @@ def test_battle_column_rules_are_a_chip(player, db):
 
 def test_smites_are_on_battle_and_ammunition_is_a_weapon():
     """Tool corrections built into askdnd (2026-10-23)."""
+    import app.models
     from app import character_views as views
-    import app.models  # noqa: F401
     from app import ddb
 
     big_c = json.loads((Path(__file__).parent / "fixtures" / "ddb" / "big_c.json").read_text())["data"]

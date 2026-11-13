@@ -147,14 +147,14 @@ class NoteLinker:
                 out.append(part)
             else:
                 out.append(self.pattern.sub(self._replace, part))
-        linked = Markup("".join(out))
+        linked = Markup("".join(out))  # noqa: S704
         return self.campaign.html(linked) if self.campaign else linked
 
     def text(self, text: str | None) -> Markup:
         return self.html(escape(text or ""))
 
     def md(self, text: str | None) -> Markup:
-        return self.html(Markup(markdown_to_html(text or "", lambda name: None)))
+        return self.html(Markup(markdown_to_html(text or "", lambda name: None)))  # noqa: S704
 
 
 def note_linker(db: Session, character: Character, sheet: dict | None) -> NoteLinker:
@@ -213,7 +213,7 @@ def edit_note(request: Request, character_id: int, note_id: int, db: Session = D
         return HTMLResponse("", status_code=404)
     return templates.TemplateResponse(request, "_note_form.html", {"c": ch, "n": n, "kind": n.kind, "meta": KINDS[n.kind],
                                                                    "data": n.data or {}, "status": n.status, "statuses": QUEST_STATUS,
-                                                                   "body_html": Markup(markdown_to_html((n.data or {}).get("body") or "", lambda name: None))})
+                                                                   "body_html": Markup(markdown_to_html((n.data or {}).get("body") or "", lambda name: None))})  # noqa: S704
 
 
 @router.post("/characters/{character_id:int}/notes")

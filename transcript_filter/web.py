@@ -12,11 +12,10 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 
 from dotenv import dotenv_values
-
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -27,10 +26,10 @@ from transcript_filter.pipeline import (
     PipelineError,
     cut_stretches,
     is_final_kept,
-    talk_times,
     load_state,
     run,
     save_state,
+    talk_times,
 )
 from transcript_filter.segments import format_time
 
@@ -190,7 +189,7 @@ def home(request: Request, error: str | None = None):
     return templates.TemplateResponse(
         request,
         "home.html",
-        {"sessions": [session_summary(s) for s in stems], "ollama": ollama_status(), "today": date.today().isoformat(), "error": error},
+        {"sessions": [session_summary(s) for s in stems], "ollama": ollama_status(), "today": datetime.now().astimezone().date().isoformat(), "error": error},
     )
 
 
@@ -354,7 +353,7 @@ def send(stem: str):
     try:
         talk = talk_for(stem)
         reply = send_transcript(stem, p["final_txt"].read_text(), talk)
-        p["sent"].write_text(json.dumps({**reply, "sent_at": datetime.now().isoformat(timespec="minutes"),
+        p["sent"].write_text(json.dumps({**reply, "sent_at": datetime.now().astimezone().isoformat(timespec="minutes"),
                                          "talk": bool(talk and talk.get("speakers"))}))
     except RuntimeError as e:
         send_errors[stem] = str(e)

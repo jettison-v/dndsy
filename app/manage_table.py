@@ -12,15 +12,13 @@ docs/mockups/the-table.html). A person and their character are one row; the camp
 Who may sign in at all, and who's an admin, is askdnd-wide: Manage › Accounts (app/manage_accounts.py).
 """
 
-from datetime import date
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import view_as
-from app import access, config, ddb, entities, web
+from app import access, config, ddb, entities, view_as, web
 from app import characters as chars
 from app.auth import can_run_table, can_see_table, is_admin, is_reviewer
 from app.db import get_db
@@ -125,7 +123,7 @@ def set_role(db: Session, user: User, campaign_id: int, role: str | None) -> Non
                                                CampaignMember.left_on.is_(None)))
     if role is None:
         if m is not None:
-            m.left_on = date.today()
+            m.left_on = config.table_today()
     elif m is None:
         db.add(CampaignMember(campaign_id=campaign_id, user_id=user.id, role=Role(role)))
     elif m.role != role:

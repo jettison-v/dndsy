@@ -92,7 +92,7 @@ def test_every_count_of_yours_opens_use_one_and_give_one_back(player, dm, db, sh
     cole = char(db, "Cole")
     ws, coin = field(cole, "Wild Shape"), "charges:992695540"
     battle, page = player.get(f"/characters/{cole.id}/battle").text, player.get(f"/characters/{cole.id}").text
-    opens = lambda html, f: f'data-use-url="/characters/{cole.id}/count?field={f.replace(":", "%3A")}"' in html  # noqa: E731
+    opens = lambda html, f: f'data-use-url="/characters/{cole.id}/count?field={f.replace(":", "%3A")}"' in html
     assert opens(battle, ws)  # Battle's Wild Shape row
     assert opens(page, "slot%3A1".replace("%3A", ":")) and opens(page, ws) and opens(page, coin)  # Sheet: slots, Wild Shape, an item's charges
     assert page.count(f"count?field={ws.replace(':', '%3A')}") >= 2  # (and Features' Wild Shape row)

@@ -2,9 +2,8 @@
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
-
 import pytest
+from sqlalchemy import select
 
 from app import characters, downs
 from app.importer import import_bundle

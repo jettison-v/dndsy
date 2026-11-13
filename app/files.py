@@ -237,7 +237,7 @@ def read(key: str | None) -> bytes | None:
         log.warning("File %s is listed but storage doesn't have it", key)
     except StorageNotReady:
         raise  # (set up wrong: that's for the deploy to show, not a missing picture)
-    except Exception:  # noqa: BLE001 - storage unreachable or refusing
+    except Exception:
         if _unreachable["at"] is None or time.monotonic() - _unreachable["at"] > 600:
             _unreachable["at"] = time.monotonic()
             log.error("File storage didn't answer for %s; pictures show as missing until it does", key, exc_info=True)

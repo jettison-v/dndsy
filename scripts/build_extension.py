@@ -22,7 +22,7 @@ LEAVE_OUT = {"README.md"}  # (for whoever builds it, not for Chrome)
 
 def store_manifest(manifest: dict) -> dict:
     """The manifest without anything for askdnd on your own computer."""
-    local = lambda pattern: pattern.startswith(("http://localhost", "http://127.0.0.1"))  # noqa: E731
+    local = lambda pattern: pattern.startswith(("http://localhost", "http://127.0.0.1"))
     out = json.loads(json.dumps(manifest))
     out["host_permissions"] = [p for p in out["host_permissions"] if not local(p)]
     for cs in out["content_scripts"]:

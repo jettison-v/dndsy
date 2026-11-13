@@ -63,7 +63,7 @@ def run(*cmd: str, check: bool = True) -> str:
 
 
 def say(text: str) -> None:
-    print(f"[{datetime.now():%H:%M:%S}] {text}", flush=True)
+    print(f"[{datetime.now().astimezone():%H:%M:%S}] {text}", flush=True)
 
 
 def deployments(service: str) -> list[dict]:

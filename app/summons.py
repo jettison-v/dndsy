@@ -116,8 +116,8 @@ def _speed(text: str) -> dict:
 def creature(entry: dict, level: int, choice: str = "", attack: int = 0, dc: int = 0, **kept) -> dict:
     """The creature for this casting, in the shape of one on a sheet's Extras (app/ddb_sheet.py creatures), its block
     worked out. `kept`: what askdnd keeps of it (its name, look, Hit Points taken)."""
-    w = lambda s: work(s or "", level, choice, attack, dc)  # noqa: E731
-    entries = lambda key: [{"name": _plain(w(e["name"])), "text": w(e["text"])} for e in entry.get(key) or []  # noqa: E731
+    w = lambda s: work(s or "", level, choice, attack, dc)
+    entries = lambda key: [{"name": _plain(w(e["name"])), "text": w(e["text"])} for e in entry.get(key) or []
                            if not re.search(r"\(([^()]*?) Only", e["name"], re.I) or _keeps(e["name"], choice)]
     senses = w(entry.get("senses"))
     hp = _first(w(entry["hp"]))

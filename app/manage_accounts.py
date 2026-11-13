@@ -7,8 +7,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import view_as
-from app import access, config, web
+from app import access, config, view_as, web
 from app.auth import is_admin
 from app.db import get_db
 from app.models import Campaign, User

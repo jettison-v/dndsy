@@ -127,7 +127,7 @@ def _expected(r: dict, phone: bool = False) -> list[str]:
     if not r["sent"]:
         return bad + [f"{name}: nothing was rolled ({r['steps']}; the card says: {r['text'][:200]!r})"]
     s = r["sent"][0]
-    one = lambda k: (s.get(k) or [""])[0]  # noqa: E731
+    one = lambda k: (s.get(k) or [""])[0]
     play, rolls = p["play"], p.get("rolls")
     level = 0
     if rolls:

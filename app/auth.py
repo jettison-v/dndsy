@@ -1,9 +1,9 @@
 """Google sign-in limited to an email allowlist."""
 
-from authlib.integrations.starlette_client import OAuth, OAuthError
 from datetime import UTC, datetime
 from urllib.parse import quote
 
+from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse

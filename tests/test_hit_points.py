@@ -190,7 +190,7 @@ def test_d_and_d_beyonds_attack_and_its_damage_show_as_one(player, dm, db, sheet
     """Brett, 2026-10-29 (no guessing): D&D Beyond rolls an attack and its damage separately; the damage joins the attack
     only as the same roller's very next roll for the same attack, to the same people, within two minutes, so Table
     rolls shows them together (and Apply sits on the attack). Anything else stays a roll of its own."""
-    send = lambda **k: player.post("/bridge/others-roll/75423618", json=game_roll(**k))  # noqa: E731
+    send = lambda **k: player.post("/bridge/others-roll/75423618", json=game_roll(**k))
     send(rid="a-1", kind="to hit", total=19)
     send(rid="d-1", kind="damage", total=17)
     attack = db.scalar(select(TableRoll).where(TableRoll.ddb_roll_id == "a-1"))

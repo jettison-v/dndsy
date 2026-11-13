@@ -18,8 +18,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from app import roll_recipes as rr  # noqa: E402
-from app import rules_data  # noqa: E402
+from app import roll_recipes as rr
+from app import rules_data
 
 PHB = ROOT / "private" / "books" / "phb-2024" / "spell-descriptions.md"
 OUT = ROOT / "app" / "data" / "rules" / "phb-2024.json"

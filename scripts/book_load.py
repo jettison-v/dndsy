@@ -26,9 +26,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import rules_data  # noqa: E402
-from app.ddb import ALIGNMENTS, SIZES, html_to_text  # noqa: E402
-from app.ddb_sheet import ABILITY_KEY, MOVES, SENSE_NAMES  # noqa: E402
+from app import rules_data
+from app.ddb import ALIGNMENTS, SIZES, html_to_text
+from app.ddb_sheet import ABILITY_KEY, MOVES, SENSE_NAMES
 
 BOOK = "mm-2024"
 FILE = ROOT / "private" / "books" / "mm-2024" / "monsters-data.json"

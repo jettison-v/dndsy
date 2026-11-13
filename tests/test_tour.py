@@ -7,12 +7,12 @@ from pathlib import Path
 
 from app import tour
 from app.player_notes import KINDS
-from tests.test_table_rolls import char, table  # noqa: F401
+from tests.test_table_rolls import char, table
 
 TEMPLATES = Path(__file__).resolve().parent.parent / "app" / "templates"
 
 
-def test_signed_in_only(table):  # noqa: F811
+def test_signed_in_only(table):
     from fastapi.testclient import TestClient
 
     from app.main import app
@@ -20,7 +20,7 @@ def test_signed_in_only(table):  # noqa: F811
     assert TestClient(app).get("/tour").status_code == 401
 
 
-def test_a_player_tours_their_own_character(table, db):  # noqa: F811
+def test_a_player_tours_their_own_character(table, db):
     stops = table["player"].get("/tour").json()["stops"]
     cole = char(db, "Cole").id
     urls = {s["url"] for s in stops}
@@ -30,7 +30,7 @@ def test_a_player_tours_their_own_character(table, db):  # noqa: F811
     assert all(s["title"] and s["what"] and s["why"] for s in stops)
 
 
-def test_without_a_character_the_tour_leaves_out_character_pages(table):  # noqa: F811
+def test_without_a_character_the_tour_leaves_out_character_pages(table):
     groups = [s["group"] for s in table["dm"].get("/tour").json()["stops"]]
     assert groups == ["previously", "memory", "rolling", "rolling", "dice", "live", "party", "help"]  # (Table rolls, Search and Your dice: anyone)
 
@@ -48,7 +48,7 @@ def test_every_stop_has_a_target_in_the_templates():
                 elif attr == "data-tab" and f'("{value[2:]}", "' in html and 'data-tab="t-{{ key }}"' in html:
                     pass  # Campaign's tabs, from its list (Previously on…, Sessions, World…)
                 elif value:
-                    assert f'{attr}="{value}"' in html or f'{attr}="{{{{' in html and attr == "data-econ-col", sel
+                    assert f'{attr}="{value}"' in html or (f'{attr}="{{{{' in html and attr == "data-econ-col"), sel
                 else:
                     assert attr in html, sel
             for cls in re.findall(r"\.([\w-]+)", sel):
@@ -61,7 +61,7 @@ def test_the_words_are_plain_with_bold_names_only():
             assert set(re.findall(r"</?(\w+)", text)) <= {"b"}, text
 
 
-def test_help_shows_what_askdnd_adds_with_show_me(table):  # noqa: F811
+def test_help_shows_what_askdnd_adds_with_show_me(table):
     html = table["player"].get("/help?tab=adds").text
     assert 'aria-selected="true" data-tab="t-adds"' in html
     keys = {k for _, groups in tour.SECTIONS for k, _, _ in groups if k}

@@ -193,7 +193,7 @@ def _item(fb: Feedback, html: bool = False) -> dict:
 
 
 @router.get("/manage/feedback")
-def queue(request: Request, tab: str = "", open: int = 0, db: Session = Depends(get_db)):  # noqa: A002 (the address's word)
+def queue(request: Request, tab: str = "", open: int = 0, db: Session = Depends(get_db)):
     """Manage › askdnd › Feedback: every note, by where it stands."""
     _, denied = web.require(request, is_admin, "Feedback is for admins.")
     if denied:

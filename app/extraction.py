@@ -10,20 +10,16 @@ writes the story (STEP "tell": the recap, the full tale, key moments, awards). N
 import base64
 import json
 import re
-from datetime import date
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import date
 
 import anthropic
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.characters import campaign_characters
-from app.traits import clean_traits, has_traits, traits_line
-
 from app import files, spending
-from app.relations import TYPES as REL_TYPES
-from app.relations import find as find_relation
+from app.characters import campaign_characters
 from app.models import (
     Campaign,
     Correction,
@@ -42,6 +38,9 @@ from app.models import (
     Status,
     StoryEvent,
 )
+from app.relations import TYPES as REL_TYPES
+from app.relations import find as find_relation
+from app.traits import clean_traits, has_traits, traits_line
 
 MODEL = "claude-opus-5-5"
 EFFORT = "high"

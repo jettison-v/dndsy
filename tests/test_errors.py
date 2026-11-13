@@ -7,7 +7,7 @@ import sentry_sdk
 from sentry_sdk.transport import Transport
 
 from app import errors
-from tests.test_table_rolls import table  # noqa: F401
+from tests.test_table_rolls import table
 
 
 class Captured(Transport):
@@ -84,7 +84,7 @@ def test_a_browser_that_went_away_isnt_an_error(sentry):
     assert sentry.events == []
 
 
-def test_a_pages_javascript_error_comes_home(table, sentry):  # noqa: F811
+def test_a_pages_javascript_error_comes_home(table, sentry):
     from fastapi.testclient import TestClient
 
     from app.main import app

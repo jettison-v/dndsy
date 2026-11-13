@@ -83,5 +83,5 @@ async def loop() -> None:
         await asyncio.sleep(TICK)
         try:
             await asyncio.to_thread(run_once)
-        except Exception:  # noqa: BLE001 - D&D Beyond or the database away for a moment: the next tick tries again
+        except Exception:
             log.warning("Reading unwatched sheets failed this time", exc_info=True)

@@ -16,7 +16,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from app import rules_data  # noqa: E402
+from app import rules_data
 
 DDB_SEARCH = "https://monster-service.dndbeyond.com/v1/Monster?search={q}&skip=0&take=20"
 MM_2024 = 147  # D&D Beyond's source id for the 2024 Monster Manual
@@ -30,7 +30,7 @@ def get(url: str) -> dict:
 def ddb_art(name: str) -> dict:
     try:
         found = get(DDB_SEARCH.format(q=urllib.parse.quote(name))).get("data") or []
-    except Exception:  # noqa: BLE001 - a missing picture is fine
+    except Exception:
         return {}
     m = next((m for m in found if m.get("name") == name and m.get("sourceId") == MM_2024), None)
     return {"image": m.get("avatarUrl") or "", "ddb_url": m.get("url") or "", "ddb_id": m.get("id")} if m and m.get("avatarUrl") else {}

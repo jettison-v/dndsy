@@ -56,7 +56,7 @@ def browser_db():
         if os.getenv("CI"):
             raise
         pytest.skip("local test database not available (brew services start postgresql@18)")
-    import app.models  # noqa: F401
+    import app.models
     from app import characters
     from app.db import Base
     from app.importer import import_bundle

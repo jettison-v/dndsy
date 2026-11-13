@@ -107,7 +107,7 @@ def _clean(s, n: int = 200) -> str:
 
 def from_form(form) -> tuple[dict, list[str]]:
     """The entry a DM Tools item form describes, and what's wrong with it (nothing saved while there's anything)."""
-    get = lambda k: _clean(form.get(k))  # noqa: E731
+    get = lambda k: _clean(form.get(k))
     errors = []
     name = get("name")[:80]
     if not name:

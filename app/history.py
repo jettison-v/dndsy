@@ -19,11 +19,9 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.orm import Session
 
 from app.models import (
-    HouseRule,
-    CampaignMember,
-    Role,
-    CampaignCharacter,
     Campaign,
+    CampaignCharacter,
+    CampaignMember,
     Character,
     CharacterPick,
     Entity,
@@ -31,12 +29,14 @@ from app.models import (
     EntityRelation,
     EventKind,
     Fact,
-    StoryEvent,
     GameSession,
     GlossaryTerm,
+    HouseRule,
     PlayerNote,
     Revision,
+    Role,
     Status,
+    StoryEvent,
     User,
 )
 

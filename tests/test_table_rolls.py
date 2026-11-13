@@ -9,8 +9,8 @@ from sqlalchemy import select
 from app import table_rolls as tr
 from app.importer import import_bundle
 from app.models import TableRoll
-from tests.table_setup import BUNDLE, char, owned_by
 from tests.roles import set_role
+from tests.table_setup import BUNDLE, char, owned_by
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
@@ -91,8 +91,8 @@ def table(db, monkeypatch):
     app.dependency_overrides[get_db] = lambda: db
     people = {}
     for who in ("player", "other", "dm"):
-        async def token(request, email=f"{who}@example.com"):
-            return {"userinfo": {"email": email, "email_verified": True, "name": who}}
+        async def token(request, email=f"{who}@example.com", name=who):
+            return {"userinfo": {"email": email, "email_verified": True, "name": name}}
 
         monkeypatch.setattr(auth.oauth.google, "authorize_access_token", token)
         people[who] = TestClient(app)
@@ -529,7 +529,6 @@ def test_riders_on_a_hit_change_the_damage_and_ask_for_a_save(table, db, monkeyp
     hit's damage as Force, Savage Attacker rolls it twice and keeps the higher (the other said), and Stunning Strike's
     save goes into this attack's own entry for the DM, its DC worked out by askdnd from the character's rules."""
     import json
-
     from pathlib import Path
 
     from app import ddb

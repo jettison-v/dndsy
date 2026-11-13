@@ -38,7 +38,7 @@ def test_the_vtt_tells_askdnd_the_fight_and_every_page_hears_it(player, db, shee
     assert r.status_code == 200 and r.json()["changed"] is True
     assert campaign.fight["round"] == 2 and [x["name"] for x in campaign.fight["order"]] == ["Cole", "Enemy 1", "Goblin"]
     assert campaign.fight["order"][0]["character"] == char(db, "Cole").id  # by its D&D Beyond id, in this campaign
-    games = lambda: [x for x in sent if x[1] == "game"]  # noqa: E731 (the setup's own changes announce too)
+    games = lambda: [x for x in sent if x[1] == "game"]
     assert games() == [(campaign.id, "game")]  # every open page shows its new copy
     assert player.post(f"/bridge/fight/{GAME}", json={"fight": heard()}).json()["changed"] is False  # the same again: nothing
     player.post(f"/bridge/fight/{GAME}", json={"fight": None})  # the fight ended in the VTT
@@ -204,7 +204,7 @@ def test_two_changes_to_the_fight_at_once_both_stay(db_engine):
         def card(text):
             with Session(db_engine) as s:
                 ch = s.get(Character, ids[1])
-                s.get(Campaign, ids[0]).fight  # (read before the other saves: what each did before the lock)
+                _ = s.get(Campaign, ids[0]).fight  # (read before the other saves: what each did before the lock)
                 together.wait()
                 death_saves.tell(s, ch, "dying", text)
                 s.commit()

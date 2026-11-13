@@ -2,12 +2,14 @@
 the Concentration save, and who can start or end Concentration."""
 
 import json
+
 import pytest
+
 from app import roll_recipes as rr
 from app import spellbook as sb
 from tests.table_setup import BUNDLE, COLE, char, owned_by
 from tests.test_suggestions import HX
-from tests.test_wild_shape import cole, cole_sheet  # noqa: F401
+from tests.test_wild_shape import cole, cole_sheet
 
 pytestmark = pytest.mark.usefixtures("no_network")  # D&D Beyond is never called (tests/conftest.py)
 
@@ -38,7 +40,7 @@ def test_a_spell_that_adds_to_hits_rolls_nothing_when_cast():
     mark = rr.spell("Hunter's Mark")
     assert [e["on"] for e in mark["events"]] == ["rider"]
     assert all(e["on"] == "rider" for n in ("Hex", "Divine Favor") for e in rr.spell(n)["events"])
-    assert [e["on"] for e in rr.spell("Searing Smite")["events"]][0] == "auto"  # (a smite is cast on the hit: it deals it)
+    assert next(e["on"] for e in rr.spell("Searing Smite")["events"]) == "auto"  # (a smite is cast on the hit: it deals it)
     assert sb.average(mark, 1, 5) == {"avg": 3.5, "dice": "1d6 force", "per": "each hit"}
     assert views.rollable({"recipe": mark})["dice"] == ""
     sheet = {"level": 5, "spells": [{"name": "Hunter's Mark", "roll": mark}]}

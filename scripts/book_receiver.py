@@ -47,7 +47,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Allow-Private-Network", "true")
 
-    def do_OPTIONS(self):  # noqa: N802
+    def do_OPTIONS(self):
         self.send_response(204)
         self._cors()
         self.end_headers()
@@ -66,7 +66,7 @@ class Handler(BaseHTTPRequestHandler):
             path.write_text(f"# {body.get('title', slug)}\n\nSource: {body.get('url', '')}\n\n{body['text']}\n", encoding="utf-8")
         return {"saved": str(path.relative_to(ROOT)), "bytes": path.stat().st_size}
 
-    def do_GET(self):  # noqa: N802
+    def do_GET(self):
         try:
             q = parse_qs(urlparse(self.path).query)
             z = q["z"][0]
@@ -78,12 +78,12 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(page.encode())
             print("saved", len(saved), "pages")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             self.send_response(400)
             self.end_headers()
             self.wfile.write(f"<pre id=error>{e}</pre>".encode())
 
-    def do_POST(self):  # noqa: N802
+    def do_POST(self):
         try:
             raw = self.rfile.read(int(self.headers.get("Content-Length", 0)))
             if self.headers.get("Content-Type", "").startswith("application/x-www-form-urlencoded"):
@@ -94,7 +94,7 @@ class Handler(BaseHTTPRequestHandler):
             self._cors()
             self.end_headers()
             self.wfile.write(json.dumps(result).encode())
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             self.send_response(400)
             self._cors()
             self.end_headers()

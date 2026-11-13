@@ -108,5 +108,5 @@ class Stopwatch:
             if total >= SLOW:
                 try:
                     _report(scope.get("method", ""), route_of(scope), total, dict(watch))
-                except Exception:  # noqa: BLE001 (timing never breaks a request)
+                except Exception:
                     log.exception("Couldn't report a slow request")

@@ -27,9 +27,9 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import access, config, vtt, web
 from app import characters as chars
 from app import conditions as cond
-from app import access, config, vtt, web
 from app.auth import current_user, is_dm, is_reviewer
 from app.db import get_db
 from app.models import BridgeIntent, CampaignCharacter, Character, CharacterSnapshot, User

@@ -19,19 +19,33 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Resp
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import web
 from app import character_views as views
 from app import characters as chars
+from app import (
+    class_rules,
+    companions,
+    creature_hp,
+    creatures,
+    ddb,
+    ddb_bridge,
+    hit_points,
+    house_rules,
+    initiative,
+    item_creatures,
+    picks,
+    pictures,
+    player_notes,
+    vtt,
+    web,
+)
 from app import conditions as cond
-from app import ddb, ddb_bridge, hit_points, house_rules, picks
-from app import class_rules, companions, creature_hp, creatures, initiative, item_creatures, pictures, player_notes, vtt
-from app import spellbook as sb
-from app.preparing import books_to_prepare
-from app import wild_shape as ws
 from app import rules_terms as terms
+from app import spellbook as sb
+from app import wild_shape as ws
 from app.auth import can_run_table, can_set_house_rules, current_user, is_admin, is_dm, is_reviewer
 from app.db import get_db
 from app.models import Campaign, Character, HouseRule, TableRoll, ToolCorrection
+from app.preparing import books_to_prepare
 from app.templating import templates
 
 router = APIRouter()
@@ -299,7 +313,7 @@ def _recent_spells(db: Session, ch: Character, names: set[str]) -> dict[str, int
     if names:
         rows = db.execute(select(TableRoll.label, func.max(TableRoll.id)).where(
             TableRoll.character_id == ch.id, TableRoll.parent_id.is_(None), TableRoll.label.in_(names)).group_by(TableRoll.label))
-        seen = {label: last for label, last in rows}
+        seen = dict(rows.all())
     conc = (ch.concentration or {}).get("spell")
     if conc in names:
         seen[conc] = max(seen.values(), default=0) + 1

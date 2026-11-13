@@ -11,8 +11,8 @@ from app import characters, ddb, pictures
 from app.importer import import_bundle
 from app.main import app
 from app.models import Character, Entity, EntityPicture, Status, User
-from tests.test_suggestions import HX, client_for
 from tests.roles import set_role
+from tests.test_suggestions import HX, client_for
 
 BUNDLE = {
     "campaign": {"slug": "main", "name": "Main"},

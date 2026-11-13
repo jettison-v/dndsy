@@ -26,7 +26,7 @@ def path(a: tuple[float, float], b: tuple[float, float]) -> list[tuple[float, fl
     rules' count."""
     (x0, y0), (x1, y1) = a, b
     dx, dy = x1 - x0, y1 - y0
-    n = int(round(max(abs(dx), abs(dy))))
+    n = round(max(abs(dx), abs(dy)))
     out, px, py = [], x0, y0
     for i in range(1, n + 1):
         x, y = round(x0 + dx * i / n), round(y0 + dy * i / n)
@@ -40,7 +40,7 @@ def cost(steps: list[tuple[float, float, bool]], rule: str = "5", terrain: set[s
     slowed where any square it enters is Difficult Terrain."""
     terrain = terrain or set()
     feet = rough = diagonals = 0
-    span = max(1, int(round(size)))
+    span = max(1, round(size))
     for x, y, diag in steps:
         base = STEP
         if diag:
@@ -61,7 +61,7 @@ def apart(a: dict, b: dict) -> int:
         return max(0.0, q - (p + ps), p - (q + qs))
     sa, sb = max(a.get("size") or 1, 0.5), max(b.get("size") or 1, 0.5)
     squares = max(gap(a["x"], sa, b["x"], sb), gap(a["y"], sa, b["y"], sb))
-    return int(round(squares)) * STEP + STEP
+    return round(squares) * STEP + STEP
 
 
 REACH = re.compile(r"\breach (\d+) ?(?:ft|feet)", re.I)

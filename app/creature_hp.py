@@ -6,14 +6,13 @@ from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import characters as chars
 from app import companion_story as story
 from app import companions, ddb_bridge, hit_points, summons, vtt, web
 from app.auth import current_user
-from sqlalchemy import select
-
 from app.creatures import card, find, yours
 from app.db import get_db
 from app.models import BridgeIntent, Campaign, Character
