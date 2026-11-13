@@ -355,3 +355,37 @@ def test_healing_and_any_dice_are_one_step_on_the_card(people, server, browser_d
         assert player.errors == []
     finally:
         _pieces(browser_db, server, was)
+
+
+def test_a_dramatic_roll_plays_big_and_slow_on_every_screen(people, server, browser_db):
+    """Make it dramatic (Brett chose A and B, Nov 13): an icon at the end of the Advantage row, no line of its own; pressed,
+    the roll is thrown big and slow on the DM's screen too, the number held until the die stops, and Table rolls marks it."""
+    was = _pieces(browser_db, server, ["sync"])
+    try:
+        player, dm = people("player", "dm")
+        for p in (player, dm):
+            p.context.add_init_script("localStorage.setItem('askdnd.rollsAnim', 'on')")  # (after Person's own, which turns dice off)
+        dm_page = dm.open("/c/main/party")
+        dm.live()
+        page = _battle_with(player, server, True)
+        page.locator(UNARMED).click()
+        card = page.locator(".roll-card")
+        card.locator('[data-choice="damage"]').click()
+        icon = card.locator("[data-drama]")
+        row = card.locator(".rw-mode")
+        assert icon.get_attribute("aria-pressed") == "false" and "dramatic" in icon.get_attribute("title")
+        box, normal = icon.bounding_box(), row.locator("button").first.bounding_box()
+        assert abs(box["y"] + box["height"] / 2 - (normal["y"] + normal["height"] / 2)) < 6  # (on the Advantage row: no new line)
+        icon.click()
+        assert card.locator("[data-drama]").get_attribute("aria-pressed") == "true"
+        dm_page.bring_to_front()  # (a page out of sight never throws others' dice)
+        card.locator("[data-roll-hit]").click()
+        dm_page.wait_for_function("document.querySelector('.dice-throw.on.drama')", timeout=15000)
+        assert "Unarmed Strike" in dm_page.locator(".dice-throw .dt-who").inner_text()
+        page.wait_for_function("document.querySelector('.dice-throw.drama')", timeout=15000)
+        _sees(dm_page, "🎬")
+        page.keyboard.press("Escape")  # (skipped on this screen: straight to the result)
+        page.wait_for_function("!document.querySelector('.dice-throw.drama') || document.querySelector('.dice-throw.landed')", timeout=5000)
+        assert player.errors == [] and dm.errors == []
+    finally:
+        _pieces(browser_db, server, was)

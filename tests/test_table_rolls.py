@@ -573,3 +573,26 @@ def test_an_items_save_on_a_hit_comes_from_its_recipe(table, db, monkeypatch):
     post(table["player"], parent=attack["id"], action="damage")
     r = post(table["player"], parent=attack["id"], action="save", label="Thunderclap: Con save").json()["roll"]
     assert r["saves"] == [{"label": "Thunderclap: Con save", "dc": 17}]
+
+
+def test_a_dramatic_roll_is_marked_for_every_screen(table, db, monkeypatch):
+    """Make it dramatic (Brett chose A and B, Nov 13, docs/mockups/make-it-dramatic/): pressed on the card, the roll is
+    kept as dramatic, its row and the live message say so (every screen throws it big and slow), and only a roll the
+    table sees can be: a DM-only or private roll stays quiet."""
+    from app import realtime
+
+    heard = []
+    monkeypatch.setattr(realtime, "announce", lambda db, cid, kind, **kw: heard.append(kw))
+    cole = char(db, "Cole")
+    r = post(table["player"], character=cole.id, kind="attack", label="Eldritch Blast", mod="+7", count="2", each="beam",
+             part=["1d10 force"], mode="normal", to="table", dramatic="1").json()
+    assert r["roll"]["dramatic"] is True and 'data-dramatic="1"' in r["html"] and "🎬" in r["html"]
+    assert db.get(TableRoll, r["roll"]["id"]).detail.get("dramatic") is True
+    assert heard[-1]["roll"]["dramatic"] is True and len(r["roll"]["main"]["parts"]) == 2  # (two beams: one at a time)
+    other = table["other"].get("/rolls?since=-1").text
+    assert 'data-dramatic="1"' in other  # (someone else's screen throws it the same way)
+    for to in ("dm", "self"):
+        quiet = post(table["player"], character=cole.id, kind="save", label="Dex save", mod="+3", to=to, dramatic="1").json()
+        assert not db.get(TableRoll, quiet["roll"]["id"]).detail.get("dramatic")
+    plain = post(table["player"], character=cole.id, kind="save", label="Dex save", mod="+3", to="table").json()
+    assert plain["roll"]["dramatic"] is False and "data-dramatic" not in plain["html"]

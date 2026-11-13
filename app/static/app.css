@@ -1986,6 +1986,24 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: var(--lift); opacity: 0; transition: opacity .25s, transform .25s; }
 .dice-throw.landed .dt-card { opacity: 1; transform: translate(-50%, 0); }
 .dice-throw.others .dt-card { top: calc(var(--stick-top, 62px) + 60px); }
+/* Make it dramatic (Brett chose A and B, Nov 13): who rolled and what, large above the dice; the result held until
+   the die stops, larger; several rolls in one leave each result along the bottom */
+.dice-throw.drama { z-index: 40; pointer-events: auto; cursor: pointer; }
+.dice-throw.drama .dt-who { display: flex; font-size: var(--fs-lg); padding: 8px 18px; top: calc(var(--stick-top, 62px) + 24px); }
+.dice-throw.drama .dt-card { top: calc(var(--stick-top, 62px) + 86px); min-width: 280px; }
+.dice-throw.drama .dt-card .ds-total { font-size: calc(var(--fs-2xl) * 1.6); }
+.dt-strip { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); display: none; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 32px); }
+.dice-throw.drama .dt-strip { display: flex; }
+.dt-strip:empty { display: none !important; }
+.dt-strip span { background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-pill); padding: 4px 12px; font-size: var(--fs-sm); white-space: nowrap; box-shadow: 0 6px 18px var(--shadow); }
+.dt-strip b { color: var(--text-strong); }
+.dt-strip .nat20 b { color: var(--green); } .dt-strip .nat1 b { color: var(--link); }
+.rcard-drama { margin-left: auto; width: 34px; height: 34px; flex: none; border-radius: var(--r-pill); border: 1px solid var(--line); background: var(--surface-2); font-size: var(--fs-md); line-height: 1; cursor: pointer; opacity: .65; }
+.rcard-drama:hover, .rcard-drama:focus-visible { opacity: 1; }
+.rcard-drama[aria-pressed="true"] { opacity: 1; border-color: var(--amber); background: var(--amber-soft); box-shadow: 0 0 0 2px var(--amber-soft); }
+.rw-mode:has(.rcard-drama) { flex-wrap: nowrap; }
+.rw-mode:has(.rcard-drama) .roll-modes { width: auto; flex: 1 1 0; min-width: 0; }  /* (the icon sits at the row's end: no extra line, Brett Nov 13) */
+.roll-drama { border: 0; padding: 0; }
 /* (grows with the window, from Dice tuning's 300 × 150 to twice that: feedback 7 found it small) */
 .dice-tray { position: fixed; z-index: 9; left: calc(var(--rolls-w, 0px) + 16px); bottom: 16px; width: clamp(300px, 32vw, 600px); aspect-ratio: 2 / 1; max-height: 45vh; overflow: hidden; pointer-events: none;
   background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-lg); box-shadow: var(--lift);

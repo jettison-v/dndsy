@@ -1087,5 +1087,14 @@
   "what": "Brett's Roll Audit note, Nov 12: one window that spends a feature's pool or count, picks who and applies (Lay on Hands, Second Wind, Font of Magic), made from its data.",
   "source": "docs/mockups/use-window/index.html",
   "link": "https://claude.ai/artifact/KNJZvV2qX66j1AxucK9ewx"
+ },
+ {
+  "title": "askdnd Test Steps",
+  "kind": "guide",
+  "status": "Current",
+  "date": "Nov 13",
+  "what": "Brett, Nov 13: every change Claude builds lands with the steps to try it; Brett marks each Passed, Failed (with a note Claude reads) or Skip. The steps and marks are in the page's own store (groups, steps, results).",
+  "source": "docs/artifacts/test-steps.html",
+  "link": "https://claude.ai/artifact/Jbd6VR8w6thqm951FxKqGV"
  }
 ]

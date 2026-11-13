@@ -1885,7 +1885,7 @@ function feedbackBusy(e) {
     const level0 = !cast ? 0 : spec.cast || (spec.slot >= cast.base ? spec.slot : ((ctx.slots || []).find(l => l >= cast.base) || cast.base));
     const st = { step: from ? (from.action === 'bonus' ? 'pick' : 'rolling') : attack ? (choice ? 'choose' : 'attack') : save ? 'save' : single ? 'single' : 'attack', forText: '',
                  mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false, visOpen: false, entry: from ? from.entry : null,
-                 dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {} };
+                 dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {}, drama: false };
     // (on by themselves while they last, Radiant Strikes; once a turn, or only sometimes (`pressed: false`, Rage Damage): yours to tick)
     mods.forEach(m => { if (m.when === 'on_hit' && m.adds) st.on[m.name] = m.pressed != null ? !!m.pressed : !m.once; });
     mods.forEach(m => { if (m.when === 'before' && m.adds && m.pressed) st.pre[m.name] = true; });  // (Aura of Protection: always, unless the DM says)
@@ -2009,7 +2009,11 @@ function feedbackBusy(e) {
           + '<p class="rw-note">In Table rolls for the DM, who rolls the saves and applies it.</p><div class="rcard-acts"><button type="button" class="btn primary" data-done>Done</button></div>';
       } else if (st.step === 'attack') {
         if (attack) h += castAt();
-        h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + '</div>' + notes();
+        // Make it dramatic (Brett chose A, Nov 13, docs/mockups/make-it-dramatic/): an icon at the end of this row, for
+        // players to find by pointing at it; pressed, every screen throws this roll big and slow. A roll the table sees only.
+        const drama = spec.shared && to === 'table' && play !== 'death'
+          ? '<button type="button" class="rcard-drama" data-drama aria-pressed="' + st.drama + '" aria-label="Make it dramatic" title="Make it dramatic: the whole table watches this roll in slow motion">🎬</button>' : '';
+        h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + drama + '</div>' + notes();
         const pre = mods.filter(m => m.when === 'before' && m.adds);
         h += '<div class="rcard-group"><span class="rcard-lbl">Adds to the roll</span><div class="rcard-pills">' + pre.map(m => pill('data-pre="' + esc(m.name) + '"', st.pre[m.name], m.name, m.adds)).join('')
           + added() + plus('pre') + '</div>';
@@ -2162,7 +2166,7 @@ function feedbackBusy(e) {
       const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
       st.step = 'rolling'; st.adding = false; draw();
       const d = dice();
-      go({ kind: attack ? 'attack' : plan.roll, mode: st.mode, extras, endsHidden: st.hidden && attack, level: cast ? st.level : 0, riders: (plan.riders || []).map(r => r.name), math: sentMath(),
+      go({ kind: attack ? 'attack' : plan.roll, mode: st.mode, extras, endsHidden: st.hidden && attack, level: cast ? st.level : 0, riders: (plan.riders || []).map(r => r.name), math: sentMath(), dramatic: st.drama,
            ...(attack && d.parts ? { dmgParts: d.parts, count: d.count || 1, each: d.each } : {}) })
         .then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
     }
@@ -2204,6 +2208,7 @@ function feedbackBusy(e) {
         return go({ kind: 'dc', label: name, mod: '', dmg: '', mode: 'normal', extras: [] }).then(e => { st.entry = e; st.step = 'done'; if (w.isConnected) draw(); }, () => { st.step = 'choose'; draw(); });
       }
       if (b.dataset.mode) { st.mode = b.dataset.mode; return draw(); }
+      if (b.hasAttribute('data-drama')) { st.drama = !st.drama; return draw(); }
       if (b.hasAttribute('data-vis-open')) { st.visOpen = true; return draw(); }
       if (b.hasAttribute('data-ends-hidden')) { st.hidden = !st.hidden; return draw(); }
       if (b.dataset.cardEv != null) { st.ev = +b.dataset.cardEv; return draw(); }
@@ -2359,7 +2364,8 @@ function feedbackBusy(e) {
   const soundOn = () => store.get('askdnd.diceSound') === 'on';
   // How the dice move and how long they stay in each place (mine, tray, vtt): Manage › Dice tuning, on every page as
   // body[data-dice-tuning] (app/dice.py); askdnd's own tuning if it's missing
-  const TUNE = { mine: { strength: 1.4, gravity: 300, size: 95, shadows: true, light: 0.7, dim: 55, blur: 2, fade_in: 0.2, stay: 3.2, fade_out: 0.3 },
+  const TUNE = { drama: { strength: 0.9, gravity: 120, size: 140, shadows: true, light: 0.8, dim: 75, blur: 4, fade_in: 0.4, stay: 4.5, fade_out: 0.5 },
+                 mine: { strength: 1.4, gravity: 300, size: 95, shadows: true, light: 0.7, dim: 55, blur: 2, fade_in: 0.2, stay: 3.2, fade_out: 0.3 },
                  tray: { strength: 1, gravity: 400, size: 60, shadows: false, light: 0.7, slide: 0.3, stay: 2.6 },
                  vtt: { strength: 1.4, gravity: 300, size: 95, shadows: true, light: 0.7, dim: 35, blur: 0, fade_in: 0.2, stay: 3.2, fade_out: 0.3 } };
   const tuning = place => { let t = {}; try { t = JSON.parse(document.body.dataset.diceTuning || '{}'); } catch (e) { /* askdnd's own */ } return { ...TUNE[place], ...(t[place] || {}) }; };
@@ -2448,7 +2454,9 @@ function feedbackBusy(e) {
       return box.roll(notation(list));
     }
     return { get ready() { return ready; }, clear: () => box && box.clearDice(),
-      throw: (list, dice, before, after, t, until) => (queue = queue.catch(() => {}).then(async () => { if (until && Date.now() > until) return; if (before) await before(); await go(list, dice, t); if (after) await after(); })) };
+      throw: (list, dice, before, after, t, until) => (queue = queue.catch(() => {}).then(async () => {
+        const late = () => until && (typeof until === 'function' ? until() : Date.now() > until);  // (a time, or a test: a dramatic throw skipped)
+        if (late()) return; if (before) await before(); await go(list, dice, t); if (after && !late()) await after(); })) };
   }
   // The page-wide layer: dim, dice, who rolled (others' rolls), and the result card
   let throwEl = null, throwBox = null, throwTimer = null;
@@ -2457,7 +2465,7 @@ function feedbackBusy(e) {
     throwEl = document.createElement('div');
     throwEl.className = 'dice-throw';
     throwEl.setAttribute('aria-hidden', 'true');  // the roll window and Table rolls say the same in words
-    throwEl.innerHTML = '<div class="dt-dim"></div><div class="dt-box"></div><div class="dt-who"></div><div class="dt-card"></div>';
+    throwEl.innerHTML = '<div class="dt-dim"></div><div class="dt-box"></div><div class="dt-who"></div><div class="dt-card"></div><div class="dt-strip"></div>';
     document.body.append(throwEl);
     throwBox = diceBox(throwEl.querySelector('.dt-box'), {}, tuning('mine'), true);
     return throwBox;
@@ -2467,7 +2475,7 @@ function feedbackBusy(e) {
     throwEl._t = t;
     [['--dt-in', t.fade_in + 's'], ['--dt-out', t.fade_out + 's'], ['--dt-dim', t.dim + '%'], ['--dt-blur', t.blur + 'px']].forEach(([k, v]) => throwEl.style.setProperty(k, v));
   }
-  function throwDone() { if (!throwEl) return; clearTimeout(throwTimer); throwEl.classList.remove('on', 'landed');
+  function throwDone() { if (!throwEl) return; clearTimeout(throwTimer); throwEl.classList.remove('on', 'landed', 'drama'); throwEl._skip = null;
     throwTimer = setTimeout(() => { if (throwBox && !throwEl.classList.contains('on')) throwBox.clear(); }, ((throwEl._t || TUNE.mine).fade_out + 0.1) * 1000); }
   function throwCard(what, total, nat, sub) {
     throwEl.querySelector('.dt-card').innerHTML = '<span class="ds-what">' + esc(what) + '</span><b class="ds-total' + (nat === 20 ? ' nat20' : nat === 1 ? ' nat1' : '') + '">' + total + '</b>'
@@ -2476,9 +2484,49 @@ function feedbackBusy(e) {
     clearTimeout(throwTimer);
     throwTimer = setTimeout(throwDone, (throwEl._t || TUNE.mine).stay * 1000);
   }
+  // Make it dramatic (Brett chose A and B, Nov 13, docs/mockups/make-it-dramatic/): on every screen, the dice tray too,
+  // the roll is thrown big and slow in the middle with who rolled above it, and the number shows only once the die stops.
+  // Several attack rolls in one (two beams, three rays) come one at a time, each result kept along the bottom. Esc or a
+  // click skips it on your own screen; it plays on for everyone else. Dice tuning's "Dramatic rolls" sets how it moves.
+  let dramaRun = 0;
+  function throwDrama(e, focus, dice, name) {
+    const box = thrower(), t = tuning('drama'), run = ++dramaRun, gone = () => run !== dramaRun;
+    const dmg = focus === 'damage' && e.damage;
+    const rays = !dmg && D20.includes(e.kind) ? ((e.main && e.main.parts) || []).filter(x => x.kept != null) : [];
+    const what = dmg ? (e.damage.crit ? 'critical damage' : 'damage') : e.label + (KIND_WORDS[e.kind] || '');
+    const total = dmg ? e.damage.total : focus === 'bonus' && e.bonus ? e.bonus.total : e.total;
+    const start = () => {
+      clearTimeout(throwTimer);
+      throwTune(t);
+      throwEl.classList.remove('landed', 'others');
+      throwEl.classList.add('on', 'drama');
+      throwEl.querySelector('.dt-who').innerHTML = '<span aria-hidden="true">🎬</span><b>' + esc(name || 'You') + '</b> · ' + esc(what);
+      throwEl.querySelector('.dt-strip').innerHTML = '';
+      throwEl.querySelector('.dt-card').innerHTML = '';
+    };
+    const end = () => { throwCard((name ? name + ' · ' : '') + what, rays.length > 1 ? rays.map(r => r.total).join(' · ') : total, dmg || rays.length > 1 ? null : e.nat,
+                                  !dmg && rays.length <= 1 && e.nat && e.kind !== 'death' ? 'Natural ' + e.nat : ''); throwEl._skip = null; };
+    throwEl && (throwEl._skip = null);
+    return box.ready.then(() => {
+      throwEl._skip = () => { dramaRun++; box.clear(); end(); };
+      if (rays.length > 1) {  // (one at a time: the tension builds to the last)
+        let chain = Promise.resolve();
+        rays.forEach((r, i) => {
+          const one = [...r.dice.map(v => ({ s: 20, v })), ...(r.extras || []).filter(x => (x.dice || []).length).flatMap(x => x.dice.map(v => ({ s: +((/d(\d+)/.exec(x.formula) || [])[1] || 6), v })))];
+          chain = chain.then(() => box.throw(one, dice, i ? null : start, async () => {
+            throwEl.querySelector('.dt-strip').insertAdjacentHTML('beforeend', '<span class="' + (r.kept === 20 ? 'nat20' : r.kept === 1 ? 'nat1' : '') + '">' + esc(r.label || 'Roll ' + (i + 1)) + ': <b>' + r.total + '</b></span>');
+            if (i < rays.length - 1) { await sleep(0.8); box.clear(); }
+          }, t, gone));
+        });
+        return chain.then(() => { if (!gone()) end(); });
+      }
+      return box.throw(throwList(e, focus), dice, start, () => { if (!gone()) end(); }, t, gone);
+    });
+  }
   function throwMine(e, focus) {
     const list = throwList(e, focus);
     if (!list.length) return Promise.resolve();
+    if (e.dramatic) return throwDrama(e, focus, diceOf(document.body), '');
     const box = thrower(), t = tuning('mine');
     return box.ready.then(() => box.throw(list, diceOf(document.body), () => {
       clearTimeout(throwTimer);
@@ -2517,6 +2565,10 @@ function feedbackBusy(e) {
     const nat = followUp ? null : li.classList.contains('nat20') ? 20 : li.classList.contains('nat1') ? 1 : null;
     const dice = diceOf(li);
     const swatch = '<i class="sw-' + esc(dice.set || 'white') + '"></i>';
+    if (li.dataset.dramatic === '1') {  // (dramatic: the middle of every screen, the dice tray too)
+      thrower();
+      return throwDrama({ ...t, label: what.replace(/ (to hit|damage|healing)$/, ''), total: +total, nat }, followUp ? 'damage' : null, dice, name);
+    }
     if (!diceOf(document.body).tray || document.querySelector('.table-page')) {
       const box = thrower(), tune = tuning('vtt');
       return box.ready.then(() => box.throw(list, dice, () => {
@@ -2682,6 +2734,7 @@ function feedbackBusy(e) {
   ['pointerdown', 'keydown'].forEach(t => document.addEventListener(t, () => {
     if (stageEl) { const s = stageEl._skip; stageClear(); if (s) s(); }
     if (throwEl && throwEl.classList.contains('landed')) throwDone();  // thrown dice: once they've landed, a click clears them
+    else if (throwEl && throwEl._skip) throwEl._skip();  // (a dramatic throw: skipped on this screen, straight to its result)
   }, true));
 
   function payload(go) {
@@ -2706,6 +2759,7 @@ function feedbackBusy(e) {
       if (go.endsHidden) p.set('hidden', 1);
       if (go.self) p.set('self', 1);  // (healing only its roller takes: Apply to offers only them)
       if (go.math) p.set('math', JSON.stringify(go.math));  // (how its numbers add up, kept with it: Show the Math, app/roll_math.py)
+      if (go.dramatic && to === 'table') p.set('dramatic', 1);  // (Make it dramatic: every screen throws it big and slow)
     }
     (go.extras || []).forEach(x => p.append('extra', x));
     if (go.via) p.set('via', go.via);  // (the roll card: counted as its own, app/usage.py)
@@ -3171,6 +3225,7 @@ function feedbackBusy(e) {
     Object.assign(li.dataset, { id: t.id, seq: t.seq, dice: JSON.stringify(t.dice || {}),
                                 throw: JSON.stringify({ kind: t.kind, main: t.main, dmg: t.damage, bonus: t.bonus }) });
     if (t.nat === 20 || t.nat === 1) li.classList.add('nat' + t.nat);
+    if (t.dramatic) li.dataset.dramatic = '1';
     li.innerHTML = '<span class="roll-who"><b></b></span><span class="roll-what"></span><b class="roll-total"></b>' + (t.damage ? '<span class="roll-dmg-line"><b></b></span>' : '');
     li.querySelector('.roll-who b').textContent = t.name;
     li.querySelector('.roll-what').textContent = t.label + (t.kind === 'attack' ? ' to hit' : t.kind === 'damage' ? ' damage' : '');
