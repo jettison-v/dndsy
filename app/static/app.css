@@ -125,6 +125,12 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .manage { position: relative; }
 .manage > button { min-height: var(--bar-h); background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-sm); padding: 0 12px; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; }
 .manage > button.active { border-color: var(--red); }
+/* DM Tools' door (app/homebrew.py): beside Manage, the DM's own (Brett chose 1B, Nov 13) */
+.dm-door { display: inline-flex; align-items: center; min-height: var(--bar-h); background: var(--surface); border: 1px solid var(--line); color: var(--text); border-radius: var(--r-sm); padding: 0 12px; font-weight: 500; font-size: var(--fs-md); white-space: nowrap; text-decoration: none; }
+.dm-door:hover { border-color: var(--line-strong); }
+.dm-door.active { border-color: var(--amber); }
+@media (max-width: 1439px) { .dm-door-more { display: none; } }  /* ("DM" on a laptop: the campaign's name keeps its room) */
+@media (max-width: 1100px) { .bar-end .dm-door { display: none; } }  /* (under More on narrower screens) */
 .menu { position: absolute; right: 0; top: 44px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px; width: 240px; box-shadow: var(--lift); }
 .menu a { display: block; color: var(--text); text-decoration: none; padding: 8px 10px; border-radius: var(--r-sm); }
 .menu .menu-me { pointer-events: none; }  /* the account menu's name and email: a label, not a link */
@@ -3919,3 +3925,30 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .search-anchor { position: fixed; top: 90px; left: 50%; width: 0; height: 0; overflow: hidden; border: 0; padding: 0; }
 .search-foot kbd + kbd { margin-left: 2px; }
 @media (hover: none), (max-width: 640px) { .search-foot { display: none; } }  /* (keys mean nothing on a touch screen, and crowd a narrow one) */
+
+/* DM Tools (app/homebrew.py, dm_tools.html, dm_item.html): its list down the left, then the page; one column on a phone */
+.page.dm-tools { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sp-6); align-items: start; }
+.dm-side { display: grid; gap: 2px; align-content: start; position: sticky; top: calc(var(--stick-top, 62px) + var(--sp-4)); }
+.dm-side a, .dm-planned { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.dm-side a:hover { color: var(--text); background: var(--surface); }
+.dm-side a.on { color: var(--text-strong); background: var(--surface-2); font-weight: 600; }
+.dm-planned { cursor: default; }
+.dm-planned small { color: var(--faint); font-size: var(--fs-xs); }
+.dm-main { min-width: 0; }
+.dm-says { color: var(--text); }
+.dm-items .record { align-items: center; }
+.dm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-3); }
+.dm-grid .field { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-sm); min-width: 0; }
+.dm-grid .field input[type=text], .dm-grid select, .dm-form textarea { width: 100%; min-width: 0; }
+.dm-form > .section > .field { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-sm); }
+.dm-check { display: flex !important; align-items: center; gap: var(--sp-2); align-self: end; padding-bottom: 6px; }
+.dm-wide { grid-column: 1 / -1; }
+.dm-piece { border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4) 0; margin: 0 0 var(--sp-3); }
+.dm-piece legend { padding: 0 var(--sp-2); color: var(--muted); font-size: var(--fs-sm); }
+.dm-go { margin-top: var(--sp-4); }
+.dm-retire { margin-top: var(--sp-4); display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+@media (max-width: 900px) {
+  .page.dm-tools { grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+  .dm-side { position: static; display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+  .dm-side .manage-sec { width: 100%; }
+}

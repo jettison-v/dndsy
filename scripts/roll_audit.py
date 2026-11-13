@@ -35,13 +35,7 @@ OUT = ROOT / "app" / "data" / "roll_recipes.json"
 RIDER = re.compile(r"\bextra\b[^.]*\b(?:whenever you hit|on a hit|when (?:it|you) hits?)\b|\b(?:whenever you hit|on a hit)\b[^.]*\bextra\b", re.I)
 BOOKS = ROOT / "app" / "data" / "rules"
 # An entry's `rolls` say how each resolves and what it does; the compiled recipe keeps one word for both (`on`)
-ON = {("attack", "damage", None): "hit", ("save", "damage", None): "save", ("none", "damage", None): "auto",
-      ("none", "heal", None): "heal", ("none", "temp", None): "temp", ("none", "dice", None): "plain", ("none", "damage", "on_hit"): "rider"}
-
-
-def _event(e: dict) -> dict:
-    out = {"name": e["name"], "on": ON[(e["resolve"], e["effect"], e.get("when"))], "parts": e["dice"]}
-    return out | {k: v for k, v in e.items() if k not in ("name", "resolve", "effect", "when", "dice")}
+from app.roll_recipes import ON, event as _event  # noqa: E402,F401 (the one map, shared with homebrew items)
 
 
 def _recipe(e: dict) -> dict:

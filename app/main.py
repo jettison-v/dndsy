@@ -70,6 +70,7 @@ from app.manage import router as manage_router
 from app.player_notes import router as notes_router
 from app.history_pages import router as history_router
 from app.house_rules_pages import router as house_rules_router
+from app.homebrew import router as homebrew_router
 from app.campaigns_admin import router as campaigns_router
 from app.dice import router as dice_router
 from app.documents import router as documents_router
@@ -229,6 +230,7 @@ app.include_router(manage_router)
 app.include_router(notes_router)
 app.include_router(history_router)
 app.include_router(house_rules_router)
+app.include_router(homebrew_router)  # DM Tools: the campaign's homebrew items
 app.include_router(campaigns_router)
 app.include_router(dice_router)
 app.include_router(documents_router)  # Manage › askdnd › Documents: every page made for askdnd (docs/library.json)
