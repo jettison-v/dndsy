@@ -1080,6 +1080,15 @@
   "link": "https://claude.ai/artifact/LQfEyaQ4nohv5S4a3DXqND"
  },
  {
+  "title": "Menu Bar by Person",
+  "kind": "design",
+  "status": "For you to pick",
+  "date": "Nov 13",
+  "what": "Brett's note on the design grade's fix 3: the menu bar for a player, the DM and an admin at 1280px, today and with Story and Campaign as one Campaign page, ⌘F kept, Help and the admin gear in the account menu, and the Live pill's words for every state but connected.",
+  "source": "docs/mockups/menu-bar-people/index.html",
+  "link": "https://claude.ai/artifact/JUbytTRRvQePW6U5kaxQJu"
+ },
+ {
   "title": "Use Window",
   "kind": "design",
   "status": "For you to pick",
