@@ -62,12 +62,21 @@ if WORKER := os.getenv("PYTEST_XDIST_WORKER"):
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 
+# Browser test files that run each of their cases on a worker of its own: each case is long (a party sheet's every roll,
+# ~30s; a page at every width, ~20s) and they share nothing but the server, which a worker starts for itself
+SPREAD = ("test_every_roll.py", "test_layout.py")
+
+
 @pytest.hookimpl(tryfirst=True)  # before pytest-xdist reads the groups
 def pytest_collection_modifyitems(items):
-    """The browser tests share one server per file: keep them together on one worker."""
+    """The browser tests share one server per file (module-scoped, on its own database per worker), so a file's tests
+    stay together on one worker and different files run side by side (Nov 13: one group for every browser test ran
+    them one at a time, 9 minutes for 100). A long file in SPREAD spreads its cases instead."""
     for item in items:
         if "browser" in item.path.parts:
-            item.add_marker(pytest.mark.xdist_group("browser"))
+            name = item.path.name
+            group = f"browser:{name}:{item.originalname}:{getattr(item, 'callspec', None) and item.callspec.id}" if name in SPREAD else f"browser:{name}"
+            item.add_marker(pytest.mark.xdist_group(group))
 
 
 @pytest.hookimpl(tryfirst=True)
