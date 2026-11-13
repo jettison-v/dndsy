@@ -146,7 +146,7 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
     <div class="where">
       <div><b>Where it lives</b>The menu bar on every page, for everyone signed in. Phones keep their bottom bar (Story there becomes Campaign too).</div>
       <div><b>What changes</b>Story joins Campaign as its first tab; Help (?) and the admin gear move into your account menu; the Live pill speaks up when something needs you.</div>
-      <div><b>What stays</b>Search with ⌘F, Table, your character, Party, Manage, DM Tools, and the Live window that opens from the pill.</div>
+      <div><b>What stays</b>Search with ⌘F, Table, your character, Party, Manage (DM Tools joins it, your note), and the Live window that opens from the pill.</div>
     </div>
   </header>
 
@@ -180,7 +180,7 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
   </section>
 
   <section class="board" id="dm">
-    <div class="say"><div class="lbl">2 · The DM</div><h2>The DM</h2><p>The DM has no character of their own, so the space goes to Manage and DM Tools. Their Live pill counts the party's sheets, so they can see who to nudge before the game.</p></div>
+    <div class="say"><div class="lbl">2 · The DM</div><h2>The DM</h2><p>The DM has no character of their own, so the space goes to Manage. DM Tools joins Manage as one door (your note, Nov 13): running the campaign and making things for it in one place, planned in its own mockup. Their Live pill counts the party's sheets, so they can see who to nudge before the game.</p></div>
     <div class="state"><span class="lbl">Today</span>
       <div class="screen"><div class="frame">
         <div class="topbar"><div class="topbar-inner">
@@ -200,16 +200,16 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
           <nav class="table-nav"><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>3 of 4 · 1 via you</span><span class="mbtn">Manage ▾</span><span class="mbtn">DM Tools</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">D</span></div>
+          <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>3 of 4 · 1 via you</span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar">D</span></div>
         </div></div>
       </div></div>
       <p class="fits" data-fits></p>
     </div>
-    <p class="cap">One sheet isn't connected and one is reached through the DM's browser, so the pill says both, briefly: "3 of 4 · 1 via you". Once all four are connected it's the green dot alone. DM Tools gets its full name back.</p>
+    <p class="cap">One sheet isn't connected and one is reached through the DM's browser, so the pill says both, briefly: "3 of 4 · 1 via you". Once all four are connected it's the green dot alone. DM Tools has no door of its own: it lives inside Manage.</p>
   </section>
 
   <section class="board" id="admin">
-    <div class="say"><div class="lbl">3 · An admin</div><h2>An admin who also plays</h2><p>The fullest bar: a character, Manage, DM Tools and askdnd's admin pages. The gear is the one door only admins have, so it moves into the account menu, where it sits beside Your notes and Help. It's one more click for you, and none for anyone else.</p></div>
+    <div class="say"><div class="lbl">3 · An admin</div><h2>An admin who also plays</h2><p>The fullest bar: a character, Manage (with DM Tools inside) and askdnd's admin pages. The gear is the one door only admins have, so it moves into the account menu, where it sits beside Your notes and Help. It's one more click for you, and none for anyone else.</p></div>
     <div class="state"><span class="lbl">Today</span>
       <div class="screen"><div class="frame">
         <div class="topbar"><div class="topbar-inner">
@@ -229,7 +229,7 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
           <span class="campaign-name">The Adventure Begins</span>
           <nav class="nav"><a class="active">Campaign</a><a>Table ↗</a></nav><span class="nav-sep"></span>
           <nav class="table-nav"><span class="char-btn mine"><span class="char-av b">B</span>Big C</span><span class="char-btn">Party ▾</span></nav>
-          <div class="bar-end"><span class="live-pill bad"><span class="live-dot"></span>Open your sheet</span><span class="mbtn">Manage ▾</span><span class="mbtn">DM Tools</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar open">A</span></div>
+          <div class="bar-end"><span class="live-pill bad"><span class="live-dot"></span>Open your sheet</span><span class="mbtn">Manage ▾</span><span class="search-btn">⌕ <kbd>⌘F</kbd></span><span class="avatar open">A</span></div>
         </div></div>
         <div class="menu" style="right: 24px">
           <a class="me">An admin<small>Signed in with Google</small></a>
@@ -246,7 +246,7 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
       </div></div>
       <p class="fits" data-fits></p>
     </div>
-    <p class="cap">At the table with the sheet closed. Today's pill says "Open your sheet to connect" here, but only "Live" in red at 1240px and narrower, where it shortens itself. With the change it says "Open your sheet" at every laptop width. Help's tour, What askdnd adds, FAQ and About move into one Help item, and the menu's highlighted rows are the two that moved. Measured: for a player and the DM, every state's words fit with the whole name. For an admin who also plays, the two longest ("Via the DM · open your sheet", "D&amp;D Beyond not answering") leave the name about 60px short, so it ends in "…" while that state lasts.</p>
+    <p class="cap">At the table with the sheet closed. Today's pill says "Open your sheet to connect" here, but only "Live" in red at 1240px and narrower, where it shortens itself. With the change it says "Open your sheet" at every laptop width. Help's tour, What askdnd adds, FAQ and About move into one Help item, and the menu's highlighted rows are the two that moved. Measured: with DM Tools inside Manage, every state's words fit with the whole name for all three people, the longest ("Via the DM · open your sheet") with about 50px to spare on the admin's bar.</p>
   </section>
 
   <section class="board" id="live">
