@@ -134,7 +134,10 @@ def test_a_long_group_of_resources_fits_a_phone(people, server):
 
 
 def test_resources_shorten_only_when_they_would_wrap(people, server):
-    """Brett, 2026-11-01: whole names while they fit on one line; once they don't, the short ones, and back again."""
+    """Brett, 2026-11-01: whole names while they fit on one line; once they don't, the short ones, and back again.
+
+    The test sets the row's contents itself; a fresh copy of Battle can arrive at any moment (a change announced for
+    Cole), so its contents are set again on each one and the row refitted (Nov 13: the cause of this test's flakes)."""
     player = people("player")
     page = player.page
     page.set_viewport_size({"width": 1280, "height": 800})
@@ -142,15 +145,25 @@ def test_resources_shorten_only_when_they_would_wrap(people, server):
     row = ".battlebar > .res-row:not(.slots)"
     short = f"document.querySelector('{row}').classList.contains('short')"
     page.wait_for_selector(row)
-    page.wait_for_load_state("networkidle")  # (a fresh copy of the page arriving after this would undo the rows added below)
-    page.evaluate(f"document.querySelectorAll('{row} > .res:not(.res-insp), {row} > .res-group').forEach(e => e.remove())")
+    page.evaluate(f"""() => {{
+      window.resExtras = 0;
+      const set = () => {{
+        const r = document.querySelector('{row}');
+        r.querySelectorAll(':scope > .res:not(.res-insp), :scope > .res-group').forEach(e => e.remove());
+        const first = r.querySelector('.res-insp');
+        for (let i = 0; i < window.resExtras; i++) first.insertAdjacentHTML('beforebegin',
+          '<span class="res extra"><span class="rn-full">A resource with a long name</span><span class="rn-short">R</span></span>');
+      }};
+      window.resSet = set;  // (each step's resize then refits it: what the test checks)
+      document.addEventListener('askdnd:swapped', () => {{ set(); document.body.dispatchEvent(new CustomEvent('htmx:afterSettle')); }});  // (a fresh copy: set again, app.js refits)
+      set();
+    }}""")
     page.set_viewport_size({"width": 1270, "height": 800})
     page.wait_for_function(f"!({short})")
-    page.evaluate(f"""() => {{ const first = document.querySelector('{row} .res-insp');
-      for (let i = 0; i < 12; i++) first.insertAdjacentHTML('beforebegin', '<span class="res extra"><span class="rn-full">A resource with a long name</span><span class="rn-short">R</span></span>'); }}""")
+    page.evaluate("window.resExtras = 12; window.resSet()")
     page.set_viewport_size({"width": 1280, "height": 800})
     page.wait_for_function(short)
-    page.evaluate("document.querySelectorAll('.res.extra').forEach(e => e.remove())")
+    page.evaluate("window.resExtras = 0; window.resSet()")
     page.set_viewport_size({"width": 1270, "height": 800})
     page.wait_for_function(f"!({short})")
 
