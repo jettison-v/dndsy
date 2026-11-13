@@ -76,7 +76,7 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
-from app import access, config, ddb, ddb_fields, ddb_sheet, live, picks, realtime, table_rolls, web
+from app import access, config, ddb, ddb_fields, ddb_sheet, live, picks, realtime, table_rolls, timing, web
 from app import conditions as cond
 from app import characters as chars
 from app.auth import current_user, is_admin, is_dm
@@ -145,7 +145,8 @@ def _lock(db: Session, character_id: int) -> None:
     FOR NO KEY UPDATE, never FOR UPDATE (Sentry ASKDND-V2-5, 2026-10-29): a request saving a bridge change holds the
     light hold its new row's character link takes; FOR UPDATE waited on it while that request waited on this one's own
     update of the row (sheet heard), and the two deadlocked. This still keeps out every other writer of the row."""
-    db.execute(select(Character.id).where(Character.id == character_id).with_for_update(key_share=True))
+    with timing.step("waiting for the character's lock"):  # (a slow request says where its time went: app/timing.py)
+        db.execute(select(Character.id).where(Character.id == character_id).with_for_update(key_share=True))
 
 
 def _log(db: Session, character_id: int, text: str, state: str) -> None:

@@ -40,7 +40,9 @@ def _load_from_db() -> dict:
 
     if engine is None:
         return {}
-    with SessionLocal() as db:
+    from app import timing
+
+    with timing.step("loading house rules"), SessionLocal() as db:  # (a second connection: worth seeing when it waits)
         return rows_from(db)
 
 

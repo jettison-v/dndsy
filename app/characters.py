@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app import config, ddb
+from app import config, ddb, timing
 from app.models import NEW_CHARACTER, CampaignCharacter, Character, CharacterItemNote, CharacterSnapshot, Entity, EntityKind
 
 Fetch = Callable[[str], dict]
@@ -139,6 +139,11 @@ PUBLIC_TRAILS = timedelta(minutes=3)
 
 
 def read(ddb_id: str | None, fetch: Fetch | None = None) -> Read:
+    with timing.step("reading D&D Beyond"):  # (a slow request says where its time went: app/timing.py)
+        return _read(ddb_id, fetch)
+
+
+def _read(ddb_id: str | None, fetch: Fetch | None = None) -> Read:
     """Read and parse a sheet from D&D Beyond. Touches no database, so call it with none held (`read_released`)."""
     at = datetime.now(UTC)
     try:
@@ -163,6 +168,11 @@ def read_released(db: Session, character: Character, fetch: Fetch | None = None)
 
 
 def store(db: Session, character: Character, got: Read, over_sheet: bool = False) -> CharacterSnapshot:
+    with timing.step("storing the sheet"):
+        return _store(db, character, got, over_sheet)
+
+
+def _store(db: Session, character: Character, got: Read, over_sheet: bool = False) -> CharacterSnapshot:
     """Keep a read as the character's copy. On success the snapshot is replaced; on any failure only its status and
     error change, so the last good copy stays. A read older than the copy already kept (another request stored a newer
     one while this one waited for D&D Beyond) changes nothing, and neither does a public read within PUBLIC_TRAILS of a

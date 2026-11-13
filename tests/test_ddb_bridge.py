@@ -1321,3 +1321,30 @@ def test_the_bridges_icon_says_how_each_sheet_stands(player, db, sheet):
     cole.sheet_heard_at = None
     db.commit()
     assert next(c for c in player.get("/bridge/links").json()["characters"] if c["name"] == "Cole")["how"] is None
+
+
+def test_a_sheet_sent_gzipped_is_kept_as_one_sent_plain(player, db, sheet):
+    """Nov 12: askdnd.ai crawled while the extension's half-megabyte sheets piled up on a slow upload. The extension
+    (0.12.2) sends a sheet gzipped, about a seventh of its size; askdnd unpacks it as if it came plain. A body that isn't
+    gzip, or would unpack past web.MAX_JSON_BYTES, is refused as no body at all (askdnd then reads the public copy)."""
+    import gzip
+    import json
+
+    from app import web
+
+    cole = char(db, "Cole")
+    player.post("/bridge/heard/75423618")
+    next(i for i in sheet["inventory"] if i["id"] == SOUL_COIN)["limitedUse"]["numberUsed"] = 2  # the public copy, stale
+    body = gzip.compress(json.dumps({"data": as_read(sheet, 0)}).encode())
+    r = player.post("/bridge/heard/75423618", content=body, headers={"Content-Type": "application/json", "Content-Encoding": "gzip"})
+    assert r.status_code == 200
+    db.refresh(cole.snapshot)
+    assert coin_left(cole) == 3  # (the sheet's own read, unpacked: not the stale public copy's 1)
+    with pytest.raises(ValueError):
+        web.gunzip(b"not gzip at all")
+    with pytest.raises(ValueError):
+        web.gunzip(gzip.compress(b"x" * 1000), limit=100)  # (it would grow past the limit: refused, never unpacked whole)
+    bad = player.post("/bridge/heard/75423618", content=b"not gzip", headers={"Content-Type": "application/json", "Content-Encoding": "gzip"})
+    assert bad.status_code == 200
+    db.refresh(cole.snapshot)
+    assert coin_left(cole) == 3  # (no body it could read: a public read, which never replaces the sheet's own for a while)

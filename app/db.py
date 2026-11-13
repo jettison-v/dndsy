@@ -26,6 +26,11 @@ LoopSession = sessionmaker(bind=loop_engine, expire_on_commit=False)
 
 
 def get_db() -> Iterator[Session]:
-    """FastAPI dependency: one database session per request."""
+    """FastAPI dependency: one database session per request. Its connection is taken at once, timed, so a slow request
+    says whether it waited for one (app/timing.py: the pool running out looks like a slow server with nothing to do)."""
+    from app import timing
+
     with SessionLocal() as session:
+        with timing.step("waiting for a database connection"):
+            session.connection()
         yield session

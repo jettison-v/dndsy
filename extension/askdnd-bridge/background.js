@@ -54,10 +54,18 @@ chrome.tabs.onRemoved.addListener(async tabId => {
   if (!others(await chrome.tabs.query({ url: DDB_PAGES })).length) carry(tabId);  // no D&D Beyond page here now: the DM isn't
 });
 
-async function api(method, path, body) {
+// `zip`: send the body gzipped (a whole sheet is about 540 KB of JSON, a tenth of that zipped; Nov 12, askdnd.ai crawled
+// while half-megabyte sheets piled up on a slow upload). askdnd unpacks it (app/web.py `gunzip`).
+async function zipped(text) {
+  return new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer();
+}
+async function api(method, path, body, zip) {
   const { key, askdnd } = await chrome.storage.session.get(['key', 'askdnd']);  // from askdnd.js
   if (!key || !askdnd) throw new Error('Open askdnd once in this browser, signed in, to connect the extension.');
-  const r = await fetch(askdnd + path, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Askdnd-Bridge': key }, body: body ? JSON.stringify(body) : undefined });
+  const headers = { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Askdnd-Bridge': key };
+  let sent = body ? JSON.stringify(body) : undefined;
+  if (sent && zip && typeof CompressionStream === 'function') { sent = await zipped(sent); headers['Content-Encoding'] = 'gzip'; }
+  const r = await fetch(askdnd + path, { method, headers, body: sent });
   const j = await r.json().catch(() => ({}));
   if (r.status === 401) await chrome.storage.session.remove('key');  // askdnd restarted: an askdnd page reconnects it
   if (!r.ok) throw new Error(j.error || j.detail || 'askdnd answered ' + r.status + '.');
@@ -154,10 +162,30 @@ function heardSoon(ddbId, tabId) {
     quiet.set(ddbId, setTimeout(() => heard(ddbId, true, tabId), AGAIN_MS));
   }, QUIET_MS));
 }
-// `data`: the sheet as it just read itself, signed in (ddb-page.js 5.); without it askdnd reads D&D Beyond's public copy
+// `data`: the sheet as it just read itself, signed in (ddb-page.js 5.); without it askdnd reads D&D Beyond's public copy.
+// One at a time per sheet (Nov 12: on a slow upload the 30-second pulls and each save's reads overlapped, every
+// half-megabyte sheet slowing the rest, until askdnd.ai crawled for everything in that house): one asked for while
+// another is on its way waits, and every one asked for meanwhile becomes a single next one, with the newest sheet, a
+// save's (not a pull's) if any of them was one.
+const sending = new Map();  // sheet → the next one to send once this one is done (null: none yet)
 async function heard(ddbId, pull, tabId, data) {
+  if (sending.has(ddbId)) {
+    const was = sending.get(ddbId) || { pull: true };
+    sending.set(ddbId, { pull: was.pull && pull, tabId: tabId || was.tabId, data: data || was.data });
+    return;
+  }
+  sending.set(ddbId, null);
+  try {
+    return await heardOnce(ddbId, pull, tabId, data);
+  } finally {
+    const next = sending.get(ddbId);
+    sending.delete(ddbId);
+    if (next) heard(ddbId, next.pull, next.tabId, next.data);
+  }
+}
+async function heardOnce(ddbId, pull, tabId, data) {
   if (!(await sheetTabs(ddbId)).length) return;  // (its last tab closed since this was asked for)
-  const st = await api('POST', '/bridge/heard/' + ddbId + (pull ? '?pull=1' : ''), data ? { data } : undefined).catch(() => null);
+  const st = await api('POST', '/bridge/heard/' + ddbId + (pull ? '?pull=1' : ''), data ? { data } : undefined, true).catch(() => null);
   if (await stillClosed(ddbId)) return;
   // What askdnd just read from D&D Beyond: an open copy of the sheet holding anything else shows D&D Beyond's numbers
   // (not the copy that just saved: it has its own change)
