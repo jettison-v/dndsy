@@ -1028,7 +1028,7 @@
  {
   "title": "The DM's Creatures in Play",
   "kind": "design",
-  "status": "For you to pick",
+  "status": "Chose A and C · held until the Player Assistant is locked",
   "date": "Nov 12",
   "what": "Two things the DM does every fight that askdnd's table doesn't help with yet: one roll that hits several of the party at once (a Fireball, a breath weapon), and playing a creature's own turn.",
   "source": "docs/mockups/dm-creatures-in-play/index.html",
@@ -1046,7 +1046,7 @@
  {
   "title": "Spell Components",
   "kind": "design",
-  "status": "For you to pick",
+  "status": "Chose A–D",
   "date": "Nov 12",
   "what": "Brett, Nov 8: askdnd says when a spell's component is missing (one with a cost, or any without a pouch or focus) and uses up a consumed one; it never stops a cast, the DM rules.",
   "source": "docs/mockups/spell-components/index.html",
@@ -1055,7 +1055,7 @@
  {
   "title": "Changing Your Options",
   "kind": "design",
-  "status": "For you to pick",
+  "status": "Chose 1, 2, 3 and Aid",
   "date": "Nov 12",
   "what": "Choices still made only on D&D Beyond (Wild Shape forms, weapon masteries, cantrips and the spellbook) as askdnd windows, and maximum Hit Points (Aid).",
   "source": "docs/mockups/choices-in-askdnd/index.html",
@@ -1064,7 +1064,7 @@
  {
   "title": "Compare",
   "kind": "design",
-  "status": "For you to pick",
+  "status": "Chose both",
   "date": "Nov 12",
   "what": "From the UI pass: tick two to four spells or Wild Shape forms and see them side by side, as a table (A) or cards (B); facts only.",
   "source": "docs/mockups/compare/index.html",
@@ -1091,7 +1091,7 @@
  {
   "title": "The DM's Workspace",
   "kind": "design",
-  "status": "For you to pick",
+  "status": "Chose B · Manage · scene notes in the list",
   "date": "Nov 13",
   "what": "Brett's note, Nov 13: Manage and DM Tools as one door and one master page. Every page grouped by the DM's week (after the game, the next game, the table), three layouts at 1280 × 800, the door's menu for the DM, a reviewer and an admin, and where each page goes.",
   "source": "docs/mockups/dm-workspace/index.html",
@@ -1118,16 +1118,25 @@
  {
   "title": "The Three Menus",
   "kind": "design",
-  "status": "For you to pick",
+  "status": "Chose all six",
   "date": "Nov 13",
   "what": "Brett's note, Nov 13: keep the gear, fold Help into the account menu, and design the account menu, Manage and the admin gear together so they never need redoing: five rules for all three, plainer names in the account menu, Manage grouped by the DM's week, the gear in groups, Manage › Campaigns with + New campaign and moves only when D&D Beyond says so.",
   "source": "docs/mockups/menus/index.html",
   "link": "https://claude.ai/artifact/EmPPET1F7mieCoPMmvS9q8"
  },
  {
+  "title": "Your Queue",
+  "kind": "plan",
+  "status": "Current",
+  "date": "Nov 13",
+  "what": "Brett's note, Nov 13: a short, temporary list of only what waits on Brett, in the order that unblocks the most (the picks that gate the structure lock first, then trying what's live on VTT test).",
+  "source": "docs/artifacts/your-queue.html",
+  "link": "https://claude.ai/artifact/RV2j6zyjvJa6dRupgQ73oX"
+ },
+ {
   "title": "Use Window",
   "kind": "design",
-  "status": "For you to pick",
+  "status": "Chose A, with the table",
   "date": "Nov 12",
   "what": "Brett's Roll Audit note, Nov 12: one window that spends a feature's pool or count, picks who and applies (Lay on Hands, Second Wind, Font of Magic), made from its data.",
   "source": "docs/mockups/use-window/index.html",
