@@ -1753,6 +1753,7 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rcard-vis-open { display: grid; }
 .roll-card .rw-row, .roll-card .rw-notes, .roll-card .rw-note { margin: 0; }
 /* A roll that won't reach D&D Beyond's Game Log although it would have: said in amber, with the sheet (connection-drops) */
+.rw-note[data-log-note] { padding: var(--sp-2) var(--sp-3); border: 1px solid transparent; border-radius: var(--r-md); }  /* one box whichever it says (it changes while the card is open) */
 .rw-note.rw-log-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-2); align-items: start; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); background: var(--amber-soft); border: 1px solid var(--amber); color: var(--text); }
 .rw-log-warn b { color: var(--amber); font-weight: 800; }
 .rw-log-warn a { color: var(--amber); font-weight: 600; white-space: nowrap; }
@@ -3921,14 +3922,14 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 /* Search, like Spotlight (app/search.py; Brett chose A and A, Nov 9): the menu bar's button beside Help, the magnifier and
    its key, drawn as a button like Manage and the gear, not a field (Brett chose A, Nov 9: docs/mockups/search/menu-button.html) */
-.search-btn { display: inline-flex; align-items: center; gap: 8px; height: var(--bar-h); flex: 0 100 380px; min-width: 78px; margin-right: auto; padding: 0 6px 0 11px;
+.search-btn { display: inline-flex; align-items: center; gap: 8px; height: var(--bar-h); flex: 0 100 380px; min-width: 94px; margin-right: auto; padding: 0 6px 0 11px;
   container-type: inline-size; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--muted); font: 400 var(--fs-sm)/1 var(--sans); cursor: pointer; text-align: left; }
 .search-btn svg, .search-btn kbd { flex: none; }
 .search-btn kbd { margin-left: auto; }
 .search-ph { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sp-short { display: none; }
 @container (max-width: 240px) { .search-btn .sp-long { display: none; } .search-btn .sp-short { display: inline; } }  /* the same box, shorter words */
-@container (max-width: 100px) { .search-btn .search-ph { display: none; } }  /* then the magnifier and ⌘F */
+@container (max-width: 110px) { .search-btn .search-ph { display: none; } }  /* then the magnifier and ⌘F (Ctrl+F) */
 .search-btn:hover, .search-btn:focus-visible { color: var(--text-strong); border-color: var(--blue); }
 .search-btn kbd, .search-foot kbd { font: 600 var(--fs-xs)/1 var(--sans); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--r-xs); padding: 1px 4px; background: var(--surface-2); color: var(--text); }
 .search-btn kbd { background: transparent; color: var(--muted); padding: 2px 5px; }
