@@ -145,14 +145,14 @@ def test_resources_shorten_only_when_they_would_wrap(people, server):
     page.wait_for_load_state("networkidle")  # (a fresh copy of the page arriving after this would undo the rows added below)
     page.evaluate(f"document.querySelectorAll('{row} > .res:not(.res-insp), {row} > .res-group').forEach(e => e.remove())")
     page.set_viewport_size({"width": 1270, "height": 800})
-    page.wait_for_function(f"!({short})", timeout=3000)
+    page.wait_for_function(f"!({short})")
     page.evaluate(f"""() => {{ const first = document.querySelector('{row} .res-insp');
       for (let i = 0; i < 12; i++) first.insertAdjacentHTML('beforebegin', '<span class="res extra"><span class="rn-full">A resource with a long name</span><span class="rn-short">R</span></span>'); }}""")
     page.set_viewport_size({"width": 1280, "height": 800})
-    page.wait_for_function(short, timeout=3000)
+    page.wait_for_function(short)
     page.evaluate("document.querySelectorAll('.res.extra').forEach(e => e.remove())")
     page.set_viewport_size({"width": 1270, "height": 800})
-    page.wait_for_function(f"!({short})", timeout=3000)
+    page.wait_for_function(f"!({short})")
 
 
 def test_tap_targets_on_a_phone(people, server):

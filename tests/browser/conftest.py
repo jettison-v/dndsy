@@ -206,7 +206,13 @@ class Person:
         self.context.add_init_script("document.addEventListener('securitypolicyviolation', e => console.error('CSP blocked: ' + e.violatedDirective + ' ' + (e.blockedURI || 'inline')))")
         self.page = self.context.new_page()
         self.page.on("console", lambda m: m.text.startswith("CSP blocked:") and self.csp.append(m.text))
-        self.page.on("pageerror", lambda e: self.errors.append(str(e)))
+        # Each error says where it came from on the test's output (shown when a test fails), so a failure on GitHub's
+        # machines that never happens locally still says what it was (Nov 13: WebKit on Linux, never on a Mac)
+        def note(source, text, ignored=False):
+            print(f"[{who} {'ignored ' if ignored else ''}{source}] {text}")
+            if not ignored:
+                self.errors.append(text)
+        self.note = note
         # The console's "Failed to load resource" doesn't say which: record the failing address instead
         # (Safari's engine says a request cut short by leaving the page failed to send, which htmx reports; a real failure
         # still shows as its response below)
@@ -216,9 +222,11 @@ class Person:
         # (its words vary: "Fetch API cannot load <address> …", or the address alone, Nov 13 on /search/index)
         own = server["base"].split("://", 1)[-1]
         cancelled = (lambda t: "due to access control checks" in t and own in t) if webkit else (lambda t: False)
-        self.page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and m.text not in cut_short and not cancelled(m.text)
-                     and self.errors.append(m.text))
-        self.page.on("response", lambda r: r.status >= 400 and self.errors.append(f"{r.status} {r.url.replace(server['base'], '')}"))
+        self.page.on("console", lambda m: m.type == "error" and not m.text.startswith("Failed to load resource") and m.text not in cut_short
+                     and note("console", m.text, ignored=cancelled(m.text)))
+        # (a fetch WebKit cancelled can also arrive as the page's own error, the same words; a real one shows as its answer)
+        self.page.on("pageerror", lambda e: note("pageerror", str(e), ignored=cancelled(str(e))))
+        self.page.on("response", lambda r: r.status >= 400 and note("response", f"{r.status} {r.url.replace(server['base'], '')}"))
         # (a fresh browser's first page, WebKit's especially, can take longer: Nov 2, 10 seconds ran out on a busy machine)
         self.page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}", timeout=30_000)
 
