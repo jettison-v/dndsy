@@ -62,12 +62,16 @@ PLACES = [
      [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "light"]), ("Timing", ["slide", "stay"])]),
     ("vtt", "Others' rolls, full screen", "Someone else rolled (everyone without the dice tray, and everyone on askdnd's table): "
      "their dice cross the whole screen with a tag saying who rolled.", _PAGE),
+    ("drama", "Dramatic rolls", "A roll made dramatic (🎬 on the roll card): on every screen, the dice tray too, it's thrown big "
+     "and slow in the middle, the number held until the die stops; several beams or darts come one at a time.", _PAGE),
 ]
 # askdnd's own tuning (what it did before the Dice tuning page)
 TUNING = {
     "mine": {"strength": 1.4, "gravity": 300, "size": 95, "shadows": True, "light": 0.7, "dim": 55, "blur": 2, "fade_in": 0.2, "stay": 3.2, "fade_out": 0.3},
     "tray": {"strength": 1, "gravity": 400, "size": 60, "shadows": False, "light": 0.7, "slide": 0.3, "stay": 2.6},
     "vtt": {"strength": 1.4, "gravity": 300, "size": 95, "shadows": True, "light": 0.7, "dim": 35, "blur": 0, "fade_in": 0.2, "stay": 3.2, "fade_out": 0.3},
+    # (Make it dramatic, Brett chose A and B Nov 13, docs/mockups/make-it-dramatic/: floaty, big, the page well back)
+    "drama": {"strength": 0.9, "gravity": 120, "size": 140, "shadows": True, "light": 0.8, "dim": 75, "blur": 4, "fade_in": 0.4, "stay": 4.5, "fade_out": 0.5},
 }
 TUNING_KEY = "dice_tuning"
 
