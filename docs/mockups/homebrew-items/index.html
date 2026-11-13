@@ -127,6 +127,15 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
 .q .opt .l { font: 700 .9rem/1 var(--sans); color: var(--strong); }
 .q .opt span { font-size: .86rem; color: var(--muted); } .q .opt b { color: var(--text); }
 @media (max-width: 700px) { .shell { grid-template-columns: minmax(0, 1fr); } .shell nav { display: none; } .form2 { grid-template-columns: minmax(0, 1fr); } }
+.mbar2 { display: flex; gap: 12px; align-items: center; background: #0f1113; border: 1px solid var(--line); border-bottom: 2px solid var(--red-btn); border-radius: 10px 10px 0 0; padding: 8px 12px; font-size: .84rem; color: var(--muted); flex-wrap: wrap; }
+.mbar2 .logo { width: 20px; height: 20px; border-radius: 6px; background: var(--red-btn); }
+.mbar2 b { color: var(--strong); } .mbar2 .sp { flex: 1; }
+.mbar2 .door { color: var(--strong); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: 999px; padding: 2px 10px; }
+.shell nav i { font-style: normal; font-size: .7rem; color: var(--faint); margin-left: 4px; }
+table.makes { width: 100%; border-collapse: collapse; font-size: .84rem; }
+table.makes th { text-align: left; font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 6px 8px; }
+table.makes td { padding: 7px 8px; border-top: 1px solid var(--line-soft); vertical-align: top; color: var(--muted); }
+table.makes td:first-child { color: var(--text); }
 </style>
 
 <div class="wrap">
@@ -135,7 +144,7 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
     <h1>Homebrew items</h1>
     <p class="lead">Your note (Nov 10), after setting up Trah's Beasty Bone: the DM should make and manage the campaign's own items in askdnd, not through a setting tucked into one item's side panel. What an item does in play is picked from what askdnd already plays (a roll, an effect, charges, a creature it brings), so its rules are set once when it's made, not worked out at the table.</p>
     <div class="where">
-      <div><b>Where it lives</b>To decide (below): a new DM Tools page, or Manage › the campaign's pages. Either way, one list of the campaign's own items.</div>
+      <div><b>Where it lives</b>To decide (below): DM Tools, a page of its own, or Manage › the campaign's pages. Either way, one list of the campaign's own items.</div>
       <div><b>Who uses it</b>The campaign's DM (and admins). Players see an item once it's on their sheet, as any item.</div>
       <div><b>Three decisions</b>Where it lives, whether an item also goes onto D&amp;D Beyond's sheet, and whether players can find these items. Each has my pick below.</div>
     </div>
@@ -184,10 +193,46 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
   </section>
 
   <section class="board wide">
+    <div class="split" style="grid-template-columns:minmax(0,1fr)">
+      <div class="stage">
+        <div class="mbar2"><span class="logo"></span><b>The Adventure Begins</b><span>Story</span><span>Campaign</span><span>Table ↗</span><span class="sp"></span><span class="door">DM Tools</span><span>Manage ▾</span></div>
+        <div class="shell" aria-label="DM Tools">
+          <nav><span class="grp">For the next game</span><span>Encounters <i>planned</i></span><span>Loot <i>planned</i></span><span>Handouts <i>planned</i></span><span>Scene notes</span>
+            <span class="grp">The campaign's own</span><span class="on">Items</span><span>Shops <i>planned</i></span><span>Creatures</span><span>Places and maps</span>
+            <span class="grp">Later</span><span>Random tables</span><span>Spells, feats, subclasses</span></nav>
+          <div class="main">
+            <table class="makes"><thead><tr><th>What the DM makes</th><th>In askdnd today</th></tr></thead><tbody>
+              <tr><td><b>Items</b> (the Beasty Bone)</td><td>A setting in one item's side panel</td></tr>
+              <tr><td><b>Shops</b>: what's for sale, at what price</td><td>Planned (the item browser's board 4)</td></tr>
+              <tr><td><b>Creatures</b>: a homebrew monster's stat block</td><td>Kept by askdnd (campaign content), no page to make one</td></tr>
+              <tr><td><b>Encounters</b>: a fight prepared ahead (its creatures, a place, where they stand)</td><td>Built at the table, from the map's tokens</td></tr>
+              <tr><td><b>Loot</b>: what a fight or chest gives, coins included</td><td>Give loot, one item at a time</td></tr>
+              <tr><td><b>Handouts</b>: a letter, a picture, a map, shown to the table when found</td><td>Not yet</td></tr>
+              <tr><td><b>Places and maps</b>, <b>scene notes</b></td><td>On askdnd's table (scene notes: the DM's alone)</td></tr>
+              <tr><td><b>House rules</b>, <b>corrections</b>, the art style</td><td>Manage (they're rules and settings, not things made; they stay)</td></tr>
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Your question, Nov 13</div>
+      <h2>What else a DM makes: enough for a page of its own</h2>
+      <p>Besides items, shops and house rules, a DM makes creatures, encounters, loot, handouts, places and maps, and scene notes, and later random tables and homebrew spells or subclasses. That's eight or more kinds of things made before a game, so they earn their own door: <b>DM Tools</b>, in the menu bar for the campaign's DM only.</p>
+      <ul class="meta">
+        <li>Manage keeps what it is now: the campaign's settings, review (Needs you, Inbox, Sessions) and rules (house rules, corrections). Things the DM makes move out of it.</li>
+        <li>Kept apart from admins: admins don't see the door; they reach it through View as when they need to help (as with scene notes).</li>
+        <li>Built as each kind comes: Items first; the rest show as "planned" until they're made.</li>
+      </ul>
+      <div class="cost"><span>Build: S for the door and page, then each kind its own step</span></div>
+    </div>
+  </section>
+
+  <section class="board wide">
     <div class="split">
       <div class="q"><b>1 · Where it lives</b>
-        <div class="opt rec"><span class="l">A</span><span><b>Manage › the campaign</b>, beside House rules and Settings. My pick: the DM already goes there for the campaign's rules, and it needs no new door in the menu bar.</span></div>
-        <div class="opt"><span class="l">B</span><span><b>A new DM Tools page</b>, the start of step 19's DM Tools. Worth it once there are several tools; today it would be one page behind a new door.</span></div>
+        <div class="opt"><span class="l">A</span><span><b>Manage › the campaign</b>, beside House rules and Settings. No new door, but Manage fills with things made beside settings and review.</span></div>
+        <div class="opt rec"><span class="l">B</span><span><b>DM Tools, a page of its own</b> (the board above): the DM's door in the menu bar, Items first, the other kinds as they come. My pick now: there are eight or more kinds of things a DM makes, and it keeps them apart from admins.</span></div>
       </div>
       <div class="q"><b>2 · Onto the D&amp;D Beyond sheet too?</b>
         <div class="opt rec"><span class="l">A</span><span><b>Yes, as a custom item</b>, with its name and words, so the sheet stays complete for anyone who opens it on D&amp;D Beyond. askdnd keeps what it does in play. My pick, while the table still uses D&amp;D Beyond's sheets.</span></div>
@@ -204,11 +249,11 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
   <section class="pick" aria-labelledby="pick-h">
     <div class="lbl">Your pick</div>
     <h2 id="pick-h">Your three answers</h2>
-    <p class="meta">My picks: <b>1A, 2A, 3A</b>. Tick yours below and Save; you can come back and change it.</p>
+    <p class="meta">My picks: <b>1B, 2A, 3A</b> (1 changed to B after your question: what else a DM makes). Tick yours below and Save; you can come back and change it.</p>
     <form class="decide">
       <fieldset data-q="where" data-kind="one"><legend>1 · Where it lives</legend><div class="choices">
-        <label class="choice one"><input type="radio" name="where" value="A">A · Manage › the campaign <span class="mine-tag">My pick</span></label>
-        <label class="choice one"><input type="radio" name="where" value="B">B · A new DM Tools page</label>
+        <label class="choice one"><input type="radio" name="where" value="A">A · Manage › the campaign</label>
+        <label class="choice one"><input type="radio" name="where" value="B">B · DM Tools, a page of its own <span class="mine-tag">My pick</span></label>
       </div></fieldset>
       <fieldset data-q="ddb" data-kind="one"><legend>2 · Onto the D&amp;D Beyond sheet too?</legend><div class="choices">
         <label class="choice one"><input type="radio" name="ddb" value="A">A · Yes, as a custom item <span class="mine-tag">My pick</span></label>
