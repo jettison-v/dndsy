@@ -1,0 +1,4686 @@
+{
+ "about": "Names, classes, levels and the kind of number each entry has (dice, save, bonus), from the offline 2024 PHB and DMG by scripts/books_coverage.py; never their words.",
+ "subclasses": {
+  "Barbarian": [
+   "Path of the Berserker",
+   "Path of the Wild Heart",
+   "Path of the World Tree",
+   "Path of the Zealot"
+  ],
+  "Bard": [
+   "College of Dance",
+   "College of Glamour",
+   "College of Lore",
+   "College of Valor"
+  ],
+  "Cleric": [
+   "Life Domain",
+   "Light Domain",
+   "Trickery Domain",
+   "War Domain"
+  ],
+  "Druid": [
+   "Circle of the Land",
+   "Circle of the Moon",
+   "Circle of the Sea",
+   "Circle of the Stars"
+  ],
+  "Fighter": [
+   "Battle Master",
+   "Champion",
+   "Eldritch Knight",
+   "Psi Warrior"
+  ],
+  "Monk": [
+   "Warrior of Mercy",
+   "Warrior of Shadow",
+   "Warrior of the Elements",
+   "Warrior of the Open Hand"
+  ],
+  "Paladin": [
+   "Oath of Devotion",
+   "Oath of Glory",
+   "Oath of the Ancients",
+   "Oath of Vengeance"
+  ],
+  "Ranger": [
+   "Beast Master",
+   "Fey Wanderer",
+   "Gloom Stalker",
+   "Hunter"
+  ],
+  "Rogue": [
+   "Arcane Trickster",
+   "Assassin",
+   "Soulknife",
+   "Thief"
+  ],
+  "Sorcerer": [
+   "Aberrant Sorcery",
+   "Clockwork Sorcery",
+   "Draconic Sorcery",
+   "Wild Magic Sorcery"
+  ],
+  "Warlock": [
+   "Archfey Patron",
+   "Celestial Patron",
+   "Fiend Patron",
+   "Great Old One Patron"
+  ],
+  "Wizard": [
+   "Abjurer",
+   "Diviner",
+   "Evoker",
+   "Illusionist"
+  ]
+ },
+ "entries": [
+  {
+   "kind": "feature",
+   "name": "Rage",
+   "class": "Barbarian",
+   "level": 1,
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Rage Damage",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Brutal Strike",
+   "class": "Barbarian",
+   "level": 9,
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Relentless Rage",
+   "class": "Barbarian",
+   "level": 11,
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Brutal Strike",
+   "class": "Barbarian",
+   "level": 13,
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Sundering Blow",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Brutal Strike",
+   "class": "Barbarian",
+   "level": 17,
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Frenzy",
+   "class": "Barbarian",
+   "level": 3,
+   "sub": "Path of the Berserker",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Intimidating Presence",
+   "class": "Barbarian",
+   "level": 14,
+   "sub": "Path of the Berserker",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Vitality of the Tree",
+   "class": "Barbarian",
+   "level": 3,
+   "sub": "Path of the World Tree",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Vitality Surge",
+     "has": [
+      "bonus"
+     ]
+    },
+    {
+     "name": "Life-Giving Force",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Branches of the Tree",
+   "class": "Barbarian",
+   "level": 6,
+   "sub": "Path of the World Tree",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Divine Fury",
+   "class": "Barbarian",
+   "level": 3,
+   "sub": "Path of the Zealot",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Warrior of the Gods",
+   "class": "Barbarian",
+   "level": 3,
+   "sub": "Path of the Zealot",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Bardic Inspiration",
+   "class": "Bard",
+   "level": 1,
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "At Higher Levels",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Jack of All Trades",
+   "class": "Bard",
+   "level": 2,
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tandem Footwork",
+   "class": "Bard",
+   "level": 6,
+   "sub": "College of Dance",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Beguiling Magic",
+   "class": "Bard",
+   "level": 3,
+   "sub": "College of Glamour",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Mantle of Inspiration",
+   "class": "Bard",
+   "level": 3,
+   "sub": "College of Glamour",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Unbreakable Majesty",
+   "class": "Bard",
+   "level": 14,
+   "sub": "College of Glamour",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Peerless Skill",
+   "class": "Bard",
+   "level": 14,
+   "sub": "College of Lore",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Combat Inspiration",
+   "class": "Bard",
+   "level": 3,
+   "sub": "College of Valor",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Offense",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Channel Divinity",
+   "class": "Cleric",
+   "level": 2,
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Divine Spark",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Sear Undead",
+   "class": "Cleric",
+   "level": 5,
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Blessed Strikes",
+   "class": "Cleric",
+   "level": 7,
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Divine Strike",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Potent Spellcasting",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Blessed Strikes",
+   "class": "Cleric",
+   "level": 14,
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Divine Strike",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    },
+    {
+     "name": "Potent Spellcasting",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Greater Divine Intervention",
+   "class": "Cleric",
+   "level": 20,
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Disciple of Life",
+   "class": "Cleric",
+   "level": 3,
+   "sub": "Life Domain",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Blessed Healer",
+   "class": "Cleric",
+   "level": 6,
+   "sub": "Life Domain",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Supreme Healing",
+   "class": "Cleric",
+   "level": 17,
+   "sub": "Life Domain",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Radiance of the Dawn",
+   "class": "Cleric",
+   "level": 3,
+   "sub": "Light Domain",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Warding Flare",
+   "class": "Cleric",
+   "level": 6,
+   "sub": "Light Domain",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Corona of Light",
+   "class": "Cleric",
+   "level": 17,
+   "sub": "Light Domain",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Duplicity",
+   "class": "Cleric",
+   "level": 17,
+   "sub": "Trickery Domain",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Healing Illusion",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Druidic",
+   "class": "Druid",
+   "level": 1,
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Wild Shape",
+   "class": "Druid",
+   "level": 2,
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Temporary Hit Points",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Elemental Fury",
+   "class": "Druid",
+   "level": 7,
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Potent Spellcasting",
+     "has": [
+      "bonus"
+     ]
+    },
+    {
+     "name": "Primal Strike",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Elemental Fury",
+   "class": "Druid",
+   "level": 15,
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Primal Strike",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Land’s Aid",
+   "class": "Druid",
+   "level": 3,
+   "sub": "Circle of the Land",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Circle Forms",
+   "class": "Druid",
+   "level": 3,
+   "sub": "Circle of the Moon",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Temporary Hit Points",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Circle Forms",
+   "class": "Druid",
+   "level": 6,
+   "sub": "Circle of the Moon",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Increased Toughness",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Lunar Form",
+   "class": "Druid",
+   "level": 14,
+   "sub": "Circle of the Moon",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Improved Lunar Radiance",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Wrath of the Sea",
+   "class": "Druid",
+   "level": 3,
+   "sub": "Circle of the Sea",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Star Map",
+   "class": "Druid",
+   "level": 3,
+   "sub": "Circle of the Stars",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Starry Form",
+   "class": "Druid",
+   "level": 3,
+   "sub": "Circle of the Stars",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Archer",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Chalice",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    },
+    {
+     "name": "Dragon",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Cosmic Omen",
+   "class": "Druid",
+   "level": 6,
+   "sub": "Circle of the Stars",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Weal",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Woe",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Twinkling Constellations",
+   "class": "Druid",
+   "level": 10,
+   "sub": "Circle of the Stars",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Second Wind",
+   "class": "Fighter",
+   "level": 1,
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tactical Mind",
+   "class": "Fighter",
+   "level": 2,
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Combat Superiority",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Superiority Dice",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Saving Throws",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Combat Superiority",
+   "class": "Fighter",
+   "level": 10,
+   "sub": "Battle Master",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Relentless",
+   "class": "Fighter",
+   "level": 15,
+   "sub": "Battle Master",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Ultimate Combat Superiority",
+   "class": "Fighter",
+   "level": 18,
+   "sub": "Battle Master",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Ambush",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Bait and Switch",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Roll the Superiority Die",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Commanding Presence",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Disarming Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Distracting Strike",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Feinting Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Goading Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Lunging Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Maneuvering Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Menacing Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Parry",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Precision Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Pushing Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Rally",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Riposte",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Tactical Assessment",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Trip Attack",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Battle Master",
+   "of": "Maneuver",
+   "has": [
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Critical",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Champion",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Superior Critical",
+   "class": "Fighter",
+   "level": 15,
+   "sub": "Champion",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Survivor",
+   "class": "Fighter",
+   "level": 18,
+   "sub": "Champion",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Heroic Rally",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Psionic Power",
+   "class": "Fighter",
+   "level": 3,
+   "sub": "Psi Warrior",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Protective Field",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Telekinetic Adept",
+   "class": "Fighter",
+   "level": 7,
+   "sub": "Psi Warrior",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Telekinetic Thrust",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Martial Arts",
+   "class": "Monk",
+   "level": 1,
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Martial Arts Die",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Monk’s Focus",
+   "class": "Monk",
+   "level": 2,
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Uncanny Metabolism",
+   "class": "Monk",
+   "level": 2,
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Deflect Attacks",
+   "class": "Monk",
+   "level": 3,
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Heightened Focus",
+   "class": "Monk",
+   "level": 10,
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Patient Defense",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Hand of Ultimate Mercy",
+   "class": "Monk",
+   "level": 17,
+   "sub": "Warrior of Mercy",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Elemental Epitome",
+   "class": "Monk",
+   "level": 17,
+   "sub": "Warrior of the Elements",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Empowered Strikes",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Open Hand Technique",
+   "class": "Monk",
+   "level": 3,
+   "sub": "Warrior of the Open Hand",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Push",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Topple",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Wholeness of Body",
+   "class": "Monk",
+   "level": 6,
+   "sub": "Warrior of the Open Hand",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Quivering Palm",
+   "class": "Monk",
+   "level": 17,
+   "sub": "Warrior of the Open Hand",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Channel Divinity",
+   "class": "Paladin",
+   "level": 3,
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Aura of Protection",
+   "class": "Paladin",
+   "level": 6,
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Abjure Foes",
+   "class": "Paladin",
+   "level": 9,
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Radiant Strikes",
+   "class": "Paladin",
+   "level": 11,
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Sacred Weapon",
+   "class": "Paladin",
+   "level": 3,
+   "sub": "Oath of Devotion",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Inspiring Smite",
+   "class": "Paladin",
+   "level": 3,
+   "sub": "Oath of Glory",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Nature’s Wrath",
+   "class": "Paladin",
+   "level": 3,
+   "sub": "Oath of the Ancients",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Undying Sentinel",
+   "class": "Paladin",
+   "level": 15,
+   "sub": "Oath of the Ancients",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Elder Champion",
+   "class": "Paladin",
+   "level": 20,
+   "sub": "Oath of the Ancients",
+   "has": [
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Diminish Defiance",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Regeneration",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Avenging Angel",
+   "class": "Paladin",
+   "level": 20,
+   "sub": "Oath of Vengeance",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Frightful Aura",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tireless",
+   "class": "Ranger",
+   "level": 10,
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Temporary Hit Points",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Foe Slayer",
+   "class": "Ranger",
+   "level": 20,
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Dreadful Strikes",
+   "class": "Ranger",
+   "level": 3,
+   "sub": "Fey Wanderer",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Fey Wanderer Spells",
+   "class": "Ranger",
+   "level": 3,
+   "sub": "Fey Wanderer",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Dread Ambusher",
+   "class": "Ranger",
+   "level": 3,
+   "sub": "Gloom Stalker",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Dreadful Strike",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Initiative Bonus",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Stalker’s Flurry",
+   "class": "Ranger",
+   "level": 11,
+   "sub": "Gloom Stalker",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Mass Fear",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Hunter’s Prey",
+   "class": "Ranger",
+   "level": 3,
+   "sub": "Hunter",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Colossus Slayer",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Superior Hunter’s Prey",
+   "class": "Ranger",
+   "level": 11,
+   "sub": "Hunter",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Sneak Attack",
+   "class": "Rogue",
+   "level": 1,
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Cunning Strike",
+   "class": "Rogue",
+   "level": 5,
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Reliable Talent",
+   "class": "Rogue",
+   "level": 7,
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Devious Strikes",
+   "class": "Rogue",
+   "level": 14,
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Spell Thief",
+   "class": "Rogue",
+   "level": 17,
+   "sub": "Arcane Trickster",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Assassinate",
+   "class": "Rogue",
+   "level": 3,
+   "sub": "Assassin",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Surprising Strikes",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Envenom Weapons",
+   "class": "Rogue",
+   "level": 13,
+   "sub": "Assassin",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Death Strike",
+   "class": "Rogue",
+   "level": 17,
+   "sub": "Assassin",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Psionic Power",
+   "class": "Rogue",
+   "level": 3,
+   "sub": "Soulknife",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Psi-Bolstered Knack",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Psychic Blades",
+   "class": "Rogue",
+   "level": 3,
+   "sub": "Soulknife",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Soul Blades",
+   "class": "Rogue",
+   "level": 9,
+   "sub": "Soulknife",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Homing Strikes",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Rend Mind",
+   "class": "Rogue",
+   "level": 17,
+   "sub": "Soulknife",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Supreme Sneak",
+   "class": "Rogue",
+   "level": 9,
+   "sub": "Thief",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Use Magic Device",
+   "class": "Rogue",
+   "level": 13,
+   "sub": "Thief",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Charges",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Scrolls",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Empowered Spell",
+   "class": "Sorcerer",
+   "level": 2,
+   "of": "Metamagic",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Seeking Spell",
+   "class": "Sorcerer",
+   "level": 2,
+   "of": "Metamagic",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Warping Implosion",
+   "class": "Sorcerer",
+   "level": 18,
+   "sub": "Aberrant Sorcery",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Clockwork Spells",
+   "class": "Sorcerer",
+   "level": 3,
+   "sub": "Clockwork Sorcery",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Restore Balance",
+   "class": "Sorcerer",
+   "level": 3,
+   "sub": "Clockwork Sorcery",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Bastion of Law",
+   "class": "Sorcerer",
+   "level": 6,
+   "sub": "Clockwork Sorcery",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Trance of Order",
+   "class": "Sorcerer",
+   "level": 14,
+   "sub": "Clockwork Sorcery",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Elemental Affinity",
+   "class": "Sorcerer",
+   "level": 6,
+   "sub": "Draconic Sorcery",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Wild Magic Surge",
+   "class": "Sorcerer",
+   "level": 3,
+   "sub": "Wild Magic Sorcery",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tides of Chaos",
+   "class": "Sorcerer",
+   "level": 3,
+   "sub": "Wild Magic Sorcery",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Bend Luck",
+   "class": "Sorcerer",
+   "level": 6,
+   "sub": "Wild Magic Sorcery",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tamed Surge",
+   "class": "Sorcerer",
+   "level": 18,
+   "sub": "Wild Magic Sorcery",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Agonizing Blast",
+   "class": "Warlock",
+   "level": 2,
+   "of": "Eldritch Invocation",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Eldritch Smite",
+   "class": "Warlock",
+   "level": 5,
+   "of": "Eldritch Invocation",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Investment of the Chain Master",
+   "class": "Warlock",
+   "level": 5,
+   "of": "Eldritch Invocation",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Your Save DC",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "option",
+   "name": "Lifedrinker",
+   "class": "Warlock",
+   "level": 9,
+   "of": "Eldritch Invocation",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Steps of the Fey",
+   "class": "Warlock",
+   "level": 3,
+   "sub": "Archfey Patron",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Refreshing Step",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Taunting Step",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Misty Escape",
+   "class": "Warlock",
+   "level": 6,
+   "sub": "Archfey Patron",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Dreadful Step",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Beguiling Defenses",
+   "class": "Warlock",
+   "level": 10,
+   "sub": "Archfey Patron",
+   "has": [
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Healing Light",
+   "class": "Warlock",
+   "level": 3,
+   "sub": "Celestial Patron",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Radiant Soul",
+   "class": "Warlock",
+   "level": 6,
+   "sub": "Celestial Patron",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Celestial Resilience",
+   "class": "Warlock",
+   "level": 10,
+   "sub": "Celestial Patron",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Searing Vengeance",
+   "class": "Warlock",
+   "level": 14,
+   "sub": "Celestial Patron",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Dark One’s Blessing",
+   "class": "Warlock",
+   "level": 3,
+   "sub": "Fiend Patron",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Dark One’s Own Luck",
+   "class": "Warlock",
+   "level": 6,
+   "sub": "Fiend Patron",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Hurl Through Hell",
+   "class": "Warlock",
+   "level": 14,
+   "sub": "Fiend Patron",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Clairvoyant Combatant",
+   "class": "Warlock",
+   "level": 6,
+   "sub": "Great Old One Patron",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Create Thrall",
+   "class": "Warlock",
+   "level": 14,
+   "sub": "Great Old One Patron",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Arcane Ward",
+   "class": "Wizard",
+   "level": 3,
+   "sub": "Abjurer",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Spell Breaker",
+   "class": "Wizard",
+   "level": 10,
+   "sub": "Abjurer",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Portent",
+   "class": "Wizard",
+   "level": 3,
+   "sub": "Diviner",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Greater Portent",
+   "class": "Wizard",
+   "level": 14,
+   "sub": "Diviner",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Empowered Evocation",
+   "class": "Wizard",
+   "level": 10,
+   "sub": "Evoker",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Overchannel",
+   "class": "Wizard",
+   "level": 14,
+   "sub": "Evoker",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Alert",
+   "group": "Origin Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Initiative Proficiency",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Healer",
+   "group": "Origin Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Battle Medic",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Lucky",
+   "group": "Origin Feats",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Advantage",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Disadvantage",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Tavern Brawler",
+   "group": "Origin Feats",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Enhanced Unarmed Strike",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Actor",
+   "group": "General Feats",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Mimicry",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Charger",
+   "group": "General Feats",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Charge Attack",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Chef",
+   "group": "General Feats",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Replenishing Meal",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    },
+    {
+     "name": "Bolstering Treats",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Crossbow Expert",
+   "group": "General Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Dual Wielding",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Defensive Duelist",
+   "group": "General Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Parry",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Dual Wielder",
+   "group": "General Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Enhanced Dual Wielding",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Durable",
+   "group": "General Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Speedy Recovery",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Great Weapon Master",
+   "group": "General Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Heavy Weapon Mastery",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Heavy Armor Master",
+   "group": "General Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Damage Reduction",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Inspiring Leader",
+   "group": "General Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Bolstering Performance",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Poisoner",
+   "group": "General Feats",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Brew Poison",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Polearm Master",
+   "group": "General Feats",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Pole Strike",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Shield Master",
+   "group": "General Feats",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Shield Bash",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Telekinetic",
+   "group": "General Feats",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Telekinetic Shove",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Archery",
+   "group": "Fighting Style Feats",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Defense",
+   "group": "Fighting Style Feats",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Dueling",
+   "group": "Fighting Style Feats",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Interception",
+   "group": "Fighting Style Feats",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Thrown Weapon Fighting",
+   "group": "Fighting Style Feats",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Two-Weapon Fighting",
+   "group": "Fighting Style Feats",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Unarmed Fighting",
+   "group": "Fighting Style Feats",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Boon of Energy Resistance",
+   "group": "Epic Boon Feats",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Energy Redirection",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Boon of Fate",
+   "group": "Epic Boon Feats",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Improve Fate",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Boon of Fortitude",
+   "group": "Epic Boon Feats",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Fortified Health",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Boon of Irresistible Offense",
+   "group": "Epic Boon Feats",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Overwhelming Strike",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Boon of Recovery",
+   "group": "Epic Boon Feats",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Last Stand",
+     "has": [
+      "bonus"
+     ]
+    },
+    {
+     "name": "Recover Vitality",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Boon of Spell Recall",
+   "group": "Epic Boon Feats",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Free Casting",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Healing Hands",
+   "species": "Aasimar",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Necrotic Shroud",
+   "species": "Aasimar",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Breath Weapon",
+   "species": "Dragonborn",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Fire’s Burn",
+   "species": "Goliath",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Frost’s Chill",
+   "species": "Goliath",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Stone’s Endurance",
+   "species": "Goliath",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Storm’s Thunder",
+   "species": "Goliath",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Luck",
+   "species": "Halfling",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "species",
+   "name": "Adrenaline Rush",
+   "species": "Orc",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ammunition, +1, +2, or +3",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ammunition of Slaying",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Amulet of the Planes",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Apparatus of Kwalish",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "The apparatus floats on water",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Armor, +1, +2, or +3",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Armor of Resistance",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Arrow-Catching Shield",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Axe of the Dwarvish Lords",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Magic Weapon",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Bag of Beans",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Bag of Devouring",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Bag of Tricks",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Bead of Force",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Berserker Axe",
+   "has": [
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Blackrazor",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Book of Exalted Deeds",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Destroying the Book",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Book of Vile Darkness",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Spells",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Vile Speech",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Bracers of Archery",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Bracers of Defense",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Candle of Invocation",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Carpet of Flying",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Cloak of Arachnida",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Web",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Cloak of Protection",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Clockwork Amulet",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Crystal Ball",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Cube of Force",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Cube of Summoning",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Daern’s Instant Fortress",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dagger of Venom",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dancing Sword",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dark Shard Amulet",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Unknown Spell",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Decanter of Endless Water",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Geyser",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Deck of Illusions",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Deck of Many Things",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Defender",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Demon Armor",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Demonomicon of Iggwilv",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Containment",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Spells",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dimensional Shackles",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dragon Scale Mail",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dragon Slayer",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dust of Disappearance",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "This powder resembles fine sand",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dust of Dryness",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dust of Sneezing and Choking",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dwarven Plate",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Dwarven Thrower",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Efreeti Bottle",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Efreeti Chain",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Elven Chain",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Energy Bow",
+   "has": [
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Arrow of Restraint",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Enspelled Armor",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Enspelled Staff",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Enspelled Weapon",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Executioner’s Axe",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Eye and Hand of Vecna",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Spellcasting",
+     "has": [
+      "dice",
+      "save"
+     ]
+    },
+    {
+     "name": "Icy Touch",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Spellcasting",
+     "has": [
+      "dice",
+      "save"
+     ]
+    },
+    {
+     "name": "Necrotic Reduction",
+     "has": [
+      "dice",
+      "save"
+     ]
+    },
+    {
+     "name": "Regeneration",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Eyes of Charming",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Flame Tongue",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Frost Brand",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Gem of Brightness",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Second Command Word",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Giant Slayer",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Glamoured Studded Leather",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Gloves of Missile Snaring",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Hammer of Thunderbolts",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Giants’ Bane",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Hat of Many Spells",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Unknown Spell",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Hat of Wizardry",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Unknown Spell",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Helm of Brilliance",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Diamond Light",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Fire Opal Flames",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Spells",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Taking Fire Damage",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Helm of Telepathy",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Heward’s Handy Spice Pouch",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Holy Avenger",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Horn of Blasting",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Horn of Silent Alarm",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Horn of Valhalla",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Immovable Rod",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Instrument of the Bards",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Iron Bands of Bilarro",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Iron Flask",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Javelin of Lightning",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Lightning Bolt",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Keoghtom’s Ointment",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Luck Blade",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Lute of Thunderous Thumping",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Mace of Disruption",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Mace of Smiting",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Mace of Terror",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Manual of Golems",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Mariner’s Armor",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Medallion of Thoughts",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Mirror of Life Trapping",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Moonblade",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Necklace of Fireballs",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Necklace of Prayer Beads",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Nine Lives Stealer",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Life Stealing",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Nolzur’s Marvelous Pigments",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Oathbow",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Orb of Dragonkind",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Spells",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Periapt of Health",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Periapt of Wound Closure",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Natural Healing Boost",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Pipes of Haunting",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Pipes of the Sewers",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Portable Hole",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Animal Friendship",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Diminution",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Fire Breath",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potions of Healing",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Longevity",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Mind Reading",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Poison",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Pugilism",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Resistance",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Potion of Vitality",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Quaal’s Feather Token",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Quarterstaff of the Acrobat",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Attack Deflection",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Animal Influence",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Elemental Command",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Elemental Compulsion",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Spellcasting",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Protection",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Regeneration",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Resistance",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Shooting Stars",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Shooting Stars",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Spell Storing",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Spell Turning",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of the Ram",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of Warmth",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Ring of X-ray Vision",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rival Coin",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Heads",
+     "has": [
+      "dice",
+      "save"
+     ]
+    },
+    {
+     "name": "Tails",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Robe of Eyes",
+   "has": [
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Drawbacks",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Robe of Scintillating Colors",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Robe of Stars",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Robe of Useful Items",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rod of Absorption",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rod of Alertness",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Protective Aura",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rod of Lordly Might",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Drain Life",
+     "has": [
+      "dice",
+      "save",
+      "bonus"
+     ]
+    },
+    {
+     "name": "Paralyze",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Terrify",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rod of Resurrection",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rod of Rulership",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rod of Security",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rod of the Pact Keeper",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Rope of Entanglement",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Scarab of Protection",
+   "has": [
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Defense",
+     "has": [
+      "bonus"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Scimitar of Speed",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Scroll of Protection",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Scroll of Titan Summoning",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Shield, +1, +2, or +3",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Shield of the Cavalier",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Forceful Bash",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sovereign Glue",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Spell Scroll",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sphere of Annihilation",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Controlling the Sphere",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Birdcalls",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Charming",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Fire",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Flowers",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Frost",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Healing",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Power",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    },
+    {
+     "name": "Retributive Strike",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Striking",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Swarming Insects",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of the Adder",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of the Magi",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Retributive Strike",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of the Woodlands",
+   "has": [
+    "dice",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Thunder and Lightning",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Lightning",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Thunder",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Lightning Strike",
+     "has": [
+      "dice",
+      "save"
+     ]
+    },
+    {
+     "name": "Thunderclap",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Staff of Withering",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Stone of Good Luck (Luckstone)",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sun Blade",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sword of Answering",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sword of Kas",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Bloodthirst",
+     "has": [
+      "dice",
+      "save"
+     ]
+    },
+    {
+     "name": "Magic Weapon",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    },
+    {
+     "name": "Spells",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Battle Hunger",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    },
+    {
+     "name": "Blade of Defense",
+     "has": [
+      "bonus"
+     ]
+    },
+    {
+     "name": "Destroying the Sword",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sword of Life Stealing",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sword of Sharpness",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sword of Vengeance",
+   "has": [
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Sword of Wounding",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Talisman of Pure Good",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Pure Rebuke",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Talisman of Ultimate Evil",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "This item symbolizes unrepentant evil",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Ultimate End",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Tentacle Rod",
+   "has": [
+    "dice",
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Thunderous Greatclub",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Clap of Thunder",
+     "has": [
+      "dice",
+      "save"
+     ]
+    },
+    {
+     "name": "Earthquake",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Trident of Fish Command",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Universal Solvent",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Vicious Weapon",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Vorpal Sword",
+   "has": [
+    "dice",
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Walloping Ammunition",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Binding",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Spells",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Conducting",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Enemy Detection",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Fear",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Spells",
+     "has": [
+      "save"
+     ]
+    },
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Fireballs",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Lightning Bolts",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Magic Missiles",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Orcus",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Magic Weapon",
+     "has": [
+      "dice",
+      "bonus"
+     ]
+    },
+    {
+     "name": "Protection",
+     "has": [
+      "bonus"
+     ]
+    },
+    {
+     "name": "Spells",
+     "has": [
+      "dice",
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Paralysis",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Polymorph",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Pyrotechnics",
+   "has": [
+    "dice"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Web",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wand of Wonder",
+   "has": [
+    "dice",
+    "save"
+   ],
+   "parts": [
+    {
+     "name": "Regaining Charges",
+     "has": [
+      "dice"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wave",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Aquatic Command",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Weapon, +1, +2, or +3",
+   "has": [
+    "bonus"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Well of Many Worlds",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Whelm",
+   "has": [
+    "dice",
+    "save",
+    "bonus"
+   ],
+   "parts": [
+    {
+     "name": "Hurl",
+     "has": [
+      "dice"
+     ]
+    },
+    {
+     "name": "Shock Wave",
+     "has": [
+      "save"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wind Fan",
+   "has": [
+    "save"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Winged Boots",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wings of Flying",
+   "has": [
+    "dice"
+   ]
+  },
+  {
+   "kind": "item",
+   "name": "Wraps of Unarmed Power",
+   "has": [
+    "bonus"
+   ]
+  }
+ ]
+}

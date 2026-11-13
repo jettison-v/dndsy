@@ -200,8 +200,87 @@ td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 
   </section>
 
   <section class="pick" aria-labelledby="pick-h">
-    <div class="lbl">To pick</div>
+    <div class="lbl">Your pick</div>
     <h2 id="pick-h">Want it, and which?</h2>
-    <p class="meta">My recommendation: <b>A for spells, B for forms</b> (one Compare, drawn the way each reads best). Or skip it: Plan's Shortlist already puts what you're weighing in one list. Reply with A, B, both, or "not now".</p>
+    <p class="meta">My recommendation: <b>A for spells, B for forms</b> (one Compare, drawn the way each reads best). Or skip it: Plan's Shortlist already puts what you're weighing in one list. Tick yours below and Save; you can come back and change it.</p>
+    <form class="decide">
+      <fieldset data-q="way" data-kind="one"><legend>Compare</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="way" value="both">A for spells, B for forms <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="way" value="A">A · A table, for both</label>
+        <label class="choice one"><input type="radio" name="way" value="B">B · Cards, for both</label>
+        <label class="choice one"><input type="radio" name="way" value="no">Not now</label>
+      </div></fieldset>
+      <fieldset><legend>Your notes</legend><textarea name="notes" aria-label="Your notes" placeholder="Anything to change, an order, a question"></textarea></fieldset>
+      <div class="save-row"><button type="submit">Save</button><span class="saved" role="status">Loading…</span></div>
+    </form>
   </section>
 </div>
+
+<style>
+.decide { display: grid; gap: 16px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.decide legend { font-weight: 600; color: var(--strong); padding: 0; margin-bottom: 8px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 14px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; color: var(--text); }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice::before { content: ""; width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid var(--muted); flex: none; }
+.choice.one::before { border-radius: 50%; }
+.choice:has(input:checked) { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.choice:has(input:checked)::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--surface-2); }
+.choice:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+.choice .mine-tag { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.decide textarea { width: 100%; min-height: 84px; box-sizing: border-box; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font: 400 1rem/1.4 var(--sans); resize: vertical; }
+.save-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.save-row button { background: var(--red-btn); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: 600 .95rem/1 var(--sans); cursor: pointer; }
+.save-row button:disabled { opacity: .6; cursor: default; }
+.saved { color: var(--muted); font-size: .88rem; }
+.saved.ok { color: var(--green); }
+</style>
+<script>
+(() => {
+  const form = document.querySelector('form.decide');
+  if (!form) return;
+  const said = form.querySelector('.saved'), btn = form.querySelector('button');
+  let db = null;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle('ok', !!ok); };
+  const collect = () => {
+    const out = {};
+    form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+      const picked = [...fs.querySelectorAll('input:checked')].map(i => i.value);
+      out[fs.dataset.q] = fs.dataset.kind === 'one' ? (picked[0] || '') : picked;
+    });
+    return out;
+  };
+  form.addEventListener('change', () => show('Not saved yet'));
+  form.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') show('Not saved yet'); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString();
+    try {
+      await db.collection('answers').doc('pick').set({ answers: collect(), notes: form.querySelector('textarea').value.trim(), at });
+      show('Saved ' + when(at) + ' · Claude reads it from here', true);
+    } catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) { show('Nothing saved yet'); return; }
+      const a = d.data(), ans = a.answers || {};
+      form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+        const v = ans[fs.dataset.q], vs = Array.isArray(v) ? v : [v];
+        fs.querySelectorAll('input').forEach(i => { i.checked = vs.includes(i.value); });
+      });
+      form.querySelector('textarea').value = a.notes || '';
+      show('Saved ' + when(a.at) + ' · change anything and Save again', true);
+    } catch (err) { show('Nothing saved yet'); }
+  })();
+})();
+</script>
