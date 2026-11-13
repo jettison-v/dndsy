@@ -2,7 +2,7 @@
    numbers, Nov 9, docs/mockups/full-tale/): a band of the night's dice, spells cast, the biggest hit and healing, then
    damage rolled, who talked, fights and story, and who cast what. Needs talked, mix, chapters, rolled and night
    (app/session_story.py `dice`, `night_numbers`); on the session's own page (The Night) and its review page. #}
-{% macro av(r) %}<span class="roll-av hue{{ 5 if r.dm else (r.entity_id or r.character_id or r.user_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endmacro %}
+{% macro av(r) %}<span class="roll-av hue{{ 5 if r.dm else (r.entity_id or r.character_id or r.user_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>{% endmacro %}
 {% macro bars(rows, kind, unit) %}<ul class="plain share-rows">
   {% for r in rows %}<li class="share-row"><span class="share-who">{{ av(r) }}{{ r.name }}</span>
     <span class="share-bar{{ ' ' ~ kind if kind }}" aria-hidden="true"><i style="width: {{ r.share }}%"></i></span><span class="share-n">{{ r.total if r.total is defined else r.share ~ "%" }}{{ unit }}</span></li>{% endfor %}

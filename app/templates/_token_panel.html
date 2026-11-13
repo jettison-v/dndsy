@@ -3,7 +3,7 @@
    creature: `data-token`), Hide or Show, Rename, Take off the map. Players: its name and what the settings let them see. #}
 {% from "_char.html" import hit %}
 <div class="peek-head">
-  <span class="tk-pic{{ ' foe' if t.kind == 'monster' }}" aria-hidden="true">{% if t.monster and t.monster.image %}<img src="{{ t.monster.image }}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ t.name[:2] }}</span>
+  <span class="tk-pic{{ ' foe' if t.kind == 'monster' }}" aria-hidden="true">{% if t.monster and t.monster.image %}<img src="{{ t.monster.image }}" alt="" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ t.name[:2] }}</span>
   <div class="grow"><h2 id="peek-title">{{ t.name }}</h2>
     <div class="note">{% if entry %}{{ entry.size }} {{ entry.type }}{% if dm and entry.source %} · {{ entry.source }}{% endif %}{% endif %}{% if t.hidden %} · <span class="tag draft">Hidden from the players</span>{% endif %}{% if its_turn %} · <b>its turn</b>{% endif %}</div></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
@@ -17,7 +17,7 @@
   {% set hp = t.hp or {} %}
   <div class="tk-hp-row">
     <div class="tk-hp" data-mark="tk{{ t.id }}:hp"><small>Hit Points</small><b>{{ hp.current }}</b> <span class="note">/ {{ hp.max }}{% if hp.temp %} · {{ hp.temp }} temporary{% endif %}</span>{% if status != "Healthy" %} <span class="tk-status {{ status | lower }}">{{ status }}</span>{% endif %}</div>
-    <form class="tk-hp-form" hx-post="{{ cbase }}/table/tokens/{{ t.id }}/hp" hx-swap="none" hx-on::after-request="this.reset()">
+    <form class="tk-hp-form" hx-post="{{ cbase }}/table/tokens/{{ t.id }}/hp" hx-swap="none" data-reset-after>
       <label class="sr" for="tk-hp-{{ t.id }}">Damage, healing or a number</label>
       <input id="tk-hp-{{ t.id }}" name="change" inputmode="numeric" placeholder="−7, +5 or 20" autocomplete="off" required>
       <button type="submit" class="btn small">Take</button>

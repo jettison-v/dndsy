@@ -1067,3 +1067,11 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **Why**: "skip a deploy when nothing that runs changed" is right per commit, but wrong once an earlier commit's deploy was skipped for a different reason.
 
 **Reuse on a new project**: after a deploy, check the live site's version (a /health address that reports the commit) rather than trusting that the pipeline ran, and decide "does this need a deploy" against what's live, not the previous commit.
+
+## A Content Security Policy (Nov 13)
+
+**What was set up:** every page now tells the browser exactly what it may run and load: only askdnd's own script files (nothing written into a page, nothing evaluated as code), pictures from askdnd, D&D Beyond and Google, Google's fonts, and the aidedd.org map. Before it could go on, about 45 small bits of code written into the pages (hide a broken picture, confirm a delete) moved into askdnd's own scripts, marked in the page with a `data-` attribute instead. The browser tests now fail on anything the policy blocks, so a page that needs something new can't break quietly.
+
+**Why:** if anyone ever slipped a script into a page (a name, a note), the browser refuses to run it. It's the strongest single protection a website has against that kind of attack.
+
+**For a new project:** set the policy (the `Content-Security-Policy` header) on the first day, with no inline scripts allowed, and keep scripts in files from the start; adding it later means finding and moving every inline bit first, as here.

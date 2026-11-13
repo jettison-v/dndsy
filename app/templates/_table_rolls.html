@@ -14,7 +14,7 @@
   {# A phone's closed bar: one avatar per person with their latest roll (built by app.js from the log) #}
   <div class="rs-people" role="list" aria-label="Each person's latest roll"></div>
   <ol id="roll-log" class="rs-log" aria-live="polite" hx-get="/rolls" hx-swap="afterbegin"
-      hx-trigger="load[window.askdndRolls && askdndRolls.wanted()], rolls:load, every 3s[window.askdndRolls && askdndRolls.poll()]" hx-vals="js:{since: askdndRolls.since(), also: askdndRolls.also()}"></ol>
+      hx-trigger="rolls:load"></ol>
 </aside>
 {# Closed on a wider screen: open it again #}
 <button type="button" class="rs-edge" aria-controls="table-rolls" aria-expanded="false" aria-label="Show the table's rolls" title="Table rolls"><svg width="18" height="18" viewBox="0 0 30 30" aria-hidden="true"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="currentColor" stroke-width="2"/><polygon points="15,8 21,19 9,19" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>

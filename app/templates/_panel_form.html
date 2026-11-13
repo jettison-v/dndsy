@@ -7,7 +7,7 @@
   {% if o.source == "form" and o.text and o.text != o.meta %}<details class="move-more"><summary>Full text</summary><p>{{ o.text }}</p></details>{% endif %}
 </div>{% endmacro %}
 <div class="peek-head fm-head">
-  {% if b.image %}<img class="fm-pic" src="{{ b.image }}" alt="{{ b.name }}" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}
+  {% if b.image %}<img class="fm-pic" src="{{ b.image }}" alt="{{ b.name }}" referrerpolicy="no-referrer" data-hide-broken>{% endif %}
   <div class="fm-title">
     <div class="note">{{ c.name }} · Wild Shape form</div>
     <h2 id="peek-title">{{ b.name }}</h2>

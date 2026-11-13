@@ -35,7 +35,7 @@
   {# One row of the list: click it for everything about that seat #}
   {% macro seat(s, n) %}{% set p, c = s.person, s.character %}{% set snap = c.snapshot if c else none %}{% set pic = (snap.summary or {}).get("portrait") if snap else "" %}
   <details class="seat">
-    <summary class="seat-row"><span class="seat-pic{{ ' none' if not c }}">{% if pic %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ (c.name if c else (p.name or p.email))[:1] }}</span>
+    <summary class="seat-row"><span class="seat-pic{{ ' none' if not c }}">{% if pic %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ (c.name if c else (p.name or p.email))[:1] }}</span>
       <span class="seat-who"><b>{{ c.name if c else (p.name or p.email) }}{% if c and c.copy_of_id %} <span class="tag faint">Test copy</span>{% endif %}</b>
         <span class="note">{% if c %}{{ [p.name or p.email, classes[c.id]] | select | join(" · ") }}{% elif p.role == "player" %}No character yet{% else %}{{ p.email if p.name }}{% endif %}</span></span>
       <span class="tag{{ ' seat-dm' if p.role == 'dm' }}">{{ role_labels[p.role] }}</span></summary>
@@ -87,7 +87,7 @@
     {% if free %}<h2>Characters nobody plays</h2>
     {% for c in free %}{% set snap = c.snapshot %}{% set pic = (snap.summary or {}).get("portrait") if snap else "" %}
     <details class="seat">
-      <summary class="seat-row"><span class="seat-pic">{% if pic %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{{ c.name[:1] }}</span>
+      <summary class="seat-row"><span class="seat-pic">{% if pic %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ c.name[:1] }}</span>
         <span class="seat-who"><b>{{ c.name }}{% if c.copy_of_id %} <span class="tag faint">Test copy</span>{% endif %}</b><span class="note">{{ classes[c.id] }}</span></span>
         <span class="tag">{% if c.owner_id %}{{ names.get(c.owner_id, "Someone") }} (not here){% else %}Nobody plays it{% endif %}</span></summary>
       <div class="seat-panel">

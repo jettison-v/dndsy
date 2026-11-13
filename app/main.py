@@ -174,7 +174,27 @@ app.add_middleware(Stopwatch)  # (added after the rest, so it's around them all:
 
 # Every answer says these unless its route said otherwise (the outside review's C1, Nov 10): a file is what its type
 # says, no other site frames askdnd's pages, and another site sees only askdnd's address, never which page you were on.
-SAFE_HEADERS = {"X-Content-Type-Options": "nosniff", "X-Frame-Options": "SAMEORIGIN", "Referrer-Policy": "strict-origin-when-cross-origin"}
+# The Content Security Policy (the engineering practices, Nov 13): a page runs only askdnd's own scripts (no inline
+# script, no handler written into the page, no text evaluated as code: tests/test_csp.py), loads from askdnd itself and
+# only these others: D&D Beyond's pictures (portraits, token and creature art), Google's (your account's picture) and
+# fonts, and aidedd.org's Sword Coast map in Campaign › Map. Styles may be inline (style="", set by app.js).
+CSP = "; ".join([
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "img-src 'self' data: blob: https://*.dndbeyond.com https://*.googleusercontent.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",  # (html-to-image reads the fonts to draw a page)
+    "media-src 'self' blob:",
+    "frame-src 'self' https://www.aidedd.org",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+])
+SAFE_HEADERS = {"X-Content-Type-Options": "nosniff", "X-Frame-Options": "SAMEORIGIN", "Referrer-Policy": "strict-origin-when-cross-origin",
+                "Content-Security-Policy": CSP}
 
 
 @app.middleware("http")  # (added last, so it runs first)
