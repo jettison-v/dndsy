@@ -4,18 +4,22 @@
 {% from "_suggest_form.html" import suggest with context %}
 {% from "_lists.html" import view_switch %}
 {# The Campaign page (roadmap step 11; Brett 2026-10-22, docs/mockups/campaign-reading.html option E and
-   docs/mockups/campaign-tabs.html Q1, R1 with R2). Tabs: World (the Reader: names down the left, one entry on the
+   docs/mockups/campaign-tabs.html Q1, R1 with R2; Story joined it Nov 13, Brett chose it on docs/mockups/menu-bar-people/).
+   Tabs: Previously on… (the pre-session refresher, where it opens) and Sessions (every published session), then World (the Reader: names down the left, one entry on the
    page; the list uses the shared list engine, app.js "Lists"), Quests (the quest log: the quests down the left, the one picked on the right), Relationships
    (family trees, the other ties, anyone's connections in a window) and Glossary. ?tab= picks one. #}
 <main class="page sheet wide campaign-page">
   <div class="title-row"><h1>{{ campaign.name if campaign else "Campaign" }}</h1>
     {% if editor %}<a class="btn title-action" href="#" data-modal-url="/campaign/new">+ New entry</a>{% endif %}</div>
-  <p class="subtitle">People, places and things the party has met.{% if campaign and campaign.dm_name %} Dungeon Master: {{ campaign.dm_name }}.{% endif %}</p>
+  {% if campaign and campaign.dm_name %}<p class="subtitle">Dungeon Master: {{ campaign.dm_name }}.</p>{% endif %}
   {% if campaign %}
   <div class="tabbar" role="tablist" data-tab-param data-tour="campaign">
-    {% for key, label, n in [("world", "World", none), ("quests", "Quests", quests | length), ("relationships", "Relationships", none), ("glossary", "Glossary", glossary | length), ("map", "Map", none)] %}
+    {% for key, label, n in [("previously", "Previously on…", none), ("sessions", "Sessions", (st["items"] | length) or none), ("world", "World", none), ("quests", "Quests", quests | length), ("relationships", "Relationships", none), ("glossary", "Glossary", glossary | length), ("map", "Map", none)] %}
     <button role="tab" aria-selected="{{ 'true' if tab == key else 'false' }}" data-tab="t-{{ key }}">{{ label }}{% if n is not none %} <span class="count">{{ n }}</span>{% endif %}</button>{% endfor %}
   </div>
+
+  <div id="t-previously" data-tour="previously"{% if tab != "previously" %} hidden{% endif %}>{% include "_story_previously.html" %}</div>
+  <div id="t-sessions"{% if tab != "sessions" %} hidden{% endif %}>{% include "_story_sessions.html" %}</div>
 
   <div id="t-world"{% if tab != "world" %} hidden{% endif %}>
     <div class="reader" id="reader">

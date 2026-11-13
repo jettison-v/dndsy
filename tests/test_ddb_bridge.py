@@ -911,7 +911,7 @@ def test_the_pages_tick_draws_the_pill_while_your_sheet_isnt_connected(player, d
     cole = char(db, "Cole")
     cole.sheet_heard_at = None
     db.flush()
-    assert "Open your sheet to connect" in player.post(f"/live/sync?c={cole.id}").text
+    assert ">Open your sheet<" in player.post(f"/live/sync?c={cole.id}").text
 
 
 def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_make_by_hand(player, db, sheet):
@@ -921,13 +921,13 @@ def test_the_live_pill_says_whether_your_sheet_is_connected_or_has_something_to_
     pill = lambda: player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
     cole.sheet_heard_at = None  # no extension yet
     db.flush()
-    assert "Open your sheet to connect" in pill() and ">Connected<" not in pill()
+    assert ">Open your sheet<" in pill() and " dot" not in pill().split(">")[0]
     player.post("/bridge/heard/75423618?pull=1")  # the extension's pull: the sheet can be reached
-    assert 'live-ago">Connected<' in pill() and " step" in pill().split(">")[0]
+    assert 'live-ago sr">Connected<' in pill() and " step dot" in pill().split(">")[0]  # connected: the dot alone (Nov 13)
     drink(db, cole)
     db.scalar(select(BridgeIntent)).state = "not_yet"
     db.flush()
-    assert "1 didn't go through" in pill()
+    assert "1 didn&#39;t go through" in pill()
     cole.sheet_heard_at -= timedelta(minutes=5)  # the sheet was closed a while ago
     db.scalar(select(BridgeIntent)).state = "dismissed"
     db.flush()
@@ -1035,7 +1035,7 @@ def test_a_closed_sheet_tells_open_pages_at_once(player, db, sheet, monkeypatch)
     player.post("/bridge/closed/75423618")
     assert ("character", {"id": cole.id}) in sent and not ddb_bridge.reachable(cole)
     pill = player.get(f"/characters/{cole.id}").text.split('id="live-pill"')[1].split("</button>")[0]
-    assert "Open your sheet to connect" in pill
+    assert ">Open your sheet<" in pill
     sent.clear()
     player.post("/bridge/heard/75423618?pull=1")  # back: said once
     assert ("character", {"id": cole.id}) in sent
@@ -1051,9 +1051,9 @@ def test_someone_with_no_character_sees_how_many_sheets_are_connected(player, dm
     set_role(db, "dm@example.com", "dm")
     player.post("/bridge/closed/75423618")
     pill = lambda: dm.get("/c/main/").text.split('id="live-pill"')[1].split("</button>")[0]  # noqa: E731
-    assert "1 of 2 sheets connected" in pill() and 'live-ago">Connected<' not in pill() and " step" not in pill().split(">")[0]
+    assert "1 of 2 connected" in pill() and 'live-ago sr">Connected<' not in pill() and " step" not in pill().split(">")[0]
     player.post("/bridge/heard/75423618?pull=1")
-    assert "2 of 2 sheets connected" in pill() and " step" in pill().split(">")[0]
+    assert 'live-ago sr">Connected<' in pill() and " step dot" in pill().split(">")[0]  # every sheet: the dot alone
 
 
 def test_the_pill_says_how_long_a_sheet_counts_as_open_and_the_window_links_the_extension(player, db, sheet):
@@ -1285,7 +1285,7 @@ def test_a_change_says_how_it_stands_the_same_everywhere(player, db, sheet, monk
     live_window = player.get(f"/live?c={cole.id}").text
     assert "Didn&#39;t go through" in live_window and f"/bridge/retry/{f['failed'][0]['id']}?live=1" in live_window
     assert "Cole: Heroic Inspiration" in live_window and "On its way" in live_window  # (the one after it, now on its way, without buttons)
-    assert "1 didn't go through" in player.get(f"/characters/{cole.id}/battle").text  # the pill
+    assert "1 didn&#39;t go through" in player.get(f"/characters/{cole.id}/battle").text  # the pill
 
 
 def test_the_corner_card_follows_only_a_change_just_made(player, db, sheet):

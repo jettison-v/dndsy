@@ -24,7 +24,7 @@ def test_a_player_tours_their_own_character(table, db):  # noqa: F811
     stops = table["player"].get("/tour").json()["stops"]
     cole = char(db, "Cole").id
     urls = {s["url"] for s in stops}
-    assert {f"/characters/{cole}/battle", f"/characters/{cole}", f"/characters/{cole}/plan", "/c/main/", "/c/main/campaign",
+    assert {f"/characters/{cole}/battle", f"/characters/{cole}", f"/characters/{cole}/plan", "/c/main/campaign",
             "/party", None} == urls
     assert [s["group"] for s in stops][:2] == ["previously", "memory"] and stops[-1]["group"] == "help"
     assert all(s["title"] and s["what"] and s["why"] for s in stops)
@@ -45,6 +45,8 @@ def test_every_stop_has_a_target_in_the_templates():
             for attr, value in re.findall(r'\[([\w-]+)(?:="([^"]*)")?\]', sel):
                 if attr == "data-tab" and value in ("t-combo", "t-leveling", "t-quest", "t-general"):
                     assert value[2:] in KINDS and 'data-tab="t-{{ kind }}"' in html  # Plan's note tabs, one per kind
+                elif attr == "data-tab" and f'("{value[2:]}", "' in html and 'data-tab="t-{{ key }}"' in html:
+                    pass  # Campaign's tabs, from its list (Previously on…, Sessions, World…)
                 elif value:
                     assert f'{attr}="{value}"' in html or f'{attr}="{{{{' in html and attr == "data-econ-col", sel
                 else:

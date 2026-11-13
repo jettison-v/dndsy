@@ -10,7 +10,8 @@ import re
 from pathlib import Path
 
 CSS = (Path(__file__).parent.parent / "app" / "static" / "app.css").read_text()
-SCREEN_WIDTHS = {640, 641, 900, 901, 1099, 1100, 1240, 1439}  # phone, tablet, wide (and the pixel either side), full menu bar, its long labels (DM Tools)
+SCREEN_WIDTHS = {640, 641, 900, 901, 999, 1000, 1099, 1100, 1200, 1240, 1360}  # phone, tablet, wide (and the pixel either side); the menu bar's
+# collapse order (docs/DESIGN.md › Navigation: 1360 the word askdnd, 1200 your character's name, 1100 the Live pill's short words, 1000 the campaign's name)
 
 
 

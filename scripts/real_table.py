@@ -142,9 +142,16 @@ def pill(page: Page) -> str:
     return " ".join(page.locator("#live-pill").inner_text(timeout=3000).split())
 
 
+def tone(page: Page) -> str:
+    """The Live pill's colour, which says how the sheet is reached whatever its words (Nov 13: connected is the dot
+    alone): "step" its own sheet, "via" through the DM's browser, "bad" can't while the table plays, "" no one."""
+    classes = (page.locator("#live-pill").get_attribute("class", timeout=3000) or "").split()
+    return next((c for c in ("step", "via", "bad", "warn") if c in classes), "")
+
+
 def reached(t: Table, page: Page) -> bool:
     """askdnd's page says the sheet can be reached: its own sheet (Connected), or through the DM with --via-dm."""
-    return ("Through the DM" if t.via_dm else "Connected") in pill(page)
+    return tone(page) == ("via" if t.via_dm else "step")
 
 
 def connects(t: Table, *pages: Page) -> None:
@@ -186,7 +193,7 @@ def game_log(t: Table, seat: str = "player2", other: str = "player3") -> None:
     t.sheet(other, theirs)
     page = t.battle(seat)
     watching = t.page("dm", f"{BETA}/party")
-    t.expect("the sheet connects before rolling", lambda: "Connected" in pill(page), 40)
+    t.expect("the sheet connects before rolling", lambda: tone(page) == "step", 40)
     page.wait_for_timeout(3000)
     note = roll(page, "Dex")
     print("  roll window:", note[-110:], flush=True)
@@ -197,7 +204,7 @@ def game_log(t: Table, seat: str = "player2", other: str = "player3") -> None:
     heard = askdnd_rolls(theirs)
     print("  frames:", askdnd_rolls(mine), heard, "| sheet tabs open:", sum(f"/{SHEETS[seat]}" in x.url for x in t.contexts[seat].pages), flush=True)
     sheet.close()
-    t.expect("the pill says the sheet closed", lambda: "Connected" not in pill(page), 15)
+    t.expect("the pill says the sheet closed", lambda: tone(page) != "step", 15)
     note = roll(page, "Wis")
     print("  roll window:", note[-110:], flush=True)
     t.expect("the roll window says the sheet isn't open", lambda: "your sheet isn't open" in note, 1)
@@ -211,13 +218,13 @@ def closed_sheet(t: Table, seat: str = "player2") -> None:
     """Open your sheet and the pill says connected; close it and every open page of yours says so at once."""
     askdnd = t.page(seat, f"{BETA}/party")
     sheet = t.sheet(seat)
-    t.expect("an open sheet connects the pill", lambda: "Connected" in pill(askdnd), 40)
+    t.expect("an open sheet connects the pill", lambda: tone(askdnd) == "step", 40)
     print("  pill:", pill(askdnd), flush=True)
     sheet.close()
-    t.expect("closing the sheet changes the pill at once", lambda: "Connected" not in pill(askdnd), 15)
+    t.expect("closing the sheet changes the pill at once", lambda: tone(askdnd) != "step", 15)
     print("  pill:", pill(askdnd), flush=True)
     sheet = t.sheet(seat)
-    t.expect("opening it again connects the pill", lambda: "Connected" in pill(askdnd), 40)
+    t.expect("opening it again connects the pill", lambda: tone(askdnd) == "step", 40)
 
 
 def close_after_roll(t: Table, seat: str = "player2", times: int = 5) -> None:
@@ -225,15 +232,15 @@ def close_after_roll(t: Table, seat: str = "player2", times: int = 5) -> None:
     page = t.battle(seat)
     for n in range(times):
         sheet = t.sheet(seat)
-        t.expect(f"{n + 1}: the sheet connects", lambda: "Connected" in pill(page), 40)
+        t.expect(f"{n + 1}: the sheet connects", lambda: tone(page) == "step", 40)
         page.wait_for_timeout(2000 + 3000 * n)  # (a different moment against the extension's 30-second tick each time)
         page.click(save("Dex"), modifiers=["Shift"])
         page.wait_for_timeout(1500)
         page.keyboard.press("Escape")
         sheet.close()
-        t.expect(f"{n + 1}: the pill follows the closed sheet", lambda: "Connected" not in pill(page), 10)
+        t.expect(f"{n + 1}: the pill follows the closed sheet", lambda: tone(page) != "step", 10)
         for s in range(40):
-            if "Connected" not in pill(page):
+            if tone(page) != "step":
                 print(f"  pill changed within {10 + s} seconds", flush=True)
                 break
             page.wait_for_timeout(1000)
@@ -1272,7 +1279,7 @@ def dm_backup(t: Table, seat: str = "player2") -> None:
     for x in [p for p in t.contexts[seat].pages if "dndbeyond.com/characters/" in p.url]:
         x.close()
     ddb = t.page("dm", "https://www.dndbeyond.com/campaigns/8224496")
-    t.expect("the player's pill says through the DM", lambda: "Through the DM" in pill(page), 60)
+    t.expect("the player's pill says through the DM", lambda: tone(page) == "via", 60)
     start = record_of(ddb, SHEETS[seat])["removedHitPoints"]
     change_hp(page, 0, 1)
     t.expect("the DM's browser makes the hit on D&D Beyond", lambda: record_of(ddb, SHEETS[seat])["removedHitPoints"] == start + 1, SLOW)
@@ -1280,7 +1287,7 @@ def dm_backup(t: Table, seat: str = "player2") -> None:
     change_hp(page, 1, 1)
     t.expect("and the healing", lambda: record_of(ddb, SHEETS[seat])["removedHitPoints"] == start, SLOW)
     t.sheet(seat)
-    t.expect("the sheet open again: Connected", lambda: "Connected" in pill(page), 40)
+    t.expect("the sheet open again: Connected", lambda: tone(page) == "step", 40)
 
 
 CANT = "can't be reached"
@@ -1297,7 +1304,7 @@ def unreachable(t: Table, seat: str = "player2") -> None:
     ddb = t.page(seat, "https://www.dndbeyond.com/my-characters")  # (reads the record; a player's page carries nothing)
     start = record_of(ddb, SHEETS[seat])
     cid = cid_of(page)
-    if not t.expect("nothing can reach the sheet", lambda: not any(x in pill(page) for x in ("Connected", "Through the DM")), 150):
+    if not t.expect("nothing can reach the sheet", lambda: tone(page) not in ("step", "via"), 150):
         raise RuntimeError("the sheet can still be reached: the pill says " + repr(pill(page)) + " (a sheet or the DM's D&D Beyond open in another browser?)")
     print("  pill:", pill(page), flush=True)
     page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
@@ -1335,7 +1342,7 @@ def unreachable(t: Table, seat: str = "player2") -> None:
     after = record_of(ddb, SHEETS[seat])
     t.expect("and nothing reached D&D Beyond", lambda: after["conditions"] == start["conditions"] and after["removedHitPoints"] == start["removedHitPoints"], 1)
     t.sheet(seat)
-    t.expect("the sheet open again: Connected", lambda: "Connected" in pill(page), 40)
+    t.expect("the sheet open again: Connected", lambda: tone(page) == "step", 40)
     page.goto(f"https://beta.askdnd.ai/characters/{cid}/battle", wait_until="domcontentloaded")
     page.locator("details.cond-add > summary").click(timeout=8000)
     t.expect("and + Condition offers them again", lambda: page.locator("details.cond-add .unreached").count() == 0 and not chips.first.is_disabled(), 10)

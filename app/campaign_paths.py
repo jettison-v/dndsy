@@ -7,7 +7,7 @@ page (/campaign/12) stay in it. A campaign the person can't open is "not found".
 
 Every page has one address (Brett, 2026-10-23). Story pages and the campaign's Manage pages live only at
 /c/<campaign>/…; opened without it they're Not found, except the home page (/), which opens your current campaign's
-Story. Everything else (characters, Party, Help, askdnd-wide Manage pages) has a plain address and shows the
+Campaign page (Story's tabs joined it Nov 13; /c/<campaign>/ forwards there too, app/story.py). Everything else (characters, Party, Help, askdnd-wide Manage pages) has a plain address and shows the
 current campaign. Panels, forms and pictures a page asks for still work at plain addresses.
 """
 
@@ -88,9 +88,9 @@ class CampaignPaths:
                     scope = {**scope, "path": GONE, "raw_path": GONE.encode()}  # askdnd's pages never name a campaign
             elif email and scope["path"] == "/" and scope["method"] == "GET" and not _header(scope, b"hx-request"):
                 here = access.current_campaign(email) if access.level(email) else None
-                if here:  # the home page: the one plain address kept, opening your current campaign's Story
+                if here:  # the home page: the one plain address kept, opening your current campaign's Campaign page (Nov 13)
                     query = scope.get("query_string", b"").decode()
-                    return await RedirectResponse(f"/c/{here['slug']}/" + (f"?{query}" if query else ""), status_code=307)(scope, receive, send)
+                    return await RedirectResponse(f"/c/{here['slug']}/campaign" + (f"?{query}" if query else ""), status_code=307)(scope, receive, send)
             elif is_page_visit(scope) and is_campaign_page(scope["path"]):
                 scope = {**scope, "path": GONE, "raw_path": GONE.encode()}  # one address per page: /c/<campaign>/… (2026-10-23)
             await self.app(scope, receive, send)

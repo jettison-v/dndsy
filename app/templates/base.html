@@ -52,7 +52,7 @@
 </div>
 {% endmacro %}
 <header class="topbar"><div class="topbar-inner">
-  <a class="brand" href="{{ cbase }}/"><img src="/static/icons/android-chrome-192x192.png" alt=""><span class="brand-word">askdnd</span>{% if staging %}<span class="staging-mark" title="staging.askdnd.ai: a copy for trying changes. Nothing here reaches the table.">Staging</span>{% endif %}</a>
+  <a class="brand" href="{{ cbase ~ '/campaign' if cbase else '/' }}" title="askdnd"><img src="/static/icons/android-chrome-192x192.png" alt=""><span class="brand-word">askdnd</span>{% if staging %}<span class="staging-mark" title="staging.askdnd.ai: a copy for trying changes. Nothing here reaches the table.">Staging</span>{% endif %}</a>
   {% if user and here %}
   {% if my_campaigns | length > 1 %}
   <div class="campaign-switch">
@@ -67,20 +67,24 @@
   {% if user %}{% set tn = tablenav() %}{% set mine_here = tn.here and tn.here.mine %}
   <span class="nav-sep" aria-hidden="true"></span>
   <nav class="nav" aria-label="The campaign">
-    <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') or path.startswith('/sessions/') }}">Story</a>
-    <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
+    <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') or path.startswith('/sessions/') }}">Campaign</a>
     {% if table_url and table_url.startswith('/') %}<a class="nav-table{{ ' active' if path == '/table' }}" href="{{ table_url }}" title="Open the table">Table</a>
     {% elif table_url %}<a class="nav-table" href="{{ table_url }}" target="_blank" rel="noopener" title="Open the table: D&amp;D Beyond's VTT">Table ↗</a>{% endif %}
   </nav>
   <span class="nav-sep" aria-hidden="true"></span>
   <nav class="table-nav" aria-label="Your table">
     {# Your character: one click, in the mode you used last. The DM has none here. #}
-    {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="char-btn{{ ' active' if mine_here }}" title="Your character">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span><span class="cond-dots" data-cond-dots data-character="{{ tn.mine.id }}"{% if tn.mine.conditions %} title="{{ tn.mine.conditions | join(', ') }}"{% endif %}>{% for n in (tn.mine.conditions or [])[:4] %}<i data-cond="{{ cond_slug(n) }}"></i>{% endfor %}</span></a>{% endif %}
+    {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="char-btn{{ ' active' if mine_here }}" title="Your character: {{ tn.mine.name }}">{{ avatar(tn.mine) }}<span class="char-name">{{ tn.mine.name }}</span><span class="cond-dots" data-cond-dots data-character="{{ tn.mine.id }}"{% if tn.mine.conditions %} title="{{ tn.mine.conditions | join(', ') }}"{% endif %}>{% for n in (tn.mine.conditions or [])[:4] %}<i data-cond="{{ cond_slug(n) }}"></i>{% endfor %}</span></a>{% endif %}
     <div class="party-switch">
       <button type="button" class="char-btn{{ ' active' if path.startswith('/party') or (tn.here and not mine_here) }}" data-menu="party-menu" aria-haspopup="true" aria-controls="party-menu">Party ▾</button>
       {{ party_menu("party-menu", tn) }}
     </div>
   </nav>
+  {# Search, like Spotlight (app/search.py; Brett chose A and A, Nov 9), drawn as a command bar right after Party (Brett chose D
+     on Menu Bar by Person, Nov 13, and that it keep its place and its box as it shrinks): it takes only the room the bar
+     has free, up to 380px, its words going to "Search" and then to the magnifier and ⌘F (container queries, app.css).
+     It, ⌘F, Ctrl+F or ⌘K opens the search box under it (app.js "Search, like Spotlight"). #}
+  <button type="button" class="search-btn" data-search-open aria-label="Search" title="Search: your character, the rules, the story"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="search-ph" aria-hidden="true"><span class="sp-long">Search your character, the rules, the story</span><span class="sp-short">Search</span></span><kbd class="search-btn-key" data-pc="Ctrl+F">⌘F</kbd></button>
   <div class="bar-end">
     <div class="live" data-tour="live">{% include "_live_pill.html" %}<div class="menu live-menu" id="live-menu" data-keep-open hidden></div></div>
     {# Two doors (Brett, 2026-10-27, docs/mockups/manage-menu.html round 2, option A): Manage is this campaign's (the DM,
@@ -88,12 +92,14 @@
        either lists the rest down the left. #}
     {% set camp_pages = manage_pages | selectattr("group", "equalto", "campaign") | list %}
     {% set admin_pages = manage_pages | selectattr("group", "equalto", "askdnd") | list %}
-    {% if dm_tools_ok(user, here) %}<a class="dm-door{{ ' active' if path == '/dm' or path.startswith('/dm/') }}" href="{{ cbase }}/dm" title="DM Tools: what you make for this campaign, its homebrew items" aria-label="DM Tools">DM<span class="dm-door-more"> Tools</span></a>{% endif %}
     {% if camp_pages %}{% set on_camp = camp_pages | selectattr("here") | list %}
     <div class="manage">
-      <button class="{{ 'active' if on_camp }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
+      {% set on_dm = path == '/dm' or path.startswith('/dm/') %}
+      <button class="{{ 'active' if on_camp or on_dm }}" data-menu="manage-menu" aria-haspopup="true">Manage ▾</button>
       <div class="menu manage-menu" id="manage-menu" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head camp"><b>{{ here.name if here else "This campaign" }}</b><span>This campaign</span></div>
+        {# DM Tools joins Manage (Brett, Nov 13: one door for the DM; The DM's Workspace decides its page) #}
+        {% if dm_tools_ok(user, here) %}<a href="{{ cbase }}/dm" class="{{ 'active' if on_dm }}" title="What you make for this campaign: its homebrew items">DM Tools<small>What you make: homebrew items</small></a>{% endif %}
         {% for p in camp_pages if p.menu %}<a href="{{ p.href }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}
         {% set more = camp_pages | rejectattr("menu") | list %}{% if more %}<p class="menu-more">{% for p in more %}<a href="{{ p.href }}" class="{{ 'active' if p.here }}">{{ p.label }}</a>{% endfor %}</p>{% endif %}
         {% set others = my_campaigns | rejectattr("id", "equalto", here.id if here else none) | list %}{% set others = others if is_admin else (others | selectattr("id", "in", managed_ids) | list) %}
@@ -112,8 +118,6 @@
       </div>
     </div>
     {% endif %}
-    {# Search, like Spotlight (app/search.py; Brett chose A and A, Nov 9): beside Help, a button with the magnifier and its key (Brett chose A, Nov 9: docs/mockups/search/menu-button.html), not a field; ⌘F, Ctrl+F, ⌘K #}
-    <button type="button" class="search-btn" data-search-open aria-label="Search" title="Search: your character, the rules, the story"><svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><kbd class="search-btn-key" data-pc="Ctrl+F">⌘F</kbd></button>
     {# Help: one quiet icon instead of another word in the bar (Brett, 2026-10-23), opening the tour, What askdnd adds,
        the FAQ and About (2026-10-26; app/tour.py) #}
     <div class="help-menu" data-tour="help">
@@ -141,10 +145,9 @@
   {% endif %}
 </div>{% if user %}{% include "_conn_band.html" %}{% endif %}</header>
 {% if user %}
-{# Phones: the same groups in a bottom bar (Story · Campaign · your character · Party · More); the rest under More. #}
+{# Phones: the same groups in a bottom bar (Campaign · your character · Party · More); the rest under More. #}
 <nav class="bottom-nav" aria-label="Main">
-  <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') or path.startswith('/sessions/') }}">Story</a>
-  <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
+  <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') or path.startswith('/sessions/') }}">Campaign</a>
   {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="bn-char{{ ' active' if mine_here }}" aria-label="Your character: {{ tn.mine.name }}{% if tn.mine.conditions %} ({{ tn.mine.conditions | join(', ') }}){% endif %}">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span><span class="cond-dots" data-cond-dots data-character="{{ tn.mine.id }}"{% if tn.mine.conditions %} title="{{ tn.mine.conditions | join(', ') }}"{% endif %}>{% for n in (tn.mine.conditions or [])[:4] %}<i data-cond="{{ cond_slug(n) }}"></i>{% endfor %}</span></a>{% endif %}
   <button type="button" data-menu="party-menu-m" aria-haspopup="true" aria-controls="party-menu-m" class="{{ 'active' if path.startswith('/party') or (tn.here and not mine_here) }}">Party</button>
   <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/manage') or path.startswith('/admin') or path == '/your-notes' }}"><span class="notes-dot-badge" data-notes-count hidden></span>More</button>

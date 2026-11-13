@@ -75,7 +75,7 @@ def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server)
     page.goto(f"{server['base']}/characters/{server['cole']}/battle")
     page.wait_for_function("window.askdndLive && window.askdndLive.up", timeout=8000)
     page.wait_for_function("!document.body.classList.contains('no-bridge')")
-    assert "Open your sheet to connect" in page.locator(PILL).inner_text()
+    assert "Not connected" in page.locator(PILL).inner_text()  # (grey: no one at the table is connected yet)
     # which extension this browser has (0.9.9 on), for feedback and support
     assert page.evaluate("document.body.dataset.bridgeVersion") == json.load(open(os.path.join(SOURCE, "manifest.json")))["version"]
 
@@ -84,7 +84,7 @@ def test_opening_and_closing_a_sheet_shows_on_askdnds_open_pages(chrome, server)
     page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Connected')", timeout=45000)
 
     sheet.close()
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet to connect')", timeout=8000)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet')", timeout=8000)
     # The connection band (Brett chose B, Nov 13, docs/mockups/connection-drops/): it got worse tonight, so it says so
     band = page.locator("#conn-band")
     expect(band).to_be_visible()
@@ -116,9 +116,9 @@ def test_a_sheet_closed_right_after_it_saved_stays_closed(chrome, server):
     sheet.evaluate("window.postMessage({ askdndBridge: 'from-page', type: 'saved', characterId: '75423618', path: '/x' }, location.origin)")
     sheet.wait_for_timeout(300)
     sheet.close()
-    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet to connect')", timeout=8000)
+    page.wait_for_function(f"document.querySelector('{PILL}').textContent.includes('Open your sheet')", timeout=8000)
     page.wait_for_timeout(8000)  # (past the two reads after a save)
-    assert "Open your sheet to connect" in page.locator(PILL).inner_text()
+    assert "Open your sheet" in page.locator(PILL).inner_text()
 
 
 def test_cast_spends_through_the_window_and_undo_takes_it_back(chrome, server):

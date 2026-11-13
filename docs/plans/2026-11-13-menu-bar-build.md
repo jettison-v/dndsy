@@ -25,7 +25,7 @@ person, every width, every page that pointed at what moved.
    connected, None connected), and their short forms below 1100px. Never a bare "Live". The connection band (Nov 13)
    already says the same in the same colours.
 4. **Search as a command bar** (`.search-bar`, replacing `.search-btn`): right after Party, always the same distance
-   from it, taking only the bar's free room (up to 380px, down to 78px), its words going from "Search your character,
+   from it, taking only the bar's free room (up to 380px, down to 94px), its words going from "Search your character,
    the rules, the story" to "Search" to the magnifier and ⌘F alone (container queries), the same box at every width.
    Pressing it, ⌘F, Ctrl F or ⌘K opens the search box under it, at its left edge (the box seems to grow out of it).
 5. **The order things give way** (docs/DESIGN.md › Navigation): Search's bar shrinks first, always; below **1360px**

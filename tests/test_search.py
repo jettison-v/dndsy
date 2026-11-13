@@ -44,7 +44,7 @@ def test_a_player_finds_their_character_the_rules_the_story_and_pages(no_network
     checks = {r["n"] for r in _rows(player, "Checks, saves, skills")}
     assert {"Stealth check", "Dex save", "Initiative"} <= checks
     assert any(r["n"] == "Prone" and r["text"] for r in _rows(player, "Rules"))
-    assert {"Story", "Campaign", "Party", "Help"} <= {r["n"] for r in _rows(player, "Pages")}
+    assert {"Campaign", "Party", "Help"} <= {r["n"] for r in _rows(player, "Pages")} and "Story" not in {r["n"] for r in _rows(player, "Pages")}
 
 
 def test_hidden_entries_are_as_if_they_did_not_exist(no_network, player, dm, db):

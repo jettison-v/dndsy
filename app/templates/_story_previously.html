@@ -1,0 +1,47 @@
+{# Campaign › Previously on… (Story's first tab until Nov 13; docs/plans/2026-11-13-menu-bar-build.md): questions for you,
+   then the latest session's recap, key moments and open threads. `st` is the published story (story.published_story). #}
+{% from "_story_macros.html" import scroll, after with context %}{% from "_suggest_form.html" import suggest with context %}
+{% set latest, earlier, quests, threads = st.latest, st.earlier, st.quests, st.threads %}
+{% if waiting %}<p class="flash">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} {{ "are" if waiting != 1 else "is" }} waiting for an OK from you, the DM or a reviewer. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
+  {% if questions %}
+  <section class="section ask-card" id="questions-for-you">
+    <div class="section-head"><h2>Questions for you</h2><span class="count">{{ questions | length }}</span></div>
+    <p class="hint">Claude wasn't sure about these while drafting a recap, and a reviewer thought you'd know. Your answer goes into the next draft.</p>
+    {% for item in questions %}{% set c = item.c %}{% set fid = "ask" ~ c.id %}
+    <div class="item">
+      <p class="note m-0 mb-1">{{ item.label }}</p>
+      <p class="item-title">{{ c.before }}</p>
+      {% if c.note %}<p class="note byline">{{ c.asked_by or "A reviewer" }} adds: {{ c.note }}</p>{% endif %}
+      <form method="post" action="/questions/{{ c.id }}/answer" class="stack">
+        <label class="field" for="{{ fid }}">Your answer</label>
+        <textarea id="{{ fid }}" name="answer" rows="2" required placeholder="What you remember… (type @ to insert a name)"></textarea>
+        <label class="check"><input type="checkbox" name="remember" value="1"> Use in every future draft (for lasting facts like name spellings)</label>
+        <div><button class="btn {{ 'primary' if questions | length == 1 }}">Send answer</button></div>
+      </form>
+    </div>
+    {% endfor %}
+  </section>
+  {% endif %}
+  {% if not latest %}
+  {# A new table's first page (Brett, 2026-10-31, docs/mockups/usability/): what already works, until the first recap #}
+  <p class="subtitle">Recaps appear here after your first session. Until then, this is what's ready.</p>
+  {% set tn = tablenav() %}{% set sessions = manage_pages | selectattr("label", "equalto", "Sessions") | first %}
+  <div class="start-cards">
+    {% if tn.mine %}<a class="start-card" href="/characters/{{ tn.mine.id }}/battle"><b>Your character</b><span>Battle, your Sheet and your Plan, from D&amp;D Beyond.</span><span class="btn small">Open your character</span></a>{% endif %}
+    <a class="start-card" href="/party"><b>The party</b><span>Everyone at the table, at a glance.</span><span class="btn small">Open Party</span></a>
+    {% if table_url %}<a class="start-card" href="{{ table_url }}" target="_blank" rel="noopener"><b>The table</b><span>Where you play: the map and the fight.</span><span class="btn small">Open the table ↗</span></a>{% endif %}
+    <a class="start-card" href="#" data-tour-start><b>The tour</b><span>A walk through your own pages.</span><span class="btn small">Take the tour</span></a>
+    {% if sessions %}<a class="start-card" href="{{ sessions.href }}"><b>For the DM</b><span>The first recap starts with your first session's transcript.</span><span class="btn small">Open Sessions</span></a>{% endif %}
+  </div>
+  {% else %}
+  {# Option A of The Story Page (Brett, 2026-11-05; docs/mockups/story-page/): one reading column, the tale on its
+     scroll (the session and its title at its head, the DM's note inside), then what came of it #}
+  <div class="tale">
+    {{ scroll(latest, listen=vtt_on("recap_listen")) }}
+    {{ after(latest.events, quests, threads) }}
+    <div class="tale-foot">
+      {% if earlier %}<a class="btn" href="{{ cbase }}/campaign?tab=sessions" data-goto-tab="t-sessions">Earlier sessions</a>{% endif %}
+      {{ suggest("/sessions/" ~ latest.s.id ~ "/suggest", "this session") }}
+    </div>
+  </div>
+  {% endif %}

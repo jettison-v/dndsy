@@ -1,4 +1,5 @@
-"""Pages for the whole table: Story (Previously on… and All sessions) and Campaign. Characters: app/character_pages.py."""
+"""Pages for the whole table: Campaign (Previously on…, Sessions, World, Quests, Relationships, Glossary, Map; Story's two
+tabs joined it Nov 13) and a session's own page. Characters: app/character_pages.py."""
 
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse
@@ -96,29 +97,26 @@ def _linker(db: Session) -> Linker:
 
 @router.get("/")
 def story(request: Request, tab: str = "", order: str = "", db: Session = Depends(get_db)):
-    """Story (menu bar Option B, Brett 2026-10-22): tabs Previously on… (questions for you, then the latest session's
-    recap, key moments and open threads) and All sessions (every published session, newest first). ?tab=sessions;
-    &order=start reads every recap in order, the first session first, all of them open (Brett, Nov 5)."""
-    user = current_user(request)
-    if not user:
+    """Story's old address (/c/<campaign>/): Story is Campaign's first two tabs since Nov 13 (Brett chose it on
+    docs/mockups/menu-bar-people/), so it forwards there, keeping `?tab=sessions&order=start` (a kept forward, like /).
+    Someone in no campaign yet has no campaign address: the home page itself shows them Campaign (empty)."""
+    if not current_user(request):
         return RedirectResponse("/login", status_code=303)
-    story = published_story(db)
+    if not web.base():
+        return campaign_page(request, tab=tab, order=order, db=db)
+    query = request.url.query
+    return RedirectResponse(f"{web.base()}/campaign" + (f"?{query}" if query else ""), status_code=307)
+
+
+def _story(db: Session, user: dict, tab: str, order: str) -> dict:
+    """What Campaign's Previously on… and Sessions tabs show (Story's until Nov 13): the published story (its newest
+    session, every session, open threads), questions for you, and how many suggestions wait (the DM, reviewers)."""
+    st = published_story(db)
     from_start = tab == "sessions" and order == "start"
     if from_start:
-        story["items"] = list(reversed(story.get("items") or []))
-    return templates.TemplateResponse(
-        request,
-        "story.html",
-        {
-            **story,
-            "tab": "sessions" if tab == "sessions" else "previously",
-            "from_start": from_start,
-            "questions": questions_card(db, user),
-            "waiting": waiting_count(db) if can_moderate(user) else 0,
-            "toast": request.session.pop("toast", None),
-            "ln": _linker(db),
-        },
-    )
+        st["items"] = list(reversed(st.get("items") or []))
+    return {"st": st, "from_start": from_start, "questions": questions_card(db, user),
+            "waiting": waiting_count(db) if can_moderate(user) else 0, "sln": _linker(db)}
 
 
 @router.get("/sessions/{session_id:int}")
@@ -166,7 +164,7 @@ def answer_question(
     except review.ReviewError as e:
         db.rollback()
         request.session["toast"] = web.notice(str(e), "warn")
-    return RedirectResponse("/", status_code=303)
+    return RedirectResponse(f"{web.base()}/campaign", status_code=303)
 
 
 def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[int, dict]]:
@@ -193,8 +191,9 @@ def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[in
 
 
 @router.get("/campaign")
-def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "", db: Session = Depends(get_db)):
-    """The Campaign page (roadmap step 11; Brett 2026-10-22): tabs World (the Reader: names down the left, one entry
+def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "", order: str = "", db: Session = Depends(get_db)):
+    """The Campaign page (roadmap step 11; Brett 2026-10-22): tabs Previously on… and Sessions (Story's, since Nov 13:
+    where it opens; `&order=start` reads every session in order), World (the Reader: names down the left, one entry
     on the page), Quests (the quest log), Relationships (family trees, other ties, anyone's connections), Glossary and
     Map (app/atlas.py; menu bar Option B). `?open=<id>` is an entry's address (a quest's opens Quests); `?tab=` picks
     a tab; `?tab=map&at=<place>` centers the map on that place ("Show on map")."""
@@ -235,8 +234,8 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
         reference = [e for _, rows in groups for e in rows]
         recent = [e for e in reference if latest and seen.get(e.id, {}).get("session_id") == latest]
         selected = (asked if asked and asked.kind != EntityKind.QUEST else None) or next(iter(recent + reference), None)
-    if tab not in ("world", "quests", "relationships", "glossary", "map"):
-        tab = "quests" if asked is not None and asked.kind == EntityKind.QUEST else "world"
+    if tab not in ("previously", "sessions", "world", "quests", "relationships", "glossary", "map"):
+        tab = "quests" if asked is not None and asked.kind == EntityKind.QUEST else "world" if asked is not None else "previously"
     # The quest log shows one quest: the one asked for, else the first open one, else the first done one
     quest = next((c for c in board if asked is not None and c["q"].id == asked.id), None) or next(iter(board), None)
     article = {**entity_context(db, selected, user), "where": "reader"} if selected else {}
@@ -248,5 +247,5 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
                                    "hidden_count": sum(1 for _, rows in groups for e in rows if e.status != Status.PUBLISHED),
                                    "board": board, "families": fams, "ties": tie, "open_quest": quest["q"].id if quest else None,
                                    "map": atlas.view(at if tab == "map" else ""),
-                                   "toast": request.session.pop("toast", None), "qln": entity_linker(db, campaign.id, include_drafts=editor) if campaign else Linker(None, {}), **article}
+                                   "toast": request.session.pop("toast", None), "qln": entity_linker(db, campaign.id, include_drafts=editor) if campaign else Linker(None, {}), **_story(db, user, tab, order), **article}  # (an entry's own linker wins)
     )

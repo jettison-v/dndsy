@@ -14,7 +14,7 @@ CHECK = (Path(__file__).parent / "layout_check.js").read_text()
 
 WIDTHS = (375, 768, 1000, 1280)
 PAGES = {
-    "player": ("/c/main/", "/c/main/?tab=sessions", "/c/main/campaign", "/characters/{cole}/battle", "/characters/{cole}",
+    "player": ("/c/main/campaign", "/c/main/campaign?tab=sessions", "/c/main/campaign?tab=world", "/characters/{cole}/battle", "/characters/{cole}",
                "/characters/{cole}/plan", "/party", "/help", "/your-notes", "/your-notes?tab=askdnd"),
     "admin": tuple(f"/c/main/manage{p}" for p in ("", "/inbox", "/sessions", "/table", "/house-rules", "/history", "/settings",
                                                   "/dm-guide"))
@@ -189,7 +189,7 @@ def test_pages_dont_shift_as_they_load(people, server):
     found = []
     for width in (1400, 1000):
         player.page.set_viewport_size({"width": width, "height": 900})
-        for path in ("/c/main/", "/c/main/campaign", f"/characters/{server['cole']}/battle", f"/characters/{server['cole']}", "/party"):
+        for path in ("/c/main/campaign", "/c/main/campaign?tab=world", f"/characters/{server['cole']}/battle", f"/characters/{server['cole']}", "/party"):
             player.open(path)
             player.page.wait_for_load_state("networkidle")
             player.page.wait_for_timeout(800)  # the log's first load, and anything it moves

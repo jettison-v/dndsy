@@ -97,7 +97,7 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
     page.evaluate("until => { Object.assign(document.getElementById('live-pill').dataset, { log: 'on', logUntil: until }); document.dispatchEvent(new Event('askdnd:pill')); }", str(time.time() + 60))
     expect(note).to_contain_text("Also goes to D&D Beyond's Game Log")
     expect(note).not_to_have_class(re.compile("rw-log-warn"))
-    assert page.locator(WINDOW).bounding_box()["y"] == top
+    assert abs(page.locator(WINDOW).bounding_box()["y"] - top) < 2  # (less than a pixel or two of rounding)
     to(page, "self")
     expect(note).to_be_hidden()  # it isn't going anywhere
     to(page, "table")

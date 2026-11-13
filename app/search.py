@@ -130,12 +130,12 @@ def page_rows(user: dict, path: str) -> list[dict]:
 
     base = web.base()
     out = [{"g": "Pages", "n": n, "s": s, "a": "Go", "find": _words(n, s), "go": h} for n, s, h in (
-        ("Story", "Previously on… and every session", f"{base}/"), ("Campaign", "the World, quests, relationships, the map", f"{base}/campaign"),
+        ("Campaign", "Previously on…, every session (the story), the World, quests, relationships, the map", f"{base}/campaign"),
         ("Party", "everyone at the table", "/party"), ("Your notes", "what happened to what you sent", "/your-notes"),
         ("Help", "the FAQ and About askdnd", "/help"))]
     table = table_url(access.current_campaign())
     if table:  # (the menu bar's Table: askdnd's own, else D&D Beyond's VTT in a tab of its own)
-        out.insert(2, {"g": "Pages", "n": "Table", "s": "where the table plays" + ("" if table.startswith("/") else " (D&D Beyond ↗)"), "a": "Go",
+        out.insert(1, {"g": "Pages", "n": "Table", "s": "where the table plays" + ("" if table.startswith("/") else " (D&D Beyond ↗)"), "a": "Go",
                        "find": _words("table vtt map play"), "go": table})
     out += [{"g": "Pages", "n": p["label"], "s": p.get("about") or "", "a": "Go", "find": _words(p["label"], p.get("about"), "manage"), "go": p["href"]}
             for p in pages_for(user, path)]

@@ -200,7 +200,7 @@ def test_public_pages_show_only_published(client, db):
     campaign = client.get("/c/main/campaign").text
     assert "Lillippi Lemon" in campaign and "Reach the library" in campaign
     assert 'Open <span class="ls-n">1</span>' in campaign and '<main class="page sheet wide campaign-page">' in campaign
-    assert '<main class="page wide">' in home and '<div class="tale">' in home  # option A: one reading column (Nov 5)
+    assert '<main class="page sheet wide campaign-page">' in home and '<div class="tale">' in home  # option A: one reading column (Nov 5), on Campaign since Nov 13
     assert client.get("/party").status_code == 200
 
 
