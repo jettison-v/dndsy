@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from app import ddb_bridge
 from app.models import BridgeIntent, BridgeLog, Campaign, Character
+from tests.menu import tone
 from tests.roles import set_role
 from tests.table_setup import char
 from tests.test_ddb_bridge import make
@@ -113,7 +114,7 @@ def test_the_dms_open_copy_of_a_players_sheet_isnt_its_own(player, dm, db, table
     assert player.post(f"/bridge/hp/{cole.id}", data={"amount": -1}).status_code == 200
     batch = dm.post("/bridge/outbox/75423618").json()["batch"]
     assert batch and batch["ddb"] == "75423618"
-    assert 'class="live-pill via"' in player.get(f"/characters/{cole.id}").text  # not green: their own sheet is closed
+    assert tone(player.get(f"/characters/{cole.id}").text) == "via"  # not green: their own sheet is closed
 
     cole.sheet_heard_at = datetime.now(UTC)  # the player opens their own sheet
     db.flush()
@@ -168,20 +169,20 @@ def test_the_live_pill_is_yellow_through_the_dm_red_while_playing_grey_otherwise
     table plays, grey when no one is connected."""
     cole = table
     page = player.get(f"/characters/{cole.id}").text
-    assert 'class="live-pill"' in page and ">Not connected<" in page  # grey: no one's connected
+    assert tone(page) == "none" and ">Not connected<" in page  # grey: no one's connected (the words: what to do)
 
     other = next(c for c in db.scalars(select(Character)) if c.id != cole.id and c.ddb_id)
     other.sheet_heard_at = datetime.now(UTC)  # someone at the table is
     db.flush()
-    assert 'class="live-pill bad"' in player.get(f"/characters/{cole.id}").text
+    assert tone(player.get(f"/characters/{cole.id}").text) == "bad"
 
     carry(dm)
     page = player.get(f"/characters/{cole.id}").text
-    assert 'class="live-pill via"' in page and "Via the DM · open your sheet" in page
+    assert tone(page) == "via" and "Via the DM · open your sheet" in page
     window = player.get(f"/live?c={cole.id}").text
     assert "the DM's D&amp;D Beyond is making your changes" in window and "Open sheet ↗" in window
     assert "Through you · their sheet is closed" in dm.get("/live").text
 
     cole.sheet_heard_at = datetime.now(UTC)
     db.flush()
-    assert 'class="live-pill step dot"' in player.get(f"/characters/{cole.id}").text
+    assert tone(player.get(f"/characters/{cole.id}").text) == "step"
