@@ -20,7 +20,7 @@
   <p class="muted">{% if can_pick %}Nothing yet. Press the bell (<b>Remind me</b>) on anything you tend to forget (for example, Advantage against being Charmed), or write one below.{% else %}{{ c.name }}'s player hasn't added any reminders yet.{% endif %}</p>
   {% endif %}
   {% if can_pick and show_picks %}{# Free-text reminders, not tied to anything on the sheet #}
-  <form class="forget-add" hx-post="/characters/{{ c.id }}/reminders" hx-swap="none" hx-on::after-request="if (event.detail.successful) this.reset()">
+  <form class="forget-add" hx-post="/characters/{{ c.id }}/reminders" hx-swap="none" data-reset-after>
     <input type="text" name="text" maxlength="500" placeholder="Write a reminder: Ask the DM about the map" aria-label="New reminder" required>
     <button class="btn small" type="submit">Add</button>
   </form>{% endif %}

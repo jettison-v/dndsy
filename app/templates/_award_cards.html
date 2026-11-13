@@ -8,7 +8,7 @@
     <span class="award-name">{{ a.award }}</span>
     {% if reveal %}<button type="button" class="award-reveal" data-award-reveal aria-label="Reveal who won {{ a.award }}"><span class="award-q" aria-hidden="true">?</span><small>Reveal</small></button>{% endif %}
     <div class="award-face"{% if reveal %} hidden{% endif %}>
-      <span class="award-who">{% if a.dm %}<span class="roll-av hue5" aria-hidden="true">DM</span>{% else %}<span class="roll-av hue{{ (a.entity_id or loop.index) % 6 }}" aria-hidden="true">{{ a.who[:1] }}{% if a.picture %}<img src="{{ a.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>{% endif %}
+      <span class="award-who">{% if a.dm %}<span class="roll-av hue5" aria-hidden="true">DM</span>{% else %}<span class="roll-av hue{{ (a.entity_id or loop.index) % 6 }}" aria-hidden="true">{{ a.who[:1] }}{% if a.picture %}<img src="{{ a.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>{% endif %}
         {% if a.entity_id %}<a href="{{ entry_url(a.entity_id) }}">{{ a.who }}</a>{% else %}<b>{{ a.who }}</b>{% endif %}</span>
       {% if a.quote %}<q class="award-line">{{ a.quote }}</q>{% endif %}
       {% if a.why %}<span class="award-why">{{ ln.text(a.why) }}</span>{% endif %}

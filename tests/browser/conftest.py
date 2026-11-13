@@ -155,13 +155,46 @@ def webkit(playwright):
     browser.close()
 
 
+# Waiting for something on a page by polling it from here (Nov 13): Playwright's own wait_for_function evaluates its text
+# inside the page, which askdnd's Content Security Policy refuses (no text evaluated as code); page.evaluate goes through
+# the browser's debugging connection, which the policy doesn't govern. Same arguments, same timeout error.
+def _wait_for_function(self, expression, arg=None, timeout=None, polling=None):
+    from playwright.sync_api import Error as PlaywrightError
+    from playwright.sync_api import TimeoutError as PlaywrightTimeout
+
+    end = time.monotonic() + (timeout if timeout is not None else 10000) / 1000
+    pause = polling / 1000 if isinstance(polling, (int, float)) else 0.05
+    while True:
+        try:
+            value = self.evaluate(expression, arg)
+        except PlaywrightError as e:  # (the page moved on while asked: ask again)
+            if "context was destroyed" not in str(e) and "navigat" not in str(e).lower():
+                raise
+            value = None
+        if value:
+            return value
+        if time.monotonic() > end:
+            raise PlaywrightTimeout(f"wait_for_function: not true within {timeout or 10000}ms: {expression[:120]}")
+        time.sleep(pause)
+
+
+def _patch_waits():
+    from playwright.sync_api import Frame, Page
+
+    Page.wait_for_function = _wait_for_function
+    Frame.wait_for_function = _wait_for_function
+
+
+_patch_waits()
+
+
 class Person:
     """One person at the table: their own browser context, signed in, with the dice animation off (the numbers are the
     same; the tests don't wait for dice to land), in the table's time zone (Pacific).
     `errors` collects the page's JavaScript errors."""
 
     def __init__(self, browser, server, who: str, **device):
-        self.server, self.errors = server, []
+        self.server, self.errors, self.csp = server, [], []  # (csp: what the Content Security Policy blocked)
         self.context = browser.new_context(**{"viewport": {"width": 1400, "height": 900}, **device}, timezone_id="America/Los_Angeles")
         webkit = browser.browser_type.name == "webkit"
         self.context.set_default_timeout(20_000 if webkit else 10_000)  # a page that's working answers well within this (WebKit is slower)
@@ -169,7 +202,10 @@ class Person:
         # Outside sites a page frames (Campaign › Map's atlas) get a stand-in: the tests never depend on another site,
         # which may answer GitHub's machines differently (aidedd.org refused to be framed there, Nov 13)
         self.context.route("https://www.aidedd.org/**", lambda route: route.fulfill(status=200, content_type="text/html", body="<p>atlas</p>"))
+        # Anything the Content Security Policy blocks (app/main.py CSP) is said on the console, and fails the test at its end
+        self.context.add_init_script("document.addEventListener('securitypolicyviolation', e => console.error('CSP blocked: ' + e.violatedDirective + ' ' + (e.blockedURI || 'inline')))")
         self.page = self.context.new_page()
+        self.page.on("console", lambda m: m.text.startswith("CSP blocked:") and self.csp.append(m.text))
         self.page.on("pageerror", lambda e: self.errors.append(str(e)))
         # The console's "Failed to load resource" doesn't say which: record the failing address instead
         # (Safari's engine says a request cut short by leaving the page failed to send, which htmx reports; a real failure
@@ -204,8 +240,10 @@ def people(chromium, server):
         return out if len(out) > 1 else out[0]
 
     yield make
+    blocked = [x for p in made for x in p.csp]
     for p in made:
         p.context.close()
+    assert not blocked, "The Content Security Policy blocked something a page needs:\n" + "\n".join(sorted(set(blocked)))
 
 
 
