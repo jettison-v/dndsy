@@ -195,7 +195,7 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
   </section>
 
   <section class="board" id="account">
-    <div class="say"><div class="lbl">2 · Your picture · everyone</div><h2>The account menu: short, plain, and Help is in it</h2><p>A player opens it rarely, so it should take a glance: four things about you, two about help, Sign out. The ? leaves the bar, which gives Search's bar 44px more.</p></div>
+    <div class="say"><div class="lbl">2 · Your picture · everyone</div><h2>The account menu: short, plain, and Help is in it</h2><p>A player opens it rarely, so it should take a glance: your notes and sending one, Help, Sign out. Dice left for Table rolls' Roll window (your note). The ? leaves the bar, which gives Search's bar 44px more.</p></div>
     <div class="pair">
       <div><span class="lbl" style="color:var(--muted)">Today</span><div class="old"><a>Cole's player<small>player@… (your Google email)</small></a><a>Your notes<small>What happened to what you sent</small></a><a>Your dice<small>How your rolls look to the table</small></a><a>Feedback for Claude <kbd>\</kbd><small>A note for Claude about this page</small></a><a>Help<small>The FAQ and About askdnd</small></a><a>Sign out</a></div>
 <p class="cap">And a separate <b>?</b> in the bar: Take the tour, What askdnd adds, FAQ, About, each with a line under it.</p></div>
@@ -207,14 +207,14 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
       <div class="bar-end"><span class="live-pill step dot"><span class="live-dot"></span></span><span class="avatar on">P</span></div>
     </div></div><div style="padding:18px 24px;display:grid;gap:12px"><div style="height:30px;width:280px;border-radius:8px;background:var(--surface)"></div><div style="height:16px;width:60%;border-radius:6px;background:var(--surface)"></div><div style="height:220px;border-radius:12px;background:var(--surface)"></div></div><div class="dm" style="right:24px">
   <div class="hd"><span class="pic">P</span><span><b>Cole's player</b><small>Signed in with Google</small></span></div>
-  <div class="grp"><a>Notes you sent <span class="n">1</span></a><a>Dice</a></div>
-  <div class="grp"><a>Help</a><a>Take the tour</a><a>Send feedback <span class="k">\</span></a></div>
+  <div class="grp"><div class="gh">Your notes</div><a>Notes you sent <span class="n">1</span></a><a>Send feedback <span class="k">\</span></a></div>
+  <div class="grp"><div class="gh">Help</div><a>Take the tour</a><a>Help and FAQ</a></div>
   <div class="out"><a>Sign out</a></div>
 </div></div></div></div>
     </div>
-    <div class="tbl"><table class="rename"><tr><th>Today</th><th>Proposed</th><th>Why</th></tr><tr><td><s>Your notes</s></td><td><b>Notes you sent</b></td><td>Its page is what you sent (suggestions about the story, feedback about askdnd) and what came of it; "Your notes" reads like your character's notes.</td></tr><tr><td><s>Your dice</s></td><td><b>Dice</b></td><td>It's already in your menu: "Your" says nothing.</td></tr><tr><td><s>Feedback for Claude</s></td><td><b>Send feedback</b></td><td>Says what it does. Only for the accounts it's switched on for; the \ key stays.</td></tr><tr><td><s>Email</s></td><td><b>Email</b></td><td>Unchanged, and only for whoever gets the Inbox digest (the DM, reviewers, admins), with On or Off beside it.</td></tr><tr><td><s>Help (and the ? menu: Take the tour, What askdnd adds, FAQ, About)</s></td><td><b>Help · Take the tour</b></td><td>Help opens on What askdnd adds, then your last tab, as today; the tour starts from its own item. The ? leaves the bar.</td></tr><tr><td><s>Every line under a name</s></td><td><b>Gone</b></td><td>Each says what its name should: if a name needs a line, the name is wrong. Pointing at one still says it.</td></tr></table></div>
+    <div class="tbl"><table class="rename"><tr><th>Today</th><th>Proposed</th><th>Why</th></tr><tr><td><s>Your notes</s></td><td><b>Notes you sent</b></td><td>Its page is what you sent (suggestions about the story, feedback about askdnd) and what came of it; "Your notes" reads like your character's notes.</td></tr><tr><td><s>Your dice</s></td><td><b>Gone</b></td><td>It lives in Table rolls' Roll window (its Your dice tab), where you think about your dice.</td></tr><tr><td><s>Feedback for Claude</s></td><td><b>Send feedback, beside Notes you sent</b></td><td>Says what it does, and sits with the notes it adds to (both under Your notes). Only for the accounts it's switched on for; the \ key stays.</td></tr><tr><td><s>Email</s></td><td><b>Email digest</b></td><td>Says which email; only for whoever gets the Inbox digest (the DM, reviewers, admins), with On or Off beside it.</td></tr><tr><td><s>Help (and the ? menu: Take the tour, What askdnd adds, FAQ, About)</s></td><td><b>Help: Take the tour · Help and FAQ</b></td><td>One group: the tour, then the Help page (What askdnd adds, the FAQ, About; it opens on your last tab). The ? leaves the bar.</td></tr><tr><td><s>Every line under a name</s></td><td><b>Gone</b></td><td>Each says what its name should: if a name needs a line, the name is wrong. Pointing at one still says it.</td></tr></table></div>
     <div class="pair">
-      <div><p class="cap">The DM's (and a reviewer's) account menu adds <b>Email</b> (the Inbox digest) and the <b>DM guide</b> under Help, where the DM looks for how things work. It leaves Manage's list, which is about running the campaign.</p></div>
+      <div><p class="cap">The DM's (and a reviewer's) account menu adds <b>Email digest</b> (the Inbox digest) and the <b>DM guide</b> under Help, where the DM looks for how things work. It leaves Manage's list, which is about running the campaign.</p></div>
       <div><span class="lbl" style="color:var(--green)">Proposed · the DM</span><div class="screen" style="--h: 420px"><div class="frame"><div class="topbar"><div class="topbar-inner">
       <span class="brand"><i class="logo"></i></span><span class="nav-sep"></span>
       <span class="campaign-name">The Adventure Begins</span>
@@ -223,8 +223,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
       <div class="bar-end"><span class="live-pill via"><span class="live-dot"></span>3 of 4 · 1 via you</span><span class="mbtn">Manage ▾</span><span class="avatar on">D</span></div>
     </div></div><div style="padding:18px 24px;display:grid;gap:12px"><div style="height:30px;width:280px;border-radius:8px;background:var(--surface)"></div><div style="height:16px;width:60%;border-radius:6px;background:var(--surface)"></div><div style="height:220px;border-radius:12px;background:var(--surface)"></div></div><div class="dm" style="right:24px">
   <div class="hd"><span class="pic">D</span><span><b>The DM</b><small>Signed in with Google</small></span></div>
-  <div class="grp"><a>Notes you sent</a><a>Dice</a><a>Email <span class="tag2">On</span></a></div>
-  <div class="grp"><a>Help</a><a>Take the tour</a><a>DM guide</a></div>
+  <div class="grp"><div class="gh">Your notes</div><a>Notes you sent</a><a>Email digest <span class="tag2">On</span></a></div>
+  <div class="grp"><div class="gh">Help</div><a>Take the tour</a><a>Help and FAQ</a><a>DM guide</a></div>
   <div class="out"><a>Sign out</a></div>
 </div></div></div></div>
     </div>
@@ -306,7 +306,7 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
     <div class="say"><div class="lbl">6 · On a phone</div><h2>More holds all three, in the same groups</h2><p>The bottom bar keeps Campaign, your character, Party and More. More is the three doors stacked under the same headings, so nothing has a second name on a phone.</p></div>
     <div class="phone"><div style="height:56px;background:var(--chrome);border-bottom:2px solid var(--red);display:flex;align-items:center;gap:10px;padding:0 14px"><i class="logo" style="width:28px;height:28px;display:inline-block;border-radius:7px"></i><b style="color:var(--strong);font-size:.95rem">The Adventure Begins</b></div>
       <div style="height:120px"></div>
-      <div class="sheet"><div class="gh">You</div><a>Notes you sent <span class="n" style="background:var(--red);color:#fff;border-radius:999px;padding:1px 7px;font-size:.75rem">1</span></a><a>Dice</a><a>Help</a><a>Take the tour</a>
+      <div class="sheet"><div class="gh">Your notes</div><a>Notes you sent <span class="n" style="background:var(--red);color:#fff;border-radius:999px;padding:1px 7px;font-size:.75rem">1</span></a><div class="gh">Help</div><a>Take the tour</a><a>Help and FAQ</a>
       <div class="gh">This campaign</div><a>Manage</a><a>Table ↗</a>
       <div class="gh">askdnd</div><a>⚙ Admin</a><a>Sign out</a></div>
       <div class="bn"><span>Campaign</span><span>Cole</span><span>Party</span><span class="on">More</span></div></div>
@@ -320,7 +320,7 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
       <fieldset data-q="parts" data-kind="many"><legend>Approve</legend><div class="choices">
         <label class="choice many"><input type="checkbox" name="parts" value="rules">1 · The five rules <span class="mine-tag">My pick</span></label>
         <label class="choice many"><input type="checkbox" name="parts" value="account">2 · The account menu, Help in it, the ? gone <span class="mine-tag">My pick</span></label>
-        <label class="choice many"><input type="checkbox" name="parts" value="names">2 · The new names (Notes you sent, Dice, Send feedback) <span class="mine-tag">My pick</span></label>
+        <label class="choice many"><input type="checkbox" name="parts" value="names">2 · The groups and names (Your notes; Help: Take the tour, Help and FAQ) <span class="mine-tag">My pick</span></label>
         <label class="choice many"><input type="checkbox" name="parts" value="manage">3 · Manage grouped by the DM's week <span class="mine-tag">My pick</span></label>
         <label class="choice many"><input type="checkbox" name="parts" value="gear">4 · The gear in groups <span class="mine-tag">My pick</span></label>
         <label class="choice many"><input type="checkbox" name="parts" value="campaigns">5 · Campaigns: + New campaign, moves from D&amp;D Beyond <span class="mine-tag">My pick</span></label>

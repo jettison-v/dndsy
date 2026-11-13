@@ -80,7 +80,10 @@ button { font: inherit; cursor: pointer; }
 img { max-width: 100%; }
 
 /* Top bar */
-.topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 6; }  /* (over Table rolls, 5, so its menus open over it) */
+.topbar { background: var(--chrome); border-bottom: 2px solid var(--red); position: sticky; top: 0; z-index: 6; }
+/* The menu bar gives way by its own width, not the window's (Brett, Nov 13: with Table rolls open beside the page it has
+   340px less, and its contents centre over the page): the collapse order's widths are the bar's (docs/DESIGN.md › Navigation) */
+.topbar { container: bar / inline-size; }  /* (over Table rolls, 5, so its menus open over it) */
 /* Staging (docs/SETUP_LOG.md › A staging copy): an amber menu bar and a Staging label, so it's never taken for the table's askdnd */
 body[data-staging] .topbar { background: var(--staging-bar); border-bottom-color: var(--staging-edge); }
 body[data-staging] .bottom-nav { background: var(--staging-bar); border-top: 2px solid var(--staging-edge); }
@@ -117,12 +120,12 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .char-av { position: relative; width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; overflow: hidden; background: var(--line-strong); color: var(--text); font-size: var(--fs-xs); font-weight: 700; }
 .char-av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .party-switch { position: relative; }
-@media (max-width: 1360px) { .brand-word { display: none; } }  /* step 1: the logo stays and opens the campaign */
+@container bar (max-width: 1360px) { .brand-word { display: none; } }  /* step 1: the logo stays and opens the campaign */
 .campaign-switch, span.campaign-name { flex-shrink: 0; }  /* the campaign's name gives way last */
-@media (max-width: 1200px) { a.char-btn .char-name { display: none; } a.char-btn { padding-right: 5px; } }  /* step 2: your character's picture, its name on hover */
-@media (max-width: 1100px) { .topbar-inner { gap: 8px; } .bar-end { gap: 6px; } .nav a { padding: 0 9px; } }  /* (with step 3: the bar's own spacing tightens, so the name stays whole) */
-@media (max-width: 1000px) { .campaign-switch, span.campaign-name { flex-shrink: 1; min-width: 72px; } .table-nav { gap: 4px; } }  /* step 4: the name shortens with "…" */
-@media (max-width: 999px) { .campaign-switch, span.campaign-name { min-width: 48px; } .topbar .search-btn { min-width: var(--bar-h); padding: 0; justify-content: center; } .topbar .search-btn kbd { display: none; } }  /* below the narrowest laptop (a tablet): Search keeps its box, the magnifier alone */
+@container bar (max-width: 1200px) { a.char-btn .char-name { display: none; } a.char-btn { padding-right: 5px; } }  /* step 2: your character's picture, its name on hover */
+@container bar (max-width: 1100px) { .topbar-inner { gap: 8px; } .bar-end { gap: 6px; } .nav a { padding: 0 9px; } }  /* (with step 3: the bar's own spacing tightens, so the name stays whole) */
+@container bar (max-width: 1000px) { .campaign-switch, span.campaign-name { flex-shrink: 1; min-width: 72px; } .table-nav { gap: 4px; } }  /* step 4: the name shortens with "…" */
+@container bar (max-width: 999px) { .campaign-switch, span.campaign-name { min-width: 48px; } .topbar .search-btn { min-width: var(--bar-h); padding: 0; justify-content: center; } .topbar .search-btn kbd { display: none; } }  /* below the narrowest laptop (a tablet): Search keeps its box, the magnifier alone */
 .menu.party-menu { left: auto; right: 0; width: 290px; max-width: calc(100vw - 24px); }  /* opens leftward: Party sits right of center, so it never runs off the screen */
 .menu a.party-row { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; align-items: center; }
 .party-row .char-av { grid-row: span 2; width: 32px; height: 32px; font-size: var(--fs-sm); }
@@ -202,7 +205,7 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-ag
 body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-bridge { display: revert; }
 body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-tx.cb-bridge { display: block; }
 @media (max-width: 900px) { .conn-band { display: none; } }  /* a phone never holds the sheet's connection */
-@media (max-width: 1100px) { .live-ago:has(.lw-short) .lw-long { display: none; } .lw-short { display: inline; } }  /* step 3 of the collapse order: just what to do, never a bare "Live" */
+@container bar (max-width: 1100px) { .live-ago:has(.lw-short) .lw-long { display: none; } .lw-short { display: inline; } }  /* step 3 of the collapse order: just what to do, never a bare "Live" */
 .menu.live-menu { width: 360px; max-width: calc(100vw - 24px); padding: 0; }
 .live-menu:empty { display: none; }
 .live-pop { padding: 14px 16px; display: grid; gap: 12px; font-size: var(--fs-sm); }
@@ -1836,9 +1839,9 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rolls-side { display: none; }
 body.at-table .rolls-side { display: flex; flex-direction: column; position: fixed; z-index: 5; /* over a page's sticky tab bar (4): feedback 45 */ left: 0; top: var(--stick-top, 62px); bottom: 0; width: 340px; background: var(--chrome); border-right: 1px solid var(--line); transition: transform .25s ease, visibility 0s; }
 body.at-table.rolls-open { --rolls-w: 340px; }
-@media (max-width: 1099px) and (min-width: 901px) { body.at-table.rolls-open { --rolls-w: 0px; } body.at-table.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
+@media (max-width: 1240px) and (min-width: 901px) { body.at-table.rolls-open { --rolls-w: 0px; } body.at-table.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
 body.at-table { padding-left: var(--rolls-w, 0); }
-body.at-table .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
+body.at-table .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); padding-left: var(--rolls-w, 0px); }  /* (its bar spans the window; its contents centre over the page beside Table rolls, so they line up: Brett, Nov 13) */
 .rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; color: var(--amber); }
 .rs-grip { display: none; }
 .rs-title { flex: 1; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
@@ -2148,7 +2151,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
    (collapsed), or every roll with the dice (tap or swipe up). Notices show under the menu bar. */
 @media (max-width: 900px) {
   body.at-table { padding-left: 0; --rolls-w: 0px; }
-  body.at-table .topbar { margin-left: 0; }
+  body.at-table .topbar { margin-left: 0; padding-left: 0; }
   body.at-table .rolls-side, body.at-table.rolls-closed .rolls-side { z-index: 5; transform: none; visibility: visible; top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -10px 30px var(--shadow); }
   body.at-table.rolls-full .rolls-side { max-height: 80vh; }
   body.at-table.rolls-open { padding-bottom: calc(270px + env(safe-area-inset-bottom)); }
