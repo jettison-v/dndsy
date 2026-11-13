@@ -1,0 +1,205 @@
+<meta charset="utf-8">
+<title>Design Grade Fixes</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups (Nov 12 round): dark, in askdnd's own tokens; laptop first, a board per option (its picture
+   left, what it means right), one column on a phone; the table's own characters. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --k-action: #ef6b6b; --k-bonus: #e8b34b; --k-reaction: #6fa8ff;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 38px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+ul, ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta, .note { color: var(--muted); font-size: .9rem; }
+header.top { display: grid; gap: 14px; }
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.where b { display: block; margin-bottom: 2px; }
+.board { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.board.wide { grid-template-columns: minmax(0, 1fr); }
+.say { display: grid; gap: 12px; min-width: 0; }
+.say .meta { font-size: .9rem; }
+.stage { display: grid; gap: 12px; min-width: 0; }
+.cap { color: var(--muted); font-size: .84rem; }
+.cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); }
+.cost span { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px 10px; }
+.mine { color: var(--green); font-weight: 600; }
+/* askdnd's pieces */
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; font-size: .9rem; max-width: 460px; box-shadow: 0 14px 34px rgba(0,0,0,.35); }
+.win.large { max-width: none; }
+.win .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.win .hd b { font-size: 1.1rem; }
+.win .x { color: var(--muted); }
+.sub { color: var(--muted); font-size: .86rem; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { font: 600 .88rem/1 var(--sans); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+.btn:focus-visible, .chip:focus-visible, .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.chip { font: 600 .8rem/1 var(--sans); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chip small { color: var(--muted); font-weight: 500; }
+.tag { font: 600 .72rem/1 var(--sans); padding: 3px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
+.tag.warn { background: var(--amber-soft); color: var(--amber); }
+.tag.ok { background: var(--green-soft); color: var(--green); }
+.tag.dm { background: var(--amber-soft); color: var(--amber); }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line-soft); }
+.row:first-child { border-top: 0; }
+.row .nm b { display: block; }
+.row .nm span { color: var(--muted); font-size: .84rem; }
+.hit { font: 700 .95rem/1 var(--sans); color: var(--strong); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+.res { background: var(--surface-2); border-radius: 10px; padding: 9px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 12px; align-items: center; }
+.res .big { font: 700 2rem/1 var(--sans); color: var(--strong); grid-row: span 2; font-variant-numeric: tabular-nums; }
+.res.dmg .big { color: var(--red); } .res.heal .big { color: var(--green); }
+.res small { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.res .how { color: var(--muted); }
+.rail { display: flex; gap: 14px; font-size: .85rem; color: var(--muted); flex-wrap: wrap; }
+.rail .now { color: var(--strong); font-weight: 600; }
+.rail span::before { content: "●"; margin-right: 5px; color: var(--muted); }
+.rail .done::before { color: var(--green); } .rail .now::before { color: var(--red); }
+.section { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.econ { font: 700 .78rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; }
+.k-action { color: var(--k-action); } .k-bonus { color: var(--k-bonus); } .k-reaction { color: var(--k-reaction); }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { font: 600 .86rem/1 var(--sans); color: var(--muted); background: none; border: 0; border-bottom: 2px solid transparent; padding: 10px 10px; cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--strong); border-bottom-color: var(--red); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+th { text-align: left; font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 9px 10px; border-bottom: 1px solid var(--line); }
+td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+td.num { font-variant-numeric: tabular-nums; color: var(--strong); font-weight: 600; white-space: nowrap; }
+.field { display: grid; gap: 4px; font-size: .84rem; color: var(--muted); }
+.input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--text); font: 400 .9rem/1.3 var(--sans); }
+.av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: inline-grid; place-items: center; font: 700 .8rem/1 var(--sans); color: #1b1b1b; }
+.av.c { background: #8fb39a; } .av.b { background: #e0b878; } .av.n { background: #b39ad8; } .av.t { background: #90b4e0; } .av.e { background: #d88f8f; }
+.pick { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.pick ol { padding-left: 20px; gap: 8px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.before, .after { display: grid; gap: 8px; min-width: 0; }
+.before > .lbl { color: var(--muted); } .after > .lbl { color: var(--green); }
+@media (max-width: 900px) {
+  .board, .split { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .where { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) { h1 { font-size: 1.8rem; } }
+</style>
+<style>
+.faint-old { color: #6f6b64; } .faint-new { color: #8f8a81; }
+.mbar { max-width: 1180px; display: flex; align-items: center; gap: 10px; background: #0f1113; border: 1px solid var(--line); border-bottom: 2px solid var(--red-btn); border-radius: 10px 10px 0 0; padding: 8px 12px; font-size: .84rem; overflow: hidden; white-space: nowrap; }
+.mbar .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--red-btn); flex: none; }
+.mbar .camp { font-weight: 700; color: var(--strong); max-width: 30px; overflow: hidden; text-overflow: ellipsis; }
+.mbar .camp.full { max-width: none; }
+.mbar .it { color: var(--muted); } .mbar .it.on { color: var(--strong); }
+.mbar .pill { border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; color: var(--muted); }
+.mbar .sp { flex: 1; }
+.card2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; font-size: .86rem; }
+.busy { display: flex; flex-wrap: wrap; gap: 5px; }
+.busy span { border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; font-size: .74rem; background: var(--surface-2); color: var(--muted); }
+.calm { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.calm div { display: grid; gap: 1px; } .calm small { color: var(--muted); font-size: .72rem; } .calm b { font-size: 1.05rem; }
+.scrollish { background: linear-gradient(#221f1a, #1a1916); border: 1px solid #3b3428; border-radius: 12px; padding: 12px 14px; font-family: var(--serif); color: #e2dccf; font-size: .92rem; }
+.contrast { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; align-items: center; font-size: .86rem; }
+.contrast .ratio { font-variant-numeric: tabular-nums; font-weight: 700; }
+.bad { color: var(--red); } .good { color: var(--green); }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lbl">The design grade · before and after</div>
+    <h1>The design grade's four fixes, side by side</h1>
+    <p class="lead">Your ask (Nov 12): see each fix before it's made. My grade from Nov 5 was a B overall. Each fix below shows askdnd as it is today on the left and with the fix on the right, at laptop width. Pick which to make; none changes how anything works.</p>
+    <div class="where">
+      <div><b>Where it lives</b>Everywhere: these are the design system's own pieces (colours, the menu bar, Battle's and Party's tiles), so each change reaches every page that uses them.</div>
+      <div><b>Already done since the grade</b>Admin became a gear (Nov 9), which gave the campaign name some room. At 1280px it's still cut to "T…", so fix 3 still stands.</div>
+      <div><b>How it's checked</b>Fix 1 adds a contrast check to the design test, so the faint grey can't slip back.</div>
+    </div>
+  </header>
+
+  <section class="board wide">
+    <div class="split">
+      <div class="before"><span class="lbl">Today</span>
+        <div class="card2"><b>Healing Word</b><span class="faint-old">Bonus Action · 60 ft · heals 2d4 + 4 · cast 3 times this session</span><span class="faint-old">From Druid · prepared</span></div>
+        <div class="contrast"><span class="ratio bad">3.0 : 1</span><span>askdnd's faintest grey (#6f6b64), in 48 places (the standard for small text is 4.5 : 1)</span></div>
+      </div>
+      <div class="after"><span class="lbl">With the fix</span>
+        <div class="card2"><b>Healing Word</b><span class="faint-new">Bonus Action · 60 ft · heals 2d4 + 4 · cast 3 times this session</span><span class="faint-new">From Druid · prepared</span></div>
+        <div class="contrast"><span class="ratio good">4.6 : 1</span><span>The same grey, a step lighter (#8f8a81); the design test checks every colour pair</span></div>
+      </div>
+    </div>
+    <div class="say"><div class="lbl">Fix 1 · small</div><h2>The faint grey passes contrast</h2><p>Small notes become readable in a dim room or on a laptop at an angle, without looking louder. One colour token changes, everywhere at once.</p></div>
+  </section>
+
+  <section class="board wide">
+    <div class="split">
+      <div class="before"><span class="lbl">Today</span>
+        <div class="card2"><b>Cole</b>
+          <div class="busy"><span>HP 51/51</span><span>+18 temp</span><span>AC 17</span><span>Speed 40</span><span>Init +4</span><span>Conc. Moonbeam</span><span>Polar Bear</span><span>Insp.</span><span>3 Luck</span><span>2 Focus</span><span>Live</span><span>with Owlie</span></div>
+        </div>
+        <p class="cap">Every number, count and tag its own pill: nothing stands out.</p>
+      </div>
+      <div class="after"><span class="lbl">With the fix</span>
+        <div class="card2"><b>Cole <span class="tag ok">Polar Bear</span></b>
+          <div class="calm"><div><small>HP</small><b>51 <span class="sub">+18</span></b></div><div><small>AC</small><b>17</b></div><div><small>Speed</small><b>40</b></div><div><small>Init.</small><b>+4</b></div></div>
+          <span class="sub">Concentrating on Moonbeam · Luck 3 · Focus 2 · with Owlie</span>
+        </div>
+        <p class="cap">The four numbers as numbers, the rest one quiet line.</p>
+      </div>
+    </div>
+    <div class="say"><div class="lbl">Fix 2 · medium, with the component library</div><h2>A quiet pass on Battle and Party</h2><p>What matters in a glance (Hit Points, AC, Speed, Initiative) reads as numbers; counts and states drop into one quiet line. On a phone, Battle opens on Hit Points and the first actions, not two screens down.</p></div>
+  </section>
+
+  <section class="board wide">
+    <div class="split" style="grid-template-columns:minmax(0,1fr)">
+      <div class="before"><span class="lbl">Today, at 1280px</span>
+        <div class="mbar"><span class="logo"></span><span class="camp">The Adventure Begins</span><span class="it on">Story</span><span class="it">Campaign</span><span class="it">Table ↗</span><span class="it">Cole</span><span class="it">Party ▾</span><span class="sp"></span><span class="pill">● Live</span><span class="it">Manage ▾</span><span class="it">⚙</span><span class="it">⌕ ⌘F</span><span class="it">?</span></div>
+      </div>
+      <div class="after"><span class="lbl">With the fix</span>
+        <div class="mbar"><span class="logo"></span><span class="camp full">The Adventure Begins</span><span class="it on">Story</span><span class="it">Campaign</span><span class="it">Table ↗</span><span class="it">Cole</span><span class="it">Party ▾</span><span class="sp"></span><span class="pill">●</span><span class="it">Manage ▾</span><span class="it">⌕</span></div>
+        <p class="cap">The gear and ? move into the account menu, Search shows its magnifier only, the Live pill its dot: the campaign's name fits.</p>
+      </div>
+    </div>
+    <div class="say"><div class="lbl">Fix 3 · small</div><h2>The campaign's name fits</h2><p>At a laptop's 1280px the menu bar cuts the campaign to "T…". Moving the admin gear and Help into the account menu, and shortening Search and Live to their icons below 1400px, leaves room for the whole name.</p></div>
+  </section>
+
+  <section class="board wide">
+    <div class="split">
+      <div class="before"><span class="lbl">Today</span>
+        <div class="card2"><b>Previously on…</b><span class="sub">Your party reached the Observatory and found Terra…</span></div>
+      </div>
+      <div class="after"><span class="lbl">With the fix</span>
+        <div class="scrollish"><b style="color:#f1e9da">Previously on…</b><br>Your party reached the Observatory and found Terra…</div>
+      </div>
+    </div>
+    <div class="say"><div class="lbl">Fix 4 · a direction, not one change</div><h2>Lean on what's askdnd's own</h2><p>The story's scroll, the thrown dice and the condition icons are what make askdnd feel like itself. Use them more where they fit: the scroll's paper behind the recap wherever it shows (Story, a session, Listen), and the dice's colours in Table rolls. A direction for later pages, not a rebuild.</p></div>
+  </section>
+
+  <section class="pick" aria-labelledby="pick-h">
+    <div class="lbl">To pick</div>
+    <h2 id="pick-h">Which fixes?</h2>
+    <p class="meta">My recommendation: <b>1 and 3</b> now (small, every page better); <b>2</b> with the component library; <b>4</b> as a direction as new pages are made. Reply with the numbers, or comment on any board.</p>
+  </section>
+</div>

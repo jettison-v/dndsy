@@ -67,7 +67,7 @@
   {% if user %}{% set tn = tablenav() %}{% set mine_here = tn.here and tn.here.mine %}
   <span class="nav-sep" aria-hidden="true"></span>
   <nav class="nav" aria-label="The campaign">
-    <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Story</a>
+    <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') or path.startswith('/sessions/') }}">Story</a>
     <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
     {% if table_url and table_url.startswith('/') %}<a class="nav-table{{ ' active' if path == '/table' }}" href="{{ table_url }}" title="Open the table">Table</a>
     {% elif table_url %}<a class="nav-table" href="{{ table_url }}" target="_blank" rel="noopener" title="Open the table: D&amp;D Beyond's VTT">Table ↗</a>{% endif %}
@@ -142,7 +142,7 @@
 {% if user %}
 {# Phones: the same groups in a bottom bar (Story · Campaign · your character · Party · More); the rest under More. #}
 <nav class="bottom-nav" aria-label="Main">
-  <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') }}">Story</a>
+  <a href="{{ cbase }}/" class="{{ 'active' if path in ('/', '/story') or path.startswith('/sessions/') }}">Story</a>
   <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') }}">Campaign</a>
   {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="bn-char{{ ' active' if mine_here }}" aria-label="Your character: {{ tn.mine.name }}{% if tn.mine.conditions %} ({{ tn.mine.conditions | join(', ') }}){% endif %}">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span><span class="cond-dots" data-cond-dots data-character="{{ tn.mine.id }}"{% if tn.mine.conditions %} title="{{ tn.mine.conditions | join(', ') }}"{% endif %}>{% for n in (tn.mine.conditions or [])[:4] %}<i data-cond="{{ cond_slug(n) }}"></i>{% endfor %}</span></a>{% endif %}
   <button type="button" data-menu="party-menu-m" aria-haspopup="true" aria-controls="party-menu-m" class="{{ 'active' if path.startswith('/party') or (tn.here and not mine_here) }}">Party</button>

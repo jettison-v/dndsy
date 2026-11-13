@@ -127,6 +127,10 @@ def work(hp: dict, mode: str, parts: list[dict], defs: list[dict], off: set[str]
         out.update(amount=n, hp_after=min(top, cur + n))
         out["steps"].append({"title": "Healing", "value": f"+{out['hp_after'] - cur}", "why": f"Restores your own Hit Points, up to {top}; "
                              "never Temporary ones." + (f" {n - (out['hp_after'] - cur)} more would go past your maximum." if cur + n > top else "")})
+        if not n:
+            out["empty"] = True  # (nothing typed yet: the button waits, nothing to say)
+        elif out["hp_after"] == cur:  # (feedback 62: a disabled Heal 0 looked broken; say why nothing happens)
+            out["nothing"] = f"Already at full Hit Points ({cur} of {top}): this healing changes nothing."
         if cur == 0 and out["hp_after"] > 0:
             out["up"] = "unconscious" not in off
             out["steps"].append({"key": "unconscious", "off": not out["up"], "title": "Back from 0 Hit Points", "value": "Unconscious ends",
@@ -136,6 +140,11 @@ def work(hp: dict, mode: str, parts: list[dict], defs: list[dict], off: set[str]
         n = max(0, sum(int(p.get("amount") or 0) for p in parts))
         take = (n > temp) if temp_take is None else temp_take
         out.update(amount=n, temp_after=n if take else temp, take=take)
+        if not n:
+            out["empty"] = True
+        elif out["temp_after"] == temp:
+            out["nothing"] = (f"Keeping the {temp} Temporary Hit Points already there: nothing changes. Choose Take {n} to replace them." if temp
+                              else f"Keeping none: nothing changes. Choose Take {n} to give them.")
         out["steps"].append({"title": "Temporary Hit Points don't add up", "value": f"{'take' if take else 'keep'} {n if take else temp}",
                              "why": f"Keep the {temp} you have or take the new {n}; askdnd starts on the higher. You choose.", "choose": True})
         return out
@@ -166,6 +175,8 @@ def work(hp: dict, mode: str, parts: list[dict], defs: list[dict], off: set[str]
     soak = min(temp, taken)
     own = taken - soak
     out.update(amount=taken, taken=taken, temp_after=temp - soak, hp_after=max(0, cur - own))
+    if not sum(max(0, int(p.get("amount") or 0)) for p in parts):  # (one that a defense takes whole is still applied: it was a hit)
+        out["empty"] = True
     if temp:
         out["steps"].append({"title": "Temporary Hit Points first", "value": f"{temp} → {temp - soak}",
                              "why": f"They take {soak}; {'the rest, ' + str(own) + ', comes off' if own else 'nothing comes off'} your own Hit Points."})
@@ -208,6 +219,14 @@ def work(hp: dict, mode: str, parts: list[dict], defs: list[dict], off: set[str]
 def can_apply(db: Session, user: dict | None, character: Character) -> bool:
     """Normally the character's own player; the DM can too, for anyone at the table (an admin as well)."""
     return picks.can_edit(db, user, character) or is_dm(user, character.campaign_id) or is_admin(user)
+
+
+def _hp_now(c: Character) -> dict:
+    """Where a character's Hit Points stand, for Apply to's list (feedback 62: who's hurt, before choosing)."""
+    hp = (chars.character_summary(c) or {}).get("hit_points") or {}
+    if not hp.get("max"):
+        return {}
+    return {"hp": f"{hp.get('current', 0)}/{hp['max']}", "full": hp.get("current", 0) >= hp["max"]}
 
 
 def targets(db: Session, user: dict | None, campaign_id: int) -> list[Character]:
@@ -414,6 +433,6 @@ def apply_info(db: Session, user: dict | None, roots: list[TableRoll], kids: lis
             if c and ch and picks.can_edit(db, user, ch):
                 conc.append({"cid": cid, "name": ch.name, **c})
         only = r.character_id if (r.detail or {}).get("self") else None  # (Second Wind, a Hit Point Die: the roller's own)
-        out[r.id] = {"to": [{"id": c.id, "name": c.name} for c in mine[r.campaign_id] if c.id not in done and (only is None or c.id == only)],
+        out[r.id] = {"to": [{"id": c.id, "name": c.name, **_hp_now(c)} for c in mine[r.campaign_id] if c.id not in done and (only is None or c.id == only)],
                      "done": [k.label for k in done.values()], "conc": conc, "dm": is_dm(user, r.campaign_id)}
     return out

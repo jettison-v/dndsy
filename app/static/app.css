@@ -503,6 +503,8 @@ details.conversation[open] > summary { margin-bottom: 12px; }
    then what came of it; All sessions the same column, each session a rolled scroll, the newest open */
 .tale { max-width: 820px; margin: var(--sp-5) auto 0; display: flex; flex-direction: column; gap: var(--sp-6); }
 .tale > .subtitle { margin: 0; }
+.tale.session-page { max-width: none; }  /* a session's own page: The Night as wide as the page (feedback 61) */
+.session-page > .tale-head, .session-page #t-tale { width: 100%; max-width: 820px; margin-inline: auto; }  /* (its title and The Tale: a reading column) */
 .tale-head { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; margin-bottom: var(--sp-5); }
 .tale-head h2 { flex: none; margin: 0; font-size: var(--fs-xl); font-weight: 600; color: var(--story-head); text-wrap: balance; }
 .tale-listen { margin-top: var(--sp-2); white-space: nowrap; }
@@ -1826,6 +1828,8 @@ body.at-table .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); }
 .nat20 .roll-flag, .nat20 > .roll-total, b.nat20 { color: var(--green); }
 .nat1 .roll-flag, .nat1 > .roll-total, b.nat1 { color: var(--link); }
 .kind-heal > .roll-total { color: var(--green); }
+.roll-apply-hp { color: var(--muted); font-weight: 400; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.roll-apply-hp.full::after { content: " full"; }  /* (healing someone at full changes nothing: feedback 62) */
 .roll-total { font-size: var(--fs-2xl); line-height: 1.1; font-variant-numeric: tabular-nums; }
 .roll-lock { color: var(--muted); display: grid; place-items: center; padding-top: 8px; }
 .hidden-roll .roll-what { color: var(--muted); font-weight: 400; }
@@ -3588,7 +3592,7 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 .fb-answer { display: grid; gap: var(--sp-2); justify-items: start; }
 .fb-answer .field, .fb-answer textarea { width: 100%; }
 /* The one Picture window (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2) */
-.pw { display: grid; gap: var(--sp-3); }
+.pw { display: grid; gap: var(--sp-3); align-content: start; }  /* (rows their own height: spare room never stretched the tab bar, feedback 39) */
 .pw > .tabbar { min-height: 41px; flex: none; }  /* (staging feedback 31: a full window squeezed the tabs to a sliver) */
 .pw-drawing, #pw-options:not(:empty) { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--line); }  /* the pictures stand apart from Draw (staging feedback 31, feedback 39): twice the form's own gaps, and a line */
 .pw-form { display: grid; gap: var(--sp-3); }
