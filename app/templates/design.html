@@ -19,7 +19,7 @@
 
   <nav class="ds-jump" aria-label="On this page" data-ds-jump>
     <a href="#" class="ds-top" data-ds-top>↑ Top</a>
-    {% for id, label in [("colors", "Colors"), ("type", "Text sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("pills", "Pills"),
+    {% for id, label in [("colors", "Colors"), ("type", "Fonts and sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
                          ("help", "Help and empty states"), ("panels", "Panels and toasts"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("conditions", "Conditions"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
   </nav>
@@ -34,8 +34,15 @@
   </section>
 
   <section class="section" id="type">
-    <h2>Text sizes</h2>
-    <p class="hint">Six sizes (Brett, 2026-10-22). Inter for everything, story text too (on its faint scroll); the serif only in quoted answers.</p>
+    <h2>Fonts and sizes</h2>
+    <p class="hint">Three fonts and nothing else (Brett, Nov 13; a test fails on any other). Pick one by its use.</p>
+    <div class="ds-type">
+      <div><span class="ds-font-sans">The party rests at the Yawning Portal</span><span class="muted"><code>--sans</code> Inter · everything: the UI, story text, recaps, quoted answers, notes</span></div>
+      <div><span class="ds-font-cond">Bonus Action</span><span class="muted"><code>--cond</code> Roboto Condensed · the logo and small uppercase labels</span></div>
+      <div><span class="ds-font-tale">The Observatory</span><span class="muted"><code>--tale-cap</code> Cormorant Garamond · the tale's flourishes: a recap's first letter, a chapter's title, an award's line</span></div>
+    </div>
+    <h3 class="divider">Sizes</h3>
+    <p class="hint">Six sizes (Brett, 2026-10-22).</p>
     <div class="ds-type">{% for name, px, use in sizes %}
       <div><span style="font-size:var({{ name }}); font-weight:{{ 700 if px in ('26', '30') else 600 if px == '19' else 400 }}">The party rests at the Yawning Portal</span>
         <span class="muted"><code>{{ name }}</code> {{ px }}px · {{ use }}</span></div>{% endfor %}

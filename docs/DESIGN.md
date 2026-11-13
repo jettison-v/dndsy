@@ -68,7 +68,17 @@ Dark only (Brett, 2026-10-22), inspired by D&D Beyond (dark chrome, red accents,
 
 Status colors are text on their `-soft` tint.
 
-**Text sizes** (Brett, 2026-10-22): `--fs-xs` 12px labels, secondary lines and tags · `--fs-sm` 14px list cells, chips, controls · `--fs-md` 16px body and a row's name · `--fs-lg` 19px section headings · `--fs-xl` 26px the character's name · `--fs-2xl` 30px page titles. UI in **Inter** (fallback system-ui) at 16px / 1.6; story text in Inter too, at `--fs-md` / 1.7 on its faint scroll (a recap's first letter in Cormorant Garamond); the serif `"Iowan Old Style", Palatino, Georgia` stays for quoted answers. The logo alone uses Roboto Condensed.
+**Text sizes** (Brett, 2026-10-22): `--fs-xs` 12px labels, secondary lines and tags · `--fs-sm` 14px list cells, chips, controls · `--fs-md` 16px body and a row's name · `--fs-lg` 19px section headings · `--fs-xl` 26px the character's name · `--fs-2xl` 30px page titles. UI in Inter at 16px / 1.6; story text in Inter too, at `--fs-md` / 1.7 on its faint scroll.
+
+**Fonts** (Brett, 2026-11-13: "limit the number of fonts used to the ones we have selected"): three, each a token in app.css's `:root`, and nothing else on any page.
+
+| Token | Font | Where |
+|---|---|---|
+| `--sans` | **Inter** (fallback system-ui) | Everything: the UI, story text, recaps, quoted answers, the DM's read-aloud text, notes |
+| `--cond` | **Roboto Condensed** 700 | The logo, and small uppercase labels (a section's or column's label, a roll card's kind, Manage's groups) |
+| `--tale-cap` | **Cormorant Garamond** 500 | The tale's flourishes only: a recap's first letter, a chapter's title, an award's line and quote mark |
+
+The serif quoted answers used (Iowan Old Style, Palatino) was hard to read and is gone. A new place for text takes one of these by its use, never a font of its own; tests/test_design_system.py fails on any other font in app.css, a page or app.js, and on a Google Fonts link that loads anything else. Mockups use the same three. An email names Inter with the system's fonts after it, since it can't load web fonts.
 
 **Space:** a 4px scale, `--sp-1` 4 · `--sp-2` 8 · `--sp-3` 12 · `--sp-4` 16 · `--sp-5` 24 · `--sp-6` 32. Prefer `gap` on flex and grid over margins between siblings. **Battle's blocks** (numbers, Wild Shape, the Status row, the spell bar, the columns) stack in `#battle-body` with one `--sp-4` gap and no margins of their own (Brett, 2026-10-29: the Status row sat closer to the spell bar than to Wild Shape). Where a block's parent has no gap, a **spacing helper** on the same scale, never an inline style (2026-10-27; `tests/test_design_system.py` checks every page): `.mt-1`…`.mt-5` space above, `.mb-1`…`.mb-3` below, `.m-0` none, `.byline` a note tucked under what it's about (who added it and when), `.push` a button at the far end of its row, `.grow` the part of a row that takes the room left, `.row.tight` small controls that belong together. Small component rules took the rest: `.btn.block` (a card's one action), `label.field.short`, `.callout.ready`, `.title-action`.
 
