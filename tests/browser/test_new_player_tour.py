@@ -4,6 +4,8 @@ stop's target fails here, so the tour can't quietly break."""
 
 import pytest
 
+from tests.browser.pages import click_item
+
 
 # Is the top of what a stop lights covered by something stuck across the page (the menu bar, Sheet's tabs)? Looks
 # at what's drawn just inside its top edge, left of the card: the name of the cover, or "" when the target shows.
@@ -39,8 +41,7 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
     page = player.open("/c/main/")
     stops = page.evaluate("fetch('/tour').then(r => r.json()).then(d => d.stops)")
     assert len(stops) > 10 and {"spellbook", "wildshape"} <= {s["group"] for s in stops}  # Cole casts and shifts
-    page.click("[data-tour=help] .help-btn")
-    page.click("#help-menu [data-tour-start]")
+    click_item(page, "tour")  # (wherever Take the tour lives in the menus)
     for i, stop in enumerate(stops):
         page.wait_for_function("t => document.querySelector('.tour-card h3')?.textContent === t", arg=stop["title"], timeout=10000)
         if stop["url"]:
