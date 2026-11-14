@@ -1,0 +1,17 @@
+{# + New campaign on Manage › Campaigns (The Three Menus, part 5; app/campaigns_admin.py): a small window. A D&D Beyond
+   campaign askdnd has seen on a sheet but no askdnd campaign follows is offered first. #}
+<div class="peek-head">
+  <div><div class="note">Campaigns</div><h2 id="peek-title">New campaign</h2></div>
+  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
+</div>
+<div class="peek-body">
+  <form method="post" action="/manage/campaigns" class="stack" data-new-campaign>
+    <label class="field">Name<input type="text" name="name" maxlength="200" required {% if unmatched %}value="{{ unmatched[0][1] }}"{% endif %}></label>
+    <label class="field">DM's name (optional)<input type="text" name="dm_name" maxlength="200"></label>
+    {% if unmatched %}<label class="field">Its D&amp;D Beyond campaign
+      <select name="ddb_campaign_id">{% for i, n in unmatched %}<option value="{{ i }}">{{ n or i }}</option>{% endfor %}<option value="">None</option></select></label>{% endif %}
+    <label class="check"><input type="checkbox" name="is_test" value="1"> A test campaign (it holds test data)</label>
+    <div class="row"><button class="btn primary" type="submit">Start it</button><button class="btn peek-close" type="button">Cancel</button></div>
+    <p class="note">Then add its people and characters on its Table.</p>
+  </form>
+</div>

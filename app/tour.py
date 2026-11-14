@@ -1,4 +1,4 @@
-"""The new-player tour (? › Take the tour) and Help › What askdnd adds, from one list (Brett, 2026-10-24 and
+"""The new-player tour (your picture › Take the tour) and Help › What askdnd adds, from one list (Brett, 2026-10-24 and
 2026-10-26; docs/plans/2026-10-26-tour.md, mockup docs/mockups/tour.html).
 
 A stop is a page, the thing to light up on it (`at`, a CSS selector; `open` is a tab to click first), and what it is
@@ -26,7 +26,7 @@ SECTIONS = [
         ("rolling", "Rolling and Table rolls", ("Click any number to roll it, or find it with Search (⌘F). Rolls go to Table rolls for "
                                                "everyone; DM only and Only me keep a roll private. Apply to on the DM's damage changes "
                                                "your Hit Points.")),
-        ("dice", "Your dice", "Thrown 3D dice in the set you choose (account menu › Your dice); the table sees your rolls in them."),
+        ("dice", "Your dice", "Thrown 3D dice in the set you choose (Table rolls › Roll › Your dice); the table sees your rolls in them."),
         ("conditions", "Conditions and effects", ("Invisible, Poisoned, Bless and the rest: what each does to your rolls, offered in "
                                                  "the roll card with its reason, and a reminder when one is due to end. The DM rules.")),
     ]),
@@ -119,9 +119,9 @@ STOPS = [
              "from any page, as you type.",
      "why": "<b>Enter</b> does it: rolls a check or an attack, opens Cast for a spell, shows a rule's words. "
             "<b>⌘F</b> again gives you the browser's own find."},
-    {"group": "dice", "page": None, "at": ".avatar",
-     "what": "<b>Your dice</b>, in your account menu here (and a tab in Table rolls' Roll), picks the set your rolls are thrown "
-             "in, and how others' rolls show for you.",
+    {"group": "dice", "page": None, "at": ".rs-head .rs-roll",
+     "what": "<b>Your dice</b>, a tab in Table rolls' <b>Roll</b> here, picks the set your rolls are thrown in, and how "
+             "others' rolls show for you.",
      "why": "The table sees your rolls in your dice."},
     {"group": "conditions", "page": "battle", "needs": "character", "at": "#battle-body .cond-add",
      "what": "<b>+ Condition</b> starts one, with how long it lasts. Each shows as a badge after your name, and the roll "
@@ -232,9 +232,9 @@ STOPS = [
              "they do and who has them; <b>Trophies</b> keeps everyone's awards and dice across the campaign.",
      "why": "See who carries which potions and scrolls, and what the party covers between you (healing, control…)."},
     {"group": "help", "page": None, "at": '[data-tour="help"]',
-     "what": "<b>What askdnd adds</b> is this tour as a page to read, the <b>FAQ</b> explains each feature, and "
-             "<b>About</b> says what askdnd keeps and who can see it.",
-     "why": "Take the tour again from this menu whenever you like."},
+     "what": "Your picture's menu has <b>Help and FAQ</b>: <b>What askdnd adds</b> (this tour as a page to read), the "
+             "<b>FAQ</b> on each feature, and <b>About</b>, what askdnd keeps and who can see it.",
+     "why": "Take the tour again from the same menu whenever you like."},
 ]
 
 

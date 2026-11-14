@@ -67,6 +67,15 @@ def page(request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "manage_campaigns.html", {**overview(db), "toast": request.session.pop("toast", None)})
 
 
+@router.get(BACK + "/new")
+def new_window(request: Request, db: Session = Depends(get_db)):
+    """+ New campaign's small window (The Three Menus, part 5): a name, the DM's, its D&D Beyond campaign, test or not."""
+    user, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    return templates.TemplateResponse(request, "_new_campaign.html", {"unmatched": overview(db)["unmatched"]})
+
+
 @router.post(BACK)
 def create(request: Request, name: str = Form(""), dm_name: str = Form(""), ddb_campaign_id: str = Form(""),
            is_test: str = Form(""), db: Session = Depends(get_db)):
