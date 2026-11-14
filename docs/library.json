@@ -1161,6 +1161,15 @@
   "link": "https://claude.ai/artifact/KNJZvV2qX66j1AxucK9ewx"
  },
  {
+  "title": "Healing and Costs",
+  "kind": "design",
+  "status": "Chose A and the pill",
+  "date": "Nov 14",
+  "what": "Brett's notes on the Use window's first slice: how healing given to another player's character reaches them (a card that stays, or applied at once, with its downsides), and the cost as a pill beside a plain Use button.",
+  "source": "docs/mockups/healing-and-costs/index.html",
+  "link": "https://claude.ai/artifact/3TCk2iNDVPYLG5gV4JgCAw"
+ },
+ {
   "title": "askdnd Test Steps",
   "kind": "guide",
   "status": "Current",

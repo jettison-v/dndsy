@@ -213,7 +213,9 @@ def roll_context(sheet: dict | None) -> dict:
             "halfling": "halfling" in (s.get("species") or "").lower(), "spell_mod": spell_mod, "con": con, "hit_dice": dice,
             "level": s.get("level") or 1, "slots": have,
             # (the roll card's pills on a check or a save: this character's own modifiers, app/roll_plan.py)
-            "mods": {k: _modifiers(s, k) for k in ("check", "save")}}
+            # (Initiative is a Dexterity check: a check's modifiers, and what adds to Initiative alone, Tandem Footwork)
+            "mods": (m := {k: _modifiers(s, k) for k in ("check", "save")}) | {"initiative": m["check"] + [
+                x for x in _modifiers(s, "initiative") if x["name"] not in {y["name"] for y in m["check"]}]}}  # (once each)
 
 
 def _modifiers(sheet: dict, kind: str) -> list[dict]:
@@ -524,13 +526,14 @@ def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool,
     return JSONResponse(reply_body(request, db, root, me_id, dm, new, death))
 
 
-def add_roll(db: Session, ch: Character, me_id: int, label: str, dice: str) -> TableRoll | None:
-    """A healing roll the whole table sees, made for another route (a potion: app/item_use.py). None: not dice."""
+def add_roll(db: Session, ch: Character, me_id: int, label: str, dice: str, for_id: int | None = None) -> TableRoll | None:
+    """A healing roll the whole table sees, made for another route (a potion: app/item_use.py). None: not dice.
+    `for_id`: the character it was given to, whose player is asked to apply it (app/heals.py)."""
     result = roll_formula(dice, floor=True)
     if result is None:
         return None
     row = TableRoll(campaign_id=ch.campaign_id, character_id=ch.id, user_id=me_id, label=label[:120], kind="heal", mode="normal",
-                    visibility="table", damage="", spec=None, extras=[], who="", **result)
+                    visibility="table", damage="", spec={"for": for_id} if for_id else None, extras=[], who="", **result)
     db.add(row)
     db.flush()
     realtime.announce(db, ch.campaign_id, "rolls", **_live(db, row))
