@@ -9,7 +9,7 @@
 {% if form_no %}<p class="use-cost shift-warn">{{ form_no }}</p>{% endif %}
 {# Its Material component (Brett chose B, Nov 13): said plainly, never stopping the cast; the DM rules #}
 {% set need = e.need %}{% if need and need.kind in ("missing", "unsure") %}<p class="use-what comp-says" data-comp="{{ need.kind }}">{{ "You don't carry its component:" if need.kind == "missing" else "Check its component:" }} {{ need.says }}. The DM rules: cast anyway, or not.</p>
-{% elif need %}<p class="use-what comp-says" data-comp="{{ need.kind }}">This cast {{ need.says }}.</p>{% endif %}
+{% elif need %}<p class="use-what comp-says" data-comp="{{ need.kind }}">This cast {{ need.says }}{% if use_up %}: {{ "askdnd takes it off D&D Beyond" if reachable else "take it off D&D Beyond" }}{% endif %}.</p>{% endif %}
 {% if ends %}<p class="use-what">Ends Concentration on {{ ends.spell }}.</p>{% endif %}
 {% set can_cast = reachable or offline %}
 {% if ways and can_cast %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for g, ws in way_groups %}{% if g %}<optgroup label="{{ g }}">{% endif %}{% for w in ws %}<option value="{{ w.way }}" data-level="{{ w.level }}">{{ w.label | replace(" · Wild Companion", "") if g else w.label }}</option>{% endfor %}{% if g %}</optgroup>{% endif %}{% endfor %}</select></div>{% endif %}

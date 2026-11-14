@@ -9,7 +9,8 @@ the character carries is matched by name (a significant word of the component, "
 "costly only" never marks a component without a cost, pouch or not.
 
 `need(spell, sheet, rules)` answers one spell: None (nothing to say), or {"kind": "missing" | "unsure" | "consumes",
-"says": words, "item": the item's key when one is carried}. Players' and the DM's pages show it alike, as everything
+"says": words, "item": the item's key when one is carried}; one the spell consumes also gives the item's "name" and how
+many it takes ("n"), which a cast takes off D&D Beyond when the table plays it so (C, `use_up`, app/casting.py). Players' and the DM's pages show it alike, as everything
 else about a spell.
 """
 
@@ -72,8 +73,12 @@ def need(spell: dict, sheet: dict, rules: dict | None = None) -> dict | None:
     worth = sum((i.get("cost") or 0) * (i.get("count") or i.get("quantity") or 1) for i in have)
     needs = f"{m['text'].split(',')[0]}" if m["text"] else "its Material component"
     if have and worth >= m["cost"]:
-        if m["consumed"]:
-            return {"kind": "consumes", "says": f"uses {have[0]['name']} (consumed)", "item": have[0].get("key")}
+        if m["consumed"]:  # (how many it takes: Diamond Dust worth 50 GP each, for 100 GP, is two)
+            first = have[0]
+            each, count = first.get("cost") or 0, first.get("count") or first.get("quantity") or 1
+            n = max(1, min(count, -(-m["cost"] // each))) if each else 1
+            return {"kind": "consumes", "says": f"uses {f'{n:g} ' if n > 1 else ''}{first['name']} (consumed)", "item": first.get("key"),
+                    "name": first["name"], "n": int(n)}
         return None
     if have and not worth:
         return {"kind": "unsure", "says": f"needs {needs}; you carry {have[0]['name']}, its worth isn't on D&D Beyond",
