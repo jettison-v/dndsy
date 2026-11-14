@@ -94,3 +94,16 @@ def test_numbers_alone_add_up_and_a_dies_own_bonus_is_left():
     assert rules_book.fill("5+{mod:con}", s) == "7"
     assert rules_book.fill("{hp_half}", s) == "25"
     assert rules_book.fill("1d4-2+3", s) == "1d4-2+3" and rules_book.fill("1d8+3", s) == "1d8+3"
+
+
+def test_a_healing_spell_in_the_spell_book_carries_what_adds_to_its_healing():
+    """Found on a real Life Cleric's sheet (Nov 14): the Spell Book built a spell's roll plan only when it had an attack
+    or a save, so Cure Wounds' card never had Disciple of Life, Blessed Healer or Supreme Healing on it."""
+    from app import spellbook
+
+    s = made_up(("Cleric", 17, "Life Domain"), features=[("Disciple of Life", "Life Domain"), ("Blessed Healer", "Life Domain"),
+                                                         ("Supreme Healing", "Life Domain")])
+    s |= {"level": 17, "spells": [{"key": "spell:Cure Wounds", "name": "Cure Wounds", "level": 1, "casting_time": "1 Action",
+                                   "text": "", "summary": ""}], "spell_slots": {"slots": [{"level": 1, "max": 4, "used": 0}]}}
+    e = next(e for e in spellbook.entries(s) if e["name"] == "Cure Wounds")
+    assert {m["name"] for m in e["plan"]["modifiers"]} >= {"Disciple of Life", "Blessed Healer", "Supreme Healing"}
