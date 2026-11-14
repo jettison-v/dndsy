@@ -100,6 +100,9 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
       cardH: document.querySelector('{WINDOW}').offsetHeight, scroll: scrollY,
       bar: document.querySelector('.topbar').offsetHeight, band: document.querySelector('.conn-band')?.offsetHeight,
       button: [...document.querySelectorAll('[data-roll=save][data-label="Dex save"]')].find(b => b.checkVisibility())?.getBoundingClientRect().top }})"""
+    # (once it has settled: the card slides up 8px as it opens, roll-pop; measured mid-slide on GitHub's slower machines,
+    # it seemed to move 3.75px when it only finished arriving, Nov 13)
+    page.wait_for_function(f"document.querySelector('{WINDOW}').getAnimations().every(a => a.playState !== 'running')")
     before = page.evaluate(where)
     was = beside()
     page.evaluate("until => { Object.assign(document.getElementById('live-pill').dataset, { log: 'on', logUntil: until }); document.dispatchEvent(new Event('askdnd:pill')); }", str(time.time() + 60))
