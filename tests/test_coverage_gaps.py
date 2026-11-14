@@ -18,8 +18,7 @@ from app import character_views as views
 from app import roll_plan, rules_book
 from app import roll_recipes as rr
 from app import table_rolls as tr
-from tests.table_setup import plain_id
-from tests.test_class_rules import made_up
+from tests.table_setup import made_up, plain_id
 
 ROWS = [  # (class, level, subclass, feats, the row's name, its column, each effect's parts)
     ("Bard", 5, "College of Glamour", [], "Mantle of Inspiration", "Bonus action", [["2x1d8"]]),
