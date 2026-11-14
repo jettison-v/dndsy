@@ -2,7 +2,7 @@
 
 _Rewritten 2026-11-02 as today's map (it was the 2026-10-14 draft of the first three weeks; that plan is in git and
 the roadmap's Done list). Pairs with [BRIEF.md](BRIEF.md). The picture of the services and who changes each is
-[stack.html](stack.html); where every page and module is, CLAUDE.md › Where things are; what's next,
+[stack.html](stack.html); where every page and module is, docs/MAP.md; what's next,
 [roadmap.html](roadmap.html) and [plans/2026-11-02-vtt-build-plan.md](plans/2026-11-02-vtt-build-plan.md)._
 
 ## The shape in one paragraph
