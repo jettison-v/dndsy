@@ -7,6 +7,9 @@
 <div class="rw-title">{{ e.name }}</div>
 <p class="use-cost">{{ e.time }}{% if e.range %} · {{ e.range }}{% endif %}{% if e.duration %} · {{ e.duration }}{% endif %}</p>
 {% if form_no %}<p class="use-cost shift-warn">{{ form_no }}</p>{% endif %}
+{# Its Material component (Brett chose B, Nov 13): said plainly, never stopping the cast; the DM rules #}
+{% set need = e.need %}{% if need and need.kind in ("missing", "unsure") %}<p class="use-what comp-says" data-comp="{{ need.kind }}">{{ "You don't carry its component:" if need.kind == "missing" else "Check its component:" }} {{ need.says }}. The DM rules: cast anyway, or not.</p>
+{% elif need %}<p class="use-what comp-says" data-comp="{{ need.kind }}">This cast {{ need.says }}.</p>{% endif %}
 {% if ends %}<p class="use-what">Ends Concentration on {{ ends.spell }}.</p>{% endif %}
 {% set can_cast = reachable or offline %}
 {% if ways and can_cast %}<div class="rw-row"><span class="rw-label">Cast at</span><select class="rw-slot" name="way" aria-label="How to cast {{ e.name }}">{% for g, ws in way_groups %}{% if g %}<optgroup label="{{ g }}">{% endif %}{% for w in ws %}<option value="{{ w.way }}" data-level="{{ w.level }}">{{ w.label | replace(" · Wild Companion", "") if g else w.label }}</option>{% endfor %}{% if g %}</optgroup>{% endif %}{% endfor %}</select></div>{% endif %}
@@ -34,7 +37,7 @@
 {% endif %}
 {% if offline %}<p class="use-what">{{ c.name }}'s D&amp;D Beyond sheet can't be reached, so only as a Ritual or without a slot. One coming back after 0 Hit Points: give it its Hit Points on D&amp;D Beyond.</p>{% endif %}
 {% if can_cast %}
-<div class="rw-row use-foot" data-character="{{ c.id }}">{% if rolls %}<button type="button" class="btn primary small" data-use-go data-then-roll>Cast and roll</button><span hidden>{{ spell_roll(c, e, "Roll", "cast-roll", 0) }}</span>{% else %}<button type="button" class="btn primary small" data-use-go>Cast</button>{% endif %}<button type="button" class="btn link small" data-use-close>Cancel</button></div>
+<div class="rw-row use-foot" data-character="{{ c.id }}">{% if rolls %}<button type="button" class="btn primary small" data-use-go data-then-roll>{{ "Cast anyway and roll" if need and need.kind == "missing" else "Cast and roll" }}</button><span hidden>{{ spell_roll(c, e, "Roll", "cast-roll", 0) }}</span>{% else %}<button type="button" class="btn primary small" data-use-go>{{ "Cast anyway" if need and need.kind == "missing" else "Cast" }}</button>{% endif %}<button type="button" class="btn link small" data-use-close>Cancel</button></div>
 <p class="use-said" role="alert" hidden></p>
 {% else %}
 <p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to cast here, or spend the slot on D&amp;D Beyond (askdnd shows it within seconds).</p>

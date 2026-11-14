@@ -3994,6 +3994,13 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .ws-tile .row { margin-top: var(--sp-2); }
 .ws-count { color: var(--muted); font-weight: 600; margin-left: var(--sp-1); }
 
+/* A spell's Material component (app/components.py; Brett chose A and B, Nov 13): lacking (amber), unsure (muted), used
+   up when cast (green); in a spell's row and said in the Cast window */
+.comp-mark { font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 22em; display: inline-block; vertical-align: bottom; }
+.comp-mark[data-comp="missing"], .comp-says[data-comp="missing"] { color: var(--amber); }
+.comp-mark[data-comp="unsure"], .comp-says[data-comp="unsure"] { color: var(--muted); }
+.comp-mark[data-comp="consumes"], .comp-says[data-comp="consumes"] { color: var(--green); }
+
 /* Healing given to someone, waiting for them (app/heals.py): Table rolls' mark, and the card that stays */
 .roll-waiting { display: inline-block; font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); border-radius: var(--r-pill); padding: 4px 8px; }
 .card.k-heal { border-color: var(--green); }

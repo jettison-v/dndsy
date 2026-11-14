@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import character_views as views
-from app import house_rules, web
+from app import components, house_rules, web
 from app import roll_recipes as rr
 from app.auth import can_set_house_rules
 from app.db import get_db
@@ -18,8 +18,8 @@ DENIED = "House rules are for the DM and admins."
 
 
 def _rows(db: Session, campaign_id: int) -> list[dict]:
-    rows = db.scalars(select(HouseRule).where(HouseRule.campaign_id == campaign_id)
-                      .order_by(HouseRule.target_key, HouseRule.field))
+    rows = db.scalars(select(HouseRule).where(HouseRule.campaign_id == campaign_id, HouseRule.target_kind != "table")
+                      .order_by(HouseRule.target_key, HouseRule.field))  # (the table-wide switches have their own section)
     return [{"r": r, "name": r.target_key.split(":", 1)[-1] if r.target_kind == "sheet" else r.target_key,
              "text": _sheet_text(r) if r.target_kind == "sheet" else house_rules.describe(r.field, r.value, rr.spell(r.target_key))} for r in rows]
 
@@ -43,6 +43,7 @@ def page(request: Request, db: Session = Depends(get_db)):
     spells = sorted((rr.recipes().get("spells") or {}).items())
     return templates.TemplateResponse(request, "house_rules.html", {
         "campaign": campaign, "rules": _rows(db, campaign.id) if campaign else [],
+        "comp": components.rules_for(campaign.id) if campaign else {},
         "spells": [name for name, _ in spells], "once_spells": [name for name, r in spells if house_rules.can_roll_once(r)],
         "toast": request.session.pop("toast", None)})
 
@@ -72,6 +73,28 @@ def add(request: Request, spell: str = Form(""), field: str = Form(""), value: s
         db.commit()
         house_rules.invalidate()
         request.session["toast"] = f"House rule saved for {key}"
+    return RedirectResponse(f"{web.base()}/manage/house-rules", status_code=303)
+
+
+@router.post("/components/{field}")
+def components_rule(request: Request, field: str, on: str = Form(""), db: Session = Depends(get_db)):
+    """Spells › the table's own way with components (Brett chose D, Nov 13; app/components.py): one switch each."""
+    user, denied = web.require(request, can_set_house_rules, DENIED)
+    if denied:
+        return denied
+    campaign = web.campaign(db)
+    if not campaign or field not in (components.COSTLY_ONLY, components.USE_UP):
+        return RedirectResponse(f"{web.base()}/manage/house-rules", status_code=303)
+    kind, key = components.RULES
+    row = db.scalar(select(HouseRule).where(HouseRule.campaign_id == campaign.id, HouseRule.target_kind == kind,
+                                            HouseRule.target_key == key, HouseRule.field == field))
+    if on and row is None:
+        db.add(HouseRule(campaign_id=campaign.id, target_kind=kind, target_key=key, field=field, value="1",
+                         set_by=web.person_name(user)))
+    elif not on and row is not None:
+        db.delete(row)
+    db.commit()
+    house_rules.invalidate()
     return RedirectResponse(f"{web.base()}/manage/house-rules", status_code=303)
 
 

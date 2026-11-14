@@ -1,7 +1,7 @@
 {# The spell list on the shared list pattern (_lists.html): Sheet › Spells (every spell, with Prepared · Shortlist
    · All views) and Plan › Spells (the Shortlist only, no views). `spells` from spellbook.sheet_entries. #}
 {% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
-{% from "_char.html" import pick_btn %}
+{% from "_char.html" import pick_btn, comp_mark %}
 {% macro spell_list(c, s, spells, groups, picks, can_pick, show_picks, key="sheet-spells", views=()) -%}
   {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
   <div class="sheet-spells" data-list="{{ key }}" data-noun="spell">
@@ -33,7 +33,7 @@
             <span class="sh-status {{ st[0] }}{{ ' wanted' if wanted }}" title="{{ st[1] }}{{ '; on your Shortlist' if wanted }}" role="img" aria-label="{{ st[1] }}">{{ "✓" if st[0] == "on" else "○" }}</span>
             <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if e.state in ("always", "granted") %} <span class="tag sh-always" title="{{ st[1] }}">Always</span>{% endif %}
               {%- if e.from %} <span class="tag">{{ e.from }}</span>{% endif %}
-              {%- if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}
+              {%- if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}{{ comp_mark(e.need) }}
               {%- if e.core == false %} <span class="tag faint">Not core: {{ e.book }}</span>{% endif %}</span>
               {% if e.summary %}<span class="ls-what">{{ e.summary }}</span>{% endif %}
               {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>

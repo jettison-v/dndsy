@@ -59,6 +59,11 @@
 {%- endmacro %}
 
 {# What an option uses up (a Focus Point, a 1st-level slot…), with how many are left. #}
+{# A spell's Material component (app/components.py, Brett chose A, Nov 13): amber when you lack it, a question when you
+   carry something like it with no worth on D&D Beyond, green when the spell uses it up. Never stops a cast. #}
+{% macro comp_mark(need) -%}
+{%- if need %} <span class="comp-mark" data-comp="{{ need.kind }}" title="{{ need.says }}">{{ need.says }}</span>{% endif -%}
+{%- endmacro %}
 {% macro spends(list) -%}
 {%- for x in list %} <span class="spend{{ ' none' if not x.uses.left }}" title="Uses {{ 'a ' if x.of in ('Spell slots', 'Pact Magic') }}{{ x.label | replace('or ', '') }}{{ ' slot' if x.of in ('Spell slots', 'Pact Magic') }}: {{ x.uses.left }} of {{ x.uses.max }} left">{{ x.label }} {{ pips(x.uses) }}</span>{% endfor -%}
 {%- endmacro %}

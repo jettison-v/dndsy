@@ -1014,6 +1014,7 @@ class _Sheet:
                 "equipped": bool(i.get("equipped")),
                 "magic": bool(df.get("magic")),
                 "rarity": df.get("rarity") or "",
+                "cost": df.get("cost"),  # (in GP: a spell component's worth, app/components.py)
                 "attunement": "attuned" if i.get("isAttuned") else ("required" if df.get("canAttune") else ""),
                 "attunement_note": df.get("attunementDescription") or "",
                 "charges": charges,
