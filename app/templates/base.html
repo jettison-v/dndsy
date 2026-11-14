@@ -35,7 +35,7 @@
    whose it is, then groups with a small heading when there's more than one, then anything final on its own), one line
    per item with its name only, fixed groups that pages join (a group's most used as rows, the rest on its line of
    small links), and the menu is the page list (app/manage.py PAGES, the same for the lists down the left). #}
-{% macro menu_groups(pages) %}{% set listed = pages | selectattr("listed") | list %}{% set sections = listed | map(attribute="section") | unique | list %}
+{% macro menu_groups(pages) %}{% set listed = pages | selectattr("listed") | rejectattr("planned") | list %}{% set sections = listed | map(attribute="section") | unique | list %}
   {% for sec in sections %}{% set mine = listed | selectattr("section", "equalto", sec) | list %}
   {% if sec and sections | length > 1 %}<div class="menu-group">{{ sec }}</div>{% endif %}
   {% for p in mine if p.menu %}<a href="{{ p.href }}" data-item="{{ p.key }}" class="menu-count{{ ' active' if p.here }}" title="{{ p.about }}">{{ p.label }}{% if p.counted %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endfor %}

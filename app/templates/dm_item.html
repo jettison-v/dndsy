@@ -3,13 +3,8 @@
    what it does in play, from what askdnd already plays: a roll, a bonus to another roll, charges. #}
 {% block title %}{{ item.name or "New item" }} · DM Tools · askdnd{% endblock %}
 {% block content %}
-<main class="page dm-tools dm-item">
-  <nav class="dm-side" aria-label="DM Tools">
-    <span class="manage-sec">The campaign's own</span>
-    <a href="{{ cbase }}/dm" class="on" aria-current="page">Items</a>
-    <span class="manage-sec">Rules</span>
-    <a href="{{ cbase }}/manage/house-rules">House rules</a>
-  </nav>
+<main class="page manage-page dm-tools dm-item">
+  {% include "_manage_head.html" %}
   <div class="dm-main">
     <p class="note"><a href="{{ cbase }}/dm">← DM Tools</a></p>
     <div class="title-row"><h1>{{ item.name or "New item" }}</h1></div>
