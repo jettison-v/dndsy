@@ -93,11 +93,22 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
     expect(note).to_have_class(re.compile("rw-log-warn"))  # said loudly, with the way to fix it (connection-drops, Nov 13)
     expect(note.locator("a")).to_have_attribute("href", "https://www.dndbeyond.com/characters/75423618")
     # The sheet connects while the card is open: its line follows at once (Brett, Nov 13), the card stays where it is
-    top = page.locator(WINDOW).bounding_box()["y"]
+    # (where it is beside its button: a card follows its button when the page moves under it, by design; on GitHub's
+    # machines the page shifted a few pixels as the connection changed, Nov 13, and the card rightly went with it)
+    beside = lambda: page.locator(WINDOW).bounding_box()["y"] - page.locator(save("Dex")).bounding_box()["y"]
+    where = f"""() => ({{ card: document.querySelector('{WINDOW}').getBoundingClientRect().top,
+      cardH: document.querySelector('{WINDOW}').offsetHeight, scroll: scrollY,
+      bar: document.querySelector('.topbar').offsetHeight, band: document.querySelector('.conn-band')?.offsetHeight,
+      button: [...document.querySelectorAll('[data-roll=save][data-label="Dex save"]')].find(b => b.checkVisibility())?.getBoundingClientRect().top }})"""
+    # (once it has settled: the card slides up 8px as it opens, roll-pop; measured mid-slide on GitHub's slower machines,
+    # it seemed to move 3.75px when it only finished arriving, Nov 13)
+    page.wait_for_function(f"document.querySelector('{WINDOW}').getAnimations().every(a => a.playState !== 'running')")
+    before = page.evaluate(where)
+    was = beside()
     page.evaluate("until => { Object.assign(document.getElementById('live-pill').dataset, { log: 'on', logUntil: until }); document.dispatchEvent(new Event('askdnd:pill')); }", str(time.time() + 60))
     expect(note).to_contain_text("Also goes to D&D Beyond's Game Log")
     expect(note).not_to_have_class(re.compile("rw-log-warn"))
-    assert abs(page.locator(WINDOW).bounding_box()["y"] - top) < 2  # (less than a pixel or two of rounding)
+    assert abs(beside() - was) < 2, f"before {before}, after {page.evaluate(where)}"  # (less than a pixel or two of rounding)
     to(page, "self")
     expect(note).to_be_hidden()  # it isn't going anywhere
     to(page, "table")

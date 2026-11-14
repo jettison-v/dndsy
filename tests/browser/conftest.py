@@ -291,3 +291,13 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if Path(str(item.fspath)).is_relative_to(here):
             item.add_marker(pytest.mark.flaky(reruns=1, reruns_delay=2))
+
+
+def pytest_runtest_logreport(report):
+    """A test that failed and is being tried again says why first (Nov 13: a retry that passed hid the first failure's
+    words, so a flaky test couldn't be fixed at its cause): its failure, as it would have printed, in the run's output."""
+    if report.outcome == "rerun" and report.longreprtext:
+        import sys
+
+        sys.__stdout__.write(f"\n=== {report.nodeid} failed on its first try:\n{report.longreprtext[-3000:]}\n=== (trying it again)\n")
+        sys.__stdout__.flush()

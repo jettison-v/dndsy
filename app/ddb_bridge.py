@@ -73,6 +73,7 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import event, inspect, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
@@ -157,15 +158,26 @@ def _log(db: Session, character_id: int, text: str, state: str) -> None:
 
 
 def _wake_row(db: Session) -> tuple[ToolSetting, dict]:
+    """The awake row (None until it's first marked) and what it holds. Only read: reading never adds it, as two
+    requests on a fresh database each adding it made the second fail (Nov 13); `_mark_row` makes it."""
     row = db.get(ToolSetting, AWAKE_KEY)
-    if not row:
-        row = ToolSetting(key=AWAKE_KEY, value="{}")
-        db.add(row)
     try:
-        value = json.loads(row.value or "{}")
+        value = json.loads(row.value or "{}") if row else {}
     except ValueError:
         value = {}
     return row, value
+
+
+def _mark_row(db: Session) -> None:
+    """The awake row made if it isn't there yet, in a way two requests can't both make (Postgres keeps one and lets the
+    other's do nothing; SQLite, in a script, as before)."""
+    if db.get(ToolSetting, AWAKE_KEY) is not None:
+        return
+    if db.get_bind().dialect.name == "postgresql":
+        db.execute(pg_insert(ToolSetting).values(key=AWAKE_KEY, value="{}").on_conflict_do_nothing(index_elements=["key"]))
+    else:
+        db.add(ToolSetting(key=AWAKE_KEY, value="{}"))
+        db.flush()
 
 
 def timers(db: Session) -> dict:
@@ -303,12 +315,11 @@ def active(db: Session) -> None:
     15 seconds isn't marked again (the timers run in minutes)."""
     if time.time() - _wake_row(db)[1].get("last", 0) < 15:
         return
+    _mark_row(db)
     row = db.scalars(select(ToolSetting).where(ToolSetting.key == AWAKE_KEY)
                      .with_for_update(skip_locked=True).execution_options(populate_existing=True)).first()
     if row is None:
-        if db.get(ToolSetting, AWAKE_KEY) is not None:
-            return  # (being marked by another request now)
-        row = _wake_row(db)[0]
+        return  # (being marked by another request now)
     w = _wake_row(db)[1]
     w["last"] = time.time()
     row.value = json.dumps(w)

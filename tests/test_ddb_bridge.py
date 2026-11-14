@@ -1349,3 +1349,44 @@ def test_a_sheet_sent_gzipped_is_kept_as_one_sent_plain(player, db, sheet):
     assert bad.status_code == 200
     db.refresh(cole.snapshot)
     assert coin_left(cole) == 3  # (no body it could read: a public read, which never replaces the sheet's own for a while)
+
+
+def test_two_requests_on_a_fresh_database_both_mark_it_awake(db_engine):
+    """Nov 13 (a 500 on /bridge/active in the browser tests): on a database without the awake row yet, two pages
+    opening together each found it missing and both added it, and the second failed. Now one makes it, the other's
+    does nothing, and neither fails."""
+    import threading
+
+    from sqlalchemy import delete
+    from sqlalchemy.orm import Session as DbSession
+
+    from app.models import ToolSetting
+
+    def clear():
+        with DbSession(db_engine) as s:
+            s.execute(delete(ToolSetting).where(ToolSetting.key == ddb_bridge.AWAKE_KEY))
+            s.commit()
+
+    clear()
+    together, failed = threading.Barrier(2), []
+
+    def page_opens():
+        with DbSession(db_engine) as s:
+            try:
+                together.wait()
+                ddb_bridge.active(s)
+                s.commit()
+            except Exception as e:  # (what a request would answer with a 500)
+                failed.append(repr(e))
+
+    try:
+        for _ in range(5):  # (a race: a few tries make it all but certain to meet)
+            clear()
+            runs = [threading.Thread(target=page_opens) for _ in range(2)]
+            [t.start() for t in runs]
+            [t.join(30) for t in runs]
+        assert failed == []
+        with DbSession(db_engine) as s:
+            assert s.get(ToolSetting, ddb_bridge.AWAKE_KEY) is not None
+    finally:
+        clear()
