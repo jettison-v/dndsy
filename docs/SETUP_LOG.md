@@ -1103,3 +1103,8 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **What:** a script that draws every main page twice, once from main and once from the branch being changed, with the same made-up data, the same window sizes and a frozen clock, then compares them pixel by pixel and writes a local report of only the pages that changed (before, after, and the change in red).
 **Why:** tests check what they were written to check; a picture catches what nobody thought to check, like today's band pushing Table rolls down. Run against itself it found no differences, so any it reports are real.
 **Reuse:** "visual regression testing". Freeze everything that changes by itself (the clock, animations, times like "3 min ago") or the report fills with noise; keep the pictures off public places when they show real data.
+
+## Mutation testing, and what it found about the tests (Nov 13)
+**What:** a tool (mutmut) that plants small bugs in a file, one at a time (a > made >=, a True made False), and runs the tests that reach it. A planted bug the tests don't notice is a test that's missing. It runs by hand on one file at a time (`uv run python scripts/mutation.py access`), not on every push: it's slow.
+**Why:** passing tests only prove the code does what the tests check. Its first run on the file that decides who can see what found four things no test checked. And because it runs tests in a different order, it found tests that only passed thanks to an earlier test or to D&D Beyond's live servers answering in time.
+**Reuse:** make tests independent from day one: reset shared state before each test, and block the internet in tests so a test can't quietly depend on another site.
