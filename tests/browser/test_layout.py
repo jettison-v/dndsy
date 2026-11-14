@@ -295,7 +295,8 @@ def test_the_table_page_holds_together(people, server, browser_db, long_names):
 
 
 def test_table_rolls_is_a_full_height_panel_beside_the_bar_and_the_band(people, server):
-    """Brett chose it, Nov 13: on a laptop Table rolls runs from the window's top, its title row level with the menu bar,
+    """Brett chose it, Nov 13: on a laptop Table rolls runs from the window's top as its own column (its title row level
+    with the menu bar, a thin line under it, the red line the bar's alone: option A of docs/mockups/table-rolls-top/),
     and the menu bar and the connection band sit over the page beside it (#328 had the bar span the window with an empty
     stretch over Table rolls, and the band, inside the bar, lost its colour there and pushed Table rolls down)."""
     player = people("player")
@@ -311,6 +312,9 @@ def test_table_rolls_is_a_full_height_panel_beside_the_bar_and_the_band(people, 
         top = box(".topbar")
         assert side["y"] == 0, "Table rolls starts at the window's top"
         assert abs(head["bottom"] - (top["y"] + 62)) <= 1, "its title row ends level with the menu bar"
+        line = page.evaluate("getComputedStyle(document.querySelector('.rs-head')).borderBottomColor")
+        red = page.evaluate("getComputedStyle(document.querySelector('.topbar')).borderBottomColor")
+        assert line != red, "its own column: a thin line under its title, the red line is the bar's alone (Brett chose A)"
         assert abs(top["x"] - side["right"]) <= 1 and bar["x"] >= side["right"], "the menu bar sits beside it, not over it"
         if band:
             b = box(".conn-band")
