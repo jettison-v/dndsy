@@ -292,3 +292,33 @@ def test_the_table_page_holds_together(people, server, browser_db, long_names):
         engine.dispose()
     assert not found, "\n".join(found)
     assert player.unexpected() == []
+
+
+def test_table_rolls_is_a_full_height_panel_beside_the_bar_and_the_band(people, server):
+    """Brett chose it, Nov 13: on a laptop Table rolls runs from the window's top, its title row level with the menu bar,
+    and the menu bar and the connection band sit over the page beside it (#328 had the bar span the window with an empty
+    stretch over Table rolls, and the band, inside the bar, lost its colour there and pushed Table rolls down)."""
+    player = people("player")
+    page = player.page
+    page.set_viewport_size({"width": 1440, "height": 900})
+    player.open(f"/characters/{server['cole']}/battle")
+    if page.evaluate("document.body.classList.contains('rolls-closed')"):
+        page.locator(".rs-edge").click()
+    box = lambda sel: page.evaluate(f"(() => {{ const r = document.querySelector('{sel}').getBoundingClientRect(); return {{x: r.left, y: r.top, right: r.right, bottom: r.bottom}}; }})()")
+
+    def check(band: bool):
+        side, head, bar = box(".rolls-side"), box(".rs-head"), box(".topbar-inner")
+        top = box(".topbar")
+        assert side["y"] == 0, "Table rolls starts at the window's top"
+        assert abs(head["bottom"] - (top["y"] + 62)) <= 1, "its title row ends level with the menu bar"
+        assert abs(top["x"] - side["right"]) <= 1 and bar["x"] >= side["right"], "the menu bar sits beside it, not over it"
+        if band:
+            b = box(".conn-band")
+            assert abs(b["x"] - side["right"]) <= 1 and b["y"] >= top["y"] + 60, "the band sits under the bar, beside Table rolls"
+
+    check(band=False)
+    page.evaluate("const b = document.querySelector('.conn-band'); b.hidden = false; b.classList.remove('later'); b.classList.add('bad')")  # (as a dropped sheet shows it)
+    page.wait_for_function("document.querySelector('.conn-band').offsetHeight > 0")
+    check(band=True)
+    page.set_viewport_size({"width": 1100, "height": 900})  # (narrower: it opens over the page, under the bar)
+    page.wait_for_function("document.querySelector('.rolls-side').getBoundingClientRect().top > 0")
