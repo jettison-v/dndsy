@@ -123,7 +123,7 @@ def _entry(sp: dict, sheet: dict, top: int, castable_in_form: set[str] | None = 
     if e["recipe"]:
         o = {"name": sp["name"], "kind": "spell", "level": sp.get("level") or 0, "hit": e["attack"] or e["save"], "recipe": e["recipe"], "tags": [],
              "meta": sp.get("summary") or "", "text": sp.get("text") or "", "summary": sp.get("summary") or ""}
-        heals = any(ev.get("on") in ("heal", "temp") for ev in e["recipe"]["events"])  # (Cure Wounds: what adds to its healing,
+        heals = any(ev.get("on") == "heal" for ev in e["recipe"]["events"])  # (Cure Wounds: what adds to its healing,
         e["plan"] = roll_plan.plan(sheet, o) if o["hit"] or heals else None  # Disciple of Life, Supreme Healing; found Nov 14)
         e["rolls"] = {"hit": roll_plan.effects(e["recipe"], sheet, sp["name"], True), "other": roll_plan.effects(e["recipe"], sheet, sp["name"], False)}
     return e

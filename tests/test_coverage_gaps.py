@@ -107,3 +107,6 @@ def test_a_healing_spell_in_the_spell_book_carries_what_adds_to_its_healing():
                                    "text": "", "summary": ""}], "spell_slots": {"slots": [{"level": 1, "max": 4, "used": 0}]}}
     e = next(e for e in spellbook.entries(s) if e["name"] == "Cure Wounds")
     assert {m["name"] for m in e["plan"]["modifiers"]} >= {"Disciple of Life", "Blessed Healer", "Supreme Healing"}
+    temp = {**s, "spells": [{"key": "spell:False Life", "name": "False Life", "level": 1, "casting_time": "1 Action", "text": "", "summary": ""}]}
+    life = next(e for e in spellbook.entries(temp) if e["name"] == "False Life")
+    assert not life["plan"] or not {m["name"] for m in life["plan"]["modifiers"]} & {"Disciple of Life", "Supreme Healing", "Blessed Healer"}

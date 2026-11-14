@@ -549,6 +549,8 @@ def test_a_life_clerics_healing_spell_shows_what_adds_to_it(people, server, brow
         card = page.locator(".roll-card")
         card.locator('[data-on="Supreme Healing"]').wait_for(timeout=5000)
         assert card.locator('[data-on="Disciple of Life"]').count() == 1
+        card.locator("[data-roll-single]").click()
+        card.locator('[data-self-name="Blessed Healer"]').wait_for(timeout=15000)
         assert player.errors == []
     finally:
         _as(browser_db, server, "cole")

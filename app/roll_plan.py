@@ -450,7 +450,8 @@ def plan(sheet: dict, o: dict, scope: str = "own") -> dict:
         (out["heal"] if o.get("heal") else out["damage"]).append(part)
         src["heal" if o.get("heal") else "damage"] = "sheet" if sheet_part else "text"
 
-    spell = ({"level": o.get("level") or 0, "types": {p["type"] for p in out["damage"] if p.get("type")}, "damages": bool(out["damage"]), "heals": bool(out["heal"])}
+    spell = ({"level": o.get("level") or 0, "types": {p["type"] for p in out["damage"] if p.get("type")}, "damages": bool(out["damage"]),
+             "heals": any(not p.get("temp") for p in out["heal"])}  # (Temporary Hit Points restore none: False Life)
              if o.get("kind") == "spell" and (out["damage"] or out["heal"]) else None)
     made = ("spell" if o.get("kind") == "spell" else "unarmed" if UNARMED_ROW.search(f"{o['name']} {o.get('meta') or ''}")
             else "natural" if block else "weapon")
