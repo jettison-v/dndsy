@@ -155,7 +155,7 @@ def test_resources_shorten_only_when_they_would_wrap(people, server):
           '<span class="res extra"><span class="rn-full">A resource with a long name</span><span class="rn-short">R</span></span>');
       }};
       window.resSet = set;  // (each step's resize then refits it: what the test checks)
-      document.addEventListener('askdnd:swapped', () => {{ set(); document.body.dispatchEvent(new CustomEvent('htmx:afterSettle')); }});  // (a fresh copy: set again, app.js refits)
+      document.addEventListener('askdnd:swapped', () => {{ set(); document.body.dispatchEvent(new CustomEvent('htmx:afterSettle', {{ detail: {{ target: document.body, elt: document.body }} }})); }});  // (a fresh copy: set again, app.js refits)
       set();
     }}""")
     # (what the row measured, said when a step fails: on GitHub's machines it once never shortened, Nov 13)
@@ -170,7 +170,7 @@ def test_resources_shorten_only_when_they_would_wrap(people, server):
             raise AssertionError(f"{expression}: the row measured {page.evaluate(measured)}") from e
 
     # New contents refit as the page does after any change (htmx:afterSettle, a fresh copy)
-    refit = "document.body.dispatchEvent(new CustomEvent('htmx:afterSettle'))"
+    refit = "document.body.dispatchEvent(new CustomEvent('htmx:afterSettle', { detail: { target: document.body, elt: document.body } }))"
     page.evaluate(f"window.resExtras = 0; window.resSet(); {refit}")
     until(f"!({short})")
     page.evaluate(f"window.resExtras = 12; window.resSet(); {refit}")
@@ -245,6 +245,7 @@ def test_the_table_page_holds_together(people, server, browser_db, long_names):
     fight = {"id": "f1", "round": 2, "turn": 1, "order": order, "reminders": []}
     engine = create_engine(browser_db[0])
     player = people("player")
+    player.allow("/map?v=")  # (the map's picture isn't there: only its layout is)
 
     def set_campaign(vtt_on, f):
         with engine.connect() as conn:
@@ -282,10 +283,12 @@ def test_the_table_page_holds_together(people, server, browser_db, long_names):
         found += check(player, server, ("/c/main/table",))
         with_map()
         found += check(player, server, ("/c/main/table",))
-        found += check(people("admin"), server, ("/c/main/table",))  # (the DM's tools: an admin has them too)
+        admin = people("admin")
+        admin.allow("/map?v=")
+        found += check(admin, server, ("/c/main/table",))  # (the DM's tools: an admin has them too)
     finally:
         without_map()
         set_campaign(False, None)
         engine.dispose()
     assert not found, "\n".join(found)
-    assert [e for e in player.errors if "/map?v=" not in e] == []  # (the map's picture isn't there: only its layout is)
+    assert player.unexpected() == []

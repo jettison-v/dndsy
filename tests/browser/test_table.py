@@ -117,6 +117,7 @@ def test_a_dm_only_roll_reaches_everyone_but_only_the_dm_sees_it(people, server)
 def test_a_pages_javascript_error_is_sent_home(people, server):
     """app.js "page errors": an error in askdnd's own page goes to /errors/page (app/errors.py), once."""
     player = people("player")
+    player.allow("reading 'type'")  # (the error this test throws on purpose)
     page = player.open("/c/main/")
     # Playwright can't read a beacon's body, so keep a copy of what the page hands the browser
     page.evaluate("""window.__sent = []; const send = navigator.sendBeacon.bind(navigator);

@@ -195,6 +195,7 @@ class Person:
 
     def __init__(self, browser, server, who: str, **device):
         self.server, self.errors, self.csp = server, [], []  # (csp: what the Content Security Policy blocked)
+        self.who, self.allowed = who, []  # (allowed: errors this test causes on purpose, by a part of their words)
         self.context = browser.new_context(**{"viewport": {"width": 1400, "height": 900}, **device}, timezone_id="America/Los_Angeles")
         webkit = browser.browser_type.name == "webkit"
         self.context.set_default_timeout(20_000 if webkit else 10_000)  # a page that's working answers well within this (WebKit is slower)
@@ -237,6 +238,13 @@ class Person:
         # (a fresh browser's first page, WebKit's especially, can take longer: Nov 2, 10 seconds ran out on a busy machine)
         self.page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}", timeout=30_000)
 
+    def allow(self, *parts: str):
+        """This test causes these errors on purpose (a refusal it checks, an error it throws): each by a part of its words."""
+        self.allowed.extend(parts)
+
+    def unexpected(self) -> list[str]:
+        return [e for e in self.errors if not any(a in e for a in self.allowed)]
+
     def open(self, path: str):
         self.page.goto(self.server["base"] + path)
         return self.page
@@ -258,9 +266,14 @@ def people(chromium, server):
 
     yield make
     blocked = [x for p in made for x in p.csp]
+    # Every test, whatever it checks, fails on an error a page didn't mean to show (Brett, Nov 13: robust means no new
+    # bug anyone missed): an error the page didn't catch, an error on the console, an answer of 400 or more. A test
+    # that causes one on purpose says so with person.allow(...).
+    errors = [f"{p.who}: {e}" for p in made for e in p.unexpected()]
     for p in made:
         p.context.close()
     assert not blocked, "The Content Security Policy blocked something a page needs:\n" + "\n".join(sorted(set(blocked)))
+    assert not errors, "A page had an error this test didn't expect (person.allow(...) if it's on purpose):\n" + "\n".join(errors)
 
 
 
