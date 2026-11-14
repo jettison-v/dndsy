@@ -51,7 +51,7 @@ def test_without_a_pouch_or_focus_every_material_component_is_said_unless_the_ta
 def test_a_component_carried_and_used_up_says_so():
     sheet = {"inventory": [{"key": "item:9", "name": "Diamond Dust", "cost": 50, "count": 2}]}
     need = components.need({"components": ["M"], "material": "diamond dust worth at least 100 gp, which the spell consumes"}, sheet)
-    assert need == {"kind": "consumes", "says": "uses Diamond Dust (consumed)", "item": "item:9"}
+    assert need == {"kind": "consumes", "says": "uses 2 Diamond Dust (consumed)", "item": "item:9", "name": "Diamond Dust", "n": 2}
 
 
 def test_the_dm_sets_the_tables_way_and_only_the_dm(dm, player, db):
@@ -79,3 +79,40 @@ def test_the_marks_reach_every_spell_screens_data():
     assert any(e["name"] == "Find Familiar" and e["need"] for e in spellbook.entries(cole))
     rows = {o["name"]: o for o in character_views.options(big_c) if o.get("kind") == "spell"}
     assert rows["Greater Restoration"]["need"]["kind"] == "missing"
+
+
+def test_a_consumed_component_comes_off_d_and_d_beyond_when_the_table_says_so_and_undo_puts_it_back(player, dm, db, sheet, monkeypatch):
+    """C (Brett chose it, Nov 13): with Use up consumed components on (Manage › House rules), a cast takes what the spell
+    consumes from the inventory on D&D Beyond, as many as its worth needs, and the cast's Undo puts it back; off, the
+    inventory is left alone (B only says it)."""
+    from urllib.parse import quote
+
+    from sqlalchemy import select
+
+    from app import spellbook
+    from app.models import BridgeIntent
+    from tests.table_setup import char
+
+    cole = char(db, "Cole")
+    used = {"kind": "consumes", "says": "uses 2 Bag of Holding (consumed)", "item": "item:340867412", "name": "Bag of Holding", "n": 2}
+    monkeypatch.setattr(spellbook.components, "need", lambda sp, sheet, rules=None: used if sp["name"] == "Cure Wounds" else None)
+    url = f"/characters/{cole.id}/cast?key={quote('spell:Cure Wounds')}"
+
+    def items():
+        return [i.data for i in db.scalars(select(BridgeIntent).order_by(BridgeIntent.id)) if i.kind == "item"]
+
+    off = player.post(url, data={"way": "slot:1"}).json()
+    assert "used" not in off["undo"] and not items()
+    player.post(off["undoUrl"], data=off["undo"])
+
+    set_role(db, "dm@example.com", "dm")
+    db.commit()
+    dm.post("/c/main/manage/house-rules/components/use_up", data={"on": "1"})
+    assert "askdnd takes it off D&amp;D Beyond" in player.get(url).text
+    on = player.post(url, data={"way": "slot:1"}).json()
+    assert on["undo"]["used"] == "item:340867412:2" and "2 Bag of Holding used up" in on["text"]
+    assert [(d["item"], d["delta"]) for d in items()] == [(340867412, -2)]
+    player.post(on["undoUrl"], data=on["undo"])
+    assert [(d["item"], d["delta"]) for d in items()] == [(340867412, -2), (340867412, 2)]
+    forged = {**on["undo"], "used": "item:340867412:50"}  # (only what the cast answered)
+    assert player.post(on["undoUrl"], data=forged).status_code == 409

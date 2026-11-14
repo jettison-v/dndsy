@@ -25,8 +25,8 @@
   <section class="section" data-rules="components">
     <h2>Spells: components</h2>
     <ul class="records">
-      {# (Use up consumed components joins here with C, which takes them from the inventory on D&D Beyond) #}
-      {% for key, title, what in [("costly_only", "Components without a cost don't matter", "No pouch or focus needed: only a component with a cost is marked.")] %}
+      {% for key, title, what in [("costly_only", "Components without a cost don't matter", "No pouch or focus needed: only a component with a cost is marked."),
+                                  ("use_up", "Use up consumed components", "A spell that consumes its component takes it from the inventory on D&D Beyond as it's cast; Undo puts it back.")] %}
       <li class="record"><span class="record-main"><b>{{ title }}</b><span class="note">{{ what }}</span></span>
         <span class="record-actions"><form method="post" action="{{ cbase }}/manage/house-rules/components/{{ key }}">{% if not comp.get(key) %}<input type="hidden" name="on" value="1">{% endif %}
           <button class="switch" type="submit" role="switch" data-rule="{{ key }}" aria-checked="{{ 'true' if comp.get(key) else 'false' }}" aria-label="{{ title }}"></button></form></span></li>
