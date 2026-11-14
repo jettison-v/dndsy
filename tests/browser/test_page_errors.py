@@ -6,6 +6,7 @@ import json
 
 def test_a_blocked_picture_comes_home_with_its_rule_and_only_its_origin(people, server):
     player = people("player")
+    player.allow("elsewhere.example")  # (the picture this test has the policy block)
     player.open("/c/main/campaign")
     with player.page.expect_request("**/errors/page") as sent:
         player.page.evaluate("""() => { const i = document.createElement('img');
