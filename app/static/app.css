@@ -139,7 +139,6 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 /* DM Tools' door (app/homebrew.py): beside Manage, the DM's own (Brett chose 1B, Nov 13) */
 .menu { position: absolute; right: 0; top: 44px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px; width: 240px; box-shadow: var(--lift); }
 .menu a { display: block; color: var(--text); text-decoration: none; padding: 8px 10px; border-radius: var(--r-sm); }
-.menu .menu-me { pointer-events: none; }  /* the account menu's name and email: a label, not a link */
 .menu a small { display: block; color: var(--muted); font-size: var(--fs-xs); }
 .menu a:hover, .menu a.active { background: var(--surface); }
 .menu a.btn { display: inline-flex; padding: 0 var(--sp-3); }  /* a button that's a link stays a button */
@@ -147,10 +146,6 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .account { position: relative; }
 .avatar { width: var(--bar-h); height: var(--bar-h); border-radius: 50%; background: var(--line-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-sm); color: var(--text); border: none; padding: 0; }
 .avatar img { width: 100%; height: 100%; border-radius: 50%; }
-.help-btn { width: var(--bar-h); height: var(--bar-h); border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-strong); color: var(--muted); font-weight: 600; font-size: var(--fs-sm); text-decoration: none; flex: none; }
-.help-btn:hover, .help-btn.active { color: var(--text-strong); border-color: var(--muted); }
-.help-menu { position: relative; }
-button.help-btn { background: none; cursor: pointer; padding: 0; font-family: inherit; }
 .menu form button { width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 8px 10px; border-radius: var(--r-sm); }
 .menu form button:hover { background: var(--surface); }
 /* Live (app/live.py): whether your sheet is connected */
@@ -1458,7 +1453,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 
 /* Manage: the menu's two groups */
 .menu .menu-group { padding: 8px 12px 2px; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); }
-.menu a + .menu-group { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); }
+.menu :is(a, .menu-more) + .menu-group { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); }
 .menu a.menu-count { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
 .menu .menu-more { margin: 0; padding: 2px 12px 8px; display: flex; flex-wrap: wrap; gap: 2px var(--sp-3); font-size: var(--fs-xs); }
 .menu .menu-more a { display: inline; padding: 0; color: var(--muted); background: none; }
@@ -1471,7 +1466,12 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .manage-side a, .manage-jump-list a { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
 .manage-side a:hover, .manage-jump-list a:hover { color: var(--text); background: var(--surface); }
 .manage-side a.on, .manage-jump-list a.on { color: var(--text-strong); background: var(--surface-2); font-weight: 600; }
-.manage-sec { display: block; padding: var(--sp-3) 10px 2px; font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+/* A group's title (Brett, Nov 14: told apart from the pages under it): a hairline and room above, smaller and wider
+   set, never a link's color or size */
+.manage-sec { display: block; margin-top: var(--sp-3); padding: var(--sp-3) 10px var(--sp-1); border-top: 1px solid var(--line); font: 700 var(--fs-xs)/1.2 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.manage-sec:first-child { margin-top: 0; padding-top: var(--sp-1); border-top: 0; }
+.manage-planned { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); padding: 5px 10px; color: var(--faint); font-size: var(--fs-sm); cursor: default; }  /* a kind of thing the DM will make: listed, not yet a page */
+.manage-planned small { font-size: var(--fs-xs); }
 .manage-jump { margin: 0 0 var(--sp-4); }
 .manage-jump > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); min-height: var(--control-h); padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; font-size: var(--fs-sm); }
 .manage-jump > summary::-webkit-details-marker { display: none; }
@@ -1485,10 +1485,16 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .manage-band.camp ~ .title-row { padding-right: 116px; }  /* ⚙ Admin, a full-size button (feedback 31) */
 .manage-band.tool ~ .title-row { padding-right: 216px; }  /* a campaign's name */
 @media (max-width: 640px) { .manage-band a { max-width: 140px; top: calc(var(--sp-5) + var(--control-h) + var(--sp-4) - 5px); } .manage-band.tool ~ .title-row { padding-right: 152px; } }
-.menu .menu-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin: -6px -6px var(--sp-1); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--red-line); border-radius: var(--r-md) var(--r-md) 0 0; background: var(--red-soft); font-size: var(--fs-sm); }
+.menu .menu-head { display: flex; flex-direction: column; align-items: stretch; gap: 0; min-width: 0; margin: -6px -6px var(--sp-1); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--red-line); border-radius: var(--r-md) var(--r-md) 0 0; background: var(--red-soft); font-size: var(--fs-sm); }
 .menu .menu-head.tool { border-bottom-color: var(--blue-line); background: var(--blue-soft); }
-.menu .menu-head b { color: var(--text-strong); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.menu .menu-head b { display: block; max-width: 100%; color: var(--text-strong); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* (a long campaign name ends in … rather than widening the menu) */
 .menu .menu-head span { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; }
+/* The account menu's head (The Three Menus): your picture and name, whose menu it is; neutral, the menu is yours */
+.menu .menu-head.me { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--sp-2); background: var(--surface-2); border-bottom-color: var(--line); }
+.menu .menu-head.me .me-av { grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; background: var(--line-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-xs); color: var(--text); overflow: hidden; }
+.menu .menu-head.me .me-av img { width: 100%; height: 100%; }
+.menu .menu-state { margin-left: var(--sp-1); color: var(--muted); font-size: var(--fs-xs); }
+.menu .menu-last { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-1); }
 .manage.admin > button.active { border-color: var(--blue); }
 @media (min-width: 1240px) {
   .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }
@@ -1717,6 +1723,11 @@ a.sheet-ref { text-decoration-style: dotted; }
 .rcard-lbl { font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .rcard-pills { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .rcard-pill small { color: var(--muted); font-size: var(--fs-xs); }
+/* The pill as a checkbox (the Use window's cost, app/feature_use.py): the box hidden, pressed while ticked */
+.use-pay { position: relative; cursor: pointer; }
+.use-pay input { position: absolute; opacity: 0; pointer-events: none; }
+.use-pay:has(input:checked) { background: var(--selected-bg); border-color: var(--blue); }
+.use-pay:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
 .rcard-plus { color: var(--muted); }
 .rcard-adder { display: flex; flex-wrap: wrap; gap: var(--sp-1); background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2); }
 .rcard-result { display: grid; grid-template-columns: auto 1fr; gap: 0 var(--sp-3); align-items: center; background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-1) var(--sp-3); }
@@ -1996,7 +2007,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .card-act { font: 600 var(--fs-xs)/1 var(--sans); color: var(--k); background: transparent; border: 1px solid color-mix(in srgb, var(--k) 55%, transparent); border-radius: var(--r-md); padding: 6px 9px; cursor: pointer; white-space: nowrap; }
 .card-x { width: 26px; height: 26px; border: 0; background: transparent; color: var(--muted); border-radius: var(--r-sm); cursor: pointer; font-size: var(--fs-sm); }
 .card-x:hover { background: var(--surface-3); color: var(--text-strong); }
-.k-ok { --k: var(--green); } .k-info { --k: var(--blue); } .k-roll { --k: var(--amber); } .k-warn { --k: var(--amber); } .k-error { --k: var(--red); }
+.k-heal { --k: var(--green); } .k-ok { --k: var(--green); } .k-info { --k: var(--blue); } .k-roll { --k: var(--amber); } .k-warn { --k: var(--amber); } .k-error { --k: var(--red); }
 @media (max-width: 900px) {
   .cards { left: calc(10px + env(safe-area-inset-left, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); width: auto; bottom: calc(var(--bottom-nav-h, 64px) + 10px + env(safe-area-inset-bottom, 0px)); }
   body:has(.peek.open:not(.modal)) .cards { right: calc(10px + env(safe-area-inset-right, 0px)); }
@@ -3955,13 +3966,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 @media (hover: none), (max-width: 640px) { .search-foot { display: none; } }  /* (keys mean nothing on a touch screen, and crowd a narrow one) */
 
 /* DM Tools (app/homebrew.py, dm_tools.html, dm_item.html): its list down the left, then the page; one column on a phone */
-.page.dm-tools { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sp-6); align-items: start; }
-.dm-side { display: grid; gap: 2px; align-content: start; position: sticky; top: calc(var(--stick-top, 62px) + var(--sp-4)); }
-.dm-side a, .dm-planned { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
-.dm-side a:hover { color: var(--text); background: var(--surface); }
-.dm-side a.on { color: var(--text-strong); background: var(--surface-2); font-weight: 600; }
-.dm-planned { cursor: default; }
-.dm-planned small { color: var(--faint); font-size: var(--fs-xs); }
 .dm-main { min-width: 0; }
 .dm-says { color: var(--text); }
 .dm-items .record { align-items: center; }
@@ -3975,11 +3979,20 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .dm-piece legend { padding: 0 var(--sp-2); color: var(--muted); font-size: var(--fs-sm); }
 .dm-go { margin-top: var(--sp-4); }
 .dm-retire { margin-top: var(--sp-4); display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
-@media (max-width: 900px) {
-  .page.dm-tools { grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
-  .dm-side { position: static; display: flex; flex-wrap: wrap; gap: var(--sp-1); }
-  .dm-side .manage-sec { width: 100%; }
-}
+
+/* The DM's Workspace (Brett chose B, Nov 13; manage.html, app/workspace.py): Needs you's workbench, who's at the table
+   and a tile per kind of thing the DM makes, planned ones dashed */
+.ws-who { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); }
+.ws-who li { display: grid; grid-template-columns: auto auto; column-gap: var(--sp-2); align-items: center; }
+.ws-who .char-av { grid-row: span 2; }
+.ws-who small { color: var(--muted); font-size: var(--fs-xs); }
+.ws-who [data-tone="step"] small { color: var(--green); }
+.ws-who [data-tone="via"] small { color: var(--amber); }
+.ws-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
+.ws-tile { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); min-width: 0; }
+.ws-tile.planned { border-style: dashed; background: none; color: var(--muted); }
+.ws-tile .row { margin-top: var(--sp-2); }
+.ws-count { color: var(--muted); font-weight: 600; margin-left: var(--sp-1); }
 
 /* A spell's Material component (app/components.py; Brett chose A and B, Nov 13): lacking (amber), unsure (muted), used
    up when cast (green); in a spell's row and said in the Cast window */
@@ -3987,3 +4000,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .comp-mark[data-comp="missing"], .comp-says[data-comp="missing"] { color: var(--amber); }
 .comp-mark[data-comp="unsure"], .comp-says[data-comp="unsure"] { color: var(--muted); }
 .comp-mark[data-comp="consumes"], .comp-says[data-comp="consumes"] { color: var(--green); }
+
+/* Healing given to someone, waiting for them (app/heals.py): Table rolls' mark, and the card that stays */
+.roll-waiting { display: inline-block; font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); border-radius: var(--r-pill); padding: 4px 8px; }
+.card.k-heal { border-color: var(--green); }

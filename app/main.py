@@ -39,9 +39,11 @@ from app.digest import router as digest_router
 from app.documents import router as documents_router
 from app.entity_pages import router as entity_router
 from app.errors import router as errors_router
+from app.feature_use import router as feature_use_router
 from app.feedback import router as feedback_router
 from app.fog import router as fog_router
 from app.giving import router as giving_router
+from app.heals import router as heals_router
 from app.help_pages import router as help_router
 from app.history_pages import router as history_router
 from app.hit_points import router as hit_points_router
@@ -84,6 +86,7 @@ from app.turn_bar import router as turn_bar_router
 from app.usage import router as usage_router
 from app.view_as import ViewAs
 from app.view_as import router as view_as_router
+from app.workspace import router as workspace_router
 from app.your_notes import router as your_notes_router
 
 
@@ -217,12 +220,14 @@ app.include_router(admin_router)
 app.include_router(item_use_router)
 app.include_router(item_creatures_router)  # items that bring a creature (the Beasty Bone)
 app.include_router(check_numbers_router)  # Check your numbers (Show the Math, E)
-app.include_router(digest_router)  # the Inbox digest email and Your account › Email
+app.include_router(digest_router)  # the Inbox digest email and your picture › Email digest
 app.include_router(usage_router)  # Admin › Features: which features get used
 app.include_router(search_router)  # Search, like Spotlight: what the search box can find
 app.include_router(trophies_router)  # Trophy Case: Party's Trophies tab and each person's view
 app.include_router(casting_router)  # (through the bridge: on_for)
 app.include_router(resources_router)  # (through the bridge: on_for)
+app.include_router(feature_use_router)
+app.include_router(heals_router)  # (healing given to someone: the card that asks them, app/heals.py)  # (the Use window: through the bridge, as resources)
 app.include_router(rests_router)  # (through the bridge: on_for)
 app.include_router(level_up_router)
 app.include_router(inventory_router)  # (through the bridge: on_for)
@@ -253,6 +258,7 @@ app.include_router(notes_router)
 app.include_router(history_router)
 app.include_router(house_rules_router)
 app.include_router(homebrew_router)  # DM Tools: the campaign's homebrew items
+app.include_router(workspace_router)  # the DM's Workspace: Scene notes and Places and maps in Manage
 app.include_router(campaigns_router)
 app.include_router(dice_router)
 app.include_router(documents_router)  # Manage › askdnd › Documents: every page made for askdnd (docs/library.json)

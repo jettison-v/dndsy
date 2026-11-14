@@ -23,8 +23,9 @@ def _clear():
 
 def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     """Brett, 2026-10-27 (docs/mockups/manage-menu.html, round 2 option A): two doors, Manage for this campaign and
-    Admin for askdnd as a whole; each lists what's opened most, and every page lists the rest of its half down the
-    left, under a line in its half's colour."""
+    Admin for askdnd as a whole, every page listing its half down the left under a line in its half's colour; since
+    Nov 13 (The Three Menus, docs/mockups/menus/) each in fixed groups, Manage by the DM's week with DM Tools inside,
+    the DM guide in the account menu instead, the gear's rarely opened pages on its Tuning line."""
     import_bundle(db, {"campaign": {"slug": "main", "name": "The Lost Mine"}})
     import_bundle(db, {"campaign": {"slug": "second", "name": "Second Wind"}})
     admin = client_for(monkeypatch, db, "brett@example.com")
@@ -33,23 +34,26 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     menu = door(page, "manage")
     assert "The Lost Mine" in menu  # whose it is, at its head
     # the campaign's pages (the most used, then the rest on one line), then your other campaigns (tests/menu.py)
-    assert items(page, "manage") == ["dm-tools", "needs", "inbox", "sessions", "table", "house", "settings", "history", "guide", "campaign:second"]
+    assert items(page, "manage") == ["needs", "inbox", "sessions", "dm-tools", "table", "house", "settings", "history", "campaign:second"]
+    assert [g.split("<")[0] for g in menu.split('class="menu-group">')[1:]] == ["After the game", "The next game", "The table", "Your other campaigns"]
+    assert "guide" in items(page, "account") and "guide" not in items(page, "manage")  # (read, not run: Help in your menu)
     assert 'href="/c/main/manage/inbox"' in menu and "/manage/askdnd" not in menu
     assert "askdnd admin" in door(page, "admin")
-    assert items(page, "admin") == ["overview", "accounts", "campaigns", "feedback", "documents", "usage", "backups",
+    assert items(page, "admin") == ["overview", "feedback", "documents", "usage", "backups", "accounts", "campaigns",
                                     "features", "askdnd-history", "corrections", "dice", "design"]
+    assert [g.split("<")[0] for g in door(page, "admin").split('class="menu-group">')[1:]] == ["People", "Tuning"]
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
     assert band.startswith(' camp"') and "The Lost Mine" in band and 'href="/manage/askdnd">⚙ Admin' in band
     side = page.split('class="manage-side"')[1].split("</nav>")[0]
-    assert [s.split('class="manage-sec">')[1].split("<")[0] for s in side.split("<span")[1:] if 'manage-sec"' in s] == ["Every week", "The table", "Setup"]
+    assert [s.split('class="manage-sec">')[1].split("<")[0] for s in side.split("<span")[1:] if 'manage-sec"' in s] == ["After the game", "The next game", "The table"]
     assert 'aria-current="page">Needs you' in side
     usage = admin.get("/manage/usage").text
     band = usage.split('class="manage-band')[1].split("</div>")[0]
     assert band.startswith(' tool"') and "askdnd admin" in band and "The Lost Mine's Manage" in band
     side = usage.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Usage' in side and "Inbox" not in side and ">askdnd history<" in side
-    assert side.index(">Overview<") < side.index(">Accounts<") < side.index(">Usage<") < side.index(">Design system<")
+    assert side.index(">Overview<") < side.index(">Usage<") < side.index(">Accounts<") < side.index(">Design system<")  # (the menu is the page list)
 
     overview = admin.get("/manage/askdnd").text
     assert "<h1>askdnd admin</h1>" in overview and "No backup recorded yet" in overview and 'href="/manage/accounts"' in overview

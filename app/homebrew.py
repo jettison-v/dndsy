@@ -192,8 +192,18 @@ DENIED = "DM Tools is for the campaign's DM (and admins)."
 def _allowed(request: Request, db: Session):
     """(user, campaign, None), or (None, None, the sign-in redirect or the 403 page)."""
     campaign = web.campaign(db)
-    user, denied = web.require(request, lambda u: bool(campaign) and can_set_house_rules(u, campaign.id), DENIED)
+    user, denied = web.require(request, lambda u: can_make(u, campaign), DENIED)
     return user, campaign, denied
+
+
+def can_make(user: dict | None, campaign) -> bool:
+    """Whoever sets the campaign's house rules makes its homebrew (its DM, admins): `house_rules` in app/access.py."""
+    return bool(campaign) and can_set_house_rules(user, campaign.id)
+
+
+def rows_for(db: Session, campaign_id: int) -> list[CampaignContent]:
+    """The campaign's homebrew items, retired ones too (their data says so)."""
+    return _rows(db, campaign_id)
 
 
 def _rows(db: Session, campaign_id: int) -> list[CampaignContent]:

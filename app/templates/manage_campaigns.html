@@ -4,7 +4,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Campaigns</h1></div>
-  <p class="subtitle">Every campaign in askdnd, and which characters are in each. A character is in one campaign at a time, like on D&amp;D Beyond; moving it keeps what it did in its old campaign's story. Each campaign's details are on its Settings, and its people and characters on its Table. Only admins can see this page.</p>
+  <p class="subtitle">Every campaign in askdnd and who's in each. A character follows its D&amp;D Beyond campaign: when its sheet moves there, a line here offers the move, and its old campaign keeps what it did in the story. Only admins can see this page.</p>
 
   <section class="section">
     <ul class="records">
@@ -16,39 +16,22 @@
     </ul>
   </section>
 
-  <section class="section">
-    <h2>New campaign</h2>
-    <form method="post" action="/manage/campaigns" class="form-narrow">
-      <label class="field">Name<input type="text" name="name" maxlength="200" required {% if unmatched %}value="{{ unmatched[0][1] }}"{% endif %}></label>
-      <label class="field">DM's name (optional)<input type="text" name="dm_name" maxlength="200"></label>
-      {% if unmatched %}<label class="field">Its D&amp;D Beyond campaign
-        <select name="ddb_campaign_id">{% for i, n in unmatched %}<option value="{{ i }}">{{ n or i }}</option>{% endfor %}<option value="">None</option></select></label>{% endif %}
-      <label class="check"><input type="checkbox" name="is_test" value="1"> Test campaign: try every VTT piece here</label>
-      <div class="row"><button class="btn primary" type="submit">Create</button></div>
-      <p class="note">Then add its people and characters on its Table, or move characters to it here.</p>
-    </form>
-  </section>
+  <div class="row"><button class="btn" type="button" data-modal-url="/manage/campaigns/new" data-item="new-campaign">+ New campaign</button></div>
 
-  <section class="section">
-    <h2>Move a character</h2>
-    <p class="hint">Move a character to another campaign. Its time in the old one ends today; its story page, key moments and rolls stay there, and its Wild Shape keeps start over (each DM rules on those). Its D&amp;D Beyond copy, notes, pins and reminders go with it.</p>
+  {# A character moves only when D&D Beyond says it's elsewhere (Brett, Nov 13, The Three Menus part 5: moving here alone
+     was confusing, since it also has to move on D&D Beyond): one line and one button for each, nothing otherwise. #}
+  {% set moves = characters | selectattr("mismatch") | list %}
+  {% if moves %}<section class="section">
     <ul class="records">
-      {% for r in characters %}{% set ch = r.c %}
-      <li class="record">
-        <div class="record-main"><b>{{ ch.name }}</b>
-          <span class="note">{% if ch.player_name %}{{ ch.player_name }} · {% endif %}{{ r.here.name if r.here else "Not in a campaign" }}</span>
-          {% if r.mismatch %}<span class="note quiet-warn">On D&amp;D Beyond, {{ ch.name }} is in {{ ("“" ~ r.ddb_name ~ "”") if r.ddb_name else "another campaign" }}.{% if r.suggest %} That's {{ r.suggest.name }} here.{% endif %}</span>{% endif %}
-        </div>
-        <form method="post" action="/manage/campaigns/characters/{{ ch.id }}/move" class="record-actions">
-          {% if r.suggest %}<input type="hidden" name="campaign_id" value="{{ r.suggest.id }}"><button class="btn" type="submit">Move to {{ r.suggest.name }}</button>
-          {% else %}<select name="campaign_id" aria-label="Campaign for {{ ch.name }}">
-            {% for x in campaigns %}<option value="{{ x.c.id }}" {{ "selected" if r.here is sameas x.c }}>{{ x.c.name }}</option>{% endfor %}
-            <option value="" {{ "selected" if not r.here }}>Not in a campaign</option>
-          </select><button class="btn" type="submit">Move</button>{% endif %}
-        </form>
+      {% for r in moves %}{% set ch = r.c %}
+      <li class="record" data-move="{{ ch.id }}">
+        <span class="record-main">{{ ch.name }} is in {{ ("“" ~ r.ddb_name ~ "”") if r.ddb_name else "another campaign" }} on D&amp;D Beyond, but in {{ r.here.name if r.here else "no campaign" }} here.{% if not r.suggest %} <span class="note">No askdnd campaign follows that one yet: + New campaign starts one for it.</span>{% endif %}</span>
+        {% if r.suggest %}<form method="post" action="/manage/campaigns/characters/{{ ch.id }}/move" class="record-actions">
+          <input type="hidden" name="campaign_id" value="{{ r.suggest.id }}"><button class="btn" type="submit">Move to {{ r.suggest.name }}</button>
+        </form>{% endif %}
       </li>
-      {% else %}<li class="record muted">No characters yet.</li>{% endfor %}
+      {% endfor %}
     </ul>
-  </section>
+  </section>{% endif %}
 </main>
 {% endblock %}

@@ -21,11 +21,9 @@ ROWS = [r for r in INDEX if r["kind"] != "item"]  # (a magic item's rolls are ad
 
 # What the data doesn't play yet, each with what fills it. A new gap fails; a filled one must come off the list.
 KNOWN_GAPS = {
-    "Tandem Footwork": "a bonus to Initiative alone (an add's `to` of initiative), and the ally's share of it",
     "Mantle of Inspiration": "an amount that's twice a die (a multiplier in a roll's dice)",
     "Undying Sentinel": "a feature that acts at 0 Hit Points, offered by the hit points window; three times a level",
     "Boon of Recovery": "a feature that acts at 0 Hit Points; a pool of d10s to spend",
-    "Disciple of Life": "healing that adds the slot's level (a {slot} token in an add's amount)",
     "Blessed Healer": "healing for yourself that adds the slot's level, after healing someone else",
     "Supreme Healing": "healing dice at their maximum (an add's op of max)",
     "Survivor": "healing at the start of your turn while Bloodied (a turn-start reminder with its roll, fight.follow)",
@@ -104,7 +102,8 @@ def test_a_made_up_character_is_given_what_its_level_brings(cls, sub, lv):
             assert rules_book._norm(e["name"]) in have, f"{cls} {lv} ({sub}) has {name}, but the data's entry doesn't apply"
     for a in rules_book.adds(sheet):
         for k in ("amount", "reduces", "dc"):
-            assert "{" not in str(a.get(k, "")), f"{a['name']}'s {k} left a token unfilled: {a.get(k)}"
+            # ({slot} is the one filled as it's cast, by the level: roll_plan._at_levels)
+            assert "{" not in str(a.get(k, "")).replace("{slot}", ""), f"{a['name']}'s {k} left a token unfilled: {a.get(k)}"
     for e in active:
         for roll in e.get("rolls") or []:
             for d in roll["dice"]:

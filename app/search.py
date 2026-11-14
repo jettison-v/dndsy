@@ -72,6 +72,8 @@ def character_rows(db: Session, user: dict) -> tuple[int | None, list[dict], dic
             row |= {"a": "Cast", "use": f"/characters/{ch.id}/cast?key={quote(o['key'])}"}
         elif (o.get("use") or {}).get("id") and ctx.get("can_use"):
             row |= {"a": o["use"].get("verb") or "Use", "use": f"/characters/{ch.id}/use/{o['use']['id']}"}
+        elif o.get("use_window") and ctx.get("can_play"):  # (the Use window: a cost with no roll, app/feature_use.py)
+            row |= {"a": "Use", "use": f"/characters/{ch.id}/feature?key={quote(o['key'])}"}
         elif (o.get("bring") or {}).get("state") == "ready" and ctx.get("can_bring"):
             row |= {"a": "Use", "use": f"/characters/{ch.id}/bring/{o['bring']['id']}"}
         elif first:
@@ -138,7 +140,7 @@ def page_rows(user: dict, path: str) -> list[dict]:
         out.insert(1, {"g": "Pages", "n": "Table", "s": "where the table plays" + ("" if table.startswith("/") else " (D&D Beyond ↗)"), "a": "Go",
                        "find": _words("table vtt map play"), "go": table})
     out += [{"g": "Pages", "n": p["label"], "s": p.get("about") or "", "a": "Go", "find": _words(p["label"], p.get("about"), "manage"), "go": p["href"]}
-            for p in pages_for(user, path)]
+            for p in pages_for(user, path) if not p["planned"]]
     return out
 
 

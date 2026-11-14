@@ -126,7 +126,7 @@ def test_manage_campaigns_creates_and_moves_and_table_adds(two, db):
     admin, pat = two["admin"], two["pat"]
     assert pat.get("/manage/campaigns").status_code == 403
     page = admin.get("/manage/campaigns").text
-    assert "Curse of Strahd" in page and "/c/strahd" in page and "Move" in page
+    assert "Curse of Strahd" in page and "/c/strahd" in page and "data-move=" not in page  # (moves only when D&D Beyond moved it)
     # Switch on every campaign but the one you're in (like the campaign menu)
     assert page.count(">Switch</a>") == 1 and '<a class="btn small" href="/c/strahd/campaign"' in page and "Main <span class=\"tag faint\">You're here" in page
     r = admin.post("/manage/campaigns", data={"name": "Curse of Strahd", "dm_name": "Mary"}, follow_redirects=False)
@@ -136,7 +136,7 @@ def test_manage_campaigns_creates_and_moves_and_table_adds(two, db):
     admin.post(f"/manage/campaigns/characters/{trah.id}/move", data={"campaign_id": str(two["strahd"].id)})
     assert trah.campaign_id == two["strahd"].id
     admin.post(f"/manage/campaigns/characters/{trah.id}/move", data={"campaign_id": ""})
-    assert trah.campaign_id is None and "Not in a campaign" in admin.get("/manage/campaigns").text
+    assert trah.campaign_id is None
     admin.post("/c/strahd/manage/table/add", data={"char_name": "Ismark"})  # added on the campaign's Table
     ismark = db.scalar(select(Character).where(Character.name == "Ismark"))
     assert ismark.campaign_id == two["strahd"].id and ismark.entity.name == "Ismark"
@@ -149,7 +149,7 @@ def test_a_character_dnd_beyond_puts_elsewhere_is_offered_a_move_never_moved(two
     cole.ddb_campaign_id = "222"
     db.flush()
     page = two["admin"].get("/manage/campaigns").text
-    assert "On D&amp;D Beyond, Cole is in" in page and "Move to Curse of Strahd" in page
+    assert f'data-move="{cole.id}"' in page and f'value="{two["strahd"].id}"' in page.split(f'data-move="{cole.id}"')[1]
     assert cole.campaign_id == two["main"].id
 
 
@@ -157,7 +157,7 @@ def test_new_campaign_offers_dnd_beyond_campaigns_not_set_up_yet(two, db):
     cole = char(db, "Cole")
     characters.refresh(db, cole, lambda _id: {**fake_fetch(_id), "campaign": {"id": 3005233, "name": "The Adventure Begins"}})
     db.flush()
-    page = two["admin"].get("/manage/campaigns").text
+    page = two["admin"].get("/manage/campaigns/new").text  # (+ New campaign's window)
     assert 'value="The Adventure Begins"' in page and '<option value="3005233">The Adventure Begins</option>' in page
 
 
