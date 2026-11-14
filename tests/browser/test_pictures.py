@@ -23,6 +23,8 @@ OUT = Path(os.environ.get("VISUAL_OUT", "private/visual/out"))
 WIDTHS = {"laptop": 1280, "phone": 375}  # (designed for a laptop first; a phone must hold together too)
 # Whatever differs between two runs by itself: times and "ago", the live pill, Table rolls' newest moments
 MASK = "time, .live-ago, .sb-time, .cond-time, .readied-when, .rider-when, .hist-head .note, [data-at], [data-clock]"  # (Table rolls' list itself is compared)
+# (a mask hides the words but keeps their width, which moves with the time: each gets the same words first)
+SAME = f"document.querySelectorAll('{MASK}').forEach(e => {{ e.textContent = '00:00'; }})"
 STILL = "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }"
 
 
@@ -43,6 +45,7 @@ def test_pictures_of_every_main_page(people, server, browser_db, who):
             person.open(path.format(**server))
             page.wait_for_load_state("networkidle")
             page.add_style_tag(content=STILL)
+            page.evaluate(SAME)
             page.evaluate("document.fonts.ready")
             page.screenshot(path=str(OUT / name(who, path, width_name)), full_page=True,
                             mask=[page.locator(MASK)], mask_color="#888")
@@ -68,6 +71,7 @@ def band(person, server, browser_db):
             person.open(f"/characters/{server['cole']}/battle")
             page.wait_for_load_state("networkidle")
             page.add_style_tag(content=STILL)
+            page.evaluate(SAME)
             page.screenshot(path=str(OUT / name("player", "battle-with-the-connection-band", width_name)),
                             mask=[page.locator(MASK)], mask_color="#888")
     finally:
