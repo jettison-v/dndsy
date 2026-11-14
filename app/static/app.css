@@ -139,7 +139,6 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 /* DM Tools' door (app/homebrew.py): beside Manage, the DM's own (Brett chose 1B, Nov 13) */
 .menu { position: absolute; right: 0; top: 44px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 6px; width: 240px; box-shadow: var(--lift); }
 .menu a { display: block; color: var(--text); text-decoration: none; padding: 8px 10px; border-radius: var(--r-sm); }
-.menu .menu-me { pointer-events: none; }  /* the account menu's name and email: a label, not a link */
 .menu a small { display: block; color: var(--muted); font-size: var(--fs-xs); }
 .menu a:hover, .menu a.active { background: var(--surface); }
 .menu a.btn { display: inline-flex; padding: 0 var(--sp-3); }  /* a button that's a link stays a button */
@@ -147,10 +146,6 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .account { position: relative; }
 .avatar { width: var(--bar-h); height: var(--bar-h); border-radius: 50%; background: var(--line-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-sm); color: var(--text); border: none; padding: 0; }
 .avatar img { width: 100%; height: 100%; border-radius: 50%; }
-.help-btn { width: var(--bar-h); height: var(--bar-h); border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-strong); color: var(--muted); font-weight: 600; font-size: var(--fs-sm); text-decoration: none; flex: none; }
-.help-btn:hover, .help-btn.active { color: var(--text-strong); border-color: var(--muted); }
-.help-menu { position: relative; }
-button.help-btn { background: none; cursor: pointer; padding: 0; font-family: inherit; }
 .menu form button { width: 100%; text-align: left; background: none; border: none; color: var(--text); padding: 8px 10px; border-radius: var(--r-sm); }
 .menu form button:hover { background: var(--surface); }
 /* Live (app/live.py): whether your sheet is connected */
@@ -1458,7 +1453,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 
 /* Manage: the menu's two groups */
 .menu .menu-group { padding: 8px 12px 2px; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); }
-.menu a + .menu-group { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); }
+.menu :is(a, .menu-more) + .menu-group { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-3); }
 .menu a.menu-count { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
 .menu .menu-more { margin: 0; padding: 2px 12px 8px; display: flex; flex-wrap: wrap; gap: 2px var(--sp-3); font-size: var(--fs-xs); }
 .menu .menu-more a { display: inline; padding: 0; color: var(--muted); background: none; }
@@ -1489,6 +1484,12 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .menu .menu-head.tool { border-bottom-color: var(--blue-line); background: var(--blue-soft); }
 .menu .menu-head b { color: var(--text-strong); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .menu .menu-head span { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; }
+/* The account menu's head (The Three Menus): your picture and name, whose menu it is; neutral, the menu is yours */
+.menu .menu-head.me { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--sp-2); background: var(--surface-2); border-bottom-color: var(--line); }
+.menu .menu-head.me .me-av { grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; background: var(--line-strong); display: grid; place-items: center; font-weight: 600; font-size: var(--fs-xs); color: var(--text); overflow: hidden; }
+.menu .menu-head.me .me-av img { width: 100%; height: 100%; }
+.menu .menu-state { margin-left: var(--sp-1); color: var(--muted); font-size: var(--fs-xs); }
+.menu .menu-last { border-top: 1px solid var(--line); margin-top: var(--sp-1); padding-top: var(--sp-1); }
 .manage.admin > button.active { border-color: var(--blue); }
 @media (min-width: 1240px) {
   .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }

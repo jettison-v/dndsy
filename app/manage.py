@@ -31,28 +31,33 @@ from app.templating import templates
 router = APIRouter()
 
 CAMPAIGN, ASKDND = "campaign", "askdnd"
-# (key, label, address, what it's for, group, section, who may open it, extra addresses that belong to it), in the
-# order of the list down the left of every Manage page (Brett, 2026-10-27, docs/mockups/manage-menu.html): most
-# often opened first. A campaign page's address is under the campaign's (/c/<campaign>/manage/…).
-WEEK, TABLE, SETUP, PEOPLE, RUNNING, TUNING = "Every week", "The table", "Setup", "People", "Running askdnd", "Tuning"
+# The one list of Manage's and the gear's pages (The Three Menus, Brett approved all six parts, Nov 13,
+# docs/mockups/menus/): (key, label, address, what it's for, group, section, who may open it, extra addresses that belong
+# to it). Each menu and each page's list down the left is drawn from it: the same groups, names and order. A group shows
+# its most used pages (IN_MENU) and the rest on its own line of small links. A campaign page's address is under the
+# campaign's (/c/<campaign>/manage/…). Manage is grouped by the DM's week; the gear by what its pages already are.
+AFTER, NEXT, TABLE = "After the game", "The next game", "The table"
+PEOPLE, TUNING = "People", "Tuning"
 PAGES = (
-    ("needs", "Needs you", "/manage", "What's waiting, most important first", CAMPAIGN, WEEK, can_moderate, ()),
-    ("inbox", "Inbox", "/manage/inbox", "Suggestions from the table and Claude's drafts, waiting for your OK", CAMPAIGN, WEEK, can_moderate, ()),
-    ("sessions", "Sessions", "/manage/sessions", "Draft, review and publish recaps; the campaign doc", CAMPAIGN, WEEK, is_reviewer, ("/manage/proposals",)),
+    ("needs", "Needs you", "/manage", "What's waiting, most important first", CAMPAIGN, AFTER, can_moderate, ()),
+    ("inbox", "Inbox", "/manage/inbox", "Suggestions from the table and Claude's drafts, waiting for your OK", CAMPAIGN, AFTER, can_moderate, ()),
+    ("sessions", "Sessions", "/manage/sessions", "Draft, review and publish recaps; the campaign doc", CAMPAIGN, AFTER, is_reviewer, ("/manage/proposals",)),
+    ("dm-tools", "DM Tools", "/dm", "What you make for this campaign: homebrew items", CAMPAIGN, NEXT, can_set_house_rules, ()),
     ("table", "Table", "/manage/table", "Who plays which character, roles, D&D Beyond links", CAMPAIGN, TABLE, can_see_table, ()),
     ("house", "House rules", "/manage/house-rules", "Your rulings on how askdnd rolls things at this table", CAMPAIGN, TABLE, can_set_house_rules, ()),
-    ("settings", "Settings", "/manage/settings", "The campaign's name, the DM's name, its D&D Beyond id", CAMPAIGN, SETUP, can_edit_settings, ()),
-    ("history", "History", "/manage/history", "This campaign's changes, with Restore", CAMPAIGN, SETUP, is_reviewer, ()),
-    ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, SETUP, can_moderate, ()),
+    ("settings", "Settings", "/manage/settings", "The campaign's name, the DM's name, its D&D Beyond id", CAMPAIGN, TABLE, can_edit_settings, ()),
+    ("history", "History", "/manage/history", "This campaign's changes, with Restore", CAMPAIGN, TABLE, is_reviewer, ()),
+    # (the DM guide is read, not run: it's in the account menu's Help, not Manage's list; UNLISTED)
+    ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, TABLE, can_moderate, ()),
     ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", is_admin, ()),
+    ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, "", is_admin, ()),
+    ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, "", is_admin, ()),
+    ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, "", is_admin, ()),
+    ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, "", is_admin, ()),
     ("accounts", "Accounts", "/manage/accounts", "Who can sign in, who's an admin, their campaigns", ASKDND, PEOPLE, is_admin, ()),
-    ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign; start one, move a character", ASKDND, PEOPLE, is_admin, ()),
-    ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, RUNNING, is_admin, ()),
-    ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, RUNNING, is_admin, ()),
-    ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, RUNNING, is_admin, ()),
-    ("features", "Features", "/manage/features", "Which features the table uses, and on which page", ASKDND, RUNNING, is_admin, ()),
-    ("backups", "Backups and imports", "/manage/backups", "Nightly backups, then imports", ASKDND, RUNNING, is_admin, ()),
-    ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, RUNNING, is_admin, ()),
+    ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign, and starting one", ASKDND, PEOPLE, is_admin, ()),
+    ("features", "Features", "/manage/features", "Which features the table uses, and on which page", ASKDND, TUNING, is_admin, ()),
+    ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, TUNING, is_admin, ()),
     ("corrections", "Tool corrections", "/manage/tool-corrections", "Fixes to how askdnd reads D&D Beyond, for every character", ASKDND, TUNING, is_admin, ()),
     ("dice", "Dice tuning", "/manage/dice", "How thrown dice move and how long they stay, for everyone", ASKDND, TUNING, is_admin, ()),
     # the D&D Beyond bridge (app/ddb_bridge.py): only where it may run (DDB_BRIDGE=1)
@@ -60,8 +65,9 @@ PAGES = (
      lambda user: config.DDB_BRIDGE and is_admin(user), ()),
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, is_admin, ()),
 )
-IN_MENU = ("needs", "inbox", "sessions", "table",  # each menu's own items (Manage, then Admin); the rest are on one line
-           "overview", "feedback", "documents", "accounts", "campaigns", "usage", "backups")
+IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "table", "house", "settings", "history",  # a group's own rows; the rest
+           "overview", "feedback", "documents", "usage", "backups", "accounts", "campaigns")    # on its line of small links
+UNLISTED = ("guide",)  # (a page of the list that no menu or list down the left shows: the DM guide is the account menu's)
 COUNTED = ("needs", "inbox", "feedback")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
 
 
@@ -79,6 +85,7 @@ def pages_for(user: dict | None, path: str = "") -> list[dict]:
         same = path == href or (href != "/manage" and path.startswith(href + "/")) or any(path.startswith(p) for p in extra)
         out.append({"key": key, "label": label, "href": (base if group == CAMPAIGN else "") + href, "about": about,
                     "group": group, "section": section, "menu": key in IN_MENU, "counted": key in COUNTED,
+                    "listed": key not in UNLISTED,
                     "here": same and (group == CAMPAIGN) == in_campaign})
     return out
 

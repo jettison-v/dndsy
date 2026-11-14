@@ -360,6 +360,23 @@ def _dm_tools_ok(user, here) -> bool:
 
 
 templates.env.globals["dm_tools_ok"] = _dm_tools_ok
+
+
+def _digest_on(here) -> bool | None:
+    """Whether the person asking gets this campaign's Inbox digest (the account menu's Email digest says On or Off);
+    None where there's no campaign to say it for."""
+    from app import access
+    from app.digest import wants_from
+
+    cid = here.get("id") if isinstance(here, dict) else getattr(here, "id", None)
+    email = access.viewer.get() or ""
+    if not cid or not email:
+        return None
+    row = access._rows().get(email.lower(), {})
+    return wants_from(row.get("emails"), cid, access.role(email, cid), access.level(email) == "admin")
+
+
+templates.env.globals["digest_on"] = _digest_on
 templates.env.globals["staging"] = config.STAGING  # (base.html: the Staging label and the amber menu bar)
 templates.env.globals["bridge_extension_url"] = config.BRIDGE_EXTENSION_URL
 templates.env.globals["lasts_times"], templates.env.globals["lasts_abilities"] = cond.TIMES, cond.ABILITIES  # + Condition's Lasts

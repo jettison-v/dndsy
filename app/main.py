@@ -217,7 +217,7 @@ app.include_router(admin_router)
 app.include_router(item_use_router)
 app.include_router(item_creatures_router)  # items that bring a creature (the Beasty Bone)
 app.include_router(check_numbers_router)  # Check your numbers (Show the Math, E)
-app.include_router(digest_router)  # the Inbox digest email and Your account › Email
+app.include_router(digest_router)  # the Inbox digest email and your picture › Email digest
 app.include_router(usage_router)  # Admin › Features: which features get used
 app.include_router(search_router)  # Search, like Spotlight: what the search box can find
 app.include_router(trophies_router)  # Trophy Case: Party's Trophies tab and each person's view
