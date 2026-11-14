@@ -23,7 +23,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app import characters as chars
-from app import companion_story, companions, ddb_bridge, ddb_sheet, web
+from app import companion_story, companions, components, ddb_bridge, ddb_sheet, web
 from app import spellbook as sb
 from app.character_views import ordinal
 from app.db import get_db
@@ -149,7 +149,8 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
                                                                      "form_no": form_no(sheet, ch, e["name"]), "familiars": forms, "ff_first": first,
                                                                      "ff_kind": kind, "ff_name": named, "kinds": companions.KINDS,
                                                                      "ff_new": companions.new_forms(sheet) if forms is not None and reachable else [],
-                                                                     "summon": summon, "steed_before": companions.steed_before(ch, summon) if summon else None})
+                                                                     "summon": summon, "steed_before": companions.steed_before(ch, summon) if summon else None,
+                                                                     "use_up": components.rules_for(ch.campaign_id)[components.USE_UP]})
 
 
 def way_groups(can: list[dict], e: dict) -> list[tuple[str, list[dict]]]:
@@ -213,6 +214,7 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
         ddb_bridge.reach(ch)
         _spend(ch, db, way, 1, f"{ch.name}: {e['name']}, {chosen['name']} slot")
         undo["spent"] = way
+    said += _use_up(db, ch, e, undo)
     story_was = dict(ch.creature_story or {})  # (a familiar's or steed's World entry: Undo puts its story back)
     if e["name"] == companions.FIND_FAMILIAR and companions.on(db, ch) and (familiar or companions.familiars(ch, sheet)):
         back, brought = companions.cast(db, ch, sheet, familiar, kind, familiar_name, wild=wild)
@@ -240,6 +242,23 @@ def cast(request: Request, character_id: int, key: str, way: str = Form(""), fam
     return JSONResponse(out)
 
 
+def _use_up(db: Session, ch: Character, e: dict, undo: dict) -> str:
+    """A component the spell consumes, taken from the inventory on D&D Beyond when the table plays it so (Brett chose C,
+    Nov 13; Manage › House rules › Spells: components, app/components.py). Undo puts it back. What it adds to the corner
+    card's words."""
+    need = e.get("need") or {}
+    if need.get("kind") != "consumes" or not need.get("item") or not components.rules_for(ch.campaign_id)[components.USE_UP]:
+        return ""
+    n, name = int(need.get("n") or 1), need.get("name") or "its component"
+    many = f"{n} {name}" if n > 1 else name
+    if not ddb_bridge.reachable(ch):
+        return f": take {many} off D&D Beyond"
+    ddb_bridge.add(db, ch, "item", {"item": int(need["item"].split(":", 1)[1]), "delta": -n, "name": name},
+                   f"{ch.name}: {many} used up ({e['name']})")
+    undo["used"] = f"{need['item']}:{n}"
+    return f": {many} used up"
+
+
 def _spend(ch: Character, db: Session, way: str, delta: int, label: str) -> None:
     kind, level = way.split(":", 1)
     ddb_bridge.add(db, ch, "use", {"field": way, "delta": delta, "max": ddb_sheet.most(ch.snapshot.raw, kind, level)}, label)
@@ -248,11 +267,12 @@ def _spend(ch: Character, db: Session, way: str, delta: int, label: str) -> None
 @router.post("/characters/{character_id:int}/cast/undo")
 def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: str = Form(""), companions_were: str = Form("", alias="companions"),
               healed: str = Form(""), added: str = Form(""), story: str = Form(""), made: str = Form(""), n: str = Form(""),
-              sig: str = Form(""), db: Session = Depends(get_db)):
+              used: str = Form(""), sig: str = Form(""), db: Session = Depends(get_db)):
     """The corner card's Undo: the slot back, Concentration as it was, and a familiar where it was. Only what the cast
     answered, as it was (`sig`)."""
     ch, _ = _guard(db, request, character_id)
-    sent = {"key": key, "spent": spent, "companions": companions_were, "healed": healed, "added": added, "story": story, "made": made, "n": n}
+    sent = {"key": key, "spent": spent, "companions": companions_were, "healed": healed, "added": added, "story": story, "made": made, "n": n,
+            "used": used}
     if not web.sealed(sent, f"cast-undo:{ch.id}", sig):
         raise HTTPException(409, "That Undo isn't one askdnd gave: cast again, or change it on the sheet.")
     _, e = _spell(db, ch, key)
@@ -282,6 +302,14 @@ def undo_cast(request: Request, character_id: int, key: str = Form(...), spent: 
             raise HTTPException(404)
         ddb_bridge.reach(ch)
         _spend(ch, db, spent, -1, f"{ch.name}: {e['name']} undone")
+    if used:  # (the component the cast used up, back in the inventory)
+        item, _, many = used.removeprefix("item:").partition(":")
+        if not item.isdigit():
+            raise HTTPException(404)
+        ddb_bridge.reach(ch)
+        name = next((i.get("name") for i in _sheet(db, ch).get("inventory") or [] if i.get("key") == f"item:{item}"), "") or "its component"
+        ddb_bridge.add(db, ch, "item", {"item": int(item), "delta": max(1, min(int(many) if many.isdigit() else 1, 99)), "name": name},
+                       f"{ch.name}: {name} back ({e['name']} undone)")
     if ch.concentration and ch.concentration.get("key") == key:
         ch.concentration = ch.concentration.get("was")
     db.commit()
