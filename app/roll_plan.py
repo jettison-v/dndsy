@@ -450,7 +450,8 @@ def plan(sheet: dict, o: dict, scope: str = "own") -> dict:
         (out["heal"] if o.get("heal") else out["damage"]).append(part)
         src["heal" if o.get("heal") else "damage"] = "sheet" if sheet_part else "text"
 
-    spell = {"level": o.get("level") or 0, "types": {p["type"] for p in out["damage"] if p.get("type")}} if o.get("kind") == "spell" and out["damage"] else None
+    spell = ({"level": o.get("level") or 0, "types": {p["type"] for p in out["damage"] if p.get("type")}, "damages": bool(out["damage"]), "heals": bool(out["heal"])}
+             if o.get("kind") == "spell" and (out["damage"] or out["heal"]) else None)
     made = ("spell" if o.get("kind") == "spell" else "unarmed" if UNARMED_ROW.search(f"{o['name']} {o.get('meta') or ''}")
             else "natural" if block else "weapon")
     have = traits(sheet, o, made)
@@ -482,7 +483,7 @@ def plan(sheet: dict, o: dict, scope: str = "own") -> dict:
     return out
 
 
-MODIFIER_WHEN = ("before", "after_roll", "after_fail", "on_hit", "on_damage", "damage_taken")
+MODIFIER_WHEN = ("before", "after_roll", "after_fail", "on_hit", "on_damage", "on_heal", "damage_taken")
 
 
 def _modifier(a: dict) -> dict:
@@ -512,13 +513,28 @@ def modifiers_for(sheet: dict, roll: str, spell: dict | None = None, have: set[s
             if roll == "attack" and have is not None and not applies(a, have):
                 continue
             out.append(_modifier(a))
-        elif spell is not None and "spell damage" in to:
+        elif spell is not None and "spell damage" in to and spell.get("damages", True):
             if a.get("slot") and not spell.get("level"):
                 continue  # (a cantrip uses no slot)
             if a.get("damage_types") and spell.get("types") and not set(a["damage_types"]) & spell["types"]:
                 continue
-            out.append(_modifier(a))
+            out.append(_at_levels(_modifier(a), spell))
+        elif spell is not None and "spell healing" in to and spell.get("heals"):
+            if a.get("slot") and not spell.get("level"):
+                continue
+            out.append(_at_levels(_modifier(a), spell))  # (Disciple of Life: 2 + the slot's level)
     return out
+
+
+def _at_levels(m: dict, spell: dict) -> dict:
+    """A modifier whose amount grows with the slot ({slot}: Disciple of Life's 2 + the slot's level) as its amount at
+    every level the spell can be cast at (`adds_at`), so the card only looks up the level it's cast at."""
+    if "{slot}" not in str(m.get("adds") or ""):
+        return m
+    def at(level: int) -> str:
+        total = sum(int(x) for x in re.findall(r"-?\d+", str(m["adds"]).replace("{slot}", str(level))))
+        return f"+{total}"
+    return {**m, "adds": at(spell.get("level") or 1), "adds_at": {str(lv): at(lv) for lv in range(max(1, spell.get("level") or 1), 10)}}
 
 
 def _judge(out: dict, o: dict, rsrc: str | None) -> None:
@@ -624,6 +640,7 @@ def button(kind: str, label: str, mod="", dmg="", note: str = "", plan: dict | N
             out["notes"].append("Concentration after damage: DC 10 or half the damage, whichever is higher (up to 30).")
         if label == "Initiative":
             out["notes"].append("Initiative: Disadvantage if you're Surprised, Advantage if you're Invisible.")
+            out["mods"] = "initiative"  # (the roll context's modifiers for Initiative: a check's and Initiative's own)
         if note:
             out["notes"].append(note)
         return {**out, "play": "d20", "bonus": _int(mod), "adv_keys": keys}
