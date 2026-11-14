@@ -25,12 +25,18 @@ class Captured(Transport):
 
 @pytest.fixture
 def sentry(monkeypatch):
+    """Sentry started as askdnd starts it, with the stand-in as its transport from the first moment: swapped in after
+    the start, the real one had already queued what it would send, and sent it to the made-up address later, in some
+    later test (Nov 13, found by mutation testing's other order)."""
     monkeypatch.setenv("SENTRY_DSN", "https://key@o0.ingest.sentry.io/0")
+    sent = Captured(None)
+    real_init = sentry_sdk.init
+    monkeypatch.setattr(sentry_sdk, "init", lambda *a, **k: real_init(*a, **{**k, "transport": sent}))
     assert errors.setup()
-    sent = Captured(sentry_sdk.get_client().options)
-    sentry_sdk.get_client().transport = sent
+    assert sentry_sdk.get_client().transport is sent
     yield sent
-    sentry_sdk.init()  # no DSN: reporting off again
+    sentry_sdk.get_client().close()
+    real_init()  # no DSN: reporting off again
     errors._state["on"] = False
     errors._recent.clear()
 
