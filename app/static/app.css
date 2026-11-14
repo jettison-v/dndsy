@@ -1835,12 +1835,13 @@ body.at-table .rolls-side { display: flex; flex-direction: column; position: fix
 body.at-table.rolls-open { --rolls-w: 340px; }
 @media (max-width: 1240px) and (min-width: 901px) { body.at-table.rolls-open { --rolls-w: 0px; } body.at-table.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
 body.at-table { padding-left: var(--rolls-w, 0); }
-/* Table rolls beside the page is a full-height side panel (Brett chose it, Nov 13): from the window's top, its title row
-   level with the menu bar and carrying its red line, while the menu bar and the connection band sit over the page beside
-   it, lined up with it. Narrower than 1241px it opens over the page instead, below the bar. */
+/* Table rolls beside the page is a full-height side panel (Brett chose it, Nov 13): its own column from the window's top,
+   its title row as tall as the menu bar with a thin line under it (Brett chose A, Nov 13, docs/mockups/table-rolls-top/:
+   the bar's red line is the bar's alone, stopping at the panel's edge), while the menu bar and the connection band sit
+   over the page beside it. Narrower than 1241px it opens over the page instead, below the bar. */
 @media (min-width: 1241px) {
   body.at-table.rolls-open .rolls-side { top: 0; }
-  body.at-table.rolls-open .rs-head { min-height: 62px; padding-top: 0; padding-bottom: 0; border-bottom: 2px solid var(--red); }
+  body.at-table.rolls-open .rs-head { min-height: 62px; padding-top: 0; padding-bottom: 1px; border-bottom: 1px solid var(--line); }  /* (1px + 1px: its title, Roll and « stay where the red line left them) */
 }
 .rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; color: var(--amber); }
 .rs-grip { display: none; }
@@ -1848,7 +1849,7 @@ body.at-table { padding-left: var(--rolls-w, 0); }
 .rs-toggle { flex: none; width: 30px; height: 30px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-sm); line-height: 1; }
 .rs-toggle:hover { color: var(--text); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.rs-log { list-style: none; margin: 0; padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.rs-log { list-style: none; margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
 .roll-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; background: var(--surface); border: 1px solid transparent; border-radius: var(--r-lg); padding: 12px 14px; font-size: var(--fs-sm); line-height: 1.4; }
 .roll-item.mine { border-color: var(--line); }
 .roll-item.fresh { animation: roll-fresh 1.6s ease-out; }

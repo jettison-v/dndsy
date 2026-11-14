@@ -1,0 +1,107 @@
+<title>Table Rolls' Top</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  :root { --bg:#15171a; --surface:#1f2226; --surface-2:#272b30; --line:#34383e; --line-strong:#4a4f57; --chrome:#0f1113;
+    --text:#ebe7df; --strong:#fff; --muted:#a29d93; --red:#d64545; --amber:#e8b34b; --paper:#f6f4ef; --ink:#23262b; --ink-muted:#6b665d; color-scheme: dark; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 Inter, system-ui, -apple-system, sans-serif;
+    padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); padding-block:24px 48px; }
+  main { max-width:1180px; margin:0 auto; display:grid; gap:28px; }
+  h1 { font-size:26px; margin:0; color:var(--strong); text-wrap:balance; }
+  .lede { color:var(--muted); max-width:72ch; margin:6px 0 0; }
+  .where { background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:12px 16px; color:var(--muted); max-width:72ch; }
+  .where b { color:var(--text); }
+  section { display:grid; gap:10px; }
+  h2 { margin:0; font-size:18px; color:var(--strong); display:flex; gap:10px; align-items:baseline; flex-wrap:wrap; }
+  h2 .tag { font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--amber); border:1px solid var(--amber); border-radius:999px; padding:1px 8px; }
+  .why { color:var(--muted); margin:0; max-width:80ch; }
+  .shot { overflow-x:auto; border:1px solid var(--line-strong); border-radius:10px; }
+  .app { width:100%; min-width:1000px; height:250px; display:grid; grid-template-columns:300px 1fr; background:var(--bg); position:relative; }
+  /* the side panel */
+  .side { display:grid; grid-template-rows:60px 1fr; min-width:0; }
+  .side-head { display:flex; align-items:center; justify-content:space-between; padding:0 14px; }
+  .side-head > span { color:var(--amber); font-weight:800; letter-spacing:.12em; font-size:13px; }
+  .side-head .btns { display:flex; gap:8px; }
+  .btn { border:1px solid var(--line); background:var(--surface-2); color:var(--text); border-radius:7px; padding:3px 10px; font-size:13px; }
+  .roll { margin:10px 12px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; display:grid; grid-template-columns:36px 1fr auto; gap:10px; }
+  .av { width:36px; height:36px; border-radius:50%; background:#6b5a48; }
+  .roll b { color:var(--strong); }
+  .roll small { color:var(--muted); display:block; }
+  .big { font-size:28px; font-weight:800; color:var(--strong); }
+  /* the page side */
+  .page { display:grid; grid-template-rows:60px 1fr; min-width:0; }
+  .bar { display:flex; align-items:center; gap:18px; padding:0 20px; color:var(--muted); font-size:14px; }
+  .bar .logo { width:26px; height:26px; border-radius:6px; background:var(--red); }
+  .bar .camp { color:var(--strong); font-weight:700; }
+  .bar .pill { margin-left:auto; border:1px solid var(--line); border-radius:999px; padding:3px 12px; }
+  .content { padding:18px 22px; }
+  .content h3 { margin:0; font-size:24px; color:var(--strong); }
+  .content p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+
+  /* A: the panel is its own column, top to bottom */
+  .a .side { background:var(--chrome); border-right:1px solid var(--line); }
+  .a .side-head { border-bottom:1px solid var(--line); }
+  .a .bar { background:var(--chrome); border-bottom:2px solid var(--red); }
+
+  /* B: one bar across the whole window; the panel's title sits in it */
+  .b .side-head, .b .bar { background:var(--chrome); border-bottom:2px solid var(--red); }
+  .b .side-body { border-right:1px solid var(--line); }
+
+  /* C: today: one red line across, a divider through the bar */
+  .c .side { background:var(--chrome); border-right:1px solid var(--line); }
+  .c .side-head, .c .bar { background:var(--chrome); border-bottom:2px solid var(--red); }
+
+  .rec { border-left:3px solid var(--amber); padding-left:12px; }
+  .fine { color:var(--muted); font-size:13px; }
+</style>
+
+<main>
+  <header>
+    <h1>Table Rolls' Top</h1>
+    <p class="lede">Since tonight, Table rolls runs the full height of the window on a laptop, beside the menu bar. Its top
+      row still looks off: the red line under the menu bar runs across it as if it were part of the bar, while the line
+      between them says they're separate. Three ways apps usually settle this, drawn in askdnd's colours.</p>
+  </header>
+  <p class="where"><b>Where this is:</b> every page in a campaign, on a laptop (1241px wide or more) with Table rolls open.
+    Phones and narrower windows aren't affected: there Table rolls opens over the page, below the menu bar.</p>
+
+  <section class="rec">
+    <h2>A · The panel is its own column <span class="tag">Recommended</span></h2>
+    <p class="why">Table rolls is one column from top to bottom, with a thin line under its title. The red line belongs to
+      the menu bar alone and stops at the panel's edge. The usual pattern for a full-height panel (Slack, Notion, VS Code):
+      the eye reads two clear pieces, the page with its bar, and the panel beside it.</p>
+    <div class="shot"><div class="app a">
+      <div class="side"><div class="side-head"><span>TABLE ROLLS</span><div class="btns"><span class="btn">Roll</span><span class="btn">«</span></div></div>
+        <div><div class="roll"><div class="av"></div><div><b>Cole</b> <small>5 h</small><b>Dex save</b><small>d20 17 / 7 +3 · Adv</small></div><div class="big">20</div></div></div></div>
+      <div class="page"><div class="bar"><span class="logo"></span><span class="camp">The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span>Cole</span><span>Party ▾</span><span class="pill">●</span><span>Manage ▾</span></div>
+        <div class="content"><h3>Cole</h3><p>Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8</p></div></div>
+    </div></div>
+  </section>
+
+  <section>
+    <h2>B · One bar across the whole window</h2>
+    <p class="why">The menu bar runs the full width with no break, and Table rolls' title sits in it like a section of the
+      bar; the panel's own edge starts below the red line. Reads as one app bar (Gmail, YouTube), but the panel's title
+      then looks like a menu bar item.</p>
+    <div class="shot"><div class="app b">
+      <div class="side"><div class="side-head"><span>TABLE ROLLS</span><div class="btns"><span class="btn">Roll</span><span class="btn">«</span></div></div>
+        <div class="side-body"><div class="roll"><div class="av"></div><div><b>Cole</b> <small>5 h</small><b>Dex save</b><small>d20 17 / 7 +3 · Adv</small></div><div class="big">20</div></div></div></div>
+      <div class="page"><div class="bar"><span class="logo"></span><span class="camp">The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span>Cole</span><span>Party ▾</span><span class="pill">●</span><span>Manage ▾</span></div>
+        <div class="content"><h3>Cole</h3><p>Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8</p></div></div>
+    </div></div>
+  </section>
+
+  <section>
+    <h2>C · Today, for comparison</h2>
+    <p class="why">The red line runs across both, and a line divides them through the bar: the two halves disagree about
+      whether they belong together.</p>
+    <div class="shot"><div class="app c">
+      <div class="side"><div class="side-head"><span>TABLE ROLLS</span><div class="btns"><span class="btn">Roll</span><span class="btn">«</span></div></div>
+        <div><div class="roll"><div class="av"></div><div><b>Cole</b> <small>5 h</small><b>Dex save</b><small>d20 17 / 7 +3 · Adv</small></div><div class="big">20</div></div></div></div>
+      <div class="page"><div class="bar"><span class="logo"></span><span class="camp">The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span>Cole</span><span>Party ▾</span><span class="pill">●</span><span>Manage ▾</span></div>
+        <div class="content"><h3>Cole</h3><p>Wood Elf · Druid 6 (Circle of the Moon) / Monk 2 · level 8</p></div></div>
+    </div></div>
+  </section>
+
+  <p class="fine">Drawn with askdnd's own colour tokens; made-up layout, not a screenshot. The connection band, when it
+    shows, sits under the menu bar in A and B alike, over the page only.</p>
+</main>
