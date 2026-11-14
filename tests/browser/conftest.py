@@ -119,6 +119,10 @@ def server(browser_db, tmp_path_factory, request):
         proc.kill()
 
 
+# The before-and-after pictures (test_pictures.py, foundation F7) run only for scripts/visual_compare.py
+collect_ignore = [] if os.getenv("VISUAL_OUT") else ["test_pictures.py"]
+
+
 @pytest.fixture(scope="module")  # per file: torn down before the server tests run
 def playwright():
     """One Playwright per file, for every browser in it: a second one started beside it fails ("Sync API inside the
