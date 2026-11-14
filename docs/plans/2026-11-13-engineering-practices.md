@@ -23,6 +23,42 @@ and each has the checks that catch it:
 | **The UI or UX quietly getting worse**: something moved, hidden, restyled or slower that nobody asked for | Layout checks at every width (test_layout); the design system; a visual comparison of every main page before and after each change (F7) |
 | **Any of the above later**, when the next change lands | Each enhancement leaves a test that fails if it breaks; ratchets only go down; nothing merges red |
 
+## The fire drill (Nov 13, Brett: check the foundations as a whole)
+
+`scripts/fire_drill.py` plants one break for each line of What robust means, runs the check meant to catch it (clean
+first, so a failure is the break's), and puts the file back. First run, Nov 13: **14 of 14 caught**.
+
+| The break | Caught by |
+| --- | --- |
+| A player may change someone else's character | test_refusals |
+| A change from another website is accepted | test_same_site |
+| A hidden World entry shows up in a player's Search | test_search |
+| A new route that changes something, with no feature and no refusal check | test_usage, test_refusals |
+| A route that holds the event loop while it waits for the database | test_event_loop |
+| A link to a page that doesn't exist, in the menu bar | test_links |
+| app.js deciding by a button's words | test_no_text_refs |
+| A date from the server's clock instead of the table's | ruff (DTZ) |
+| A button with no type inside a form | djLint |
+| A name in app.js hiding another | ESLint |
+| A real-looking email address in the public repo | test_public_safe |
+| The menu bar too wide for a phone | test_layout |
+| A JavaScript error on every page | every browser test (unexpected page errors) |
+| Battle's tabs nudged 24px | visual_compare |
+
+Run it again after changing a check or how tests run; a break that stays green is a hole to fix. A test that passes
+while broken is mutation testing's job (F8), not the drill's.
+
+## Faster development (Nov 13, Brett: "make development and testing faster")
+
+- **CLAUDE.md is the rules and an index** (114 KB to 30 KB, read on every turn): the feature map is docs/MAP.md, read
+  section by section when a feature changes.
+- **Steadier pictures**: the before-and-after draws text the same way every time (Chromium without LCD text or hinting)
+  and lists a page that differs only by text smoothing apart from the changes. main against itself: 0 of 64 changed.
+- **A quick local pass**: `scripts/quick_test.py` runs only the tests that ran the changed files' code, from a record
+  made by the server suite with coverage contexts (44 seconds, kept three days in private/). Import chains can't narrow
+  it here: everything uses the models, which use measuring. GitHub still runs everything.
+- **Fewer pull requests**: small fixes ride together, since each merge sends every open one back through CI.
+
 ## The foundations, in order (F)
 
 1. Dependency and code scanning: Dependabot, pip-audit, CodeQL, secret scanning. **Built** (#326).
