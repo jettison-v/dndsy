@@ -2,6 +2,8 @@
 used, with Undo. First, a row's own cost spent as its roll is made (Brett, Nov 13: Flurry of Blows showed its Focus
 Point and didn't spend it)."""
 
+import os
+
 from sqlalchemy import create_engine, text
 
 from tests.browser.test_roll_card import _pieces
@@ -77,6 +79,40 @@ def test_a_rows_own_cost_is_spent_as_it_is_rolled_with_undo(people, server, brow
         card.locator("[data-roll-dmg], [data-missed]").first.wait_for()
         page.wait_for_timeout(500)
         assert len(spent()) == n and player.errors == []
+    finally:
+        _pieces(browser_db, server, was)
+        engine.dispose()
+
+
+def test_the_use_window_spends_a_cost_with_no_roll(people, server, browser_db):
+    """Brett chose A on the Use Window mockup (Nov 13): Patient Defense has no roll, so its row (and Search) has Use;
+    its window says the cost and what's left, and Use spends the Focus Point with Undo on the corner card."""
+    was = _pieces(browser_db, server, ["sync"])
+    engine = create_engine(browser_db[0])
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM bridge_intents WHERE character_id = :c"), {"c": server["cole"]})
+        player = people("player")
+        for _ in range(20):  # (the server keeps a campaign's switches for a few seconds)
+            with engine.begin() as conn:
+                conn.execute(text("UPDATE characters SET sheet_heard_at = now(), sheet_seen_at = now() WHERE id = :c"), {"c": server["cole"]})
+            page = battle(player, server)
+            if page.locator("main[data-spends='play']").count():
+                break
+            page.wait_for_timeout(500)
+        page.locator("[data-search-open]").click()
+        page.fill("#search-q", "patient defense")
+        page.locator(".search-res.on").wait_for()
+        page.keyboard.press("Enter")
+        go = page.locator(".roll-win [data-use-go]")
+        go.wait_for()
+        if os.environ.get("SHOT_OUT"):  # (a picture for a look by eye, never in git)
+            page.locator(".roll-win").screenshot(path=os.environ["SHOT_OUT"])
+        go.click()
+        page.locator("#cards > .card .card-act").first.wait_for()
+        with engine.begin() as conn:
+            sent = [r[0] for r in conn.execute(text("SELECT data FROM bridge_intents WHERE character_id = :c AND kind = 'use' ORDER BY id"), {"c": server["cole"]})]
+        assert [d["delta"] for d in sent] == [1] and player.errors == []
     finally:
         _pieces(browser_db, server, was)
         engine.dispose()

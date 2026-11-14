@@ -242,10 +242,13 @@ def planned(sheet: dict, rows: list[dict], scope: str = "own") -> list[dict]:
     dice at every level, and how its numbers add up (Show the Math, app/roll_math.py). A row that already has a plan
     (one of the character's own, copied onto a form's Battle) keeps it. tests/test_roll_math.py walks every form and
     creature of the party's sheets."""
+    from app.feature_use import spec as use_spec  # (the Use window: a row that costs something and doesn't roll)
     from app.roll_math import option_math
     from app.roll_plan import SAVE, effects, plan  # (the roll card's: what each roll button plays, app/roll_plan.py)
 
     for o in rows:
+        if scope == "own" and o.get("pay") and "use_window" not in o:
+            o["use_window"] = use_spec(sheet, o) is not None
         if "plan" in o:
             continue
         if str(o.get("hit") or "")[:1] in "+-\u2212" or SAVE.match(str(o.get("hit") or "")):  # (a to-hit, or a save spell's "Dex 15")

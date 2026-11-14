@@ -1,0 +1,23 @@
+{# A feature's Use window, inside the roll window (app.js "using an item"; app/feature_use.py; Brett chose A on
+   docs/mockups/use-window/): what it costs and has left, its words, then what its data asks (the way, how many, for
+   whom), one button that does it all, with Undo on the corner card. #}
+{% set p = s.pay[0] %}{% set left = p.count.left %}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">{{ o.name }}</div>
+<p class="use-cost">{{ o.cost }} · {% if s.pool %}{{ p.count.name.split(":")[0] }}: {{ left }} of {{ p.count.max }}{% else %}{{ p.label }} · {{ left }}{% if p.count.max %} of {{ p.count.max }}{% endif %} left{% endif %}{% if p.count.back %} · {{ p.count.back }}{% endif %}</p>
+{% if o.summary %}<p class="use-what">{{ o.summary }}</p>{% endif %}
+{% if reachable %}
+{% if s.ways | length > 1 %}<fieldset class="ff-pick ff-kinds" data-feature-ways><legend class="rw-label">Way</legend>{% for w in s.ways %}<label class="ff-kind"><input type="radio" name="way" value="{{ w.key }}" data-label="{{ w.name }}"{% if loop.first %} checked{% endif %}{% if w.spend %} data-spend="{{ w.spend }}"{% endif %}> {{ w.name }}{% if w.spend %} <span class="note">{{ w.spend }}</span>{% endif %}</label>{% endfor %}</fieldset>
+{% else %}<input type="hidden" name="way" value="{{ s.ways[0].key }}">{% endif %}
+{% if s.pool %}<div class="rw-row"{% if s.ways[0].spend %} hidden{% endif %}><label class="count-n">How many <input type="number" name="n" value="{{ n }}" min="1" max="{{ left }}" inputmode="numeric" data-feature-n></label>{% if first and first.needs %}<span class="note" data-feature-needs>{{ first.name }} is missing {{ first.needs }}</span>{% endif %}</div>{% endif %}
+{% if s.for %}<div class="rw-row rw-choices" role="radiogroup" aria-label="For">
+  {% for w in whom %}<label class="rw-choice"><input type="radio" name="target" value="{{ w.id }}" data-needs="{{ w.needs }}" data-name="{{ w.name }}"{% if first and w.id == first.id %} checked{% endif %}><span>{{ w.name }}</span><small>{{ w.hp }}{% if not w.own %} · they apply it{% endif %}</small></label>{% endfor %}
+</div>{% endif %}
+<div class="rw-row use-foot">
+  <button type="button" class="btn primary small" data-use-go data-to="use"{% if not left %} disabled title="{{ p.count.back }}"{% endif %}>{{ s.ways[0].name }}</button>
+  <button type="button" class="btn link small" data-use-close>Cancel</button>
+</div>
+<p class="use-said" role="alert" hidden></p>
+{% else %}
+<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to use this here, or mark it on D&amp;D Beyond (askdnd shows it within seconds).</p>
+{% endif %}

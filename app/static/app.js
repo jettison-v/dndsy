@@ -3015,6 +3015,20 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       itemChanged(j);
     }).catch(err => toast(name + ': ' + err.message, null, 'warn'));
   }
+  // A feature's Use window (app/feature_use.py): How many starts at what the one it's for is missing, never more than
+  // what's left; a way with its own cost (End Poisoned, 5) has no How many; the button names the way
+  document.addEventListener('change', e => {
+    const w = e.target.closest && e.target.closest('.roll-win');
+    if (!w || !w.querySelector('[data-feature-use], [data-feature-n], [data-feature-ways]') || !e.target.matches('input[type=radio]')) return;
+    const n = w.querySelector('[data-feature-n]'), way = w.querySelector('input[name=way]:checked'), who = w.querySelector('input[name=target]:checked');
+    const go = w.querySelector('[data-use-go]'), needs = w.querySelector('[data-feature-needs]');
+    if (n) {
+      n.closest('.rw-row').hidden = !!(way && way.dataset.spend);
+      if (who && e.target === who && +who.dataset.needs) n.value = Math.max(1, Math.min(+n.max, +who.dataset.needs));
+    }
+    if (needs && who) { needs.textContent = +who.dataset.needs ? who.dataset.name + ' is missing ' + who.dataset.needs : who.dataset.name + ' is at full Hit Points'; }
+    if (go && way) go.textContent = way.dataset.label;
+  });
   // A Necklace of Prayer Beads' window: its button says "and roll" only for a bead whose spell rolls (Cure Wounds, Shining Smite)
   document.addEventListener('change', e => {
     if (!e.target.matches || !e.target.matches('[data-use-bead]')) return;
