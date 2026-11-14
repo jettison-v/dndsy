@@ -199,3 +199,4 @@ def test_healing_given_to_someone_waits_for_their_player_until_it_is_applied_or_
     player.post(r["undoUrl"], data=r["undo"])  # (the healer takes it back: it waits for no one)
     db.expire_all()
     assert heals.waiting(db, {"email": "other@example.com"}, cole.campaign_id) == []
+    assert hit_points.apply_info(db, {"email": "dm@example.com"}, [row], [])[row.id]["to"] == []  # (nothing left to apply)

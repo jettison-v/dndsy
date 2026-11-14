@@ -434,7 +434,8 @@ def apply_info(db: Session, user: dict | None, roots: list[TableRoll], kids: lis
                 conc.append({"cid": cid, "name": ch.name, **c})
         given = heals.for_of(r)  # (healing given to someone: theirs to apply, app/heals.py)
         only = r.character_id if (r.detail or {}).get("self") else given  # (Second Wind, a Hit Point Die: the roller's own)
-        out[r.id] = {"to": [{"id": c.id, "name": c.name, **_hp_now(c)} for c in mine[r.campaign_id] if c.id not in done and (only is None or c.id == only)],
+        undone = bool(given) and not r.total  # (a heal its giver took back: nothing to apply)
+        out[r.id] = {"to": [] if undone else [{"id": c.id, "name": c.name, **_hp_now(c)} for c in mine[r.campaign_id] if c.id not in done and (only is None or c.id == only)],
                      "done": [k.label for k in done.values()], "conc": conc, "dm": is_dm(user, r.campaign_id),
                      **({"waiting": (db.get(Character, given) or Character(name="them")).name} if given and given not in done and r.total else {})}
     return out

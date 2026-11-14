@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import picks, web
+from app import ddb_bridge, picks, web
 from app.auth import current_user
 from app.db import get_db
 from app.models import Character, TableRoll
@@ -61,7 +61,7 @@ def waiting(db: Session, user: dict | None, campaign_id: int) -> list[dict]:
     for r, tgt in open_heals(db, campaign_id):
         if not picks.can_edit(db, user, tgt):
             continue
-        hp = (chars.character_summary(tgt) or {}).get("hit_points") or {}
+        hp = (ddb_bridge.as_shown(db, tgt, chars.character_summary(tgt)) or {}).get("hit_points") or {}  # (a change on its way counts)
         now, top = hp.get("current"), hp.get("max")
         out.append({"id": r.id, "for": tgt.id, "name": tgt.name, "from": r.character.name if r.character else "Someone",
                     "label": r.label, "amount": r.total,
