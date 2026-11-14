@@ -37,7 +37,11 @@ and each has the checks that catch it:
    review checks the diff against "What robust means" above and CLAUDE.md's "Before calling a change done".
 7. A visual comparison: every main page drawn before and after a change (main against the branch, same data, same
    widths), and the differences shown to Brett before merge. Kept off GitHub (the repo is public: no pictures of pages
-   with the party's sheets); run locally or on the Mac Mini.
+   with the party's sheets); run locally or on the Mac Mini. **Built** (Nov 13): `uv run python scripts/visual_compare.py`
+   draws every main page for a player and an admin at laptop and phone width, plus states a page only shows sometimes
+   (the connection band), on main and on the branch, and writes private/visual/report.html with only what changed
+   (before, after, the change in red). main against itself: 62 of 62 the same. Run it before merging anything people see,
+   and show Brett the report's changed pages.
 8. Mutation testing on core logic (the roll plan, hit points, rules data, access): small deliberate bugs put into the
    code, and the tests must catch each one; a bug they miss is a missing test.
 
