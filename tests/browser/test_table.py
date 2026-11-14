@@ -403,9 +403,9 @@ def test_the_dms_table_tools_work_after_a_map_is_added(people, server, browser_d
         page.locator("#tbl-area input[name=label]").fill("Fireball")
         page.locator("#tbl-area button[type=submit]").click()
         page.locator("#tbl-area").wait_for(state="hidden")  # (the window closes, then the map takes the click)
-        page.locator("#tmap").wait_for(state="visible")
-        m = page.locator("#tmap").bounding_box()
-        page.mouse.click(m["x"] + m["width"] / 2, m["y"] + m["height"] / 2)
+        # (the map's middle, through the locator: a fresh copy of the map can replace it at any moment, Nov 13; force:
+        # a token there may sit on top, and the map takes the click as before)
+        page.locator("#tmap").click(force=True)
         page.locator(".tmap-area", has_text="Fireball").wait_for()
         page.get_by_role("button", name="Start a fight").click()
         page.get_by_role("button", name="Begin Round 1").wait_for()

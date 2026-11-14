@@ -134,7 +134,10 @@ def test_a_long_group_of_resources_fits_a_phone(people, server):
 
 
 def test_resources_shorten_only_when_they_would_wrap(people, server):
-    """Brett, 2026-11-01: whole names while they fit on one line; once they don't, the short ones, and back again."""
+    """Brett, 2026-11-01: whole names while they fit on one line; once they don't, the short ones, and back again.
+
+    The test sets the row's contents itself; a fresh copy of Battle can arrive at any moment (a change announced for
+    Cole), so its contents are set again on each one and the row refitted (Nov 13: the cause of this test's flakes)."""
     player = people("player")
     page = player.page
     page.set_viewport_size({"width": 1280, "height": 800})
@@ -142,17 +145,44 @@ def test_resources_shorten_only_when_they_would_wrap(people, server):
     row = ".battlebar > .res-row:not(.slots)"
     short = f"document.querySelector('{row}').classList.contains('short')"
     page.wait_for_selector(row)
-    page.wait_for_load_state("networkidle")  # (a fresh copy of the page arriving after this would undo the rows added below)
-    page.evaluate(f"document.querySelectorAll('{row} > .res:not(.res-insp), {row} > .res-group').forEach(e => e.remove())")
-    page.set_viewport_size({"width": 1270, "height": 800})
-    page.wait_for_function(f"!({short})", timeout=3000)
-    page.evaluate(f"""() => {{ const first = document.querySelector('{row} .res-insp');
-      for (let i = 0; i < 12; i++) first.insertAdjacentHTML('beforebegin', '<span class="res extra"><span class="rn-full">A resource with a long name</span><span class="rn-short">R</span></span>'); }}""")
-    page.set_viewport_size({"width": 1280, "height": 800})
-    page.wait_for_function(short, timeout=3000)
-    page.evaluate("document.querySelectorAll('.res.extra').forEach(e => e.remove())")
-    page.set_viewport_size({"width": 1270, "height": 800})
-    page.wait_for_function(f"!({short})", timeout=3000)
+    page.evaluate(f"""() => {{
+      window.resExtras = 0;
+      const set = () => {{
+        const r = document.querySelector('{row}');
+        r.querySelectorAll(':scope > .res:not(.res-insp), :scope > .res-group').forEach(e => e.remove());
+        const first = r.querySelector('.res-insp');
+        for (let i = 0; i < window.resExtras; i++) first.insertAdjacentHTML('beforebegin',
+          '<span class="res extra"><span class="rn-full">A resource with a long name</span><span class="rn-short">R</span></span>');
+      }};
+      window.resSet = set;  // (each step's resize then refits it: what the test checks)
+      document.addEventListener('askdnd:swapped', () => {{ set(); document.body.dispatchEvent(new CustomEvent('htmx:afterSettle')); }});  // (a fresh copy: set again, app.js refits)
+      set();
+    }}""")
+    # (what the row measured, said when a step fails: on GitHub's machines it once never shortened, Nov 13)
+    measured = f"""() => {{ const r = document.querySelector('{row}'), i = r && r.querySelector('.res-insp');
+      return r && {{ short: r.classList.contains('short'), height: r.offsetHeight, line: i && i.offsetHeight, width: r.offsetWidth,
+        extras: r.querySelectorAll('.res.extra').length, items: r.children.length, viewport: innerWidth }}; }}"""
+
+    def until(expression):
+        try:
+            page.wait_for_function(expression)
+        except Exception as e:
+            raise AssertionError(f"{expression}: the row measured {page.evaluate(measured)}") from e
+
+    # New contents refit as the page does after any change (htmx:afterSettle, a fresh copy)
+    refit = "document.body.dispatchEvent(new CustomEvent('htmx:afterSettle'))"
+    page.evaluate(f"window.resExtras = 0; window.resSet(); {refit}")
+    until(f"!({short})")
+    page.evaluate(f"window.resExtras = 12; window.resSet(); {refit}")
+    until(short)
+    # A change of width refits on its own (the row's ResizeObserver): back to whole names once they fit again.
+    # (1280 to 1000: below 1241 Table rolls opens over the page, so the row's own width changes; 1270 to 1280 left it
+    # the same, 892px, and only passed when something else happened to refit it, Nov 13)
+    width = page.evaluate(f"document.querySelector('{row}').offsetWidth")
+    page.evaluate("window.resExtras = 0; window.resSet()")
+    page.set_viewport_size({"width": 1000, "height": 800})
+    page.wait_for_function(f"document.querySelector('{row}').offsetWidth !== {width}")
+    until(f"!({short})")
 
 
 def test_tap_targets_on_a_phone(people, server):
