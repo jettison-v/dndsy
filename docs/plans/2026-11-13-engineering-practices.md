@@ -30,7 +30,7 @@ and each has the checks that catch it:
 3. Migrations run up and down in CI on a fresh database, and the models match it. **Built** (#330).
 4. Linters: ruff's bugbear, simplify, pyupgrade and security rules; ESLint for app.js (no redeclared or implicit
    globals, the bug of Nov 13); Stylelint for app.css; djLint for templates. **Built**: ruff (#331); ESLint, Stylelint and djLint (tools/lint, pyproject.toml).
-5. A preview for each pull request on Railway (Brett switches it on in Railway's dashboard; Claude wires the rest).
+5. A preview for each pull request on Railway (Brett switches it on in Railway's dashboard; Claude wires the rest). **Skipped** (Nov 13): a preview's random address can't use Google sign-in, starts with an empty database, and with no base environment copies production (the legacy app and the nightly backup job, which could save an empty backup that a staging refresh then loads). Local first and staging.askdnd.ai cover it. Revisit only with Base Environment = staging, Focused PR Environments on, and a way to sign in.
 6. The automated code review at high effort on every PR before it merges, its findings fixed. **Built** (Nov 13): before
    merging any pull request, Claude runs the code review at high effort on its diff, fixes what it finds (or says why
    not), and writes the outcome in the pull request's **Review** section (.github/pull_request_template.md). The
