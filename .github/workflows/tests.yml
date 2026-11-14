@@ -66,6 +66,8 @@ jobs:
         run: tools/lint/node_modules/.bin/stylelint --config tools/lint/stylelint.config.mjs "app/static/**/*.css"
       - name: Lint the templates (a button's type, unclosed tags; pyproject.toml [tool.djlint])
         run: uv run djlint app/templates --lint
+      - name: Known vulnerabilities in the Python dependencies (pip-audit)
+        run: uv run --with pip-audit pip-audit
       - name: Tests, with how much of the app they reach
         run: uv run pytest -q --durations=15 --ignore=tests/browser --cov=app --cov-branch --cov-report= --cov-fail-under=90
       - name: Coverage on the run's summary page

@@ -1,0 +1,36 @@
+# CodeQL (the engineering practices, Nov 13): GitHub's security analysis of the Python and the pages' JavaScript, on
+# every pull request into main, on main itself, and weekly; its findings are on the repo's Security tab.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 9 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+          # (vendored libraries are their authors' to fix: askdnd updates them instead)
+          config: |
+            paths-ignore:
+              - app/static/vendor
+      - uses: github/codeql-action/analyze@v3

@@ -1,0 +1,19 @@
+# Dependabot (the engineering practices, Nov 13): a weekly pull request for each outdated dependency, Python (uv) and
+# the GitHub Actions the workflows use. Each runs the full tests like any change and merges only when green.
+# Security fixes come at once, apart from this schedule (the repo's Dependabot security updates, on since Nov 13).
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"

@@ -1068,6 +1068,14 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 
 **Reuse on a new project**: after a deploy, check the live site's version (a /health address that reports the commit) rather than trusting that the pipeline ran, and decide "does this need a deploy" against what's live, not the previous commit.
 
+## Dependency and code scanning (Nov 13)
+
+**What was set up:** GitHub now watches askdnd's code and its dependencies for security problems. Secret scanning and push protection stop a key or password from being committed by mistake (GitHub refuses the push). Dependabot opens a pull request at once when a dependency has a known security fix, and weekly for ordinary updates (`.github/dependabot.yml`), each tested like any change. CodeQL reads the Python and the pages' JavaScript for security mistakes on every pull request (`.github/workflows/codeql.yml`), and pip-audit fails the tests when a Python dependency has a known vulnerability. The first run found one (opentelemetry-api), upgraded in the same change.
+
+**Why:** askdnd's code is public and it holds the table's data; problems are cheaper caught by a machine on every change than found later.
+
+**For a new project:** turn on secret scanning, push protection and Dependabot in the repo's Settings › Code security on day one (free for public repos), add a `dependabot.yml`, and add CodeQL and a dependency audit to CI before the first feature.
+
 ## A Content Security Policy (Nov 13)
 
 **What was set up:** every page now tells the browser exactly what it may run and load: only askdnd's own script files (nothing written into a page, nothing evaluated as code), pictures from askdnd, D&D Beyond and Google, Google's fonts, and the aidedd.org map. Before it could go on, about 45 small bits of code written into the pages (hide a broken picture, confirm a delete) moved into askdnd's own scripts, marked in the page with a `data-` attribute instead. The browser tests now fail on anything the policy blocks, so a page that needs something new can't break quietly.
@@ -1085,3 +1093,8 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **What:** the same kind of checker for app.js (ESLint), app.css (Stylelint) and the page templates (djLint). The JavaScript and CSS tools are Node programs; they live in their own folder, `tools/lint`, with their own `package.json` and lockfile, and CI installs them with `npm ci`.
 **Why:** each found something real on its first run: a CSS rule browsers had been silently dropping, local names that hid others (the bug class behind the roll card opening off screen), and 147 buttons whose behaviour depended on a default.
 **Reuse:** keep build-time tools out of the app's own root when the host detects the language from files there (a `package.json` beside `pyproject.toml` can make Railway build the wrong kind of app). Lock tool versions (`package-lock.json`) so CI and your machine run the same checks.
+
+## Preview environments: tried and switched off (Nov 13)
+**What:** Railway can make a temporary copy of the app for every pull request. Brett switched it on in Project Settings › Environments, then off again before any preview was made.
+**Why off:** a preview gets a random web address, and Google sign-in only works on addresses registered with Google, so nobody could sign in; it starts with an empty database; and with "No base environment" it copies production, including the nightly backup job.
+**Reuse:** previews pay off when the app works signed out or uses a sign-in that allows any address, and when you set the base environment to staging (never production) and turn on Focused PR Environments so only changed services build.
