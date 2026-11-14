@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{# Manage › Scene notes (The DM's Workspace, Brett chose B, Nov 13; app/workspace.py): every place's pins in one list,
+   each opening its notes in the side panel or the table at its place. The DM's alone (app/scene_notes.py). #}
+{% block title %}Scene notes · Manage · askdnd{% endblock %}
+{% block content %}
+<main class="page manage-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Scene notes</h1></div>
+  <p class="subtitle">Your notes for each place of askdnd's table, the read-aloud first. Only you see them: not the players, not admins.</p>
+  {% if not count %}<p class="muted">No scene notes yet. On askdnd's table, open a place and add a pin from its menu.</p>{% endif %}
+  {% for r in rows if r.pins %}
+  <section class="section" data-place="{{ r.place.id }}">
+    <h2>{{ r.place.name }}</h2>
+    {% if table_on %}<div class="row"><a class="btn small" href="{{ cbase }}/table?place={{ r.place.id }}">Open the table here</a></div>{% endif %}
+    <ul class="records">
+      {% for p in r.pins %}<li class="record" data-panel-url="{{ cbase }}/table/scenes/{{ p.id }}" tabindex="0"><span class="record-main"><b>{{ p.name }}</b><span class="note">{{ "On the map" if p.x is not none else "Not pinned on the map" }}</span></span></li>{% endfor %}
+    </ul>
+  </section>
+  {% endfor %}
+  {% if loose %}<section class="section"><h2>Not at a place</h2>
+    <ul class="records">{% for p in loose %}<li class="record" data-panel-url="{{ cbase }}/table/scenes/{{ p.id }}" tabindex="0"><span class="record-main"><b>{{ p.name }}</b></span></li>{% endfor %}</ul>
+  </section>{% endif %}
+</main>
+{% endblock %}

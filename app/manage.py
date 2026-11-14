@@ -15,12 +15,11 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import access, config, documents, review, web
+from app import access, config, documents, review, vtt, web
 from app.auth import (
-    can_edit_settings,
+    _allows,
     can_moderate,
     can_see_table,
-    can_set_house_rules,
     current_user,
     is_admin,
     is_reviewer,
@@ -32,43 +31,54 @@ router = APIRouter()
 
 CAMPAIGN, ASKDND = "campaign", "askdnd"
 # The one list of Manage's and the gear's pages (The Three Menus, Brett approved all six parts, Nov 13,
-# docs/mockups/menus/): (key, label, address, what it's for, group, section, who may open it, extra addresses that belong
-# to it). Each menu and each page's list down the left is drawn from it: the same groups, names and order. A group shows
-# its most used pages (IN_MENU) and the rest on its own line of small links. A campaign page's address is under the
-# campaign's (/c/<campaign>/manage/…). Manage is grouped by the DM's week; the gear by what its pages already are.
+# docs/mockups/menus/; The DM's Workspace, Brett chose B, Nov 13, docs/mockups/dm-workspace/): (key, label, address,
+# what it's for, group, section, who may open it, extra addresses that belong to it). Each menu, each page's list down
+# the left and Manage's home are drawn from it: the same groups, names and order. A group shows its most used pages
+# (IN_MENU) and the rest on its own line of small links. A campaign page's address is under the campaign's
+# (/c/<campaign>/…). **Who may open a page is a rule's name** in app/access.py `allows()` (Brett, Nov 13: "make sure
+# the permission structure is robust and flexible", since what an admin may see may need narrowing): changing who sees
+# a page is one line there, and the Table's access chart, the menus and the pages' own checks all follow it.
 AFTER, NEXT, TABLE = "After the game", "The next game", "The table"
 PEOPLE, TUNING = "People", "Tuning"
 PAGES = (
-    ("needs", "Needs you", "/manage", "What's waiting, most important first", CAMPAIGN, AFTER, can_moderate, ()),
-    ("inbox", "Inbox", "/manage/inbox", "Suggestions from the table and Claude's drafts, waiting for your OK", CAMPAIGN, AFTER, can_moderate, ()),
-    ("sessions", "Sessions", "/manage/sessions", "Draft, review and publish recaps; the campaign doc", CAMPAIGN, AFTER, is_reviewer, ("/manage/proposals",)),
-    ("dm-tools", "DM Tools", "/dm", "What you make for this campaign: homebrew items", CAMPAIGN, NEXT, can_set_house_rules, ()),
-    ("table", "Table", "/manage/table", "Who plays which character, roles, D&D Beyond links", CAMPAIGN, TABLE, can_see_table, ()),
-    ("house", "House rules", "/manage/house-rules", "Your rulings on how askdnd rolls things at this table", CAMPAIGN, TABLE, can_set_house_rules, ()),
-    ("settings", "Settings", "/manage/settings", "The campaign's name, the DM's name, its D&D Beyond id", CAMPAIGN, TABLE, can_edit_settings, ()),
-    ("history", "History", "/manage/history", "This campaign's changes, with Restore", CAMPAIGN, TABLE, is_reviewer, ()),
+    ("needs", "Needs you", "/manage", "What's waiting, and what you're preparing", CAMPAIGN, AFTER, "moderate", ()),
+    ("inbox", "Inbox", "/manage/inbox", "Suggestions from the table and Claude's drafts, waiting for your OK", CAMPAIGN, AFTER, "moderate", ()),
+    ("sessions", "Sessions", "/manage/sessions", "Draft, review and publish recaps; the campaign doc", CAMPAIGN, AFTER, "review", ("/manage/proposals",)),
+    ("dm-tools", "Items", "/dm", "The campaign's own magic items, played on Battle for whoever carries one", CAMPAIGN, NEXT, "house_rules", ()),
+    ("scene-notes", "Scene notes", "/manage/scene-notes", "Your pins on each place of askdnd's table, only yours", CAMPAIGN, NEXT, "scene_notes", ()),
+    ("places", "Places and maps", "/manage/places", "The places of askdnd's table and their maps", CAMPAIGN, NEXT, "run_table", ()),
+    ("table", "Table", "/manage/table", "Who plays which character, roles, D&D Beyond links", CAMPAIGN, TABLE, "see_table", ()),
+    ("house", "House rules", "/manage/house-rules", "Your rulings on how askdnd rolls things at this table", CAMPAIGN, TABLE, "house_rules", ()),
+    ("settings", "Settings", "/manage/settings", "The campaign's name, the DM's name, its D&D Beyond id", CAMPAIGN, TABLE, "settings", ()),
+    ("history", "History", "/manage/history", "This campaign's changes, with Restore", CAMPAIGN, TABLE, "review", ()),
     # (the DM guide is read, not run: it's in the account menu's Help, not Manage's list; UNLISTED)
-    ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, TABLE, can_moderate, ()),
-    ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", is_admin, ()),
-    ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, "", is_admin, ()),
-    ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, "", is_admin, ()),
-    ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, "", is_admin, ()),
-    ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, "", is_admin, ()),
-    ("accounts", "Accounts", "/manage/accounts", "Who can sign in, who's an admin, their campaigns", ASKDND, PEOPLE, is_admin, ()),
-    ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign, and starting one", ASKDND, PEOPLE, is_admin, ()),
-    ("features", "Features", "/manage/features", "Which features the table uses, and on which page", ASKDND, TUNING, is_admin, ()),
-    ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, TUNING, is_admin, ()),
-    ("corrections", "Tool corrections", "/manage/tool-corrections", "Fixes to how askdnd reads D&D Beyond, for every character", ASKDND, TUNING, is_admin, ()),
-    ("dice", "Dice tuning", "/manage/dice", "How thrown dice move and how long they stay, for everyone", ASKDND, TUNING, is_admin, ()),
+    ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, TABLE, "moderate", ()),
+    ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", "admin", ()),
+    ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, "", "admin", ()),
+    ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, "", "admin", ()),
+    ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, "", "admin", ()),
+    ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, "", "admin", ()),
+    ("accounts", "Accounts", "/manage/accounts", "Who can sign in, who's an admin, their campaigns", ASKDND, PEOPLE, "admin", ()),
+    ("campaigns", "Campaigns", "/manage/campaigns", "Every campaign, and starting one", ASKDND, PEOPLE, "admin", ()),
+    ("features", "Features", "/manage/features", "Which features the table uses, and on which page", ASKDND, TUNING, "admin", ()),
+    ("askdnd-history", "askdnd history", "/manage/history", "Changes to accounts and askdnd as a whole", ASKDND, TUNING, "admin", ()),
+    ("corrections", "Tool corrections", "/manage/tool-corrections", "Fixes to how askdnd reads D&D Beyond, for every character", ASKDND, TUNING, "admin", ()),
+    ("dice", "Dice tuning", "/manage/dice", "How thrown dice move and how long they stay, for everyone", ASKDND, TUNING, "admin", ()),
     # the D&D Beyond bridge (app/ddb_bridge.py): only where it may run (DDB_BRIDGE=1)
     ("bridge", "D&D Beyond bridge", "/manage/bridge", "Whether it's awake and why, and its timers", ASKDND, TUNING,
      lambda user: config.DDB_BRIDGE and is_admin(user), ()),
-    ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, is_admin, ()),
+    ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, "admin", ()),
 )
-IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "table", "house", "settings", "history",  # a group's own rows; the rest
-           "overview", "feedback", "documents", "usage", "backups", "accounts", "campaigns")    # on its line of small links
+IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "scene-notes", "places", "table", "house", "settings", "history",
+           "overview", "feedback", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
+NEEDS = {"scene-notes": "vtt_table", "places": "vtt_table"}  # (a page that comes with a feature: listed only where it's on)
 UNLISTED = ("guide",)  # (a page of the list that no menu or list down the left shows: the DM guide is the account menu's)
 COUNTED = ("needs", "inbox", "feedback")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
+
+
+def may(user: dict | None, allowed) -> bool:
+    """Whether this person may open a page: its rule's name asked of app/access.py, or (the bridge) its own check."""
+    return allowed(user) if callable(allowed) else _allows(user, allowed)
 
 
 def pages_for(user: dict | None, path: str = "") -> list[dict]:
@@ -80,13 +90,17 @@ def pages_for(user: dict | None, path: str = "") -> list[dict]:
     base = web.base()
     out = []
     for key, label, href, about, group, section, allowed, extra in PAGES:
-        if not allowed(user):
+        if not may(user, allowed) or (key in NEEDS and not vtt.on(access.current_campaign(), NEEDS[key])):
             continue
         same = path == href or (href != "/manage" and path.startswith(href + "/")) or any(path.startswith(p) for p in extra)
         out.append({"key": key, "label": label, "href": (base if group == CAMPAIGN else "") + href, "about": about,
                     "group": group, "section": section, "menu": key in IN_MENU, "counted": key in COUNTED,
-                    "listed": key not in UNLISTED,
+                    "listed": key not in UNLISTED, "planned": False,
                     "here": same and (group == CAMPAIGN) == in_campaign})
+        if key == "places" and may(user, "house_rules"):  # (what a DM will make next: listed, never a link, until built)
+            from app.homebrew import PLANNED
+            out += [{"key": f"planned:{k}", "label": name, "href": "", "about": what, "group": CAMPAIGN, "section": NEXT,
+                     "menu": False, "counted": False, "listed": True, "planned": True, "here": False} for k, name, what in PLANNED]
     return out
 
 
@@ -211,9 +225,13 @@ def needs_you(request: Request, db: Session = Depends(get_db)):
         if pages:
             return RedirectResponse(pages[0]["href"], status_code=303)
         return web.forbidden(request, "Manage is for the DM, reviewers and admins.")
+    from app import workspace
+
+    campaign = web.campaign(db)
     return templates.TemplateResponse(request, "manage.html", {
-        "items": needs(db, user), "campaign": web.campaign(db),
-        "pages": [p for p in pages if p["group"] == CAMPAIGN and p["key"] != "needs"]})
+        "items": needs(db, user), "campaign": campaign,
+        "pages": [p for p in pages if p["group"] == CAMPAIGN and p["key"] != "needs" and p["listed"] and not p["planned"]],
+        **(workspace.workbench(db, request, user, campaign) if campaign else {"tiles": []})})
 
 
 @router.get("/manage/counts")  # under the campaign: /c/<campaign>/manage/counts

@@ -138,7 +138,7 @@ def page_rows(user: dict, path: str) -> list[dict]:
         out.insert(1, {"g": "Pages", "n": "Table", "s": "where the table plays" + ("" if table.startswith("/") else " (D&D Beyond ↗)"), "a": "Go",
                        "find": _words("table vtt map play"), "go": table})
     out += [{"g": "Pages", "n": p["label"], "s": p.get("about") or "", "a": "Go", "find": _words(p["label"], p.get("about"), "manage"), "go": p["href"]}
-            for p in pages_for(user, path)]
+            for p in pages_for(user, path) if not p["planned"]]
     return out
 
 
