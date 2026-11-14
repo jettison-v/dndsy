@@ -13,6 +13,7 @@ import pytest
 
 from app import rules_book
 from scripts import books_coverage as bc
+from tests.table_setup import plain_id
 
 BOOK = json.loads((Path(__file__).parent / "fixtures" / "book-index.json").read_text())
 INDEX = BOOK["entries"]
@@ -87,7 +88,7 @@ def sheet_for(cls: str, sub: str | None, lv: int) -> tuple[dict, list[dict]]:
     return sheet, rows
 
 
-@pytest.mark.parametrize("cls, sub, lv", list(characters()), ids=lambda x: str(x))
+@pytest.mark.parametrize("cls, sub, lv", list(characters()), ids=plain_id)
 def test_a_made_up_character_is_given_what_its_level_brings(cls, sub, lv):
     """What the data plays for a class feature reaches a character of that class, subclass and level (its class, `sub`
     and `level` match the book's), and every number in it fills from the sheet: no token is left unfilled."""

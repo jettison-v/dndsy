@@ -151,6 +151,27 @@ def _books_read_fresh():
     books._read.clear()
 
 
+def context_values():
+    """Every value the app keeps per request in a ContextVar, with its default (tests/test_isolation.py checks the list
+    is complete). One process runs many tests, and a value one test set would otherwise reach the next."""
+    from app import access, history, timing
+
+    return [(access.viewer, ""), (access.path_slug, None), (history._actor, ""), (history._source, ("edit", None)), (timing._now, None)]
+
+
+@pytest.fixture(autouse=True)
+def _fresh_context():
+    """Each test starts with every context value at its default (Nov 13, mutation testing: in another order,
+    test_history found the source an earlier test had left, and recorded its edit under it)."""
+    tokens = [(var, var.set(default)) for var, default in context_values()]
+    yield
+    for var, token in reversed(tokens):
+        try:
+            var.reset(token)
+        except ValueError:  # (set in another context meanwhile: it's set again before the next test anyway)
+            pass
+
+
 @pytest.fixture(autouse=True)
 def _access_rows(monkeypatch):
     """Access checks (app/access.py) read people from the database. Tests never see

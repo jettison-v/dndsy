@@ -28,6 +28,7 @@ dependencies = [
 dev = [
     "djlint>=1.50.0",
     "httpx2>=2.13.1",
+    "mutmut>=3.8.1",
     "playwright>=1.64.1",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
@@ -78,3 +79,17 @@ ignore = [
 profile = "jinja"
 ignore = "J004,J018,H021,H015,H023,H020"
 extension = "html"
+
+[tool.mutmut]
+# Mutation testing (foundations F8, docs/plans/2026-11-13-engineering-practices.md): small deliberate bugs put into core
+# logic, one at a time; the tests must catch each, and a bug they miss is a missing test. Run with
+# `uv run python scripts/mutation.py <module>` (it runs one module and lists what survived); never in CI (slow).
+source_paths = ["app"]
+only_mutate = ["app/access.py", "app/roll_plan.py", "app/hit_points.py", "app/rules_book.py", "app/measure.py", "app/areas.py", "app/fog.py",
+               "app/coins.py", "app/initiative.py", "app/conditions.py", "app/death_saves.py"]
+also_copy = ["scripts", "migrations", "alembic.ini", "docs", "extension", "transcript_filter", "CLAUDE.md", ".env", ".github", "Procfile", "README.md", ".gitignore", ".gitattributes"]
+pytest_add_cli_args = ["-n", "0", "-p", "no:randomly", "-p", "no:cacheprovider"]
+# (the repository's own checks, which read git and its files, test no app logic: left out)
+pytest_add_cli_args_test_selection = ["tests", "--ignore=tests/browser", "--ignore=tests/test_deploy.py", "--ignore=tests/test_documents.py",
+                                      "--ignore=tests/test_public_safe.py", "--ignore=tests/test_no_text_refs.py", "--ignore=tests/test_test_leftovers.py",
+                                      "--deselect=tests/test_models.py::test_migrations_go_down_and_up_and_match_models"]

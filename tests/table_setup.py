@@ -84,3 +84,12 @@ def card_on(page: str):
 
     m = re.search(r"data-toast='([^']*)'", page)
     return json.loads(html.unescape(m.group(1))) if m else None
+
+
+def plain_id(x) -> str:
+    """A parametrized test's id in plain letters, digits and dashes: a name with an apostrophe, a colon or brackets
+    ("Raulothim's Psychic Lance", "Eldritch Cannon: Flamethrower") can't be handed back to pytest on its command line
+    (mutation testing does, foundation F8). Use it for every ids= built from names."""
+    import re
+
+    return re.sub(r"[^A-Za-z0-9]+", "-", x if isinstance(x, str) else str(x.get("name") if isinstance(x, dict) else x)).strip("-")

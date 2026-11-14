@@ -56,3 +56,6 @@ node_modules/
 
 # Claude's scratch work (worktrees, notes): never part of the repo
 scratchpad/
+
+# mutation testing's working copy (foundations F8)
+mutants/
