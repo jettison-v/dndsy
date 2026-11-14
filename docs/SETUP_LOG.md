@@ -1098,3 +1098,8 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **What:** Railway can make a temporary copy of the app for every pull request. Brett switched it on in Project Settings › Environments, then off again before any preview was made.
 **Why off:** a preview gets a random web address, and Google sign-in only works on addresses registered with Google, so nobody could sign in; it starts with an empty database; and with "No base environment" it copies production, including the nightly backup job.
 **Reuse:** previews pay off when the app works signed out or uses a sign-in that allows any address, and when you set the base environment to staging (never production) and turn on Focused PR Environments so only changed services build.
+
+## Before-and-after pictures (Nov 13)
+**What:** a script that draws every main page twice, once from main and once from the branch being changed, with the same made-up data, the same window sizes and a frozen clock, then compares them pixel by pixel and writes a local report of only the pages that changed (before, after, and the change in red).
+**Why:** tests check what they were written to check; a picture catches what nobody thought to check, like today's band pushing Table rolls down. Run against itself it found no differences, so any it reports are real.
+**Reuse:** "visual regression testing". Freeze everything that changes by itself (the clock, animations, times like "3 min ago") or the report fills with noise; keep the pictures off public places when they show real data.
