@@ -3980,3 +3980,10 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
   .dm-side { position: static; display: flex; flex-wrap: wrap; gap: var(--sp-1); }
   .dm-side .manage-sec { width: 100%; }
 }
+
+/* A spell's Material component (app/components.py; Brett chose A and B, Nov 13): lacking (amber), unsure (muted), used
+   up when cast (green); in a spell's row and said in the Cast window */
+.comp-mark { font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 22em; display: inline-block; vertical-align: bottom; }
+.comp-mark[data-comp="missing"], .comp-says[data-comp="missing"] { color: var(--amber); }
+.comp-mark[data-comp="unsure"], .comp-says[data-comp="unsure"] { color: var(--muted); }
+.comp-mark[data-comp="consumes"], .comp-says[data-comp="consumes"] { color: var(--green); }

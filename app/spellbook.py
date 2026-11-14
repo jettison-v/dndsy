@@ -10,7 +10,7 @@ ranks spells as "best".
 
 import re
 
-from app import house_rules
+from app import components, house_rules
 from app import roll_recipes as rr
 
 EFFECTS = [("damage", "Damage"), ("heal", "Heal"), ("control", "Control"), ("support", "Support"), ("utility", "Utility")]
@@ -116,6 +116,7 @@ def _entry(sp: dict, sheet: dict, top: int, castable_in_form: set[str] | None = 
         "uses": sp.get("uses"), "from": sp.get("free_from") or "", "use_id": sp.get("use_id"),
         # A higher slot does more (its text says so, or its dice grow): else the Cast window says it changes nothing
         "higher": bool(HIGHER.search(sp.get("text") or "")) or len({str(v) for v in avgs.values()}) > 1,
+        "need": components.need(sp, sheet, components.rules_for()),  # (its Material component: lacking, or used up)
     }
     e |= _facts(e, _main_event(e["recipe"]))
     e["f"] = facets(e)

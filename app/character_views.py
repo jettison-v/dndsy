@@ -6,7 +6,7 @@ import json
 import re
 from urllib.parse import quote
 
-from app import advantage, class_rules, conditions, house_rules
+from app import advantage, class_rules, components, conditions, house_rules
 from app import roll_recipes as rr
 
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
@@ -156,7 +156,7 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         tags = ([] if says_level else [level]) + (["Conc."] if sp["concentration"] else [])
         add(key=sp["key"], kind="spell", cost=cost, name=sp["name"], hit=sp["attack"] or sp["save"], tags=tags, level=sp["level"] or 0,
             adv=advantage.for_attack(advs, spell=True) if sp["attack"] else [], cast=bool(sp["level"] or sp["concentration"]),
-            spends=spends,
+            spends=spends, need=components.need(sp, sheet, components.rules_for()),
             meta=" · ".join(x for x in (sp["range"], effect, sp["trigger"] if cost == "Reaction" else "") if x),
             text=sp.get("text") or sp["summary"], summary=sp["summary"], recipe=house_rules.spell(sp["name"]) or sp.get("roll"),
             # Smites are cast right after you hit, so they belong with the fight (tool correction built in, 2026-10-23)
