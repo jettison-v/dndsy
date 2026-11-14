@@ -4,7 +4,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Needs you</h1></div>
-  <p class="subtitle">What's waiting in {{ campaign.name if campaign else "the campaign" }}, most important first, then what you're preparing.</p>
+  <p class="subtitle">What's waiting in {{ campaign.name if campaign else "the campaign" }}, most important first{{ ", then what you're preparing" if tiles }}.</p>
   {% if items %}
   <ul class="records">
     {% for x in items %}

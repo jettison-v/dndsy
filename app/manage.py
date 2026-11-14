@@ -97,10 +97,12 @@ def pages_for(user: dict | None, path: str = "") -> list[dict]:
                     "group": group, "section": section, "menu": key in IN_MENU, "counted": key in COUNTED,
                     "listed": key not in UNLISTED, "planned": False,
                     "here": same and (group == CAMPAIGN) == in_campaign})
-        if key == "places" and may(user, "house_rules"):  # (what a DM will make next: listed, never a link, until built)
-            from app.homebrew import PLANNED
-            out += [{"key": f"planned:{k}", "label": name, "href": "", "about": what, "group": CAMPAIGN, "section": NEXT,
-                     "menu": False, "counted": False, "listed": True, "planned": True, "here": False} for k, name, what in PLANNED]
+    if may(user, "house_rules"):  # (what a DM will make next: listed at the end of The next game, never a link, until built)
+        from app.homebrew import PLANNED
+
+        at = max((i + 1 for i, p in enumerate(out) if p["section"] == NEXT), default=len(out))
+        out[at:at] = [{"key": f"planned:{k}", "label": name, "href": "", "about": what, "group": CAMPAIGN, "section": NEXT,
+                       "menu": False, "counted": False, "listed": True, "planned": True, "here": False} for k, name, what in PLANNED]
     return out
 
 

@@ -36,7 +36,7 @@ def workbench(db: Session, request: Request, user: dict, campaign) -> dict:
     base = web.base(campaign)
     table_on = vtt.on(campaign, "vtt_table")
     tiles = []
-    if places.runs(user, campaign) or homebrew.can_make(user, campaign):
+    if homebrew.can_make(user, campaign):  # (its Open and + New are DM Tools', which only its rule opens)
         made = [r for r in homebrew.rows_for(db, campaign.id) if not (r.data or {}).get("retired")]
         tiles.append({"key": "items", "name": "Items", "count": len(made),
                       "says": ", ".join(r.name for r in made[:3]) + ("…" if len(made) > 3 else "") if made else "None yet",
@@ -72,7 +72,7 @@ def scene_notes(request: Request, db: Session = Depends(get_db)):
     campaign = web.campaign(db)
     if not user:
         return web.require(request)[1]
-    if not places.writes_notes(request, user, campaign):
+    if not campaign or not places.writes_notes(request, user, campaign):
         return web.not_found(request)  # (no one else learns a scene exists: app/scene_notes.py)
     rows = []
     pins = _pins(db, campaign.id)
@@ -91,6 +91,8 @@ def places_page(request: Request, db: Session = Depends(get_db)):
     campaign = web.campaign(db)
     if not user:
         return web.require(request)[1]
+    if not campaign:
+        return web.not_found(request)
     if not places.runs(user, campaign):
         return web.forbidden(request, "Places and maps are the DM's (and admins').")
     pins = dict(db.execute(select(ScenePin.place_id, func.count()).where(ScenePin.campaign_id == campaign.id)
