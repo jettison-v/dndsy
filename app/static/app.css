@@ -1466,7 +1466,10 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .manage-side a, .manage-jump-list a { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
 .manage-side a:hover, .manage-jump-list a:hover { color: var(--text); background: var(--surface); }
 .manage-side a.on, .manage-jump-list a.on { color: var(--text-strong); background: var(--surface-2); font-weight: 600; }
-.manage-sec { display: block; padding: var(--sp-3) 10px 2px; font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+/* A group's title (Brett, Nov 14: told apart from the pages under it): a hairline and room above, smaller and wider
+   set, never a link's color or size */
+.manage-sec { display: block; margin-top: var(--sp-3); padding: var(--sp-3) 10px var(--sp-1); border-top: 1px solid var(--line); font: 700 var(--fs-xs)/1.2 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.manage-sec:first-child { margin-top: 0; padding-top: var(--sp-1); border-top: 0; }
 .manage-planned { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); padding: 5px 10px; color: var(--faint); font-size: var(--fs-sm); cursor: default; }  /* a kind of thing the DM will make: listed, not yet a page */
 .manage-planned small { font-size: var(--fs-xs); }
 .manage-jump { margin: 0 0 var(--sp-4); }
