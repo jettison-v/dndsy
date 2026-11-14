@@ -55,6 +55,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **Items that bring a creature**: app/item_creatures.py, _bring_window.html, _bring_setup.html
 - **Pictures**: app/pictures.py, app/picture_window.py, app/drawing.py
 - **DM Tools and homebrew items**: app/homebrew.py, dm_tools.html, dm_item.html
+- **Spell components**: app/components.py, _char.html (`comp_mark`), _cast_window.html
 - **Corrections**: app/house_rules.py
 - **Rolls into D&D Beyond's Game Log**: app/gamelog.py
 - **The fight**: app/fight.py, extension/askdnd-bridge/vtt-page.js, _fight_band.html

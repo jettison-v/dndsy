@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app import ddb_bridge, picks, web
+from app import components, ddb_bridge, picks, web
 from app import spellbook as sb
 from app.db import get_db
 from app.inventory import _guard
@@ -112,7 +112,7 @@ def prepare_screen(request: Request, character_id: int, cls: str = "", db: Sessi
     mine = picks.picks(db, ch, user) if noting else {"fav": [], "notes": {}}
     fav, notes = set(mine["fav"]), mine.get("notes") or {}
     on_way = {k for k, v in (sheet.get("sync") or {}).items() if k.startswith("prep:") and v == "on"}
-    rows = []
+    rows, comp_rules = [], components.rules_for(ch.campaign_id)
     for sp in book["spells"]:
         if not sp["level"] or not (sp.get("prep") or sp["state"] == "always"):
             continue
@@ -120,7 +120,7 @@ def prepare_screen(request: Request, character_id: int, cls: str = "", db: Sessi
         rows.append({"key": sp["key"], "name": sp["name"], "level": sp["level"], "time": {"Bonus action": "Bonus"}.get(sp.get("casting_time"), sp.get("casting_time") or ""),
                      "effect": dict(sb.EFFECTS).get(sb.effect_of(sp), ""), "conc": sp.get("concentration"), "what": _what(sp),
                      "always": sp["state"] == "always", "on": sp["state"] in ("prepared", "always"), "fav": sp["key"] in fav,
-                     "note": notes.get(sp["key"], ""),
+                     "note": notes.get(sp["key"], ""), "need": components.need(sp, sheet, comp_rules),
                      "going": f"prep:{p.get('cls')}:{p.get('entry')}" in on_way})
     levels = sorted({r["level"] for r in rows})
     return templates.TemplateResponse(request, "_prepare_spells.html", {
