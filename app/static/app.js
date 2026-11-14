@@ -1953,7 +1953,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
                  mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false, visOpen: false, entry: from ? from.entry : null,
                  dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {}, drama: false };
     // (on by themselves while they last, Radiant Strikes; once a turn, or only sometimes (`pressed: false`, Rage Damage): yours to tick)
-    mods.forEach(m => { if ((m.when === 'on_hit' || m.when === 'on_heal') && m.adds) st.on[m.name] = m.pressed != null ? !!m.pressed : !m.once; });
+    mods.forEach(m => { if ((m.when === 'on_hit' || m.when === 'on_heal') && m.adds) st.on[m.name] = m.pressed != null ? !!m.pressed : !m.once && !(m.slot && spec.castFree); });  // (a slot's bonus is off when cast without one)
     mods.forEach(m => { if (m.when === 'before' && m.adds && m.pressed) st.pre[m.name] = true; });  // (Aura of Protection: always, unless the DM says)
     const eff = () => effs[st.ev] || null;
     const now = () => (eff() ? eff().at[String(st.level)] : null);  // (the effect's dice at the level it's cast at)
@@ -1961,7 +1961,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // What adds to the damage (Sneak Attack on a hit; Arcane Firearm, a Chromatic focus on a spell's damage): pills, the
     // pressed ones rolled into the damage as extras
     // (and to a spell's healing: Disciple of Life, its amount at the level cast, `adds_at`, from the plan)
-    const dmgMods = () => mods.filter(m => (m.when === 'on_hit' || m.when === 'on_damage' || m.when === 'on_heal') && m.adds);
+    const dmgMods = () => mods.filter(m => m.adds && (eff() && eff().kind === 'heal' ? m.when === 'on_heal' : m.when === 'on_hit' || m.when === 'on_damage'));
     const madds = m => (m.adds_at && m.adds_at[String(st.level)]) || m.adds;
     const dmgExtras = () => dmgMods().filter(m => st.on[m.name]).map(m => (m.short || m.name).slice(0, 40) + ':+' + madds(m).replace(/^\+/, '').split(' ')[0]);
     const dmgModsText = () => (attack ? '' : dmgMods().filter(m => st.on[m.name]).map(m => ' + ' + madds(m)).join(''));

@@ -531,9 +531,11 @@ def _at_levels(m: dict, spell: dict) -> dict:
     every level the spell can be cast at (`adds_at`), so the card only looks up the level it's cast at."""
     if "{slot}" not in str(m.get("adds") or ""):
         return m
-    def at(level: int) -> str:
-        total = sum(int(x) for x in re.findall(r"-?\d+", str(m["adds"]).replace("{slot}", str(level))))
-        return f"+{total}"
+    def at(level: int) -> str:  # (its dice stay dice; its numbers add up: "1d4+2+{slot}" at level 3 is "1d4+5")
+        terms = [t for t in re.split(r"(?=[+-])", str(m["adds"]).replace("{slot}", str(level)).replace(" ", "")) if t.strip("+")]
+        dice = [t.lstrip("+") for t in terms if "d" in t]
+        flat = sum(int(t) for t in terms if "d" not in t)
+        return "+".join(dice) + (f"{flat:+d}" if dice and flat else "" if dice else f"+{flat}")
     return {**m, "adds": at(spell.get("level") or 1), "adds_at": {str(lv): at(lv) for lv in range(max(1, spell.get("level") or 1), 10)}}
 
 

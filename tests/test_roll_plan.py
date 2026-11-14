@@ -233,15 +233,16 @@ def test_healing_that_grows_with_the_slot_is_a_pill_at_each_level():
     assert m["adds"] == "+3" and m["adds_at"]["1"] == "+3" and m["adds_at"]["5"] == "+7" and m["adds_at"]["9"] == "+11"
     assert roll_plan.modifiers_for({}, "", {"level": 3, "types": {"fire"}, "damages": True, "heals": False}, adds=[add]) == []
     assert roll_plan.modifiers_for({}, "", {**heals, "level": 0}, adds=[add]) == []
+    dice = {**add, "amount": "1d4+2+{slot}"}
+    assert roll_plan.modifiers_for({}, "", {**heals, "level": 3}, adds=[dice])[0]["adds_at"]["3"] == "1d4+5"  # (dice stay dice)
 
 
 def test_a_bonus_to_initiative_alone_reaches_only_initiative():
     """Tandem Footwork (College of Dance, level 6; Nov 13, a book-coverage gap filled): a bonus to Initiative alone is a
     pill on the Initiative roll (its plan asks for the context's `initiative` modifiers, a check's and its own), never on
     another check."""
-    from tests.test_books_coverage import sheet_for
-
-    sheet, _ = sheet_for("Bard", "College of Dance", 6)
+    sheet = {"classes": [{"name": "Bard", "level": 6, "subclass": "College of Dance"}], "proficiency_bonus": 3,
+             "features": [{"name": "Bardic Inspiration"}, {"name": "Tandem Footwork"}], "actions": [], "spells": [], "inventory": []}
     names = lambda ms: {m["name"] for m in ms}
     assert "Tandem Footwork" in names(roll_plan.modifiers_for(sheet, "initiative"))
     assert "Tandem Footwork" not in names(roll_plan.modifiers_for(sheet, "check"))
