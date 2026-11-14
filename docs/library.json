@@ -1107,6 +1107,15 @@
   "link": "https://claude.ai/artifact/6LWSngz4ushCgvS3kNjsPV"
  },
  {
+  "title": "Table Rolls' Top",
+  "kind": "design",
+  "status": "Chose A · built",
+  "date": "Nov 13",
+  "what": "Brett's note, Nov 13: with Table rolls running the full height on a laptop, its top row looked off (the red line across both said one bar, the divider said two columns). Three ways it can meet the menu bar: its own column, one bar across the window, and today's.",
+  "source": "docs/mockups/table-rolls-top/index.html",
+  "link": "https://claude.ai/artifact/253SH7aue5KgpzP9vkBd1z"
+ },
+ {
   "title": "Menu bar build plan",
   "kind": "plan",
   "status": "Built",
