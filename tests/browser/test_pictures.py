@@ -37,12 +37,15 @@ def test_pictures_of_every_main_page(people, server, browser_db, who):
     OUT.mkdir(parents=True, exist_ok=True)
     person = people(who)
     person.allow("/map?v=")  # (no map picture in the test data)
+    person.allow(" 404 ")  # (a page the branch adds isn't on the base yet: no picture of it there, the report says "new page")
     page = person.page
     page.clock.set_fixed_time(datetime(2026, 11, 13, 19, 30, tzinfo=TABLE_TIME))  # (one moment for both runs: the server's own times are masked)
     for path in PAGES[who]:
         for width_name, width in WIDTHS.items():
             page.set_viewport_size({"width": width, "height": 800})
-            person.open(path.format(**server))
+            answer = page.goto(server["base"] + path.format(**server))
+            if answer is not None and answer.status == 404:
+                break  # (not on this side: a new page)
             page.wait_for_load_state("networkidle")
             page.add_style_tag(content=STILL)
             page.evaluate(SAME)
