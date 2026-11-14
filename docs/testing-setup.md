@@ -24,9 +24,11 @@ The D&D Beyond campaign is [VTT test](https://www.dndbeyond.com/campaigns/822449
 
 | Seat | Its own | Twins | Classes |
 |---|---|---|---|
-| Player 2 (CatharticPlayer) | Cathartic | Cole (twin), 173216268 | Test Ranger (Hunter 5), 173222995 |
-| Player 3 (ViPlayer) | Vi | Trah (twin), 173231727 | Test Bard (Lore 5), 173222716; Test Rogue (Assassin 9), 173222824 |
-| Player 4 (Levi's account) | Levi Shadowquick | Big C (twin), 173220725; No Name (twin), 173230905 | Test Barbarian (Berserker 5), 173222366; Test Fighter (Champion 5), 173222510 |
+| Player 2 (CatharticPlayer) | Cathartic | Cole (twin), 173216268 | Test Ranger (Hunter 5), 173222995; Test Cleric (Life Domain 17), 173587413 |
+| Player 3 (ViPlayer) | Vi | Trah (twin), 173231727 | Test Bard (Lore 5), 173222716; Test Rogue (Assassin 9), 173222824; Test Paladin (Devotion 15), 173587610 |
+| Player 4 (Levi's account) | Levi Shadowquick | Big C (twin), 173220725; No Name (twin), 173230905 | Test Barbarian (Berserker 5), 173222366; Test Fighter (Champion 18), 173222510 |
+
+**High levels for the books' coverage** (Nov 14): Test Fighter went to Champion 18 (Survivor's Heroic Rally), and Claude made Test Cleric (Life Domain 17) and Test Paladin (2024, level 15), both public and in VTT test. Oath of the Ancients isn't there: VTT test shares no 2024 Player's Handbook subclasses beyond the free ones, so the Paladin is Oath of Devotion; Undying Sentinel stays with the automated tests.
 
 All four twins are in (No Name's and Trah's on Nov 5, evening); `twins-level` checks each still matches its real character.
 
@@ -42,7 +44,9 @@ What each one's live run reaches (`TWINS` in scripts/real_table.py; docs/live-te
 | Test Bard | Bard 5 (Lore) | Bardic Inspiration | A spell slot |
 | Test Rogue | Rogue 9 (Assassin) | None | None |
 | Test Barbarian | Barbarian 5 (Berserker) | Rage | None |
-| Test Fighter | Fighter 5 (Champion) | Second Wind | None |
+| Test Fighter | Fighter 18 (Champion) | Second Wind | None |
+| Test Cleric | Cleric 17 (Life Domain) | None yet (made Nov 14 for the healing card: Disciple of Life, Blessed Healer, Supreme Healing) | None yet |
+| Test Paladin | Paladin 15 (Oath of Devotion) | None yet (made Nov 14) | None yet |
 
 **Brett's personal D&D Beyond account is not a seat** (Brett, 2026-10-30): automation could get an account flagged. That account's characters are in no testing at all (its first Vi and Spurt were taken out of askdnd's VTT test on Nov 5), and Brett's own Chrome profile on the Mini is never copied or driven.
 

@@ -230,7 +230,7 @@
 {%- if e.attack and rec -%}
 <button type="button" class="{{ cls }}" {{ roll_attrs("attack", e.name, e.attack, "", (), rolls=e.rolls.hit, plan=e.plan) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll to hit {{ e.attack }}">{{ label or e.name }}</button>
 {%- elif first -%}
-<button type="button" class="{{ cls }}" {{ roll_attrs({"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.on, "damage"), e.name, "", "", rolls=e.rolls.other, plan=e.plan if e.save else none, save=e.save) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll {{ e.name }}">{{ label or e.name }}</button>
+<button type="button" class="{{ cls }}" {{ roll_attrs({"heal": "heal", "temp": "temp", "plain": "dice"}.get(first.on, "damage"), e.name, "", "", rolls=e.rolls.other, plan=e.plan, save=e.save) }}{% if slot %} data-slot="{{ slot }}"{% endif %} title="Roll {{ e.name }}">{{ label or e.name }}</button>
 {%- else -%}
 <button type="button" class="{{ cls }}" data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" title="What {{ e.name }} does">{{ label or e.name }}</button>
 {%- endif -%}

@@ -519,3 +519,38 @@ def test_what_adds_to_a_spells_damage_is_pressed_and_rolled(people, server, brow
     sent = page.evaluate("window.__sent[0]")
     assert "Dragon-Touched Focus:+1d6" in sent.get("extra", []) and not sent.get("refused"), sent
     assert player.errors == []
+
+
+def test_a_life_clerics_healing_spell_shows_what_adds_to_it(people, server, browser_db):
+    """Found on a real Life Cleric 17's sheet (Nov 14, PR 359's test sheet): a healing spell's card had nothing that
+    adds to its healing, as the Spell Book planned a spell only when it had an attack or a save. Cole made a Life
+    Cleric 17: Healing Word's card has Supreme Healing's pill (every die at its highest) and, once rolled, Blessed
+    Healer's button."""
+    from app import characters
+
+    data = json.loads((ROOT_FIXTURES / "cole.json").read_text())["data"]
+    c = data["classes"][0]
+    c["level"], c["definition"]["name"] = 17, "Cleric"
+    c["subclassDefinition"] = {**(c.get("subclassDefinition") or {}), "name": "Life Domain"}
+    engine = create_engine(browser_db[0])
+    with Session(engine) as db:
+        characters.refresh(db, char(db, "Cole"), lambda _id: data)
+        db.commit()
+    engine.dispose()
+    try:
+        player = people("player")
+        page = player.page
+        page.set_viewport_size({"width": 1440, "height": 900})
+        player.open(f"/characters/{server['cole']}/battle")
+        page.evaluate("try { localStorage.setItem('askdnd.rollsAnim', 'off') } catch (e) {}")
+        page.evaluate(RECORD)
+        page.locator(".spellbook-btn").first.click()
+        page.locator('.sb-actions [data-roll][data-label="Healing Word"]').first.evaluate("b => b.click()")
+        card = page.locator(".roll-card")
+        card.locator('[data-on="Supreme Healing"]').wait_for(timeout=5000)
+        assert card.locator('[data-on="Disciple of Life"]').count() == 1
+        card.locator("[data-roll-single]").click()
+        card.locator('[data-self-name="Blessed Healer"]').wait_for(timeout=15000)
+        assert player.errors == []
+    finally:
+        _as(browser_db, server, "cole")
