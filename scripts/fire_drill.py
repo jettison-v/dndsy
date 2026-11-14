@@ -32,8 +32,9 @@ class Break:
     caught_by: str
 
 
-ROUTE = '\n\n@router.post("/drill-unguarded")\ndef drill_unguarded():\n    return {}\n'
-ASYNC = '\n\n@router.get("/drill-async")\nasync def drill_async(db: Session = Depends(get_db)):\n    return {}\n'
+AT = "@"  # (written apart, so the drill's own source has no address-like text: tests/test_public_safe.py)
+ROUTE = '\n\n' + AT + 'router.post("/drill-unguarded")\ndef drill_unguarded():\n    return {}\n'
+ASYNC = '\n\n' + AT + 'router.get("/drill-async")\nasync def drill_async(db: Session = Depends(get_db)):\n    return {}\n'
 VISUAL = ["bash", "-c", "uv run python scripts/visual_compare.py | tee /dev/stderr | grep -qE '^[1-9][0-9]* of [0-9]+ pictures changed' && exit 1 || exit 0"]
 
 BREAKS = [
@@ -69,7 +70,7 @@ BREAKS = [
           "  function drillShadow() { const toast = 1; return toast; }\n  function toast(message, action, kind) {",
           [LINT + "eslint", "-c", "tools/lint/eslint.config.mjs", "app/static"], "ESLint"),
     Break("email", "A bug in what already worked (privacy)", "a real-looking email address committed to the public repo",
-          "docs/DECISIONS.md", "", "\n- 2026-11-13: drill: write to someone.at.the.table@gmail.com\n",
+          "docs/DECISIONS.md", "", "\n- 2026-11-13: drill: write to someone.at.the.table" + AT + "gmail.com\n",
           PY + ["tests/test_public_safe.py"], "test_public_safe"),
     Break("phone", "The UI or UX quietly getting worse", "the menu bar too wide for a phone",
           "app/static/app.css", "", "\n.topbar { min-width: 640px; }\n",
