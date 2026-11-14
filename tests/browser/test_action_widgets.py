@@ -165,3 +165,39 @@ def test_healing_for_you_is_a_card_that_stays_until_you_apply_it(people, server,
             conn.execute(text("DELETE FROM table_rolls WHERE kind IN ('heal', 'applied') AND campaign_id = :camp"), {"camp": server["campaign"]})
         _pieces(browser_db, server, was)
         engine.dispose()
+
+
+def test_the_card_goes_when_the_dm_applies_it(people, server, browser_db):
+    """Brett, Nov 14: if the DM applies the healing for them, the player's card goes away (the same Apply route marks
+    the roll applied, and the live connection tells every page)."""
+    was = _pieces(browser_db, server, ["sync"])
+    engine = create_engine(browser_db[0])
+    try:
+        with engine.begin() as conn:
+            healer = conn.execute(text("SELECT id FROM characters WHERE id <> :c ORDER BY id LIMIT 1"), {"c": server["cole"]}).scalar()
+            rid = conn.execute(text("""INSERT INTO table_rolls (campaign_id, character_id, label, kind, mode, visibility, damage, spec, extras, who,
+                                       dice, kept, modifier, total, formula, parts)
+                                       VALUES (:camp, :healer, 'Lay On Hands for Cole', 'heal', 'normal', 'table', '', CAST(:spec AS jsonb),
+                                       '[]', '', '[]', NULL, 0, 5, '5', '[]') RETURNING id"""),
+                               {"camp": server["campaign"], "healer": healer, "spec": json.dumps({"for": server["cole"]})}).scalar()
+        player, dm = people("player", "dm")
+        for _ in range(20):  # (the server keeps a campaign's switches for a few seconds)
+            with engine.begin() as conn:
+                conn.execute(text("UPDATE characters SET sheet_heard_at = now(), sheet_seen_at = now() WHERE id = :c"), {"c": server["cole"]})
+            page = battle(player, server)
+            if page.locator("main[data-spends='play']").count():
+                break
+            page.wait_for_timeout(500)
+        page.locator("#cards > .card.k-heal").wait_for()
+        dm_page = dm.open("/party")
+        answer = dm_page.evaluate("""([cid, rid]) => fetch('/characters/' + cid + '/hp/apply', { method: 'POST', headers: { 'X-Requested-With': 'fetch' },
+                                       body: new URLSearchParams({ mode: 'heal', amount: '5', type: '', roll: String(rid) }) }).then(r => r.status)""",
+                                     [server["cole"], rid])
+        assert answer == 200  # (the DM's Apply to, as Table rolls' window sends it)
+        page.locator("#cards > .card.k-heal").wait_for(state="detached")
+        assert player.errors == [] and dm.errors == []
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM table_rolls WHERE kind IN ('heal', 'applied') AND campaign_id = :camp"), {"camp": server["campaign"]})
+        _pieces(browser_db, server, was)
+        engine.dispose()
