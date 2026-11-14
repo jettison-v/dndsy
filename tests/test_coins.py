@@ -143,7 +143,7 @@ def test_the_purse_marks_a_bag_coin_on_its_way(player, db):
     assert next(b for b in shown["bag_coins"] if b["id"] == BAG)["coins"] == {"gp": 6500}
 
 
-def test_buying_pays_from_the_place_chosen(player, db):
+def test_buying_pays_from_the_place_chosen(player, db, item_catalog):
     cole = char(db, "Cole")
     w = player.get(f"/characters/{cole.id}/items/browse").text
     assert f'<option value="{BAG}">Bag of Holding (7,000 gp)</option>' in w and 'data-ib-from' in w

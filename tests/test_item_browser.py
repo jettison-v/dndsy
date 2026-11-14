@@ -22,12 +22,11 @@ never listed: the 2014 Rope (legacy), a homebrew item and a 2014-only one."""
 
 
 @pytest.fixture(autouse=True)
-def bridge_on(db, sheet, monkeypatch):
-    """Live state comes with Sync with D&D Beyond (app/vtt.py), switched on for the campaign; D&D Beyond's list is ITEMS."""
+def bridge_on(db, sheet, item_catalog):
+    """Live state comes with Sync with D&D Beyond (app/vtt.py), switched on for the campaign; D&D Beyond's list is the
+    made-up one (conftest `item_catalog`)."""
     db.get(Campaign, char(db, "Cole").campaign_id).vtt_pieces = ["sync"]
     db.flush()
-    monkeypatch.setattr(giving, "_catalog", {"at": 0.0, "tried": 0.0, "items": []})
-    monkeypatch.setattr(giving.ddb, "_get_json", lambda url, timeout: {"data": ITEMS})
 
 
 def intents(db):
