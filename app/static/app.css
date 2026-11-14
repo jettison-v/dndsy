@@ -1467,6 +1467,8 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .manage-side a:hover, .manage-jump-list a:hover { color: var(--text); background: var(--surface); }
 .manage-side a.on, .manage-jump-list a.on { color: var(--text-strong); background: var(--surface-2); font-weight: 600; }
 .manage-sec { display: block; padding: var(--sp-3) 10px 2px; font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--faint); }
+.manage-planned { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); padding: 5px 10px; color: var(--faint); font-size: var(--fs-sm); cursor: default; }  /* a kind of thing the DM will make: listed, not yet a page */
+.manage-planned small { font-size: var(--fs-xs); }
 .manage-jump { margin: 0 0 var(--sp-4); }
 .manage-jump > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); min-height: var(--control-h); padding: 6px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); cursor: pointer; font-size: var(--fs-sm); }
 .manage-jump > summary::-webkit-details-marker { display: none; }
@@ -3956,13 +3958,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 @media (hover: none), (max-width: 640px) { .search-foot { display: none; } }  /* (keys mean nothing on a touch screen, and crowd a narrow one) */
 
 /* DM Tools (app/homebrew.py, dm_tools.html, dm_item.html): its list down the left, then the page; one column on a phone */
-.page.dm-tools { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: var(--sp-6); align-items: start; }
-.dm-side { display: grid; gap: 2px; align-content: start; position: sticky; top: calc(var(--stick-top, 62px) + var(--sp-4)); }
-.dm-side a, .dm-planned { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); color: var(--muted); text-decoration: none; padding: 5px 10px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
-.dm-side a:hover { color: var(--text); background: var(--surface); }
-.dm-side a.on { color: var(--text-strong); background: var(--surface-2); font-weight: 600; }
-.dm-planned { cursor: default; }
-.dm-planned small { color: var(--faint); font-size: var(--fs-xs); }
 .dm-main { min-width: 0; }
 .dm-says { color: var(--text); }
 .dm-items .record { align-items: center; }
@@ -3976,8 +3971,17 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .dm-piece legend { padding: 0 var(--sp-2); color: var(--muted); font-size: var(--fs-sm); }
 .dm-go { margin-top: var(--sp-4); }
 .dm-retire { margin-top: var(--sp-4); display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
-@media (max-width: 900px) {
-  .page.dm-tools { grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
-  .dm-side { position: static; display: flex; flex-wrap: wrap; gap: var(--sp-1); }
-  .dm-side .manage-sec { width: 100%; }
-}
+
+/* The DM's Workspace (Brett chose B, Nov 13; manage.html, app/workspace.py): Needs you's workbench, who's at the table
+   and a tile per kind of thing the DM makes, planned ones dashed */
+.ws-who { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); }
+.ws-who li { display: grid; grid-template-columns: auto auto; column-gap: var(--sp-2); align-items: center; }
+.ws-who .char-av { grid-row: span 2; }
+.ws-who small { color: var(--muted); font-size: var(--fs-xs); }
+.ws-who [data-tone="step"] small { color: var(--green); }
+.ws-who [data-tone="via"] small { color: var(--amber); }
+.ws-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-3); }
+.ws-tile { display: grid; gap: var(--sp-1); align-content: start; padding: var(--sp-3) var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); min-width: 0; }
+.ws-tile.planned { border-style: dashed; background: none; color: var(--muted); }
+.ws-tile .row { margin-top: var(--sp-2); }
+.ws-count { color: var(--muted); font-weight: 600; margin-left: var(--sp-1); }

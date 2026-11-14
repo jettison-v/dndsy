@@ -84,6 +84,7 @@ from app.turn_bar import router as turn_bar_router
 from app.usage import router as usage_router
 from app.view_as import ViewAs
 from app.view_as import router as view_as_router
+from app.workspace import router as workspace_router
 from app.your_notes import router as your_notes_router
 
 
@@ -253,6 +254,7 @@ app.include_router(notes_router)
 app.include_router(history_router)
 app.include_router(house_rules_router)
 app.include_router(homebrew_router)  # DM Tools: the campaign's homebrew items
+app.include_router(workspace_router)  # the DM's Workspace: Scene notes and Places and maps in Manage
 app.include_router(campaigns_router)
 app.include_router(dice_router)
 app.include_router(documents_router)  # Manage › askdnd › Documents: every page made for askdnd (docs/library.json)

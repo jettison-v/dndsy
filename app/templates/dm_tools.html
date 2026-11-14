@@ -3,14 +3,8 @@
    Manage (settings, review, rules). Items first; the other kinds are listed as planned until they're built. #}
 {% block title %}DM Tools · askdnd{% endblock %}
 {% block content %}
-<main class="page dm-tools">
-  <nav class="dm-side" aria-label="DM Tools">
-    <span class="manage-sec">The campaign's own</span>
-    <a href="{{ cbase }}/dm" class="on" aria-current="page">Items</a>
-    {% for key, label, about in planned %}<span class="dm-planned" title="{{ about }}">{{ label }} <small>planned</small></span>{% endfor %}
-    <span class="manage-sec">Rules</span>
-    <a href="{{ cbase }}/manage/house-rules">House rules</a>
-  </nav>
+<main class="page manage-page dm-tools">
+  {% include "_manage_head.html" %}
   <div class="dm-main">
     <div class="title-row"><h1>DM Tools</h1><a class="btn primary" href="{{ cbase }}/dm/items/new">+ New item</a></div>
     <p class="subtitle">What you make for this campaign. <b>Items</b>: its own magic items, with what each does in play built from what askdnd already plays (a roll, a bonus to another roll, charges). A character who carries an item of that name on their D&amp;D Beyond sheet plays it on Battle. Players see one only once it's theirs.</p>

@@ -4,7 +4,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Needs you</h1></div>
-  <p class="subtitle">What's waiting in {{ campaign.name if campaign else "the campaign" }}, most important first.</p>
+  <p class="subtitle">What's waiting in {{ campaign.name if campaign else "the campaign" }}, most important first, then what you're preparing.</p>
   {% if items %}
   <ul class="records">
     {% for x in items %}
@@ -17,6 +17,24 @@
   <ul class="records">
     {% for p in pages %}<li class="record"><span class="record-main"><a href="{{ p.href }}"><b>{{ p.label }}</b></a><span class="note">{{ p.about }}</span></span></li>{% endfor %}
   </ul>
+  {% endif %}
+  {% if who %}
+  <section class="section ws-table" data-workbench="table">
+    <h2>The table</h2>
+    <ul class="ws-who">{% for w in who %}<li data-tone="{{ w.tone }}"><span class="char-av" aria-hidden="true">{{ w.name[:1] | upper }}{% if w.portrait %}<img src="{{ w.portrait }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span><b>{{ w.name }}</b>{% if w.says %}<small>{{ w.says }}</small>{% endif %}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+  {% if tiles %}
+  <section class="section" data-workbench="make">
+    <h2>The next game · what you make</h2>
+    <div class="ws-tiles">
+      {% for t in tiles %}<div class="ws-tile{{ ' planned' if t.planned }}" data-tile="{{ t.key }}">
+        <b>{{ t.name }}{% if t.planned %} <span class="tag faint">planned</span>{% elif t.count %} <span class="ws-count">{{ t.count }}</span>{% endif %}</b>
+        <span class="note">{{ t.says }}</span>
+        {% if not t.planned %}<span class="row">{% if t.new %}<a class="btn small" href="{{ t.new }}">+ New</a>{% endif %}<a class="btn small" href="{{ t.open }}">Open</a></span>{% endif %}
+      </div>{% endfor %}
+    </div>
+  </section>
   {% endif %}
 </main>
 {% endblock %}

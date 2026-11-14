@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{# Manage › Places and maps (The DM's Workspace, Brett chose B, Nov 13; app/workspace.py): askdnd's table's places, each
+   opening the table there. They're made and mapped on the table itself (Map ▾); Campaign › Map is the story's map. #}
+{% block title %}Places and maps · Manage · askdnd{% endblock %}
+{% block content %}
+<main class="page manage-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Places and maps</h1>{% if table_on %}<a class="btn" href="{{ cbase }}/table">Open the table</a>{% endif %}</div>
+  <p class="subtitle">The places of askdnd's table, each with its map. Add one, or its map, from Map ▾ on the table. The story's own map is <a href="{{ cbase }}/campaign?tab=map">Campaign › Map</a>.</p>
+  {% if not table_on %}<p class="note">askdnd's table is still in Labs: switch it on in <a href="{{ cbase }}/manage/settings">Settings</a> to make places here.</p>{% endif %}
+  {% if places %}
+  <ul class="records">
+    {% for p in places %}<li class="record" data-place="{{ p.id }}"><span class="record-main"><b>{{ p.name }}</b><span class="note">{{ "A map" if p.map_key else "No map yet" }}{% if campaign.shown_place_id == p.id %} · the players see it now{% endif %}{% if pins.get(p.id) %} · {{ pins[p.id] }} scene note{{ "s" if pins[p.id] != 1 }}{% endif %}</span></span>
+      {% if table_on %}<span class="record-actions"><a class="btn small" href="{{ cbase }}/table?place={{ p.id }}">Open</a></span>{% endif %}</li>{% endfor %}
+  </ul>
+  {% elif table_on %}<p class="muted">No places yet. On the table, Map ▾ › New place.</p>{% endif %}
+</main>
+{% endblock %}
