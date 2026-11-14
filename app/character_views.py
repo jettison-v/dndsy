@@ -58,9 +58,14 @@ def pays(action: dict, spends: list[dict]) -> list[dict]:
     Brett, Nov 13: Flurry of Blows showed its Focus Point and didn't spend it): its own use (Second Wind), else the
     resource it says it expends (Flurry of Blows' Focus Point). Each {field, n, label, left}: the Use one window's count
     (app/resources.py), so its Undo is that window's."""
+    from app import rules_book
+
+    e = rules_book.entry("feature", action["name"].split(":")[0].strip())
+    optional = bool(((e or {}).get("use") or {}).get("optional"))  # (the rules make it a choice: the pill starts unpressed)
     if action.get("uses") and action.get("id") is not None:
-        return [{"field": f"uses:{action['id']}", "n": 1, "label": f"1 use of {action['name']}", "left": action["uses"]["left"]}]
-    return [{"field": s["field"], "n": s["n"], "label": s["label"], "left": (s.get("uses") or {}).get("left")} for s in spends if s.get("field")]
+        return [{"field": f"uses:{action['id']}", "n": 1, "label": f"1 use of {action['name']}", "left": action["uses"]["left"], "optional": optional}]
+    return [{"field": s["field"], "n": s["n"], "label": s["label"], "left": (s.get("uses") or {}).get("left"), "optional": optional}
+            for s in spends if s.get("field")]
 
 
 def resource_spends(sheet: dict, name: str, key: str, text: str) -> list[dict]:

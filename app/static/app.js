@@ -62,7 +62,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // the newest at the bottom, three at most (one on a phone). Its kind gives its icon, colour and how long it stays:
   // done 4 seconds, for your information and someone's roll 6, refused 10, an error until closed; one with a button
   // (Undo, Keep going) 20. Hovering a card keeps it. The server says which kind (web.notice: its text alone is "done").
-  const CARD = { ok: ['✓', 4000], info: ['i', 6000], roll: ['', 6000], warn: ['!', 10000], error: ['✕', 0] };
+  const CARD = { ok: ['✓', 4000], info: ['i', 6000], roll: ['', 6000], warn: ['!', 10000], error: ['✕', 0], heal: ['+', 0] };
   function card(content, { kind = 'ok', action, actions, icon, stay } = {}) {
     const box = $('#cards');
     if (!box || !content) return null;
@@ -100,7 +100,11 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     start();
     box.append(el);
     const most = matchMedia('(max-width: 900px)').matches ? 1 : 3;
-    while (box.children.length > most) box.firstElementChild.remove();
+    while (box.children.length > most) {  // (the oldest goes first; a healing card waiting for an answer last, and it comes back)
+      const old = [...box.children].find(c => c !== el && !c.classList.contains('k-heal')) || box.firstElementChild;
+      if (old.classList.contains('k-heal') && window.askdndHeals) setTimeout(window.askdndHeals, (wait || 6000) + 400);
+      old.remove();
+    }
     if (waitingFollow && Date.now() - waitingFollow.at < 1500) followChange(el, waitingFollow.d);  // (its change came first)
     waitingFollow = null;
     lastCard = { el, at: Date.now() };
@@ -162,6 +166,42 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   }
   window.askdndToast = toast;
   window.askdndCard = card;
+  // Healing for you (app/heals.py; Brett chose A on Healing and Costs, Nov 14): healing someone gave a character you
+  // play waits as a green corner card that stays until you answer, on every askdnd page you have open. Apply heals
+  // through the hit points window's own route; Not now hides it until your next page. Gone everywhere once applied or
+  // undone (the live connection's "rolls").
+  (() => {
+    if (!$('#cards') || !document.querySelector('[data-door]')) return;  // (signed in: the menu bar's doors)
+    const shown = new Map(), later = new Set();
+    const line = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
+    function apply(h) {
+      fetch('/characters/' + h.for + '/hp/apply', { method: 'POST', headers: { 'X-Requested-With': 'fetch' },
+                                                     body: new URLSearchParams({ mode: 'heal', amount: String(h.amount), type: '', roll: String(h.id) }) })
+        .then(r => {
+          if (!r.ok) return r.json().catch(() => ({})).then(j => { throw new Error(j.detail || "askdnd couldn't apply it"); });
+          const t = r.headers.get('HX-Trigger');  // (what the window's own Apply says: its corner card, the sheet's new copy)
+          if (t) { try { Object.entries(JSON.parse(t)).forEach(([k, v]) => document.body.dispatchEvent(new CustomEvent(k, { detail: v }))); } catch (err) { /* nothing more to say */ } }
+          shown.delete(h.id);
+        })
+        .catch(err => { toast(h.name + ': ' + err.message, null, 'warn'); shown.delete(h.id); setTimeout(check, 500); });
+    }
+    function check() {
+      fetch('/heals/waiting', { headers: { 'X-Requested-With': 'fetch' } }).then(r => (r.ok ? r.json() : { heals: [] })).then(j => {
+        const ids = new Set(j.heals.map(h => h.id));
+        shown.forEach((el, id) => { if (!ids.has(id)) { if (el._close) el._close(); shown.delete(id); } });
+        j.heals.forEach(h => {
+          if (later.has(h.id) || (shown.get(h.id) && shown.get(h.id).isConnected)) return;
+          const text = document.createElement('span');
+          text.append(line('b', h.from + ' heals ' + h.name + ' ' + h.amount), document.createElement('br'), line('small', h.label + (h.hp ? ' · ' + h.hp : '')));
+          const el = card(text, { kind: 'heal', stay: true, actions: [{ label: 'Apply ' + h.amount, run: () => apply(h) }, { label: 'Not now', run: () => later.add(h.id) }] });
+          if (el) { el.dataset.heal = h.id; shown.set(h.id, el); }
+        });
+      }).catch(() => { /* the next page or roll asks again */ });
+    }
+    window.askdndHeals = check;
+    check();
+    document.addEventListener('askdnd:live', e => { if (e.detail.type === 'rolls' || e.detail.type === 'resync') check(); });
+  })();
   // A change's corner card: the one just shown, or the next one (web.changed sends the change before its message)
   window.askdndFollow = d => {
     if (lastCard && lastCard.el.isConnected && Date.now() - lastCard.at < 1500) followChange(lastCard.el, d);
@@ -169,7 +209,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   };
 
   // Server can trigger a toast with the HX-Trigger header: {"toast": "Saved"}
-  document.body.addEventListener('toast', e => toast(e.detail && ('value' in e.detail ? e.detail.value : e.detail)));
+  document.body.addEventListener('toast', e => toast(e.detail && typeof e.detail === 'object' && 'value' in e.detail ? e.detail.value : e.detail));  // (htmx hands a plain message on as {value}; a fetch may hand on the message itself)
 
   document.addEventListener('click', e => {
     // Menus (campaign, Party, Live, Manage, account, phone More). A click elsewhere closes
@@ -1952,7 +1992,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const st = { step: from ? (from.action === 'bonus' ? 'pick' : 'rolling') : attack ? (choice ? 'choose' : 'attack') : save ? 'save' : single ? 'single' : 'attack', forText: '',
                  mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false, visOpen: false, entry: from ? from.entry : null,
                  dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {}, drama: false,
-                 pay: (plan.pay || []).map(p => p.left == null || p.left >= p.n), paid: false };
+                 pay: (plan.pay || []).map(p => !p.optional && (p.left == null || p.left >= p.n)), paid: false };  // (a cost the rules make a choice starts unpressed)
     // (on by themselves while they last, Radiant Strikes; once a turn, or only sometimes (`pressed: false`, Rage Damage): yours to tick)
     mods.forEach(m => { if ((m.when === 'on_hit' || m.when === 'on_heal') && m.adds) st.on[m.name] = m.pressed != null ? !!m.pressed : !m.once && !(m.slot && spec.castFree); });  // (a slot's bonus is off when cast without one)
     mods.forEach(m => { if (m.when === 'before' && m.adds && m.pressed) st.pre[m.name] = true; });  // (Aura of Protection: always, unless the DM says)

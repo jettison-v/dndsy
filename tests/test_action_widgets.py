@@ -48,7 +48,8 @@ def party(name: str) -> tuple[dict, dict]:
 
 
 def test_the_use_window_is_for_a_cost_with_no_roll_and_its_data_says_the_rest():
-    """Brett chose A on the Use Window mockup (Nov 13): Divine Sense and Patient Defense spend their cost with Use;
+    """Brett chose A on the Use Window mockup (Nov 13) and the pill (Nov 14): Divine Sense and Patient Defense have Use,
+    the cost a pill (Patient Defense's and Deflect Attack's unpressed: the rules make the point a choice);
     Lay On Hands is a pool, for one creature, in two ways, its D&D Beyond row choosing the first. A roll spends on the
     roll card instead (Flurry of Blows); a Reaction's cost is a choice (Deflect Attack's Focus Point only to redirect);
     Wild Shape has its own window."""
@@ -56,15 +57,17 @@ def test_the_use_window_is_for_a_cost_with_no_roll_and_its_data_says_the_rest():
 
     big_c, rows = party("big_c")
     s = feature_use.spec(big_c, rows["Channel Divinity: Divine Sense"])
-    assert s["ways"] == [{"key": "use", "name": "Spend 1 use of Channel Divinity"}] and not s["pool"] and not s["for"]
+    assert s["ways"] == [{"key": "use", "name": "Use"}] and s["pill"] and not s["optional"] and not s["pool"] and not s["for"]
     heal = feature_use.spec(big_c, rows["Lay On Hands: Heal"])
     assert heal["pool"] and heal["for"] == "one" and [w["key"] for w in heal["ways"]] == ["heal", "poison"]
     assert [w["key"] for w in feature_use.spec(big_c, rows["Lay On Hands: Purify Poison"])["ways"]] == ["poison", "heal"]
     cole, rows = party("cole")
     assert feature_use.spec(cole, rows["Patient Defense"]) and rows["Patient Defense"]["use_window"]
     assert not rows["Flurry of Blows"].get("use_window") and not rows["Wild Shape"].get("use_window")
+    assert feature_use.spec(cole, rows["Patient Defense"])["optional"]  # (its Disengage is free: the pill starts unpressed)
     no_name, rows = party("no_name")
-    assert not rows["Deflect Attack"].get("use_window")
+    deflect = feature_use.spec(no_name, rows["Deflect Attack"])
+    assert rows["Deflect Attack"]["use_window"] and deflect["optional"]  # (a Reaction too: its point only redirects)
 
 
 def test_use_spends_it_on_d_and_d_beyond_and_undo_gives_it_back(player, db, sheet):
@@ -81,7 +84,10 @@ def test_use_spends_it_on_d_and_d_beyond_and_undo_gives_it_back(player, db, shee
     url = f"/characters/{cole.id}/feature?key={quote('action:Patient Defense')}"
     page = player.get(url).text
     assert "data-use-go" in page and "Focus Point" in page
-    r = player.post(url, data={"way": "use"}).json()
+    assert "data-pay-pill" in page and 'name="pay" value="1" checked' not in page  # (optional: unpressed)
+    assert player.post(url, data={"way": "use"}).json()["text"].endswith("nothing spent")
+    assert not [i for i in db.scalars(select(BridgeIntent)) if i.kind == "use"]
+    r = player.post(url, data={"way": "use", "pay": "1"}).json()
     sent = [i.data for i in db.scalars(select(BridgeIntent).order_by(BridgeIntent.id)) if i.kind == "use"]
     assert [(d["field"], d["delta"]) for d in sent] == [(r["undo"]["field"], 1)]
     assert player.post(r["undoUrl"], data={**r["undo"], "n": "9"}).status_code == 409  # (only what it answered)
@@ -153,3 +159,43 @@ def test_lay_on_hands_never_spends_more_than_it_heals_nor_ends_what_isnt_there(p
     assert player.post(url, data={"way": "poison", "target": str(cole.id)}).status_code == 409
     r = player.post(url, data={"way": "heal", "n": "20", "target": str(cole.id)}).json()
     assert r["undo"]["n"] == "3" and [i.data["delta"] for i in db.scalars(select(BridgeIntent)) if i.kind == "use"] == [3]
+
+
+def test_healing_given_to_someone_waits_for_their_player_until_it_is_applied_or_undone(player, db, sheet):
+    """A standing rule (CLAUDE.md, a player changes only their own sheet) with Brett's pick A on Healing and Costs (Nov
+    14): Lay On Hands for another player's character waits for that character's player alone (the card that stays,
+    app/heals.py), Table rolls offers Apply to only for them and says Waiting, the DM sees it under Needs you, and it
+    stops waiting once applied or undone."""
+    import copy
+    from urllib.parse import quote
+
+    from sqlalchemy import select
+
+    from app import characters, heals, hit_points, manage
+    from app.models import Character, TableRoll
+    from tests.roles import set_role
+    from tests.table_setup import char, owned_by
+
+    sheet.clear()
+    sheet.update(copy.deepcopy(json.loads((ROOT / "tests" / "fixtures" / "ddb" / "big_c.json").read_text())["data"]))
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    other = next(c for c in db.scalars(select(Character)) if c.id != cole.id and c.campaign_id == cole.campaign_id and c.ddb_id)
+    owned_by(db, other, "other@example.com")
+    set_role(db, "dm@example.com", "dm")
+    db.commit()
+    url = f"/characters/{cole.id}/feature?key={quote('action:Lay On Hands: Heal')}"
+    r = player.post(url, data={"way": "heal", "n": "4", "target": str(other.id)}).json()
+    row = db.scalar(select(TableRoll).where(TableRoll.kind == "heal").order_by(TableRoll.id.desc()))
+    assert heals.for_of(row) == other.id and "waiting for" in r["text"]
+
+    theirs = heals.waiting(db, {"email": "other@example.com"}, cole.campaign_id)
+    assert [(h["id"], h["for"], h["amount"]) for h in theirs] == [(row.id, other.id, 4)]
+    assert heals.waiting(db, {"email": "player@example.com"}, cole.campaign_id) == []  # (the healer is told, not asked)
+    info = hit_points.apply_info(db, {"email": "dm@example.com"}, [row], [])[row.id]
+    assert [t["id"] for t in info["to"]] == [other.id] and info["waiting"] == other.name
+    assert any(other.name in n["text"] for n in manage.needs(db, {"email": "dm@example.com"}))
+
+    player.post(r["undoUrl"], data=r["undo"])  # (the healer takes it back: it waits for no one)
+    db.expire_all()
+    assert heals.waiting(db, {"email": "other@example.com"}, cole.campaign_id) == []

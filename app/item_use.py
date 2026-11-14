@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app import character_views as views
 from app import characters as chars
 from app import conditions as cond
-from app import ddb_bridge, ddb_sheet, hit_points, house_rules, live, picks, realtime, table_rolls, web
+from app import ddb_bridge, ddb_sheet, heals, hit_points, house_rules, live, picks, realtime, table_rolls, web
 from app.auth import current_user, is_dm
 from app.db import get_db
 from app.models import Character, TableRoll
@@ -124,14 +124,16 @@ def use(request: Request, character_id: int, item_id: int, to: str = Form(""), b
         text += f": {pick['name']}" + (f", {pick['spell']}" if pick["spell"] != pick["name"] else "")
     row = None
     if drink := _drinks(o):  # (its dice from the plan its Heal button carries: one roll, however it's made)
-        row = table_rolls.add_roll(db, ch, me.id, f"{it['name']} for {to}" if to else it["name"], drink["formula"])
+        given = next((r["id"] for r in live.rows_from(db) if to and r["name"] == to), None)  # (whom it's for: asked to apply it, app/heals.py)
+        row = table_rolls.add_roll(db, ch, me.id, f"{it['name']} for {to}" if to else it["name"], drink["formula"], for_id=given)
     if row and not to:
         w = hit_points.working(db, ch, "heal", [{"amount": row.total, "type": ""}])
         said = hit_points.make(db, ch, user, row, "heal", w)
         text += f": {said}"
         undo = None if w["up"] else {**undo, "heal": w["hp_after"] - w["hp_before"], "roll": row.id}
     elif row:
-        text += f" ({row.total} on the roll, for {to} to apply)"
+        text += f" ({row.total} on the roll, waiting for {to}'s player to apply it)"
+        undo = {**undo, "roll": row.id}  # (Undo takes the healing back too: it stops waiting for them)
     if (ou := cond.on_use(it)):
         _start(db, ch, it, ou)
         text += f": {ou['starts']}"
@@ -179,6 +181,9 @@ def undo_use(request: Request, character_id: int, item_id: int, spent: str = For
     r = db.get(TableRoll, roll) if roll else None
     if r and r.character_id == ch.id and (done := hit_points.applied(db, r).get(ch.id)):
         done.label, done.total = f"Undone: {done.label}"[:120], 0
+        realtime.announce(db, ch.campaign_id, "rolls")
+    elif r and r.character_id == ch.id and heals.for_of(r) and not hit_points.applied(db, r):  # (given, not applied yet)
+        r.label, r.total = f"Undone: {r.label}"[:120], 0
         realtime.announce(db, ch.campaign_id, "rolls")
     db.commit()
     return JSONResponse({"text": f"{it['name']} put back", "deliver": web.deliver_now(ch)})

@@ -23,6 +23,7 @@ from app.auth import (
     can_set_house_rules,
     current_user,
     is_admin,
+    is_dm,
     is_reviewer,
 )
 from app.db import get_db
@@ -166,6 +167,13 @@ def needs(db: Session, user: dict) -> list[dict]:
         elif oldest and datetime.now(UTC) - oldest > STALE_CHARACTERS:
             out.append({"text": f"Characters last refreshed {_ago(oldest)}", "sub": "Refresh them from D&D Beyond",
                         "href": where[0], "go": where[1]})
+    if campaign and is_dm(user, campaign.id):  # (healing given to someone, not applied yet: the DM can apply it, app/heals.py)
+        from app.heals import open_heals
+
+        for r, tgt in open_heals(db, campaign.id):
+            out.append({"text": f"{tgt.name} hasn't applied {r.total} healing from {r.character.name if r.character else 'someone'}",
+                        "sub": f"{r.label}: Apply to in Table rolls, for them or with them", "href": f"/characters/{tgt.id}/battle",
+                        "go": f"Open {tgt.name}"})
     if is_admin(user):
         from app.tool_corrections_pages import open_count
 

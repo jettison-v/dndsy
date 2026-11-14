@@ -2,6 +2,7 @@
 used, with Undo. First, a row's own cost spent as its roll is made (Brett, Nov 13: Flurry of Blows showed its Focus
 Point and didn't spend it)."""
 
+import json
 import os
 
 from sqlalchemy import create_engine, text
@@ -86,7 +87,8 @@ def test_a_rows_own_cost_is_spent_as_it_is_rolled_with_undo(people, server, brow
 
 def test_the_use_window_spends_a_cost_with_no_roll(people, server, browser_db):
     """Brett chose A on the Use Window mockup (Nov 13): Patient Defense has no roll, so its row (and Search) has Use;
-    its window says the cost and what's left, and Use spends the Focus Point with Undo on the corner card."""
+    its window says the cost and what's left as a pill (unpressed: the point is a choice), and Use with the pill pressed
+    spends the Focus Point with Undo on the corner card."""
     was = _pieces(browser_db, server, ["sync"])
     engine = create_engine(browser_db[0])
     try:
@@ -108,11 +110,58 @@ def test_the_use_window_spends_a_cost_with_no_roll(people, server, browser_db):
         go.wait_for()
         if os.environ.get("SHOT_OUT"):  # (a picture for a look by eye, never in git)
             page.locator(".roll-win").screenshot(path=os.environ["SHOT_OUT"])
+        page.locator(".roll-win [data-pay-pill]").click()  # (Patient Defense's point is a choice: pressed to spend it)
         go.click()
         page.locator("#cards > .card .card-act").first.wait_for()
         with engine.begin() as conn:
             sent = [r[0] for r in conn.execute(text("SELECT data FROM bridge_intents WHERE character_id = :c AND kind = 'use' ORDER BY id"), {"c": server["cole"]})]
         assert [d["delta"] for d in sent] == [1] and player.errors == []
     finally:
+        _pieces(browser_db, server, was)
+        engine.dispose()
+
+
+def test_healing_for_you_is_a_card_that_stays_until_you_apply_it(people, server, browser_db):
+    """Brett's pick A on Healing and Costs (Nov 14): healing another character gave Cole waits on Cole's player's pages
+    as a green corner card that doesn't fade (other cards don't push it out), and Apply heals Cole on D&D Beyond
+    through the hit points window's own route; then it's gone."""
+    was = _pieces(browser_db, server, ["sync"])
+    engine = create_engine(browser_db[0])
+    try:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM bridge_intents WHERE character_id = :c"), {"c": server["cole"]})
+            healer = conn.execute(text("SELECT id FROM characters WHERE id <> :c ORDER BY id LIMIT 1"), {"c": server["cole"]}).scalar()
+            conn.execute(text("""INSERT INTO table_rolls (campaign_id, character_id, label, kind, mode, visibility, damage, spec, extras, who,
+                                 dice, kept, modifier, total, formula, parts)
+                                 VALUES (:camp, :healer, 'Lay On Hands for Cole', 'heal', 'normal', 'table', '', CAST(:spec AS jsonb),
+                                 '[]', '', '[]', NULL, 0, 6, '6', '[]')"""),
+                         {"camp": server["campaign"], "healer": healer, "spec": json.dumps({"for": server["cole"]})})
+        player = people("player")
+        for _ in range(20):  # (the server keeps a campaign's switches for a few seconds)
+            with engine.begin() as conn:
+                conn.execute(text("UPDATE characters SET sheet_heard_at = now(), sheet_seen_at = now() WHERE id = :c"), {"c": server["cole"]})
+            page = battle(player, server)
+            if page.locator("main[data-spends='play']").count():
+                break
+            page.wait_for_timeout(500)
+        heal = page.locator("#cards > .card.k-heal")
+        heal.wait_for()
+        for i in range(4):  # (more cards than the corner holds: the healing card stays)
+            page.evaluate("n => window.askdndToast('Card ' + n)", i)
+        page.wait_for_timeout(300)
+        assert heal.count() == 1
+        heal.locator(".card-act").first.click()  # (Apply 6)
+        for _ in range(20):
+            with engine.begin() as conn:
+                hp = [r[0] for r in conn.execute(text("SELECT data FROM bridge_intents WHERE character_id = :c AND kind = 'hp' ORDER BY id"), {"c": server["cole"]})]
+            if hp:
+                break
+            page.wait_for_timeout(250)
+        assert [d["amount"] for d in hp] == [6]
+        page.wait_for_timeout(500)
+        assert page.locator("#cards > .card.k-heal").count() == 0 and player.errors == []
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM table_rolls WHERE kind IN ('heal', 'applied') AND campaign_id = :camp"), {"camp": server["campaign"]})
         _pieces(browser_db, server, was)
         engine.dispose()

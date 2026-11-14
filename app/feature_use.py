@@ -32,9 +32,8 @@ from app.templating import templates
 
 router = APIRouter()
 
-# (a row under Other is a note, not something to press; a Reaction's cost is often a choice, Deflect Attack's Focus
-# Point only to redirect, so a Reaction gets Use only from its data)
-COSTS = ("Action", "Bonus action")
+# (a row under Other is a note, not something to press)
+COSTS = ("Action", "Bonus action", "Reaction")
 ELSEWHERE = {"Wild Shape"}  # (its forms' window spends it: app/shifting.py)
 POOL = 10  # (more than this to count, Lay On Hands' 5 × level: How many, not one at a time; as Use one's window)
 
@@ -55,11 +54,15 @@ def spec(sheet: dict, o: dict) -> dict | None:
     if not use and (o.get("cost") not in COSTS or any(r.get("button") for r in views.option_rolls(o))):
         return None
     first = pay[0]["count"]
-    # (without data, the button says what it spends: Patient Defense's Disengage is free, its Focus Point buys the Dodge too)
-    ways = (use or {}).get("ways") or [{"key": "use", "name": f"Spend {pay[0]['label']}"}]
+    # (Brett chose the pill, Nov 14, docs/mockups/healing-and-costs/: a plain Use, its cost a pill beside it as on the roll
+    # card; `optional` in the rules book starts it unpressed: Patient Defense's Disengage is free, its Focus Point buys
+    # the Dodge too; Deflect Attack's point only redirects)
+    ways = (use or {}).get("ways") or [{"key": "use", "name": "Use"}]
     row = o["name"].split(":", 1)[1].strip() if ":" in o["name"] else ""  # (D&D Beyond's row for one way: "Lay On Hands: Purify Poison")
     ways = sorted(ways, key=lambda w: w.get("row") != row)
-    return {"pay": pay, "pool": bool(first["max"] and first["max"] > POOL), "for": (use or {}).get("for"), "ways": ways}
+    pool = bool(first["max"] and first["max"] > POOL)
+    return {"pay": pay, "pool": pool, "for": (use or {}).get("for"), "ways": ways,
+            "pill": not pool and not (use or {}).get("ways"), "optional": bool((use or {}).get("optional"))}
 
 
 def _row(sheet: dict, key: str) -> tuple[dict, dict]:
@@ -109,7 +112,7 @@ def _spend(db: Session, ch: Character, field: str, n: int, label: str) -> None:
 
 
 @router.post("/characters/{character_id:int}/feature")
-def use(request: Request, character_id: int, key: str, way: str = Form("use"), how_many: str = Form("1", alias="n"),
+def use(request: Request, character_id: int, key: str, way: str = Form("use"), how_many: str = Form("1", alias="n"), paid: str = Form("", alias="pay"),
         target: int = Form(0), db: Session = Depends(get_db)):
     """Use it: what it spends on D&D Beyond, and what the way does (heal, end a condition) to whom it's for."""
     ch, user = _guard(db, request, character_id)
@@ -121,6 +124,8 @@ def use(request: Request, character_id: int, key: str, way: str = Form("use"), h
         raise HTTPException(404)
     pay, name = s["pay"][0], o["name"].split(":")[0].strip()
     left = pay["count"]["left"]
+    if s["pill"] and not paid:  # (the pill left unpressed: used, nothing spent)
+        return JSONResponse({"text": f"{ch.name}: {name}, nothing spent"})
     n = int(w["spend"]) if w.get("spend") else (int(how_many) if how_many.strip().isdigit() else 1) if s["pool"] else int(pay["n"])
     if n < 1 or n > left:
         raise HTTPException(409, f"{name}: {left} left." if left else f"{name}: none left.")
@@ -150,8 +155,8 @@ def use(request: Request, character_id: int, key: str, way: str = Form("use"), h
             from app import picks, table_rolls
 
             me = picks.user_row(db, user)
-            row = table_rolls.add_roll(db, ch, me.id, f"{name} for {tgt.name}", str(n))
-            text = f"{name}: {n} healing for {tgt.name}, in Table rolls for {tgt.name}'s player to apply"
+            row = table_rolls.add_roll(db, ch, me.id, f"{name} for {tgt.name}", str(n), for_id=tgt.id)
+            text = f"{name}: {n} healing for {tgt.name}, waiting for {tgt.name}'s player to apply it"
             undo |= {"roll": str(row.id)} if row else {}
     if tgt and w.get("ends"):
         if who["own"]:

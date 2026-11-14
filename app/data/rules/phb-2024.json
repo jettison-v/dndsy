@@ -645,7 +645,10 @@
      ],
      "reduces": "1d10+{mod:dexterity}+{level:Monk}"
     }
-   ]
+   ],
+   "use": {
+    "optional": true
+   }
   },
   {
    "kind": "feature",
@@ -3330,6 +3333,26 @@
       "row": "Purify Poison"
      }
     ]
+   }
+  },
+  {
+   "kind": "feature",
+   "name": "Patient Defense",
+   "class": "Monk",
+   "level": 2,
+   "why": "Monk: Disengage as a Bonus Action, free; 1 Focus Point to Disengage and Dodge",
+   "use": {
+    "optional": true
+   }
+  },
+  {
+   "kind": "feature",
+   "name": "Step of the Wind",
+   "class": "Monk",
+   "level": 2,
+   "why": "Monk: Dash as a Bonus Action, free; 1 Focus Point to Disengage and Dash, jump distance doubled",
+   "use": {
+    "optional": true
    }
   }
  ]
