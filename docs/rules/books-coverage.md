@@ -2,7 +2,7 @@
 
 What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every class feature, subclass feature, feat, species trait and magic item whose words hold dice, a saving throw or a bonus to a roll. Written by `scripts/books_coverage.py` from the offline books (names only); `tests/test_books_coverage.py` checks it.
 
-**382 entries**: 142 played, 3 partly, 9 the sheet's numbers, 41 a save with nothing for the character to roll, 44 in words on purpose, 143 missing.
+**382 entries**: 157 played, 3 partly, 9 the sheet's numbers, 41 a save with nothing for the character to roll, 44 in words on purpose, 128 missing.
 
 **Played** means askdnd's data has it: an `add` plays on every roll it changes; a `rolls` entry plays on the Battle row D&D Beyond lists for it (activated features are listed as actions). **Save only**: the target rolls the save; its DC is the sheet's. Magic items are listed for reference: an item's rolls are added as the table's characters carry it.
 
@@ -10,18 +10,6 @@ What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every cla
 
 | Name | Where | Has | askdnd |
 |---|---|---|---|
-| Tandem Footwork | Bard 6, College of Dance | bonus | **missing** |
-| Mantle of Inspiration | Bard 3, College of Glamour | bonus | **missing** |
-| Disciple of Life | Cleric 3, Life Domain | bonus | **missing** |
-| Blessed Healer | Cleric 6, Life Domain | bonus | **missing** |
-| Supreme Healing | Cleric 17, Life Domain | dice | **missing** |
-| Improved Duplicity | Cleric 17, Trickery Domain | bonus | **missing** |
-| Survivor | Fighter 18, Champion | bonus | **missing** |
-| Undying Sentinel | Paladin 15, Oath of the Ancients | bonus | **missing** |
-| Elder Champion | Paladin 20, Oath of the Ancients | save, bonus | **missing** |
-| Foe Slayer | Ranger 20 | dice | **missing** |
-| Celestial Resilience | Warlock 10, Celestial Patron | bonus | **missing** |
-| Dark One’s Blessing | Warlock 3, Fiend Patron | bonus | **missing** |
 | Intimidating Presence | Barbarian 14, Path of the Berserker | save | save only: the target rolls |
 | Branches of the Tree | Barbarian 6, Path of the World Tree | save | save only: the target rolls |
 | Beguiling Magic | Bard 3, College of Glamour | save | save only: the target rolls |
@@ -76,13 +64,19 @@ What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every cla
 | Divine Fury | Barbarian 3, Path of the Zealot | dice, bonus | rules/phb-2024 |
 | Warrior of the Gods | Barbarian 3, Path of the Zealot | dice, bonus | rules/phb-2024 |
 | Bardic Inspiration | Bard 1 | dice | rules/phb-2024 |
+| Tandem Footwork | Bard 6, College of Dance | bonus | rules/phb-2024 |
+| Mantle of Inspiration | Bard 3, College of Glamour | bonus | rules/phb-2024 |
 | Peerless Skill | Bard 14, College of Lore | dice | rules/phb-2024 |
 | Combat Inspiration | Bard 3, College of Valor | bonus | rules/phb-2024 |
 | Sear Undead | Cleric 5 | dice, bonus | rules/phb-2024 |
 | Blessed Strikes | Cleric 7 | dice, bonus | rules/phb-2024 |
 | Improved Blessed Strikes | Cleric 14 | dice, bonus | rules/phb-2024 |
+| Disciple of Life | Cleric 3, Life Domain | bonus | rules/phb-2024 |
+| Blessed Healer | Cleric 6, Life Domain | bonus | rules/phb-2024 |
+| Supreme Healing | Cleric 17, Life Domain | dice | rules/phb-2024 |
 | Radiance of the Dawn | Cleric 3, Light Domain | dice | rules/phb-2024 |
 | Improved Warding Flare | Cleric 6, Light Domain | dice, bonus | rules/phb-2024 |
+| Improved Duplicity | Cleric 17, Trickery Domain | bonus | rules/phb-2024 |
 | Elemental Fury | Druid 7 | dice, bonus | rules/phb-2024 |
 | Improved Elemental Fury | Druid 15 | dice, bonus | rules/phb-2024 |
 | Land’s Aid | Druid 3, Circle of the Land | dice, save, bonus | rules/phb-2024 |
@@ -95,6 +89,7 @@ What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every cla
 | Combat Superiority | Fighter 3, Battle Master | dice, save | rules/phb-2024 |
 | Improved Critical | Fighter 3, Champion | dice | class_rules |
 | Superior Critical | Fighter 15, Champion | dice | class_rules |
+| Survivor | Fighter 18, Champion | bonus | rules/phb-2024 |
 | Psionic Power | Fighter 3, Psi Warrior | bonus | rules/phb-2024 |
 | Martial Arts | Monk 1 | dice | rules/phb-2024 scale |
 | Uncanny Metabolism | Monk 2 | bonus | rules/phb-2024 |
@@ -109,7 +104,10 @@ What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every cla
 | Radiant Strikes | Paladin 11 | dice | rules/phb-2024 |
 | Sacred Weapon | Paladin 3, Oath of Devotion | bonus | rules/phb-2024 |
 | Inspiring Smite | Paladin 3, Oath of Glory | dice, bonus | rules/phb-2024 |
+| Undying Sentinel | Paladin 15, Oath of the Ancients | bonus | rules/phb-2024 |
+| Elder Champion | Paladin 20, Oath of the Ancients | save, bonus | rules/phb-2024 |
 | Tireless | Ranger 10 | dice, bonus | rules/phb-2024 |
+| Foe Slayer | Ranger 20 | dice | rules/phb-2024 |
 | Dreadful Strikes | Ranger 3, Fey Wanderer | dice, bonus | rules/phb-2024 |
 | Dread Ambusher | Ranger 3, Gloom Stalker | dice, bonus | rules/phb-2024 |
 | Stalker’s Flurry | Ranger 11, Gloom Stalker | dice, save | rules/phb-2024 |
@@ -130,7 +128,9 @@ What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every cla
 | Misty Escape | Warlock 6, Archfey Patron | dice, save | rules/phb-2024 |
 | Healing Light | Warlock 3, Celestial Patron | dice | rules/phb-2024 |
 | Radiant Soul | Warlock 6, Celestial Patron | bonus | rules/phb-2024 |
+| Celestial Resilience | Warlock 10, Celestial Patron | bonus | rules/phb-2024 |
 | Searing Vengeance | Warlock 14, Celestial Patron | dice, bonus | rules/phb-2024 |
+| Dark One’s Blessing | Warlock 3, Fiend Patron | bonus | rules/phb-2024 |
 | Dark One’s Own Luck | Warlock 6, Fiend Patron | dice, bonus | rules/phb-2024 |
 | Hurl Through Hell | Warlock 14, Fiend Patron | dice, save | rules/phb-2024 |
 | Spell Breaker | Wizard 10, Abjurer | bonus | rules/phb-2024 |
@@ -168,9 +168,6 @@ What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every cla
 
 | Name | Where | Has | askdnd |
 |---|---|---|---|
-| Healer | Origin Feats | bonus | **missing** |
-| Inspiring Leader | General Feats | bonus | **missing** |
-| Boon of Recovery | Epic Boon Feats | dice, bonus | **missing** |
 | Actor | General Feats | save | save only: the target rolls |
 | Alert | Origin Feats | bonus | the sheet: Initiative, in the sheet's Initiative |
 | Crossbow Expert | General Feats | bonus | the sheet: in the sheet's attacks |
@@ -186,6 +183,7 @@ What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every cla
 | Boon of Fortitude | Epic Boon Feats | bonus | in words: extra healing once a turn, said |
 | Boon of Irresistible Offense | Epic Boon Feats | dice, bonus | in words: extra damage on a 20, said |
 | Boon of Spell Recall | Epic Boon Feats | dice | in words: a d4 to keep a slot: Any dice |
+| Healer | Origin Feats | bonus | rules/phb-2024 |
 | Tavern Brawler | Origin Feats | dice | rules/phb-2024 |
 | Charger | General Feats | dice, bonus | rules/phb-2024 |
 | Chef | General Feats | dice, bonus | rules/phb-2024 |
@@ -193,12 +191,14 @@ What askdnd's roll data plays from the 2024 Player's Handbook and DMG: every cla
 | Dual Wielder | General Feats | bonus | class_rules |
 | Great Weapon Master | General Feats | bonus | rules/phb-2024 |
 | Heavy Armor Master | General Feats | bonus | rules/phb-2024 |
+| Inspiring Leader | General Feats | bonus | rules/phb-2024 |
 | Polearm Master | General Feats | dice | class_rules |
 | Shield Master | General Feats | save | rules/phb-2024 |
 | Telekinetic | General Feats | save | rules/phb-2024 |
 | Interception | Fighting Style Feats | dice, bonus | rules/phb-2024 |
 | Boon of Energy Resistance | Epic Boon Feats | dice, save | rules/phb-2024 |
 | Boon of Fate | Epic Boon Feats | dice | rules/phb-2024 |
+| Boon of Recovery | Epic Boon Feats | dice, bonus | rules/phb-2024 |
 
 ## Species traits
 

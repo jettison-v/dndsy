@@ -132,11 +132,12 @@ def check_parts(parts: list[str], count: int = 1) -> bool:
 
 
 def roll_parts(parts: list[str], count: int = 1, crits: list[bool] | None = None, each: str = "", roll=None,
-               floor: bool = True, once: bool = False) -> dict:
+               floor: bool = True, once: bool = False, best: bool = False) -> dict:
     """Roll each part, once per instance (3 darts: 3 × 1d4+1), keeping each roll's own line. A
     critical instance rolls its dice twice. `crits` (one per instance) also says how many there are.
-    `once` (a house rule, app/house_rules.py): the first instance's dice count for every instance."""
-    roll = roll or die
+    `once` (a house rule, app/house_rules.py): the first instance's dice count for every instance. `best`: every die
+    at its highest (Supreme Healing). A part "2x1d8" counts twice (rr.times: Mantle of Inspiration)."""
+    roll = (lambda sides: sides) if best else (roll or die)
     crits = crits if crits is not None else [False] * count
     lines, first = [], {}
     for i, crit in enumerate(crits):
@@ -144,11 +145,13 @@ def roll_parts(parts: list[str], count: int = 1, crits: list[bool] | None = None
             k = n * 2 if crit else n
             dice = list(first[j]) if once and i else [roll(sides) for _ in range(k)]
             first.setdefault(j, dice)
+            x = rr.times(parts[j])
+            formula = (f"{k}d{sides}" + (f"{flat:+d}" if flat else "")) if k else str(flat)
             lines.append({"label": f"{each.title()} {i + 1}" if len(crits) > 1 and each else "", "kind": kind, "crit": crit,
-                          "formula": (f"{k}d{sides}" + (f"{flat:+d}" if flat else "")) if k else str(flat), "dice": dice,
-                          "total": sum(dice) + flat})
+                          "formula": f"{x}×({formula})" if x > 1 else formula, "dice": dice,
+                          "total": (sum(dice) + flat) * x})
     total = sum(x["total"] for x in lines)
-    return {"dice": [d for x in lines for d in x["dice"]], "kept": None, "modifier": sum(rr.parse_part(p)[2] for p in parts) * len(crits),
+    return {"dice": [d for x in lines for d in x["dice"]], "kept": None, "modifier": sum(rr.parse_part(p)[2] * rr.times(p) for p in parts) * len(crits),
             "total": max(total, 0) if floor else total, "formula": " + ".join(parts), "parts": lines}
 
 
@@ -558,7 +561,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
               count: int = Form(1), each: str = Form(""), once: str = Form(""), who: str = Form(""), token: int = Form(0),
               via: str = Form(""), level: int = Form(0), why: list[str] = Form([]), rider: list[str] = Form([]),
               hidden: str = Form(""), own: str = Form("", alias="self"), as_type: str = Form(""), twice: str = Form(""),
-              math: str = Form(""), dramatic: str = Form(""), db: Session = Depends(get_db)):
+              math: str = Form(""), dramatic: str = Form(""), best: str = Form(""), db: Session = Depends(get_db)):
     """Roll on the server and return the result (the entry and its HTML for the log).
 
     A new roll: `kind` with its data, for the player's own character (plain `dice` may have
@@ -629,7 +632,7 @@ def make_roll(request: Request, character: int = Form(0), kind: str = Form(""), 
             damage = dmg.replace(" ", "").replace("−", "-")
     else:
         if part:
-            result = roll_parts(part, count, each=each, floor=kind != "dice", once=bool(once))
+            result = roll_parts(part, count, each=each, floor=kind != "dice", once=bool(once), best=bool(best) and kind == "heal")
         else:
             result = roll_formula(dmg, floor=kind != "dice")
             if result is None:

@@ -30,7 +30,8 @@ from functools import cache
 from pathlib import Path
 
 PATH = Path(__file__).parent / "data" / "roll_recipes.json"
-PART = re.compile(r"^(?:(\d+)d(\d+)([+-]\d+)?|([+-]?\d+))(?:\s+(.+))?$")  # "2d6+3 fire", or a fixed "1 bludgeoning"
+PART = re.compile(r"^(?:\d+x)?(?:(\d+)d(\d+)([+-]\d+)?|([+-]?\d+))(?:\s+(.+))?$")  # "2d6+3 fire", a fixed "1 bludgeoning",
+# or either times a number, "2x1d8" (Mantle of Inspiration: twice the roll), read by `times`
 # Spells the SRD names without their wizard ("Melf's Acid Arrow" is "Acid Arrow")
 RENAMED = {"Nystul's Magic Aura": "Arcanist's Magic Aura", "Bigby's Hand": "Arcane Hand", "Mordenkainen's Sword": "Arcane Sword"}
 
@@ -125,6 +126,12 @@ def parse_part(part: str) -> tuple[int, int, int, str] | None:
     if m.group(4):
         return 0, 0, int(m.group(4)), (m.group(5) or "").strip()
     return int(m.group(1)), int(m.group(2)), int(m.group(3) or 0), (m.group(5) or "").strip()
+
+
+def times(part: str) -> int:
+    """How many times a part counts: "2x1d8" (twice the roll) is 2; anything else 1."""
+    m = re.match(r"^\s*(\d+)x", part or "")
+    return max(1, min(int(m.group(1)), 10)) if m else 1
 
 
 def _grow(part: str, extra: str, times: int) -> str:

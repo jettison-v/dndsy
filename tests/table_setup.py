@@ -93,3 +93,12 @@ def plain_id(x) -> str:
     import re
 
     return re.sub(r"[^A-Za-z0-9]+", "-", x if isinstance(x, str) else str(x.get("name") if isinstance(x, dict) else x)).strip("-")
+
+
+def made_up(*classes, features=(), attacks=(), pb=3, mods=None) -> dict:
+    """A minimal sheet: classes as (name, level, subclass) tuples."""
+    mods = mods or {"Str": 3, "Dex": 3, "Con": 2, "Int": 1, "Wis": 2, "Cha": 0}
+    return {"classes": [{"name": n, "level": lv, "subclass": sub} for n, lv, sub in classes],
+            "features": [{"name": f, "source": src} for f, src in features], "actions": [],
+            "abilities": [{"short": k, "modifier": v} for k, v in mods.items()], "proficiency_bonus": pb,
+            "attacks": list(attacks)}

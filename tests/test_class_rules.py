@@ -8,20 +8,12 @@ from pathlib import Path
 from app import character_views as views
 from app import class_rules as cr
 from app import ddb
+from tests.table_setup import made_up
 
 
 def sheet_of(name: str) -> dict:
     raw = json.loads((Path(__file__).parent / "fixtures" / "ddb" / f"{name}.json").read_text())["data"]
     return ddb.parse_character(raw)
-
-
-def made_up(*classes, features=(), attacks=(), pb=3, mods=None) -> dict:
-    """A minimal sheet: classes as (name, level, subclass) tuples."""
-    mods = mods or {"Str": 3, "Dex": 3, "Con": 2, "Int": 1, "Wis": 2, "Cha": 0}
-    return {"classes": [{"name": n, "level": lv, "subclass": sub} for n, lv, sub in classes],
-            "features": [{"name": f, "source": src} for f, src in features], "actions": [],
-            "abilities": [{"short": k, "modifier": v} for k, v in mods.items()], "proficiency_bonus": pb,
-            "attacks": list(attacks)}
 
 
 def names(sheet, cost=None):

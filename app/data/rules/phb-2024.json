@@ -117,6 +117,15 @@
     "17": 12
    },
    "why": "the Psionic Energy die (Soulknife)"
+  },
+  "hunters_mark": {
+   "by": "Ranger",
+   "die": true,
+   "at": {
+    "0": 6,
+    "20": 10
+   },
+   "why": "Hunter's Mark's die (a d10 with Foe Slayer, Ranger 20)"
   }
  },
  "entries": [
@@ -3354,6 +3363,342 @@
    "use": {
     "optional": true
    }
+  },
+  {
+   "kind": "feature",
+   "name": "Mantle of Inspiration",
+   "class": "Bard",
+   "level": 3,
+   "sub": "College of Glamour",
+   "why": "a Bonus Action and a Bardic Inspiration use: roll the Bardic die; up to Charisma-modifier creatures each gain Temporary Hit Points of twice the roll",
+   "row": {
+    "cost": "Bonus action",
+    "when": "uses a Bardic Inspiration"
+   },
+   "rolls": [
+    {
+     "name": "Mantle of Inspiration",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "2x{bardic}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Blessed Healer",
+   "class": "Cleric",
+   "level": 6,
+   "sub": "Life Domain",
+   "why": "a spell you cast with a slot that restores Hit Points to someone else also restores 2 + the slot's level to you",
+   "adds": [
+    {
+     "name": "Blessed Healer",
+     "when": "on_heal",
+     "to": [
+      "spell healing"
+     ],
+     "op": "self_heal",
+     "amount": "2+{slot}",
+     "slot": true,
+     "says": "when it heals someone other than you"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Supreme Healing",
+   "class": "Cleric",
+   "level": 17,
+   "sub": "Life Domain",
+   "why": "a spell's healing dice count as their highest number",
+   "adds": [
+    {
+     "name": "Supreme Healing",
+     "when": "on_heal",
+     "to": [
+      "spell healing"
+     ],
+     "op": "max",
+     "says": "each healing die at its highest"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Improved Duplicity",
+   "class": "Cleric",
+   "level": 17,
+   "sub": "Trickery Domain",
+   "why": "when your illusory duplicate ends, you or a creature within 5 ft of it regains Cleric-level Hit Points",
+   "row": {
+    "cost": "No action",
+    "when": "when your duplicate ends"
+   },
+   "rolls": [
+    {
+     "name": "Improved Duplicity",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "{level:Cleric}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Survivor",
+   "class": "Fighter",
+   "level": 18,
+   "sub": "Champion",
+   "why": "Heroic Rally: at the start of each of your turns while Bloodied (and above 0), regain 5 + Constitution Hit Points",
+   "row": {
+    "cost": "No action",
+    "when": "at the start of your turn, while Bloodied"
+   },
+   "remind": "turn",
+   "self": true,
+   "rolls": [
+    {
+     "name": "Heroic Rally",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "5+{mod:constitution}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Undying Sentinel",
+   "class": "Paladin",
+   "level": 15,
+   "sub": "Oath of the Ancients",
+   "why": "once per Long Rest, when you drop to 0 Hit Points and aren't killed, you drop to 1 instead and regain three times your Paladin level",
+   "row": {
+    "cost": "No action",
+    "when": "when you drop to 0 Hit Points, once per Long Rest"
+   },
+   "remind": "zero",
+   "self": true,
+   "rolls": [
+    {
+     "name": "Undying Sentinel",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1",
+      "3x{level:Paladin}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Elder Champion",
+   "class": "Paladin",
+   "level": 20,
+   "sub": "Oath of the Ancients",
+   "why": "while transformed: regain 10 Hit Points at the start of each of your turns; enemies have Disadvantage on saves against your Paladin spells and Channel Divinity",
+   "row": {
+    "cost": "No action",
+    "when": "at the start of your turn, while transformed"
+   },
+   "remind": "turn",
+   "self": true,
+   "rolls": [
+    {
+     "name": "Elder Champion",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "10"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Foe Slayer",
+   "class": "Ranger",
+   "level": 20,
+   "why": "Hunter's Mark's damage die is a d10 (the hunters_mark scale)"
+  },
+  {
+   "kind": "spell",
+   "name": "Hunter's Mark",
+   "why": "its extra damage on each hit against the marked creature, the hunters_mark die (a d10 with Foe Slayer)",
+   "rolls": [
+    {
+     "name": "Hunter's Mark",
+     "resolve": "none",
+     "effect": "damage",
+     "when": "on_hit",
+     "dice": [
+      "1{hunters_mark} force"
+     ]
+    }
+   ],
+   "level": 1
+  },
+  {
+   "kind": "feature",
+   "name": "Dark One's Blessing",
+   "class": "Warlock",
+   "level": 3,
+   "sub": "Fiend Patron",
+   "why": "when you reduce an enemy to 0 Hit Points, gain Charisma + Warlock-level Temporary Hit Points (at least 1)",
+   "row": {
+    "cost": "No action",
+    "when": "when you reduce an enemy to 0 Hit Points"
+   },
+   "self": true,
+   "rolls": [
+    {
+     "name": "Dark One's Blessing",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "{mod:charisma}+{level:Warlock}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Celestial Resilience",
+   "class": "Warlock",
+   "level": 10,
+   "sub": "Celestial Patron",
+   "why": "after a Short or Long Rest: Warlock-level + Charisma Temporary Hit Points for you, and half that level + Charisma for up to five others",
+   "row": {
+    "cost": "No action",
+    "when": "when you finish a Short or Long Rest"
+   },
+   "remind": "rest",
+   "rolls": [
+    {
+     "name": "For you",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "{level:Warlock}+{mod:charisma}"
+     ]
+    },
+    {
+     "name": "For each of up to five others",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "{half:Warlock}+{mod:charisma}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Inspiring Leader",
+   "why": "after a Short or Long Rest, a 10-minute speech: up to six creatures gain character-level + Wisdom or Charisma Temporary Hit Points",
+   "row": {
+    "cost": "No action",
+    "when": "when you finish a Short or Long Rest"
+   },
+   "remind": "rest",
+   "rolls": [
+    {
+     "name": "With Wisdom",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "{lv}+{mod:wisdom}"
+     ]
+    },
+    {
+     "name": "With Charisma",
+     "resolve": "none",
+     "effect": "temp",
+     "dice": [
+      "{lv}+{mod:charisma}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Healer",
+   "why": "Battle Medic: a Utilize action and a Healer's Kit use; the creature spends a Hit Point Die, you roll it, it regains the roll + your Proficiency Bonus",
+   "row": {
+    "cost": "Action",
+    "when": "uses a Healer's Kit; the creature spends a Hit Point Die"
+   },
+   "rolls": [
+    {
+     "name": "A d6 Hit Point Die",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d6+{pb}"
+     ]
+    },
+    {
+     "name": "A d8 Hit Point Die",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d8+{pb}"
+     ]
+    },
+    {
+     "name": "A d10 Hit Point Die",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d10+{pb}"
+     ]
+    },
+    {
+     "name": "A d12 Hit Point Die",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d12+{pb}"
+     ]
+    }
+   ]
+  },
+  {
+   "kind": "feat",
+   "name": "Boon of Recovery",
+   "why": "Last Stand: once per Long Rest, at 0 Hit Points drop to 1 instead and regain half your maximum; Recover Vitality: a pool of ten d10s, a Bonus Action to spend some and regain what they roll",
+   "row": {
+    "cost": "No action",
+    "when": "Last Stand at 0 Hit Points; Recover Vitality, a Bonus Action"
+   },
+   "remind": "zero",
+   "self": true,
+   "rolls": [
+    {
+     "name": "Last Stand",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1",
+      "{hp_half}"
+     ]
+    },
+    {
+     "name": "Recover Vitality (one die)",
+     "resolve": "none",
+     "effect": "heal",
+     "dice": [
+      "1d10"
+     ]
+    }
+   ]
   }
  ]
 }

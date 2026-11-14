@@ -3267,6 +3267,8 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 .hp-step.off .hp-st-title, .hp-step.off b { text-decoration: line-through; color: var(--muted); }
 .hp-step.mass { background: var(--red-soft); border-radius: var(--r-md); }  /* massive damage: for the DM's ruling */
 .hp-step .seg { grid-column: 1 / -1; justify-self: start; }
+/* What can keep a character up at 0 (an entry's remind "zero": Undying Sentinel, Last Stand): said, its roll on Battle */
+.hp-keeps { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); font-size: var(--fs-sm); }
 .hp-blocked { display: grid; gap: var(--sp-1); border: 1px solid var(--red); background: var(--red-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); margin: 0; }
 .hp-go { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
 /* Hit points' panel: its buttons as one group, the same gap between the rows as below them (Brett, 2026-11-02) */

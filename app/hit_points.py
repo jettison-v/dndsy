@@ -274,7 +274,10 @@ def working(db: Session, ch: Character, mode: str, parts: list[dict], off: set[s
     w = work(hp, mode, parts, defs, off, form, conc, con_save(summary, form), temp_take, death_saves.state(summary), crit)
     # Damage types: the ones this character resists (or is immune or vulnerable to) first, then the rest
     first = [t for t in TYPES if any(d["type"] == t for d in defs)]
-    return {**w, "defs": defs, "types": first + [t for t in TYPES if t not in first], "first": first, "form": form}
+    from app import rules_book  # (what keeps you up at 0: Undying Sentinel, Last Stand; said, its roll on Battle)
+
+    keeps = rules_book.reminded(summary, "zero") if w.get("down") else []
+    return {**w, "defs": defs, "types": first + [t for t in TYPES if t not in first], "first": first, "form": form, "keeps": keeps}
 
 
 def _read(form) -> tuple[str, list[dict], set[str], bool | None]:
