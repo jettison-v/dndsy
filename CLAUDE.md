@@ -31,6 +31,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 
 ## Where things are
 **docs/MAP.md** is the map of every feature: where it lives, the rules it keeps and the decisions behind it, one section per line below. **Read a feature's section in docs/MAP.md before changing it, and keep that section current in the same change** (a new feature gets a section and a line here). Access rules live only in `app/access.py` (`allows()`); shared page helpers in app/web.py. **One way for each thing**, never a second: a message is a corner card, a new copy of a page comes through `showInPlace`, a picture through the one Picture window, a roll's data through `character_views.roll_data`, anything findable through Search, a character's numbers through `ddb_bridge.as_shown`.
+- **The Three Menus**: base.html (`menu_groups`, `account_items`), app/manage.py (`PAGES`)
 - **Manage**: app/manage.py, app/admin_sessions.py, app/admin_notes.py
 - **One address per page**: app/campaign_paths.py
 - **Features and Labs**: app/vtt.py, app/table_page.py, table.html

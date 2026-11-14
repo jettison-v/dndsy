@@ -4,7 +4,7 @@
    a "jump to" control. Needs you and Inbox get their counts from /manage/counts (app.js "Manage counts"). #}
 {% set on = manage_pages | selectattr("here") | first %}{% set grp = on.group if on else ("campaign" if in_campaign else "askdnd") %}
 {% set camp = here.name if here else "This campaign" %}
-{% set mine = manage_pages | selectattr("group", "equalto", grp) | list %}
+{% set mine = manage_pages | selectattr("group", "equalto", grp) | selectattr("listed") | list %}
 {% set camp_home = manage_pages | selectattr("group", "equalto", "campaign") | first %}
 {% set admin_home = manage_pages | selectattr("group", "equalto", "askdnd") | first %}
 {% macro manage_list() %}

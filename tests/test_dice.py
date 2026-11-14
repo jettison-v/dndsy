@@ -27,7 +27,7 @@ def test_choose_your_dice(two, db):
     assert me.dice == {"set": "bloodmoon", "material": "metal", "by_type": False, "tray": False}
     access.invalidate()
     assert "data-dice='{\"by_type\": false, \"material\": \"metal\", \"set\": \"bloodmoon\", \"tray\": false}'" in pat.get("/c/main/").text
-    assert 'data-modal-url="/dice"' in pat.get("/c/main/").text  # Your dice, in the account menu
+    assert 'data-tab="rb-dice"' in pat.get("/rolls/checks").text  # Your dice: a tab in Table rolls' Roll (The Three Menus)
 
 
 def test_the_dice_tray_is_each_persons_own(two, db):
