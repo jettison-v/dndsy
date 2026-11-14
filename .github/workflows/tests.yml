@@ -52,7 +52,7 @@ jobs:
           --health-cmd "pg_isready -U askdnd"
           --health-interval 2s --health-timeout 5s --health-retries 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
@@ -97,7 +97,7 @@ jobs:
     services:
       postgres: *postgres
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
