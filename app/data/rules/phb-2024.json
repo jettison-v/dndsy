@@ -1159,6 +1159,47 @@
   },
   {
    "kind": "feature",
+   "name": "Tandem Footwork",
+   "class": "Bard",
+   "level": 6,
+   "sub": "College of Dance",
+   "why": "when you roll Initiative, spend a use of Bardic Inspiration: roll the die and add it to Initiative",
+   "adds": [
+    {
+     "name": "Tandem Footwork",
+     "when": "before",
+     "to": [
+      "initiative"
+     ],
+     "amount": "1{bardic}",
+     "cost": "a use of Bardic Inspiration",
+     "pressed": false,
+     "says": "you and each ally within 30 feet who can see or hear you add the same number"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Disciple of Life",
+   "class": "Cleric",
+   "level": 3,
+   "sub": "Life Domain",
+   "why": "a spell you cast with a slot that restores Hit Points restores 2 + the slot's level more, to one target",
+   "adds": [
+    {
+     "name": "Disciple of Life",
+     "when": "on_heal",
+     "to": [
+      "spell healing"
+     ],
+     "amount": "2+{slot}",
+     "slot": true,
+     "says": "one creature the spell heals, that turn"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
    "name": "Guided Strike",
    "adds": [
     {
