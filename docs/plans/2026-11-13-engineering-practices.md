@@ -9,6 +9,20 @@ remembering it, and a place in the order of work (`docs/DECISIONS.md`, Nov 13): 
 **S** structure lock, **C** component library, **D** design review, **R** code review, **H** test hardening,
 **N** net-new features. What askdnd already does is marked *have*.
 
+## What robust means (Brett, Nov 13)
+
+"I ask for an enhancement, we mock it up, the enhancement itself might need tweaking, but it does not have a negative
+impact to the current system at that point in time or in the future." A change is robust when it does none of these,
+and each has the checks that catch it:
+
+| What must not happen | What catches it |
+|---|---|
+| **A bug in what already worked** (security included) | Linters (F4), the server and browser suites on every push, every button and roll enumerated (test_every_roll, test_refusals, test_links), the review before merge (F6) |
+| **A bug in the tests themselves**: a test that passes while the thing is broken, or fails while it works | Markers, never words (test_no_text_refs); asserting outcomes, never timing; a flaky test fixed at its cause; the review reads tests as closely as code; mutation testing on core logic (F8) |
+| **A workflow left incomplete**: a path that 404s, a person or state not covered, a doc or the tour not updated | "Before calling a change done" (CLAUDE.md) checked in the review (F6); routes enumerated (test_usage, test_refusals, test_links); a browser test that walks the new flow end to end |
+| **The UI or UX quietly getting worse**: something moved, hidden, restyled or slower that nobody asked for | Layout checks at every width (test_layout); the design system; a visual comparison of every main page before and after each change (F7) |
+| **Any of the above later**, when the next change lands | Each enhancement leaves a test that fails if it breaks; ratchets only go down; nothing merges red |
+
 ## The foundations, in order (F)
 
 1. Dependency and code scanning: Dependabot, pip-audit, CodeQL, secret scanning. **Built** (#326).
@@ -17,7 +31,15 @@ remembering it, and a place in the order of work (`docs/DECISIONS.md`, Nov 13): 
 4. Linters: ruff's bugbear, simplify, pyupgrade and security rules; ESLint for app.js (no redeclared or implicit
    globals, the bug of Nov 13); Stylelint for app.css; djLint for templates. **Built**: ruff (#331); ESLint, Stylelint and djLint (tools/lint, pyproject.toml).
 5. A preview for each pull request on Railway (Brett switches it on in Railway's dashboard; Claude wires the rest).
-6. The automated code review at high effort on every PR before it merges, its findings fixed.
+6. The automated code review at high effort on every PR before it merges, its findings fixed. **Built** (Nov 13): before
+   merging any pull request, Claude runs the code review at high effort on its diff, fixes what it finds (or says why
+   not), and writes the outcome in the pull request's **Review** section (.github/pull_request_template.md). The
+   review checks the diff against "What robust means" above and CLAUDE.md's "Before calling a change done".
+7. A visual comparison: every main page drawn before and after a change (main against the branch, same data, same
+   widths), and the differences shown to Brett before merge. Kept off GitHub (the repo is public: no pictures of pages
+   with the party's sheets); run locally or on the Mac Mini.
+8. Mutation testing on core logic (the roll plan, hit points, rules data, access): small deliberate bugs put into the
+   code, and the tests must catch each one; a bug they miss is a missing test.
 
 Each lands as its own pull request, with its check on in CI the day it lands.
 
