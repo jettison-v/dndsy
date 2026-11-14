@@ -130,3 +130,26 @@ def test_lay_on_hands_heals_yourself_at_once_and_another_through_table_rolls(pla
     row = db.scalar(select(TableRoll).where(TableRoll.kind == "heal").order_by(TableRoll.id.desc()))
     assert row.total == 4 and other.name in row.label and "to apply" in r["text"]
     assert not [d for k, d in ((i.kind, i.data) for i in db.scalars(select(BridgeIntent).where(BridgeIntent.character_id == other.id))) if k == "hp"]
+
+
+def test_lay_on_hands_never_spends_more_than_it_heals_nor_ends_what_isnt_there(player, db, sheet):
+    """The review's findings (Nov 14): How many is capped at what the one it's for is missing, a full character is
+    refused, and End Poisoned on someone who isn't Poisoned spends nothing (its Undo would have made them Poisoned)."""
+    import copy
+    from urllib.parse import quote
+
+    from sqlalchemy import select
+
+    from app import characters
+    from app.models import BridgeIntent
+    from tests.table_setup import char
+
+    sheet.clear()
+    sheet.update(copy.deepcopy(json.loads((ROOT / "tests" / "fixtures" / "ddb" / "big_c.json").read_text())["data"]))
+    sheet["removedHitPoints"] = 3
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    url = f"/characters/{cole.id}/feature?key={quote('action:Lay On Hands: Heal')}"
+    assert player.post(url, data={"way": "poison", "target": str(cole.id)}).status_code == 409
+    r = player.post(url, data={"way": "heal", "n": "20", "target": str(cole.id)}).json()
+    assert r["undo"]["n"] == "3" and [i.data["delta"] for i in db.scalars(select(BridgeIntent)) if i.kind == "use"] == [3]

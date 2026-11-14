@@ -97,7 +97,7 @@ def window(request: Request, character_id: int, key: str, db: Session = Depends(
     left = s["pay"][0]["count"]["left"]
     return templates.TemplateResponse(request, "_feature_window.html", {
         "c": ch, "o": o, "s": s, "whom": whom, "first": first, "reachable": ddb_bridge.reachable(ch),
-        "n": max(1, min(left, first["needs"] if first and first["needs"] else left)) if s["pool"] else 1})
+        "n": max(1, min(left, first["needs"] if first and first["needs"] else 1)) if s["pool"] else 1})  # (all it needs; 1 when nobody's hurt)
 
 
 def _spend(db: Session, ch: Character, field: str, n: int, label: str) -> None:
@@ -129,10 +129,16 @@ def use(request: Request, character_id: int, key: str, way: str = Form("use"), h
         who = next((x for x in _whom(db, user, ch) if x["id"] == target), None)
         if not who:
             raise HTTPException(409, f"Who is {name} for?")
+        if w.get("heal") and who["hp"] and not who["needs"]:
+            raise HTTPException(409, f"{who['name']} is at full Hit Points.")
+        if w.get("heal") and who["needs"]:  # (never more than it heals: the rest stays in the pool)
+            n = min(n, who["needs"])
+    tgt = db.get(Character, who["id"]) if who else None
+    if tgt and w.get("ends") and who["own"] and not any(x.get("name") == w["ends"] for x in cond.shown(tgt.conditions, (_sheet(db, tgt)).get("conditions"), True)):
+        raise HTTPException(409, f"{tgt.name} isn't {w['ends']}.")
     _spend(db, ch, pay["field"], n, f"{ch.name}: {name}, {n} {'used' if not s['pool'] else 'from the pool'}")
     undo = {"key": key, "field": pay["field"], "n": str(n)}
     text = f"{ch.name}: {name}, {pay['label']}" if w["key"] == "use" else f"{ch.name}: {w['name']}" + (f", {n}" if s["pool"] and not w.get("spend") else "")
-    tgt = db.get(Character, who["id"]) if who else None
     if tgt and w.get("heal"):
         if who["own"]:
             ddb_bridge.reach(tgt)
@@ -171,6 +177,11 @@ def undo_use(request: Request, character_id: int, key: str = Form(...), field: s
         raise HTTPException(409, "That Undo isn't one askdnd gave: change it on the sheet.")
     ddb_bridge.reach(ch)
     name = key.removeprefix("action:").split(":")[0].strip()
+    from app.models import TableRoll
+
+    given = db.get(TableRoll, int(roll)) if roll.isdigit() else None
+    if given and hit_points.applied(db, given):  # (the healing is someone's now: the points stay spent)
+        raise HTTPException(409, f"{name}: that healing was already applied; the DM can change it.")
     _spend(db, ch, field, -int(n), f"{ch.name}: {name} undone")
     tgt = db.get(Character, int(target)) if target.isdigit() else None
     if tgt and healed.isdigit() and int(healed) > 0 and hit_points.can_apply(db, user, tgt):
@@ -180,11 +191,9 @@ def undo_use(request: Request, character_id: int, key: str = Form(...), field: s
         tgt.conditions = cond.add(tgt.conditions, ended, name, "")
         if ended in cond.ON_DDB:
             ddb_bridge.add(db, tgt, "set", {"field": cond.ddb_field(ended), "value": True}, f"{tgt.name}: {ended} again ({name} undone)")
-    if roll.isdigit():
-        from app.models import TableRoll
-
-        r = db.get(TableRoll, int(roll))
-        if r and r.character_id == ch.id and not hit_points.applied(db, r):
+    if given:
+        r = given
+        if r.character_id == ch.id:
             r.label, r.total = f"Undone: {r.label}"[:120], 0
             from app import realtime
 
