@@ -96,7 +96,7 @@ def _entry(sp: dict, sheet: dict, top: int, castable_in_form: set[str] | None = 
     roll buttons plays (app/roll_plan.py: the same plan as its row on Battle)."""
     from app import roll_plan
 
-    recipe = house_rules.spell(sp["name"]) or sp.get("roll")
+    recipe = spell_recipe(sp, sheet)
     level = sp.get("level") or 0
     char_level, mod = sheet.get("level") or 1, roll_plan.spell_mod(sheet, sp["name"]) or 0
     avgs = {}
@@ -131,12 +131,25 @@ def _entry(sp: dict, sheet: dict, top: int, castable_in_form: set[str] | None = 
 HIGHER = re.compile(r"Higher-Level Spell Slot|At Higher Levels|(?:spell )?slot level above", re.I)
 
 
+def spell_recipe(sp: dict, sheet: dict) -> dict | None:
+    """A spell's recipe (the table's house rules on it, else its own), its {tokens} filled from this sheet: a die that
+    grows with a class (Hunter's Mark's d10 at Ranger 20, the hunters_mark scale)."""
+    from app.roll_plan import fill
+
+    recipe = house_rules.spell(sp["name"]) or sp.get("roll")
+    if not recipe or "{" not in str(recipe.get("events")):
+        return recipe
+    return {**recipe, "events": [{**e, "parts": [fill(x, sheet) for x in e.get("parts") or []],
+                                  **({"upcast": [fill(x, sheet) for x in e["upcast"]]} if e.get("upcast") else {})}
+                                 for e in recipe.get("events") or []]}
+
+
 def riders(sheet: dict, conc: dict | None) -> list[dict]:
     """Battle's On a hit for the spell being concentrated on, when it adds damage to each hit while it lasts (Hunter's
     Mark, Hex; feedback 48, Nov 7): {"name", "when", "effect", "source"}, as class_rules.turn's riders. Adding its dice to
     a damage roll is the roll workflows' (the component library, next)."""
     sp = next((s for s in (sheet or {}).get("spells") or [] if conc and s.get("name") == conc.get("spell")), None)
-    recipe = (house_rules.spell(sp["name"]) or sp.get("roll")) if sp else None
+    recipe = spell_recipe(sp, sheet) if sp else None
     out = []
     for ev in (recipe or {}).get("events") or []:
         e = resolve(recipe, ev, conc.get("level") or 0, sheet.get("level") or 1) if ev.get("on") == "rider" else None

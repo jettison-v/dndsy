@@ -8,7 +8,7 @@ Arts die, Sneak Attack's dice…). An entry has what it rolls when used (`rolls`
 into app/data/roll_recipes.json; everything about `adds` is read from here.
 
 Numbers come from the sheet through one set of tokens (`fill`): {level:Class}, {half:Class}, {mod:ability},
-{dc:ability}, {pb}, a book's named scale ({rage}, N{martial_arts}…), and the older ones class_rules' words use
+{dc:ability}, {pb}, {hp_half} (half the Hit Point maximum), a book's named scale ({rage}, N{martial_arts}…), and the older ones class_rules' words use
 ({lv}, {half}, {ma}, {mod_wis}, {dc_wis}), each relative to the entry's own class.
 """
 
@@ -88,6 +88,8 @@ def fill(text: str, sheet: dict | None, cls: str | None = None) -> str:
             out = str(8 + m_ + pb) if head == "dc" or k.startswith("dc_") else (f"{m_:+d}" if k.startswith("mod_") else str(m_))
         elif k == "pb":
             out = str(pb)
+        elif k == "hp_half":  # (half the Hit Point maximum: Boon of Recovery's Last Stand)
+            out = str(((sheet.get("hit_points") or {}).get("max") or 0) // 2)
         elif k == "lv":
             out = str(own)
         elif k == "half":
@@ -98,7 +100,14 @@ def fill(text: str, sheet: dict | None, cls: str | None = None) -> str:
             return m.group(0)
         return n + out
     out = re.sub(r"(\d*)\{([^}]+)\}", value, text or "").replace("+-", "-").replace("++", "+")
-    return re.sub(r"\+0\b(?!d)", "", out)
+    out = re.sub(r"\+0\b(?!d)", "", out)
+    # numbers alone add up ("5+2" is 7, Heroic Rally's 5 + Constitution); a die's own bonus ("1d8+3") is left as it is
+    return re.sub(r"(?<![\w.+-])\d+(?:[+-]\d+)+(?![\w.])", lambda m: str(eval_sum(m.group(0))), out)
+
+
+def eval_sum(text: str) -> int:
+    """'5+2-1' -> 6: whole numbers added and taken away, nothing else."""
+    return sum(int(t) for t in re.findall(r"[+-]?\d+", text))
 
 
 def _has(sheet: dict, text: str) -> bool:
@@ -148,6 +157,13 @@ def active(sheet: dict | None) -> list[dict]:
         if e.get("group") and e.get("level", 0) >= top.get(e["group"], 0):
             top[e["group"]] = e.get("level", 0)
     return [e for e in out if not e.get("group") or e.get("level", 0) == top[e["group"]]]
+
+
+def reminded(sheet: dict | None, at: str) -> list[dict]:
+    """What this character has that comes into play at a moment askdnd shows but doesn't decide (an entry's `remind`):
+    "zero", dropping to 0 Hit Points (Undying Sentinel); "rest", finishing a rest (Celestial Resilience); "turn", the
+    start of your turn (Heroic Rally). Each {"name", "when"}: said where the moment is, its roll on Battle."""
+    return [{"name": e["name"], "when": (e.get("row") or {}).get("when") or ""} for e in active(sheet) if e.get("remind") == at]
 
 
 def homebrew(sheet: dict) -> list[dict]:

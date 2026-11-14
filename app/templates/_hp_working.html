@@ -17,6 +17,7 @@
     {% else %}<li class="hp-step{{ ' mass' if st.mass }}"><span class="hp-st-title">{{ st.title }}</span><b>{{ st.value }}</b><span class="why">{{ st.why }}</span></li>{% endif %}
     {% endfor %}
   </ol>
+  {% if w.keeps %}<p class="hp-keeps" data-remind="zero">{% for k in w.keeps %}<b>{{ k.name }}</b>{{ ", " if not loop.last }}{% endfor %} can keep {{ c.name }} up: {{ w.keeps | map(attribute="when") | first }}. Its roll is on Battle, under No action needed; the DM rules.</p>{% endif %}
   {% if done %}
   <p class="hp-blocked">Already applied to {{ c.name }}: {{ done.label }}.</p>
   {% elif not reachable %}

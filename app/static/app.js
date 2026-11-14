@@ -1994,7 +1994,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
                  dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {}, drama: false,
                  pay: (plan.pay || []).map(p => !p.optional && (p.left == null || p.left >= p.n)), paid: false };  // (a cost the rules make a choice starts unpressed)
     // (on by themselves while they last, Radiant Strikes; once a turn, or only sometimes (`pressed: false`, Rage Damage): yours to tick)
-    mods.forEach(m => { if ((m.when === 'on_hit' || m.when === 'on_heal') && m.adds) st.on[m.name] = m.pressed != null ? !!m.pressed : !m.once && !(m.slot && spec.castFree); });  // (a slot's bonus is off when cast without one)
+    mods.forEach(m => { if ((m.when === 'on_hit' || m.when === 'on_heal') && m.adds && !m.op) st.on[m.name] = m.pressed != null ? !!m.pressed : !m.once && !(m.slot && spec.castFree); });  // (a slot's bonus is off when cast without one)
+    mods.forEach(m => { if (m.op === 'max') st.on[m.name] = true; });  // (Supreme Healing: on, yours to press off)
     mods.forEach(m => { if (m.when === 'before' && m.adds && m.pressed) st.pre[m.name] = true; });  // (Aura of Protection: always, unless the DM says)
     const eff = () => effs[st.ev] || null;
     const now = () => (eff() ? eff().at[String(st.level)] : null);  // (the effect's dice at the level it's cast at)
@@ -2002,12 +2003,17 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // What adds to the damage (Sneak Attack on a hit; Arcane Firearm, a Chromatic focus on a spell's damage): pills, the
     // pressed ones rolled into the damage as extras
     // (and to a spell's healing: Disciple of Life, its amount at the level cast, `adds_at`, from the plan)
-    const dmgMods = () => mods.filter(m => m.adds && (eff() && eff().kind === 'heal' ? m.when === 'on_heal' : m.when === 'on_hit' || m.when === 'on_damage'));
+    const dmgMods = () => mods.filter(m => m.adds && !m.op && (eff() && eff().kind === 'heal' ? m.when === 'on_heal' : m.when === 'on_hit' || m.when === 'on_damage'));
+    // What a spell's healing does that isn't a number added (roll_plan HEAL_OPS): every die at its highest (Supreme
+    // Healing, a pill), and healing yourself once it healed someone else (Blessed Healer, a button on the result)
+    const healOps = op => (eff() && eff().kind === 'heal' ? mods.filter(m => m.op === op && !(m.slot && spec.castFree)) : []);
     const madds = m => (m.adds_at && m.adds_at[String(st.level)]) || m.adds;
     const dmgExtras = () => dmgMods().filter(m => st.on[m.name]).map(m => (m.short || m.name).slice(0, 40) + ':+' + madds(m).replace(/^\+/, '').split(' ')[0]);
     const dmgModsText = () => (attack ? '' : dmgMods().filter(m => st.on[m.name]).map(m => ' + ' + madds(m)).join(''));
     const dmgPills = () => { const ms = dmgMods(); return ms.length ? '<div class="rcard-group"><span class="rcard-lbl">' + (eff() && eff().kind === 'heal' ? 'Adds to the healing' : 'Adds to the damage') + '</span><div class="rcard-pills">'
       + ms.map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.short || m.name, madds(m) + (m.once ? ' · once a turn' : '') + (m.slot ? ' · with a slot' : ''))).join('') + '</div></div>' : ''; };
+    const healPills = () => (healOps('max').length ? '<div class="rcard-group"><span class="rcard-lbl">The dice</span><div class="rcard-pills">'
+      + healOps('max').map(m => pill('data-on="' + esc(m.name) + '"', st.on[m.name], m.short || m.name, m.says || '')).join('') + '</div></div>' : '');
     const steps = () => d20 || single ? ['Roll'] : save ? ['The save', 'Damage'] : [...(choice ? ['Choose'] : []), 'To hit', 'Damage'];
     const at = () => d20 || single ? (st.step === 'done' ? 9 : 0) : save ? ({ save: 0, rolling: 1, saved: 9 })[st.step]
       : ({ choose: 0, attack: choice ? 1 : 0, rolling: choice ? 1 : 0, result: choice ? 1 : 0, damage: choice ? 2 : 1, done: 9 })[st.step];
@@ -2102,7 +2108,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         h += castAt();
         if (plan.roll === 'dice') h += '<div class="rw-row"><span class="rw-label">For</span><input type="text" class="rw-text" data-card-for placeholder="What the DM asked for (optional)" maxlength="60" value="' + esc(st.forText) + '"></div>';
         h += notes() + payLine();
-        if (eff() && (eff().kind === 'damage' || eff().kind === 'heal')) h += dmgPills();
+        if (eff() && (eff().kind === 'damage' || eff().kind === 'heal')) h += dmgPills() + healPills();
         h += '<div class="rcard-group"><span class="rcard-lbl">Adds to the roll</span><div class="rcard-pills">' + added() + plus('pre') + '</div>';
         h += '<button type="button" class="btn primary rcard-go" data-roll-single' + (cast && !now() ? ' disabled' : '') + '>' + ({ heal: 'Roll healing', temp: 'Roll Temporary Hit Points', damage: 'Roll damage' }[eff() ? eff().kind : plan.roll] || 'Roll')
           + ' <small>' + esc(singleText()) + '</small></button>' + visLine();
@@ -2242,8 +2248,11 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
           : (e.kind === 'heal' || e.kind === 'temp') && plan.self ? 'In Table rolls, <b>Apply to</b> adds it to your own Hit Points.'
           : e.kind === 'heal' || e.kind === 'temp' ? 'In Table rolls, <b>Apply to</b> gives it to a character.'
           : e.kind === 'damage' ? 'In Table rolls for the DM, who applies it to an enemy; a character or a creature on askdnd\'s table can be applied there.' : '';
+        const yours = spec.shared && spec.cid && e.kind === 'heal' ? healOps('self_heal') : [];
         return '<div class="rcard-result' + (e.kind === 'heal' || e.kind === 'temp' ? ' rcard-heal' : e.kind === 'damage' ? ' rcard-dmg' : '') + '"><span class="rcard-big">' + mathNum(e.total, (e.math || {}).dmg, what.replace(/<[^>]+>/g, '')) + '</span><span class="rcard-what">' + what + '</span><span class="rcard-how">' + dline(e.main, false) + '</span></div>'
-          + (next ? '<p class="rw-note">' + next + '</p>' : '');
+          + (next ? '<p class="rw-note">' + next + '</p>' : '')
+          + yours.map(m => '<div class="rcard-acts"><button type="button" class="btn small" data-self-heal="' + esc(madds(m)) + '" data-self-name="' + esc(m.name) + '"' + (st.selfHealed ? ' disabled' : '') + '>'
+            + esc(m.name) + ': you regain ' + esc(madds(m)) + '</button><span class="rw-note">' + esc(m.says || '') + '</span></div>').join('');
       }
       if (e.kind === 'dc') return '<div class="rcard-result"><span class="rcard-big">DC ' + e.total + '</span><span class="rcard-what">' + esc(e.label) + '</span><span class="rcard-how">The target picks Strength or Dexterity; the DM rolls its save. It\'s in Table rolls.</span></div>';
       if (dmg && e.damage) return '<div class="rcard-result rcard-dmg"><span class="rcard-big">' + mathNum(e.damage.total, (e.math || {}).dmg, 'Damage') + '</span><span class="rcard-what">' + (e.damage.crit ? 'critical damage' : 'damage') + '</span><span class="rcard-how">' + dline(e.damage, false) + '</span></div>'
@@ -2309,7 +2318,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       st.step = 'rolling'; st.adding = false; draw();
       const label = plan.roll === 'dice' && !cast ? (st.forText.trim() || 'Dice') : spec.label + (d.parts && effs.length > 1 ? ' · ' + eff().name : '');
       const adds = eff() && (eff().kind === 'damage' || eff().kind === 'heal') ? dmgExtras() : [];
-      return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: [...(single ? st.added.slice() : []), ...adds], level: cast ? st.level : 0, self: !!plan.self, math: sentMath(), ...d })
+      return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: [...(single ? st.added.slice() : []), ...adds], level: cast ? st.level : 0, self: !!plan.self, math: sentMath(),
+                  best: healOps('max').some(m => st.on[m.name]), ...d })
         .then(e => { st.entry = e; st.step = next; if (w.isConnected) draw(); if (cast || save) turnUsed(anchor); payCost(); }, () => { st.step = was; if (w.isConnected) draw(); });
     }
     function followUp(action, o) {
@@ -2348,6 +2358,18 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       if (b.dataset.cardEv != null) { st.ev = +b.dataset.cardEv; return draw(); }
       if (b.dataset.to) { to = b.dataset.to; store.set(TO, to); st.visOpen = false; return draw(); }
       if (b.dataset.pre) { st.pre[b.dataset.pre] = !st.pre[b.dataset.pre]; return draw(); }
+      if (b.dataset.selfHeal) {  // (Blessed Healer: your own Hit Points, through the hit points window's own route)
+        st.selfHealed = true; draw();
+        fetch('/characters/' + spec.cid + '/hp/apply', { method: 'POST', headers: { 'X-Requested-With': 'fetch' },
+                                                          body: new URLSearchParams({ mode: 'heal', amount: b.dataset.selfHeal, type: '' }) })
+          .then(r => {
+            if (!r.ok) return r.json().catch(() => ({})).then(j => { throw new Error(j.detail || "askdnd couldn't heal you"); });
+            const t = r.headers.get('HX-Trigger');
+            if (t) { try { Object.entries(JSON.parse(t)).forEach(([k, v]) => { if (k !== 'closePanel') document.body.dispatchEvent(new CustomEvent(k, { detail: v })); }); } catch (err) { /* nothing more */ } }
+          })
+          .catch(err => { st.selfHealed = false; if (w.isConnected) draw(); toast(b.dataset.selfName + ': ' + err.message, null, 'warn'); });
+        return;
+      }
       if (b.dataset.pay != null) { st.pay[+b.dataset.pay] = !st.pay[+b.dataset.pay]; return draw(); }
       if (b.dataset.on) { st.on[b.dataset.on] = !st.on[b.dataset.on]; return draw(); }
       if (b.dataset.unadd != null) { st.added.splice(+b.dataset.unadd, 1); return draw(); }
@@ -2894,7 +2916,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       if (go.endsHidden) p.set('hidden', 1);
       if (go.self) p.set('self', 1);  // (healing only its roller takes: Apply to offers only them)
       if (go.math) p.set('math', JSON.stringify(go.math));  // (how its numbers add up, kept with it: Show the Math, app/roll_math.py)
-      if (go.dramatic && to === 'table') p.set('dramatic', 1);  // (Make it dramatic: every screen throws it big and slow)
+      if (go.dramatic && to === 'table') p.set('dramatic', 1);
+      if (go.best) p.set('best', 1);  // (every healing die at its highest: Supreme Healing)  // (Make it dramatic: every screen throws it big and slow)
     }
     (go.extras || []).forEach(x => p.append('extra', x));
     if (go.via) p.set('via', go.via);  // (the roll card: counted as its own, app/usage.py)

@@ -208,6 +208,20 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         if class_rules._norm(r["name"]) not in have:
             add(key=f"rule:{r['name']}", kind="feature", cost=r["cost"], name=r["name"], meta=r["meta"], text=r["meta"],
                 tags=[r["source"]], common=True)
+    # A feature, feat or trait that rolls but that D&D Beyond doesn't list as something to do (Heroic Rally, Dark One's
+    # Blessing, Battle Medic): its rules-book entry's `row` puts it on Battle, in its column, with its roll and when it
+    # applies; askdnd never decides the moment came (Brett: remind, don't automate)
+    from app import rules_book
+
+    have |= {class_rules._norm(o["name"]) for o in out}
+    for e in rules_book.active(sheet):
+        if not e.get("row") or not e.get("rolls") or class_rules._norm(e["name"]) in have:
+            continue
+        recipe = _feature_recipe(sheet, e["name"])
+        add(key=f"rule:{e['name']}", kind="feature", cost=e["row"].get("cost") or "No action", name=e["name"],
+            meta=e["row"].get("when") or "", text=e.get("why") or "", summary=e.get("why") or "",
+            tags=[e.get("sub") or e.get("class") or ("Feat" if e["kind"] == "feat" else "")], common=True,
+            **({"recipe": recipe} if recipe is not None else {}))
     _general_options(sheet, add, mastered, have)
     for it in sheet.get("inventory") or []:
         for a in conditions.item_actions(it):  # magic items that grant an action (Ring of Invisibility…)

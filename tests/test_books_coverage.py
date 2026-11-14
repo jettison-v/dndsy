@@ -20,21 +20,7 @@ INDEX = BOOK["entries"]
 ROWS = [r for r in INDEX if r["kind"] != "item"]  # (a magic item's rolls are added as the table's characters carry it)
 
 # What the data doesn't play yet, each with what fills it. A new gap fails; a filled one must come off the list.
-KNOWN_GAPS = {
-    "Mantle of Inspiration": "an amount that's twice a die (a multiplier in a roll's dice)",
-    "Undying Sentinel": "a feature that acts at 0 Hit Points, offered by the hit points window; three times a level",
-    "Boon of Recovery": "a feature that acts at 0 Hit Points; a pool of d10s to spend",
-    "Blessed Healer": "healing for yourself that adds the slot's level, after healing someone else",
-    "Supreme Healing": "healing dice at their maximum (an add's op of max)",
-    "Survivor": "healing at the start of your turn while Bloodied (a turn-start reminder with its roll, fight.follow)",
-    "Elder Champion": "healing at the start of your turn (a turn-start reminder with its roll)",
-    "Dark One's Blessing": "Temporary Hit Points when an enemy drops to 0 (a moment the hit points window could offer)",
-    "Celestial Resilience": "Temporary Hit Points after a rest, for you and five others (the Rest window)",
-    "Inspiring Leader": "Temporary Hit Points after a rest from your character level (a character-level token; the Rest window)",
-    "Improved Duplicity": "healing when the illusion ends (a moment askdnd doesn't see)",
-    "Foe Slayer": "Hunter's Mark's die as a d10 at Ranger 20 (a scale for the spell's die)",
-    "Healer": "Battle Medic heals with the patient's Hit Point Die (whose die askdnd would need to ask)",
-}
+KNOWN_GAPS: dict[str, str] = {}  # (empty since Nov 14: each gap has data; a new one says here what it needs)
 
 
 def status(row: dict) -> str:

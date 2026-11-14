@@ -483,6 +483,7 @@ def plan(sheet: dict, o: dict, scope: str = "own") -> dict:
     return out
 
 
+HEAL_OPS = ("max", "self_heal")  # (an add to a spell's healing that isn't a number added to it: Supreme Healing, Blessed Healer)
 MODIFIER_WHEN = ("before", "after_roll", "after_fail", "on_hit", "on_damage", "on_heal", "damage_taken")
 
 
@@ -490,7 +491,9 @@ def _modifier(a: dict) -> dict:
     """An add as the card's modifier (a pill): its `amount` as `adds`, its damage types as `types`."""
     out = {("adds" if k == "amount" else "types" if k == "damage_types" else k): v for k, v in a.items()
            if k not in ("trigger", "effect", "source", "_kind", "with", "op")}
-    return out | {"why": a.get("why", "")}
+    # (what it does instead of adding: "max", every healing die at its highest; "self_heal", you regain it after healing
+    # someone else; both played by the roll card)
+    return out | {"why": a.get("why", "")} | ({"op": a["op"]} if a.get("op") in HEAL_OPS else {})
 
 
 def modifiers_for(sheet: dict, roll: str, spell: dict | None = None, have: set[str] | None = None, adds: list[dict] | None = None) -> list[dict]:
@@ -504,7 +507,8 @@ def modifiers_for(sheet: dict, roll: str, spell: dict | None = None, have: set[s
         return []
     out = []
     for a in sorted(rules_book.adds(sheet) if adds is None else adds, key=lambda a: a["name"]):
-        if a.get("op", "add") != "add" or not (a.get("amount") or a.get("reduces")) or a.get("gives") or a.get("from"):
+        heal_op = a.get("op") in HEAL_OPS and "spell healing" in (a.get("to") or [])
+        if (not heal_op and (a.get("op", "add") != "add" or not (a.get("amount") or a.get("reduces")))) or a.get("gives") or a.get("from"):
             continue
         if a["when"] not in MODIFIER_WHEN:
             continue

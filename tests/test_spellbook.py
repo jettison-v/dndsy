@@ -41,7 +41,9 @@ def test_a_spell_that_adds_to_hits_rolls_nothing_when_cast():
     assert [e["on"] for e in mark["events"]] == ["rider"]
     assert all(e["on"] == "rider" for n in ("Hex", "Divine Favor") for e in rr.spell(n)["events"])
     assert next(e["on"] for e in rr.spell("Searing Smite")["events"]) == "auto"  # (a smite is cast on the hit: it deals it)
-    assert sb.average(mark, 1, 5) == {"avg": 3.5, "dice": "1d6 force", "per": "each hit"}
+    assert sb.average(sb.spell_recipe({"name": "Hunter's Mark"}, {}), 1, 5) == {"avg": 3.5, "dice": "1d6 force", "per": "each hit"}
+    ranger_20 = {"classes": [{"name": "Ranger", "level": 20}]}  # (Foe Slayer: Hunter's Mark's die is a d10, the hunters_mark scale)
+    assert sb.average(sb.spell_recipe({"name": "Hunter's Mark"}, ranger_20), 1, 20)["dice"] == "1d10 force"
     assert views.rollable({"recipe": mark})["dice"] == ""
     sheet = {"level": 5, "spells": [{"name": "Hunter's Mark", "roll": mark}]}
     assert sb.riders(sheet, {"spell": "Hunter's Mark", "level": 1}) == [

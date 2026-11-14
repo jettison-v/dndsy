@@ -45,9 +45,14 @@ def test_every_entry_has_a_shape_the_engine_plays(book, e):
             assert r.get("save") and r.get("success") in ("half", "none")
     for a in e.get("adds") or []:
         assert a["name"] and a["when"] in WHEN and set(a.get("to") or []) <= TO
-        assert a.get("amount") or a.get("reduces") or a.get("op") in ("words", "save", "type", "twice"), "an add says what it does"
-        assert a.get("op", "add") in ("add", "words", "save", "type", "twice")
+        assert a.get("amount") or a.get("reduces") or a.get("op") in ("words", "save", "type", "twice", "max"), "an add says what it does"
+        assert a.get("op", "add") in ("add", "words", "save", "type", "twice", "max", "self_heal")
+        if a.get("op") in ("max", "self_heal"):  # (what a spell's healing does instead of a number added: the roll card plays it)
+            assert a["to"] == ["spell healing"] and a["when"] == "on_heal" and (a["op"] == "max" or a.get("amount"))
         assert set(a.get("with") or []) <= WITH, a.get("with")
+    if row := e.get("row"):  # (a feature that rolls but isn't one of D&D Beyond's actions: its own Battle row)
+        assert e.get("rolls") and row.get("cost") in ("Action", "Bonus action", "Reaction", "No action") and row.get("when")
+    assert e.get("remind") in (None, "zero", "rest", "turn"), "where it's recalled: at 0 Hit Points, after a rest, at your turn"
 
 
 def test_names_are_unique_within_a_kind():

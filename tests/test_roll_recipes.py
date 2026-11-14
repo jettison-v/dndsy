@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from app import roll_recipes as rr
+from app import rules_book
 from app import wild_shape as ws
 
 BEASTS = {b["name"]: b for b in ws._catalog()}
@@ -30,7 +31,7 @@ def test_every_stored_recipe_is_well_formed():
             continue
         for e in recipe["events"]:
             assert e["on"] in ("hit", "save", "auto", "rider", "heal", "temp", "plain"), name
-            assert e["parts"] and all(rr.parse_part(p) for p in e["parts"]), name
+            assert e["parts"] and all(rr.parse_part(rules_book.fill(p, {})) for p in e["parts"]), name  # (a scale's token: filled per sheet)
             assert len(e.get("upcast") or e["parts"]) == len(e["parts"]), name
             if e["on"] == "save":
                 assert e.get("success") in ("half", "none"), name

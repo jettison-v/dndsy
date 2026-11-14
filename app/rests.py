@@ -141,8 +141,12 @@ def window(request: Request, character_id: int, kind: str, db: Session = Depends
     from app import item_creatures
 
     items = item_creatures.ready_again(ch, sheet, kind)  # (an item that brings a creature: ready again)
+    from app import rules_book
+
+    after = rules_book.reminded(sheet, "rest")  # (what comes into play after it: Celestial Resilience, Inspiring Leader)
     return templates.TemplateResponse(request, "_rest_window.html", {"c": ch, "kind": kind, "title": TITLE[kind], "p": p, "lines": lines(p, kind),
-                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare, "wild": wild, "items": items})
+                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare, "wild": wild, "items": items,
+                                                                     "after": after})
 
 
 @router.post("/characters/{character_id:int}/rest")

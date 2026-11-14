@@ -8,133 +8,133 @@ the script.
 
 | Spell | Level | How it rolls | Checked |
 |---|---|---|---|
-| Acid Arrow | 2 | On a hit: 4d4 acid (on a hit); +1d4 per slot level · End of its next turn: 2d4 acid (no roll to hit; again at the end of the target's next turn, after a hit); +1d4 per slot level | by hand: two moments: on the hit, and again at the end of the target's next turn; both upcast; same dice as the 2024 PHB |
-| Acid Splash | cantrip | Acid Splash: 1d6 acid (Dex save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Alter Self | 2 | Natural Weapons: 1d6 + spellcasting modifier (on a hit) | by hand: Natural Weapons: your Unarmed Strike with the growth, using your spellcasting modifier; same dice as the 2024 PHB |
-| Animate Objects | 5 | no damage or healing roll | by hand: the objects attack with the Animated Object stat block's Slam, rolled from that block; the PHB also has 2d12, 2d6 (the SRD: -) |
-| Arcane Hand | 5 | Clenched Fist: 5d8 force (on a hit); +2d8 per slot level · Grasping Hand: crush: 4d6 bludgeoning + spellcasting modifier (no roll to hit); +2d6 per slot level | by hand: two different damaging effects with different upcasting; same dice as the 2024 PHB |
-| Arcane Sword | 7 | Arcane Sword: 4d12 force + spellcasting modifier (on a hit; again at the Bonus Action on your later turns) | by hand: damage 'equal to 4d12 plus your spellcasting ability modifier'; same dice as the 2024 PHB |
-| Bane | 1 | no damage or healing roll | read from the text; same dice as the 2024 PHB |
-| Befuddlement | 8 | Befuddlement: 10d12 psychic (Int save, nothing on a success) | read from the text; same dice as the 2024 PHB |
-| Bestow Curse | 3 | Curse: extra damage: 1d8 necrotic (no roll to hit) | by hand: the 1d8 is one of four curses you choose from, added when you damage the target; same dice as the 2024 PHB |
-| Black Tentacles | 4 | Black Tentacles: 3d6 bludgeoning (Str save, nothing on a success) | read from the text; same dice as the 2024 PHB |
-| Blade Barrier | 6 | Blade Barrier: 6d10 force (Dex save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Bless | 1 | no damage or healing roll | read from the text; same dice as the 2024 PHB |
-| Blight | 4 | Blight: 8d8 necrotic (Con save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Blink | 3 | Blink roll: 1d6 (plain) | by hand: a plain d6 at the end of each of your turns; same dice as the 2024 PHB |
-| Burning Hands | 1 | Burning Hands: 3d6 fire (Dex save, half on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Call Lightning | 3 | Call Lightning: 3d10 lightning (Dex save, half on a success; again at the Magic action on later turns); +1d10 per slot level | by hand: a storm you control adds a die; same dice as the 2024 PHB |
-| Chain Lightning | 6 | Chain Lightning: 10d8 lightning (Dex save, half on a success) | by hand: up to four targets save at the same time, so the damage is rolled once for all (2024 rules, Saving Throws and Damage); same dice as the 2024 PHB |
-| Chill Touch | cantrip | Chill Touch: 1d10 necrotic (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Chromatic Orb | 1 | Chromatic Orb: 3d8 (on a hit); +1d8 per slot level | by hand: the leap is a new attack and a new damage roll; same dice as the 2024 PHB |
-| Circle of Death | 6 | Circle of Death: 8d8 necrotic (Con save, half on a success); +2d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Cloudkill | 5 | Cloudkill: 5d8 poison (Con save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Cone of Cold | 5 | Cone of Cold: 8d8 cold (Con save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Confusion | 4 | no damage or healing roll | by hand: the 1d10 behavior and 1d4 direction are rolled for the confused creature; same dice as the 2024 PHB |
-| Conjure Animals | 3 | Conjure Animals: 3d10 slashing (Dex save, nothing on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
-| Conjure Celestial | 7 | Healing Light: 4d12 + spellcasting modifier (healing); +1d12 per slot level · Searing Light: 6d12 radiant (Dex save, half on a success); +1d12 per slot level | by hand: two effects, each named, and both upcast (the reader misses Searing Light's); checked against the 2024 Player's Handbook; same dice as the 2024 PHB |
-| Conjure Elemental | 5 | Conjure Elemental: 8d8 (Dex save, nothing on a success); +1d8 per slot level · Restrained target: 4d8 (Dex save, nothing on a success; again at the start of each of the Restrained target's turns); +1d8 per slot level | by hand: the Restrained target repeats the save each turn for less damage (checked against the 2024 Player's Handbook); same dice as the 2024 PHB |
-| Conjure Fey | 6 | Conjure Fey: 3d12 psychic + spellcasting modifier (on a hit); +1d12 per slot level | by hand: damage 'equal to 3d12 plus your spellcasting ability modifier'; same dice as the 2024 PHB |
-| Conjure Minor Elementals | 4 | Conjure Minor Elementals: 2d8 (added to each hit while it lasts); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Conjure Woodland Beings | 4 | Conjure Woodland Beings: 5d8 force (Wis save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Contact Other Plane | 5 | If you fail your DC 15 Int save: 6d6 psychic (no roll to hit) | by hand: the damage is to you, if you fail your own DC 15 Intelligence save; same dice as the 2024 PHB |
-| Contagion | 5 | Contagion: 11d8 necrotic (Con save, nothing on a success) | read from the text; same dice as the 2024 PHB |
-| Control Water | 4 | Control Water: 2d8 bludgeoning (Str save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Control Weather | 8 | no damage or healing roll | by hand: 1d4 × 10 minutes is how long the change takes; same dice as the 2024 PHB |
-| Cure Wounds | 1 | Healing: 2d8 + spellcasting modifier (healing); +2d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Delayed Blast Fireball | 7 | Delayed Blast Fireball: 12d6 fire (Dex save, half on a success); +1d6 per slot level | by hand: the damage grows each turn the bead waits; same dice as the 2024 PHB |
-| Dimension Door | 4 | Dimension Door: 4d6 force (no roll to hit) | read from the text; same dice as the 2024 PHB |
-| Disintegrate | 6 | Disintegrate: 10d6+40 force (Dex save, nothing on a success); +3d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Dissonant Whispers | 1 | Dissonant Whispers: 3d6 psychic (Wis save, half on a success); +1d6 per slot level | by hand: adds the note that a failed save spends the target's Reaction; checked against the 2024 Player's Handbook; same dice as the 2024 PHB |
-| Divine Favor | 1 | Divine Favor: 1d4 radiant (added to each hit while it lasts) | read from the text; same dice as the 2024 PHB |
-| Divine Smite | 1 | Divine Smite: 2d8 radiant (no roll to hit); +1d8 per slot level | by hand: a Fiend or Undead adds a die; on a Critical Hit its dice double with the attack's; same dice as the 2024 PHB |
-| Dragon's Breath | 2 | Dragon's Breath: 3d6 (Dex save, half on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Dream | 5 | Dream: 3d6 psychic (Wis save, nothing on a success) | read from the text; same dice as the 2024 PHB |
-| Earthquake | 8 | Collapsing structure: 12d6 bludgeoning (Dex save, half on a success) | by hand: the fissures and their depth are the DM's rolls; the damage is for creatures near a collapsing structure; same dice as the 2024 PHB |
-| Eldritch Blast | cantrip | Eldritch Blast: 1d10 force (on a hit); more beams at levels 5, 11, 17 | by hand: a beam each: an attack roll per beam, more beams at character levels 5, 11 and 17 (named so the card and Table rolls say beams); same dice as the 2024 PHB |
-| Enlarge/Reduce | 2 | Enlarged: extra damage: 1d4 (no roll to hit) | by hand: the 1d4 changes the target's weapon damage; it isn't a save; same dice as the 2024 PHB |
-| Ensnaring Strike | 1 | Ensnaring Strike: 1d6 piercing (no roll to hit; again at the start of each of its turns); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Faithful Hound | 4 | Faithful Hound: 4d8 force (Dex save, nothing on a success) | read from the text; same dice as the 2024 PHB |
-| False Life | 1 | Temporary Hit Points: 2d4+4 (Temporary Hit Points); ++5 per slot level | by hand: upcasting adds a flat 5; same dice as the 2024 PHB |
-| Finger of Death | 7 | Finger of Death: 7d8+30 necrotic (Con save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Fire Bolt | cantrip | Fire Bolt: 1d10 fire (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Fire Shield | 4 | Warm shield: 2d8 fire (no roll to hit) · Chill shield: 2d8 cold (no roll to hit) | by hand: a warm shield or a chill shield, not both; same dice as the 2024 PHB |
-| Fire Storm | 7 | Fire Storm: 7d10 fire (Dex save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Fireball | 3 | Fireball: 8d6 fire (Dex save, half on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Flame Blade | 2 | Flame Blade: 3d6 fire + spellcasting modifier (on a hit; again at the Magic action on later turns); +1d6 per slot level | by hand: damage 'equal to 3d6 plus your spellcasting ability modifier'; same dice as the 2024 PHB |
-| Flame Strike | 5 | Flame Strike: 5d6 fire + 5d6 radiant (Dex save, half on a success); +1d6 / 1d6 per slot level | by hand: both damage types upcast; same dice as the 2024 PHB |
-| Flaming Sphere | 2 | Flaming Sphere: 2d6 fire (Dex save, half on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Forbiddance | 6 | Forbiddance: 5d10 radiant or necrotic (no roll to hit; again at the enters the) | read from the text; same dice as the 2024 PHB |
-| Freezing Sphere | 6 | Freezing Sphere: 10d6 cold (Con save, half on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Geas | 5 | Geas: 5d10 psychic (Wis save, nothing on a success) | read from the text; same dice as the 2024 PHB |
-| Glyph of Warding | 3 | Glyph of Warding: 5d8 acid or cold or fire or lightning or thunder (Dex save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Guidance | cantrip | no damage or healing roll | read from the text; same dice as the 2024 PHB |
-| Guiding Bolt | 1 | Guiding Bolt: 4d6 radiant (on a hit); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Harm | 6 | Harm: 14d6 necrotic (Con save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Healing Word | 1 | Healing: 2d4 + spellcasting modifier (healing); +2d4 per slot level | read from the text; same dice as the 2024 PHB |
-| Heat Metal | 2 | Heat Metal: 2d8 fire (no roll to hit); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Hellish Rebuke | 1 | Hellish Rebuke: 2d10 fire (Dex save, half on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
-| Heroes' Feast | 6 | Hit Point maximum: 2d10 (healing) | by hand: the Hit Point maximum (and Hit Points) go up by 2d10; same dice as the 2024 PHB |
-| Hex | 1 | Hex: 1d6 necrotic (added to each hit while it lasts) | read from the text; same dice as the 2024 PHB |
-| Hunter's Mark | 1 | Hunter's Mark: 1d6 force (added to each hit while it lasts) | read from the text; same dice as the 2024 PHB |
-| Ice Knife | 1 | On a hit: 1d10 piercing (on a hit) · Dex save: 2d6 cold (Dex save, nothing on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Ice Storm | 4 | Ice Storm: 2d10 bludgeoning + 4d6 cold (Dex save, half on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
-| Incendiary Cloud | 8 | Incendiary Cloud: 10d8 fire (Dex save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Inflict Wounds | 1 | Inflict Wounds: 2d10 necrotic (Con save, half on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
-| Insect Plague | 5 | Insect Plague: 4d10 piercing (Con save, half on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
-| Lightning Bolt | 3 | Lightning Bolt: 8d6 lightning (Dex save, half on a success); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Magic Missile | 1 | Dart: 3 darts × 1d4+1 force (no roll to hit); +1 dart per slot level | by hand: each dart deals its own 1d4 + 1; same dice as the 2024 PHB |
-| Mass Cure Wounds | 5 | Healing: 5d8 + spellcasting modifier (healing); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Mass Healing Word | 3 | Healing: 2d4 + spellcasting modifier (healing); +1d4 per slot level | read from the text; same dice as the 2024 PHB |
-| Meld into Stone | 3 | Meld into Stone: 6d6 force (no roll to hit) | read from the text; same dice as the 2024 PHB |
-| Meteor Swarm | 9 | Meteor Swarm: 20d6 fire + 20d6 bludgeoning (Dex save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Mind Spike | 2 | Mind Spike: 3d8 psychic (Wis save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Moonbeam | 2 | Moonbeam: 2d10 radiant (Con save, half on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
-| Phantasmal Force | 2 | Phantasmal Force: 2d8 psychic (no roll to hit; again at the each of your turns) | read from the text; same dice as the 2024 PHB |
-| Phantasmal Killer | 4 | Phantasmal Killer: 4d10 psychic (Wis save, half on a success); +1d10 per slot level | read from the text; same dice as the 2024 PHB |
-| Poison Spray | cantrip | Poison Spray: 1d12 poison (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Power Word Kill | 9 | Power Word Kill: 12d12 psychic (no roll to hit) | read from the text; same dice as the 2024 PHB |
-| Prayer of Healing | 2 | Healing: 2d8 (healing); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Prismatic Spray | 7 | Ray color (each target): 1d8 (plain) · Red: 12d6 fire (Dex save, half on a success) · Orange: 12d6 acid (Dex save, half on a success) · Yellow: 12d6 lightning (Dex save, half on a success) · Green: 12d6 poison (Dex save, half on a success) · Blue: 12d6 cold (Dex save, half on a success) | by hand: a d8 picks each target's ray; then that color's damage; same dice as the 2024 PHB |
-| Prismatic Wall | 9 | Red layer: 12d6 fire (Dex save, half on a success) · Orange layer: 12d6 acid (Dex save, half on a success) · Yellow layer: 12d6 lightning (Dex save, half on a success) · Green layer: 12d6 poison (Dex save, half on a success) · Blue layer: 12d6 cold (Dex save, half on a success) | by hand: each layer a creature passes deals its own damage; same dice as the 2024 PHB |
-| Produce Flame | cantrip | Produce Flame: 1d8 fire (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Ray of Enfeeblement | 2 | no damage or healing roll | read from the text; same dice as the 2024 PHB |
-| Ray of Frost | cantrip | Ray of Frost: 1d8 cold (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Ray of Sickness | 1 | Ray of Sickness: 2d8 poison (on a hit); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Regenerate | 7 | Healing: 4d8+15 (healing) | read from the text; same dice as the 2024 PHB |
-| Reincarnate | 5 | no damage or healing roll | by hand: a table roll for the new body (the DM may choose instead); same dice as the 2024 PHB |
-| Resistance | cantrip | no damage or healing roll | by hand: the 1d4 is rolled when the protected creature takes damage, to reduce it; same dice as the 2024 PHB |
-| Sacred Flame | cantrip | Sacred Flame: 1d8 radiant (Dex save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Scorching Ray | 2 | Scorching Ray: 3 rays × 2d6 fire (on a hit); +1 ray per slot level | read from the text; same dice as the 2024 PHB |
-| Searing Smite | 1 | On the hit: 1d6 fire (no roll to hit); +1d6 per slot level · Each of its turns: 1d6 fire (no roll to hit; again at the start of each of its turns); +1d6 per slot level | by hand: the later damage happens before the save, which only ends the spell; same dice as the 2024 PHB |
-| Shatter | 2 | Shatter: 3d8 thunder (Con save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Shillelagh | cantrip | no damage or healing roll | by hand: it changes your Club or Quarterstaff instead of rolling its own damage; same dice as the 2024 PHB |
-| Shining Smite | 2 | Shining Smite: 2d6 radiant (no roll to hit); +1d6 per slot level | read from the text; same dice as the 2024 PHB |
-| Shocking Grasp | cantrip | Shocking Grasp: 1d8 lightning (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Sorcerous Burst | cantrip | Sorcerous Burst: 1d8 (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: an 8 lets you roll another d8, up to your spellcasting modifier in extra d8s; same dice as the 2024 PHB |
-| Spike Growth | 2 | Each 5 feet moved: 2d4 piercing (no roll to hit) | by hand: the damage is for every 5 feet moved; same dice as the 2024 PHB |
-| Spirit Guardians | 3 | Spirit Guardians: 3d8 radiant or necrotic (Wis save, half on a success; again at the when it enters or ends its turn in the Emanation); +1d8 per slot level | by hand: Radiant or Necrotic by your alignment, not both; same dice as the 2024 PHB |
-| Spiritual Weapon | 2 | Spiritual Weapon: 1d8 force + spellcasting modifier (on a hit; again at the Bonus Action on your later turns); +1d8 per slot level | by hand: damage 'equal to 1d8 plus your spellcasting ability modifier'; same dice as the 2024 PHB |
-| Starry Wisp | cantrip | Starry Wisp: 1d8 radiant (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Storm of Vengeance | 9 | Turn 1: thunder: 2d6 thunder (Con save, nothing on a success) · Turn 2: acid rain: 4d6 acid (no roll to hit) · Turn 3: six bolts: 10d6 lightning (Dex save, half on a success) · Turn 4: hail: 2d6 bludgeoning (no roll to hit) · Turns 5 to 10: freezing rain: 1d6 cold (no roll to hit) | by hand: a different effect each turn; same dice as the 2024 PHB |
-| Sunbeam | 6 | Sunbeam: 6d8 radiant (Con save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Sunburst | 8 | Sunburst: 12d6 radiant (Con save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Symbol | 7 | Symbol: 10d10 necrotic (Con save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Teleport | 7 | Mishap: 3d10 force (no roll to hit) | by hand: the GM rolls the outcome; this is the damage of a Mishap; same dice as the 2024 PHB |
-| Thunderwave | 1 | Thunderwave: 2d8 thunder (Con save, half on a success); +1d8 per slot level | read from the text; same dice as the 2024 PHB |
-| Time Stop | 9 | Turns in a row: 1d4+1 (plain) | by hand: how many turns you take is a roll; same dice as the 2024 PHB |
-| True Strike | cantrip | Extra Radiant (level 5+): 1d6 radiant (no roll to hit); none before level 5, then ×1/×2/×3 at levels 5, 11, 17 | by hand: a weapon attack; extra Radiant damage only from level 5; same dice as the 2024 PHB |
-| Tsunami | 8 | When it appears: 6d10 bludgeoning (Str save, half on a success) · Later rounds: 5d10 bludgeoning (Str save, nothing on a success) | by hand: a smaller save-or-take for later rounds, shrinking each round; same dice as the 2024 PHB |
-| Vampiric Touch | 3 | Vampiric Touch: 3d6 necrotic (on a hit; again at the Magic action on later turns); +1d6 per slot level | by hand: you also regain half the damage; same dice as the 2024 PHB |
-| Vicious Mockery | cantrip | Vicious Mockery: 1d6 psychic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text; same dice as the 2024 PHB |
-| Vitriolic Sphere | 4 | Vitriolic Sphere: 10d4 acid (Dex save, half on a success); +2d4 per slot level · End of its next turn: 5d4 acid (no roll to hit; again at the end of its next turn, after a failed save) | by hand: only the initial damage upcasts; the later damage follows a failed save; same dice as the 2024 PHB |
-| Wall of Fire | 4 | When it appears: 5d8 fire (Dex save, half on a success); +1d8 per slot level · Burning side: 5d8 fire (no roll to hit; again at the ends its turn within 10 ft of that side or in the wall, or enters it); +1d8 per slot level | by hand: the lingering damage has no save; same dice as the 2024 PHB |
-| Wall of Ice | 6 | When it appears: 10d6 cold (Dex save, half on a success); +2d6 per slot level · Frigid air: 5d6 cold (Con save, half on a success; again at the first time on a turn a creature moves through it); +1d6 per slot level | by hand: the two damages upcast differently; same dice as the 2024 PHB |
-| Wall of Thorns | 6 | When it appears: 7d8 piercing (Dex save, half on a success); +1d8 per slot level · Entering the wall: 7d8 slashing (Dex save, half on a success; again at the first time on a turn it enters, or ends its turn there); +1d8 per slot level | by hand: 'Both types of damage increase by 1d8'; same dice as the 2024 PHB |
-| Web | 2 | Web: 2d4 fire (no roll to hit) | read from the text; same dice as the 2024 PHB |
-| Weird | 9 | Wis save: 10d10 psychic (Wis save, half on a success) · Wis save (later): 5d10 psychic (Wis save, nothing on a success) | read from the text; same dice as the 2024 PHB |
-| Wind Wall | 3 | Wind Wall: 4d8 bludgeoning (Str save, half on a success) | read from the text; same dice as the 2024 PHB |
-| Wish | 9 | Stress: 1d10 necrotic (no roll to hit) | by hand: the stress damage is per level of each later spell; 2d4 days is a duration; same dice as the 2024 PHB |
+| Acid Arrow | 2 | On a hit: 4d4 acid (on a hit); +1d4 per slot level · End of its next turn: 2d4 acid (no roll to hit; again at the end of the target's next turn, after a hit); +1d4 per slot level | by hand: two moments: on the hit, and again at the end of the target's next turn; both upcast |
+| Acid Splash | cantrip | Acid Splash: 1d6 acid (Dex save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Alter Self | 2 | Natural Weapons: 1d6 + spellcasting modifier (on a hit) | by hand: Natural Weapons: your Unarmed Strike with the growth, using your spellcasting modifier |
+| Animate Objects | 5 | no damage or healing roll | by hand: the objects attack with the Animated Object stat block's Slam, rolled from that block |
+| Arcane Hand | 5 | Clenched Fist: 5d8 force (on a hit); +2d8 per slot level · Grasping Hand: crush: 4d6 bludgeoning + spellcasting modifier (no roll to hit); +2d6 per slot level | by hand: two different damaging effects with different upcasting |
+| Arcane Sword | 7 | Arcane Sword: 4d12 force + spellcasting modifier (on a hit; again at the Bonus Action on your later turns) | by hand: damage 'equal to 4d12 plus your spellcasting ability modifier' |
+| Bane | 1 | no damage or healing roll | read from the text |
+| Befuddlement | 8 | Befuddlement: 10d12 psychic (Int save, nothing on a success) | read from the text |
+| Bestow Curse | 3 | Curse: extra damage: 1d8 necrotic (no roll to hit) | by hand: the 1d8 is one of four curses you choose from, added when you damage the target |
+| Black Tentacles | 4 | Black Tentacles: 3d6 bludgeoning (Str save, nothing on a success) | read from the text |
+| Blade Barrier | 6 | Blade Barrier: 6d10 force (Dex save, half on a success) | read from the text |
+| Bless | 1 | no damage or healing roll | read from the text |
+| Blight | 4 | Blight: 8d8 necrotic (Con save, half on a success); +1d8 per slot level | read from the text |
+| Blink | 3 | Blink roll: 1d6 (plain) | by hand: a plain d6 at the end of each of your turns |
+| Burning Hands | 1 | Burning Hands: 3d6 fire (Dex save, half on a success); +1d6 per slot level | read from the text |
+| Call Lightning | 3 | Call Lightning: 3d10 lightning (Dex save, half on a success; again at the Magic action on later turns); +1d10 per slot level | by hand: a storm you control adds a die |
+| Chain Lightning | 6 | Chain Lightning: 10d8 lightning (Dex save, half on a success) | by hand: up to four targets save at the same time, so the damage is rolled once for all (2024 rules, Saving Throws and Damage) |
+| Chill Touch | cantrip | Chill Touch: 1d10 necrotic (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Chromatic Orb | 1 | Chromatic Orb: 3d8 (on a hit); +1d8 per slot level | by hand: the leap is a new attack and a new damage roll |
+| Circle of Death | 6 | Circle of Death: 8d8 necrotic (Con save, half on a success); +2d8 per slot level | read from the text |
+| Cloudkill | 5 | Cloudkill: 5d8 poison (Con save, half on a success); +1d8 per slot level | read from the text |
+| Cone of Cold | 5 | Cone of Cold: 8d8 cold (Con save, half on a success); +1d8 per slot level | read from the text |
+| Confusion | 4 | no damage or healing roll | by hand: the 1d10 behavior and 1d4 direction are rolled for the confused creature |
+| Conjure Animals | 3 | Conjure Animals: 3d10 slashing (Dex save, nothing on a success); +1d10 per slot level | read from the text |
+| Conjure Celestial | 7 | Healing Light: 4d12 + spellcasting modifier (healing); +1d12 per slot level · Searing Light: 6d12 radiant (Dex save, half on a success); +1d12 per slot level | by hand: two effects, each named, and both upcast (the reader misses Searing Light's); checked against the 2024 Player's Handbook |
+| Conjure Elemental | 5 | Conjure Elemental: 8d8 (Dex save, nothing on a success); +1d8 per slot level · Restrained target: 4d8 (Dex save, nothing on a success; again at the start of each of the Restrained target's turns); +1d8 per slot level | by hand: the Restrained target repeats the save each turn for less damage (checked against the 2024 Player's Handbook) |
+| Conjure Fey | 6 | Conjure Fey: 3d12 psychic + spellcasting modifier (on a hit); +1d12 per slot level | by hand: damage 'equal to 3d12 plus your spellcasting ability modifier' |
+| Conjure Minor Elementals | 4 | Conjure Minor Elementals: 2d8 (added to each hit while it lasts); +1d8 per slot level | read from the text |
+| Conjure Woodland Beings | 4 | Conjure Woodland Beings: 5d8 force (Wis save, half on a success); +1d8 per slot level | read from the text |
+| Contact Other Plane | 5 | If you fail your DC 15 Int save: 6d6 psychic (no roll to hit) | by hand: the damage is to you, if you fail your own DC 15 Intelligence save |
+| Contagion | 5 | Contagion: 11d8 necrotic (Con save, nothing on a success) | read from the text |
+| Control Water | 4 | Control Water: 2d8 bludgeoning (Str save, half on a success) | read from the text |
+| Control Weather | 8 | no damage or healing roll | by hand: 1d4 × 10 minutes is how long the change takes |
+| Cure Wounds | 1 | Healing: 2d8 + spellcasting modifier (healing); +2d8 per slot level | read from the text |
+| Delayed Blast Fireball | 7 | Delayed Blast Fireball: 12d6 fire (Dex save, half on a success); +1d6 per slot level | by hand: the damage grows each turn the bead waits |
+| Dimension Door | 4 | Dimension Door: 4d6 force (no roll to hit) | read from the text |
+| Disintegrate | 6 | Disintegrate: 10d6+40 force (Dex save, nothing on a success); +3d6 per slot level | read from the text |
+| Dissonant Whispers | 1 | Dissonant Whispers: 3d6 psychic (Wis save, half on a success); +1d6 per slot level | by hand: adds the note that a failed save spends the target's Reaction; checked against the 2024 Player's Handbook |
+| Divine Favor | 1 | Divine Favor: 1d4 radiant (added to each hit while it lasts) | read from the text |
+| Divine Smite | 1 | Divine Smite: 2d8 radiant (no roll to hit); +1d8 per slot level | by hand: a Fiend or Undead adds a die; on a Critical Hit its dice double with the attack's |
+| Dragon's Breath | 2 | Dragon's Breath: 3d6 (Dex save, half on a success); +1d6 per slot level | read from the text |
+| Dream | 5 | Dream: 3d6 psychic (Wis save, nothing on a success) | read from the text |
+| Earthquake | 8 | Collapsing structure: 12d6 bludgeoning (Dex save, half on a success) | by hand: the fissures and their depth are the DM's rolls; the damage is for creatures near a collapsing structure |
+| Eldritch Blast | cantrip | Eldritch Blast: 1d10 force (on a hit); more beams at levels 5, 11, 17 | by hand: a beam each: an attack roll per beam, more beams at character levels 5, 11 and 17 (named so the card and Table rolls say beams) |
+| Enlarge/Reduce | 2 | Enlarged: extra damage: 1d4 (no roll to hit) | by hand: the 1d4 changes the target's weapon damage; it isn't a save |
+| Ensnaring Strike | 1 | Ensnaring Strike: 1d6 piercing (no roll to hit; again at the start of each of its turns); +1d6 per slot level | read from the text |
+| Faithful Hound | 4 | Faithful Hound: 4d8 force (Dex save, nothing on a success) | read from the text |
+| False Life | 1 | Temporary Hit Points: 2d4+4 (Temporary Hit Points); ++5 per slot level | by hand: upcasting adds a flat 5 |
+| Finger of Death | 7 | Finger of Death: 7d8+30 necrotic (Con save, half on a success) | read from the text |
+| Fire Bolt | cantrip | Fire Bolt: 1d10 fire (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Fire Shield | 4 | Warm shield: 2d8 fire (no roll to hit) · Chill shield: 2d8 cold (no roll to hit) | by hand: a warm shield or a chill shield, not both |
+| Fire Storm | 7 | Fire Storm: 7d10 fire (Dex save, half on a success) | read from the text |
+| Fireball | 3 | Fireball: 8d6 fire (Dex save, half on a success); +1d6 per slot level | read from the text |
+| Flame Blade | 2 | Flame Blade: 3d6 fire + spellcasting modifier (on a hit; again at the Magic action on later turns); +1d6 per slot level | by hand: damage 'equal to 3d6 plus your spellcasting ability modifier' |
+| Flame Strike | 5 | Flame Strike: 5d6 fire + 5d6 radiant (Dex save, half on a success); +1d6 / 1d6 per slot level | by hand: both damage types upcast |
+| Flaming Sphere | 2 | Flaming Sphere: 2d6 fire (Dex save, half on a success); +1d6 per slot level | read from the text |
+| Forbiddance | 6 | Forbiddance: 5d10 radiant or necrotic (no roll to hit; again at the enters the) | read from the text |
+| Freezing Sphere | 6 | Freezing Sphere: 10d6 cold (Con save, half on a success); +1d6 per slot level | read from the text |
+| Geas | 5 | Geas: 5d10 psychic (Wis save, nothing on a success) | read from the text |
+| Glyph of Warding | 3 | Glyph of Warding: 5d8 acid or cold or fire or lightning or thunder (Dex save, half on a success); +1d8 per slot level | read from the text |
+| Guidance | cantrip | no damage or healing roll | read from the text |
+| Guiding Bolt | 1 | Guiding Bolt: 4d6 radiant (on a hit); +1d6 per slot level | read from the text |
+| Harm | 6 | Harm: 14d6 necrotic (Con save, half on a success) | read from the text |
+| Healing Word | 1 | Healing: 2d4 + spellcasting modifier (healing); +2d4 per slot level | read from the text |
+| Heat Metal | 2 | Heat Metal: 2d8 fire (no roll to hit); +1d8 per slot level | read from the text |
+| Hellish Rebuke | 1 | Hellish Rebuke: 2d10 fire (Dex save, half on a success); +1d10 per slot level | read from the text |
+| Heroes' Feast | 6 | Hit Point maximum: 2d10 (healing) | by hand: the Hit Point maximum (and Hit Points) go up by 2d10 |
+| Hex | 1 | Hex: 1d6 necrotic (added to each hit while it lasts) | read from the text |
+| Hunter's Mark | 1 | Hunter's Mark: 1d6 force (added to each hit while it lasts) | read from the text |
+| Ice Knife | 1 | On a hit: 1d10 piercing (on a hit) · Dex save: 2d6 cold (Dex save, nothing on a success); +1d6 per slot level | read from the text |
+| Ice Storm | 4 | Ice Storm: 2d10 bludgeoning + 4d6 cold (Dex save, half on a success); +1d10 per slot level | read from the text |
+| Incendiary Cloud | 8 | Incendiary Cloud: 10d8 fire (Dex save, half on a success) | read from the text |
+| Inflict Wounds | 1 | Inflict Wounds: 2d10 necrotic (Con save, half on a success); +1d10 per slot level | read from the text |
+| Insect Plague | 5 | Insect Plague: 4d10 piercing (Con save, half on a success); +1d10 per slot level | read from the text |
+| Lightning Bolt | 3 | Lightning Bolt: 8d6 lightning (Dex save, half on a success); +1d6 per slot level | read from the text |
+| Magic Missile | 1 | Dart: 3 darts × 1d4+1 force (no roll to hit); +1 dart per slot level | by hand: each dart deals its own 1d4 + 1 |
+| Mass Cure Wounds | 5 | Healing: 5d8 + spellcasting modifier (healing); +1d8 per slot level | read from the text |
+| Mass Healing Word | 3 | Healing: 2d4 + spellcasting modifier (healing); +1d4 per slot level | read from the text |
+| Meld into Stone | 3 | Meld into Stone: 6d6 force (no roll to hit) | read from the text |
+| Meteor Swarm | 9 | Meteor Swarm: 20d6 fire + 20d6 bludgeoning (Dex save, half on a success) | read from the text |
+| Mind Spike | 2 | Mind Spike: 3d8 psychic (Wis save, half on a success); +1d8 per slot level | read from the text |
+| Moonbeam | 2 | Moonbeam: 2d10 radiant (Con save, half on a success); +1d10 per slot level | read from the text |
+| Phantasmal Force | 2 | Phantasmal Force: 2d8 psychic (no roll to hit; again at the each of your turns) | read from the text |
+| Phantasmal Killer | 4 | Phantasmal Killer: 4d10 psychic (Wis save, half on a success); +1d10 per slot level | read from the text |
+| Poison Spray | cantrip | Poison Spray: 1d12 poison (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Power Word Kill | 9 | Power Word Kill: 12d12 psychic (no roll to hit) | read from the text |
+| Prayer of Healing | 2 | Healing: 2d8 (healing); +1d8 per slot level | read from the text |
+| Prismatic Spray | 7 | Ray color (each target): 1d8 (plain) · Red: 12d6 fire (Dex save, half on a success) · Orange: 12d6 acid (Dex save, half on a success) · Yellow: 12d6 lightning (Dex save, half on a success) · Green: 12d6 poison (Dex save, half on a success) · Blue: 12d6 cold (Dex save, half on a success) | by hand: a d8 picks each target's ray; then that color's damage |
+| Prismatic Wall | 9 | Red layer: 12d6 fire (Dex save, half on a success) · Orange layer: 12d6 acid (Dex save, half on a success) · Yellow layer: 12d6 lightning (Dex save, half on a success) · Green layer: 12d6 poison (Dex save, half on a success) · Blue layer: 12d6 cold (Dex save, half on a success) | by hand: each layer a creature passes deals its own damage |
+| Produce Flame | cantrip | Produce Flame: 1d8 fire (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Ray of Enfeeblement | 2 | no damage or healing roll | read from the text |
+| Ray of Frost | cantrip | Ray of Frost: 1d8 cold (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Ray of Sickness | 1 | Ray of Sickness: 2d8 poison (on a hit); +1d8 per slot level | read from the text |
+| Regenerate | 7 | Healing: 4d8+15 (healing) | read from the text |
+| Reincarnate | 5 | no damage or healing roll | by hand: a table roll for the new body (the DM may choose instead) |
+| Resistance | cantrip | no damage or healing roll | by hand: the 1d4 is rolled when the protected creature takes damage, to reduce it |
+| Sacred Flame | cantrip | Sacred Flame: 1d8 radiant (Dex save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Scorching Ray | 2 | Scorching Ray: 3 rays × 2d6 fire (on a hit); +1 ray per slot level | read from the text |
+| Searing Smite | 1 | On the hit: 1d6 fire (no roll to hit); +1d6 per slot level · Each of its turns: 1d6 fire (no roll to hit; again at the start of each of its turns); +1d6 per slot level | by hand: the later damage happens before the save, which only ends the spell |
+| Shatter | 2 | Shatter: 3d8 thunder (Con save, half on a success); +1d8 per slot level | read from the text |
+| Shillelagh | cantrip | no damage or healing roll | by hand: it changes your Club or Quarterstaff instead of rolling its own damage |
+| Shining Smite | 2 | Shining Smite: 2d6 radiant (no roll to hit); +1d6 per slot level | read from the text |
+| Shocking Grasp | cantrip | Shocking Grasp: 1d8 lightning (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Sorcerous Burst | cantrip | Sorcerous Burst: 1d8 (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: an 8 lets you roll another d8, up to your spellcasting modifier in extra d8s |
+| Spike Growth | 2 | Each 5 feet moved: 2d4 piercing (no roll to hit) | by hand: the damage is for every 5 feet moved |
+| Spirit Guardians | 3 | Spirit Guardians: 3d8 radiant or necrotic (Wis save, half on a success; again at the when it enters or ends its turn in the Emanation); +1d8 per slot level | by hand: Radiant or Necrotic by your alignment, not both |
+| Spiritual Weapon | 2 | Spiritual Weapon: 1d8 force + spellcasting modifier (on a hit; again at the Bonus Action on your later turns); +1d8 per slot level | by hand: damage 'equal to 1d8 plus your spellcasting ability modifier' |
+| Starry Wisp | cantrip | Starry Wisp: 1d8 radiant (on a hit); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Storm of Vengeance | 9 | Turn 1: thunder: 2d6 thunder (Con save, nothing on a success) · Turn 2: acid rain: 4d6 acid (no roll to hit) · Turn 3: six bolts: 10d6 lightning (Dex save, half on a success) · Turn 4: hail: 2d6 bludgeoning (no roll to hit) · Turns 5 to 10: freezing rain: 1d6 cold (no roll to hit) | by hand: a different effect each turn |
+| Sunbeam | 6 | Sunbeam: 6d8 radiant (Con save, half on a success) | read from the text |
+| Sunburst | 8 | Sunburst: 12d6 radiant (Con save, half on a success) | read from the text |
+| Symbol | 7 | Symbol: 10d10 necrotic (Con save, half on a success) | read from the text |
+| Teleport | 7 | Mishap: 3d10 force (no roll to hit) | by hand: the GM rolls the outcome; this is the damage of a Mishap |
+| Thunderwave | 1 | Thunderwave: 2d8 thunder (Con save, half on a success); +1d8 per slot level | read from the text |
+| Time Stop | 9 | Turns in a row: 1d4+1 (plain) | by hand: how many turns you take is a roll |
+| True Strike | cantrip | Extra Radiant (level 5+): 1d6 radiant (no roll to hit); none before level 5, then ×1/×2/×3 at levels 5, 11, 17 | by hand: a weapon attack; extra Radiant damage only from level 5 |
+| Tsunami | 8 | When it appears: 6d10 bludgeoning (Str save, half on a success) · Later rounds: 5d10 bludgeoning (Str save, nothing on a success) | by hand: a smaller save-or-take for later rounds, shrinking each round |
+| Vampiric Touch | 3 | Vampiric Touch: 3d6 necrotic (on a hit; again at the Magic action on later turns); +1d6 per slot level | by hand: you also regain half the damage |
+| Vicious Mockery | cantrip | Vicious Mockery: 1d6 psychic (Wis save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | read from the text |
+| Vitriolic Sphere | 4 | Vitriolic Sphere: 10d4 acid (Dex save, half on a success); +2d4 per slot level · End of its next turn: 5d4 acid (no roll to hit; again at the end of its next turn, after a failed save) | by hand: only the initial damage upcasts; the later damage follows a failed save |
+| Wall of Fire | 4 | When it appears: 5d8 fire (Dex save, half on a success); +1d8 per slot level · Burning side: 5d8 fire (no roll to hit; again at the ends its turn within 10 ft of that side or in the wall, or enters it); +1d8 per slot level | by hand: the lingering damage has no save |
+| Wall of Ice | 6 | When it appears: 10d6 cold (Dex save, half on a success); +2d6 per slot level · Frigid air: 5d6 cold (Con save, half on a success; again at the first time on a turn a creature moves through it); +1d6 per slot level | by hand: the two damages upcast differently |
+| Wall of Thorns | 6 | When it appears: 7d8 piercing (Dex save, half on a success); +1d8 per slot level · Entering the wall: 7d8 slashing (Dex save, half on a success; again at the first time on a turn it enters, or ends its turn there); +1d8 per slot level | by hand: 'Both types of damage increase by 1d8' |
+| Web | 2 | Web: 2d4 fire (no roll to hit) | read from the text |
+| Weird | 9 | Wis save: 10d10 psychic (Wis save, half on a success) · Wis save (later): 5d10 psychic (Wis save, nothing on a success) | read from the text |
+| Wind Wall | 3 | Wind Wall: 4d8 bludgeoning (Str save, half on a success) | read from the text |
+| Wish | 9 | Stress: 1d10 necrotic (no roll to hit) | by hand: the stress damage is per level of each later spell; 2d4 days is a duration |
 
 ## Player's Handbook spells (not in the SRD)
 
@@ -160,6 +160,7 @@ recipes; no book text). Their dice are checked against the offline copy when it'
 | Grasping Vine | 4 | Grasping Vine: 4d8 bludgeoning (on a hit) | read from the 2024 PHB |
 | Hail of Thorns | 1 | Hail of Thorns: 1d10 piercing (Dex save, half on a success); +1d10 per slot level | read from the 2024 PHB |
 | Hunger of Hadar | 3 | Damage: 2d6 cold (no roll to hit); +1d6 per slot level · Dex save: 2d6 acid (Dex save, nothing on a success) | read from the 2024 PHB |
+| Hunter's Mark | 1 | Hunter's Mark: 1{hunters_mark} force (added to each hit while it lasts) | by hand: its extra damage on each hit against the marked creature, the hunters_mark die (a d10 with Foe Slayer) |
 | Jallarzi's Storm of Radiance | 5 | Jallarzi's Storm of Radiance: 2d10 radiant + 2d10 thunder (Con save, half on a success); +1d10 per slot level | read from the 2024 PHB |
 | Lightning Arrow | 3 | Damage: 4d8 lightning (no roll to hit); +1d8 per slot level · Dex save: 2d8 lightning (Dex save, half on a success); +1d8 per slot level | read from the 2024 PHB |
 | Mind Sliver | cantrip | Mind Sliver: 1d6 psychic (Int save, nothing on a success); dice ×2/×3/×4 at levels 5, 11, 17 | by hand: not in the SRD; checked against the 2024 Player's Handbook |

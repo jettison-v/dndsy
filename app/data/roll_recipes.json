@@ -29,6 +29,32 @@
     }
    ]
   },
+  "Boon of Recovery": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "Last Stand",
+     "on": "heal",
+     "parts": [
+      "1",
+      "{hp_half}"
+     ]
+    },
+    {
+     "name": "Recover Vitality (one die)",
+     "on": "heal",
+     "parts": [
+      "1d10"
+     ]
+    }
+   ],
+   "remind": "zero",
+   "row": {
+    "cost": "No action",
+    "when": "Last Stand at 0 Hit Points; Recover Vitality, a Bonus Action"
+   },
+   "self": true
+  },
   "Breath Weapon": {
    "checked": "by hand",
    "events": [
@@ -44,6 +70,33 @@
      "success": "half"
     }
    ]
+  },
+  "Celestial Resilience": {
+   "checked": "by hand",
+   "class": "Warlock",
+   "events": [
+    {
+     "name": "For you",
+     "on": "temp",
+     "parts": [
+      "{level:Warlock}+{mod:charisma}"
+     ]
+    },
+    {
+     "name": "For each of up to five others",
+     "on": "temp",
+     "parts": [
+      "{half:Warlock}+{mod:charisma}"
+     ]
+    }
+   ],
+   "level": 10,
+   "remind": "rest",
+   "row": {
+    "cost": "No action",
+    "when": "when you finish a Short or Long Rest"
+   },
+   "sub": "Celestial Patron"
   },
   "Chef": {
    "checked": "by hand",
@@ -68,6 +121,26 @@
   "Create Eldritch Cannon": {
    "checked": "by hand",
    "events": []
+  },
+  "Dark One's Blessing": {
+   "checked": "by hand",
+   "class": "Warlock",
+   "events": [
+    {
+     "name": "Dark One's Blessing",
+     "on": "temp",
+     "parts": [
+      "{mod:charisma}+{level:Warlock}"
+     ]
+    }
+   ],
+   "level": 3,
+   "row": {
+    "cost": "No action",
+    "when": "when you reduce an enemy to 0 Hit Points"
+   },
+   "self": true,
+   "sub": "Fiend Patron"
   },
   "Deflect Attack: Redirect Attack": {
    "checked": "by hand",
@@ -124,6 +197,27 @@
     }
    ],
    "level": 2
+  },
+  "Elder Champion": {
+   "checked": "by hand",
+   "class": "Paladin",
+   "events": [
+    {
+     "name": "Elder Champion",
+     "on": "heal",
+     "parts": [
+      "10"
+     ]
+    }
+   ],
+   "level": 20,
+   "remind": "turn",
+   "row": {
+    "cost": "No action",
+    "when": "at the start of your turn, while transformed"
+   },
+   "self": true,
+   "sub": "Oath of the Ancients"
   },
   "Eldritch Cannon: Flamethrower": {
    "checked": "by hand",
@@ -214,6 +308,43 @@
    "level": 17,
    "sub": "Warrior of Mercy"
   },
+  "Healer": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "A d6 Hit Point Die",
+     "on": "heal",
+     "parts": [
+      "1d6+{pb}"
+     ]
+    },
+    {
+     "name": "A d8 Hit Point Die",
+     "on": "heal",
+     "parts": [
+      "1d8+{pb}"
+     ]
+    },
+    {
+     "name": "A d10 Hit Point Die",
+     "on": "heal",
+     "parts": [
+      "1d10+{pb}"
+     ]
+    },
+    {
+     "name": "A d12 Hit Point Die",
+     "on": "heal",
+     "parts": [
+      "1d12+{pb}"
+     ]
+    }
+   ],
+   "row": {
+    "cost": "Action",
+    "when": "uses a Healer's Kit; the creature spends a Hit Point Die"
+   }
+  },
   "Healing Hands": {
    "checked": "by hand",
    "events": [
@@ -242,6 +373,25 @@
    "level": 3,
    "sub": "Celestial Patron"
   },
+  "Improved Duplicity": {
+   "checked": "by hand",
+   "class": "Cleric",
+   "events": [
+    {
+     "name": "Improved Duplicity",
+     "on": "heal",
+     "parts": [
+      "{level:Cleric}"
+     ]
+    }
+   ],
+   "level": 17,
+   "row": {
+    "cost": "No action",
+    "when": "when your duplicate ends"
+   },
+   "sub": "Trickery Domain"
+  },
   "Improved Warding Flare": {
    "checked": "by hand",
    "class": "Cleric",
@@ -256,6 +406,30 @@
    ],
    "level": 6,
    "sub": "Light Domain"
+  },
+  "Inspiring Leader": {
+   "checked": "by hand",
+   "events": [
+    {
+     "name": "With Wisdom",
+     "on": "temp",
+     "parts": [
+      "{lv}+{mod:wisdom}"
+     ]
+    },
+    {
+     "name": "With Charisma",
+     "on": "temp",
+     "parts": [
+      "{lv}+{mod:charisma}"
+     ]
+    }
+   ],
+   "remind": "rest",
+   "row": {
+    "cost": "No action",
+    "when": "when you finish a Short or Long Rest"
+   }
   },
   "Inspiring Smite": {
    "checked": "by hand",
@@ -311,6 +485,25 @@
      ]
     }
    ]
+  },
+  "Mantle of Inspiration": {
+   "checked": "by hand",
+   "class": "Bard",
+   "events": [
+    {
+     "name": "Mantle of Inspiration",
+     "on": "temp",
+     "parts": [
+      "2x{bardic}"
+     ]
+    }
+   ],
+   "level": 3,
+   "row": {
+    "cost": "Bonus action",
+    "when": "uses a Bardic Inspiration"
+   },
+   "sub": "College of Glamour"
   },
   "Misty Escape": {
    "checked": "by hand",
@@ -467,6 +660,27 @@
     }
    ]
   },
+  "Survivor": {
+   "checked": "by hand",
+   "class": "Fighter",
+   "events": [
+    {
+     "name": "Heroic Rally",
+     "on": "heal",
+     "parts": [
+      "5+{mod:constitution}"
+     ]
+    }
+   ],
+   "level": 18,
+   "remind": "turn",
+   "row": {
+    "cost": "No action",
+    "when": "at the start of your turn, while Bloodied"
+   },
+   "self": true,
+   "sub": "Champion"
+  },
   "Tireless": {
    "checked": "by hand",
    "class": "Ranger",
@@ -498,6 +712,28 @@
   "Undead Steed: Ghostly Stride": {
    "checked": "by hand",
    "events": []
+  },
+  "Undying Sentinel": {
+   "checked": "by hand",
+   "class": "Paladin",
+   "events": [
+    {
+     "name": "Undying Sentinel",
+     "on": "heal",
+     "parts": [
+      "1",
+      "3x{level:Paladin}"
+     ]
+    }
+   ],
+   "level": 15,
+   "remind": "zero",
+   "row": {
+    "cost": "No action",
+    "when": "when you drop to 0 Hit Points, once per Long Rest"
+   },
+   "self": true,
+   "sub": "Oath of the Ancients"
   },
   "Vitality of the Tree: Life-Giving Force": {
    "checked": "by hand",
@@ -2545,13 +2781,13 @@
    "level": 3
   },
   "Hunter's Mark": {
-   "checked": "text",
+   "checked": "by hand (PHB)",
    "events": [
     {
      "name": "Hunter's Mark",
      "on": "rider",
      "parts": [
-      "1d6 force"
+      "1{hunters_mark} force"
      ]
     }
    ],
