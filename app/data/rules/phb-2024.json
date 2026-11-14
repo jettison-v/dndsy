@@ -3306,6 +3306,31 @@
      "success": "half"
     }
    ]
+  },
+  {
+   "kind": "feature",
+   "name": "Lay On Hands",
+   "class": "Paladin",
+   "level": 1,
+   "why": "Paladin: a pool of healing, 5 × your Paladin level, back after a Long Rest; a Bonus Action to touch a creature",
+   "use": {
+    "for": "one",
+    "ways": [
+     {
+      "key": "heal",
+      "name": "Heal",
+      "heal": "chosen",
+      "row": "Heal"
+     },
+     {
+      "key": "poison",
+      "name": "End Poisoned",
+      "spend": 5,
+      "ends": "Poisoned",
+      "row": "Purify Poison"
+     }
+    ]
+   }
   }
  ]
 }

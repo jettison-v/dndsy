@@ -46,6 +46,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **Battle against the rules text**: scripts/battle_audit.py
 - **The roll plan**: app/roll_plan.py, scripts/roll_coverage.py, app/rules_book.py
 - **The roll card**: _roll_checks.html, _dice_form.html, _roll_items.html
+- **The Use window**: app/feature_use.py, _feature_window.html
 - **Every Battle's rows are ready the same way**: app/character_views.py (`planned`)
 - **Show the Math**: app/roll_math.py, app/check_numbers.py, _math.html
 - **Search, like Spotlight**: app/search.py, base.html

@@ -31,6 +31,7 @@ FEATURES: list[tuple[str, str]] = [
     (r"^/characters/\{character_id\}/death$", "Death saves"),
     (r"^/characters/\{character_id\}/rest$", "Rests"),
     (r"^/characters/\{character_id\}/(count|inspiration)$", "Resources"),
+    (r"^/characters/\{character_id\}/feature", "Use a feature"),
     (r"^/characters/\{character_id\}/use/", "Using an item"),
     (r"^/characters/\{character_id\}/coins$", "Coins"),
     (r"^/characters/\{character_id\}/items/add$", "Item browser"),

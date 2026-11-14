@@ -47,7 +47,20 @@ def _spend(resource: dict, amount: int | None) -> dict:
         f"{amount} use of {unit}" if amount == 1 else f"{amount} uses of {unit}" if amount else unit)
     if resource["name"].startswith("Lay On Hands") and amount:
         label = f"{amount} HP from the pool"
-    return {"label": label, "of": resource["name"], "uses": resource["uses"]}
+    out = {"label": label, "of": resource["name"], "uses": resource["uses"]}
+    if amount and resource.get("id") is not None:  # (the count it comes off, for the roll card to spend: `pays`)
+        out |= {"field": f"uses:{resource['id']}", "n": amount}
+    return out
+
+
+def pays(action: dict, spends: list[dict]) -> list[dict]:
+    """What making a feature's roll spends, for the roll card to spend as it's rolled (the action widgets, roadmap 8;
+    Brett, Nov 13: Flurry of Blows showed its Focus Point and didn't spend it): its own use (Second Wind), else the
+    resource it says it expends (Flurry of Blows' Focus Point). Each {field, n, label, left}: the Use one window's count
+    (app/resources.py), so its Undo is that window's."""
+    if action.get("uses") and action.get("id") is not None:
+        return [{"field": f"uses:{action['id']}", "n": 1, "label": f"1 use of {action['name']}", "left": action["uses"]["left"]}]
+    return [{"field": s["field"], "n": s["n"], "label": s["label"], "left": (s.get("uses") or {}).get("left")} for s in spends if s.get("field")]
 
 
 def resource_spends(sheet: dict, name: str, key: str, text: str) -> list[dict]:
@@ -180,9 +193,9 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             u = attacks.get("Unarmed Strike") or {}
             hit, meta = u.get("to_hit", ""), u.get("damage", "")
         recipe = _feature_recipe(sheet, a["name"])  # (a checked recipe says how it rolls: Land's Aid deals damage, Nov 9)
+        spent = [] if a["uses"] else resource_spends(sheet, a["name"], a["key"], a["text"] or "")
         add(key=a["key"], kind="feature", cost=cost, name=a["name"], hit=hit, meta=meta, uses=a["uses"], text=a["text"], cost_from=from_text or None,
-            **({"recipe": recipe} if recipe is not None else {}),
-            spends=[] if a["uses"] else resource_spends(sheet, a["name"], a["key"], a["text"] or ""),
+            **({"recipe": recipe} if recipe is not None else {}), spends=spent, pay=pays(a, spent),
             summary=a.get("summary", ""),
             common=not a.get("rule") and (unarmed or cost == "Reaction" or bool(a["uses"] and a["source"] in ("class", "feat", "race"))))
     have = {class_rules._norm(o["name"]) for o in out}
@@ -229,10 +242,13 @@ def planned(sheet: dict, rows: list[dict], scope: str = "own") -> list[dict]:
     dice at every level, and how its numbers add up (Show the Math, app/roll_math.py). A row that already has a plan
     (one of the character's own, copied onto a form's Battle) keeps it. tests/test_roll_math.py walks every form and
     creature of the party's sheets."""
+    from app.feature_use import spec as use_spec  # (the Use window: a row that costs something and doesn't roll)
     from app.roll_math import option_math
     from app.roll_plan import SAVE, effects, plan  # (the roll card's: what each roll button plays, app/roll_plan.py)
 
     for o in rows:
+        if scope == "own" and o.get("pay") and "use_window" not in o:
+            o["use_window"] = use_spec(sheet, o) is not None
         if "plan" in o:
             continue
         if str(o.get("hit") or "")[:1] in "+-\u2212" or SAVE.match(str(o.get("hit") or "")):  # (a to-hit, or a save spell's "Dex 15")
@@ -262,13 +278,13 @@ def _dice(text: str) -> str:
 
 
 def roll_data(kind: str, label: str, mod="", dmg="", advs=(), note="", rolls=None, plan=None, slot=0, save="", math=None,
-              parts=None) -> dict[str, str]:
+              parts=None, pay=None) -> dict[str, str]:
     """A roll button's data attributes, the one place they're made: every roll button's template (_char.html
     `roll_attrs`) and Search's rows (app/search.py, copied whole onto the button it makes), so a roll from Search is the
     button's own roll. `data-plan` is everything the roll card plays (app/roll_plan.py `button`: the option's `plan`,
     `rolls` its dice at each level); the rest says what the button is. `advs`: Advantage with its reasons, those without
     a `when` always on. `math`: how its numbers add up (app/roll_math.py), or `parts`, a check's or save's own
-    [(what, amount)] as the sheet gives them."""
+    [(what, amount)] as the sheet gives them. `pay`: what making the roll spends (`pays`), on the option's first button."""
     from app import roll_math
     from app.roll_plan import button
 
@@ -287,7 +303,7 @@ def roll_data(kind: str, label: str, mod="", dmg="", advs=(), note="", rolls=Non
     math = dict(math or {})
     if parts and mod not in ("", None) and (got := roll_math.checked(roll_math.rows(parts), str(mod).replace("\u2212", "-"))):
         math["bonus"] = got
-    d["plan"] = json.dumps(button(kind, label, mod, dmg, note, plan, rolls, save, math=math))
+    d["plan"] = json.dumps(button(kind, label, mod, dmg, note, plan, rolls, save, math=math) | ({"pay": pay} if pay else {}))
     return d
 
 
@@ -309,7 +325,8 @@ def option_rolls(o: dict) -> list[dict]:
         first = next((e for e in rec["events"] if e.get("on") != "hit"), None)
         if hits and to_hit:
             out.append({"button": "hit", "title": "Roll to hit", "text": hit,
-                        "attrs": roll_data("attack", o["name"], hit, "", o.get("adv"), rolls=rolls["hit"], plan=o.get("plan"), math=o.get("math"))})
+                        "attrs": roll_data("attack", o["name"], hit, "", o.get("adv"), rolls=rolls["hit"], plan=o.get("plan"), math=o.get("math"),
+                                           pay=o.get("pay"))})
         elif hit:
             out.append({"button": None, "text": hit})
         if first:
@@ -317,7 +334,7 @@ def option_rolls(o: dict) -> list[dict]:
             save = bool(hit) and not to_hit
             out.append({"button": "chip", "title": "Roll", "text": "Heal" if first.get("on") == "heal" else "Roll",
                         "attrs": roll_data(kind, o["name"], rolls=rolls["other"], plan=o.get("plan") if save else None,
-                                           save=hit if save else "", math=o.get("math"))})
+                                           save=hit if save else "", math=o.get("math"), pay=None if out and out[0]["button"] else o.get("pay"))})
         return out
     dmg = o["dice"] if "dice" in o else _dice(o.get("meta") or "")
     heal = o["heal"] if "heal" in o else ("heals " in (o.get("meta") or "") or "healing" in (o.get("name") or "").lower())
@@ -325,14 +342,14 @@ def option_rolls(o: dict) -> list[dict]:
     word = "Heal" if heal else "Roll"
     if to_hit:
         out.append({"button": "hit", "title": "Roll to hit" + (" (then damage)" if dmg else ""), "text": hit,
-                    "attrs": roll_data("attack", o["name"], hit, dmg, o.get("adv"), plan=o.get("plan"), math=o.get("math"))})
+                    "attrs": roll_data("attack", o["name"], hit, dmg, o.get("adv"), plan=o.get("plan"), math=o.get("math"), pay=o.get("pay"))})
     elif hit:
         out.append({"button": None, "text": hit})
         if dmg:
             out.append({"button": "chip", "title": f"Roll {dmg}", "text": word,
-                        "attrs": roll_data(kind, o["name"], "", dmg, plan=o.get("plan"), save=hit, math=o.get("math"))})
+                        "attrs": roll_data(kind, o["name"], "", dmg, plan=o.get("plan"), save=hit, math=o.get("math"), pay=o.get("pay"))})
     elif dmg:
-        out.append({"button": "chip", "title": f"Roll {dmg}", "text": word, "attrs": roll_data(kind, o["name"], "", dmg, math=o.get("math"))})
+        out.append({"button": "chip", "title": f"Roll {dmg}", "text": word, "attrs": roll_data(kind, o["name"], "", dmg, math=o.get("math"), pay=o.get("pay"))})
     return out
 
 
