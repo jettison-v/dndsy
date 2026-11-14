@@ -24,7 +24,15 @@ def test_a_name_in_apply_tos_list_opens_the_hit_points_window(people, server, br
         page = battle(dm, server)
         if page.evaluate("document.body.classList.contains('rolls-closed')"):
             page.locator(".rs-edge").click()
-        page.locator("details.roll-apply-to summary").first.click()
+        try:
+            page.locator("details.roll-apply-to summary").first.click()
+        except Exception as e:  # (what Table rolls held, said when it fails: on GitHub's machines only, Nov 13)
+            held = page.evaluate("""() => ({ body: document.body.className,
+              lists: document.querySelectorAll('details.roll-apply-to').length,
+              shown: [...document.querySelectorAll('details.roll-apply-to')].map(d => d.checkVisibility()),
+              single: document.querySelectorAll('.roll-apply > button[data-modal-url]').length,
+              entries: [...document.querySelectorAll('#roll-log > li')].slice(0, 4).map(li => ({ kind: li.dataset.kind, cls: li.className, apply: !!li.querySelector('.roll-apply') })) })""")
+            raise AssertionError(f"Apply to… wasn't there to press: {held}") from e
         page.locator(".roll-apply-list button").first.click()
         page.locator("#peek.open").wait_for(timeout=10000)
         assert "hit points" in page.locator("#peek.open").inner_text()

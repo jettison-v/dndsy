@@ -34,7 +34,9 @@ def act(kind, payload=None):
 
 
 def test_the_listener_follows_the_fight_as_the_vtt_does(people):
-    page = people("player").page
+    player = people("player")
+    player.allow("games.dndbeyond.com.invalid")  # (the stand-in game server's address: never meant to connect)
+    page = player.page
     vtt_page(page)
     page.evaluate("""() => {
         window.told = [];
@@ -88,7 +90,9 @@ def test_the_listener_follows_the_fight_as_the_vtt_does(people):
 def test_on_the_dms_page_a_number_askdnd_hands_it_goes_out_as_the_pages_own(people):
     """0.12.0 (captured on the Mac Mini, Nov 4): the VTT takes UPDATE_INITIATIVE only with the connection's own client id,
     the one its CONNECT message carried; a number askdnd hands the page goes out so, and nothing goes before that."""
-    page = people("player").page
+    player = people("player")
+    player.allow("games.dndbeyond.com.invalid")  # (the stand-in game server's address: never meant to connect)
+    page = player.page
     vtt_page(page)
     page.evaluate("""() => {
         window.sent = [];
