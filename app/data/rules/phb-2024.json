@@ -645,7 +645,10 @@
      ],
      "reduces": "1d10+{mod:dexterity}+{level:Monk}"
     }
-   ]
+   ],
+   "use": {
+    "optional": true
+   }
   },
   {
    "kind": "feature",
@@ -1154,6 +1157,47 @@
      ],
      "op": "words",
      "cost": "a Superiority Die"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Tandem Footwork",
+   "class": "Bard",
+   "level": 6,
+   "sub": "College of Dance",
+   "why": "when you roll Initiative, spend a use of Bardic Inspiration: roll the die and add it to Initiative",
+   "adds": [
+    {
+     "name": "Tandem Footwork",
+     "when": "before",
+     "to": [
+      "initiative"
+     ],
+     "amount": "1{bardic}",
+     "cost": "a use of Bardic Inspiration",
+     "pressed": false,
+     "says": "you and each ally within 30 feet who can see or hear you add the same number"
+    }
+   ]
+  },
+  {
+   "kind": "feature",
+   "name": "Disciple of Life",
+   "class": "Cleric",
+   "level": 3,
+   "sub": "Life Domain",
+   "why": "a spell you cast with a slot that restores Hit Points restores 2 + the slot's level more, to one target",
+   "adds": [
+    {
+     "name": "Disciple of Life",
+     "when": "on_heal",
+     "to": [
+      "spell healing"
+     ],
+     "amount": "2+{slot}",
+     "slot": true,
+     "says": "one creature the spell heals, that turn"
     }
    ]
   },
@@ -3265,6 +3309,51 @@
      "success": "half"
     }
    ]
+  },
+  {
+   "kind": "feature",
+   "name": "Lay On Hands",
+   "class": "Paladin",
+   "level": 1,
+   "why": "Paladin: a pool of healing, 5 × your Paladin level, back after a Long Rest; a Bonus Action to touch a creature",
+   "use": {
+    "for": "one",
+    "ways": [
+     {
+      "key": "heal",
+      "name": "Heal",
+      "heal": "chosen",
+      "row": "Heal"
+     },
+     {
+      "key": "poison",
+      "name": "End Poisoned",
+      "spend": 5,
+      "ends": "Poisoned",
+      "row": "Purify Poison"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "feature",
+   "name": "Patient Defense",
+   "class": "Monk",
+   "level": 2,
+   "why": "Monk: Disengage as a Bonus Action, free; 1 Focus Point to Disengage and Dodge",
+   "use": {
+    "optional": true
+   }
+  },
+  {
+   "kind": "feature",
+   "name": "Step of the Wind",
+   "class": "Monk",
+   "level": 2,
+   "why": "Monk: Dash as a Bonus Action, free; 1 Focus Point to Disengage and Dash, jump distance doubled",
+   "use": {
+    "optional": true
+   }
   }
  ]
 }

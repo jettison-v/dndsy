@@ -126,5 +126,5 @@ def test_every_rule_names_a_real_column_and_fills_its_placeholders():
     for e in rules_book.entries():
         for a in e.get("adds") or []:
             for k in ("trigger", "effect", "says", "amount", "dc"):
-                if isinstance(a.get(k), str):
-                    assert "{" not in rules_book.fill(a[k], sheet, e.get("class")), (e["name"], k, a[k])
+                if isinstance(a.get(k), str):  # ({slot} is the slot a spell is cast with, filled as it's rolled: app/roll_plan.py)
+                    assert "{" not in rules_book.fill(a[k], sheet, e.get("class")).replace("{slot}", "1"), (e["name"], k, a[k])

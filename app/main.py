@@ -39,9 +39,11 @@ from app.digest import router as digest_router
 from app.documents import router as documents_router
 from app.entity_pages import router as entity_router
 from app.errors import router as errors_router
+from app.feature_use import router as feature_use_router
 from app.feedback import router as feedback_router
 from app.fog import router as fog_router
 from app.giving import router as giving_router
+from app.heals import router as heals_router
 from app.help_pages import router as help_router
 from app.history_pages import router as history_router
 from app.hit_points import router as hit_points_router
@@ -224,6 +226,8 @@ app.include_router(search_router)  # Search, like Spotlight: what the search box
 app.include_router(trophies_router)  # Trophy Case: Party's Trophies tab and each person's view
 app.include_router(casting_router)  # (through the bridge: on_for)
 app.include_router(resources_router)  # (through the bridge: on_for)
+app.include_router(feature_use_router)
+app.include_router(heals_router)  # (healing given to someone: the card that asks them, app/heals.py)  # (the Use window: through the bridge, as resources)
 app.include_router(rests_router)  # (through the bridge: on_for)
 app.include_router(level_up_router)
 app.include_router(inventory_router)  # (through the bridge: on_for)

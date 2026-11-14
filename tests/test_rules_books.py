@@ -15,8 +15,8 @@ BOOKS = sorted((Path(__file__).resolve().parents[1] / "app" / "data" / "rules").
 KINDS = {"spell", "feature", "feat", "item", "species", "mastery"}
 RESOLVE = {"attack", "save", "none"}
 EFFECT = {"damage", "heal", "temp", "dice"}
-WHEN = {"before", "after_roll", "after_fail", "on_hit", "on_miss", "on_damage", "damage_taken"}
-TO = {"attack", "save", "check", "damage", "spell damage", "damage_taken"}
+WHEN = {"before", "after_roll", "after_fail", "on_hit", "on_miss", "on_damage", "on_heal", "damage_taken"}
+TO = {"attack", "save", "check", "initiative", "damage", "spell damage", "spell healing", "damage_taken"}
 WITH = {"weapon", "melee_weapon", "ranged_weapon", "monk_weapon", "finesse", "heavy_weapon", "unarmed", "spell", "this_item"}  # (roll_plan.traits)
 
 
