@@ -1480,7 +1480,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .manage-band.camp ~ .title-row { padding-right: 116px; }  /* ⚙ Admin, a full-size button (feedback 31) */
 .manage-band.tool ~ .title-row { padding-right: 216px; }  /* a campaign's name */
 @media (max-width: 640px) { .manage-band a { max-width: 140px; top: calc(var(--sp-5) + var(--control-h) + var(--sp-4) - 5px); } .manage-band.tool ~ .title-row { padding-right: 152px; } }
-.menu .menu-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin: -6px -6px var(--sp-1); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--red-line); border-radius: var(--r-md) var(--r-md) 0 0; background: var(--red-soft); font-size: var(--fs-sm); }
+.menu .menu-head { display: flex; flex-direction: column; align-items: flex-start; gap: 0; margin: -6px -6px var(--sp-1); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--red-line); border-radius: var(--r-md) var(--r-md) 0 0; background: var(--red-soft); font-size: var(--fs-sm); }
 .menu .menu-head.tool { border-bottom-color: var(--blue-line); background: var(--blue-soft); }
 .menu .menu-head b { color: var(--text-strong); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .menu .menu-head span { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; }
