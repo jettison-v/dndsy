@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_lists.html" import search_box %}
-{% block title %}Your notes · askdnd{% endblock %}
+{% block title %}Notes you sent · askdnd{% endblock %}
 {# Your notes (app/your_notes.py; Brett, Nov 7: docs/mockups/your-notes/ Layout A and a badge, then
    docs/mockups/your-notes-2/ Layout B, feedback 54): what you sent, in two tabs that say who reads it, each the Reader
    (a list beside the note, as the World tab and the quest log): search, the status and where-from chips, Newest or
@@ -74,7 +74,7 @@
 
 {% block content %}
 <main class="page wide notes-page">
-  <div class="title-row"><h1>Your notes</h1></div>
+  <div class="title-row"><h1>Notes you sent</h1></div>
   <p class="subtitle">What you sent and what happened to it. Notes <b>about the story</b> go to the DM; notes <b>about askdnd</b> go to Brett, then Claude.</p>
   {% if askdnd %}<div class="tabbar" role="tablist" data-tab-param>
     <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'story' else 'false' }}" data-tab="t-story">About the story <span class="count{{ ' notes-tab-new' if news.story }}" data-notes-tab="story">{% if news.story %}{{ news.story }} new{% else %}{{ lists.story | length }}{% endif %}</span></button>

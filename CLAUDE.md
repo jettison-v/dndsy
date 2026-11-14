@@ -31,6 +31,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 
 ## Where things are
 **docs/MAP.md** is the map of every feature: where it lives, the rules it keeps and the decisions behind it, one section per line below. **Read a feature's section in docs/MAP.md before changing it, and keep that section current in the same change** (a new feature gets a section and a line here). Access rules live only in `app/access.py` (`allows()`); shared page helpers in app/web.py. **One way for each thing**, never a second: a message is a corner card, a new copy of a page comes through `showInPlace`, a picture through the one Picture window, a roll's data through `character_views.roll_data`, anything findable through Search, a character's numbers through `ddb_bridge.as_shown`.
+- **The Three Menus**: base.html (`menu_groups`, `account_items`), app/manage.py (`PAGES`)
 - **Manage**: app/manage.py, app/admin_sessions.py, app/admin_notes.py
 - **One address per page**: app/campaign_paths.py
 - **Features and Labs**: app/vtt.py, app/table_page.py, table.html
@@ -46,6 +47,8 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **Battle against the rules text**: scripts/battle_audit.py
 - **The roll plan**: app/roll_plan.py, scripts/roll_coverage.py, app/rules_book.py
 - **The roll card**: _roll_checks.html, _dice_form.html, _roll_items.html
+- **The Use window**: app/feature_use.py, _feature_window.html
+- **Healing given to someone**: app/heals.py, app/static/app.js ("Healing for you")
 - **Every Battle's rows are ready the same way**: app/character_views.py (`planned`)
 - **Show the Math**: app/roll_math.py, app/check_numbers.py, _math.html
 - **Search, like Spotlight**: app/search.py, base.html

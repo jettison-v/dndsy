@@ -4,7 +4,7 @@ their last one. Counts and a link only: never a word of a suggestion, a draft or
 email can be forwarded or kept by the mail service; the Inbox itself stays behind sign-in).
 
 - **Who**: the campaign's DM, unless they turn it off; its reviewers and askdnd's admins only if they turn it on
-  (Your account › Email). Players never: their news is on Your notes.
+  (your picture › Email digest). Players never: their news is on Your notes.
 - **What counts**: suggestions from the table (facts and session or glossary suggestions still waiting) made since
   the last digest, and Claude's description drafts made since then (app/suggestions.py, the Inbox's own lists).
 - **Sent by Resend** (RESEND_API_KEY; from EMAIL_FROM, askdnd.ai's own address), where the key is set and never on
@@ -27,7 +27,7 @@ from itsdangerous import BadSignature, URLSafeSerializer
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import config, web
+from app import access, config, web
 from app.auth import current_user, is_admin
 from app.config import TABLE_TIME
 from app.db import get_db
@@ -50,7 +50,11 @@ def enabled() -> bool:
 
 def wants(user: User, campaign_id: int, role: str | None, admin: bool) -> bool:
     """Whether this person gets the campaign's digest: their own choice, else on for its DM, off for anyone else."""
-    choice = ((user.emails or {}).get("inbox") or {}).get(str(campaign_id))
+    return wants_from(user.emails, campaign_id, role, admin)
+
+
+def wants_from(emails: dict | None, campaign_id: int, role: str | None, admin: bool) -> bool:
+    choice = ((emails or {}).get("inbox") or {}).get(str(campaign_id))
     if role not in (Role.DM, Role.REVIEWER) and not admin:
         return False  # (players never)
     return bool(choice) if choice is not None else role == Role.DM
@@ -105,7 +109,7 @@ def compose(campaign: Campaign, counts: dict[str, int], user: User, role: str | 
     title = f"{total} new {'thing' if total == 1 else 'things'} in the Inbox"
     rows = [("From the table", counts["table"]), ("Claude's drafts for your OK", counts["drafts"])]
     rows = [r for r in rows if r[1]]
-    why = "You get this as the campaign's DM." if role == Role.DM else "You turned this on in Your account › Email."
+    why = "You get this as the campaign's DM." if role == Role.DM else "You turned this on in your picture › Email digest."
     link = f"{config.PROD_URL}/c/{campaign.slug}/manage/inbox"
     stop = stop_link(user, campaign)
     html = templates.get_template("email/digest.html").render(campaign=campaign, title=title, rows=rows, link=link, why=why, stop=stop)
@@ -204,7 +208,7 @@ def _set(user: User, campaign_id: int, on: bool) -> None:
 
 @router.get("/email")
 def settings(request: Request, db: Session = Depends(get_db)):
-    """Your account › Email: the campaigns you could get the Inbox digest for, each a switch."""
+    """Your picture › Email digest: the campaigns you could get the Inbox digest for, each a switch."""
     me = _me(db, request)
     if me is None:
         return HTMLResponse("", status_code=401)
@@ -219,6 +223,7 @@ def choose(request: Request, campaign: int = Form(...), on: str = Form(""), db: 
         return HTMLResponse("", status_code=403)
     _set(me, campaign, on == "1")
     db.commit()
+    access.invalidate()  # (the account menu says On or Off from the access cache)
     resp = templates.TemplateResponse(request, "_email_settings.html", {"rows": may_choose(db, me), "only_rows": True})
     resp.headers["HX-Trigger"] = json.dumps({"toast": "Inbox digest " + ("on" if on == "1" else "off")})
     return resp
@@ -234,6 +239,7 @@ def _stop(db: Session, t: str) -> tuple[User, Campaign] | None:
         return None
     _set(user, campaign.id, False)
     db.commit()
+    access.invalidate()
     return user, campaign
 
 
@@ -242,8 +248,8 @@ def stop_page(request: Request, t: str = "", db: Session = Depends(get_db)):
     """The email's own link: no sign-in, the signed token says who and which campaign."""
     done = _stop(db, t)
     if not done:
-        return web.message(request, "That link doesn't work", "It may be from another copy of askdnd. Your account › Email turns the digest off.", 400)
-    return web.message(request, "No more Inbox emails", f"You won't get {done[1].name}'s Inbox digest any more. Your account › Email turns it back on.")
+        return web.message(request, "That link doesn't work", "It may be from another copy of askdnd. Your picture › Email digest turns it off.", 400)
+    return web.message(request, "No more Inbox emails", f"You won't get {done[1].name}'s Inbox digest any more. Your picture › Email digest turns it back on.")
 
 
 @router.post("/email/stop")
