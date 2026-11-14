@@ -116,3 +116,10 @@ def test_a_consumed_component_comes_off_d_and_d_beyond_when_the_table_says_so_an
     assert [(d["item"], d["delta"]) for d in items()] == [(340867412, -2), (340867412, 2)]
     forged = {**on["undo"], "used": "item:340867412:50"}  # (only what the cast answered)
     assert player.post(on["undoUrl"], data=forged).status_code == 409
+
+
+def test_a_magic_item_is_never_the_component():
+    """The review (Nov 14): diamond dust isn't a Dust of Disappearance, whatever it's worth."""
+    sheet = {"inventory": [{"key": "item:7", "name": "Dust of Disappearance", "cost": 300, "count": 1, "magic": True}]}
+    need = components.need({"components": ["M"], "material": "diamond dust worth at least 100 gp, which the spell consumes"}, sheet)
+    assert need["kind"] == "missing" and "Disappearance" not in need["says"]
