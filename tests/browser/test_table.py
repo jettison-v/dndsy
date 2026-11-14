@@ -79,11 +79,14 @@ def test_a_roll_reaches_the_dms_screen_within_a_second(people, server):
     dm.open("/c/main/")
     dm.live()
     dm.page.wait_for_selector(LOG, state="attached")  # the log is collapsed on Story
-    before = dm.page.locator(LOG).count()
+    # (by the newest row, not how many: the first roll replaces "No rolls yet", so an empty log's count stays 1, and a
+    # full log stays full; this test passed only when an earlier one had left rolls, Nov 13)
+    newest_id = f"document.querySelector('{LOG}')?.dataset.id"
+    top = dm.page.evaluate(newest_id)
     page = battle(player, server)
     start = time.monotonic()
     page.click(save("Con"), modifiers=["Shift"])  # Shift: roll straight away
-    dm.page.wait_for_function(f"document.querySelectorAll('{LOG}').length > {before}", timeout=5000)
+    dm.page.wait_for_function(f"([id]) => {newest_id} && {newest_id} !== id", arg=[top], timeout=5000)
     took = time.monotonic() - start
     assert "Con save" in newest(dm.page)
     assert took < 1.5, f"took {took:.1f} s: the live connection should beat the 30-second fallback poll"

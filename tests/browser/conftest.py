@@ -233,10 +233,10 @@ class Person:
         # a page error. It's not one: it has no error type (Safari's real fetch failure is "TypeError: Load failed"), the
         # fetch it names catches its own failure (app.js "Search" load()), and Sentry has none from people's Safari.
         def page_error(e):
+            # (where in app.js, in the error's own words: printed output is held back for a passing retry, Nov 13)
             stack = (getattr(e, "stack", "") or "").replace(server["base"], "")
-            if stack and not cancelled(str(e)):
-                print(f"[{who} pageerror stack] {stack[:1500]}")  # (where in app.js: the line says what broke)
-            note("pageerror", str(e), ignored=cancelled(str(e)))
+            frames = [ln.strip() for ln in stack.splitlines()[1:4] if ln.strip()]
+            note("pageerror", str(e) + (f" (at {' < '.join(frames)})" if frames else ""), ignored=cancelled(str(e)))
         self.page.on("pageerror", page_error)
         self.page.on("response", lambda r: r.status >= 400 and note("response", f"{r.status} {r.url.replace(server['base'], '')}"))
         # (a fresh browser's first page, WebKit's especially, can take longer: Nov 2, 10 seconds ran out on a busy machine)
