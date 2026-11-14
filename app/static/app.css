@@ -1835,7 +1835,13 @@ body.at-table .rolls-side { display: flex; flex-direction: column; position: fix
 body.at-table.rolls-open { --rolls-w: 340px; }
 @media (max-width: 1240px) and (min-width: 901px) { body.at-table.rolls-open { --rolls-w: 0px; } body.at-table.rolls-open .rolls-side { box-shadow: 12px 0 30px var(--shadow); } }
 body.at-table { padding-left: var(--rolls-w, 0); }
-body.at-table .topbar { margin-left: calc(-1 * var(--rolls-w, 0px)); padding-left: var(--rolls-w, 0px); }  /* (its bar spans the window; its contents centre over the page beside Table rolls, so they line up: Brett, Nov 13) */
+/* Table rolls beside the page is a full-height side panel (Brett chose it, Nov 13): from the window's top, its title row
+   level with the menu bar and carrying its red line, while the menu bar and the connection band sit over the page beside
+   it, lined up with it. Narrower than 1241px it opens over the page instead, below the bar. */
+@media (min-width: 1241px) {
+  body.at-table.rolls-open .rolls-side { top: 0; }
+  body.at-table.rolls-open .rs-head { min-height: 62px; padding-top: 0; padding-bottom: 0; border-bottom: 2px solid var(--red); }
+}
 .rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; color: var(--amber); }
 .rs-grip { display: none; }
 .rs-title { flex: 1; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
@@ -2145,7 +2151,6 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
    (collapsed), or every roll with the dice (tap or swipe up). Notices show under the menu bar. */
 @media (max-width: 900px) {
   body.at-table { padding-left: 0; --rolls-w: 0px; }
-  body.at-table .topbar { margin-left: 0; padding-left: 0; }
   body.at-table .rolls-side, body.at-table.rolls-closed .rolls-side { z-index: 5; transform: none; visibility: visible; top: auto; bottom: calc(60px + env(safe-area-inset-bottom)); width: auto; right: 0; max-height: 210px; border-right: 0; border-top: 1px solid var(--line); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -10px 30px var(--shadow); }
   body.at-table.rolls-full .rolls-side { max-height: 80vh; }
   body.at-table.rolls-open { padding-bottom: calc(270px + env(safe-area-inset-bottom)); }
