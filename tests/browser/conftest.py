@@ -136,8 +136,11 @@ def playwright():
 def _launch(kind):
     from playwright.sync_api import Error
 
+    # (the before-and-after pictures: text drawn the same way every time, so only what changed on the page differs)
+    steady = ["--disable-lcd-text", "--font-render-hinting=none", "--disable-font-subpixel-positioning",
+              "--force-color-profile=srgb"] if os.getenv("VISUAL_OUT") and kind.name == "chromium" else []
     try:
-        return kind.launch()
+        return kind.launch(args=steady)
     except Error:
         if os.getenv("CI"):
             raise
