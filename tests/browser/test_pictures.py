@@ -22,7 +22,7 @@ SERVER_ENV = {"DDB_BRIDGE": "1"}  # (as askdnd.ai runs: the bridge's parts of ea
 OUT = Path(os.environ.get("VISUAL_OUT", "private/visual/out"))
 WIDTHS = {"laptop": 1280, "phone": 375}  # (designed for a laptop first; a phone must hold together too)
 # Whatever differs between two runs by itself: times and "ago", the live pill, Table rolls' newest moments
-MASK = "time, .live-ago, .sb-time, .cond-time, .readied-when, .rider-when, [data-at], [data-clock]"  # (Table rolls' list itself is compared)
+MASK = "time, .live-ago, .sb-time, .cond-time, .readied-when, .rider-when, .hist-head .note, [data-at], [data-clock]"  # (Table rolls' list itself is compared)
 STILL = "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }"
 
 
