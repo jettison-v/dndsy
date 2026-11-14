@@ -71,7 +71,7 @@ def difference(a: Path, b: Path, out: Path) -> tuple[int, int]:
     strict = over(gap(before, after))
     near = gap(before, after)
     for dx, dy in ((-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)):
-        near = ImageChops.darker(near, gap(ImageChops.offset(before, dx, dy), after))
+        near = ImageChops.darker(near, gap(_shifted(before, dx, dy), after))
     real = over(near)
     changed, smoothing = real.histogram()[255], strict.histogram()[255]
     if changed or smoothing > CHANGED:
@@ -79,6 +79,13 @@ def difference(a: Path, b: Path, out: Path) -> tuple[int, int]:
         faded.paste(Image.new("RGB", (w, h), (220, 30, 30)), mask=real if changed > CHANGED else strict)
         faded.save(out)
     return changed, smoothing
+
+
+def _shifted(im: Image.Image, dx: int, dy: int) -> Image.Image:
+    """The picture moved by a pixel, its uncovered edge left as it was (never wrapped round from the other side)."""
+    out = im.copy()
+    out.paste(im, (dx, dy))
+    return out
 
 
 def _largest(d: Image.Image) -> Image.Image:
@@ -108,7 +115,7 @@ def report(before: Path, after: Path) -> Path:
         if pixels > CHANGED:
             rows.append((n, f"{pixels:,} pixels changed", diffs / n))
         elif strict > CHANGED:  # (listed apart, never as a change: text drawn a hair over)
-            smooth.append((n, f"text smoothing only ({strict:,} pixels a hair over)", diffs / n))
+            smooth.append((n, f"text smoothing or a one-pixel shift only ({strict:,} pixels)", diffs / n))
         else:
             same += 1
             (diffs / n).unlink(missing_ok=True)
@@ -124,7 +131,7 @@ def report(before: Path, after: Path) -> Path:
     page.write_text(f"""<!doctype html><meta charset=utf-8><title>Before and after</title>
 <style>body{{font:14px system-ui;margin:16px;background:#f6f4ef}} .row{{display:flex;gap:12px;align-items:flex-start}}
 figure{{margin:0;flex:1;min-width:0}} img{{width:100%;border:1px solid #ccc;background:#fff}} h2{{font-size:15px;margin:24px 0 4px}}</style>
-<h1>Before and after</h1><p>{len(rows)} of {len(names)} pictures changed; {same} the same{f"; {len(smooth)} differ only by text smoothing (listed last)" if smooth else ""}.</p>{body or '<p>Nothing changed.</p>'}""")
+<h1>Before and after</h1><p>{len(rows)} of {len(names)} pictures changed; {same} the same{f"; {len(smooth)} differ only by text smoothing or a one-pixel shift (listed last, look at them too)" if smooth else ""}.</p>{body or '<p>Nothing changed.</p>'}""")
     print(f"\n{len(rows)} of {len(names)} pictures changed, {same} the same, {len(smooth)} only text smoothing. Report: {page}")
     for n, what, _ in rows + smooth:
         print(f"  {n}: {what}")

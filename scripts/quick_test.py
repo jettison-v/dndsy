@@ -7,12 +7,14 @@
 The record (private/test-map.json, on this computer only) is made by running the server suite once with coverage noting
 which test ran each line; a changed file in app/ then runs exactly the tests that ran it. Import chains can't narrow it
 here (everything uses the models, which use measuring), so the record is the only precise way. A changed test runs
-itself; a changed template or stylesheet runs the layout checks and the tests that name it; shared test setup or the
+itself; a changed template, stylesheet or app.js runs the layout checks, the links and the tests that name it (not the
+browser flows: GitHub runs those); shared test setup or the
 project's settings run everything. Seconds instead of the whole suite's minutes while you work. It is not the check:
 GitHub runs everything on every push, and nothing merges until that is green.
 """
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -23,7 +25,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TESTS = ROOT / "tests"
 MAP = ROOT / "private" / "test-map.json"
 OLD = 3 * 86400  # (a record older than three days is made again first: new tests, moved code)
-LOOKS = ["tests/browser/test_layout.py"]  # (a template's or a stylesheet's change: what every page looks like)
+LOOKS = ["tests/browser/test_layout.py", "tests/test_links.py"]  # (a template's or a stylesheet's change: every page's look and links)
 EVERYTHING = ("conftest.py", "tests/table_setup.py", "pyproject.toml", "uv.lock")
 
 
@@ -31,7 +33,7 @@ def changed() -> list[str]:
     git = lambda *a: subprocess.run(["git", *a], cwd=ROOT, capture_output=True, text=True, check=True).stdout.split()
     files = git("diff", "--name-only", "origin/main...HEAD") + git("diff", "--name-only", "HEAD")
     files += git("ls-files", "--others", "--exclude-standard")
-    return sorted({f for f in files if (ROOT / f).exists()})
+    return sorted(set(files))  # (a deleted file too: the tests that ran it should still run)
 
 
 def make_map() -> None:
@@ -40,9 +42,12 @@ def make_map() -> None:
 
     data_file = ROOT / "private" / ".coverage-map"
     data_file.parent.mkdir(exist_ok=True)
-    env = {**__import__("os").environ, "COVERAGE_FILE": str(data_file)}
-    subprocess.run(["uv", "run", "pytest", "-q", "-n", "auto", "--ignore=tests/browser", "-p", "no:randomly",
-                    "--cov=app", "--cov-context=test", "--cov-report="], cwd=ROOT, env=env, check=False)
+    env = {**os.environ, "COVERAGE_FILE": str(data_file)}
+    data_file.unlink(missing_ok=True)
+    run = subprocess.run(["uv", "run", "pytest", "-q", "-n", "auto", "--ignore=tests/browser", "-p", "no:randomly",
+                          "--cov=app", "--cov-context=test", "--cov-report="], cwd=ROOT, env=env, check=False)
+    if run.returncode != 0 or not data_file.exists():  # (a run that failed partway would leave a record trusted for days)
+        sys.exit("The server suite didn't pass, so no record was made: fix it, or run the whole suite.")
     data = CoverageData(str(data_file))
     data.read()
     out: dict[str, list[str]] = {}
@@ -62,7 +67,8 @@ def tests_for(files: list[str], record: dict[str, list[str]]) -> dict[str, list[
     for f in files:
         path = Path(f)
         if f.startswith("tests/") and path.name.startswith("test_") and path.suffix == ".py":
-            add(f, f)
+            if (ROOT / f).exists():
+                add(f, f)
         elif f.startswith("app/") and path.suffix == ".py":
             for test in record.get(f, []):
                 add(test, f)
