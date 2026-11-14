@@ -79,3 +79,10 @@ def test_the_marks_reach_every_spell_screens_data():
     assert any(e["name"] == "Find Familiar" and e["need"] for e in spellbook.entries(cole))
     rows = {o["name"]: o for o in character_views.options(big_c) if o.get("kind") == "spell"}
     assert rows["Greater Restoration"]["need"]["kind"] == "missing"
+
+
+def test_a_magic_item_is_never_the_component():
+    """The review (Nov 14): diamond dust isn't a Dust of Disappearance, whatever it's worth."""
+    sheet = {"inventory": [{"key": "item:7", "name": "Dust of Disappearance", "cost": 300, "count": 1, "magic": True}]}
+    need = components.need({"components": ["M"], "material": "diamond dust worth at least 100 gp, which the spell consumes"}, sheet)
+    assert need["kind"] == "missing" and "Disappearance" not in need["says"]

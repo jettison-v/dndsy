@@ -21,8 +21,7 @@ RULES = ("table", "components")
 
 WORTH = re.compile(r"worth\s+(?:at\s+least\s+)?([\d,]+)\s*\+?\s*(gp|sp|cp)\b", re.I)
 CONSUMED = re.compile(r"\bconsume", re.I)
-FOCUS_WORDS = ("component pouch", "focus", "holy symbol", "totem", "sprig of mistletoe", "yew wand", "wooden staff",
-               "amulet", "emblem", "reliquary", "crystal", "orb", "rod", "staff", "wand")
+FOCUS_WORDS = ("holy symbol", "totem", "sprig of mistletoe", "yew wand", "wooden staff")  # (and a Component Pouch, a "focus", a rod, staff or wand)
 SKIP = {"a", "an", "the", "of", "and", "or", "other", "worth", "least", "which", "spell", "consumes", "some", "piece",
         "bit", "specially", "marked", "burning", "small", "tiny", "each", "with", "that"}
 COIN = {"gp": 1.0, "sp": 0.1, "cp": 0.01}
@@ -48,14 +47,15 @@ def covered(sheet: dict) -> str:
         text = f"{i.get('name') or ''} {i.get('type') or ''}".lower()
         if "component pouch" in text or "focus" in text or (i.get("type") or "").lower() in ("rod", "staff", "wand"):
             return i.get("name") or ""
-        if any(w in text for w in FOCUS_WORDS[2:7]):
+        if any(w in text for w in FOCUS_WORDS):
             return i.get("name") or ""
     return ""
 
 
 def carried(sheet: dict, words: set[str]) -> list[dict]:
-    """The items whose names share a significant word with the component."""
-    return [i for i in sheet.get("inventory") or [] if words & _words(i.get("name") or "")]
+    """The items whose names share a significant word with the component; never a magic item (diamond dust isn't a Dust
+    of Disappearance)."""
+    return [i for i in sheet.get("inventory") or [] if not i.get("magic") and words & _words(i.get("name") or "")]
 
 
 def need(spell: dict, sheet: dict, rules: dict | None = None) -> dict | None:
