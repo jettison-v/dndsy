@@ -158,14 +158,31 @@ def test_resources_shorten_only_when_they_would_wrap(people, server):
       document.addEventListener('askdnd:swapped', () => {{ set(); document.body.dispatchEvent(new CustomEvent('htmx:afterSettle')); }});  // (a fresh copy: set again, app.js refits)
       set();
     }}""")
-    page.set_viewport_size({"width": 1270, "height": 800})
-    page.wait_for_function(f"!({short})")
-    page.evaluate("window.resExtras = 12; window.resSet()")
-    page.set_viewport_size({"width": 1280, "height": 800})
-    page.wait_for_function(short)
+    # (what the row measured, said when a step fails: on GitHub's machines it once never shortened, Nov 13)
+    measured = f"""() => {{ const r = document.querySelector('{row}'), i = r && r.querySelector('.res-insp');
+      return r && {{ short: r.classList.contains('short'), height: r.offsetHeight, line: i && i.offsetHeight, width: r.offsetWidth,
+        extras: r.querySelectorAll('.res.extra').length, items: r.children.length, viewport: innerWidth }}; }}"""
+
+    def until(expression):
+        try:
+            page.wait_for_function(expression)
+        except Exception as e:
+            raise AssertionError(f"{expression}: the row measured {page.evaluate(measured)}") from e
+
+    # New contents refit as the page does after any change (htmx:afterSettle, a fresh copy)
+    refit = "document.body.dispatchEvent(new CustomEvent('htmx:afterSettle'))"
+    page.evaluate(f"window.resExtras = 0; window.resSet(); {refit}")
+    until(f"!({short})")
+    page.evaluate(f"window.resExtras = 12; window.resSet(); {refit}")
+    until(short)
+    # A change of width refits on its own (the row's ResizeObserver): back to whole names once they fit again.
+    # (1280 to 1000: below 1241 Table rolls opens over the page, so the row's own width changes; 1270 to 1280 left it
+    # the same, 892px, and only passed when something else happened to refit it, Nov 13)
+    width = page.evaluate(f"document.querySelector('{row}').offsetWidth")
     page.evaluate("window.resExtras = 0; window.resSet()")
-    page.set_viewport_size({"width": 1270, "height": 800})
-    page.wait_for_function(f"!({short})")
+    page.set_viewport_size({"width": 1000, "height": 800})
+    page.wait_for_function(f"document.querySelector('{row}').offsetWidth !== {width}")
+    until(f"!({short})")
 
 
 def test_tap_targets_on_a_phone(people, server):
