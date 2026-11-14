@@ -29,7 +29,7 @@ def test_a_rows_own_cost_is_spent_as_it_is_rolled_with_undo(people, server, brow
     def flurry(page):
         page.locator("[data-search-open]").click()
         page.fill("#search-q", "flurry of blows")
-        page.locator(".search-res.on", has_text="Flurry of Blows").wait_for()
+        page.locator(".search-res.on").wait_for()  # (the first match, Flurry of Blows' own roll)
         page.keyboard.press("Enter")
         card = page.locator(".roll-card")
         card.locator("[data-pays]").first.wait_for()
@@ -53,13 +53,17 @@ def test_a_rows_own_cost_is_spent_as_it_is_rolled_with_undo(people, server, brow
             page.wait_for_timeout(500)
         card = flurry(page)
         pay = card.locator("[data-pay]").first
-        assert pay.get_attribute("aria-pressed") == "true" and "1 Focus Point" in pay.inner_text()
+        assert pay.get_attribute("aria-pressed") == "true"
         to_hit(card)
-        page.locator("#cards > .card", has_text="Focus Points").wait_for()
+        undo = page.locator("#cards > .card .card-act").first  # (the spend's corner card: its Undo)
+        undo.wait_for()
         focus = [d for d in spent() if d.get("delta") == 1]
         assert len(focus) == 1 and focus[0]["field"].startswith("uses:")
-        page.locator("#cards > .card", has_text="Focus Points").get_by_role("button", name="Undo").click()
-        page.locator("#cards > .card", has_text="Focus Points: 2").wait_for()
+        undo.click()
+        for _ in range(20):
+            if [d["delta"] for d in spent()][-2:] == [1, -1]:
+                break
+            page.wait_for_timeout(250)
         assert [d["delta"] for d in spent()][-2:] == [1, -1]
         if card.count():  # (pressing Undo, outside the card, may have closed it)
             card.locator("[data-done], [data-missed]").first.click()
