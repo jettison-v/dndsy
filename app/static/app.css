@@ -1841,7 +1841,7 @@ body.at-table { padding-left: var(--rolls-w, 0); }
    over the page beside it. Narrower than 1241px it opens over the page instead, below the bar. */
 @media (min-width: 1241px) {
   body.at-table.rolls-open .rolls-side { top: 0; }
-  body.at-table.rolls-open .rs-head { min-height: 62px; padding-top: 0; padding-bottom: 0; border-bottom: 1px solid var(--line); }
+  body.at-table.rolls-open .rs-head { min-height: 62px; padding-top: 0; padding-bottom: 1px; border-bottom: 1px solid var(--line); }  /* (1px + 1px: its title, Roll and « stay where the red line left them) */
 }
 .rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; color: var(--amber); }
 .rs-grip { display: none; }
