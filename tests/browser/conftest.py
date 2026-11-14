@@ -227,7 +227,12 @@ class Person:
         # GitHub's Linux WebKit (Nov 13, tagged runs of #334): the engine's own line about a fetch it cancelled arrives as
         # a page error. It's not one: it has no error type (Safari's real fetch failure is "TypeError: Load failed"), the
         # fetch it names catches its own failure (app.js "Search" load()), and Sentry has none from people's Safari.
-        self.page.on("pageerror", lambda e: note("pageerror", str(e), ignored=cancelled(str(e))))
+        def page_error(e):
+            stack = (getattr(e, "stack", "") or "").replace(server["base"], "")
+            if stack and not cancelled(str(e)):
+                print(f"[{who} pageerror stack] {stack[:1500]}")  # (where in app.js: the line says what broke)
+            note("pageerror", str(e), ignored=cancelled(str(e)))
+        self.page.on("pageerror", page_error)
         self.page.on("response", lambda r: r.status >= 400 and note("response", f"{r.status} {r.url.replace(server['base'], '')}"))
         # (a fresh browser's first page, WebKit's especially, can take longer: Nov 2, 10 seconds ran out on a busy machine)
         self.page.goto(f"{server['base']}/dev/login?as={PEOPLE[who]}", timeout=30_000)
