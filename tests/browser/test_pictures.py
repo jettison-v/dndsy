@@ -22,7 +22,7 @@ SERVER_ENV = {"DDB_BRIDGE": "1"}  # (as askdnd.ai runs: the bridge's parts of ea
 OUT = Path(os.environ.get("VISUAL_OUT", "private/visual/out"))
 WIDTHS = {"laptop": 1280, "phone": 375}  # (designed for a laptop first; a phone must hold together too)
 # Whatever differs between two runs by itself: times and "ago", the live pill, Table rolls' newest moments
-MASK = "time, .live-ago, .sb-time, .cond-time, .readied-when, .rider-when, #roll-log, [data-at], [data-clock]"
+MASK = "time, .live-ago, .sb-time, .cond-time, .readied-when, .rider-when, [data-at], [data-clock]"  # (Table rolls' list itself is compared)
 STILL = "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }"
 
 
@@ -60,8 +60,9 @@ def band(person, server, browser_db):
     engine.dispose()
     was = _pieces(browser_db, server, ["sync"])
     try:
-        page.request.post(f"{server['base']}/bridge/heard/{ddb}")
-        page.request.post(f"{server['base']}/bridge/closed/{ddb}")
+        for step in ("heard", "closed"):  # (refused, the picture would quietly lose the band: say so instead)
+            answer = page.request.post(f"{server['base']}/bridge/{step}/{ddb}")
+            assert answer.ok, f"/bridge/{step}: {answer.status}"
         for width_name, width in WIDTHS.items():
             page.set_viewport_size({"width": width, "height": 800})
             person.open(f"/characters/{server['cole']}/battle")

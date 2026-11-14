@@ -23,7 +23,8 @@ from PIL import Image, ImageChops
 ROOT = Path(__file__).resolve().parent.parent
 WORK = ROOT / "private" / "visual"
 TOLERANCE = 24  # per colour channel: anti-aliasing and font smoothing differ by a little, a real change by a lot
-CHANGED = 0.0005  # share of a page's pixels that must differ before it counts as changed
+CHANGED = 40  # pixels that must differ before a page counts as changed: a few stray ones are smoothing, a recoloured
+             # 1px border or a swapped icon is more (counted, not a share: a small change on a tall page still counts)
 
 
 def run(cmd: list[str], cwd: Path, env: dict | None = None) -> None:
@@ -45,6 +46,7 @@ def base_checkout(ref: str) -> Path:
     run(["git", "fetch", "-q", "origin"], ROOT)
     if src.exists():
         subprocess.run(["git", "worktree", "remove", "--force", str(src)], cwd=ROOT)
+    run(["git", "worktree", "prune"], ROOT)  # (a folder deleted by hand stays registered until pruned)
     run(["git", "worktree", "add", "-q", "--detach", str(src), ref], ROOT)
     shutil.rmtree(src / "tests")
     shutil.copytree(ROOT / "tests", src / "tests", ignore=shutil.ignore_patterns("__pycache__"))
@@ -54,14 +56,15 @@ def base_checkout(ref: str) -> Path:
     return src
 
 
-def difference(a: Path, b: Path, out: Path) -> float:
-    """The share of pixels that differ (1.0 when the page changed size), with the change drawn in red over the after."""
+def difference(a: Path, b: Path, out: Path) -> int:
+    """How many pixels differ (a page that changed size is padded with white, so what moved counts), with the change
+    drawn in red over the after."""
     before, after = Image.open(a).convert("RGB"), Image.open(b).convert("RGB")
     w, h = max(before.width, after.width), max(before.height, after.height)
-    pad = lambda im: im if im.size == (w, h) else Image.new("RGB", (w, h), "white").paste(im) or _pasted(im, w, h)
+    pad = lambda im: im if im.size == (w, h) else _pasted(im, w, h)
     before, after = pad(before), pad(after)
     diff = ImageChops.difference(before, after).convert("L").point(lambda v: 255 if v > TOLERANCE else 0)
-    changed = diff.histogram()[255] / (w * h)
+    changed = diff.histogram()[255]
     if changed:
         faded = Image.blend(after, Image.new("RGB", (w, h), "white"), 0.6)
         faded.paste(Image.new("RGB", (w, h), (220, 30, 30)), mask=diff)
@@ -87,9 +90,9 @@ def report(before: Path, after: Path) -> Path:
         if not a.exists() or not b.exists():
             rows.append((n, "new page" if b.exists() else "page gone", None))
             continue
-        share = difference(a, b, diffs / n)
-        if share > CHANGED:
-            rows.append((n, f"{share:.2%} of the page changed", diffs / n))
+        pixels = difference(a, b, diffs / n)
+        if pixels > CHANGED:
+            rows.append((n, f"{pixels:,} pixels changed", diffs / n))
         else:
             same += 1
             (diffs / n).unlink(missing_ok=True)
