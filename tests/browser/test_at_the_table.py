@@ -96,11 +96,16 @@ def test_the_window_says_whether_a_roll_reaches_the_game_log(people, server):
     # (where it is beside its button: a card follows its button when the page moves under it, by design; on GitHub's
     # machines the page shifted a few pixels as the connection changed, Nov 13, and the card rightly went with it)
     beside = lambda: page.locator(WINDOW).bounding_box()["y"] - page.locator(save("Dex")).bounding_box()["y"]
+    where = f"""() => ({{ card: document.querySelector('{WINDOW}').getBoundingClientRect().top,
+      cardH: document.querySelector('{WINDOW}').offsetHeight, scroll: scrollY,
+      bar: document.querySelector('.topbar').offsetHeight, band: document.querySelector('.conn-band')?.offsetHeight,
+      button: [...document.querySelectorAll('[data-roll=save][data-label="Dex save"]')].find(b => b.checkVisibility())?.getBoundingClientRect().top }})"""
+    before = page.evaluate(where)
     was = beside()
     page.evaluate("until => { Object.assign(document.getElementById('live-pill').dataset, { log: 'on', logUntil: until }); document.dispatchEvent(new Event('askdnd:pill')); }", str(time.time() + 60))
     expect(note).to_contain_text("Also goes to D&D Beyond's Game Log")
     expect(note).not_to_have_class(re.compile("rw-log-warn"))
-    assert abs(beside() - was) < 2  # (less than a pixel or two of rounding)
+    assert abs(beside() - was) < 2, f"before {before}, after {page.evaluate(where)}"  # (less than a pixel or two of rounding)
     to(page, "self")
     expect(note).to_be_hidden()  # it isn't going anywhere
     to(page, "table")
