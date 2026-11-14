@@ -645,7 +645,10 @@
      ],
      "reduces": "1d10+{mod:dexterity}+{level:Monk}"
     }
-   ]
+   ],
+   "use": {
+    "optional": true
+   }
   },
   {
    "kind": "feature",
@@ -3306,6 +3309,51 @@
      "success": "half"
     }
    ]
+  },
+  {
+   "kind": "feature",
+   "name": "Lay On Hands",
+   "class": "Paladin",
+   "level": 1,
+   "why": "Paladin: a pool of healing, 5 × your Paladin level, back after a Long Rest; a Bonus Action to touch a creature",
+   "use": {
+    "for": "one",
+    "ways": [
+     {
+      "key": "heal",
+      "name": "Heal",
+      "heal": "chosen",
+      "row": "Heal"
+     },
+     {
+      "key": "poison",
+      "name": "End Poisoned",
+      "spend": 5,
+      "ends": "Poisoned",
+      "row": "Purify Poison"
+     }
+    ]
+   }
+  },
+  {
+   "kind": "feature",
+   "name": "Patient Defense",
+   "class": "Monk",
+   "level": 2,
+   "why": "Monk: Disengage as a Bonus Action, free; 1 Focus Point to Disengage and Dodge",
+   "use": {
+    "optional": true
+   }
+  },
+  {
+   "kind": "feature",
+   "name": "Step of the Wind",
+   "class": "Monk",
+   "level": 2,
+   "why": "Monk: Dash as a Bonus Action, free; 1 Focus Point to Disengage and Dash, jump distance doubled",
+   "use": {
+    "optional": true
+   }
   }
  ]
 }

@@ -62,7 +62,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // the newest at the bottom, three at most (one on a phone). Its kind gives its icon, colour and how long it stays:
   // done 4 seconds, for your information and someone's roll 6, refused 10, an error until closed; one with a button
   // (Undo, Keep going) 20. Hovering a card keeps it. The server says which kind (web.notice: its text alone is "done").
-  const CARD = { ok: ['✓', 4000], info: ['i', 6000], roll: ['', 6000], warn: ['!', 10000], error: ['✕', 0] };
+  const CARD = { ok: ['✓', 4000], info: ['i', 6000], roll: ['', 6000], warn: ['!', 10000], error: ['✕', 0], heal: ['+', 0] };
   function card(content, { kind = 'ok', action, actions, icon, stay } = {}) {
     const box = $('#cards');
     if (!box || !content) return null;
@@ -100,7 +100,11 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     start();
     box.append(el);
     const most = matchMedia('(max-width: 900px)').matches ? 1 : 3;
-    while (box.children.length > most) box.firstElementChild.remove();
+    while (box.children.length > most) {  // (the oldest goes first; a healing card waiting for an answer last, and it comes back)
+      const old = [...box.children].find(c => c !== el && !c.classList.contains('k-heal')) || box.firstElementChild;
+      if (old.classList.contains('k-heal') && window.askdndHeals) setTimeout(window.askdndHeals, (wait || 6000) + 400);
+      old.remove();
+    }
     if (waitingFollow && Date.now() - waitingFollow.at < 1500) followChange(el, waitingFollow.d);  // (its change came first)
     waitingFollow = null;
     lastCard = { el, at: Date.now() };
@@ -162,6 +166,42 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   }
   window.askdndToast = toast;
   window.askdndCard = card;
+  // Healing for you (app/heals.py; Brett chose A on Healing and Costs, Nov 14): healing someone gave a character you
+  // play waits as a green corner card that stays until you answer, on every askdnd page you have open. Apply heals
+  // through the hit points window's own route; Not now hides it until your next page. Gone everywhere once applied or
+  // undone (the live connection's "rolls").
+  (() => {
+    if (!$('#cards') || !document.querySelector('[data-door]')) return;  // (signed in: the menu bar's doors)
+    const shown = new Map(), later = new Set();
+    const line = (tag, text) => Object.assign(document.createElement(tag), { textContent: text });
+    function apply(h) {
+      fetch('/characters/' + h.for + '/hp/apply', { method: 'POST', headers: { 'X-Requested-With': 'fetch' },
+                                                     body: new URLSearchParams({ mode: 'heal', amount: String(h.amount), type: '', roll: String(h.id) }) })
+        .then(r => {
+          if (!r.ok) return r.json().catch(() => ({})).then(j => { throw new Error(j.detail || "askdnd couldn't apply it"); });
+          const t = r.headers.get('HX-Trigger');  // (what the window's own Apply says: its corner card, the sheet's new copy)
+          if (t) { try { Object.entries(JSON.parse(t)).forEach(([k, v]) => document.body.dispatchEvent(new CustomEvent(k, { detail: v }))); } catch (err) { /* nothing more to say */ } }
+          shown.delete(h.id);
+        })
+        .catch(err => { toast(h.name + ': ' + err.message, null, 'warn'); shown.delete(h.id); setTimeout(check, 500); });
+    }
+    function check() {
+      fetch('/heals/waiting', { headers: { 'X-Requested-With': 'fetch' } }).then(r => (r.ok ? r.json() : { heals: [] })).then(j => {
+        const ids = new Set(j.heals.map(h => h.id));
+        shown.forEach((el, id) => { if (!ids.has(id)) { if (el._close) el._close(); shown.delete(id); } });
+        j.heals.forEach(h => {
+          if (later.has(h.id) || (shown.get(h.id) && shown.get(h.id).isConnected)) return;
+          const text = document.createElement('span');
+          text.append(line('b', h.from + ' heals ' + h.name + ' ' + h.amount), document.createElement('br'), line('small', h.label + (h.hp ? ' · ' + h.hp : '')));
+          const el = card(text, { kind: 'heal', stay: true, actions: [{ label: 'Apply ' + h.amount, run: () => apply(h) }, { label: 'Not now', run: () => later.add(h.id) }] });
+          if (el) { el.dataset.heal = h.id; shown.set(h.id, el); }
+        });
+      }).catch(() => { /* the next page or roll asks again */ });
+    }
+    window.askdndHeals = check;
+    check();
+    document.addEventListener('askdnd:live', e => { if (e.detail.type === 'rolls' || e.detail.type === 'resync') check(); });
+  })();
   // A change's corner card: the one just shown, or the next one (web.changed sends the change before its message)
   window.askdndFollow = d => {
     if (lastCard && lastCard.el.isConnected && Date.now() - lastCard.at < 1500) followChange(lastCard.el, d);
@@ -169,7 +209,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   };
 
   // Server can trigger a toast with the HX-Trigger header: {"toast": "Saved"}
-  document.body.addEventListener('toast', e => toast(e.detail && ('value' in e.detail ? e.detail.value : e.detail)));
+  document.body.addEventListener('toast', e => toast(e.detail && typeof e.detail === 'object' && 'value' in e.detail ? e.detail.value : e.detail));  // (htmx hands a plain message on as {value}; a fetch may hand on the message itself)
 
   document.addEventListener('click', e => {
     // Menus (campaign, Party, Live, Manage, account, phone More). A click elsewhere closes
@@ -1951,7 +1991,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const level0 = !cast ? 0 : spec.cast || (spec.slot >= cast.base ? spec.slot : ((ctx.slots || []).find(l => l >= cast.base) || cast.base));
     const st = { step: from ? (from.action === 'bonus' ? 'pick' : 'rolling') : attack ? (choice ? 'choose' : 'attack') : save ? 'save' : single ? 'single' : 'attack', forText: '',
                  mode: spec.adv ? 'adv' : 'normal', pre: {}, added: [], on: {}, adding: false, visOpen: false, entry: from ? from.entry : null,
-                 dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {}, drama: false };
+                 dmg: null, busy: false, hidden: !!spec.endsHidden, level: level0, ev: 0, ride: {}, way: {}, drama: false,
+                 pay: (plan.pay || []).map(p => !p.optional && (p.left == null || p.left >= p.n)), paid: false };  // (a cost the rules make a choice starts unpressed)
     // (on by themselves while they last, Radiant Strikes; once a turn, or only sometimes (`pressed: false`, Rage Damage): yours to tick)
     mods.forEach(m => { if ((m.when === 'on_hit' || m.when === 'on_heal') && m.adds) st.on[m.name] = m.pressed != null ? !!m.pressed : !m.once && !(m.slot && spec.castFree); });  // (a slot's bonus is off when cast without one)
     mods.forEach(m => { if (m.when === 'before' && m.adds && m.pressed) st.pre[m.name] = true; });  // (Aura of Protection: always, unless the DM says)
@@ -2055,12 +2096,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     function draw() {
       let h = head();
       if (st.step === 'choose') {
-        h += '<p class="rcard-q">' + esc(choice.ask) + '</p><div class="rcard-choices">' + choice.options.map(o =>
+        h += payLine() + '<p class="rcard-q">' + esc(choice.ask) + '</p><div class="rcard-choices">' + choice.options.map(o =>
           '<button type="button" class="rcard-choice" data-choice="' + esc(o.key) + '"><b>' + esc(o.name) + '</b><small>' + esc(o.says) + '</small></button>').join('') + '</div>';
       } else if (st.step === 'single') {
         h += castAt();
         if (plan.roll === 'dice') h += '<div class="rw-row"><span class="rw-label">For</span><input type="text" class="rw-text" data-card-for placeholder="What the DM asked for (optional)" maxlength="60" value="' + esc(st.forText) + '"></div>';
-        h += notes();
+        h += notes() + payLine();
         if (eff() && (eff().kind === 'damage' || eff().kind === 'heal')) h += dmgPills();
         h += '<div class="rcard-group"><span class="rcard-lbl">Adds to the roll</span><div class="rcard-pills">' + added() + plus('pre') + '</div>';
         h += '<button type="button" class="btn primary rcard-go" data-roll-single' + (cast && !now() ? ' disabled' : '') + '>' + ({ heal: 'Roll healing', temp: 'Roll Temporary Hit Points', damage: 'Roll damage' }[eff() ? eff().kind : plan.roll] || 'Roll')
@@ -2083,7 +2124,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         // Just you or DM only, it goes to the table, said on the card's Who sees it line like any choice there.
         const drama = spec.shared && play !== 'death'
           ? '<button type="button" class="rcard-drama" data-drama aria-pressed="' + st.drama + '" aria-label="Make it dramatic" title="Make it dramatic: the whole table watches this roll in slow motion">🎬</button>' : '';
-        h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + drama + '</div>' + notes();
+        h += '<div class="rw-row rw-mode">' + seg('Mode', [['normal', 'Normal'], ['adv', 'Advantage'], ['dis', 'Disadvantage']], st.mode) + drama + '</div>' + notes() + payLine();
         const pre = mods.filter(m => m.when === 'before' && m.adds);
         h += '<div class="rcard-group"><span class="rcard-lbl">Adds to the roll</span><div class="rcard-pills">' + pre.map(m => pill('data-pre="' + esc(m.name) + '"', st.pre[m.name], m.name, m.adds)).join('')
           + added() + plus('pre') + '</div>';
@@ -2186,7 +2227,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         if (!way) return;
         url = '/characters/' + cid + '/cast?key=' + encodeURIComponent(a.cast.key); data = { way: way.way };
       } else if (a.spend && a.spend.field) {
-        url = '/characters/' + cid + '/count?field=' + encodeURIComponent(a.spend.field); data = { to: 'use' };
+        return spendCount(cid, a.spend.field, 1, r.name);
       } else return;
       posted(url, data).then(j => {
         toast(j.text, j.undo ? { label: 'Undo', run: () => posted(j.undoUrl, j.undo).then(u => { toast(u.text); itemChanged(u); }).catch(err => toast(err.message, null, 'warn')) } : null);
@@ -2239,13 +2280,29 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     }
     // What's sent for each roll is what the plan says, at the level and effect chosen (tests/browser/test_every_roll.py)
     const dice = () => (now() ? { parts: now().parts, count: now().count, once: !!eff().once, each: eff().each || '' } : {});
+    // What making this roll spends (the action widgets, roadmap 8; character_views.pays): Flurry of Blows' Focus Point,
+    // Second Wind's use. A pill each, on while there's enough left; spent once the roll is made, through Use one's own
+    // count (app/resources.py), so the corner card's Undo is that window's. Marked by hand where askdnd can't spend it.
+    function payLine() {
+      const pay = spec.shared ? plan.pay || [] : [];
+      if (!pay.length) return '';
+      const by = ctx.spends === 'play' ? '' : '<span class="rcard-rider-by-hand">' + (ctx.spends === 'unreached' ? "The D&amp;D Beyond sheet can't be reached: mark it there." : 'Mark it on D&amp;D Beyond.') + '</span>';
+      return '<div class="rcard-group" data-pays><span class="rcard-lbl">Spends</span><div class="rcard-pills">' + pay.map((p, i) => p.left != null && p.left < p.n
+        ? '<span class="chip rcard-pill" aria-disabled="true">' + esc(p.label) + ' <small>none left</small></span>'
+        : pill('data-pay="' + i + '"', st.pay[i], p.label, p.left != null ? p.left + ' left' : '')).join('') + '</div>' + by + '</div>';
+    }
+    function payCost() {
+      if (st.paid || !spec.shared || ctx.spends !== 'play' || !spec.cid) return;
+      st.paid = true;
+      (plan.pay || []).forEach((p, i) => { if (st.pay[i]) spendCount(spec.cid, p.field, p.n, plan.name); });
+    }
     function rollHit() {
       const extras = [...mods.filter(m => m.when === 'before' && st.pre[m.name] && m.adds).map(m => m.name + ':+' + m.adds.replace(/^\+/, '')), ...st.added];
       st.step = 'rolling'; st.adding = false; draw();
       const d = dice();
       go({ kind: attack ? 'attack' : plan.roll, mode: st.mode, extras, endsHidden: st.hidden && attack, level: cast ? st.level : 0, riders: (plan.riders || []).map(r => r.name), math: sentMath(), dramatic: st.drama,
            ...(attack && d.parts ? { dmgParts: d.parts, count: d.count || 1, each: d.each } : {}) })
-        .then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
+        .then(e => { st.entry = e; st.step = 'result'; if (w.isConnected) draw(); turnUsed(anchor); payCost(); }, () => { st.step = 'attack'; if (w.isConnected) draw(); });
     }
     function rollOne(next) {  // single and save: one roll of the effect at the level chosen
       const d = dice(), was = st.step;
@@ -2253,7 +2310,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       const label = plan.roll === 'dice' && !cast ? (st.forText.trim() || 'Dice') : spec.label + (d.parts && effs.length > 1 ? ' · ' + eff().name : '');
       const adds = eff() && (eff().kind === 'damage' || eff().kind === 'heal') ? dmgExtras() : [];
       return go({ kind: eff() ? eff().kind : plan.roll, label, mode: 'normal', extras: [...(single ? st.added.slice() : []), ...adds], level: cast ? st.level : 0, self: !!plan.self, math: sentMath(), ...d })
-        .then(e => { st.entry = e; st.step = next; if (w.isConnected) draw(); if (cast || save) turnUsed(anchor); }, () => { st.step = was; if (w.isConnected) draw(); });
+        .then(e => { st.entry = e; st.step = next; if (w.isConnected) draw(); if (cast || save) turnUsed(anchor); payCost(); }, () => { st.step = was; if (w.isConnected) draw(); });
     }
     function followUp(action, o) {
       const was = st.step;
@@ -2282,7 +2339,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         if (b.dataset.choice === 'damage') { st.step = 'attack'; return draw(); }
         st.step = 'rolling'; draw();
         const name = (choice.options.find(x => x.key === b.dataset.choice) || {}).name;
-        return go({ kind: 'dc', label: name, mod: '', dmg: '', mode: 'normal', extras: [] }).then(e => { st.entry = e; st.step = 'done'; if (w.isConnected) draw(); }, () => { st.step = 'choose'; draw(); });
+        return go({ kind: 'dc', label: name, mod: '', dmg: '', mode: 'normal', extras: [] }).then(e => { st.entry = e; st.step = 'done'; if (w.isConnected) draw(); payCost(); }, () => { st.step = 'choose'; draw(); });
       }
       if (b.dataset.mode) { st.mode = b.dataset.mode; return draw(); }
       if (b.hasAttribute('data-drama')) { st.drama = !st.drama; if (st.drama && to !== 'table') { to = 'table'; store.set(TO, to); } return draw(); }
@@ -2291,6 +2348,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       if (b.dataset.cardEv != null) { st.ev = +b.dataset.cardEv; return draw(); }
       if (b.dataset.to) { to = b.dataset.to; store.set(TO, to); st.visOpen = false; return draw(); }
       if (b.dataset.pre) { st.pre[b.dataset.pre] = !st.pre[b.dataset.pre]; return draw(); }
+      if (b.dataset.pay != null) { st.pay[+b.dataset.pay] = !st.pay[+b.dataset.pay]; return draw(); }
       if (b.dataset.on) { st.on[b.dataset.on] = !st.on[b.dataset.on]; return draw(); }
       if (b.dataset.unadd != null) { st.added.splice(+b.dataset.unadd, 1); return draw(); }
       if (b.hasAttribute('data-adding')) { st.adding = !st.adding; return draw(); }
@@ -2989,6 +3047,28 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver }));
     document.body.dispatchEvent(new CustomEvent('characterChanged'));
   }
+  // A count spent from the roll card (a rider's Focus Point, a row's own cost): Use one's own change (app/resources.py), its
+  // corner card with that window's Undo
+  function spendCount(cid, field, n, name) {
+    return posted('/characters/' + cid + '/count?field=' + encodeURIComponent(field), { to: 'use', n: String(n || 1) }).then(j => {
+      toast(j.text, j.undo ? { label: 'Undo', run: () => posted(j.undoUrl, j.undo).then(u => { toast(u.text); itemChanged(u); }).catch(err => toast(err.message, null, 'warn')) } : null);
+      itemChanged(j);
+    }).catch(err => toast(name + ': ' + err.message, null, 'warn'));
+  }
+  // A feature's Use window (app/feature_use.py): How many starts at what the one it's for is missing, never more than
+  // what's left; a way with its own cost (End Poisoned, 5) has no How many; the button names the way
+  document.addEventListener('change', e => {
+    const w = e.target.closest && e.target.closest('.roll-win');
+    if (!w || !w.querySelector('[data-feature-use], [data-feature-n], [data-feature-ways]') || !e.target.matches('input[type=radio]')) return;
+    const n = w.querySelector('[data-feature-n]'), way = w.querySelector('input[name=way]:checked'), who = w.querySelector('input[name=target]:checked');
+    const go = w.querySelector('[data-use-go]'), needs = w.querySelector('[data-feature-needs]');
+    if (n) {
+      n.closest('.rw-row').hidden = !!(way && way.dataset.spend);
+      if (who && e.target === who && +who.dataset.needs) n.value = Math.max(1, Math.min(+n.max, +who.dataset.needs));
+    }
+    if (needs && who) { needs.textContent = +who.dataset.needs ? who.dataset.name + ' is missing ' + who.dataset.needs : who.dataset.name + ' is at full Hit Points'; }
+    if (go && way) go.textContent = way.dataset.label;
+  });
   // A Necklace of Prayer Beads' window: its button says "and roll" only for a bead whose spell rolls (Cure Wounds, Shining Smite)
   document.addEventListener('change', e => {
     if (!e.target.matches || !e.target.matches('[data-use-bead]')) return;

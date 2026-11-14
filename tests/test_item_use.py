@@ -134,10 +134,17 @@ def test_taking_a_heal_back_leaves_temporary_hit_points_alone(player, db, sheet)
 def test_give_spends_yours_and_leaves_apply_to_on_the_roll(player, db, sheet):
     cole, pid = hurt(db, sheet)
     r = player.post(f"/characters/{cole.id}/use/{pid}", data={"to": "Trah"}).json()
-    assert r["roll"]["label"] == "Potion of Healing for Trah" and "for Trah to apply" in r["text"]
+    assert r["roll"]["label"] == "Potion of Healing for Trah" and "waiting for Trah's player to apply it" in r["text"]
+    from app import heals
+
+    given = db.scalar(select(TableRoll).where(TableRoll.kind == "heal"))
+    assert given and heals.for_of(given) == char(db, "Trah").id  # (Trah's player is asked to apply it, app/heals.py)
     end = made(db, cole)
     assert end[f"item:{pid}"] == 1 and "hp" not in end  # Cole's hit points don't move
     assert not db.scalars(select(TableRoll).where(TableRoll.kind == "applied")).all()
+    player.post(r["undoUrl"], data=r["undo"])  # (Undo: the potion back, and the healing waits for no one)
+    db.expire_all()
+    assert heals.open_heals(db, cole.campaign_id) == []
 
 
 def test_drinking_at_0_ends_unconscious_and_has_no_undo(player, db, sheet):

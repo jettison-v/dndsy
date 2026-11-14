@@ -526,13 +526,14 @@ def _reply(request: Request, db: Session, root: TableRoll, me_id: int, dm: bool,
     return JSONResponse(reply_body(request, db, root, me_id, dm, new, death))
 
 
-def add_roll(db: Session, ch: Character, me_id: int, label: str, dice: str) -> TableRoll | None:
-    """A healing roll the whole table sees, made for another route (a potion: app/item_use.py). None: not dice."""
+def add_roll(db: Session, ch: Character, me_id: int, label: str, dice: str, for_id: int | None = None) -> TableRoll | None:
+    """A healing roll the whole table sees, made for another route (a potion: app/item_use.py). None: not dice.
+    `for_id`: the character it was given to, whose player is asked to apply it (app/heals.py)."""
     result = roll_formula(dice, floor=True)
     if result is None:
         return None
     row = TableRoll(campaign_id=ch.campaign_id, character_id=ch.id, user_id=me_id, label=label[:120], kind="heal", mode="normal",
-                    visibility="table", damage="", spec=None, extras=[], who="", **result)
+                    visibility="table", damage="", spec={"for": for_id} if for_id else None, extras=[], who="", **result)
     db.add(row)
     db.flush()
     realtime.announce(db, ch.campaign_id, "rolls", **_live(db, row))
