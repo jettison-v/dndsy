@@ -152,6 +152,61 @@ def _books_read_fresh():
 
 
 @pytest.fixture(autouse=True)
+def _no_internet(monkeypatch):
+    """No test reaches another site (CLAUDE.md: never live services; Nov 13: test_coins passed only when D&D Beyond's
+    live item list answered). A connection to anything but this machine or the test database fails at once, saying
+    which; a test that needs another site's answer gives it a stand-in."""
+    import socket
+
+    from sqlalchemy.engine import make_url
+
+    allowed = {"localhost", "127.0.0.1", "::1", "testserver", make_url(TEST_DATABASE_URL).host or "localhost"}
+    real = socket.getaddrinfo
+
+    def only_here(host, *a, **k):
+        if host not in allowed and not str(host).startswith("127."):
+            raise OSError(f"tests don't reach other sites: {host} (give the test a stand-in)")
+        return real(host, *a, **k)
+
+    monkeypatch.setattr(socket, "getaddrinfo", only_here)
+
+
+@pytest.fixture
+def item_catalog(monkeypatch):
+    """D&D Beyond's item list, as the item browser reads it (app/giving.py `catalog`), made up in its shape
+    (tests/fixtures/ddb/items.json: Rope 415, Torch 437, a Longsword from the Free Rules...)."""
+    import json as _json
+
+    from app import giving
+
+    items = _json.loads((Path(__file__).parent / "fixtures" / "ddb" / "items.json").read_text())["data"]
+    monkeypatch.setattr(giving, "_catalog", {"at": 0.0, "tried": 0.0, "items": []})
+    monkeypatch.setattr(giving.ddb, "_get_json", lambda url, timeout: {"data": items})
+    return items
+
+
+def context_values():
+    """Every value the app keeps per request in a ContextVar, with its default (tests/test_isolation.py checks the list
+    is complete). One process runs many tests, and a value one test set would otherwise reach the next."""
+    from app import access, history, timing
+
+    return [(access.viewer, ""), (access.path_slug, None), (history._actor, ""), (history._source, ("edit", None)), (timing._now, None)]
+
+
+@pytest.fixture(autouse=True)
+def _fresh_context():
+    """Each test starts with every context value at its default (Nov 13, mutation testing: in another order,
+    test_history found the source an earlier test had left, and recorded its edit under it)."""
+    tokens = [(var, var.set(default)) for var, default in context_values()]
+    yield
+    for var, token in reversed(tokens):
+        try:
+            var.reset(token)
+        except ValueError:  # (set in another context meanwhile: it's set again before the next test anyway)
+            pass
+
+
+@pytest.fixture(autouse=True)
 def _access_rows(monkeypatch):
     """Access checks (app/access.py) read people from the database. Tests never see
     the local dev database: no rows unless the test uses `db`, and no caching."""

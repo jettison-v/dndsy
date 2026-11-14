@@ -43,7 +43,13 @@ and each has the checks that catch it:
    (before, after, the change in red). main against itself: 64 of 64 the same; a planted 1px border is caught on every page. Run it before merging anything people see,
    and show Brett the report's changed pages.
 8. Mutation testing on core logic (the roll plan, hit points, rules data, access): small deliberate bugs put into the
-   code, and the tests must catch each one; a bug they miss is a missing test.
+   code, and the tests must catch each one; a bug they miss is a missing test. **Started** (Nov 13): `uv run python
+   scripts/mutation.py <module>` (mutmut, by hand, never in CI). Its first run on app/access.py found four missing tests
+   (the access chart's groups and "not included", the admin's line, the live loader), now written; getting it to run
+   at all found the tests' own isolation gaps: values one test left set reaching the next (now reset before every
+   test), two tests that quietly reached D&D Beyond's live servers (now no test reaches another site), and test names
+   that couldn't be run by name (now plain). Still to do: one more test leaves a Sentry client running in another
+   order; then a clean run of access.py, and the other core modules in turn.
 
 Each lands as its own pull request, with its check on in CI the day it lands.
 

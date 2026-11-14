@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from app import roll_recipes as rr
+from tests.table_setup import plain_id
 
 BOOKS = sorted((Path(__file__).resolve().parents[1] / "app" / "data" / "rules").glob("*.json"))
 KINDS = {"spell", "feature", "feat", "item", "species", "mastery"}
@@ -31,7 +32,7 @@ def test_there_is_a_file_per_book():
     assert {f.stem for f in BOOKS} >= {"srd-5.2.1", "phb-2024", "dmg-2024", "other-books"}
 
 
-@pytest.mark.parametrize("book, e", list(entries()), ids=lambda x: x if isinstance(x, str) else x.get("name"))
+@pytest.mark.parametrize("book, e", list(entries()), ids=plain_id)
 def test_every_entry_has_a_shape_the_engine_plays(book, e):
     assert e["kind"] in KINDS and e["name"].strip() == e["name"] and e["name"]
     assert book != "other-books" or e.get("book"), "an entry from another book names its book"
