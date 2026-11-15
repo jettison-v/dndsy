@@ -102,3 +102,42 @@ def made_up(*classes, features=(), attacks=(), pb=3, mods=None) -> dict:
             "features": [{"name": f, "source": src} for f, src in features], "actions": [],
             "abilities": [{"short": k, "modifier": v} for k, v in mods.items()], "proficiency_bonus": pb,
             "attacks": list(attacks)}
+
+
+def two_campaigns(db) -> dict:
+    """Main with Cole (player@'s) and Trah (other@'s), a session and a glossary term, dm@ its DM; and Elsewhere, whose
+    DM is elsewhere@ (a DM, but not of Main). The ids of Main's rows, by the names routes give them (tests/test_refusals.py
+    asks every change of them, tests/test_reading.py every page)."""
+    from app.importer import import_bundle
+    from app.models import GameSession, GlossaryTerm
+    from tests.roles import set_role
+
+    import_bundle(db, {**BUNDLE, "sessions": [{"number": 1}]})
+    cole, trah = char(db, "Cole"), char(db, "Trah")
+    owned_by(db, cole, "player@example.com")
+    owned_by(db, trah, "other@example.com")
+    main = db.get(Campaign, cole.campaign_id)
+    term = GlossaryTerm(campaign_id=main.id, term="Womford", description="A town.", misheard_as=[])
+    db.add(term)
+    elsewhere = Campaign(slug="elsewhere", name="Elsewhere")
+    db.add(elsewhere)
+    db.flush()
+    set_role(db, "dm@example.com", "dm", "Dee", main)
+    set_role(db, "elsewhere@example.com", "dm", "Elle", elsewhere)
+    session = db.query(GameSession).filter_by(campaign_id=main.id).first()
+    db.flush()
+    return {"character_id": trah.id, "entity_id": trah.entity.id, "term_id": term.id, "session_id": session.id}
+
+
+def address(path: str, op: dict, ids: dict) -> str:
+    """A route's real address: its {ids} filled from `ids` (1 for one not given), under /c/main when it's a campaign's
+    page, with its required query parameters."""
+    import re
+
+    from app import campaign_paths
+
+    url = re.sub(r"\{(\w+)\}", lambda m: str(ids.get(m.group(1), 1)), path)
+    if campaign_paths.in_campaign(path):
+        url = f"/c/main{url}"
+    query = [f"{p['name']}=1" for p in op.get("parameters", []) if p["in"] == "query" and p.get("required")]
+    return url + ("?" + "&".join(query) if query else "")

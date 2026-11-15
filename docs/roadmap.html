@@ -207,6 +207,9 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
   <section id="done">
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
+      <div class="day"><span class="d">Nov 15</span><ul>
+        <li><b>The bug-planting check runs for real</b> (<a href="https://github.com/jettison-v/dndsy/pull/362">PR 362</a>, your "Yes, fix it"): three setup faults had kept it from testing anything; fixed. Its first real run on the rules book found a bug, Divine Fury's words missing their bonus ("+1d6" for "+1d6+3"), now fixed, and 20 new tests for what else it found (a multiclass character's levels, an upgraded feature replacing its first form, an item marked with its kind). Unnoticed bugs: 222 down to 91, the rest harmless (the cache's speed, two equal lookups).</li>
+      </ul></div>
       <div class="day"><span class="d">Nov 14</span><ul>
         <li><b>Spell components, all four parts</b> (<a href="https://github.com/jettison-v/dndsy/pull/356">PR 356</a> and <a href="https://github.com/jettison-v/dndsy/pull/357">PR 357</a>, your picks A to D): a Material component you lack, can't be sure of, or use up is marked wherever you choose a spell and said in the Cast window (Cast anyway); the DM can count only costly components, and with <b>Use up consumed components</b> on, a cast takes the component off D&amp;D Beyond with Undo. A magic item is never taken for a component.</li>
         <li><b>The DM's Workspace</b> (<a href="https://github.com/jettison-v/dndsy/pull/354">PR 354</a>, your pick B): Manage is the DM's one place, grouped by the week (After the game, The next game, The table); Needs you is a workbench with who's at the table and a tile per kind of thing you make; DM Tools' Items, Scene notes and Places and maps live under The next game; who may open each page is one named rule.</li>
