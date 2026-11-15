@@ -366,7 +366,7 @@
      "note": "The most dice at once; spend fewer as you like",
      "on": "heal",
      "parts": [
-      "{mod:charisma}d6"
+      "{mod:charisma|1}d6"
      ]
     }
    ],
@@ -567,7 +567,7 @@
      "note": "The Turn Undead save; at least 1d8",
      "on": "save",
      "parts": [
-      "{mod:wisdom}d8 radiant"
+      "{mod:wisdom|1}d8 radiant"
      ],
      "save": "Wis",
      "success": "none"
@@ -819,7 +819,7 @@
      "note": "At least one die",
      "on": "save",
      "parts": [
-      "{mod:wisdom}d6 cold"
+      "{mod:wisdom|1}d6 cold"
      ],
      "save": "Con",
      "success": "none"

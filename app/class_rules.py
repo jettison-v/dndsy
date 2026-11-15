@@ -31,6 +31,8 @@ dc_con / dc_int / dc_wis / dc_cha (8 + modifier + PB), mod_int / mod_wis / mod_c
 import re
 from dataclasses import dataclass
 
+from app.rules_book import norm
+
 
 @dataclass(frozen=True)
 class Rule:
@@ -146,14 +148,9 @@ _MASTERY_NAME = re.compile(rf"^(?:({'|'.join(MASTERIES)}) \((.+)\)|(.+) \(({'|'.
 RESOURCE_ACTIONS = {"Sorcery Points", "Focus Points", "Luck Points", "Superiority Dice", "Psionic Energy Dice"}
 
 
-def _norm(name: str | None) -> str:
-    """'Oath of Conquest (XGtE)' -> 'oath of conquest'; curly quotes straightened."""
-    return re.sub(r"\s*\(.*\)$", "", (name or "").replace("’", "'")).strip().lower()
-
-
 def _has(sheet: dict, text: str) -> bool:
     names = [x.get("name") or "" for x in (sheet.get("features") or []) + (sheet.get("actions") or [])]
-    return any(text.lower() in _norm(n) or text.lower() in (n or "").lower() for n in names)
+    return any(text.lower() in norm(n) or text.lower() in (n or "").lower() for n in names)
 
 
 def _values(sheet: dict, level: int) -> dict:
@@ -175,17 +172,17 @@ def active(sheet: dict) -> list[tuple[Rule, dict]]:
     levels, subs = {}, {}
     for c in sheet.get("classes") or []:
         levels[c["name"]] = c["level"]
-        subs[c["name"]] = _norm(c.get("subclass"))
-    feats = {_norm(f["name"]) for f in sheet.get("features") or [] if f.get("source") == "Feat"}
+        subs[c["name"]] = norm(c.get("subclass"))
+    feats = {norm(f["name"]) for f in sheet.get("features") or [] if f.get("source") == "Feat"}
     out = []
     for r in RULES:
         if r.cls == "Feat":
-            if _norm(r.name) not in feats and not (r.needs and _norm(r.needs) in feats):
+            if norm(r.name) not in feats and not (r.needs and norm(r.needs) in feats):
                 continue
             lv = sum(levels.values())
         else:
             lv = levels.get(r.cls, 0)
-            if lv < r.level or (r.sub and subs.get(r.cls) != _norm(r.sub)):
+            if lv < r.level or (r.sub and subs.get(r.cls) != norm(r.sub)):
                 continue
         if r.needs and not _has(sheet, r.needs):
             continue
@@ -210,7 +207,7 @@ def turn(sheet: dict) -> dict:
             scoped.append((r.attacks, f"{r.attacks} attacks with {r.attacks_with} ({r.name})"))
     # Extra Attack from a class or book this table doesn't cover still counts
     for f in sheet.get("features") or []:
-        n = {"extra attack": 2, "two extra attacks": 3, "three extra attacks": 4}.get(_norm(f["name"]), 0)
+        n = {"extra attack": 2, "two extra attacks": 3, "three extra attacks": 4}.get(norm(f["name"]), 0)
         if n > best:
             best, source = n, f"{f['name']} ({f['source']})"
     notes: dict[str, list[str]] = {"Action": [], "Bonus action": [], "Reaction": []}
