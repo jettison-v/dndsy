@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app import campaign_views, narration, review, session_story, web
+from app import campaign_views, entities, narration, review, session_story, web
 from app.auth import can_edit_entries, can_moderate, current_user
 from app.db import get_db
 from app.extraction import session_label, timeline
@@ -50,7 +50,7 @@ def published_items(db: Session, campaign: Campaign) -> list[dict]:
     for s in timeline(db, campaign.id):
         recap = next((r for r in reversed(s.recaps) if r.status == Status.PUBLISHED), None)
         if recap:
-            events = [e for e in s.events if e.status == Status.PUBLISHED]
+            events = [e for e in s.events if entities.shown(e)]  # (one naming a hidden entry waits until it's shown)
             items.append({
                 "s": s,
                 "label": session_label(s),
@@ -191,7 +191,8 @@ def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[in
     ).all()
     by_entity: dict[int, list[StoryEvent]] = {}
     for entity_id, event in rows:
-        by_entity.setdefault(entity_id, []).append(event)
+        if entities.shown(event):
+            by_entity.setdefault(entity_id, []).append(event)
     seen = {}
     for entity_id, events in by_entity.items():
         events.sort(key=lambda e: (order.get(e.session_id, 10**6), e.position, e.id))

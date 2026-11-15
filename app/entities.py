@@ -102,15 +102,22 @@ def merged_facts(db: Session, entity_id: int) -> list[Fact]:
 # --- Key moments -------------------------------------------------------------------
 
 
-def moments(db: Session, entity: Entity) -> list[dict]:
-    """Every published key moment that mentions the entity, in story order."""
-    events = list(
-        db.scalars(
-            select(StoryEvent)
-            .join(EventEntity, EventEntity.event_id == StoryEvent.id)
-            .where(EventEntity.entity_id == entity.id, StoryEvent.status == Status.PUBLISHED)
-        )
-    )
+def shown(event: StoryEvent, visible=None) -> bool:
+    """A key moment this person (or Claude) may read: published, and naming only entries they may see. A moment that
+    names a hidden entry waits until the DM shows it: its words would give the name away (CLAUDE.md › Hidden is as if
+    it didn't exist; the outside review's A2, Nov 10). `visible`: who may see which entry (a reviewer the hidden ones
+    too); by default, the table's: published entries only."""
+    see = visible or (lambda x: x.status == Status.PUBLISHED)
+    return event.status == Status.PUBLISHED and all(see(x) for x in event.entities)
+
+
+def moments(db: Session, entity: Entity, visible=None) -> list[dict]:
+    """Every key moment that mentions the entity and that this person may read (`shown`), in story order."""
+    events = [e for e in db.scalars(
+        select(StoryEvent)
+        .join(EventEntity, EventEntity.event_id == StoryEvent.id)
+        .where(EventEntity.entity_id == entity.id, StoryEvent.status == Status.PUBLISHED)
+    ) if shown(e, visible)]
     if not events:
         return []
     order = {s.id: i for i, s in enumerate(timeline(db, entity.campaign_id))}

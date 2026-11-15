@@ -171,8 +171,8 @@ def test_timeline_orders_undated_numbered_and_added_sessions(db):
 def test_a_standing_rule_a_hidden_entry_is_as_if_it_did_not_exist(db, player):
     """A standing rule (Brett, Nov 6: hidden content can't be used in recaps, World updates or questions; it's as if it
     doesn't exist until shown): a hidden entry, its facts and its relationships never reach Claude, whether drafting a
-    session or describing another entry; a draft's key moments never link to it; and its name never shows on a key
-    moment to the table."""
+    session or describing another entry; a draft's key moments never link to it; and a key moment that names it waits,
+    for the table and for Claude, until the DM shows it."""
     from app import entities, relations
     from app.models import Campaign, EventEntity, EventKind, Fact, Status
 
@@ -196,7 +196,34 @@ def test_a_standing_rule_a_hidden_entry_is_as_if_it_did_not_exist(db, player):
     db.add(Recap(session_id=s.id, version=1, body="They met.", author="ai", status=Status.PUBLISHED))
     db.flush()
     db.expire_all()
+    # a published moment that names it waits until it's shown (the outside review's A2, Nov 10: its words would say the
+    # name): not on Story, not on her entry, not to Claude describing her
     page = player.get("/c/main/").text
-    assert "Mara Quill</a>" in page and "Veiled Duke</a>" not in page
+    assert "They met." in page and "Veiled Duke" not in page and "met the" not in page
     reader = player.get(f"/c/main/campaign?open={shown.id}").text  # her entry's Connections (Nov 13: a tie to it showed its name)
-    assert "Mara Quill" in reader and "Veiled Duke</a>" not in reader  # (a published moment may say its name; nothing links to it)
+    assert "Mara Quill" in reader and "Veiled Duke" not in reader
+    assert "Veiled Duke" not in json.dumps(entities.build_describe_messages(db, shown))
+    hidden.status = Status.PUBLISHED  # (the DM shows it: the moment is the table's)
+    db.flush()
+    db.expire_all()
+    assert "Mara Quill met the Veiled Duke." in player.get(f"/c/main/campaign?open={shown.id}").text
+    assert "Veiled Duke" in json.dumps(entities.build_describe_messages(db, shown))
+
+
+def test_the_dm_still_reads_a_moment_that_names_a_hidden_entry(db, dm):
+    """The DM and reviewers see hidden entries, so a moment naming one stays on its entry for them (the table's Story
+    holds it back: test_a_standing_rule_a_hidden_entry_is_as_if_it_did_not_exist)."""
+    from app.models import Campaign, EventEntity, EventKind, Status
+
+    s = setup(db)
+    campaign = db.get(Campaign, s.campaign_id)
+    hidden = Entity(campaign_id=campaign.id, kind=extraction.EntityKind.NPC, name="The Veiled Duke", summary="", status=Status.DRAFT)
+    db.add(hidden)
+    db.flush()
+    ev = StoryEvent(session_id=s.id, position=1, kind=EventKind.EVENT, text="The Veiled Duke fled the harbour.", status=Status.PUBLISHED)
+    db.add(ev)
+    db.flush()
+    db.add(EventEntity(event_id=ev.id, entity_id=hidden.id))
+    db.flush()
+    db.expire_all()
+    assert "The Veiled Duke fled the harbour." in dm.get(f"/c/main/campaign?open={hidden.id}").text

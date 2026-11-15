@@ -85,7 +85,7 @@ def entity_context(db: Session, entity: Entity, user: dict) -> dict:
         "cx": campaign_views.connections(db, entity, lambda e: e.status == Status.PUBLISHED or reviewer),
         "rel_choices": relations.CHOICES,
         "others": others,
-        "moments": entities.moments(db, entity),
+        "moments": entities.moments(db, entity, lambda e: e.status == Status.PUBLISHED or reviewer),
         "ln": entity_linker(db, entity.campaign_id, exclude_id=entity.id, include_drafts=reviewer),
         "picture": pictures.urls(db, [entity.id]).get(entity.id) or _creature_picture(db, companion),
         "can_picture": can_picture,
