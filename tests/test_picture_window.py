@@ -200,3 +200,94 @@ def test_a_portrait_is_read_only_from_d_and_d_beyond():
     assert drawing._theirs("https://www.dndbeyond.com/avatars/1/2.png") and drawing._theirs("https://media.dndbeyond.com/x.jpeg")
     with pytest.raises(ValueError):  # a redirect from D&D Beyond to anywhere else
         drawing._OnlyTheirs().redirect_request(None, None, 302, "Found", {}, "http://localhost:8000/")
+
+
+# ------------------------------------------------------------------ OpenAI's own answers (the outside review's C12)
+
+
+class _Answer:
+    def __init__(self, body: bytes):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def read(self):
+        return self.body
+
+
+def test_what_goes_to_openai_is_json_alone_or_a_form_with_pictures(monkeypatch):
+    """Words alone go as JSON to generations; with pictures to match, a multipart form to edits, each picture a part."""
+    import json
+    import urllib.request
+
+    sent = []
+
+    def urlopen(req, timeout):
+        sent.append(req)
+        return _Answer(b'{"data": []}')
+    monkeypatch.setattr(drawing, "FETCH", None)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(urllib.request, "urlopen", urlopen)
+    assert drawing._post("generations", {"prompt": "a lighthouse"}, []) == {"data": []}
+    assert sent[-1].full_url.endswith("/generations") and json.loads(sent[-1].data) == {"prompt": "a lighthouse"}
+    assert sent[-1].headers["Authorization"] == "Bearer test-key"
+    drawing._post("edits", {"prompt": "a lighthouse"}, [("ref.png", b"PNGDATA")])
+    body, kind = sent[-1].data, sent[-1].headers["Content-type"]
+    assert kind.startswith("multipart/form-data; boundary=askdnd") and b'name="image[]"' in body and b"PNGDATA" in body
+    assert b'name="prompt"\r\n\r\na lighthouse' in body
+
+
+def test_openais_refusals_are_said_plainly(monkeypatch):
+    import io
+    import urllib.error
+    import urllib.request
+
+    def refusing(body):
+        def urlopen(req, timeout):
+            raise urllib.error.HTTPError(req.full_url, 400, "Bad Request", {}, io.BytesIO(body))
+        return urlopen
+    monkeypatch.setattr(drawing, "FETCH", None)
+    monkeypatch.setattr(urllib.request, "urlopen", refusing(b'{"error": {"message": "Your prompt was declined."}}'))
+    with pytest.raises(pictures.PictureError, match=r"\(400: Your prompt was declined\.\)"):
+        drawing._post("generations", {}, [])
+    monkeypatch.setattr(urllib.request, "urlopen", refusing(b"<html>busy</html>"))
+    with pytest.raises(pictures.PictureError, match=r"\(400\)"):
+        drawing._post("generations", {}, [])
+
+    def unreachable(req, timeout):
+        raise urllib.error.URLError("no route")
+    monkeypatch.setattr(urllib.request, "urlopen", unreachable)
+    with pytest.raises(pictures.PictureError, match="couldn't be reached"):
+        drawing._post("generations", {}, [])
+
+
+def test_no_pictures_back_is_said_and_counted_as_an_error(db, openai, monkeypatch):
+    import_bundle(db, BUNDLE)
+    monkeypatch.setattr(drawing, "FETCH", lambda path, fields, files: {"data": []})
+    with pytest.raises(pictures.PictureError, match="no pictures back"):
+        drawing.draw(db, db.scalar(select(Campaign)), "a lighthouse")
+    run = db.scalar(select(ExtractionRun).where(ExtractionRun.source == "picture"))
+    assert run.status == "error" and "no pictures" in run.error
+
+
+def test_a_portrait_that_cant_be_had_is_drawn_without(db, monkeypatch):
+    """No portrait on the sheet, or D&D Beyond's image server failing: drawing goes on without it."""
+    from app.importer import import_bundle as load
+    from tests.table_setup import BUNDLE as TABLE
+    from tests.table_setup import char
+
+    load(db, TABLE)
+    assert drawing._portrait(db, "not-a-number") is None
+    cole = char(db, "Cole")
+    monkeypatch.setattr("app.characters.character_summary", lambda c: {"portrait": "https://www.dndbeyond.com/a.png"})
+
+    def broken(url):
+        raise OSError("down")
+    monkeypatch.setattr(drawing, "READ_PORTRAIT", broken)
+    assert drawing._portrait(db, str(cole.id)) is None
+    monkeypatch.setattr("app.characters.character_summary", lambda c: {})
+    assert drawing._portrait(db, str(cole.id)) is None
