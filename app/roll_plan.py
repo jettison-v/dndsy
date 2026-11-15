@@ -268,7 +268,7 @@ def traits(sheet: dict, o: dict, made: str) -> set[str]:
         return {made}
     if made == "natural":  # (a stat block's own attack, a bear's Rend: a natural weapon, never a Monk weapon or an item)
         return {"natural", "ranged_weapon" if re.search(r"\bRanged\b", o.get("text") or "") else "melee_weapon"}
-    out = {"weapon", f"item:{rules_book._norm(o.get('name'))}"}  # (which weapon: a magic weapon's own adds, `this_item`)
+    out = {"weapon", f"item:{rules_book.norm(o.get('name'))}"}  # (which weapon: a magic weapon's own adds, `this_item`)
     a = next((a for a in sheet.get("attacks") or [] if a.get("key") == o.get("key") or a.get("name") == o.get("name")), None)
     if a is None:
         return out | {"melee_weapon", "monk_weapon"}
@@ -285,7 +285,7 @@ def applies(add: dict, have: set[str]) -> bool:
     """Whether an add (or a spell cast after a hit) can go with this attack: its `with`, or any attack when it names none;
     `this_item`: only an attack made with the item it's from (Flame Tongue's 2d6 Fire, not the dagger's)."""
     if "this_item" in (add.get("with") or []):
-        own = rules_book._norm(add.get("item") or "")
+        own = rules_book.norm(add.get("item") or "")
         return bool(own) and any(t.startswith("item:") and t[5:].startswith(own) for t in have)
     return not add.get("with") or bool(set(add["with"]) & have)
 
@@ -393,7 +393,7 @@ def plan(sheet: dict, o: dict, scope: str = "own") -> dict:
     rsrc = "block" if block and o.get("recipe") else _recipe_source(o)
     events = (recipe or {}).get("events") or []
     mod = next((a for a in adds if a.get("op", "add") == "add" and (a.get("amount") or a.get("reduces"))
-                and rules_book._norm(o["name"]).endswith(rules_book._norm(a["name"]))), None) if not events else None
+                and rules_book.norm(o["name"]).endswith(rules_book.norm(a["name"]))), None) if not events else None
     if mod:  # it changes another roll: Guidance, Sneak Attack, Deflect Attack ("Channel Divinity: Guided Strike" is Guided Strike's)
         out["modifier"], src["modifier"] = _modifier(mod) | {"name": o["name"]}, "checked"
         out["steps"], out["status"] = ["modify"], "ready"

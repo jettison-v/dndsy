@@ -78,14 +78,14 @@ def test_a_made_up_character_is_given_what_its_level_brings(cls, sub, lv):
     and `level` match the book's), and every number in it fills from the sheet: no token is left unfilled."""
     sheet, rows = sheet_for(cls, sub, lv)
     active = rules_book.active(sheet)
-    have = {rules_book._norm(e["name"]) for e in active}
-    book = {rules_book._norm(e["name"]): e for e in rules_book.entries() if e.get("class") == cls}
+    have = {rules_book.norm(e["name"]) for e in active}
+    book = {rules_book.norm(e["name"]): e for e in rules_book.entries() if e.get("class") == cls}
     for r in rows:
         for name in [r["name"], *(p["name"] for p in r.get("parts") or [])]:
-            e = book.get(rules_book._norm(name))
+            e = book.get(rules_book.norm(name))
             if not e or (e.get("sub") and e["sub"] != sub) or e.get("level", 1) > lv or e.get("group"):
                 continue
-            assert rules_book._norm(e["name"]) in have, f"{cls} {lv} ({sub}) has {name}, but the data's entry doesn't apply"
+            assert rules_book.norm(e["name"]) in have, f"{cls} {lv} ({sub}) has {name}, but the data's entry doesn't apply"
     for a in rules_book.adds(sheet):
         for k in ("amount", "reduces", "dc"):
             # ({slot} is the one filled as it's cast, by the level: roll_plan._at_levels)

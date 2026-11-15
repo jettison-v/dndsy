@@ -6,7 +6,7 @@ import json
 import re
 from urllib.parse import quote
 
-from app import advantage, class_rules, components, conditions, house_rules
+from app import advantage, class_rules, components, conditions, house_rules, rules_book
 from app import roll_recipes as rr
 
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
@@ -58,8 +58,6 @@ def pays(action: dict, spends: list[dict]) -> list[dict]:
     Brett, Nov 13: Flurry of Blows showed its Focus Point and didn't spend it): its own use (Second Wind), else the
     resource it says it expends (Flurry of Blows' Focus Point). Each {field, n, label, left}: the Use one window's count
     (app/resources.py), so its Undo is that window's."""
-    from app import rules_book
-
     e = rules_book.entry("feature", action["name"].split(":")[0].strip())
     optional = bool(((e or {}).get("use") or {}).get("optional"))  # (the rules make it a choice: the pill starts unpressed)
     if action.get("uses") and action.get("id") is not None:
@@ -203,19 +201,17 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
             **({"recipe": recipe} if recipe is not None else {}), spends=spent, pay=pays(a, spent),
             summary=a.get("summary", ""),
             common=not a.get("rule") and (unarmed or cost == "Reaction" or bool(a["uses"] and a["source"] in ("class", "feat", "race"))))
-    have = {class_rules._norm(o["name"]) for o in out}
+    have = {rules_book.norm(o["name"]) for o in out}
     for r in rules["options"]:
-        if class_rules._norm(r["name"]) not in have:
+        if rules_book.norm(r["name"]) not in have:
             add(key=f"rule:{r['name']}", kind="feature", cost=r["cost"], name=r["name"], meta=r["meta"], text=r["meta"],
                 tags=[r["source"]], common=True)
     # A feature, feat or trait that rolls but that D&D Beyond doesn't list as something to do (Heroic Rally, Dark One's
     # Blessing, Battle Medic): its rules-book entry's `row` puts it on Battle, in its column, with its roll and when it
     # applies; askdnd never decides the moment came (Brett: remind, don't automate)
-    from app import rules_book
-
-    have |= {class_rules._norm(o["name"]) for o in out}
+    have |= {rules_book.norm(o["name"]) for o in out}
     for e in rules_book.active(sheet):
-        if not e.get("row") or not e.get("rolls") or class_rules._norm(e["name"]) in have:
+        if not e.get("row") or not e.get("rolls") or rules_book.norm(e["name"]) in have:
             continue
         recipe = _feature_recipe(sheet, e["name"])
         add(key=f"rule:{e['name']}", kind="feature", cost=e["row"].get("cost") or "No action", name=e["name"],

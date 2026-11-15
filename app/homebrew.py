@@ -22,7 +22,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import rules_data, web
+from app import rules_book, rules_data, web
 from app.auth import can_set_house_rules
 from app.db import get_db
 from app.models import CampaignContent
@@ -54,10 +54,6 @@ DICE = re.compile(r"^\s*(\d*d\d+|\d+)(\s*[+-]\s*\d+)?(\s+[a-zA-Z]+)?\s*$")
 # ------------------------------------------------------------------ the engine's side
 
 
-def norm(name: str) -> str:
-    return " ".join((name or "").replace("’", "'").lower().split())
-
-
 def invalidate() -> None:
     _cache["at"] = 0.0
 
@@ -70,7 +66,7 @@ def _load(db: Session) -> dict:
             continue
         e = book_entry(row.name, data)
         if e:
-            out.setdefault(row.campaign_id, {})[norm(row.name)] = e
+            out.setdefault(row.campaign_id, {})[rules_book.norm(row.name, whole=True)] = e
     return out
 
 
@@ -221,7 +217,7 @@ def _carried(db: Session, campaign_id: int) -> dict[str, list[str]]:
                       .where(CampaignCharacter.campaign_id == campaign_id, CampaignCharacter.left_on.is_(None), Character.copy_of_id.is_(None)))
     for ch in rows.unique():
         for it in (chars.character_summary(ch) or {}).get("inventory") or []:
-            for n in {norm(it.get("name") or ""), norm(it.get("base_name") or "")} - {""}:
+            for n in {rules_book.norm(it.get("name") or "", whole=True), rules_book.norm(it.get("base_name") or "", whole=True)} - {""}:
                 if ch.name not in out.setdefault(n, []):
                     out[n].append(ch.name)
     return out
@@ -237,7 +233,7 @@ def _customs(db: Session, campaign_id: int, made: set[str]) -> list[dict]:
                       .where(CampaignCharacter.campaign_id == campaign_id, CampaignCharacter.left_on.is_(None), Character.copy_of_id.is_(None)))
     for ch in rows.unique():
         for it in (chars.character_summary(ch) or {}).get("inventory") or []:
-            if it.get("custom") and (n := norm(it.get("name") or "")) and n not in seen:
+            if it.get("custom") and (n := rules_book.norm(it.get("name") or "", whole=True)) and n not in seen:
                 seen.add(n)
                 out.append({"name": it["name"], "who": ch.name})
     return out
@@ -250,11 +246,11 @@ def dm_tools(request: Request, db: Session = Depends(get_db)):
         return denied
     rows = _rows(db, campaign.id)
     carried = _carried(db, campaign.id)
-    items = [{"key": r.key, "name": r.name, "data": r.data or {}, "says": says(r.data or {}), "who": carried.get(norm(r.name), []),
+    items = [{"key": r.key, "name": r.name, "data": r.data or {}, "says": says(r.data or {}), "who": carried.get(rules_book.norm(r.name, whole=True), []),
               "retired": bool((r.data or {}).get("retired"))} for r in rows]
     return templates.TemplateResponse(request, "dm_tools.html", {
         "user": user, "items": [i for i in items if not i["retired"]], "retired": [i for i in items if i["retired"]],
-        "customs": _customs(db, campaign.id, {norm(r.name) for r in rows}), "planned": PLANNED,
+        "customs": _customs(db, campaign.id, {rules_book.norm(r.name, whole=True) for r in rows}), "planned": PLANNED,
         "toast": request.session.pop("toast", None)})
 
 

@@ -109,5 +109,7 @@ def test_what_a_sheet_adds_is_worked_out_again_whenever_it_could_change(name):
     check()
     s["inventory"][-1]["equipped"] = False
     check()
+    s["inventory"][-1] |= {"equipped": True, "attunement": "required"}
+    check()
     s["_item_choices"] = {"1": "Chromatic"}
     check()

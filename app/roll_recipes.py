@@ -29,6 +29,8 @@ import re
 from functools import cache
 from pathlib import Path
 
+from app.rules_book import norm
+
 PATH = Path(__file__).parent / "data" / "roll_recipes.json"
 PART = re.compile(r"^(?:\d+x)?(?:(\d+)d(\d+)([+-]\d+)?|([+-]?\d+))(?:\s+(.+))?$")  # "2d6+3 fire", a fixed "1 bludgeoning",
 # or either times a number, "2x1d8" (Mantle of Inspiration: twice the roll), read by `times`
@@ -66,9 +68,8 @@ def feature(name: str) -> dict | None:
     (app/rules_book.py `fill`: {level:Fighter}, {mod:dexterity}, N{martial_arts}, {sneak}, {lands_aid}, {bardic}…). D&D
     Beyond's own names match too: curly apostrophes, and the part after a prefix ("Channel Divinity: Divine Spark")."""
     all_ = recipes().get("features") or {}
-    norm = lambda n: re.sub(r"\s+", " ", (n or "").replace("’", "'")).strip().lower()
-    keys = {norm(k): k for k in all_}
-    want = norm(name)
+    keys = {norm(k, whole=True): k for k in all_}
+    want = norm(name, whole=True)
     hit = keys.get(want) or (keys.get(want.split(": ", 1)[1]) if ": " in want else None)
     return all_.get(hit) if hit else None
 
@@ -79,9 +80,9 @@ def modifier(name: str) -> dict | None:
     adds (`adds`) or reduces."""
     from app import rules_book
 
-    want = rules_book._norm(name)
+    want = rules_book.norm(name)
     a = next((a for e in rules_book.entries() for a in e.get("adds") or []
-              if rules_book._norm(a["name"]) == want and a.get("op", "add") == "add" and (a.get("amount") or a.get("reduces"))), None)
+              if rules_book.norm(a["name"]) == want and a.get("op", "add") == "add" and (a.get("amount") or a.get("reduces"))), None)
     return {("adds" if k == "amount" else "types" if k == "damage_types" else k): v for k, v in a.items() if k != "name"} if a else None
 
 
@@ -100,8 +101,8 @@ def item_for(sheet: dict | None, name: str) -> dict | None:
     """An item's recipe for this character: the campaign's homebrew item of that name first (app/homebrew.py, carried
     on the sheet as `_homebrew` by character_views.apply_overrides), then the books' (`item`)."""
     hb = (sheet or {}).get("_homebrew") or {}
-    want = " ".join((name or "").removeprefix("Use an item: ").replace("’", "'").lower().split())
-    e = hb.get(want) or (hb.get(want.split(" (")[0]) if " (" in want else None)
+    full = (name or "").removeprefix("Use an item: ")
+    e = hb.get(norm(full, whole=True)) or hb.get(_base(full))  # (its own name, else without its note: "Ember Blade (Longsword)")
     if e and e.get("rolls"):
         return {"checked": "homebrew", "level": 0, "events": [event(r) for r in e["rolls"]]}
     return item(name)
@@ -109,13 +110,15 @@ def item_for(sheet: dict | None, name: str) -> dict | None:
 
 def item(name: str) -> dict | None:
     """The recipe for an item by name ("Potion of Healing (Superior)"), any capitalization."""
-    want = (name or "").removeprefix("Use an item: ").strip().lower()
-    items = recipes().get("items") or {}
-    found = next((r for n, r in items.items() if n.lower() == want), None)
-    if found is None and " (" in want:  # (a magic weapon named with its base: "Hammer of Thunderbolts (Maul)")
-        base = want.split(" (")[0]
-        found = next((r for n, r in items.items() if n.lower() == base), None)
-    return found
+    full = (name or "").removeprefix("Use an item: ")
+    # (else without its note: a magic weapon named with its base, "Hammer of Thunderbolts (Maul)")
+    items = {norm(n, whole=True): r for n, r in (recipes().get("items") or {}).items()}  # (27; read fresh, as recipes() is)
+    return items.get(norm(full, whole=True)) or items.get(_base(full))
+
+
+def _base(name: str) -> str:
+    """An item's name without its note, wherever the note is ("Ember Blade (Longsword) +1" -> "ember blade")."""
+    return norm(name.split(" (")[0], whole=True)
 
 
 def parse_part(part: str) -> tuple[int, int, int, str] | None:

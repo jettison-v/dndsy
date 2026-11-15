@@ -178,7 +178,8 @@
       "damage"
      ],
      "with": [
-      "melee_weapon"
+      "melee_weapon",
+      "unarmed"
      ],
      "amount": "1d8",
      "once": "a turn",
@@ -415,7 +416,7 @@
      "to": [
       "save"
      ],
-     "amount": "{mod:charisma}",
+     "amount": "{mod:charisma|1}",
      "says": "you and allies in the aura",
      "pressed": true
     }
@@ -848,6 +849,7 @@
    "class": "Ranger",
    "level": 3,
    "sub": "Gloom Stalker",
+   "part_of": "Dread Ambusher",
    "adds": [
     {
      "name": "Dreadful Strike",
@@ -861,7 +863,8 @@
      ],
      "amount": "2d6 psychic",
      "once": "a turn",
-     "effect": "+2d6 Psychic"
+     "effect": "+2d6 Psychic",
+     "pressed": false
     }
    ],
    "group": "gloom-strike"
@@ -872,6 +875,7 @@
    "class": "Ranger",
    "level": 11,
    "sub": "Gloom Stalker",
+   "part_of": "Dread Ambusher",
    "group": "gloom-strike",
    "adds": [
     {
@@ -886,7 +890,8 @@
      "amount": "2d8 psychic",
      "once": "a turn",
      "trigger": "Once per turn, a hit with a weapon (uses equal to your Wisdom modifier per Long Rest)",
-     "effect": "+2d8 Psychic (Stalker's Flurry); the target and creatures within 10 ft make a Wis save"
+     "effect": "+2d8 Psychic (Stalker's Flurry); the target and creatures within 10 ft make a Wis save",
+     "pressed": false
     }
    ]
   },
@@ -1024,6 +1029,7 @@
    "class": "Monk",
    "level": 17,
    "sub": "Warrior of the Elements",
+   "part_of": "Elemental Epitome",
    "adds": [
     {
      "name": "Elemental Empowered Strikes",
@@ -1306,7 +1312,7 @@
      "resolve": "none",
      "effect": "heal",
      "dice": [
-      "{mod:charisma}d6"
+      "{mod:charisma|1}d6"
      ],
      "note": "The most dice at once; spend fewer as you like"
     }
@@ -1318,6 +1324,7 @@
    "class": "Rogue",
    "level": 9,
    "sub": "Soulknife",
+   "part_of": "Soul Blades",
    "why": "Soul Blades: after a Psychic Blade misses, add a Psionic Energy Die to the attack roll (spent only if it then hits)",
    "adds": [
     {
@@ -1498,7 +1505,8 @@
      ],
      "amount": "1d6",
      "pressed": false,
-     "effect": "+1d6 Necrotic, Psychic or Radiant; you can spend a Hit Point Die to heal"
+     "effect": "+1d6 Necrotic, Psychic or Radiant; you can spend a Hit Point Die to heal",
+     "once": "a turn"
     }
    ]
   },
@@ -1784,6 +1792,7 @@
    "class": "Fighter",
    "level": 3,
    "sub": "Psi Warrior",
+   "part_of": "Psionic Power",
    "why": "Psionic Power: a Reaction when you or a creature within 30 ft takes damage, spend a Psionic Energy Die to reduce it by the roll + Intelligence",
    "adds": [
     {
@@ -1803,6 +1812,7 @@
    "class": "Rogue",
    "level": 3,
    "sub": "Soulknife",
+   "part_of": "Psionic Power",
    "why": "Psionic Power: after failing a check with a skill or tool you're proficient with, add a Psionic Energy Die (spent only if it succeeds)",
    "adds": [
     {
@@ -1823,6 +1833,7 @@
    "class": "Fighter",
    "level": 3,
    "sub": "Psi Warrior",
+   "part_of": "Psionic Power",
    "adds": [
     {
      "name": "Psionic Strike",
@@ -1956,6 +1967,7 @@
    "name": "Rage Damage",
    "class": "Barbarian",
    "level": 1,
+   "part_of": "Rage",
    "adds": [
     {
      "name": "Rage Damage",
@@ -2074,7 +2086,7 @@
      "to": [
       "attack"
      ],
-     "amount": "{mod:charisma}",
+     "amount": "{mod:charisma|1}",
      "with": [
       "melee_weapon"
      ],
@@ -2094,7 +2106,7 @@
      "resolve": "save",
      "effect": "damage",
      "dice": [
-      "{mod:wisdom}d8 radiant"
+      "{mod:wisdom|1}d8 radiant"
      ],
      "save": "Wis",
      "success": "none",
@@ -2433,6 +2445,7 @@
    "class": "Paladin",
    "level": 20,
    "sub": "Oath of Glory",
+   "part_of": "Living Legend",
    "adds": [
     {
      "name": "Unerring Strike",
@@ -2549,7 +2562,7 @@
      "resolve": "save",
      "effect": "damage",
      "dice": [
-      "{mod:wisdom}d6 cold"
+      "{mod:wisdom|1}d6 cold"
      ],
      "save": "Con",
      "success": "none",
@@ -3349,6 +3362,7 @@
    "name": "Patient Defense",
    "class": "Monk",
    "level": 2,
+   "part_of": "Monk's Focus",
    "why": "Monk: Disengage as a Bonus Action, free; 1 Focus Point to Disengage and Dodge",
    "use": {
     "optional": true
@@ -3359,6 +3373,7 @@
    "name": "Step of the Wind",
    "class": "Monk",
    "level": 2,
+   "part_of": "Monk's Focus",
    "why": "Monk: Dash as a Bonus Action, free; 1 Focus Point to Disengage and Dash, jump distance doubled",
    "use": {
     "optional": true

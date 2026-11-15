@@ -532,6 +532,9 @@ def test_a_life_clerics_healing_spell_shows_what_adds_to_it(people, server, brow
     c = data["classes"][0]
     c["level"], c["definition"]["name"] = 17, "Cleric"
     c["subclassDefinition"] = {**(c.get("subclassDefinition") or {}), "name": "Life Domain"}
+    # (its sheet lists the Life Domain's features, as D&D Beyond's does: a class feature counts once the sheet names it)
+    c["classFeatures"] = [{"definition": {"id": 900 + i, "name": n, "requiredLevel": lv, "isSubClassFeature": True, "description": ""}}
+                          for i, (n, lv) in enumerate([("Disciple of Life", 3), ("Blessed Healer", 6), ("Supreme Healing", 17)])]
     engine = create_engine(browser_db[0])
     with Session(engine) as db:
         characters.refresh(db, char(db, "Cole"), lambda _id: data)
