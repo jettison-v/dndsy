@@ -21,7 +21,7 @@ from app.importer import import_bundle
 from app.main import app
 from app.models import Campaign, GameSession, GlossaryTerm
 from tests.roles import set_role
-from tests.table_setup import BUNDLE, char, owned_by, sign_in
+from tests.table_setup import address, sign_in, two_campaigns
 
 pytestmark = pytest.mark.usefixtures("no_network")
 
@@ -48,14 +48,6 @@ def body_for(op: dict) -> dict:
         kind = p.get("type") or next((x.get("type") for x in p.get("anyOf", []) if x.get("type") != "null"), "string")
         out[name] = "1" if kind in ("integer", "number") else "true" if kind == "boolean" else "x"
     return out
-
-
-def address(path: str, op: dict, ids: dict) -> str:
-    url = re.sub(r"\{(\w+)\}", lambda m: str(ids.get(m.group(1), 1)), path)
-    if campaign_paths.in_campaign(path):
-        url = f"/c/main{url}"
-    query = [f"{p['name']}=1" for p in op.get("parameters", []) if p["in"] == "query" and p.get("required")]
-    return url + ("?" + "&".join(query) if query else "")
 
 
 # What any page visit keeps about the person visiting: the campaign they're in now (app/campaign_paths.py) and when
@@ -95,24 +87,9 @@ def ask_all(c: TestClient, db, ids: dict, skip=frozenset()) -> tuple[list, dict]
 
 
 @pytest.fixture
-def table(db, monkeypatch):
-    """Main with Cole (player@'s) and Trah (other@'s), a session and a glossary term; and Elsewhere, whose DM is
-    elsewhere@ (a DM, but not of Main)."""
-    import_bundle(db, {**BUNDLE, "sessions": [{"number": 1}]})
-    cole, trah = char(db, "Cole"), char(db, "Trah")
-    owned_by(db, cole, "player@example.com")
-    owned_by(db, trah, "other@example.com")
-    main = db.get(Campaign, cole.campaign_id)
-    term = GlossaryTerm(campaign_id=main.id, term="Womford", description="A town.", misheard_as=[])
-    db.add(term)
-    elsewhere = Campaign(slug="elsewhere", name="Elsewhere")
-    db.add(elsewhere)
-    db.flush()
-    set_role(db, "dm@example.com", "dm", "Dee", main)
-    set_role(db, "elsewhere@example.com", "dm", "Elle", elsewhere)
-    session = db.query(GameSession).filter_by(campaign_id=main.id).first()
-    db.flush()
-    yield {"character_id": trah.id, "entity_id": trah.entity.id, "term_id": term.id, "session_id": session.id}
+def table(db):
+    """tests/table_setup.py's two campaigns: Main, and Elsewhere with a DM of its own."""
+    yield two_campaigns(db)
     app.dependency_overrides.clear()
 
 
