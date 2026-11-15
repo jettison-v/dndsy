@@ -2,6 +2,7 @@
 each case checks everything the working gives back, so a number, a flag or a step that changes is caught. The words
 each step says aren't pinned (CLAUDE.md, markers not text): its title and its why are left out of the comparison."""
 
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -315,7 +316,7 @@ def test_making_a_hit_sends_it_and_its_steps(monkeypatch):
     w = hit_points.work({"current": 5, "max": 20, "temp": 0}, "damage", [{"amount": 30}], [], set())
     hit_points.make(m.db, CH, {}, None, "damage", w)
     assert [c[:3] for c in m.calls] == [("add", CH, "hp"), ("down", CH), ("tell", CH, "massive")]
-    assert [int(n) for n in __import__("re").findall(r"\d+", m.calls[-1][3])] == [25, 20]  # (left over, the maximum)
+    assert [int(n) for n in re.findall(r"\d+", m.calls[-1][3])] == [25, 20]  # (left over, the maximum)
 
     m = Made(monkeypatch)
     w = hit_points.work({"current": 0, "max": 20, "temp": 0}, "damage", [{"amount": 3}], [], set(), crit=True)
