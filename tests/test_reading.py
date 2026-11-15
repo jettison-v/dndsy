@@ -22,7 +22,7 @@ from tests.table_setup import address, char, sign_in, two_campaigns
 
 pytestmark = pytest.mark.usefixtures("no_network")
 
-NOTE = "Notemark Quill"  # Trah's player's note
+NOTE = "Notemark Quill"  # Cole's player's note
 DRAFT = "Veiled Draftmark"  # a hidden World entry
 SCENE = "Scenemark Ledger"  # the DM's scene note
 TOKEN = "Tokenmark Lurker"  # a hidden creature on the map
@@ -42,10 +42,14 @@ def reading_routes() -> list[tuple[str, dict]]:
 @pytest.fixture
 def table(db):
     ids = two_campaigns(db)
-    trah = char(db, "Trah")
-    main = db.get(Campaign, trah.campaign_id)
+    from app import characters
+
+    cole = char(db, "Cole")  # (the character with a sheet in the fake D&D Beyond: its windows open, not a 404)
+    characters.refresh(db, cole)
+    ids |= {"character_id": cole.id, "entity_id": cole.entity.id}
+    main = db.get(Campaign, cole.campaign_id)
     main.vtt_pieces = [f.key for f in vtt.FEATURES] + [vtt.LABS]  # (every feature on, askdnd's table too: every page has its say)
-    note = PlayerNote(character_id=trah.id, kind="general", campaign_id=main.id, title=NOTE, data={"text": NOTE})
+    note = PlayerNote(character_id=cole.id, kind="general", campaign_id=main.id, title=NOTE, data={"text": NOTE})
     draft = Entity(campaign_id=main.id, kind=EntityKind.NPC, name=DRAFT, summary=f"{DRAFT} rules the harbor.", status=Status.DRAFT)
     place = Place(campaign_id=main.id, name=f"{MAIN} Docks")
     db.add_all([note, draft, place])
@@ -93,15 +97,15 @@ def test_another_campaigns_dm_reads_nothing_here(db, table, monkeypatch):
 
 def test_a_player_never_reads_a_hidden_entry_a_scene_note_or_a_hidden_token(db, table, monkeypatch):
     """A standing rule (CLAUDE.md › Hidden is as if it didn't exist; the DM's scene notes are hers alone, Nov 6;
-    hidden tokens reach only the DM's page): asked as Cole's player, about Trah and the table, no page shows any."""
-    pages = read_all(sign_in(monkeypatch, db, "player@example.com"), table)
+    hidden tokens reach only the DM's page): asked as Trah's player, about Cole and the table, no page shows any."""
+    pages = read_all(sign_in(monkeypatch, db, "other@example.com"), table)
     assert not shows(pages, DRAFT, SCENE, TOKEN)
     assert shows(pages, NOTE)  # (a player reads another's character notes: the sweep reached them)
 
 
 def test_the_dm_never_reads_a_players_character_notes(db, table, monkeypatch):
     """A standing rule (CLAUDE.md › Visibility, Brett 2026-10-17): character notes are visible to players but not the
-    DM. Asked as Main's DM, no page shows Trah's note."""
+    DM. Asked as Main's DM, no page shows Cole's note."""
     pages = read_all(sign_in(monkeypatch, db, "dm@example.com"), table)
     assert not shows(pages, NOTE)
     assert shows(pages, SCENE) and shows(pages, DRAFT) and shows(pages, TOKEN) and shows(pages, MAIN)  # (hers to see: the sweep reached them)
