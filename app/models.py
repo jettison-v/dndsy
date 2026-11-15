@@ -624,7 +624,8 @@ class StoryEvent(Timestamped, Base):
     # None on moments drafted before, which show their first few instead
     major: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     session: Mapped[GameSession] = relationship(back_populates="events")
-    entities: Mapped[list[Entity]] = relationship(secondary="event_entities")
+    # (read for every moment shown, entities.shown: loaded with the moments in one query, not one per moment)
+    entities: Mapped[list[Entity]] = relationship(secondary="event_entities", lazy="selectin")
 
 
 class EventEntity(Base):

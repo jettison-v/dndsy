@@ -18,12 +18,12 @@ from fastapi.responses import HTMLResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import review, session_story, web
+from app import entities, review, session_story, web
 from app.auth import can_edit_settings, current_user
 from app.characters import campaign_characters, character_summary
 from app.db import get_db
 from app.extraction import session_label
-from app.models import Campaign, CharacterDown, GameSession, Status, StoryEvent, TableRoll
+from app.models import Campaign, CharacterDown, GameSession, StoryEvent, TableRoll
 from app.templating import templates
 
 MODES = {"sessions": "Only what happened during sessions", "all": "Every roll the table saw"}
@@ -52,7 +52,7 @@ def _sessions(db: Session, campaign: Campaign) -> list[tuple[GameSession, object
 
 def moments(s: GameSession) -> list[StoryEvent]:
     """A session's published key moments that name only published entries (a hidden entry is as if it didn't exist)."""
-    return [e for e in s.events if e.status == Status.PUBLISHED and all(x.status == Status.PUBLISHED for x in e.entities)]
+    return [e for e in s.events if entities.shown(e)]
 
 
 def gather(db: Session, campaign: Campaign) -> dict:

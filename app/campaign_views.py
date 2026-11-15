@@ -25,16 +25,15 @@ def _relations(db: Session, campaign_id: int, visible: Visible, types=None) -> l
     return [r for r in db.scalars(q.order_by(EntityRelation.id)) if r.type in TYPES and visible(r.from_entity) and visible(r.to_entity)]
 
 
-def _co_mentioned(db: Session, entity_id: int) -> list[int]:
-    """Entries mentioned in the same published key moments as this one, in story order of first mention."""
-    events = select(EventEntity.event_id).join(StoryEvent, StoryEvent.id == EventEntity.event_id).where(
-        EventEntity.entity_id == entity_id, StoryEvent.status == Status.PUBLISHED)
-    rows = db.execute(select(EventEntity.entity_id, EventEntity.event_id).where(EventEntity.event_id.in_(events),
-                                                                                  EventEntity.entity_id != entity_id)).all()
+def _co_mentioned(db: Session, entity_id: int, visible: Visible) -> list[int]:
+    """Entries mentioned in the same key moments as this one that this person may read (entities.shown), in story order
+    of first mention."""
+    events = db.scalars(select(StoryEvent).join(EventEntity, EventEntity.event_id == StoryEvent.id).where(
+        EventEntity.entity_id == entity_id, StoryEvent.status == Status.PUBLISHED).order_by(StoryEvent.id))
     seen: list[int] = []
-    for eid, _ in sorted(rows, key=lambda r: r[1]):
-        if eid not in seen:
-            seen.append(eid)
+    for ev in events:
+        if entities.shown(ev, visible):
+            seen += sorted(x.id for x in ev.entities if x.id != entity_id and x.id not in seen)
     return seen
 
 
@@ -50,10 +49,10 @@ def givers(db: Session, quest: Entity, visible: Visible) -> list[Entity]:
 def quest_card(db: Session, quest: Entity, visible: Visible, order: dict[int, int], latest_index: int | None) -> dict:
     """One quest in the quest log: who gave it, its key moments (oldest first), who and where it involves, the
     table's facts, and whether it has gone quiet."""
-    moments = entities.moments(db, quest)
+    moments = entities.moments(db, quest, visible)
     gave = givers(db, quest, visible)
     who = list(gave)
-    for eid in _co_mentioned(db, quest.id):
+    for eid in _co_mentioned(db, quest.id, visible):
         e = db.get(Entity, eid)
         if e is not None and visible(e) and e not in who:
             who.append(e)
@@ -73,7 +72,7 @@ def quest_board(db: Session, campaign_id: int, quests: list[Entity], visible: Vi
 def part_of(db: Session, entity: Entity, visible: Visible) -> list[Entity]:
     """The quests an entry is part of: it gave them, or it's in their key moments."""
     found = [r.to_entity for r in db.scalars(select(EntityRelation).where(EntityRelation.type == "gave", EntityRelation.from_entity_id == entity.id))]
-    for eid in _co_mentioned(db, entity.id):
+    for eid in _co_mentioned(db, entity.id, visible):
         e = db.get(Entity, eid)
         if e is not None and e.kind == EntityKind.QUEST and e not in found:
             found.append(e)
