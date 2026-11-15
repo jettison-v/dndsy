@@ -99,17 +99,49 @@ def test_what_a_sheet_adds_is_worked_out_again_whenever_it_could_change(name):
     check()
     s["abilities"][0]["modifier"] = (s["abilities"][0].get("modifier") or 0) + 3
     check()
+    cha = next(a for a in s["abilities"] if a.get("short") == "Cha")
+    cha["modifier"] = 4
+    check()
+    cha["key"] = "nothing"  # (an ability is found by its key or its short name: each alone changes the answer)
+    check()
+    cha["short"] = "Non"
+    check()
     s["features"].append({"name": "Great Weapon Master", "source": "Feat"})
     check()
     s["actions"].append({"name": "Stunning Strike"})
     check()
     s["spells"].append({"name": "Hunter's Mark"})
     check()
-    s["inventory"].append({"name": "Flame Tongue Longsword", "base_name": "Longsword", "key": "item:1", "equipped": True})
+    s["inventory"].append({"name": "Flame Tongue Longsword", "base_name": "Longsword", "key": "item:1", "equipped": True,
+                           "category": "Weapon"})
     check()
     s["inventory"][-1]["equipped"] = False
     check()
+    s["inventory"][-1]["category"] = "Other Gear"  # (carried, not a weapon: it counts unequipped)
+    check()
+    s["inventory"][-1]["category"] = "Weapon"
     s["inventory"][-1] |= {"equipped": True, "attunement": "required"}
     check()
     s["_item_choices"] = {"1": "Chromatic"}
+    check()
+    # and each changed in place, as a feat retrained or an item swapped is (the same count of everything: Nov 15,
+    # mutation testing found the key could lose a field the appends above never noticed)
+    s["features"][-1]["name"] = "Charger"
+    check()
+    s["features"][-1]["source"] = "Species"
+    check()
+    s["actions"][-1]["name"] = "Healing Hands"
+    check()
+    s["spells"][-1]["name"] = "Branding Smite"
+    check()
+    s["inventory"][-1] |= {"attunement": "", "name": "Frost Brand Longsword"}
+    check()
+    s["inventory"][-1] |= {"name": "Grandfather's Sword", "base_name": "Flame Tongue"}
+    check()
+    s["inventory"].append({"name": "Dragon-Touched Focus", "key": "item:5", "equipped": True, "category": "Wondrous item"})
+    s["_item_choices"] = {"5": "Chromatic"}
+    check()
+    s["inventory"][-1]["key"] = "item:6"
+    check()
+    s["classes"][0]["name"] = "Wizard"
     check()

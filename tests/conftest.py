@@ -197,7 +197,12 @@ def context_values():
 def _fresh_context():
     """Each test starts with every context value at its default (Nov 13, mutation testing: in another order,
     test_history found the source an earlier test had left, and recorded its edit under it)."""
+    from app import rules_book
+
     tokens = [(var, var.set(default)) for var, default in context_values()]
+    # and an empty adds cache: an answer kept from an earlier test (or, in mutation testing, from the clean run before
+    # each planted bug) would be given back without the code running (Nov 15: 30 bugs went unnoticed that way)
+    rules_book._ADDS.clear()
     yield
     for var, token in reversed(tokens):
         try:

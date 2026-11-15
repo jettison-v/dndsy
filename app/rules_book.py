@@ -94,7 +94,7 @@ def fill(text: str, sheet: dict | None, cls: str | None = None) -> str:
         head, _, arg = k.partition(":")
         if head == "level":
             out = str(lv.get(arg, 0))
-        elif head == "half":
+        elif head == "half" and arg:  # ({half} alone is the entry's own class, below)
             out = str(lv.get(arg, 0) // 2)
         elif head in ("mod", "dc") or k.startswith(("mod_", "dc_")):
             ab = arg or k.split("_", 1)[1]
