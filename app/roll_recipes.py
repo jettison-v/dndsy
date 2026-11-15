@@ -102,7 +102,7 @@ def item_for(sheet: dict | None, name: str) -> dict | None:
     on the sheet as `_homebrew` by character_views.apply_overrides), then the books' (`item`)."""
     hb = (sheet or {}).get("_homebrew") or {}
     full = (name or "").removeprefix("Use an item: ")
-    e = hb.get(norm(full, whole=True)) or hb.get(norm(full))  # (its own name, else without its note: "Ember Blade (Longsword)")
+    e = hb.get(norm(full, whole=True)) or hb.get(_base(full))  # (its own name, else without its note: "Ember Blade (Longsword)")
     if e and e.get("rolls"):
         return {"checked": "homebrew", "level": 0, "events": [event(r) for r in e["rolls"]]}
     return item(name)
@@ -111,9 +111,18 @@ def item_for(sheet: dict | None, name: str) -> dict | None:
 def item(name: str) -> dict | None:
     """The recipe for an item by name ("Potion of Healing (Superior)"), any capitalization."""
     full = (name or "").removeprefix("Use an item: ")
-    items = {norm(n, whole=True): r for n, r in (recipes().get("items") or {}).items()}
     # (else without its note: a magic weapon named with its base, "Hammer of Thunderbolts (Maul)")
-    return items.get(norm(full, whole=True)) or items.get(norm(full))
+    return _items().get(norm(full, whole=True)) or _items().get(_base(full))
+
+
+@cache
+def _items() -> dict:
+    return {norm(n, whole=True): r for n, r in (recipes().get("items") or {}).items()}
+
+
+def _base(name: str) -> str:
+    """An item's name without its note, wherever the note is ("Ember Blade (Longsword) +1" -> "ember blade")."""
+    return norm(name.split(" (")[0], whole=True)
 
 
 def parse_part(part: str) -> tuple[int, int, int, str] | None:

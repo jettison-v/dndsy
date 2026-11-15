@@ -45,7 +45,9 @@ def test_a_name_is_matched_one_way(raw, base, whole):
 def test_items_and_features_are_found_by_that_one_way():
     assert roll_recipes.item("Use an item: potion of healing (greater)") is roll_recipes.item("Potion of Healing (Greater)")
     assert roll_recipes.item("Potion of Healing (Greater)") is not roll_recipes.item("Potion of Healing")
-    assert roll_recipes.item("Hammer of Thunderbolts (Maul)") is roll_recipes.item("Hammer of Thunderbolts")
+    hammer = roll_recipes.item("Hammer of Thunderbolts")
+    assert hammer is not None and roll_recipes.item("Hammer of Thunderbolts (Maul)") is hammer
+    assert roll_recipes.item("Hammer of Thunderbolts (Maul) +1") is hammer  # (a note in brackets anywhere)
     assert roll_recipes.feature("Second  Wind") is roll_recipes.feature("second wind") is not None
 
 
@@ -125,3 +127,21 @@ def test_a_wondrous_item_counts_while_carried_unless_it_needs_attuning():
     assert "Guiding needle" in adds(s)
     s["inventory"][0]["attunement"] = "required"
     assert "Guiding needle" not in adds(s)
+
+
+
+@pytest.mark.parametrize("name", ["big_c", "cole", "no_name", "trah"])
+def test_the_partys_real_sheets_lose_nothing_to_it(name):
+    """R6's guard on real sheets: the party's D&D Beyond sheets (2024 classes, two of them with a 2014 subclass) keep
+    every entry they'd have by class and level alone, so an entry named for an option D&D Beyond doesn't list (Rage
+    Damage, inside Rage) shows here as missing. (Checked Nov 14 on every sheet in the local copy of beta, too: only 2014
+    characters lost anything, and only 2024-only features.)"""
+    import copy
+
+    from tests.test_roll_plan import sheet as party_sheet
+
+    s = party_sheet(name)
+    unlisted = copy.deepcopy(s)
+    classes = {x for c in s["classes"] for x in (c["name"], c.get("subclass"))}
+    unlisted["features"] = [dict(f, source="") if f.get("source") in classes else f for f in unlisted["features"]]
+    assert names(s) == names(unlisted)

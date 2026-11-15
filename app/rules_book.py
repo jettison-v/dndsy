@@ -80,11 +80,12 @@ def fill(text: str, sheet: dict | None, cls: str | None = None) -> str:
 
     def value(m):
         n, (k, bar, floor) = m.group(1), m.group(2).partition("|")
-        out = one(n, k)
-        # a floor: {mod:wisdom|1} is at least 1 ("a number of d8s equal to your Wisdom modifier (minimum of one)")
-        if bar and re.fullmatch(r"-?\d+", floor) and re.fullmatch(r"[+-]?\d+", num := out[len(n):]):
+        # a floor: {mod:wisdom|1} is at least 1 ("a number of d8s equal to your Wisdom modifier (minimum of one)"); the
+        # token's own number is floored, then its count in front of it kept
+        if bar and re.fullmatch(r"-?\d+", floor) and re.fullmatch(r"[+-]?\d+", num := one("", k)):
             low = max(int(num), int(floor))
             return n + (f"{low:+d}" if k.startswith("mod_") else str(low))
+        out = one(n, k)
         return out if out != f"{n}{{{k}}}" else m.group(0)
 
     def one(n, k):
@@ -150,7 +151,8 @@ def active(sheet: dict | None) -> list[dict]:
     names = has_names(sheet)
     # the classes whose features the sheet lists (D&D Beyond's sheets do; a made-up character's don't)
     listed = {c.get("name") for c in sheet.get("classes") or []
-              if any(f.get("source") in (c.get("name"), c.get("subclass")) for f in sheet.get("features") or [] if isinstance(f, dict))}
+              if any(f.get("source") and f.get("source") in (c.get("name"), c.get("subclass"))
+                     for f in sheet.get("features") or [] if isinstance(f, dict))}
     # (a magic item's adds while it's in use: attuned if it needs it, and a weapon equipped; the outside review's R7)
     carried = [norm(n) for it in sheet.get("inventory") or [] if it.get("attunement") != "required"
                and (it.get("equipped") or it.get("category") != "Weapon") for n in (it.get("name"), it.get("base_name")) if n]
