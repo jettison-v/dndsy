@@ -112,12 +112,8 @@ def item(name: str) -> dict | None:
     """The recipe for an item by name ("Potion of Healing (Superior)"), any capitalization."""
     full = (name or "").removeprefix("Use an item: ")
     # (else without its note: a magic weapon named with its base, "Hammer of Thunderbolts (Maul)")
-    return _items().get(norm(full, whole=True)) or _items().get(_base(full))
-
-
-@cache
-def _items() -> dict:
-    return {norm(n, whole=True): r for n, r in (recipes().get("items") or {}).items()}
+    items = {norm(n, whole=True): r for n, r in (recipes().get("items") or {}).items()}  # (27; read fresh, as recipes() is)
+    return items.get(norm(full, whole=True)) or items.get(_base(full))
 
 
 def _base(name: str) -> str:
