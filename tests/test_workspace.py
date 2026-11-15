@@ -33,9 +33,16 @@ def _table_on(db) -> Campaign:
 def test_every_page_says_who_by_a_rule_access_knows():
     """A standing rule (Brett, Nov 13: "make sure the permission structure is robust and flexible"): every Manage page's
     who-may-open is a rule app/access.py answers, so the access chart, the menus and the pages can't disagree."""
-    rules = set(access.allows.__code__.co_consts) | {"admin"}
+    def known(rule) -> bool:  # (asked of `allows` itself, not read from its compiled code, which mutation testing wraps)
+        try:
+            access.allows(rule, access.MEMBER)
+        except KeyError:
+            return False
+        return True
+
+    assert not known("no such rule")
     for key, *_, allowed, _extra in manage.PAGES:
-        assert callable(allowed) or allowed in rules, key
+        assert callable(allowed) or known(allowed), key
 
 
 def test_the_dm_sees_what_they_make_under_the_next_game(dm, db):

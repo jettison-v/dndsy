@@ -7,12 +7,14 @@ mutmut puts small deliberate bugs into the module, one at a time (a > made >=, a
 runs the tests that reach it; each bug the tests don't notice "survived": a missing test, or a change nobody could see
 (wording, which the tests don't pin on purpose: CLAUDE.md, markers not text). It lists the survivors with what changed.
 Slow (minutes to an hour a module): run it by hand on the module you're changing, never in CI. Its working copy is
-mutants/ (ignored by git). Never reports to Sentry or uses the local copy of beta.
+mutants/ (ignored by git), made fresh each run. Never reports to Sentry or uses the local copy of beta.
 """
 
 import os
+import shutil
 import subprocess
 import sys
+from pathlib import Path
 
 CORE = ("access", "roll_plan", "hit_points", "rules_book", "measure", "areas", "fog", "coins", "initiative", "conditions", "death_saves")
 
@@ -25,6 +27,9 @@ def main() -> int:
     # (OBJC_DISABLE_INITIALIZE_FORK_SAFETY: macOS aborts a forked test process that touches its own system libraries,
     # which crashed 54 runs; mutmut forks one per bug)
     env = {**os.environ, "SENTRY_DSN": "", "OBJC_DISABLE_INITIALIZE_FORK_SAFETY": "YES", "TEST_DATABASE_URL": os.environ.get("TEST_DATABASE_URL", "postgresql+psycopg://localhost/askdnd_test_mutation")}
+    # a fresh copy each run: mutmut keeps its old copy of what isn't Python (templates, data), so a template changed since
+    # failed its first full test run and nothing was tested (Nov 14)
+    shutil.rmtree(Path(__file__).resolve().parent.parent / "mutants", ignore_errors=True)
     subprocess.run(["uv", "run", "mutmut", "run", "--max-children", "4", f"app.{module}.*"], env=env, check=False)
     out = subprocess.run(["uv", "run", "mutmut", "results"], env=env, capture_output=True, text=True).stdout
     survived = [line.split(":")[0].strip() for line in out.splitlines() if line.strip().endswith("survived") and f"app.{module}." in line]
