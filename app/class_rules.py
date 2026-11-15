@@ -150,7 +150,8 @@ RESOURCE_ACTIONS = {"Sorcery Points", "Focus Points", "Luck Points", "Superiorit
 
 def _has(sheet: dict, text: str) -> bool:
     names = [x.get("name") or "" for x in (sheet.get("features") or []) + (sheet.get("actions") or [])]
-    return any(text.lower() in norm(n) or text.lower() in (n or "").lower() for n in names)
+    want = norm(text, whole=True)
+    return any(want in norm(n) or want in norm(n, whole=True) for n in names)
 
 
 def _values(sheet: dict, level: int) -> dict:

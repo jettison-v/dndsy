@@ -29,6 +29,8 @@ import re
 from functools import cache
 from pathlib import Path
 
+from app.rules_book import norm
+
 PATH = Path(__file__).parent / "data" / "roll_recipes.json"
 PART = re.compile(r"^(?:\d+x)?(?:(\d+)d(\d+)([+-]\d+)?|([+-]?\d+))(?:\s+(.+))?$")  # "2d6+3 fire", a fixed "1 bludgeoning",
 # or either times a number, "2x1d8" (Mantle of Inspiration: twice the roll), read by `times`
@@ -65,8 +67,6 @@ def feature(name: str) -> dict | None:
     """The recipe for a class feature's roll by its Battle name ("Second Wind"), parts with {tokens} the sheet fills in
     (app/rules_book.py `fill`: {level:Fighter}, {mod:dexterity}, N{martial_arts}, {sneak}, {lands_aid}, {bardic}…). D&D
     Beyond's own names match too: curly apostrophes, and the part after a prefix ("Channel Divinity: Divine Spark")."""
-    from app.rules_book import norm
-
     all_ = recipes().get("features") or {}
     keys = {norm(k, whole=True): k for k in all_}
     want = norm(name, whole=True)
@@ -100,8 +100,6 @@ def event(e: dict) -> dict:
 def item_for(sheet: dict | None, name: str) -> dict | None:
     """An item's recipe for this character: the campaign's homebrew item of that name first (app/homebrew.py, carried
     on the sheet as `_homebrew` by character_views.apply_overrides), then the books' (`item`)."""
-    from app.rules_book import norm
-
     hb = (sheet or {}).get("_homebrew") or {}
     full = (name or "").removeprefix("Use an item: ")
     e = hb.get(norm(full, whole=True)) or hb.get(norm(full))  # (its own name, else without its note: "Ember Blade (Longsword)")
@@ -112,8 +110,6 @@ def item_for(sheet: dict | None, name: str) -> dict | None:
 
 def item(name: str) -> dict | None:
     """The recipe for an item by name ("Potion of Healing (Superior)"), any capitalization."""
-    from app.rules_book import norm
-
     full = (name or "").removeprefix("Use an item: ")
     items = {norm(n, whole=True): r for n, r in (recipes().get("items") or {}).items()}
     # (else without its note: a magic weapon named with its base, "Hammer of Thunderbolts (Maul)")

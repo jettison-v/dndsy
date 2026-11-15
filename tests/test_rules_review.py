@@ -14,7 +14,10 @@ import pytest
 from app import roll_plan, roll_recipes, rules_book
 from app.class_rules import norm as class_norm
 from tests.table_setup import made_up, plain_id
-from tests.test_rules_books import entries
+
+
+def entries():
+    return [(e["_book"], e) for e in rules_book.entries()]
 
 
 def names(sheet):
