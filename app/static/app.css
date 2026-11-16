@@ -3426,8 +3426,8 @@ button.chg-card:hover { border-color: var(--faint); }
 .rl-when { color: var(--muted); min-width: 0; }
 .rl-now { font-size: var(--fs-xs); font-weight: 700; padding: 2px 8px; border-radius: var(--r-pill); white-space: nowrap; background: var(--surface-3, var(--surface)); color: var(--muted); }
 .rl-now.yes { background: var(--green-soft); color: var(--green); }
-.rl-now.no { background: var(--amber-soft); color: var(--amber); }
-.rl-full { grid-column: 1 / -1; color: var(--amber); font-size: var(--fs-xs); }
+.rl-now.no { background: var(--surface-3, var(--surface)); color: var(--muted); }  /* (not now is information, not a warning: amber is for what goes past a rule) */
+.rl-full { grid-column: 1 / -1; color: var(--muted); font-size: var(--fs-xs); }  /* (a full count is held, as on D&D Beyond: said quietly) */
 .chg-warns:empty { display: none; }
 .chg-warns { display: grid; gap: var(--sp-1); }
 .chg-warn { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); }

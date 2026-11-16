@@ -36,25 +36,27 @@ router = APIRouter()
 LOOK = "look"
 
 # When each list may change, by the 2024 Player's Handbook (checked against its text, Nov 15; board 1 of the mockup):
-# (when: "rest" or "level", one at a time?, the few words the rule line has room for). Said, never enforced.
-CANTRIPS = {"Wizard": ("rest", True, "one, after a Long Rest")}
-CANTRIPS_DEFAULT = ("level", True, "one, when you gain a {cls} level")
-SPELLS = {"Cleric": ("rest", False, "any, after a Long Rest"), "Druid": ("rest", False, "any, after a Long Rest"),
-          "Wizard": ("rest", False, "any from your spellbook, after a Long Rest"),
-          "Paladin": ("rest", True, "one, after a Long Rest"), "Ranger": ("rest", True, "one, after a Long Rest")}
-SPELLS_DEFAULT = ("level", True, "one, when you gain a {cls} level")
-BOOK = ("level", False, "two free on each Wizard level; a spell you find, 2 hours and 50 GP a level (not taken from your purse)")
-FORMS = ("rest", True, "one, after a Long Rest")
+# (when: "rest" or "level", one at a time?, what you may do, and when: the rule line says them as one plain sentence,
+# "Swap 1 when you gain a Druid level"; Brett, Nov 16: "one, when you gain a Druid level" was confusing). Said, never
+# enforced.
+CANTRIPS = {"Wizard": ("rest", True, "swap 1", "after a Long Rest")}
+CANTRIPS_DEFAULT = ("level", True, "swap 1", "when you gain a {cls} level")
+SPELLS = {"Cleric": ("rest", False, "change any", "after a Long Rest"), "Druid": ("rest", False, "change any", "after a Long Rest"),
+          "Wizard": ("rest", False, "change any", "from your spellbook after a Long Rest"),
+          "Paladin": ("rest", True, "swap 1", "after a Long Rest"), "Ranger": ("rest", True, "swap 1", "after a Long Rest")}
+SPELLS_DEFAULT = ("level", True, "swap 1", "when you gain a {cls} level")
+BOOK = ("level", False, "copy in 2 free", "on each Wizard level; a spell you find takes 2 hours and 50 GP a level (not taken from your purse)")
+FORMS = ("rest", True, "swap 1", "after a Long Rest")
 
 
-def _rule(table: dict, default: tuple, cls: str) -> tuple[str, bool, str]:
-    when, one, words = table.get(cls, default)
-    return when, one, words.format(cls=cls)
+def _rule(table: dict, default: tuple, cls: str) -> tuple[str, bool, str, str]:
+    when, one, may, words = table.get(cls, default)
+    return when, one, may, words.format(cls=cls)
 
 
 def _list(lid: str, cls: str, title: str, label: str, kind: str, rule: tuple, cap: int | None, add: str, drop: str) -> dict:
-    when, one, words = rule
-    return {"id": lid, "cls": cls, "title": title, "label": label, "kind": kind, "cap": cap or 0, "one": one, "when": words,
+    when, one, may, words = rule
+    return {"id": lid, "cls": cls, "title": title, "label": label, "kind": kind, "cap": cap or 0, "one": one, "may": may, "when": f"{may} {words}",
             "k": when, "occ": ["rest"] if when == "rest" else [f"level-{cls.lower()}"], "add": add, "drop": drop, "rows": [],
             "first": "let one go first" if drop == "Let go" else f"{drop.lower()} one first",  # (what a full count asks)
             "full": f"{'let one go' if drop == 'Let go' else drop.lower() + ' one'} to {add.lower()} another"}
@@ -137,10 +139,10 @@ def occasions(tabs: list[dict]) -> list[tuple[str, str, str]]:
 
 def allows(tabs: list[dict], key: str) -> str:
     """What a reason lets this character change, in the words of each list's rule (the ask step's tiles; Brett chose B,
-    Nov 16, docs/mockups/why-changing/): "Paladin prepared spells: one" for After a Long Rest."""
+    Nov 16, docs/mockups/why-changing/): "Paladin prepared spells: swap 1" for After a Long Rest."""
     if key == LOOK:
         return "See the lists; nothing is marked Now."
-    said = [f"{L['label']}: {L['when'].split(',')[0]}" for t in tabs for L in t["lists"] if key in L["occ"]]
+    said = [f"{L['label']}: {L['may']}" for t in tabs for L in t["lists"] if key in L["occ"]]
     return " · ".join(said) if said else "Nothing changes now by the rules; you can still look."
 
 
