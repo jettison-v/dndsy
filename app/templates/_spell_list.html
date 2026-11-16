@@ -2,7 +2,7 @@
    · All views), Plan › Spells (the Shortlist only, no views) and Change spells (app/choosing.py: `edit`, each list's
    meta by id, puts one button by the bookmark: Prepare or Unprepare, Learn or Let go, Copy in). `spells` from
    spellbook.sheet_entries, or the window's rows (each with its `pick`). #}
-{% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle, change_act %}
+{% from "_lists.html" import filter_column, search_box, view_switch, notes_toggle, change_act %}
 {% from "_char.html" import pick_btn, comp_mark %}
 {% macro spell_list(c, s, spells, groups, picks, can_pick, show_picks, key="sheet-spells", views=(), edit=none) -%}
   {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
@@ -18,7 +18,6 @@
             <select data-ls-sort aria-label="Sort"><option value="level">Level</option><option value="name">Name</option><option value="avg">Amount</option></select></label>
           {% if show_picks %}{{ notes_toggle() }}{% endif %}
         </div>
-        {{ active_row() }}
         <div class="ls-rows sh-cols{{ ' chg-cols' if edit }}" data-ls-rows>
           <div class="ls-head" aria-hidden="true"><span title="Prepared">✓</span><span>Spell</span><span>Time</span><span>Range</span><span>Duration</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
           {% for e in spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}{% set a = e.avgs.get(e.level) %}
@@ -52,7 +51,7 @@
           </div>
           {% endfor %}
         </div>
-        <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+        <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear</button></p>
         {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on a spell you're considering; compare your Shortlist on Plan before preparing it on D&amp;D Beyond.</p>{% endif %}
       </div>
     </div>

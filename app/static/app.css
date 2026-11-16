@@ -2343,8 +2343,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ls-search input { flex: 1; min-width: 0; min-height: 0; padding: 0; background: none; border: 0; color: var(--text); font: inherit; font-size: var(--fs-sm); outline: none; }
 .ls-searching { margin: 0; padding: 6px 10px; border-radius: var(--r-md); background: var(--amber-soft); color: var(--text); font-size: var(--fs-sm); }
 .ls-is-searching .ls-filters { opacity: .45; pointer-events: none; }
-.ls-active { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.ls-active-chips { display: inline-flex; flex-wrap: wrap; gap: 5px; }
+.ls-filters-head .ls-clear { margin-left: auto; flex: none; }  /* Clear by the Filters heading (feedback 67) */
+.ls-fold > summary .ls-clear { float: right; }  /* (a phone's folded Filters button carries it too, at its right) */
 .ls-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .ls-toolbar > .note:first-child { margin-right: auto; }
 .ls-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
@@ -2795,8 +2795,6 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
 
 /* Battle's "See all" / "+ Add" panels: search and kind chips above the groups */
 .opt-tools { display: flex; flex-direction: column; gap: var(--sp-2); margin-bottom: var(--sp-2); position: sticky; top: calc(-1 * var(--sp-4)); z-index: 2; background: var(--surface); padding: var(--sp-2) 0; }
-.opt-group h3.divider { margin-top: var(--sp-4); }
-.opt-group:first-of-type h3.divider { margin-top: var(--sp-2); }
 
 /* A campaign entry's side panel (_peek.html): the table's facts, each with Done for the DM */
 .peek-facts li { display: block; }
@@ -2838,7 +2836,7 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
 .reader-nav .ls-views { display: flex; }
 .reader-nav .ls-views button { flex: 1; }
 .reader-filters { display: grid; gap: var(--sp-2); }
-.reader-filters-head { display: flex; justify-content: space-between; align-items: baseline; font: 700 var(--fs-xs) var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.reader-filters .ls-label { font-size: var(--fs-xs); }  /* (the Reader's narrow column: the shared groups, a size smaller) */
 .reader-filters .ls-chip { font-size: var(--fs-xs); min-height: var(--control-h-sm); padding: 0 var(--sp-2); }
 .reader-filters .note { margin: 0; }
 /* The Campaign page's tabs: Story's underline tabs on the page itself, still sticky (Brett, 2026-10-23) */

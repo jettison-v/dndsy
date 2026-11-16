@@ -89,7 +89,7 @@ STOPS = [
      "what": "<b>+ Add</b> on a column opens the side panel with everything that isn't on Battle yet.",
      "why": "Everything stays one click away, and only what you pick takes up room."},
     {"group": "battle", "title": "The pin", "page": "battle", "needs": "character", "panel": True,
-     "open": [ADD], "at": ".peek.open [data-opt-panel] .pick.star",
+     "open": [ADD], "at": ".peek.open [data-list='battle-options'] .pick.star",
      "what": "The <b>pin</b> on a row puts it on Battle, in its column.",
      "why": "Unpin it the same way whenever you like."},
     {"group": "battle", "title": "Pinned: it's on Battle", "page": "battle", "needs": "character", "example": "pin",
@@ -97,7 +97,7 @@ STOPS = [
      "what": "Here it is, at the top of its column. (Only an example: the tour doesn't pin anything for you.)",
      "why": "Drag rows up and down to put a column in the order you use it."},
     {"group": "battle", "title": "Open one: Pin and Notes", "page": "battle", "needs": "character", "panel": True,
-     "open": [ADD, ".peek.open [data-opt-panel] .ri"], "at": ".peek.open .detail-marks",
+     "open": [ADD, ".peek.open [data-list='battle-options'] .ri"], "at": ".peek.open .detail-marks",
      "what": "Click a row's name for its rules and its marks: <b>Pin to Battle</b>, <b>Remind me</b> and <b>Your "
              "note</b>.",
      "why": "Your note is for the why and when (\"save it for the boss\"). Other players can read it; the DM never sees "

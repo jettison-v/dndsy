@@ -1,22 +1,25 @@
 {# Side panel content (app.js openPanel): one option, or all options of one kind. #}
 {% from "_char.html" import opt_row %}
+{% from "_lists.html" import search_box, filter_head, chip_group, empty_state %}
 <div class="peek-head">
   <div><div class="note">{{ c.name }}{% if adding %} · not pinned yet{% elif items_only %} · items{% elif opts | length > 1 %} · everything you can do{% endif %}</div><h2 id="peek-title" class="econ-title k-{{ {"Action": "action", "Bonus action": "bonus", "Reaction": "reaction"}.get(title, "other") }}">{{ title }}{% if opts | length > 1 or adding %}s{% endif %}</h2></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
-<div class="peek-body" data-opt-panel>
-  {# Bucketed (character_views.option_groups), with chips to show one kind and a search box (app.js) #}
+<div class="peek-body" data-list="battle-options" data-default-sort="default" data-noun="option">
+  {# Bucketed (character_views.option_groups) under their headings, with the shared list pieces (_lists.html, app.js
+     "Lists"; one component, feedback 67): search, a chip per kind with its count, and Clear by the Filters heading #}
+  {% set KIND = {"attack": "Attacks", "feature": "Features", "spell": "Spells", "item": "Items", "rule": "Rules"} %}
   {% set kinds = groups | map(attribute="kind") | unique | list %}
   {% if opts | length > 6 %}<div class="opt-tools">
-    <div class="ls-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input type="search" data-opt-search placeholder="Search {{ title | lower }}s" aria-label="Search {{ title | lower }}s" autocomplete="off"></div>
-    {% if kinds | length > 1 %}<div class="ls-chips" role="group" aria-label="Show only">{% for k in kinds %}{% set n = groups | selectattr("kind", "equalto", k) | map(attribute="opts") | map("length") | sum %}<button type="button" class="ls-chip" data-opt-kind="{{ k }}" aria-pressed="false">{{ {"attack": "Attacks", "feature": "Features", "spell": "Spells", "item": "Items", "rule": "Rules"}[k] }} <span class="ls-n">{{ n }}</span></button>{% endfor %}</div>{% endif %}
+    {{ search_box("Search " ~ title | lower ~ "s") }}
+    {% if kinds | length > 1 %}<div class="opt-filters">{{ filter_head() }}{% set kvals = [] %}{% for k in kinds %}{% set _ = kvals.append(KIND[k]) %}{% endfor %}{{ chip_group({"key": "kind", "label": "Show only", "values": kvals}) }}</div>{% endif %}
   </div>{% endif %}
-  {% for g in groups %}<div class="opt-group" data-kind="{{ g.kind }}">
-    {% if groups | length > 1 %}<h3 class="divider">{{ g.label }} <span class="count">{{ g.opts | length }}</span></h3>{% endif %}
-    <div class="rows one">{% for o in g.opts %}{{ opt_row(c, o, picks, can_pick, can_use, can_play) }}{% endfor %}</div>
-  </div>{% endfor %}
-  <p class="muted" data-opt-none hidden>Nothing matches.</p>
-  {% if adding and not opts %}<p class="muted">Everything here is already pinned.</p>{% endif %}
-  {% if can_pick and (opts | length > 1 or adding and opts) %}<p class="note mt-3">Pin an option to show it in its column on Battle.</p>{% endif %}
+  <div class="rows one" data-ls-rows>
+    {% set n = namespace(i=0) %}
+    {% for g in groups %}{% for o in g.opts %}{% set n.i = n.i + 1 %}
+    {% set row %}data-ls-row data-sort-default="{{ n.i }}"{% if groups | length > 1 %} data-group-label="{{ g.label }}"{% endif %} data-name="{{ [o.name, o.summary or o.meta or ''] | join(' ') | lower }}" data-f='{{ {"kind": KIND[g.kind]} | tojson }}'{% endset %}
+    {{ opt_row(c, o, picks, can_pick, can_use, can_play, attrs=row) }}{% endfor %}{% endfor %}
+  </div>
+  <p class="muted ls-empty" data-ls-empty hidden>Nothing matches. <button type="button" class="btn link small" data-ls-clear>Clear</button></p>
+  {% if adding and not opts %}{{ empty_state("Everything here is already pinned.") }}{% endif %}
 </div>

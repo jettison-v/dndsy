@@ -3,7 +3,7 @@
    left, search, compact rows; a name shows what the item is on the right (over the list on narrow screens), + puts it in
    Adding at the bottom, and one press there makes them all on D&D Beyond (app.js "Item browser"). Nothing is priced
    that D&D Beyond doesn't price: a magic item says ask the DM. #}
-{% from "_lists.html" import filter_column, search_box, active_row %}
+{% from "_lists.html" import filter_column, search_box %}
 {% from "_char.html" import purse, coins_text %}
 {# Can the character use it (app/item_fit.py; Brett, Nov 3): a circle with a tick, or a triangle for a catch the rules
    attach; shape and colour both say it, and hovering (or tapping) says why. Nothing to say: an empty cell. #}
@@ -31,7 +31,6 @@
     {{ filter_column(groups) }}
     <div class="ls-main ib-main">
       {{ search_box("Search items: rope, healing, +1…") }}
-      {{ active_row() }}
       <div class="ls-toolbar"><span class="note" data-ls-summary></span></div>
       <div class="ls-rows ib-cols" data-ls-rows>
         <div class="ls-head" aria-hidden="true"><span></span><span>Item</span><span>Rarity</span><span>Cost</span><span>Weight</span><span></span></div>

@@ -1,7 +1,7 @@
 {# Inventory on the shared list pattern (_lists.html, roadmap step 11): All · Equipped · Shortlist (All first: Brett, 2026-10-28), chip filters,
    search, sorts and the side panel, like Sheet › Spells. `items` is sheet.inventory (apply_overrides gives each
    its group: battle, equipped, Weapons, Armor, Magic items, Potions and scrolls, Gear). #}
-{% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
+{% from "_lists.html" import filter_column, search_box, view_switch, notes_toggle %}
 {% from "_char.html" import pick_btn, pips, count_pips, sync_attrs %}
 {# `sync` is the sheet's changes on their way to D&D Beyond (ddb_bridge.as_shown): each row marks its count, equipping,
    attuning and charges with the one ↻ (Brett, 2026-11-02, the UI pass) #}
@@ -38,7 +38,6 @@
         {% if show_picks %}{{ notes_toggle() }}{% endif %}
         {% if end %}<span class="ls-end">{{ end }}</span>{% endif %}
       </div>
-      {{ active_row() }}
       <div class="ls-rows it-cols" data-ls-rows>
         <div class="ls-head" aria-hidden="true"><span title="Equipped or attuned">✓</span><span>Item</span><span>Kind</span><span>Uses</span><span>Details</span><span></span></div>
         {% for it in items %}{% set note = picks.notes.get(it.key) if show_picks else "" %}
@@ -66,7 +65,7 @@
         </div>
         {% endfor %}
       </div>
-      <p class="note ls-empty" data-ls-empty hidden>No items match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+      <p class="note ls-empty" data-ls-empty hidden>No items match. <button type="button" class="btn link small" data-ls-clear>Clear</button></p>
       {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on an item you want close at hand.</p>
       <p class="note ls-empty" data-ls-empty-view="ready" hidden>Nothing equipped. Equip items on D&amp;D Beyond, then refresh; <b>All</b> shows everything you carry.</p>{% endif %}
     </div>

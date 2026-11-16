@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_lists.html" import search_box %}
+{% from "_lists.html" import search_box, clear_filters, filter_head, chip_group %}
 {% from "_feedback_pics.html" import pics_field, added_pics %}
 {% block title %}Notes you sent · askdnd{% endblock %}
 {# Your notes (app/your_notes.py; Brett, Nov 7: docs/mockups/your-notes/ Layout A and a badge, then
@@ -22,15 +22,14 @@
     <div class="reader-nav-head">
       {{ search_box(placeholder) }}
       <details class="ls-fold" data-ls-fold open>{# (folded to "Filters (N)" on a phone, as every list's filters are) #}
-      <summary>Filters <span class="count" data-ls-fold-count hidden></span></summary>
+      <summary>Filters <span class="count" data-ls-fold-count hidden></span>{{ clear_filters() }}</summary>
       <div class="reader-filters">
-        <div class="reader-filters-head"><span>Where it stands</span><button type="button" class="btn link small" data-ls-clear>Clear</button></div>
-        <div class="ls-chips">{% for v in statuses if v in (base or statuses) or v in present %}<button type="button" class="ls-chip" data-ls-group="status" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}
-          <button type="button" class="ls-chip" data-ls-group="new" data-ls-value="New to you" aria-pressed="false">New to you <span class="ls-n" data-ls-n></span></button></div>
-        {% if whats %}<div class="reader-filters-head"><span>What it is</span></div>
-        <div class="ls-chips">{% for v in whats %}<button type="button" class="ls-chip" data-ls-group="what" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}</div>{% endif %}
-        {% if froms | length > 1 %}<div class="reader-filters-head"><span>{{ from_label }}</span></div>
-        <div class="ls-chips">{% for v in froms %}<button type="button" class="ls-chip" data-ls-group="from" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}</div>{% endif %}
+        {{ filter_head() }}{# (the shared filter pieces, _lists.html: one component, feedback 67) #}
+        {% set stands = [] %}{% for v in statuses if v in (base or statuses) or v in present %}{% set _ = stands.append(v) %}{% endfor %}
+        {{ chip_group({"key": "status", "label": "Where it stands", "values": stands}) }}
+        {{ chip_group({"key": "new", "label": "Since you looked", "values": ["New to you"]}) }}
+        {% if whats %}{{ chip_group({"key": "what", "label": "What it is", "values": whats}) }}{% endif %}
+        {% if froms | length > 1 %}{{ chip_group({"key": "from", "label": from_label, "values": froms}) }}{% endif %}
         <div class="notes-sort"><label class="ls-select"><span>Order</span><select data-ls-sort aria-label="Order"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
           <span class="note"><span data-ls-summary></span> shown</span></div>
       </div>

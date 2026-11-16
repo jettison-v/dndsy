@@ -2,7 +2,7 @@
    Sheet › Wild Shape (Known · All you can learn) and Plan › Wild Shapes (Shortlist · All you can learn).
    `forms` from wild_shape.forms; a row opens the form in its large window. Change forms (app/choosing.py) is the same
    list with `edit`: Learn or Let go by the bookmark (each form's `pick`), and a row opens nothing (the window stays). #}
-{% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle, change_act %}
+{% from "_lists.html" import filter_column, search_box, view_switch, notes_toggle, change_act %}
 {% from "_char.html" import pick_btn, adv %}
 {% macro form_list(c, forms, picks, can_pick, show_picks, key="sheet-forms", views=(), edit=none) -%}
 {%- set sizes = ["Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan"] -%}
@@ -28,7 +28,6 @@
           <select data-ls-sort aria-label="Sort"><option value="default">Known</option><option value="damage">Damage</option><option value="hit">To hit</option><option value="speed">Speed</option><option value="cr">CR</option><option value="name">Name</option></select></label>
         {% if show_picks %}{{ notes_toggle() }}{% endif %}
       </div>
-      {{ active_row() }}
       <div class="ls-rows fm-cols{{ ' chg-cols' if edit }}" data-ls-rows>
         <div class="ls-head" aria-hidden="true"><span title="Known">✓</span><span></span><span>Form</span><span>AC</span><span>Temp HP</span><span>To hit</span><span>Damage / turn</span><span>Speed</span><span></span></div>
         {% for fm in forms %}{% set k = fm.card %}{% set note = picks.notes.get(fm.key) if show_picks else "" %}
@@ -53,7 +52,7 @@
         </div>
         {% endfor %}
       </div>
-      <p class="note ls-empty" data-ls-empty hidden>No forms match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+      <p class="note ls-empty" data-ls-empty hidden>No forms match. <button type="button" class="btn link small" data-ls-clear>Clear</button></p>
       {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All you can learn</b>, press the bookmark on a form you're considering.</p>{% endif %}
     </div>
   </div>

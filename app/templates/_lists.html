@@ -2,15 +2,26 @@
    the filter column, the search box, the active-filter row and [data-ls-row] rows. Each row carries its
    filter values as data-f (JSON: group key -> value, or a list of values). #}
 
-{# The left filter column: the main groups, then More filters. On phones it folds into "Filters (N)".
-   Clear all lives in the active-filter row above the list, shown once something is filtered. #}
+{# Clear: by the Filters heading (and on a phone's folded Filters button), only once something is filtered, on every
+   list (Brett chose A, Nov 16, docs/mockups/filter-clear/; his feedback 67). The blue chips say what's on: no row above
+   the list. #}
+{% macro clear_filters() -%}
+<button type="button" class="btn link small ls-clear" data-ls-clear data-ls-clear-filters hidden>Clear</button>
+{%- endmacro %}
+
+{# The Filters heading, its rule and Clear: every filter column has it, the Reader's narrow one too (World, Notes you
+   sent). Not an <h3>: panel styles give h3s their own margins, which pushed it off the rule. #}
+{% macro filter_head() -%}
+<div class="ls-filters-head"><span class="ls-h" role="heading" aria-level="3">Filters</span><span class="ls-rule" aria-hidden="true"></span>{{ clear_filters() }}</div>
+{%- endmacro %}
+
+{# The left filter column: the main groups, then More filters. On phones it folds into "Filters (N)", with Clear. #}
 {% macro filter_column(groups) -%}
 {%- set more = groups | selectattr("more") | list -%}
 <details class="ls-fold" data-ls-fold>
-  <summary>Filters <span class="count" data-ls-fold-count hidden></span></summary>
+  <summary>Filters <span class="count" data-ls-fold-count hidden></span>{{ clear_filters() }}</summary>
   <aside class="ls-filters" aria-label="Filters">
-    {# Not an <h3>: panel styles give h3s their own margins, which pushed it off the rule #}
-    <div class="ls-filters-head"><span class="ls-h" role="heading" aria-level="3">Filters</span><span class="ls-rule" aria-hidden="true"></span></div>
+    {{ filter_head() }}
     {% for g in groups if not g.more %}{{ chip_group(g) }}{% endfor %}
     {% if more %}<details class="ls-more" data-ls-more>
       <summary>More filters <span class="note" data-ls-more-on></span></summary>
@@ -34,11 +45,6 @@
   <input type="search" placeholder="{{ placeholder }}" aria-label="{{ placeholder }}" data-ls-search>
 </div>
 <p class="ls-searching" data-ls-searching hidden>Searching everything: the filters are paused until you clear the search. <button type="button" class="btn link small" data-ls-clear-search>Clear search</button></p>
-{%- endmacro %}
-
-{# What's filtered right now, each with ×, and Clear all. #}
-{% macro active_row() -%}
-<div class="ls-active" data-ls-active hidden><span class="note">Showing only:</span> <span class="ls-active-chips" data-ls-active-chips></span> <button type="button" class="btn link small" data-ls-clear>Clear all</button></div>
 {%- endmacro %}
 
 {# Rows show your note on one line; this shows each note in full (remembered per list, app.js). On every list a player

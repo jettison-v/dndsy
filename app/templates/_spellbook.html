@@ -2,7 +2,7 @@
    (_lists.html, DESIGN.md › Lists and filters): Prepared spells only, filters on the left, compact rows.
    A row opens its side panel from the window edge; "Averages at" redraws the numbers for upcasting. #}
 {% from "_char.html" import spell_roll, pick_btn, comp_mark %}
-{% from "_lists.html" import filter_column, search_box, active_row, notes_toggle %}
+{% from "_lists.html" import filter_column, search_box, notes_toggle %}
 {% from "_cond_icons.html" import cond_icon %}
 {% set ON_SAVE = {"half": ("Half on a save", "half"), "none": ("Nothing on a save", "none"), "lands": ("Damage needs no save", "lands")} %}
 <div class="peek-head sb-head{{ ' sb-concentrating' if conc }}">
@@ -19,7 +19,6 @@
     {{ filter_column(groups) }}
     <div class="ls-main">
       {{ search_box("Search your prepared spells") }}
-      {{ active_row() }}
       <div class="ls-toolbar">
         <span class="note" data-ls-summary></span>
         <label class="ls-select" title="Average damage or healing if cast with a slot of this level (each spell at least at its own level)"><span>Cast at</span>
@@ -76,7 +75,7 @@
         </div>
         {% endfor %}
       </div>
-      <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+      <p class="note ls-empty" data-ls-empty hidden>No spells match. <button type="button" class="btn link small" data-ls-clear>Clear</button></p>
       <p class="note sb-foot-note">Pin a spell to show it on Battle's spell bar. Click a spell for everything about it: its full text, your note, and Shortlist and Remind me. Damage / Healing is the dice's average (cantrips at your level); healing is in green. Spend slots on D&amp;D Beyond; askdnd reads them on the next refresh.</p>
     </div>
   </div>
