@@ -932,6 +932,9 @@ class Feedback(Timestamped, Base):
     # what it is, picked when it's sent (feedback.KINDS; Brett, Nov 16): broken (fixed next round), idea (onto the
     # Roadmap's Ideas from feedback), question (answered in its thread); "" for a note sent before Nov 16 not yet sorted
     kind: Mapped[str] = mapped_column(String(20), default="", server_default="")
+    # a short title Claude writes when it takes the note up (`feedback.py title`; Brett, Nov 16); "" until then, when
+    # its first sentence stands in (your_notes.title_of)
+    title: Mapped[str] = mapped_column(String(120), default="", server_default="")
     url: Mapped[str] = mapped_column(String(1000), default="", server_default="")
     context: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     html: Mapped[str] = mapped_column(Text, default="", server_default="")

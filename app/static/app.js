@@ -5557,18 +5557,21 @@ document.addEventListener('change', e => {
 // or Esc closes it. A picture that is itself a button or link (your creature's, which opens the Picture window; a
 // party card) keeps doing that.
 (() => {
-  const PICS = '.ws-pic, .ep-pic img, .ep-mark, .peek-pic, img.portrait, .ib-pic, .fm-pic';
+  const PICS = '.ws-pic, .ep-pic img, .ep-mark, .peek-pic, img.portrait, .ib-pic, .fm-pic, .fb-pic';  // (.fb-pic: a feedback note's screenshots, Nov 16)
   const big = pic => pic.matches(PICS) && !pic.closest('a, button, [data-panel-url], [data-modal-url], [data-use-url], label');
   document.addEventListener('click', e => {
     const pic = e.target.closest && e.target.closest('img');
-    if (!pic || !big(pic) || !pic.currentSrc) return;
+    if (!pic || !big(pic) || !(pic.currentSrc || pic.src)) return;  // (a lazy picture not loaded yet still opens)
     e.preventDefault();
     const d = document.createElement('dialog');
     d.className = 'pic-big';
     d.setAttribute('aria-label', pic.alt || 'Picture');
     const img = document.createElement('img');
-    img.src = pic.dataset.full || pic.currentSrc; img.alt = pic.alt || ''; img.referrerPolicy = 'no-referrer';
-    d.append(img);
+    img.src = pic.dataset.full || pic.currentSrc || pic.src; img.alt = pic.alt || ''; img.referrerPolicy = 'no-referrer';
+    // A ✕ that says how to close it (Brett, Nov 16: a tap anywhere or Esc closes it, but nothing said so)
+    const x = document.createElement('button');
+    x.type = 'button'; x.className = 'pic-big-x'; x.setAttribute('aria-label', 'Close'); x.textContent = '✕';
+    d.append(img, x);
     d.addEventListener('click', () => d.close());
     d.addEventListener('close', () => d.remove());
     document.body.append(d);

@@ -3855,9 +3855,11 @@ body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  
 
 /* A picture, large (app.js "a picture, large"; feedback 44) */
 img.pic-can-big { cursor: zoom-in; }
-dialog.pic-big { padding: 0; border: 0; background: transparent; max-width: 94vw; max-height: 90vh; cursor: zoom-out; }
+dialog.pic-big { padding: 0; border: 0; background: transparent; max-width: 94vw; max-height: 90vh; overflow: visible; cursor: zoom-out; }
 dialog.pic-big::backdrop { background: color-mix(in srgb, var(--backdrop-dark) 78%, transparent); }
 dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: auto; height: auto; object-fit: contain; border-radius: var(--r-md); }
+.pic-big-x { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: color-mix(in srgb, var(--surface) 88%, transparent); color: var(--text); font-size: var(--fs-md); cursor: pointer; }
+.pic-big-x:hover, .pic-big-x:focus-visible { background: var(--surface-2); border-color: var(--faint); }
 
 /* Describe it's pictures to go by (feedback 34, 36) */
 .pw-refs { display: grid; gap: var(--sp-2); margin: 0; padding: var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); }

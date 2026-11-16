@@ -81,13 +81,14 @@ def askdnd_note(fb) -> dict:
     answer = replies[-1] if replies else None
     page = n["page"] or ""
     closed = fb.status == "deleted"
-    return {"key": f"f{fb.id}", "id": fb.id, "kind": "askdnd", "title": title_of(fb.text), "text": fb.text, "at": fb.created_at,
+    return {"key": f"f{fb.id}", "id": fb.id, "kind": "askdnd", "title": fb.title or title_of(fb.text), "text": fb.text, "at": fb.created_at,
             "where": page, "href": n["url"], "from": page.rsplit(" · ", 1)[-1] if page else "Another page",
             "label": n["label"], "dot": ASKDND_DOT.get(fb.status, "claude"), "open": fb.status not in ("done", "deleted"),
             "answer": answer, "says": n["says"], "landed": None, "earlier": [m for m in n["thread"] if m is not answer],
             "track": track(feedback.STEPS.get(fb.kind, ASKDND_STEPS), feedback.REACHED.get(fb.kind, ASKDND_REACHED).get(fb.status, 0),
                            "Closed" if closed else ""),
-            "new": n["new"], "can_add": n["can_add"], "what": feedback.KINDS[fb.kind][0] if fb.kind in feedback.KINDS else "", "what_key": fb.kind}
+            "new": n["new"], "can_add": n["can_add"], "what": feedback.KINDS[fb.kind][0] if fb.kind in feedback.KINDS else "", "what_key": fb.kind,
+            "shots": [w for w, k in (("shot", fb.shot_key), ("pasted", fb.pasted_key)) if k]}  # (the pictures sent with it: Brett, Nov 16)
 
 
 def story_note(r: dict) -> dict:
@@ -169,6 +170,16 @@ def _looking(request: Request) -> bool:
     return view_as.viewing(request.session) is not None
 
 
+def _kept(db: Session, request: Request, fb) -> bool:
+    """A note's pictures are kept from an admin who is its sender's DM (feedback.kept_from, the outside review's C9).
+    View as already refuses such an admin (app/view_as.py); this checks the real person signed in again, so a change
+    there can never show them."""
+    if not _looking(request):
+        return False
+    real = (request.session.get("real_user") or {}).get("email")
+    return feedback.kept_from(db, fb, real)
+
+
 # ------------------------------------------------------------------ the page
 
 
@@ -190,7 +201,8 @@ def page(request: Request, tab: str = "", note: str = "", db: Session = Depends(
         news[tab] = 0
         db.commit()
     return templates.TemplateResponse(request, "your_notes.html", {
-        "tab": tab, "lists": lists, "note": note, "askdnd": askdnd, "news": news, "toast": request.session.pop("toast", None)})
+        "tab": tab, "lists": lists, "note": note, "askdnd": askdnd, "news": news, "toast": request.session.pop("toast", None),
+        "kept": {fb.id for fb in notes if _kept(db, request, fb)}})
 
 
 def _mark(rows: list[dict], notes: list, tab: str) -> None:
@@ -207,9 +219,19 @@ def _mark(rows: list[dict], notes: list, tab: str) -> None:
 def own_picture(request: Request, feedback_id: int, pic_id: int, db: Session = Depends(get_db)):
     """A screenshot you added to your own note."""
     fb = next((x for x in notes_of(db, current_user(request)) if x.id == feedback_id), None)
-    if fb is None:
+    if fb is None or _kept(db, request, fb):
         raise HTTPException(404)
     return feedback.picture_of(db, fb, pic_id)
+
+
+@router.get("/your-notes/feedback/{feedback_id:int}/{which}")
+def own_shot(request: Request, feedback_id: int, which: str, db: Session = Depends(get_db)):
+    """The pictures you sent with your own note (Brett, Nov 16): the page as you opened the window (`shot`) and the
+    screenshot you pasted (`pasted`)."""
+    fb = next((x for x in notes_of(db, current_user(request)) if x.id == feedback_id), None)
+    if fb is None or which not in ("shot", "pasted") or _kept(db, request, fb):
+        raise HTTPException(404)
+    return feedback._shot(db, feedback_id, which)
 
 
 @router.get("/your-notes/seen")
