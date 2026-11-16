@@ -195,8 +195,7 @@ def _make(request: Request, db: Session, character_id: int, kind: str, form) -> 
             me = picks.user_row(db, user)
             row = table_rolls.add_roll(db, ch, me.id, "Hit Point Dice", _formula(spend, _con(sheet)))
             if row:
-                at_least = max(row.total, sum(n for _, n in spend))  # (each die heals at least 1)
-                w = hit_points.working(db, ch, "heal", [{"amount": at_least, "type": ""}])
+                w = hit_points.working(db, ch, "heal", [{"amount": healed(row.dice, _con(sheet)), "type": ""}])
                 said.append(hit_points.make(db, ch, user, row, "heal", w))
     db.commit()
     out = {"text": f"{TITLE[kind]}" + (": " + ", ".join(said) if said else ": nothing to bring back"), "deliver": web.deliver_now(ch)}
@@ -204,6 +203,12 @@ def _make(request: Request, db: Session, character_id: int, kind: str, form) -> 
         db.refresh(row)
         out |= table_rolls.reply_body(request, db, row, picks.user_row(db, user).id, False)
     return JSONResponse(out)
+
+
+def healed(dice: list[int], con: int) -> int:
+    """What spent Hit Point Dice heal: each die plus the Constitution modifier, at least 1 each (2024 Player's Handbook,
+    Short Rest; the outside review's W5: with Con −1, dice of 1 and 6 heal 1 + 5 = 6, not the total's 5)."""
+    return sum(max(1, d + con) for d in dice)
 
 
 def _number(value) -> int:

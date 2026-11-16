@@ -139,3 +139,25 @@ def test_a_closed_sheet_and_someone_elses_character(player, dm, db, sheet):
     db.flush()
     assert "can't be reached" in player.get(f"/characters/{cole.id}/rest?kind=long").text
     assert player.post(f"/characters/{cole.id}/rest?kind=long").status_code == 409
+
+
+def test_each_hit_point_die_heals_at_least_one():
+    """The 2024 rule (Player's Handbook, Short Rest; the outside review's W5): each die plus Constitution, at least 1
+    each, not the total at least the number of dice."""
+    assert rests.healed([1, 6], -1) == 6  # (1 + 5; the total, 5, was what askdnd gave)
+    assert rests.healed([1, 1], -3) == 2
+    assert rests.healed([5, 3], 2) == 12
+    assert rests.healed([], 4) == 0
+
+
+def test_a_short_rest_heals_by_the_dice_not_the_total(player, db, sheet, monkeypatch):
+    from app import table_rolls
+
+    cole = char(db, "Cole")
+    worn(db, sheet, cole)
+    monkeypatch.setattr(table_rolls, "die", lambda sides: 1)  # every die a 1
+    monkeypatch.setattr(rests, "_con", lambda sheet: -3)  # Constitution 4 or 5
+    druid = next(d for d in rests.dice(characters.character_summary(cole)) if d["left"] >= 2)
+    assert player.post(f"/characters/{cole.id}/rest?kind=short", data={f"dice_{druid['id']}": "2"}).status_code == 200
+    heal = db.scalar(select(BridgeIntent).where(BridgeIntent.kind == "hp"))
+    assert heal.data == {"amount": 2}  # (1 each; the roll's own total is 0)
