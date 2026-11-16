@@ -113,7 +113,7 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     if not text:
         raise HTTPException(400, "Say what it's about first.")
     kind = body.get("kind")
-    if kind not in KINDS:
+    if not isinstance(kind, str) or kind not in KINDS:
         raise HTTPException(400, "Pick what it is first: something broken, an idea or a question.")
     context = body.get("context") if isinstance(body.get("context"), dict) else {}
     if len(json.dumps(context)) > MAX_CONTEXT:
@@ -151,7 +151,7 @@ def _store(db: Session, note: dict, staging: bool = False) -> Feedback:
             except (files.FileError, files.StorageNotReady) as e:
                 context[f"{name}_left_out"] = str(e)
     me = picks.user_row(db, {"email": email})
-    kind = note.get("kind") if note.get("kind") in KINDS else ""  # (staging may run code from before kinds)
+    kind = note.get("kind") if isinstance(note.get("kind"), str) and note["kind"] in KINDS else ""  # (staging may run code from before kinds)
     fb = Feedback(user_id=me.id if me else None, sender=sender[:300], text=note["text"][:MAX_TEXT], kind=kind, url=str(note.get("url") or "")[:1000],
                   status="new" if admin else "review",  # (the table's notes wait for an admin's approval)
                   context=context, html=str(note.get("html") or "")[:MAX_HTML], shot_key=keys.get("shot"), pasted_key=keys.get("pasted"))
@@ -268,7 +268,9 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
         raise HTTPException(400)
     db.commit()
     request.session["toast"] = said
-    return RedirectResponse(f"{BACK}?tab={request.query_params.get('tab', '')}&kind={request.query_params.get('kind', '')}", status_code=303)
+    back_kind = request.query_params.get("kind", "")
+    return RedirectResponse(f"{BACK}?tab={request.query_params.get('tab', '')}&kind={back_kind if back_kind in (*KINDS, 'none') else ''}",
+                            status_code=303)
 
 
 def _rekind(fb: Feedback, kind: str, why: str, who: str) -> str:
@@ -358,7 +360,7 @@ def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None =
     body = body if isinstance(body, dict) else {}
     fb = db.get(Feedback, feedback_id) or _missing()
     if body.get("kind"):
-        if body["kind"] not in KINDS:
+        if not isinstance(body["kind"], str) or body["kind"] not in KINDS:
             raise HTTPException(400, f"A kind is one of {', '.join(KINDS)}.")
         _rekind(fb, body["kind"], str(body.get("why") or ""), "claude")
     tell = str(body.get("tell") or "").strip()[:MAX_TEXT]

@@ -371,6 +371,7 @@ def test_a_note_says_what_it_is_and_nothing_picks_it_for_you(admin, db):
     picked for you is never changed). Without one, or with one askdnd doesn't know, nothing is kept."""
     assert note(admin, kind=None).status_code == 400
     assert note(admin, kind="bug").status_code == 400
+    assert note(admin, kind=["idea"]).status_code == 400  # (not a string: refused, never a 500)
     assert db.scalar(select(func.count()).select_from(Feedback)) == 0
     assert note(admin, kind="question").status_code == 200
     assert db.scalar(select(Feedback)).kind == "question"
@@ -401,6 +402,8 @@ def test_the_queue_sorts_by_kind_and_an_admin_or_claude_changes_one_saying_why(a
     r = admin.post(f"/manage/feedback/{wraps.id}?tab=new&kind=broken", data={"to": "kind", "kind": "idea", "answer": "It's a design change"},
                    follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].endswith("tab=new&kind=broken")
+    r = admin.post(f"/manage/feedback/{wraps.id}?tab=new&kind=x//y", data={"to": "kind", "kind": "idea"}, follow_redirects=False)
+    assert r.headers["location"].endswith("tab=new&kind=")  # (only a kind askdnd knows goes back into the address)
     db.refresh(wraps)
     assert wraps.kind == "idea" and wraps.status == "new" and wraps.thread[-1]["text"] == "Broken → Idea: It's a design change"
     assert admin.post(f"/manage/feedback/{wraps.id}", data={"to": "kind", "kind": "nonsense"}).status_code == 400
@@ -409,6 +412,7 @@ def test_the_queue_sorts_by_kind_and_an_admin_or_claude_changes_one_saying_why(a
     assert [i["id"] for i in admin.get("/api/feedback?kind=none", headers=claude).json()["items"]] == [old.id]
     assert admin.post(f"/api/feedback/{old.id}", json={"kind": "broken", "why": "Sorted once"}, headers=claude).json()["kind"] == "broken"
     assert admin.post(f"/api/feedback/{old.id}", json={"kind": "bug"}, headers=claude).status_code == 400
+    assert admin.post(f"/api/feedback/{old.id}", json={"kind": {"x": 1}}, headers=claude).status_code == 400
     assert {i["id"] for i in admin.get("/api/feedback?kind=idea,question", headers=claude).json()["items"]} == {swim.id, wraps.id}
     admin.post(f"/manage/feedback/{why.id}", data={"to": "new"})  # (approved)
     admin.post(f"/manage/feedback/{why.id}", data={"to": "kind", "kind": "broken", "answer": "Speed is read wrong"})
