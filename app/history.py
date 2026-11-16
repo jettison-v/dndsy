@@ -249,7 +249,7 @@ def restore(db: Session, rev: Revision) -> str:
             elif rev.table == "story_events":
                 ev = StoryEvent(session_id=c["session_id"], position=c.get("position", 0), kind=EventKind(c["kind"]),
                                 text=c.get("text", ""), status=Status(c.get("status") or Status.DRAFT.value),
-                                by_hand=True)  # (a person brought it back: a redraft leaves it, and it's no sign of one)
+                                by_hand=True)  # (a person brought it back: a redraft leaves it)
                 ev.entities = [e for e in (db.get(Entity, i) for i in c.get("entity_ids") or []) if e]
                 db.add(ev)
             elif rev.table == "entity_aliases":
@@ -272,7 +272,7 @@ def restore(db: Session, rev: Revision) -> str:
             raise ValueError("That no longer exists.")
         setattr(obj, rev.field, _value(type(obj), rev.field, rev.old))
         if isinstance(obj, StoryEvent):
-            obj.by_hand = True  # (a person's choice: a key moment put back to a draft is no sign of a redraft)
+            obj.by_hand, obj.superseded = True, False  # (a person's choice: a redraft leaves it)
         db.flush()
         _changed(rev)
     return f"Restored {FIELD_LABELS.get(rev.field, rev.field).lower()} of {rev.label}"

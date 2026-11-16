@@ -627,6 +627,9 @@ class StoryEvent(Timestamped, Base):
     # Claude drafting the session again replaces only its own moments, and a person's stay (app/review.py `upcoming`;
     # Nov 16, a redraft's moments had doubled the published ones)
     by_hand: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # One of Claude's published moments that Claude drafted the session again over: still what the table reads, until
+    # the redraft is published and it goes (set by extraction._store_story, the one mark of a redraft: review.redrafted)
+    superseded: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     session: Mapped[GameSession] = relationship(back_populates="events")
     # (read for every moment shown, entities.shown: loaded with the moments in one query, not one per moment)
     entities: Mapped[list[Entity]] = relationship(secondary="event_entities", lazy="selectin")

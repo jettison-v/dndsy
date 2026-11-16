@@ -601,34 +601,32 @@ def keep_person_version(db: Session, session: GameSession) -> Recap:
 
 
 def redrafted(session: GameSession) -> bool:
-    """Whether Claude drafted the key moments again since the session was published: its draft moments are waiting
-    (a person's are `by_hand`), and publishing replaces its published ones with them. Read from the moments themselves,
-    never a time (Nov 16: playing a published recap's narration moved its updated_at past a redraft, and the redraft's
-    moments were published beside the first draft's)."""
-    return any(ev.status == Status.DRAFT and not ev.by_hand for ev in session.events)
+    """Whether Claude drafted the session again since it was published: the redraft marked Claude's published moments
+    `superseded` when it was stored (extraction._store_story), and publishing replaces them. Marked, never inferred from
+    a time or from which drafts are left (Nov 16: playing a published recap's narration moved its updated_at past a
+    redraft, and the redraft's moments were published beside the first draft's)."""
+    return any(ev.superseded for ev in session.events)
 
 
 def upcoming(session: GameSession) -> list[StoryEvent]:
     """The session's key moments as they'll stand once published: what the review page shows and Claude updates. Claude's
-    published ones leave when its redraft is waiting; a person's always stay."""
-    replaced = redrafted(session)
-    return [ev for ev in session.events if not (replaced and ev.status == Status.PUBLISHED and not ev.by_hand)]
+    published ones a waiting redraft replaces are left out; a person's always stay."""
+    return [ev for ev in session.events if not ev.superseded]
 
 
 def publish(db: Session, session: GameSession) -> None:
     latest = latest_recap(session)
     if latest is None:
         raise ReviewError("There's no recap to publish yet.")
-    keep = {ev.id for ev in upcoming(session)}  # (before this publish)
     for r in session.recaps:
         if r.status == Status.PUBLISHED and r.id != latest.id:
             r.status = Status.DRAFT
     latest.status = Status.PUBLISHED
     for ev in list(session.events):
-        if ev.id in keep:
-            ev.status = Status.PUBLISHED
-        else:
+        if ev.superseded:
             db.delete(ev)  # a redraft's key moments replace Claude's published before (kept in version history)
+        else:
+            ev.status = Status.PUBLISHED
 
 
 def save_event(db: Session, session: GameSession, event_id: int | None, kind: str, text: str) -> None:
@@ -645,7 +643,7 @@ def save_event(db: Session, session: GameSession, event_id: int | None, kind: st
     if ev is None or ev.session_id != session.id:
         raise ReviewError("That key moment no longer exists.")
     if (ev.kind, ev.text) != (EventKind(kind), text):
-        ev.kind, ev.text, ev.by_hand = EventKind(kind), text, True  # (a person's words now: a redraft leaves it)
+        ev.kind, ev.text, ev.by_hand, ev.superseded = EventKind(kind), text, True, False  # (a person's words now: a redraft leaves it)
 
 
 def toggle_major(db: Session, session: GameSession, event_id: int) -> bool:
