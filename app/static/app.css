@@ -3681,6 +3681,9 @@ kbd { display: inline-block; border: 1px solid var(--line-strong); border-bottom
 .fb-form { display: grid; gap: var(--sp-3); padding: var(--sp-4); }
 .fb-form h2 { margin: 0; font-size: var(--fs-lg); color: var(--text-strong); }
 .fb-form textarea { width: 100%; }
+.fb-kinds { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }  /* what it is: three chips, none on until picked */
+.fb-kind-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin: var(--sp-2) 0; }  /* the queue, by kind */
+.fb-kind-chips .chip { text-decoration: none; color: var(--text); }
 .fb-shots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
 @media (max-width: 640px) { .fb-shots { grid-template-columns: minmax(0, 1fr); } }
 .fb-shot { margin: 0; display: grid; gap: var(--sp-1); align-content: start; min-width: 0; }

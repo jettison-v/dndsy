@@ -4,8 +4,8 @@ tabs that say who reads it.
 - **About the story**: corrections and additions to a recap, an entry or the glossary (`Fact`, `Suggestion`), which
   the DM reads and decides on: Waiting, Added, Used, Not used (`suggestions.outcome`).
 - **About askdnd**: notes sent with \\ (`Feedback`), which an admin reads first, then Claude: Waiting for an admin,
-  With Claude, Planned, Fixed, Closed, with the replies meant for the sender and Add to it (app/feedback.py). Shown to
-  anyone who can send one or has.
+  With Claude, Planned, Fixed, Closed (an idea: On the Roadmap, Built; a question: Answered; `feedback.says`), with
+  the replies meant for the sender and Add to it (app/feedback.py). Shown to anyone who can send one or has.
 
 **Knowing something moved**: each note remembers what its author last saw (`seen`: the badge on their picture, More
 on a phone and each tab's "new", cleared when they open that tab) and what they last had a corner card about (`told`:
@@ -55,7 +55,7 @@ def title_of(text: str) -> str:
     return cut.rstrip(" ,;:") + "…"
 
 
-ASKDND_STEPS = ("Sent", "Approved", "Planned", "Fixed")
+ASKDND_STEPS = feedback.STEPS["broken"]  # (an idea's and a question's: feedback.STEPS)
 ASKDND_REACHED = {"review": 0, "new": 1, "question": 1, "planned": 2, "done": 3}
 ASKDND_DOT = {"review": "wait", "new": "claude", "question": "claude", "planned": "planned", "done": "done", "deleted": "closed"}
 STORY_DOT = {"Waiting": "wait", "Added": "done", "Used": "used", "Not used": "closed"}
@@ -85,8 +85,9 @@ def askdnd_note(fb) -> dict:
             "where": page, "href": n["url"], "from": page.rsplit(" · ", 1)[-1] if page else "Another page",
             "label": n["label"], "dot": ASKDND_DOT.get(fb.status, "claude"), "open": fb.status not in ("done", "deleted"),
             "answer": answer, "says": n["says"], "landed": None, "earlier": [m for m in n["thread"] if m is not answer],
-            "track": track(ASKDND_STEPS, ASKDND_REACHED.get(fb.status, 0), "Closed" if closed else ""),
-            "new": n["new"], "can_add": n["can_add"]}
+            "track": track(feedback.STEPS.get(fb.kind, ASKDND_STEPS), feedback.REACHED.get(fb.kind, ASKDND_REACHED).get(fb.status, 0),
+                           "Closed" if closed else ""),
+            "new": n["new"], "can_add": n["can_add"], "what": feedback.KINDS[fb.kind][0] if fb.kind in feedback.KINDS else "", "what_key": fb.kind}
 
 
 def story_note(r: dict) -> dict:
@@ -263,7 +264,8 @@ def news(request: Request, db: Session = Depends(get_db)):
         if _feedback_new(fb, "told"):
             was = (fb.told or "review:0").split(":")[0]
             now = feedback.marker(fb)
-            cards.append(f"{ASKDND_NEWS.get(fb.status, 'Moved') if now.split(':')[0] != was else 'A reply'}: “{_short(fb.text)}”")
+            moved = feedback.says(fb)[0] if fb.status in ("planned", "done") else ASKDND_NEWS.get(fb.status, "Moved")
+            cards.append(f"{moved if now.split(':')[0] != was else 'A reply'}: “{_short(fb.text)}”")
             tab_of.append("askdnd")
             fb.told = now
     if cards:

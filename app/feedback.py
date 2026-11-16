@@ -7,6 +7,9 @@ until Brett says "review the feedback", so nothing small goes unrecorded and not
   player's. The page sends the note, where it was pointed at, its picture as the window opened, a pasted screenshot,
   the page as drawn and where, when, the screen, the browser and the extension's version (`context`). While an admin
   views as someone (app/view_as.py), the note is still theirs, saying whom they were viewing as.
+- **Its kind** (Brett, Nov 16), picked when it's sent, never picked for you: something broken (Claude fixes it in the
+  next round), an idea (it goes onto the Roadmap's Ideas from feedback, built only once Brett moves it up) or a question
+  (answered in its thread). An admin or Claude can change it, saying why in its thread.
 - **The queue** (admins: Manage › askdnd › Feedback): new → question (Claude asked, in `thread`; Brett answers under
   it, which makes it new again) → planned → done (with the PR that fixed it), or deleted.
 - **Your notes › About askdnd** (app/your_notes.py; Brett, Nov 7: a feedback workflow for the players who send it):
@@ -43,6 +46,10 @@ router = APIRouter()
 STATUSES = ("review", "new", "question", "planned", "done", "deleted")
 LABELS = {"review": "Waiting for you", "new": "New", "question": "Question for you", "planned": "Planned", "done": "Done", "deleted": "Deleted"}
 OPEN = ("new", "question", "planned")
+# What a note is (Brett, Nov 16): how it's said in the window, and its short tag on the queue. A note sent before then
+# has "" until it's sorted (`feedback.py kind`).
+KINDS = {"broken": ("Something's broken", "Broken", "What's wrong?"), "idea": ("An idea", "Idea", "What would be better?"),
+         "question": ("A question", "Question", "What would you like to know?")}  # (in the window, its short tag, its box's ask)
 MAX_TEXT, MAX_HTML, MAX_CONTEXT = 4000, 3_000_000, 50_000
 IMAGE = re.compile(r"^data:(image/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$")
 BACK = "/manage/feedback"
@@ -71,6 +78,7 @@ def shows_menu(request: Request) -> bool:
 
 templates.env.globals["feedback_send"] = can_send
 templates.env.globals["feedback_menu"] = shows_menu
+templates.env.globals["feedback_kinds"] = KINDS
 
 
 def _image(value) -> tuple[bytes, str] | None:
@@ -104,13 +112,16 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     text = str(body.get("text") or "").strip()[:MAX_TEXT]
     if not text:
         raise HTTPException(400, "Say what it's about first.")
+    kind = body.get("kind")
+    if kind not in KINDS:
+        raise HTTPException(400, "Pick what it is first: something broken, an idea or a question.")
     context = body.get("context") if isinstance(body.get("context"), dict) else {}
     if len(json.dumps(context)) > MAX_CONTEXT:
         context = {"left_out": "The page's details were too long to keep."}
     viewing = view_as.viewing(request.session)
     if viewing:
         context |= {"viewing_as": viewing.get("name") or viewing["email"], "viewing_as_email": viewing["email"].lower()}
-    note = {"email": user["email"].lower(), "name": user.get("name") or "", "text": text, "url": str(body.get("url") or "")[:1000],
+    note = {"email": user["email"].lower(), "name": user.get("name") or "", "text": text, "kind": kind, "url": str(body.get("url") or "")[:1000],
             "context": context, "html": str(body.get("html") or "")[:MAX_HTML], "shot": body.get("shot"), "pasted": body.get("pasted")}
     if config.STAGING:
         sent = to_prod(note)
@@ -140,7 +151,8 @@ def _store(db: Session, note: dict, staging: bool = False) -> Feedback:
             except (files.FileError, files.StorageNotReady) as e:
                 context[f"{name}_left_out"] = str(e)
     me = picks.user_row(db, {"email": email})
-    fb = Feedback(user_id=me.id if me else None, sender=sender[:300], text=note["text"][:MAX_TEXT], url=str(note.get("url") or "")[:1000],
+    kind = note.get("kind") if note.get("kind") in KINDS else ""  # (staging may run code from before kinds)
+    fb = Feedback(user_id=me.id if me else None, sender=sender[:300], text=note["text"][:MAX_TEXT], kind=kind, url=str(note.get("url") or "")[:1000],
                   status="new" if admin else "review",  # (the table's notes wait for an admin's approval)
                   context=context, html=str(note.get("html") or "")[:MAX_HTML], shot_key=keys.get("shot"), pasted_key=keys.get("pasted"))
     db.add(fb)
@@ -187,14 +199,14 @@ def from_staging(body=web.JsonBody, x_feedback_key: str | None = Header(default=
 
 def _item(fb: Feedback, html: bool = False) -> dict:
     out = {"id": fb.id, "at": fb.created_at.isoformat() if fb.created_at else "", "sender": fb.sender, "text": fb.text,
-           "status": fb.status, "url": fb.url, "context": fb.context or {}, "thread": fb.thread or [], "pr": fb.pr,
+           "kind": fb.kind or "", "status": fb.status, "url": fb.url, "context": fb.context or {}, "thread": fb.thread or [], "pr": fb.pr,
            "shots": [n for n, k in (("shot", fb.shot_key), ("pasted", fb.pasted_key)) if k], "html_size": len(fb.html or "")}
     return out | ({"html": fb.html} if html else {})
 
 
 @router.get("/manage/feedback")
-def queue(request: Request, tab: str = "", open: int = 0, db: Session = Depends(get_db)):
-    """Manage › askdnd › Feedback: every note, by where it stands."""
+def queue(request: Request, tab: str = "", kind: str = "", open: int = 0, db: Session = Depends(get_db)):
+    """Manage › askdnd › Feedback: every note, by where it stands, and by its kind (the chips above the list)."""
     user, denied = web.require(request, is_admin, "Feedback is for admins.")
     if denied:
         return denied
@@ -202,20 +214,28 @@ def queue(request: Request, tab: str = "", open: int = 0, db: Session = Depends(
     tab = tab if tab in ("review", *OPEN, "done", "all") else ("review" if counts.get("review") else "new")
     q = select(Feedback).order_by(Feedback.id.desc())
     q = q.where(Feedback.status != "deleted") if tab == "all" else q.where(Feedback.status == tab)
+    in_tab = dict(db.execute(select(Feedback.kind, func.count()).where(q.whereclause).group_by(Feedback.kind)).all())
+    kind = kind if kind in (*KINDS, "none") else ""
+    if kind:
+        q = q.where(Feedback.kind == ("" if kind == "none" else kind))
     items = list(db.scalars(q.limit(200)))
     me = user["email"]
     return templates.TemplateResponse(request, "manage_feedback.html", {
         "items": items, "kept": {f.id for f in items if kept_from(db, f, me)}, "tab": tab, "open": open, "counts": counts, "labels": LABELS,
+        "kind": kind, "kinds": KINDS, "kind_chips": [(k, v[1], in_tab.get(k, 0)) for k, v in KINDS.items()]
+        + ([("none", "Not sorted", in_tab[""])] if in_tab.get("") and tab in ("review", *OPEN) else []),  # (an old note done is done)
         "tabs": [(t, LABELS.get(t, "All"), counts.get(t, 0) if t != "all" else None) for t in ("review", *OPEN, "done", "all")
                  if t != "review" or counts.get("review") or tab == "review"],
         "toast": request.session.pop("toast", None)})
 
 
 @router.post("/manage/feedback/{feedback_id:int}")
-def change(request: Request, feedback_id: int, to: str = Form(...), answer: str = Form(""), db: Session = Depends(get_db)):
+def change(request: Request, feedback_id: int, to: str = Form(...), answer: str = Form(""), kind: str = Form(""),
+           db: Session = Depends(get_db)):
     """Answer Claude's question, or add to a note any time (feedback 18, Brett, Nov 5: something forgotten): it's new
     again for Claude, unless it's planned. Or move a note: planned, done, back to new, deleted. A note from the table
-    waiting for approval: Approve sends it to Claude (new), Delete drops it; adding to it approves it too."""
+    waiting for approval: Approve sends it to Claude (new), Delete drops it; adding to it approves it too. Or change
+    what it is (`kind`), with why in its thread."""
     _, denied = web.require(request, is_admin, "Feedback is for admins.")
     if denied:
         return denied
@@ -234,6 +254,10 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
             raise HTTPException(400, "Write your reply first.")
         fb.thread = [*(fb.thread or []), {"who": "you", "to": "sender", "text": answer.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat()}]
         said = "Sent to " + (fb.sender.split(" (")[0] or "its sender")
+    elif to == "kind":
+        if kind not in KINDS:
+            raise HTTPException(400, "Pick what it is.")
+        said = _rekind(fb, kind, answer, "you")
     elif to in ("new", "planned", "done", "deleted"):
         approved = fb.status == "review" and to == "new"
         if to == "deleted" and answer.strip() and fb.user_id:  # why, for its sender (Your notes, round 2: optional)
@@ -244,7 +268,20 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
         raise HTTPException(400)
     db.commit()
     request.session["toast"] = said
-    return RedirectResponse(f"{BACK}?tab={request.query_params.get('tab', '')}", status_code=303)
+    return RedirectResponse(f"{BACK}?tab={request.query_params.get('tab', '')}&kind={request.query_params.get('kind', '')}", status_code=303)
+
+
+def _rekind(fb: Feedback, kind: str, why: str, who: str) -> str:
+    """A note is something else than its sender picked (a "bug" that's really a design change): its new kind, and
+    the change in its thread with why, for the admins and Claude (never its sender's Your notes)."""
+    if kind == fb.kind:
+        return "Already " + KINDS[kind][1].lower()
+    was = KINDS[fb.kind][1] if fb.kind in KINDS else "Not sorted"
+    fb.kind = kind
+    why = why.strip()[:MAX_TEXT]
+    fb.thread = [*(fb.thread or []), {"who": who, "text": f"{was} → {KINDS[kind][1]}" + (f": {why}" if why else ""), "at": now_iso(),
+                                      "kind": kind}]
+    return f"Now {KINDS[kind][1].lower()}"
 
 
 def _missing():
@@ -290,11 +327,14 @@ def _claude(key: str | None) -> None:
 
 
 @router.get("/api/feedback")
-def api_list(status: str = ",".join(OPEN), x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """The queue for Claude: the notes in these states (default: new, question, planned), without their pages."""
+def api_list(status: str = ",".join(OPEN), kind: str = "", x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """The queue for Claude: the notes in these states (default: new, question, planned), of these kinds (default
+    any; "none" is a note not yet sorted), without their pages."""
     _claude(x_feedback_key)
     wanted = [s for s in status.split(",") if s in STATUSES] or list(OPEN)
-    rows = db.scalars(select(Feedback).where(Feedback.status.in_(wanted)).order_by(Feedback.id))
+    q = select(Feedback).where(Feedback.status.in_(wanted)).order_by(Feedback.id)
+    kinds = ["" if k == "none" else k for k in kind.split(",") if k in (*KINDS, "none")]
+    rows = db.scalars(q.where(Feedback.kind.in_(kinds)) if kinds else q)
     return JSONResponse({"items": [_item(fb) for fb in rows]}, headers={"Cache-Control": "no-store"})
 
 
@@ -313,10 +353,14 @@ def api_picture(feedback_id: int, which: str, x_feedback_key: str | None = Heade
 @router.post("/api/feedback/{feedback_id:int}")
 def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """Claude moves a note on: a question for Brett (`note`, which makes it a question unless `status` says else), a
-    status, the PR that fixed it."""
+    status, the PR that fixed it, or what it is (`kind`, with `why`)."""
     _claude(x_feedback_key)
     body = body if isinstance(body, dict) else {}
     fb = db.get(Feedback, feedback_id) or _missing()
+    if body.get("kind"):
+        if body["kind"] not in KINDS:
+            raise HTTPException(400, f"A kind is one of {', '.join(KINDS)}.")
+        _rekind(fb, body["kind"], str(body.get("why") or ""), "claude")
     tell = str(body.get("tell") or "").strip()[:MAX_TEXT]
     if tell:  # (a reply its sender sees: `feedback.py tell`)
         fb.thread = [*(fb.thread or []), {"who": "claude", "to": "sender", "text": tell, "at": datetime.now(UTC).isoformat()}]
@@ -342,6 +386,20 @@ SENDER_SAYS = {"review": ("Waiting for an admin", "An admin reads it first, then
                "planned": ("Planned", "Claude is going to fix this."),
                "done": ("Fixed", "It's fixed on askdnd."),
                "deleted": ("Closed", "Not something askdnd will change for now.")}
+# where an idea or a question stands, when it differs from something broken's (Brett, Nov 16)
+SENDER_SAYS_KIND = {"idea": {"planned": ("On the Roadmap", "It's on askdnd's Roadmap as an idea; an admin picks when it's built."),
+                             "done": ("Built", "It's on askdnd now.")},
+                    "question": {"planned": ("With Claude", "Claude has it and will answer it with the next batch."),
+                                 "done": ("Answered", "Claude answered it.")}}
+# each kind's steps on its sender's status track (Your notes), and how far each status reaches along them
+STEPS = {"broken": ("Sent", "Approved", "Planned", "Fixed"), "idea": ("Sent", "Approved", "On the Roadmap", "Built"),
+         "question": ("Sent", "Approved", "Answered")}
+REACHED = {"question": {"review": 0, "new": 1, "question": 1, "planned": 1, "done": 2}}
+
+
+def says(fb: Feedback) -> tuple[str, str]:
+    """Where a note stands for its sender, in its kind's words: (label, sentence)."""
+    return SENDER_SAYS_KIND.get(fb.kind, {}).get(fb.status) or SENDER_SAYS.get(fb.status, ("", ""))
 
 
 def now_iso() -> str:
@@ -356,9 +414,9 @@ def marker(fb: Feedback) -> str:
 
 def for_sender(fb: Feedback) -> dict:
     """A note as its sender sees it: never the admin's or Claude's notes to each other, nor the page as drawn."""
-    label, says = SENDER_SAYS.get(fb.status, ("", ""))
+    label, sentence = says(fb)
     shown = [{"who": "You" if m.get("who") == "sender" else "Claude" if m.get("who") == "claude" else "An admin",
               "mine": m.get("who") == "sender", "text": m.get("text", ""), "at": m.get("at", "")}
              for m in fb.thread or [] if m.get("who") == "sender" or m.get("to") == "sender"]
-    return {"id": fb.id, "text": fb.text, "status": fb.status, "label": label, "says": says, "page": (fb.context or {}).get("page") or fb.url,
+    return {"id": fb.id, "text": fb.text, "status": fb.status, "kind": fb.kind, "label": label, "says": sentence, "page": (fb.context or {}).get("page") or fb.url,
             "url": fb.url, "at": fb.created_at, "thread": shown, "can_add": fb.status != "deleted"}

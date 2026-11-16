@@ -19,17 +19,25 @@ def test_backslash_point_and_send(people, server, browser_db):
     page.click("h1")  # (pointing: the next click marks it)
     win.wait_for(state="visible", timeout=5000)
     assert "Pointed at" in page.locator("[data-fb-pointed]").inner_text()
+    page.click("[data-fb-send]")  # (what it is, never picked for you: Send asks for it first)
+    page.locator("[data-fb-said]").wait_for(state="visible", timeout=5000)
+    assert page.locator("#fb-win").is_visible()
+    page.click("[data-fb-kind=idea]")
+    assert page.locator("[data-fb-kind=idea]").get_attribute("aria-checked") == "true"
+    assert page.locator("[data-fb-ask]").evaluate("e => e.textContent === document.querySelector('[data-fb-kind=idea]').dataset.ask")
+    assert page.locator("[data-fb-said]").is_hidden()  # (the box's question is the idea's own)
     page.click("[data-fb-send]")
     page.locator("#cards > .card", has_text="In the queue").wait_for(timeout=10000)
     engine = create_engine(browser_db[0])
     with engine.connect() as conn:
-        row = conn.execute(text("SELECT text, context, shot_key, length(html) FROM feedback ORDER BY id DESC LIMIT 1")).one()
+        row = conn.execute(text("SELECT text, context, shot_key, length(html), kind FROM feedback ORDER BY id DESC LIMIT 1")).one()
     engine.dispose()
-    words, ctx, shot, html = row
-    assert words == "Speed should show the swim speed too." and shot and html > 1000
+    words, ctx, shot, html, kind = row
+    assert words == "Speed should show the swim speed too." and shot and html > 1000 and kind == "idea"
     assert ctx["window"] and ctx["browser"] and ctx["pointed"]["label"] and ctx["signed_in_as"].endswith("(admin)")
     page.keyboard.press("\\")  # (again, in a field: typing a backslash there never opens it)
     win.wait_for(state="visible", timeout=5000)
+    assert page.locator("[data-fb-kind].on").count() == 0  # (opened again: nothing picked)
     page.fill("#fb-win textarea[name=text]", "a \\ b")
     assert page.locator("#fb-win textarea[name=text]").input_value() == "a \\ b"
     assert not admin.errors, admin.errors
