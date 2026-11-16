@@ -15,14 +15,19 @@
 <div class="ls-filters-head"><span class="ls-h" role="heading" aria-level="3">Filters</span><span class="ls-rule" aria-hidden="true"></span>{{ clear_filters() }}</div>
 {%- endmacro %}
 
-{# Filters above a list (Brett, Nov 16, docs/mockups/filters-above/): where the list sits under its filters, in a narrow
-   column (the Reader's World and Notes you sent, Battle's See all), they fold to one line, "Filters 2 · Places, People ·
-   Clear", that opens the groups in place; open or closed is remembered per list. Beside a list, filter_column below. #}
+{# Filters above a list (Brett chose A, Nov 16, docs/mockups/filters-above/ round 2): where the list sits under its
+   filters in a narrow column (the Reader's World and Notes you sent, Battle's See all and + Add). A control drawn like
+   Sort's dropdown, "Filters 3 ▾", opens the chip groups beneath it; while it's closed, what's on shows beside it as blue
+   pills, each with its × (two at most, then "+1", which opens it), and Clear at the end: two lines at most, never wider
+   than its column. Open or closed is remembered per list (app.js "Lists"). Beside a list, filter_column below. #}
 {% macro filters_above(groups) -%}
-<details class="ls-fold ls-above" data-ls-fold data-ls-above>
-  <summary><span class="ls-h">Filters</span> <span class="count" data-ls-fold-count hidden></span><span class="ls-on-names" data-ls-on-names></span>{{ clear_filters() }}</summary>
-  <div class="ls-above-body">{% for g in groups %}{{ chip_group(g) }}{% endfor %}</div>
-</details>
+<div class="ls-above" data-ls-above>
+  <div class="ls-above-row">
+    <button type="button" class="ls-above-btn" data-ls-above-toggle aria-expanded="false">Filters <span class="ls-above-n" data-ls-fold-count hidden></span> <span class="ls-above-chev" aria-hidden="true"></span></button>
+    <span class="ls-pills" data-ls-pills></span>{{ clear_filters() }}
+  </div>
+  <div class="ls-above-body" data-ls-above-body hidden>{% for g in groups %}{{ chip_group(g) }}{% endfor %}</div>
+</div>
 {%- endmacro %}
 
 {# The left filter column: the main groups, then More filters. On phones it folds into "Filters (N)", with Clear. #}

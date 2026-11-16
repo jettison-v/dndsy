@@ -2345,18 +2345,27 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ls-is-searching .ls-filters { opacity: .45; pointer-events: none; }
 .ls-filters-head .ls-clear { margin-left: auto; flex: none; }  /* Clear by the Filters heading (feedback 67) */
 .ls-fold > summary .ls-clear { float: right; }
-/* Filters above a list (filters_above; Nov 16): one line, "Filters 2 · names · Clear", opening the groups in place, at every width */
-.ls-fold.ls-above > summary { display: flex; align-items: center; gap: var(--sp-2); min-height: var(--control-h); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); cursor: pointer; list-style: none; font-weight: 600; }
-.ls-fold.ls-above > summary::-webkit-details-marker { display: none; }
-.ls-fold.ls-above > summary::before { content: "▸"; color: var(--muted); font-size: var(--fs-xs); }
-.ls-fold.ls-above[open] > summary::before { content: "▾"; }
-.ls-fold.ls-above > summary .ls-h { font-size: var(--fs-sm); }
-.ls-fold.ls-above > summary .ls-clear { float: none; margin-left: auto; }
-.ls-on-names { flex: 1 1 auto; min-width: 0; font-size: var(--fs-xs); font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.ls-fold.ls-above[open] .ls-on-names { visibility: hidden; }  /* (open: the chips say it) */
-.ls-above-body { display: grid; gap: var(--sp-2); padding: var(--sp-2) var(--sp-1) var(--sp-1); }
+/* Filters above a list (filters_above; Brett chose A, Nov 16, docs/mockups/filters-above/): a control like Sort's
+   dropdown, what's on as blue pills beside it (two, then "+1"), Clear at the end; it wraps to two lines at most and never
+   grows past its column (min-width: 0 all the way down: Nov 16, three kinds on pushed World's column wider) */
+.ls-above { display: grid; gap: var(--sp-2); min-width: 0; }
+.ls-above-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.ls-above-btn { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--control-h); padding: 0 10px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: 400 var(--fs-sm)/1 var(--sans); white-space: nowrap; cursor: pointer; }
+.ls-above-btn:hover, .ls-above-btn:focus-visible { border-color: var(--faint); }
+.ls-above-n { background: var(--selected-bg); border: 1px solid var(--blue); border-radius: var(--r-pill); padding: 2px 7px; font-size: var(--fs-xs); }
+.ls-above-chev::before { content: "▾"; color: var(--muted); font-size: var(--fs-xs); }
+.ls-above-btn[aria-expanded="true"] .ls-above-chev::before { content: "▴"; }
+.ls-pills { display: contents; }
+.ls-pill { display: inline-flex; align-items: center; gap: 6px; min-height: var(--chip-h); max-width: 100%; min-width: 0; padding: 0 6px 0 10px; background: var(--selected-bg); border: 1px solid var(--blue); border-radius: var(--r-pill); color: var(--text); font: 400 var(--fs-xs)/1 var(--sans); cursor: pointer; }
+.ls-pill > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ls-pill > i { font-style: normal; color: var(--muted); padding: 0 2px; }
+.ls-pill.more { padding: 0 10px; background: var(--surface-2); border-color: var(--line); color: var(--muted); }
+.ls-pill:hover > i, .ls-pill:focus-visible > i { color: var(--text); }
+.ls-above-row .ls-clear { margin-left: auto; }
+.ls-above-body { display: grid; gap: var(--sp-2); min-width: 0; padding: 0 var(--sp-1) var(--sp-1); }
+.ls-above-body[hidden] { display: none; }
 .ls-above-body .ls-label { font-size: var(--fs-xs); }
-.ls-above-body .ls-chip { font-size: var(--fs-xs); min-height: var(--control-h-sm); padding: 0 var(--sp-2); }  /* (a phone's folded Filters button carries it too, at its right) */
+.ls-above-body .ls-chip { font-size: var(--fs-xs); padding: 0 10px; }
 .ls-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .ls-toolbar > .note:first-child { margin-right: auto; }
 .ls-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }

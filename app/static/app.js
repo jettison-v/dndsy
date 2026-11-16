@@ -3509,7 +3509,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const lens = root.querySelector('[data-ls-lens]');
     if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
     const more = root.querySelector('[data-ls-more]'); if (more) more.open = root._ls.more;
-    const above = root.querySelector('[data-ls-above]'); if (above) above.open = root._ls.above;  // (filters folded above a list: open or closed, as left)
+    // (filters above a list: open or closed, as left; drawn by apply)
   }
   function save(root) {
     const st = root._ls;
@@ -3544,7 +3544,28 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // Nov 16, docs/mockups/filter-clear/: the blue chips say what's on, so there's no row above the list)
     const picked = on.flatMap(g => sel[g].map(v => [g, v]));
     root.querySelectorAll('[data-ls-clear-filters]').forEach(b => { b.hidden = !picked.length; });
-    const onNames = root.querySelector('[data-ls-on-names]'); if (onNames) onNames.textContent = picked.map(([, v]) => v).join(', ');  // (folded: what's on, while it fits)
+    // Filters above a list (filters_above): open or closed, and while closed what's on as pills, two at most, then "+N"
+    const above = root.querySelector('[data-ls-above]');
+    if (above) {
+      const body = above.querySelector('[data-ls-above-body]'), toggle = above.querySelector('[data-ls-above-toggle]');
+      body.hidden = !st.above;
+      toggle.setAttribute('aria-expanded', st.above ? 'true' : 'false');
+      const pills = st.above ? [] : picked.slice(0, 2).map(([g, v]) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'ls-pill'; b.dataset.lsRemove = g + '\u0000' + v; b.setAttribute('aria-label', 'Remove ' + v); b.title = v;
+        const t = document.createElement('span'); t.textContent = v;
+        const x = document.createElement('i'); x.textContent = '×'; x.setAttribute('aria-hidden', 'true');
+        b.append(t, x);
+        return b;
+      });
+      if (!st.above && picked.length > 2) {
+        const more = document.createElement('button');
+        more.type = 'button'; more.className = 'ls-pill more'; more.dataset.lsAboveToggle = ''; more.textContent = '+' + (picked.length - 2);
+        more.title = picked.slice(2).map(([, v]) => v).join(', ');
+        pills.push(more);
+      }
+      above.querySelector('[data-ls-pills]').replaceChildren(...pills);
+    }
     const moreOn = root.querySelector('[data-ls-more-on]');
     if (moreOn) {
       const n = [...root.querySelectorAll('[data-ls-more] [data-ls-group][aria-pressed="true"]')].length;
@@ -3610,6 +3631,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const clearSearch = () => { st.q = ''; if (search) search.value = ''; };
     if (e.target.closest('[data-ls-clear]')) { e.preventDefault(); st.sel = {}; clearSearch(); apply(root); return; }  // (in a folded summary: clears, never opens it)
     if (e.target.closest('[data-ls-clear-search]')) { clearSearch(); apply(root); if (search) search.focus(); return; }
+    if (e.target.closest('[data-ls-above-toggle]')) { st.above = !st.above; apply(root); return; }  // (apply saves it)
+    const rm = e.target.closest('[data-ls-remove]');
+    if (rm) { const [g, v] = rm.dataset.lsRemove.split('\u0000'); st.sel[g] = (st.sel[g] || []).filter(x => x !== v); apply(root); return; }
     const view = e.target.closest('[data-ls-view]');
     if (view) { st.view = view.dataset.lsView; clearSearch(); apply(root); return; }
     const chip = e.target.closest('[data-ls-group]');
@@ -3631,7 +3655,6 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   document.addEventListener('toggle', e => {
     const root = rootOf(e.target);
     if (root && root._ls && e.target.matches('[data-ls-more]')) { root._ls.more = e.target.open; save(root); }
-    if (root && root._ls && e.target.matches('[data-ls-above]')) { root._ls.above = e.target.open; save(root); }
   }, true);
   // A page that changes rows (Change spells: a row moved into Yours, a class tab) asks the list to look again
   document.addEventListener('list:refresh', e => { const root = rootOf(e.target); if (root && root._ls) apply(root); });
