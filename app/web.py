@@ -9,7 +9,7 @@ import json
 from collections.abc import Callable
 
 from fastapi import Depends, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -64,6 +64,18 @@ def notice(text: str, kind: str = "ok"):
     closed)."""
     assert kind in NOTICE_KINDS
     return text if kind == "ok" else {"text": text, "kind": kind}
+
+
+def switched(request: Request, toast, back: str, ok: bool = True, reload: bool = False):
+    """A setting's switch was flipped (`_settings.html` `switch`, app.js "the switch"; the UI review's pick 1, Nov 16):
+    from the page's script (X-Switch), 204 and its corner card, the switch flipping where it is (409 and an amber card
+    when it wasn't changed; `reload` when the page shows more because of it, as Labs does); without the script, the
+    message on the next page and back to `back`."""
+    if request.headers.get("X-Switch"):
+        events = {"toast": toast} | ({"switchReload": True} if reload else {})
+        return Response(status_code=204 if ok else 409, headers={"HX-Trigger": json.dumps(events)})
+    request.session["toast"] = toast
+    return RedirectResponse(back, status_code=303)
 
 
 def require(request: Request, allow: Callable[[dict], bool] | None = None,

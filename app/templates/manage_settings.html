@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Settings · Manage · askdnd{% endblock %}
 {% block content %}
+{% from "_settings.html" import switch, set_row, choice %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Settings</h1></div>
@@ -27,8 +28,7 @@
       {% for r in book_rows %}
       <li class="record"><span class="record-main"><b>{{ r.b.title }}</b><span class="note">Labelled {{ r.b.short }}{% if r.b.key == "mm-2024" %}. Its Beasts are among Wild Shape's forms.{% endif %}</span></span>
         <span>{{ r.what }}</span>
-        <span class="record-actions"><form method="post" action="{{ cbase }}/manage/settings/books/{{ r.b.key }}">{% if not r.on %}<input type="hidden" name="on" value="1">{% endif %}
-          <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if r.on else 'false' }}" aria-label="{{ r.b.title }} on here"></button></form></span>
+        <span class="record-actions">{{ switch(cbase ~ "/manage/settings/books/" ~ r.b.key, r.on, r.b.title ~ " on here") }}</span>
       </li>{% endfor %}
     </ul>
     <p class="note">Off: its entries leave this campaign's lists and lookups (with only the SRD, Wild Shape offers the SRD's Beasts). Nothing is deleted; switching it back on brings them back. A character's own D&amp;D Beyond sheet always shows in full.</p>
@@ -39,10 +39,7 @@
   <section class="section" id="trophy-case">
     <h2>Trophy Case</h2>
     <p class="hint">What Party's <b>Trophies</b> tab counts. A session's own time comes from its recording (the start the Processor sends, for the recording's length), or its evening when there's no start time. Choose every roll for a table that doesn't record its sessions.</p>
-    <form hx-post="{{ cbase }}/manage/settings/trophies" hx-swap="none" class="form-narrow">
-      {% for k, label in trophy_modes.items() %}<label class="check"><input type="radio" name="counts" value="{{ k }}"{{ ' checked' if trophy_mode == k }}> {{ label }}</label>{% endfor %}
-      <div class="row"><button class="btn primary" type="submit">Save</button></div>
-    </form>
+    {% call set_row("What Party's Trophies counts", key="trophy-case") %}{{ choice(cbase ~ "/manage/settings/trophies", "counts", [("sessions", "During sessions", trophy_modes["sessions"]), ("all", "Every roll", trophy_modes["all"])], trophy_mode, "What Trophy Case counts") }}{% endcall %}
   </section>
 
   {# Art style (Brett, 2026-11-04, docs/mockups/pictures/ board 3; app/drawing.py): every picture drawn from a description in
@@ -50,13 +47,13 @@
   <section class="section" id="art-style">
     <h2>Art style</h2>
     <p class="hint">Every picture drawn from a description in this campaign gets this style, so its pictures belong together. A few words, and up to {{ art_refs }} pictures to match: the campaign's own, or its characters' portraits from D&amp;D Beyond. Uploads stay as they are, and pictures already drawn keep their look.</p>
+    {% call set_row("Describe it", "Draw a picture from a description. Off, Upload and D&D Beyond's art stay.", "describe") %}{{ switch(cbase ~ "/manage/settings/art-describe", not art.off, "Describe it in this campaign") }}{% endcall %}
     <form hx-post="{{ cbase }}/manage/settings/art-style" hx-swap="none" class="form-narrow">
       <label class="field">In a few words<textarea name="words" rows="3" maxlength="600" placeholder="Ink and muted watercolour, like an old field guide; soft light, plain backgrounds, no text in the picture.">{{ art.words }}</textarea></label>
       <fieldset class="art-refs"><legend>Pictures to match</legend>
         {% for x in art_choices %}<label class="art-ref" title="{{ x.name }}"><input type="checkbox" name="refs" value="{{ x.id }}"{{ ' checked' if x.on }}><img src="{{ x.thumb }}" alt="{{ x.name }}"></label>
         {% else %}<p class="note">None yet: pictures added to this campaign's World entries or familiars, and its characters' D&amp;D Beyond portraits, show here to pick from.</p>{% endfor %}
       </fieldset>
-      <label class="check"><input type="checkbox" name="off" value="1"{{ ' checked' if art.off }}> Switch Describe it off for this campaign (Upload and D&amp;D Beyond's art stay)</label>
       <div class="row"><button class="btn primary" type="submit">Save</button></div>
     </form>
   </section>
@@ -65,8 +62,7 @@
      the features still being tried, each with its own toggle, what it does and where it sits on the roadmap. #}
   {% macro feature_row(f, is_on, can=true) %}
   <li class="record"><span class="record-main"><b>{{ f.name }}</b> <span class="tag {{ 'done' if f.state == 'Ready' else 'draft' }}">{{ f.state }}</span><span class="note">{{ f.about }}</span><span class="note faint">Roadmap: {{ f.roadmap }}</span></span>
-    <span class="record-actions">{% if can %}<form method="post" action="{{ cbase }}/manage/settings/vtt/{{ f.key }}">{% if not is_on %}<input type="hidden" name="on" value="1">{% endif %}
-      <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if is_on else 'false' }}" aria-label="{{ f.name }} on here"></button></form>
+    <span class="record-actions">{% if can %}{{ switch(cbase ~ "/manage/settings/vtt/" ~ f.key, is_on, f.name ~ " on here") }}
       {% else %}<button type="button" class="btn small" data-modal-url="/dice">Your dice</button>{% endif %}</span>
   </li>
   {% endmacro %}
@@ -81,12 +77,7 @@
 
   <section class="section" id="labs">
     <h2>Labs</h2>
-    <form method="post" action="{{ cbase }}/manage/settings/vtt/labs" class="vtt-test">
-      {% if not vtt_rows.labs_on %}<input type="hidden" name="on" value="1">{% endif %}
-      <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if vtt_rows.labs_on else 'false' }}" aria-label="Labs on here"></button>
-      <div><b>Labs: try what's still being built</b>
-        <span class="note">{% if vtt_rows.labs_on %}On: switch each feature below on or off for this table. They may be unfinished or change.{% else %}Off: none of them show here. Switch Labs on to see them and try each one.{% endif %}</span></div>
-    </form>
+    {% call set_row("Labs: try what's still being built", "On: switch each feature below on or off for this table. They may be unfinished or change." if vtt_rows.labs_on else "Off: none of them show here. Switch Labs on to see them and try each one.", "labs") %}{{ switch(cbase ~ "/manage/settings/vtt/labs", vtt_rows.labs_on, "Labs on here") }}{% endcall %}
     {% if vtt_rows.labs_on %}
     <ul class="records">
       <li class="records-head" aria-hidden="true"><span>Feature</span><span>Here</span></li>
@@ -97,12 +88,7 @@
 
   <section class="section" id="test">
     <h2>Test campaign</h2>
-    <form method="post" action="{{ cbase }}/manage/settings/test" class="vtt-test">
-      {% if not campaign.is_test %}<input type="hidden" name="is_test" value="1">{% endif %}
-      <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if campaign.is_test else 'false' }}" aria-label="Test campaign"{% if not can_set_test %} disabled{% endif %}></button>
-      <div><b>This campaign holds test data</b>
-        <span class="note">Tagged Test, and it can have test copies of the table's characters (Manage › Table), which never reach their real D&amp;D Beyond sheets. It switches nothing on by itself. Never on for the table's campaign.{% if not can_set_test %} Only admins change this.{% endif %}</span></div>
-    </form>
+    {% call set_row("This campaign holds test data", "Tagged Test, and it can have test copies of the table's characters (Manage › Table), which never reach their real D&D Beyond sheets. It switches nothing on by itself. Never on for the table's campaign." ~ ("" if can_set_test else " Only admins change this."), "test") %}{{ switch(cbase ~ "/manage/settings/test", campaign.is_test, "Test campaign", name="is_test", disabled=not can_set_test) }}{% endcall %}
   </section>
 </main>
 {% endblock %}

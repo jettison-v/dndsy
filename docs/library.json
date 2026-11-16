@@ -1116,6 +1116,15 @@
   "link": "https://claude.ai/artifact/GPQDtgn4LptUNpeo9BRnyH"
  },
  {
+  "title": "One Switch for Settings",
+  "kind": "design",
+  "status": "Your pick 1, drawn and built in its PR",
+  "date": "Nov 16",
+  "what": "UI review part 3, Manage pick 1: every yes/no setting on Manage as one switch at the row's right that saves itself (Settings, Accounts), Trophy Case's two-way switch, and what stays a checkbox.",
+  "source": "docs/mockups/one-switch/",
+  "link": "https://claude.ai/artifact/RBZzVknwiTcXb5UQBzW7ZC"
+ },
+ {
   "title": "Compare",
   "kind": "design",
   "status": "Chose both",
