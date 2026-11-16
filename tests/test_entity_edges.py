@@ -7,7 +7,7 @@ from sqlalchemy import select
 from app import entities
 from app.entities import EntityError
 from app.importer import import_bundle
-from app.models import Entity, EntityKind, EntityRelation, EventEntity, Fact, GameSession, Status, StoryEvent
+from app.models import Entity, EntityRelation, EventEntity, Fact, GameSession, Status, StoryEvent
 from tests.table_setup import BUNDLE
 
 

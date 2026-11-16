@@ -50,12 +50,8 @@ def refusal(real_email: str, target_email: str) -> str:
         return "That's you."
     if access.level(target_email) is None:
         return "They can't sign in, so there's nothing to see."
-    rows = access._rows()
-    mine = (rows.get(real_email) or {}).get("roles") or {}
-    theirs = (rows.get(target_email) or {}).get("roles") or {}
-    for cid, r in mine.items():
-        if r == access.DM and cid in theirs and theirs[cid] != access.DM:
-            return "You're the DM of a campaign they play in. Viewing as them would show you their notes."
+    if access.dm_over(real_email, target_email):
+        return "You're the DM of a campaign they play in. Viewing as them would show you their notes."
     return ""
 
 

@@ -75,6 +75,37 @@ def test_a_creature_that_acts_right_after_its_master_moves_with_it():
     assert initiative.plan([o[0], vi, synthetic, *o[3:]], "t-vi", 0)["moves"] == {"t-vi": 16}
 
 
+def test_a_dragged_row_between_close_numbers_gets_the_simplest_number_that_fits():
+    """The bug-planting check (Nov 15): a whole number first (the one below, else the one above), then a half, else
+    half way; a row with no number is skipped over; numbers as people read them."""
+    o = order(("Trah", 17), ("Big C", 13.9), ("Enemy 1", 12), ("Cole", 11.2))
+    assert initiative.plan(o, "k0", 2)["initiative"] == 13  # (between 13.9 and 12: 12 is taken, so 13)
+    assert initiative.plan(o, "k0", 3)["initiative"] == 11.5  # (between 12 and 11.2: a half, not 11.6)
+    assert initiative.plan(o, "k3", 2)["initiative"] == 13  # (dragged up from below)
+    blank = order(("Trah", 17), ("Enemy 1", None))
+    assert initiative.plan(blank, "k0", 2) is None  # (nothing to place it by)
+    unrolled = order(("Trah", 17), ("Big C", 12.5), ("Enemy 1", None))
+    assert initiative.plan(unrolled, "k0", 2)["initiative"] == 12  # (below 12.5, above one with no number)
+    assert initiative.plan(unrolled, "k0", 3) is None  # (below a row with no number: nothing to place it by)
+    assert initiative.plan(o, "nobody", 1) is None and initiative.plan(o, "k0", 9) is None and initiative.plan(o, "k0", -1) is None
+    assert (initiative.num(None), initiative.num(13.0), initiative.num(1.234), initiative.num("7")) == (None, 13, 1.23, 7)
+    assert initiative.shown(None) == "—" and initiative.shown(13.50) == "13.5"
+
+
+def test_a_creature_stays_just_after_its_master_wherever_the_master_lands():
+    vi = entry("t-vi", "Vi", 14, kind="character", character=7)
+    hom = entry("t-hom", "Homunculus Servant", 13.5, kind="companion", creature={"master": 7, "own": False})
+    o = [entry("t-a", "Big C", 15), entry("t-b", "Enemy 1", 12), vi, hom, entry("t-c", "Cole", 11.5)]
+    assert [[x["key"] for x in g] for g in initiative._groups(o)] == [["t-a"], ["t-b"], ["t-vi", "t-hom"], ["t-c"]]
+    got = initiative.plan(o, "t-vi", 0)  # (to the top: 16, and its Homunculus 15.5)
+    assert got["moves"] == {"t-vi": 16, "t-hom": 15.5}
+    low = [entry("t-a", "Big C", 15), entry("t-b", "Enemy 1", 12), entry("t-c", "Cole", 11.6), vi, hom]
+    got = initiative.plan(low, "t-vi", 2)  # (between 12 and 11.6: no room for 11.5 after it, so half way)
+    assert got["initiative"] == 11.8 and got["moves"]["t-hom"] == initiative.num((11.8 + 11.6) / 2)
+    own = {**hom, "creature": {"master": 7, "own": True}}  # (a familiar rolls its own: not moved with its master)
+    assert [[x["key"] for x in g] for g in initiative._groups([vi, own])] == [["t-vi"], ["t-hom"]]
+
+
 # ---- before Start Combat: who's waiting
 
 def test_before_start_combat_askdnd_hears_who_is_waiting_only_with_initiative_from_askdnd(player, db, table):
