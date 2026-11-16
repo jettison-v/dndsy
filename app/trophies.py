@@ -192,6 +192,6 @@ def save_mode(request: Request, counts: str = Form(""), db: Session = Depends(ge
     try:
         set_mode(campaign, counts)
     except ValueError as e:
-        return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": web.notice(str(e), "warn")})})
+        return Response(status_code=409, headers={"HX-Trigger": json.dumps({"toast": web.notice(str(e), "warn")})})  # (not saved: the choice stays)
     db.commit()
     return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": f"Trophy Case counts: {MODES[counts].lower()}"})})

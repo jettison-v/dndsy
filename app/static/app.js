@@ -223,7 +223,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     let events = {};
     try { events = JSON.parse((r && r.headers.get('HX-Trigger')) || '{}'); } catch (err) { /* no message */ }
     if (events.toast) toast(events.toast);
-    if (!r || !r.ok) { if (!events.toast) toast("Not saved: try again.", null, 'warn'); return; }
+    if (!r || r.status !== 204) { if (!events.toast) toast("Not saved: try again.", null, 'warn'); return; }  // (only 204 is saved: a sign-in page after a redirect isn't)
     if (events.switchReload) { location.reload(); return; }
     done();
   }
