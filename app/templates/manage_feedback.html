@@ -30,8 +30,8 @@
         <div class="fb-open">
           <div class="fb-pics" data-kept="{{ 1 if hide else 0 }}">
             {% if hide %}<p class="note">Its page and pictures are kept from you: you're the DM of a campaign {{ f.sender.split(" (")[0] or "its sender" }}{% if ctx.viewing_as %} or {{ ctx.viewing_as }}{% endif %} plays in, and they can show that player's character notes.</p>
-            {% else %}{% if f.shot_key %}<a href="/manage/feedback/{{ f.id }}/shot" target="_blank" rel="noopener"><img src="/manage/feedback/{{ f.id }}/shot" alt="The page as the note was opened" loading="lazy"></a>{% endif %}
-            {% if f.pasted_key %}<a href="/manage/feedback/{{ f.id }}/pasted" target="_blank" rel="noopener"><img src="/manage/feedback/{{ f.id }}/pasted" alt="The pasted screenshot" loading="lazy"></a>{% endif %}{% endif %}
+            {% else %}{% if f.shot_key %}<img class="fb-pic" src="/manage/feedback/{{ f.id }}/shot" alt="The page as the note was opened" loading="lazy">{% endif %}
+            {% if f.pasted_key %}<img class="fb-pic" src="/manage/feedback/{{ f.id }}/pasted" alt="The pasted screenshot" loading="lazy">{% endif %}{% endif %}
           </div>
           <div class="fb-side">
             <p class="fb-text">{{ f.text }}</p>

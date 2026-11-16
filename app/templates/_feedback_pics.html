@@ -6,12 +6,13 @@
   <span class="note" data-pics-said>Or paste one here (<kbd>⌘V</kbd>)</span></div>
 {%- endmacro %}
 
-{# The pictures a note was sent with, by name ("shot": the page as the window opened, "pasted"), each opening full size #}
+{# The pictures a note was sent with, by name ("shot": the page as the window opened, "pasted"); a tap shows one large over
+   the page, in the one large-picture view (app.js "a picture, large"), never a new tab (Brett, Nov 16) #}
 {% macro sent_pics(names, base) -%}
-{% if names %}<span class="fb-thread-pics">{% for w in names %}<a href="{{ base }}/{{ w }}" target="_blank" rel="noopener"><img src="{{ base }}/{{ w }}" alt="{{ 'The page as you sent this' if w == 'shot' else 'Your screenshot' }}" loading="lazy"></a>{% endfor %}</span>{% endif %}
+{% if names %}<span class="fb-thread-pics">{% for w in names %}<img class="fb-pic" src="{{ base }}/{{ w }}" alt="{{ 'The page as you sent this' if w == 'shot' else 'Your screenshot' }}" loading="lazy">{% endfor %}</span>{% endif %}
 {%- endmacro %}
 
 {# The screenshots a thread entry came with, each opening at full size #}
 {% macro added_pics(ids, base) -%}
-{% if ids %}<span class="fb-thread-pics">{% for p in ids %}<a href="{{ base }}/pic/{{ p }}" target="_blank" rel="noopener"><img src="{{ base }}/pic/{{ p }}" alt="A screenshot added to the note" loading="lazy"></a>{% endfor %}</span>{% endif %}
+{% if ids %}<span class="fb-thread-pics">{% for p in ids %}<img class="fb-pic" src="{{ base }}/pic/{{ p }}" alt="A screenshot added to the note" loading="lazy">{% endfor %}</span>{% endif %}
 {%- endmacro %}

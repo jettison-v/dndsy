@@ -40,6 +40,20 @@ def test_backslash_point_and_send(people, server, browser_db):
     assert page.locator("[data-fb-kind].on").count() == 0  # (opened again: nothing picked)
     page.fill("#fb-win textarea[name=text]", "a \\ b")
     assert page.locator("#fb-win textarea[name=text]").input_value() == "a \\ b"
+    # A note's screenshots (here on the queue, as on Notes you sent) show large over the page, never in a new tab, and
+    # the ✕ closes them (Brett, Nov 16)
+    page.keyboard.press("Escape")
+    admin.open("/manage/feedback?tab=new")
+    page.locator(".fb-item summary").first.click()
+    pic = page.locator(".fb-item details[open] .fb-pic").first
+    pic.wait_for()
+    before = page.url
+    pic.click()
+    big = page.locator("dialog.pic-big[open]")
+    big.wait_for()
+    assert big.locator("img").is_visible() and page.url == before and len(page.context.pages) == 1
+    big.locator(".pic-big-x").click()
+    page.wait_for_function("!document.querySelector('dialog.pic-big')")
     assert not admin.errors, admin.errors
 
 
