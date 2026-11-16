@@ -8,9 +8,9 @@
   {% if saved %}<p class="all-clear" role="status">✓ Saved</p>{% endif %}
   {% if g.description %}<div class="story">{{ g.description }}</div>{% else %}<p class="muted">No description.</p>{% endif %}
   {% if g.misheard_as %}<p class="note">Often misheard as: {{ g.misheard_as | join(", ") }}</p>{% endif %}
-  {% if not (can_edit and is_dm) %}{{ suggest("/campaign/glossary/" ~ g.id ~ "/suggest", "this entry") }}{% endif %}
+  {% if not (can_edit and is_dm) %}{{ suggest("/campaign/glossary/" ~ g.id ~ "/suggest", g.term, label="+ Suggest a fix", placeholder="What should it say? (type @ for a name)") }}{% endif %}
   {% if can_edit %}
-  <details class="suggest">
+  <details class="fold">
     <summary>{{ "Edit" if is_dm else "Edit (reviewers)" }}</summary>
     <form class="stack" hx-post="/campaign/glossary/{{ g.id }}/edit" hx-target="#peek .peek-body, #glossary-page" hx-select=".peek-body > *" hx-swap="innerHTML">
       <label class="field">Correct spelling<input type="text" name="term" value="{{ g.term }}" required></label>

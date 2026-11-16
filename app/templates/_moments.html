@@ -1,0 +1,26 @@
+{# Key moments, one look everywhere (docs/mockups/key-moments/, the UI review's pick 2; Brett, Nov 16): the kind and
+   the date in one slot, the moment, the names it mentions under it; the first few, then "Show the other N key moments",
+   which carries on the same list. On a recap (Previously on…, Sessions), a World entry (the Reader, the side panel, the
+   DM's Edit window) and a quest's Progress.
+   `items`: a recap's StoryEvents (no date: they're all that session's) or entities.moments' {e, when}, newest first
+   off a recap. `first`: what shows first (a recap's major ones), else the first `few`; one more never folds.
+   `skip`: the entry's own id (its name isn't listed under its own moments). `latest`: an open quest's newest moment
+   gets the amber dot. `lk`: the linker that makes names in the text links. #}
+{% from "_lists.html" import empty_state %}
+
+{% macro key_moment(m, lk, skip=None, latest=False) -%}
+{% set e = m.e if m.e is defined else m %}{% set k = e.kind.value %}
+{% set names = e.entities | selectattr("status.value", "equalto", "published") | rejectattr("id", "equalto", skip) | list %}
+<li class="ev {{ k }}{{ ' latest' if latest }}" data-moment="{{ e.id }}"><span class="km-slot"><span class="kind {{ k }}">{{ k | capitalize }}</span>{% if m.when is defined and m.when %} · {{ m.when }}{% endif %}</span><div class="ev-text">{{ lk.text(e.text) }}{% if names %}<small>{% for x in names %}<a href="{{ entry_url(x.id) }}">{{ x.name }}</a>{{ " · " if not loop.last }}{% endfor %}</small>{% endif %}</div></li>
+{%- endmacro %}
+
+{% macro moment_list(items, lk, first=None, few=3, skip=None, latest=False, empty="") -%}
+{% if items %}
+{% set top = first if first is not none else items[:few] %}
+{% set shown = top if items | length > top | length + 1 else items %}
+{% set rest = items | reject("in", shown) | list %}
+<ol class="moment-line" data-moments>{% for m in shown %}{{ key_moment(m, lk, skip, latest and loop.first) }}{% endfor %}</ol>
+{% if rest %}<details class="km-more"><summary>Show the other {{ rest | length }} key moments</summary>
+  <ol class="moment-line">{% for m in rest %}{{ key_moment(m, lk, skip) }}{% endfor %}</ol></details>{% endif %}
+{% elif empty %}{{ empty_state(empty) }}{% endif %}
+{%- endmacro %}

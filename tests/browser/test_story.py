@@ -1,7 +1,9 @@
 """Story's search in a real browser (app.js "Story search"): it finds sessions by their words, marks them, and
 clearing it puts the page back as it was (Brett, 2026-10-29: Story search covers Story only)."""
 
-from sqlalchemy import create_engine
+from datetime import date
+
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
 from app.models import GameSession, Recap, Status
@@ -106,4 +108,48 @@ def test_an_open_session_carries_its_title_in_its_scroll_and_rolls_up(people, se
     two.get_by_role("button", name="Roll up Night 2 at the Bell").click()
     two.locator(":scope > summary").wait_for()
     assert one.get_attribute("open") is not None  # (rolling one up leaves the others as they are)
+    assert player.errors == []
+
+
+def test_add_what_the_party_learned_is_one_fold_that_opens_in_place(people, server, browser_db):
+    """Key Moments Everywhere, pick 3 (Brett, Nov 16; docs/mockups/key-moments/): "+ Add what the party learned" rests
+    closed under a recap; opened, the box is ready to type; Escape and Cancel close only the fold and keep what's
+    typed; Send gives a corner card and empties and closes it. It fits a phone's column open."""
+    engine = create_engine(browser_db[0])
+    with Session(engine) as db:
+        s = GameSession(campaign_id=server["campaign"], number=99, played_on=date(2099, 1, 1), source="notes", title="The Ford")  # (the newest: Previously on's)
+        db.add(s)
+        db.flush()
+        db.add(Recap(session_id=s.id, version=1, body="Cole and Trah crossed at the old ford.", author="brett", status=Status.PUBLISHED))
+        db.commit()
+        sid = s.id
+    engine.dispose()
+
+    player = people("player")
+    page = player.open("/c/main/campaign")
+    fold = page.locator(f'#t-previously details.add-fold:has(form[hx-post="/sessions/{sid}/suggest"])')
+    assert not fold.evaluate("d => d.open")
+    fold.locator("summary").click()
+    page.wait_for_function("document.activeElement && document.activeElement.matches('details.add-fold textarea')")
+    page.keyboard.type("It was the new ford.")
+    page.keyboard.press("Escape")
+    assert not fold.evaluate("d => d.open") and fold.locator("textarea").input_value() == "It was the new ford."
+    fold.locator("summary").click()
+    fold.locator("[data-fold-cancel]").click()
+    assert not fold.evaluate("d => d.open")
+    fold.locator("summary").click()
+    fold.locator("label.chip", has=page.locator("input[value=correction]")).click()
+    assert fold.locator("input[value=correction]").is_checked()
+    fold.locator("button[type=submit]").click()
+    page.locator("#cards > .card").first.wait_for()
+    page.wait_for_function("d => !d.open", arg=fold.element_handle())
+    assert fold.locator("textarea").input_value() == ""
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT kind, text FROM suggestions WHERE target_type = 'session' AND target_id = :s"), {"s": sid}).first()
+    engine.dispose()
+    assert tuple(row) == ("correction", "It was the new ford.")
+    page.set_viewport_size({"width": 375, "height": 800})  # open on a phone, it stays in its column
+    fold.locator("summary").click()
+    assert fold.evaluate("d => d.querySelector('form').scrollWidth <= d.querySelector('form').clientWidth")
     assert player.errors == []

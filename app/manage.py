@@ -26,6 +26,7 @@ from app.auth import (
     is_reviewer,
 )
 from app.db import get_db
+from app.linking import Linker
 from app.templating import templates
 
 router = APIRouter()
@@ -330,7 +331,21 @@ def design_page(request: Request):
     demo = {"c": {"id": 0}, "picks": {"star": {"spell:Fire Bolt"}, "fav": {"spell:Fire Bolt", "spell:Shield"}, "remind": set(),
                                        "notes": {"spell:Shield": "Save it for the big hit"}}}
     return templates.TemplateResponse(request, "design.html", {"colors": COLOR_TOKENS, "sizes": TEXT_SIZES, "space": SPACE,
-                                                               "corners": CORNERS, **demo})
+                                                               "corners": CORNERS, "sample_moments": sample_moments(),
+                                                               "plain": Linker(None, {}), **demo})
+
+
+def sample_moments() -> list[dict]:
+    """Made-up key moments for the design system's Key moment sample (_moments.html), newest first."""
+    from types import SimpleNamespace as N
+
+    named = lambda *names: [N(id=0, name=n, status=N(value="published")) for n in names]
+    moment = lambda i, kind, text, when, *names: {"e": N(id=-i, kind=N(value=kind), text=text, entities=named(*names)), "when": when}
+    return [moment(1, "decision", "The party agreed to escort NPC 1 to the harbour before dawn.", "Session 14 · Nov 13", "NPC 1"),
+            moment(2, "reveal", "Trah recognised the seal on the letter as the Guild's.", "Session 13 · Nov 6", "Trah"),
+            moment(3, "theory", "Big C suspects NPC 1 knew about the ambush all along.", "Session 12 · Oct 30", "Big C", "NPC 1"),
+            moment(4, "loot", "Cole found a Potion of Healing in the cellar.", "Session 7 · Sep 25", "Cole"),
+            moment(5, "event", "The party first met NPC 1 at the crossroads inn.", "Session 6 · Sep 18", "NPC 1")]
 
 
 @router.get("/manage/design/panel")

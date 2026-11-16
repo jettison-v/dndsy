@@ -1,6 +1,7 @@
 {# What the table knows about an entry, with the DM's and reviewers' decisions and the form to add to it; shared by
    the side panel and the Reader (_peek.html, _entry_reader.html). #}
 {% from "_lists.html" import empty_state %}
+{% from "_suggest_form.html" import add_fold %}
   <h3>What the table knows</h3>
   {% if merged %}<ul class="plain peek-facts">{% for f in merged %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(f.text) }}
     {% if can_moderate %}<button type="submit" class="btn link small" hx-post="/campaign/facts/{{ f.id }}/done?in={{ w }}" {{ px | safe }} title="Take it off this list (it stays under Done)">Done</button>{% endif %}</li>{% endfor %}</ul>
@@ -18,14 +19,8 @@
   <p class="note"><a href="/your-notes">All your notes</a></p>
   {% endif %}
 
-  <form class="stack add-fact" hx-post="/campaign/{{ e.id }}/facts?in={{ w }}" {{ px | safe }} hx-disabled-elt="find button">
-    <div class="row">
-      <label class="check"><input type="radio" name="kind" value="addition" checked> Add something</label>
-      <label class="check"><input type="radio" name="kind" value="correction"> Something here is wrong</label>
-    </div>
-    <textarea name="text" rows="2" required aria-label="What the party learned" placeholder="Something the party learned about {{ e.name }}, or what's wrong (type @ for a name)"></textarea>
-    <div class="row"><button type="submit" class="btn small">{{ "Add" if is_dm else "Send" }}</button><span class="note">{{ "You're the DM, so it goes straight on." if is_dm else ("Merge it above to show it." if can_moderate else "The DM or a reviewer adds it.") }}</span></div>
-  </form>
+  {{ add_fold("/campaign/" ~ e.id ~ "/facts?in=" ~ w, e.name, px, dm=is_dm,
+              note="You're the DM, so it goes straight on." if is_dm else ("Merge it above to show it." if can_moderate else "The DM or a reviewer adds it.")) }}
 
   {% if finished %}
   <details class="done"><summary>Done ({{ finished | length }})</summary>

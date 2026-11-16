@@ -1107,6 +1107,15 @@
   "link": "https://claude.ai/artifact/6PuVh6AdhvhmdqPA54mx23"
  },
  {
+  "title": "Key Moments Everywhere",
+  "kind": "design",
+  "status": "Waiting for your look before it's built",
+  "date": "Nov 16",
+  "what": "UI review part 3, Campaign picks 2 and 3: key moments drawn one way in every place (the recap, a World entry, a quest, the side panel, a phone), and one closed \"+ Add what the party learned\" fold, in every state.",
+  "source": "docs/mockups/key-moments/",
+  "link": "https://claude.ai/artifact/GPQDtgn4LptUNpeo9BRnyH"
+ },
+ {
   "title": "Compare",
   "kind": "design",
   "status": "Chose both",

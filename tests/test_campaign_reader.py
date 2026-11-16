@@ -2,6 +2,8 @@
 the page, ?open=<id> its address, the last session marked), Quests is the quest log, Relationships has the family trees
 and anyone's connections."""
 
+import re
+
 from sqlalchemy import select
 
 from app import relations
@@ -74,7 +76,7 @@ def test_the_quest_board(player, db):
     card = board[board.index(f'id="quest-{quest.id}"'):]
     assert f'Given by <a class="ent" href="/c/main/campaign?open={lil.id}">Lillippi Lemon</a>' in card and "since Session 1" in card
     # Progress, newest first: every key moment, the latest marked as where the quest stands now
-    assert "Climb the tower." in card and card.index("A key turned up.") < card.index("Lillippi asked for help.") and '<li class="now">' in card
+    assert "Climb the tower." in card and card.index("A key turned up.") < card.index("Lillippi asked for help.") and ' latest" data-moment=' in card
     assert '<span class="note">Session 4 · 4 updates · from Lillippi Lemon</span>' in board  # the quest log's list
     assert f'<a class="chip-link" href="/c/main/campaign?open={lil.id}">Lillippi Lemon</a>' in card  # who and where
     assert "Clear the road" in board and 'data-ql-view="done" aria-pressed="false">Done <span class="ls-n">1</span>' in board  # done quests under Done
@@ -101,6 +103,36 @@ def test_the_quest_board(player, db):
     # A quest's address opens the Quests tab on its journal, picked in the quest log
     assert f'id="quest-{quest.id}" data-ql-journal="{quest.id}">' in page and '<div id="t-world" hidden>' in page
     assert f'class="ql-item open sel" data-ql-id="{quest.id}"' in page
+
+
+def test_key_moments_one_look_and_a_quests_fold_answers_in_place(player, db, monkeypatch):
+    """Key Moments Everywhere, the UI review's picks 2 and 3 (Brett, Nov 16; docs/mockups/key-moments/): a quest's key
+    moments are the one piece (the kind and the date in one slot, the names under it but the quest's own, the newest 3,
+    then Show the other N), and its "+ Add what the party learned" is the one closed fold, which answers in place."""
+    import_bundle(db, BUNDLE)
+    import_bundle(db, QUESTS)
+    import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "sessions": [{"number": n, "played_on": f"2026-02-0{n}"} for n in range(3, 8)]})
+    quest = entry(db, "Reach the library")
+    for n in range(1, 6):
+        quest_moment(db, n, f"Step {n} on the way.")
+    page = player.get(f"/c/main/campaign?tab=quests&open={quest.id}").text
+    card = page[page.index(f'id="quest-{quest.id}"'):page.index('id="t-relationships"')]
+    first = card[card.index("data-moments"):card.index("</ol>", card.index("data-moments"))]
+    assert first.count('class="ev ') == 3 and "Step 5 on the way." in first and "Step 2 on the way." not in first  # the newest 3
+    assert "Show the other 2 key moments" in card
+    assert '<span class="km-slot"><span class="kind event">' in first and " · Session 5 · Feb 5</span>" in first  # the kind and the date, one slot
+    names = " ".join(re.findall(r"<small>(.*?)</small>", first))
+    assert f"open={lillippi(db).id}\"" in names and f"open={quest.id}\"" not in names  # the names under it, not its own
+    assert '<details class="add-fold" data-add-fold>\n  <summary>+ Add what the party learned</summary>' in card
+    assert f'hx-post="/campaign/{quest.id}/facts?in=quest"' in card and 'href="/c/main/campaign?open=' not in card[card.index("ql-knows"):]
+    # Sent from Quests, its column comes back alone, the fold closed; the DM's goes straight on
+    r = player.post(f"/campaign/{quest.id}/facts?in=quest", data={"kind": "addition", "text": "The library is under the lake."}, headers=HX)
+    assert r.text.strip().startswith('<div class="ql-knows">') and "add-fold" in r.text and "under the lake" not in r.text
+    assert "will add it to the page" in r.headers["HX-Trigger"]
+    set_role(db, "dm@example.com")
+    dm = client_for(monkeypatch, db, "dm@example.com")
+    r = dm.post(f"/campaign/{quest.id}/facts?in=quest", data={"kind": "addition", "text": "Its door faces east."}, headers=HX)
+    assert "Its door faces east." in r.text and "Added to the page" in r.headers["HX-Trigger"]
 
 
 def test_player_characters_are_people_in_world(player, db):
@@ -287,10 +319,10 @@ def test_all_sessions_reads_from_the_start_and_shows_a_few_key_moments(player, d
     most = max(len(i.get("events") or []) for i in many(db)["items"])
     assert most > 4  # (the test's sessions, each moment five times)
     page = player.get("/c/main/?tab=sessions").text
-    assert f'<details class="tale-more"><summary>Show the other {most - 3} key moments</summary>' in page
+    assert f'<details class="km-more"><summary>Show the other {most - 3} key moments</summary>' in page
     # Feedback 40 (Brett, Nov 7): too many to scroll. The major ones show (here two), the rest behind the fold
     monkeypatch.setattr(story_mod, "published_story", lambda db: many(db, majors={(1, 0), (3, 0)}))
     page = player.get("/c/main/?tab=sessions").text
-    shown = page.split('<ol class="moment-line tale-moments">', 1)[1].split("</ol>", 1)[0]
+    shown = page.split('<ol class="moment-line" data-moments>', 1)[1].split("</ol>", 1)[0]
     assert shown.count('class="ev ') == 2 and "(1)" in shown and "(3)" in shown
     assert f"Show the other {most - 2} key moments" in page

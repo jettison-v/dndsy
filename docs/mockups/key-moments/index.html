@@ -1,0 +1,299 @@
+<title>Key Moments Everywhere</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens and sizes (app.css: 14px text in lists, --fs-xs 12px, --control-h 32px,
+   44px on a phone; the story line #3b3428). Each place is drawn at its real width on a 1280px laptop with Table rolls
+   open: the recap's Key moments column, the Reader's left column, a quest's Progress column, the side panel, a phone.
+   UI review part 3, Campaign, picks 2 and 3 (Brett, Nov 16). Made-up moments, the table's characters, NPC 1. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0; --violet: #b9a3e3; --selected-bg: #2a3550;
+  --story-bg: #221f1a; --story-line: #3b3428; --story-text: #e2dccf;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  --control-h: 32px; --chip-h: 28px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --fs-xs: .75rem; --fs-sm: .875rem;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+a { color: var(--link); }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 82ch; font-size: 1.04rem; }
+.wrap > *, section.board > * { min-width: 0; }
+section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px solid #2c3036; }
+.intro { display: grid; gap: 8px; max-width: 90ch; }
+.decided { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.decided div { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 10px; padding: 11px 14px; font-size: .88rem; color: var(--muted); }
+.decided b { display: block; margin-bottom: 2px; }
+.rules { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 92ch; }
+
+/* places × states */
+.place { min-width: 0; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; padding-bottom: 20px; border-bottom: 1px solid #2c3036; }
+.place-name { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: .84rem; color: var(--muted); }
+.place-name b { font-size: .92rem; }
+.state-h { font: 700 .7rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; display: block; }
+.cell { background: var(--surface); border-radius: var(--r-lg); padding: 16px; min-width: 0; }
+.cell.story { background: var(--story-bg); color: var(--story-text); }
+.cell.phone { --control-h: 44px; --chip-h: 36px; }
+.cell .w { font-size: .7rem; color: var(--faint); text-align: right; margin: -8px -4px 6px 0; }
+.before { opacity: .9; outline: 1px dashed var(--line-strong); }
+
+/* askdnd's pieces as app.css draws them */
+.sec-h { margin: 0 0 12px; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.note { color: var(--muted); font-size: var(--fs-xs); }
+.empty-state { color: var(--muted); font-size: var(--fs-sm); }
+.btn { display: inline-flex; align-items: center; min-height: var(--control-h); padding: 0 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: 500 var(--fs-sm)/1 var(--sans); }
+.btn.primary { background: #c94a4a; border-color: #c94a4a; color: #fff; }
+.btn.link { background: none; border: 0; padding: 0 4px; color: var(--link); }
+
+/* THE KEY MOMENT: Story's, with the date added (pick 2) */
+.km { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--story-line); }
+.km li { position: relative; padding: 0 0 14px 16px; font-size: var(--fs-sm); line-height: 1.5; }
+.km li::before { content: ""; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; border-radius: 999px; background: var(--story-line); }
+.km li.latest::before { background: var(--amber); }
+.km .slot { display: block; font-size: var(--fs-xs); color: var(--faint); }
+.km .k { font-weight: 600; }
+.km .k.event { color: var(--muted); } .km .k.reveal { color: var(--violet); } .km .k.decision { color: var(--blue); }
+.km .k.loot { color: var(--amber); } .km .k.theory { color: var(--muted); font-style: italic; }
+.km li.theory .t { font-style: italic; color: var(--muted); }
+.km .names { display: block; font-size: var(--fs-xs); color: var(--faint); }
+.km .names a { color: var(--muted); text-decoration: none; }
+.km .t { overflow-wrap: anywhere; }
+.km-more { display: block; padding: 0 0 8px 16px; color: var(--link); font-size: var(--fs-sm); background: none; border: 0; font-family: inherit; cursor: pointer; }
+.quiet { margin-top: 2px; }
+
+/* THE FOLD: one closed "+ Add what the party learned" (pick 3) */
+.add-fold { margin-top: 14px; }
+.add-fold > summary { list-style: none; cursor: pointer; color: var(--link); font-size: var(--fs-sm); width: fit-content; }
+.add-fold > summary::-webkit-details-marker { display: none; }
+.add-fold[open] > summary { display: none; }
+.add-form { display: grid; gap: 10px; }
+.add-form { min-width: 0; }
+.add-form > * { min-width: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; min-height: var(--chip-h); padding: 0 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; color: var(--text); font-size: var(--fs-sm); white-space: nowrap; }
+.chip.on { background: var(--selected-bg); border-color: var(--blue); color: var(--strong); }
+.box { min-height: 62px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--faint); font-size: var(--fs-sm); }
+.phone .box { font-size: 16px; }
+.box.typed { color: var(--text); }
+.acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.acts .note { flex: 1 1 140px; }
+.facts { margin: 0 0 4px; padding-left: 18px; font-size: var(--fs-sm); display: grid; gap: 4px; }
+.mine { list-style: none; margin: 4px 0 0; padding: 0; font-size: var(--fs-sm); display: grid; gap: 4px; }
+.tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: var(--fs-xs); background: var(--surface-2); color: var(--amber); border: 1px solid var(--line); }
+.card { position: relative; margin-top: 10px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: var(--r-md); font-size: var(--fs-sm); }
+.sub-h { margin: 14px 0 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--strong); }
+
+.table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.table th, .table td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+.table th { color: var(--faint); font: 700 .72rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.table td:first-child { color: var(--strong); white-space: nowrap; }
+.scroll-x { overflow-x: auto; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; max-width: 92ch; }
+.q ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; }
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:14px">
+  <span class="lbl">Mockup · Nov 16 · for Brett · UI review part 3, Campaign</span>
+  <h1>Key moments, one look everywhere</h1>
+  <p class="lead">Your picks 2 and 3 from the UI review. Key moments are drawn four ways today (the recap's, the World
+  entry's dated line, a quest's amber rings, the side panel's plain list), and how many show differs (8, 3, or all of
+  them). "Add what the party learned" is three things (an open form, a fold, a link that leaves the page). Both are shared
+  pieces, so here is each one in every place it goes, at that place's real width, and in every state, before anything is
+  built.</p>
+  <div class="decided">
+    <div><b>Pick 2: Story's look, with the date</b>The kind word and the date in one slot above the moment, the names under it, "Show the other N" after a few.</div>
+    <div><b>Pick 3: one closed fold</b>"+ Add what the party learned" opens the same form in place, on entries, quests and recaps alike.</div>
+  </div>
+</header>
+
+<section class="board">
+  <div class="intro">
+    <span class="lbl">The key moment</span>
+    <h2>One piece, and the rules it keeps</h2>
+  </div>
+  <ul class="rules">
+    <li><b>The slot</b>: the kind (Decision blue, Reveal violet, Loot amber, Event and Theory grey) and the date as the
+      table knows it, "Session 13 · Nov 6". On a recap the date is left off: every moment there is that session's.</li>
+    <li><b>The names</b> it mentions go under it, linked (they open the side panel). On an entry, the entry's own name is
+      left out (it's about them); a hidden entry's name is never there (the standing rule).</li>
+    <li><b>A Theory</b> is in italics, in grey: the party's guess, not what happened.</li>
+    <li><b>How many</b>: a recap shows its major moments (8 on Previously on…, 3 on Sessions, as now); an entry, a quest
+      and the side panel show the newest 3. Then "Show the other N key moments", which opens the rest in the same list
+      (it never moves what you were reading). Fewer than 5: all of them, no fold.</li>
+    <li><b>The order</b>: a recap reads as the session went; everywhere else, newest first.</li>
+    <li><b>A quest that's open</b> keeps one mark of its own: its newest moment's dot is amber, "where it stands". A
+      done quest's dots are all the same.</li>
+    <li><b>None yet</b> is the one empty state: "No key moments mention Cole yet." (a quest: "No progress yet.").</li>
+  </ul>
+</section>
+
+<section class="board">
+  <div class="intro"><span class="lbl">Every place, every state</span><h2>Where key moments go</h2>
+    <p class="note" style="font-size:.86rem">Widths are each place's own on a 1280px laptop with Table rolls open, and a 375px phone.</p></div>
+  <div id="km-places" style="display:grid;gap:22px"></div>
+</section>
+
+<section class="board">
+  <div class="intro">
+    <span class="lbl">The fold</span>
+    <h2>"+ Add what the party learned", and the rules it keeps</h2>
+  </div>
+  <ul class="rules">
+    <li><b>Closed until pressed</b>, in link red, under What the table knows (an entry, a quest, the side panel), at the
+      foot of a recap (in place of "Suggest a correction or addition"), and on a glossary entry. A quest's opens in place:
+      it no longer takes you to its entry.</li>
+    <li><b>Open</b>, the fold's line gives way to the form: two choice chips, Add something and Something here is wrong (the
+      design system's chips, as in the feedback window; Add something first everywhere, where recaps had it the other
+      way round; in a narrow column the second wraps under the first), the box, then Send and Cancel. Cancel,
+      or Escape, closes it. What you typed stays until you send it.</li>
+    <li><b>Who sees it</b> is said beside Send: a player's "The DM or a reviewer adds it."; the DM's button is Add, "You're
+      the DM, so it goes straight on."</li>
+    <li><b>After Send</b> the fold closes, a corner card says it's sent, and it shows under Your suggestions here as
+      Waiting (as now). The DM's goes straight onto What the table knows.</li>
+    <li><b>On a phone</b> the box is 16px (Safari doesn't zoom) and the buttons 44px tall.</li>
+  </ul>
+  <div id="fold-places" style="display:grid;gap:22px"></div>
+</section>
+
+<section class="board">
+  <div class="intro"><span class="lbl">What changes</span><h2>Today, and after</h2></div>
+  <div class="scroll-x"><table class="table">
+    <tr><th>Place</th><th>Key moments today</th><th>After</th><th>Adding today</th><th>After</th></tr>
+    <tr><td>Previously on…, Sessions</td><td>Kind above, names under; 8 or 3, Show the other N</td><td>The same (no date: one session)</td><td>"Suggest a correction or addition", wrong first</td><td>The fold, Add something first</td></tr>
+    <tr><td>World entry (the Reader)</td><td>Date above, no kind, no names, all of them</td><td>The piece, newest 3, Show the other N</td><td>The form always open</td><td>The fold</td></tr>
+    <tr><td>Quests</td><td>Amber rings, date in bold, all of them</td><td>The piece, newest 3, amber dot on the newest while open</td><td>A link to its entry</td><td>The fold, in place</td></tr>
+    <tr><td>Side panel</td><td>A plain list, date after</td><td>The piece, newest 3</td><td>The form always open</td><td>The fold</td></tr>
+    <tr><td>The DM's Edit window</td><td>Kind at the side, session link under</td><td>The piece, all of them (it's where the DM tidies), + Add a key moment as now</td><td>"Suggest a correction or addition" form</td><td>The fold</td></tr>
+    <tr><td>Glossary entry</td><td>(none)</td><td>(none)</td><td>"Suggest a correction or addition"</td><td>The fold</td></tr>
+  </table></div>
+  <p class="note" style="font-size:.86rem">Not here: the session review's Key moments step, where the DM edits and marks the major ones (a form, not a reading list).</p>
+</section>
+
+<section class="board">
+  <div class="intro"><span class="lbl">Your look</span><h2>Before I build it</h2></div>
+  <div class="q"><b>Anything to change?</b>
+    <ul>
+      <li>Newest 3 then Show the other N on entries, quests and the side panel (a recap keeps its 8 and 3)?</li>
+      <li>The quest's amber dot on its newest moment while it's open?</li>
+      <li>Cancel beside Send to close the fold (and Escape)?</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<script>
+const M = [
+  { k: "decision", d: "Session 14 · Nov 13", t: "The party agreed to escort NPC 1 to the harbour before dawn.", n: ["NPC 1", "The Harbour"] },
+  { k: "reveal", d: "Session 13 · Nov 6", t: "Trah recognised the seal on the letter as the Guild's.", n: ["Trah", "The Guild"] },
+  { k: "loot", d: "Session 13 · Nov 6", t: "Cole took the silver key from the wrecked carriage.", n: ["Cole"] },
+  { k: "theory", d: "Session 12 · Oct 30", t: "Big C suspects NPC 1 knew about the ambush all along.", n: ["Big C", "NPC 1"] },
+  { k: "event", d: "Session 11 · Oct 23", t: "No Name dropped to 0 Hit Points against Enemy 1 and was back up a round later.", n: ["No Name", "Enemy 1"] },
+  { k: "event", d: "Session 10 · Oct 16", t: "Cole and Trah crossed the river at the old ford.", n: ["Cole", "Trah"] },
+  { k: "decision", d: "Session 9 · Oct 9", t: "The party turned down NPC 1's first offer.", n: ["NPC 1"] },
+  { k: "reveal", d: "Session 8 · Oct 2", t: "The map was a copy: the real one is still in the tower.", n: ["The Tower"] },
+  { k: "loot", d: "Session 7 · Sep 25", t: "Cole found a Potion of Healing in the cellar.", n: ["Cole"] },
+  { k: "event", d: "Session 6 · Sep 18", t: "The party first met NPC 1 at the crossroads inn.", n: ["NPC 1"] },
+  { k: "event", d: "Session 5 · Sep 11", t: "Cole kept watch through the storm.", n: ["Cole"] },
+  { k: "event", d: "Session 4 · Sep 4", t: "Cole joined the party at the docks.", n: ["Cole"] },
+];
+const LONG = { k: "reveal", d: "Session 13 · Nov 6", t: "The Sunken Observatory of Thrennimoralithar-under-the-Mountain was never sunk: its lower halls were sealed from inside.", n: ["The Sunken Observatory of Thrennimoralithar-under-the-Mountain", "Archivist-Prime Velkorrimanthus"] };
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const kindWord = k => k[0].toUpperCase() + k.slice(1);
+
+// one key moment: the slot (kind · date), the moment, the names it mentions under it
+function li(m, o) {
+  const names = m.n.filter(x => x !== o.self);
+  const slot = `<span class="slot"><span class="k ${m.k}">${kindWord(m.k)}</span>${o.date ? " · " + esc(m.d) : ""}</span>`;
+  const cls = [m.k === "theory" ? "theory" : "", o.latest ? "latest" : ""].filter(Boolean).join(" ");
+  return `<li${cls ? ` class="${cls}"` : ""}>${slot}<span class="t">${esc(m.t)}</span>${names.length ? `<span class="names">${names.map(x => `<a href="#">${esc(x)}</a>`).join(" · ")}</span>` : ""}</li>`;
+}
+// a list: the first few, then "Show the other N key moments" (fewer than 5: all of them)
+function list(ms, o) {
+  if (!ms.length) return `<p class="empty-state">${esc(o.empty)}</p>`;
+  const few = o.few || 3;
+  const shown = ms.length < 5 ? ms : ms.slice(0, few);
+  const rest = ms.length - shown.length;
+  return `<ol class="km">${shown.map((m, i) => li(m, { ...o, latest: o.questOpen && i === 0 })).join("")}</ol>` +
+    (rest ? `<button type="button" class="km-more">Show the other ${rest} key moments</button>` : "") +
+    (o.quiet ? `<p class="note quiet">No key moments since Nov 13.</p>` : "");
+}
+const cell = (state, width, inner, extra = "") => `<div style="min-width:0;max-width:100%"><span class="state-h">${state}</span><div class="cell ${extra}" style="width:${width}px;max-width:100%"><div class="w">${width}px</div>${inner}</div></div>`;
+const place = (name, note, cells) => `<div class="place"><div class="place-name"><b>${name}</b>${note}</div>${cells.join("")}</div>`;
+const H = t => `<h3 class="sec-h">${t}</h3>`;
+
+const recap = M.filter(m => /Nov 6/.test(m.d)).concat([
+  { k: "event", d: "", t: "The party fought off Enemy 1's patrol at the carriage.", n: ["Enemy 1"] },
+  { k: "decision", d: "", t: "Big C chose to keep the letter rather than burn it.", n: ["Big C"] },
+  { k: "event", d: "", t: "No Name scouted the Guild's warehouse from the rooftops.", n: ["No Name", "The Guild"] },
+  { k: "theory", d: "", t: "Trah thinks the seal was forged.", n: ["Trah"] },
+]);
+
+document.getElementById("km-places").innerHTML = [
+  place("Previously on… and Sessions", "the recap's Key moments column, beside Open threads", [
+    cell("Previously on…: its major ones, up to 8", 410, H("Key moments") + list(recap, { few: 8 }), "story"),
+    cell("Sessions: 3, then the rest", 410, H("Key moments") + list(recap, { few: 3 }), "story"),
+  ]),
+  place("A World entry, the Reader", "Cole's page: the left column under the facts box, What the table knows below it", [
+    cell("Many: the newest 3", 300, H("Key moments") + list(M, { date: true, self: "Cole" })),
+    cell("A few: all of them", 300, H("Key moments") + list(M.slice(1, 4), { date: true, self: "Cole" })),
+    cell("Long names", 300, H("Key moments") + list([LONG], { date: true, self: "Cole" })),
+    cell("None yet", 300, H("Key moments") + list([], { empty: "No key moments mention Cole yet." })),
+  ]),
+  place("Quests", "a quest's Progress column", [
+    cell("Open: the newest dot is amber", 300, H("Progress") + list(M.slice(0, 7), { date: true, questOpen: true, quiet: true })),
+    cell("Done: no mark", 300, H("Progress") + list(M.slice(4, 7), { date: true })),
+    cell("None yet", 300, H("Progress") + list([], { empty: "No progress yet." })),
+  ]),
+  place("The side panel", "a name clicked in a recap, under What the table knows", [
+    cell("Many", 400, H("Key moments") + list(M, { date: true, self: "Cole" })),
+  ]),
+  place("A phone", "World, the entry (one column)", [
+    cell("375px wide", 343, H("Key moments") + list(M, { date: true, self: "Cole" }), "phone"),
+  ]),
+].join("");
+
+const fold = `<details class="add-fold"><summary>+ Add what the party learned</summary></details>`;
+const form = (o) => `<div class="add-form">
+    <div class="chips" role="radiogroup"><span class="chip${o.wrong ? "" : " on"}">Add something</span><span class="chip${o.wrong ? " on" : ""}">Something here is wrong</span></div>
+    <div class="box${o.typed ? " typed" : ""}">${o.typed ? esc(o.typed) : "Something the party learned about " + esc(o.about) + ", or what's wrong (type @ for a name)"}</div>
+    <div class="acts"><span class="btn ${o.dm ? "primary" : ""}">${o.dm ? "Add" : "Send"}</span><button type="button" class="btn link">Cancel</button><span class="note">${o.dm ? "You're the DM, so it goes straight on." : "The DM or a reviewer adds it."}</span></div>
+  </div>`;
+const knows = (items) => H("What the table knows") + (items.length ? `<ul class="facts">${items.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : `<p class="empty-state">Nothing the party learned about it yet.</p>`);
+const F = ["Cole carries a silver key from the carriage.", "Cole owes NPC 1 a favour."];
+
+document.getElementById("fold-places").innerHTML = [
+  place("A World entry, the Reader and the side panel", "under What the table knows", [
+    cell("Closed (how it rests)", 300, knows(F) + fold),
+    cell("Open, a player", 300, knows(F) + form({ about: "Cole" })),
+    cell("Open, the DM", 300, knows(F) + form({ about: "Cole", dm: true, typed: "Cole's key opens the Guild's back door." })),
+    cell("Sent, a player", 300, knows(F) + `<p class="sub-h">Your suggestions here</p><ul class="mine"><li><span class="tag">Waiting</span> Cole's key opens the Guild's back door.</li></ul>` + fold + `<div class="card">Sent. The DM or a reviewer adds it.</div>`),
+  ]),
+  place("Quests", "a quest's What the table knows column: opens in place now (it used to go to the entry)", [
+    cell("Nothing yet, closed", 300, knows([]) + fold),
+    cell("Open", 300, knows([]) + form({ about: "Hatch the egg" })),
+  ]),
+  place("A recap", "the foot of a recap on Previously on… and Sessions (and a glossary entry)", [
+    cell("Closed", 410, fold, "story"),
+    cell("Open: Add something first, as everywhere", 410, form({ about: "this session" }), "story"),
+  ]),
+  place("A phone", "World, an entry", [
+    cell("Open, 375px", 343, knows(F) + form({ about: "Cole" }), "phone"),
+  ]),
+].join("");
+</script>

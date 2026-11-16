@@ -700,8 +700,6 @@ body.tale-playing { overflow: hidden; }
 .mix-fight { background: var(--red); } .mix-story { background: var(--violet); } .mix-exploring { background: var(--green); } .mix-rest { background: var(--amber); }
 .numbers-dice { grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; }
 .numbers-dice > div { background: var(--surface-2); }
-.tale-moments .ev, .tale-moments .ev + .ev { display: block; padding: 0 0 var(--sp-3) var(--sp-4); border: 0; }
-.tale-moments .kind { display: block; font-size: var(--fs-xs); }
 .tale-threads li { display: flex; flex-wrap: wrap; gap: 0 var(--sp-1); padding: var(--sp-1) 0; }
 .tale-threads li > .muted { flex-basis: 100%; font-size: var(--fs-sm); }
 .tale-theory i { color: var(--muted); }
@@ -726,9 +724,6 @@ details.tale-roll .session-body { display: flex; flex-direction: column; gap: va
 .seg a { display: inline-flex; align-items: center; border-radius: var(--r-sm); color: var(--muted); padding: 0 var(--sp-3); min-height: calc(var(--control-h) - 6px); font-size: var(--fs-sm); font-weight: 500; text-decoration: none; white-space: nowrap; }
 .seg a:hover { color: var(--text); }
 .seg a[aria-current=true] { background: var(--selected-bg); color: var(--text-strong); box-shadow: inset 0 0 0 1px var(--blue); }
-details.tale-more { margin: 0; }
-details.tale-more > summary { cursor: pointer; padding: 0 0 var(--sp-2) var(--sp-4); color: var(--link); font-size: var(--fs-sm); }
-details.tale-more[open] > summary { display: none; }  /* opened, its moments simply carry on the list */
 .story p, .story li { max-width: 66ch; }
 .story p { margin: 0 0 1em; }
 .story > :last-child { margin-bottom: 0; }
@@ -833,7 +828,6 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
 .rels a { color: var(--text); font-weight: 500; }
 .facts li { font-family: var(--sans); color: var(--story-text); font-size: var(--fs-md); }
 .facts small { display: block; font-family: var(--sans); color: var(--faint); font-size: var(--fs-sm); }
-.add-fact { margin-top: 18px; }
 .wait { display: none; margin-top: 10px; font-style: italic; }
 .wait.htmx-request { display: block; }
 
@@ -934,11 +928,6 @@ ul.plain { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 /* Family tree diagram */
 
 /* Suggest a correction or addition */
-details.suggest { margin-top: 14px; }
-details.suggest > summary { cursor: pointer; color: var(--muted); font-size: var(--fs-sm); }
-details.suggest > summary:hover { color: var(--text); }
-details.suggest[open] > summary { margin-bottom: 10px; }
-.suggest-thanks { margin: 10px 0; }
 
 /* Characters */
 .quiet-warn { color: var(--amber); }
@@ -2935,10 +2924,34 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
   .ep-side { width: min(100%, 220px); }
 }
 .reader-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-6); }
+/* A key moment (_moments.html; DESIGN.md › Key moments; Key Moments Everywhere, Nov 16): one look on a recap, an entry,
+   a quest and the side panel. The kind and the date in one slot, the moment, the names under it, on the story line. */
 .moment-line { list-style: none; padding: 0; margin: 0; border-left: 2px solid var(--story-line); }
-.moment-line li { position: relative; padding: 0 0 var(--sp-3) var(--sp-4); }
-.moment-line li::before { content: ""; position: absolute; left: -6px; top: 9px; width: 10px; height: 10px; border-radius: var(--r-pill); background: var(--story-line); }
-.moment-line .note { display: block; font-size: var(--fs-xs); }
+.moment-line > .ev, .moment-line > .ev + .ev { position: relative; display: block; padding: 0 0 var(--sp-3) var(--sp-4); border: 0; font-size: var(--fs-sm); }
+.tale-after .moment-line > .ev { font-size: inherit; }  /* (a recap's read at the story's own size) */
+.moment-line > .ev::before { content: ""; position: absolute; left: -6px; top: 6px; width: 10px; height: 10px; border-radius: var(--r-pill); background: var(--story-line); }
+.moment-line > .ev.latest::before { background: var(--amber); }  /* an open quest: where it stands */
+.km-slot { display: block; font-size: var(--fs-xs); color: var(--faint); }
+.km-slot .kind { display: inline; width: auto; font-size: inherit; }
+.moment-line .ev-text { overflow-wrap: anywhere; }
+.moment-line .ev-text small { font-size: var(--fs-xs); }
+details.km-more { margin: 0; }
+details.km-more > summary { list-style: none; cursor: pointer; width: fit-content; padding: 0 0 var(--sp-2) var(--sp-4); color: var(--link); font-size: var(--fs-sm); }
+details.km-more > summary::-webkit-details-marker { display: none; }
+details.km-more[open] > summary { display: none; }  /* opened, its moments simply carry on the list */
+
+/* Adding what the party learned (_suggest_form.html add_fold; Key Moments Everywhere, Nov 16): closed until pressed,
+   then the form in place of its line; Cancel or Escape closes it. */
+details.add-fold { margin-top: var(--sp-3); }
+details.add-fold > summary { list-style: none; cursor: pointer; width: fit-content; color: var(--link); font-size: var(--fs-sm); }
+details.add-fold > summary::-webkit-details-marker { display: none; }
+details.add-fold[open] > summary { display: none; }
+details.add-fold > form { min-width: 0; }
+.fold-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
+.fold-chips label.chip > input[type="radio"] { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }  /* (the chip is the control: its radio stays focusable, in a corner off the words) */
+.fold-chips label.chip { position: relative; }
+.fold-chips label.chip:has(input:checked) { background: var(--selected-bg); border-color: var(--blue); }
+.fold-chips label.chip:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
 .reader-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--line); }
 .reader-foot form { margin: 0; }
 @media (max-width: 900px) {
@@ -2971,10 +2984,6 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
 .ql-head form { margin: 0; }
 .quest-journal .story { margin: var(--sp-4) 0; }
 .quest-journal h3 { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin: 24px 0 8px; }
-.ql-steps { list-style: none; margin: 0; padding: 0 0 0 var(--sp-4); border-left: 2px solid var(--line); display: grid; gap: var(--sp-3); }
-.ql-steps li { position: relative; font-size: var(--fs-sm); }
-.ql-steps li::before { content: ""; position: absolute; left: calc(-1 * var(--sp-4) - 6px); top: 6px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--amber); }
-.ql-steps li.now::before { background: var(--amber); }
 
 /* Relationships: a tree per family, the other ties */
 .ft-wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: var(--sp-4); }

@@ -211,6 +211,31 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // Server can trigger a toast with the HX-Trigger header: {"toast": "Saved"}
   document.body.addEventListener('toast', e => toast(e.detail && typeof e.detail === 'object' && 'value' in e.detail ? e.detail.value : e.detail));  // (htmx hands a plain message on as {value}; a fetch may hand on the message itself)
 
+  // The add fold (_suggest_form.html add_fold; Key Moments Everywhere, Nov 16): "+ Add what the party learned" opens its
+  // form in place with the box ready to type; Cancel or Escape closes it and keeps what's typed; a send that went
+  // through empties and closes it (addFoldDone, with its corner card). A form the server redraws comes back closed.
+  document.addEventListener('toggle', e => {
+    const fold = e.target;
+    if (fold.matches && fold.matches('details.add-fold') && fold.open) fold.querySelector('textarea')?.focus();
+  }, true);
+  document.addEventListener('click', e => {
+    const cancel = e.target.closest('[data-fold-cancel]');
+    const fold = cancel && cancel.closest('details.add-fold');
+    if (fold) { fold.open = false; fold.querySelector('summary').focus(); }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const fold = e.target.closest && e.target.closest('details.add-fold[open]');
+    if (!fold) return;
+    e.preventDefault(); e.stopPropagation();  // (only the fold: a side panel or window around it stays open)
+    fold.open = false; fold.querySelector('summary').focus();
+  }, true);
+  document.addEventListener('addFoldDone', e => {
+    const fold = e.target.closest && e.target.closest('details.add-fold');
+    if (!fold) return;
+    fold.querySelector('form').reset(); fold.open = false;
+  });
+
   document.addEventListener('click', e => {
     // Menus (campaign, Party, Live, Manage, account, phone More). A click elsewhere closes
     // them; clicks inside a [data-keep-open] menu (the Live popover's switch) don't.
@@ -3747,7 +3772,7 @@ document.addEventListener('click', e => {
     unmark();
     const words = box.value.trim().toLowerCase().split(/\s+/).filter(w => w.length > 1);
     if (!words.length) {
-      sessions.forEach(d => { d.hidden = false; d.open = wasOpen.get(d); d.querySelectorAll('details.tale-more').forEach(x => { x.open = false; }); });
+      sessions.forEach(d => { d.hidden = false; d.open = wasOpen.get(d); d.querySelectorAll('details.km-more').forEach(x => { x.open = false; }); });
       found.hidden = true; sub.hidden = false;
       return;
     }

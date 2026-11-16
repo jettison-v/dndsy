@@ -1,0 +1,12 @@
+{# A quest's What the table knows on Campaign › Quests (campaign.html), with its fold: what's added opens in place and
+   this column comes back alone (entity_pages ?in=quest; Key Moments Everywhere, Nov 16: it used to go to the entry).
+   `q` the quest, `facts` what the table knows, `qln` the linker. #}
+{% from "_lists.html" import empty_state %}
+{% from "_suggest_form.html" import add_fold %}
+<div class="ql-knows">
+  <h3>What the table knows</h3>
+  {% if facts %}<ul class="plain">{% for f in facts %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ qln.text(f.text) }}</li>{% endfor %}</ul>
+  {% else %}{{ empty_state("Nothing the party learned about it yet.") }}{% endif %}
+  {{ add_fold("/campaign/" ~ q.id ~ "/facts?in=quest", q.name, 'hx-target="closest .ql-knows" hx-swap="outerHTML"', dm=is_dm,
+              note="You're the DM, so it goes straight on." if is_dm else ("Merge it on its entry to show it." if can_moderate else "The DM or a reviewer adds it.")) }}
+</div>

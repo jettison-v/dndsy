@@ -4,6 +4,7 @@
    already knows; key moments and what the table knows below, beside the connections as a list (the diagram opens from a
    link). With no picture yet, whoever can change the entry sees its place asking for one (Draw one, Upload: the one
    Picture window), so the World gets finished; everyone else sees no empty box, just a badge with its initials. #}
+{% from "_moments.html" import moment_list %}
 {% macro outline(kind) -%}{# a quiet drawing of what the picture will be, by its frame #}
 <svg class="ep-outline" viewBox="0 0 56 56" aria-hidden="true">
   {%- if kind in ("portrait",) %}<circle cx="28" cy="20" r="10"/><path d="M8 50c2-11 10-17 20-17s18 6 20 17"/>
@@ -61,7 +62,7 @@
     <dt>{{ "First met" if e.kind.value in ("npc", "pc", "creature") else "First" }}</dt><dd>{{ moments[0].label }}</dd>
     {% if moments | length > 1 %}<dt>{{ "Last seen" if e.kind.value in ("npc", "pc", "creature") else "Latest" }}</dt><dd>{{ moments[-1].label }}</dd>{% endif %}
     {% endif %}
-    <dt>Key moments</dt><dd>{{ moments | length if moments else "None yet" }}</dd>
+    {% if moments %}<dt>Key moments</dt><dd>{{ moments | length }}</dd>{% endif %}{# (none: the list below says so once) #}
     {% if part_of %}<dt>Part of</dt><dd class="part-of">{% for q in part_of %}<a class="chip-link" href="{{ cbase }}/campaign?tab=quests&amp;open={{ q.id }}" data-goto-quest="{{ q.id }}" data-no-peek>{{ q.name }} <span class="tag {{ 'done' if q.quest_open == false else 'draft' }}">{{ "Done" if q.quest_open == false else "Open" }}</span></a>{% endfor %}</dd>{% endif %}
     {% if map_marker %}<dt>On the map</dt><dd><a href="{{ map_href }}" data-map-src="{{ map_src }}" data-map-at="{{ map_marker }}" data-no-peek>Show it</a></dd>{% endif %}
     {% if sheet %}<dt>Its sheet</dt><dd><a href="/characters/{{ sheet }}" data-no-peek>{{ e.name }}'s sheet</a></dd>{% endif %}{# (↗ only when leaving for D&D Beyond: the UI review) #}
@@ -70,8 +71,7 @@
 <div class="ep-cols">
   <div>
     <h3>Key moments</h3>
-    {% if moments %}<ol class="moment-line">{% for m in moments | reverse %}<li><span class="note">{{ m.label }}</span>{{ ln.text(m.e.text) }}</li>{% endfor %}</ol>
-    {% else %}<p class="muted">No key moments mention {{ e.name }} yet.</p>{% endif %}
+    {{ moment_list(moments | reverse | list, ln, skip=e.id, empty="No key moments mention " ~ e.name ~ " yet.") }}
 {% include "_entry_facts.html" %}
   </div>
   {% if relations or cx.nodes %}

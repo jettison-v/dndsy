@@ -213,9 +213,12 @@ def _act(request: Request, db: Session, entity_id: int, action: Callable[[Entity
     if entity is None:  # e.g. removed while acting
         return RedirectResponse(f"{web.base()}/campaign", status_code=303)
     if request.headers.get("HX-Request"):
-        where = request.query_params.get("in", "")  # the side panel, the Campaign page's Reader, or the edit window
+        where = request.query_params.get("in", "")  # the side panel, the Campaign page's Reader, a quest on Quests, or the edit window
         context = {**entity_context(db, entity, user), "where": where}
-        response = templates.TemplateResponse(request, "_peek.html" if where in ("panel", "reader") else "_entity_body.html", context)
+        if where == "quest":  # its What the table knows column alone (the fold opens in place there; Nov 16)
+            context.update(q=entity, facts=entities.merged_facts(db, entity.id), qln=context["ln"])
+        page = {"panel": "_peek.html", "reader": "_peek.html", "quest": "_quest_knows.html"}.get(where, "_entity_body.html")
+        response = templates.TemplateResponse(request, page, context)
         response.headers["HX-Trigger"] = json.dumps({"toast": message})
         return response
     request.session["toast"] = message
