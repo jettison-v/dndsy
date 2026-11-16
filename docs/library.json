@@ -126,6 +126,15 @@
   "link": "https://claude.ai/artifact/4aq1xYj2DSiiAPUhiFMRhW"
  },
  {
+  "title": "askdnd UI and UX Review",
+  "kind": "plan",
+  "status": "Waiting on you",
+  "date": "Nov 16",
+  "what": "The second full scan: every page at five widths as admin, DM and player, against the design system; 12 bugs, 25 rules not followed (fixed without asking), five choices.",
+  "source": "docs/artifacts/ui-ux-review-nov16.html",
+  "link": "https://claude.ai/artifact/W319KTiC4aM3K8qQddWT5W"
+ },
+ {
   "title": "UI and UX Pass",
   "kind": "design",
   "status": "Answered, built",

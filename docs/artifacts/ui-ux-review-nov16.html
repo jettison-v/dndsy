@@ -1,0 +1,171 @@
+<title>askdnd UI and UX Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: one reading column, as the first pass (Nov 2). What the sweep found, the bugs, the places askdnd breaks a rule
+   it already wrote down (fixed without asking), then the few choices that are Brett's, then how it gets built. */
+:root{
+  --bg:#f6f3ee;--surface:#fffdf9;--surface-2:#efe9e0;--line:#ddd5c9;
+  --text:#24211d;--muted:#6b655c;--faint:#9a9389;
+  --red:#b83232;--amber:#9a6a10;--green:#2f8a52;--blue:#3a6db3;
+  --tint-red:rgba(184,50,50,.10);--tint-amber:rgba(154,106,16,.12);--tint-green:rgba(47,138,82,.12);
+  --ui:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15171a;--surface:#1f2226;--surface-2:#272b30;--line:#34383e;
+  --text:#ebe7df;--muted:#a29d93;--faint:#6f6b64;
+  --red:#e06262;--amber:#e8b34b;--green:#5bbf7f;--blue:#7ea6e0;
+  --tint-red:rgba(214,69,69,.15);--tint-amber:rgba(232,179,75,.14);--tint-green:rgba(91,191,127,.15);
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15171a;--surface:#1f2226;--surface-2:#272b30;--line:#34383e;
+  --text:#ebe7df;--muted:#a29d93;--faint:#6f6b64;
+  --red:#e06262;--amber:#e8b34b;--green:#5bbf7f;--blue:#7ea6e0;
+  --tint-red:rgba(214,69,69,.15);--tint-amber:rgba(232,179,75,.14);--tint-green:rgba(91,191,127,.15);
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font:15.5px/1.6 var(--ui);margin:0}
+.wrap{max-width:900px;margin:0 auto;padding-block:36px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:34px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
+h1{font-size:2rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.3rem;font-weight:700}
+h3{font-size:1rem;font-weight:650}
+p{margin:0}
+.eyebrow{font:700 .74rem/1 var(--ui);letter-spacing:.12em;text-transform:uppercase;color:var(--red)}
+.lead{font-size:1.06rem;max-width:68ch}
+.muted{color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.stat b{display:block;font-size:1.6rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:.86rem}
+section{display:grid;gap:14px}
+.intro{display:grid;gap:6px;max-width:70ch}
+ol.find{list-style:none;margin:0;padding:0;display:grid;gap:10px;counter-reset:f}
+ol.find>li{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--k,var(--line));border-radius:10px;padding:12px 16px;display:grid;gap:4px;counter-increment:f}
+ol.find>li>b::before{content:counter(f) ". ";color:var(--muted);font-weight:600}
+.bug{--k:var(--red)} .rule{--k:var(--blue)} .data{--k:var(--amber)}
+.where{font-size:.84rem;color:var(--muted)}
+.fix{font-size:.92rem}
+.fix::before{content:"Fix: ";font-weight:650}
+.tag{display:inline-block;font:600 .72rem/1 var(--ui);padding:3px 7px;border-radius:5px;background:var(--surface-2);color:var(--muted);margin-left:6px;vertical-align:2px}
+.choice{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:10px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.opt{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);display:grid;gap:4px;font-size:.92rem}
+.opt.mine{border-color:var(--green);background:var(--tint-green)}
+.opt .k{font-weight:700}
+.opt.mine .k::after{content:" · my pick";color:var(--green);font-weight:600}
+.plan{display:grid;gap:8px;padding-left:20px;margin:0}
+.ok{background:var(--tint-green);border:1px solid var(--green);border-radius:10px;padding:12px 16px;font-size:.94rem}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.opts{grid-template-columns:1fr}h1{font-size:1.65rem}}
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:14px">
+  <span class="eyebrow">UI and UX review · Nov 16 · for Brett</span>
+  <h1>askdnd, page by page, against its own design system</h1>
+  <p class="lead">The second full scan, after the first on Nov 2. A sweep opened every page as you (admin), the DM and a
+  player, at 375, 768, 1000, 1280 and 1440px, and photographed each one. Three reviewers then went through the photos
+  against docs/DESIGN.md: the character pages, Campaign with Help and the Table, and Manage. Most of what they found is
+  askdnd breaking a rule it already wrote down; those I fix without asking. Five are real design choices, at the end.</p>
+  <div class="stats">
+    <div class="stat"><b>720</b><span>photos of 147 pages</span></div>
+    <div class="stat"><b>12</b><span>bugs</span></div>
+    <div class="stat"><b>25</b><span>rules already written, not followed</span></div>
+    <div class="stat"><b>5</b><span>choices for you</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="intro"><span class="eyebrow" style="color:var(--red)">Bugs</span><h2>Broken, whatever the design</h2>
+  <p class="muted">Each of these is wrong on screen today. Fixed first, in one pull request for your local look.</p></div>
+  <ol class="find">
+    <li class="bug"><b>On a phone, Manage page titles break one letter per line</b><span class="where">Manage › Table, Sessions, D&amp;D Beyond bridge (DM and admin, 375px)</span><span>The title row keeps room for the link to the other half of Manage even when there's none (a DM has no Admin), and the title is allowed to shrink below its longest word. The same room pushes the DM's "+ Add session" and "Refresh all" about 116px in from the edge on a laptop.</span><span class="fix">Keep the room only when the link is there; a title never shrinks below a word; on a phone the link sits by All pages.</span></li>
+    <li class="bug"><b>The Live pill is a bare dot on a phone and a tablet, whatever its state</b><span class="where">Every page under 900px</span><span>Not connected and None connected look exactly like Connected (the dot alone). An old rule for a word that no longer exists hides the short text. On GitHub tonight the pill also showed "Connected" and "Add the bridge" at once while a page loaded, 35px too wide.</span><span class="fix">Remove the stale rule, give every state its short words, and only one label ever showing.</span></li>
+    <li class="bug"><b>Sheet › Actions shows an item's description twice and cuts its tags</b><span class="where">Trah's, Cole's and Big C's Sheet › Actions (Soul Coin, the scrolls, the potions)</span><span>The second line and the right-hand column carry the same sentence, so the name line runs out of room and the tags become "…"; on a phone the two Scrolls of Protection read the same.</span><span class="fix">The right-hand column carries the game facts (cost, charges, the choice made) or nothing.</span></li>
+    <li class="bug"><b>The session review's steps are cut off on a laptop</b><span class="where">Manage › Sessions › a session (1440px: "6 Award…", step 7 hidden; 1000px: four and a half steps)</span><span>Also, the step says "Key moments 54" in grey while the checklist beside it has a green tick for the same thing.</span><span class="fix">The steps fit at 1280–1512 (short labels, the counts under them); one meaning for done in both places.</span></li>
+    <li class="bug"><b>Things wider than a phone</b><span class="where">A World entry's banner picture (scrolls sideways 145px), Manage › Documents (36px), Usage's Claude calls (Tokens and Cost off screen), Sessions' "Draft from notes" (cut to "Dr"), the bridge's change table, a Backups import's Undo</span><span class="fix">Pictures and rows kept to the screen; the record tables switch to the compact rows the lists already have.</span></li>
+    <li class="bug"><b>Lists whose rows don't line up</b><span class="where">Sheet › Features (375–1000px), Sheet › Spells (1280px), Wild Shape (1000px)</span><span>A few rows end their last column where the others don't (the sweep measured each).</span><span class="fix">One column template per list, so every row uses it.</span></li>
+    <li class="bug"><b>The Table rolls tab's hidden label covers the newest roll on a phone</b><span class="where">Every page with Table rolls, 375px</span><span class="fix">The label stays inside the button.</span></li>
+    <li class="bug"><b>The Live menu's list spills 8px</b><span class="where">The Live pill's menu, 1000–1440px</span><span class="fix">The list fits its box.</span></li>
+    <li class="bug"><b>The Features chart's text grows and shrinks with the page</b><span class="where">Admin › Features: about 19px at 1440, about 4px at 375</span><span class="fix">The labels keep the page's own text size at every width.</span></li>
+    <li class="bug"><b>Dice tuning's tabs wrap onto two lines at 1440</b><span class="where">Admin › Dice tuning</span><span class="fix">Short labels (Yours · Tray · Full screen · Dramatic), one line always.</span></li>
+    <li class="bug"><b>Placeholders cut mid-word</b><span class="where">"Search people, places and thing", "Search your notes and the answ" (even at 1440), "Write a reminder: Ask the DI" (phone)</span><span class="fix">"Search the world", "Search your notes", a shorter reminder hint.</span></li>
+    <li class="data"><b>Key moments and theories appear twice</b><span class="tag">data</span><span class="where">Previously, Sessions, a World entry (19 moments, mostly pairs), a quest's progress (two identical Nov 6 steps), the session review (Key moments 54)</span><span>It looks like a recap drafted again kept both copies. Not a layout problem, but it makes every page with moments look worse.</span><span class="fix">Find why a second draft keeps the first's moments, stop it, and clean up the copies (with a backup first).</span></li>
+  </ol>
+</section>
+
+<section>
+  <div class="intro"><span class="eyebrow" style="color:var(--blue)">Rules already written</span><h2>Where askdnd doesn't follow its own design system</h2>
+  <p class="muted">Each line names the rule in DESIGN.md it breaks. These follow without asking, as in the first pass; say if any surprises you.</p></div>
+  <ol class="find">
+    <li class="rule"><b>A page's own action sits in four places</b><span>Places' "Open the table" by the title, Campaigns' "+ New campaign" under the list, Table's "+ Add to the table" mid-page, Accounts' whole form at the bottom, DM Tools' red "+ New item" after the title.</span><span class="fix">Always the title row's action, at its right (`.title-action`); a form opens in a window from it.</span></li>
+    <li class="rule"><b>Too many red buttons</b><span>Every suggestion's Accept, three Saves on Settings, two Adds on House rules, two on Backups and on Dice tuning, a World entry's Edit.</span><span class="fix">One red button per screen, its next step; repeated and section actions are small secondary buttons.</span></li>
+    <li class="rule"><b>Remove looks three ways</b><span>A secondary button on Tool corrections, a quiet link elsewhere, the danger style never.</span><span class="fix">Remove is always the quiet red link, and it asks first.</span></li>
+    <li class="rule"><b>Help lines on pages</b><span>Battle's "Pin what you use most…", Your notes' explainer, Plan's line above each tab, Sessions' and World's notes, "↑ ↓ move through the list", "On a hit"'s line, a three-line DM Tools subtitle.</span><span class="fix">Gone; each list says it in its empty state, and the tour and Help explain the rest.</span></li>
+    <li class="rule"><b>Empty states in many words</b><span>"None yet.", "Nothing yet.", "Nothing here yet.", "…hasn't pinned anything yet."; Big C's Reaction column has none.</span><span class="fix">One empty-state piece in the design system: what goes there and how to add the first.</span></li>
+    <li class="rule"><b>Counts follow no rule</b><span>Trah's Battle says 17 actions where Sheet says 15; Big C's say 20 and 9. Some tabs hide a 0, some show it; World never counts; a count is sometimes "(17)" inside link text.</span><span class="fix">One count per column, worked out in one place, always the count pill; one rule for 0 (choice 4).</span></li>
+    <li class="rule"><b>↗ on links that stay in askdnd</b><span>The Start card's "Open the table ↗" (and it opens a new tab), a World entry's "Its sheet: Open ↗" in red.</span><span class="fix">↗ only for leaving to D&amp;D Beyond; a name that opens something is plain text.</span></li>
+    <li class="rule"><b>Code words and a fourth font</b><span>File paths and "(Phase 1)" on Settings › Features, S3 paths and a command on Backups, "#turn-invisible" on Tool corrections, lowercase kinds on Usage, all in monospace.</span><span class="fix">Plain words, the page's own fonts.</span></li>
+    <li class="rule"><b>Filters with their own Clear</b><span>World's and Your notes' filter columns have a bold Clear, showing even with nothing filtered.</span><span class="fix">The shared chip groups and the "Showing only… Clear all" row above the list.</span></li>
+    <li class="rule"><b>Folds in three looks under one recap</b><span>A red "Show the other 42", a grey "Suggest a correction", a button for "Earlier sessions", not lined up.</span><span class="fix">One fold style, on the column's edge.</span></li>
+    <li class="rule"><b>Title Case and "&amp;"</b><span>"Full Tale &amp; Stats →", also called "Listen to the full tale", "The Tale" and "Read the tale →".</span><span class="fix">"The full tale →" everywhere (Help and the DM guide quote it).</span></li>
+    <li class="rule"><b>Heroic Inspiration two ways</b><span>A chip on Battle (★ Insp.), a number tile on Sheet (✦ Yes).</span><span class="fix">The chip on both.</span></li>
+    <li class="rule"><b>A spell's slot tag moves between pages</b><span>Inline on Battle, on its own line on Sheet (three-line rows beside two-line ones); on Battle tags wrap one at a time.</span><span class="fix">Tags and cost inline on both, wrapping together.</span></li>
+    <li class="rule"><b>"On a hit" borrows a colour and a glyph</b><span>Violet ✦ and a help line, where colour means only what an option costs.</span><span class="fix">The same plain section heading as Reminders.</span></li>
+    <li class="rule"><b>The DM gets a Reminders card saying it isn't for them</b><span>Half a row of nothing on every Battle the DM opens.</span><span class="fix">Left out for the DM, as Battle combos already is.</span></li>
+    <li class="rule"><b>"+ Add" in three styles, one action under two names</b><span>The spell bar's bordered button; Battle's and Plan's "+ Battle combo" differ in style and empty state.</span><span class="fix">One quiet add, one label, one empty state.</span></li>
+    <li class="rule"><b>Turn Invisible has a full button under its row</b><span>Every other item has its verb chip where an attack's to-hit goes.</span><span class="fix">The same chip, "Turn invisible".</span></li>
+    <li class="rule"><b>Battle's row labels differ</b><span>"Resources" faint grey, "Wild Shape" amber two rows below.</span><span class="fix">One label style.</span></li>
+    <li class="rule"><b>Your notes says the same states two ways</b><span>The track says Sent — Approved — Planned — Fixed, the chips Waiting for an admin / With Claude…; "Order: Newest first"; "Fixed: Fixed."</span><span class="fix">One set of words for both; "Sort: Newest · Oldest".</span></li>
+    <li class="rule"><b>Party shortens resources card by card</b><span>"Sorcery · Favored · Channel" beside "Channel Divinity"; "Lay on Hands" here, "Lay On Hands" on Battle; "2nd Wind" on a phone.</span><span class="fix">Short or whole decided once for the whole grid; D&amp;D Beyond's capitals.</span></li>
+    <li class="rule"><b>The coin purse total isn't gold</b><span>DESIGN.md says the total in gold; it's muted.</span><span class="fix">Gold, as written.</span></li>
+    <li class="rule"><b>Manage › Documents doesn't use the list pieces</b><span>A bare browser search field, rows that don't line up, "Current" in amber (amber means needs attention).</span><span class="fix">The shared search box, one row template, a green Current.</span></li>
+    <li class="rule"><b>Admin pages say they're admin-only on some pages only</b><span>Five do, seven don't; the review page says "only reviewers" though the DM sees it.</span><span class="fix">Every admin page says so in its subtitle; the right audience on review.</span></li>
+    <li class="rule"><b>The same thing written differently</b><span>Session names three ways on one list ("Nov 6, 2026: …", "Session 29 — Feb 7", "Session 20"); "102¢" beside "$1.02"; "THURSDAY 5 NOVEMBER 2026" beside "Nov 5"; "3 am Pacific" beside "2:00 AM".</span><span class="fix">One way each for session names, money, dates and times.</span></li>
+    <li class="rule"><b>The Table as the DM with no places</b><span>"+ Place" twice, a 26px button beside a 32px field, the select repeating the empty state, no page title.</span><span class="fix">The empty state's one button until there's a place, matching heights, one title.</span></li>
+  </ol>
+</section>
+
+<section>
+  <div class="intro"><span class="eyebrow" style="color:var(--green)">Your picks</span><h2>Five choices</h2>
+  <p class="muted">Each is a real design choice, not a slip. My pick is first and green. Answer in the comments, or "all your picks".</p></div>
+
+  <div class="choice"><h3>1. One on/off control for every yes/no setting</h3>
+  <p class="muted">Today: the autosaving switch (on the right on Books and Features, the left on Labs), a checkbox and Save (Accounts' Admin, Art style), a button saying its state ("Sends feedback: on"), radios and Save (Trophy Case). The switch isn't in the design system at all.</p>
+  <div class="opts"><div class="opt mine"><span class="k">The switch, always at the row's right</span>It saves itself the moment you flip it, as Settings › Features does. Added to the design system.</div>
+  <div class="opt"><span class="k">A checkbox and the section's Save</span>Nothing changes until Save; slower, but undoable before saving.</div></div></div>
+
+  <div class="choice"><h3>2. Key moments, one look everywhere</h3>
+  <p class="muted">Drawn four ways: Story's (the kind word, Decision or Reveal, above the names), the World entry's timeline (a date, no kind), a quest's steps (amber rings), the side panel's plain list. How many show differs too: 8, 3, or all 19.</p>
+  <div class="opts"><div class="opt mine"><span class="k">Story's, with the date added</span>The kind word and date in one slot, names under, the same "Show the other N" after a few, on Story, entries, quests and panels.</div>
+  <div class="opt"><span class="k">The World entry's timeline</span>A dated line down the side; reads as history, but loses what kind each moment was.</div></div></div>
+
+  <div class="choice"><h3>3. Adding what the party learned</h3>
+  <p class="muted">Three ways: a World entry has the form always open (two choices, a box, Send); a quest has "+ Add what the party learned", which jumps to its entry; Previously and Sessions have "▸ Suggest a correction or addition".</p>
+  <div class="opts"><div class="opt mine"><span class="k">One closed "+ Add what the party learned"</span>Opens the same form in place, on entries, quests and recaps alike; a form is never what a page rests on.</div>
+  <div class="opt"><span class="k">Keep the entry's form open</span>One press less on an entry; the others become the same fold.</div></div></div>
+
+  <div class="choice"><h3>4. A tab's count when there's nothing</h3>
+  <p class="muted">Sessions hides its 0 while Quests and Glossary show "0"; World, the biggest list, has no count.</p>
+  <div class="opts"><div class="opt mine"><span class="k">Hide 0, count everything else</span>A count means there's something there; World gets its count.</div>
+  <div class="opt"><span class="k">Always show the count, 0 too</span>Every tab looks the same, empty ones say so.</div></div></div>
+
+  <div class="choice"><h3>5. A glossary term</h3>
+  <p class="muted">Today it's a page of its own made to look like a window (✕, a narrower column, no title), where World entries open in the Reader.</p>
+  <div class="opts"><div class="opt mine"><span class="k">In the Reader, inside Glossary</span>As a World entry opens: same width, its own address, ↑ ↓ through the list.</div>
+  <div class="opt"><span class="k">A side panel over Campaign</span>Quick to glance at without leaving where you are.</div></div></div>
+</section>
+
+<section>
+  <div class="intro"><span class="eyebrow" style="color:var(--muted)">How it gets built</span><h2>Three pull requests, each for your local look</h2></div>
+  <ol class="plan">
+    <li><b>Bugs</b> (the 11 layout ones), with a check in the layout tests for each so they can't come back, notably a title never breaking below a word and the Live pill's short words.</li>
+    <li><b>The duplicated key moments</b>: the cause in drafting, then a one-time clean-up on beta after a backup.</li>
+    <li><b>The written rules</b>, then your five picks, page group by page group (character pages, Campaign, Manage), each piece added to Manage › Design system where it's new (the switch, the empty state, the count rule).</li>
+  </ol>
+  <div class="ok">Consistent already, by all three reviewers: the Battle · Sheet · Plan switch, the underline tab bars with their counts, number tiles and saves, Sheet's colour-coded section headings, Party's cards, and the condition and Concentration edges. (The sweep doesn't open windows, so Change spells and the other modals weren't in it; their own browser tests check them at every width.)</div>
+</section>
+
+</div>
