@@ -817,7 +817,7 @@ def change_window(page: Page, cid: str, tab: str, opener: str) -> None:
     """Sheet › Spells' Change spells, or Sheet › Wild Shape's Change forms, open on All (a view is kept per browser)."""
     sheet_tab(page, cid, tab)
     page.locator(f"{opener}:visible").first.click(timeout=8000)
-    page.wait_for_selector(f"{WIN} [data-pick-row]", timeout=15000)
+    page.wait_for_selector(f"{WIN} [data-pick-row]:not([data-ls-out])", timeout=15000)  # (a row of another class's tab is out of the list)
     page.locator(f'{WIN} [data-ls-view="all"]').first.click(timeout=8000)
 
 
@@ -834,7 +834,7 @@ def prepare_these(page: Page, cid: str, names: list[str]) -> None:
     """Sheet › Spells › Change spells: each of `names` prepared or unprepared, those prepared first (the count is held, as
     D&D Beyond holds it), then Make."""
     change_window(page, cid, "t-spells", "[data-change-spells]")
-    row = lambda n: f'[data-pick-row][data-pick-list$=":spells"][data-label="{n}"]'
+    row = lambda n: f'[data-pick-row]:not([data-ls-out])[data-pick-list$=":spells"][data-label="{n}"]'
     for n in sorted(names, key=lambda n: page.locator(f"{WIN} {row(n)}").first.get_attribute("data-on") != "1"):
         pick(page, row(n))
     make_changes(page)
@@ -850,8 +850,8 @@ def prepare(t: Table, seat: str = "player2") -> None:
     connects(t, page)
     cid, start = cid_of(page), prepared(record(sheet))
     change_window(page, cid, "t-spells", "[data-change-spells]")
-    add = page.locator(f'{WIN} [data-pick-row][data-pick-list$=":spells"][data-on=""]:not([data-always])').first.get_attribute("data-label")
-    drop = page.locator(f'{WIN} [data-pick-row][data-pick-list$=":spells"][data-on="1"]:not([data-always])').first.get_attribute("data-label")
+    add = page.locator(f'{WIN} [data-pick-row]:not([data-ls-out])[data-pick-list$=":spells"][data-on=""]:not([data-always])').first.get_attribute("data-label")
+    drop = page.locator(f'{WIN} [data-pick-row]:not([data-ls-out])[data-pick-list$=":spells"][data-on="1"]:not([data-always])').first.get_attribute("data-label")
     page.keyboard.press("Escape")
     print(f"  prepare {add}, drop {drop}", flush=True)
     prepare_these(page, cid, [add, drop])
@@ -1068,10 +1068,10 @@ def learn_spells(t: Table, seat: str = "player4") -> None:
     connects(t, page)
     cid, before = cid_of(page), spells_on(record(sheet))
     change_window(page, cid, "t-spells", "[data-change-spells]")
-    out = page.locator(f'{WIN} [data-pick-row][data-pick-list$=":cantrips"][data-base="1"]:has([data-pick-act])').first
+    out = page.locator(f'{WIN} [data-pick-row]:not([data-ls-out])[data-pick-list$=":cantrips"][data-base="1"]:has([data-pick-act])').first
     out_id = out.get_attribute("data-label")
     out.locator("[data-pick-act]").click(timeout=8000)
-    into = page.locator(f'{WIN} [data-pick-row][data-pick-list$=":cantrips"]:not([data-base="1"]):has([data-pick-act]:not([disabled]))').first
+    into = page.locator(f'{WIN} [data-pick-row]:not([data-ls-out])[data-pick-list$=":cantrips"]:not([data-base="1"]):has([data-pick-act]:not([disabled]))').first
     in_id = into.get_attribute("data-label")
     into.locator("[data-pick-act]").click(timeout=8000)
     print(f"  let go of {out_id}, learn {in_id}", flush=True)
