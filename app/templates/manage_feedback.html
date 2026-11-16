@@ -14,19 +14,20 @@
   </nav>
 
   <ul class="fb-list">
-    {% for f in items %}{% set ctx = f.context or {} %}
+    {% for f in items %}{% set ctx = f.context or {} %}{% set hide = f.id in kept %}{# (C9: the page can hold notes kept from you) #}
     <li class="fb-item">
       <details{% if f.id == open %} open{% endif %}>
         <summary class="fb-row">
-          {% if f.shot_key %}<img class="fb-thumb" src="/manage/feedback/{{ f.id }}/shot" alt="" loading="lazy">{% else %}<span class="fb-thumb" aria-hidden="true"></span>{% endif %}
+          {% if f.shot_key and not hide %}<img class="fb-thumb" src="/manage/feedback/{{ f.id }}/shot" alt="" loading="lazy">{% else %}<span class="fb-thumb" aria-hidden="true"></span>{% endif %}
           <span class="fb-main"><b>{{ f.text | truncate(160) }}</b>
-            <span class="note">{% if ctx.staging %}<span class="tag staging-tag" title="Sent from staging.askdnd.ai">Staging</span> {% endif %}{{ ctx.page or f.url }} · <time datetime="{{ f.created_at.isoformat() }}" data-clock="date">{{ f.created_at | ago }}</time> · {{ f.sender }}{% if ctx.viewing_as %} viewing as {{ ctx.viewing_as }}{% endif %}{% if ctx.browser %} · {{ ctx.browser }}{% endif %}{% if ctx.window %}, {{ ctx.window }}{% endif %}{% if ctx.pointed %} · pointed at {{ ctx.pointed.label }}{% endif %}{% if f.pasted_key %} · a screenshot pasted{% endif %}</span></span>
+            <span class="note">{% if ctx.staging %}<span class="tag staging-tag" title="Sent from staging.askdnd.ai">Staging</span> {% endif %}{{ ctx.page or f.url }} · <time datetime="{{ f.created_at.isoformat() }}" data-clock="date">{{ f.created_at | ago }}</time> · {{ f.sender }}{% if ctx.viewing_as %} viewing as {{ ctx.viewing_as }}{% endif %}{% if ctx.browser %} · {{ ctx.browser }}{% endif %}{% if ctx.window %}, {{ ctx.window }}{% endif %}{% if ctx.pointed and not hide %} · pointed at {{ ctx.pointed.label }}{% endif %}{% if f.pasted_key %} · a screenshot pasted{% endif %}</span></span>
           <span class="fb-st {{ f.status }}">{{ labels[f.status] }}</span>
         </summary>
         <div class="fb-open">
-          <div class="fb-pics">
-            {% if f.shot_key %}<a href="/manage/feedback/{{ f.id }}/shot" target="_blank" rel="noopener"><img src="/manage/feedback/{{ f.id }}/shot" alt="The page as the note was opened" loading="lazy"></a>{% endif %}
-            {% if f.pasted_key %}<a href="/manage/feedback/{{ f.id }}/pasted" target="_blank" rel="noopener"><img src="/manage/feedback/{{ f.id }}/pasted" alt="The pasted screenshot" loading="lazy"></a>{% endif %}
+          <div class="fb-pics" data-kept="{{ 1 if hide else 0 }}">
+            {% if hide %}<p class="note">Its page and pictures are kept from you: you're the DM of a campaign {{ f.sender.split(" (")[0] or "its sender" }}{% if ctx.viewing_as %} or {{ ctx.viewing_as }}{% endif %} plays in, and they can show that player's character notes.</p>
+            {% else %}{% if f.shot_key %}<a href="/manage/feedback/{{ f.id }}/shot" target="_blank" rel="noopener"><img src="/manage/feedback/{{ f.id }}/shot" alt="The page as the note was opened" loading="lazy"></a>{% endif %}
+            {% if f.pasted_key %}<a href="/manage/feedback/{{ f.id }}/pasted" target="_blank" rel="noopener"><img src="/manage/feedback/{{ f.id }}/pasted" alt="The pasted screenshot" loading="lazy"></a>{% endif %}{% endif %}
           </div>
           <div class="fb-side">
             <p class="fb-text">{{ f.text }}</p>
@@ -54,8 +55,8 @@
                 <dt>Page</dt><dd><a href="{{ f.url }}">{{ f.url }}</a></dd>
                 {% for k, label in (("signed_in_as", "Signed in as"), ("viewing_as", "Viewing as"), ("at", "When"), ("window", "Window"), ("screen", "Screen"), ("zoom", "Zoom"), ("browser", "Browser"), ("extension", "askdnd bridge"), ("live", "Live pill"), ("tab", "Tab"), ("panel", "Side panel"), ("errors", "Page errors")) if ctx[k] %}
                 <dt>{{ label }}</dt><dd>{{ ctx[k] if ctx[k] is string else ctx[k] | tojson }}</dd>{% endfor %}
-                {% if ctx.pointed %}<dt>Pointed at</dt><dd>{{ ctx.pointed.label }} <span class="note">{{ ctx.pointed.path }}</span></dd>{% endif %}
-                <dt>The page itself</dt><dd>{% if f.html %}<a href="/manage/feedback/{{ f.id }}/page" target="_blank" rel="noopener">As drawn ({{ (f.html | length / 1024) | round | int }} KB)</a>{% else %}Not kept{% endif %}</dd>
+                {% if ctx.pointed and not hide %}<dt>Pointed at</dt><dd>{{ ctx.pointed.label }} <span class="note">{{ ctx.pointed.path }}</span></dd>{% endif %}
+                <dt>The page itself</dt><dd>{% if hide %}Kept from you{% elif f.html %}<a href="/manage/feedback/{{ f.id }}/page" target="_blank" rel="noopener">As drawn ({{ (f.html | length / 1024) | round | int }} KB)</a>{% else %}Not kept{% endif %}</dd>
               </dl>
             </details>
           </div>

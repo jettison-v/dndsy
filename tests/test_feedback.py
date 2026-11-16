@@ -310,3 +310,57 @@ def test_prod_takes_a_staging_note_only_with_the_key(admin, db, monkeypatch):
     r = client_for_api.post("/api/feedback/from-staging", json=body, headers={"X-Feedback-Key": "k" * 32})
     fb = db.get(Feedback, r.json()["id"])
     assert r.json()["review"] and fb.status == "review" and fb.context["staging"] and fb.shot_key and fb.sender.startswith("Pat (")
+
+
+def test_a_notes_page_is_kept_from_an_admin_who_is_its_senders_dm(admin, player, db):
+    """A standing rule (CLAUDE.md › Visibility: character notes are visible to players but NOT the DM, even an admin;
+    the outside review's C9): a note's page and pictures can show its sender's character notes, so an admin who is the
+    DM of a campaign the sender plays in sees its words but not its page, pictures or what it pointed at."""
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    assert note(player, text="The Rest button wraps.", pasted=png()).status_code == 200
+    fb = db.scalar(select(Feedback))
+    page = admin.get("/manage/feedback").text  # (not the DM: everything)
+    assert f"/manage/feedback/{fb.id}/shot" in page and 'data-kept="0"' in page and "pointed at Speed" in page
+    assert admin.get(f"/manage/feedback/{fb.id}/page").status_code == 200
+
+    set_role(db, "admin@example.com", "dm")  # the admin becomes this campaign's DM
+    access.invalidate()
+    page = admin.get("/manage/feedback").text
+    assert "The Rest button wraps." in page and 'data-kept="1"' in page  # (its words stay)
+    assert f"/manage/feedback/{fb.id}/shot" not in page and f"/manage/feedback/{fb.id}/page" not in page and "pointed at Speed" not in page
+    for which in ("shot", "pasted", "page"):
+        assert admin.get(f"/manage/feedback/{fb.id}/{which}").status_code == 404
+
+
+def test_a_note_sent_viewing_as_a_player_is_kept_from_their_dm(admin, db):
+    """Sent by one admin viewing as a player: the page is that player's, so it's kept from the player's DM, even when
+    the DM is another admin."""
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/view-as", data={"email": "player@example.com"})
+    assert note(admin).status_code == 200
+    admin.post("/view-as/stop")
+    fb = db.scalar(select(Feedback))
+    assert fb.context["viewing_as_email"] == "player@example.com"
+    other = db.scalar(select(User).where(User.email == "admin@example.com"))
+    other.email = "second@example.com"  # (the sender, now under another address; admin@ will be the DM)
+    db.flush()
+    fb.user_id = other.id
+    set_role(db, "admin@example.com", "dm")
+    access.invalidate()
+    assert admin.get(f"/manage/feedback/{fb.id}/page").status_code == 404
+
+
+def test_the_dm_over_rule_is_one_rule():
+    rows = {"dm@x": {"roles": {1: "dm", 2: "player"}}, "p@x": {"roles": {1: "player"}}, "q@x": {"roles": {2: "dm"}},
+            "co@x": {"roles": {1: "dm"}}}
+    assert access.dm_over("dm@x", "p@x", rows) and access.dm_over(" DM@x ", "P@x", rows)
+    assert not access.dm_over("p@x", "dm@x", rows)  # (a player over the DM: no)
+    assert not access.dm_over("dm@x", "q@x", rows)  # (q is the DM of 2, where dm@ plays)
+    assert not access.dm_over("dm@x", "co@x", rows)  # (two DMs of one campaign)
+    assert not access.dm_over("dm@x", "dm@x", rows) and not access.dm_over(None, "p@x", rows) and not access.dm_over("dm@x", "", rows)
