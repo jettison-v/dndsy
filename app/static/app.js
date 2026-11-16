@@ -3448,6 +3448,30 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (e.detail.type === 'rolls' && e.detail.changed) changedRoll = e.detail.changed;
     if ((e.detail.type === 'rolls' || e.detail.type === 'resync') && atTable() && loaded && log && window.htmx) htmx.trigger(log, 'rolls:load');
   });
+  // Hit Points beside Apply to (Brett's test, Nov 16: they stayed as they were when the roll was drawn): when a character
+  // changes, or the connection catches up, every pill showing them is brought up to date from /hp/now.
+  let hpTick = null, hpIds = new Set();
+  function hpPills(ids) {
+    const pills = [...document.querySelectorAll('[data-hp-of]')].filter(p => ids.has('*') || ids.has(p.dataset.hpOf));
+    if (!pills.length) return;
+    const want = [...new Set(pills.map(p => p.dataset.hpOf))];
+    fetch('/hp/now?ids=' + want.join(','), { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : {})).then(now => {
+      pills.forEach(p => {
+        const n = now[p.dataset.hpOf];
+        if (!n || !n.hp) return;
+        p.textContent = n.hp; p.dataset.hp = n.hp;
+        p.classList.toggle('full', !!n.full && p.hasAttribute('data-heal'));
+        p.title = 'Hit Points now' + (n.full ? ': full' : '');
+      });
+    }).catch(() => { /* they stay as they were */ });
+  }
+  document.addEventListener('askdnd:live', e => {
+    const t = e.detail.type;
+    if (t !== 'character' && t !== 'resync') return;
+    hpIds.add(t === 'resync' ? '*' : String(e.detail.id));
+    clearTimeout(hpTick);
+    hpTick = setTimeout(() => { const ids = hpIds; hpIds = new Set(); hpPills(ids); }, 500);
+  });
   // A roll the whole table sees comes in the live message itself (app/table_rolls.py _live; Brett, 2026-10-29: every
   // screen starts the dice at once, as D&D Beyond's do): someone else's dice start now, from it, and the row the page
   // then fetches doesn't throw them again (its number shows as they land)
@@ -3511,6 +3535,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       if (+li.dataset.seq > before && !li.dataset.mine) {
         if (thrownEarly.delete(li.dataset.seq)) { /* its dice started from the live message */ }
         else if (away.on) away.rolls++;  // (they happened without you: no dice, no card)
+        else if (+(li.dataset.thrown || li.dataset.seq) <= before) { /* applied to someone: it moves up, no dice (Brett's test, Nov 16) */ }
         else if (animate() && !li.classList.contains('hidden-roll')) { window.askdndThrowing.throwing(li.dataset.id); throwOthers(li).catch(() => notice(li)).finally(() => window.askdndThrowing.landed(li.dataset.id)); }  // thrown dice (Brett, 2026-10-23)
         else notice(li);
         li.classList.remove('fresh'); void li.offsetWidth; li.classList.add('fresh');

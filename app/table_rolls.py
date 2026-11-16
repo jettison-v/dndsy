@@ -323,6 +323,9 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
     rollers = {r.user_id for r in roots if r.user_id}
     dice = {u.id: prefs(u) for u in db.scalars(select(User).where(User.id.in_(rollers)))} if rollers else {}
     seq = {r.id: max([r.id] + [k.id for k in by_root.get(r.id, [])]) for r in roots}
+    # The dice's own: the roll and what added dice to it. Healing or damage applied to someone (an "applied" row) moves
+    # the roll up the list, but nobody else's dice are thrown for it again (Brett's test, Nov 16)
+    thrown = {r.id: max([r.id] + [k.id for k in by_root.get(r.id, []) if k.kind in ("damage", "reroll", "bonus")]) for r in roots}
     out, newest_mine = [], True
     for r in sorted(roots, key=lambda r: seq[r.id], reverse=True):
         how = shown(r, viewer_id, viewer_is_dm)
@@ -330,7 +333,7 @@ def entries(db: Session, roots: list[TableRoll], kids: list[TableRoll], viewer_i
             continue
         mine = viewer_id is not None and r.user_id == viewer_id
         name = (f"{names[r.character_id]} ({r.who})" if r.who else names[r.character_id]) if r.character_id in names else (r.who or "Someone")
-        e = {"id": r.id, "seq": seq[r.id], "character_id": r.character_id or 0, "name": name, "initial": name[:1].upper(),
+        e = {"id": r.id, "seq": seq[r.id], "thrown": thrown[r.id], "character_id": r.character_id or 0, "name": name, "initial": name[:1].upper(),
              "portrait": pics.get(r.character_id) or "", "hue": (r.character_id or 0) % 6 if r.character_id else 6,
              "mine": mine, "to": r.visibility, "hidden": how == "hidden", "dice": dice.get(r.user_id) or prefs(None), "ddb": bool(r.ddb_roll_id),
              "at": r.created_at.isoformat() if r.created_at else "", "ago": _ago(r.created_at),
