@@ -1109,7 +1109,7 @@
  {
   "title": "Key Moments Everywhere",
   "kind": "design",
-  "status": "Built as drawn in PR 390, your look first",
+  "status": "Built as drawn in PR 390",
   "date": "Nov 16",
   "what": "UI review part 3, Campaign picks 2 and 3: key moments drawn one way in every place (the recap, a World entry, a quest, the side panel, a phone), and one closed \"+ Add what the party learned\" fold, in every state.",
   "source": "docs/mockups/key-moments/",

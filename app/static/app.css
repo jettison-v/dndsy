@@ -3131,6 +3131,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 /* A closing note under a page's content, and the title row's own button */
 .page-note { margin-top: var(--sp-5); }
 .title-row .title-action { margin-left: auto; flex: none; }
+.title-row .title-action.row { flex: 0 1 auto; min-width: 0; flex-wrap: wrap; justify-content: flex-end; }  /* (two actions, as Table's: they wrap rather than run off a phone) */
 /* A page's own action stays at the right end of its title row at every width; the title wraps beside it instead
    (the UI pass, 2026-11-02: on phones it dropped to a line of its own, left, centred or right) */
 /* A title never shrinks below its longest word (the UI review, Nov 16: "T/a/b/l/e" beside a long button on a phone):
