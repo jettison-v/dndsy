@@ -520,7 +520,7 @@ def add_moment(db: Session, entity: Entity, session_id: int, kind: str, text: st
     except ValueError as e:
         raise EntityError("Pick what kind of moment it is.") from e
     last = max((e.position for e in session.events), default=0)
-    event = StoryEvent(session_id=session.id, position=last + 1, kind=k, text=text[:2000], status=Status.PUBLISHED)
+    event = StoryEvent(session_id=session.id, position=last + 1, kind=k, text=text[:2000], status=Status.PUBLISHED, by_hand=True)
     db.add(event)
     db.flush()
     db.add(EventEntity(event_id=event.id, entity_id=entity.id))

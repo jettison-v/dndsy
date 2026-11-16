@@ -505,12 +505,11 @@ def test_the_review_is_a_wizard_that_opens_on_what_is_left_and_keeps_its_place(d
 
 def test_a_redrafts_key_moments_replace_the_published_ones_when_published(db, story):
     s = publish(db, story)
-    review.published_recap(s).updated_at = datetime(2026, 11, 7, 9, tzinfo=session_story.TABLE_TIME)  # (published before the redraft)
-    db.flush()
     told(db, s)
     db.expire_all()
     s = db.get(GameSession, s.id)
     old = next(ev for ev in s.events if ev.status == Status.PUBLISHED)
+    assert old.superseded and review.redrafted(s)  # (marked when the redraft was stored)
     review.toggle_major(db, s, old.id)  # (a published moment starred after the redraft: still replaced)
     db.expire_all()
     s = db.get(GameSession, s.id)
@@ -519,12 +518,14 @@ def test_a_redrafts_key_moments_replace_the_published_ones_when_published(db, st
     db.expire_all()
     s = db.get(GameSession, s.id)
     assert len(s.events) == 3  # the published one, the DM's and the redraft's, until publishing
+    mine = next(ev.id for ev in s.events if ev.by_hand)
     review.publish(db, s)
     db.flush()
     db.expire_all()
     s = db.get(GameSession, s.id)
+    assert db.get(StoryEvent, old.id) is None and db.get(StoryEvent, mine) is not None  # (Claude's gone, the person's kept)
     assert sorted(ev.text for ev in s.events) == ["Added by hand.", "Trah read the runes."]
-    assert all(ev.status == Status.PUBLISHED for ev in s.events)
+    assert all(ev.status == Status.PUBLISHED and not ev.superseded for ev in s.events)
 
 
 def test_editing_a_published_moment_and_publishing_again_keeps_the_rest(db, story):
@@ -535,6 +536,181 @@ def test_editing_a_published_moment_and_publishing_again_keeps_the_rest(db, stor
     db.flush()
     db.expire_all()
     assert len(db.get(GameSession, s.id).events) == 2
+
+
+def fresh(db, s):
+    db.flush()
+    db.expire_all()
+    return db.get(GameSession, s.id)
+
+
+def test_a_redraft_published_after_the_recap_was_listened_to_leaves_one_copy_of_each_moment(db, story):
+    """Nov 16 (the UI/UX review): key moments and theories showed in pairs on Story, an entry and a quest. Publishing
+    told a redraft from the first draft by the published recap's updated_at, which Listen moves when it measures an
+    older narration's length; the redraft's moments were published beside the first draft's. Now a redraft is marked
+    when it is stored, whatever any time says."""
+    s = publish(db, story)
+    told(db, s)
+    s = fresh(db, s)
+    review.published_recap(s).updated_at = datetime(2030, 1, 1, tzinfo=session_story.TABLE_TIME)  # (Listen, after the redraft)
+    s = fresh(db, s)
+    assert [ev.status for ev in review.upcoming(s)] == [Status.DRAFT]  # (the review page shows what publishing leaves)
+    review.publish(db, s)
+    s = fresh(db, s)
+    assert [(ev.text, ev.status) for ev in s.events] == [("Trah read the runes.", Status.PUBLISHED)]
+    told(db, s)  # and again, drafted twice before publishing
+    told(db, s)
+    review.publish(db, fresh(db, s))
+    assert len(fresh(db, s).events) == 1
+
+
+def test_moments_a_person_wrote_or_edited_survive_a_redraft_and_claude_is_told_not_to_repeat_them(db, story):
+    """Nov 16: a redraft replaces Claude's own moments, never a person's: one added on the review page, one the DM wrote
+    on an entry's page (its link to the entry, a quest step, stays), and one of Claude's a reviewer reworded. Claude
+    gets them as kept moments so it doesn't write them again; one naming a hidden entry isn't sent at all."""
+    from app import entities
+    from app.models import Entity, EventEntity
+
+    s = publish(db, story)
+    quest = Entity(campaign_id=s.campaign_id, kind="quest", name="Ring the Drowned Bell", status=Status.PUBLISHED)
+    secret = Entity(campaign_id=s.campaign_id, kind="npc", name="Captain Marrow", status=Status.DRAFT)
+    db.add_all([quest, secret])
+    db.flush()
+    claudes = s.events[0]
+    review.save_event(db, s, claudes.id, "reveal", "The runes named the bell's maker.")  # (reworded by the reviewer)
+    entities.add_moment(db, quest, s.id, "decision", "The party swore to ring the bell.")
+    hidden = entities.add_moment(db, secret, s.id, "event", "A voice called from the hold.")
+    s = fresh(db, s)
+    review.save_event(db, s, None, "theory", "The bell may ring for the drowned.")
+    s = fresh(db, s)
+    assert all(ev.by_hand for ev in s.events) and len(s.events) == 4
+
+    seen = []
+    told(db, s, seen=seen)
+    sent = " ".join(b.get("text", "") for b in seen[0]["messages"][0]["content"])
+    assert "<kept_key_moments>" in sent and extraction.KEPT_NOTE in sent
+    for kept in ("The runes named the bell's maker.", "The party swore to ring the bell.", "The bell may ring for the drowned."):
+        assert kept in sent
+    assert "A voice called from the hold." not in sent  # (Hidden is as if it didn't exist)
+    s = fresh(db, s)
+    assert [(ev.text, ev.by_hand) for ev in s.events] == [  # (theirs kept their places; Claude's new one after them)
+        ("The runes named the bell's maker.", True), ("The party swore to ring the bell.", True),
+        ("A voice called from the hold.", True), ("The bell may ring for the drowned.", True), ("Trah read the runes.", False)]
+    review.publish(db, s)
+    s = fresh(db, s)
+    assert sorted(ev.text for ev in s.events) == sorted([
+        "Trah read the runes.", "The runes named the bell's maker.", "The party swore to ring the bell.",
+        "The bell may ring for the drowned.", "A voice called from the hold."])
+    assert all(ev.status == Status.PUBLISHED for ev in s.events)
+    assert db.scalar(select(EventEntity.event_id).where(EventEntity.entity_id == quest.id)) is not None
+    assert db.get(StoryEvent, hidden.id) is not None
+
+    sent = extraction.build_messages(db, s, Source("transcript", "x"), step="tell", update=True)[0]["content"]
+    current = next(b["text"] for b in sent if b.get("text", "").startswith("<current_draft"))  # (Draft the recap again)
+    assert "Trah read the runes." in current and "The party swore to ring the bell." not in current
+    assert any("The party swore to ring the bell." in b.get("text", "") and "<kept_key_moments>" in b.get("text", "") for b in sent)
+    assert not any("<kept_key_moments>" in b.get("text", "") for b in
+                   extraction.build_messages(db, s, Source("transcript", "x"), step="ask")[0]["content"])  # (the first read writes none)
+
+
+def test_a_moment_brought_back_from_history_is_no_redraft(db, story):
+    """A deleted draft moment brought back is a person's choice: publishing again doesn't take it for a redraft and drop
+    the session's published moments."""
+    from app import history
+    from app.models import Revision
+
+    s = publish(db, story)
+    review.save_event(db, s, None, "event", "Added by hand.")
+    s = fresh(db, s)
+    added = next(ev for ev in s.events if ev.status == Status.DRAFT)
+    review.delete_event(db, s, added.id)
+    s = fresh(db, s)
+    history.restore(db, db.scalar(select(Revision).where(Revision.table == "story_events", Revision.field == "deleted")))
+    s = fresh(db, s)
+    assert not review.redrafted(s)
+    claudes = next(ev for ev in s.events if not ev.by_hand)
+    published = db.scalar(select(Revision).where(Revision.table == "story_events", Revision.row_id == claudes.id, Revision.field == "status"))
+    history.restore(db, published)  # (Claude's moment put back to a draft from history: a person's choice, no redraft either)
+    s = fresh(db, s)
+    assert [ev.status for ev in s.events if ev.id == claudes.id] == [Status.DRAFT] and not review.redrafted(s)
+    review.publish(db, s)
+    assert sorted(ev.text for ev in fresh(db, s).events) == ["Added by hand.", "Trah read the runes."]
+
+
+def told_with(db, s, *texts):
+    """Draft the recap with these key moments (each an event naming no one)."""
+    events = [{"kind": "event", "text": t, "entities": [], "major": False} for t in texts]
+    return extract_session(db, s, Source("transcript", session_story.text(s)), fake_client(result={**TOLD, "events": events}),
+                           step="tell")
+
+
+def test_a_redraft_whose_moments_were_all_reworded_or_deleted_still_replaces_the_published_ones(db, story):
+    """Nov 16 review: the redraft is marked when it's stored, not guessed from which of its moments are left, so
+    rewording some of them and deleting the rest still replaces the first draft's on publishing."""
+    s = publish(db, story)
+    first = [ev.id for ev in s.events]
+    told_with(db, s, "The bell rang twice.", "The crew came aboard.")
+    s = fresh(db, s)
+    rang, crew = (ev for ev in review.upcoming(s))
+    review.save_event(db, s, rang.id, "event", "The bell rang twice, then stopped.")
+    review.delete_event(db, s, crew.id)
+    s = fresh(db, s)
+    assert review.redrafted(s) and [ev.text for ev in review.upcoming(s)] == ["The bell rang twice, then stopped."]
+    review.publish(db, s)
+    s = fresh(db, s)
+    assert [(ev.text, ev.status) for ev in s.events] == [("The bell rang twice, then stopped.", Status.PUBLISHED)]
+    assert all(db.get(StoryEvent, i) is None for i in first)
+
+
+def test_a_persons_moment_keeps_its_place_through_a_redraft_and_the_table_sees_no_reordering(db, story):
+    """Nov 16 review: a person's moment stays after as many of Claude's as came before it, at its position, and the
+    published ones the table reads keep their order until the redraft is published."""
+    from app import entities
+    from app.models import Entity
+
+    s = publish(db, story)
+    told_with(db, s, "A.", "B.", "C.")
+    review.publish(db, fresh(db, s))
+    s = fresh(db, s)
+    b = next(ev for ev in s.events if ev.text == "B.")
+    review.save_event(db, s, b.id, "event", "B, as the DM tells it.")  # (reworded: second of four)
+    quest = Entity(campaign_id=s.campaign_id, kind="quest", name="Ring the Drowned Bell", status=Status.PUBLISHED)
+    db.add(quest)
+    db.flush()
+    entities.add_moment(db, quest, s.id, "decision", "The party swore to ring the bell.")  # (published, last)
+    s = fresh(db, s)
+    table_before = [ev.text for ev in s.events if ev.status == Status.PUBLISHED]
+    assert table_before == ["A.", "B, as the DM tells it.", "C.", "The party swore to ring the bell."]
+    told_with(db, s, "A2.", "B2.", "C2.")
+    s = fresh(db, s)
+    assert [ev.text for ev in sorted(review.upcoming(s), key=lambda e: e.position)] == [
+        "A2.", "B, as the DM tells it.", "B2.", "C2.", "The party swore to ring the bell."]
+    assert next(ev.position for ev in s.events if ev.id == b.id) == 2  # (its place kept)
+    assert [ev.text for ev in s.events if ev.status == Status.PUBLISHED] == table_before  # (Story's order, until publishing)
+    review.publish(db, s)
+    assert [ev.text for ev in fresh(db, s).events] == ["A2.", "B, as the DM tells it.", "B2.", "C2.", "The party swore to ring the bell."]
+
+
+def test_claudes_own_moment_naming_an_entry_hidden_since_isnt_sent_to_claude(db, story):
+    """Nov 16 review (CLAUDE.md › Hidden is as if it didn't exist): a moment Claude drafted, linked to an entry the DM hid
+    afterwards, isn't in the current draft Draft the recap again sends."""
+    from app.models import Entity
+
+    marrow = Entity(campaign_id=story.campaign_id, kind="npc", name="Captain Marrow", status=Status.PUBLISHED)
+    db.add(marrow)
+    db.flush()
+    read(db, story)
+    events =[{"kind": "event", "text": "Trah read the runes.", "entities": ["Trah"], "major": True},
+              {"kind": "reveal", "text": "Marrow spoke from the hold.", "entities": ["Captain Marrow"], "major": False}]
+    extract_session(db, story, Source("transcript", session_story.text(story)), fake_client(result={**TOLD, "events": events}),
+                    step="tell")
+    s = fresh(db, story)
+    assert [x.name for ev in s.events for x in ev.entities] == ["Trah", "Captain Marrow"]
+    marrow.status = Status.DRAFT  # (hidden from the table)
+    s = fresh(db, s)
+    sent = " ".join(b.get("text", "") for b in extraction.build_messages(db, s, Source("transcript", "x"), step="tell",
+                                                                         update=True)[0]["content"])
+    assert "Trah read the runes." in sent and "Marrow" not in sent
 
 
 def suggested(db, s):
