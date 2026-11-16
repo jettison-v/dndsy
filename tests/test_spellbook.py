@@ -155,7 +155,7 @@ def test_sheet_spells_list_every_spell_with_views(db, cole, player, dm):
 
 def test_spell_bar_offers_add_when_nothing_is_pinned_and_the_book_pins(db, cole, player, dm):
     bar = player.get(f"/characters/{cole.id}/battle").text
-    assert 'class="spell-chip more sb-add"' in bar  # nothing pinned: + Add opens the Spell Book
+    assert 'class="head-add sb-add"' in bar  # nothing pinned: + Add opens the Spell Book
     assert "sb-add" not in dm.get(f"/characters/{cole.id}/battle").text  # the DM can't pin
     book = player.get(f"/characters/{cole.id}/spellbook").text
     assert '"ref": "spell:Moonbeam"' in book and 'class="pick star"' in book  # each row's pin toggle

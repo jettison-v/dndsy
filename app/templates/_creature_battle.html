@@ -3,6 +3,7 @@
    says whose it is and when its turn comes; the top row is its own Hit Points, AC, Speed, Initiative and saves; its stat
    block's actions are rows to roll, in the three columns. Its rolls say whose they are (the body's data-who). #}
 {% from "_char.html" import ntile, save_tiles, roll_attrs, hit, sync_attrs %}
+{% from "_lists.html" import empty_state %}
 {% set k = creature %}{% set sync_of = (s.sync or {}).get("creature:" ~ k.id) %}
 <div class="battlebar">
   <div class="ws-form cr-band">
@@ -76,7 +77,7 @@
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
         {% if o.text and o.text != o.meta %}<details class="cr-text"><summary class="note">Its stat block</summary><p class="note">{{ o.text }}</p></details>{% endif %}
       </div>
-      {% else %}<p class="muted pin-empty">Nothing here for it.</p>{% endfor %}
+      {% else %}{{ empty_state("Nothing here for it.") }}{% endfor %}
     </div>
   </div>
   {% endfor %}

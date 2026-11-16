@@ -3,7 +3,7 @@
 {% from "_form_list.html" import form_list %}
 {% from "_item_list.html" import item_list %}
 {% from "_feature_list.html" import feature_list %}
-{% from "_char.html" import pips, count_pips, sync, res, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs, ntile, hp_tile, inspiration, purse, rest_btn %}
+{% from "_char.html" import pips, count_pips, sync, res, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs, ntile, hp_tile, insp_mark, purse, rest_btn %}
 {% set s = sheet %}
 {% if s %}
 {# Row 1: the numbers you look up most #}
@@ -17,7 +17,7 @@
   {{ ntile(s, tile(c, "proficiency"), "Proficiency", ("<b>+%s</b>" | format(s.proficiency_bonus)) | safe) }}
   {{ ntile(s, tile(c, "perception"), "Passive Perception", ("<b>%s</b>" | format(s.passive_perception)) | safe) }}
   {% for sc in s.spellcasting[:1] %}{{ ntile(s, tile(c, "spell"), "Spell DC / attack", ("<b>%s</b><span class=\"note\"> / %s</span>" | format(sc.save_dc, sc.attack)) | safe) }}{% endfor %}
-  {{ inspiration(s, c, "") }}
+  <div class="insp-cell">{{ insp_mark(s, c, can_change_hp) }}</div>{# (Heroic Inspiration is the chip, as on Battle: the UI review, Nov 16) #}
 </div>
 
 {# Row 2: abilities with their saves, and advantages shown on the save they change #}
