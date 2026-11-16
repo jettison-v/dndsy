@@ -132,10 +132,10 @@ def _glossary_context(request: Request, db: Session, term_id: int) -> dict | Non
     campaign = web.campaign(db)
     if not user or term is None or campaign is None or term.campaign_id != campaign.id:  # (only this campaign's)
         return None
-    return {"g": term, "can_edit": _can_edit_glossary(user)}
+    return {"g": term, "can_edit": can_edit_glossary(user)}
 
 
-def _can_edit_glossary(user: dict | None) -> bool:
+def can_edit_glossary(user: dict | None) -> bool:
     return bool(user) and access.allows("story_extras", access.level(user.get("email")), access.role(user.get("email")))
 
 
@@ -145,7 +145,7 @@ def glossary_add(request: Request, term: str = Form(""), description: str = Form
     user = current_user(request)
     campaign = web.campaign(db)
     new_term = " ".join(term.split())[:200]
-    if not _can_edit_glossary(user) or campaign is None:
+    if not can_edit_glossary(user) or campaign is None:
         return _problem_line("Only the DM and reviewers can add terms directly.")
     if not new_term or db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id, GlossaryTerm.term == new_term)):
         return _problem_line("That term is empty or already in the glossary.")
@@ -171,7 +171,7 @@ def glossary_edit(
     user = current_user(request)
     g = db.get(GlossaryTerm, term_id)
     campaign = web.campaign(db)
-    if not _can_edit_glossary(user) or g is None or campaign is None or g.campaign_id != campaign.id:
+    if not can_edit_glossary(user) or g is None or campaign is None or g.campaign_id != campaign.id:
         return RedirectResponse(f"{web.base()}/campaign", status_code=303)
     new_term = " ".join(term.split())
     clash = db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == g.campaign_id, GlossaryTerm.term == new_term, GlossaryTerm.id != g.id))
@@ -188,7 +188,7 @@ def glossary_delete(request: Request, term_id: int, db: Session = Depends(get_db
     user = current_user(request)
     g = db.get(GlossaryTerm, term_id)
     campaign = web.campaign(db)
-    if _can_edit_glossary(user) and g is not None and campaign is not None and g.campaign_id == campaign.id:
+    if can_edit_glossary(user) and g is not None and campaign is not None and g.campaign_id == campaign.id:
         db.delete(g)
         db.commit()
     return _done_line("Removed from the glossary. Reload the page to update the list.")
@@ -322,7 +322,7 @@ def accept_glossary(request: Request, suggestion_id: int, term: str = Form(""), 
     """Edit then accept a glossary suggestion: fix the term it's about, or add the new term it suggests."""
     user = current_user(request)
     x = db.get(Suggestion, suggestion_id)
-    if not _can_edit_glossary(user) or x is None or x.status != "pending" or x.target_type != "glossary":
+    if not can_edit_glossary(user) or x is None or x.status != "pending" or x.target_type != "glossary":
         return RedirectResponse(f"{web.base()}/manage/inbox", status_code=303)
     g = db.get(GlossaryTerm, x.target_id) if x.target_id else None
     new_term = " ".join(term.split())[:200]

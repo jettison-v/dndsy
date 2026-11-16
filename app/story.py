@@ -252,9 +252,9 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
     quest = next((c for c in board if asked is not None and c["q"].id == asked.id), None) or next(iter(board), None)
     article = {**entity_context(db, selected, user), "where": "reader"} if selected else {}
     # The glossary term on its Reader: the one asked for, else the first
-    from app.suggestions import _can_edit_glossary
+    from app.suggestions import can_edit_glossary
     chosen = next((g for g in glossary if term.isdigit() and g.id == int(term)), None) or next(iter(glossary), None)
-    term_sel = {"g": chosen, "can_edit": _can_edit_glossary(user)} if chosen else None
+    term_sel = {"g": chosen, "can_edit": can_edit_glossary(user)} if chosen else None
     return templates.TemplateResponse(
         request, "campaign.html", {"campaign": campaign, "quests": quests, "done_quests": done, "groups": groups, "glossary": glossary,
                                    "editor": editor, "seen": seen, "latest": latest, "selected": selected, "tab": tab,
