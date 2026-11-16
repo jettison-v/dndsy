@@ -92,8 +92,9 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
   <div class="intro">
     <span class="lbl">A · Clear at the top of the filters</span><span class="pick">My pick</span>
     <h2>Where your eye already is</h2>
-    <p><b>Clear</b> sits at the right of the Filters heading, on every list, and shows only once something is filtered. The
-    row above the list stays as a reminder of what's on, each with its own ×, without a second Clear all.</p>
+    <p><b>Clear</b> sits at the right of the Filters heading, on every list, and shows only once something is filtered. No
+    row above the list: the blue chips already say what's on, so the list keeps that room (your comment, Nov 16). On a
+    phone, where the filters fold away, the folded button says how many are on and carries Clear.</p>
   </div>
   <div class="frame" data-mock="a"></div>
 </section>
@@ -126,7 +127,8 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
     clears without opening the filters; with B it stays in the row above the list.</p>
   </div>
   <div class="phones">
-    <div><span class="phone-cap">A and C</span><div class="phone"><div class="fold">▸ Filters <span class="n">2</span><span class="clear">Clear</span></div><div class="active">Showing only: <span class="on">1st ×</span><span class="on">Action ×</span></div><div class="rows"><div class="row"><span>Cure Wounds<small>1st</small></span><span></span><span class="note">Action</span></div><div class="row"><span>Faerie Fire<small>1st</small></span><span></span><span class="note">Action</span></div></div></div></div>
+    <div><span class="phone-cap">A</span><div class="phone"><div class="fold">▸ Filters <span class="n">2</span><span class="clear">Clear</span></div><div class="rows"><div class="row"><span>Cure Wounds<small>1st</small></span><span></span><span class="note">Action</span></div><div class="row"><span>Faerie Fire<small>1st</small></span><span></span><span class="note">Action</span></div></div></div></div>
+    <div><span class="phone-cap">C</span><div class="phone"><div class="fold">▸ Filters <span class="n">2</span><span class="clear">Clear</span></div><div class="active">Showing only: <span class="on">1st ×</span><span class="on">Action ×</span><button class="clear">Clear all</button></div><div class="rows"><div class="row"><span>Cure Wounds<small>1st</small></span><span></span><span class="note">Action</span></div><div class="row"><span>Faerie Fire<small>1st</small></span><span></span><span class="note">Action</span></div></div></div></div>
     <div><span class="phone-cap">B</span><div class="phone"><div class="fold">▸ Filters <span class="n">2</span></div><div class="active">Showing only: <span class="on">1st ×</span><span class="on">Action ×</span><button class="clear">Clear all</button></div><div class="rows"><div class="row"><span>Cure Wounds<small>1st</small></span><span></span><span class="note">Action</span></div><div class="row"><span>Faerie Fire<small>1st</small></span><span></span><span class="note">Action</span></div></div></div></div>
   </div>
 </section>
@@ -135,7 +137,7 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
   <div class="intro"><span class="lbl">Your pick</span><h2>One choice</h2></div>
   <div class="q"><b>Where should Clear go, on every filtered list?</b>
     <ul>
-      <li><b>A, at the top of the filters</b> (my pick): Clear by the Filters heading, only once something's filtered; the row above the list keeps each filter's ×.</li>
+      <li><b>A, at the top of the filters</b> (my pick): Clear by the Filters heading, only once something's filtered; no row above the list, the blue chips say what's on.</li>
       <li><b>B, one row above the list</b>: "Showing only … Clear all" on every list, the column's Clear gone.</li>
       <li><b>C, both</b>: two Clears on every list.</li>
     </ul>
@@ -153,7 +155,7 @@ const SPELLS = [["Cure Wounds", "1st", "Action", "Heal"], ["Faerie Fire", "1st",
 const GROUPS = [["Level", 1, ["Cantrip", "1st", "2nd", "3rd"]], ["Casting time", 2, ["Action", "Bonus"]], ["Effect", 3, ["Damage", "Heal", "Control", "Support"]]];
 document.querySelectorAll("[data-mock]").forEach(frame => {
   const kind = frame.dataset.mock, on = new Set();
-  const topClear = kind !== "b", rowClear = kind !== "a";
+  const topClear = kind !== "b", rowClear = kind !== "a", row = kind !== "a";  // (A: no row above the list at all)
   frame.innerHTML = `<div class="filters"><div class="f-head">Filters <span class="rule"></span>${topClear ? '<button class="clear" data-clear hidden>Clear</button>' : ""}</div>
     ${GROUPS.map(([g, i, vs]) => `<div class="group"><span>${g}</span><div class="chips">${vs.map(v => `<button type="button" class="chip" data-v="${i}:${v}" aria-pressed="false">${v} <small></small></button>`).join("")}</div></div>`).join("")}</div>
     <div class="main"><div class="search">⌕ Search all your spells</div>
@@ -171,7 +173,7 @@ document.querySelectorAll("[data-mock]").forEach(frame => {
       c.querySelector("small").textContent = SPELLS.filter(s => s[i] === v && GROUPS.every(([, j]) => j === i || ![...others].some(k => k.startsWith(j + ":")) || [...others].filter(k => k.startsWith(j + ":")).map(k => k.slice(2)).includes(s[j]))).length;
     });
     const active = frame.querySelector("[data-active]");
-    active.hidden = !on.size;
+    active.hidden = !on.size || !row;
     frame.querySelector("[data-on]").innerHTML = [...on].map(k => `<span class="on" data-off="${k}">${k.slice(2)} ×</span>`).join(" ");
     const top = frame.querySelector(".f-head [data-clear]"); if (top) top.hidden = !on.size;
   };
