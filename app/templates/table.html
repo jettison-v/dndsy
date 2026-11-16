@@ -9,12 +9,11 @@
 <main class="page wide table-page" data-place="{{ g.id if g else '' }}">
   {% include "_fight_band.html" %}
   <div class="tbl-top">
-    {% if dm %}
+    {% if dm and places %}{# (no places yet: the title below, and the empty state's one + Place; the UI review, Nov 16) #}
     <div class="tbl-places">
       <label class="sr" for="tbl-place">Place</label>
       <select id="tbl-place" data-tbl-place>
         {% for x in places %}<option value="{{ x.id }}"{{ ' selected' if place and x.id == place.id }}>{{ x.name }}{{ ' · players see it' if x.id == shown_id }}</option>{% endfor %}
-        {% if not places %}<option value="">No places yet</option>{% endif %}
       </select>
       <button type="button" class="btn small" data-open-dialog="tbl-new-place">+ Place</button>
       {% if place %}

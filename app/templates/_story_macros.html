@@ -1,7 +1,7 @@
 {# Story's pieces, shared by Campaign's first two tabs (Brett chose Story and Campaign as one, Nov 13,
    docs/mockups/menu-bar-people/): a session's recap on its scroll, a key moment, what came of it. #}
-{% macro tale_link(item) %}{% if item.more %}<a class="btn tale-more-link" href="{{ cbase }}/sessions/{{ item.s.id }}">Full Tale &amp; Stats →</a>{% endif %}{% endmacro %}
-{% macro scroll(item, listen=False, roll_up=False) %}{# A session's recap on its scroll: the rods, the parchment with its date and title, Listen and Full Tale & Stats, the DM's note. The same header on both tabs: on All sessions (roll_up) the open session's row hides and its scroll carries the title, with Roll up ▴ in its corner (docs/mockups/story-page/ Sessions board; Brett, Nov 10) #}
+{% macro tale_link(item) %}{% if item.more %}<a class="btn tale-more-link" href="{{ cbase }}/sessions/{{ item.s.id }}">The full tale →</a>{% endif %}{% endmacro %}
+{% macro scroll(item, listen=False, roll_up=False) %}{# A session's recap on its scroll: the rods, the parchment with its date and title, Listen and The full tale (one name everywhere: the UI review, Nov 16), the DM's note. The same header on both tabs: on All sessions (roll_up) the open session's row hides and its scroll carries the title, with Roll up ▴ in its corner (docs/mockups/story-page/ Sessions board; Brett, Nov 10) #}
 <div class="scroll">
   <div class="story">
     {% if roll_up %}<button type="button" class="tale-roll-up" data-roll-up aria-expanded="true" aria-label="Roll up {{ item.s.title or item.label }}">Roll up ▴</button>{% endif %}

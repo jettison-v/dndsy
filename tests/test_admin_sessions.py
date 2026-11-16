@@ -192,7 +192,7 @@ def test_double_accept_is_refused(client, db):
 def test_public_pages_show_only_published(client, db):
     s = drafted_session(db)
     import_bundle(db, {"campaign": {"slug": "main", "name": "Main"}, "entities": [{"kind": "quest", "name": "Reach the library", "quest_open": True}]})
-    assert "Nothing published yet" in client.get("/").text
+    assert "No sessions published yet" in client.get("/").text  # (the empty state: the UI review)
     client.post(f"/manage/sessions/{s.id}/publish", headers=HX)
     home = client.get("/").text
     assert "The party fought devils." in home and "Big fight." in home and "Reach the library" in home

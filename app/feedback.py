@@ -453,8 +453,9 @@ SENDER_SAYS_KIND = {"idea": {"planned": ("On the Roadmap", "It's on askdnd's Roa
                     "question": {"planned": ("With Claude", "Claude has it and will answer it with the next batch."),
                                  "done": ("Answered", "Claude answered it.")}}
 # each kind's steps on its sender's status track (Your notes), and how far each status reaches along them
-STEPS = {"broken": ("Sent", "Approved", "Planned", "Fixed"), "idea": ("Sent", "Approved", "On the Roadmap", "Built"),
-         "question": ("Sent", "Approved", "Answered")}
+# (named for the states its sender sees, With Claude not "Approved": one set of words, the UI review, Nov 16)
+STEPS = {"broken": ("Sent", "With Claude", "Planned", "Fixed"), "idea": ("Sent", "With Claude", "On the Roadmap", "Built"),
+         "question": ("Sent", "With Claude", "Answered")}
 REACHED = {"question": {"review": 0, "new": 1, "question": 1, "planned": 1, "done": 2}}
 
 

@@ -7,7 +7,7 @@ When Brett says "review the feedback", pull the queue from askdnd, then answer o
     uv run python scripts/feedback.py ask 42 "Do you mean …?"    # a question for Brett, on the note
     uv run python scripts/feedback.py set 42 planned             # new | question | planned | done | deleted
     uv run python scripts/feedback.py set 42 done --pr https://github.com/jettison-v/dndsy/pull/190
-    uv run python scripts/feedback.py tell 42 "Fixed: …"     # a reply its sender sees on Your feedback
+    uv run python scripts/feedback.py tell 42 "Rest stays on one line now …"   # a reply its sender sees on Notes you sent (not starting with its status: the note shows that)
     uv run python scripts/feedback.py kind 42 idea "It's a new feature, not a fix"   # what it is, and why
     uv run python scripts/feedback.py title 42 "Change forms beside Change spells"     # a short title, when taking it up
     uv run python scripts/feedback.py pull --kind none            # notes sent before kinds, to sort once

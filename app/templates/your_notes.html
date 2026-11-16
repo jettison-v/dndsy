@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_lists.html" import search_box, filters_above %}
+{% from "_lists.html" import search_box, filters_above, empty_state %}
 {% from "_feedback_pics.html" import pics_field, added_pics, sent_pics %}
 {% block title %}Notes you sent · askdnd{% endblock %}
 {# Your notes (app/your_notes.py; Brett, Nov 7: docs/mockups/your-notes/ Layout A and a badge, then
@@ -35,14 +35,14 @@
          data-name="{{ [n.title, n.text, n.where, n.answer.text if n.answer else '', n.says] | join(' ') | lower }}"
          data-sort-newest="{{ n.rank_newest }}" data-sort-oldest="{{ n.rank_oldest }}" data-group-newest="{{ 'Open' if n.open else 'Done' }}" data-group-oldest="{{ 'Open' if n.open else 'Done' }}"
          data-f='{{ {"status": n.label, "new": "New to you" if n.new else "", "from": n.from, "what": n.what or ""} | tojson }}'>
-        <span class="st-dot st-{{ n.dot }}" title="{{ n.label }}" aria-hidden="true"></span>
+        <span class="st-dot st-{{ n.dot }}" title="{{ n.label }}" role="img" aria-label="{{ n.label }}"></span>{# (the status, now its row's only mention of it) #}
         <span class="nt-title">{{ n.title }}{% if n.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</span>
         <span class="nt-date">{{ n.at.strftime("%b %-d") }}</span>
-        <span class="nt-sum">{{ n.label }}: {{ n.answer.text if n.answer else n.says }}</span>
+        <span class="nt-sum">{{ n.answer.text if n.answer else n.says }}</span>{# (its dot says where it stands; a reply often starts with it too: "Fixed: Fixed." was the UI review's) #}
       </a>
       {% endfor %}
     </div>
-    {% if not notes %}<p class="muted">Nothing yet.</p>{% endif %}
+    {% if not notes %}{{ empty_state("Nothing sent yet.") }}{% endif %}
     <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
   </aside>
   <div class="notes-read">
@@ -67,7 +67,7 @@
         </form></details>{% endif %}
     </article>
     {% else %}
-    <article class="reader-article"><p class="muted">Nothing here yet.</p></article>
+    <article class="reader-article">{{ empty_state("Pick a note to read it here.") }}</article>
     {% endfor %}
   </div>
 </div>
