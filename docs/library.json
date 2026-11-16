@@ -1062,6 +1062,15 @@
   "link": "https://claude.ai/artifact/6e1EiM8AbvBWNKpeuY72PL"
  },
  {
+  "title": "Changing Spells and Forms",
+  "kind": "design",
+  "status": "Waiting on you",
+  "date": "Nov 15",
+  "what": "Prepare spells with cantrips folded in, two spellcasting classes (a tab each, or one list), a Wizard's spellbook and Wild Shape known forms in the same modal; every list under its own 2024 rule, checked against the Player's Handbook; four choices.",
+  "source": "docs/mockups/changing-spells/",
+  "link": "https://claude.ai/artifact/DfDA7ucJ5YdjrFRm88Uj3J"
+ },
+ {
   "title": "Compare",
   "kind": "design",
   "status": "Chose both",

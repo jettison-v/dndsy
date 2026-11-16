@@ -133,10 +133,13 @@ def test_cast_spends_through_the_window_and_undo_takes_it_back(chrome, server):
     wait_tone(page, "step", timeout=45000)
     page.click('.res-row .res-go >> nth=0')
     page.locator(".roll-win [data-use-go]").first.click(timeout=5000)
-    card = page.locator("#cards > .card", has_text="left")
+    card = page.locator("#cards > .card:has(.card-act)").first  # (the cast's card: it has Undo)
     card.wait_for(timeout=5000)
+    card.evaluate("el => { window.__castCard = el; }")
     card.locator(".card-act").click()
-    page.locator("#cards > .card", has_text="left").nth(1).wait_for(timeout=5000)
+    # Undo's own card: any card but the one closed. (Not the second card on screen: a closed card leaves 250 ms later,
+    # and on a slow machine Undo answers after that, so there was only ever one; GitHub, Nov 15.)
+    page.wait_for_function("[...document.querySelectorAll('#cards > .card:not(.out)')].some(c => c !== window.__castCard)", timeout=10000)
 
 
 def test_minus_on_hit_points_is_click_type_enter(chrome, server):
