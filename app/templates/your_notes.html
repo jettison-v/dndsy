@@ -35,7 +35,7 @@
          data-name="{{ [n.title, n.text, n.where, n.answer.text if n.answer else '', n.says] | join(' ') | lower }}"
          data-sort-newest="{{ n.rank_newest }}" data-sort-oldest="{{ n.rank_oldest }}" data-group-newest="{{ 'Open' if n.open else 'Done' }}" data-group-oldest="{{ 'Open' if n.open else 'Done' }}"
          data-f='{{ {"status": n.label, "new": "New to you" if n.new else "", "from": n.from, "what": n.what or ""} | tojson }}'>
-        <span class="st-dot st-{{ n.dot }}" title="{{ n.label }}" aria-hidden="true"></span>
+        <span class="st-dot st-{{ n.dot }}" title="{{ n.label }}" role="img" aria-label="{{ n.label }}"></span>{# (the status, now its row's only mention of it) #}
         <span class="nt-title">{{ n.title }}{% if n.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</span>
         <span class="nt-date">{{ n.at.strftime("%b %-d") }}</span>
         <span class="nt-sum">{{ n.answer.text if n.answer else n.says }}</span>{# (its dot says where it stands; a reply often starts with it too: "Fixed: Fixed." was the UI review's) #}
