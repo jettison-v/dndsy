@@ -58,3 +58,14 @@ def test_a_new_entry_elsewhere_is_still_a_change():
     before["inventory"] = [{"id": 1, "quantity": 1}]
     after["inventory"] = [{"id": 1, "quantity": 1}, {"id": 2, "quantity": 1}]
     assert [p for p, _, _ in rt.steady(rt.changes(before, after))] == [".inventory{+}"]
+
+
+def test_a_creature_back_as_a_new_row_is_back_as_found():
+    """Nov 15 (wild-shape-forms on Levi's seat): a form let go of and learned again is a new row with a new id; the same
+    form is known, so the sheet is back as found. Another form in its place is still a change."""
+    form = lambda row, monster, name: {"id": row, "groupId": 13, "name": None, "definition": {"id": monster, "name": name}}
+    before = {"creatures": [form(1, 4775801, "Spider"), form(2, 5195167, "Polar Bear")]}
+    again = {"creatures": [form(2, 5195167, "Polar Bear"), form(9, 4775801, "Spider")]}
+    assert not rt.steady(rt.changes(before, again))
+    other = {"creatures": [form(2, 5195167, "Polar Bear"), form(9, 5194910, "Dire Wolf")]}
+    assert sorted(p for p, _, _ in rt.steady(rt.changes(before, other))) == [".creatures{+}", ".creatures{-}"]

@@ -335,7 +335,10 @@ def record(sheet: Page) -> dict:
 def changes(before, after, path: str = "") -> list[tuple[str, object, object]]:
     """Every value that differs between two records, leaving out what D&D Beyond works out or stamps by itself (and the
     lists of what a choice could be, which change when D&D Beyond adds content: Nov 4, a feat's spell list; what's
-    chosen is still compared)."""
+    chosen is still compared). A creature is compared by what it is: one let go of and learned again (a Wild Shape form,
+    Nov 15) comes back as a new row, its id D&D Beyond's own."""
+    if path == ".creatures" and isinstance(before, list) and isinstance(after, list):
+        before, after = ([{k: v for k, v in x.items() if k != "id"} if isinstance(x, dict) else x for x in xs] for xs in (before, after))
     if isinstance(before, dict) and isinstance(after, dict):
         return [c for k in sorted(set(before) | set(after))
                 if k not in ("dateModified", "providedFrom", "readonlyUrl", "definition", "choiceDefinitions", "optionIds")
