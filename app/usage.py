@@ -274,20 +274,29 @@ def _left_out(email: str) -> bool:
 # ------------------------------------------------------------------ Admin › Features
 
 def chart(daily: list[int], releases: list[tuple[int, str]], start, w: int = 640, h: int = 190) -> dict:
-    """One line of uses by day (the admin blue), the days marked where a deploy first ran; each day a hover target."""
+    """One line of uses by day (the admin blue), the days marked where a deploy first ran; each day a hover target.
+    Its words (`labels`) are the page's own text laid over the drawing, at where each sits as a share of it, so they keep
+    the page's size at every width (the UI review, Nov 16: drawn inside, they grew to 19px at 1440 and shrank to 4px)."""
     from datetime import timedelta
 
-    left, right, top, bottom = 36, 10, 14, 24
+    left, right, top, bottom = 36, 10, 14, 8  # (the dates go under the drawing, in the page's text)
     n, peak = len(daily), max(daily or [0]) or 1
     peak = int(peak * 1.1) + 1
     x = lambda i: left + (w - left - right) * (i / max(1, n - 1))
     y = lambda v: top + (h - top - bottom) * (1 - v / peak)
     line = " ".join(f"{'M' if i == 0 else 'L'}{x(i):.1f} {y(v):.1f}" for i, v in enumerate(daily))
+
+    def word(at_x: float, at_y: float, text: str, anchor: str) -> dict:
+        return {"left": round(100 * at_x / w, 2), "top": round(100 * at_y / h, 2), "text": text, "anchor": anchor}
+
     return {"w": w, "h": h, "line": line, "area": f"{line} L{x(n - 1):.1f} {h - bottom} L{left} {h - bottom} Z",
             "ticks": [(round(y(t), 1), t) for t in (0, peak // 2, peak)], "left": left, "right": w - right, "base": h - bottom, "top": top,
             "days": [{"x": round(x(i), 1), "y": round(y(v), 1), "n": v, "on": (start + timedelta(days=i)).strftime("%a %b %-d")} for i, v in enumerate(daily)],
             "step": round((w - left - right) / max(1, n - 1), 1),
-            "releases": [{"x": round(x(i), 1), "label": f"Deploy {label}", "end": x(i) > w - 120} for i, label in releases]}
+            "releases": [{"x": round(x(i), 1), "label": f"Deploy {label}", "end": x(i) > w - 120} for i, label in releases],
+            "labels": [word(left - 6, y(t), str(t), "end") for t in (0, peak // 2, peak)]
+            + [word(x(i) + (-4 if x(i) > w - 120 else 4), top + 6, f"Deploy {said}", "end" if x(i) > w - 120 else "start") for i, said in releases],
+            "axis": {"left": round(100 * left / w, 2), "right": round(100 * right / w, 2)}}
 
 
 from fastapi import APIRouter, Depends, Request

@@ -318,3 +318,20 @@ def test_an_unarmed_strike_lists_damage_grapple_and_shove_with_its_dc(player, db
     key = next(o["key"] for o in v.options(characters.character_summary(cole), set()) if o["name"] == "Unarmed Strike")
     panel = player.get(f"/characters/{cole.id}/detail", params={"ref": key}).text
     assert "Choose one each time" in panel and "<dt>Grapple</dt>" in panel and "<dt>Shove</dt>" in panel and "<b>DC " in panel
+
+
+def test_an_items_row_on_sheet_never_says_its_description_twice(player, db):
+    """The UI review, Nov 16: Sheet › Actions gave an item its summary under its name and the summary's first sentence
+    again in the right-hand column, which ran its name line out of room and cut its tags to "…". That column carries
+    game facts (which kind it is, when its charges come back) or nothing."""
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    page = player.get(f"/characters/{cole.id}").text
+    rows = [r for r in (r.split("</div>")[0] for r in page.split('data-ref="item:')[1:]) if 'class="ri-mech">' in r]  # (Sheet's rows)
+    assert rows, "Cole's items are on Sheet › Actions"
+    for row in rows:
+        mech = row.split('class="ri-mech">')[1].split("</span>")[0].strip()
+        what = row.split('class="ri-what">')[1].split("</span>")[0] if 'class="ri-what">' in row else ""
+        assert not (mech and what.startswith(mech.rstrip("…"))), f"the summary twice: {mech!r}"

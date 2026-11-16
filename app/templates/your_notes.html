@@ -83,13 +83,13 @@
 
   <section id="t-story" class="notes-tab"{% if tab != "story" %} hidden{% endif %}>
     <div class="notes-who"><span class="notes-ico dm" aria-hidden="true">DM</span><p>The DM reads these and decides what goes into the campaign: <b>Added</b> (on the page as you wrote it), <b>Used</b> (worked into a description or recap) or <b>Not used</b>, sometimes with a word to you. Send one with <b>Suggest a correction or addition</b> under a recap, or <b>What the table knows</b> in an entry's side panel.</p></div>
-    {{ note_reader("story", lists.story, "Search your notes and the DM's answers", "About", ["Waiting", "Added", "Used", "Not used"]) }}
+    {{ note_reader("story", lists.story, "Search your notes", "About", ["Waiting", "Added", "Used", "Not used"]) }}
   </section>
 
   {% if askdnd %}
   <section id="t-askdnd" class="notes-tab"{% if tab != "askdnd" %} hidden{% endif %}>
     <div class="notes-who"><span class="notes-ico app" aria-hidden="true">a</span><p>Brett reads these first, then Claude, who fixes askdnd: <b>Waiting for an admin</b>, then <b>With Claude</b>, <b>Planned</b> and <b>Fixed</b>; <b>Closed</b> if askdnd won't change it for now. Press <kbd>\</kbd> on any page to send one about it.</p></div>
-    {{ note_reader("askdnd", lists.askdnd, "Search your notes and the answers", "Sent from", ["Waiting for an admin", "With Claude", "Planned", "Fixed", "Closed"]) }}
+    {{ note_reader("askdnd", lists.askdnd, "Search your notes", "Sent from", ["Waiting for an admin", "With Claude", "Planned", "Fixed", "Closed"]) }}
   </section>
   {% endif %}
 </main>

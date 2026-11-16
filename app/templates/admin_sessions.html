@@ -29,13 +29,13 @@
   {% if waiting %}<p class="flash" id="from-the-table">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} waiting for your OK. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
 
   <section class="section">
-    <div class="table-scroll"><table class="list">
+    <div class="table-scroll"><table class="list stacked">
       <tr><th>Session</th><th>Status</th><th>Last draft</th><th></th></tr>
       {% for r in rows %}
       <tr>
         <td><a href="{{ cbase }}/manage/sessions/{{ r.s.id }}">{{ r.label }}</a>{% if r.s.title %}<div class="note">{{ r.s.title }}</div>{% endif %}</td>
         <td><span class="tag {{ {'draft': 'draft', 'published': 'published', 'edited': 'edited', 'drafting': 'working'}.get(r.status, '') }}">{{ {'draft': 'Draft', 'published': 'Published', 'edited': 'Edited since publishing', 'drafting': 'Drafting…', 'no draft': 'Not drafted', 'read': 'Recap to draft'}[r.status] }}</span></td>
-        <td class="note">{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="tag error">Failed</span>{% elif r.last_run.status == "done" %}{{ "%.0f" | format(r.last_run.cost_usd * 100) }}¢{% endif %}{% endif %}</td>
+        <td class="note" data-label="Last draft">{% if r.last_run %}{% if r.last_run.status == "error" %}<span class="tag error">Failed</span>{% elif r.last_run.status == "done" %}{{ "%.0f" | format(r.last_run.cost_usd * 100) }}¢{% endif %}{% endif %}</td>
         <td class="end">
           {% if r.has_notes and r.status == "no draft" and not running %}
           <form method="post" action="{{ cbase }}/manage/sessions/draft"><input type="hidden" name="session_ids" value="{{ r.s.id }}"><button type="submit" class="btn" data-busy="Starting…">Draft from notes</button></form>

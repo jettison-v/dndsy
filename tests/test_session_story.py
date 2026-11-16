@@ -498,6 +498,8 @@ def test_the_review_is_a_wizard_that_opens_on_what_is_left_and_keeps_its_place(d
     assert 'id="t-awards" role="tabpanel">' in r.text and 'id="t-recap" role="tabpanel" hidden' in r.text
     page = dm.get(f"/c/main/manage/sessions/{story.id}?tab=numbers").text
     assert 'id="t-numbers" role="tabpanel">' in page and "That's everything" in page
+    moments = page.split('data-tab="t-moments"')[1].split("</button>")[0]  # (the UI review, Nov 16: grey "54" beside the checklist's ✓)
+    assert 'class="step-done"' in moments, "a step with nothing left is done, as the checklist says: a ✓ and how many"
     assert dm.get(f"/c/main/manage/sessions/{story.id}?tab=nope").status_code == 200
 
 

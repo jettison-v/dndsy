@@ -6,6 +6,9 @@
 // - "overlaps": two items in the menu bar sit on top of each other, or something placed on top (a badge, a corner
 //   button) covers text beside it
 // - "zooms", on a touch screen only: a box you type in with text under 16px, which makes an iPhone zoom the page in
+// - "breaks a word": a heading or a bold name wrapped inside a word rather than between words
+// - "cuts its hint": a box's placeholder longer than the box
+// - "unreadable": words drawn in a scaling picture (an SVG's <text>) under 9px
 // - "misaligned", only when asked ({rows: true}): rows of one list whose small last item (an icon, a ↗) doesn't line up
 //   with the rest. scripts/layout_sweep.py asks; the tests don't yet, since it finds rows on the Character page that
 //   wrap differently on a phone (Nov 2), a design question before it can be a rule.
@@ -82,6 +85,42 @@ ask => {
       for (const r of range.getClientRects()) if (r.width > 1) tops.push(r.top);
     }
     if (tops.length && Math.max(...tops) - Math.min(...tops) >= line * 0.8) add('wraps', el, text);
+  }
+
+  // A title or a name broken inside a word (the UI review, Nov 16: a Manage title one letter per line beside its
+  // button; a seat's name on Table, a Dice tuning knob's): its words wrap between them, never within one, unless the
+  // word alone is wider than the room around it (a long email or web address breaks on purpose)
+  for (const el of document.querySelectorAll('main h1, main h2, main h3, main b, .peek h1, .peek h2, .peek h3, .peek b')) {
+    if (!el.getBoundingClientRect().height || getComputedStyle(el).visibility === 'hidden') continue;  // (squeezed to no width counts: that's the bug)
+    const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      let broken = '';
+      for (const m of n.textContent.matchAll(/[^\s\-–—/]+/g)) {  // (a word, as a line may break after a hyphen or slash)
+        const range = document.createRange(); range.setStart(n, m.index); range.setEnd(n, m.index + m[0].length);
+        const rects = [...range.getClientRects()].filter(r => r.width > 1), tops = rects.map(r => Math.round(r.top));
+        const room = el.parentElement ? el.parentElement.clientWidth : 0, em = parseFloat(getComputedStyle(el).fontSize);
+        const wide = room >= 3 * em && rects.reduce((w, r) => w + r.width, 0) > room;  // (room squeezed to a few letters is the bug)
+        if (tops.length > 1 && Math.max(...tops) - Math.min(...tops) > 2 && !wide) { broken = m[0]; break; }
+      }
+      if (broken) { add('breaks a word', el, `"${broken}" runs over two lines: ${el.textContent}`); break; }
+    }
+  }
+  // A box's hint cut off mid-word (the UI review, Nov 16: "Search people, places and thing"): its placeholder fits
+  const ruler = document.createElement('canvas').getContext('2d');
+  for (const el of document.querySelectorAll('input[placeholder], textarea[placeholder]')) {
+    if (!shown(el) || el.value || !el.placeholder) continue;
+    const cs = getComputedStyle(el);
+    ruler.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const width = ruler.measureText(el.placeholder).width;
+    if (el.tagName === 'INPUT' && width > room + 1) add('cuts its hint', el, `"${el.placeholder}" needs ${Math.round(width)}px of ${Math.round(room)}px`);
+  }
+  // Words drawn inside a picture that scales with the page (the UI review, Nov 16: the Features chart's labels at 4px
+  // on a phone): too small to read
+  for (const el of document.querySelectorAll('svg text')) {
+    if (!shown(el) || !el.textContent.trim()) continue;
+    const ctm = el.getScreenCTM(), px = parseFloat(getComputedStyle(el).fontSize) * (ctm ? Math.hypot(ctm.a, ctm.b) : 1);
+    if (px < 9) add('unreadable', el, `${px.toFixed(1)}px: ${el.textContent}`);
   }
 
   // The menu bar: nothing sits on top of anything else

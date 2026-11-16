@@ -38,14 +38,14 @@
         <p>Neither is open: askdnd refuses a change and says how to reach the sheet. One already on its way waits (the wait timer below), then is listed to make by hand.</p>
         <p class="note">For example: the player's sheet is closed and the DM is on an iPad; or a test copy.</p></div>
     </div>
-    <div class="table-scroll"><table class="list br-mx">
+    <div class="table-scroll"><table class="list stacked br-mx">
       <thead><tr><th>Change</th><th><span class="br-dot br-dot-own" aria-hidden="true"></span>Own sheet</th><th><span class="br-dot br-dot-dm" aria-hidden="true"></span>Through the DM</th><th><span class="br-dot br-dot-none" aria-hidden="true"></span>Neither</th></tr></thead>
       <tbody>
         {% for label, kinds, runs, dm in connections %}
-        <tr><td>{{ label }}</td><td>{{ mark("yes") }}</td><td>{{ mark(dm) }}</td><td>{{ mark("no") }}</td></tr>
+        <tr><td>{{ label }}</td><td data-label="Own sheet">{{ mark("yes") }}</td><td data-label="Through the DM">{{ mark(dm) }}</td><td data-label="Neither">{{ mark("no") }}</td></tr>
         {% endfor %}
-        <tr class="br-mx-other"><td>Rolls into D&amp;D Beyond's Game Log</td><td>{{ mark("yes") }}</td><td>{{ mark("no", "Table rolls only") }}</td><td>{{ mark("no", "Table rolls only") }}</td></tr>
-        <tr><td>Hears changes made on D&amp;D Beyond</td><td>{{ mark("yes", "as it saves") }}</td><td>{{ mark("some", "within a minute") }}</td><td>{{ mark("some", "when a page asks") }}</td></tr>
+        <tr class="br-mx-other"><td>Rolls into D&amp;D Beyond's Game Log</td><td data-label="Own sheet">{{ mark("yes") }}</td><td data-label="Through the DM">{{ mark("no", "Table rolls only") }}</td><td data-label="Neither">{{ mark("no", "Table rolls only") }}</td></tr>
+        <tr><td>Hears changes made on D&amp;D Beyond</td><td data-label="Own sheet">{{ mark("yes", "as it saves") }}</td><td data-label="Through the DM">{{ mark("some", "within a minute") }}</td><td data-label="Neither">{{ mark("some", "when a page asks") }}</td></tr>
       </tbody>
     </table></div>
     <p class="note">Wild Shape's form itself is askdnd's own, so it changes with neither; its use and Temporary Hit Points need the sheet. Through the DM, D&amp;D Beyond hears a change as it saves when the DM has that sheet open.</p>

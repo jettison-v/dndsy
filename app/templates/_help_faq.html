@@ -2,7 +2,7 @@
 {% macro q(question, id="") %}<details class="faq"{% if id %} id="{{ id }}"{% endif %}><summary>{{ question }}</summary><div class="faq-a">{{ caller() }}</div></details>{% endmacro %}
   {# Search: shows only the answers with every word typed, opened (app.js) #}
   <div class="ls-search faq-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    <input type="search" id="faq-search" placeholder="Search the FAQ: pin, Wild Shape, backups…" aria-label="Search the FAQ" autocomplete="off"></div>
+    <input type="search" id="faq-search" placeholder="Search the FAQ" aria-label="Search the FAQ" autocomplete="off"></div>
   <p class="muted" id="faq-none" hidden>No answers mention that. Try another word, or ask the admin.</p>
 
   <section class="section">

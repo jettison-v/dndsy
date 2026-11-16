@@ -201,8 +201,107 @@ def test_manage_pages_hold_together_at_every_width(people, server, long_names, t
     admin = people("admin")
     review = told_session.replace("/sessions/", "/manage/sessions/")  # (the review wizard: every step's tab is checked)
     found = check(admin, server, PAGES["admin"] + (review,))
+    # The review's seven steps fit a laptop's column, with Table rolls open beside it and closed (the UI review, Nov 16:
+    # "6 Award…" at 1440)
+    for width, rolls in ((1000, "closed"), (1280, "open"), (1280, "closed"), (1440, "open"), (1440, "closed"), (1512, "open")):
+        admin.page.set_viewport_size({"width": width, "height": 900})
+        admin.open(review)
+        if admin.page.evaluate("document.body.classList.contains('rolls-closed')") != (rolls == "closed") and admin.page.locator(".rs-edge:visible, .rs-toggle:visible").count():
+            admin.page.locator(".rs-edge:visible, .rs-toggle:visible").first.click()
+            admin.page.wait_for_timeout(300)
+        cut = admin.page.evaluate("(() => { const t = document.querySelector('.review-steps'); return t.scrollWidth - t.clientWidth; })()")
+        if cut > 1:
+            found.append(f"{review} at {width}px, Table rolls {rolls} · the review's steps run {cut}px past their bar")
     assert not found, "\n".join(found)
     assert admin.errors == []
+
+
+def test_the_dms_manage_pages_hold_together_at_every_width(people, server, long_names, told_session):
+    """The UI review, Nov 16: the DM sees Manage without ⚙ Admin, and the room kept for it broke titles one letter per
+    line on a phone and pushed the title's button in on a laptop. The same pages as the DM, who has no way across."""
+    dm = people("dm")
+    review = told_session.replace("/sessions/", "/manage/sessions/")
+    found = check(dm, server, tuple(p for p in PAGES["admin"] if p.startswith("/c/")) + (review,))
+    for width in (375, 1280):
+        dm.page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+        dm.open("/c/main/manage/sessions")
+        assert dm.page.locator(".manage-cross").count() == 0, "a DM has no way to askdnd admin"
+        room = dm.page.evaluate("parseFloat(getComputedStyle(document.querySelector('.title-row')).paddingRight)")
+        if room:
+            found.append(f"Sessions at {width}px · the title row keeps {room}px for a link that isn't there")
+    assert not found, "\n".join(found)
+    assert dm.errors == []
+
+
+def test_the_sheets_lists_line_up_at_every_width(people, server):
+    """The UI review, Nov 16: Sheet's Features, Spells and Wild Shape rows ended their marks in different places once
+    their columns folded (a row's words decided where it wrapped). One template per list: the layout check's rows."""
+    player = people("player")
+    found = []
+    for width in WIDTHS:
+        player.page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+        player.open(f"/characters/{server['cole']}")
+        for tab in ("t-features", "t-spells", "t-forms", "t-items"):
+            button = player.page.locator(f'main [data-tab="{tab}"]:visible')
+            if not button.count():
+                continue
+            button.first.click()
+            found += [f"Sheet › {tab} at {width}px · {p['kind']}: {p['where']} ({p['detail']})"
+                      for p in player.page.evaluate(CHECK, {"rows": True}) if p["kind"] == "misaligned"]
+    assert not found, "\n".join(found)
+
+
+def _pills() -> dict:
+    """The Live pill in each of its states, drawn by its own template (tn: what app/live.py hands it)."""
+    from types import SimpleNamespace as N
+
+    from app.templating import templates
+
+    pill = templates.get_template("_live_pill.html")
+    me = {"mine": True, "connects": True, "by_hand": 0, "step": False, "via": False, "failed": False, "dropped": False, "name": "Coleridge Thistlewood",
+          "fetched_at": None, "in_game": True, "ddb_id": 1, "step_until": 0}
+    party = dict(me, mine=False, connects=False, name="the party")
+
+    def draw(p, **tn):  # (a player's own pill: their sheet is theirs to connect, so the bridge is wanted)
+        tn = {"pill": N(**p), "focus": None, "mine": N(**p) if p["mine"] else None, "connectable": 1, "connected": 0, "via": 0,
+              "playing": False, "dm": False, "every": 60, "party_pill": False, **tn}
+        return pill.render(tn=N(**tn), fight_now=lambda: None)
+
+    return {"connected": draw({**me, "step": True}), "via the DM": draw({**me, "via": True}), "not connected": draw(me),
+            "open your sheet": draw(me, playing=True), "not sent": draw({**me, "by_hand": 1}), "not answering": draw({**me, "failed": True}),
+            "party connected": draw(party, connectable=4, connected=4, dm=True), "party via": draw(party, connectable=4, connected=2, via=1, dm=True),
+            "party some": draw(party, connectable=4, connected=2, dm=True), "party none": draw(party, connectable=4, dm=True)}
+
+
+def test_the_live_pill_says_its_state_at_every_width(people, server):
+    """The UI review, Nov 16: under 900px an old rule hid every state's words, so Not connected and None connected were a
+    bare dot like Connected; and without the bridge a connected pill showed "Add the bridge" in a dot's width, 35px
+    out of its box. Every state but connected says something at every width, one label at a time, inside the pill."""
+    player = people("player")
+    page = player.page
+    found = []
+    for width in WIDTHS:
+        page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+        player.open("/party")
+        for bridge in (True, False):
+            page.evaluate("b => document.body.classList.toggle('no-bridge', !b)", bridge)
+            for state, html in _pills().items():
+                seen = page.evaluate("""html => {
+                  document.getElementById('live-pill').outerHTML = html;
+                  const p = document.getElementById('live-pill'), on = e => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden';
+                  const labels = [...p.querySelectorAll('.lw-long, .lw-short, .live-noext')].filter(on);
+                  return { dot: p.classList.contains('dot'), words: labels.map(l => l.textContent.trim()).filter(Boolean),
+                           spills: p.scrollWidth > p.clientWidth + 1 };
+                }""", html)
+                where = f"{state} at {width}px{'' if bridge else ', no bridge'}"
+                if not seen["dot"] and not seen["words"]:
+                    found.append(f"{where}: a bare dot")
+                if len(seen["words"]) > 1:
+                    found.append(f"{where}: two labels at once, {seen['words']}")
+                if seen["spills"]:
+                    found.append(f"{where}: its words run out of the pill")
+                found += problems(page, where)
+    assert not found, "\n".join(found)
 
 
 

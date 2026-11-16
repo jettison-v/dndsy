@@ -21,7 +21,7 @@
   {% endif %}
   {% if can_pick and show_picks %}{# Free-text reminders, not tied to anything on the sheet #}
   <form class="forget-add" hx-post="/characters/{{ c.id }}/reminders" hx-swap="none" data-reset-after>
-    <input type="text" name="text" maxlength="500" placeholder="Write a reminder: Ask the DM about the map" aria-label="New reminder" required>
+    <input type="text" name="text" maxlength="500" placeholder="Write a reminder" aria-label="New reminder" required>
     <button class="btn small" type="submit">Add</button>
   </form>{% endif %}
 </div>

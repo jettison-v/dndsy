@@ -49,6 +49,7 @@
   --r-xs: 3px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
   /* Controls (search box, selects, buttons): 32px tall on desktop, 44px on phones (Brett, 2026-10-22) */
   --control-h: 32px; --control-h-sm: 26px; --chip-h: 28px; --bar-h: 36px;  /* the last is everything in the menu bar */
+  --manage-cross-w: 104px;  /* Manage's way to the other half (.manage-cross), and the room kept for it */
   --selected-bg: #2a3550;  /* a chip or view that's on: blue on a dark tint */
   /* Panels and modals: side panel (also inside a modal) · regular modal (forms) · large (a Wild Shape form, combos,
      leveling, the Spell Book) */
@@ -172,6 +173,7 @@ body.bridge-elsewhere .bridge-other { display: block; font-size: var(--fs-sm); }
 body.bridge-elsewhere .bridge-steps, body.bridge-elsewhere .bridge-small { display: none; }
 body.no-bridge:not(.bridge-elsewhere) .live-noext-box ~ .live-actions .btn.primary { background: var(--surface-2); border-color: var(--line); color: var(--text); font-weight: 500; }  /* one main action: adding the bridge */
 body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { display: none; }
+body.no-bridge:not(.bridge-elsewhere) .live-pill.dot[data-wants-bridge] { width: auto; padding: 0 12px; }  /* (connected elsewhere: the dot's own width can't hold "Add the bridge", which spilled 35px; the UI review, Nov 16) */
 /* Its colour (DM Backup, Brett 2026-11-02): green your own sheet, yellow through the DM, red can't while the table plays
    or something to make by hand, grey no one's connected; warn: couldn't refresh */
 .live-pill.warn .live-dot { background: var(--amber); }
@@ -206,8 +208,8 @@ body.no-bridge:not(.bridge-elsewhere) .conn-band .cb-tx.cb-bridge { display: blo
 .live-pop { padding: 14px 16px; display: grid; gap: 12px; font-size: var(--fs-sm); }
 /* The list (Brett, 2026-11-02, docs/mockups/live-window/ Option B): every sheet two lines, its name and then how it's
    connected, so no row has to line up with another but for its ↗; the whole row opens the sheet on D&D Beyond */
-.live-list { display: grid; gap: 2px; }
-body.no-bridge .live-noext-box + .live-list { border-top: 1px solid var(--line); padding-top: 10px; }  /* under the steps to add the bridge */
+.live-list { display: grid; gap: 2px; padding-inline: 8px; margin-inline: -8px; }  /* (room for its rows' hover, which reach 8px past the words: inside its own box, never spilling out; the UI review, Nov 16) */
+body.no-bridge .live-noext-box:has(+ .live-list) { padding-bottom: 12px; border-bottom: 1px solid var(--line); margin-bottom: -2px; }  /* the line between the steps to add the bridge and the list, where it was */
 .live-head { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); margin-bottom: 2px; }
 .live-row, .menu a.live-row { display: grid; grid-template-columns: minmax(0, 1fr) 28px; gap: 10px; align-items: center; margin: 0 -8px; padding: 6px 8px; border-radius: var(--r-md); color: inherit; text-decoration: none; }
 .live-who { display: grid; gap: 1px; min-width: 0; }
@@ -648,6 +650,17 @@ body.tale-playing { overflow: hidden; }
 .night-source { margin: var(--sp-3) 0 0; }
 .award-nominees { max-height: none; margin-top: var(--sp-2); }  /* (the review page: pick who an award goes to) */
 /* The review as a wizard (Brett, Nov 7): the tab bar's tabs numbered in order, a tick on a finished step, Next at each one's end */
+/* Each step two lines (the UI review, Nov 16: one line cut the seventh off at 1440px): its number and short label, then
+   what's left in red or a green ✓ with how many, the checklist's one meaning of done */
+.tabbar.review-steps { container: steps / inline-size; }
+.tabbar.review-steps button { position: relative; display: grid; justify-items: center; flex: 1 0 auto; padding: 6px; font-size: var(--fs-sm); line-height: 1.3; }
+/* Narrower than all seven (Table rolls open beside a laptop's page): each step its number and state, the open one its
+   name too; the names are still read out, and the checklist beside names them all */
+@container steps (max-width: 600px) {
+  .review-steps button:not([aria-selected=true]) .step-name { position: absolute; width: 1px; height: 1px; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .review-steps button:not([aria-selected=true]) .step-n { margin-right: 0; }
+}
+.review-steps .step-st { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .review-steps .step-n { color: var(--muted); font-weight: 700; margin-right: var(--sp-1); font-variant-numeric: tabular-nums; }
 .review-steps [aria-selected=true] .step-n { color: var(--red); }
 .review-steps .step-done { color: var(--green); }
@@ -790,6 +803,19 @@ table.list th { text-align: left; font-size: var(--fs-sm); font-weight: 600; col
 table.list td { padding: 14px 10px; border-top: 1px solid var(--line); vertical-align: top; }
 table.list td a { color: var(--text); font-weight: 500; text-decoration: none; }
 table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
+/* A record table on a phone (table.list.stacked; the UI review, Nov 16: columns ran off the screen inside their scroller):
+   each row a block, its first cell whole, the rest after it in a wrapping line, each named by its data-label when the
+   value alone doesn't say what it is, the buttons last */
+@media (max-width: 640px) {
+  table.list.stacked, table.list.stacked tbody { display: block; }
+  table.list.stacked thead, table.list.stacked tr:has(> th) { display: none; }
+  table.list.stacked tr { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-3); padding: var(--sp-3) 0; border-top: 1px solid var(--line); }
+  table.list.stacked td { display: block; width: auto; padding: 0; border: 0; text-align: left; }
+  table.list.stacked td:first-child { flex: 1 0 100%; }
+  table.list.stacked td:empty { display: none; }
+  table.list.stacked td[data-label]::before { content: attr(data-label) " "; color: var(--muted); font-size: var(--fs-xs); }
+  table.list.stacked td.end { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-left: auto; white-space: normal; }
+}
 .entry b { display: block; }
 .entry p { margin: 4px 0 0; color: var(--muted); font-size: var(--fs-sm); }
 .ev-text small a { color: var(--muted); text-decoration: none; }
@@ -999,6 +1025,7 @@ details.opt > summary b:hover { text-decoration: underline; text-decoration-colo
 .seat-pic.none { background: none; border: 1px dashed var(--line-strong); }
 .seat-who { display: grid; min-width: 0; }
 .seat-who b, .seat-who .note { overflow-wrap: anywhere; }
+@media (max-width: 640px) { .seat-row > .seat-owner { grid-column: 2 / -1; justify-self: start; } }  /* (who plays a character not at the table, a name and "not here", goes under it on a phone: beside it, it squeezed the name one letter per line) */
 .seat-dm { color: var(--amber); border-color: var(--amber); }
 .seat-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); padding: var(--sp-2) var(--sp-3) var(--sp-3); border-top: 1px solid var(--line); }
 .seat-panel .form-narrow { grid-template-columns: minmax(0, 1fr); }
@@ -1481,10 +1508,13 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Which half of Manage you're in: a band in its colour, red for this campaign, blue for askdnd admin */
 .manage-band { position: relative; height: 3px; margin: 0 0 var(--sp-5); border-radius: var(--r-xs); background: var(--red); }  /* the half's colour, as a line (Brett, 2026-10-31) */
 .manage-band.tool { background: var(--blue); }
-.manage-band a { display: block; position: absolute; right: 0; top: calc(var(--sp-5) + var(--control-h) + var(--sp-4) + 6px); line-height: calc(var(--control-h) - 2px); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* beside the page's title, under the "All pages" control (feedback 10: it covered it); a block, since a flex button centres its text and cuts both ends (feedback 10) */
-.manage-band.camp ~ .title-row { padding-right: 116px; }  /* ⚙ Admin, a full-size button (feedback 31) */
-.manage-band.tool ~ .title-row { padding-right: 216px; }  /* a campaign's name */
-@media (max-width: 640px) { .manage-band a { max-width: 140px; top: calc(var(--sp-5) + var(--control-h) + var(--sp-4) - 5px); } .manage-band.tool ~ .title-row { padding-right: 152px; } }
+/* The way to the other half (.manage-cross: "⚙ Admin" or "Manage", the campaign's name on hover), one width both ways.
+   Narrower than 1240px it sits beside the "All pages" control, which keeps room for it; from 1240px (no jump control)
+   beside the page's title, which keeps room for it only when it's there: a DM has no ⚙ Admin (the UI review, Nov 16:
+   room kept for nothing broke Manage titles one letter per line on a phone and pushed the DM's title button in) */
+.manage-band .manage-cross { display: block; position: absolute; right: 0; top: calc(var(--sp-5) + 3px); width: var(--manage-cross-w); padding-inline: var(--sp-2); line-height: calc(var(--control-h) - 2px); text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* a block, since a flex button centres its text and cuts both ends (feedback 10) */
+.manage-band:has(.manage-cross) ~ .manage-jump { margin-right: calc(var(--manage-cross-w) + var(--sp-2)); }
+@media (max-width: 640px) { .manage-band .manage-cross { min-height: var(--control-h-sm); line-height: calc(var(--control-h-sm) - 2px); } }  /* (the "All pages" control's height beside it, as every summary on a phone) */
 .menu .menu-head { display: flex; flex-direction: column; align-items: stretch; gap: 0; min-width: 0; margin: -6px -6px var(--sp-1); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--red-line); border-radius: var(--r-md) var(--r-md) 0 0; background: var(--red-soft); font-size: var(--fs-sm); }
 .menu .menu-head.tool { border-bottom-color: var(--blue-line); background: var(--blue-soft); }
 .menu .menu-head b { display: block; max-width: 100%; color: var(--text-strong); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }  /* (a long campaign name ends in … rather than widening the menu) */
@@ -1499,7 +1529,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (min-width: 1240px) {
   .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }
   .page.manage-page > .manage-band { margin-left: -228px; }
-  .manage-band a { top: calc(var(--sp-5) + 3px); }  /* (no "All pages" control here: the list is down the left) */  /* the page's own band, across the list's column too (not a sample in a section) */
+  .manage-band:has(.manage-cross) ~ .title-row { padding-right: calc(var(--manage-cross-w) + var(--sp-3)); }  /* (no "All pages" control here: the list is down the left, and the way across sits beside the title) */
   .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: calc(32px + 3px + var(--sp-5)); width: 200px; }  /* under the line */
   .manage-jump { display: none; }
 }
@@ -1511,14 +1541,19 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 /* Manage › askdnd › Documents (app/documents.py): the library's rows, and one document in its sealed frame */
 .doc-search { display: flex; gap: var(--sp-2); align-items: center; margin: 0 0 var(--sp-4); max-width: 520px; }
 .doc-search input { flex: 1; min-width: 0; }
-.doc-list { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; }
+.doc-list { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); }  /* (each row the list's width: on a phone a row grew to its titles' width, 36px past the screen; the UI review, Nov 16) */
 .doc-row { display: grid; grid-template-columns: minmax(0, 15rem) auto 4.5rem minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); align-items: baseline;
   padding: var(--sp-2) 0; border-top: 1px solid var(--line); }
 .doc-row .tag { justify-self: start; }
 .doc-title { font-weight: 600; color: var(--text-strong); }
 .doc-date { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
 .doc-what { color: var(--muted); font-size: var(--fs-sm); min-width: 0; }
-@media (max-width: 900px) { .doc-row { grid-template-columns: minmax(0, 1fr) auto; } .doc-date { grid-column: 2; grid-row: 2; justify-self: end; } .doc-what { grid-column: 1 / -1; } }
+@media (max-width: 900px) {  /* the title and its date, then its status (a long one wraps), then what it is */
+  .doc-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .doc-date { grid-column: 2; grid-row: 1; justify-self: end; }
+  .doc-row .tag { grid-column: 1 / -1; grid-row: 2; max-width: 100%; white-space: normal; }
+  .doc-what { grid-column: 1 / -1; }
+}
 .doc-back { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }
 .doc-meta { margin: var(--sp-1) 0 var(--sp-3); overflow-wrap: anywhere; }
 .doc-boards { margin-bottom: var(--sp-3); overflow-x: auto; }
@@ -1529,8 +1564,8 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .ov-state { font-size: var(--fs-sm); }
 .ov-state.ok { color: var(--green); } .ov-state.warn { color: var(--amber); }
 /* Manage lists and grids: Needs you, Table, Accounts, Campaigns, Sessions (Manage layout, 2026-10-23) */
-.sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); }
-.sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; }
+.sub-tabs { display: flex; gap: var(--sp-4); border-bottom: 1px solid var(--line); margin: 0 0 var(--sp-4); font-size: var(--fs-sm); overflow-x: auto; scrollbar-width: none; }  /* (narrower than its tabs, it scrolls as the tab bar does) */
+.sub-tabs a { padding-bottom: var(--sp-2); color: var(--muted); text-decoration: none; white-space: nowrap; }  /* (one line always: the UI review, Nov 16) */
 .sub-tabs a.on { color: var(--text-strong); border-bottom: 2px solid var(--red); }
 
 /* Player notes (Plan, Battle combos, and the note form) */
@@ -1857,9 +1892,11 @@ body.at-table { padding-left: var(--rolls-w, 0); }
 .rs-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; color: var(--amber); }
 .rs-grip { display: none; }
 .rs-title { flex: 1; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
-.rs-toggle { flex: none; width: 30px; height: 30px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-sm); line-height: 1; }
+.rs-toggle { position: relative; flex: none; width: 30px; height: 30px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); border-radius: var(--r-sm); line-height: 1; }
 .rs-toggle:hover { color: var(--text); }
-.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* Words for a screen reader only: a 1px box with nothing showing, inside its own control (a control that holds one is
+   position: relative, as .rs-toggle; the UI review, Nov 16: Table rolls' sat over the newest roll on a phone) */
+.sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .rs-log { list-style: none; margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1; overflow-y: auto; overscroll-behavior: contain; }
 .roll-item { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; background: var(--surface); border: 1px solid transparent; border-radius: var(--r-lg); padding: 12px 14px; font-size: var(--fs-sm); line-height: 1.4; }
 .roll-item.mine { border-color: var(--line); }
@@ -2061,7 +2098,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .dtr-total.nat20 { color: var(--green); } .dtr-total.nat1 { color: var(--red); }
 /* Manage › Dice tuning (manage_dice.html; docs/mockups/dice-tuning.html): sliders on the left, a preview that throws on the right */
 .tn-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: var(--sp-5); align-items: start; margin-bottom: var(--sp-5); }
-.section.tn-controls { padding: var(--sp-4) var(--sp-5) 0; margin: 0; }
+.section.tn-controls { padding: var(--sp-4) var(--sp-5) 0; margin: 0; container: tuner / inline-size; }
 .tn-controls .sub-tabs { margin-bottom: var(--sp-2); }
 .tn-why { font-size: var(--fs-sm); color: var(--muted); margin: 0 0 var(--sp-2); }
 .tn-group h3 { margin: var(--sp-4) 0 0; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
@@ -2076,6 +2113,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .tn-range::after { content: ""; position: absolute; left: calc(8px + (100% - 16px) * var(--now, 0)); bottom: -7px; width: 2px; height: 6px; margin-left: -1px; background: var(--faint); border-radius: var(--r-xs); }
 .tn-ctl output { min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-strong); font-size: var(--fs-sm); font-weight: 600; }
 .tn-now { grid-column: 2; display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--faint); min-height: 18px; }
+@container tuner (max-width: 460px) { .tn-row { grid-template-columns: 1fr; } .tn-now { grid-column: 1; } }  /* (a knob's name over its slider when the column runs short, Table rolls open on a laptop: beside a 220px slider "Throw strength" broke one letter per line) */
 .tn-row.changed output { color: var(--amber); }
 .tn-reset { background: none; border: 0; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
 .tn-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; background: var(--surface); border-top: 1px solid var(--line);
@@ -2227,7 +2265,6 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   .econ[data-econ-show=bonus] > [data-econ-col]:not([data-econ-col=bonus]),
   .econ[data-econ-show=reaction] > [data-econ-col]:not([data-econ-col=reaction]) { display: none; }
 }
-@media (max-width: 900px) { .live-ago { display: none; } .live-word { display: inline; } }
 
 /* Spell bar on Battle and the Spell Book (Brett, 2026-10-21: mockups on the spellcasting canvas) */
 .spell-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 0 0 14px; padding: 8px 12px; background: var(--spell-bg); border: 1px solid var(--spell-line); border-radius: var(--r-lg); }
@@ -2347,7 +2384,9 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   .sh-cols { display: block; }
   .sh-cols > .ls-head { display: none; }
   .sh-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
-  .sh-cols > .ls-row > .ls-name { flex: 1 1 60%; }
+  .sh-cols > .ls-row > .ls-name { flex: 1 1 0; min-width: 0; }
+  /* one template for every row: the name and its marks on the first line, the rest under them (the UI review, Nov 16: rows wrapped as their words fit, so their marks ended in different places) */
+  .sh-cols > .ls-row::after { content: ""; flex-basis: 100%; order: 1; }
   .sh-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status) { order: 2; font-size: var(--fs-xs); }
 }
 
@@ -2566,7 +2605,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   .fm-cols { display: block; }
   .fm-cols > .ls-head { display: none; }
   .fm-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
-  .fm-cols > .ls-row > .ls-name { flex: 1 1 50%; }
+  .fm-cols > .ls-row > .ls-name { flex: 1 1 0; min-width: 0; }
+  .fm-cols > .ls-row::after { content: ""; flex-basis: 100%; order: 1; }
   .fm-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status):not(.fm-pic) { order: 2; font-size: var(--fs-xs); }
 }
 
@@ -2672,6 +2712,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ds-sample .title-row h1 { margin: 0; }
 .ds-h2 { margin: 0; }
 .ds-narrow { max-width: 420px; }
+.ds-band { padding-bottom: var(--control-h); }  /* (a band sample with room under it for its way across) */
 .ds-menus { align-items: flex-start; }
 .ds-menu { position: static; }  /* a menu drawn open on the design page */
 .ds-econ .section { background: var(--surface-2); min-height: 70px; }
@@ -2712,7 +2753,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   .it-cols { display: block; }
   .it-cols > .ls-head { display: none; }
   .it-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
-  .it-cols > .ls-row > .ls-name { flex: 1 1 50%; }
+  .it-cols > .ls-row > .ls-name { flex: 1 1 0; min-width: 0; }
+  .it-cols > .ls-row::after { content: ""; flex-basis: 100%; order: 1; }
   .it-cols > .ls-row > :not(.ls-marks):not(.ls-name):not(.sh-status) { order: 2; font-size: var(--fs-xs); }
 }
 
@@ -2725,7 +2767,8 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   .ft-cols { display: block; }
   .ft-cols > .ls-head { display: none; }
   .ft-cols > .ls-row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
-  .ft-cols > .ls-row > .ls-name { flex: 1 1 60%; }
+  .ft-cols > .ls-row > .ls-name { flex: 1 1 0; min-width: 0; }
+  .ft-cols > .ls-row::after { content: ""; flex-basis: 100%; order: 1; }
   .ft-cols > .ls-row > :not(.ls-marks):not(.ls-name) { order: 2; font-size: var(--fs-xs); }
 }
 
@@ -2822,7 +2865,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ep[data-shape=portrait] .ep-side { aspect-ratio: 3 / 4; }
 .ep[data-shape=square] .ep-side, .ep[data-shape=item] .ep-side { aspect-ratio: 1; }
 .ep[data-shape=item] .ep-pic img { object-fit: contain; }
-.ep-pic.ep-banner, .ep-slot.ep-banner { aspect-ratio: 16 / 5; min-height: 150px; margin-bottom: var(--sp-5); }
+.ep-pic.ep-banner, .ep-slot.ep-banner { aspect-ratio: 16 / 5; width: 100%; min-width: 0; min-height: 150px; margin-bottom: var(--sp-5); }  /* (a width of its own: the 150px floor made a phone banner 480px wide through its ratio; the UI review, Nov 16) */
 .ep-pic figcaption { margin-top: var(--sp-1); }
 .ep-change { position: absolute; right: var(--sp-2); bottom: var(--sp-2); opacity: 0; transition: opacity .15s; }
 .ep-pic:hover .ep-change, .ep-change:focus-visible { opacity: 1; }
@@ -3031,8 +3074,10 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .title-row .title-action { margin-left: auto; flex: none; }
 /* A page's own action stays at the right end of its title row at every width; the title wraps beside it instead
    (the UI pass, 2026-11-02: on phones it dropped to a line of its own, left, centred or right) */
-.title-row:has(> .title-action) { flex-wrap: nowrap; align-items: flex-start; }
-.title-row:has(> .title-action) > h1 { flex: 1 1 auto; min-width: 0; }
+/* A title never shrinks below its longest word (the UI review, Nov 16: "T/a/b/l/e" beside a long button on a phone):
+   it grows from its narrowest, and only when even that can't sit beside the action does the action go under it, at the right */
+.title-row:has(> .title-action) { align-items: flex-start; }
+.title-row:has(> .title-action) > h1 { flex: 1 1 0; min-width: min-content; }
 .all-clear + .records { margin-top: var(--sp-4); }
 
 /* The new-player tour (app.js "the tour", app/tour.py): everything else dims, one thing stays lit, a card says what
@@ -3342,6 +3387,7 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
    holds a rule line per list; Your changes and Make stay along the bottom so the list keeps its full width. */
 @media (min-width: 901px) { .peek.modal.large:has(.chg) { width: min(1600px, calc(100% - 32px)); height: 94vh; max-height: 94vh; } }  /* immersive: nearly the whole screen (a phone's large modal is already) */
 .chg-head { flex-wrap: wrap; align-items: center; }
+.chg-head .fm-title { flex: 1 1 auto; }  /* (its whole title, the reasons wrapping under it when they can't sit beside: at 768px "Change" broke inside the word; the UI review's check, Nov 16) */
 .chg-why { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin-right: auto; }
 .peek-body.chg { display: grid; gap: var(--sp-3); align-content: start; padding-bottom: 0; }
 .chg-cards { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
@@ -3775,7 +3821,7 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .notes-dot-badge { position: absolute; top: -4px; right: -6px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: var(--r-pill); background: var(--red); color: var(--text-strong); font-size: var(--fs-xs); font-weight: 700; line-height: 17px; text-align: center; border: 2px solid var(--chrome); }
 .bottom-nav .notes-dot-badge { top: 2px; right: 8px; }
 .notes-count { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: var(--r-pill); background: var(--red); color: var(--text-strong); font-size: var(--fs-xs); font-weight: 700; text-align: center; }
-.tabbar .count.notes-tab-new { color: var(--red); font-weight: 700; }
+.tabbar .count.notes-tab-new, .review-steps .notes-tab-new { color: var(--red); font-weight: 700; }
 .notes-who { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3); margin: var(--sp-3) 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); font-size: var(--fs-sm); }
 .notes-who p { margin: 0; }
 .notes-ico { flex: none; width: 30px; height: 30px; border-radius: var(--r-sm); display: grid; place-items: center; font-weight: 700; font-size: var(--fs-xs); }
@@ -3876,7 +3922,10 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .ft-filters { display: flex; flex-wrap: wrap; gap: var(--sp-3); margin-bottom: var(--sp-4); }
 .ft-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .ft-chart svg { width: 100%; height: auto; display: block; }
-.ft-chart text { fill: var(--muted); font-size: var(--fs-xs); }
+.ft-plot { position: relative; }
+.ft-axis { display: flex; justify-content: space-between; gap: var(--sp-3); margin-top: var(--sp-1); color: var(--muted); font-size: var(--fs-xs); }
+.ft-label { position: absolute; transform: translateY(-50%); color: var(--muted); font-size: var(--fs-xs); line-height: 1; white-space: nowrap; pointer-events: none; }  /* (the page's own text over the drawing, which scales: usage.chart) */
+.ft-label.end { transform: translate(-100%, -50%); }
 .ft-grid { stroke: var(--line); }
 .ft-release { stroke: var(--muted); stroke-dasharray: 3 3; }
 .ft-area { fill: color-mix(in srgb, var(--blue) 18%, transparent); }

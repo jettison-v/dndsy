@@ -231,16 +231,17 @@ def _tab(request: Request) -> str:
 
 def _steps(ctx: dict, s: GameSession, tab: str) -> tuple[list[dict], str]:
     """The review as a wizard (Brett, Nov 7): a tab per step, in the order they're done, each saying what's left; and the
-    step to open (the one asked for, else the first with something left)."""
+    step to open (the one asked for, else the first with something left). A long label has a short one for its tab
+    (`tab`; the UI review, Nov 16: seven steps fit a laptop's column), the checklist and Next keep the whole."""
     latest = ctx["latest"]
     steps = [
         {"key": "questions", "label": "Questions", "left": len(ctx["open_questions"])},
         {"key": "suggestions", "label": "Suggestions", "left": len(ctx["open_proposals"])},
-        {"key": "recap", "label": "Recap" if latest or s.source != "transcript" else "Draft the recap", "left": 0 if latest else 1},
+        {"key": "recap", "label": "Recap" if latest or s.source != "transcript" else "Draft the recap", "tab": "Recap", "left": 0 if latest else 1},
     ]
     if latest:
-        steps += [{"key": "tale", "label": "Full tale", "left": 0, "count": len(ctx["chapters"])}] if ctx["chapters"] else []
-        steps += [{"key": "moments", "label": "Key moments", "left": 0, "count": len(ctx["events"])},
+        steps += [{"key": "tale", "label": "Full tale", "tab": "Tale", "left": 0, "count": len(ctx["chapters"])}] if ctx["chapters"] else []
+        steps += [{"key": "moments", "label": "Key moments", "tab": "Moments", "left": 0, "count": len(ctx["events"])},
                   {"key": "awards", "label": "Awards", "left": 0, "count": len(ctx["awards"])},
                   {"key": "numbers", "label": "Numbers", "left": len(ctx["talked"]["unmatched"])}]
     keys = [x["key"] for x in steps]
