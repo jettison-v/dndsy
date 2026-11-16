@@ -5,11 +5,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
 /* askdnd's mockups: dark, in askdnd's own tokens (one look, as the app); laptop first, each board a working copy of the
-   window over its explanation, one column on a phone; the table's own characters and their real sheets. */
+   real tab drawn over its explanation, one column on a phone; the table's own characters and their sheets.
+   Round 2 (Nov 16): Brett's picks hold; where the change happens is explored: in the tab itself (C) or a wider modal (D). */
 :root {
   --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
   --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
-  --red: #f08a8a; --red-btn: #d64545;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .16);
   --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
   --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .13);
   --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
@@ -20,8 +21,9 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
-.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
 h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
 h1 { font: 600 2.2rem/1.15 var(--serif); }
 h2 { font: 600 1.4rem/1.25 var(--serif); }
@@ -30,18 +32,17 @@ p { margin: 0; }
 b { color: var(--strong); font-weight: 600; }
 ul, ol { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
-.lead { max-width: 78ch; font-size: 1.04rem; }
+.pick { color: var(--green); font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.lead { max-width: 80ch; font-size: 1.04rem; }
 .meta, .note { color: var(--muted); font-size: .9rem; }
 header.top { display: grid; gap: 14px; }
-.where { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .88rem; color: var(--muted); }
-.where b { display: block; margin-bottom: 2px; }
+.decided { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.decided div { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 10px; padding: 11px 14px; font-size: .88rem; color: var(--muted); }
+.decided b { display: block; margin-bottom: 2px; }
 section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px solid var(--line-soft); }
-.intro { display: grid; gap: 8px; max-width: 86ch; }
-.pick { color: var(--green); font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
-.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.intro { display: grid; gap: 8px; max-width: 88ch; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
 .notes > div { display: grid; gap: 4px; align-content: start; font-size: .9rem; }
-.notes > div b { font-size: .92rem; }
 
 /* The rules table */
 .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
@@ -57,99 +58,135 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
 .when.rest { --k: var(--blue); }
 .when.lvl { --k: var(--violet); }
 .when.never { --k: var(--faint); }
+/* The page around a tab: a frame like askdnd's Sheet, its tab bar, then the tab */
+.frame { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px rgba(0,0,0,.35); min-width: 0; overflow: hidden; }
+.tabbar { display: flex; gap: 22px; padding: 0 20px; border-bottom: 1px solid var(--line-soft); font-size: .92rem; color: var(--muted); overflow-x: auto; }
+.tabbar span { padding: 12px 0 10px; white-space: nowrap; }
+.tabbar .on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red-btn); }
+.tab-in { padding: 14px 20px 18px; display: grid; gap: 14px; min-width: 0; }
 
-/* askdnd's large modal, as Prepare spells */
-.modal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px rgba(0,0,0,.4); display: grid; overflow: hidden; min-width: 0; }
-.m-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 14px 18px; border-bottom: 1px solid var(--line-soft); }
-.m-title { display: grid; gap: 2px; margin-right: auto; }
-.m-title .note { font-size: .84rem; }
-.m-title h3 { font: 600 1.3rem/1.2 var(--serif); }
-.x { color: var(--muted); font-size: 1.1rem; }
-.why { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 18px; background: var(--surface-2); border-bottom: 1px solid var(--line-soft); font-size: .86rem; }
-.why > span { color: var(--muted); margin-right: 2px; }
-.chip { font: 600 .8rem/1 var(--sans); padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; }
+/* The class card on top of the tab (as today), and its edit-mode form: the edit bar */
+.heads { display: flex; flex-wrap: wrap; gap: 12px; }
+.ccard { flex: 1 1 300px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: grid; gap: 6px; font-size: .86rem; }
+.ccard .t { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.ccard .t b { font-size: 1rem; }
+.pills { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pill { font: 600 .74rem/1 var(--sans); padding: 4px 8px; border-radius: 6px; background: var(--green-soft); color: var(--green); white-space: nowrap; }
+.btn { font: 600 .86rem/1 var(--sans); padding: 8px 13px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-3); color: var(--text); cursor: pointer; white-space: nowrap; }
+.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.primary[disabled] { opacity: .45; cursor: default; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+.btn:focus-visible, .chip:focus-visible, .act:focus-visible, .ctab:focus-visible, .seg button:focus-visible, .ls-chip:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+.editbar { position: sticky; top: 0; z-index: 2; background: var(--surface-2); border: 1px solid var(--blue); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; box-shadow: 0 8px 22px rgba(0,0,0,.35); }
+.eb-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.eb-top .ttl { font-weight: 700; color: var(--strong); margin-right: 6px; }
+.why { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-right: auto; font-size: .84rem; color: var(--muted); }
+.chip { font: 600 .78rem/1 var(--sans); padding: 7px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; }
 .chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
-.chip:focus-visible, .tick:focus-visible, .btn:focus-visible, .tab:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-.tabs { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 18px 0; }
-.tab { display: grid; gap: 3px; text-align: left; font: 500 .8rem/1.3 var(--sans); color: var(--muted); padding: 9px 14px; border-radius: 10px 10px 0 0; border: 1px solid var(--line); border-bottom: 0; background: var(--surface-2); cursor: pointer; min-width: 190px; }
-.tab b { font-size: .95rem; display: flex; align-items: center; gap: 8px; }
-.tab[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: inset 0 3px 0 var(--red-btn); }
-.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
-.dot.yes { background: var(--green); } .dot.no { background: var(--amber); }
-.m-body { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 18px; padding: 14px 18px 16px; align-items: start; }
-.tabs + .m-body { border-top: 1px solid var(--line); }
-.list { display: grid; gap: 14px; min-width: 0; }
-.panel { display: grid; gap: 14px; min-width: 0; }
-
-/* The rule line: a section's own count and rule, the one new piece (to Manage › Design system) */
-.sec { display: grid; gap: 2px; min-width: 0; }
-.rule { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 9px 12px; border: 1px solid var(--line); border-left: 4px solid var(--k, var(--line-strong)); border-radius: 10px; background: var(--surface-2); margin-bottom: 4px; }
-.rule.rest { --k: var(--blue); } .rule.lvl { --k: var(--violet); }
-.rule-name { display: grid; gap: 1px; }
-.rule-name b { font-size: .98rem; }
-.cnt { font-size: .82rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.cnt b { color: var(--strong); font-size: 1.05rem; }
-.cnt.over b { color: var(--amber); }
-.bits { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .86rem; min-width: 0; }
-.bits span { white-space: nowrap; }
-.bits i { font: normal 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 5px; }
-.now { font: 700 .74rem/1 var(--sans); padding: 5px 9px; border-radius: 999px; white-space: nowrap; background: var(--surface-3); color: var(--muted); }
+.cards { display: flex; flex-wrap: wrap; gap: 8px; }
+.ctab { display: grid; gap: 6px; align-content: start; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; color: var(--text); font: inherit; min-width: 0; flex: 1 1 260px; }
+button.ctab { cursor: pointer; }
+.ctab[aria-selected="true"] { border-color: var(--red-btn); box-shadow: inset 0 3px 0 var(--red-btn); }
+.ctab .cn { font-weight: 700; color: var(--strong); font-size: .9rem; }
+/* The rule line, small: one per list (the one new piece, to Manage › Design system) */
+.rl { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 6px 8px; border-left: 3px solid var(--k, var(--line-strong)); background: var(--surface-2); border-radius: 6px; font-size: .82rem; }
+.rl.rest { --k: var(--blue); } .rl.lvl { --k: var(--violet); }
+.rl .nm2 { font-weight: 700; color: var(--strong); white-space: nowrap; }
+.rl .nm2 small { font-weight: 500; color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+.rl .nm2 small b { color: var(--strong); }
+.rl .wh { color: var(--muted); min-width: 0; }
+.rl .full { grid-column: 1 / -1; color: var(--amber); font-size: .78rem; }
+.now { font: 700 .7rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; white-space: nowrap; background: var(--surface-3); color: var(--muted); }
 .now.yes { background: var(--green-soft); color: var(--green); }
 .now.no { background: var(--amber-soft); color: var(--amber); }
-.lvl-h { font: 800 .7rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); padding: 8px 8px 3px; }
-.r { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 5px 8px; border-radius: 8px; }
-.r.pics { grid-template-columns: 32px 34px minmax(0, 1fr) auto; }
-.r:hover { background: var(--surface-2); }
-.r.add { box-shadow: inset 3px 0 0 var(--green); }
-.r.drop { box-shadow: inset 3px 0 0 var(--muted); }
-.r.drop .nm b { text-decoration: line-through; color: var(--muted); }
-.r.cant .nm b { color: var(--muted); }
-.tick { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border-radius: 6px; border: 1.5px solid var(--line-strong); background: var(--bg); color: transparent; font-weight: 800; cursor: pointer; }
-.tick[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--bg); }
-.tick.always { color: var(--violet); border-color: var(--violet); background: var(--surface-2); cursor: default; font-size: .8rem; }
-.tick.off { color: var(--faint); border-style: dashed; cursor: default; background: none; }
-.nm { min-width: 0; }
-.nm b { font-weight: 600; }
-.nm small { display: block; color: var(--muted); font-size: .8rem; }
-.tag { font: 600 .72rem/1 var(--sans); padding: 3px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
-.tag.why-not { background: none; border: 1px dashed var(--line-strong); }
-.pic { width: 34px; height: 34px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font: 700 .72rem/1 var(--sans); color: var(--muted); }
-.side { display: grid; gap: 10px; position: sticky; top: 0; font-size: .86rem; }
-.side .lb { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.grp { display: grid; gap: 3px; }
-.grp > b { font-size: .84rem; color: var(--muted); font-weight: 600; }
-.chg { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 6px; }
-.chg i { font-style: normal; font-weight: 800; text-align: center; }
-.chg.add i { color: var(--green); } .chg.drop i, .chg.drop span { color: var(--muted); }
-.warn { padding: 8px 10px; border: 1px solid var(--amber); background: var(--amber-soft); border-radius: 8px; display: grid; gap: 2px; }
-.warn b { color: var(--amber); font-size: .8rem; }
-.ok { color: var(--green); font-size: .82rem; }
-.m-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line-soft); }
-.m-foot .note { margin-right: auto; font-size: .84rem; }
-.btn { font: 600 .88rem/1 var(--sans); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); cursor: pointer; white-space: nowrap; }
-.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
-.btn.small { padding: 6px 10px; font-size: .8rem; }
-.boxes { display: flex; gap: 4px; flex-wrap: wrap; }
-.boxes i { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--line-strong); }
-.boxes i.on { background: var(--green); border-color: var(--green); }
-.big { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; }
-.big .n { font: 800 1.6rem/1 var(--sans); color: var(--strong); font-variant-numeric: tabular-nums; }
-.big .n span { color: var(--muted); font-weight: 600; font-size: 1.1rem; }
+.eb-chg { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .84rem; }
+.eb-chg > .lb { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+.cg { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line-soft); white-space: nowrap; }
+.cg.add { color: var(--green); } .cg.drop { color: var(--muted); text-decoration: line-through; }
+.warns { display: grid; gap: 4px; }
+.warn { padding: 6px 10px; border: 1px solid var(--amber); background: var(--amber-soft); border-radius: 8px; font-size: .82rem; }
+.warn b { color: var(--amber); margin-right: 6px; }
+
+/* The list, as Sheet › Spells and Sheet › Wild Shape draw it: filters beside it, columns, the action cluster at the end */
+.lw { display: grid; grid-template-columns: 160px minmax(0, 1fr); gap: 18px; align-items: start; min-width: 0; }
+.flt { display: grid; gap: 10px; font-size: .8rem; }
+.flt .h { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.ls-group { display: grid; gap: 5px; }
+.ls-label { color: var(--muted); }
+.ls-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.ls-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .76rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.ls-chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); }
+.ls-chip.zero { color: var(--faint); }
+.ls-n { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.lmain { display: grid; gap: 8px; min-width: 0; }
+.ltop { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; font-size: .84rem; color: var(--muted); }
+.ls-search { display: flex; align-items: center; gap: 8px; flex: 1 1 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; height: 32px; padding: 0 10px; color: var(--muted); }
+.ls-search input { flex: 1; min-width: 0; background: none; border: 0; color: var(--text); font: 400 .88rem/1 var(--sans); outline: none; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: 600 .78rem/1 var(--sans); padding: 0 10px; height: 28px; border: 0; background: var(--surface-2); color: var(--muted); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--blue-soft); color: var(--text); }
+.ls-searching { padding: 5px 10px; border-radius: 8px; background: var(--amber-soft); font-size: .82rem; color: var(--text); }
+.tbl { display: grid; min-width: 0; }
+.row { display: grid; grid-template-columns: var(--cols); gap: 10px; align-items: center; padding: 7px 8px; border-top: 1px solid var(--line-soft); font-size: .86rem; min-width: 0; }
+.row.hd { border-top: 0; font: 600 .72rem/1 var(--sans); color: var(--muted); padding-bottom: 6px; }
+.spells { --cols: 22px minmax(0, 2.2fr) 64px 92px 74px 84px 96px 112px; }
+.forms { --cols: 22px 32px minmax(0, 2.2fr) 40px 62px 54px 92px 84px 112px; }
+.sh { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 14px 8px 4px; font: 800 .7rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.sh .rt { font: 500 .78rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--muted); }
+.sh .now { letter-spacing: 0; text-transform: none; }
+.mk { color: var(--green); font-weight: 800; text-align: center; }
+.mk.off { color: var(--faint); }
+.mk.al { color: var(--violet); font-size: .8rem; }
+.nmc { min-width: 0; }
+.nmc b { font-weight: 600; }
+.row.off .nmc b { color: var(--text); font-weight: 500; }
+.nmc .tg { font: 600 .68rem/1 var(--sans); padding: 2px 6px; border-radius: 5px; background: var(--surface-3); color: var(--muted); margin-left: 6px; white-space: nowrap; vertical-align: 1px; }
+.nmc small { display: block; color: var(--muted); font-size: .76rem; }
+.c { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c.st { color: var(--text); font-weight: 600; }
+.dm b { color: var(--strong); font-size: .95rem; } .dm small { color: var(--muted); }
+.dm.heal b { color: var(--green); }
+.pic { width: 30px; height: 30px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font: 700 .66rem/1 var(--sans); color: var(--muted); }
+.row.add { box-shadow: inset 3px 0 0 var(--green); background: var(--green-soft); }
+.row.drop { box-shadow: inset 3px 0 0 var(--muted); }
+.row.drop .nmc b { text-decoration: line-through; color: var(--muted); }
+.row.locked .nmc b, .row.locked .c { color: var(--faint); }
+/* The action cluster: the bookmark and bell in view; in edit, one button where they were (D&D Beyond's Learn / Delete) */
+.acts { display: flex; justify-content: flex-end; gap: 10px; color: var(--faint); }
+.acts svg { width: 15px; height: 15px; }
+.act { font: 700 .72rem/1 var(--sans); letter-spacing: .04em; text-transform: uppercase; padding: 7px 0; width: 104px; border-radius: 6px; cursor: pointer; border: 1px solid var(--line-strong); background: var(--bg); color: var(--text); text-align: center; }
+.act.mine { background: var(--red-soft); border-color: var(--red-btn); color: var(--red); }
+.act.undo { background: var(--surface-3); color: var(--muted); }
+.act[disabled] { opacity: .4; cursor: not-allowed; }
+.act.lockd { border-style: dashed; color: var(--faint); cursor: default; text-transform: none; letter-spacing: 0; font-weight: 600; }
+.more { color: var(--muted); font-size: .84rem; padding: 8px; }
+/* D: the wider modal */
+.modal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 18px 40px rgba(0,0,0,.45); display: grid; overflow: hidden; min-width: 0; }
+.m-head { display: grid; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line-soft); background: var(--surface-2); }
+.m-head .r1 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.m-head h3 { font: 600 1.25rem/1.2 var(--serif); }
+.m-body { padding: 12px 18px; min-width: 0; }
+.tray { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 18px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.tray .eb-chg { margin-right: auto; }
+.toast { position: fixed; right: 18px; bottom: 18px; background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 10px; padding: 10px 14px; font-size: .86rem; box-shadow: 0 10px 28px rgba(0,0,0,.5); max-width: 340px; z-index: 5; }
 .asks { display: grid; gap: 12px; counter-reset: q; }
 .ask { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; }
 .ask h3::before { counter-increment: q; content: counter(q) ". "; color: var(--red); }
-.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: .86rem; color: var(--muted); }
-@media (max-width: 900px) {
-  .where { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .notes { grid-template-columns: minmax(0, 1fr); }
-  .m-body { grid-template-columns: minmax(0, 1fr); }
-  .side { position: static; }
+@media (max-width: 1000px) {
+  .spells { --cols: 22px minmax(0, 1fr) 64px 84px 112px; }
+  .forms { --cols: 22px 32px minmax(0, 1fr) 40px 84px 112px; }
+  .spells .c-range, .spells .c-dur, .spells .c-roll, .forms .c-thp, .forms .c-hit, .forms .c-speed { display: none; }
 }
-@media (max-width: 560px) {
-  .where { grid-template-columns: minmax(0, 1fr); }
-  .rule { grid-template-columns: minmax(0, 1fr) auto; }
-  .rule .bits { grid-column: 1 / -1; grid-row: 2; }
-  .tab { min-width: 0; flex: 1 1 140px; }
+@media (max-width: 760px) {
+  .lw { grid-template-columns: minmax(0, 1fr); }
+  .spells { --cols: 20px minmax(0, 1fr) 96px; }
+  .forms { --cols: 20px 30px minmax(0, 1fr) 96px; }
+  .spells .c-time, .spells .dm, .forms .c-ac, .forms .dm { display: none; }
+  .act { width: 90px; }
+  .tab-in, .m-body { padding-left: 12px; padding-right: 12px; }
   h1 { font-size: 1.8rem; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
@@ -158,24 +195,78 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
 <div class="wrap">
 
 <header class="top">
-  <span class="lbl">Mockup · Nov 15 · for Brett</span>
+  <span class="lbl">Mockup, round 2 · Nov 16 · for Brett</span>
   <h1>Changing spells and forms</h1>
-  <p class="lead">You asked for Swap a form to work like Prepare spells, and for cantrips to sit in Prepare spells beside the
-  other spells, as on D&amp;D Beyond. The catch is that each list changes on its own rule, and a character with two
-  spellcasting classes has two sets of rules. So every section of the window carries its own rule line, and the window
-  asks why you're changing things, so it can mark which rules apply right now. Every board below works: tick, untick and
-  switch the reason.</p>
-  <div class="where">
-    <div><b>Sheet › Spells › Prepare spells</b>The same large modal as today, now with cantrips (and a Wizard's spellbook) in it. The Swap a cantrip and Learn spells buttons go.</div>
-    <div><b>The Long Rest window</b>Its Prepare spells and Known forms buttons open these with the reason set to "After a Long Rest".</div>
-    <div><b>Battle's level-up card</b>"You're Sorcerer 3" gets a Change spells button, opening with "I gained a Sorcerer level".</div>
-    <div><b>Sheet › Wild Shape › Known forms</b>Replaces Swap a form's small window with the same large modal.</div>
+  <p class="lead">Your picks from round 1 hold, and they're built into every board below. What's new is where the change
+  happens. The first window showed less to decide with than the tab does, so this round tries <b>C, changing them right in
+  the tab</b> (your idea: a button where the bookmark and bell are, like D&amp;D Beyond's Learn and Delete) and <b>D, a wider
+  modal</b> that carries the tab's own list and columns. Every board works: press the buttons, change the reason, and go
+  past a rule to see what it says.</p>
+  <div class="decided">
+    <div><b>A tab per class</b>Big C's Paladin and Sorcerer are changed one class at a time; Your changes keeps both in view.</div>
+    <div><b>Why are you changing?</b>Set from where you came (a Long Rest, a level-up card); it marks each list Now or Not now.</div>
+    <div><b>Counts held, as D&amp;D Beyond</b>You can't prepare or know more than your number: let one go first. Swaps are never limited.</div>
+    <div><b>Past a rule: warned, never blocked</b>Too many swaps, or a swap at the wrong time, shows amber. The DM rules.</div>
+    <div><b>Wild Shape the same way</b>Known forms change exactly as spells do.</div>
   </div>
 </header>
 
+<section class="board" id="in-tab">
+  <div class="intro">
+    <span class="lbl">C · Change them in the tab</span> <span class="pick">My pick</span>
+    <h2>Cole's Spells tab, editing</h2>
+    <p><b>Change spells</b> on the Druid card turns the tab into edit mode. The card becomes the edit bar, which stays at the
+    top as you scroll: the reason, a rule line for each list, and what you've changed. Nothing in the list goes: every
+    column, filter and the search stay. Only the bookmark and bell make way for one button, Prepare or Unprepare (Learn or
+    Let go for a cantrip). Cole has 10 of 10 prepared, so Prepare is greyed until you unprepare one, as on D&amp;D Beyond.
+    Try swapping a cantrip after a Long Rest.</p>
+  </div>
+  <div class="frame" data-board="cole" data-mode="tab"></div>
+  <div class="notes">
+    <div><b>From the Long Rest window and the level-up card</b><span class="meta">Their Prepare spells button opens Sheet › Spells already in edit mode, the reason set ("After a Long Rest", "I gained a Druid level"). From the tab itself it starts at Just looking.</span></div>
+    <div><b>One Make, one Undo</b><span class="meta">Nothing reaches D&amp;D Beyond until Make, so a half-done swap never shows on the sheet; the corner card's Undo puts it all back. Cancel leaves edit mode with nothing changed.</span></div>
+    <div><b>The views in edit mode</b><span class="meta">The list opens on All (what you could take), not Prepared. "Yours" shows what you'd end with, changes included.</span></div>
+  </div>
+</section>
+
+<section class="board" id="in-tab-two">
+  <div class="intro">
+    <span class="lbl">C · Two classes</span>
+    <h2>Big C's Spells tab: the class cards become the tabs</h2>
+    <p>The Paladin and Sorcerer cards already sit on top of his Spells tab. In edit mode they are the class tabs you picked.
+    Each holds its own rule lines, and the list shows only that class's spells, so a Paladin rule is never read beside a
+    Sorcerer spell. After a Long Rest the Paladin card says Now and the Sorcerer card Not now. Open the Sorcerer tab and
+    swap a cantrip to see the warning.</p>
+  </div>
+  <div class="frame" data-board="bigc" data-mode="tab"></div>
+</section>
+
+<section class="board" id="forms-tab">
+  <div class="intro">
+    <span class="lbl">C · Wild Shape</span>
+    <h2>Cole's Wild Shape tab, editing</h2>
+    <p>The same edit mode on Sheet › Wild Shape: <b>Change forms</b> on the Wild Shape card, the edit bar with its rule line,
+    and Learn or Let go where the bookmark and bell are. The list keeps AC, Temporary Hit Points, to hit, damage a turn and
+    Speed, which is what you choose a form by. A Beast he can't take yet shows why where its button would be.</p>
+  </div>
+  <div class="frame" data-board="forms" data-mode="tab"></div>
+</section>
+
+<section class="board" id="wide-modal">
+  <div class="intro">
+    <span class="lbl">D · A wider modal</span>
+    <h2>The same list in a window</h2>
+    <p>For changes made from somewhere else (the Long Rest window, a level-up card on Battle) without leaving that page.
+    The window is the tab's own list at full width, with every column, filters and search. The rules sit in its header,
+    and Your changes and Make sit in a tray along the bottom, not in a side column, so the list keeps its width. It's the
+    same pieces as C, so the two can be the same code: C on Sheet, D wherever Sheet isn't open.</p>
+  </div>
+  <div class="modal" data-board="coleD" data-mode="modal"></div>
+</section>
+
 <section class="board" id="rules">
   <div class="intro">
-    <span class="lbl">1 · The rules, checked</span>
+    <span class="lbl">The rules, checked</span>
     <h2>Every rule is the 2024 Player's Handbook's</h2>
     <p>I checked each against the 2024 Player's Handbook text (each class's Spellcasting feature, Wild Shape, the
     Multiclassing section's Spellcasting, the Magic Initiate feat), not against D&amp;D Beyond or the 2014 books. The words
@@ -203,425 +294,294 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
     </tbody>
   </table>
   </div>
-  <p class="note">D&amp;D Beyond enforces none of these; it shows Learn and Delete at any time. askdnd won't block either. It says each rule where you make the change, marks what applies now, and flags a change past it. The DM rules.</p>
-</section>
-
-<section class="board" id="one-class">
-  <div class="intro">
-    <span class="lbl">2 · One class: cantrips folded in</span>
-    <h2>Cole, Druid 6, after a Long Rest</h2>
-    <p>Cantrips come first, then the prepared spells, each under its own rule line: the count, when, how many, and a
-    Now or Not now from the reason picked at the top. Here the Long Rest lets Cole change any prepared spell, but his
-    cantrips wait for his next Druid level. Untick Thorn Whip to see what happens.</p>
-  </div>
-
-  <div class="modal" data-modal data-occasion="rest">
-    <div class="m-head">
-      <div class="m-title"><span class="note">Cole · Druid 6</span><h3>Prepare spells</h3></div>
-      <span class="x" aria-hidden="true">✕</span>
-    </div>
-    <div class="why"><span>Why are you changing?</span>
-      <button type="button" class="chip" data-occ="rest" data-occ-text="after a Long Rest">After a Long Rest</button>
-      <button type="button" class="chip" data-occ="level-druid" data-occ-text="on a Druid level">I gained a Druid level</button>
-      <button type="button" class="chip" data-occ="look" data-occ-text="">Just looking</button>
-    </div>
-    <div class="m-body">
-      <div class="list">
-        <div class="sec" data-sec data-label="Druid cantrips" data-when="change when you gain a Druid level" data-occ="level-druid" data-one="1" data-cap="3">
-          <div class="rule lvl">
-            <div class="rule-name"><b>Cantrips</b><span class="cnt"><b data-count>3</b> of 3</span></div>
-            <div class="bits"><span><i>When</i>you gain a Druid level</span><span><i>How many</i>replace one</span><span><i>From</i>the Druid list</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="r" data-row data-name="Mending" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Mending">✓</button><span class="nm"><b>Mending</b><small>1 minute · Touch</small></span><span class="tag">Utility</span></div>
-          <div class="r" data-row data-name="Message" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Message">✓</button><span class="nm"><b>Message</b><small>Action · 120 ft</small></span><span class="tag">Communication</span></div>
-          <div class="r" data-row data-name="Thorn Whip" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Thorn Whip">✓</button><span class="nm"><b>Thorn Whip</b><small>Action · 30 ft</small></span><span class="tag">Damage</span></div>
-          <div class="r" data-row data-name="Starry Wisp" data-always="1" data-base="1" data-on="1"><span class="tick always" title="Always prepared">◆</span><span class="nm"><b>Starry Wisp</b><small>Always yours (Circle of the Moon), not counted</small></span><span class="tag">Damage</span></div>
-          <div class="r" data-row data-name="Guidance" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Guidance">✓</button><span class="nm"><b>Guidance</b><small>Action · Touch · Concentration</small></span><span class="tag">Buff</span></div>
-          <div class="r" data-row data-name="Produce Flame" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Produce Flame">✓</button><span class="nm"><b>Produce Flame</b><small>Bonus Action · Self</small></span><span class="tag">Damage</span></div>
-        </div>
-
-        <div class="sec" data-sec data-label="Druid prepared spells" data-when="change after a Long Rest" data-occ="rest" data-cap="10">
-          <div class="rule rest">
-            <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>10</b> of 10</span></div>
-            <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>change any</span><span><i>From</i>Druid spells you have slots for</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="lvl-h">1st level</div>
-          <div class="r" data-row data-name="Absorb Elements" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Absorb Elements">✓</button><span class="nm"><b>Absorb Elements</b><small>Reaction · Self</small></span><span class="tag">Defense</span></div>
-          <div class="r" data-row data-name="Faerie Fire" data-base="1" data-on=""><button type="button" class="tick" data-tick aria-label="Faerie Fire">✓</button><span class="nm"><b>Faerie Fire</b><small>Action · 60 ft · Concentration</small></span><span class="tag">Control</span></div>
-          <div class="r" data-row data-name="Healing Word" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Healing Word">✓</button><span class="nm"><b>Healing Word</b><small>Bonus Action · 60 ft</small></span><span class="tag">Healing</span></div>
-          <div class="r" data-row data-name="Cure Wounds" data-always="1" data-base="1" data-on="1"><span class="tick always" title="Always prepared">◆</span><span class="nm"><b>Cure Wounds</b><small>Always prepared (Circle of the Moon), not counted</small></span><span class="tag">Healing</span></div>
-          <div class="r" data-row data-name="Entangle" data-base="" data-on="1"><button type="button" class="tick" data-tick aria-label="Entangle">✓</button><span class="nm"><b>Entangle</b><small>Action · 90 ft · Concentration</small></span><span class="tag">Control</span></div>
-          <div class="lvl-h">2nd level</div>
-          <div class="r" data-row data-name="Heat Metal" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Heat Metal">✓</button><span class="nm"><b>Heat Metal</b><small>Action · 60 ft · Concentration</small></span><span class="tag">Damage</span></div>
-          <div class="r" data-row data-name="Pass without Trace" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Pass without Trace">✓</button><span class="nm"><b>Pass without Trace</b><small>Action · Self · Concentration</small></span><span class="tag">Buff</span></div>
-          <p class="note" style="padding: 4px 8px">… and the rest of his list, by level, with the filters as today.</p>
-        </div>
-      </div>
-      <aside class="side" aria-label="Your changes"><span class="lb">Your changes</span><div data-changes></div><div data-warns></div></aside>
-    </div>
-    <div class="m-foot"><button type="button" class="btn small" data-reset>Start over</button><span class="note">Nothing changes until you press Make</span><button type="button" class="btn primary">Make these changes</button></div>
-  </div>
-
-  <div class="notes">
-    <div><b>Why the reason at the top</b><span class="meta">The same window opens from the Long Rest window, a level-up card and Sheet. The reason it was opened for picks which rule lines say Now; the player can change it. Opened from Sheet it starts at Just looking: every rule shown, none marked.</span></div>
-    <div><b>Past the rule: said, never blocked</b><span class="meta">A change the reason doesn't cover, or more swaps than a "replace one" allows, shows amber in Your changes, and Make still works, as going over the prepared number does today. The DM rules.</span></div>
-    <div><b>One Make, two kinds of change</b><span class="meta">A cantrip is learned or let go on D&amp;D Beyond; a spell is prepared or unprepared. One Make sends both, and one Undo puts both back.</span></div>
-  </div>
-</section>
-
-<section class="board" id="two-classes">
-  <div class="intro">
-    <span class="lbl">3 · Two spellcasting classes</span> <span class="pick">My pick: A</span>
-    <h2>A · Big C, Paladin 6 / Sorcerer 2: a tab per class</h2>
-    <p>Each class gets its own tab, and each tab shows only that class's lists and rules, so a Paladin rule is never read
-    beside a Sorcerer spell. Each tab says whether it applies now (the dot). Your changes keeps both classes in view, each
-    checked against its own rule. Big C's player has already swapped a Paladin spell (allowed after a Long Rest) and
-    a Sorcerer spell (not: that waits for a Sorcerer level). Open the Sorcerer tab, or switch the reason to "I gained a
-    Sorcerer level".</p>
-  </div>
-
-  <div class="modal" data-modal data-occasion="rest">
-    <div class="m-head">
-      <div class="m-title"><span class="note">Big C · Paladin 6 / Sorcerer 2</span><h3>Prepare spells</h3></div>
-      <span class="x" aria-hidden="true">✕</span>
-    </div>
-    <div class="why"><span>Why are you changing?</span>
-      <button type="button" class="chip" data-occ="rest" data-occ-text="after a Long Rest">After a Long Rest</button>
-      <button type="button" class="chip" data-occ="level-paladin" data-occ-text="on a Paladin level">I gained a Paladin level</button>
-      <button type="button" class="chip" data-occ="level-sorcerer" data-occ-text="on a Sorcerer level">I gained a Sorcerer level</button>
-      <button type="button" class="chip" data-occ="look" data-occ-text="">Just looking</button>
-    </div>
-    <div class="tabs" role="tablist" aria-label="Class">
-      <button type="button" class="tab" role="tab" data-tab="pal" aria-selected="true"><b><span class="dot" data-tab-dot></span>Paladin 6</b><span>Prepared 4 of 6 · replace one after a Long Rest</span></button>
-      <button type="button" class="tab" role="tab" data-tab="sor" aria-selected="false"><b><span class="dot" data-tab-dot></span>Sorcerer 2</b><span>Cantrips 4 · Prepared 3 · one each on a Sorcerer level</span></button>
-    </div>
-    <div class="m-body">
-      <div class="list">
-        <div class="panel" data-panel="pal">
-          <div class="sec" data-sec data-label="Paladin prepared spells" data-when="replace one after a Long Rest" data-occ="rest" data-one="1" data-cap="6">
-            <div class="rule rest">
-              <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>4</b> of 6</span></div>
-              <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>replace one (and fill the 2 empty places)</span><span><i>From</i>Paladin spells, 1st and 2nd level</span></div>
-              <span class="now" data-now></span>
-            </div>
-            <p class="note" style="padding: 2px 8px 4px">Paladins have no cantrips.</p>
-            <div class="lvl-h">1st level</div>
-            <div class="r" data-row data-name="Compelled Duel" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Compelled Duel">✓</button><span class="nm"><b>Compelled Duel</b><small>Bonus Action · 30 ft · Concentration</small></span><span class="tag">Control</span></div>
-            <div class="r" data-row data-name="Purify Food and Drink" data-base="1" data-on=""><button type="button" class="tick" data-tick aria-label="Purify Food and Drink">✓</button><span class="nm"><b>Purify Food and Drink</b><small>Action · 10 ft · Ritual</small></span><span class="tag">Utility</span></div>
-            <div class="r" data-row data-name="Shield of Faith" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shield of Faith">✓</button><span class="nm"><b>Shield of Faith</b><small>Bonus Action · 60 ft · Concentration</small></span><span class="tag">Defense</span></div>
-            <div class="r" data-row data-name="Bless" data-base="" data-on="1"><button type="button" class="tick" data-tick aria-label="Bless">✓</button><span class="nm"><b>Bless</b><small>Action · 30 ft · Concentration</small></span><span class="tag">Buff</span></div>
-            <div class="r" data-row data-name="Command" data-always="1" data-base="1" data-on="1"><span class="tick always" title="Always prepared">◆</span><span class="nm"><b>Command</b><small>Always prepared (Oath of Conquest), not counted</small></span><span class="tag">Control</span></div>
-            <div class="r" data-row data-name="Heroism" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Heroism">✓</button><span class="nm"><b>Heroism</b><small>Action · Touch · Concentration</small></span><span class="tag">Buff</span></div>
-            <div class="lvl-h">2nd level</div>
-            <div class="r" data-row data-name="Prayer of Healing" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Prayer of Healing">✓</button><span class="nm"><b>Prayer of Healing</b><small>10 minutes · 30 ft</small></span><span class="tag">Healing</span></div>
-            <div class="r" data-row data-name="Aid" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Aid">✓</button><span class="nm"><b>Aid</b><small>Action · 30 ft</small></span><span class="tag">Healing</span></div>
-          </div>
-        </div>
-        <div class="panel" data-panel="sor" hidden>
-          <div class="sec" data-sec data-label="Sorcerer cantrips" data-when="change when you gain a Sorcerer level" data-occ="level-sorcerer" data-one="1" data-cap="4">
-            <div class="rule lvl">
-              <div class="rule-name"><b>Cantrips</b><span class="cnt"><b data-count>4</b> of 4</span></div>
-              <div class="bits"><span><i>When</i>you gain a Sorcerer level</span><span><i>How many</i>replace one</span><span><i>From</i>the Sorcerer list</span></div>
-              <span class="now" data-now></span>
-            </div>
-            <div class="r" data-row data-name="Green-Flame Blade" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Green-Flame Blade">✓</button><span class="nm"><b>Green-Flame Blade</b><small>Action · Self</small></span><span class="tag">Damage</span></div>
-            <div class="r" data-row data-name="Lightning Lure" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Lightning Lure">✓</button><span class="nm"><b>Lightning Lure</b><small>Action · Self</small></span><span class="tag">Damage</span></div>
-            <div class="r" data-row data-name="Message" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Message">✓</button><span class="nm"><b>Message</b><small>Action · 120 ft</small></span><span class="tag">Communication</span></div>
-            <div class="r" data-row data-name="Word of Radiance" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Word of Radiance">✓</button><span class="nm"><b>Word of Radiance</b><small>Action · Self</small></span><span class="tag">Damage</span></div>
-            <div class="r" data-row data-name="Fire Bolt" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Fire Bolt">✓</button><span class="nm"><b>Fire Bolt</b><small>Action · 120 ft</small></span><span class="tag">Damage</span></div>
-          </div>
-          <div class="sec" data-sec data-label="Sorcerer prepared spells" data-when="change when you gain a Sorcerer level" data-occ="level-sorcerer" data-one="1" data-cap="3">
-            <div class="rule lvl">
-              <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>3</b> of 3</span></div>
-              <div class="bits"><span><i>When</i>you gain a Sorcerer level</span><span><i>How many</i>replace one</span><span><i>From</i>Sorcerer spells, 1st level (his Sorcerer level)</span></div>
-              <span class="now" data-now></span>
-            </div>
-            <div class="r" data-row data-name="Expeditious Retreat" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Expeditious Retreat">✓</button><span class="nm"><b>Expeditious Retreat</b><small>Bonus Action · Self · Concentration</small></span><span class="tag">Movement</span></div>
-            <div class="r" data-row data-name="Healing Word" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Healing Word">✓</button><span class="nm"><b>Healing Word</b><small>Bonus Action · 60 ft</small></span><span class="tag">Healing</span></div>
-            <div class="r" data-row data-name="Shield" data-base="1" data-on=""><button type="button" class="tick" data-tick aria-label="Shield">✓</button><span class="nm"><b>Shield</b><small>Reaction · Self</small></span><span class="tag">Defense</span></div>
-            <div class="r" data-row data-name="Magic Missile" data-base="" data-on="1"><button type="button" class="tick" data-tick aria-label="Magic Missile">✓</button><span class="nm"><b>Magic Missile</b><small>Action · 120 ft</small></span><span class="tag">Damage</span></div>
-            <div class="r" data-row data-name="Chromatic Orb" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Chromatic Orb">✓</button><span class="nm"><b>Chromatic Orb</b><small>Action · 90 ft</small></span><span class="tag">Damage</span></div>
-          </div>
-        </div>
-      </div>
-      <aside class="side" aria-label="Your changes"><span class="lb">Your changes</span><div data-changes></div><div data-warns></div></aside>
-    </div>
-    <div class="m-foot"><button type="button" class="btn small" data-reset>Start over</button><span class="note">Nothing changes until you press Make</span><button type="button" class="btn primary">Make these changes</button></div>
-  </div>
-
-  <div class="intro" style="margin-top: 12px">
-    <span class="lbl">Or B</span>
-    <h2>B · Big C: both classes in one list</h2>
-    <p>Every section stacked, each class under a header. Fewer clicks, and closer to D&amp;D Beyond's single list, but a long
-    scroll, and the two classes' rule lines sit one above the other, which is where a player reads the wrong one.</p>
-  </div>
-  <div class="modal" data-modal data-occasion="rest">
-    <div class="m-head">
-      <div class="m-title"><span class="note">Big C · Paladin 6 / Sorcerer 2</span><h3>Prepare spells</h3></div>
-      <span class="x" aria-hidden="true">✕</span>
-    </div>
-    <div class="why"><span>Why are you changing?</span>
-      <button type="button" class="chip" data-occ="rest" data-occ-text="after a Long Rest">After a Long Rest</button>
-      <button type="button" class="chip" data-occ="level-paladin" data-occ-text="on a Paladin level">I gained a Paladin level</button>
-      <button type="button" class="chip" data-occ="level-sorcerer" data-occ-text="on a Sorcerer level">I gained a Sorcerer level</button>
-      <button type="button" class="chip" data-occ="look" data-occ-text="">Just looking</button>
-    </div>
-    <div class="m-body">
-      <div class="list">
-        <div class="lvl-h" style="color: var(--red); font-size: .78rem">Paladin 6</div>
-        <div class="sec" data-sec data-label="Paladin prepared spells" data-when="replace one after a Long Rest" data-occ="rest" data-one="1" data-cap="6">
-          <div class="rule rest">
-            <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>4</b> of 6</span></div>
-            <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>replace one</span><span><i>From</i>Paladin spells</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="r" data-row data-name="Compelled Duel" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Compelled Duel">✓</button><span class="nm"><b>Compelled Duel</b><small>Bonus Action · 30 ft</small></span><span class="tag">Control</span></div>
-          <div class="r" data-row data-name="Shield of Faith" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shield of Faith">✓</button><span class="nm"><b>Shield of Faith</b><small>Bonus Action · 60 ft</small></span><span class="tag">Defense</span></div>
-          <div class="r" data-row data-name="Bless" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Bless">✓</button><span class="nm"><b>Bless</b><small>Action · 30 ft</small></span><span class="tag">Buff</span></div>
-        </div>
-        <div class="lvl-h" style="color: var(--red); font-size: .78rem; padding-top: 14px">Sorcerer 2</div>
-        <div class="sec" data-sec data-label="Sorcerer cantrips" data-when="change when you gain a Sorcerer level" data-occ="level-sorcerer" data-one="1" data-cap="4">
-          <div class="rule lvl">
-            <div class="rule-name"><b>Cantrips</b><span class="cnt"><b data-count>4</b> of 4</span></div>
-            <div class="bits"><span><i>When</i>you gain a Sorcerer level</span><span><i>How many</i>replace one</span><span><i>From</i>the Sorcerer list</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="r" data-row data-name="Message" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Message">✓</button><span class="nm"><b>Message</b><small>Action · 120 ft</small></span><span class="tag">Communication</span></div>
-          <div class="r" data-row data-name="Fire Bolt" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Fire Bolt">✓</button><span class="nm"><b>Fire Bolt</b><small>Action · 120 ft</small></span><span class="tag">Damage</span></div>
-        </div>
-        <div class="sec" data-sec data-label="Sorcerer prepared spells" data-when="change when you gain a Sorcerer level" data-occ="level-sorcerer" data-one="1" data-cap="3">
-          <div class="rule lvl">
-            <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>3</b> of 3</span></div>
-            <div class="bits"><span><i>When</i>you gain a Sorcerer level</span><span><i>How many</i>replace one</span><span><i>From</i>Sorcerer spells</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="r" data-row data-name="Shield" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shield">✓</button><span class="nm"><b>Shield</b><small>Reaction · Self</small></span><span class="tag">Defense</span></div>
-          <div class="r" data-row data-name="Magic Missile" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Magic Missile">✓</button><span class="nm"><b>Magic Missile</b><small>Action · 120 ft</small></span><span class="tag">Damage</span></div>
-        </div>
-      </div>
-      <aside class="side" aria-label="Your changes"><span class="lb">Your changes</span><div data-changes></div><div data-warns></div></aside>
-    </div>
-    <div class="m-foot"><button type="button" class="btn small" data-reset>Start over</button><span class="note">Nothing changes until you press Make</span><button type="button" class="btn primary">Make these changes</button></div>
-  </div>
-</section>
-
-<section class="board" id="wizard">
-  <div class="intro">
-    <span class="lbl">4 · A spellbook</span>
-    <h2>Trah, Wizard 7: three lists, three rules</h2>
-    <p>A Wizard is the one class whose cantrips change after a Long Rest. The spellbook is its own section: the spells
-    in it are what Trah prepares from, two are free on each Wizard level, and a spell found on an adventure costs time
-    and gold to copy (said, never taken from the purse). Switch the reason to see each section's Now move.</p>
-  </div>
-  <div class="modal" data-modal data-occasion="rest">
-    <div class="m-head">
-      <div class="m-title"><span class="note">Trah · Wizard 7</span><h3>Prepare spells</h3></div>
-      <span class="x" aria-hidden="true">✕</span>
-    </div>
-    <div class="why"><span>Why are you changing?</span>
-      <button type="button" class="chip" data-occ="rest" data-occ-text="after a Long Rest">After a Long Rest</button>
-      <button type="button" class="chip" data-occ="level-wizard" data-occ-text="on a Wizard level">I gained a Wizard level</button>
-      <button type="button" class="chip" data-occ="found" data-occ-text="when copying a found spell">I found a spell to copy</button>
-      <button type="button" class="chip" data-occ="look" data-occ-text="">Just looking</button>
-    </div>
-    <div class="m-body">
-      <div class="list">
-        <div class="sec" data-sec data-label="Wizard cantrips" data-when="replace one after a Long Rest" data-occ="rest" data-one="1" data-cap="4">
-          <div class="rule rest">
-            <div class="rule-name"><b>Cantrips</b><span class="cnt"><b data-count>4</b> of 4</span></div>
-            <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>replace one</span><span><i>From</i>the Wizard list</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="r" data-row data-name="Fire Bolt" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Fire Bolt">✓</button><span class="nm"><b>Fire Bolt</b><small>Action · 120 ft</small></span><span class="tag">Damage</span></div>
-          <div class="r" data-row data-name="Shape Water" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shape Water">✓</button><span class="nm"><b>Shape Water</b><small>Action · 30 ft</small></span><span class="tag">Utility</span></div>
-          <div class="r" data-row data-name="Mage Hand" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Mage Hand">✓</button><span class="nm"><b>Mage Hand</b><small>Action · 30 ft</small></span><span class="tag">Utility</span></div>
-        </div>
-        <div class="sec" data-sec data-label="Wizard prepared spells" data-when="change after a Long Rest" data-occ="rest" data-cap="11">
-          <div class="rule rest">
-            <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>11</b> of 11</span></div>
-            <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>change any</span><span><i>From</i>your spellbook</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="r" data-row data-name="Fireball" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Fireball">✓</button><span class="nm"><b>Fireball</b><small>3rd · Action · 150 ft</small></span><span class="tag">Damage</span></div>
-          <div class="r" data-row data-name="Leomund's Tiny Hut" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Leomund's Tiny Hut">✓</button><span class="nm"><b>Leomund's Tiny Hut</b><small>3rd · 1 minute · Ritual</small></span><span class="tag">Defense</span></div>
-          <div class="r" data-row data-name="Intellect Fortress" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Intellect Fortress">✓</button><span class="nm"><b>Intellect Fortress</b><small>3rd · in your spellbook, not prepared</small></span><span class="tag">Defense</span></div>
-        </div>
-        <div class="sec" data-sec data-label="Spellbook" data-when="grows by two on a Wizard level, or by copying a found spell" data-occ="level-wizard found">
-          <div class="rule lvl">
-            <div class="rule-name"><b>Spellbook</b><span class="cnt"><b data-count>23</b> spells</span></div>
-            <div class="bits"><span><i>When</i>you gain a Wizard level: two free</span><span><i>Or</i>you find one: 2 hours and 50 GP per level</span><span><i>Never</i>taken out</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="r" data-row data-name="Fly (copied: 6 hours, 150 GP)" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Fly">✓</button><span class="nm"><b>Fly</b><small>3rd · copying it takes 6 hours and 150 GP</small></span><span class="tag">Movement</span></div>
-          <div class="r" data-row data-name="Haste (copied: 6 hours, 150 GP)" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Haste">✓</button><span class="nm"><b>Haste</b><small>3rd · copying it takes 6 hours and 150 GP</small></span><span class="tag">Buff</span></div>
-        </div>
-      </div>
-      <aside class="side" aria-label="Your changes"><span class="lb">Your changes</span><div data-changes></div><div data-warns></div></aside>
-    </div>
-    <div class="m-foot"><button type="button" class="btn small" data-reset>Start over</button><span class="note">Nothing changes until you press Make</span><button type="button" class="btn primary">Make these changes</button></div>
-  </div>
-</section>
-
-<section class="board" id="forms">
-  <div class="intro">
-    <span class="lbl">5 · Wild Shape</span>
-    <h2>Cole's known forms: the same modal</h2>
-    <p>Swap a form's small window becomes the large modal: the count of known forms big at the top, the Beasts Cole could
-    know grouped by Challenge Rating with their pictures, a tick on each known one, and the same Your changes and Make.
-    Beasts he can't take yet stay in the list, greyed, with the reason. The rule is one form per Long Rest; let two go to
-    see it flagged.</p>
-  </div>
-  <div class="modal" data-modal data-occasion="rest">
-    <div class="m-head">
-      <div class="m-title"><span class="note">Cole · Druid 6 (Circle of the Moon)</span><h3>Known forms</h3></div>
-      <div class="big"><span class="n"><b data-total>6</b><span> of 6</span></span><span class="boxes" data-total-boxes="6"></span><span class="note">known</span></div>
-      <span class="x" aria-hidden="true">✕</span>
-    </div>
-    <div class="why"><span>Why are you changing?</span>
-      <button type="button" class="chip" data-occ="rest" data-occ-text="after a Long Rest">After a Long Rest</button>
-      <button type="button" class="chip" data-occ="level-druid" data-occ-text="on a Druid level">I gained a Druid level</button>
-      <button type="button" class="chip" data-occ="look" data-occ-text="">Just looking</button>
-    </div>
-    <div class="m-body">
-      <div class="list">
-        <div class="sec" data-sec data-label="Known forms" data-when="replace one after a Long Rest" data-occ="rest level-druid" data-one="1" data-cap="6" data-total-of>
-          <div class="rule rest">
-            <div class="rule-name"><b>Wild Shape forms</b><span class="cnt"><b data-count>6</b> of 6</span></div>
-            <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>replace one</span><span><i>Eligible</i>Beasts up to CR 2, no Fly Speed until Druid 8</span></div>
-            <span class="now" data-now></span>
-          </div>
-          <div class="lvl-h">CR 0 to 1/2</div>
-          <div class="r pics" data-row data-name="Spider" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Spider">✓</button><span class="pic">Sp</span><span class="nm"><b>Spider</b><small>CR 0 · climb 20 ft</small></span><span class="tag">Tiny</span></div>
-          <div class="r pics" data-row data-name="Crocodile" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Crocodile">✓</button><span class="pic">Cr</span><span class="nm"><b>Crocodile</b><small>CR 1/2 · swim 30 ft</small></span><span class="tag">Large</span></div>
-          <div class="lvl-h">CR 1</div>
-          <div class="r pics" data-row data-name="Giant Toad" data-base="1" data-on=""><button type="button" class="tick" data-tick aria-label="Giant Toad">✓</button><span class="pic">GT</span><span class="nm"><b>Giant Toad</b><small>CR 1 · swim 40 ft</small></span><span class="tag">Large</span></div>
-          <div class="r pics" data-row data-name="Giant Octopus" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Giant Octopus">✓</button><span class="pic">GO</span><span class="nm"><b>Giant Octopus</b><small>CR 1 · swim 60 ft</small></span><span class="tag">Large</span></div>
-          <div class="r pics" data-row data-name="Dire Wolf" data-base="" data-on="1"><button type="button" class="tick" data-tick aria-label="Dire Wolf">✓</button><span class="pic">DW</span><span class="nm"><b>Dire Wolf</b><small>CR 1 · walk 50 ft</small></span><span class="tag">Large</span></div>
-          <div class="r pics" data-row data-name="Brown Bear" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Brown Bear">✓</button><span class="pic">BB</span><span class="nm"><b>Brown Bear</b><small>CR 1 · climb 30 ft</small></span><span class="tag">Large</span></div>
-          <div class="r pics cant"><span class="tick off" aria-hidden="true">–</span><span class="pic">GE</span><span class="nm"><b>Giant Eagle</b><small>CR 1 · fly 80 ft</small></span><span class="tag why-not">Fly Speed: from Druid 8</span></div>
-          <div class="lvl-h">CR 2</div>
-          <div class="r pics" data-row data-name="Giant Constrictor Snake" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Giant Constrictor Snake">✓</button><span class="pic">GC</span><span class="nm"><b>Giant Constrictor Snake</b><small>CR 2 · swim 30 ft</small></span><span class="tag">Huge</span></div>
-          <div class="r pics" data-row data-name="Hunter Shark" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Hunter Shark">✓</button><span class="pic">HS</span><span class="nm"><b>Hunter Shark</b><small>CR 2 · swim 40 ft</small></span><span class="tag">Large</span></div>
-          <div class="r pics" data-row data-name="Polar Bear" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Polar Bear">✓</button><span class="pic">PB</span><span class="nm"><b>Polar Bear</b><small>CR 2 · swim 30 ft</small></span><span class="tag">Large</span></div>
-          <div class="r pics cant"><span class="tick off" aria-hidden="true">–</span><span class="pic">EB</span><span class="nm"><b>An example Beast</b><small>CR 2 · walk 40 ft</small></span><span class="tag why-not">Learn it on D&amp;D Beyond</span></div>
-        </div>
-      </div>
-      <aside class="side" aria-label="Your changes"><span class="lb">Your changes</span><div data-changes></div><div data-warns></div></aside>
-    </div>
-    <div class="m-foot"><button type="button" class="btn small" data-reset>Start over</button><span class="note">Nothing changes until you press Make</span><button type="button" class="btn primary">Make these changes</button></div>
-  </div>
-  <div class="notes">
-    <div><b>The filters, as Prepare spells</b><span class="meta">Show (All, Known, Not known), CR, and movement (swim, climb, burrow), in the left column as on Prepare spells; left out here to keep the board short.</span></div>
-    <div><b>Greyed, with the reason</b><span class="meta">A Beast past his CR or with a Fly Speed stays listed so the player sees what Druid 8 brings. One askdnd has no D&amp;D Beyond id for says to learn it there.</span></div>
-    <div><b>A name opens its stat block</b><span class="meta">As a spell's name opens its panel in Prepare spells, a Beast's name opens its stat block beside the list.</span></div>
-  </div>
+  <p class="note">D&amp;D Beyond enforces none of these; it shows Learn and Delete at any time. askdnd holds the counts as D&amp;D Beyond does (no more prepared or known than your number) and never limits a swap: it says each rule where you make the change, marks what applies now, and warns about a swap past it. The DM rules.</p>
 </section>
 
 <section class="board" id="questions">
   <div class="intro">
     <span class="lbl">Your picks</span>
-    <h2>Four things to decide</h2>
+    <h2>Three things to decide</h2>
   </div>
   <div class="asks">
-    <div class="ask"><h3>Two spellcasting classes: A (a tab per class) or B (one list)?</h3><p class="meta">My pick is A: each tab shows only that class's rules, so the wrong rule is never beside the spell, and Your changes still shows both. B is closer to D&amp;D Beyond but puts the two rule lines one above the other.</p></div>
-    <div class="ask"><h3>"Why are you changing?" at the top: keep it?</h3><p class="meta">My pick is yes. It's what lets the window mark which rules apply now; it's set from where you opened it, and the player can change it. Without it, each rule line is shown and never marked Now or Not now.</p></div>
-    <div class="ask"><h3>A change past the rule: an amber note, and Make still works?</h3><p class="meta">My pick is yes, as going over the prepared number works today (rules as written, the DM rules). The other way is a second press, "Make anyway", before it goes to D&amp;D Beyond.</p></div>
-    <div class="ask"><h3>Known forms: the large modal for Wild Shape too?</h3><p class="meta">As drawn in board 5, with pictures, grouped by CR, greyed Beasts kept with their reason. It replaces Swap a form's small window, from Sheet and the Long Rest window.</p></div>
+    <div class="ask"><h3>Where the change happens: C (in the tab), D (a wider window), or both?</h3><p class="meta">My pick is both, sharing one list: C on Sheet › Spells and Sheet › Wild Shape; D only where Sheet isn't open (the Long Rest window and Battle's level-up card). If you want one place only, C, with those buttons going to Sheet in edit mode.</p></div>
+    <div class="ask"><h3>The button where the bookmark and bell are, or the tick column on the left?</h3><p class="meta">My pick is your idea, drawn here: a labeled button on the right reads clearly (Prepare, Unprepare, Learn, Let go), as D&amp;D Beyond's Learn and Delete do. The left column keeps showing the state, with the green or struck-through bar for a change.</p></div>
+    <div class="ask"><h3>One Make for all, or each press sent at once?</h3><p class="meta">My pick is one Make. A swap is two presses (one out, one in), and sending each at once would show the sheet half-swapped on D&amp;D Beyond in between. One Make also gives one Undo.</p></div>
   </div>
 </section>
 
 </div>
 
 <script>
-// The working boards: each modal ticks and unticks rows, counts each section, marks Now from the reason chosen, and
-// lists Your changes per section with an amber note for a change its rule doesn't cover. Mockup code only.
+// The working boards. Each board's data: its reasons, its lists (each with its own rule: count, when, how many) and
+// rows; edit mode turns the bookmark and bell into one button. Counts are held (D&D Beyond's way); a swap past its rule
+// is warned about, never blocked. Mockup code only.
 (function () {
   "use strict";
-  function render(m) {
-    var occ = m.dataset.occasion;
-    var chip = m.querySelector('[data-occ="' + occ + '"]');
-    var occText = chip ? chip.dataset.occText : "";
-    var changes = m.querySelector("[data-changes]");
-    var warns = m.querySelector("[data-warns]");
-    changes.textContent = ""; warns.textContent = "";
-    var any = false;
-    m.querySelectorAll("[data-occ]").forEach(function (c) { c.setAttribute("aria-pressed", String(c.dataset.occ === occ)); });
-    m.querySelectorAll("[data-sec]").forEach(function (s) {
-      var now = (s.dataset.occ || "").split(" ").indexOf(occ) !== -1;
-      s.dataset.isNow = now ? "1" : "";
-      var pill = s.querySelector("[data-now]");
-      if (occ === "look") { pill.textContent = "Just looking"; pill.className = "now"; }
-      else if (now) { pill.textContent = "Now"; pill.className = "now yes"; }
-      else { pill.textContent = "Not now"; pill.className = "now no"; }
-      var count = 0, adds = [], drops = [];
-      s.querySelectorAll("[data-row]").forEach(function (r) {
-        var on = r.dataset.on === "1", base = r.dataset.base === "1";
-        r.classList.toggle("add", on && !base);
-        r.classList.toggle("drop", !on && base);
-        var t = r.querySelector("[data-tick]");
-        if (t) t.setAttribute("aria-pressed", String(on));
-        if (on && !r.dataset.always) count++;
-        if (on && !base) adds.push(r.dataset.name);
-        if (!on && base) drops.push(r.dataset.name);
-      });
-      var cnt = s.querySelector("[data-count]");
-      var cap = Number(s.dataset.cap || 0);
-      if (cap) { cnt.textContent = count; cnt.parentNode.classList.toggle("over", count > cap); }
-      if (s.hasAttribute("data-total-of")) {
-        m.querySelector("[data-total]").textContent = count;
-        var bx = m.querySelector("[data-total-boxes]"); bx.textContent = "";
-        for (var i = 0; i < Number(bx.dataset.totalBoxes); i++) { var b = document.createElement("i"); if (i < count) b.className = "on"; bx.appendChild(b); }
-      }
+  var BOOK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  var BELL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z M10 20h4" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  var REST = ["rest", "After a Long Rest", "after a Long Rest"], LOOK = ["look", "Just looking", ""];
+  // spell rows: [name, list, state (on / off / always), tags, time, range, duration, roll, damage|dice, healing?, level group]
+  var B = {
+    cole: {
+      kind: "spells", name: "Cole", title: "Druid", sub: "Wisdom · save DC 15 · attack +7", verb: "Change spells", occ: "rest",
+      occs: [REST, ["level-druid", "I gained a Druid level", "on a Druid level"], LOOK],
+      lists: [
+        { id: "cant", cls: "Druid", title: "Cantrips", label: "Druid cantrips", cap: 3, one: true, k: "lvl", when: "one, when you gain a Druid level", occ: ["level-druid"], add: "Learn", drop: "Let go" },
+        { id: "prep", cls: "Druid", title: "Prepared", label: "Druid prepared spells", cap: 10, unlisted: 6, k: "rest", when: "any, after a Long Rest", occ: ["rest"], add: "Prepare", drop: "Unprepare" }],
+      groups: [["Cantrips", "cant", 0], ["1st level", "prep", 1], ["2nd level", "prep", 2]],
+      rows: [
+        ["Druidcraft", "cant", "off", "", "Action", "30 ft", "Instant", "—", "—", 0, 0],
+        ["Guidance", "cant", "off", "Conc.", "Action", "Touch", "1 minute", "—", "—", 0, 0],
+        ["Mending", "cant", "on", "", "1 minute", "Touch", "Instant", "—", "—", 0, 0],
+        ["Message", "cant", "on", "", "Action", "120 ft", "1 round", "—", "—", 0, 0],
+        ["Produce Flame", "cant", "off", "", "Bonus", "Self", "10 minutes", "+7 to hit", "9|2d8 fire", 0, 0],
+        ["Thorn Whip", "cant", "on", "", "Action", "30 ft", "Instant", "+7 to hit", "7|2d6 piercing", 0, 0],
+        ["Starry Wisp", "cant", "always", "Always", "Action", "60 ft", "Instant", "+7 to hit", "9|2d8 radiant", 0, 0],
+        ["Absorb Elements", "prep", "on", "", "Reaction", "Self", "1 round", "—", "—", 0, 1],
+        ["Cure Wounds", "prep", "always", "Always", "Action", "Touch", "Instant", "—", "13|2d8+4", 1, 1],
+        ["Entangle", "prep", "off", "Conc.", "Action", "90 ft", "1 minute", "Str 15", "—", 0, 1],
+        ["Faerie Fire", "prep", "on", "Conc.", "Action", "60 ft", "1 minute", "Dex 15", "—", 0, 1],
+        ["Healing Word", "prep", "on", "", "Bonus", "60 ft", "Instant", "—", "9|2d4+4", 1, 1],
+        ["Thunderwave", "prep", "off", "", "Action", "15-ft cube", "Instant", "Con 15", "9|2d8 thunder", 0, 1],
+        ["Heat Metal", "prep", "on", "Conc.", "Action", "60 ft", "1 minute", "Con 15", "9|2d8 fire", 0, 2],
+        ["Moonbeam", "prep", "always", "Always · Conc.", "Action", "120 ft", "1 minute", "Con 15", "11|2d10 radiant", 0, 2],
+        ["Pass without Trace", "prep", "off", "Conc.", "Action", "Self", "1 hour", "—", "—", 0, 2],
+        ["Spike Growth", "prep", "off", "Conc.", "Action", "150 ft", "10 minutes", "—", "5|2d4 piercing", 0, 2]],
+      more: "… and the rest of his 68, by level"
+    },
+    bigc: {
+      kind: "spells", name: "Big C", verb: "Change spells", occ: "rest", tabs: true,
+      cards: [["Paladin", "Charisma · save DC 14 · attack +6"], ["Sorcerer", "Charisma · save DC 14 · attack +6"]],
+      occs: [REST, ["level-paladin", "I gained a Paladin level", "on a Paladin level"], ["level-sorcerer", "I gained a Sorcerer level", "on a Sorcerer level"], LOOK],
+      lists: [
+        { id: "pal", cls: "Paladin", title: "Prepared", label: "Paladin prepared spells", cap: 6, one: true, k: "rest", when: "one, after a Long Rest", occ: ["rest"], add: "Prepare", drop: "Unprepare" },
+        { id: "scant", cls: "Sorcerer", title: "Cantrips", label: "Sorcerer cantrips", cap: 4, one: true, k: "lvl", when: "one, when you gain a Sorcerer level", occ: ["level-sorcerer"], add: "Learn", drop: "Let go" },
+        { id: "sprep", cls: "Sorcerer", title: "Prepared", label: "Sorcerer prepared spells", cap: 3, one: true, k: "lvl", when: "one, when you gain a Sorcerer level", occ: ["level-sorcerer"], add: "Prepare", drop: "Unprepare" }],
+      groups: [["1st level", "pal", 1], ["2nd level", "pal", 2], ["Cantrips", "scant", 0], ["1st level", "sprep", 1]],
+      rows: [
+        ["Bless", "pal", "off", "Conc.", "Action", "30 ft", "1 minute", "—", "—", 0, 1],
+        ["Command", "pal", "always", "Always", "Action", "60 ft", "Instant", "Wis 14", "—", 0, 1],
+        ["Compelled Duel", "pal", "on", "Conc.", "Bonus", "30 ft", "1 minute", "Wis 14", "—", 0, 1],
+        ["Heroism", "pal", "off", "Conc.", "Action", "Touch", "1 minute", "—", "—", 0, 1],
+        ["Purify Food and Drink", "pal", "on", "Ritual", "Action", "10 ft", "Instant", "—", "—", 0, 1],
+        ["Shield of Faith", "pal", "on", "Conc.", "Bonus", "60 ft", "10 minutes", "—", "—", 0, 1],
+        ["Aid", "pal", "off", "", "Action", "30 ft", "8 hours", "—", "5|max HP", 1, 2],
+        ["Prayer of Healing", "pal", "on", "", "10 minutes", "30 ft", "Instant", "—", "12|2d8+3", 1, 2],
+        ["Chill Touch", "scant", "off", "", "Action", "Touch", "Instant", "+6 to hit", "11|2d10 necrotic", 0, 0],
+        ["Fire Bolt", "scant", "off", "", "Action", "120 ft", "Instant", "+6 to hit", "11|2d10 fire", 0, 0],
+        ["Green-Flame Blade", "scant", "on", "", "Action", "Self", "Instant", "+6 to hit", "4.5|1d8 fire", 0, 0],
+        ["Lightning Lure", "scant", "on", "", "Action", "Self", "Instant", "Str 14", "9|2d8 lightning", 0, 0],
+        ["Message", "scant", "on", "", "Action", "120 ft", "1 round", "—", "—", 0, 0],
+        ["Word of Radiance", "scant", "on", "", "Action", "Self", "Instant", "Con 14", "7|2d6 radiant", 0, 0],
+        ["Chromatic Orb", "sprep", "off", "", "Action", "90 ft", "Instant", "+6 to hit", "13|3d8", 0, 1],
+        ["Expeditious Retreat", "sprep", "on", "Conc.", "Bonus", "Self", "10 minutes", "—", "—", 0, 1],
+        ["Healing Word", "sprep", "on", "", "Bonus", "60 ft", "Instant", "—", "8|2d4+3", 1, 1],
+        ["Magic Missile", "sprep", "off", "", "Action", "120 ft", "Instant", "—", "10|3 darts", 0, 1],
+        ["Shield", "sprep", "on", "", "Reaction", "Self", "1 round", "—", "—", 0, 1]],
+      more: "… and the rest of each class's list"
+    },
+    // form rows: [name, list, state (on / off / locked), CR · size, AC, temp HP, to hit, damage a turn, speed, why locked, CR group]
+    forms: {
+      kind: "forms", name: "Cole", title: "Wild Shape", sub: "Druid 6 · Circle of the Moon · Max CR 2 · no Fly Speed until Druid 8", verb: "Change forms", occ: "rest",
+      occs: [REST, ["level-druid", "I gained a Druid level", "on a Druid level"], LOOK],
+      lists: [{ id: "known", cls: "Wild Shape", title: "Known forms", label: "Known forms", cap: 6, one: true, k: "rest", when: "one, after a Long Rest", occ: ["rest"], add: "Learn", drop: "Let go" }],
+      groups: [["CR 0 to 1/2", "known", "a"], ["CR 1", "known", "b"], ["CR 2", "known", "c"]],
+      rows: [
+        ["Spider", "known", "on", "CR 0 · Tiny", 12, 18, "+4", "4", "climb 20", "", "a"],
+        ["Crocodile", "known", "off", "CR 1/2 · Large", 12, 18, "+4", "8", "swim 30", "", "a"],
+        ["Brown Bear", "known", "off", "CR 1 · Large", 11, 18, "+5", "13", "climb 30", "", "b"],
+        ["Dire Wolf", "known", "off", "CR 1 · Large", 14, 18, "+5", "10", "walk 50", "", "b"],
+        ["Giant Eagle", "known", "locked", "CR 1 · Large", 13, 18, "+5", "12", "fly 80", "Fly: Druid 8", "b"],
+        ["Giant Octopus", "known", "on", "CR 1 · Large", 11, 18, "+5", "10", "swim 60", "", "b"],
+        ["Giant Toad", "known", "on", "CR 1 · Large", 11, 18, "+4", "12", "swim 40", "", "b"],
+        ["Giant Constrictor Snake", "known", "on", "CR 2 · Huge", 12, 18, "+6", "13", "swim 30", "", "c"],
+        ["Hunter Shark", "known", "on", "CR 2 · Large", 12, 18, "+6", "14", "swim 40", "", "c"],
+        ["Polar Bear", "known", "on", "CR 2 · Large", 12, 18, "+7", "18", "swim 40", "", "c"]],
+      more: "… and the other 59 he could learn"
+    }
+  };
+  B.coleD = JSON.parse(JSON.stringify(B.cole));
+  B.coleD.rows = B.coleD.rows.filter(function (r) { return ["Druidcraft", "Guidance", "Mending", "Message", "Thorn Whip", "Starry Wisp", "Absorb Elements", "Entangle", "Faerie Fire", "Healing Word", "Heat Metal", "Pass without Trace"].indexOf(r[0]) !== -1; });
+  B.coleD.lists[1].unlisted = 6;
+
+  function h(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  function setup(root) {
+    var d = B[root.dataset.board], modal = root.dataset.mode === "modal";
+    d.state = {};
+    d.rows.forEach(function (r) { d.state[r[0] + "|" + r[1]] = { base: r[2] === "on", on: r[2] === "on" }; });
+    d.editing = true; d.cls = d.tabs ? d.cards[0][0] : null; d.view = "all"; d.q = ""; d.lv = {};
+    root.innerHTML = "";
+    if (!modal) {
+      root.appendChild(h("div", "tabbar", '<span>Actions</span><span' + (d.kind === "spells" ? ' class="on"' : "") + '>Spells</span>' + (d.name === "Cole" ? '<span' + (d.kind === "forms" ? ' class="on"' : "") + '>Wild Shape</span>' : "") + '<span>Inventory</span><span>Features</span><span>Skills &amp; situational</span><span>Background</span>'));
+    }
+    var inner = h("div", modal ? "" : "tab-in"); root.appendChild(inner);
+    d.root = root; d.inner = inner; d.modal = modal;
+    draw(d);
+  }
+
+  function count(d, L) {
+    var n = L.unlisted || 0;
+    d.rows.forEach(function (r) { if (r[1] === L.id && d.state[r[0] + "|" + r[1]].on) n++; });
+    return n;
+  }
+  function listOf(d, id) { return d.lists.filter(function (L) { return L.id === id; })[0]; }
+  function occText(d) { var o = d.occs.filter(function (x) { return x[0] === d.occ; })[0]; return o ? o[2] : ""; }
+  function nowOf(d, L) { return d.occ === "look" ? "" : L.occ.indexOf(d.occ) !== -1 ? "yes" : "no"; }
+  function nowPill(st) { return st ? '<span class="now ' + st + '">' + (st === "yes" ? "Now" : "Not now") + "</span>" : '<span class="now">Just looking</span>'; }
+
+  function ruleLine(d, L) {
+    var n = count(d, L), full = n >= L.cap;
+    return '<div class="rl ' + L.k + '"><span class="nm2">' + esc(L.title) + ' <small><b>' + n + '</b> of ' + L.cap + '</small></span><span class="wh">' + esc(L.when) + '</span>' + nowPill(nowOf(d, L)) +
+      (full ? '<span class="full">Full: ' + esc(L.drop.toLowerCase()) + ' one to ' + esc(L.add.toLowerCase()) + ' another</span>' : "") + "</div>";
+  }
+
+  function changes(d) {
+    var out = [], warns = [];
+    d.lists.forEach(function (L) {
+      var adds = [], drops = [];
+      d.rows.forEach(function (r) { if (r[1] !== L.id) return; var s = d.state[r[0] + "|" + r[1]]; if (s.on && !s.base) adds.push(r[0]); if (!s.on && s.base) drops.push(r[0]); });
       if (!adds.length && !drops.length) return;
-      any = true;
-      var g = document.createElement("div"); g.className = "grp";
-      var h = document.createElement("b"); h.textContent = s.dataset.label; g.appendChild(h);
-      adds.forEach(function (n) { g.appendChild(line("add", "+", n)); });
-      drops.forEach(function (n) { g.appendChild(line("drop", "−", n)); });
-      var problems = [];
-      if (occ !== "look" && !now) problems.push(cap1(s.dataset.label) + " " + s.dataset.when + ", not " + occText + ".");
-      if (s.dataset.one && drops.length > 1) problems.push(cap1(s.dataset.label) + ": the rule is " + s.dataset.when + "; this lets go of " + drops.length + ".");
-      if (cap && count > cap) problems.push(cap1(s.dataset.label) + ": " + count + " of " + cap + ".");
-      if (problems.length) {
-        problems.forEach(function (p) { var w = document.createElement("div"); w.className = "warn"; var wb = document.createElement("b"); wb.textContent = "Past the rule"; var ws = document.createElement("span"); ws.textContent = p; w.appendChild(wb); w.appendChild(ws); warns.appendChild(w); });
-      } else if (occ !== "look") {
-        var ok = document.createElement("span"); ok.className = "ok"; ok.textContent = "✓ within its rule"; g.appendChild(ok);
-      }
-      changes.appendChild(g);
+      out.push({ L: L, adds: adds, drops: drops });
+      if (d.occ !== "look" && L.occ.indexOf(d.occ) === -1) warns.push(esc(L.label) + ": " + esc(L.when) + ", not " + esc(occText(d)) + ".");
+      if (L.one && Math.max(adds.length, drops.length) > 1) warns.push(esc(L.label) + ": " + esc(L.when) + "; this swaps " + Math.max(adds.length, drops.length) + ".");
     });
-    if (!any) { var p = document.createElement("p"); p.className = "note"; p.textContent = "Tick to add, untick to let go."; changes.appendChild(p); }
-    m.querySelectorAll("[data-tab]").forEach(function (t) {
-      var panel = m.querySelector('[data-panel="' + t.dataset.tab + '"]');
-      var nowHere = Array.prototype.some.call(panel.querySelectorAll("[data-sec]"), function (s) { return s.dataset.isNow === "1"; });
-      t.querySelector("[data-tab-dot]").className = "dot " + (occ === "look" ? "" : nowHere ? "yes" : "no");
-    });
+    return { out: out, warns: warns };
   }
-  function line(kind, k, text) {
-    var d = document.createElement("div"); d.className = "chg " + kind;
-    var i = document.createElement("i"); i.textContent = k;
-    var s = document.createElement("span"); s.textContent = text;
-    d.appendChild(i); d.appendChild(s); return d;
+
+  function changeHTML(c) {
+    if (!c.out.length) return '<span class="lb">Your changes</span><span class="note">None yet</span>';
+    return '<span class="lb">Your changes</span>' + c.out.map(function (g) {
+      return g.adds.map(function (n) { return '<span class="cg add">+ ' + esc(n) + "</span>"; }).join("") + g.drops.map(function (n) { return '<span class="cg drop">' + esc(n) + "</span>"; }).join("");
+    }).join("");
   }
-  function cap1(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
-  document.querySelectorAll("[data-modal]").forEach(function (m) {
-    m.querySelectorAll("[data-occ]").forEach(function (c) {
-      if (c.tagName !== "BUTTON") return;
-      c.addEventListener("click", function () { m.dataset.occasion = c.dataset.occ; render(m); });
-    });
-    m.querySelectorAll("[data-tick]").forEach(function (b) {
-      b.addEventListener("click", function () { var r = b.closest("[data-row]"); r.dataset.on = r.dataset.on === "1" ? "" : "1"; render(m); });
-    });
-    m.querySelectorAll("[data-tab]").forEach(function (t) {
-      t.addEventListener("click", function () {
-        m.querySelectorAll("[data-tab]").forEach(function (x) { x.setAttribute("aria-selected", String(x === t)); });
-        m.querySelectorAll("[data-panel]").forEach(function (p) { p.hidden = p.dataset.panel !== t.dataset.tab; });
+
+  function makeBtn(n) { return '<button type="button" class="btn primary" data-make' + (n ? "" : " disabled") + ">Make " + (n ? n + " change" + (n > 1 ? "s" : "") : "changes") + "</button>"; }
+
+  function draw(d) {
+    var y = window.scrollY, inner = d.inner, c = changes(d), n = c.out.reduce(function (a, g) { return a + g.adds.length + g.drops.length; }, 0);
+    inner.innerHTML = "";
+    var why = '<span class="why">Why are you changing? ' + d.occs.map(function (o) { return '<button type="button" class="chip" data-occ="' + o[0] + '" aria-pressed="' + (o[0] === d.occ) + '">' + esc(o[1]) + "</button>"; }).join("") + "</span>";
+    var warns = '<div class="warns">' + c.warns.map(function (w) { return '<div class="warn"><b>Past the rule</b>' + w + "</div>"; }).join("") + "</div>";
+    var cards;
+    if (d.tabs) {
+      cards = '<div class="cards" role="tablist">' + d.cards.map(function (cd) {
+        var ls = d.lists.filter(function (L) { return L.cls === cd[0]; });
+        return '<button type="button" class="ctab" role="tab" data-cls="' + cd[0] + '" aria-selected="' + (d.cls === cd[0]) + '"><span class="cn">' + cd[0] + "</span>" + ls.map(function (L) { return ruleLine(d, L); }).join("") + "</button>";
+      }).join("") + "</div>";
+    } else {
+      cards = '<div class="cards">' + d.lists.map(function (L) { return '<div class="ctab" style="flex-basis:300px">' + ruleLine(d, L) + "</div>"; }).join("") + "</div>";
+    }
+    if (d.modal) {
+      inner.innerHTML = '<div class="m-head"><div class="r1"><h3>Prepare spells</h3><span class="note">' + esc(d.name) + " · Druid 6</span>" + why + '<span class="note" aria-hidden="true">✕</span></div>' + cards + warns + "</div>" +
+        '<div class="m-body"></div><div class="tray"><div class="eb-chg">' + changeHTML(c) + '</div><button type="button" class="btn link" data-cancel>Start over</button>' + makeBtn(n) + "</div>";
+      inner.querySelector(".m-body").appendChild(listBlock(d));
+    } else if (d.editing) {
+      inner.appendChild(h("div", "editbar", '<div class="eb-top"><span class="ttl">' + esc(d.verb) + " · " + esc(d.name) + "</span>" + why + '<button type="button" class="btn link" data-cancel>Cancel</button>' + makeBtn(n) + "</div>" + cards + '<div class="eb-chg">' + changeHTML(c) + "</div>" + warns));
+      inner.appendChild(listBlock(d));
+    } else {
+      var heads = h("div", "heads");
+      (d.tabs ? d.cards : [[d.title, d.sub]]).forEach(function (cd) {
+        var ls = d.lists.filter(function (L) { return L.cls === cd[0] || !d.tabs; });
+        heads.appendChild(h("div", "ccard", '<div class="t"><b>' + esc(cd[0]) + '</b><span class="note">' + esc(cd[1]) + '</span></div><div class="pills">' + ls.map(function (L) { return '<span class="pill">' + esc(L.title) + " " + count(d, L) + " of " + L.cap + "</span>"; }).join("") + '<span style="margin-left:auto"></span><button type="button" class="btn small" data-edit>' + esc(d.verb) + "</button></div>"));
       });
+      inner.appendChild(heads);
+      inner.appendChild(listBlock(d));
+    }
+    wire(d);
+    window.scrollTo(0, y);
+  }
+
+  function groupOf(d, r) { return d.groups.filter(function (g) { return g[1] === r[1] && g[2] === r[10]; })[0]; }
+  function mine(d, r) { return r[2] === "always" || d.state[r[0] + "|" + r[1]].on; }
+  function passView(d, r) { return d.view === "all" || mine(d, r); }
+  function uniq(a) { return a.filter(function (x, i) { return a.indexOf(x) === i; }); }
+
+  function listBlock(d) {
+    var lw = h("div", "lw");
+    var rows = d.rows.filter(function (r) { return !d.tabs || !d.editing || listOf(d, r[1]).cls === d.cls; });
+    var names = uniq(d.groups.filter(function (g) { return rows.some(function (r) { return r[1] === g[1]; }); }).map(function (g) { return g[0]; }));
+    var f = '<div class="flt"><span class="h">Filters</span><div class="ls-group"><span class="ls-label">' + (d.kind === "forms" ? "Challenge Rating" : "Level") + '</span><span class="ls-chips">' +
+      names.map(function (g) { var cnt = rows.filter(function (r) { return groupOf(d, r)[0] === g && passView(d, r); }).length; return '<button type="button" class="ls-chip' + (cnt ? "" : " zero") + '" data-lv="' + esc(g) + '" aria-pressed="' + !!d.lv[g] + '">' + esc(g.replace(" level", "").replace("CR ", "")) + ' <span class="ls-n">' + cnt + "</span></button>"; }).join("") +
+      '</span></div><div class="ls-group"><span class="ls-label">' + (d.kind === "forms" ? "Moves" : "Effect") + '</span><span class="ls-chips">' + (d.kind === "forms" ? '<button type="button" class="ls-chip" aria-pressed="false">Swim <span class="ls-n">6</span></button><button type="button" class="ls-chip" aria-pressed="false">Climb <span class="ls-n">2</span></button>' : '<button type="button" class="ls-chip" aria-pressed="false">Damage <span class="ls-n">8</span></button><button type="button" class="ls-chip" aria-pressed="false">Heal <span class="ls-n">3</span></button><button type="button" class="ls-chip" aria-pressed="false">Control <span class="ls-n">4</span></button>') + '</span></div><span class="note" style="font-size:.78rem">▸ More filters</span></div>';
+    lw.appendChild(h("div", "", f));
+    var main = h("div", "lmain");
+    var views = d.kind === "forms" ? [["mine", "Known"], ["all", "All you can learn"]] : [["mine", d.editing || d.modal ? "Yours" : "Prepared"], ["all", "All"]];
+    main.appendChild(h("div", "ltop", '<label class="ls-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input type="search" id="q-' + d.root.dataset.board + '" placeholder="' + (d.kind === "forms" ? "Search beasts" : "Search all your spells") + '" aria-label="Search" value="' + esc(d.q) + '"></label><div class="seg" role="group" aria-label="Which ones">' +
+      views.map(function (v) { var cnt = rows.filter(function (r) { return v[0] === "all" || mine(d, r); }).length; return '<button type="button" data-view="' + v[0] + '" aria-pressed="' + (d.view === v[0]) + '">' + v[1] + ' <span class="ls-n">' + cnt + "</span></button>"; }).join("") + "</div>" +
+      (d.kind === "forms" ? "<span>Sort: Known ▾</span>" : "<span>Sort: Level ▾</span>")));
+    if (d.q) main.appendChild(h("p", "ls-searching", "Searching everything: the filters are paused until you clear the search."));
+    var t = h("div", "tbl " + d.kind);
+    t.appendChild(h("div", "row hd", d.kind === "forms" ? '<span>✓</span><span></span><span>Form</span><span class="c-ac">AC</span><span class="c-thp">Temp HP</span><span class="c-hit">To hit</span><span class="dm">Damage / turn</span><span class="c-speed">Speed</span><span></span>'
+      : '<span>✓</span><span>Spell</span><span class="c-time">Time</span><span class="c-range">Range</span><span class="c-dur">Duration</span><span class="c-roll">Roll</span><span class="dm">Damage / Healing</span><span></span>'));
+    var anyLv = Object.keys(d.lv).some(function (k) { return d.lv[k]; });
+    var shown = {};
+    d.groups.forEach(function (g) {
+      var rs = rows.filter(function (r) {
+        if (groupOf(d, r) !== g) return false;
+        if (d.q) return r[0].toLowerCase().indexOf(d.q) !== -1;
+        return passView(d, r) && (!anyLv || d.lv[g[0]]);
+      });
+      if (!rs.length) return;
+      var L = listOf(d, g[1]), first = !shown[g[1]];
+      shown[g[1]] = 1;
+      var rt = (d.editing || d.modal) && first ? '<span class="rt">' + esc(L.title) + " " + count(d, L) + " of " + L.cap + " · " + esc(L.when) + "</span>" + nowPill(nowOf(d, L)) : "";
+      t.appendChild(h("div", "sh", esc(g[0]) + rt));
+      rs.forEach(function (r) { t.appendChild(rowEl(d, r, L)); });
     });
-    var reset = m.querySelector("[data-reset]");
-    if (reset) reset.addEventListener("click", function () { m.querySelectorAll("[data-row]").forEach(function (r) { r.dataset.on = r.dataset.base; }); render(m); });
-    render(m);
-  });
+    t.appendChild(h("div", "more", d.more));
+    main.appendChild(t);
+    lw.appendChild(main);
+    return lw;
+  }
+
+  function rowEl(d, r, L) {
+    var s = d.state[r[0] + "|" + r[1]], always = r[2] === "always", locked = r[2] === "locked", editing = d.editing || d.modal;
+    var cls = "row" + (s.on && !s.base ? " add" : "") + (!s.on && s.base ? " drop" : "") + (!mine(d, r) ? " off" : "") + (locked ? " locked" : "");
+    var mk = always ? '<span class="mk al" title="Always">◆</span>' : s.on ? '<span class="mk">✓</span>' : '<span class="mk off">○</span>';
+    var act;
+    if (!editing) act = '<span class="acts">' + BOOK + BELL + "</span>";
+    else if (always) act = '<span class="acts"><span class="act lockd">Always</span></span>';
+    else if (locked) act = '<span class="acts"><span class="act lockd">' + esc(r[9]) + "</span></span>";
+    else {
+      var full = !s.on && count(d, L) >= L.cap;
+      var label = s.on === s.base ? (s.on ? L.drop : L.add) : "Undo";
+      act = '<span class="acts"><button type="button" class="act' + (s.on && s.base ? " mine" : "") + (s.on !== s.base ? " undo" : "") + '" data-k="' + esc(r[0] + "|" + r[1]) + '"' + (full ? ' disabled title="' + L.cap + " of " + L.cap + ": " + L.drop.toLowerCase() + ' one first"' : "") + ">" + esc(label) + "</button></span>";
+    }
+    if (d.kind === "forms") {
+      return h("div", cls, mk + '<span class="pic">' + r[0].split(" ").map(function (w) { return w[0]; }).join("").slice(0, 2) + '</span><span class="nmc"><b>' + esc(r[0]) + '</b><small>' + esc(r[3]) + '</small></span><span class="c c-ac st">' + r[4] + '</span><span class="c c-thp">' + r[5] + '</span><span class="c c-hit st">' + r[6] + '</span><span class="dm"><b>' + r[7] + '</b></span><span class="c c-speed">' + esc(r[8]) + "</span>" + act);
+    }
+    var dmg = r[8] === "—" ? '<span class="dm c">—</span>' : '<span class="dm' + (r[9] ? " heal" : "") + '"><b>' + esc(r[8].split("|")[0]) + "</b> <small>" + esc(r[8].split("|")[1]) + "</small></span>";
+    return h("div", cls, mk + '<span class="nmc"><b>' + esc(r[0]) + "</b>" + (r[3] ? '<span class="tg">' + esc(r[3]) + "</span>" : "") + (d.tabs && !editing ? '<span class="tg">' + esc(L.cls) + "</span>" : "") + '</span><span class="c c-time st">' + esc(r[4]) + '</span><span class="c c-range">' + esc(r[5]) + '</span><span class="c c-dur">' + esc(r[6]) + '</span><span class="c c-roll st">' + esc(r[7]) + "</span>" + dmg + act);
+  }
+
+  function wire(d) {
+    var root = d.root;
+    root.querySelectorAll("[data-occ]").forEach(function (b) { b.onclick = function () { d.occ = b.dataset.occ; draw(d); }; });
+    root.querySelectorAll("[data-cls]").forEach(function (b) { b.onclick = function () { d.cls = b.dataset.cls; d.lv = {}; draw(d); }; });
+    root.querySelectorAll("[data-view]").forEach(function (b) { b.onclick = function () { d.view = b.dataset.view; draw(d); }; });
+    root.querySelectorAll("[data-lv]").forEach(function (b) { b.onclick = function () { d.lv[b.dataset.lv] = !d.lv[b.dataset.lv]; draw(d); }; });
+    root.querySelectorAll(".act[data-k]").forEach(function (b) { b.onclick = function () { var s = d.state[b.dataset.k]; s.on = !s.on; draw(d); }; });
+    var q = root.querySelector("input[type=search]");
+    if (q) q.oninput = function () { d.q = q.value.trim().toLowerCase(); draw(d); var nq = d.root.querySelector("input[type=search]"); nq.focus(); nq.setSelectionRange(nq.value.length, nq.value.length); };
+    var e = root.querySelectorAll("[data-edit]");
+    e.forEach(function (b) { b.onclick = function () { d.editing = true; d.view = "all"; draw(d); }; });
+    var cancel = root.querySelector("[data-cancel]");
+    if (cancel) cancel.onclick = function () { Object.keys(d.state).forEach(function (k) { d.state[k].on = d.state[k].base; }); if (!d.modal) { d.editing = false; d.view = "mine"; } draw(d); };
+    var make = root.querySelector("[data-make]");
+    if (make) make.onclick = function () {
+      var c = changes(d).out, n = c.reduce(function (a, g) { return a + g.adds.length + g.drops.length; }, 0);
+      Object.keys(d.state).forEach(function (k) { d.state[k].base = d.state[k].on; });
+      if (!d.modal) { d.editing = false; d.view = "mine"; }
+      draw(d);
+      toast(d.name + ": " + n + " change" + (n > 1 ? "s" : "") + " on their way to D&D Beyond, with Undo (in the mockup nothing is sent).");
+    };
+  }
+  function toast(text) {
+    var t = h("div", "toast"); t.textContent = text; document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3500);
+  }
+  document.querySelectorAll("[data-board]").forEach(setup);
 })();
 </script>

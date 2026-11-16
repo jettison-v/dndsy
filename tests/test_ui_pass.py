@@ -89,8 +89,9 @@ def test_an_item_on_its_way_is_marked_in_its_row(player, db):
 
 
 def test_a_spell_on_its_way_is_marked_in_prepare_spells(player, db):
-    """Question 1: the Prepare spells window marks a spell on its way after its name, as every other place does."""
+    """Question 1: the Change spells window (Prepare spells, until Nov 16) marks a spell on its way after its name, as
+    every other place does."""
     cole = char(db, "Cole")
     assert player.post(f"/characters/{cole.id}/prepare?key=spell:Healing Word", data={"to": "unprepare"}).status_code == 200
-    row = player.get(f"/characters/{cole.id}/spells/prepare").text.split('data-name="Healing Word"', 1)[1][:1200]
+    row = player.get(f"/characters/{cole.id}/spells/prepare").text.split('data-label="Healing Word"', 1)[1][:1500]
     assert 'data-sync="on"' in row and "↻" not in row

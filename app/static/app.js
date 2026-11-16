@@ -3538,7 +3538,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   }
   function apply(root) {
     const st = root._ls, sel = st.sel, q = st.q.trim().toLowerCase();
-    const rows = [...root.querySelectorAll('[data-ls-row]')];
+    // (a row a scope leaves out, such as another class's in Change spells' class tabs, isn't in the list at all)
+    const all = [...root.querySelectorAll('[data-ls-row]')], rows = all.filter(r => !r.hasAttribute('data-ls-out'));
+    all.forEach(r => { if (r.hasAttribute('data-ls-out')) r.hidden = true; });
     const on = Object.keys(sel).filter(g => (sel[g] || []).length);
     const passes = (f, skip) => on.every(g => g === skip || vals(f, g).some(v => sel[g].includes(v)));
     const inView = (r, v = st.view) => !v || (r.dataset.views || '').split(' ').includes(v);
@@ -3655,6 +3657,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const root = rootOf(e.target);
     if (root && root._ls && e.target.matches('[data-ls-more]')) { root._ls.more = e.target.open; save(root); }
   }, true);
+  // A page that changes rows (Change spells: a row moved into Yours, a class tab) asks the list to look again
+  document.addEventListener('list:refresh', e => { const root = rootOf(e.target); if (root && root._ls) apply(root); });
   // Lists can arrive later (a modal): set each one up when it appears
   function init() {
     document.querySelectorAll('[data-list]:not([data-ls-ready])').forEach(root => {
@@ -4349,110 +4353,118 @@ document.addEventListener('click', e => {
   document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"], [data-menu="admin-menu"]')) fill(); });
 })();
 
-// ---------------------------------------------------------------- Prepare spells
-// (app/preparing.py, _prepare_spells.html; Brett, 2026-11-02, docs/mockups/prepare-spells/) A large modal like the Spell
-// Book. Ticking a spell changes nothing yet: the count, the meter and the list of changes follow as you go, and Make
-// sends them all at once. The count against the class's number is said, never enforced (going over is the DM's call).
+// ---------------------------------------------------------------- Changing spells and forms
+// (app/choosing.py, _change_window.html; Brett, Nov 16: the wide window, D on docs/mockups/changing-spells/) Sheet's own
+// list in a large modal. A row's button changes nothing yet: the counts, each rule's Now or Not now, the warnings and Your
+// changes follow as you go, and Make sends them all. A full count is held, as D&D Beyond holds it (let one go first);
+// a swap past its 2024 rule (how many, or when) is warned about, never blocked. Two classes: a tab each, the list showing
+// that class's rows (the others are left out of the list's counts, `data-ls-out`), Your changes keeping both.
 (function () {
   function start(root) {
-    if (root._prep) return;
-    root._prep = true;
-    const fold = root.querySelector('.prep-fold');  // (the filters fold into one line on narrower screens, as the Spell Book's)
-    if (fold && matchMedia('(max-width: 900px)').matches) fold.open = false;
-    const rows = [...root.querySelectorAll('[data-prep-row]')];
-    const most = +root.dataset.max || 0;
-    const filter = { show: 'all', level: '', effect: '' };
-    const on = r => r.dataset.on === '1';
-    const changed = () => rows.filter(r => !r.dataset.always && r.dataset.on !== r.dataset.base);
-    const scope = root.closest('.peek') || root;  // (the count is in the window's head, frozen above the list)
-    const $ = s => scope.querySelector(s);
-    const ORD = n => n + ({ 1: 'st', 2: 'nd', 3: 'rd' }[n] || 'th');
-    function draw() {
-      const count = rows.filter(r => on(r) && !r.dataset.always).length, over = !!most && count > most;
-      $('[data-prep-have]').textContent = count;
-      $('[data-prep-have]').classList.toggle('over', over);
-      if (most) $('[data-prep-left]').textContent = over ? `${count - most} over` : `${most - count} left`;
-      const boxes = $('[data-prep-boxes]');
-      if (boxes) {
-        boxes.querySelectorAll('i').forEach((b, i) => b.classList.toggle('on', i < count));
-        boxes.classList.toggle('over', over);
-        boxes.setAttribute('aria-label', `${count} of ${most} prepared`);
-        const extra = $('[data-prep-extra]');
-        extra.hidden = !over;
-        extra.textContent = over ? `+${count - most}` : '';
-      }
-      const warn = $('[data-prep-over]');
-      if (warn) {
-        warn.hidden = !over;
-        warn.textContent = `${count} prepared: more than the ${most} a ${root.dataset.class} prepares at this level. D&D Beyond allows it; whether it stands is the DM's call.`;
-      }
-      const ch = changed();
-      // Each change: + to prepare, − to drop, the spell and its level (Brett, 2026-11-02, the UI pass: no amber)
-      $('[data-prep-changes]').replaceChildren(...ch.map(r => {
-        const p = document.createElement('div');
-        p.className = 'prep-change ' + (on(r) ? 'add' : 'drop');
-        const k = document.createElement('span');
-        k.className = 'prep-k'; k.textContent = on(r) ? '+' : '−';
-        k.setAttribute('aria-label', on(r) ? 'prepare' : 'drop');
-        const name = document.createElement('b');
-        name.textContent = r.dataset.name;
-        const what = document.createElement('small');
-        what.textContent = ORD(+r.dataset.level);
-        p.append(k, name, what);
-        return p;
-      }));
-      $('[data-prep-none]').hidden = ch.length > 0;
-      const adds = ch.filter(on).length, drops = ch.length - adds;
-      $('[data-prep-note]').textContent = ch.length
-        ? [adds && `prepare ${adds}`, drops && `drop ${drops}`].filter(Boolean).join(', ').replace(/^./, x => x.toUpperCase())
-        : 'Nothing changes until you press Make';
-      const make = $('[data-prep-make]');
-      if (make) { make.disabled = !ch.length; make.textContent = ch.length ? `Make ${ch.length} change${ch.length === 1 ? '' : 's'} on D&D Beyond` : 'Make these changes'; }
-      rows.forEach(r => {
-        const moved = !r.dataset.always && r.dataset.on !== r.dataset.base;
-        r.classList.toggle('changed', moved);
-        r.classList.toggle('add', moved && on(r));
-        r.classList.toggle('drop', moved && !on(r));
-        const t = r.querySelector('[data-prep-tick]');
-        if (t) t.setAttribute('aria-pressed', on(r) ? 'true' : 'false');
-        r.hidden = !((filter.show === 'all' || (filter.show === 'on' ? on(r) : filter.show === 'off' ? !on(r) : r.dataset.fav === '1'))
-          && (!filter.level || r.dataset.level === filter.level) && (!filter.effect || r.dataset.effect === filter.effect));
-      });
-      root.querySelectorAll('[data-prep-heading]').forEach(h => { h.hidden = !rows.some(r => !r.hidden && r.dataset.level === h.dataset.prepHeading); });
-      $('[data-prep-empty]').hidden = rows.some(r => !r.hidden);
+    if (root._chg) return;
+    root._chg = true;
+    const lists = JSON.parse(root.dataset.lists || '{}'), occs = JSON.parse(root.dataset.occs || '[]');
+    const head = (root.closest('.peek') || document).querySelector('.chg-head'), list = root.querySelector('[data-list]');
+    const rows = [...root.querySelectorAll('[data-pick-row]')];
+    const on = r => r.dataset.on === '1', moved = r => !r.dataset.always && r.dataset.on !== r.dataset.base;
+    const count = id => rows.filter(r => r.dataset.pickList === id && !r.dataset.always && on(r)).length;
+    const now = L => root.dataset.occ === 'look' ? '' : L.occ.includes(root.dataset.occ) ? 'yes' : 'no';
+    const occText = () => (occs.find(o => o[0] === root.dataset.occ) || [])[2] || '';
+    function changes() {
+      return Object.entries(lists).map(([id, L]) => {
+        const rs = rows.filter(r => r.dataset.pickList === id && moved(r));
+        return { id, L, adds: rs.filter(on).map(r => r.dataset.label), drops: rs.filter(r => !on(r)).map(r => r.dataset.label) };
+      }).filter(g => g.adds.length || g.drops.length);
     }
+    function draw() {
+      // each list's rule line: its count, Now or Not now, and Full
+      Object.entries(lists).forEach(([id, L]) => {
+        const line = root.querySelector('[data-rule="' + id + '"]'); if (!line) return;
+        const n = count(id), st = now(L);
+        line.querySelector('[data-rule-count]').textContent = n;
+        const pill = line.querySelector('[data-rule-now]');
+        pill.textContent = st === 'yes' ? 'Now' : st === 'no' ? 'Not now' : 'Just looking';
+        pill.className = 'rl-now' + (st ? ' ' + st : '');
+        const full = line.querySelector('[data-rule-full]'); if (full) full.hidden = !(L.cap && n >= L.cap);
+      });
+      // each row: its button's words, its mark, held when its list is full, in Yours or not
+      rows.forEach(r => {
+        const L = lists[r.dataset.pickList], m = moved(r), b = r.querySelector('[data-pick-act]');
+        r.classList.toggle('add', m && on(r));
+        r.classList.toggle('drop', m && !on(r));
+        const mark = r.querySelector('.sh-status');
+        if (mark && !r.dataset.always) { mark.textContent = on(r) ? '✓' : '○'; mark.classList.toggle('on', on(r)); mark.classList.toggle('off', !on(r)); }
+        const views = (r.dataset.views || '').split(' ').filter(v => v && v !== 'mine');
+        r.dataset.views = (on(r) || r.dataset.always ? ['mine'] : []).concat(views).join(' ');
+        if (!b) return;
+        const full = !on(r) && L.cap && count(r.dataset.pickList) >= L.cap;
+        b.textContent = m ? 'Undo' : on(r) ? L.drop : L.add;
+        b.classList.toggle('mine', on(r) && !m);
+        b.classList.toggle('undo', m);
+        b.setAttribute('aria-pressed', on(r) ? 'true' : 'false');
+        b.disabled = !!full;
+        b.title = full ? `${count(r.dataset.pickList)} of ${L.cap}: ${L.first}` : '';
+      });
+      // the class tabs: the chosen class's rows in the list; a dot for whether its rules allow it now
+      const cls = root.dataset.cls;
+      root.querySelectorAll('[data-chg-cls]').forEach(t => {
+        t.setAttribute('aria-selected', t.dataset.chgCls === cls ? 'true' : 'false');
+        const ls = Object.values(lists).filter(L => L.cls === t.dataset.chgCls), dot = t.querySelector('[data-chg-dot]');
+        if (dot) dot.className = 'chg-dot ' + (root.dataset.occ === 'look' ? '' : ls.some(L => now(L) === 'yes') ? 'yes' : 'no');
+      });
+      if (root.querySelector('[data-chg-cls]')) rows.forEach(r => r.toggleAttribute('data-ls-out', r.dataset.cls !== cls));
+      (head || root).querySelectorAll('[data-chg-occ]').forEach(b => { const o = b.dataset.chgOcc === root.dataset.occ; b.classList.toggle('on', o); b.setAttribute('aria-pressed', o ? 'true' : 'false'); });
+      // Your changes, and what goes past a rule
+      const ch = changes(), n = ch.reduce((a, g) => a + g.adds.length + g.drops.length, 0);
+      const box = root.querySelector('[data-chg-list]');
+      box.replaceChildren(...(n ? ch.flatMap(g => [...g.adds.map(x => ['add', '+ ' + x]), ...g.drops.map(x => ['drop', x])]).map(([k, t]) => {
+        const s = document.createElement('span'); s.className = 'chg-chip ' + k; s.textContent = t; return s;
+      }) : [Object.assign(document.createElement('span'), { className: 'note', textContent: 'None yet' })]));
+      const warns = [];
+      ch.forEach(g => {
+        if (root.dataset.occ !== 'look' && !g.L.occ.includes(root.dataset.occ)) warns.push(`${g.L.label}: ${g.L.when}, not ${occText()}.`);
+        const swaps = Math.max(g.adds.length, g.drops.length);
+        if (g.L.one && swaps > 1) warns.push(`${g.L.label}: ${g.L.when}; this swaps ${swaps}.`);
+      });
+      root.querySelector('[data-chg-warns]').replaceChildren(...warns.map(w => {
+        const p = document.createElement('p'); p.className = 'chg-warn';
+        const b = document.createElement('b'); b.textContent = 'Past the rule';
+        p.append(b, ' ', w); return p;
+      }));
+      const make = root.querySelector('[data-chg-make]');
+      if (make) { make.disabled = !n; make.textContent = n ? `Make ${n} change${n === 1 ? '' : 's'} on D&D Beyond` : 'Make changes'; }
+      if (list) list.dispatchEvent(new CustomEvent('list:refresh', { bubbles: true }));
+    }
+    const post = body => fetch(root.dataset.url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' }, body: JSON.stringify(body) })
+      .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || "askdnd couldn't do that"); return j; }));
+    const told = j => { document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver })); document.body.dispatchEvent(new CustomEvent('characterChanged')); };
     root.addEventListener('click', e => {
-      const tick = e.target.closest('[data-prep-tick]');
-      if (tick) { const r = tick.closest('[data-prep-row]'); r.dataset.on = on(r) ? '' : '1'; draw(); return; }
-      const chip = e.target.closest('[data-prep-show], [data-prep-level], [data-prep-effect]');
-      if (chip) {
-        const key = 'prepShow' in chip.dataset ? 'show' : 'prepLevel' in chip.dataset ? 'level' : 'effect';
-        const val = chip.dataset['prep' + key[0].toUpperCase() + key.slice(1)];
-        filter[key] = key !== 'show' && filter[key] === val ? '' : val;
-        chip.parentElement.querySelectorAll('.chip').forEach(x => x.classList.toggle('on', x === chip && (key === 'show' || filter[key] === val)));
-        draw();
-        return;
-      }
-      if (e.target.closest('[data-prep-reset]')) { rows.forEach(r => { r.dataset.on = r.dataset.base; }); draw(); return; }
-      const make = e.target.closest('[data-prep-make]');
+      const act = e.target.closest('[data-pick-act]');
+      if (act) { e.stopPropagation(); const r = act.closest('[data-pick-row]'); r.dataset.on = on(r) ? '' : '1'; draw(); return; }
+      const tab = e.target.closest('[data-chg-cls]');
+      if (tab) { root.dataset.cls = tab.dataset.chgCls; draw(); return; }
+      if (e.target.closest('[data-chg-reset]')) { rows.forEach(r => { r.dataset.on = r.dataset.base; }); draw(); return; }
+      const make = e.target.closest('[data-chg-make]');
       if (make && !make.disabled) {
-        const said = $('[data-prep-said]');
+        const said = root.querySelector('[data-chg-said]');
         make.disabled = true;
-        fetch(root.dataset.url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
-          body: JSON.stringify({ changes: changed().map(r => ({ key: r.dataset.key, on: on(r) })) }) })
-          .then(r => r.json().catch(() => ({})).then(j => { if (!r.ok) throw new Error(j.detail || "askdnd couldn't do that"); return j; }))
+        post({ changes: rows.filter(moved).map(r => ({ id: r.dataset.pick, on: on(r) })) })
           .then(j => {
-            document.body.dispatchEvent(new CustomEvent('bridgeDeliver', { detail: j.deliver }));
-            document.body.dispatchEvent(new CustomEvent('characterChanged'));
-            window.askdndToast(j.text);
-            window.askdndPanel(root.dataset.url, null, null, 'large');  // (again: each change shows ↻ until D&D Beyond has it)
+            told(j);
+            window.askdndToast(j.text, j.undo ? { label: 'Undo', run: () => post({ undo: j.undo }).then(u => { told(u); window.askdndToast(u.text); }).catch(err => window.askdndToast(err.message, null, 'warn')) } : null);
+            window.askdndPanel(root.dataset.url + (root.dataset.url.includes('?') ? '&' : '?') + 'cls=' + encodeURIComponent(root.dataset.cls) + '&why=' + root.dataset.occ, null, null, 'large');  // (again: each change shows ↻ until D&D Beyond has it)
           })
           .catch(err => { said.hidden = false; said.textContent = err.message; make.disabled = false; });
       }
     });
+    // the reason sits in the window's head, outside the body (its own head: a reload after Make brings a new one)
+    if (head) head.addEventListener('click', e => {
+      const b = e.target.closest('[data-chg-occ]');
+      if (b) { root.dataset.occ = b.dataset.chgOcc; draw(); }
+    });
     draw();
   }
-  document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-prep]'); if (root) start(root); });
+  document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-change]'); if (root) start(root); });
 })();
 
 // ---------------------------------------------------------------- Item browser

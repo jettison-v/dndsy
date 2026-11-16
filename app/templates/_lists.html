@@ -55,3 +55,25 @@
   {% for v, l in views %}<button type="button" data-ls-view="{{ v }}" aria-pressed="{{ 'true' if v == ('all' if views | selectattr(0, 'equalto', 'all') | first else views[0][0]) else 'false' }}">{{ l }} <span class="ls-n" data-ls-view-n></span></button>{% endfor %}
 </div>
 {%- endmacro %}
+
+{# Change spells and forms (app/choosing.py): a row's action where the bookmark's neighbours are, beside the bookmark
+   (kept: the Shortlist is how you compare before choosing). `meta` is the window's lists by id (their words). #}
+{% macro change_act(pick, meta, fav) -%}
+{%- set L = meta[pick.list] -%}
+<span class="ls-marks chg-marks"><span>{{ fav }}</span><span>
+  {%- if pick.always %}<span class="chg-lock" title="Always prepared: not changed here">Always</span>
+  {%- elif pick.lock %}<span class="chg-lock" title="{{ pick.lock }}">{{ pick.lock }}</span>
+  {%- else %}<button type="button" class="chg-act{{ ' mine' if pick.on }}" data-pick-act aria-pressed="{{ 'true' if pick.on else 'false' }}">{{ L.drop if pick.on else L.add }}</button>{% endif -%}
+</span></span>
+{%- endmacro %}
+
+{# A list's rule (Changing Spells and Forms, Nov 15–16): its count against the number at your level, when and how many
+   by the 2024 rules, and Now or Not now for the reason you're changing. Said, never enforced; a full count is held. #}
+{% macro rule_line(L) -%}
+<div class="rule-line {{ L.k }}" data-rule="{{ L.id }}">
+  <span class="rl-name">{{ L.title }} <span class="rl-count"><b data-rule-count>{{ L.count }}</b>{% if L.cap %} of {{ L.cap }}{% endif %}</span></span>
+  <span class="rl-when">{{ L.when }}</span>
+  <span class="rl-now" data-rule-now></span>
+  {% if L.cap %}<span class="rl-full" data-rule-full hidden>Full: {{ L.full }}</span>{% endif %}
+</div>
+{%- endmacro %}

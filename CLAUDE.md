@@ -55,6 +55,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **Search, like Spotlight**: app/search.py, base.html
 - **Hide and Ready on Battle**: app/hiding.py, app/readying.py, _ready_window.html
 - **Playing in Wild Shape**: app/shifting.py, _shift_window.html
+- **Changing spells and forms**: app/choosing.py, _change_window.html, _lists.html (`rule_line`, `change_act`)
 - **Your creatures**: app/creatures.py, _creature_battle.html, app/wild_shape.py
 - **Items that bring a creature**: app/item_creatures.py, _bring_window.html, _bring_setup.html
 - **Pictures**: app/pictures.py, app/picture_window.py, app/drawing.py

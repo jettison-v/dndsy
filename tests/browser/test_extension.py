@@ -296,9 +296,11 @@ def test_without_the_extension_the_pill_says_to_add_it_and_the_window_has_the_li
     assert link.evaluate("a => getComputedStyle(a).alignItems") == "center"  # (a link in a menu stays a button: Brett, 2026-10-30)
 
 
-def test_prepare_spells_holds_together_at_every_width(people, server):
-    """Prepare spells (app/preparing.py) is a live-state modal, so it's checked here, where the bridge is on (and the
-    campaign is a test one), with the same check as every main page (tests/browser/test_layout.py)."""
+def test_change_spells_and_forms_hold_together_at_every_width(people, server):
+    """Change spells and Change forms (app/choosing.py; Brett, Nov 16: the wide window) are live-state modals, so they're
+    checked here, where the bridge is on (and the campaign is a test one), with the same check as every main page
+    (tests/browser/test_layout.py). A cantrip let go after a Long Rest is allowed and warned about (Druids swap them on
+    a level); a full count holds every Learn until one is let go, as D&D Beyond does."""
     from tests.browser.test_layout import WIDTHS, problems
 
     player = people("player")
@@ -306,13 +308,42 @@ def test_prepare_spells_holds_together_at_every_width(people, server):
     for width in WIDTHS:
         page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
         player.open(f"/characters/{server['cole']}")
+        page.click("[data-tab=t-forms]")
+        page.click("button[data-change-forms]")
+        page.locator(".peek.open [data-change] [data-pick-row]").first.wait_for()
+        found += problems(page, f"change forms at {width}px")
+        player.open(f"/characters/{server['cole']}")
         page.click("[data-tab=t-spells]")
-        page.click("button[data-modal-url*='/spells/prepare']")
-        page.locator(".peek.open [data-prep]").wait_for()
-        found += problems(page, f"prepare spells at {width}px")
-    page.locator("[data-prep-tick]").first.click()  # a change: the side's list and the foot's label grow
-    found += problems(page, "prepare spells, one change ticked")
-    assert page.locator("[data-prep-note]").inner_text() in ("Drop 1", "Prepare 1")  # (the sheet isn't open here: no Make)
+        page.click("button[data-change-spells]")
+        page.locator(".peek.open [data-change] [data-pick-row]").first.wait_for()
+        found += problems(page, f"change spells at {width}px")
+    root = page.locator(".peek.open [data-change]")
+    page.locator('.peek.open [data-chg-occ="rest"]').click()
+    assert page.locator('.peek.open [data-chg-occ="rest"]').get_attribute("aria-pressed") == "true"  # (the reason, in the head)
+    root.locator('[data-pick-list$=":cantrips"][data-base="1"] [data-pick-act]').first.click()  # (let one go)
+    assert root.locator(".chg-warn").count() == 1  # (a Druid's cantrips change on a level: said, never blocked)
+    assert page.locator(".peek.open [data-chg-list] .chg-chip").count() == 1
+    # (in the window: the menu bar's Live pill can be mid-change after the page opened, on GitHub's slower machines)
+    in_window = lambda where: [p for p in problems(page, where) if "#live-pill" not in p]
+    found += in_window("change spells, a cantrip let go")
+    # Six forms of six: every Learn held until one is let go, then held again once one is learned
+    player.open(f"/characters/{server['cole']}")
+    page.click("[data-tab=t-forms]")
+    page.click("button[data-change-forms]")
+    root = page.locator(".peek.open [data-change]")
+    learn = root.locator('[data-pick-row]:not([data-base="1"]) [data-pick-act]')
+    learn.first.wait_for()
+    assert learn.count() > 1 and all(b.is_disabled() for b in learn.all())
+    known = root.locator('[data-pick-row][data-base="1"] [data-pick-act]')
+    known.first.click()
+    assert not learn.first.is_disabled()
+    learn.first.click()
+    assert all(b.is_disabled() for b in learn.all()[1:])
+    known.nth(1).click()
+    learn.nth(1).click()
+    page.locator('.peek.open [data-chg-occ="rest"]').click()
+    assert "this swaps 2" in root.locator(".chg-warn").inner_text()  # (one form a Long Rest)
+    found += in_window("change forms, two swapped")
     assert not found, "\n".join(found)
 
 
