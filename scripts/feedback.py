@@ -17,7 +17,7 @@ nothing is built until Brett moves it up; **question**, answer it with `tell`, t
 
 `pull` writes each note to private/feedback/<id>/ (never committed: notes hold campaign pages): note.md (the words,
 who, where, when, the thread), context.json, page.html (the page as drawn), shot.jpg (its picture) and pasted.* (a
-screenshot Brett added). Reads askdnd at --base (default https://askdnd.ai) with FEEDBACK_KEY, from the environment
+screenshot Brett added), and added-<id>.* (screenshots added later with Add to it). Reads askdnd at --base (default https://askdnd.ai) with FEEDBACK_KEY, from the environment
 or .env (set with scripts/set-secret.sh FEEDBACK_KEY).
 """
 
@@ -68,7 +68,8 @@ def note_md(item: dict) -> str:
     if c.get("errors"):
         lines.append(f"- Page errors: {json.dumps(c['errors'])}")
     if item.get("thread"):
-        lines += ["", "## Thread", *[f"- **{'Claude' if m['who'] == 'claude' else 'Brett'}:** {m['text']}" for m in item["thread"]]]
+        lines += ["", "## Thread", *[f"- **{'Claude' if m['who'] == 'claude' else 'Brett'}:** {m['text']}"
+                                     + (f" (screenshots: {', '.join(f'added-{p}' for p in m['pics'])})" if m.get("pics") else "") for m in item["thread"]]]
     if item.get("pr"):
         lines += ["", f"Fixed in {item['pr']}"]
     return "\n".join(lines) + "\n"
@@ -92,6 +93,11 @@ def pull(base: str, status: str, kind: str = "") -> None:
             data = call(base, f"/api/feedback/{item['id']}/{which}")
             ext = ".jpg" if data[:3] == b"\xff\xd8\xff" else ".webp" if data[8:12] == b"WEBP" else ".png"
             (d / f"{which}{ext}").write_bytes(data)
+        for m in full.get("thread") or []:  # (screenshots added with Add to it: added-<id>.*)
+            for pid in m.get("pics") or []:
+                data = call(base, f"/api/feedback/{item['id']}/pic/{pid}")
+                ext = ".jpg" if data[:3] == b"\xff\xd8\xff" else ".webp" if data[8:12] == b"WEBP" else ".png"
+                (d / f"added-{pid}{ext}").write_bytes(data)
         print(f"{item['id']:>4}  {item.get('kind') or '-':<8} {item['status']:<9} {item['sender'][:24]:<24} {item['text'][:90]}")
     print(f"{len(items)} note(s) in {OUT.relative_to(ROOT)}/")
 

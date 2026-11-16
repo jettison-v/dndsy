@@ -4807,6 +4807,26 @@ document.addEventListener('click', e => {
   }
 })();
 
+// ---------------------------------------------------------------- screenshots in Add to it
+// (feedback 64, Nov 16; _feedback_pics.html) A form with [data-pics] takes screenshots: chosen with its button, or
+// pasted anywhere in the form; the note beside the button says how many are going with it.
+document.addEventListener('paste', e => {
+  const form = e.target.closest && e.target.closest('form[data-pics]');
+  const input = form && form.querySelector('[data-pics-input]');
+  const pasted = [...((e.clipboardData && e.clipboardData.files) || [])].filter(f => /^image\/(png|jpeg|webp)$/.test(f.type));
+  if (!input || !pasted.length) return;
+  e.preventDefault();
+  const all = new DataTransfer();
+  [...input.files, ...pasted].forEach(f => all.items.add(f));
+  input.files = all.files;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+});
+document.addEventListener('change', e => {
+  if (!e.target.matches || !e.target.matches('[data-pics-input]')) return;
+  const said = e.target.closest('form').querySelector('[data-pics-said]'), n = e.target.files.length;
+  if (said) said.textContent = n ? n + (n === 1 ? ' screenshot' : ' screenshots') + ' going with it' : 'Or paste one here (⌘V)';
+});
+
 // ---------------------------------------------------------------- the Picture window
 // (app/picture_window.py; Brett, 2026-11-04, docs/mockups/pictures/ board 2) Upload takes a picture chosen, dropped on
 // its box or pasted anywhere in the window, and shows it before it's sent; the form sends it as the file.

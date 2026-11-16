@@ -463,3 +463,49 @@ def test_a_staging_note_from_before_kinds_is_kept_not_sorted(admin, db, monkeypa
     r = admin.post("/api/feedback/from-staging", json={"email": "admin@example.com", "text": "From older staging"},
                    headers={"X-Feedback-Key": "k" * 32})
     assert r.status_code == 200 and db.get(Feedback, r.json()["id"]).kind == ""
+
+
+def _png_file(name="shot.png"):
+    out = io.BytesIO()
+    Image.new("RGB", (8, 6), (40, 200, 40)).save(out, "PNG")
+    return ("pics", (name, out.getvalue(), "image/png"))
+
+
+def test_add_to_it_takes_screenshots_that_only_its_sender_admins_and_claude_see(admin, player, dm, db, file_store, monkeypatch):
+    """Feedback 64 (Nov 16): Add to it takes screenshots too, chosen or pasted, from a note's sender on Notes you sent
+    and from an admin on the queue. Its sender sees their own; another player can't; admins and Claude can."""
+    from app.models import FeedbackPicture
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    note(player, text="The Rest button wraps.")
+    fb = db.scalar(select(Feedback))
+    r = player.post(f"/your-notes/feedback/{fb.id}", data={"text": "Here it is on my phone"}, files=[_png_file(), _png_file("two.png")],
+                    follow_redirects=False)
+    assert r.status_code == 303
+    db.refresh(fb)
+    pics = fb.thread[-1]["pics"]
+    assert len(pics) == 2 and fb.thread[-1]["text"] == "Here it is on my phone" and fb.status == "review"
+    assert db.get(FeedbackPicture, pics[0]).key.endswith(".png")  # (in file storage, like every picture)
+    assert player.get(f"/your-notes/feedback/{fb.id}/pic/{pics[0]}").headers["content-type"] == "image/png"
+    page = player.get("/your-notes?tab=askdnd").text
+    assert f"/your-notes/feedback/{fb.id}/pic/{pics[1]}" in page
+    assert dm.get(f"/your-notes/feedback/{fb.id}/pic/{pics[0]}").status_code == 404  # (not their note)
+    assert admin.get(f"/manage/feedback/{fb.id}/pic/{pics[0]}").status_code == 200
+    assert f"/manage/feedback/{fb.id}/pic/{pics[0]}" in admin.get("/manage/feedback?tab=review").text
+    monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 40)
+    assert admin.get(f"/api/feedback/{fb.id}/pic/{pics[1]}", headers={"X-Feedback-Key": "k" * 40}).status_code == 200
+    assert admin.get(f"/api/feedback/{fb.id}/pic/{pics[1]}").status_code == 404  # (Claude's key, or nothing)
+    # A screenshot alone is enough; the wrong kind of file, or too many, is refused and nothing is kept
+    assert player.post(f"/your-notes/feedback/{fb.id}", files=[_png_file()], follow_redirects=False).status_code == 303
+    before = db.scalar(select(func.count()).select_from(FeedbackPicture))
+    assert player.post(f"/your-notes/feedback/{fb.id}", data={"text": "x"}, files=[("pics", ("a.gif", b"GIF89a", "image/gif"))]).status_code == 400
+    assert player.post(f"/your-notes/feedback/{fb.id}", data={"text": "x"}, files=[_png_file(f"{i}.png") for i in range(5)]).status_code == 400
+    assert player.post(f"/your-notes/feedback/{fb.id}", data={"text": " "}).status_code == 400
+    assert db.scalar(select(func.count()).select_from(FeedbackPicture)) == before
+    # An admin adds one on the queue
+    r = admin.post(f"/manage/feedback/{fb.id}", data={"to": "answer", "answer": "Same on mine"}, files=[_png_file()], follow_redirects=False)
+    db.refresh(fb)
+    assert r.status_code == 303 and fb.thread[-1]["who"] == "you" and len(fb.thread[-1]["pics"]) == 1 and fb.status == "new"

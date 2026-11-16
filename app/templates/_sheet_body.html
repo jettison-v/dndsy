@@ -136,9 +136,10 @@
         <div class="row tight mt-1">
           {% set known_n = forms | selectattr("known") | list | length %}
           <span class="tag {{ 'done' if known_n == d.known else 'draft' }}">Known {{ known_n }} of {{ d.known }}</span>
-          {% if can_play %}<button type="button" class="btn small" data-change-forms data-modal-url="/characters/{{ c.id }}/wild-shape/forms" data-modal-size="large">Change forms</button>{% endif %}
           <span class="tag">Max CR {{ d.max_cr_label }}{% if d.moon and d.max_cr > d.table_cr %} (Circle Forms){% endif %}</span>
-          <span class="tag {{ '' if d.fly else 'faint' }}">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
+          <span class="tag">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
+          {# Change forms ends the counts at the far right, as Change spells does (feedback 65, Nov 16) #}
+          {% if can_play %}<button type="button" class="btn small planner-prep" data-change-forms data-modal-url="/characters/{{ c.id }}/wild-shape/forms" data-modal-size="large">Change forms</button>{% endif %}
         </div></div>
       <div class="planner-class"><b>In a form</b>
         {%- set ws_act = s.actions | selectattr("name", "equalto", "Wild Shape") | selectattr("uses") | first %}

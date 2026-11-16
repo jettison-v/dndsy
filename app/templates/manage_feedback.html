@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_feedback_pics.html" import pics_field, added_pics %}
 {% block title %}Feedback · Manage · askdnd{% endblock %}
 {% block content %}
 {# Manage › askdnd › Feedback (app/feedback.py; docs/mockups/feedback-queue/, Queue): every note for Claude by where it
@@ -35,10 +36,11 @@
           <div class="fb-side">
             <p class="fb-text">{{ f.text }}</p>
             {% set who = f.sender.split(" (")[0] or "Its sender" %}
-            {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else who if m.who == "sender" else "You" }}{% if m.to == "sender" %}, to {{ who }}{% elif m.kind %}, what it is{% endif %}</small>{{ m.text }}</div>{% endfor %}
+            {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else who if m.who == "sender" else "You" }}{% if m.to == "sender" %}, to {{ who }}{% elif m.kind %}, what it is{% endif %}</small>{{ m.text }}{% if not hide %}{{ added_pics(m.pics, "/manage/feedback/" ~ f.id) }}{% endif %}</div>{% endfor %}
             {% if f.pr %}<p class="note">Fixed in <a href="{{ f.pr }}" target="_blank" rel="noopener">{{ f.pr }}</a></p>{% endif %}
-            {% if f.status != "deleted" %}{% set asked = f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer">
-              <label class="field"><span>{{ "Your answer" if asked else "Add to it and send it to Claude" if f.status == "review" else "Add to this note" }}</span><textarea name="answer" rows="2" required{% if not asked %} placeholder="Something you forgot, or what happened next"{% endif %}></textarea></label>
+            {% if f.status != "deleted" %}{% set asked = f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer" enctype="multipart/form-data" data-pics>
+              <label class="field"><span>{{ "Your answer" if asked else "Add to it and send it to Claude" if f.status == "review" else "Add to this note" }}</span><textarea name="answer" rows="2"{% if not asked %} placeholder="Something you forgot, or what happened next"{% endif %}></textarea></label>
+              {{ pics_field() }}
               <input type="hidden" name="to" value="answer"><button class="btn {{ 'primary' if asked }} small" type="submit">{{ "Answer" if asked else "Add" }}</button></form>{% endif %}
             {% if f.user_id %}<details class="fold"><summary>Reply to {{ who }}</summary>{# (they see it on Your notes, and a corner card once) #}
               <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer">

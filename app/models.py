@@ -944,6 +944,16 @@ class Feedback(Timestamped, Base):
     seen: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last saw on Your notes (the badge)
 
 
+class FeedbackPicture(Timestamped, Base):
+    """A screenshot added to a note after it was sent (Add to it, by its sender or an admin; feedback 64, Nov 16). The
+    thread entry it came with names it (`"pics": [id]`); a row here keeps the file in use for the nightly sweep."""
+
+    __tablename__ = "feedback_pictures"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    feedback_id: Mapped[int] = mapped_column(ForeignKey("feedback.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(200), ForeignKey("stored_files.key"))
+
+
 
 class Place(Timestamped, Base):
     """A place on askdnd's table (app/places.py; docs/plans/2026-11-06-table-build-plan.md, D&D Beyond's Location): one map

@@ -252,7 +252,7 @@ a.live-row:hover .live-go { color: var(--text); }
 .cond-rest svg { color: var(--amber); flex: none; }  /* (a moon: Rest stands out from the chips beside it, Brett 2026-11-02) */
 .sheet-hd { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; margin-top: var(--sp-2); }  /* Sheet: Rest, then Hit dice */
 .planner-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-2) var(--sp-3); flex-wrap: wrap; }
-.row > .planner-prep { margin-left: auto; }  /* Prepare spells ends its class's counts, at the far right */
+.row > .planner-prep { margin-left: auto; }  /* Change spells and Change forms end their counts, at the far right (feedback 65) */
 .res-row > .cond-rest { margin-left: auto; }  /* Rest ends Resources, at the far right */
 /* Heroic Inspiration: a chip you can press, lit when you have it, grey and hollow when you don't */
 .res-row .res.res-insp, .res-insp { display: inline-flex; align-items: center; gap: var(--sp-1); min-height: var(--chip-h); margin-left: var(--sp-2); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-pill); background: var(--surface-2); color: var(--muted); font: 600 var(--fs-md)/1 var(--sans); cursor: pointer; }
@@ -3687,6 +3687,9 @@ kbd { display: inline-block; border: 1px solid var(--line-strong); border-bottom
 .fb-form { display: grid; gap: var(--sp-3); padding: var(--sp-4); }
 .fb-form h2 { margin: 0; font-size: var(--fs-lg); color: var(--text-strong); }
 .fb-form textarea { width: 100%; }
+.nt-kind { justify-self: start; align-self: flex-start; width: fit-content; }  /* a note's kind, its own size (Notes you sent) */
+.fb-thread-pics { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }  /* screenshots added with Add to it (feedback 64) */
+.fb-thread-pics img { display: block; max-width: 100%; max-height: 120px; border-radius: var(--r-md); border: 1px solid var(--line); }
 .fb-kinds { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }  /* what it is: three chips, none on until picked */
 .fb-kind-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin: var(--sp-2) 0; }  /* the queue, by kind */
 .fb-kind-chips .chip { text-decoration: none; color: var(--text); }
