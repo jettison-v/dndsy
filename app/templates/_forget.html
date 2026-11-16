@@ -1,5 +1,6 @@
 {# Reminders: the player's reminders, in their order. On Battle (where they're used) and Plan (where they're
    made, as a tab: set `bare` to leave out the box). #}
+{% from "_lists.html" import empty_state %}
 <div class="{{ 'forget-tab' if bare else 'section' }}"{% if not bare %} data-tour="reminders"{% endif %}>
   <div class="sec-head"><h2>Reminders</h2>{% if can_pick %}<a href="/characters/{{ c.id }}">Choose on Sheet →</a>{% endif %}</div>
   {% if not show_picks %}
@@ -17,7 +18,7 @@
         hx-post="/characters/{{ c.id }}/pick" hx-vals='{{ {"kind": "remind", "ref": r.ref} | tojson }}' hx-target="closest li" hx-swap="delete">×</button>{% endif %}
     </li>{% endfor %}</ul>
   {% else %}
-  <p class="muted">{% if can_pick %}Nothing yet. Press the bell (<b>Remind me</b>) on anything you tend to forget (for example, Advantage against being Charmed), or write one below.{% else %}{{ c.name }}'s player hasn't added any reminders yet.{% endif %}</p>
+  {% if can_pick %}{{ empty_state("Nothing to remember yet: press the bell on anything you tend to forget, or write one below.") }}{% else %}{{ empty_state(c.name ~ "'s player hasn't added any reminders.") }}{% endif %}
   {% endif %}
   {% if can_pick and show_picks %}{# Free-text reminders, not tied to anything on the sheet #}
   <form class="forget-add" hx-post="/characters/{{ c.id }}/reminders" hx-swap="none" data-reset-after>

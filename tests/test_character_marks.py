@@ -87,7 +87,7 @@ def test_dm_never_sees_reminders(dm, db):
     db.add(CharacterPick(character_id=cole.id, kind="star", ref="spell:Heat Metal"))
     db.flush()
     battle = dm.get(f"/characters/{cole.id}/battle").text
-    assert "SECRET REMINDER" not in battle and "aren't shown to the DM" in battle
+    assert "SECRET REMINDER" not in battle and 'data-tour="reminders"' not in battle  # (no Reminders card for the DM at all; the UI review)
     assert "ico-pin" not in dm.get(f"/characters/{cole.id}/all/action").text
 
 

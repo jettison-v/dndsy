@@ -62,7 +62,7 @@ def test_battle_page(player, db):
     characters.refresh(db, cole)
     page = player.get(f"/characters/{cole.id}/battle").text
     assert "Wild Shape" in page and "Reminders" in page and "Party" in page
-    assert "hasn't pinned anything yet" in page  # Battle shows only what the player pinned
+    assert page.count("data-empty") >= 3  # Battle shows only what the player pinned: each column says it has none
     assert 'id="live-pill"' in page and "See all actions" in page
     panel = player.get(f"/characters/{cole.id}/all/action").text
     assert "<html" not in panel and "Heat Metal" in panel and "Moonbeam" in panel
@@ -79,7 +79,8 @@ def test_battle_shows_only_pins_to_players_and_the_usual_options_to_the_dm(playe
     owned_by(db, cole, "player@example.com")
     owned_by(db, char(db, "Trah"), "dm@example.com", is_dm=True)
     action = lambda page: page.split('data-econ-col="action"')[1].split('data-econ-col="bonus"')[0]
-    assert "Pin what you use most" in player.get(f"/characters/{cole.id}/battle").text
+    first = action(player.get(f"/characters/{cole.id}/battle").text)  # (nothing pinned: a few to pin, no help line)
+    assert "data-empty" not in first and "pin-hint" not in first
     picks.toggle(db, cole, "star", "spell:Heat Metal", "Heat Metal")
     mine = action(player.get(f"/characters/{cole.id}/battle").text)
     assert "Heat Metal" in mine and "Unarmed Strike" not in mine and "See all actions" in mine

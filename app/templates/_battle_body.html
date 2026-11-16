@@ -1,16 +1,15 @@
 {% from "_char.html" import comp_mark, pips, count_pips, sync, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, insp_mark, portrait, spends, adv, hit, roll_attrs, sync_attrs, rest_btn, basic_actions %}
 {% from "_notes_macros.html" import combo_body %}
+{% from "_lists.html" import empty_state %}
 {% from "_cond_icons.html" import cond_icon, cond_halo with context %}
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). A new copy and the Wild Shape switch swap this whole block. #}
 {# One row of a column on Battle. #}
 {% macro move(o, pin=false) %}
       <div class="move{{ ' yours' if o.source == 'yours' }}" data-key="{{ o.key }}" {% if form and o.source in ('form', 'rule') %}data-modal-url="/characters/{{ c.id }}/form?name={{ form.beast.name | urlencode }}" data-modal-size="large"{% else %}data-panel-url="/characters/{{ c.id }}/detail?ref={{ o.key | urlencode }}"{% endif %} tabindex="0" role="button">
-        {% if can_use and o.use %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button></span>{% endif %}{% if not (can_use and o.use and o.use.gives and o.heal) and not (can_play and o.cast) %}{{ hit(o) }}{% endif %}{% if can_play and o.cast %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ o.key | urlencode }}">Cast</button></span>{% endif %}{% if can_play and o.use_window %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/feature?key={{ o.key | urlencode }}" data-feature-use>Use</button></span>{% endif %}{% if can_bring and o.bring and o.bring.state == "ready" %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/bring/{{ o.bring.id }}">{{ o.bring.verb }}</button></span>{% endif %}
-        {% if pin %}{{ pick_btn(c, "star", o.key, false, can_pick) }}{% endif %}{% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}{% set st = (s.sync or {}) %}<b{% if o.use %}{{ sync_attrs(st.get("item:" ~ o.use.id) or st.get("charges:" ~ o.use.id)) }}{% endif %}>{{ o.name }}</b> {{ pips(o.uses) }}{% for t in o.tags %} <span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}{{ comp_mark(o.need) }}
+        {% if can_use and o.use %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button></span>{% endif %}{% if not (can_use and o.use and o.use.gives and o.heal) and not (can_play and o.cast) %}{{ hit(o) }}{% endif %}{% if can_pick and o.starts and o.starts not in active_conditions %}<span class="hit"><button type="submit" class="roll-chip item-go cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item, "note": o.note or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Shows {{ o.starts }} under the header for the whole table">{{ o.name | capitalize }}</button></span>{% elif can_pick and o.ends and o.ends in active_conditions %}<span class="hit"><button type="submit" class="roll-chip item-go cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name | capitalize }}</button></span>{% endif %}{% if can_play and o.cast %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ o.key | urlencode }}">Cast</button></span>{% endif %}{% if can_play and o.use_window %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/feature?key={{ o.key | urlencode }}" data-feature-use>Use</button></span>{% endif %}{% if can_bring and o.bring and o.bring.state == "ready" %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/bring/{{ o.bring.id }}">{{ o.bring.verb }}</button></span>{% endif %}
+        {% if pin %}{{ pick_btn(c, "star", o.key, false, can_pick) }}{% endif %}{% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}{% set st = (s.sync or {}) %}<b{% if o.use %}{{ sync_attrs(st.get("item:" ~ o.use.id) or st.get("charges:" ~ o.use.id)) }}{% endif %}>{{ o.name }}</b> {{ pips(o.uses) }}{% if o.tags or o.spends or o.need %} <span class="tag-run">{% for t in o.tags %}<span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}{{ comp_mark(o.need) }}</span>{% endif %}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
-        {% if can_pick and o.starts and o.starts not in active_conditions %}<button type="submit" class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item, "note": o.note or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Shows {{ o.starts }} under the header for the whole table">{{ o.name }}</button>
-        {% elif can_pick and o.ends and o.ends in active_conditions %}<button type="submit" class="btn small cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name }}</button>{% endif %}
         {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
       </div>
 {% endmacro %}
@@ -111,11 +110,9 @@
   {% set econ = [("Action", "One per turn", "action"), ("Bonus action", "One per turn, before or after your Action", "bonus"), ("Reaction", "One per round, also on others' turns", "reaction")] %}
   {# Phones: the three columns become tabs (app.js keeps the chosen one across updates). #}
   {# Said once, above the columns, however many are empty (Brett, 2026-10-31, docs/mockups/usability/) #}
-  {% set nothing_pinned = not form and not (columns["Action"].shown or columns["Bonus action"].shown or columns["Reaction"].shown) %}
-  {% if nothing_pinned and can_pick %}<p class="pin-hint">Pin what you use most, and it stays at the top of each column.</p>
-  {% elif nothing_pinned and show_picks %}<p class="pin-hint">{{ c.name }}'s player hasn't pinned anything yet.</p>{% endif %}
+  {# Each column says what goes there when it has nothing (the empty state; the UI review, Nov 16: no help lines) #}
   <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
-    {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }} <span class="count">{{ columns[cost].shown | length }}</span></button>{% endfor %}
+    {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }}{% if columns[cost].shown %} <span class="count">{{ columns[cost].shown | length }}</span>{% endif %}</button>{% endfor %}
   </div>
   <div class="econ" data-econ-show="action" data-tour="battle">
     {% for cost, sub, slug in econ %}
@@ -142,31 +139,35 @@
       <div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }}" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>
       {% for o in col.shown %}
       {{ move(o) }}
-      {% else %}{% if form %}<p class="muted pin-empty">Nothing here in this form.</p>{% elif can_pick %}{% for o in (col.all | rejectattr("kind", "equalto", "item") | list)[:3] %}{{ move(o, pin=true) }}{% else %}<p class="muted pin-empty">Nothing here yet.</p>{% endfor %}{% elif not show_picks or not nothing_pinned %}<p class="muted pin-empty">Nothing here yet.</p>{% endif %}{% endfor %}
+      {% else %}{% set plural = {"Action": "actions", "Bonus action": "bonus actions", "Reaction": "reactions"}[cost] %}
+      {% if form %}{{ empty_state("Nothing here in this form.") }}
+      {% elif can_pick %}{% for o in (col.all | rejectattr("kind", "equalto", "item") | list)[:3] %}{{ move(o, pin=true) }}{% else %}{{ empty_state("No " ~ plural ~ " on this sheet yet.") }}{% endfor %}
+      {% elif show_picks %}{{ empty_state(c.name ~ "'s player hasn't pinned any " ~ plural ~ ".") }}
+      {% else %}{{ empty_state("No " ~ plural ~ " on this sheet yet.") }}{% endif %}{% endfor %}
       </div>
       {% if col.item_count %}{# Items follow pinning; the rest are in the side panel (Brett, 2026-10-30) #}
       <h3 class="items-head">Items</h3>
       {% if col["items"] %}<div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }} items" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>{% for o in col["items"] %}{{ move(o) }}{% endfor %}</div>{% endif %}
-      <div class="seeall items-all"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?items=1">All items ({{ col.item_count }}) →</a></div>
+      <div class="seeall items-all"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?items=1">All items <span class="count">{{ col.item_count }}</span> →</a></div>
       {% endif %}
       {% if cost == "Action" and form %}<div class="move static"><b>{{ basic_actions(c, basic_names | reject("equalto", "Ready")) }}</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
       {% elif cost == "Action" %}<div class="move static"><b>{{ basic_actions(c, basic_names) }}</b><div class="meta">What anyone can do</div></div>{% endif %}
-      {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s ({{ col.count }}) →</a></div>{% endif %}
+      {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s <span class="count">{{ col.count }}</span> →</a></div>{% endif %}
     </div>
     {% endfor %}
   </div>
   {% set unprompted = columns.get("No action") %}
   {% if unprompted and (unprompted.shown or unprompted.item_count) %}{# Items that just happen (Brett, 2026-10-30) #}
   <div class="section riders">
-    <h2 class="econ-head k-hit">No action needed<small>These happen on their own when something sets them off.</small></h2>
+    <div class="sec-head"><h2>No action needed</h2></div>
     {% for o in unprompted.shown %}{{ move(o) }}{% endfor %}
     {% if unprompted["items"] %}<div class="moves"{% if can_pick and not form %} data-sort-column="No action items" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>{% for o in unprompted["items"] %}{{ move(o) }}{% endfor %}</div>{% endif %}
-    {% if unprompted.item_count %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/none?items=1">All items ({{ unprompted.item_count }}) →</a></div>{% endif %}
+    {% if unprompted.item_count %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/none?items=1">All items <span class="count">{{ unprompted.item_count }}</span> →</a></div>{% endif %}
   </div>
   {% endif %}
   {% if riders and not form %}
   <div class="section riders">
-    <h2 class="econ-head k-hit">On a hit<small>Extras you can add when an attack hits (or misses). No action needed unless it says so.</small></h2>
+    <div class="sec-head"><h2>On a hit</h2></div>
     <div class="rider-grid">
     {% for r in riders %}
       <div class="rider"><b>{{ r.name }}</b>{% if r.cost %} <span class="tag">{{ r.cost }}</span>{% endif %} <span class="tag faint">{{ r.source }}</span>
@@ -177,13 +178,13 @@
   {% endif %}
 
   <div class="lower">
-    {% include "_forget.html" %}
+    {% if show_picks %}{% include "_forget.html" %}{% endif %}{# (the DM never sees a player's reminders: no card saying so; the UI review) #}
     {% if show_picks and (combos or can_pick) %}
     <div class="section">
-      <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Add</a>{% endif %}</div>
+      <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a class="head-add" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Battle combo</a>{% endif %}</div>
       {% for n in combos %}
       <details class="combo-fold"><summary><b>{{ n.title }}</b>{% if n.data.when %} <span class="muted">· {{ n.data.when }}</span>{% endif %}</summary>{{ combo_body(n, nl) }}</details>
-      {% else %}<p class="muted">Plans that take a setup turn and a payoff turn. Add one here or on Plan.</p>{% endfor %}
+      {% else %}{{ empty_state(note_kinds.combo.about) }}{% endfor %}
     </div>
     {% endif %}
   </div>

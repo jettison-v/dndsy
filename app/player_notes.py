@@ -39,6 +39,7 @@ KINDS = {
                 "about": "Anything else, written however you like."},
 }
 QUEST_STATUS = {"open": "Open", "done": "Done", "abandoned": "Abandoned"}
+templates.env.globals["note_kinds"] = KINDS  # (Battle's combos say what one is when there are none, as Plan's tab does)
 MAX_TEXT, MAX_BODY, MAX_ROWS = 2000, 20000, 20
 TURN_FIELDS = ("label", "action", "bonus", "reaction", "move", "notes")  # the older fixed-box shape
 STEP_KINDS = {"bonus": "Bonus action", "action": "Action", "reaction": "Reaction", "move": "Movement", "free": "Free"}

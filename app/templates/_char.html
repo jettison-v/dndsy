@@ -46,11 +46,6 @@
 </div>
 {%- endmacro %}
 
-{% macro inspiration(s, c, cls="vital") -%}
-{{ ntile(s, tile(c, "inspiration"), "Heroic Inspiration", ("<b>" ~ ("✦ Yes" if s.inspiration else "—") ~ "</b>") | safe, "inspiration", cls=cls ~ " insp" ~ (" on" if s.inspiration else ""),
-         title="Heroic Inspiration" ~ (": you have it" if s.inspiration else ": not right now")) }}
-{%- endmacro %}
-
 {% macro pips(u) -%}
 {%- if u -%}
 {%- if u.max <= 8 -%}<span class="pips" aria-label="{{ u.left }} of {{ u.max }} left">{% for i in range(u.max) %}<i class="pip{{ ' used' if i >= u.left }}"></i>{% endfor %}</span>
@@ -196,7 +191,7 @@
   {{ ntile(s, tile(c, "speed"), "Speed", ("<b>%s</b><span class=\"note\"> ft</span>" | format(s.speed.walk)) | safe, cls="vital") }}
   {{ ntile(s, tile(c, "initiative"), "Initiative", ("<b>%s</b>" | format(s.initiative)) | safe, foot=adv(s.initiative_adv), cls="vital") }}
   {% for sc in s.spellcasting[:1] %}{{ ntile(s, tile(c, "spell"), "Spell DC / attack", ("<b>%s</b><span class=\"note\"> / %s</span>" | format(sc.save_dc, sc.attack)) | safe, cls="vital") }}{% endfor %}
-  {{ inspiration(s, c) }}
+  <div class="insp-cell">{{ insp_mark(s, c) }}</div>{# (the chip, as on Battle: the UI review, Nov 16) #}
 </div>
 {%- endmacro %}
 
@@ -314,8 +309,7 @@
 {%- set notes = [picks.notes.get(key)] | select | list if picks.notes else [] -%}
 <div class="ri {{ cls }}{{ ' has-pic' if image }}" {% if modal %}data-modal-url="{{ url }}" data-modal-size="large"{% else %}data-panel-url="{{ url or ('/characters/' ~ c.id ~ '/detail?ref=' ~ (key | urlencode)) }}"{% endif %} data-ref="{{ key }}" tabindex="0" role="button" {{ attrs | safe }}>
   <span class="ri-pk">{% if image %}<img class="ri-pic" src="{{ image }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
-  <span class="ri-main"><span class="ri-line"><span class="ri-name">{{ name }}</span>{% if uses %} {{ pips(uses) }}{% endif %}{% for t in chips if t %} <span class="tag {{ '' if t is string else t[1] }}">{{ t if t is string else t[0] }}</span>{% endfor %}</span>
-    {% if spend %}<span class="ri-spend">{{ spends(spend) }}</span>{% endif %}
+  <span class="ri-main"><span class="ri-line"><span class="ri-name">{{ name }}</span>{% if uses %} {{ pips(uses) }}{% endif %}{% if chips | select | list or spend %} <span class="tag-run">{% for t in chips if t %}<span class="tag {{ '' if t is string else t[1] }}">{{ t if t is string else t[0] }}</span>{% endfor %}{% if spend %}{{ spends(spend) }}{% endif %}</span>{% endif %}</span>{# (tags and cost inline, as on Battle; the UI review) #}
     {% if what %}<span class="ri-what">{{ what }}</span>{% endif %}
     {% for n in notes %}<span class="ri-note" title="Your note">✎ {{ n }}</span>{% endfor %}</span>
   <span class="ri-mech">{{ mech }}</span>

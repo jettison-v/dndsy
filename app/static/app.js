@@ -559,13 +559,13 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // Battle's Resources: whole names while they fit on one line, every short name once they don't (Brett, 2026-11-01).
   // Measured with the short names off, each time the row's width changes or a new copy arrives. Phones stack them.
   function fitRes() {
-    // Party's cards too (Brett, 2026-11-02): each card's resources by their whole names while they fit on one line.
+    // Party's cards too (Brett, 2026-11-02): resources by their whole names while every card's fit on one line, else
+    // short on every card, decided once for the grid (the UI review, Nov 16: never short on one card, whole beside it).
     // They arrive short (party.html), so a card never grows and then shrinks as the page loads.
-    document.querySelectorAll('.pt-res').forEach(r => {
-      r.classList.remove('short');
-      const one = r.firstElementChild?.offsetHeight || 24;
-      if (r.offsetHeight > one * 1.5) r.classList.add('short');
-    });
+    const cards = [...document.querySelectorAll('.pt-res')];
+    cards.forEach(r => r.classList.remove('short'));
+    const tooLong = cards.some(r => r.offsetHeight > (r.firstElementChild?.offsetHeight || 24) * 1.5);
+    if (tooLong) cards.forEach(r => r.classList.add('short'));
     const row = document.querySelector('.battlebar > .res-row:not(.slots)');
     if (!row) return;
     row.classList.remove('short');

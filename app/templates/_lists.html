@@ -77,3 +77,9 @@
   {% if L.cap %}<span class="rl-full" data-rule-full hidden>Full: {{ L.full }}</span>{% endif %}
 </div>
 {%- endmacro %}
+
+{# The empty state (DESIGN.md › Help and empty states; the UI review, Nov 16: one piece, not "None yet." in five
+   wordings): what goes here, and, from a call block, how to add the first one (a quiet add). #}
+{% macro empty_state(what) -%}
+<div class="empty-state" data-empty><span>{{ what }}</span>{% if caller is defined %} {{ caller() }}{% endif %}</div>
+{%- endmacro %}
