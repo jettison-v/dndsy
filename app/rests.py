@@ -135,6 +135,9 @@ def window(request: Request, character_id: int, kind: str, db: Session = Depends
     sheet = _sheet(db, ch)
     p = plan(sheet, _kind(kind), ch.concentration)
     prepare = [b["class"] for b in books_to_prepare(sheet)] if kind == "long" else []  # (a Long Rest is when most classes change them)
+    from app import wild_shape
+
+    forms = kind == "long" and bool(wild_shape.druid(sheet))  # (and when a Druid can swap a known Wild Shape form)
     from app import companions
 
     wild = companions.wild_leaving(ch, sheet) if kind == "long" else []  # (Wild Companion: gone at the Long Rest)
@@ -145,7 +148,7 @@ def window(request: Request, character_id: int, kind: str, db: Session = Depends
 
     after = rules_book.reminded(sheet, "rest")  # (what comes into play after it: Celestial Resilience, Inspiring Leader)
     return templates.TemplateResponse(request, "_rest_window.html", {"c": ch, "kind": kind, "title": TITLE[kind], "p": p, "lines": lines(p, kind),
-                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare, "wild": wild, "items": items,
+                                                                     "reachable": ddb_bridge.reachable(ch), "prepare": prepare, "forms": forms, "wild": wild, "items": items,
                                                                      "after": after})
 
 

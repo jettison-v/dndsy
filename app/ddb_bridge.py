@@ -1873,6 +1873,7 @@ CONNECTIONS = [
     ("Preparing spells", ("prep",), ("prepare",), "yes"),
     ("A creature's Hit Points and maximum", ("creature", "creature_max"), ("creature-hp",), "yes"),
     ("A familiar: here or not, what it is, its name, a new form", ("creature_active", "creature_type", "creature_name", "familiar_add"), ("familiar",), "yes"),
+    ("Wild Shape's known forms: one learned, one let go", ("wildshape",), ("wild-shape-forms",), "yes"),
 ]
 
 

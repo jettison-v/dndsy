@@ -56,6 +56,7 @@ WRITES = {("PUT", HP_PATH), ("PUT", f"{CS}/life/death-saves"), ("PUT", f"{CS}/ch
 CREATURE_MAX = 43  # D&D Beyond's AdjustmentTypeEnum.CREATURE_HIT_POINTS: a creature's maximum, set on its sheet
 CREATURE_TYPE = 44  # D&D Beyond's AdjustmentTypeEnum.CREATURE_TYPE_OVERRIDE: what a creature is (a familiar's Celestial…)
 FAMILIAR_GROUP = 2  # D&D Beyond's group for familiars on Extras (Manage Extras › Familiar)
+WILD_SHAPE_GROUP = 13  # D&D Beyond's group for a Druid's known Wild Shape forms (2024; recorded on Levi's seat, Nov 14)
 CREATURE_AC = 42  # D&D Beyond's AdjustmentTypeEnum.CREATURE_AC: a steed's or summon's Armor Class from its spell's level (0.11.0, unused yet)
 MONSTER_TYPES = {"Celestial": 3, "Fey": 8, "Fiend": 9}  # D&D Beyond's monsterTypes (its config), for CREATURE_TYPE
 VALUES = {"creature_max": CREATURE_MAX, "creature_type": CREATURE_TYPE}  # the character values askdnd may set, by field
@@ -129,6 +130,8 @@ def steps(field: str) -> list:
         # A familiar form added to Extras (Your creatures; `arg` D&D Beyond's monster id): how many of it there are
         # (only the Familiar group's: the same monster as a Pet or Mount isn't this one, review Nov 4)
         "familiar_add": ["creatures", {"or": []}, {"count": [["definition", "id"], arg, ["groupId"], FAMILIAR_GROUP]}],
+        # A Wild Shape form known (Swap a form, app/form_swap.py; `arg` its monster id): 1 known, 0 not
+        "wildshape": ["creatures", {"or": []}, {"count": [["definition", "id"], arg, ["groupId"], WILD_SHAPE_GROUP]}],
     }[kind]
 
 
@@ -143,10 +146,11 @@ def wire(field: str, data: dict, before, after) -> tuple[list, object, object]:
     Nov 5: every Find Familiar with a new form was refused as changed) is checked as the sum of the matching creatures'
     group ids: adding one to the Familiar group adds 2, whatever else of that monster is on Extras."""
     kind, arg = _split(field)
-    if kind == "familiar_add":
+    if kind in ("familiar_add", "wildshape"):  # (a known Wild Shape form, checked the same way: its group is 13)
         read = ["creatures", {"or": []}, {"sum": [["definition", "id"], arg, "groupId"]}]
         now = pick(data, read) or 0
-        return read, now, now + FAMILIAR_GROUP * ((after or 0) - (before or 0))
+        group = FAMILIAR_GROUP if kind == "familiar_add" else WILD_SHAPE_GROUP
+        return read, now, now + group * ((after or 0) - (before or 0))
     return steps(field), before, after
 
 
@@ -158,6 +162,11 @@ def put(data: dict, field: str, v) -> None:
     """Write `v` where `field` lives in D&D Beyond's character data (a copy: what askdnd shows while a change is on its
     way, ddb_bridge.as_shown), the other way round from `value`. A field it can't find is left as it is."""
     kind, arg = _split(field)
+    if kind == "wildshape":  # a form let go of is gone at once; one learned shows once D&D Beyond has it (its stat block is D&D Beyond's)
+        if not v:
+            data["creatures"] = [c for c in data.get("creatures") or [] if not (isinstance(c, dict) and c.get("groupId") == WILD_SHAPE_GROUP
+                                                                                 and str((c.get("definition") or {}).get("id")) == arg)]
+        return
     if kind == "prep":  # D&D Beyond adds a spell to the sheet when it's prepared: a copy shows it there while on its way
         cls, _, entry = arg.partition(":")
         group = next((g for g in data.get("classSpells") or [] if str(g.get("characterClassId")) == cls), None)
@@ -268,6 +277,9 @@ def name(data: dict | None, field: str) -> str:
         return (row.get("definition") or {}).get("name") or "an item"
     if kind == "familiar_add":
         return "familiar forms on Extras"  # ("D&D Beyond's familiar forms on Extras changed…")
+    if kind == "wildshape":
+        c = next((c for c in data.get("creatures") or [] if isinstance(c, dict) and str((c.get("definition") or {}).get("id")) == arg), None)
+        return f"Wild Shape form {((c or {}).get('definition') or {}).get('name') or arg}"
     if kind == "prep":
         entry = arg.partition(":")[2]
         lists = [s for g in data.get("classSpells") or [] for s in g.get("spells") or []]
@@ -318,6 +330,8 @@ def text(data: dict | None, field: str, v, max_hit_points: int = 0) -> str:
         return f"×{v}"
     if kind == "familiar_add":
         return "added" if v else "not there"
+    if kind == "wildshape":
+        return "known" if v else "not known"
     if kind == "container":
         return "carried" if str(v) == str((data or {}).get("id")) else f"in {item_name(data, v)}"
     if isinstance(v, bool):
@@ -406,6 +420,14 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
         cls, _, entry = arg.partition(":")
         return req("PUT", "spell/prepared", spellId=extra.get("spellId"), characterClassId=int(cls), entityTypeId=extra.get("entityTypeId"),
                    id=int(entry), prepared=bool(v))
+    if kind == "wildshape":  # a known Wild Shape form learned or let go, as D&D Beyond's own sheet sends it (Nov 14, Levi's seat)
+        if v:
+            return req("POST", "creature", groupId=WILD_SHAPE_GROUP, monsterId=int(arg), names=[None])
+        c = next((c for c in data.get("creatures") or [] if isinstance(c, dict) and c.get("groupId") == WILD_SHAPE_GROUP
+                  and str((c.get("definition") or {}).get("id")) == arg), None)
+        if c is None:
+            raise ValueError(f"No Wild Shape form {arg} on the sheet to let go of")
+        return req("DELETE", "creature", id=int(c["id"]))
     if kind == "familiar_add":  # a familiar form onto Extras, as Manage Extras › Familiar › Add sends it (Nov 4, Levi's seat)
         return req("POST", "creature", groupId=FAMILIAR_GROUP, monsterId=int(arg), names=[None])
     if kind == "add":

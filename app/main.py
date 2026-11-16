@@ -42,6 +42,7 @@ from app.errors import router as errors_router
 from app.feature_use import router as feature_use_router
 from app.feedback import router as feedback_router
 from app.fog import router as fog_router
+from app.form_swap import router as form_swap_router
 from app.giving import router as giving_router
 from app.heals import router as heals_router
 from app.help_pages import router as help_router
@@ -232,6 +233,7 @@ app.include_router(rests_router)  # (through the bridge: on_for)
 app.include_router(level_up_router)
 app.include_router(inventory_router)  # (through the bridge: on_for)
 app.include_router(preparing_router)  # (through the bridge: on_for)
+app.include_router(form_swap_router)  # (through the bridge: on_for)
 app.include_router(giving_router)  # (through the bridge: on_for)
 app.include_router(item_browser_router)  # (through the bridge: plays)
 app.include_router(creature_hp_router)  # (Your creatures: its Hit Points through the bridge)
