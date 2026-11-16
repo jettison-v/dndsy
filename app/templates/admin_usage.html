@@ -4,13 +4,13 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Usage</h1></div>
-  <p class="subtitle">What askdnd has spent on Claude, from the exact token counts of every call, and on OpenAI (drawn pictures and Listen's voice, at their price). The <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic Console</a> and <a href="{{ u.openai_billing }}" target="_blank" rel="noopener">OpenAI's billing page</a> have the official balances.</p>
+  <p class="subtitle">What askdnd has spent on Claude, from the exact token counts of every call, and on OpenAI (drawn pictures and Listen's voice, at their price). The <a href="https://console.anthropic.com/settings/billing" target="_blank" rel="noopener">Anthropic Console</a> and <a href="{{ u.openai_billing }}" target="_blank" rel="noopener">OpenAI's billing page</a> have the official balances. Only admins can see this page.</p>
 
   <div class="stats">
     <div class="stat"><span>Estimated balance</span><b>{% if u.balance is not none %}${{ "%.2f" | format(u.balance) }}{% else %}—{% endif %}</b>
       <small>{% if u.bought %}of ${{ "%.2f" | format(u.bought) }} bought{% else %}add a top-up below{% endif %}</small></div>
     <div class="stat{% if u.limit_reached %} attention{% endif %}"><span>This month</span><b>${{ "%.2f" | format(u.month) }}</b><small>{% if u.limit is not none %}{% if u.limit_reached %}limit of ${{ "%.2f" | format(u.limit) }} reached{% else %}${{ "%.2f" | format(u.limit_left) }} left of ${{ "%.2f" | format(u.limit) }}{% endif %} · {% endif %}today ${{ "%.2f" | format(u.today) }}</small></div>
-    <div class="stat"><span>Claude, all time</span><b>${{ "%.2f" | format(u.total) }}</b><small>{{ u.drafts }} draft{{ "s" if u.drafts != 1 }}{% if u.average %} · about {{ "%.0f" | format(u.average * 100) }}¢ each{% endif %}</small></div>
+    <div class="stat"><span>Claude, all time</span><b>${{ "%.2f" | format(u.total) }}</b><small>{{ u.drafts }} draft{{ "s" if u.drafts != 1 }}{% if u.average %} · about {{ u.average | money }} each{% endif %}</small></div>
     <div class="stat"><span>OpenAI</span><b>${{ "%.2f" | format(u.openai_month) }}</b><small>this month · ${{ "%.2f" | format(u.openai_total) }} all time · <a href="{{ u.openai_billing }}" target="_blank" rel="noopener">its balance ↗</a></small></div>
   </div>
 
@@ -50,9 +50,9 @@
       <tr>
         <td class="note">{{ r.created_at | clock(date=True) }}</td>
         <td>{% if row.href %}<a href="{{ row.href }}">{{ row.label }}</a>{% else %}{{ row.label }}{% endif %}</td>
-        <td class="note">{{ {"entity": "description", "conversation": "Add Session check", "notes": "draft from notes", "transcript": "draft from a recording", "account": "draft from a written account", "picture": "pictures drawn (OpenAI, estimated)"}.get(r.source, r.source) }}{% if r.status == "error" %} · <span class="tag error">failed</span>{% elif r.status == "running" %} · <span class="tag working">running</span>{% endif %}</td>
+        <td class="note">{% set what = {"entity": "A description", "conversation": "Add session's check", "notes": "A draft from notes", "transcript": "A draft from a recording", "account": "A draft from a written account", "picture": "Pictures drawn (OpenAI, estimated)"}.get(r.source, r.source.replace("_", " ")) %}{{ what[:1] | upper }}{{ what[1:] }}{% if r.status == "error" %} · <span class="tag error">Failed</span>{% elif r.status == "running" %} · <span class="tag working">Running</span>{% endif %}</td>
         <td class="note num" data-label="Tokens">{{ "{:,}".format(r.input_tokens) }} / {{ "{:,}".format(r.output_tokens) }}</td>
-        <td class="num" data-label="Cost">{% if r.cost_usd and r.cost_usd < 0.005 %}&lt;1¢{% else %}${{ "%.2f" | format(r.cost_usd or 0) }}{% endif %}</td>
+        <td class="num" data-label="Cost">{{ r.cost_usd | money }}</td>
       </tr>
       {% endfor %}
     </table></div>

@@ -398,3 +398,12 @@ templates.env.globals["cond_edge"] = cond.edge
 templates.env.globals["cond_darkens"] = cond.darkens
 templates.env.filters["cond_var"] = lambda slug: "var(--cond-dark)" if slug == "blinded" else f"var(--cond-{slug})"  # Blinded's edge is black
 templates.env.globals["STEP_KINDS"] = {"bonus": "Bonus action", "action": "Action", "reaction": "Reaction", "move": "Movement", "free": "Free"}
+
+
+def _money(value) -> str:
+    """Money one way (the UI review, Nov 16: "102¢" sat beside "$1.02"): dollars and cents, "$0.13", "under $0.01"."""
+    v = float(value or 0)
+    return "under $0.01" if 0 < v < 0.005 else f"${v:,.2f}"
+
+
+templates.env.filters["money"] = _money

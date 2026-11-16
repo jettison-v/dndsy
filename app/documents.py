@@ -94,15 +94,15 @@ def file_url(page: str) -> str:
 
 
 @router.get("/manage/documents")
-def library_page(request: Request, q: str = ""):
-    """Every document, in its group, newest first within it; a search over titles and what each is."""
+def library_page(request: Request):
+    """Every document, in its group, newest first within it; the page's search box finds by title, status and what
+    each is (the shared list pieces, the UI review)."""
     _, stop = web.require(request, is_admin, "askdnd's documents are for admins.")
     if stop:
         return stop
-    words = q.lower().split()
-    shown = [e for e in library() if all(w in f"{e['title']} {e['what']} {e['status']}".lower() for w in words)]
-    groups = [(key, name, about, [e for e in shown if e["kind"] == key]) for key, name, about in KINDS]
-    return templates.TemplateResponse(request, "manage_documents.html", {"groups": groups, "q": q, "count": len(library())})
+    entries = library()
+    groups = [(key, name, about, [e for e in entries if e["kind"] == key]) for key, name, about in KINDS]
+    return templates.TemplateResponse(request, "manage_documents.html", {"groups": groups, "count": len(entries)})
 
 
 @router.get("/manage/documents/{did}")

@@ -8,7 +8,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Feedback for Claude</h1></div>
-  <p class="subtitle">Notes sent from any page with <kbd>\</kbd> or your account menu (and by the accounts you let send it, on Accounts), each saying what it is. Claude reads them when you say "review the feedback": it fixes what's broken, puts an idea on the Roadmap's Ideas from feedback for you to move up, and answers a question in its thread. A question it asks you shows here for your answer, and a note it fixed says which change did it.</p>
+  <p class="subtitle">Notes sent from any page with <kbd>\</kbd> or your account menu (and by the accounts you let send it, on Accounts), each saying what it is. Claude reads them when you say "review the feedback": it fixes what's broken, puts an idea on the Roadmap's Ideas from feedback for you to move up, and answers a question in its thread. A question it asks you shows here for your answer, and a note it fixed says which change did it. Only admins can see this page.</p>
 
   <nav class="sub-tabs" aria-label="Where each stands">
     {% for key, label, n in tabs %}<a href="?tab={{ key }}{% if kind %}&amp;kind={{ kind }}{% endif %}" class="{{ 'on' if key == tab }}">{{ label }}{% if n and key in ("review", "new", "question", "planned") %} <span class="mcount">{{ n }}</span>{% elif n %} <span class="note">{{ n }}</span>{% endif %}</a>{% endfor %}

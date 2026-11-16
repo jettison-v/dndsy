@@ -219,6 +219,22 @@ def save_plays(request: Request, email: str = Form(""), character_id: str = Form
     return _back()
 
 
+@router.get("/add")
+def add_window(request: Request, db: Session = Depends(get_db)):
+    """+ Add to the table's window (_table_add.html): who, their role and their character."""
+    user, denied = web.require(request, can_see_table, DENIED_SEE)
+    if denied:
+        return denied
+    campaign = web.campaign(db)
+    if campaign is None or not can_run_table(user, campaign.id):
+        return web.forbidden(request, "Only the DM and admins add to the table.")
+    in_campaign = {p["email"] for p in people(db, campaign.id)}
+    return templates.TemplateResponse(request, "_table_add.html", {
+        "campaign": campaign, "can_add_new": is_admin(user), "roles": access.ROLES, "role_labels": access.ROLE_LABELS,
+        "accounts": [u for u in db.scalars(select(User).order_by(User.name))
+                     if u.email.lower() not in in_campaign and access.level(u.email) is not None]})
+
+
 @router.post("/add")
 def add(request: Request, email: str = Form(""), new_email: str = Form(""), name: str = Form(""), role: str = Form(access.PLAYER),
         ddb_link: str = Form(""), char_name: str = Form(""), db: Session = Depends(get_db)):

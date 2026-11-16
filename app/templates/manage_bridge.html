@@ -5,7 +5,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>D&amp;D Beyond bridge</h1><button type="button" class="br-st title-action {{ {'live': 'br-live', 'wait': 'br-wait', 'off': 'br-off', 'asleep': 'br-asleep'}[health.state] }}" data-bridge-health data-base="br-st title-action" title="The bridge's health; click to run the check on the test character">{{ health.text }}{% if health.checked_at %} (checked {{ health.checked_at | clock }}){% endif %}</button></div>
-  <p class="subtitle">It's awake whenever someone is using askdnd or a D&amp;D Beyond sheet, and asleep otherwise. Asleep, it only stops checking D&amp;D Beyond in the background: anything a person does still goes through.</p>
+  <p class="subtitle">It's awake whenever someone is using askdnd or a D&amp;D Beyond sheet, and asleep otherwise. Asleep, it only stops checking D&amp;D Beyond in the background: anything a person does still goes through. Only admins can see this page.</p>
 
   <section class="section">
     <h2>Right now</h2>

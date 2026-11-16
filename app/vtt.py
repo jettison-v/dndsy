@@ -32,14 +32,14 @@ FEATURES: list[Feature] = [
             "Chrome: hit points, conditions and death saves, Heroic Inspiration, casting, resources and rests, items and "
             "coins, adding items (Add item, Give loot) and Give, preparing spells, and the DM's browser making changes for a player whose sheet is "
             "closed. Tell the table first: D&D Beyond's terms don't allow tools like this.",
-            "Live character state (Phase 1) and the D&D Beyond bridge; finished Nov 3."),
+            "Live character state and the D&D Beyond bridge; finished Nov 3."),
     Feature("vtt", "askdnd's VTT",
             "The menu bar's Table button opens askdnd's own table instead of D&D Beyond's VTT: places with their maps (a "
             "picture or a Dungeon Alchemist file), the party's and the DM's creatures as tokens, the DM's scene notes "
             "pinned on the map (hers alone), a creature's stat block and rolls in the side panel, the fight run here "
             "(Start a fight, Initiative, Next turn, Undo) and your turn's bar under the map. Being built: moving and "
             "measuring, fog and spell areas come next; the table moves from D&D Beyond's VTT once it's all here.",
-            "askdnd's table (docs/plans/2026-11-06-table-build-plan.md): built to the fight, Nov 7; then moving, fog, areas.",
+            "askdnd's table: built to the fight, Nov 7; then moving, fog, areas.",
             labs=True, state="Being built"),
     Feature("creatures", "Your creatures",
             "A familiar, an artificer's Homunculus Servant or Steel Defender, a ranger's companion, a summon or a steed "
@@ -49,13 +49,13 @@ FEATURES: list[Feature] = [
             "Points; summons and steeds are worked out for the level cast. Each has its own card on Party and its place "
             "in the fight, and a familiar or steed its own World entry. With Sync with D&D Beyond, its Hit Points and a "
             "familiar's form are kept in step on the sheet's Extras.",
-            "Your creatures (docs/plans/2026-11-03-your-creatures.md): finished Nov 5, out of Labs."),
+            "Your creatures: finished Nov 5, out of Labs."),
     Feature("initiative", "Initiative from askdnd",
             "Everyone rolls their own Initiative in askdnd before the DM presses Start Combat in D&D Beyond's VTT, a "
             "character's familiar with it, and the number fills in the VTT's combat sidebar (a Homunculus right after "
             "its master). After Start Combat the order is the DM's: drag a row on Party's Rows to move someone. Needs "
             "Sync with D&D Beyond, and extension 0.12.0 with the DM's VTT open.",
-            "Initiative in askdnd (docs/mockups/initiative/), Nov 4: being built. Once askdnd's own VTT runs, nothing is "
+            "Initiative in askdnd, Nov 4: being built. Once askdnd's own VTT runs, nothing is "
             "sent to D&D Beyond's.",
             labs=True, state="Being built"),
     Feature("recap_listen", "Listen to the recap",

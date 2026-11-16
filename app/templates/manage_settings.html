@@ -15,7 +15,7 @@
     <p class="note">With the D&amp;D Beyond id, askdnd notices characters whose sheet says another campaign (admins see them on Campaigns).</p>
     <div class="row"><button class="btn primary" type="submit">Save</button></div>
   </form>
-  <p class="note page-note">Its address stays <code>/c/{{ campaign.slug }}</code>, so links people saved keep working.</p>
+  <p class="note page-note">Its address stays askdnd.ai/c/{{ campaign.slug }}, so links people saved keep working.</p>
   </section>
 
   {# Books (data strategy, 2026-10-27; app/books.py): private rules books this campaign's lookups use #}
@@ -54,7 +54,7 @@
         {% for x in art_choices %}<label class="art-ref" title="{{ x.name }}"><input type="checkbox" name="refs" value="{{ x.id }}"{{ ' checked' if x.on }}><img src="{{ x.thumb }}" alt="{{ x.name }}"></label>
         {% else %}<p class="note">None yet: pictures added to this campaign's World entries or familiars, and its characters' D&amp;D Beyond portraits, show here to pick from.</p>{% endfor %}
       </fieldset>
-      <div class="row"><button class="btn primary" type="submit">Save</button></div>
+      <div class="row"><button class="btn" type="submit">Save</button></div>{# (Campaign details' Save is the page's one red button) #}
     </form>
   </section>
 

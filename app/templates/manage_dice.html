@@ -5,7 +5,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Dice tuning</h1></div>
-  <p class="subtitle">How thrown dice move and how long they stay, for everyone in every campaign. Players only choose their own dice (Your dice).</p>
+  <p class="subtitle">How thrown dice move and how long they stay, for everyone in every campaign. Players only choose their own dice (Your dice). Only admins can see this page.</p>
 
   <div class="tn-grid" data-dice-tuner>
     <form class="section tn-controls" method="post" action="/manage/dice">
@@ -45,7 +45,7 @@
 
     <div class="tn-preview">
       <div class="tn-throws">
-        <button class="btn primary" type="button" data-throw="d20">Throw a d20</button>
+        <button class="btn" type="button" data-throw="d20">Throw a d20</button>
         <button class="btn" type="button" data-throw="adv">Advantage</button>
         <button class="btn" type="button" data-throw="fireball">Fireball 8d6</button>
         <span class="spacer"></span>

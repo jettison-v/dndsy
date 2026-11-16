@@ -94,7 +94,9 @@ def _names(db: Session, overrides: list[ToolCorrection]) -> dict[str, dict]:
     for o in overrides:
         kind, _, rest = o.ref.partition(":") if ":" in o.ref else ("", "", o.ref)
         found = next((x for sh in sheets if (x := views.find(sh, o.ref))), None)
-        out[o.ref] = {"name": (found or {}).get("name") or (rest if not rest.isdigit() else f"Item {rest} (no character has it now)"),
+        key = rest.lstrip("#").replace("-", " ").replace("_", " ")
+        plain = key[:1].upper() + key[1:] if rest != key or rest.islower() else rest  # (a key in words, never "#turn-invisible": the UI review)
+        out[o.ref] = {"name": (found or {}).get("name") or (plain if not rest.isdigit() else f"Item {rest} (no character has it now)"),
                       "kind": KINDS.get(kind, kind.capitalize())}
     return out
 

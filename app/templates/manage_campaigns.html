@@ -3,7 +3,7 @@
 {% block content %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Campaigns</h1></div>
+  <div class="title-row"><h1>Campaigns</h1><button class="btn title-action" type="button" data-modal-url="/manage/campaigns/new" data-item="new-campaign">+ New campaign</button></div>
   <p class="subtitle">Every campaign in askdnd and who's in each. A character follows its D&amp;D Beyond campaign: when its sheet moves there, a line here offers the move, and its old campaign keeps what it did in the story. Only admins can see this page.</p>
 
   <section class="section">
@@ -15,8 +15,6 @@
       {% endfor %}
     </ul>
   </section>
-
-  <div class="row"><button class="btn" type="button" data-modal-url="/manage/campaigns/new" data-item="new-campaign">+ New campaign</button></div>
 
   {# A character moves only when D&D Beyond says it's elsewhere (Brett, Nov 13, The Three Menus part 5: moving here alone
      was confusing, since it also has to move on D&D Beyond): one line and one button for each, nothing otherwise. #}
