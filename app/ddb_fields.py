@@ -121,7 +121,7 @@ def steps(field: str) -> list:
         "bagcoin": [*["inventory", {"id": arg.partition(":")[0]}], "currency", arg.partition(":")[2], {"or": 0}],
         "add": ["inventory", {"sum": [["definition", "id"], arg, "quantity"]}],
         "prep": ["classSpells", {"characterClassId": arg.partition(":")[0]}, "spells", {"id": arg.partition(":")[2]}, "prepared", {"or": False}],
-        # A spell learned: on the class's list on the sheet or not (Your spells, app/spells_known.py)
+        # A spell learned: on the class's list on the sheet or not (Change spells, app/choosing.py)
         "learn": ["classSpells", {"characterClassId": arg.partition(":")[0]}, "spells", {"id": arg.partition(":")[2]}, {"present": True}],
         "creature": ["creatures", {"id": arg}, {"read": {"removedHitPoints": ["removedHitPoints", {"or": 0}],
                                                          "temporaryHitPoints": ["temporaryHitPoints", {"or": 0}]}}],
@@ -132,7 +132,7 @@ def steps(field: str) -> list:
         # A familiar form added to Extras (Your creatures; `arg` D&D Beyond's monster id): how many of it there are
         # (only the Familiar group's: the same monster as a Pet or Mount isn't this one, review Nov 4)
         "familiar_add": ["creatures", {"or": []}, {"count": [["definition", "id"], arg, ["groupId"], FAMILIAR_GROUP]}],
-        # A Wild Shape form known (Swap a form, app/form_swap.py; `arg` its monster id): 1 known, 0 not
+        # A Wild Shape form known (Change forms, app/choosing.py; `arg` its monster id): 1 known, 0 not
         "wildshape": ["creatures", {"or": []}, {"count": [["definition", "id"], arg, ["groupId"], WILD_SHAPE_GROUP]}],
     }[kind]
 

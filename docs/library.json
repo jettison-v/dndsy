@@ -1062,6 +1062,15 @@
   "link": "https://claude.ai/artifact/6e1EiM8AbvBWNKpeuY72PL"
  },
  {
+  "title": "Changing Spells and Forms",
+  "kind": "design",
+  "status": "Chosen D (the wide window) · built, your look first",
+  "date": "Nov 16",
+  "what": "Round 1's picks taken (a tab per class, why you're changing, Wild Shape alike, counts held as D&D Beyond does, swaps warned); round 2 explores changing them in the Sheet tab itself (C, buttons where the bookmark and bell are) or a wider window with the tab's own list (D); three choices.",
+  "source": "docs/mockups/changing-spells/",
+  "link": "https://claude.ai/artifact/DfDA7ucJ5YdjrFRm88Uj3J"
+ },
+ {
   "title": "Compare",
   "kind": "design",
   "status": "Chose both",

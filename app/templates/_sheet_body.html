@@ -63,17 +63,16 @@
       {% for b in s.spellbook %}
       <div class="planner-class">
         <div class="planner-head"><span><b>{{ b.class }}</b> <span class="muted">{{ b.ability }} · save DC {{ b.save_dc }} · attack {{ b.attack }}</span></span></div>
-        {# Prepare spells at the end of the counts, so a long first line never pushes it onto a row of its own (Brett, Nov 3).
+        {# Change spells at the end of the counts, so a long first line never pushes it onto a row of its own (Brett, Nov 3).
            A class D&D Beyond has you choose spells for only at a new level (a Warlock, a Sorcerer) says so instead. #}
         {% set preps = b.spells | selectattr("prep") | first %}
         <div class="row tight mt-1">
           {% if b.prepared_max %}<span class="tag {{ 'done' if b.prepared_count == b.prepared_max else 'draft' }}">{{ "Spellbook: prepared" if b.spellbook else "Prepared" }} {{ b.prepared_count }} of {{ b.prepared_max }}</span>{% endif %}
           {% if b.cantrips_max %}<span class="tag {{ 'done' if b.cantrips_count == b.cantrips_max else 'draft' }}">Cantrips {{ b.cantrips_count }} of {{ b.cantrips_max }}</span>{% endif %}
           {% set always = b.spells | selectattr("state", "equalto", "always") | list %}{% if always %}<span class="tag">+{{ always | length }} always prepared</span>{% endif %}
-          {% if can_play and preps %}<button type="button" class="btn small planner-prep" data-modal-url="/characters/{{ c.id }}/spells/prepare?cls={{ b.class | urlencode }}" data-modal-size="large">Prepare spells</button>
+          {% set lrn = b.spells | selectattr("learn") | first %}
+          {% if can_play and (preps or lrn) %}<button type="button" class="btn small planner-prep" data-change-spells data-modal-url="/characters/{{ c.id }}/spells/prepare?cls={{ b.class | urlencode }}" data-modal-size="large">Change spells</button>
           {% elif b.prepared_max and not preps and not can_play %}<span class="note planner-prep">Chosen on D&amp;D Beyond when you gain a level</span>{% endif %}
-          {# Your spells (app/spells_known.py): a cantrip swapped, a spell learned, a Wizard's spellbook #}
-          {% set lrn = b.spells | selectattr("learn") | list %}{% if can_play and ((lrn | selectattr("level", "equalto", 0) | first) or ((b.learns or b.spellbook) and (lrn | rejectattr("level", "equalto", 0) | first))) %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/spells/learn?cls={{ b.class | urlencode }}" data-learn-spells>{{ "Learn spells" if b.learns else "Spellbook" if b.spellbook else "Swap a cantrip" }}</button>{% endif %}
         </div>
       </div>
       {% endfor %}
@@ -137,7 +136,7 @@
         <div class="row tight mt-1">
           {% set known_n = forms | selectattr("known") | list | length %}
           <span class="tag {{ 'done' if known_n == d.known else 'draft' }}">Known {{ known_n }} of {{ d.known }}</span>
-          {% if can_play %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/wild-shape/forms" data-swap-forms>Swap a form</button>{% endif %}
+          {% if can_play %}<button type="button" class="btn small" data-change-forms data-modal-url="/characters/{{ c.id }}/wild-shape/forms" data-modal-size="large">Change forms</button>{% endif %}
           <span class="tag">Max CR {{ d.max_cr_label }}{% if d.moon and d.max_cr > d.table_cr %} (Circle Forms){% endif %}</span>
           <span class="tag {{ '' if d.fly else 'faint' }}">{{ "Fly Speed allowed" if d.fly else "No Fly Speed until Druid 8" }}</span>
         </div></div>

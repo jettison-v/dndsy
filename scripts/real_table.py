@@ -810,30 +810,48 @@ def prepared(data: dict) -> set[str]:
     return {sp["definition"]["name"] for cs in data.get("classSpells") or [] for sp in cs.get("spells") or [] if sp.get("prepared")}
 
 
+WIN = ".peek.open [data-change]"  # (Change spells and Change forms: app/choosing.py, Nov 16)
+
+
+def change_window(page: Page, cid: str, tab: str, opener: str) -> None:
+    """Sheet › Spells' Change spells, or Sheet › Wild Shape's Change forms, open on All (a view is kept per browser)."""
+    sheet_tab(page, cid, tab)
+    page.locator(f"{opener}:visible").first.click(timeout=8000)
+    page.wait_for_selector(f"{WIN} [data-pick-row]", timeout=15000)
+    page.locator(f'{WIN} [data-ls-view="all"]').first.click(timeout=8000)
+
+
+def pick(page: Page, row: str) -> None:
+    """A row's button: Prepare or Unprepare, Learn or Let go."""
+    page.locator(f"{WIN} {row} [data-pick-act]").first.click(timeout=8000)
+
+
+def make_changes(page: Page) -> None:
+    page.locator(".peek.open [data-chg-make]").first.click(timeout=8000)
+
+
 def prepare_these(page: Page, cid: str, names: list[str]) -> None:
-    """Sheet › Spells › Prepare spells: tick or untick each of `names`, then Make these changes."""
-    sheet_tab(page, cid, "t-spells")
-    page.locator('[data-modal-url*="/spells/prepare"]:visible').first.click(timeout=8000)
-    page.wait_for_selector(".peek.open [data-prep]", timeout=15000)
-    for n in names:
-        page.locator(f'.peek.open .prep-row[data-name="{n}"] [data-prep-tick]').first.click(timeout=8000)
-    page.locator(".peek.open [data-prep-make]").first.click(timeout=8000)
+    """Sheet › Spells › Change spells: each of `names` prepared or unprepared, those prepared first (the count is held, as
+    D&D Beyond holds it), then Make."""
+    change_window(page, cid, "t-spells", "[data-change-spells]")
+    row = lambda n: f'[data-pick-row][data-pick-list$=":spells"][data-label="{n}"]'
+    for n in sorted(names, key=lambda n: page.locator(f"{WIN} {row(n)}").first.get_attribute("data-on") != "1"):
+        pick(page, row(n))
+    make_changes(page)
     page.wait_for_timeout(2500)
     page.keyboard.press("Escape")
 
 
 def prepare(t: Table, seat: str = "player2") -> None:
-    """Prepare spells (extension 0.9.8): one spell prepared and one dropped in askdnd's window reach D&D Beyond; then both
-    put back the same way."""
+    """Prepare spells (extension 0.9.8; the Change spells window since Nov 16): one spell prepared and one dropped in
+    askdnd's window reach D&D Beyond; then both put back the same way."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
     connects(t, page)
     cid, start = cid_of(page), prepared(record(sheet))
-    sheet_tab(page, cid, "t-spells")
-    page.locator('[data-modal-url*="/spells/prepare"]:visible').first.click(timeout=8000)
-    page.wait_for_selector(".peek.open [data-prep]", timeout=15000)
-    add = page.locator('.peek.open .prep-row[data-on=""]:not([data-always])').first.get_attribute("data-name")
-    drop = page.locator('.peek.open .prep-row[data-on="1"]:not([data-always])').first.get_attribute("data-name")
+    change_window(page, cid, "t-spells", "[data-change-spells]")
+    add = page.locator(f'{WIN} [data-pick-row][data-pick-list$=":spells"][data-on=""]:not([data-always])').first.get_attribute("data-label")
+    drop = page.locator(f'{WIN} [data-pick-row][data-pick-list$=":spells"][data-on="1"]:not([data-always])').first.get_attribute("data-label")
     page.keyboard.press("Escape")
     print(f"  prepare {add}, drop {drop}", flush=True)
     prepare_these(page, cid, [add, drop])
@@ -1000,24 +1018,22 @@ def forms_known(d: dict) -> dict:
 
 
 def wild_shape_forms(t: Table, seat: str = "player4") -> None:
-    """Swap a Wild Shape form (roadmap step 5, Nov 15; Levi, Druid 6): Sheet › Wild Shape › Swap a form lets one known form
-    go and learns another, made on D&D Beyond with its own requests (a creature in group 13 deleted and added); Undo
-    puts both back. Anything left over is put back as found."""
+    """Change a Wild Shape form (roadmap step 5, Nov 15; Levi, Druid 6; the Change forms window since Nov 16): one known
+    form let go and another learned, made on D&D Beyond with its own requests (a creature in group 13 deleted and
+    added); Undo puts both back. Anything left over is put back as found."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
     connects(t, page)
-    before = forms_known(record(sheet))
-    page.goto(page.url.split("?")[0].removesuffix("/battle"), wait_until="domcontentloaded")
-    page.locator('[data-tab="t-forms"]').first.click(timeout=8000)
-    go(page, page.locator("[data-swap-forms]").first)
-    out = page.locator('input[name="out"]:not([value=""])').first
-    out_mid = out.get_attribute("value")
-    out.check()
-    into = page.locator('select[name="in"] option:not([value=""]):not([disabled])').first
-    in_mid = into.get_attribute("value")
-    page.locator('select[name="in"]').select_option(in_mid)
+    cid, before = cid_of(page), forms_known(record(sheet))
+    change_window(page, cid, "t-forms", "[data-change-forms]")
+    out = page.locator(f'{WIN} [data-pick-row][data-base="1"]:has([data-pick-act])').first
+    out_mid = out.get_attribute("data-pick").split("|")[1]
+    out.locator("[data-pick-act]").click(timeout=8000)
+    into = page.locator(f'{WIN} [data-pick-row]:not([data-base="1"]):has([data-pick-act]:not([disabled]))').first
+    in_mid = into.get_attribute("data-pick").split("|")[1]
+    into.locator("[data-pick-act]").click(timeout=8000)
     print(f"  let go of {out_mid}, learn {in_mid}", flush=True)
-    page.locator("[data-use-go]").first.click(timeout=8000)
+    make_changes(page)
     t.expect("the form let go of is gone from D&D Beyond", lambda: out_mid not in forms_known(record(sheet)), SLOW)
     t.expect("and the new one is known there", lambda: in_mid in forms_known(record(sheet)), SLOW)
     page.wait_for_timeout(1500)
@@ -1038,31 +1054,34 @@ def spells_on(d: dict) -> dict:
             for cs in d.get("classSpells") or [] for s in cs.get("spells") or []}
 
 
+def names_on(d: dict) -> set[str]:
+    """The names of a sheet's spells on its classes' lists."""
+    return {(s.get("definition") or {}).get("name") for cs in d.get("classSpells") or [] for s in cs.get("spells") or []}
+
+
 def learn_spells(t: Table, seat: str = "player4") -> None:
-    """Your spells (roadmap step 5, Nov 15; Levi, Druid / Warlock): Sheet › Spells › Swap a cantrip lets one cantrip go
-    and learns another, made on D&D Beyond with its own Manage Spells requests (DELETE and POST spell); Undo puts both
-    back. Anything left over is put back as found."""
+    """A cantrip swapped (roadmap step 5, Nov 15; Levi, Druid / Warlock; the Change spells window since Nov 16): one
+    cantrip let go and another learned, made on D&D Beyond with its own Manage Spells requests (DELETE and POST spell);
+    Undo puts both back. Anything left over is put back as found."""
     sheet = t.sheet(seat)
     page = t.battle(seat)
     connects(t, page)
-    before = spells_on(record(sheet))
-    page.goto(page.url.split("?")[0].removesuffix("/battle"), wait_until="domcontentloaded")
-    page.locator('[data-tab="t-spells"]').first.click(timeout=8000)
-    go(page, page.locator("[data-learn-spells]").first)
-    out = page.locator('input[name="out"]:not([value=""])').first
-    out_id = out.get_attribute("value")
-    out.check()
-    into = page.locator('select[name="in"] option:not([value=""]):not([disabled])').first
-    in_id = into.get_attribute("value")
-    page.locator('select[name="in"]').select_option(in_id)
+    cid, before = cid_of(page), spells_on(record(sheet))
+    change_window(page, cid, "t-spells", "[data-change-spells]")
+    out = page.locator(f'{WIN} [data-pick-row][data-pick-list$=":cantrips"][data-base="1"]:has([data-pick-act])').first
+    out_id = out.get_attribute("data-label")
+    out.locator("[data-pick-act]").click(timeout=8000)
+    into = page.locator(f'{WIN} [data-pick-row][data-pick-list$=":cantrips"]:not([data-base="1"]):has([data-pick-act]:not([disabled]))').first
+    in_id = into.get_attribute("data-label")
+    into.locator("[data-pick-act]").click(timeout=8000)
     print(f"  let go of {out_id}, learn {in_id}", flush=True)
-    page.locator("[data-use-go]").first.click(timeout=8000)
-    t.expect("the spell let go of is gone from D&D Beyond", lambda: out_id not in spells_on(record(sheet)), SLOW)
-    t.expect("and the new one is on the class's list there", lambda: in_id in spells_on(record(sheet)), SLOW)
+    make_changes(page)
+    t.expect("the spell let go of is gone from D&D Beyond", lambda: out_id not in names_on(record(sheet)), SLOW)
+    t.expect("and the new one is on the class's list there", lambda: in_id in names_on(record(sheet)), SLOW)
     page.wait_for_timeout(1500)
     if undo(page):
-        t.expect("Undo lets the new one go", lambda: in_id not in spells_on(record(sheet)), SLOW)
-        t.expect("and learns the first again", lambda: out_id in spells_on(record(sheet)), SLOW)
+        t.expect("Undo lets the new one go", lambda: in_id not in names_on(record(sheet)), SLOW)
+        t.expect("and learns the first again", lambda: out_id in names_on(record(sheet)), SLOW)
     now = spells_on(record(sheet))
     tidy = [["DELETE", "spell", now[e]] for e in now if e not in before]
     tidy += [["POST", "spell", before[e]] for e in before if e not in now]
@@ -1411,7 +1430,7 @@ def unreachable(t: Table, seat: str = "player2") -> None:
              lambda: CANT in page.locator(".peek.open .unreached").first.inner_text(timeout=3000)
              and page.locator('.peek.open button:text-is("Equip"), .peek.open button:text-is("Unequip")').count() == 0, 10)
     page.keyboard.press("Escape")
-    for what, url, top in (("the item browser", "items/browse", "data-ib-said"), ("Prepare spells", "spells/prepare", 'class="use-said"')):
+    for what, url, top in (("the item browser", "items/browse", "data-ib-said"), ("Change spells", "spells/prepare", "data-ls-rows")):
         html = unescape(page.evaluate("u => fetch(u).then(r => r.text())", f"/characters/{cid}/{url}"))  # (its "can&#39;t")
         t.expect(f"{what} says so at the top", lambda: CANT in html and html.index('class="unreached"') < html.index(top), 1)
     status = page.evaluate("""cid => fetch(`/characters/${cid}/conditions`, {method: 'POST', headers: {'HX-Request': 'true'},
