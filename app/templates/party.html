@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, adv, mark, sync, sync_attrs, dying_state, dying_marks, hp_tile, ntile, purse, res_name %}
 {% from "_cond_icons.html" import cond_icon, cond_badges with context %}
-{% from "_lists.html" import filter_column, search_box, active_row %}
+{% from "_lists.html" import filter_column, search_box %}
 {% from "_fight_rows.html" import fight_rows with context %}
 {% block title %}Party · askdnd{% endblock %}
 {% block content %}
@@ -75,7 +75,6 @@
         {{ filter_column(data.groups) }}
         <div class="ls-main">
           {{ search_box("Search the party's " ~ nouns) }}
-          {{ active_row() }}
           <div class="ls-toolbar"><span class="note" data-ls-summary></span></div>
           <div class="ls-rows pt-rows {{ cols }}" data-ls-rows>
             {{ caller() }}

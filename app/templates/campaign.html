@@ -2,7 +2,7 @@
 {% block title %}Campaign · askdnd{% endblock %}
 {% block content %}
 {% from "_suggest_form.html" import suggest with context %}
-{% from "_lists.html" import view_switch %}
+{% from "_lists.html" import view_switch, filter_head, chip_group %}
 {# The Campaign page (roadmap step 11; Brett 2026-10-22, docs/mockups/campaign-reading.html option E and
    docs/mockups/campaign-tabs.html Q1, R1 with R2; Story joined it Nov 13, Brett chose it on docs/mockups/menu-bar-people/).
    Tabs: Previously on… (the pre-session refresher, where it opens) and Sessions (every published session), then World (the Reader: names down the left, one entry on the
@@ -33,9 +33,9 @@
         {% if latest_label %}<p class="note ls-which">Last session: <b>{{ latest_label }}</b>, the newest with a published recap. Its key moments' names get the dot.</p>{% endif %}
         {# Filters (Brett, 2026-10-23, docs/mockups/campaign-v2.html): kinds, and Hidden for the DM; they combine with the view #}
         <div class="reader-filters">
-          <div class="reader-filters-head"><span>Kind</span><button type="button" class="btn link small" data-ls-clear>Clear</button></div>
-          <div class="ls-chips">{% for title, rows in groups %}<button type="button" class="ls-chip" data-ls-group="kind" data-ls-value="{{ title }}" aria-pressed="false">{{ title }} <span class="ls-n" data-ls-n></span></button>{% endfor %}
-            {%- if editor and hidden_count %}<button type="button" class="ls-chip" data-ls-group="status" data-ls-value="Hidden" aria-pressed="false">Hidden <span class="ls-n" data-ls-n></span></button>{% endif %}</div>
+          {{ filter_head() }}{# (the shared filter pieces, _lists.html: one component, feedback 67) #}
+          {{ chip_group({"key": "kind", "label": "Kind", "values": groups | map(attribute=0) | list}) }}
+          {% if editor and hidden_count %}{{ chip_group({"key": "status", "label": "Visibility", "values": ["Hidden"]}) }}{% endif %}
           <p class="note"><span data-ls-summary></span> shown</p>
         </div>
         </div>

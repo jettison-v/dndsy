@@ -324,7 +324,7 @@
 
 {# One option in a list (the side panel's "everything you can do", Sheet › Actions): the same button as on Battle's
    columns (_battle_body.html `move`), an item's use or a spell's Cast (Brett, Nov 3: only pinned rows had Cast). #}
-{% macro opt_row(c, o, picks, can_pick, can_use=False, can_play=False) -%}
+{% macro opt_row(c, o, picks, can_pick, can_use=False, can_play=False, attrs="") -%}
 {%- set cast = can_play and o.cast and not (can_use and o.use) -%}
 {%- set bring = can_pick and o.bring and o.bring.state == "ready" -%}
 {%- set feature = can_play and o.use_window and not cast -%}
@@ -336,7 +336,7 @@
 {#- In a Wild Shape form (Sheet, character_pages._in_form): what the form can't do greyed with its reason, an item's note -#}
 {{ ri(c, o.key, o.name, picks, can_pick, star=o.cost != "Other", chips=o.tags + ([(o.form_note, "form-note")] if o.form_note else []),
       what=o.form_why or o.summary or o.meta, mech=o.mech if "mech" in o else (o.meta if o.summary else ""), cls="form-no" if o.form_why else "",
-      hit=btn if go else o.hit, uses=o.uses, spend=o.spends, hit_adv=o.adv, roll=o if not go and (o.dice or (o.hit and o.hit[0] in "+-−")) else None) }}
+      hit=btn if go else o.hit, uses=o.uses, spend=o.spends, hit_adv=o.adv, roll=o if not go and (o.dice or (o.hit and o.hit[0] in "+-−")) else None, attrs=attrs) }}
 {%- endmacro %}
 
 {# A character's picture from D&D Beyond (their image server). Hidden if it doesn't load. #}

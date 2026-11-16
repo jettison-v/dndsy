@@ -162,12 +162,13 @@ def test_party_filters_work_like_the_rest(people, server):
     pool.locator('[data-ls-group="does"]').first.click()
     some = pool.locator("[data-ls-row]:visible").count()
     assert 0 < some < total
-    assert pool.locator("[data-ls-active]").is_visible()  # Showing only: … ×
-    pool.locator("[data-ls-clear]").click()
-    assert pool.locator("[data-ls-row]:visible").count() == total
+    clear = pool.locator("[data-ls-clear-filters]:visible")  # (Clear by the Filters heading, once something's on: feedback 67)
+    assert clear.count() == 1
+    clear.click()
+    assert pool.locator("[data-ls-row]:visible").count() == total and clear.count() == 0
     pool.locator('[data-ls-group="who"][data-ls-value="Cole"]').click()
     assert 0 < pool.locator("[data-ls-row]:visible").count() <= total
-    pool.locator("[data-ls-clear]").click()
+    clear.click()
     pool.locator("[data-ls-search]").fill("zzzz")
     assert pool.locator("[data-ls-empty]").is_visible()
     pool.locator("[data-ls-search]").fill("")

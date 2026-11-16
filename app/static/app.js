@@ -1050,26 +1050,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const c = e.target.closest('.clamp'); if (!c || e.target.closest('a, button')) return;
     const open = c.classList.toggle('open'); c.setAttribute('aria-expanded', open ? 'true' : 'false'); c.title = open ? 'Show less' : 'Show all';
   });
-  // Battle's "See all" / "+ Add" panels: chips show one kind (attacks, features, spells…), search looks at names
-  // and descriptions; groups with nothing left hide (Brett, 2026-10-22)
-  function optFilter(panel) {
-    const on = [...panel.querySelectorAll('[data-opt-kind][aria-pressed=true]')].map(b => b.dataset.optKind);
-    const q = ((panel.querySelector('[data-opt-search]') || {}).value || '').toLowerCase().trim();
-    let any = false;
-    panel.querySelectorAll('.opt-group').forEach(g => {
-      const kindOk = !on.length || on.includes(g.dataset.kind);
-      let shown = 0;
-      g.querySelectorAll('.ri').forEach(r => { const ok = kindOk && (!q || r.textContent.toLowerCase().includes(q)); r.hidden = !ok; if (ok) shown++; });
-      g.hidden = !shown; any = any || shown > 0;
-    });
-    const none = panel.querySelector('[data-opt-none]'); if (none) none.hidden = any;
-  }
-  document.addEventListener('click', e => {
-    const b = e.target.closest('[data-opt-kind]'); if (!b) return;
-    b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
-    optFilter(b.closest('[data-opt-panel]'));
-  });
-  document.addEventListener('input', e => { if (e.target.matches('[data-opt-search]')) optFilter(e.target.closest('[data-opt-panel]')); });
+  // (Battle's See all and + Add panels use the shared list engine below, "Lists": feedback 67, Nov 16)
   // FAQ search: only the answers containing every word typed, opened; sections with none hide (Brett, 2026-10-22)
   const faqBox = document.getElementById('faq-search');
   if (faqBox) faqBox.addEventListener('input', () => {
@@ -3558,16 +3539,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       chip.classList.toggle('zero', !n && !pressed);
       const c = chip.querySelector('[data-ls-n]'); if (c) c.textContent = n;
     });
-    // The active-filter row: one chip per value with ×
-    const active = root.querySelector('[data-ls-active]'), list = root.querySelector('[data-ls-active-chips]');
+    // Clear, by the Filters heading and on a phone's folded Filters button, once something is filtered (Brett chose A,
+    // Nov 16, docs/mockups/filter-clear/: the blue chips say what's on, so there's no row above the list)
     const picked = on.flatMap(g => sel[g].map(v => [g, v]));
-    if (list) list.replaceChildren(...picked.map(([g, v]) => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'ls-chip on'; b.dataset.lsRemove = g + '\u0000' + v;
-      b.setAttribute('aria-label', 'Remove filter ' + v); b.textContent = v + ' ×';
-      return b;
-    }));
-    if (active) active.hidden = !picked.length || !!q;
+    root.querySelectorAll('[data-ls-clear-filters]').forEach(b => { b.hidden = !picked.length; });
     const moreOn = root.querySelector('[data-ls-more-on]');
     if (moreOn) {
       const n = [...root.querySelectorAll('[data-ls-more] [data-ls-group][aria-pressed="true"]')].length;
@@ -3631,12 +3606,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const root = rootOf(e.target); if (!root || !root._ls) return;
     const st = root._ls, search = root.querySelector('[data-ls-search]');
     const clearSearch = () => { st.q = ''; if (search) search.value = ''; };
-    if (e.target.closest('[data-ls-clear]')) { st.sel = {}; clearSearch(); apply(root); return; }
+    if (e.target.closest('[data-ls-clear]')) { e.preventDefault(); st.sel = {}; clearSearch(); apply(root); return; }  // (in a folded summary: clears, never opens it)
     if (e.target.closest('[data-ls-clear-search]')) { clearSearch(); apply(root); if (search) search.focus(); return; }
     const view = e.target.closest('[data-ls-view]');
     if (view) { st.view = view.dataset.lsView; clearSearch(); apply(root); return; }
-    const rm = e.target.closest('[data-ls-remove]');
-    if (rm) { const [g, v] = rm.dataset.lsRemove.split('\u0000'); st.sel[g] = (st.sel[g] || []).filter(x => x !== v); apply(root); return; }
     const chip = e.target.closest('[data-ls-group]');
     if (chip) {
       const g = chip.dataset.lsGroup, v = chip.dataset.lsValue, cur = st.sel[g] || [];

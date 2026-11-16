@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
-{% from "_lists.html" import search_box, chip_group, view_switch, empty_state %}
+{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head %}
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
 {% from "_math.html" import math_num %}
@@ -184,6 +184,8 @@
       <label class="ls-select"><span>Sort</span><select aria-label="Sort"><option>Level</option><option>Name</option></select></label><label class="ls-check"><input type="checkbox"> Full notes</label></div>
     {{ ds("Filter group", "_lists.html chip_group()", "OR within a group, AND across groups; each chip shows how many match.") }}
     <div class="ds-sample">{{ chip_group({"key": "time", "label": "Casting time", "values": ["Action", "Bonus action", "Reaction"]}) }}</div>
+    {{ ds("Filters heading and Clear", "_lists.html filter_head(), clear_filters()", "Every filter column starts with it; Clear shows once something is filtered (on a phone, on the folded Filters button too). No row above the list: the blue chips say what's on.") }}
+    <div class="ds-sample ds-narrow">{{ filter_head() }}{{ chip_group({"key": "kind", "label": "Show only", "values": ["Attacks", "Spells", "Items"]}) }}</div>
     {{ ds("Row", "_char.html ri()", "One thing per row: marks, name, tags, a summary line, the roll on the right; a click opens the side panel.") }}
     <div class="rows one ds-rows">
       {{ ri(c, "spell:Fire Bolt", "Fire Bolt", picks, False, star=True, fav=True, chips=["Cantrip"], what="A mote of fire streaks at a creature or object.", mech="120 ft · 1d10 fire", url="/manage/design/panel") }}

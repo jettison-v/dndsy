@@ -2,7 +2,7 @@
    Group / Level / Name sorts and the side panel. `features` from character_views.feature_rows (each with `turn`,
    what it's used as, and `uses`). The Group sort keeps the old tab's order: features you use, by where they
    come from, then the ones that are always on. #}
-{% from "_lists.html" import filter_column, search_box, active_row, view_switch, notes_toggle %}
+{% from "_lists.html" import filter_column, search_box, view_switch, notes_toggle %}
 {% from "_char.html" import pick_btn, pips, count_pips %}
 {% macro feature_list(c, features, picks, can_pick, show_picks, key="sheet-features", views=(), play=false) -%}
 {%- set TURN = ["Action", "Bonus action", "Reaction", "Other", "Always on"] -%}
@@ -24,7 +24,6 @@
           <select data-ls-sort aria-label="Sort"><option value="default">Group</option><option value="name">Name</option></select></label>
         {% if show_picks %}{{ notes_toggle() }}{% endif %}
       </div>
-      {{ active_row() }}
       <div class="ls-rows ft-cols" data-ls-rows>
         <div class="ls-head" aria-hidden="true"><span>Feature</span><span>From</span><span>Level</span><span>Used as</span><span>Uses</span><span></span></div>
         {% for f in features %}{% set note = picks.notes.get(f.key) if show_picks else "" %}
@@ -45,7 +44,7 @@
         </div>
         {% endfor %}
       </div>
-      <p class="note ls-empty" data-ls-empty hidden>No features match. <button type="button" class="btn link small" data-ls-clear>Clear all</button></p>
+      <p class="note ls-empty" data-ls-empty hidden>No features match. <button type="button" class="btn link small" data-ls-clear>Clear</button></p>
       {% if views %}<p class="note ls-empty" data-ls-empty-view="fav" hidden>Nothing on your Shortlist yet. In <b>All</b>, press the bookmark on a feature you want close at hand.</p>{% endif %}
     </div>
   </div>
