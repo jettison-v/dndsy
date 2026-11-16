@@ -1091,7 +1091,7 @@
  {
   "title": "Clearing Filters",
   "kind": "design",
-  "status": "Waiting for your pick",
+  "status": "Chosen A, no row above the list · built (PR 385), your look first",
   "date": "Nov 16",
   "what": "Where Clear goes on every filtered list: at the top of the filters, one row above the list, or both (your feedback 67).",
   "source": "docs/mockups/filter-clear/",
