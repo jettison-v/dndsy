@@ -3,289 +3,188 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <style>
-/* askdnd's mockups: dark, in askdnd's own tokens (one look, as the app); laptop first, one column on a phone; the
-   table's own characters. Brett, Nov 16: the filter component has two cases, beside the list and above it. */
+/* askdnd's mockups: dark, in askdnd's own tokens. This round is drawn at askdnd's real sizes (app.css: --control-h 32px,
+   44px on a phone; --chip-h 28px, 36px on a phone; fields on --bg with a --line border, radius 8px; 14px text), in each
+   place the folded filters go, at that place's real width. Brett, Nov 16: the first build's bold FILTERS clouded what's
+   filtered, and three kinds on overflowed World's column. */
 :root {
-  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
-  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
-  --red: #f08a8a; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0; --selected: rgba(126, 166, 224, .2);
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0; --selected-bg: #2a3550;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
   --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  --control-h: 32px; --chip-h: 28px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --fs-xs: .75rem; --fs-sm: .875rem;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
-.wrap { max-width: 1280px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
-h1, h2 { color: var(--strong); margin: 0; text-wrap: balance; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
 h1 { font: 600 2.2rem/1.15 var(--serif); }
 h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
 p { margin: 0; }
 b { color: var(--strong); font-weight: 600; }
 .lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
 .pick { color: var(--green); font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; margin-left: 8px; }
-.lead { max-width: 80ch; font-size: 1.04rem; }
+.lead { max-width: 82ch; font-size: 1.04rem; }
 .meta { color: var(--muted); font-size: .88rem; }
-section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px solid var(--line-soft); }
-.intro { display: grid; gap: 8px; max-width: 88ch; }
-.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-.notes > div { display: grid; gap: 4px; align-content: start; font-size: .9rem; }
-.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; align-items: start; }
-.cap { font: 700 .74rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
+section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px solid #2c3036; }
+.intro { display: grid; gap: 8px; max-width: 90ch; }
+.decided { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.decided div { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: 10px; padding: 11px 14px; font-size: .88rem; color: var(--muted); }
+.decided b { display: block; margin-bottom: 2px; }
 
-/* The Reader: a narrow name column beside the entry */
-.reader { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px; min-height: 540px; }
-.col { display: grid; gap: 10px; align-content: start; min-width: 0; }
-.entry { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 8px; align-content: start; }
-.entry h3 { margin: 0; font: 600 1.3rem/1.2 var(--serif); color: var(--strong); }
-.search { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--faint); font-size: .88rem; }
-.seg { display: flex; gap: 2px; padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
-.seg button { flex: 1; min-height: 30px; border: 0; border-radius: 7px; background: none; color: var(--muted); font: 500 .86rem/1 var(--sans); white-space: nowrap; cursor: pointer; }
-.seg button[aria-pressed="true"] { background: var(--selected); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
-.seg small { color: var(--faint); margin-left: 4px; }
-.explain { font-size: .84rem; color: var(--muted); }
-.f-head { display: flex; align-items: center; gap: 10px; font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
-.f-head .rule { flex: 1; height: 1px; background: var(--line); }
-.clear { font: 500 .82rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--red); background: none; border: 0; padding: 0; cursor: pointer; }
-.group { display: grid; gap: 5px; }
-.group > span { font-size: .76rem; color: var(--muted); }
-.chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.chip { display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: 500 .78rem/1 var(--sans); cursor: pointer; }
-.chip small { color: var(--faint); font-size: .72rem; }
-.chip[aria-pressed="true"] { background: var(--selected); border-color: var(--blue); }
-.shown { font-size: .8rem; color: var(--muted); }
-.names { display: grid; border-top: 1px solid var(--line-soft); }
-.name { display: flex; align-items: center; gap: 8px; padding: 6px 4px; font-size: .9rem; border-bottom: 1px solid var(--line-soft); }
-.name .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex: none; }
-.name .nodot { width: 7px; flex: none; }
-.note-row { display: grid; gap: 2px; padding: 8px 4px; border-bottom: 1px solid var(--line-soft); font-size: .88rem; }
-.note-row small { color: var(--muted); }
-.grouph { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); padding: 10px 4px 4px; }
+/* The grid of places × states */
+.grid { display: grid; gap: 22px; }
+.place { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; padding-bottom: 18px; border-bottom: 1px solid #2c3036; }
+.place-name { flex: 1 0 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; font-size: .84rem; color: var(--muted); }
+.place-name b { font-size: .92rem; }
+.state-h { font: 700 .7rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 6px; display: block; }
+/* One cell: the column exactly as wide as askdnd's, its background and padding as the Reader's (12px) */
+.cell { background: var(--surface); border-radius: var(--r-lg); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.cell.phone { --control-h: 44px; --chip-h: 36px; }
+.cell .w { font-size: .7rem; color: var(--faint); text-align: right; margin-top: -4px; }
 
-/* The folded line: Filters ▸ 2 · Clear (above a list) */
-.fold { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; font: 600 .84rem/1 var(--sans); color: var(--text); width: 100%; text-align: left; }
-.fold .arrow { color: var(--muted); width: 10px; }
-.fold .n { background: var(--selected); border: 1px solid var(--blue); border-radius: 999px; padding: 2px 7px; font-size: .72rem; }
-.fold .on-names { flex: 1; min-width: 0; color: var(--muted); font-weight: 500; font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fold .clear { margin-left: auto; }
-.fold-body { display: grid; gap: 10px; padding: 10px 2px 4px; }
-.mark { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--amber); color: #1a1a1a; font: 700 .7rem/1 var(--sans); flex: none; }
-/* Round 2: the filters line itself (Brett: the bold FILTERS clouds what's filtered) */
-.r2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; }
-.r2-col { display: grid; gap: 10px; align-content: start; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px; }
-.r2-col h3 { margin: 0; font: 600 1rem/1.3 var(--sans); color: var(--strong); }
-.state { display: grid; gap: 6px; }
-.state > small { font: 700 .7rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
-.ctl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .86rem; }
-.ctl { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: 400 .86rem/1 var(--sans); }
-.ctl .chev { color: var(--muted); font-size: .72rem; }
-.ctl .badge { background: var(--blue); color: #10131a; border-radius: 999px; padding: 2px 6px; font: 700 .7rem/1 var(--sans); }
-.ctl svg { width: 14px; height: 14px; stroke: var(--muted); fill: none; stroke-width: 2; }
-.ctl-lbl { color: var(--muted); font-size: .86rem; }
-.on-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 9px; border-radius: 999px; background: var(--selected); border: 1px solid var(--blue); color: var(--text); font: 500 .78rem/1 var(--sans); }
-.on-pill b { color: var(--muted); font-weight: 500; }
-.bar { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: .86rem; color: var(--faint); }
-.bar .vals { flex: 1; min-width: 0; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bar .clear, .ctl-row .clear { margin-left: auto; }
-.open-groups { display: grid; gap: 8px; padding: 8px 2px 2px; }
-.sortrow { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--muted); }
-.sortrow .ctl { min-height: 30px; }
-.sortrow .cnt { margin-left: auto; }
+/* askdnd's own pieces, as app.css draws them */
+.search { display: flex; align-items: center; gap: 8px; height: var(--control-h); padding: 0 12px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--muted); font-size: var(--fs-sm); }
+.sortrow { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--muted); min-width: 0; }
+.select { display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 0 8px 0 10px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font-size: var(--fs-sm); white-space: nowrap; }
+.chev { color: var(--muted); font-size: .7rem; }
+.count { margin-left: auto; font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; }
+.group { display: grid; gap: 6px; }
+.group > span { font-size: var(--fs-xs); color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: var(--chip-h); padding: 0 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; color: var(--text); font-size: var(--fs-xs); white-space: nowrap; }
+.chip small { color: var(--muted); font-size: var(--fs-xs); }
+.chip.on { background: var(--selected-bg); border-color: var(--blue); }
+.clear { background: none; border: 0; padding: 4px 4px; color: var(--link); font: 500 var(--fs-sm)/1 var(--sans); white-space: nowrap; cursor: pointer; }
+.rows { border-top: 1px solid var(--line); padding-top: 6px; display: grid; gap: 2px; font-size: var(--fs-sm); color: var(--muted); }
+
+/* A: a control like Sort's dropdown, and what's on as pills beside it (two at most, then "+2"), wrapping onto a second line at most */
+.a-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.a-btn { display: inline-flex; align-items: center; gap: 8px; min-height: var(--control-h); padding: 0 10px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: 400 var(--fs-sm)/1 var(--sans); white-space: nowrap; }
+.a-btn .n { background: var(--selected-bg); border: 1px solid var(--blue); border-radius: 999px; padding: 2px 7px; font-size: var(--fs-xs); }
+.pill { display: inline-flex; align-items: center; gap: 6px; min-height: var(--chip-h); max-width: 100%; padding: 0 6px 0 10px; background: var(--selected-bg); border: 1px solid var(--blue); border-radius: 999px; color: var(--text); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill i { font-style: normal; color: var(--muted); padding: 0 2px; }
+.pill.more { padding: 0 10px; background: var(--surface-2); border-color: var(--line); color: var(--muted); }
+.a-row .clear { margin-left: auto; }
+
+/* C: a bar that says what's showing, always one line */
+.c-bar { display: flex; align-items: center; gap: 8px; min-height: var(--control-h); min-width: 0; padding: 0 10px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); font-size: var(--fs-sm); }
+.c-bar .k { color: var(--muted); flex: none; }
+.c-bar .v { flex: 1 1 auto; min-width: 0; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c-bar .v.none { color: var(--muted); }
+.c-bar .clear { flex: none; }
+.c-bar .chev { flex: none; }
+
+.compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.compare > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; font-size: .9rem; }
+.compare ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; color: var(--muted); }
 .q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
 .q ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; }
-@media (max-width: 760px) { .reader { grid-template-columns: 1fr; min-height: 0; } .entry { display: none; } h1 { font-size: 1.7rem; } }
 </style>
 
 <div class="wrap">
 
 <header style="display:grid;gap:14px">
-  <span class="lbl">Mockup · Nov 16 · for Brett</span>
+  <span class="lbl">Mockup, round 2 · Nov 16 · for Brett</span>
   <h1>Filters above a list</h1>
-  <p class="lead">Every filtered list now shares one filter component. Lists use it two ways: <b>beside the list</b>
-  (the Spell Book, Sheet's lists, Party), where there's room and the list you read is on the right, and <b>above the
-  list</b>, in a narrow column (World, Notes you sent, Battle's See all), where every row the filters take pushes the list
-  down. This draws the second case: the filters fold to <b>one line</b>, "Filters ▸ 2 · Clear", that opens in place.
-  The pieces stay the same: chips, counts, Clear, and each list remembering what's on and whether it's open. The
-  beside-the-list layout doesn't change.</p>
+  <p class="lead">Where a list sits under its filters in a narrow column, the filters fold to one control. The first build
+  drew it as a bold FILTERS heading with what's on squeezed beside it, which clouded what's filtered, and with three kinds
+  on it overflowed World's column. This round draws two designs carefully: at askdnd's real sizes, in each place the
+  folded filters go, at that place's real width, and in every state, including three on and many long names.</p>
+  <div class="decided">
+    <div><b>Folded above the list</b>World, Notes you sent, Battle's See all and + Add. Beside a list (the Spell Book, Sheet's lists, Party) stays a column.</div>
+    <div><b>Sort is a dropdown</b>"Sort" and its dropdown under the filters, the count at the right, on every list.</div>
+    <div><b>World's explainer line is gone</b>The date is the Last session button's tooltip.</div>
+    <div><b>Notes' list grows with the page</b>300px at 901px wide, about a third of the page from there, 446px at most.</div>
+  </div>
 </header>
 
-<section class="board" id="today">
+<section class="board" id="a">
   <div class="intro">
-    <span class="lbl">Today</span>
-    <h2>World's name column</h2>
-    <p>Search, the All · Last session switch (its count wraps under "Last session" in this width), two lines explaining
-    the dot, then the filters, open, all before the first name.</p>
+    <span class="lbl">A · A control like Sort, with what's on as pills</span><span class="pick">My pick</span>
+    <h2>The control says Filters; the pills say what's filtered</h2>
+    <p>The control is drawn like Sort's dropdown (the same height, border and regular weight), so the two read as a pair.
+    What's on sits beside it as blue pills, each with its own ×; at most two show, then "+2", so it never takes more than
+    two lines. Clear comes at the end. Open, the pills give way to the chips themselves.</p>
   </div>
-  <div class="reader">
-    <div class="col">
-      <div class="search">⌕ Search the world</div>
-      <div class="seg"><button aria-pressed="true">All <small>35</small></button><button aria-pressed="false" style="white-space:normal;line-height:1.3">Last session <small>14</small></button></div>
-      <p class="explain">Last session: <b>Nov 6, 2026</b>, the newest with a published recap. Its key moments' names get the dot.</p>
-      <div class="f-head">Filters <span class="rule"></span></div>
-      <div class="group"><span>Kind</span><div class="chips"><span class="chip">People <small>35</small></span><span class="chip">Places <small>15</small></span><span class="chip">Factions <small>4</small></span><span class="chip">Items <small>15</small></span><span class="chip">Creatures <small>3</small></span><span class="chip">Other <small>1</small></span></div></div>
-      <span class="shown">73 entries shown</span>
-      <div class="names"><div class="name"><span class="nodot"></span>Aleth</div><div class="name"><span class="dot"></span>Captain Rosalind</div><div class="name"><span class="nodot"></span>Celeste</div></div>
-    </div>
-    <div class="entry"><span class="meta">Person</span><h3>Aleth</h3><p class="meta">An entry opens here.</p></div>
-  </div>
+  <div class="grid" data-design="a"></div>
 </section>
 
-<section class="board" id="world">
+<section class="board" id="c">
   <div class="intro">
-    <span class="lbl">Folded above the list · World</span><span class="pick">My pick</span>
-    <h2>One line, until you open it</h2>
-    <p>The filters fold to one line under the switch: closed, it says how many are on and which, and Clear clears without
-    opening. Press it and the chip groups open in place; the list keeps its place under them. The explainer line goes:
-    the date is the Last session button's tooltip, and the dot says what it means when you point at it. The switch stays
-    on one line. Try it: open the filters, press Places, close them.</p>
+    <span class="lbl">C · A bar that says what's showing</span>
+    <h2>One line, in words</h2>
+    <p>One field-like bar: "Showing every note", or "Showing Something's broken · Planned" in regular text, Clear, and the
+    arrow. It's always one line, so the list never moves down, but many filters cut off with "…" (the whole list is its
+    tooltip), and taking one filter off means opening it.</p>
   </div>
-  <div class="reader" data-mock="world"></div>
-  <div class="notes">
-    <div><b>More of the list on screen</b><span class="meta">Closed, everything above the first name is the search, the switch and one line.</span></div>
-    <div><b>What's on, without opening</b><span class="meta">"Filters ▸ 2 · People, Places · Clear": the count, the names while they fit, and Clear.</span></div>
-    <div><b>Remembered</b><span class="meta">Open or closed is kept per list in this browser, as the chips already are.</span></div>
-  </div>
+  <div class="grid" data-design="c"></div>
 </section>
 
-<section class="board" id="notes">
-  <div class="intro">
-    <span class="lbl">The same, for longer rows · Notes you sent</span>
-    <h2>Notes keeps more of its list</h2>
-    <p>Notes' rows are taller (a title and a line under it), so the room matters more. The same folded line, with Where
-    it stands and What it is inside it (and Sent from, once you've sent from more than one page), and the order (Newest ·
-    Oldest) at its foot.</p>
-  </div>
-  <div class="reader" data-mock="notes"></div>
-</section>
-
-<section class="board" id="panel">
-  <div class="intro">
-    <span class="lbl">The same, in a side panel · Battle's See all</span>
-    <h2>The panel's filters fold too</h2>
-    <p>Battle's See all actions is a narrow panel with the list below its filters: the same line. Beside-the-list lists
-    (the Spell Book, Sheet) keep their column; on a phone, every list already folds this way.</p>
-  </div>
-  <div class="pair">
-    <div><span class="cap">Closed</span><div class="col" style="background:var(--surface-2);border:1px solid var(--line-strong);border-radius:14px;padding:14px;max-width:420px">
-      <div class="search">⌕ Search actions</div>
-      <button class="fold" type="button"><span class="arrow">▸</span>Filters <span class="n">1</span><span class="on-names">Spells</span><span class="clear">Clear</span></button>
-      <div class="grouph">Cantrips</div><div class="names"><div class="name">Guidance</div><div class="name">Message</div><div class="name">Starry Wisp</div></div>
-      <div class="grouph">1st-level spells</div><div class="names"><div class="name">Cure Wounds</div><div class="name">Faerie Fire</div></div>
-    </div></div>
-    <div><span class="cap">Open</span><div class="col" style="background:var(--surface-2);border:1px solid var(--line-strong);border-radius:14px;padding:14px;max-width:420px">
-      <div class="search">⌕ Search actions</div>
-      <button class="fold" type="button"><span class="arrow">▾</span>Filters <span class="n">1</span><span class="on-names"></span><span class="clear">Clear</span></button>
-      <div class="fold-body"><div class="group"><span>Show only</span><div class="chips"><span class="chip">Attacks <small>1</small></span><span class="chip" aria-pressed="true">Spells <small>16</small></span><span class="chip">Items <small>2</small></span></div></div></div>
-      <div class="grouph">Cantrips</div><div class="names"><div class="name">Guidance</div><div class="name">Message</div></div>
-    </div></div>
-  </div>
-</section>
-
-<section class="board" id="round2">
-  <div class="intro">
-    <span class="lbl">Round 2 · the filters line itself</span>
-    <h2>Three ways to draw the folded line</h2>
-    <p>You said the built line's bold <b>FILTERS</b> clouds what's being filtered. That heading style belongs to a column's
-    title, not a control. Each version below is drawn as a control at regular weight, in three states: nothing filtered,
-    two on, and open. Each sits above the Sort row it's paired with on Notes.</p>
-  </div>
-  <div class="r2">
-    <div class="r2-col">
-      <h3>A · A control, like Sort, and what's on as pills</h3><span class="pick" style="margin:0">My pick</span>
-      <div class="state"><small>Nothing filtered</small>
-        <div class="ctl-row"><span class="ctl">Filters <span class="chev">▾</span></span></div>
-        <div class="sortrow">Sort <span class="ctl">Newest first <span class="chev">▾</span></span><span class="cnt">33 notes</span></div></div>
-      <div class="state"><small>Two on</small>
-        <div class="ctl-row"><span class="ctl">Filters <span class="badge">2</span> <span class="chev">▾</span></span><span class="on-pill">Something's broken ×</span><span class="on-pill">Planned ×</span><span class="clear">Clear</span></div>
-        <div class="sortrow">Sort <span class="ctl">Newest first <span class="chev">▾</span></span><span class="cnt">3 notes</span></div></div>
-      <div class="state"><small>Open</small>
-        <div class="ctl-row"><span class="ctl">Filters <span class="badge">2</span> <span class="chev">▴</span></span><span class="clear">Clear</span></div>
-        <div class="open-groups"><div class="group"><span>Where it stands</span><div class="chips"><span class="chip">With Claude <small>1</small></span><span class="chip" aria-pressed="true">Planned <small>4</small></span><span class="chip">Fixed <small>32</small></span></div></div>
-          <div class="group"><span>What it is</span><div class="chips"><span class="chip" aria-pressed="true">Something's broken <small>3</small></span><span class="chip">An idea <small>0</small></span><span class="chip">A question <small>0</small></span></div></div></div></div>
-      <p class="meta">The button looks like Sort's dropdown, so the two read as a pair of controls. What's on sits beside it as blue pills (each with ×, wrapping when there are many), never mixed into the button's words.</p>
-    </div>
-    <div class="r2-col">
-      <h3>B · An icon button with a count</h3>
-      <div class="state"><small>Nothing filtered</small>
-        <div class="ctl-row"><span class="ctl"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Filter</span></div></div>
-      <div class="state"><small>Two on</small>
-        <div class="ctl-row"><span class="ctl"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Filter <span class="badge">2</span></span><span class="on-pill">Something's broken ×</span><span class="on-pill">Planned ×</span></div></div>
-      <div class="state"><small>Open</small>
-        <div class="ctl-row"><span class="ctl"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Filter <span class="badge">2</span></span><span class="clear">Clear</span></div>
-        <div class="open-groups"><div class="group"><span>Where it stands</span><div class="chips"><span class="chip" aria-pressed="true">Planned <small>4</small></span><span class="chip">Fixed <small>32</small></span></div></div></div></div>
-      <p class="meta">Smaller, with a funnel like most apps. Clear moves into the open filters (each pill's × clears one), so the closed line is shortest; the funnel is the only icon of its kind in askdnd so far.</p>
-    </div>
-    <div class="r2-col">
-      <h3>C · A bar that says what's showing</h3>
-      <div class="state"><small>Nothing filtered</small>
-        <div class="bar">Showing <span class="vals" style="color:var(--muted)">every note</span><span class="chev" style="color:var(--muted)">▾</span></div></div>
-      <div class="state"><small>Two on</small>
-        <div class="bar">Showing <span class="vals">Something's broken · Planned</span><span class="clear">Clear</span><span style="color:var(--muted)">▾</span></div></div>
-      <div class="state"><small>Open</small>
-        <div class="bar">Showing <span class="vals">Something's broken · Planned</span><span class="clear">Clear</span><span style="color:var(--muted)">▴</span></div>
-        <div class="open-groups"><div class="group"><span>Where it stands</span><div class="chips"><span class="chip" aria-pressed="true">Planned <small>4</small></span><span class="chip">Fixed <small>32</small></span></div></div></div></div>
-      <p class="meta">Reads as a sentence and takes one line, like the search box above it; with many on, the words cut off and you open it to see them all.</p>
-    </div>
+<section class="board" id="compare">
+  <div class="intro"><span class="lbl">Side by side</span><h2>What each is better at</h2></div>
+  <div class="compare">
+    <div><b>A, pills</b><ul><li>What's on is unmistakable: the same blue as the chips you pressed.</li><li>Take one filter off without opening (its ×).</li><li>Matches Sort's dropdown beneath it.</li><li>Two lines when several are on.</li></ul></div>
+    <div><b>C, a bar</b><ul><li>Always one line: the list never moves.</li><li>Reads as a sentence, like the search box above it.</li><li>Many filters cut off ("…").</li><li>Taking one off means opening it.</li></ul></div>
   </div>
 </section>
 
 <section class="board" id="picks">
-  <div class="intro"><span class="lbl">Your pick</span><h2>Choices</h2></div>
-  <div class="q"><b>Round 2: how should the folded filters line look?</b>
+  <div class="intro"><span class="lbl">Your pick</span><h2>One choice</h2></div>
+  <div class="q"><b>How should the folded filters look?</b>
     <ul>
-      <li><b>A, a control like Sort, with what's on as pills</b> (my pick).</li>
-      <li><b>B, an icon button with a count</b>.</li>
-      <li><b>C, a bar that says what's showing</b>.</li>
+      <li><b>A, a control like Sort with what's on as pills</b> (my pick): clearest about what's filtered, one × each, two lines at most.</li>
+      <li><b>C, a "Showing …" bar</b>: one line always, in words.</li>
     </ul>
-  </div>
-  <div class="q"><b>1. Filters above a list (World, Notes you sent, Battle's See all)</b>
-    <ul>
-      <li><b>Folded to one line</b> (my pick): "Filters ▸ 2 · names · Clear", opening in place, remembered per list.</li>
-      <li><b>Open, as today</b>: the chip groups always showing, Clear in their heading.</li>
-    </ul>
-  </div>
-  <div class="q"><b>2. World's "Last session" line</b>
-    <ul>
-      <li><b>Gone</b> (my pick): the date in the Last session button's tooltip, the dot explained on the dot.</li>
-      <li><b>One short line</b>: "Last session: Nov 6".</li>
-    </ul>
+    <p class="meta">Whichever you pick, the build adds layout tests for these same states in these same places, so a long filter line can't push past its column again.</p>
   </div>
 </section>
 
 </div>
 
 <script>
-const WORLD = [["Aleth", "People", 0], ["Captain Rosalind", "People", 1], ["Celeste", "People", 0], ["Cole", "People", 1], ["Crow's Keep", "Places", 1],
-  ["Devin the Librarian", "People", 1], ["The Observatory", "Places", 1], ["Terra", "People", 1], ["The White Space", "Places", 0], ["Thieves' Guild", "Factions", 0]];
-const NOTES = [["The Rest button wraps.", "Fixed", "Something's broken"], ["Could Battle show the swim speed?", "On the Roadmap", "An idea"],
-  ["Why is my Speed 25?", "Answered", "A question"], ["The placement of Change forms…", "Planned", "Something's broken"], ["Add to it should take screenshots", "Fixed", "Something's broken"]];
-function mock(el, kind) {
-  const on = new Set(kind === "world" ? [] : ["What it is:Something's broken"]);
-  let open = false, view = "all";
-  const groups = kind === "world" ? [["Kind", ["People", "Places", "Factions"]]] : [["Where it stands", ["Planned", "On the Roadmap", "Fixed", "Answered"]], ["What it is", ["Something's broken", "An idea", "A question"]]];
-  const data = kind === "world" ? WORLD : NOTES;
-  const val = (row, g) => kind === "world" ? row[1] : g === "Where it stands" ? row[1] : row[2];
-  const passes = row => groups.every(([g]) => { const want = [...on].filter(k => k.startsWith(g + ":")).map(k => k.slice(g.length + 1)); return !want.length || want.includes(val(row, g)); }) && (view === "all" || row[2] === 1);
-  const draw = () => {
-    const shown = data.filter(passes), names = [...on].map(k => k.split(":")[1]).join(", ");
-    el.innerHTML = `<div class="col">
-      <div class="search">⌕ ${kind === "world" ? "Search the world" : "Search your notes"}</div>
-      ${kind === "world" ? `<div class="seg"><button data-view="all" aria-pressed="${view === "all"}">All <small>35</small></button><button data-view="last" aria-pressed="${view === "last"}" title="Last session: Nov 6, 2026, the newest with a published recap">Last session <small>14</small></button></div>` : ""}
-      <button class="fold" type="button" data-fold aria-expanded="${open}"><span class="arrow">${open ? "▾" : "▸"}</span>Filters ${on.size ? `<span class="n">${on.size}</span>` : ""}<span class="on-names">${open ? "" : names}</span>${on.size ? '<span class="clear" data-clear>Clear</span>' : ""}</button>
-      ${open ? `<div class="fold-body">${groups.map(([g, vs]) => `<div class="group"><span>${g}</span><div class="chips">${vs.map(v => `<button type="button" class="chip" data-v="${g}:${v}" aria-pressed="${on.has(g + ":" + v)}">${v} <small>${data.filter(r => val(r, g) === v).length}</small></button>`).join("")}</div></div>`).join("")}${kind === "notes" ? '<div class="seg" style="max-width:220px"><button aria-pressed="true">Newest</button><button aria-pressed="false">Oldest</button></div>' : ""}</div>` : ""}
-      <span class="shown">${shown.length} ${kind === "world" ? "entries" : "notes"} shown</span>
-      <div class="names">${shown.map(r => kind === "world" ? `<div class="name">${r[2] ? '<span class="dot" title="In last session\'s key moments"></span>' : '<span class="nodot"></span>'}${r[0]}</div>` : `<div class="note-row"><b>${r[0]}</b><small>${r[1]} · ${r[2]}</small></div>`).join("")}</div>
-    </div>
-    <div class="entry"><span class="meta">${kind === "world" ? "Person" : "Something's broken"}</span><h3>${kind === "world" ? "Aleth" : "The Rest button wraps."}</h3><p class="meta">${kind === "world" ? "An entry opens here." : "The note opens here."}</p></div>`;
-  };
-  el.addEventListener("click", e => {
-    if (e.target.closest("[data-clear]")) { on.clear(); draw(); return; }
-    if (e.target.closest("[data-fold]")) { open = !open; draw(); return; }
-    const c = e.target.closest(".chip[data-v]"); if (c) { on.has(c.dataset.v) ? on.delete(c.dataset.v) : on.add(c.dataset.v); draw(); return; }
-    const v = e.target.closest("[data-view]"); if (v) { view = v.dataset.view; draw(); }
-  });
-  draw();
+// Each place at askdnd's real width for its controls (the Reader's column less its 12px padding each side; the side
+// panel's 420px less 22px each side; a 375px phone's Reader column), with the list's own filters and words
+const PLACES = [
+  { name: "World", note: "The Reader's 300px column", w: 276, noun: "entries", sort: "", total: 54,
+    groups: [["Kind", [["People", 35], ["Places", 15], ["Factions", 4], ["Items", 15], ["Creatures", 3], ["Other", 1]]]],
+    one: ["People"], three: ["People", "Factions", "Items"], many: ["People", "Places", "Factions", "Items", "Creatures"] },
+  { name: "Notes you sent", note: "Its column at 1280px wide", w: 391, noun: "notes", sort: "Newest first", total: 33,
+    groups: [["Where it stands", [["Waiting for an admin", 0], ["With Claude", 1], ["Planned", 4], ["Fixed", 32]]], ["What it is", [["Something's broken", 3], ["An idea", 0], ["A question", 0]]]],
+    one: ["Something's broken"], three: ["Something's broken", "Planned", "With Claude"], many: ["Waiting for an admin", "With Claude", "Planned", "Something's broken", "A question"] },
+  { name: "Battle's See all", note: "The 420px side panel", w: 376, noun: "options", sort: "", total: 21,
+    groups: [["Show only", [["Attacks", 1], ["Features", 4], ["Spells", 16], ["Items", 2]]]],
+    one: ["Spells"], three: ["Attacks", "Spells", "Items"], many: ["Attacks", "Features", "Spells", "Items"] },
+  { name: "On a phone", note: "World at 375px; controls 44px tall", w: 307, noun: "entries", sort: "", total: 54, phone: true,
+    groups: [["Kind", [["People", 35], ["Places", 15], ["Factions", 4], ["Items", 15], ["Creatures", 3], ["Other", 1]]]],
+    one: ["People"], three: ["People", "Factions", "Items"], many: ["People", "Places", "Factions", "Items", "Creatures"] },
+];
+const STATES = [["Nothing on", "none"], ["One on", "one"], ["Three on", "three"], ["Many, long names", "many"], ["Open", "open"]];
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+function shown(p, on) { return on.length ? Math.max(1, Math.round(p.total * on.length / 9)) : p.total; }
+function control(design, p, on, open) {
+  if (design === "a") {
+    const pills = open ? "" : on.slice(0, 2).map(v => `<span class="pill">${esc(v)} <i>×</i></span>`).join("") + (on.length > 2 ? `<span class="pill more">+${on.length - 2}</span>` : "");
+    return `<div class="a-row"><span class="a-btn">Filters${on.length ? ` <span class="n">${on.length}</span>` : ""} <span class="chev">${open ? "▴" : "▾"}</span></span>${pills}${on.length ? '<button class="clear">Clear</button>' : ""}</div>`;
+  }
+  const v = on.length ? on.map(esc).join(" · ") : `every ${p.noun === "options" ? "option" : p.noun === "notes" ? "note" : "entry"}`;
+  return `<div class="c-bar" title="${on.join(", ")}"><span class="k">Showing</span><span class="v${on.length ? "" : " none"}">${v}</span>${on.length ? '<button class="clear">Clear</button>' : ""}<span class="chev">${open ? "▴" : "▾"}</span></div>`;
 }
-document.querySelectorAll("[data-mock]").forEach(el => mock(el, el.dataset.mock));
+function cell(design, p, state) {
+  const on = state === "none" ? [] : state === "open" ? p.three : p[state];
+  const open = state === "open";
+  const groups = open ? p.groups.map(([g, vs]) => `<div class="group"><span>${g}</span><div class="chips">${vs.map(([v, n]) => `<span class="chip${on.includes(v) ? " on" : ""}">${esc(v)} <small>${n}</small></span>`).join("")}</div></div>`).join("") : "";
+  const sort = p.sort ? `<div class="sortrow">Sort <span class="select">${p.sort} <span class="chev">▾</span></span><span class="count">${shown(p, on)} ${p.noun}</span></div>`
+    : `<div class="sortrow"><span class="count" style="margin-left:0">${shown(p, on)} ${p.noun} shown</span></div>`;
+  return `<div class="cell${p.phone ? " phone" : ""}" style="width:${p.w + 24}px"><div class="search">⌕ Search</div>${control(design, p, on, open)}${groups}${sort}<div class="rows">…</div><span class="w">${p.w}px for controls</span></div>`;
+}
+document.querySelectorAll("[data-design]").forEach(g => {
+  const d = g.dataset.design;
+  g.innerHTML = PLACES.map(p => `<div class="place"><div class="place-name"><b>${p.name}</b>${p.note}</div>${STATES.map(([h, s]) => `<div><span class="state-h">${h}</span>${cell(d, p, s)}</div>`).join("")}</div>`).join("");
+});
 </script>
