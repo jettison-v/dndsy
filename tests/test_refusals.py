@@ -9,18 +9,12 @@ The people who mustn't: someone signed out; a player, about another player's cha
 DM of another campaign, about this one's rows (a role is per campaign, so a check that asks only "is a DM?" lets them in).
 """
 
-import re
-
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 
-from app import campaign_paths
 from app.db import Base, get_db
-from app.importer import import_bundle
 from app.main import app
-from app.models import Campaign, GameSession, GlossaryTerm
-from tests.roles import set_role
 from tests.table_setup import address, sign_in, two_campaigns
 
 pytestmark = pytest.mark.usefixtures("no_network")

@@ -180,3 +180,86 @@ def test_healing_from_0_outside_the_window_ends_unconscious_too(player, db, shee
     end = made(db, cole)
     assert end["hp"]["removedHitPoints"] == 47 and end["death"] == {"successCount": 0, "failCount": 0}
     assert end[death_saves.UNCONSCIOUS] is False
+
+
+# ---- the bug-planting check (Nov 15): each count and its edges, without D&D Beyond
+
+class Marked:
+    """What death_saves asks of the bridge and the fight, the character dying with these marks."""
+
+    def __init__(self, monkeypatch, success=0, fail=0, stable=None, hp=0):
+        self.calls = []
+        stable = success >= 3 if stable is None else stable  # (as the sheet reader has it: ddb_sheet.death_saves)
+        summary = {"hit_points": {"current": hp, "max": 20}, "death_saves": {"success": success, "fail": fail, "stable": stable}}
+        monkeypatch.setattr(death_saves.ddb_bridge, "on_for", lambda db, ch: True)
+        monkeypatch.setattr(death_saves.ddb_bridge, "reachable", lambda ch: True)
+        monkeypatch.setattr(death_saves.chars, "character_summary", lambda ch: summary)
+        monkeypatch.setattr(death_saves.ddb_bridge, "as_shown", lambda db, ch, s: s)
+        monkeypatch.setattr(death_saves.ddb_bridge, "add", lambda db, ch, kind, data, label: self.calls.append(("add", kind, data)))
+        monkeypatch.setattr(death_saves, "tell", lambda db, ch, kind, text: self.calls.append(("tell", kind)))
+
+    def marks(self):
+        return [c[2]["value"] for c in self.calls if c[0] == "add" and c[2].get("field") == "death"]
+
+
+COLE_ISH = type("Ch", (), {"id": 1, "name": "Cole", "campaign_id": 1, "conditions": None})
+
+
+def test_a_third_success_is_stable_and_a_third_failure_the_dms_ruling(monkeypatch):
+    m = Marked(monkeypatch, success=2)
+    assert "Stable" in death_saves.roll(None, COLE_ISH(), "success")
+    assert m.marks() == [{"successCount": 3, "failCount": 0}] and ("tell", "stable") in m.calls
+    m = Marked(monkeypatch, fail=2)
+    assert "three" in death_saves.roll(None, COLE_ISH(), "nat1")
+    assert m.marks() == [{"successCount": 0, "failCount": 3}] and ("tell", "out") in m.calls  # (at most three)
+    m = Marked(monkeypatch, success=1, fail=1)
+    death_saves.roll(None, COLE_ISH(), "failure")
+    assert m.marks() == [{"successCount": 1, "failCount": 2}] and not [c for c in m.calls if c[0] == "tell"]
+
+
+def test_a_reroll_takes_the_first_result_off_before_marking_its_own(monkeypatch):
+    m = Marked(monkeypatch, success=1, fail=1)
+    death_saves.roll(None, COLE_ISH(), "success", replaces="failure")  # (the failure off, then a success)
+    assert m.marks() == [{"successCount": 2, "failCount": 0}]
+    m = Marked(monkeypatch, success=0, fail=3)
+    death_saves.roll(None, COLE_ISH(), "success", replaces="nat1")  # (the third failure was the reroll's: not out any more)
+    assert m.marks() == [{"successCount": 1, "failCount": 1}]
+    m = Marked(monkeypatch, success=3)
+    death_saves.roll(None, COLE_ISH(), "failure", replaces="success")  # (Stable came from it: rolling again)
+    assert m.marks() == [{"successCount": 2, "failCount": 1}]
+    m = Marked(monkeypatch, success=1)
+    assert death_saves.roll(None, COLE_ISH(), "success", replaces="success") == "" and m.marks() == []  # (the same: nothing)
+    m = Marked(monkeypatch, success=3)
+    assert death_saves.roll(None, COLE_ISH(), "failure") == "" and m.marks() == []  # (Stable: no more saves)
+
+
+def test_damage_at_0_counts_failures_and_restarts_them_while_stable(monkeypatch):
+    m = Marked(monkeypatch, success=1, fail=2)
+    death_saves.hit(None, COLE_ISH(), 2, "crit")
+    assert m.marks() == [{"successCount": 1, "failCount": 3}]
+    m = Marked(monkeypatch, success=3, fail=1, stable=True)
+    death_saves.hit(None, COLE_ISH(), 1, "hit")
+    assert m.marks() == [{"successCount": 0, "failCount": 1}]  # (Stable: the saves start over)
+    m = Marked(monkeypatch, hp=5)  # (not at 0 on the sheet: from none)
+    death_saves.hit(None, COLE_ISH(), 1, "hit")
+    assert m.marks() == [{"successCount": 0, "failCount": 1}]
+
+
+def test_back_up_clears_askdnds_own_unconscious_and_keeps_the_rest(monkeypatch):
+    m = Marked(monkeypatch)
+    ch = COLE_ISH()
+    ch.conditions = [{"name": "Unconscious"}, {"name": "Poisoned"}]
+    death_saves.up(None, ch, 5, "healed")
+    assert ch.conditions == [{"name": "Poisoned"}]
+    assert m.calls[0] == ("add", "hp", {"amount": 5}) and m.marks() == [{"successCount": 0, "failCount": 0}]
+    m = Marked(monkeypatch)
+    death_saves.down(None, ch)
+    assert m.marks() == [{"successCount": 0, "failCount": 0}] and any(c[2].get("value") is True for c in m.calls)
+
+
+def test_the_sheets_marks_read_with_their_gaps():
+    assert death_saves.state({"hit_points": {"current": 0}}) == {"success": 0, "fail": 0, "stable": False, "out": False}
+    assert death_saves.state({"hit_points": {"max": 20}}) is None  # (no current given: not at 0)
+    assert death_saves.state({"hit_points": {"current": 0}, "death_saves": {"success": 3}})["stable"] is False  # (the sheet's own flag)
+    assert death_saves.state({"hit_points": {"current": 0}, "death_saves": {"fail": 3}})["out"] is True
+    assert death_saves.state({"hit_points": {"current": 0}, "death_saves": {"fail": 2}})["out"] is False
