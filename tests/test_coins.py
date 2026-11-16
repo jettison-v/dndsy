@@ -150,3 +150,28 @@ def test_buying_pays_from_the_place_chosen(player, db, item_catalog):
     r = player.post(f"/characters/{cole.id}/items/add", json={"items": [{"id": 415, "n": 1}], "pay": "1 sp", "from": BAG})
     assert r.json()["text"] == "Cole got Rope, paid 1 sp from Bag of Holding: on its way to D&D Beyond"
     assert changes(db)[1] == ("coins", {"deltas": {f"bagcoin:{BAG}:gp": -1, f"bagcoin:{BAG}:sp": 9}, "said": "paid 1 sp from Bag of Holding"})
+
+
+def test_an_undo_sent_back_is_checked_before_anything_moves():
+    """The bug-planting check (Nov 15): an Undo's deltas come back from the page, so only this character's own places
+    and coins pass, whole numbers in range (app/coins.py `checked`)."""
+    sheet = {"currency": {"gp": 5}, "inventory": [{"key": f"item:{BAG}", "name": "Bag of Holding", "bag": True},
+                                                  {"key": "item:7", "name": "Rope"}, {"name": "No key", "bag": True}],
+             "bag_coins": [{"id": BAG, "coins": {"gp": 7000}}]}
+    ok = {"coin:gp": -3, f"bagcoin:{BAG}:sp": 25, "coin:pp": coins.MOST * 10}
+    assert coins.checked(sheet, json.dumps(ok)) == ok
+    for bad in ({"coin:gp": 0}, {"coin:gp": True}, {"coin:gp": 1.5}, {"coin:gp": coins.MOST * 10 + 1}, {"coin:xp": 1},
+                {"item:gp": 1}, {f"bagcoin:{BAG}:xp": 1}, {"bagcoin:me:gp": 1}, {"bagcoin:7:gp": 1}, {f"bagcoin:{BAG}:gp:x": 1},
+                {f"bagcoin:{BAG}": 1}, {f"BAGCOIN:{BAG}:gp": 1}, {}, [1]):
+        assert coins.checked(sheet, json.dumps(bad)) is None, bad
+    assert coins.checked(sheet, "not json") is None and coins.checked(sheet, None) is None
+    assert coins.checked(sheet, json.dumps({"coin:gp": 1}))  # (one coin is enough)
+
+
+def test_spending_exactly_what_you_have_and_amounts_in_words():
+    purse = {"key": "me", "coins": {"cp": 0, "sp": 0, "ep": 0, "gp": 3, "pp": 0}}
+    assert coins.spend(purse, "gp", 3) == {"coin:gp": -3}  # (all of it, no change made)
+    assert coins.pay_from({"cp": 50}, 50) == {"cp": 0, "sp": 0, "ep": 0, "gp": 0, "pp": 0} and coins.pay_from({"cp": 49}, 50) is None
+    assert coins.made_change({"coin:gp": -1, "coin:sp": 5}, "sp") == ": paid 1 gp, 5 sp back"
+    assert coins.made_change({"coin:gp": -1, "coin:sp": 0}, "sp") == ": paid 1 gp"
+    assert coins.money(0) == "0 gp" and coins.parse_money("1,200 gp") == 120000
