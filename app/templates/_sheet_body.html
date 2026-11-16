@@ -81,7 +81,7 @@
         <div class="res-row mt-1">{% for sl in s.spell_slots.slots %}{{ res(s, c if can_play else none, "slot:" ~ sl.level, (sl.level ~ {1: "st", 2: "nd", 3: "rd"}.get(sl.level, "th")), {"max": sl.max, "left": sl.max - sl.used}) }}{% endfor %}
           {% if s.spell_slots.pact %}{% set p = s.spell_slots.pact %}{{ res(s, c if can_play else none, "pact:" ~ p.level, "Pact, level " ~ p.level, {"max": p.max, "left": p.max - p.used}) }}{% endif %}</div></div>
     </div>
-    {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("ready", "Prepared"), ("fav", "Shortlist"), ("all", "All")]) }}
+    {{ spell_list(c, s, sheet_spells, spell_groups, picks, can_pick, show_picks, "sheet-spells", [("all", "All"), ("ready", "Prepared"), ("fav", "Shortlist")]) }}
   </div>
   {% endif %}
 
@@ -155,7 +155,7 @@
     </div>
     {% if ws_other_uses %}<details class="fold ws-other"{% if not d.moon and d.level >= 3 %} open{% endif %}><summary>Other ways to use Wild Shape ({{ ws_other_uses | length }})</summary>
       <ul class="plain">{% for u in ws_other_uses %}<li><b>{{ u.name }}</b> <span class="muted">{{ u.summary }}</span></li>{% endfor %}</ul></details>{% endif %}
-    {{ form_list(c, forms, picks, can_pick, show_picks, "sheet-forms", [("ready", "Known"), ("all", "All you can learn")]) }}
+    {{ form_list(c, forms, picks, can_pick, show_picks, "sheet-forms", [("all", "All"), ("ready", "Known")]) }}
     <p class="note">Beast stat blocks from the SRD 5.2.1 (see Help › About). Pictures from D&amp;D Beyond.</p>
   </div>
   {% elif s.creatures %}

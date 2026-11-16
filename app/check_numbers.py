@@ -19,7 +19,7 @@ router = APIRouter()
 VERDICTS = {
     "dm": ("Your DM's ruling", "dm", "A correction for this campaign (Manage › House rules)."),
     "rules": ("2024 rules", "ok", "askdnd's rules for it, checked against the 2024 books; the sheet gives the numbers."),
-    "sheet": ("The sheet", "ok", "The D&D Beyond sheet's own numbers, added up by askdnd."),
+    "sheet": ("D&D Beyond", "ok", "D&D Beyond's own numbers for it, added up by askdnd."),  # (was "The sheet": feedback 68, it confused players)
     "unchecked": ("Not checked yet", "warn", "From D&D Beyond's data or read from its words: askdnd hasn't checked it against the 2024 rules."),
     "gap": ("Something's missing", "bad", ""),
     "none": ("Nothing to roll", "faint", ""),
