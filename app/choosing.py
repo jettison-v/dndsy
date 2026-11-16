@@ -135,6 +135,15 @@ def occasions(tabs: list[dict]) -> list[tuple[str, str, str]]:
             + [(LOOK, "Just looking", "")])
 
 
+def allows(tabs: list[dict], key: str) -> str:
+    """What a reason lets this character change, in the words of each list's rule (the ask step's tiles; Brett chose B,
+    Nov 16, docs/mockups/why-changing/): "Paladin prepared spells: one" for After a Long Rest."""
+    if key == LOOK:
+        return "See the lists; nothing is marked Now."
+    said = [f"{L['label']}: {L['when'].split(',')[0]}" for t in tabs for L in t["lists"] if key in L["occ"]]
+    return " · ".join(said) if said else "Nothing changes now by the rules; you can still look."
+
+
 def _meta(tabs: list[dict]) -> dict:
     return {L["id"]: {k: L[k] for k in ("cls", "label", "cap", "one", "when", "occ", "add", "drop", "first")} for t in tabs for L in t["lists"]}
 
@@ -171,12 +180,16 @@ def _window(request: Request, db: Session, character_id: int, what: str, cls: st
     if not tabs:
         raise HTTPException(404)
     occ = occasions(tabs)
-    why = why if why in {k for k, _, _ in occ} else LOOK
+    # No reason given (opened from Sheet): the window asks first (Brett chose B, Nov 16, docs/mockups/why-changing/);
+    # from the Long Rest window or a level-up card the reason comes with it, and the list opens at once
+    ask = why not in {k for k, _, _ in occ}
+    why = LOOK if ask else why
     cls = cls if cls in {t["cls"] for t in tabs} else tabs[0]["cls"]
     groups = [g for g in sb.sheet_filter_groups(rows) if g["key"] not in ("prep", "from")] if what == "spells" else []
     url = f"/characters/{ch.id}/{'wild-shape/forms' if what == 'forms' else 'spells/prepare'}"
     return templates.TemplateResponse(request, "_change_window.html", {
-        "c": ch, "what": what, "tabs": tabs, "cls": cls, "occasions": occ, "occ": why, "rows": rows, "groups": groups,
+        "c": ch, "what": what, "tabs": tabs, "cls": cls, "occasions": occ, "occ": why, "ask": ask, "rows": rows, "groups": groups,
+        "allows": {k: allows(tabs, k) for k, _, _ in occ},
         "picks": {"fav": set(mine.get("fav") or []), "star": set(mine.get("star") or []), "remind": set(mine.get("remind") or []), "notes": mine.get("notes") or {}},
         "can_pick": noting, "meta": _meta(tabs), "url": url, "reachable": ddb_bridge.reachable(ch)})
 

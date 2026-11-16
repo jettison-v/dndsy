@@ -1,0 +1,344 @@
+<title>Why You're Changing</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (one look, as the app); laptop first, one column on a phone; the
+   table's own characters. Feedback 66 (Nov 16): "Why are you changing?" is hard to find in Change spells. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --red-btn: #d64545;
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .13);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --selected: rgba(126, 166, 224, .2);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.pick { color: var(--green); font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; margin-left: 8px; }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta, .note { color: var(--muted); font-size: .88rem; }
+header.top { display: grid; gap: 14px; }
+section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.intro { display: grid; gap: 8px; max-width: 88ch; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.notes > div { display: grid; gap: 4px; align-content: start; font-size: .9rem; }
+
+/* Today, for comparison */
+.today { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: start; }
+.today figure { margin: 0; display: grid; gap: 8px; }
+.today figcaption { font-size: .88rem; color: var(--muted); }
+
+/* The window, drawn as the app draws it (_change_window.html) */
+.win { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.45); }
+.w-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.w-title { flex: 1 1 auto; min-width: 0; }
+.w-title small { display: block; color: var(--muted); font-size: .8rem; }
+.w-title h3 { font: 600 1.15rem/1.3 var(--sans); }
+.x { color: var(--muted); font-size: 1rem; padding: 2px 6px; }
+.w-body { display: grid; gap: 12px; padding: 14px 18px 0; }
+.chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 12px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: 500 .82rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.chip:hover { border-color: var(--faint); }
+.chip[aria-pressed="true"], .chip.on { background: var(--selected); border-color: var(--blue); }
+.why-small { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.why-small .note { font-size: .78rem; }
+.why-small .chip { min-height: 24px; font-size: .76rem; padding: 0 9px; }
+
+/* The design system's switch (.seg): choices side by side, the one on in blue */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.seg button { min-height: 32px; padding: 0 14px; border: 0; border-radius: 7px; background: none; color: var(--muted); font: 500 .88rem/1 var(--sans); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--selected); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+
+/* A: the reason bar */
+.reason { display: grid; gap: 6px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.reason-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.reason-q { font: 600 .95rem/1.3 var(--sans); color: var(--strong); }
+.reason-says { font-size: .86rem; color: var(--muted); }
+.reason-says b { font-weight: 600; }
+
+/* B: ask first */
+.ask { display: grid; gap: 14px; padding: 18px 18px 22px; }
+.ask-q { font: 600 1.05rem/1.3 var(--sans); color: var(--strong); }
+.ask-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.tile { display: grid; gap: 6px; align-content: start; text-align: left; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; color: var(--text); font: inherit; cursor: pointer; }
+.tile:hover { border-color: var(--blue); }
+.tile b { font-size: .98rem; }
+.tile span { font-size: .84rem; color: var(--muted); }
+.chosen { display: inline-flex; align-items: center; gap: 8px; font-size: .86rem; color: var(--muted); }
+.chosen .chip { cursor: default; }
+.chosen button.link { background: none; border: 0; color: var(--red); font: 500 .84rem/1 var(--sans); cursor: pointer; padding: 0; }
+
+/* B's two steps, and where the reason shows after choosing */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 20px; align-items: start; }
+.step-col { display: grid; gap: 8px; min-width: 0; }
+.step-n { font: 700 .76rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.title-with-reason { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.reason-chip { font-weight: 600; }
+.reason-menu { padding: 10px 18px; border-bottom: 1px solid var(--line); background: var(--surface); }
+.mark { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--amber); color: #1a1a1a; font: 700 .72rem/1 var(--sans); flex: none; }
+.mark-row { display: inline-flex; align-items: center; gap: 8px; }
+.link-btn { background: none; border: 0; color: var(--red); font: 500 .86rem/1 var(--sans); cursor: pointer; padding: 0; }
+.tray-warn { margin: 0 18px 14px; }
+
+/* Class cards with their rule lines (the tabs, for two classes) */
+.cards { display: flex; flex-wrap: wrap; gap: 8px; }
+.card { flex: 1 1 280px; min-width: 0; display: grid; gap: 6px; padding: 9px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.card.on { border-color: var(--red); box-shadow: inset 0 3px 0 var(--red); }
+.card-n { font: 600 .9rem/1.2 var(--sans); color: var(--strong); }
+.rule { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; font-size: .82rem; color: var(--muted); }
+.rule b { font-weight: 600; }
+.now { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; padding: 3px 7px; border-radius: 999px; }
+.now.yes { background: var(--green-soft); color: var(--green); }
+.now.no { background: var(--surface-3); color: var(--muted); }
+.now.look { background: transparent; color: var(--faint); border: 1px solid var(--line); }
+
+/* A few rows of the list, and the tray */
+.rows { display: grid; border-top: 1px solid var(--line-soft); }
+.row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 2px; border-bottom: 1px solid var(--line-soft); font-size: .88rem; }
+.row small { color: var(--muted); margin-left: 6px; }
+.act { font: 600 .76rem/1 var(--sans); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--text); background: var(--surface); }
+.act.off { opacity: .45; }  /* (6 of 6 prepared: held until one is let go, as on D&D Beyond) */
+.tray { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 12px 18px; margin-top: 4px; border-top: 1px solid var(--line); background: var(--surface); }
+.tray .grow { flex: 1 1 auto; font-size: .84rem; color: var(--muted); }
+.tray .why-in { display: inline-flex; align-items: center; gap: 6px; font-size: .84rem; }
+.tray select { background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-radius: 8px; min-height: 32px; padding: 0 8px; font: 500 .84rem/1 var(--sans); }
+.make { background: var(--red-btn); color: #fff; border: 0; border-radius: 8px; min-height: 32px; padding: 0 16px; font: 600 .86rem/1 var(--sans); }
+.make[disabled] { opacity: .45; }
+.warn { font-size: .84rem; color: var(--amber); background: var(--amber-soft); border-radius: 8px; padding: 6px 10px; }
+
+/* Picks */
+.qs { display: grid; gap: 12px; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
+.q ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; }
+@media (max-width: 640px) { h1 { font-size: 1.7rem; } .w-head, .w-body, .tray { padding-left: 12px; padding-right: 12px; } }
+</style>
+
+<div class="wrap">
+
+<header class="top">
+  <span class="lbl">Mockup · Nov 16 · for Brett · your feedback 66</span>
+  <h1>Why you're changing</h1>
+  <p class="lead">In Change spells and Change forms, <b>Why are you changing?</b> decides which of the 2024 rules apply now:
+  it marks each list <b>Now</b> or <b>Not now</b>, and a swap past a rule shows amber. Today it's three small chips in the
+  window's header, beside the title, in the same grey as a date, so it's easy to miss, and the window opens on
+  <b>Just looking</b>, which marks nothing. Big C shows it best: his Paladin spells change after a Long Rest, his Sorcerer
+  ones only on a Sorcerer level. Every board works: press a reason and watch his two cards.</p>
+</header>
+
+<section class="board" id="today">
+  <div class="intro">
+    <span class="lbl">Today</span>
+    <h2>Where it is now</h2>
+    <p>The reasons share the header with the title and ✕. Nothing tells you to pick one, and nothing changes until you do.</p>
+  </div>
+  <div class="today">
+    <figure>
+      <div class="win">
+        <div class="w-head">
+          <div class="w-title"><small>Big C · Paladin 6 · Sorcerer 2</small><h3>Change spells</h3></div>
+          <div class="why-small"><span class="note">Why are you changing?</span><span class="chip">After a Long Rest</span><span class="chip">I gained a Paladin level</span><span class="chip">I gained a Sorcerer level</span><span class="chip" aria-pressed="true">Just looking</span></div>
+          <span class="x">✕</span>
+        </div>
+        <div class="w-body" style="padding-bottom:14px">
+          <div class="cards">
+            <div class="card on"><span class="card-n">Paladin 6</span><div class="rule"><b>Prepared</b> 6 of 6 · one, after a Long Rest</div></div>
+            <div class="card"><span class="card-n">Sorcerer 2</span><div class="rule"><b>Cantrips</b> 4 of 4 · one, on a Sorcerer level</div><div class="rule"><b>Spells</b> 2 of 2 · one, on a Sorcerer level</div></div>
+          </div>
+        </div>
+      </div>
+      <figcaption>Small grey words in a busy header; Just looking marks nothing Now or Not now.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="board" id="bar">
+  <div class="intro">
+    <span class="lbl">A · The reason first, in the window's body</span><span class="pick">My pick</span>
+    <h2>A reason bar above the class cards</h2>
+    <p>The question moves out of the header to the first thing in the window, at normal size, as the design system's switch
+    (the one Battle · Sheet · Plan uses). Under it, one line says what the reason means for <i>this</i> character, so the
+    choice explains itself. The cards' Now and Not now follow it. Opened from the Long Rest window or a level-up card, the
+    reason is already set; opened from Sheet, it starts on <b>After a Long Rest</b>, the usual case, not Just looking.</p>
+  </div>
+  <div class="win" data-mock="bar">
+    <div class="w-head"><div class="w-title"><small>Big C · Paladin 6 · Sorcerer 2</small><h3>Change spells</h3></div><span class="x">✕</span></div>
+    <div class="w-body">
+      <div class="reason">
+        <div class="reason-top"><span class="reason-q">Why are you changing?</span>
+          <div class="seg" role="group" aria-label="Why are you changing?" data-reasons></div></div>
+        <p class="reason-says" data-says></p>
+      </div>
+      <div class="cards" data-cards></div>
+      <div class="rows" data-rows></div>
+    </div>
+    <div class="tray"><span class="grow">Your changes: none yet</span><button class="make" disabled>Make changes</button></div>
+  </div>
+  <div class="notes">
+    <div><b>One control, one look</b><span class="meta">The switch is already in the design system; at 32px it reads as a choice to make, not a footnote.</span></div>
+    <div><b>It says what it means</b><span class="meta">"Paladin spells: one can change now. Sorcerer: not now, only on a Sorcerer level." No need to know the rule to pick right.</span></div>
+    <div><b>Phones</b><span class="meta">The switch wraps under the question; the line under it stays.</span></div>
+  </div>
+</section>
+
+<section class="board" id="ask">
+  <div class="intro">
+    <span class="lbl">B · Ask before the list</span>
+    <h2>A first step when the reason isn't known</h2>
+    <p>Opened from Sheet, the window asks first, with three tiles that each say what they allow. From the Long Rest window
+    or a level-up card there's nothing to ask, so it opens straight on step 2. Changing spells is rare, so the extra press
+    costs little, and once chosen the reason takes no rows of its own.</p>
+  </div>
+  <div class="steps">
+    <div class="step-col"><span class="step-n">Step 1 · opened from Sheet</span>
+      <div class="win" data-mock="ask">
+        <div class="w-head"><div class="w-title"><small>Big C · Paladin 6 · Sorcerer 2</small><h3>Change spells</h3></div><span class="x">✕</span></div>
+        <div class="ask" data-ask-step>
+          <p class="ask-q">Why are you changing Big C's spells?</p>
+          <div class="ask-tiles" data-tiles></div>
+        </div>
+        <div data-ask-list hidden><p class="note" style="padding:14px 18px">Chosen: step 2 shows the list. <button class="link-btn" data-again>Ask again</button></p></div>
+      </div>
+    </div>
+    <div class="step-col"><span class="step-n">Step 2 · after choosing (press a tile in step 1, or the reason here)</span>
+      <div class="win" data-mock="after">
+        <div class="w-head"><div class="w-title"><small>Big C · Paladin 6 · Sorcerer 2</small>
+          <h3 class="title-with-reason">Change spells <span class="mark" aria-hidden="true">1</span><button type="button" class="chip on reason-chip" data-reason-chip title="Press to change the reason">▾</button></h3></div><span class="x">✕</span></div>
+        <div class="reason-menu" data-reason-menu hidden><div class="seg" role="group" aria-label="Why are you changing?" data-reasons></div></div>
+        <div class="w-body">
+          <div class="cards" data-cards></div>
+          <span class="mark-row"><span class="mark" aria-hidden="true">2</span><span class="note">Each list says Now or Not now for that reason</span></span>
+          <div class="rows" data-rows></div>
+        </div>
+        <div class="tray"><span class="grow" data-changes>Your changes: none yet</span><span class="mark" aria-hidden="true">3</span><button class="make" disabled data-make>Make changes</button></div>
+        <p class="warn tray-warn" data-warn hidden></p>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div><b>1 · By the title</b><span class="meta">The reason chosen sits beside "Change spells" as a blue chip, in the header the window already has: no row of its own. Pressing it opens the three reasons again, in place.</span></div>
+    <div><b>2 · On each list</b><span class="meta">Every class card's rule line says <b>Now</b> or <b>Not now</b> for that reason, so Big C reads at a glance that his Paladin spells can change and his Sorcerer ones can't.</span></div>
+    <div><b>3 · When a change goes past it</b><span class="meta">Swap a Sorcerer cantrip after a Long Rest and an amber line by Make changes names the reason it breaks. Try it: press Let go on Fire Bolt.</span></div>
+  </div>
+</section>
+
+<section class="board" id="tray">
+  <div class="intro">
+    <span class="lbl">C · Where you commit</span>
+    <h2>The reason beside Make changes</h2>
+    <p>The reason sits in the bottom tray, next to Your changes and Make, where you decide. The header keeps only the title.
+    A swap that breaks the reason's rule shows its warning right there. Out of the way while you browse, but it's below the
+    list, which is where the original problem lives: it's easy to never look at it.</p>
+  </div>
+  <div class="win" data-mock="tray">
+    <div class="w-head"><div class="w-title"><small>Big C · Paladin 6 · Sorcerer 2</small><h3>Change spells</h3></div><span class="x">✕</span></div>
+    <div class="w-body">
+      <div class="cards" data-cards></div>
+      <div class="rows" data-rows></div>
+      <p class="warn">Sorcerer: a cantrip swapped now isn't on a Sorcerer level. The DM decides.</p>
+    </div>
+    <div class="tray"><span class="grow">Your changes: Fire Bolt → Shocking Grasp</span>
+      <label class="why-in">Changing <select data-select></select></label>
+      <button class="make">Make changes</button></div>
+  </div>
+</section>
+
+<section class="board" id="picks">
+  <div class="intro">
+    <span class="lbl">Your pick</span>
+    <h2>One choice</h2>
+  </div>
+  <div class="qs">
+    <div class="q"><b>Where should "Why are you changing?" go?</b>
+      <ul>
+        <li><b>A, a reason bar first in the window</b> (my pick): the design system's switch at full size, a line saying what it means for this character, starting on After a Long Rest. Change forms gets the same bar.</li>
+        <li><b>B, ask before the list</b> when the reason isn't known: hardest to miss, one more press from Sheet; after that the reason is a chip by the title, Now or Not now on each list, and named by Make when a change goes past it. <b>Your lean</b> (Nov 16), for the room it saves.</li>
+        <li><b>C, beside Make changes</b>: where you commit, but below the list.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<script>
+// Big C, Paladin 6 / Sorcerer 2 (2024 rules: a Paladin changes one prepared spell after a Long Rest; a Sorcerer one
+// cantrip and one spell, each on a Sorcerer level)
+const REASONS = [["rest", "After a Long Rest"], ["level-paladin", "I gained a Paladin level"], ["level-sorcerer", "I gained a Sorcerer level"], ["look", "Just looking"]];
+const SAYS = {
+  rest: "<b>Paladin</b> spells: one can change now. <b>Sorcerer</b>: not now, only on a Sorcerer level.",
+  "level-paladin": "<b>Paladin</b>: a new level brings a new spell to prepare, and one can change. <b>Sorcerer</b>: not now.",
+  "level-sorcerer": "<b>Sorcerer</b>: one cantrip and one spell can change now. <b>Paladin</b>: not now, only after a Long Rest.",
+  look: "Nothing changes on D&amp;D Beyond until you press Make; every rule is shown, none marked Now."};
+const TILE = {rest: "Change one Paladin spell.", "level-paladin": "New Paladin spells, and one swap.", "level-sorcerer": "Swap a Sorcerer cantrip and a spell.", look: "See the lists; change nothing yet."};
+const now = (r, which) => r === "look" ? ["look", "Rules shown"] : (which === "paladin" ? (r === "rest" || r === "level-paladin") : r === "level-sorcerer") ? ["yes", "Now"] : ["no", "Not now"];
+function cards(el, r) {
+  const p = now(r, "paladin"), s = now(r, "sorcerer");
+  el.innerHTML = `<div class="card on"><span class="card-n">Paladin 6</span><div class="rule"><b>Prepared</b> 6 of 6 · one, after a Long Rest <span class="now ${p[0]}">${p[1]}</span></div></div>
+    <div class="card"><span class="card-n">Sorcerer 2</span><div class="rule"><b>Cantrips</b> 4 of 4 · one, on a Sorcerer level <span class="now ${s[0]}">${s[1]}</span></div>
+    <div class="rule"><b>Spells</b> 2 of 2 · one, on a Sorcerer level <span class="now ${s[0]}">${s[1]}</span></div></div>`;
+}
+function rows(el) {
+  const sorc = el.closest("[data-mock='after']") ? [["Fire Bolt", "cantrip · Sorcerer", "Let go"]] : [];
+  el.innerHTML = [["Bless", "1st-level · Paladin", "Unprepare"], ["Shield of Faith", "1st-level · Paladin", "Unprepare"], ["Find Steed", "2nd-level · Paladin", "Prepare"], ...sorc]
+    .map(([n, m, a]) => `<div class="row"><span>${n}<small>${m}</small></span><span class="note">60 ft · 1 action</span><span class="act${a === "Prepare" ? " off" : ""}"${a === "Prepare" ? ' title="6 of 6 prepared: unprepare one first"' : ""}>${a}</span></div>`).join("");
+}
+document.querySelectorAll("[data-mock]").forEach(win => {
+  const kind = win.dataset.mock;
+  let r = "rest";
+  const draw = () => {
+    win.querySelectorAll("[data-cards]").forEach(el => cards(el, r));
+    win.querySelectorAll("[data-rows]").forEach(rows);
+    const says = win.querySelector("[data-says]"); if (says) says.innerHTML = SAYS[r];
+    win.querySelectorAll("[data-reasons] button").forEach(b => b.setAttribute("aria-pressed", b.dataset.r === r ? "true" : "false"));
+    const sel = win.querySelector("[data-select]"); if (sel) sel.value = r;
+    const lab = win.querySelector("[data-chosen-label]"); if (lab) lab.textContent = REASONS.find(x => x[0] === r)[1];
+  };
+  const seg = win.querySelector("[data-reasons]");
+  if (seg) { seg.innerHTML = REASONS.map(([k, l]) => `<button type="button" data-r="${k}">${l}</button>`).join(""); seg.addEventListener("click", e => { const b = e.target.closest("button"); if (b) { r = b.dataset.r; draw(); } }); }
+  const sel = win.querySelector("[data-select]");
+  if (sel) { sel.innerHTML = REASONS.map(([k, l]) => `<option value="${k}">${l.replace("I gained", "on")}</option>`).join(""); sel.addEventListener("change", () => { r = sel.value; draw(); }); }
+  if (kind === "ask") {
+    const tiles = win.querySelector("[data-tiles]");
+    tiles.innerHTML = REASONS.map(([k, l]) => `<button type="button" class="tile" data-r="${k}"><b>${l}</b><span>${TILE[k]}</span></button>`).join("");
+    const show = list => { win.querySelector("[data-ask-step]").hidden = list; win.querySelectorAll("[data-ask-list]").forEach(x => x.hidden = !list); };
+    tiles.addEventListener("click", e => { const t = e.target.closest(".tile"); if (t) { show(true); document.dispatchEvent(new CustomEvent("reason", { detail: t.dataset.r })); } });
+    win.querySelector("[data-again]").addEventListener("click", () => show(false));
+  }
+  if (kind === "after") {
+    // Step 2: the reason as a chip by the title (press it for the three again), Now / Not now on each list, and the
+    // reason named by Make when a change goes past it (Fire Bolt let go: a Sorcerer cantrip changes only on a Sorcerer level)
+    let goes = false;
+    const chip = win.querySelector("[data-reason-chip]"), menu = win.querySelector("[data-reason-menu]");
+    const paint = () => {
+      chip.textContent = REASONS.find(x => x[0] === r)[1] + " ▾";
+      chip.title = SAYS[r].replace(/<[^>]+>/g, "") + " Press to change the reason.";
+      win.querySelector("[data-changes]").textContent = goes ? "Your changes: Fire Bolt let go (pick a cantrip to learn)" : "Your changes: none yet";
+      const warn = win.querySelector("[data-warn]"), past = goes && r !== "level-sorcerer";
+      warn.hidden = !past;
+      if (past) warn.textContent = r === "look" ? "Just looking: pick why you're changing before you make this." : `${REASONS.find(x => x[0] === r)[1]}: a Sorcerer cantrip changes only on a Sorcerer level. You can still make it; the DM decides.`;
+      const act = [...win.querySelectorAll(".row .act")].pop(); if (act) act.textContent = goes ? "Keep" : "Let go";
+    };
+    chip.addEventListener("click", () => { menu.hidden = !menu.hidden; });
+    win.addEventListener("click", e => {
+      const b = e.target.closest("[data-reasons] button"); if (b) { r = b.dataset.r; menu.hidden = true; draw(); paint(); return; }
+      const a = e.target.closest(".row .act"); if (a && a.closest(".row").textContent.includes("Fire Bolt")) { goes = !goes; paint(); }
+    });
+    document.addEventListener("reason", e => { r = e.detail; draw(); paint(); });
+    draw(); paint();
+    return;
+  }
+  draw();
+});
+</script>

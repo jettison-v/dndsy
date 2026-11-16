@@ -4457,10 +4457,27 @@ document.addEventListener('click', e => {
           .catch(err => { said.hidden = false; said.textContent = err.message; make.disabled = false; });
       }
     });
-    // the reason sits in the window's head, outside the body (its own head: a reload after Make brings a new one)
+    // Why you're changing (Brett chose B, Nov 16, docs/mockups/why-changing/): asked first when no reason came with the
+    // window (a tile each), then a chip by the title that opens the reasons again, in the window's head
+    const reasonChip = head && head.querySelector('[data-chg-reason]'), reasons = head && head.querySelector('[data-chg-reasons]');
+    function choose(k) {
+      root.dataset.occ = k;
+      root.removeAttribute('data-asking');
+      const ask = root.querySelector('[data-chg-ask]'); if (ask) ask.hidden = true;
+      root.querySelector('[data-chg-main]').hidden = false;
+      if (reasonChip) {
+        reasonChip.hidden = false;
+        reasonChip.querySelector('[data-chg-reason-label]').textContent = (occs.find(o => o[0] === k) || [])[1] || '';
+        reasonChip.setAttribute('aria-expanded', 'false');
+      }
+      if (reasons) reasons.hidden = true;
+      draw();
+    }
+    root.addEventListener('click', e => { const t = e.target.closest('[data-chg-ask] [data-chg-occ]'); if (t) choose(t.dataset.chgOcc); });
     if (head) head.addEventListener('click', e => {
       const b = e.target.closest('[data-chg-occ]');
-      if (b) { root.dataset.occ = b.dataset.chgOcc; draw(); }
+      if (b) { choose(b.dataset.chgOcc); return; }
+      if (e.target.closest('[data-chg-reason]') && reasons) { reasons.hidden = !reasons.hidden; reasonChip.setAttribute('aria-expanded', reasons.hidden ? 'false' : 'true'); }
     });
     draw();
   }

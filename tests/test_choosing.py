@@ -66,6 +66,36 @@ def test_coles_window_has_his_cantrips_and_prepared_spells_each_under_its_rule(p
     assert 'title="Always prepared: not changed here">Always' in page  # (Starry Wisp, Cure Wounds: always, never a button)
 
 
+def test_from_sheet_it_asks_why_first_and_from_a_rest_it_does_not(player, db, sheet):
+    """Brett chose B (Nov 16, docs/mockups/why-changing/; his feedback 66: the reasons were hard to find): opened with no
+    reason (Sheet's button), the window asks first, a tile per reason saying what it lets this character change; with
+    one (the Long Rest window, a level-up card) it opens on the list, the reason a chip by the title."""
+    give_ids(db, sheet)
+    page = player.get(spells_url(db)).text
+    assert "data-asking" in page and "data-chg-ask" in page and 'data-chg-main hidden' in page
+    tiles = page.split("data-chg-ask")[1].split("data-chg-main")[0]
+    assert tiles.count('class="choice-tile"') == 3  # (After a Long Rest, I gained a Druid level, Just looking)
+    assert "Druid prepared spells: any" in tiles and "Druid cantrips: one" in tiles
+    chip = lambda html: html.split("data-chg-reason ")[1].split(">")[0]
+    assert chip(page).endswith(" hidden")  # (no reason yet: no chip)
+    rest = player.get(spells_url(db, why="rest")).text
+    assert "data-asking" not in rest and "data-chg-ask" not in rest and "data-chg-main hidden" not in rest
+    assert not chip(rest).endswith(" hidden")  # (the chip shows; which reason, the switch under it says)
+    assert 'data-chg-occ="rest" aria-pressed="true"' in rest  # (the reasons again, under the chip)
+
+
+def test_what_a_reason_allows_is_said_from_each_lists_rule():
+    from app.choosing import allows
+
+    tabs = [{"cls": "Paladin", "lists": [{"label": "Paladin prepared spells", "when": "one, after a Long Rest", "occ": ["rest"]}]},
+            {"cls": "Sorcerer", "lists": [{"label": "Sorcerer cantrips", "when": "one, when you gain a Sorcerer level", "occ": ["level-sorcerer"]},
+                                          {"label": "Sorcerer prepared spells", "when": "one, when you gain a Sorcerer level", "occ": ["level-sorcerer"]}]}]
+    assert allows(tabs, "rest") == "Paladin prepared spells: one"
+    assert allows(tabs, "level-sorcerer") == "Sorcerer cantrips: one · Sorcerer prepared spells: one"
+    assert allows(tabs, "level-paladin").startswith("Nothing changes now")
+    assert allows(tabs, "look").startswith("See the lists")
+
+
 def test_one_make_sends_a_cantrip_and_a_spell_letting_go_first_and_undo_puts_both_back(player, db, sheet):
     give_ids(db, sheet)
     cole = char(db, "Cole")
