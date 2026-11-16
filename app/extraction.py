@@ -532,8 +532,10 @@ def _current_draft(session: GameSession, latest: Recap) -> dict:
     who = "Claude" if latest.author == "ai" else (first_name(latest.author_name) or "someone at the table")
     tale = "\n\n".join(f"## {c.get('title', '')} ({c.get('kind', 'story')}{', starts ' + _hms(c['at']) if c.get('at') is not None else ''})\n{c.get('text', '')}"
                         for c in latest.tale or [])
-    drafts = [e for e in session.events if e.status == Status.DRAFT] or list(session.events)
-    moments = "\n".join(f"- [{e.kind.value}{', major' if e.major else ''}] {e.text}" for e in sorted(drafts, key=lambda e: e.position))
+    from app.review import upcoming
+
+    claudes = [e for e in upcoming(session) if not e.by_hand]  # (a person's go as kept_key_moments)
+    moments = "\n".join(f"- [{e.kind.value}{', major' if e.major else ''}] {e.text}" for e in sorted(claudes, key=lambda e: e.position))
     awards = "\n".join(
         f"- {a['award']}: " + "; ".join(f"{n['character']}{' (picked)' if i == a.get('pick', 0) else ''}: {n.get('why', '')}"
                                         f"{' \u201c' + n['quote'] + '\u201d' if n.get('quote') else ''}{' at ' + _hms(n['at']) if n.get('at') is not None else ''}"
@@ -541,6 +543,22 @@ def _current_draft(session: GameSession, latest: Recap) -> dict:
         for a in latest.awards or [])
     return {"type": "text", "text": (f"<current_draft written_by=\"{who}\">\n<recap>\n{latest.body}\n</recap>\n<full_tale>\n{tale}\n</full_tale>\n"
                                      f"<key_moments>\n{moments}\n</key_moments>\n<awards>\n{awards}\n</awards>\n</current_draft>")}
+
+
+KEPT_NOTE = ("People at the table wrote these key moments themselves (kept_key_moments), and they stay as written beside "
+             "yours. Don't repeat them, or a version of them, in your key moments.")
+
+
+def _kept_moments(session: GameSession) -> dict | None:
+    """The session's key moments a person wrote or edited, which a draft leaves in place (`StoryEvent.by_hand`), so
+    Claude doesn't write them again. One naming a hidden entry isn't sent (CLAUDE.md › Hidden is as if it didn't exist)."""
+    from app.review import upcoming
+
+    kept = [e for e in upcoming(session) if e.by_hand and all(x.status == Status.PUBLISHED for x in e.entities)]
+    if not kept:
+        return None
+    lines = "\n".join(f"- [{e.kind.value}] {e.text}" for e in sorted(kept, key=lambda e: (e.position, e.id)))
+    return {"type": "text", "text": f"<kept_key_moments>\n{lines}\n</kept_key_moments>\n{KEPT_NOTE}"}
 
 
 def build_messages(db: Session, session: GameSession, source: Source, background: str = "", background_images=(),
@@ -597,6 +615,9 @@ def build_messages(db: Session, session: GameSession, source: Source, background
                 f"{who} wrote or edited the current recap. Your recap must keep their wording, order and paragraphs: "
                 "change only what the source or the clarifications show is wrong or missing. Don't rephrase anything "
                 "that's still true.")})
+    kept = _kept_moments(session) if "events" in STEPS[step] else None
+    if kept:
+        content.append(kept)
     content.append({"type": "text", "text": UPDATE_NOTE if updating else {"ask": ASK_NOTE, "tell": TELL_NOTE}.get(step, "Draft this session's record.")})
     return [{"role": "user", "content": content}]
 
@@ -810,16 +831,21 @@ def _store_story(db: Session, session: GameSession, data: dict) -> None:
                  tale=_chapters(data), awards=_keep_picks(_awards(data), before)))
 
     index = _entity_index(db, session.campaign_id)
-    for old_event in db.scalars(select(StoryEvent).where(StoryEvent.session_id == session.id, StoryEvent.status == Status.DRAFT)):
-        db.delete(old_event)  # one at a time, so version history keeps the replaced draft moments
-    majors = 0
-    for pos, ev in enumerate(data.get("events", []), start=1):
+    for old_event in db.scalars(select(StoryEvent).where(StoryEvent.session_id == session.id, StoryEvent.status == Status.DRAFT,
+                                                         StoryEvent.by_hand.is_(False))):
+        db.delete(old_event)  # one at a time, so version history keeps the replaced draft moments (a person's stay)
+    majors = last = 0
+    for last, ev in enumerate(data.get("events", []), start=1):
         major = bool(ev.get("major")) and majors < MAJOR_MOST  # (at most MAJOR_MOST, whatever comes back)
         majors += major
-        event = StoryEvent(session_id=session.id, position=pos, kind=EventKind(ev["kind"]), text=ev["text"].strip(), major=major)
+        event = StoryEvent(session_id=session.id, position=last, kind=EventKind(ev["kind"]), text=ev["text"].strip(), major=major)
         linked = {index[_norm(n)].id: index[_norm(n)] for n in ev.get("entities", []) if _norm(n) in index}
         event.entities = list(linked.values())
         db.add(event)
+    hand = list(db.scalars(select(StoryEvent).where(StoryEvent.session_id == session.id, StoryEvent.by_hand.is_(True))
+                           .order_by(StoryEvent.position, StoryEvent.id)))
+    for pos, ev in enumerate(hand, start=last + 1):
+        ev.position = pos  # a person's moments after Claude's new ones, in their own order
 
 
 def _store_suggestions(db: Session, session: GameSession, run: ExtractionRun, data: dict) -> None:

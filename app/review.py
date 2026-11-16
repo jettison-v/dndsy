@@ -600,30 +600,35 @@ def keep_person_version(db: Session, session: GameSession) -> Recap:
     return save_recap(db, session, mine.body, by=mine.author_name)
 
 
+def redrafted(session: GameSession) -> bool:
+    """Whether Claude drafted the key moments again since the session was published: its draft moments are waiting
+    (a person's are `by_hand`), and publishing replaces its published ones with them. Read from the moments themselves,
+    never a time (Nov 16: playing a published recap's narration moved its updated_at past a redraft, and the redraft's
+    moments were published beside the first draft's)."""
+    return any(ev.status == Status.DRAFT and not ev.by_hand for ev in session.events)
+
+
+def upcoming(session: GameSession) -> list[StoryEvent]:
+    """The session's key moments as they'll stand once published: what the review page shows and Claude updates. Claude's
+    published ones leave when its redraft is waiting; a person's always stay."""
+    replaced = redrafted(session)
+    return [ev for ev in session.events if not (replaced and ev.status == Status.PUBLISHED and not ev.by_hand)]
+
+
 def publish(db: Session, session: GameSession) -> None:
     latest = latest_recap(session)
     if latest is None:
         raise ReviewError("There's no recap to publish yet.")
-    redrafted = any(ev.status == Status.DRAFT for ev in session.events) and _drafted_since(db, session)  # (before this publish)
+    keep = {ev.id for ev in upcoming(session)}  # (before this publish)
     for r in session.recaps:
         if r.status == Status.PUBLISHED and r.id != latest.id:
             r.status = Status.DRAFT
     latest.status = Status.PUBLISHED
     for ev in list(session.events):
-        if redrafted and ev.status == Status.PUBLISHED:
-            db.delete(ev)  # a redraft's key moments replace the ones published before (kept in version history)
-        else:
+        if ev.id in keep:
             ev.status = Status.PUBLISHED
-
-
-def _drafted_since(db: Session, session: GameSession) -> bool:
-    """Whether Claude drafted the key moments again after the session was last published (its moments then replace
-    the published ones). Measured from the published recap, which nothing changes after publishing (an edit makes a
-    new version), so starring or fixing a published moment meanwhile doesn't count (Nov 7 review)."""
-    if not any(ev.status == Status.PUBLISHED for ev in session.events):
-        return False
-    run, shown = last_told(db, session), published_recap(session)
-    return bool(run and shown and run.created_at > shown.updated_at)
+        else:
+            db.delete(ev)  # a redraft's key moments replace Claude's published before (kept in version history)
 
 
 def save_event(db: Session, session: GameSession, event_id: int | None, kind: str, text: str) -> None:
@@ -634,12 +639,13 @@ def save_event(db: Session, session: GameSession, event_id: int | None, kind: st
         raise ReviewError("Unknown type.")
     if event_id is None:
         position = max((e.position for e in session.events), default=0) + 1
-        db.add(StoryEvent(session_id=session.id, position=position, kind=EventKind(kind), text=text))
+        db.add(StoryEvent(session_id=session.id, position=position, kind=EventKind(kind), text=text, by_hand=True))
         return
     ev = db.get(StoryEvent, event_id)
     if ev is None or ev.session_id != session.id:
         raise ReviewError("That key moment no longer exists.")
-    ev.kind, ev.text = EventKind(kind), text
+    if (ev.kind, ev.text) != (EventKind(kind), text):
+        ev.kind, ev.text, ev.by_hand = EventKind(kind), text, True  # (a person's words now: a redraft leaves it)
 
 
 def toggle_major(db: Session, session: GameSession, event_id: int) -> bool:
@@ -687,7 +693,7 @@ def review_context(db: Session, session: GameSession, drafting: bool) -> dict:
         "person_version": person_version(session),
         "current": {e.id: e for e in db.scalars(select(Entity).where(Entity.id.in_(
             {p.payload.get("entity_id") for p in open_proposals if p.kind == "entity" and p.payload.get("entity_id")})))},
-        "events": list(session.events),
+        "events": upcoming(session),
         "event_kinds": [k.value for k in EventKind],
         "open_questions": open_questions,
         "done_questions": done_questions,

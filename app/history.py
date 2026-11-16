@@ -72,7 +72,7 @@ DELETE_CONTEXT = {
 }
 BRING_BACK = ("player_notes", "glossary_terms", "story_events", "entity_aliases", "relationships", "facts", "house_rules")
 SOURCES = {"edit": "Edited", "import": "Import", "claude": "Claude rewrite accepted", "recap": "From a recap",
-           "restore": "Restored", "undo-import": "Import undone"}
+           "restore": "Restored", "undo-import": "Import undone", "cleanup": "Doubled key moments cleaned up"}
 FIELD_LABELS = {"summary": "Description", "quest_open": "Quest", "status": "Published", "name": "Name", "term": "Term",
                 "description": "Description", "title": "Title", "played_on": "Date played", "ddb_id": "D&D Beyond link",
                 "player_name": "Player name", "owner_id": "Played by", "data": "Content", "note": "Note",
@@ -248,7 +248,8 @@ def restore(db: Session, rev: Revision) -> str:
                                     misheard_as=c.get("misheard_as") or []))
             elif rev.table == "story_events":
                 ev = StoryEvent(session_id=c["session_id"], position=c.get("position", 0), kind=EventKind(c["kind"]),
-                                text=c.get("text", ""), status=Status(c.get("status") or Status.DRAFT.value))
+                                text=c.get("text", ""), status=Status(c.get("status") or Status.DRAFT.value),
+                                by_hand=True)  # (a person brought it back: a redraft leaves it, and it's no sign of one)
                 ev.entities = [e for e in (db.get(Entity, i) for i in c.get("entity_ids") or []) if e]
                 db.add(ev)
             elif rev.table == "entity_aliases":
@@ -270,6 +271,8 @@ def restore(db: Session, rev: Revision) -> str:
         if obj is None:
             raise ValueError("That no longer exists.")
         setattr(obj, rev.field, _value(type(obj), rev.field, rev.old))
+        if isinstance(obj, StoryEvent):
+            obj.by_hand = True  # (a person's choice: a key moment put back to a draft is no sign of a redraft)
         db.flush()
         _changed(rev)
     return f"Restored {FIELD_LABELS.get(rev.field, rev.field).lower()} of {rev.label}"

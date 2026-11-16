@@ -623,6 +623,10 @@ class StoryEvent(Timestamped, Base):
     # One that matters most (at most extraction.MAJOR_MOST a draft): Story shows these, the rest behind Show all (feedback 40, Nov 7);
     # None on moments drafted before, which show their first few instead
     major: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    # Written or edited by a person (the review page, an entry's Add a moment, brought back from history), not Claude:
+    # Claude drafting the session again replaces only its own moments, and a person's stay (app/review.py `upcoming`;
+    # Nov 16, a redraft's moments had doubled the published ones)
+    by_hand: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     session: Mapped[GameSession] = relationship(back_populates="events")
     # (read for every moment shown, entities.shown: loaded with the moments in one query, not one per moment)
     entities: Mapped[list[Entity]] = relationship(secondary="event_entities", lazy="selectin")
