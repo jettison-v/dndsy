@@ -3503,17 +3503,18 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const views = [...root.querySelectorAll('[data-ls-view]')].map(b => b.dataset.lsView);
     let kept = '';
     try { kept = localStorage.getItem(VIEW(root)) || ''; } catch (e) { kept = ''; }
-    root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, q: '',
+    root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, above: !!s.above, q: '',
                  view: views.includes(kept) ? kept : views.includes('all') ? 'all' : (views[0] || '') };
     const sort = root.querySelector('[data-ls-sort]'); if (sort && root._ls.sort) sort.value = root._ls.sort;
     const lens = root.querySelector('[data-ls-lens]');
     if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
     const more = root.querySelector('[data-ls-more]'); if (more) more.open = root._ls.more;
+    // (filters above a list: open or closed, as left; drawn by apply)
   }
   function save(root) {
     const st = root._ls;
     try {
-      localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more }));
+      localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more, above: st.above }));
       if (st.view) localStorage.setItem(VIEW(root), st.view);
     } catch (e) { /* private window */ }
   }
@@ -3543,6 +3544,28 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // Nov 16, docs/mockups/filter-clear/: the blue chips say what's on, so there's no row above the list)
     const picked = on.flatMap(g => sel[g].map(v => [g, v]));
     root.querySelectorAll('[data-ls-clear-filters]').forEach(b => { b.hidden = !picked.length; });
+    // Filters above a list (filters_above): open or closed, and while closed what's on as pills, two at most, then "+N"
+    const above = root.querySelector('[data-ls-above]');
+    if (above) {
+      const body = above.querySelector('[data-ls-above-body]'), toggle = above.querySelector('[data-ls-above-toggle]');
+      body.hidden = !st.above;
+      toggle.setAttribute('aria-expanded', st.above ? 'true' : 'false');
+      const pills = st.above ? [] : picked.slice(0, 2).map(([g, v]) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'ls-pill'; b.dataset.lsRemove = g + '\u0000' + v; b.setAttribute('aria-label', 'Remove ' + v); b.title = v;
+        const t = document.createElement('span'); t.textContent = v;
+        const x = document.createElement('i'); x.textContent = '×'; x.setAttribute('aria-hidden', 'true');
+        b.append(t, x);
+        return b;
+      });
+      if (!st.above && picked.length > 2) {
+        const more = document.createElement('button');
+        more.type = 'button'; more.className = 'ls-pill more'; more.dataset.lsAboveToggle = ''; more.textContent = '+' + (picked.length - 2);
+        more.title = picked.slice(2).map(([, v]) => v).join(', ');
+        pills.push(more);
+      }
+      above.querySelector('[data-ls-pills]').replaceChildren(...pills);
+    }
     const moreOn = root.querySelector('[data-ls-more-on]');
     if (moreOn) {
       const n = [...root.querySelectorAll('[data-ls-more] [data-ls-group][aria-pressed="true"]')].length;
@@ -3608,6 +3631,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const clearSearch = () => { st.q = ''; if (search) search.value = ''; };
     if (e.target.closest('[data-ls-clear]')) { e.preventDefault(); st.sel = {}; clearSearch(); apply(root); return; }  // (in a folded summary: clears, never opens it)
     if (e.target.closest('[data-ls-clear-search]')) { clearSearch(); apply(root); if (search) search.focus(); return; }
+    if (e.target.closest('[data-ls-above-toggle]')) { st.above = !st.above; apply(root); return; }  // (apply saves it)
+    const rm = e.target.closest('[data-ls-remove]');
+    if (rm) { const [g, v] = rm.dataset.lsRemove.split('\u0000'); st.sel[g] = (st.sel[g] || []).filter(x => x !== v); apply(root); return; }
     const view = e.target.closest('[data-ls-view]');
     if (view) { st.view = view.dataset.lsView; clearSearch(); apply(root); return; }
     const chip = e.target.closest('[data-ls-group]');

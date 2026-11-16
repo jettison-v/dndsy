@@ -15,6 +15,21 @@
 <div class="ls-filters-head"><span class="ls-h" role="heading" aria-level="3">Filters</span><span class="ls-rule" aria-hidden="true"></span>{{ clear_filters() }}</div>
 {%- endmacro %}
 
+{# Filters above a list (Brett chose A, Nov 16, docs/mockups/filters-above/ round 2): where the list sits under its
+   filters in a narrow column (the Reader's World and Notes you sent, Battle's See all and + Add). A control drawn like
+   Sort's dropdown, "Filters 3 ▾", opens the chip groups beneath it; while it's closed, what's on shows beside it as blue
+   pills, each with its × (two at most, then "+1", which opens it), and Clear at the end: two lines at most, never wider
+   than its column. Open or closed is remembered per list (app.js "Lists"). Beside a list, filter_column below. #}
+{% macro filters_above(groups) -%}
+<div class="ls-above" data-ls-above>
+  <div class="ls-above-row">
+    <button type="button" class="ls-above-btn" data-ls-above-toggle aria-expanded="false">Filters <span class="ls-above-n" data-ls-fold-count hidden></span> <span class="ls-above-chev" aria-hidden="true"></span></button>
+    <span class="ls-pills" data-ls-pills></span>{{ clear_filters() }}
+  </div>
+  <div class="ls-above-body" data-ls-above-body hidden>{% for g in groups %}{{ chip_group(g) }}{% endfor %}</div>
+</div>
+{%- endmacro %}
+
 {# The left filter column: the main groups, then More filters. On phones it folds into "Filters (N)", with Clear. #}
 {% macro filter_column(groups) -%}
 {%- set more = groups | selectattr("more") | list -%}
@@ -58,7 +73,7 @@
    device, All the first time (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html); the order stays as given. #}
 {% macro view_switch(views, label="Which ones") -%}
 <div class="seg ls-views" role="group" aria-label="{{ label }}">
-  {% for v, l in views %}<button type="button" data-ls-view="{{ v }}" aria-pressed="{{ 'true' if v == ('all' if views | selectattr(0, 'equalto', 'all') | first else views[0][0]) else 'false' }}">{{ l }} <span class="ls-n" data-ls-view-n></span></button>{% endfor %}
+  {% for view in views %}{% set v, l = view[0], view[1] %}<button type="button" data-ls-view="{{ v }}" aria-pressed="{{ 'true' if v == ('all' if views | selectattr(0, 'equalto', 'all') | first else views[0][0]) else 'false' }}"{% if view | length > 2 %} title="{{ view[2] }}"{% endif %}>{{ l }} <span class="ls-n" data-ls-view-n></span></button>{% endfor %}
 </div>
 {%- endmacro %}
 

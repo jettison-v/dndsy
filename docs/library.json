@@ -1098,6 +1098,15 @@
   "link": "https://claude.ai/artifact/Vkako2RYRVibX69W3UiwsT"
  },
  {
+  "title": "Filters Above a List",
+  "kind": "design",
+  "status": "Chosen A (a control like Sort, what's on as pills) · built in PR 386, your look first",
+  "date": "Nov 16",
+  "what": "The filter component's second layout: folded to one line above a list in a narrow column (World, Notes you sent, Battle's See all), and World's Last session line.",
+  "source": "docs/mockups/filters-above/",
+  "link": "https://claude.ai/artifact/6PuVh6AdhvhmdqPA54mx23"
+ },
+ {
   "title": "Compare",
   "kind": "design",
   "status": "Chose both",

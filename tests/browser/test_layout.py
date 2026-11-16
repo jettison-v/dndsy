@@ -425,3 +425,75 @@ def test_table_rolls_is_a_full_height_panel_beside_the_bar_and_the_band(people, 
     check(band=True)
     page.set_viewport_size({"width": 1100, "height": 900})  # (narrower: it opens over the page, under the bar)
     page.wait_for_function("document.querySelector('.rolls-side').getBoundingClientRect().top > 0")
+
+
+SPILL = """above => {
+  const col = above.parentElement.closest('.reader-nav, .peek-body'), cs = getComputedStyle(col), c = col.getBoundingClientRect();
+  const left = c.left + parseFloat(cs.paddingLeft), right = c.right - parseFloat(cs.paddingRight) - (col.offsetWidth - col.clientWidth);
+  const out = [];
+  above.querySelectorAll('*').forEach(el => { const r = el.getBoundingClientRect();
+    if (r.width && (r.right > right + 0.5 || r.left < left - 0.5)) out.push((el.className || el.tagName) + ' by ' + Math.round(Math.max(r.right - right, left - r.left)) + 'px'); });
+  const row = above.querySelector('.ls-above-row'), ch = parseFloat(getComputedStyle(row).getPropertyValue('--control-h'));
+  return {out, lines: row.getBoundingClientRect().height / ch, pills: above.querySelectorAll('[data-ls-pills] > *').length};
+}"""
+
+
+@pytest.fixture(scope="module")
+def every_kind(browser_db):
+    """A published World entry of every kind, with long names, so World's Kind filter has all its chips."""
+    url, ids = browser_db
+    engine = create_engine(url)
+    with engine.begin() as conn:
+        for kind, name in (("npc", "Archivist Wendeline Ashgrove-Thorne"), ("place", "The Observatory Beneath the Drowned Bell"),
+                           ("faction", "The Order of the Unbroken Saltmere Lantern"), ("item", "Lantern of the Long Night Watch"),
+                           ("creature", "Hollow-Eyed Fog Wraith of the Reach"), ("other", "The Bargain at the Crossroads Shrine")):
+            conn.execute(text("INSERT INTO entities (campaign_id, kind, name, traits, summary, status, created_at, updated_at) "
+                              "VALUES (:c, :k, :n, '{}', '', 'published', now(), now())"), {"c": ids["campaign"], "k": kind, "n": name})
+    engine.dispose()
+
+
+def test_filters_above_a_list_stay_in_their_column_whatever_is_on(people, server, long_names, every_kind):
+    """Brett, Nov 16 (chose A on docs/mockups/filters-above/ after three kinds on pushed World's filters past its
+    column): in every place the filters sit above a list, at a laptop's and a phone's width, with one filter on, with
+    every chip on, open and closed, nothing spills out of the column, the closed line takes two lines at most, its
+    pills are two and "+N" at most, a pill's × takes off just its filter, and Clear takes them all off."""
+    player = people("player")
+    page, found = player.page, []
+    places = (("World", "/c/main/campaign?tab=world", None),
+              ("Notes you sent", "/your-notes?tab=askdnd", None),
+              ("Battle's See all", "/characters/{cole}/battle", "[data-panel-url$='/all/action']"))
+    for width in (375, 1280):
+        page.set_viewport_size({"width": width, "height": 900 if width > 640 else 812})
+        for name, path, opener in places:
+            player.open(path.format(cole=server["cole"]))
+            page.wait_for_load_state("load")
+            if opener:
+                page.locator(f"{opener}:visible").first.click()
+            above = page.locator(".ls-above:visible").first
+            above.wait_for()
+            where = f"{name} at {width}px"
+            if above.locator("[data-ls-above-body]").is_hidden():
+                above.locator(".ls-above-btn").click()
+            chips = above.locator("[data-ls-group]")
+            assert chips.count() >= 2, where
+            for k in range(chips.count()):  # (every chip on: the most there can be)
+                if chips.nth(k).get_attribute("aria-pressed") != "true":
+                    chips.nth(k).click()
+                if k == 0:
+                    above.locator(".ls-above-btn").click()  # one on, closed
+                    one = above.evaluate(SPILL)
+                    found += [f"{where}, one on: {o}" for o in one["out"]]
+                    assert one["pills"] == 1 and one["lines"] < 1.5, (where, one)
+                    above.locator(".ls-above-btn").click()
+            found += [f"{where}, all on, open: {o}" for o in above.evaluate(SPILL)["out"]]
+            above.locator(".ls-above-btn").click()
+            closed = above.evaluate(SPILL)
+            found += [f"{where}, all on, closed: {o}" for o in closed["out"]] + problems(page, f"{where}, all on, closed")
+            assert closed["lines"] < 2.6 and closed["pills"] <= 3, (where, closed)
+            before = chips.evaluate_all("cs => cs.filter(c => c.getAttribute('aria-pressed') === 'true').length")
+            above.locator(".ls-pill:not(.more)").first.click()  # (one ×: just that filter)
+            assert chips.evaluate_all("cs => cs.filter(c => c.getAttribute('aria-pressed') === 'true').length") == before - 1, where
+            above.locator("[data-ls-clear-filters]").click()
+            assert chips.evaluate_all("cs => cs.filter(c => c.getAttribute('aria-pressed') === 'true').length") == 0, where
+            assert above.locator(".ls-pill").count() == 0 and above.locator("[data-ls-clear-filters]").is_hidden(), where
+    assert not found, "\n".join(found)
