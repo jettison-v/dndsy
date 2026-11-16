@@ -2344,7 +2344,19 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ls-searching { margin: 0; padding: 6px 10px; border-radius: var(--r-md); background: var(--amber-soft); color: var(--text); font-size: var(--fs-sm); }
 .ls-is-searching .ls-filters { opacity: .45; pointer-events: none; }
 .ls-filters-head .ls-clear { margin-left: auto; flex: none; }  /* Clear by the Filters heading (feedback 67) */
-.ls-fold > summary .ls-clear { float: right; }  /* (a phone's folded Filters button carries it too, at its right) */
+.ls-fold > summary .ls-clear { float: right; }
+/* Filters above a list (filters_above; Nov 16): one line, "Filters 2 · names · Clear", opening the groups in place, at every width */
+.ls-fold.ls-above > summary { display: flex; align-items: center; gap: var(--sp-2); min-height: var(--control-h); padding: 0 var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); cursor: pointer; list-style: none; font-weight: 600; }
+.ls-fold.ls-above > summary::-webkit-details-marker { display: none; }
+.ls-fold.ls-above > summary::before { content: "▸"; color: var(--muted); font-size: var(--fs-xs); }
+.ls-fold.ls-above[open] > summary::before { content: "▾"; }
+.ls-fold.ls-above > summary .ls-h { font-size: var(--fs-sm); }
+.ls-fold.ls-above > summary .ls-clear { float: none; margin-left: auto; }
+.ls-on-names { flex: 1 1 auto; min-width: 0; font-size: var(--fs-xs); font-weight: 500; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ls-fold.ls-above[open] .ls-on-names { visibility: hidden; }  /* (open: the chips say it) */
+.ls-above-body { display: grid; gap: var(--sp-2); padding: var(--sp-2) var(--sp-1) var(--sp-1); }
+.ls-above-body .ls-label { font-size: var(--fs-xs); }
+.ls-above-body .ls-chip { font-size: var(--fs-xs); min-height: var(--control-h-sm); padding: 0 var(--sp-2); }  /* (a phone's folded Filters button carries it too, at its right) */
 .ls-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
 .ls-toolbar > .note:first-child { margin-right: auto; }
 .ls-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
@@ -2830,11 +2842,12 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
    and one entry on the page (_peek.html with where="reader"); Quests is the board; Relationships has a tree per
    family, the other ties, and anyone's connections (_connections.html). */
 .reader { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--sp-5); align-items: start; }
+@media (min-width: 901px) { .reader.rows { grid-template-columns: minmax(360px, 34%) minmax(0, 1fr); } }  /* the Reader for rows with content (Notes you sent); names keep 300px (DESIGN.md › Reader; Brett, Nov 16) */
 .reader-nav { position: sticky; top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px) + var(--sp-3)); max-height: calc(100vh - var(--stick-top, 62px) - var(--tabs-h, 41px) - var(--sp-5)); overflow-y: auto; background: var(--surface); border-radius: var(--r-lg); padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2); }
 .reader-nav > * { flex: none; }
 .reader-nav-head { position: sticky; top: calc(-1 * var(--sp-3)); z-index: 1; display: flex; flex-direction: column; gap: var(--sp-2); margin: calc(-1 * var(--sp-3)) calc(-1 * var(--sp-3)) 0; padding: var(--sp-3); background: var(--surface); border-bottom: 1px solid var(--line-soft); }
 .reader-nav .ls-views { display: flex; }
-.reader-nav .ls-views button { flex: 1; }
+.reader-nav .ls-views button { flex: 1; white-space: nowrap; }  /* (All · Last session on one line, its count beside it) */
 .reader-filters { display: grid; gap: var(--sp-2); }
 .reader-filters .ls-label { font-size: var(--fs-xs); }  /* (the Reader's narrow column: the shared groups, a size smaller) */
 .reader-filters .ls-chip { font-size: var(--fs-xs); min-height: var(--control-h-sm); padding: 0 var(--sp-2); }

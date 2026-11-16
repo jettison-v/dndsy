@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_lists.html" import search_box, clear_filters, filter_head, chip_group %}
+{% from "_lists.html" import search_box, filters_above %}
 {% from "_feedback_pics.html" import pics_field, added_pics %}
 {% block title %}Notes you sent · askdnd{% endblock %}
 {# Your notes (app/your_notes.py; Brett, Nov 7: docs/mockups/your-notes/ Layout A and a badge, then
@@ -17,23 +17,17 @@
 {% set froms = notes | map(attribute="from") | unique | sort | list %}
 {% set present = notes | map(attribute="label") | list %}
 {% set whats = feedback_kinds.values() | map(attribute=0) | list if kind == "askdnd" else [] %}{# (Brett, Nov 16: always, each kind's count) #}
-<div class="reader notes-reader">
+<div class="reader rows notes-reader">{# (the Reader for rows with content: a wider list; DESIGN.md › Reader) #}
   <aside class="reader-nav" data-list="notes-{{ kind }}" data-noun="note" data-nouns="notes" data-default-sort="newest" aria-label="Your notes">
     <div class="reader-nav-head">
       {{ search_box(placeholder) }}
-      <details class="ls-fold" data-ls-fold open>{# (folded to "Filters (N)" on a phone, as every list's filters are) #}
-      <summary>Filters <span class="count" data-ls-fold-count hidden></span>{{ clear_filters() }}</summary>
-      <div class="reader-filters">
-        {{ filter_head() }}{# (the shared filter pieces, _lists.html: one component, feedback 67) #}
-        {% set stands = [] %}{% for v in statuses if v in (base or statuses) or v in present %}{% set _ = stands.append(v) %}{% endfor %}
-        {{ chip_group({"key": "status", "label": "Where it stands", "values": stands}) }}
-        {{ chip_group({"key": "new", "label": "Since you looked", "values": ["New to you"]}) }}
-        {% if whats %}{{ chip_group({"key": "what", "label": "What it is", "values": whats}) }}{% endif %}
-        {% if froms | length > 1 %}{{ chip_group({"key": "from", "label": from_label, "values": froms}) }}{% endif %}
-        <div class="notes-sort"><label class="ls-select"><span>Order</span><select data-ls-sort aria-label="Order"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
-          <span class="note"><span data-ls-summary></span> shown</span></div>
-      </div>
-      </details>
+      {% set stands = [] %}{% for v in statuses if v in (base or statuses) or v in present %}{% set _ = stands.append(v) %}{% endfor %}
+      {% set fgroups = [{"key": "status", "label": "Where it stands", "values": stands}, {"key": "new", "label": "Since you looked", "values": ["New to you"]}] %}
+      {% if whats %}{% set _ = fgroups.append({"key": "what", "label": "What it is", "values": whats}) %}{% endif %}
+      {% if froms | length > 1 %}{% set _ = fgroups.append({"key": "from", "label": from_label, "values": froms}) %}{% endif %}
+      {{ filters_above(fgroups) }}{# (folded above the notes: the shared component's second layout; Brett, Nov 16) #}
+      <div class="notes-sort"><label class="ls-select"><span>Sort</span><select data-ls-sort aria-label="Sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
+        <span class="note"><span data-ls-summary></span> shown</span></div>{# (sorting is a dropdown, as on every list: DESIGN.md › Finding things in a list) #}
     </div>
     <div class="reader-rows" data-ls-rows>
       {% for n in notes %}
@@ -81,20 +75,18 @@
 {% block content %}
 <main class="page wide notes-page">
   <div class="title-row"><h1>Notes you sent</h1></div>
-  <p class="subtitle">What you sent and what happened to it. Notes <b>about the story</b> go to the DM; notes <b>about askdnd</b> go to Brett, then Claude.</p>
+  <p class="subtitle">What you sent and what happened to it. Notes <b>about the story</b> go to the DM; notes <b>about askdnd</b> go to an admin, then Claude.</p>
   {% if askdnd %}<div class="tabbar" role="tablist" data-tab-param>
     <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'story' else 'false' }}" data-tab="t-story">About the story <span class="count{{ ' notes-tab-new' if news.story }}" data-notes-tab="story">{% if news.story %}{{ news.story }} new{% else %}{{ lists.story | length }}{% endif %}</span></button>
     <button type="button" role="tab" aria-selected="{{ 'true' if tab == 'askdnd' else 'false' }}" data-tab="t-askdnd">About askdnd <span class="count{{ ' notes-tab-new' if news.askdnd }}" data-notes-tab="askdnd">{% if news.askdnd %}{{ news.askdnd }} new{% else %}{{ lists.askdnd | length }}{% endif %}</span></button>
   </div>{% endif %}
 
   <section id="t-story" class="notes-tab"{% if tab != "story" %} hidden{% endif %}>
-    <div class="notes-who"><span class="notes-ico dm" aria-hidden="true">DM</span><p>The DM reads these and decides what goes into the campaign: <b>Added</b> (on the page as you wrote it), <b>Used</b> (worked into a description or recap) or <b>Not used</b>, sometimes with a word to you. Send one with <b>Suggest a correction or addition</b> under a recap, or <b>What the table knows</b> in an entry's side panel.</p></div>
     {{ note_reader("story", lists.story, "Search your notes", "About", ["Waiting", "Added", "Used", "Not used"]) }}
   </section>
 
   {% if askdnd %}
   <section id="t-askdnd" class="notes-tab"{% if tab != "askdnd" %} hidden{% endif %}>
-    <div class="notes-who"><span class="notes-ico app" aria-hidden="true">a</span><p>An admin reads these first, then Claude: something broken goes <b>Waiting for an admin</b>, <b>With Claude</b>, <b>Planned</b>, <b>Fixed</b>; an idea goes <b>On the Roadmap</b>, then <b>Built</b>; a question is <b>Answered</b>. <b>Closed</b> if askdnd won't change it for now. Press <kbd>\</kbd> on any page to send one.</p></div>
     {{ note_reader("askdnd", lists.askdnd, "Search your notes", "Sent from", ["Waiting for an admin", "With Claude", "Planned", "On the Roadmap", "Fixed", "Built", "Answered", "Closed"],
                     ["Waiting for an admin", "With Claude", "Planned", "Fixed", "Closed"]) }}
   </section>

@@ -15,6 +15,16 @@
 <div class="ls-filters-head"><span class="ls-h" role="heading" aria-level="3">Filters</span><span class="ls-rule" aria-hidden="true"></span>{{ clear_filters() }}</div>
 {%- endmacro %}
 
+{# Filters above a list (Brett, Nov 16, docs/mockups/filters-above/): where the list sits under its filters, in a narrow
+   column (the Reader's World and Notes you sent, Battle's See all), they fold to one line, "Filters 2 · Places, People ·
+   Clear", that opens the groups in place; open or closed is remembered per list. Beside a list, filter_column below. #}
+{% macro filters_above(groups) -%}
+<details class="ls-fold ls-above" data-ls-fold data-ls-above>
+  <summary><span class="ls-h">Filters</span> <span class="count" data-ls-fold-count hidden></span><span class="ls-on-names" data-ls-on-names></span>{{ clear_filters() }}</summary>
+  <div class="ls-above-body">{% for g in groups %}{{ chip_group(g) }}{% endfor %}</div>
+</details>
+{%- endmacro %}
+
 {# The left filter column: the main groups, then More filters. On phones it folds into "Filters (N)", with Clear. #}
 {% macro filter_column(groups) -%}
 {%- set more = groups | selectattr("more") | list -%}
@@ -58,7 +68,7 @@
    device, All the first time (Brett, 2026-11-02, docs/artifacts/ui-ux-pass.html); the order stays as given. #}
 {% macro view_switch(views, label="Which ones") -%}
 <div class="seg ls-views" role="group" aria-label="{{ label }}">
-  {% for v, l in views %}<button type="button" data-ls-view="{{ v }}" aria-pressed="{{ 'true' if v == ('all' if views | selectattr(0, 'equalto', 'all') | first else views[0][0]) else 'false' }}">{{ l }} <span class="ls-n" data-ls-view-n></span></button>{% endfor %}
+  {% for view in views %}{% set v, l = view[0], view[1] %}<button type="button" data-ls-view="{{ v }}" aria-pressed="{{ 'true' if v == ('all' if views | selectattr(0, 'equalto', 'all') | first else views[0][0]) else 'false' }}"{% if view | length > 2 %} title="{{ view[2] }}"{% endif %}>{{ l }} <span class="ls-n" data-ls-view-n></span></button>{% endfor %}
 </div>
 {%- endmacro %}
 

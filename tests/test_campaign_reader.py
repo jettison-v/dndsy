@@ -53,7 +53,7 @@ def test_world_is_the_reader_without_quests(player, db):
     assert f'data-rd-id="{lillippi(db).id}" data-views="recent all"' in names
     assert f'data-rd-id="{entry(db, "Saltmarsh").id}" data-views="all"' in names
     # Feedback 33 (Nov 6): the view says which session it means, the newest with a published recap
-    assert 'Last session: <b>Session 2' in names and "the newest with a published recap" in names
+    assert 'title="Last session: Session 2' in names and "ls-which" not in names  # (the date is the switch's tooltip, no explainer line: Brett, Nov 16)
     # Nothing asked for: the Reader opens on something from the last session, with its key moments as a timeline
     assert f'data-reader-id="{lillippi(db).id}"' in page and 'class="moment-line"' in page and "<dt>Last seen</dt><dd>Session 2" in page
     # Layout A (Brett, Nov 5): a person's picture is a portrait beside the name; the panel counts the key moments

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
-{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head %}
+{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above %}
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
 {% from "_math.html" import math_num %}
@@ -184,6 +184,8 @@
       <label class="ls-select"><span>Sort</span><select aria-label="Sort"><option>Level</option><option>Name</option></select></label><label class="ls-check"><input type="checkbox"> Full notes</label></div>
     {{ ds("Filter group", "_lists.html chip_group()", "OR within a group, AND across groups; each chip shows how many match.") }}
     <div class="ds-sample">{{ chip_group({"key": "time", "label": "Casting time", "values": ["Action", "Bonus action", "Reaction"]}) }}</div>
+    {{ ds("Finding things in a list", "search_box() · view_switch() · chip_group() in filter_column() or filters_above() · .ls-select [data-ls-sort]", "Four controls, one job each, top to bottom: Search finds by words (and pauses the filters); the View switch picks which set (All · Shortlist); Filters narrow it (chips, Clear by their heading; beside a list, or folded above it in a narrow column); Sort orders it, always a dropdown labelled Sort, under the filters.") }}
+    <div class="ds-sample ds-narrow" style="display:grid;gap:8px">{{ search_box("Search your notes") }}{{ view_switch([("all", "All"), ("fav", "Shortlist")]) }}{{ filters_above([{"key": "status", "label": "Where it stands", "values": ["Planned", "Fixed"]}]) }}<label class="ls-select"><span>Sort</span><select aria-label="Sort"><option>Newest first</option><option>Oldest first</option></select></label></div>
     {{ ds("Filters heading and Clear", "_lists.html filter_head(), clear_filters()", "Every filter column starts with it; Clear shows once something is filtered (on a phone, on the folded Filters button too). No row above the list: the blue chips say what's on.") }}
     <div class="ds-sample ds-narrow">{{ filter_head() }}{{ chip_group({"key": "kind", "label": "Show only", "values": ["Attacks", "Spells", "Items"]}) }}</div>
     {{ ds("Row", "_char.html ri()", "One thing per row: marks, name, tags, a summary line, the roll on the right; a click opens the side panel.") }}

@@ -1100,7 +1100,7 @@
  {
   "title": "Filters Above a List",
   "kind": "design",
-  "status": "Waiting for your pick",
+  "status": "Chosen (folded, the Last session line gone) · built, your look first",
   "date": "Nov 16",
   "what": "The filter component's second layout: folded to one line above a list in a narrow column (World, Notes you sent, Battle's See all), and World's Last session line.",
   "source": "docs/mockups/filters-above/",

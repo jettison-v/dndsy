@@ -3503,17 +3503,18 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const views = [...root.querySelectorAll('[data-ls-view]')].map(b => b.dataset.lsView);
     let kept = '';
     try { kept = localStorage.getItem(VIEW(root)) || ''; } catch (e) { kept = ''; }
-    root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, q: '',
+    root._ls = { sel: s.sel || {}, sort: s.sort || '', lens: s.lens || '', more: !!s.more, above: !!s.above, q: '',
                  view: views.includes(kept) ? kept : views.includes('all') ? 'all' : (views[0] || '') };
     const sort = root.querySelector('[data-ls-sort]'); if (sort && root._ls.sort) sort.value = root._ls.sort;
     const lens = root.querySelector('[data-ls-lens]');
     if (lens && root._ls.lens && [...lens.options].some(o => o.value === root._ls.lens)) lens.value = root._ls.lens;
     const more = root.querySelector('[data-ls-more]'); if (more) more.open = root._ls.more;
+    const above = root.querySelector('[data-ls-above]'); if (above) above.open = root._ls.above;  // (filters folded above a list: open or closed, as left)
   }
   function save(root) {
     const st = root._ls;
     try {
-      localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more }));
+      localStorage.setItem(KEY(root), JSON.stringify({ at: Date.now(), sel: st.sel, sort: st.sort, lens: st.lens, more: st.more, above: st.above }));
       if (st.view) localStorage.setItem(VIEW(root), st.view);
     } catch (e) { /* private window */ }
   }
@@ -3543,6 +3544,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // Nov 16, docs/mockups/filter-clear/: the blue chips say what's on, so there's no row above the list)
     const picked = on.flatMap(g => sel[g].map(v => [g, v]));
     root.querySelectorAll('[data-ls-clear-filters]').forEach(b => { b.hidden = !picked.length; });
+    const onNames = root.querySelector('[data-ls-on-names]'); if (onNames) onNames.textContent = picked.map(([, v]) => v).join(', ');  // (folded: what's on, while it fits)
     const moreOn = root.querySelector('[data-ls-more-on]');
     if (moreOn) {
       const n = [...root.querySelectorAll('[data-ls-more] [data-ls-group][aria-pressed="true"]')].length;
@@ -3629,6 +3631,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   document.addEventListener('toggle', e => {
     const root = rootOf(e.target);
     if (root && root._ls && e.target.matches('[data-ls-more]')) { root._ls.more = e.target.open; save(root); }
+    if (root && root._ls && e.target.matches('[data-ls-above]')) { root._ls.above = e.target.open; save(root); }
   }, true);
   // A page that changes rows (Change spells: a row moved into Yours, a class tab) asks the list to look again
   document.addEventListener('list:refresh', e => { const root = rootOf(e.target); if (root && root._ls) apply(root); });
