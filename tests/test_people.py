@@ -115,7 +115,7 @@ def test_owner_cant_be_demoted_and_admins_cant_lower_themselves(env, monkeypatch
     r = owner.post("/manage/accounts/update", data={"email": "pal@example.com", "admin": "1"}, headers={"X-Switch": "1"})
     assert r.status_code == 204 and access.level("pal@example.com") == "admin"
     page = owner.get("/manage/accounts").text
-    assert 'data-col="admin"' in page and 'data-switch="admin"' in page and ">Save<" not in page  # (no Save: it saves itself)
+    assert 'data-col="admin"' in page and 'data-switch="admin"' in page and 'name="admin" value="1" form=' not in page  # (no checkbox and Save: it saves itself)
 
 
 def test_imported_members_need_an_invite(env, monkeypatch, db):
