@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app import access, config, files, picks, view_as, web
 from app.auth import current_user, is_admin
 from app.db import get_db
-from app.models import Feedback
+from app.models import Feedback, User
 from app.templating import templates
 
 router = APIRouter()
@@ -255,8 +255,6 @@ def kept_from(db: Session, fb: Feedback, viewer: str | None) -> bool:
     """A note's page and pictures are kept from an admin who is the DM of a campaign its sender (or whoever its sender
     was viewing as) plays in: the page can hold their character notes (the outside review's C9; CLAUDE.md ›
     Visibility, never the campaign's DM, even an admin). Its words stay: they're the sender's own."""
-    from app.models import User
-
     sender = db.get(User, fb.user_id) if fb.user_id else None
     people = [sender.email if sender else None, (fb.context or {}).get("viewing_as_email")]
     return any(access.dm_over(viewer, p) for p in people if p)
