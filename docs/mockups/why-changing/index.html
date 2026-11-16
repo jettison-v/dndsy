@@ -323,7 +323,7 @@ document.querySelectorAll("[data-mock]").forEach(win => {
     const chip = win.querySelector("[data-reason-chip]"), menu = win.querySelector("[data-reason-menu]");
     const paint = () => {
       chip.textContent = REASONS.find(x => x[0] === r)[1] + " ▾";
-      chip.title = SAYS[r].replace(/<[^>]+>/g, "") + " Press to change the reason.";
+      chip.title = new DOMParser().parseFromString(SAYS[r], "text/html").body.textContent + " Press to change the reason.";
       win.querySelector("[data-changes]").textContent = goes ? "Your changes: Fire Bolt let go (pick a cantrip to learn)" : "Your changes: none yet";
       const warn = win.querySelector("[data-warn]"), past = goes && r !== "level-sorcerer";
       warn.hidden = !past;
