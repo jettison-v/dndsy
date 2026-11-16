@@ -71,7 +71,9 @@
           {% if b.cantrips_max %}<span class="tag {{ 'done' if b.cantrips_count == b.cantrips_max else 'draft' }}">Cantrips {{ b.cantrips_count }} of {{ b.cantrips_max }}</span>{% endif %}
           {% set always = b.spells | selectattr("state", "equalto", "always") | list %}{% if always %}<span class="tag">+{{ always | length }} always prepared</span>{% endif %}
           {% if can_play and preps %}<button type="button" class="btn small planner-prep" data-modal-url="/characters/{{ c.id }}/spells/prepare?cls={{ b.class | urlencode }}" data-modal-size="large">Prepare spells</button>
-          {% elif b.prepared_max and not preps %}<span class="note planner-prep">Chosen on D&amp;D Beyond when you gain a level</span>{% endif %}
+          {% elif b.prepared_max and not preps and not can_play %}<span class="note planner-prep">Chosen on D&amp;D Beyond when you gain a level</span>{% endif %}
+          {# Your spells (app/spells_known.py): a cantrip swapped, a spell learned, a Wizard's spellbook #}
+          {% set lrn = b.spells | selectattr("learn") | list %}{% if can_play and ((lrn | selectattr("level", "equalto", 0) | first) or ((b.learns or b.spellbook) and (lrn | rejectattr("level", "equalto", 0) | first))) %}<button type="button" class="btn small" data-use-url="/characters/{{ c.id }}/spells/learn?cls={{ b.class | urlencode }}" data-learn-spells>{{ "Learn spells" if b.learns else "Spellbook" if b.spellbook else "Swap a cantrip" }}</button>{% endif %}
         </div>
       </div>
       {% endfor %}

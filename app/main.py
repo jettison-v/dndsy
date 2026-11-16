@@ -73,6 +73,7 @@ from app.rests import router as rests_router
 from app.scene_notes import router as scene_notes_router
 from app.search import router as search_router
 from app.shifting import router as shifting_router
+from app.spells_known import router as spells_known_router
 from app.story import router as story_router
 from app.suggestions import router as suggestions_router
 from app.table_creatures import router as table_creatures_router
@@ -234,6 +235,7 @@ app.include_router(level_up_router)
 app.include_router(inventory_router)  # (through the bridge: on_for)
 app.include_router(preparing_router)  # (through the bridge: on_for)
 app.include_router(form_swap_router)  # (through the bridge: on_for)
+app.include_router(spells_known_router)  # (through the bridge: on_for)
 app.include_router(giving_router)  # (through the bridge: on_for)
 app.include_router(item_browser_router)  # (through the bridge: plays)
 app.include_router(creature_hp_router)  # (Your creatures: its Hit Points through the bridge)

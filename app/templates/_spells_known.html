@@ -1,0 +1,33 @@
+{# Your spells, inside the roll window (app.js "using an item"; app/spells_known.py; Brett's picks 3–4 on
+   docs/mockups/choices-in-askdnd/, Nov 13): a cantrip swapped, a spell learned, a Wizard's spellbook. One to let go of and
+   one to learn, either or both; the rule is said, never enforced. #}
+{% set base = "/characters/" ~ c.id ~ "/spells/learn" %}
+<button type="button" class="rp-x" aria-label="Close">×</button>
+<div class="rw-title">Your {{ book.class }} {{ 'spellbook' if kind == 'spells' and book.spellbook else kind }}</div>
+<p class="use-cost">{{ c.name }} · {{ book.class }} {{ book.level }}{% if kind == 'cantrips' and book.cantrips_max %} · {{ book.cantrips_count }} of {{ book.cantrips_max }} cantrips{% endif %}</p>
+{% if books | length > 1 or book.kinds | length > 1 %}<div class="row tight" data-spells-tabs>
+  {% for b in books %}{% for k in b.kinds %}<button type="button" class="chip{{ ' on' if b.class == book.class and k == kind }}" data-use-url="{{ base }}?cls={{ b.class | urlencode }}&amp;kind={{ k }}"{% if b.class == book.class and k == kind %} aria-current="true"{% endif %} data-spells-kind="{{ k }}">{% if books | length > 1 %}{{ b.class }} {% endif %}{{ 'spellbook' if k == 'spells' and b.spellbook else k }}</button>{% endfor %}{% endfor %}
+</div>{% endif %}
+<p class="use-what">{{ rule[:1] | upper }}{{ rule[1:] }} (2024 Player's Handbook). askdnd doesn't check when; that's the DM's call.{% if copy %} {{ copy }}{% endif %}</p>
+{% if reachable %}
+<fieldset class="ff-pick" data-learn-out><legend class="rw-label">Let go of</legend>
+  <label class="ff-opt"><input type="radio" name="out" value="" checked><span><b>None</b> <span class="note">{{ 'keep them all' if have else 'none yet' }}</span></span></label>
+  {% for r in have %}<label class="ff-opt"><input type="radio" name="out" value="{{ r.entry }}" data-spell="{{ r.key }}"><span><b>{{ r.name }}</b>{% if r.level %} <span class="note">level {{ r.level }}</span>{% endif %}</span></label>
+  {% endfor %}
+</fieldset>
+<div class="rw-row"><label class="rw-label" for="learn-in">{{ 'Copy in' if kind == 'spells' and book.spellbook else 'Learn' }}</label>
+  <select id="learn-in" class="rw-slot" name="in" data-learn-in>
+    <option value="">None</option>
+    {% for lv, rs in can | groupby("level") %}{% if kind == 'spells' %}<optgroup label="Level {{ lv }}">{% endif %}
+      {% for r in rs %}<option value="{{ r.entry }}" data-spell="{{ r.key }}"{% if r.going %} disabled{% endif %}>{{ r.name }}{% if r.going %} (on its way){% endif %}</option>
+      {% endfor %}{% if kind == 'spells' %}</optgroup>{% endif %}
+    {% endfor %}
+  </select></div>
+<div class="rw-row use-foot">
+  <button type="button" class="btn primary small" data-use-go>Make it on D&amp;D Beyond</button>
+  <button type="button" class="btn link small" data-use-close>Cancel</button>
+</div>
+<p class="use-said" role="alert" hidden></p>
+{% else %}
+<p class="use-said">{{ c.name }}'s D&amp;D Beyond sheet can't be reached: open it in Chrome with the askdnd bridge to change this here, or change it on D&amp;D Beyond (askdnd shows it within seconds).</p>
+{% endif %}

@@ -121,6 +121,8 @@ def steps(field: str) -> list:
         "bagcoin": [*["inventory", {"id": arg.partition(":")[0]}], "currency", arg.partition(":")[2], {"or": 0}],
         "add": ["inventory", {"sum": [["definition", "id"], arg, "quantity"]}],
         "prep": ["classSpells", {"characterClassId": arg.partition(":")[0]}, "spells", {"id": arg.partition(":")[2]}, "prepared", {"or": False}],
+        # A spell learned: on the class's list on the sheet or not (Your spells, app/spells_known.py)
+        "learn": ["classSpells", {"characterClassId": arg.partition(":")[0]}, "spells", {"id": arg.partition(":")[2]}, {"present": True}],
         "creature": ["creatures", {"id": arg}, {"read": {"removedHitPoints": ["removedHitPoints", {"or": 0}],
                                                          "temporaryHitPoints": ["temporaryHitPoints", {"or": 0}]}}],
         "creature_max": ["characterValues", {"typeId": CREATURE_MAX, "valueId": arg}, "value"],
@@ -166,6 +168,18 @@ def put(data: dict, field: str, v) -> None:
         if not v:
             data["creatures"] = [c for c in data.get("creatures") or [] if not (isinstance(c, dict) and c.get("groupId") == WILD_SHAPE_GROUP
                                                                                  and str((c.get("definition") or {}).get("id")) == arg)]
+    if kind == "learn":  # a spell learned shows on the class's list at once; one let go of is gone
+        cls, _, entry = arg.partition(":")
+        group = next((g for g in data.get("classSpells") or [] if str(g.get("characterClassId")) == cls), None)
+        if group is None:
+            return
+        rest = [x for x in group.get("spells") or [] if str(x.get("id")) != entry]
+        if v:
+            pool = [x for ss in ((data.get("askdnd") or {}).get("availableSpells") or {}).values() for x in ss or []]
+            known = next((x for x in pool if str(x.get("id")) == entry), None)
+            if known:
+                rest.append({**known, "prepared": False})
+        group["spells"] = rest
         return
     if kind == "prep":  # D&D Beyond adds a spell to the sheet when it's prepared: a copy shows it there while on its way
         cls, _, entry = arg.partition(":")
@@ -280,7 +294,7 @@ def name(data: dict | None, field: str) -> str:
     if kind == "wildshape":
         c = next((c for c in data.get("creatures") or [] if isinstance(c, dict) and str((c.get("definition") or {}).get("id")) == arg), None)
         return f"Wild Shape form {((c or {}).get('definition') or {}).get('name') or arg}"
-    if kind == "prep":
+    if kind in ("prep", "learn"):
         entry = arg.partition(":")[2]
         lists = [s for g in data.get("classSpells") or [] for s in g.get("spells") or []]
         lists += [s for ss in ((data.get("askdnd") or {}).get("availableSpells") or {}).values() for s in ss or []]
@@ -335,7 +349,8 @@ def text(data: dict | None, field: str, v, max_hit_points: int = 0) -> str:
     if kind == "container":
         return "carried" if str(v) == str((data or {}).get("id")) else f"in {item_name(data, v)}"
     if isinstance(v, bool):
-        return {"equipped": ("equipped", "not equipped"), "attuned": ("attuned", "not attuned"), "prep": ("prepared", "not prepared")}.get(kind, ("on", "off"))[0 if v else 1]
+        return {"equipped": ("equipped", "not equipped"), "attuned": ("attuned", "not attuned"), "prep": ("prepared", "not prepared"),
+                "learn": ("learned", "not learned")}.get(kind, ("on", "off"))[0 if v else 1]
     if kind == "exhaustion":
         return f"level {v}" if v else "none"
     return f"{v} used" if kind in ("hitdice", "slot", "pact", "uses", "charges") else str(v)
@@ -428,6 +443,10 @@ def write(ddb_id: int, field: str, v, data: dict | None = None, extra: dict | No
         if c is None:
             raise ValueError(f"No Wild Shape form {arg} on the sheet to let go of")
         return req("DELETE", "creature", id=int(c["id"]))
+    if kind == "learn":  # a spell learned or let go of, as D&D Beyond's Manage Spells sends it (Nov 14, Levi's seat)
+        cls, _, entry = arg.partition(":")
+        return req("POST" if v else "DELETE", "spell", characterClassId=int(cls), spellId=extra.get("spellId"), id=int(entry),
+                   entityTypeId=extra.get("entityTypeId"))
     if kind == "familiar_add":  # a familiar form onto Extras, as Manage Extras › Familiar › Add sends it (Nov 4, Levi's seat)
         return req("POST", "creature", groupId=FAMILIAR_GROUP, monsterId=int(arg), names=[None])
     if kind == "add":
