@@ -42,12 +42,12 @@
   {% else %}
   {{ spell_list(c, none, rows, groups, picks, can_pick, true, key="change-spells", views=[("mine", "Yours"), ("fav", "Shortlist"), ("all", "All")], edit=meta) }}
   {% endif %}
-  <div class="chg-warns" data-chg-warns></div>{# (by Make: what goes past the reason's rule, named) #}
   <div class="chg-tray">
+    <div class="chg-warns" data-chg-warns></div>{# (in the footer bar, always on screen: what goes past the reason's rule, named; Brett, Nov 16) #}
     <div class="chg-list"><span class="ls-label">Your changes</span> <span data-chg-list><span class="note">None yet</span></span></div>
     <button type="button" class="btn link small" data-chg-reset>Start over</button>
     {% if reachable %}<button type="button" class="btn primary" data-chg-make disabled>Make changes</button>{% endif %}
+    <p class="use-said chg-said" role="alert" data-chg-said hidden></p>
   </div>
-  <p class="use-said" role="alert" data-chg-said hidden></p>
   </div>
 </div>

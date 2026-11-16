@@ -329,6 +329,8 @@ def test_change_spells_and_forms_hold_together_at_every_width(people, server):
     assert page.locator(".peek.open [data-chg-reasons]").is_hidden() and page.locator(".peek.open [data-chg-reason]").is_visible()
     root.locator('[data-pick-list$=":cantrips"][data-base="1"] [data-pick-act]').first.click()  # (let one go)
     assert root.locator(".chg-warn").count() == 1  # (a Druid's cantrips change on a level: said, never blocked)
+    warn = page.locator(".peek.open .chg-tray .chg-warn")  # (in the footer bar, on screen without scrolling: Brett, Nov 16)
+    assert warn.count() == 1 and warn.evaluate("w => { const r = w.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; }")
     assert page.locator(".peek.open [data-chg-list] .chg-chip").count() == 1
     # (in the window: the menu bar's Live pill can be mid-change after the page opened, on GitHub's slower machines)
     in_window = lambda where: [p for p in problems(page, where) if "#live-pill" not in p]

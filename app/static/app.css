@@ -3429,7 +3429,8 @@ button.chg-card:hover { border-color: var(--faint); }
 .rl-now.no { background: var(--surface-3, var(--surface)); color: var(--muted); }  /* (not now is information, not a warning: amber is for what goes past a rule) */
 .rl-full { grid-column: 1 / -1; color: var(--muted); font-size: var(--fs-xs); }  /* (a full count is held, as on D&D Beyond: said quietly) */
 .chg-warns:empty { display: none; }
-.chg-warns { display: grid; gap: var(--sp-1); }
+.chg-warns { display: grid; gap: var(--sp-1); flex: 1 0 100%; order: -1; }
+.chg-said { flex: 1 0 100%; margin: 0; }  /* (Make's error, in the bar too) */  /* (the footer bar's first row, above Your changes and Make) */
 .chg-warn { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); }
 .chg-warn b { color: var(--amber); }
 /* A row's action where the pin and bell were, beside the bookmark */
