@@ -2,12 +2,13 @@
 learned, through the bridge with D&D Beyond's own requests for a known form (a creature in group 13, recorded on Levi's
 test seat, Nov 14), the rule said and never enforced, and Undo putting both back."""
 
+import pytest
 from sqlalchemy import select
 
 from app import characters, ddb_bridge, ddb_fields, form_swap
 from app.models import BridgeIntent
 from tests.roles import set_role
-from tests.table_setup import char
+from tests.table_setup import char, plain_id
 
 SPIDER, POLAR_BEAR = "4775844", "5195167"  # (two of Cole's six known forms, by D&D Beyond's monster id)
 DIRE_WOLF = form_swap._ids()["dire-wolf"]
@@ -30,6 +31,20 @@ def test_the_window_lists_the_forms_you_know_and_the_ones_you_could_learn(player
     eagle = form_swap._ids()["eagle"]
     assert f'<option value="{eagle}"' not in page  # (a Fly Speed: not until Druid 8)
     assert "data-swap-forms" in player.get(f"/characters/{char(db, 'Cole').id}").text.split('id="t-forms"')[1]  # (on Sheet › Wild Shape)
+
+
+@pytest.mark.parametrize(("rating_id", "label"), [(2, "1/8"), (3, "1/4"), (4, "1/2")], ids=plain_id)
+def test_a_known_form_shows_its_challenge_rating_as_the_sheet_gives_it(player, db, sheet, rating_id, label):
+    """ASKDND-V2-T (Nov 15, the live test on Levi's seat): a known form of CR 1/2 broke the window, its label read as a
+    number. Each known form shows the sheet's own label, the other fractions too."""
+    for c in sheet["creatures"]:
+        if str(c["definition"]["id"]) == SPIDER:
+            c["definition"]["challengeRatingId"] = rating_id  # (D&D Beyond's ids: 2, 3, 4 are CR 1/8, 1/4, 1/2)
+    characters.refresh(db, char(db, "Cole"))
+    r = player.get(url(db))
+    assert r.status_code == 200, r.text
+    spider = r.text.split(f'value="{SPIDER}"')[1].split("</label>")[0]
+    assert f"CR {label}<" in spider
 
 
 def test_a_swap_lets_one_go_and_learns_another_and_undo_puts_both_back(player, db, sheet):
