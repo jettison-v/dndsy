@@ -1073,11 +1073,29 @@
  {
   "title": "Changing Spells and Forms",
   "kind": "design",
-  "status": "Chosen D (the wide window) · built, your look first",
+  "status": "Chosen D (the wide window) · built (PR 378)",
   "date": "Nov 16",
   "what": "Round 1's picks taken (a tab per class, why you're changing, Wild Shape alike, counts held as D&D Beyond does, swaps warned); round 2 explores changing them in the Sheet tab itself (C, buttons where the bookmark and bell are) or a wider window with the tab's own list (D); three choices.",
   "source": "docs/mockups/changing-spells/",
   "link": "https://claude.ai/artifact/DfDA7ucJ5YdjrFRm88Uj3J"
+ },
+ {
+  "title": "Why You're Changing",
+  "kind": "design",
+  "status": "Chosen B (ask first) · built, your look first",
+  "date": "Nov 16",
+  "what": "Three ways to make \"Why are you changing?\" easy to find in Change spells and Change forms (your feedback 66).",
+  "source": "docs/mockups/why-changing/",
+  "link": "https://claude.ai/artifact/VqUtFJgPtenYyhZUYQrEVc"
+ },
+ {
+  "title": "Clearing Filters",
+  "kind": "design",
+  "status": "Waiting for your pick",
+  "date": "Nov 16",
+  "what": "Where Clear goes on every filtered list: at the top of the filters, one row above the list, or both (your feedback 67).",
+  "source": "docs/mockups/filter-clear/",
+  "link": "https://claude.ai/artifact/Vkako2RYRVibX69W3UiwsT"
  },
  {
   "title": "Compare",

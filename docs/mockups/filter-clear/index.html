@@ -1,0 +1,188 @@
+<title>Clearing Filters</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (one look, as the app); laptop first, one column on a phone; the
+   table's own characters. Feedback 67 (Nov 16): some filters can be cleared and others can't. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0; --selected: rgba(126, 166, 224, .2);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.pick { color: var(--green); font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; margin-left: 8px; }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta { color: var(--muted); font-size: .88rem; }
+section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.intro { display: grid; gap: 8px; max-width: 88ch; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.notes > div { display: grid; gap: 4px; align-content: start; font-size: .9rem; }
+.today { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.today div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 11px 14px; font-size: .88rem; color: var(--muted); }
+.today b { display: block; margin-bottom: 2px; }
+
+/* A list as the app draws it: the filter column, then search, the view, the rows */
+.frame { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 14px; padding: 16px 18px; display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; }
+.filters { display: grid; gap: 12px; align-content: start; }
+.f-head { display: flex; align-items: center; gap: 10px; font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.f-head .rule { flex: 1; height: 1px; background: var(--line); }
+.f-head .clear { font: 500 .82rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--red); background: none; border: 0; padding: 0; cursor: pointer; }
+.group { display: grid; gap: 6px; }
+.group > span { font-size: .8rem; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 11px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: 500 .82rem/1 var(--sans); cursor: pointer; }
+.chip small { color: var(--faint); font-size: .74rem; }
+.chip[aria-pressed="true"] { background: var(--selected); border-color: var(--blue); }
+.main { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.search { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--faint); font-size: .88rem; }
+.active { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: .84rem; color: var(--muted); }
+.active .on { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 10px; border-radius: 999px; background: var(--selected); border: 1px solid var(--blue); color: var(--text); font: 500 .8rem/1 var(--sans); cursor: pointer; }
+.active .clear { color: var(--red); background: none; border: 0; font: 500 .84rem/1 var(--sans); cursor: pointer; padding: 0; }
+.rows { display: grid; border-top: 1px solid var(--line-soft); }
+.row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center; padding: 8px 2px; border-bottom: 1px solid var(--line-soft); font-size: .88rem; }
+.row small { color: var(--muted); margin-left: 6px; }
+.row .note { color: var(--muted); font-size: .82rem; }
+.count { color: var(--muted); font-size: .84rem; }
+.mark { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--amber); color: #1a1a1a; font: 700 .7rem/1 var(--sans); }
+
+/* A phone: the filters fold to "Filters (n)" */
+.phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.phone { max-width: 340px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 22px; padding: 14px; display: grid; gap: 10px; }
+.phone .fold { display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; font: 600 .86rem/1 var(--sans); }
+.phone .fold .n { background: var(--selected); border: 1px solid var(--blue); border-radius: 999px; padding: 1px 7px; font-size: .74rem; }
+.phone .fold .clear { margin-left: auto; color: var(--red); font-weight: 500; font-size: .84rem; }
+.phone-cap { font: 700 .74rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
+.q ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; }
+@media (max-width: 760px) { .frame { grid-template-columns: 1fr; } h1 { font-size: 1.7rem; } }
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:14px">
+  <span class="lbl">Mockup · Nov 16 · for Brett · your feedback 67</span>
+  <h1>Clearing filters</h1>
+  <p class="lead">Every list in askdnd filters the same way, but clearing doesn't. On the Spell Book, Sheet's lists, the
+  Item browser and Party, Clear appears only in a <b>Showing only: … Clear all</b> row above the list, once something is
+  filtered, away from the chips you pressed. World and Notes you sent have <b>Clear</b> at the top of the filters instead,
+  always showing. Battle's See all panel has no Clear at all. Below is Cole's Spell Book, the list you pointed at, drawn
+  three ways. Press a few chips on each to see where Clear shows.</p>
+  <div class="today">
+    <div><b>Spell Book, Sheet's lists, Item browser, Party</b>"Showing only: … Clear all" above the list, only once something is filtered.</div>
+    <div><b>World, Notes you sent</b>"Clear" at the top of the filters, always showing, even with nothing filtered.</div>
+    <div><b>Battle's See all and + Add panels</b>Chips to filter by kind, no Clear.</div>
+  </div>
+</header>
+
+<section class="board" id="a">
+  <div class="intro">
+    <span class="lbl">A · Clear at the top of the filters</span><span class="pick">My pick</span>
+    <h2>Where your eye already is</h2>
+    <p><b>Clear</b> sits at the right of the Filters heading, on every list, and shows only once something is filtered. No
+    row above the list: the blue chips already say what's on, so the list keeps that room (your comment, Nov 16). On a
+    phone, where the filters fold away, the folded button says how many are on and carries Clear.</p>
+  </div>
+  <div class="frame" data-mock="a"></div>
+</section>
+
+<section class="board" id="b">
+  <div class="intro">
+    <span class="lbl">B · One row above the list</span>
+    <h2>"Showing only … Clear all", everywhere</h2>
+    <p>Today's row above the list becomes the one place to clear, added to World, Notes you sent and Battle's panels; the
+    Clear at the top of World's and Notes' filters goes. Closest to the design system as written, but it's where you
+    already missed it.</p>
+  </div>
+  <div class="frame" data-mock="b"></div>
+</section>
+
+<section class="board" id="c">
+  <div class="intro">
+    <span class="lbl">C · Both</span>
+    <h2>Clear at the top, and Clear all above the list</h2>
+    <p>Both, on every list: hard to miss either way, at the cost of two buttons doing one thing.</p>
+  </div>
+  <div class="frame" data-mock="c"></div>
+</section>
+
+<section class="board" id="phone">
+  <div class="intro">
+    <span class="lbl">On a phone</span>
+    <h2>The filters fold to one button</h2>
+    <p>On a phone the filter column folds into <b>Filters (2)</b>. With A or C, Clear sits on that button's line, so it
+    clears without opening the filters; with B it stays in the row above the list.</p>
+  </div>
+  <div class="phones">
+    <div><span class="phone-cap">A</span><div class="phone"><div class="fold">▸ Filters <span class="n">2</span><span class="clear">Clear</span></div><div class="rows"><div class="row"><span>Cure Wounds<small>1st</small></span><span></span><span class="note">Action</span></div><div class="row"><span>Faerie Fire<small>1st</small></span><span></span><span class="note">Action</span></div></div></div></div>
+    <div><span class="phone-cap">C</span><div class="phone"><div class="fold">▸ Filters <span class="n">2</span><span class="clear">Clear</span></div><div class="active">Showing only: <span class="on">1st ×</span><span class="on">Action ×</span><button class="clear">Clear all</button></div><div class="rows"><div class="row"><span>Cure Wounds<small>1st</small></span><span></span><span class="note">Action</span></div><div class="row"><span>Faerie Fire<small>1st</small></span><span></span><span class="note">Action</span></div></div></div></div>
+    <div><span class="phone-cap">B</span><div class="phone"><div class="fold">▸ Filters <span class="n">2</span></div><div class="active">Showing only: <span class="on">1st ×</span><span class="on">Action ×</span><button class="clear">Clear all</button></div><div class="rows"><div class="row"><span>Cure Wounds<small>1st</small></span><span></span><span class="note">Action</span></div><div class="row"><span>Faerie Fire<small>1st</small></span><span></span><span class="note">Action</span></div></div></div></div>
+  </div>
+</section>
+
+<section class="board" id="picks">
+  <div class="intro"><span class="lbl">Your pick</span><h2>One choice</h2></div>
+  <div class="q"><b>Where should Clear go, on every filtered list?</b>
+    <ul>
+      <li><b>A, at the top of the filters</b> (my pick): Clear by the Filters heading, only once something's filtered; no row above the list, the blue chips say what's on.</li>
+      <li><b>B, one row above the list</b>: "Showing only … Clear all" on every list, the column's Clear gone.</li>
+      <li><b>C, both</b>: two Clears on every list.</li>
+    </ul>
+    <p class="meta">Whichever you pick goes onto every list at once: the Spell Book, Sheet's Actions, Spells, Wild Shape, Inventory and Features, the Item browser, Change spells, Party, World, Notes you sent, and Battle's See all and + Add panels.</p>
+  </div>
+</section>
+
+</div>
+
+<script>
+// Cole's Spell Book (Druid 6): a few of his spells, three filter groups
+const SPELLS = [["Cure Wounds", "1st", "Action", "Heal"], ["Faerie Fire", "1st", "Action", "Control"], ["Healing Word", "1st", "Bonus", "Heal"],
+  ["Moonbeam", "2nd", "Action", "Damage"], ["Heat Metal", "2nd", "Action", "Damage"], ["Call Lightning", "3rd", "Action", "Damage"],
+  ["Shillelagh", "Cantrip", "Bonus", "Damage"], ["Guidance", "Cantrip", "Action", "Support"]];
+const GROUPS = [["Level", 1, ["Cantrip", "1st", "2nd", "3rd"]], ["Casting time", 2, ["Action", "Bonus"]], ["Effect", 3, ["Damage", "Heal", "Control", "Support"]]];
+document.querySelectorAll("[data-mock]").forEach(frame => {
+  const kind = frame.dataset.mock, on = new Set();
+  const topClear = kind !== "b", rowClear = kind !== "a", row = kind !== "a";  // (A: no row above the list at all)
+  frame.innerHTML = `<div class="filters"><div class="f-head">Filters <span class="rule"></span>${topClear ? '<button class="clear" data-clear hidden>Clear</button>' : ""}</div>
+    ${GROUPS.map(([g, i, vs]) => `<div class="group"><span>${g}</span><div class="chips">${vs.map(v => `<button type="button" class="chip" data-v="${i}:${v}" aria-pressed="false">${v} <small></small></button>`).join("")}</div></div>`).join("")}</div>
+    <div class="main"><div class="search">⌕ Search all your spells</div>
+      <div class="active" data-active hidden>Showing only: <span data-on></span>${rowClear ? '<button class="clear" data-clear>Clear all</button>' : ""}</div>
+      <span class="count" data-count></span><div class="rows" data-rows></div></div>`;
+  const match = s => GROUPS.every(([, i]) => { const want = [...on].filter(k => k.startsWith(i + ":")).map(k => k.slice(2)); return !want.length || want.includes(s[i]); });
+  const draw = () => {
+    const shown = SPELLS.filter(match);
+    frame.querySelector("[data-rows]").innerHTML = shown.map(s => `<div class="row"><span>${s[0]}<small>${s[1]}</small></span><span class="note">${s[3]}</span><span class="note">${s[2]}</span></div>`).join("") || '<p class="meta" style="padding:8px 2px">No spells match.</p>';
+    frame.querySelector("[data-count]").textContent = `${shown.length} spells`;
+    frame.querySelectorAll(".chip").forEach(c => {
+      c.setAttribute("aria-pressed", on.has(c.dataset.v) ? "true" : "false");
+      const [i, v] = [Number(c.dataset.v[0]), c.dataset.v.slice(2)];
+      const others = new Set([...on].filter(k => !k.startsWith(i + ":")));
+      c.querySelector("small").textContent = SPELLS.filter(s => s[i] === v && GROUPS.every(([, j]) => j === i || ![...others].some(k => k.startsWith(j + ":")) || [...others].filter(k => k.startsWith(j + ":")).map(k => k.slice(2)).includes(s[j]))).length;
+    });
+    const active = frame.querySelector("[data-active]");
+    active.hidden = !on.size || !row;
+    frame.querySelector("[data-on]").innerHTML = [...on].map(k => `<span class="on" data-off="${k}">${k.slice(2)} ×</span>`).join(" ");
+    const top = frame.querySelector(".f-head [data-clear]"); if (top) top.hidden = !on.size;
+  };
+  frame.addEventListener("click", e => {
+    const c = e.target.closest(".chip"); if (c) { on.has(c.dataset.v) ? on.delete(c.dataset.v) : on.add(c.dataset.v); draw(); return; }
+    const off = e.target.closest("[data-off]"); if (off) { on.delete(off.dataset.off); draw(); return; }
+    if (e.target.closest("[data-clear]")) { on.clear(); draw(); }
+  });
+  ["1:1st", "2:Action"].forEach(k => on.add(k));
+  draw();
+});
+</script>

@@ -817,6 +817,7 @@ def change_window(page: Page, cid: str, tab: str, opener: str) -> None:
     """Sheet › Spells' Change spells, or Sheet › Wild Shape's Change forms, open on All (a view is kept per browser)."""
     sheet_tab(page, cid, tab)
     page.locator(f"{opener}:visible").first.click(timeout=8000)
+    page.locator(f'{WIN} [data-chg-ask] [data-chg-occ="look"]').click(timeout=15000)  # (from Sheet it asks why first; Nov 16)
     page.wait_for_selector(f"{WIN} [data-pick-row]:not([data-ls-out])", timeout=15000)  # (a row of another class's tab is out of the list)
     page.locator(f'{WIN} [data-ls-view="all"]').first.click(timeout=8000)
 

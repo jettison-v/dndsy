@@ -1,23 +1,33 @@
 {# Change spells and Change forms (app/choosing.py; Brett, Nov 16: the wide window, D on docs/mockups/changing-spells/):
-   an immersive large modal over Sheet's own list, every column, filter and the search to decide with. On top: why you're
-   changing, then a card per class (the class tabs, for two spellcasting classes) with a rule line per list. Each row's
-   button stands by its bookmark; Your changes and Make are along the bottom (app.js "Changing spells and forms"). #}
+   an immersive large modal over Sheet's own list, every column, filter and the search to decide with. Why you're
+   changing is asked first when no reason came with the window (opened from Sheet; Brett chose B, Nov 16,
+   docs/mockups/why-changing/), then sits as a chip by the title that opens the reasons again. A card per class (the
+   class tabs, for two spellcasting classes) with a rule line per list, Now or Not now for the reason. Each row's button
+   stands by its bookmark; Your changes, what goes past a rule and Make are along the bottom (app.js "Changing spells and
+   forms"). #}
 {% from "_spell_list.html" import spell_list %}
 {% from "_form_list.html" import form_list %}
 {% from "_lists.html" import rule_line %}
 {% set many = tabs | length > 1 %}
+{% set reason = (occasions | selectattr(0, "equalto", occ) | first)[1] %}
 <div class="peek-head chg-head">
   <div class="fm-title">
     <div class="note">{{ c.name }}{% for t in tabs %} · {{ t.cls }} {{ t.level }}{% endfor %}</div>
-    <h2 id="peek-title">{{ "Change Wild Shape forms" if what == "forms" else "Change spells" }}</h2>
+    <div class="chg-title"><h2 id="peek-title">{{ "Change Wild Shape forms" if what == "forms" else "Change spells" }}</h2>
+      <button type="button" class="chip on chg-reason" data-chg-reason aria-expanded="false" title="Why you're changing: press to change it"{% if ask %} hidden{% endif %}><span data-chg-reason-label>{{ reason }}</span> ▾</button></div>
   </div>
-  <div class="chg-why" role="group" aria-label="Why are you changing?"><span class="note">Why are you changing?</span>
-    {% for k, label, _ in occasions %}<button type="button" class="chip{{ ' on' if k == occ }}" data-chg-occ="{{ k }}" aria-pressed="{{ 'true' if k == occ else 'false' }}">{{ label }}</button>{% endfor %}</div>
   <div class="fm-actions"><button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
+  <div class="chg-reasons" data-chg-reasons hidden><div class="seg" role="group" aria-label="Why are you changing?">
+    {% for k, label, _ in occasions %}<button type="button" data-chg-occ="{{ k }}" aria-pressed="{{ 'true' if k == occ else 'false' }}" title="{{ allows[k] }}">{{ label }}</button>{% endfor %}</div></div>
 </div>
 <div class="peek-body chg" data-change data-url="{{ url }}" data-occ="{{ occ }}" data-cls="{{ cls }}"
-  data-lists='{{ meta | tojson }}' data-occs='{{ occasions | tojson }}'>
+  data-lists='{{ meta | tojson }}' data-occs='{{ occasions | tojson }}'{% if ask %} data-asking{% endif %}>
   {% if not reachable %}<p class="unreached">{{ unreached_says(c, "change these") }} You can still look.</p>{% endif %}
+  {% if ask %}<div class="chg-ask" data-chg-ask>
+    <p class="chg-ask-q">Why are you changing {{ c.name }}'s {{ "Wild Shape forms" if what == "forms" else "spells" }}?</p>
+    <div class="choice-tiles">{% for k, label, _ in occasions %}<button type="button" class="choice-tile" data-chg-occ="{{ k }}"><b>{{ label }}</b><span class="note">{{ allows[k] }}</span></button>{% endfor %}</div>
+  </div>{% endif %}
+  <div class="chg-main" data-chg-main{% if ask %} hidden{% endif %}>
   <div class="chg-cards"{% if many %} role="tablist" aria-label="Class"{% endif %}>
     {% for t in tabs %}
     {% if many %}<button type="button" class="chg-card" role="tab" data-chg-cls="{{ t.cls }}" aria-selected="{{ 'true' if t.cls == cls else 'false' }}">
@@ -27,16 +37,17 @@
     {% if many %}</button>{% else %}</div>{% endif %}
     {% endfor %}
   </div>
-  <div class="chg-warns" data-chg-warns></div>
   {% if what == "forms" %}
   {{ form_list(c, rows, picks, can_pick, true, key="change-forms", views=[("mine", "Known"), ("fav", "Shortlist"), ("all", "All")], edit=meta) }}
   {% else %}
   {{ spell_list(c, none, rows, groups, picks, can_pick, true, key="change-spells", views=[("mine", "Yours"), ("fav", "Shortlist"), ("all", "All")], edit=meta) }}
   {% endif %}
   <div class="chg-tray">
+    <div class="chg-warns" data-chg-warns></div>{# (in the footer bar, always on screen: what goes past the reason's rule, named; Brett, Nov 16) #}
     <div class="chg-list"><span class="ls-label">Your changes</span> <span data-chg-list><span class="note">None yet</span></span></div>
     <button type="button" class="btn link small" data-chg-reset>Start over</button>
     {% if reachable %}<button type="button" class="btn primary" data-chg-make disabled>Make changes</button>{% endif %}
+    <p class="use-said chg-said" role="alert" data-chg-said hidden></p>
   </div>
-  <p class="use-said" role="alert" data-chg-said hidden></p>
+  </div>
 </div>

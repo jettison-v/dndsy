@@ -55,8 +55,8 @@ def test_coles_window_has_his_cantrips_and_prepared_spells_each_under_its_rule(p
     page = player.get(spells_url(db, why="rest")).text
     assert 'id="peek-title">Change spells' in page and "data-change" in page
     # a rule line per list: its count against the number, and the 2024 rule in few words
-    assert 'data-rule="Druid:cantrips"' in page and "one, when you gain a Druid level" in page
-    assert 'data-rule="Druid:spells"' in page and "any, after a Long Rest" in page
+    assert 'data-rule="Druid:cantrips"' in page and "Swap 1 when you gain a Druid level" in page
+    assert 'data-rule="Druid:spells"' in page and "Change any after a Long Rest" in page
     assert "<b data-rule-count>3</b> of 3" in page and "<b data-rule-count>10</b> of 10" in page
     # why you're changing: set from where it opened
     assert 'data-chg-occ="rest" aria-pressed="true"' in page and 'data-chg-occ="level-druid"' in page and 'data-chg-occ="look"' in page
@@ -64,6 +64,36 @@ def test_coles_window_has_his_cantrips_and_prepared_spells_each_under_its_rule(p
     assert 'data-pick="Druid:spells|spell:Healing Word"' in page and 'data-pick="Druid:cantrips|spell:Guidance"' in page
     assert page.count("data-pick-act") >= 10 and "Damage / Healing" in page
     assert 'title="Always prepared: not changed here">Always' in page  # (Starry Wisp, Cure Wounds: always, never a button)
+
+
+def test_from_sheet_it_asks_why_first_and_from_a_rest_it_does_not(player, db, sheet):
+    """Brett chose B (Nov 16, docs/mockups/why-changing/; his feedback 66: the reasons were hard to find): opened with no
+    reason (Sheet's button), the window asks first, a tile per reason saying what it lets this character change; with
+    one (the Long Rest window, a level-up card) it opens on the list, the reason a chip by the title."""
+    give_ids(db, sheet)
+    page = player.get(spells_url(db)).text
+    assert "data-asking" in page and "data-chg-ask" in page and 'data-chg-main hidden' in page
+    tiles = page.split("data-chg-ask")[1].split("data-chg-main")[0]
+    assert tiles.count('class="choice-tile"') == 3  # (After a Long Rest, I gained a Druid level, Just looking)
+    assert "Druid prepared spells: change any" in tiles and "Druid cantrips: swap 1" in tiles
+    chip = lambda html: html.split("data-chg-reason ")[1].split(">")[0]
+    assert chip(page).endswith(" hidden")  # (no reason yet: no chip)
+    rest = player.get(spells_url(db, why="rest")).text
+    assert "data-asking" not in rest and "data-chg-ask" not in rest and "data-chg-main hidden" not in rest
+    assert not chip(rest).endswith(" hidden")  # (the chip shows; which reason, the switch under it says)
+    assert 'data-chg-occ="rest" aria-pressed="true"' in rest  # (the reasons again, under the chip)
+
+
+def test_what_a_reason_allows_is_said_from_each_lists_rule():
+    from app.choosing import allows
+
+    tabs = [{"cls": "Paladin", "lists": [{"label": "Paladin prepared spells", "may": "swap 1", "occ": ["rest"]}]},
+            {"cls": "Sorcerer", "lists": [{"label": "Sorcerer cantrips", "may": "swap 1", "occ": ["level-sorcerer"]},
+                                          {"label": "Sorcerer prepared spells", "may": "swap 1", "occ": ["level-sorcerer"]}]}]
+    assert allows(tabs, "rest") == "Paladin prepared spells: swap 1"
+    assert allows(tabs, "level-sorcerer") == "Sorcerer cantrips: swap 1 · Sorcerer prepared spells: swap 1"
+    assert allows(tabs, "level-paladin").startswith("Nothing changes now")
+    assert allows(tabs, "look").startswith("See the lists")
 
 
 def test_one_make_sends_a_cantrip_and_a_spell_letting_go_first_and_undo_puts_both_back(player, db, sheet):
@@ -166,9 +196,9 @@ def test_two_spellcasting_classes_get_a_tab_each(player, db, sheet):
     tabs = choosing.spell_lists(characters.character_summary(cole))
     assert [t["cls"] for t in tabs] == ["Paladin", "Sorcerer"]
     pal, sor = tabs
-    assert [(L["title"], L["when"], L["k"]) for L in pal["lists"]] == [("Prepared", "one, after a Long Rest", "rest")]
-    assert [(L["title"], L["when"]) for L in sor["lists"]] == [("Cantrips", "one, when you gain a Sorcerer level"),
-                                                              ("Prepared", "one, when you gain a Sorcerer level")]
+    assert [(L["title"], L["when"], L["k"]) for L in pal["lists"]] == [("Prepared", "swap 1 after a Long Rest", "rest")]
+    assert [(L["title"], L["when"]) for L in sor["lists"]] == [("Cantrips", "swap 1 when you gain a Sorcerer level"),
+                                                              ("Prepared", "swap 1 when you gain a Sorcerer level")]
     assert {o[0] for o in choosing.occasions(tabs)} == {"rest", "level-paladin", "level-sorcerer", "look"}
     page = player.get(spells_url(db, cls="Sorcerer")).text
     assert 'role="tablist"' in page and 'data-chg-cls="Paladin" aria-selected="false"' in page and 'data-chg-cls="Sorcerer" aria-selected="true"' in page
@@ -187,11 +217,11 @@ def test_who_learns_and_who_keeps_a_spellbook():
     warlock = {"class": "Warlock", "learns": True, "prepared_max": 3, "spells": [sp("Hex", 1, "known", learn={"entry": 6}), sp("Sleep", 1, "available", learn={"entry": 7})]}
     tabs = choosing.spell_lists({"spellbook": [druid, wizard, warlock]})
     by = {L["id"]: L for t in tabs for L in t["lists"]}
-    assert by["Druid:cantrips"]["when"] == "one, when you gain a Druid level" and by["Druid:spells"]["when"] == "any, after a Long Rest"
+    assert by["Druid:cantrips"]["when"] == "swap 1 when you gain a Druid level" and by["Druid:spells"]["when"] == "change any after a Long Rest"
     assert [r["sp"]["name"] for r in by["Druid:cantrips"]["rows"] if r["on"] and not r["always"]] == ["Mending"]  # (Shillelagh is always: listed, not counted)
-    assert by["Wizard:cantrips"]["when"] == "one, after a Long Rest" and by["Wizard:book"]["add"] == "Copy in"
+    assert by["Wizard:cantrips"]["when"] == "swap 1 after a Long Rest" and by["Wizard:book"]["add"] == "Copy in"
     assert [r["sp"]["name"] for r in by["Wizard:book"]["rows"]] == ["Fly"]
-    assert by["Warlock:spells"]["kind"] == "learn" and by["Warlock:spells"]["when"] == "one, when you gain a Warlock level"
+    assert by["Warlock:spells"]["kind"] == "learn" and by["Warlock:spells"]["when"] == "swap 1 when you gain a Warlock level"
     assert choosing.spell_lists({"spellbook": [{"class": "Druid", "spells": []}]}) == []
 
 
@@ -222,7 +252,7 @@ def test_a_closed_sheet_says_so_and_changes_nothing(player, db, sheet):
 
 def test_the_forms_window_lists_the_forms_you_know_and_the_ones_you_could_learn(player, db, sheet):
     page = player.get(forms_url(db)).text
-    assert 'id="peek-title">Change Wild Shape forms' in page and "<b data-rule-count>6</b> of 6" in page and "one, after a Long Rest" in page
+    assert 'id="peek-title">Change Wild Shape forms' in page and "<b data-rule-count>6</b> of 6" in page and "Swap 1 after a Long Rest" in page
     assert f'data-pick="Druid:forms|{SPIDER}"' in page and f'data-pick="Druid:forms|{DIRE_WOLF}"' in page
     assert 'data-chg-occ="level-druid"' in page and "data-modal-url=\"/characters/" not in page.split("data-ls-rows")[1]  # (a row opens nothing: the window stays)
     assert "data-change-forms" in player.get(f"/characters/{char(db, 'Cole').id}").text.split('id="t-forms"')[1]  # (Sheet › Wild Shape)

@@ -72,7 +72,7 @@
 {% macro rule_line(L) -%}
 <div class="rule-line {{ L.k }}" data-rule="{{ L.id }}">
   <span class="rl-name">{{ L.title }} <span class="rl-count"><b data-rule-count>{{ L.count }}</b>{% if L.cap %} of {{ L.cap }}{% endif %}</span></span>
-  <span class="rl-when">{{ L.when }}</span>
+  <span class="rl-when">{{ L.when[:1] | upper }}{{ L.when[1:] }}</span>
   <span class="rl-now" data-rule-now></span>
   {% if L.cap %}<span class="rl-full" data-rule-full hidden>Full: {{ L.full }}</span>{% endif %}
 </div>

@@ -3392,9 +3392,21 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
    an immersive large modal over Sheet's own list. The head says why you're changing; a card per class (the class tabs)
    holds a rule line per list; Your changes and Make stay along the bottom so the list keeps its full width. */
 @media (min-width: 901px) { .peek.modal.large:has(.chg) { width: min(1600px, calc(100% - 32px)); height: 94vh; max-height: 94vh; } }  /* immersive: nearly the whole screen (a phone's large modal is already) */
+@media (min-width: 901px) { .peek.modal.large:has(.chg[data-asking]) { width: min(900px, calc(100% - 32px)); height: auto; } }  /* (asking why first: the window fits its question, then grows to the list) */
 .chg-head { flex-wrap: wrap; align-items: center; }
 .chg-head .fm-title { flex: 1 1 auto; }  /* (its whole title, the reasons wrapping under it when they can't sit beside: at 768px "Change" broke inside the word; the UI review's check, Nov 16) */
-.chg-why { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin-right: auto; }
+.chg-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }  /* the title, and the reason chosen beside it (B, Nov 16) */
+.chg-title h2 { margin: 0; flex: 0 1 auto; }  /* (the reason chip right beside it, as drawn) */
+.chg-reason { font-weight: 600; }
+.chg-reasons { flex: 1 0 100%; }  /* (the reasons again, under the title, when its chip is pressed) */
+.chg-ask { display: grid; gap: var(--sp-3); padding: var(--sp-2) 0 var(--sp-4); }
+.chg-ask-q { margin: 0; font-size: var(--fs-md); font-weight: 600; color: var(--text-strong); }
+/* Choice tiles (design system): a few choices to pick one from before going on, each saying what it means */
+.choice-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: var(--sp-2); }
+.choice-tile { display: grid; gap: var(--sp-1); align-content: start; text-align: left; padding: var(--sp-3) var(--sp-4); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; cursor: pointer; }
+.choice-tile:hover, .choice-tile:focus-visible { border-color: var(--blue); }
+.choice-tile b { color: var(--text-strong); }
+.choice-tile .note { font-size: var(--fs-sm); color: var(--muted); }
 .peek-body.chg { display: grid; gap: var(--sp-3); align-content: start; padding-bottom: 0; }
 .chg-cards { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .chg-card { flex: 1 1 280px; min-width: 0; display: grid; gap: var(--sp-2); align-content: start; padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; text-align: left; }
@@ -3414,10 +3426,11 @@ button.chg-card:hover { border-color: var(--faint); }
 .rl-when { color: var(--muted); min-width: 0; }
 .rl-now { font-size: var(--fs-xs); font-weight: 700; padding: 2px 8px; border-radius: var(--r-pill); white-space: nowrap; background: var(--surface-3, var(--surface)); color: var(--muted); }
 .rl-now.yes { background: var(--green-soft); color: var(--green); }
-.rl-now.no { background: var(--amber-soft); color: var(--amber); }
-.rl-full { grid-column: 1 / -1; color: var(--amber); font-size: var(--fs-xs); }
+.rl-now.no { background: var(--surface-3, var(--surface)); color: var(--muted); }  /* (not now is information, not a warning: amber is for what goes past a rule) */
+.rl-full { grid-column: 1 / -1; color: var(--muted); font-size: var(--fs-xs); }  /* (a full count is held, as on D&D Beyond: said quietly) */
 .chg-warns:empty { display: none; }
-.chg-warns { display: grid; gap: var(--sp-1); }
+.chg-warns { display: grid; gap: var(--sp-1); flex: 1 0 100%; order: -1; }
+.chg-said { flex: 1 0 100%; margin: 0; }  /* (Make's error, in the bar too) */  /* (the footer bar's first row, above Your changes and Make) */
 .chg-warn { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); }
 .chg-warn b { color: var(--amber); }
 /* A row's action where the pin and bell were, beside the bookmark */
