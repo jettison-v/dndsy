@@ -48,6 +48,7 @@
   /* Corners: tiny marks, controls, cards and sections, pills */
   --r-xs: 3px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
   /* Controls (search box, selects, buttons): 32px tall on desktop, 44px on phones (Brett, 2026-10-22) */
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23a29d93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");  /* every dropdown's and the Filters control's arrow, one drawing (Nov 16) */
   --control-h: 32px; --control-h-sm: 26px; --chip-h: 28px; --bar-h: 36px;  /* the last is everything in the menu bar */
   --manage-cross-w: 104px;  /* Manage's way to the other half (.manage-cross), and the room kept for it */
   --selected-bg: #2a3550;  /* a chip or view that's on: blue on a dark tint */
@@ -488,7 +489,9 @@ input[type=number] { width: 6em; }
   input[type=number], input[type=date], input[type=time], input[type=datetime-local], input[type=month], input[type=week] { font-size: max(var(--fs-md), 1em) !important; }
 }
 textarea:focus, input:focus, select:focus { border-color: var(--red); outline: none; }
-select { width: auto; max-width: 100%; padding: 0 var(--sp-2); }  /* a long option (a campaign's name) never pushes the page wider */
+select { width: auto; max-width: 100%; padding: 0 28px 0 var(--sp-2); }  /* a long option (a campaign's name) never pushes the page wider */
+/* One drawn arrow for every dropdown, centred in its box (Brett, Nov 16: the browser's own arrow sat a little off in a 32px field) */
+select:not([multiple]):not([size]) { appearance: none; -webkit-appearance: none; background-image: var(--chevron); background-repeat: no-repeat; background-position: right 9px center; background-size: 12px 12px; }
 input[type=file] { color: var(--muted); font: inherit; font-size: var(--fs-sm); max-width: 100%; }
 input[type=file]::file-selector-button { min-height: var(--control-h); margin-right: var(--sp-3); padding: 0 var(--sp-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 500; cursor: pointer; }
 label.field { display: grid; gap: 4px; font-size: var(--fs-sm); color: var(--muted); }
@@ -2353,8 +2356,10 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ls-above-btn { display: inline-flex; align-items: center; gap: var(--sp-2); min-height: var(--control-h); padding: 0 10px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: 400 var(--fs-sm)/1 var(--sans); white-space: nowrap; cursor: pointer; }
 .ls-above-btn:hover, .ls-above-btn:focus-visible { border-color: var(--faint); }
 .ls-above-n { background: var(--selected-bg); border: 1px solid var(--blue); border-radius: var(--r-pill); padding: 2px 7px; font-size: var(--fs-xs); }
-.ls-above-chev::before { content: "▾"; color: var(--muted); font-size: var(--fs-xs); }
-.ls-above-btn[aria-expanded="true"] .ls-above-chev::before { content: "▴"; }
+.ls-above-chev { display: inline-block; flex: none; width: 12px; height: 12px; background: var(--chevron) center / 12px 12px no-repeat; transition: transform .15s; }
+/* Open, the control looks pressed (the blue "on" state a chip has) and its arrow points up: press it again to close (Brett, Nov 16) */
+.ls-above-btn[aria-expanded="true"] { background: var(--selected-bg); border-color: var(--blue); }
+.ls-above-btn[aria-expanded="true"] .ls-above-chev { transform: rotate(180deg); }
 .ls-pills { display: contents; }
 .ls-pill { display: inline-flex; align-items: center; gap: 6px; min-height: var(--chip-h); max-width: 100%; min-width: 0; padding: 0 6px 0 10px; background: var(--selected-bg); border: 1px solid var(--blue); border-radius: var(--r-pill); color: var(--text); font: 400 var(--fs-xs)/1 var(--sans); cursor: pointer; }
 .ls-pill > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
