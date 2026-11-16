@@ -46,7 +46,7 @@ def options(db: Session, ch, sheet: dict) -> dict | None:
     for c in sheet.get("creatures") or []:
         if c.get("group") == "Wild Shape form" and c.get("monster_id"):
             b = ws.catalog_beast(c["kind"], beasts) or {}
-            known.append({"mid": str(c["monster_id"]), "name": c["kind"], "cr_label": ws.cr_label(c.get("cr") or 0),
+            known.append({"mid": str(c["monster_id"]), "name": c["kind"], "cr_label": c.get("cr") or b.get("cr_label", ""),
                           "image": b.get("image", ""), "going": sync.get(f"wildshape:{c['monster_id']}") == "on"})
     have = {k["name"].lower() for k in known}
     learn, no_id = [], []

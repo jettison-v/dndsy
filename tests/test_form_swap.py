@@ -32,6 +32,19 @@ def test_the_window_lists_the_forms_you_know_and_the_ones_you_could_learn(player
     assert "data-swap-forms" in player.get(f"/characters/{char(db, 'Cole').id}").text.split('id="t-forms"')[1]  # (on Sheet › Wild Shape)
 
 
+def test_a_known_form_shows_its_challenge_rating_as_the_sheet_gives_it(player, db, sheet):
+    """ASKDND-V2-T (Nov 15, the live test on Levi's seat): a known form of CR 1/2 broke the window, its label read as a
+    number. Each known form shows the sheet's own label."""
+    for c in sheet["creatures"]:
+        if str(c["definition"]["id"]) == SPIDER:
+            c["definition"]["challengeRatingId"] = 4  # (D&D Beyond's id for CR 1/2)
+    characters.refresh(db, char(db, "Cole"))
+    r = player.get(url(db))
+    assert r.status_code == 200, r.text
+    spider = r.text.split(f'value="{SPIDER}"')[1].split("</label>")[0]
+    assert "CR 1/2" in spider
+
+
 def test_a_swap_lets_one_go_and_learns_another_and_undo_puts_both_back(player, db, sheet):
     r = player.post(url(db), data={"out": SPIDER, "in": DIRE_WOLF})
     assert r.status_code == 200, r.text

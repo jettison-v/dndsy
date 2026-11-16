@@ -1024,6 +1024,10 @@ def wild_shape_forms(t: Table, seat: str = "player4") -> None:
     now = forms_known(record(sheet))
     tidy = [["DELETE", "creature", {"id": now[m]}] for m in now if m not in before]
     tidy += [["POST", "creature", {"groupId": 13, "monsterId": int(m), "names": [None]}] for m in before if m not in now]
+    if tidy:
+        print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], tidy]), flush=True)
+
+
 def spells_on(d: dict) -> dict:
     """A sheet's spells on each class's list: {entry id: the request body that adds or removes it}."""
     return {str(s.get("id")): {"characterClassId": cs.get("characterClassId"), "spellId": (s.get("definition") or {}).get("id"),
