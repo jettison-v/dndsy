@@ -34,7 +34,7 @@ from sqlalchemy.orm import Session
 from app import access, config, files, picks, view_as, web
 from app.auth import current_user, is_admin
 from app.db import get_db
-from app.models import Feedback
+from app.models import Feedback, User
 from app.templating import templates
 
 router = APIRouter()
@@ -109,7 +109,7 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
         context = {"left_out": "The page's details were too long to keep."}
     viewing = view_as.viewing(request.session)
     if viewing:
-        context |= {"viewing_as": viewing.get("name") or viewing["email"]}
+        context |= {"viewing_as": viewing.get("name") or viewing["email"], "viewing_as_email": viewing["email"].lower()}
     note = {"email": user["email"].lower(), "name": user.get("name") or "", "text": text, "url": str(body.get("url") or "")[:1000],
             "context": context, "html": str(body.get("html") or "")[:MAX_HTML], "shot": body.get("shot"), "pasted": body.get("pasted")}
     if config.STAGING:
@@ -195,15 +195,17 @@ def _item(fb: Feedback, html: bool = False) -> dict:
 @router.get("/manage/feedback")
 def queue(request: Request, tab: str = "", open: int = 0, db: Session = Depends(get_db)):
     """Manage › askdnd › Feedback: every note, by where it stands."""
-    _, denied = web.require(request, is_admin, "Feedback is for admins.")
+    user, denied = web.require(request, is_admin, "Feedback is for admins.")
     if denied:
         return denied
     counts = dict(db.execute(select(Feedback.status, func.count()).group_by(Feedback.status)).all())
     tab = tab if tab in ("review", *OPEN, "done", "all") else ("review" if counts.get("review") else "new")
     q = select(Feedback).order_by(Feedback.id.desc())
     q = q.where(Feedback.status != "deleted") if tab == "all" else q.where(Feedback.status == tab)
+    items = list(db.scalars(q.limit(200)))
+    me = user["email"]
     return templates.TemplateResponse(request, "manage_feedback.html", {
-        "items": list(db.scalars(q.limit(200))), "tab": tab, "open": open, "counts": counts, "labels": LABELS,
+        "items": items, "kept": {f.id for f in items if kept_from(db, f, me)}, "tab": tab, "open": open, "counts": counts, "labels": LABELS,
         "tabs": [(t, LABELS.get(t, "All"), counts.get(t, 0) if t != "all" else None) for t in ("review", *OPEN, "done", "all")
                  if t != "review" or counts.get("review") or tab == "review"],
         "toast": request.session.pop("toast", None)})
@@ -249,6 +251,15 @@ def _missing():
     raise HTTPException(404)
 
 
+def kept_from(db: Session, fb: Feedback, viewer: str | None) -> bool:
+    """A note's page and pictures are kept from an admin who is the DM of a campaign its sender (or whoever its sender
+    was viewing as) plays in: the page can hold their character notes (the outside review's C9; CLAUDE.md ›
+    Visibility, never the campaign's DM, even an admin). Its words stay: they're the sender's own."""
+    sender = db.get(User, fb.user_id) if fb.user_id else None
+    people = [sender.email if sender else None, (fb.context or {}).get("viewing_as_email")]
+    return any(access.dm_over(viewer, p) for p in people if p)
+
+
 def _shot(db: Session, feedback_id: int, which: str):
     fb = db.get(Feedback, feedback_id) or _missing()
     key = {"shot": fb.shot_key, "pasted": fb.pasted_key}.get(which) or _missing()
@@ -259,11 +270,13 @@ def _shot(db: Session, feedback_id: int, which: str):
 @router.get("/manage/feedback/{feedback_id:int}/{which}")
 def picture(request: Request, feedback_id: int, which: str, db: Session = Depends(get_db)):
     """A note's picture (`shot`, `pasted`), or the page as drawn (`page`, as text: it never runs here)."""
-    _, denied = web.require(request, is_admin, "Feedback is for admins.")
+    user, denied = web.require(request, is_admin, "Feedback is for admins.")
     if denied:
         return denied
+    fb = db.get(Feedback, feedback_id) or _missing()
+    if kept_from(db, fb, user["email"]):
+        raise HTTPException(404)
     if which == "page":
-        fb = db.get(Feedback, feedback_id) or _missing()
         return Response(fb.html or "", media_type="text/plain; charset=utf-8", headers={"X-Content-Type-Options": "nosniff"})
     return _shot(db, feedback_id, which)
 

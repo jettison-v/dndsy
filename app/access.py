@@ -228,6 +228,18 @@ def is_dm(email: str | None, campaign_id: int | None = None) -> bool:
 # The single list of rules. app/auth.py (and pictures, suggestions) ask these, and the
 # chart on Manage › Table is drawn from them, so the chart can't drift from the app.
 
+def dm_over(viewer: str | None, person: str | None, rows: dict[str, dict] | None = None) -> bool:
+    """The viewer is the DM of a campaign this person plays in (not as its DM): their character notes and anything a
+    page of theirs shows are kept from the viewer, admin or not (CLAUDE.md › Visibility; View as, a feedback note's
+    page and pictures)."""
+    if not viewer or not person or viewer.strip().lower() == person.strip().lower():
+        return False
+    rows = rows if rows is not None else _rows()
+    mine = (rows.get(viewer.strip().lower()) or {}).get("roles") or {}
+    theirs = (rows.get(person.strip().lower()) or {}).get("roles") or {}
+    return any(r == DM and cid in theirs and theirs[cid] != DM for cid, r in mine.items())
+
+
 def allows(rule: str, tool: str | None, campaign_role: str | None = None) -> bool:
     """May someone with this tool role and this role in the campaign do `rule`?"""
     if tool not in TOOL_ROLES:
