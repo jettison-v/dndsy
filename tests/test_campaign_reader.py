@@ -44,7 +44,10 @@ def test_world_is_the_reader_without_quests(player, db):
     import_bundle(db, QUESTS)
     published_events(db)
     page = player.get("/c/main/campaign").text
-    assert 'data-tab="t-world">World</button>' in page and 'data-tab="t-quests">Quests <span class="count">1</span>' in page
+    # Every list counts what it holds, and none shows no count (the UI review's pick 4, Brett Nov 16)
+    world_n = page.count('data-views="')  # (World's rows)
+    assert f'data-tab="t-world">World <span class="count" data-count="{world_n}">' in page and 'data-tab="t-quests">Quests <span class="count" data-count="1">' in page
+    assert re.search(r'data-tab="t-relationships">[^<]*</button>', page) and 'data-count="0"' not in page  # (nothing counted: no count, never a 0)
     # Filters (2026-10-23): a chip per kind, each name tagged with its kind; Hidden only for the DM and editors
     assert 'data-ls-group="kind" data-ls-value="People"' in page and 'data-ls-group="kind" data-ls-value="Places"' in page
     assert '"kind": "People"' in page and 'data-ls-value="Hidden"' not in page

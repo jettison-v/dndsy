@@ -202,12 +202,13 @@ def seen_in_sessions(db: Session, campaign_id: int) -> tuple[int | None, dict[in
 
 
 @router.get("/campaign")
-def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "", order: str = "", db: Session = Depends(get_db)):
+def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "", order: str = "", term: str = "", db: Session = Depends(get_db)):
     """The Campaign page (roadmap step 11; Brett 2026-10-22): tabs Previously on… and Sessions (Story's, since Nov 13:
     where it opens; `&order=start` reads every session in order), World (the Reader: names down the left, one entry
     on the page), Quests (the quest log), Relationships (family trees, other ties, anyone's connections), Glossary and
     Map (app/atlas.py; menu bar Option B). `?open=<id>` is an entry's address (a quest's opens Quests); `?tab=` picks
-    a tab; `?tab=map&at=<place>` centers the map on that place ("Show on map")."""
+    a tab; `?tab=map&at=<place>` centers the map on that place ("Show on map"); `?tab=glossary&term=<id>` is a glossary
+    term's address (its Reader, the UI review's pick 5)."""
     from app import atlas
     from app.entity_pages import entity_context
 
@@ -250,6 +251,10 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
     # The quest log shows one quest: the one asked for, else the first open one, else the first done one
     quest = next((c for c in board if asked is not None and c["q"].id == asked.id), None) or next(iter(board), None)
     article = {**entity_context(db, selected, user), "where": "reader"} if selected else {}
+    # The glossary term on its Reader: the one asked for, else the first
+    from app.suggestions import _can_edit_glossary
+    chosen = next((g for g in glossary if term.isdigit() and g.id == int(term)), None) or next(iter(glossary), None)
+    term_sel = {"g": chosen, "can_edit": _can_edit_glossary(user)} if chosen else None
     return templates.TemplateResponse(
         request, "campaign.html", {"campaign": campaign, "quests": quests, "done_quests": done, "groups": groups, "glossary": glossary,
                                    "editor": editor, "seen": seen, "latest": latest, "selected": selected, "tab": tab,
@@ -257,6 +262,6 @@ def campaign_page(request: Request, open: str = "", tab: str = "", at: str = "",
                                    "latest_label": session_label(db.get(GameSession, latest)) if latest else "",
                                    "hidden_count": sum(1 for _, rows in groups for e in rows if e.status != Status.PUBLISHED),
                                    "board": board, "families": fams, "ties": tie, "open_quest": quest["q"].id if quest else None,
-                                   "map": atlas.view(at if tab == "map" else ""),
+                                   "map": atlas.view(at if tab == "map" else ""), "term_sel": term_sel,
                                    "toast": request.session.pop("toast", None), "qln": entity_linker(db, campaign.id, include_drafts=editor) if campaign else Linker(None, {}), **_story(db, user, tab, order), **article}  # (an entry's own linker wins)
     )

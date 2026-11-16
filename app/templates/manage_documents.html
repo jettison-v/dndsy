@@ -3,6 +3,7 @@
 {% block content %}
 {# Manage › askdnd › Documents (app/documents.py; Brett, Nov 6): every page made for askdnd, from docs/library.json, in
    four groups, each row its status, date and what it is; it opens inside askdnd from the repo's copy. #}
+{% from "_lists.html" import count_pill %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Documents</h1></div>
@@ -13,7 +14,7 @@
   </form>
   {% for key, name, about, rows in groups %}{% if rows or not q %}
   <section class="section doc-group" data-kind="{{ key }}">
-    <h2>{{ name }} <span class="count">{{ rows | length }}</span></h2>
+    <h2>{{ name }}{{ count_pill(rows | length) }}</h2>
     <p class="note">{{ about }}</p>
     <ul class="doc-list">
       {% for e in rows %}

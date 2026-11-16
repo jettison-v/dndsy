@@ -79,7 +79,12 @@ def test_session_suggestion_flows_to_review_and_redraft(player, admin, db):
 def test_glossary_panel_suggest_edit_delete(player, admin, db):
     import_bundle(db, BUNDLE)
     old = db.scalar(select(GlossaryTerm).where(GlossaryTerm.term == "Bhaal"))
-    assert "Bhal" in player.get(f"/c/main/campaign/glossary/{db.scalar(select(GlossaryTerm).where(GlossaryTerm.term == 'Bhal')).id}/peek").text
+    bhal = db.scalar(select(GlossaryTerm).where(GlossaryTerm.term == 'Bhal'))
+    # A term opens in Glossary's Reader (the UI review's pick 5, Brett Nov 16): its own address, the page swapping it in
+    page = player.get(f"/c/main/campaign?tab=glossary&term={bhal.id}").text
+    assert f'id="glossary-article" data-reader-id="{bhal.id}"' in page and f'class="rd-item sel" data-ls-row data-rd-id="{bhal.id}"' in page
+    assert f'data-reader-id="{bhal.id}"' in player.get(f"/campaign/glossary/{bhal.id}/read").text
+    assert player.get(f"/c/main/campaign/glossary/{bhal.id}").status_code == 404  # (the old page made to look like a window is gone)
     player.post("/campaign/glossary/suggest", data={"text": "Add Womford, a fishing village."}, headers=HX)
     assert db.scalar(select(Suggestion)).target_id is None
     # Players can't edit or delete
@@ -91,7 +96,7 @@ def test_glossary_panel_suggest_edit_delete(player, admin, db):
     admin.post(f"/campaign/glossary/{old.id}/delete", headers=HX)
     db.expire_all()
     assert db.get(GlossaryTerm, old.id) is None
-    assert "Delete this term" not in player.get("/c/main/campaign/glossary/%d" % db.scalar(select(GlossaryTerm)).id).text
+    assert "/delete" not in player.get("/campaign/glossary/%d/read" % db.scalar(select(GlossaryTerm)).id).text
 
 
 @pytest.fixture
@@ -133,8 +138,8 @@ def test_the_dms_entries_skip_review(dm, player, db):
 
     # Glossary: the DM edits and adds terms directly
     term = db.scalar(select(GlossaryTerm).where(GlossaryTerm.term == "Bhal"))
-    peek = dm.get(f"/c/main/campaign/glossary/{term.id}/peek").text
-    assert "Delete this term" in peek and "Suggest a correction" not in peek
+    read = dm.get(f"/campaign/glossary/{term.id}/read").text
+    assert f'hx-post="/campaign/glossary/{term.id}/delete"' in read and "/suggest" not in read  # the DM's own: Edit and Delete, no suggesting
     dm.post(f"/campaign/glossary/{term.id}/edit", data={"term": "Bhal", "description": "Big C's father, a god"}, headers=HX)
     assert "Added Womford" in dm.post("/campaign/glossary/add", data={"term": "Womford", "description": "A fishing village"}, headers=HX).text
     assert "Only the DM" in player.post("/campaign/glossary/add", data={"term": "Nope"}, headers=HX).text

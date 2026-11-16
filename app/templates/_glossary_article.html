@@ -1,18 +1,18 @@
-{# Side panel for one glossary term (loaded into #peek, or shown on its own page). #}
+{# One glossary term on Campaign › Glossary's Reader (the UI review's pick 5, Brett Nov 16: as a World entry opens, the
+   same width, its own address ?tab=glossary&term=<id>, ↑ ↓ through the list). The term, what it means and how it's
+   misheard; + Suggest a fix for the table, Edit (and Delete) for the DM and reviewers, each answering in place. #}
 {% from "_suggest_form.html" import suggest with context %}
-<div class="peek-head">
-  <div><div class="note">Glossary</div><h2 id="peek-title">{{ g.term }}</h2></div>
-  <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
-</div>
-<div class="peek-body" id="glossary-{{ g.id }}">
-  {% if saved %}<p class="all-clear" role="status">✓ Saved</p>{% endif %}
+<article class="reader-article gl-article" id="glossary-article" data-reader-id="{{ g.id }}">
+  {% if problem %}<p class="flash bad" role="alert">{{ problem }}</p>{% elif saved %}<p class="all-clear" role="status">✓ Saved</p>{% endif %}
+  <div class="note">Glossary</div>
+  <h2>{{ g.term }}</h2>
   {% if g.description %}<div class="story">{{ g.description }}</div>{% else %}<p class="muted">No description.</p>{% endif %}
   {% if g.misheard_as %}<p class="note">Often misheard as: {{ g.misheard_as | join(", ") }}</p>{% endif %}
   {% if not (can_edit and is_dm) %}{{ suggest("/campaign/glossary/" ~ g.id ~ "/suggest", g.term, label="+ Suggest a fix", placeholder="What should it say? (type @ for a name)") }}{% endif %}
   {% if can_edit %}
   <details class="fold">
     <summary>{{ "Edit" if is_dm else "Edit (reviewers)" }}</summary>
-    <form class="stack" hx-post="/campaign/glossary/{{ g.id }}/edit" hx-target="#peek .peek-body, #glossary-page" hx-select=".peek-body > *" hx-swap="innerHTML">
+    <form class="stack" hx-post="/campaign/glossary/{{ g.id }}/edit" hx-target="closest .reader-article" hx-swap="outerHTML" hx-disabled-elt="find button">
       <label class="field">Correct spelling<input type="text" name="term" value="{{ g.term }}" required></label>
       <label class="field">Description<input type="text" name="description" value="{{ g.description }}"></label>
       <label class="field">Often misheard as <span class="note">(comma separated)</span><input type="text" name="misheard_as" value="{{ g.misheard_as | join(', ') }}"></label>
@@ -21,4 +21,4 @@
     <form hx-post="/campaign/glossary/{{ g.id }}/delete" hx-target="this" hx-swap="outerHTML" hx-confirm="Delete {{ g.term }} from the glossary?" class="mt-3"><button type="submit" class="btn link danger">Delete this term</button></form>
   </details>
   {% endif %}
-</div>
+</article>
