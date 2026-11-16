@@ -179,8 +179,10 @@ def _first_attack(beast: dict) -> str:
 
 
 def forms(sheet: dict, fav: set[str], keep=None, beasts: tuple | None = None) -> list[dict]:
-    """Every Beast the druid could learn now, plus anything they know or shortlisted. `beasts` is the campaign's
-    list (`beasts(db, campaign_id)`); without it, the SRD's."""
+    """Every Beast the druid could learn now, plus anything they know or shortlisted, and the Beasts within their CR
+    that only a Fly Speed bars, listed Locked until Druid level 8 (Brett, Nov 16, feedback 70: list them, locked, as a
+    higher-CR Beast on the Shortlist is). `beasts` is the campaign's list (`beasts(db, campaign_id)`); without it, the
+    SRD's."""
     beasts = beasts or _catalog()
     d = druid(sheet)
     if not d:
@@ -194,7 +196,8 @@ def forms(sheet: dict, fav: set[str], keep=None, beasts: tuple | None = None) ->
         key = f"form:{b['name']}"
         is_known = b["name"].lower() in known
         reason = why_not(d, b)
-        if reason and not is_known and key not in fav:
+        flies_later = b["cr"] <= d["max_cr"] and not d["fly"] and bool((b.get("speed") or {}).get("fly"))
+        if reason and not is_known and key not in fav and not flies_later:
             continue
         rows.append({
             "key": key, "name": b["name"], "cr": b["cr"], "cr_label": b["cr_label"], "size": b.get("size", ""),

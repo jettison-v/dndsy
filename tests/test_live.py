@@ -211,10 +211,10 @@ def test_plan_shortlists_filter_like_sheet(player, db):
     spells = part(plan, "t-spell-list", "t-form-list")
     assert 'data-list="plan-spells"' in spells and 'data-ls-group="prep"' in spells and "Barkskin" in spells  # the shared list
     assert 'data-list="sheet-spells"' in part(sheet, "t-spells", "t-forms")  # the same rows and filters as Sheet
-    assert re.findall(r'data-ls-view="(\w+)"', spells) == ["fav", "all"]  # evaluate (Shortlist) and select (All)
+    assert re.findall(r'data-ls-view="(\w+)"', spells) == ["all", "fav"]  # All first, as every list (Brett, Nov 16), then the Shortlist
     forms = part(plan, "t-form-list", None)
     assert 'data-list="plan-forms"' in forms and "Polar Bear" in forms and 'class="fm-pic"' in forms  # rows with pictures
-    assert re.findall(r'data-ls-view="(\w+)"', forms) == ["fav", "all"]  # evaluate (Shortlist) and select (All you can learn)
+    assert re.findall(r'data-ls-view="(\w+)"', forms) == ["all", "fav"]  # All first, then the Shortlist
     assert 'data-ls-group="cr" data-ls-value="2"' in forms and 'data-ls-group="move" data-ls-value="Swim"' in forms
 
 
@@ -260,3 +260,20 @@ def test_a_test_account_playing_several_opens_its_first_and_each_pill_is_its_own
     assert t["mine"]["id"] == first.id
     pill = player.get(f"/characters/{second.id}").text.split('id="live-pill"')[1].split("</button>")[0]
     assert f'data-focus="{second.id}"' in pill
+
+
+def test_every_view_switch_starts_with_all(player, db):
+    """Brett, Nov 16 (feedback 69): All comes first in every list's view switch, then what's yours, then the Shortlist;
+    the label is just All (feedback 70)."""
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    characters.refresh(db, cole)
+    owned_by(db, cole, "player@example.com")
+    url = f"/characters/{cole.id}"
+    pages = {"sheet": player.get(url).text, "plan": player.get(f"{url}/plan").text}
+    switches = [(name, re.findall(r'data-ls-view="(\w+)"', sw)) for name, page in pages.items()
+                for sw in re.findall(r'<div class="seg ls-views".*?</div>', page, re.S)]
+    assert len(switches) >= 5, switches  # Sheet: Spells, Wild Shape, Inventory, Features; Plan: Spells, Wild Shapes
+    assert all(views[0] == "all" for _, views in switches), switches
+    assert "All you can learn" not in pages["sheet"] + pages["plan"]
+

@@ -14,8 +14,9 @@
 </div>
 <div class="peek-body check-numbers">
   <p class="note">Every roll askdnd makes for {{ c.name.split()[0] }}, how each number adds up, and what it was checked against. Point at a number for its parts.
-    The sheet's numbers come from D&amp;D Beyond, read {{ fetched_at | ago if fetched_at else "recently" }}; askdnd adds them up itself.</p>
-  <p class="cn-counts">{% for k, n in counts.items() if n %}<span class="cn-v cn-{{ verdicts[k][1] }}">{{ verdicts[k][0] }} {{ n }}</span>{% endfor %}</p>
+    D&amp;D Beyond's numbers were read {{ fetched_at | ago if fetched_at else "recently" }}; askdnd adds them up itself.</p>
+  <p class="cn-counts"><span class="note">How each roll was checked:</span>{# (a lead-in and the count pill: feedback 68) #}
+    {% for k, n in counts.items() if n %}<span class="cn-sum" data-verdict="{{ k }}" title="{{ verdicts[k][2] }}"><span class="cn-v cn-{{ verdicts[k][1] }}">{{ verdicts[k][0] }}</span> <span class="count">{{ n }}</span></span>{% endfor %}</p>
   <div class="tabbar" role="tablist" aria-label="Kinds of roll">
     <button type="button" role="tab" aria-selected="true" data-tab="cn-rolls">Attacks, spells and items</button>
     {% if forms %}<button type="button" role="tab" aria-selected="false" data-tab="cn-forms">Wild Shape</button>{% endif %}

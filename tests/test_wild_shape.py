@@ -45,7 +45,9 @@ def test_forms_list_learnable_beasts_known_ones_first():
     assert names[:6] == [r["name"] for r in rows if r["known"]]  # known on D&D Beyond come first
     assert "Wolf" in names and "Black Bear" in names  # CR 1/4 and 1/2
     assert "Brown Bear" not in names  # CR 1 is above 1/2
-    assert "Pteranodon" not in names  # flies (not until level 8)
+    ptera = next(r for r in rows if r["name"] == "Pteranodon")  # flies: listed, locked until level 8 (Brett, Nov 16, feedback 70)
+    assert ptera["why_not"] == "Has a Fly Speed (Druid level 8)" and ptera["status_label"] == "Locked"
+    assert all(r["cr"] <= 0.5 or r["known"] or r["name"] == "Tiger" for r in rows)  # above the CR limit: only known or shortlisted ones
     tiger = next(r for r in rows if r["name"] == "Tiger")  # shortlisted, so still listed, with the reason
     assert tiger["why_not"] == "CR 1 is above your max of 1/2"
     polar = next(r for r in rows if r["name"] == "Polar Bear")

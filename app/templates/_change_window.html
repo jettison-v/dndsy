@@ -38,9 +38,9 @@
     {% endfor %}
   </div>
   {% if what == "forms" %}
-  {{ form_list(c, rows, picks, can_pick, true, key="change-forms", views=[("mine", "Known"), ("fav", "Shortlist"), ("all", "All")], edit=meta) }}
+  {{ form_list(c, rows, picks, can_pick, true, key="change-forms", views=[("all", "All"), ("mine", "Known"), ("fav", "Shortlist")], edit=meta) }}
   {% else %}
-  {{ spell_list(c, none, rows, groups, picks, can_pick, true, key="change-spells", views=[("mine", "Yours"), ("fav", "Shortlist"), ("all", "All")], edit=meta) }}
+  {{ spell_list(c, none, rows, groups, picks, can_pick, true, key="change-spells", views=[("all", "All"), ("mine", "Yours"), ("fav", "Shortlist")], edit=meta) }}
   {% endif %}
   <div class="chg-tray">
     <div class="chg-warns" data-chg-warns></div>{# (in the footer bar, always on screen: what goes past the reason's rule, named; Brett, Nov 16) #}

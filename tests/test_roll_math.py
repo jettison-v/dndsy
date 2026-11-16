@@ -127,6 +127,9 @@ def test_check_your_numbers(table):
     assert "Check Cole's numbers" in page and "Insignia of Claws" in page and "Moonbeam" in page
     assert re.search(r"Unarmed Strike</b><span class=\"cn-why\">Action · Bonus action", page)  # (one row for the same roll)
     assert "Checks and saves" in page and "Stone of Good Luck (Luckstone)" in page
+    counts = page.split('class="cn-counts"')[1].split("</p>")[0]  # (a lead-in, then each verdict with its count pill: feedback 68)
+    assert counts.count('class="cn-sum"') >= 2 and counts.count('<span class="count">') == counts.count('class="cn-sum"')
+    assert "The sheet" not in page  # (D&D Beyond's own numbers say so: "The sheet" confused players)
     assert table["dm"].get(f"/characters/{cid}/numbers").status_code == 200
     assert 'data-modal-url="/characters/%d/numbers"' % cid in table["player"].get(f"/characters/{cid}/battle").text
 

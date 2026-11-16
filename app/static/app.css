@@ -1415,7 +1415,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 
 /* Wild Shape: planner rows, side panel and Battle switch */
 .ri-pic { width: 34px; height: 34px; border-radius: var(--r-md); object-fit: cover; vertical-align: middle; margin-right: 6px; border: 1px solid var(--line); background: var(--surface-2); }
-.form-row.not-ready .ri-name { color: var(--muted); }
+.beast-row.not-ready .ri-name { color: var(--muted); }
 .fm-vitals .vital b.small, .ws-form .vital b.small { font-size: var(--fs-md); }
 .form-abilities { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
 .fab { background: var(--surface-2); border-radius: var(--r-md); padding: 6px 4px; text-align: center; border: 1px solid transparent; }
@@ -2626,7 +2626,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .fm-cols .fm-pic { width: 44px; height: 44px; border-radius: var(--r-md); overflow: hidden; background: var(--surface-2); }
 .fm-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .ls-marks.two { grid-template-columns: repeat(2, 22px); }
-.form-row.not-ready .ls-name b { color: var(--muted); font-weight: 500; }
+.beast-row.not-ready .ls-name b { color: var(--muted); font-weight: 500; }  /* (a Wild Shape form's row: beast-row, never .form-row, the design system's fields-side-by-side layout, whose bottom alignment it took on; feedback 71) */
 @container list (max-width: 740px) {
   .fm-cols { display: block; }
   .fm-cols > .ls-head { display: none; }
@@ -2687,7 +2687,8 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
 .cn-part { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px; margin: 0 10px 4px 0; }
 .cn-why, .cn-sub { display: block; color: var(--muted); font-size: var(--fs-xs); white-space: normal; }
 .cn-sub { margin-top: var(--sp-1); }
-.cn-counts { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.cn-counts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.cn-sum { display: inline-flex; align-items: center; gap: var(--sp-1); white-space: nowrap; }  /* a verdict and its count pill (feedback 68) */
 .cn-v { display: inline-block; font-size: var(--fs-xs); font-weight: 700; padding: 1px 8px; border-radius: var(--r-pill); background: var(--surface-3); color: var(--muted); }
 .cn-v.cn-ok { color: var(--green); background: var(--green-soft); }
 .cn-v.cn-dm { color: var(--amber); background: var(--amber-soft); }
