@@ -509,3 +509,60 @@ def test_add_to_it_takes_screenshots_that_only_its_sender_admins_and_claude_see(
     r = admin.post(f"/manage/feedback/{fb.id}", data={"to": "answer", "answer": "Same on mine"}, files=[_png_file()], follow_redirects=False)
     db.refresh(fb)
     assert r.status_code == 303 and fb.thread[-1]["who"] == "you" and len(fb.thread[-1]["pics"]) == 1 and fb.status == "new"
+
+
+def test_a_sender_sees_the_pictures_they_sent_but_never_their_dm_even_viewing_as_them(admin, player, dm, db, file_store):
+    """Brett, Nov 16: Notes you sent shows the pictures a note was sent with (the page as the window opened, a pasted
+    screenshot, those added later) to its sender. A standing rule (CLAUDE.md › Visibility; the outside review's C9):
+    they can show the sender's character notes, so an admin who is the sender's DM never sees them, and View as is no
+    way round it."""
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    assert note(player, text="The Rest button wraps.", pasted=png()).status_code == 200
+    fb = db.scalar(select(Feedback))
+    player.post(f"/your-notes/feedback/{fb.id}", data={"text": "And on my phone"}, files=[_png_file()])
+    db.refresh(fb)
+    pic = fb.thread[-1]["pics"][0]
+    mine = player.get("/your-notes?tab=askdnd").text
+    for which in ("shot", "pasted"):
+        assert f"/your-notes/feedback/{fb.id}/{which}" in mine
+        assert player.get(f"/your-notes/feedback/{fb.id}/{which}").headers["content-type"].startswith("image/")
+    assert f"/your-notes/feedback/{fb.id}/pic/{pic}" in mine
+    assert dm.get(f"/your-notes/feedback/{fb.id}/shot").status_code == 404  # (not their note)
+    assert player.get(f"/your-notes/feedback/{fb.id}/page").status_code == 404  # (only the two pictures, never the page as drawn)
+    # An admin who isn't the sender's DM, viewing as them, sees what they see
+    admin.post("/view-as", data={"email": "player@example.com"})
+    assert f"/your-notes/feedback/{fb.id}/shot" in admin.get("/your-notes?tab=askdnd").text
+    admin.post("/view-as/stop")
+    # The same admin as this campaign's DM: View as refuses (app/view_as.py), and the pictures stay theirs
+    set_role(db, "admin@example.com", "dm")
+    access.invalidate()
+    admin.post("/view-as", data={"email": "player@example.com"})
+    assert "The Rest button wraps." not in admin.get("/your-notes?tab=askdnd").text  # (not viewing as them: their own page)
+    for path in (f"/your-notes/feedback/{fb.id}/shot", f"/your-notes/feedback/{fb.id}/pasted", f"/your-notes/feedback/{fb.id}/pic/{pic}"):
+        assert admin.get(path).status_code == 404, path
+
+
+def test_claude_gives_a_note_a_short_title_its_sender_and_the_queue_show(admin, player, db, monkeypatch):
+    """Brett, Nov 16: when Claude takes a note up it writes a short title (feedback.py title); Notes you sent and the
+    queue show it, and a note without one shows its first sentence."""
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    note(player, text="When I press the button on the left of the spell row nothing seems to happen at all on my phone.")
+    fb = db.scalar(select(Feedback))
+    assert f'data-note="f{fb.id}"' in player.get("/your-notes?tab=askdnd").text
+    monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 40)
+    claude = {"X-Feedback-Key": "k" * 40}
+    r = admin.post(f"/api/feedback/{fb.id}", json={"title": "  Spell row's   button on a phone  "}, headers=claude)
+    assert r.json()["title"] == "Spell row's button on a phone"  # (spaces tidied)
+    db.refresh(fb)
+    assert fb.title == "Spell row's button on a phone"
+    assert "Spell row&#39;s button on a phone" in player.get("/your-notes?tab=askdnd").text
+    assert "Spell row&#39;s button on a phone" in admin.get("/manage/feedback?tab=review").text
+    assert admin.post(f"/api/feedback/{fb.id}", json={"title": "x" * 300}, headers=claude).json()["title"] == "x" * 120

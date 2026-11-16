@@ -50,7 +50,7 @@ OPEN = ("new", "question", "planned")
 # has "" until it's sorted (`feedback.py kind`).
 KINDS = {"broken": ("Something's broken", "Broken", "What's wrong?"), "idea": ("An idea", "Idea", "What would be better?"),
          "question": ("A question", "Question", "What would you like to know?")}  # (in the window, its short tag, its box's ask)
-MAX_TEXT, MAX_HTML, MAX_CONTEXT = 4000, 3_000_000, 50_000
+MAX_TEXT, MAX_HTML, MAX_CONTEXT, MAX_TITLE = 4000, 3_000_000, 50_000, 120
 MAX_PICS, MAX_PIC_BYTES = 4, 8_000_000  # screenshots added with Add to it, at most, each (feedback 64)
 PIC_TYPES = ("image/png", "image/jpeg", "image/webp")
 IMAGE = re.compile(r"^data:(image/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$")
@@ -236,7 +236,7 @@ def from_staging(body=web.JsonBody, x_feedback_key: str | None = Header(default=
 
 def _item(fb: Feedback, html: bool = False) -> dict:
     out = {"id": fb.id, "at": fb.created_at.isoformat() if fb.created_at else "", "sender": fb.sender, "text": fb.text,
-           "kind": fb.kind or "", "status": fb.status, "url": fb.url, "context": fb.context or {}, "thread": fb.thread or [], "pr": fb.pr,
+           "kind": fb.kind or "", "title": fb.title or "", "status": fb.status, "url": fb.url, "context": fb.context or {}, "thread": fb.thread or [], "pr": fb.pr,
            "shots": [n for n, k in (("shot", fb.shot_key), ("pasted", fb.pasted_key)) if k], "html_size": len(fb.html or "")}
     return out | ({"html": fb.html} if html else {})
 
@@ -412,7 +412,7 @@ def api_picture(feedback_id: int, which: str, x_feedback_key: str | None = Heade
 @router.post("/api/feedback/{feedback_id:int}")
 def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """Claude moves a note on: a question for Brett (`note`, which makes it a question unless `status` says else), a
-    status, the PR that fixed it, or what it is (`kind`, with `why`)."""
+    status, the PR that fixed it, what it is (`kind`, with `why`), or its short title (`title`; Brett, Nov 16)."""
     _claude(x_feedback_key)
     body = body if isinstance(body, dict) else {}
     fb = db.get(Feedback, feedback_id) or _missing()
@@ -433,6 +433,8 @@ def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None =
         fb.status = status
     if body.get("pr"):
         fb.pr = str(body["pr"])[:300]
+    if isinstance(body.get("title"), str):
+        fb.title = " ".join(body["title"].split())[:MAX_TITLE]
     db.commit()
     return JSONResponse(_item(fb))
 

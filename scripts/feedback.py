@@ -9,9 +9,11 @@ When Brett says "review the feedback", pull the queue from askdnd, then answer o
     uv run python scripts/feedback.py set 42 done --pr https://github.com/jettison-v/dndsy/pull/190
     uv run python scripts/feedback.py tell 42 "Fixed: …"     # a reply its sender sees on Your feedback
     uv run python scripts/feedback.py kind 42 idea "It's a new feature, not a fix"   # what it is, and why
+    uv run python scripts/feedback.py title 42 "Change forms beside Change spells"     # a short title, when taking it up
     uv run python scripts/feedback.py pull --kind none            # notes sent before kinds, to sort once
 
-What each kind gets (Brett, Nov 16): **broken**, fix it in the next round (one people would see still goes to Brett as a
+Give each note a short title when you take it up (Brett, Nov 16: a few words saying what it's about; its sender sees it on
+Notes you sent, and the queue lists it). What each kind gets (Brett, Nov 16): **broken**, fix it in the next round (one people would see still goes to Brett as a
 local link first); **idea**, add it to the Roadmap's Ideas from feedback with a size (S, M or L) and set it planned:
 nothing is built until Brett moves it up; **question**, answer it with `tell`, then set it done.
 
@@ -57,7 +59,7 @@ def call(base: str, path: str, body: dict | None = None) -> bytes:
 
 def note_md(item: dict) -> str:
     c = item.get("context") or {}
-    lines = [f"# Feedback {item['id']} · {item.get('kind') or 'not sorted'} · {item['status']}", "", item["text"], "",
+    lines = [f"# Feedback {item['id']} · {item.get('kind') or 'not sorted'} · {item['status']}" + (f" · {item['title']}" if item.get("title") else ""), "", item["text"], "",
              f"- From: {item['sender']}" + (f", viewing as {c['viewing_as']}" if c.get("viewing_as") else ""),
              f"- Page: {c.get('page', '')} · {item['url']}", f"- When: {c.get('at', '')} (server {c.get('server_at', '')})",
              f"- Window: {c.get('window', '')} · zoom {c.get('zoom', '')} · screen {c.get('screen', '')}",
@@ -115,6 +117,9 @@ def main() -> None:
     kd.add_argument("id", type=int)
     kd.add_argument("kind", choices=["broken", "idea", "question"])
     kd.add_argument("why", nargs="?", default="")
+    tt = sub.add_parser("title")
+    tt.add_argument("id", type=int)
+    tt.add_argument("title")
     ask = sub.add_parser("ask")
     ask.add_argument("id", type=int)
     ask.add_argument("question")
@@ -132,6 +137,8 @@ def main() -> None:
         if a.base == DEFAULT_BASE:  # (and staging's own queue: notes sent from staging.askdnd.ai, filed as staging-<id>)
             print("Staging:")
             pull(STAGING_BASE, a.status, a.kind)
+    elif a.cmd == "title":
+        print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"title": a.title}))["title"])
     elif a.cmd == "kind":
         print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"kind": a.kind, "why": a.why}))["kind"])
     elif a.cmd == "tell":

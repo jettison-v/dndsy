@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_lists.html" import search_box, filters_above %}
-{% from "_feedback_pics.html" import pics_field, added_pics %}
+{% from "_feedback_pics.html" import pics_field, added_pics, sent_pics %}
 {% block title %}Notes you sent · askdnd{% endblock %}
 {# Your notes (app/your_notes.py; Brett, Nov 7: docs/mockups/your-notes/ Layout A and a badge, then
    docs/mockups/your-notes-2/ Layout B, feedback 54): what you sent, in two tabs that say who reads it, each the Reader
@@ -53,7 +53,8 @@
       {% if n.what %}<span class="tag nt-kind" data-kind="{{ n.what_key }}">{{ n.what }}</span>{% endif %}
       <section class="nt-part"><h3 class="divider">You asked · {{ n.at.strftime("%b %-d") }}{% if n.where %} · {% if n.href %}<a href="{{ n.href }}" data-no-peek>{{ n.where }}</a>{% else %}{{ n.where }}{% endif %}{% endif %}</h3>
         <div class="nt-quote">{{ n.text }}</div>
-        {% for m in n.earlier if m.mine %}<div class="fb-msg you"><small>You added</small>{{ m.text }}{{ added_pics(m.pics, "/your-notes/feedback/" ~ n.id) }}</div>{% endfor %}</section>
+        {% if n.kind == "askdnd" and n.id not in kept %}{{ sent_pics(n.shots, "/your-notes/feedback/" ~ n.id) }}{% endif %}
+        {% for m in n.earlier if m.mine %}<div class="fb-msg you"><small>You added</small>{{ m.text }}{% if n.id not in kept %}{{ added_pics(m.pics, "/your-notes/feedback/" ~ n.id) }}{% endif %}</div>{% endfor %}</section>
       <section class="nt-part"><h3 class="divider">What happened</h3>
         {% for m in n.earlier if not m.mine %}<div class="fb-msg claude"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
         <div class="nt-answer st-{{ n.dot }}{{ ' st-open' if n.open }}"><small>{{ n.label }}{% if n.answer %} · {{ n.answer.who }}{% endif %}</small><span class="nt-said">{{ n.answer.text if n.answer else n.says }}</span>
