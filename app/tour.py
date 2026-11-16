@@ -17,7 +17,7 @@ SECTIONS = [
         ("previously", "Previously on…", ("Where Campaign opens: the last session's recap, key moments and open threads; every "
                                                 "session is under Sessions.")),
         ("memory", "The campaign's memory", ("People, places, quests and how everyone is connected, built from each session and kept right by "
-                                            "the DM. Suggest a correction sends a fix to the DM.")),
+                                            "the DM. + Add what the party learned sends a fix or something new to the DM.")),
     ]),
     ("On your turn", [
         ("battle", "Battle", ("Your plan for a fight by Action, Bonus action and Reaction: what you chose to put there, with See all "
@@ -77,8 +77,8 @@ STOPS = [
     {"group": "memory", "page": "campaign", "open": '[data-tab="t-world"]', "at": '[data-tour="campaign"]',
      "what": "Its other tabs: <b>World</b>, everyone and everywhere the party has met, plus Quests, Relationships, the"
              " Glossary and the Map.",
-     "why": "askdnd builds it from each session and the DM checks it. Spot a mistake? <b>Suggest a correction</b> on "
-            "any entry sends it to the DM."},
+     "why": "askdnd builds it from each session and the DM checks it. Spot a mistake? <b>+ Add what the party learned</b> "
+            "on any entry sends it to the DM."},
     {"group": "battle", "title": "Battle: your turn on one screen", "page": "battle", "needs": "character",
      "at": '[data-tour="battle"]',
      "what": "Your Actions, Bonus actions and Reactions, showing only what you chose to put here. Need something else "

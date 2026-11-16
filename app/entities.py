@@ -123,7 +123,14 @@ def moments(db: Session, entity: Entity, visible=None) -> list[dict]:
     order = {s.id: i for i, s in enumerate(timeline(db, entity.campaign_id))}
     events.sort(key=lambda e: (order.get(e.session_id, 10**6), e.position, e.id))
     short = lambda s: f"Session {s.number}" if s.number is not None else session_label(s)
-    return [{"e": e, "label": session_label(e.session), "short": short(e.session)} for e in events]
+    return [{"e": e, "label": session_label(e.session), "short": short(e.session), "when": moment_when(e.session)} for e in events]
+
+
+def moment_when(s) -> str:
+    """A key moment's date as the table knows it, in its slot beside the kind: "Session 13 · Nov 6" (Key Moments
+    Everywhere, the UI review's pick 2, Nov 16)."""
+    bits = ([f"Session {s.number}"] if s.number is not None else []) + ([s.played_on.strftime("%b %-d")] if s.played_on else [])
+    return " · ".join(bits) or session_label(s)
 
 
 # --- Regenerate description (Claude) ----------------------------------------------

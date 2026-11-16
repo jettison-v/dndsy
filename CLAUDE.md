@@ -73,6 +73,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **Listen to the recap**: app/narration.py
 - **Session Story**: app/session_story.py, story_session.html, _award_cards.html
 - **Story is Campaign's first two tabs**: _story_previously.html, _story_sessions.html, _story_macros.html
+- **Key moments and adding to the record**: _moments.html, _suggest_form.html, _quest_knows.html
 - **Campaign page**: app/story.py, app/campaign_views.py, campaign.html
 - **Version history**: app/history.py
 - **Backups**: scripts/restore_db.py

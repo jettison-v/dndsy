@@ -50,7 +50,7 @@ def test_entity_correction_becomes_labeled_fact(player, db):
     import_bundle(db, BUNDLE)
     e = db.scalar(select(Entity).where(Entity.name == "Kieran"))
     r = player.post(f"/campaign/{e.id}/suggest", data={"kind": "correction", "text": "He is Cole's father, not uncle."}, headers=HX)
-    assert "The DM or a reviewer will take a look" in r.text
+    assert "The DM or a reviewer will take a look" in r.headers["HX-Trigger"] and "addFoldDone" in r.headers["HX-Trigger"]  # a corner card, and its fold closes
     f = db.scalar(select(Fact))
     assert (f.kind, f.status, f.author_name) == ("correction", "pending", "Mark")
     f.status = "merged"
@@ -111,7 +111,7 @@ def test_the_dms_entries_skip_review(dm, player, db):
     assert "so it goes straight on." in dm.get(f"/campaign/{e.id}/peek").text
     assert "The DM or a reviewer adds it." in player.get(f"/campaign/{e.id}/peek").text
     # People, places, factions…: straight onto the page, from the panel or the page
-    assert "Added to the page" in dm.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sails."}, headers=HX).text
+    assert "Added to the page" in dm.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": "He sails."}, headers=HX).headers["HX-Trigger"]
     dm.post(f"/campaign/{e.id}/facts", data={"kind": "addition", "text": "He fishes."}, headers=HX)
     assert [f.status for f in db.scalars(select(Fact).order_by(Fact.id))] == ["merged", "merged"]
     assert "He sails." in player.get(f"/campaign/{e.id}/peek").text
@@ -123,7 +123,7 @@ def test_the_dms_entries_skip_review(dm, player, db):
     db.add(Recap(session_id=s.id, version=1, body="The party met Kiera.", author="ai", status=Status.PUBLISHED))
     db.flush()
     r = dm.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "It was Kieran, not Kiera."}, headers=HX)
-    assert "shows under the recap now" in r.text
+    assert "shows under the recap now" in r.headers["HX-Trigger"]
     x = db.scalar(select(Suggestion).where(Suggestion.target_type == "session"))
     assert (x.status, x.from_dm) == ("used", True)
     c = db.scalar(select(Correction).where(Correction.session_id == s.id))
@@ -186,7 +186,7 @@ def test_one_inbox_same_actions_and_players_see_the_outcome(dm, player, db, monk
     db.add(Recap(session_id=s.id, version=1, body="The party met Kiera.", author="ai", status=Status.PUBLISHED))
     for text in ("He sails.", "He sings.", "He fishes.", "He hums."):
         r = player.post(f"/campaign/{e.id}/suggest", data={"kind": "addition", "text": text}, headers=HX)
-    assert 'href="/your-notes"' in r.text
+    assert "Notes you sent follows it" in r.headers["HX-Trigger"]  # where to follow it
     player.post(f"/sessions/{s.id}/suggest", data={"kind": "correction", "text": "Kieran, not Kiera."}, headers=HX)
     player.post("/campaign/glossary/suggest", data={"text": "Womford is a fishing village."}, headers=HX)
     fact = {f.text: f for f in db.scalars(select(Fact))}

@@ -7,6 +7,8 @@ Both wait in the inbox (Manage > Inbox) for the DM, a reviewer or an admin.
 Glossary terms also get a side panel, with editing for reviewers.
 """
 
+import json
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from markupsafe import escape
@@ -26,12 +28,23 @@ MAX_TEXT = 4000
 REDRAFTABLE = ("notes", "account")  # sessions Claude can redraft: transcripts aren't kept; hand-written ones are the DM's words
 
 
-def _thanks(message: str = "Thanks! The DM or a reviewer will take a look.", follow: bool = False) -> HTMLResponse:
-    more = ' <a href="/your-notes">See what happens to it</a>' if follow else ""
-    return HTMLResponse(f'<p class="all-clear suggest-thanks" role="status">✓ {escape(message)}{more}</p>')
+def _thanks(message: str = "Thanks! The DM or a reviewer will take a look. Notes you sent follows it.") -> HTMLResponse:
+    """Sent: a corner card says so, and the fold it came from empties and closes (addFoldDone, app.js "the add fold";
+    docs/mockups/key-moments/, Nov 16: a message is a corner card)."""
+    return HTMLResponse("", headers={"HX-Trigger": json.dumps({"toast": message, "addFoldDone": True})})
 
 
 def _problem(message: str) -> HTMLResponse:
+    """Not sent: an amber corner card, and the fold stays open with what was typed."""
+    return HTMLResponse("", headers={"HX-Trigger": json.dumps({"toast": web.notice(message, "warn")})})
+
+
+def _done_line(message: str) -> HTMLResponse:
+    """The glossary's own forms (the DM's Add a term, Edit, Delete) answer in place, as they did."""
+    return HTMLResponse(f'<p class="all-clear" role="status">✓ {escape(message)}</p>')
+
+
+def _problem_line(message: str) -> HTMLResponse:
     return HTMLResponse(f'<p class="flash bad" role="alert">{escape(message)}</p>', status_code=200)
 
 
@@ -70,7 +83,7 @@ def suggest_entity(request: Request, entity_id: int, text: str = Form(""), kind:
     except entities.EntityError as e:
         return _problem(str(e))
     db.commit()
-    return _thanks("Added to the page.") if is_dm(user) else _thanks(follow=True)
+    return _thanks("Added to the page.") if is_dm(user) else _thanks()
 
 
 @router.post("/sessions/{session_id:int}/suggest")
@@ -89,7 +102,7 @@ def suggest_session(request: Request, session_id: int, text: str = Form(""), kin
         db.commit()
         return _thanks("Saved. It shows under the recap now, and the next redraft of this session uses it.")
     db.commit()
-    return _thanks(follow=True)
+    return _thanks()
 
 
 @router.post("/campaign/glossary/suggest")
@@ -107,7 +120,7 @@ def suggest_glossary(request: Request, term_id: int | None = None, text: str = F
         kind="addition" if term is None else _kind(kind), text=_clean(text), **_author(user),
     ))
     db.commit()
-    return _thanks(follow=True)
+    return _thanks()
 
 
 # --- Glossary side panel and editing ---------------------------------------------
@@ -132,12 +145,12 @@ def glossary_add(request: Request, term: str = Form(""), description: str = Form
     campaign = web.campaign(db)
     new_term = " ".join(term.split())[:200]
     if not _can_edit_glossary(user) or campaign is None:
-        return _problem("Only the DM and reviewers can add terms directly.")
+        return _problem_line("Only the DM and reviewers can add terms directly.")
     if not new_term or db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == campaign.id, GlossaryTerm.term == new_term)):
-        return _problem("That term is empty or already in the glossary.")
+        return _problem_line("That term is empty or already in the glossary.")
     db.add(GlossaryTerm(campaign_id=campaign.id, term=new_term, description=description.strip()[:MAX_TEXT], misheard_as=[]))
     db.commit()
-    return _thanks(f"Added {new_term} to the glossary. Reload the page to see it in the list.")
+    return _done_line(f"Added {new_term} to the glossary. Reload the page to see it in the list.")
 
 
 @router.get("/campaign/glossary/{term_id:int}/peek")
@@ -167,7 +180,7 @@ def glossary_edit(
     new_term = " ".join(term.split())
     clash = db.scalar(select(GlossaryTerm).where(GlossaryTerm.campaign_id == g.campaign_id, GlossaryTerm.term == new_term, GlossaryTerm.id != g.id))
     if not new_term or clash:
-        return _problem("That spelling is empty or already in the glossary.")
+        return _problem_line("That spelling is empty or already in the glossary.")
     g.term, g.description = new_term, description.strip()
     g.misheard_as = [m.strip() for m in misheard_as.split(",") if m.strip()]
     db.commit()
@@ -181,7 +194,7 @@ def glossary_delete(request: Request, term_id: int, db: Session = Depends(get_db
     if _can_edit_glossary(user) and g is not None:
         db.delete(g)
         db.commit()
-    return _thanks("Removed from the glossary. Reload the page to update the list.")
+    return _done_line("Removed from the glossary. Reload the page to update the list.")
 
 
 # --- The inbox (Manage > Inbox): the DM, reviewers and admins -----------------------

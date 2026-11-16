@@ -2,6 +2,7 @@
    Campaign page's Reader (_entry_reader.html: layout A of World Entries by Kind, Brett 2026-11-05). The DM, reviewers and
    admins get Edit, which opens the large edit window. Forms here answer with whichever one is showing (?in=panel or
    ?in=reader). Both say which quests it's part of. #}
+{% from "_moments.html" import moment_list %}
 {% set reader = where == "reader" %}
 {% set w = "reader" if reader else "panel" %}
 {% set px = 'hx-target="closest .reader-article" hx-swap="outerHTML"' if reader else 'hx-target="closest .peek" hx-swap="innerHTML"' %}
@@ -37,7 +38,7 @@
 
   {% if moments %}
   <h3>Key moments</h3>
-  <ul class="plain">{% for m in moments %}<li>{{ ln.text(m.e.text) }} <span class="note">· {{ m.label }}</span></li>{% endfor %}</ul>
+  {{ moment_list(moments | reverse | list, ln, skip=e.id) }}
   {% endif %}
 </div>
 <div class="peek-foot row">

@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
 {% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above %}
+{% from "_moments.html" import moment_list %}
+{% from "_suggest_form.html" import add_fold %}
 {% from "_manage.html" import inline_edit %}
 {% from "_cond_icons.html" import cond_icon %}
 {% from "_math.html" import math_num %}
@@ -225,6 +227,14 @@
     {% call empty_state("A plan that plays out over more than one turn: the setup, then the payoff.") %}<a class="head-add" href="#">+ Battle combo</a>{% endcall %}
     {{ ds("Tour card", ".tour-card, .tour-spot (app.js the tour)", "One stop of the tour: how far along it is, what it is and why, Back and Next; ✕ or Esc asks before ending. The page dims around .tour-spot; on phones the card sits at the bottom.") }}
     <div class="ds-sample"><div class="tour-card" style="position:static"><div class="tour-progress"><i style="width:60%"></i></div><h3>Battle combos</h3><p>Plan a few turns together, each split into action, bonus action, reaction and movement.</p><p class="why">Work it out between sessions; it shows on Battle when the moment comes.</p><div class="tour-foot"><span class="count">18 of 30</span><button type="button" class="btn small">Back</button><button type="button" class="btn small primary">Next</button><button type="button" class="btn small link">✕</button></div></div></div>
+  </section>
+
+  <section class="section" id="moments">
+    <h2>Key moments and adding to the record</h2>
+    {{ ds("Key moment", "_moments.html moment_list(items, lk) · key_moment · .moment-line · .km-slot · details.km-more", "One look on a recap, an entry, a quest and the side panel: the kind and the date in one slot, the moment, the names under it (not the entry's own). The newest 3 (a recap: its major ones), then Show the other N, which carries on the list; an open quest's newest dot is amber.") }}
+    <div class="ds-sample" style="max-width: 320px">{{ moment_list(sample_moments, plain, latest=True) }}</div>
+    {{ ds("The add fold", "_suggest_form.html add_fold(action, about, attrs) · details.add-fold · label.chip radios", "\"+ Add what the party learned\" rests closed under what it adds to; opened, the form takes its line: two choice chips, the box, Send and Cancel. Cancel or Escape closes it and keeps what's typed; sent, a corner card, and it empties and closes.") }}
+    <div class="ds-sample" style="max-width: 320px">{{ add_fold("#", "Cole", 'hx-swap="none"', note="The DM or a reviewer adds it.") }}</div>
   </section>
 
   <section class="section" id="panels">
