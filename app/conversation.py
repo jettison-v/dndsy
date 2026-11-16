@@ -16,6 +16,7 @@ from app.extraction import (
     _known_world,
     _story_after,
     _story_so_far,
+    first_name,
     session_label,
 )
 from app.models import Campaign, ExtractionRun, GameSession, SessionMessage
@@ -56,7 +57,7 @@ def conversation_text(session: GameSession) -> str:
     """The account and the back-and-forth, oldest first, for prompts and drafting."""
     lines = []
     for m in session.messages:
-        who = "Claude" if m.role == "claude" else (m.author or "Reviewer")
+        who = "Claude" if m.role == "claude" else (first_name(m.author) or "Reviewer")  # (A4: first names only, never an email)
         lines.append(f"{who}:\n{m.body.strip()}")
     return "\n\n".join(lines)
 
