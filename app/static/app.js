@@ -211,6 +211,42 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // Server can trigger a toast with the HX-Trigger header: {"toast": "Saved"}
   document.body.addEventListener('toast', e => toast(e.detail && typeof e.detail === 'object' && 'value' in e.detail ? e.detail.value : e.detail));  // (htmx hands a plain message on as {value}; a fetch may hand on the message itself)
 
+  // The switch (_settings.html; the UI review's pick 1, Nov 16): a setting saves itself the moment it's flipped. Its form
+  // is posted here with X-Switch; the route answers 204 and a corner card (web.switched), and the switch flips where it
+  // is, or 409 and an amber card, and it stays. A two-way switch (data-choice) saves the pressed choice the same way.
+  async function saveSwitch(form, values, done) {
+    const body = new URLSearchParams();
+    new FormData(form).forEach((v, k) => body.append(k, v));
+    Object.entries(values).forEach(([k, v]) => { body.delete(k); if (v !== '') body.set(k, v); });
+    let r;
+    try { r = await fetch(form.action, { method: 'POST', body, headers: { 'X-Switch': '1' } }); } catch (err) { r = null; }
+    let events = {};
+    try { events = JSON.parse((r && r.headers.get('HX-Trigger')) || '{}'); } catch (err) { /* no message */ }
+    if (events.toast) toast(events.toast);
+    if (!r || !r.ok) { if (!events.toast) toast("Not saved: try again.", null, 'warn'); return; }
+    if (events.switchReload) { location.reload(); return; }
+    done();
+  }
+  document.addEventListener('submit', e => {
+    const form = e.target;
+    if (form.matches('form[data-switch]')) {
+      e.preventDefault();
+      const btn = form.querySelector('.switch');
+      if (!btn || btn.disabled || form.dataset.busy) return;
+      const next = btn.getAttribute('aria-checked') !== 'true';
+      form.dataset.busy = '1';
+      saveSwitch(form, { [form.dataset.switch]: next ? '1' : '' }, () => btn.setAttribute('aria-checked', next ? 'true' : 'false'))
+        .finally(() => { delete form.dataset.busy; });
+    } else if (form.matches('form[data-choice]')) {
+      e.preventDefault();
+      const pick = e.submitter;
+      if (!pick || pick.getAttribute('aria-pressed') === 'true' || form.dataset.busy) return;
+      form.dataset.busy = '1';
+      saveSwitch(form, { [form.dataset.choice]: pick.value }, () => form.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b === pick ? 'true' : 'false')))
+        .finally(() => { delete form.dataset.busy; });
+    }
+  });
+
   // The add fold (_suggest_form.html add_fold; Key Moments Everywhere, Nov 16): "+ Add what the party learned" opens its
   // form in place with the box ready to type; Cancel or Escape closes it and keeps what's typed; a send that went
   // through empties and closes it (addFoldDone, with its corner card). A form the server redraws comes back closed.

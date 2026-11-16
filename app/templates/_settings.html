@@ -1,0 +1,24 @@
+{# A setting that takes effect now: one switch, at its row's right, saving itself (the UI review's pick 1, Brett Nov 16;
+   docs/mockups/one-switch/). `switch` posts its own form: from the page's script (app.js "the switch") it flips where it
+   is with a corner card (the route answers with web.switched); without the script the form posts and the page comes
+   back. `name` is the field that says on ("1") or off (empty); `extra` the fields the route also needs. `set_row` is
+   the row: the setting's name and one line on the left, what's in the call block (a switch, a two-way switch) right.
+   A choice inside a form you're filling in stays a checkbox, saved by that form's button. #}
+{% macro switch(action, on, label, name="on", extra={}, disabled=False) -%}
+<form method="post" action="{{ action }}" class="switch-form" data-switch="{{ name }}">
+  {%- for k, v in extra.items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+  {%- if not on %}<input type="hidden" name="{{ name }}" value="1">{% endif %}
+  <button class="switch" type="submit" role="switch" aria-checked="{{ 'true' if on else 'false' }}" aria-label="{{ label }}"{% if disabled %} disabled{% endif %}></button>
+</form>
+{%- endmacro %}
+
+{% macro set_row(title, note="", key="") -%}
+<div class="set-row"{% if key %} data-setting="{{ key }}"{% endif %}><span class="set-words"><b>{{ title }}</b>{% if note %}<span class="note">{{ note }}</span>{% endif %}</span>{{ caller() }}</div>
+{%- endmacro %}
+
+{# A choice of two or three that takes effect now (Trophy Case): the two-way switch, saving on press. #}
+{% macro choice(action, name, options, current, label) -%}
+<form method="post" action="{{ action }}" class="seg" role="radiogroup" aria-label="{{ label }}" data-choice="{{ name }}">
+  {%- for value, said, about in options %}<button type="submit" name="{{ name }}" value="{{ value }}" aria-pressed="{{ 'true' if value == current else 'false' }}"{% if about %} title="{{ about }}"{% endif %}>{{ said }}</button>{% endfor %}
+</form>
+{%- endmacro %}

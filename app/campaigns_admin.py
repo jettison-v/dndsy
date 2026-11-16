@@ -137,12 +137,13 @@ def set_test(request: Request, is_test: str = Form(""), db: Session = Depends(ge
     if denied:
         return denied
     c = web.campaign(db)
+    toast = ""
     if c is not None:
         c.is_test = bool(is_test)
         db.commit()
         access.invalidate()
-        request.session["toast"] = f"{c.name} is {'a test campaign: test copies of characters can be added on Manage › Table' if c.is_test else 'no longer a test campaign'}."
-    return RedirectResponse(f"{web.base(c)}/manage/settings#test", status_code=303)
+        toast = f"{c.name} is {'a test campaign: test copies of characters can be added on Manage › Table' if c.is_test else 'no longer a test campaign'}."
+    return web.switched(request, toast, f"{web.base(c)}/manage/settings#test")
 
 
 @router.post("/manage/settings/vtt/{key}")
@@ -152,12 +153,14 @@ def switch_piece(request: Request, key: str, on: str = Form(""), db: Session = D
     if denied:
         return denied
     c = web.campaign(db)
+    toast = ""
     if c is not None:
-        request.session["toast"] = vtt.switch(c, key, bool(on))
+        toast = vtt.switch(c, key, bool(on))
         db.commit()
         access.invalidate()
     f = vtt.feature(key)
-    return RedirectResponse(f"{web.base(c)}/manage/settings#{'labs' if key == vtt.LABS or (f and f.labs) else 'features'}", status_code=303)
+    return web.switched(request, toast, f"{web.base(c)}/manage/settings#{'labs' if key == vtt.LABS or (f and f.labs) else 'features'}",
+                        reload=key == vtt.LABS)  # (Labs on shows its features, off hides them)
 
 
 @router.post("/manage/settings/books/{key}")
@@ -168,10 +171,11 @@ def switch_book(request: Request, key: str, on: str = Form(""), db: Session = De
     if denied:
         return denied
     c = web.campaign(db)
+    toast = ""
     if c is not None:
-        request.session["toast"] = books.switch(c, key, bool(on))
+        toast = books.switch(c, key, bool(on))
         db.commit()
-    return RedirectResponse(f"{web.base(c)}/manage/settings#books", status_code=303)
+    return web.switched(request, toast, f"{web.base(c)}/manage/settings#books")
 
 
 @router.post(BACK + "/characters/{character_id:int}/move")

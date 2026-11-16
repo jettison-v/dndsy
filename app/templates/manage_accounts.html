@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Accounts · Manage · askdnd{% endblock %}
 {% block content %}
+{% from "_settings.html" import switch %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Accounts</h1></div>
@@ -16,20 +17,23 @@
           <label class="field"><span>Name</span><input type="text" name="name" value="{{ p.name }}" maxlength="200" required></label>
           <button class="btn small" type="submit">Save name</button></form></details>{% endif %}</span>
       <span>{% for c, r in p.campaigns %}<a href="/c/{{ c.slug }}/manage/table">{{ c.name }}</a> ({{ role_labels[r] | lower if r != "dm" else "DM" }}){{ ", " if not loop.last }}{% else %}<span class="note">No campaign yet</span>{% endfor %}</span>
-      <span>{% if fixed and p.invited %}<span class="tag published">Admin</span>
-        {% else %}<label class="check"><input type="checkbox" name="admin" value="1" form="acct-{{ p.email }}" {{ "checked" if p.level == "admin" }}> Admin</label>{% endif %}</span>
-      <span class="record-actions">{% if not (fixed and p.invited) %}<button class="btn small" type="submit" form="acct-{{ p.email }}">{{ "Invite" if not p.invited else "Save" }}</button>{% endif %}
-        {% if p.user and p.invited and p.level != "admin" %}<form method="post" action="/manage/accounts/feedback" class="inline"><input type="hidden" name="email" value="{{ p.email }}"><input type="hidden" name="on" value="{{ '' if p.user.feedback else '1' }}"><button class="btn small" type="submit" aria-pressed="{{ 'true' if p.user.feedback else 'false' }}" title="Lets this account send feedback for Claude with \ (for your test accounts; admins always can)">Sends feedback: {{ "on" if p.user.feedback else "off" }}</button></form>{% endif %}
+      {# Admin and Feedback: switches that save themselves (the UI review's pick 1, Nov 16, docs/mockups/one-switch/); an owner or
+         yourself is always an admin, an admin always sends feedback, and someone not invited yet gets Invite first #}
+      <span class="acct-set" data-col="admin">{% if fixed and p.invited %}<span class="tag published">Admin</span>
+        {% elif p.invited %}{{ switch("/manage/accounts/update", p.level == "admin", "Admin: " ~ (p.name or p.email), name="admin", extra={"email": p.email}) }}{% endif %}</span>
+      <span class="acct-set" data-col="feedback">{% if p.invited and p.level == "admin" %}<span class="note">Always</span>
+        {% elif p.user and p.invited %}{{ switch("/manage/accounts/feedback", p.user.feedback, "Sends feedback: " ~ (p.name or p.email), extra={"email": p.email}) }}{% endif %}</span>
+      <span class="record-actions">{% if not p.invited %}<button class="btn small" type="submit" form="acct-{{ p.email }}">Invite</button>{% endif %}
         {% if p.email in can_view %}<form method="post" action="/view-as" class="inline"><input type="hidden" name="email" value="{{ p.email }}"><button class="btn small" type="submit" title="See askdnd as {{ p.name or p.email }} does, read-only">View as</button></form>{% endif %}
         {% if p.invited and not fixed %}<button class="btn link small danger" type="submit" name="remove" value="1" form="acct-{{ p.email }}">Remove</button>{% endif %}</span>
     </li>
     {% endmacro %}
-    <ul class="records cols-4">
-      <li class="records-head" aria-hidden="true"><span>Person</span><span>Campaigns</span><span>Admin</span><span></span></li>
+    <ul class="records cols-acct">
+      <li class="records-head" aria-hidden="true"><span>Person</span><span>Campaigns</span><span>Admin</span><span title="Can send feedback for Claude with \ (for test accounts; admins always can)">Feedback</span><span></span></li>
       {% for p in people %}{{ person(p) }}{% endfor %}
     </ul>
     {% if away %}<details class="fold"><summary>Removed or not invited yet ({{ away | length }})</summary>
-      <ul class="records cols-4">{% for p in away %}{{ person(p) }}{% endfor %}</ul></details>{% endif %}
+      <ul class="records cols-acct">{% for p in away %}{{ person(p) }}{% endfor %}</ul></details>{% endif %}
   </section>
 
   <section class="section">

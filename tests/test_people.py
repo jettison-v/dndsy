@@ -108,6 +108,14 @@ def test_owner_cant_be_demoted_and_admins_cant_lower_themselves(env, monkeypatch
     boss, _ = sign_in(monkeypatch, "boss@example.com")
     boss.post("/manage/accounts/update", data={"email": "boss@example.com"})  # no Admin box on your own row
     assert access.level("boss@example.com") == "admin"
+    # The Admin switch (the UI review's pick 1, Nov 16) saves in place; refused (here an owner removed), it says why (409)
+    r = owner.post("/manage/accounts/update", data={"email": "owner@example.com", "remove": "1"}, headers={"X-Switch": "1"})
+    assert r.status_code == 409 and "always admins" in r.headers["HX-Trigger"] and access.level("owner@example.com") == "admin"
+    owner.post("/manage/accounts", data={"email": "pal@example.com"})
+    r = owner.post("/manage/accounts/update", data={"email": "pal@example.com", "admin": "1"}, headers={"X-Switch": "1"})
+    assert r.status_code == 204 and access.level("pal@example.com") == "admin"
+    page = owner.get("/manage/accounts").text
+    assert 'data-col="admin"' in page and 'data-switch="admin"' in page and ">Save<" not in page  # (no Save: it saves itself)
 
 
 def test_imported_members_need_an_invite(env, monkeypatch, db):

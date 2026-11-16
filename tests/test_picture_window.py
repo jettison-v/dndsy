@@ -84,7 +84,13 @@ def test_the_art_style_its_pictures_to_match_and_off(people, db, openai):
     call = openai[-1]
     assert call["path"] == "edits" and len(call["files"]) == 1 and "only for their painting style" in call["fields"]["prompt"]
     assert "A wide view of the place" in call["fields"]["prompt"] and call["fields"]["size"] == "1536x1024"  # (a place: wide)
-    dm.post("/c/main/manage/settings/art-style", data={"words": "Woodcut", "off": "1"}, headers=HX)
+    # Describe it is its own switch (the UI review's pick 1, Nov 16): it saves itself, and saving the words keeps it
+    r = dm.post("/c/main/manage/settings/art-describe", data={}, headers={"X-Switch": "1"})
+    assert r.status_code == 204 and "Describe it: off" in r.headers["HX-Trigger"]
+    dm.post("/c/main/manage/settings/art-style", data={"words": "Woodcut"}, headers=HX)
+    db.refresh(campaign)
+    assert campaign.art_style["off"] is True and campaign.art_style["words"] == "Woodcut"
+    assert player.post("/c/main/manage/settings/art-describe", data={"on": "1"}, headers={"X-Switch": "1"}).status_code == 404
     assert "switched off" in dm.get(f"/pictures?for=entity:{w.id}").text
     r = dm.post("/pictures/draw", data={"for": f"entity:{w.id}", "words": "A village"}, headers=HX)
     assert r.status_code == 409 and len(openai) == 2

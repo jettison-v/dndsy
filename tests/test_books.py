@@ -122,8 +122,11 @@ def test_wild_shape_offers_the_books_beasts_labelled_and_switchable(db, cole, pl
     page = player.get(url).text
     assert "Glimmer Hound" not in page and 'data-ls-value="MM 2024"' not in page
     assert player.get(f"{url}/form?name=Glimmer Hound").status_code == 404
-    dm.post("/c/main/manage/settings/books/mm-2024", data={"on": "1"})
+    # From the page's script the switch saves in place (the UI review's pick 1, Nov 16): 204 and a corner card, no reload
+    r = dm.post("/c/main/manage/settings/books/mm-2024", data={"on": "1"}, headers={"X-Switch": "1"})
+    assert r.status_code == 204 and "toast" in r.headers["HX-Trigger"] and "location" not in r.headers
     assert "<b>Glimmer Hound</b>" in player.get(url).text
+    assert 'data-switch="on"' in dm.get("/c/main/manage/settings").text  # (every switch on Settings is the one piece)
 
 
 def test_settings_say_when_no_book_is_in_askdnd(db, admin):

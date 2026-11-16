@@ -186,8 +186,9 @@ def creature_picture(request: Request, character_id: int, creature: str, size: s
 
 
 @router.post("/manage/settings/art-style")
-def save_style(request: Request, words: str = Form(""), refs: list[str] = Form([]), off: str = Form(""), db: Session = Depends(get_db)):
-    """Its DM or an admin: the words, up to four of the campaign's own pictures to match, and whether Describe it is on."""
+def save_style(request: Request, words: str = Form(""), refs: list[str] = Form([]), db: Session = Depends(get_db)):
+    """Its DM or an admin: the words and up to four of the campaign's own pictures to match (Describe it is its own
+    switch, below)."""
     from app.auth import can_edit_settings
 
     user = current_user(request)
@@ -199,9 +200,23 @@ def save_style(request: Request, words: str = Form(""), refs: list[str] = Form([
             or (p.character_id and (c := db.get(Character, p.character_id)) and c.campaign_id == campaign.id)}
     faces = {f"{drawing.PORTRAIT}{c.id}" for c, _ in _portraits(db, campaign)}
     picked = [int(r) if r.isdigit() else r for r in refs if (r.isdigit() and int(r) in mine) or r in faces][: drawing.REFS]
-    campaign.art_style = {"words": " ".join(words.split())[:600], "refs": picked, "off": bool(off)}
+    campaign.art_style = {"words": " ".join(words.split())[:600], "refs": picked, "off": bool((campaign.art_style or {}).get("off"))}
     db.commit()
     return Response(status_code=204, headers={"HX-Trigger": json.dumps({"toast": "Art style saved"})})
+
+
+@router.post("/manage/settings/art-describe")
+def switch_describe(request: Request, on: str = Form(""), db: Session = Depends(get_db)):
+    """Describe it on or off for this campaign (its DM or an admin): the switch on Settings › Art style (the UI review's
+    pick 1, Nov 16). Off, Upload and D&D Beyond's art stay."""
+    from app.auth import can_edit_settings
+
+    campaign = web.campaign(db)
+    if campaign is None or not can_edit_settings(current_user(request)):
+        raise HTTPException(404)
+    campaign.art_style = {**(campaign.art_style or {}), "off": not on}
+    db.commit()
+    return web.switched(request, f"Describe it: {'on' if on else 'off'}", f"{web.base(campaign)}/manage/settings#art-style")
 
 
 def _campaign_of_entity(db: Session, entity_id: int) -> int | None:

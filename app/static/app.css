@@ -1062,10 +1062,15 @@ details.fold > summary { cursor: pointer; color: var(--muted); font-size: var(--
 .switch[aria-checked=true]::after { left: 21px; background: var(--green); }
 .switch:disabled { opacity: .6; cursor: default; }
 button.switch { cursor: pointer; }
+/* A setting that takes effect now (_settings.html; the UI review's pick 1, Nov 16, docs/mockups/one-switch/): its name and one
+   line on the left, the switch (or the two-way switch) at the row's right, saving itself. */
+.switch-form { display: inline-flex; margin: 0; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); padding: var(--sp-3) 0; border-top: 1px solid var(--line); }
+.set-words { min-width: 0; }
+.set-words b { display: block; color: var(--text-strong); }
+.set-words .note { display: block; }
+@media (max-width: 640px) { .set-row:has(> .seg) { flex-wrap: wrap; } }
 /* The VTT switch (Manage › Settings › Virtual tabletop) and a test campaign's tag (VTT 0.1) */
-.vtt-test { display: flex; align-items: flex-start; gap: var(--sp-3); margin: var(--sp-3) 0 var(--sp-4); }
-.vtt-test b { display: block; color: var(--text-strong); }
-.vtt-test .note { display: block; }
 .campaign-test { font-size: var(--fs-xs); margin-left: 4px; vertical-align: 1px; }
 .econ { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .econ .section { position: relative; margin: 0; padding: 16px 18px; display: flex; flex-direction: column; }
@@ -3079,6 +3084,20 @@ a.cx-node:hover { border-color: var(--text); }
   .records.cols-4 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
   .records.cols-4 > .records-head > :last-child { display: none; }
   .records.cols-4 > .record > .record-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+/* Accounts: Person, Campaigns, Admin, Feedback and its buttons; the two switches in their own columns (pick 1) */
+.records.cols-acct { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto auto auto; }
+.acct-set { display: flex; justify-content: center; align-items: center; min-height: 24px; }
+@media (max-width: 1099px) {
+  .records.cols-acct { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto; }
+  .records.cols-acct > .records-head > :last-child { display: none; }
+  .records.cols-acct > .record > .record-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}
+@media (max-width: 640px) {  /* a phone: Campaigns folds away, the two switches stay labelled beside the name */
+  .records.cols-acct { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .records.cols-acct > .records-head { display: grid; }
+  .records.cols-acct > .records-head > :nth-child(2), .records.cols-acct > .record > :nth-child(2) { display: none; }
+  .records.cols-acct > .record > .record-main { grid-column: auto; }
 }
 /* Form row: fields side by side, bottom-aligned with their button */
 .form-row { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: flex-end; }

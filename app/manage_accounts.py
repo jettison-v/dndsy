@@ -102,12 +102,12 @@ def feedback(request: Request, email: str = Form(...), on: str = Form(""), db: S
     if denied:
         return denied
     u = db.scalar(select(User).where(User.email == email.strip().lower()))
-    if u is not None:
-        u.feedback = bool(on)
-        db.commit()
-        access.invalidate()
-        request.session["toast"] = f"{u.name}: {'sends' if u.feedback else 'no longer sends'} feedback"
-    return RedirectResponse(BACK, status_code=303)
+    if u is None:
+        return web.switched(request, web.notice("No such account.", "warn"), BACK, ok=False)
+    u.feedback = bool(on)
+    db.commit()
+    access.invalidate()
+    return web.switched(request, f"{u.name}: {'sends' if u.feedback else 'no longer sends'} feedback", BACK)
 
 
 @router.post("/update")
@@ -122,11 +122,10 @@ def update(request: Request, email: str = Form(...), admin: str = Form(""), remo
     mine = access.is_owner(email) or email == user["email"].lower()
     tool = access.REMOVED if remove else access.ADMIN if (admin or mine) else access.MEMBER
     if access.is_owner(email) and tool != access.ADMIN:
-        request.session["toast"] = web.notice("Owners are set on Railway (ADMIN_EMAILS) and are always admins.", "warn")
-    elif email == user["email"].lower() and tool != access.ADMIN:
-        request.session["toast"] = web.notice("You can't lower your own access.", "warn")
-    else:
-        _save(db, email, tool)
-        db.commit()
-        request.session["toast"] = "Removed" if tool == access.REMOVED else "Saved"
-    return RedirectResponse(BACK, status_code=303)
+        return web.switched(request, web.notice("Owners are set on Railway (ADMIN_EMAILS) and are always admins.", "warn"), BACK, ok=False)
+    if email == user["email"].lower() and tool != access.ADMIN:
+        return web.switched(request, web.notice("You can't lower your own access.", "warn"), BACK, ok=False)
+    _save(db, email, tool)
+    db.commit()
+    said = "Removed" if tool == access.REMOVED else f"{email}: admin" if tool == access.ADMIN else f"{email}: not an admin"
+    return web.switched(request, said, BACK)  # (the Admin switch, or Invite and Remove, which come back to the list)
