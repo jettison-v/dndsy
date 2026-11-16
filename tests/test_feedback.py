@@ -6,7 +6,7 @@ import io
 
 import pytest
 from PIL import Image
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app import access, config
 from app.importer import import_bundle
@@ -26,8 +26,8 @@ def png() -> str:
     return "data:image/png;base64," + base64.b64encode(out.getvalue()).decode()
 
 
-def note(client, text="Speed should show the swim speed too.", **more):
-    return client.post("/feedback", json={"text": text, "url": "http://localhost/characters/1/battle",
+def note(client, text="Speed should show the swim speed too.", kind="broken", **more):
+    return client.post("/feedback", json={"text": text, "kind": kind, "url": "http://localhost/characters/1/battle",
                                            "context": {"page": "Cole · Battle", "window": "1440 × 900", "browser": "Chrome 132 on macOS",
                                                        "extension": "0.9.9", "pointed": {"label": "Speed", "path": "main > div.nt"}},
                                            "html": "<html><body>Battle</body></html>", "shot": png(), **more})
@@ -364,3 +364,102 @@ def test_the_dm_over_rule_is_one_rule():
     assert not access.dm_over("dm@x", "q@x", rows)  # (q is the DM of 2, where dm@ plays)
     assert not access.dm_over("dm@x", "co@x", rows)  # (two DMs of one campaign)
     assert not access.dm_over("dm@x", "dm@x", rows) and not access.dm_over(None, "p@x", rows) and not access.dm_over("dm@x", "", rows)
+
+
+def test_a_note_says_what_it_is_and_nothing_picks_it_for_you(admin, db):
+    """Brett, Nov 16: a note is something broken, an idea or a question, picked when it's sent and never for you (a kind
+    picked for you is never changed). Without one, or with one askdnd doesn't know, nothing is kept."""
+    assert note(admin, kind=None).status_code == 400
+    assert note(admin, kind="bug").status_code == 400
+    assert note(admin, kind=["idea"]).status_code == 400  # (not a string: refused, never a 500)
+    assert db.scalar(select(func.count()).select_from(Feedback)) == 0
+    assert note(admin, kind="question").status_code == 200
+    assert db.scalar(select(Feedback)).kind == "question"
+    notes = admin.get("/your-notes?tab=askdnd").text  # (Notes you sent filters by it, even with one kind sent so far)
+    assert notes.count('data-ls-group="what"') == 3
+    window = admin.get("/help").text  # (the window on every page: three choices, none on)
+    assert window.count('data-fb-kind="') == 3 and 'class="chip on" role="radio"' not in window
+
+
+def test_the_queue_sorts_by_kind_and_an_admin_or_claude_changes_one_saying_why(admin, player, db, monkeypatch):
+    """Brett, Nov 16: the queue filters by kind; a "bug" that's really a design change is changed, with why in its
+    thread for the admins and Claude, never on its sender's Your notes. A note sent before kinds says Not sorted."""
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    note(admin, text="The Rest button wraps.")
+    note(admin, text="Could Battle show the swim speed?", kind="idea")
+    note(player, text="Why is my Speed 25?", kind="question")
+    wraps, swim, why = db.scalars(select(Feedback).order_by(Feedback.id)).all()
+    old = Feedback(sender="Old (admin)", text="Sent before kinds.", status="new")
+    db.add(old)
+    db.commit()
+    page = admin.get("/manage/feedback?tab=new").text
+    assert 'data-kind="broken"' in page and 'data-kind="idea"' in page and 'data-kind="none"' in page
+    ideas = admin.get("/manage/feedback?tab=new&kind=idea").text
+    assert "Could Battle show the swim speed?" in ideas and "The Rest button wraps." not in ideas
+    assert "Sent before kinds." in admin.get("/manage/feedback?tab=new&kind=none").text
+    r = admin.post(f"/manage/feedback/{wraps.id}?tab=new&kind=broken", data={"to": "kind", "kind": "idea", "answer": "It's a design change"},
+                   follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].endswith("tab=new&kind=broken")
+    r = admin.post(f"/manage/feedback/{wraps.id}?tab=new&kind=x//y", data={"to": "kind", "kind": "idea"}, follow_redirects=False)
+    assert r.headers["location"].endswith("tab=new&kind=")  # (only a kind askdnd knows goes back into the address)
+    db.refresh(wraps)
+    assert wraps.kind == "idea" and wraps.status == "new" and wraps.thread[-1]["text"] == "Broken → Idea: It's a design change"
+    assert admin.post(f"/manage/feedback/{wraps.id}", data={"to": "kind", "kind": "nonsense"}).status_code == 400
+    monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 40)
+    claude = {"X-Feedback-Key": "k" * 40}
+    assert [i["id"] for i in admin.get("/api/feedback?kind=none", headers=claude).json()["items"]] == [old.id]
+    assert admin.post(f"/api/feedback/{old.id}", json={"kind": "broken", "why": "Sorted once"}, headers=claude).json()["kind"] == "broken"
+    assert admin.post(f"/api/feedback/{old.id}", json={"kind": "bug"}, headers=claude).status_code == 400
+    assert admin.post(f"/api/feedback/{old.id}", json={"kind": {"x": 1}}, headers=claude).status_code == 400
+    assert {i["id"] for i in admin.get("/api/feedback?kind=idea,question", headers=claude).json()["items"]} == {swim.id, wraps.id}
+    admin.post(f"/manage/feedback/{why.id}", data={"to": "new"})  # (approved)
+    admin.post(f"/manage/feedback/{why.id}", data={"to": "kind", "kind": "broken", "answer": "Speed is read wrong"})
+    assert "Speed is read wrong" not in player.get("/your-notes?tab=askdnd").text  # (between the admins and Claude)
+
+
+def test_an_idea_and_a_question_say_where_they_stand_in_their_own_words(admin, player, db, monkeypatch):
+    """Brett, Nov 16: an idea goes onto the Roadmap and is built later; a question is answered. Its sender's track,
+    label and corner card say so (Your notes)."""
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    note(player, text="Could Battle show the swim speed?", kind="idea")
+    note(player, text="Why is my Speed 25?", kind="question")
+    idea, question = db.scalars(select(Feedback).order_by(Feedback.id)).all()
+    player.get("/your-notes?tab=askdnd")
+    monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 40)
+    claude = {"X-Feedback-Key": "k" * 40}
+    for fb in (idea, question):
+        admin.post(f"/manage/feedback/{fb.id}", data={"to": "new"})
+    admin.post(f"/api/feedback/{idea.id}", json={"status": "planned"}, headers=claude)
+    admin.post(f"/api/feedback/{question.id}", json={"tell": "A Dwarf's Speed is 25 in 2024? No: 30.", "status": "done"}, headers=claude)
+    cards = [c["text"] for c in player.get("/your-notes/news").json()["cards"]]
+    assert "On the Roadmap: “Could Battle show the swim speed?”" in cards and "Answered: “Why is my Speed 25?”" in cards
+    page = player.get("/your-notes?tab=askdnd").text
+    assert page.count('data-ls-group="what"') == 3 and 'data-kind="idea"' in page and 'data-kind="question"' in page
+    from app.your_notes import askdnd_note
+
+    db.refresh(idea)
+    db.refresh(question)
+    shown = {fb.kind: askdnd_note(fb) for fb in (idea, question)}
+    assert shown["idea"]["label"] == "On the Roadmap" and [s["label"] for s in shown["idea"]["track"]] == ["Sent", "Approved", "On the Roadmap", "Built"]
+    assert [s["state"] for s in shown["idea"]["track"]] == ["done", "done", "done", "now"]
+    assert shown["question"]["label"] == "Answered" and [s["label"] for s in shown["question"]["track"]] == ["Sent", "Approved", "Answered"]
+    assert shown["question"]["track"][-1]["state"] == "done"
+    for label in ("On the Roadmap", "Answered"):  # (their own status chips; Planned, Fixed and Closed always show)
+        assert f'data-ls-value="{label}"' in page
+    assert 'data-ls-value="Built"' not in page  # (nothing built yet: no chip for it)
+
+
+def test_a_staging_note_from_before_kinds_is_kept_not_sorted(admin, db, monkeypatch):
+    """Staging may run code from before kinds: its note is kept, with no kind, to be sorted."""
+    monkeypatch.setattr(config, "FEEDBACK_KEY", "k" * 32)
+    r = admin.post("/api/feedback/from-staging", json={"email": "admin@example.com", "text": "From older staging"},
+                   headers={"X-Feedback-Key": "k" * 32})
+    assert r.status_code == 200 and db.get(Feedback, r.json()["id"]).kind == ""

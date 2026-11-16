@@ -12,8 +12,10 @@
 <ol class="st-track" aria-label="Where it stands">{% for s in steps %}<li class="st-{{ s.state }}">{{ s.label }}</li>{% endfor %}</ol>
 {%- endmacro %}
 
-{% macro note_reader(kind, notes, placeholder, from_label, statuses) %}
+{% macro note_reader(kind, notes, placeholder, from_label, statuses, base=[]) %}
 {% set froms = notes | map(attribute="from") | unique | sort | list %}
+{% set present = notes | map(attribute="label") | list %}
+{% set whats = feedback_kinds.values() | map(attribute=0) | list if kind == "askdnd" else [] %}{# (Brett, Nov 16: always, each kind's count) #}
 <div class="reader notes-reader">
   <aside class="reader-nav" data-list="notes-{{ kind }}" data-noun="note" data-nouns="notes" data-default-sort="newest" aria-label="Your notes">
     <div class="reader-nav-head">
@@ -22,8 +24,10 @@
       <summary>Filters <span class="count" data-ls-fold-count hidden></span></summary>
       <div class="reader-filters">
         <div class="reader-filters-head"><span>Where it stands</span><button type="button" class="btn link small" data-ls-clear>Clear</button></div>
-        <div class="ls-chips">{% for v in statuses %}<button type="button" class="ls-chip" data-ls-group="status" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}
+        <div class="ls-chips">{% for v in statuses if v in (base or statuses) or v in present %}<button type="button" class="ls-chip" data-ls-group="status" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}
           <button type="button" class="ls-chip" data-ls-group="new" data-ls-value="New to you" aria-pressed="false">New to you <span class="ls-n" data-ls-n></span></button></div>
+        {% if whats %}<div class="reader-filters-head"><span>What it is</span></div>
+        <div class="ls-chips">{% for v in whats %}<button type="button" class="ls-chip" data-ls-group="what" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}</div>{% endif %}
         {% if froms | length > 1 %}<div class="reader-filters-head"><span>{{ from_label }}</span></div>
         <div class="ls-chips">{% for v in froms %}<button type="button" class="ls-chip" data-ls-group="from" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}</div>{% endif %}
         <div class="notes-sort"><label class="ls-select"><span>Order</span><select data-ls-sort aria-label="Order"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label>
@@ -36,7 +40,7 @@
       <a class="rd-item nt-row" data-ls-row data-note="{{ n.key }}" href="/your-notes?tab={{ kind }}&amp;note={{ n.key }}"
          data-name="{{ [n.title, n.text, n.where, n.answer.text if n.answer else '', n.says] | join(' ') | lower }}"
          data-sort-newest="{{ n.rank_newest }}" data-sort-oldest="{{ n.rank_oldest }}" data-group-newest="{{ 'Open' if n.open else 'Done' }}" data-group-oldest="{{ 'Open' if n.open else 'Done' }}"
-         data-f='{{ {"status": n.label, "new": "New to you" if n.new else "", "from": n.from} | tojson }}'>
+         data-f='{{ {"status": n.label, "new": "New to you" if n.new else "", "from": n.from, "what": n.what or ""} | tojson }}'>
         <span class="st-dot st-{{ n.dot }}" title="{{ n.label }}" aria-hidden="true"></span>
         <span class="nt-title">{{ n.title }}{% if n.new %} <span class="notes-dot" title="New since you last looked">New</span>{% endif %}</span>
         <span class="nt-date">{{ n.at.strftime("%b %-d") }}</span>
@@ -52,6 +56,7 @@
     <article class="reader-article nt-read" data-note-read="{{ n.key }}"{% if not (note == n.key or (note not in notes | map(attribute="key") | list and loop.first)) %} hidden{% endif %}>
       {{ status_track(n.track) }}
       <h2 class="nt-h">{{ n.title }}</h2>
+      {% if n.what %}<span class="tag" data-kind="{{ n.what_key }}">{{ n.what }}</span>{% endif %}
       <section class="nt-part"><h3 class="divider">You asked · {{ n.at.strftime("%b %-d") }}{% if n.where %} · {% if n.href %}<a href="{{ n.href }}" data-no-peek>{{ n.where }}</a>{% else %}{{ n.where }}{% endif %}{% endif %}</h3>
         <div class="nt-quote">{{ n.text }}</div>
         {% for m in n.earlier if m.mine %}<div class="fb-msg you"><small>You added</small>{{ m.text }}</div>{% endfor %}</section>
@@ -88,8 +93,9 @@
 
   {% if askdnd %}
   <section id="t-askdnd" class="notes-tab"{% if tab != "askdnd" %} hidden{% endif %}>
-    <div class="notes-who"><span class="notes-ico app" aria-hidden="true">a</span><p>Brett reads these first, then Claude, who fixes askdnd: <b>Waiting for an admin</b>, then <b>With Claude</b>, <b>Planned</b> and <b>Fixed</b>; <b>Closed</b> if askdnd won't change it for now. Press <kbd>\</kbd> on any page to send one about it.</p></div>
-    {{ note_reader("askdnd", lists.askdnd, "Search your notes", "Sent from", ["Waiting for an admin", "With Claude", "Planned", "Fixed", "Closed"]) }}
+    <div class="notes-who"><span class="notes-ico app" aria-hidden="true">a</span><p>An admin reads these first, then Claude: something broken goes <b>Waiting for an admin</b>, <b>With Claude</b>, <b>Planned</b>, <b>Fixed</b>; an idea goes <b>On the Roadmap</b>, then <b>Built</b>; a question is <b>Answered</b>. <b>Closed</b> if askdnd won't change it for now. Press <kbd>\</kbd> on any page to send one.</p></div>
+    {{ note_reader("askdnd", lists.askdnd, "Search your notes", "Sent from", ["Waiting for an admin", "With Claude", "Planned", "On the Roadmap", "Fixed", "Built", "Answered", "Closed"],
+                    ["Waiting for an admin", "With Claude", "Planned", "Fixed", "Closed"]) }}
   </section>
   {% endif %}
 </main>

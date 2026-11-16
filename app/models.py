@@ -920,7 +920,8 @@ class Feedback(Timestamped, Base):
     Brett, 2026-11-03, docs/mockups/feedback-queue/), with what the page was at that moment: where and when, the screen,
     the browser and the extension's version (`context`), the page as drawn (`html`), its picture and a pasted one. It
     waits in Manage › askdnd › Feedback until Claude works through the queue: new → question (Claude asked, in
-    `thread`) → planned → done (with its PR), or deleted."""
+    `thread`) → planned → done (with its PR), or deleted. Its `kind` says what it is: something broken, an idea or a
+    question."""
 
     __tablename__ = "feedback"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -928,6 +929,9 @@ class Feedback(Timestamped, Base):
     sender: Mapped[str] = mapped_column(String(300), default="", server_default="")  # who and as what: "Cathartic (player)"
     text: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="new", server_default="new", index=True)
+    # what it is, picked when it's sent (feedback.KINDS; Brett, Nov 16): broken (fixed next round), idea (onto the
+    # Roadmap's Ideas from feedback), question (answered in its thread); "" for a note sent before Nov 16 not yet sorted
+    kind: Mapped[str] = mapped_column(String(20), default="", server_default="")
     url: Mapped[str] = mapped_column(String(1000), default="", server_default="")
     context: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
     html: Mapped[str] = mapped_column(Text, default="", server_default="")

@@ -7,11 +7,14 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Feedback for Claude</h1></div>
-  <p class="subtitle">Notes sent from any page with <kbd>\</kbd> or your account menu (and by the accounts you let send it, on Accounts). Claude reads them when you say "review the feedback": a question it asks shows here for your answer, and a note it fixed says which change did it.</p>
+  <p class="subtitle">Notes sent from any page with <kbd>\</kbd> or your account menu (and by the accounts you let send it, on Accounts), each saying what it is. Claude reads them when you say "review the feedback": it fixes what's broken, puts an idea on the Roadmap's Ideas from feedback for you to move up, and answers a question in its thread. A question it asks you shows here for your answer, and a note it fixed says which change did it.</p>
 
   <nav class="sub-tabs" aria-label="Where each stands">
-    {% for key, label, n in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}">{{ label }}{% if n and key in ("review", "new", "question", "planned") %} <span class="mcount">{{ n }}</span>{% elif n %} <span class="note">{{ n }}</span>{% endif %}</a>{% endfor %}
+    {% for key, label, n in tabs %}<a href="?tab={{ key }}{% if kind %}&amp;kind={{ kind }}{% endif %}" class="{{ 'on' if key == tab }}">{{ label }}{% if n and key in ("review", "new", "question", "planned") %} <span class="mcount">{{ n }}</span>{% elif n %} <span class="note">{{ n }}</span>{% endif %}</a>{% endfor %}
   </nav>
+  <div class="fb-kind-chips" role="group" aria-label="What it is">{# (Brett, Nov 16: broken is fixed next round, an idea goes onto the Roadmap, a question is answered) #}
+    {% for k, short, n in kind_chips %}<a href="?tab={{ tab }}{% if k != kind %}&amp;kind={{ k }}{% endif %}" class="chip{{ ' on' if k == kind }}" data-kind="{{ k }}"{% if k == kind %} aria-current="true"{% endif %}>{{ short }} <span class="ls-n">{{ n }}</span></a>{% endfor %}
+  </div>
 
   <ul class="fb-list">
     {% for f in items %}{% set ctx = f.context or {} %}{% set hide = f.id in kept %}{# (C9: the page can hold notes kept from you) #}
@@ -20,7 +23,7 @@
         <summary class="fb-row">
           {% if f.shot_key and not hide %}<img class="fb-thumb" src="/manage/feedback/{{ f.id }}/shot" alt="" loading="lazy">{% else %}<span class="fb-thumb" aria-hidden="true"></span>{% endif %}
           <span class="fb-main"><b>{{ f.text | truncate(160) }}</b>
-            <span class="note">{% if ctx.staging %}<span class="tag staging-tag" title="Sent from staging.askdnd.ai">Staging</span> {% endif %}{{ ctx.page or f.url }} · <time datetime="{{ f.created_at.isoformat() }}" data-clock="date">{{ f.created_at | ago }}</time> · {{ f.sender }}{% if ctx.viewing_as %} viewing as {{ ctx.viewing_as }}{% endif %}{% if ctx.browser %} · {{ ctx.browser }}{% endif %}{% if ctx.window %}, {{ ctx.window }}{% endif %}{% if ctx.pointed and not hide %} · pointed at {{ ctx.pointed.label }}{% endif %}{% if f.pasted_key %} · a screenshot pasted{% endif %}</span></span>
+            <span class="note">{% if f.kind in kinds %}<span class="tag" data-kind="{{ f.kind }}">{{ kinds[f.kind][1] }}</span> {% elif f.status not in ("done", "deleted") %}<span class="tag" data-kind="none">Not sorted</span> {% endif %}{% if ctx.staging %}<span class="tag staging-tag" title="Sent from staging.askdnd.ai">Staging</span> {% endif %}{{ ctx.page or f.url }} · <time datetime="{{ f.created_at.isoformat() }}" data-clock="date">{{ f.created_at | ago }}</time> · {{ f.sender }}{% if ctx.viewing_as %} viewing as {{ ctx.viewing_as }}{% endif %}{% if ctx.browser %} · {{ ctx.browser }}{% endif %}{% if ctx.window %}, {{ ctx.window }}{% endif %}{% if ctx.pointed and not hide %} · pointed at {{ ctx.pointed.label }}{% endif %}{% if f.pasted_key %} · a screenshot pasted{% endif %}</span></span>
           <span class="fb-st {{ f.status }}">{{ labels[f.status] }}</span>
         </summary>
         <div class="fb-open">
@@ -32,24 +35,29 @@
           <div class="fb-side">
             <p class="fb-text">{{ f.text }}</p>
             {% set who = f.sender.split(" (")[0] or "Its sender" %}
-            {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else who if m.who == "sender" else "You" }}{% if m.to == "sender" %}, to {{ who }}{% endif %}</small>{{ m.text }}</div>{% endfor %}
+            {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else who if m.who == "sender" else "You" }}{% if m.to == "sender" %}, to {{ who }}{% elif m.kind %}, what it is{% endif %}</small>{{ m.text }}</div>{% endfor %}
             {% if f.pr %}<p class="note">Fixed in <a href="{{ f.pr }}" target="_blank" rel="noopener">{{ f.pr }}</a></p>{% endif %}
-            {% if f.status != "deleted" %}{% set asked = f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
+            {% if f.status != "deleted" %}{% set asked = f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer">
               <label class="field"><span>{{ "Your answer" if asked else "Add to it and send it to Claude" if f.status == "review" else "Add to this note" }}</span><textarea name="answer" rows="2" required{% if not asked %} placeholder="Something you forgot, or what happened next"{% endif %}></textarea></label>
               <input type="hidden" name="to" value="answer"><button class="btn {{ 'primary' if asked }} small" type="submit">{{ "Answer" if asked else "Add" }}</button></form>{% endif %}
             {% if f.user_id %}<details class="fold"><summary>Reply to {{ who }}</summary>{# (they see it on Your notes, and a corner card once) #}
-              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
+              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer">
                 <label class="field"><span>{{ who }} sees this on Your notes</span><textarea name="answer" rows="2" required></textarea></label>
                 <input type="hidden" name="to" value="tell"><button class="btn small" type="submit">Send to {{ who }}</button></form></details>{% endif %}
             <div class="row tight">
               {% set moves = (("new", "Approve: send to Claude"), ("deleted", "Delete")) if f.status == "review" else (("planned", "Mark planned"), ("done", "Done"), ("new", "Back to new"), ("deleted", "Delete")) %}
               {% for to, label in moves if to != f.status and not (to == "deleted" and f.user_id) %}
-              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="inline"><input type="hidden" name="to" value="{{ to }}"><button class="btn small{{ ' link danger' if to == 'deleted' }}{{ ' primary' if f.status == 'review' and to == 'new' }}" type="submit">{{ label }}</button></form>{% endfor %}
+              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="inline"><input type="hidden" name="to" value="{{ to }}"><button class="btn small{{ ' link danger' if to == 'deleted' }}{{ ' primary' if f.status == 'review' and to == 'new' }}" type="submit">{{ label }}</button></form>{% endfor %}
             </div>
             {% if f.user_id and f.status != "deleted" %}<details class="fold fb-delete"><summary>Delete</summary>{# (Your notes, round 2, Brett Nov 7: a reason for the sender, never required) #}
-              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}" class="fb-answer">
+              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer">
                 <label class="field"><span>Why, for {{ who }} (they see it on Your notes; leave it blank if you like)</span><input type="text" name="answer" maxlength="500" autocomplete="off"></label>
                 <input type="hidden" name="to" value="deleted"><button class="btn small danger" type="submit">Delete</button></form></details>{% endif %}
+            {% if f.status != "deleted" %}<details class="fold"><summary>Change what it is</summary>{# (with why, in its thread for you and Claude; its sender doesn't see it) #}
+              <form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer">
+                <label class="field"><span>It's</span><select name="kind" required>{% for k, v in kinds.items() %}<option value="{{ k }}"{% if k == f.kind %} selected{% endif %}>{{ v[0] }}</option>{% endfor %}</select></label>
+                <label class="field"><span>Why (for Claude; leave it blank if you like)</span><input type="text" name="answer" maxlength="500" autocomplete="off"></label>
+                <input type="hidden" name="to" value="kind"><button class="btn small" type="submit">Change</button></form></details>{% endif %}
             <details class="fold"><summary>Sent with it</summary>
               <dl class="fb-ctx">
                 <dt>Page</dt><dd><a href="{{ f.url }}">{{ f.url }}</a></dd>

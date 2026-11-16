@@ -4592,7 +4592,16 @@ document.addEventListener('click', e => {
   const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
   const shotImg = win.querySelector('[data-fb-shot]'), shotNote = win.querySelector('[data-fb-shot-note]');
   const pastedImg = win.querySelector('[data-fb-pasted]'), dropNote = win.querySelector('[data-fb-drop-note]'), pointedNote = win.querySelector('[data-fb-pointed]');
-  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0, why = '';
+  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0, why = '', kind = '';
+  // What it is (Brett, Nov 16): picked each time, never for you; the box's question follows it (feedback.KINDS)
+  const kindChips = [...win.querySelectorAll('[data-fb-kind]')], ask = win.querySelector('[data-fb-ask]'), askFirst = ask.textContent;
+  const pickKind = k => {
+    kind = k;
+    kindChips.forEach(c => { const on = c.dataset.fbKind === k; c.classList.toggle('on', on); c.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    const chip = kindChips.find(c => c.dataset.fbKind === k);
+    ask.textContent = chip ? chip.dataset.ask : askFirst;
+  };
+  kindChips.forEach(c => c.addEventListener('click', () => { pickKind(c.dataset.fbKind); say(''); }));
   const typing = el => el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
   const say = text => { said.textContent = text; said.hidden = !text; };
   const loadLib = () => lib || (lib = new Promise((ok, no) => {
@@ -4704,7 +4713,7 @@ document.addEventListener('click', e => {
     const mine = ++round;
     unmark(); pointed = null; pasted = null; shot = null;
     ctx = gather(); html = document.documentElement.outerHTML.slice(0, 3000000);
-    form.reset(); say(''); send.disabled = false;
+    form.reset(); say(''); send.disabled = false; pickKind('');
     shotImg.hidden = true; shotNote.hidden = false; shotNote.textContent = "Taking the page's picture…";
     pastedImg.hidden = true; dropNote.hidden = false; pointedNote.textContent = 'Click the thing you mean, if it helps';
     drawCtx();
@@ -4768,12 +4777,13 @@ document.addEventListener('click', e => {
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const text = form.text.value.trim();
+    if (!kind) return say('Pick what it is first: something broken, an idea or a question.');
     if (!text) return say("Say what it's about first.");
     send.disabled = true; say('');
     if (taking && !shot) { say("Finishing the page's picture…"); shot = await taking; say(''); }  // (Send pressed before it was drawn)
     try {
       const r = await fetch('/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ text, url: location.href, context: { ...ctx, pointed }, html, shot, pasted }) });
+        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, pointed }, html, shot, pasted }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
       win.close(); unmark();

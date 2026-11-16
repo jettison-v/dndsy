@@ -8,6 +8,12 @@ When Brett says "review the feedback", pull the queue from askdnd, then answer o
     uv run python scripts/feedback.py set 42 planned             # new | question | planned | done | deleted
     uv run python scripts/feedback.py set 42 done --pr https://github.com/jettison-v/dndsy/pull/190
     uv run python scripts/feedback.py tell 42 "Fixed: …"     # a reply its sender sees on Your feedback
+    uv run python scripts/feedback.py kind 42 idea "It's a new feature, not a fix"   # what it is, and why
+    uv run python scripts/feedback.py pull --kind none            # notes sent before kinds, to sort once
+
+What each kind gets (Brett, Nov 16): **broken**, fix it in the next round (one people would see still goes to Brett as a
+local link first); **idea**, add it to the Roadmap's Ideas from feedback with a size (S, M or L) and set it planned:
+nothing is built until Brett moves it up; **question**, answer it with `tell`, then set it done.
 
 `pull` writes each note to private/feedback/<id>/ (never committed: notes hold campaign pages): note.md (the words,
 who, where, when, the thread), context.json, page.html (the page as drawn), shot.jpg (its picture) and pasted.* (a
@@ -51,7 +57,7 @@ def call(base: str, path: str, body: dict | None = None) -> bytes:
 
 def note_md(item: dict) -> str:
     c = item.get("context") or {}
-    lines = [f"# Feedback {item['id']} · {item['status']}", "", item["text"], "",
+    lines = [f"# Feedback {item['id']} · {item.get('kind') or 'not sorted'} · {item['status']}", "", item["text"], "",
              f"- From: {item['sender']}" + (f", viewing as {c['viewing_as']}" if c.get("viewing_as") else ""),
              f"- Page: {c.get('page', '')} · {item['url']}", f"- When: {c.get('at', '')} (server {c.get('server_at', '')})",
              f"- Window: {c.get('window', '')} · zoom {c.get('zoom', '')} · screen {c.get('screen', '')}",
@@ -71,8 +77,8 @@ def note_md(item: dict) -> str:
 DEFAULT_BASE, STAGING_BASE = "https://askdnd.ai", "https://staging.askdnd.ai"
 
 
-def pull(base: str, status: str) -> None:
-    items = json.loads(call(base, f"/api/feedback?status={status}"))["items"]
+def pull(base: str, status: str, kind: str = "") -> None:
+    items = json.loads(call(base, f"/api/feedback?status={status}" + (f"&kind={kind}" if kind else "")))["items"]
     OUT.mkdir(parents=True, exist_ok=True)
     for item in items:
         full = json.loads(call(base, f"/api/feedback/{item['id']}"))
@@ -86,7 +92,7 @@ def pull(base: str, status: str) -> None:
             data = call(base, f"/api/feedback/{item['id']}/{which}")
             ext = ".jpg" if data[:3] == b"\xff\xd8\xff" else ".webp" if data[8:12] == b"WEBP" else ".png"
             (d / f"{which}{ext}").write_bytes(data)
-        print(f"{item['id']:>4}  {item['status']:<9} {item['sender'][:24]:<24} {item['text'][:90]}")
+        print(f"{item['id']:>4}  {item.get('kind') or '-':<8} {item['status']:<9} {item['sender'][:24]:<24} {item['text'][:90]}")
     print(f"{len(items)} note(s) in {OUT.relative_to(ROOT)}/")
 
 
@@ -98,6 +104,11 @@ def main() -> None:
     sub = p.add_subparsers(dest="cmd", required=True)
     pl = sub.add_parser("pull")
     pl.add_argument("--status", default="new,question,planned")
+    pl.add_argument("--kind", default="", help="broken, idea, question or none (not sorted), comma-separated")
+    kd = sub.add_parser("kind")
+    kd.add_argument("id", type=int)
+    kd.add_argument("kind", choices=["broken", "idea", "question"])
+    kd.add_argument("why", nargs="?", default="")
     ask = sub.add_parser("ask")
     ask.add_argument("id", type=int)
     ask.add_argument("question")
@@ -111,10 +122,12 @@ def main() -> None:
     st.add_argument("--pr", default="")
     a = p.parse_args()
     if a.cmd == "pull":
-        pull(a.base, a.status)
+        pull(a.base, a.status, a.kind)
         if a.base == DEFAULT_BASE:  # (and staging's own queue: notes sent from staging.askdnd.ai, filed as staging-<id>)
             print("Staging:")
-            pull(STAGING_BASE, a.status)
+            pull(STAGING_BASE, a.status, a.kind)
+    elif a.cmd == "kind":
+        print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"kind": a.kind, "why": a.why}))["kind"])
     elif a.cmd == "tell":
         print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"tell": a.text}))["status"])
     elif a.cmd == "ask":
