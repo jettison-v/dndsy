@@ -1541,19 +1541,20 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .ov-card:hover { border-color: var(--line-strong); background: var(--row-hover); }
 .ov-card b { color: var(--text-strong); }
 /* Manage › askdnd › Documents (app/documents.py): the library's rows, and one document in its sealed frame */
-.doc-search { display: flex; gap: var(--sp-2); align-items: center; margin: 0 0 var(--sp-4); max-width: 520px; }
-.doc-search input { flex: 1; min-width: 0; }
-.doc-list { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); }  /* (each row the list's width: on a phone a row grew to its titles' width, 36px past the screen; the UI review, Nov 16) */
-.doc-row { display: grid; grid-template-columns: minmax(0, 15rem) auto 4.5rem minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); align-items: baseline;
-  padding: var(--sp-2) 0; border-top: 1px solid var(--line); }
-.doc-row .tag { justify-self: start; }
-.doc-title { font-weight: 600; color: var(--text-strong); }
+.doc-search { margin: 0 0 var(--sp-3); max-width: 520px; }
+/* Documents: one list, its rows lined up as columns (title, status, date, what it is) on the list's grid (the UI review) */
+.doc-rows { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 13rem) 4.5rem minmax(0, 1fr); column-gap: var(--sp-3); }
+.doc-rows > .ls-grouphead { grid-column: 1 / -1; }
+.doc-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: baseline; padding: var(--sp-2) 0; border-bottom: 1px solid var(--line-soft); color: var(--text); text-decoration: none; }
+.doc-row:hover .doc-title { text-decoration: underline; }
+.doc-status .tag { white-space: normal; max-width: 100%; }
+.doc-title { font-weight: 600; color: var(--text-strong); min-width: 0; }
 .doc-date { color: var(--muted); font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
 .doc-what { color: var(--muted); font-size: var(--fs-sm); min-width: 0; }
-@media (max-width: 900px) {  /* the title and its date, then its status (a long one wraps), then what it is */
-  .doc-row { grid-template-columns: minmax(0, 1fr) auto; }
+@media (max-width: 640px) {
+  .doc-rows { grid-template-columns: minmax(0, 1fr) auto; }
   .doc-date { grid-column: 2; grid-row: 1; justify-self: end; }
-  .doc-row .tag { grid-column: 1 / -1; grid-row: 2; max-width: 100%; white-space: normal; }
+  .doc-status { grid-column: 1 / -1; grid-row: 2; }
   .doc-what { grid-column: 1 / -1; }
 }
 .doc-back { margin: 0 0 var(--sp-2); font-size: var(--fs-sm); }

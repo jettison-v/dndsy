@@ -6,7 +6,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Features</h1></div>
-  <p class="subtitle">What the table does in askdnd: a roll, a cast, an item used, a change made (not pages opened), and on which page. Counted by askdnd itself, never sent anywhere. Admins' uses are left out (yours, even as a player), and so are test campaigns, where the test accounts play. Rolls go back to the first Table roll; everything else from Nov 9.</p>
+  <p class="subtitle">What the table does in askdnd: a roll, a cast, an item used, a change made (not pages opened), and on which page. Counted by askdnd itself, never sent anywhere. Admins' uses are left out (yours, even as a player), and so are test campaigns, where the test accounts play. Rolls go back to the first Table roll; everything else from Nov 9. Only admins can see this page.</p>
 
   <div class="ft-filters">
     {% set q = "&campaign=" ~ (here.id if here else "") ~ "&sort=" ~ sort %}

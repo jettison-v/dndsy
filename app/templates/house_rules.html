@@ -14,7 +14,7 @@
       <li class="record">
         <div class="record-main"><b>{{ x.name }}</b><span class="note">{{ x.text }}</span>
           <span class="note">{% if r.reason %}{{ r.reason }} · {% endif %}{{ r.set_by }}, {{ r.updated_at | ago }}</span></div>
-        <form method="post" action="{{ cbase }}/manage/house-rules/{{ r.id }}/delete" class="record-actions"><button class="btn link small danger" type="submit">Remove</button></form>
+        <form method="post" action="{{ cbase }}/manage/house-rules/{{ r.id }}/delete" class="record-actions" data-confirm="Remove this house rule? History can bring it back."><button class="btn link small danger" type="submit">Remove</button></form>
       </li>
       {% endfor %}
     </ul>
@@ -46,7 +46,7 @@
       <div class="form-row">
         <select name="spell" aria-label="Spell">{% for s in once_spells %}<option>{{ s }}</option>{% endfor %}</select>
         <input type="text" name="reason" placeholder="Why (optional)" aria-label="Why" maxlength="500">
-        <button class="btn primary" type="submit">Add</button>
+        <button class="btn" type="submit">Add</button>
       </div>
     </form>
     {% endif %}
@@ -57,7 +57,7 @@
       <div class="form-row">
         <select name="spell" aria-label="Spell">{% for s in spells %}<option>{{ s }}</option>{% endfor %}</select>
         <input type="text" name="value" placeholder="The ruling" aria-label="The ruling" maxlength="500" required>
-        <button class="btn primary" type="submit">Add</button>
+        <button class="btn" type="submit">Add</button>
       </div>
       <p class="note">The list has every spell askdnd has an audited roll recipe for. A spell already ruled on gets its ruling replaced.</p>
     </form>

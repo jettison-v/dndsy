@@ -119,7 +119,10 @@ Read these before designing or building any page; sessions that skipped them pro
   secondary buttons.
 - **Buttons say where they go** in plain words ("More about Alea"), not how the app works ("Read in World").
 - **Terse game words** ("1st-level", never "1st-level slot"); players know the terms.
-- **No code words on a page.** A file name, a class or a roadmap phase belongs in the docs, not in text a DM or a player reads.
+- **No code words on a page.** A file name, a class or a roadmap phase belongs in the docs, not in text a DM or a player reads. Nor monospace: the page's own fonts (a key to press is a `<kbd>`).
+- **One way to write each thing** (the UI review, Nov 16): money in dollars and cents through the `money` filter ("$0.13", "under $0.01"; never "13¢"); a date "Nov 5", with the year when it isn't this one or a list spans years ("Nov 5, 2026"); a time "3:00 AM"; a session "Session 29 · Feb 7, 2026" (`session_label`; a key moment's slot "Session 13 · Nov 6").
+- **A page only some can see says so** in its subtitle: every admin page ends "Only admins can see this page."; a campaign page names who ("only the DM, reviewers and admins see this page").
+- **A form a page's own action opens is a window** (`data-modal-url`, its form in the window's body with Cancel): + Add to the table, + Add an account, + New campaign. Remove is always the quiet red link (`.btn.link.danger`), asking first (`data-confirm`, `hx-confirm`, or a question that opens under it).
 - **Check every width** (phone, tablet, about 1000px, wide) and every role (admin, DM, player; Manage › View as) before
   calling it done. The width check (tests/browser/test_layout.py) does the measurable part on every pull request; see
   Narrow screens below for what it checks and how each part of a page gives way.

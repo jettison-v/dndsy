@@ -484,7 +484,7 @@ def session_label(s: GameSession) -> str:
         bits.append(f"Session {s.number}")
     if s.played_on:
         bits.append(s.played_on.strftime("%b %-d, %Y"))
-    return " — ".join(bits) or f"Session #{s.id}"
+    return " · ".join(bits) or f"Session #{s.id}"  # (one way, as a key moment's: "Session 29 · Feb 7, 2026"; the UI review)
 
 
 ASK_NOTE = ("This is the first read. Ask and suggest only: Brett answers your questions and settles the suggested World "

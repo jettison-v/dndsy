@@ -5,7 +5,7 @@
 {% block content %}
 <main class="page manage-page">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Places and maps</h1>{% if table_on %}<a class="btn" href="{{ cbase }}/table">Open the table</a>{% endif %}</div>
+  <div class="title-row"><h1>Places and maps</h1>{% if table_on %}<a class="btn title-action" href="{{ cbase }}/table">Open the table</a>{% endif %}</div>
   <p class="subtitle">The places of askdnd's table, each with its map. Add one, or its map, from Map ▾ on the table. The story's own map is <a href="{{ cbase }}/campaign?tab=map">Campaign › Map</a>.</p>
   {% if not table_on %}<p class="note">askdnd's table is still in Labs: switch it on in <a href="{{ cbase }}/manage/settings">Settings</a> to make places here.</p>{% endif %}
   {% if places %}

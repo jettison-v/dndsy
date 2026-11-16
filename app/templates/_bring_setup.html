@@ -19,7 +19,7 @@
       <label class="field"><span>Back after</span><select name="back">{% for v in bring.backs %}<option value="{{ v }}"{{ ' selected' if f.back == v }}>{{ v }}</option>{% endfor %}</select></label>
     </div>
     <div class="bring-acts"><button type="submit" class="btn primary small">{{ "Save" if bring.set else "Set it up" }}</button>
-      {% if bring.set %}<button type="button" class="btn small link" hx-post="/characters/{{ c.id }}/bring/{{ bring.id }}/setup" hx-vals='{"creature": ""}' hx-swap="none">Remove the setup</button>{% endif %}</div>
+      {% if bring.set %}<button type="button" class="btn small link danger" hx-post="/characters/{{ c.id }}/bring/{{ bring.id }}/setup" hx-vals='{"creature": ""}' hx-swap="none" hx-confirm="Remove the setup?">Remove the setup</button>{% endif %}</div>
   </form>
   <p class="note admin-foot">Only this campaign, for every item named “{{ x.name }}”. Listed on <a href="{{ cbase }}/manage/house-rules" data-no-peek>Manage › House rules</a>.</p>
 </section>

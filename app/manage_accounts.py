@@ -62,6 +62,15 @@ def _save(db: Session, email: str, tool: str, name: str = "") -> User:
     return u
 
 
+@router.get("/new")
+def add_window(request: Request):
+    """+ Add an account's window (_account_add.html)."""
+    _, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    return templates.TemplateResponse(request, "_account_add.html", {})
+
+
 @router.post("")
 def add(request: Request, email: str = Form(...), name: str = Form(""), admin: str = Form(""), db: Session = Depends(get_db)):
     user, denied = web.require(request, is_admin, DENIED)

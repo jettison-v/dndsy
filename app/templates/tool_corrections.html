@@ -9,7 +9,7 @@
   <div class="record-main"><b>{{ n.name }}</b>{% if n.kind %} <span class="tag">{{ n.kind }}</span>{% endif %}
     <span class="note">{{ field_labels.get(o.field, o.field) }}: {{ labels.get(o.field, {}).get(o.value, o.value) }} · {{ o.updated_at | ago }}{% if o.id in unseen %} · no character has it now{% endif %}</span></div>
   <div>{% if built %}{{ o.reason or "" }}{% else %}{{ inline_edit("why-" ~ o.id, o.reason, "/manage/tool-corrections/overrides/" ~ o.id ~ "/reason", "reason", "Why " ~ n.name ~ " was corrected", empty="No reason yet.", add_label="Add why", placeholder="What askdnd got wrong") }}{% endif %}</div>
-  <form method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/delete" class="record-actions"><button class="btn small" type="submit">{{ "Remove" if built else "Undo" }}</button></form>
+  <form method="post" action="/manage/tool-corrections/overrides/{{ o.id }}/delete" class="record-actions"{% if built %} data-confirm="Remove this correction? askdnd already chooses the same."{% endif %}><button class="btn small{{ ' link danger' if built }}" type="submit">{{ "Remove" if built else "Undo" }}</button></form>
 </li>
 {% endmacro %}
 <main class="page manage-page">

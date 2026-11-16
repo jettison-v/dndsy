@@ -139,7 +139,7 @@ def history_page(request: Request, show: str = "", table: str = "", row: int | N
     days: dict[str, list] = defaultdict(list)
     people = {u.id: (u.name if u.name and u.name != u.email else u.email, u.email) for u in db.scalars(select(User))}
     for r in revs:
-        days[r.created_at.strftime("%A %-d %B %Y")].append({
+        days[r.created_at.strftime("%b %-d, %Y")].append({  # (dates one way, "Nov 5, 2026": the UI review)
             "r": r, "field": history.FIELD_LABELS.get(r.field, r.field), "source": history.SOURCES.get(r.source, r.source),
             **_present(db, r, people),
             "long": r.field in ("summary", "description", "data", "note", "deleted"),

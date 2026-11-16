@@ -8,7 +8,7 @@
   {% if backup is defined %}
   <section class="section" id="backups">
     <div class="section-head"><h2>Nightly backups</h2><span class="tag {{ 'draft' if backup.attention else 'done' }}">{{ backup.text }}</span></div>
-    <p class="hint">Every night at 10:00 UTC (3 am Pacific) the whole database is copied to S3 (<code>askdnd-ai/v2/backups/</code>), keeping 30 days. A failed or missed night shows on every campaign's Needs you page for admins.</p>
+    <p class="hint">Every night at 2:00 AM Pacific (3:00 AM in summer) the whole database is copied to askdnd's private file storage, keeping 30 days. A failed or missed night shows on every campaign's Needs you page for admins.</p>
     {% if backups %}<div class="table-scroll"><table class="list">{% for b in backups %}
       <tr><td><b>{{ b.finished_at | clock(date=True) }}</b><div class="note">{{ b.detail }}</div></td>
         <td class="end"><span class="tag {{ 'done' if b.status == 'ok' else 'draft' }}">{{ "Worked" if b.status == "ok" else "Failed" }}</span></td></tr>
@@ -69,20 +69,20 @@
     <p class="hint">Upload a campaign bundle (.json). You'll see exactly what it would change before anything is saved. Importing the same file again updates matching records; it never duplicates them.</p>
     <form method="post" action="/manage/backups/import" enctype="multipart/form-data" class="stack">
       <input type="file" name="file" accept=".json,application/json" required>
-      <div><button type="submit" class="btn primary" data-busy="Reading…">Preview import</button></div>
+      <div><button type="submit" class="btn" data-busy="Reading…">Preview import</button></div>
     </form>
   </section>
   {% endif %}
   <section class="section" id="books">
     <h2>Books</h2>
-    <p class="hint">Private rules books the DM owns, only ever in this database (never in git). Their entries come from a file made on the computer that has the book's offline copy: <code>uv run --env-file .env python scripts/book_load.py --export</code> writes <code>private/books/mm-2024-upload.json.gz</code>. Uploading it again replaces the book's entries.</p>
+    <p class="hint">Private rules books the DM owns, only ever in this database (never in git). Their entries come from a file Claude makes on the computer that has the book's offline copy (the book's upload file). Uploading it again replaces the book's entries.</p>
     <div class="table-scroll"><table class="list">{% for b in books %}
       <tr><td><b>{{ b.title }}</b> <span class="note">{{ b.short }}</span></td>
         <td class="end">{% for k, n in b.kinds.items() %}{{ n }} {{ k }}{{ "s" if n != 1 }}{{ ", " if not loop.last }}{% else %}<span class="note">nothing here yet</span>{% endfor %}</td></tr>
     {% endfor %}</table></div>
     <form method="post" action="/manage/backups/books" enctype="multipart/form-data" class="stack">
       <input type="file" name="file" accept=".gz,.json,application/gzip,application/json" required aria-label="Book file">
-      <div><button type="submit" class="btn primary" data-busy="Loading…">Upload book</button></div>
+      <div><button type="submit" class="btn" data-busy="Loading…">Upload book</button></div>
     </form>
   </section>
   {% if imports %}
