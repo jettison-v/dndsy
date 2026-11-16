@@ -389,8 +389,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // Peek panel: clicking a name (a link to an entry, /c/<campaign>/campaign?open=<id>) opens a summary in a
   // right-hand pane on desktop or a bottom sheet on phones. Cmd/Ctrl/Shift-click,
   // links marked data-no-peek and links in the panel's footer open the full page as usual.
-  // An entry's address, /c/<campaign>/campaign?open=<id>, or a glossary term's, …/campaign/glossary/<id> (2026-10-23)
-  const ENTITY_URL = /^(?:\/c\/[a-z0-9-]+)?\/campaign(?:\/(glossary\/\d+)|\?open=(\d+))$/;
+  // An entry's address, /c/<campaign>/campaign?open=<id> (2026-10-23; a glossary term's is its Reader's, ?tab=glossary&term=<id>)
+  const ENTITY_URL = /^(?:\/c\/[a-z0-9-]+)?\/campaign\?open=(\d+)$/;
   // Two layers: the base panel (a side panel, or a centered modal such as the Spell Book) and a
   // top side panel that slides in from the modal's own right edge, inside it (Brett, 2026-10-21:
   // a spell's details open inside the Spell Book). Each layer keeps its own "← Back" history.
@@ -551,9 +551,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const m = ENTITY_URL.exec(a.getAttribute('href') || a.getAttribute('xlink:href') || '');  // SVG links use xlink:href
     if (!m) return;
     e.preventDefault();
-    const ref = m[1] || m[2];
+    const ref = m[1];
     // On the Campaign page, a name opens that entry in the Reader (World) instead
-    const item = !a.closest('.peek') && document.querySelector('[data-rd-id="' + ref + '"]');
+    const item = !a.closest('.peek') && document.querySelector('#reader [data-rd-id="' + ref + '"]');
     if (item) {
       const tab = item.closest('[id^="t-"]'), btn = tab && tab.hidden && document.querySelector('[role=tab][data-tab="' + tab.id + '"]');
       if (btn) btn.click();
@@ -3939,17 +3939,20 @@ document.addEventListener('click', e => {
       if (shown.length && !(sel && !sel.hidden)) showQuest(shown[0].dataset.qlId);
     }
   });
-  function mark() {
-    const art = document.getElementById('reader-article'); if (!art) return;
-    document.querySelectorAll('[data-rd-id]').forEach(n => n.classList.toggle('sel', n.dataset.rdId === art.dataset.readerId));
+  function mark() {  // each Reader (World, Glossary) marks the name its page shows
+    document.querySelectorAll('.reader').forEach(r => {
+      const art = r.querySelector('.reader-article'); if (!art) return;
+      r.querySelectorAll('[data-rd-id]').forEach(n => n.classList.toggle('sel', n.dataset.rdId === art.dataset.readerId));
+    });
   }
   // Opening the page at an entry's address: show its name in the list
-  { const sel = document.querySelector('.rd-item.sel'), nav = sel && sel.closest('.reader-nav');
-    if (nav) nav.scrollTop = sel.offsetTop - nav.clientHeight / 3; }
+  document.querySelectorAll('.rd-item.sel').forEach(sel => { const nav = sel.closest('.reader-nav');
+    if (nav) nav.scrollTop = sel.offsetTop - nav.clientHeight / 3; });
   document.body.addEventListener('htmx:afterSwap', e => {
-    if (!e.detail.target || e.detail.target.id !== 'reader-article') return;
+    const id = e.detail.target && e.detail.target.id;
+    if (id !== 'reader-article' && id !== 'glossary-article') return;
     mark();
-    const art = document.getElementById('reader-article');
+    const art = document.getElementById(id);
     if (art && matchMedia('(max-width: 900px)').matches) art.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   document.addEventListener('keydown', e => {
@@ -3957,8 +3960,9 @@ document.addEventListener('click', e => {
     if (!document.getElementById('reader') || document.querySelector('.peek.open')) return;
     const t = e.target;
     if (t.matches && t.matches('textarea, select, input:not([data-ls-search]), [contenteditable]')) return;
-    if (document.getElementById('t-world').hidden) return;
-    const items = [...document.querySelectorAll('.rd-item')].filter(n => !n.hidden);
+    const reader = [...document.querySelectorAll('.reader')].find(r => r.checkVisibility());  // World's or Glossary's, whichever shows
+    if (!reader) return;
+    const items = [...reader.querySelectorAll('.rd-item')].filter(n => !n.hidden);
     if (!items.length) return;
     const i = items.findIndex(n => n.classList.contains('sel'));
     const next = items[i < 0 ? 0 : Math.max(0, Math.min(items.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))];

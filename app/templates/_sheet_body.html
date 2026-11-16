@@ -3,6 +3,7 @@
 {% from "_form_list.html" import form_list %}
 {% from "_item_list.html" import item_list %}
 {% from "_feature_list.html" import feature_list %}
+{% from "_lists.html" import count_pill %}
 {% from "_char.html" import pips, count_pips, sync, res, pick_btn, ri, opt_row, bell, pin_icon, bookmark_icon, tile, adv, roll_attrs, ntile, hp_tile, insp_mark, purse, rest_btn %}
 {% set s = sheet %}
 {% if s %}
@@ -124,7 +125,7 @@
     {% macro situ_row(x) %}{{ ri(c, x.key, x.text, picks, can_pick, chips=[({"advantage": "Advantage", "disadvantage": "Disadvantage", "immunity": "Immunity", "resistance": "Resistance", "vulnerability": "Vulnerability", "bonus": "Bonus", "reaction": "Reaction"}.get(x.kind, x.kind), "kind-" ~ x.kind)], what=x.source) }}{% endmacro %}
     {% set live = s.situational | rejectattr("in_numbers") | list %}
     {% set counted = s.situational | selectattr("in_numbers") | list %}
-    <h3 class="divider" id="situational">Situational <span class="count">{{ s.situational | length }}</span></h3>
+    <h3 class="divider" id="situational">Situational{{ count_pill(s.situational | length) }}</h3>
     {% if live %}<div class="rows">{% for x in live %}{{ situ_row(x) }}{% endfor %}</div>{% else %}<p class="muted">Nothing situational on this sheet.</p>{% endif %}
     {% if counted %}<details class="fold"><summary>Already in your numbers ({{ counted | length }})</summary><div class="rows">{% for x in counted %}{{ situ_row(x) }}{% endfor %}</div></details>{% endif %}
   </div>

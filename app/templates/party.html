@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, adv, mark, sync, sync_attrs, dying_state, dying_marks, hp_tile, ntile, purse, res_name %}
 {% from "_cond_icons.html" import cond_icon, cond_badges with context %}
-{% from "_lists.html" import filter_column, search_box %}
+{% from "_lists.html" import filter_column, search_box, count_pill %}
 {% from "_fight_rows.html" import fight_rows with context %}
 {% block title %}Party · askdnd{% endblock %}
 {% block content %}
@@ -20,8 +20,8 @@
   <div data-tour="party">
   <div class="tabbar" role="tablist">
     <button type="button" role="tab" aria-selected="true" data-tab="t-glance">At a glance</button>
-    <button type="button" role="tab" aria-selected="false" data-tab="t-spells">Spells <span class="count">{{ spells.rows | length }}</span></button>
-    <button type="button" role="tab" aria-selected="false" data-tab="t-items">Items <span class="count">{{ items.rows | length }}</span></button>
+    <button type="button" role="tab" aria-selected="false" data-tab="t-spells">Spells{{ count_pill(spells.rows | length) }}</button>
+    <button type="button" role="tab" aria-selected="false" data-tab="t-items">Items{{ count_pill(items.rows | length) }}</button>
     <button type="button" role="tab" aria-selected="false" data-tab="t-trophies">Trophies</button>
   </div>
 

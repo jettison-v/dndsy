@@ -6,7 +6,7 @@ from datetime import date
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from app.models import GameSession, Recap, Status
+from app.models import GameSession, GlossaryTerm, Recap, Status
 
 
 def test_story_search_finds_the_sessions_that_mention_every_word(people, server, browser_db):
@@ -152,4 +152,31 @@ def test_add_what_the_party_learned_is_one_fold_that_opens_in_place(people, serv
     page.set_viewport_size({"width": 375, "height": 800})  # open on a phone, it stays in its column
     fold.locator("summary").click()
     assert fold.evaluate("d => d.querySelector('form').scrollWidth <= d.querySelector('form').clientWidth")
+    assert player.errors == []
+
+
+def test_a_glossary_term_opens_in_glossarys_reader(people, server, browser_db):
+    """The UI review's pick 5 (Brett, Nov 16): Campaign › Glossary is a Reader as World is: a term picked from the list
+    opens on the page at its own address, ↑ ↓ step through the list, and a name elsewhere still opens World's entry."""
+    engine = create_engine(browser_db[0])
+    with Session(engine) as db:
+        ids = []
+        for term in ("Aardwolf Ford", "Zzyzx Gate"):  # (first and last in the list, whatever the test table holds)
+            g = GlossaryTerm(campaign_id=server["campaign"], term=term, description=f"About {term}.", misheard_as=[])
+            db.add(g)
+            db.flush()
+            ids.append(g.id)
+        db.commit()
+    engine.dispose()
+    first, last = ids
+    player = people("player")
+    page = player.open("/c/main/campaign?tab=glossary")
+    art = page.locator("#glossary-article")
+    assert art.get_attribute("data-reader-id") == str(first)  # (nothing asked for: the first term)
+    page.locator(f'#glossary-reader [data-rd-id="{last}"]').click()
+    page.wait_for_function(f"document.getElementById('glossary-article').dataset.readerId === '{last}'")
+    assert f"term={last}" in page.url and page.locator(f'#glossary-reader [data-rd-id="{last}"].sel').count() == 1
+    page.keyboard.press("ArrowUp")
+    page.wait_for_function(f"document.getElementById('glossary-article').dataset.readerId !== '{last}'")
+    assert page.locator("#glossary-reader .rd-item.sel").count() == 1
     assert player.errors == []

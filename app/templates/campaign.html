@@ -2,7 +2,7 @@
 {% block title %}Campaign · askdnd{% endblock %}
 {% block content %}
 {% from "_suggest_form.html" import suggest with context %}
-{% from "_lists.html" import view_switch, filters_above, empty_state %}
+{% from "_lists.html" import view_switch, filters_above, empty_state, count_pill, search_box %}
 {% from "_moments.html" import moment_list %}
 {# The Campaign page (roadmap step 11; Brett 2026-10-22, docs/mockups/campaign-reading.html option E and
    docs/mockups/campaign-tabs.html Q1, R1 with R2; Story joined it Nov 13, Brett chose it on docs/mockups/menu-bar-people/).
@@ -15,8 +15,9 @@
   {% if campaign and campaign.dm_name %}<p class="subtitle">Dungeon Master: {{ campaign.dm_name }}.</p>{% endif %}
   {% if campaign %}
   <div class="tabbar" role="tablist" data-tab-param data-tour="campaign">
-    {% for key, label, n in [("previously", "Previously on…", none), ("sessions", "Sessions", (st["items"] | length) or none), ("world", "World", none), ("quests", "Quests", quests | length), ("relationships", "Relationships", none), ("glossary", "Glossary", glossary | length), ("map", "Map", none)] %}
-    <button type="button" role="tab" aria-selected="{{ 'true' if tab == key else 'false' }}" data-tab="t-{{ key }}">{{ label }}{% if n is not none %} <span class="count">{{ n }}</span>{% endif %}</button>{% endfor %}
+    {% set world_n = groups | map(attribute=1) | map("length") | sum %}{# (every list counts what it holds; none, no count: pick 4) #}
+    {% for key, label, n in [("previously", "Previously on…", 0), ("sessions", "Sessions", st["items"] | length), ("world", "World", world_n), ("quests", "Quests", quests | length), ("relationships", "Relationships", 0), ("glossary", "Glossary", glossary | length), ("map", "Map", 0)] %}
+    <button type="button" role="tab" aria-selected="{{ 'true' if tab == key else 'false' }}" data-tab="t-{{ key }}">{{ label }}{{ count_pill(n) }}</button>{% endfor %}
   </div>
 
   <div id="t-previously" data-tour="previously"{% if tab != "previously" %} hidden{% endif %}>{% include "_story_previously.html" %}</div>
@@ -138,20 +139,34 @@
     {% else %}<p class="note">Click anyone to see everyone they're tied to.{% if editor %} Add relationships in an entry's <b>Edit</b> window.{% endif %}</p>{% endif %}
   </div>
 
-  <section class="section" id="t-glossary"{% if tab != "glossary" %} hidden{% endif %}>
-    <p class="hint m-0 mb-2">Campaign names and words with their correct spelling. Click one for more, or to suggest a fix.</p>
-    {% if glossary %}<div class="table-scroll"><table class="list">{% for g in glossary %}<tr><td class="term"><a href="{{ cbase }}/campaign/glossary/{{ g.id }}"><b>{{ g.term }}</b></a></td><td class="muted">{{ g.description }}</td></tr>{% endfor %}</table></div>
-    {% else %}<p class="muted">No terms yet.</p>{% endif %}
-    {% if is_dm or is_reviewer %}
-    <details class="fold"><summary>+ Add a term</summary>
-      <form class="stack" hx-post="/campaign/glossary/add" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
-        <label class="field">Term<input type="text" name="term" required></label>
-        <label class="field">What it means<input type="text" name="description"></label>
-        <div class="row"><button type="submit" class="btn primary">Add</button><span class="note">Goes straight into the glossary.</span></div>
-      </form>
-    </details>
-    {% else %}<div class="mt-3">{{ suggest("/campaign/glossary/suggest", "", kinds=False, label="+ Suggest a glossary entry", placeholder="A name or word, how it's spelled, and what it means") }}</div>{% endif %}
-  </section>
+  {# Glossary: a Reader, as World is (the UI review's pick 5, Brett Nov 16): the terms down the left with a search, one term on
+     the page (_glossary_article.html), its address ?tab=glossary&term=<id>, ↑ ↓ through the list #}
+  <div id="t-glossary"{% if tab != "glossary" %} hidden{% endif %}>
+    <div class="reader" id="glossary-reader">
+      <aside class="reader-nav" data-list="glossary-reader" data-noun="term" data-nouns="terms" aria-label="Glossary terms">
+        {% if glossary %}<div class="reader-nav-head">{{ search_box("Search the glossary") }}</div>{% endif %}
+        <div class="reader-rows" data-ls-rows>
+          {% for g in glossary %}
+          <a class="rd-item{{ ' sel' if term_sel and term_sel.g.id == g.id }}" data-ls-row data-rd-id="{{ g.id }}"
+             data-name="{{ ([g.term] + (g.misheard_as or []) + [g.description or '']) | join(' ') | lower }}"
+             href="{{ cbase }}/campaign?tab=glossary&amp;term={{ g.id }}" hx-get="/campaign/glossary/{{ g.id }}/read" hx-target="#glossary-article" hx-swap="outerHTML" hx-push-url="{{ cbase }}/campaign?tab=glossary&amp;term={{ g.id }}"><span class="rd-name">{{ g.term }}</span></a>
+          {% endfor %}
+        </div>
+        {% if glossary %}<p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>{% endif %}
+        {% if is_dm or is_reviewer %}
+        <details class="fold"><summary>+ Add a term</summary>
+          <form class="stack" hx-post="/campaign/glossary/add" hx-target="this" hx-swap="outerHTML" hx-disabled-elt="find button">
+            <label class="field">Term<input type="text" name="term" required></label>
+            <label class="field">What it means<input type="text" name="description"></label>
+            <div class="row"><button type="submit" class="btn primary">Add</button><span class="note">Goes straight into the glossary.</span></div>
+          </form>
+        </details>
+        {% else %}{{ suggest("/campaign/glossary/suggest", "", kinds=False, label="+ Suggest a glossary entry", placeholder="A name or word, how it's spelled, and what it means") }}{% endif %}
+      </aside>
+      {% if term_sel %}{% with g = term_sel.g, can_edit = term_sel.can_edit %}{% include "_glossary_article.html" %}{% endwith %}
+      {% else %}<article class="reader-article" id="glossary-article">{{ empty_state("No terms yet.") }}</article>{% endif %}{# (a term is always picked when there are any) #}
+    </div>
+  </div>
 
   {# Map (menu bar Option B, Brett 2026-10-22): AideDD's Sword Coast atlas (app/atlas.py). The frame loads when the tab
      is first shown; "Show on map" on a place opens this tab centered on it. #}
