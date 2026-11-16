@@ -28,7 +28,7 @@ on the character's D&D Beyond sheet through the bridge, like every other change 
 import re
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -323,6 +323,20 @@ def _page(request: Request, db: Session, ch: Character, template: str, mode: str
     return templates.TemplateResponse(request, template, {
         "c": ch, "w": w, "mode": mode, "parts": parts, "off": off, "roll": roll, "source": source, "done": done, "crit": crit,
         "reachable": ddb_bridge.reachable(ch), "hp": (chars.character_summary(ch) or {}).get("hit_points") or {}})
+
+
+@router.get("/hp/now")
+def hp_now(request: Request, ids: str = "", db: Session = Depends(get_db)):
+    """The Hit Points beside each name in Table rolls' Apply to… lists, now (Brett's test, Nov 16: they stayed as they
+    were when the roll was drawn): for the characters this person may apply a roll to, by id."""
+    user = current_user(request)
+    if not user:
+        return JSONResponse({}, status_code=401)  # (signed out: refused, as every route is; tests/test_reading.py)
+    campaign = web.campaign(db)
+    if campaign is None:
+        return JSONResponse({})
+    wanted = {int(x) for x in ids.split(",") if x.strip().isdigit()}
+    return JSONResponse({str(c.id): _hp_now(c) for c in targets(db, user, campaign.id) if c.id in wanted})
 
 
 @router.get("/characters/{character_id:int}/hp")

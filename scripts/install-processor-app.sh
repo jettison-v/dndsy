@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Builds "askdnd Processor.app" in ~/Applications. Double-clicking it starts
+# Builds "askdnd Processor.app" in /Applications (where Finder's Applications shows it; it was in ~/Applications,
+# which Finder doesn't list there: Brett, Nov 16). Double-clicking it starts
 # Ollama (if needed) and the local processor, then opens it in the browser.
 #   scripts/install-processor-app.sh
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-APP="$HOME/Applications/askdnd Processor.app"
+APP="/Applications/askdnd Processor.app"
 UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
 
 rm -rf "$APP"
