@@ -330,8 +330,10 @@ def hp_now(request: Request, ids: str = "", db: Session = Depends(get_db)):
     """The Hit Points beside each name in Table rolls' Apply to… lists, now (Brett's test, Nov 16: they stayed as they
     were when the roll was drawn): for the characters this person may apply a roll to, by id."""
     user = current_user(request)
+    if not user:
+        return JSONResponse({}, status_code=401)  # (signed out: refused, as every route is; tests/test_reading.py)
     campaign = web.campaign(db)
-    if not user or campaign is None:
+    if campaign is None:
         return JSONResponse({})
     wanted = {int(x) for x in ids.split(",") if x.strip().isdigit()}
     return JSONResponse({str(c.id): _hp_now(c) for c in targets(db, user, campaign.id) if c.id in wanted})
