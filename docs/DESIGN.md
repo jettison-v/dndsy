@@ -171,7 +171,7 @@ end of each roadmap phase, `scripts/layout_sweep.py` runs the same check over ev
 each role, and saves a screenshot of each page at each width for a look-over; it also lists rows of one list whose
 small last item (an icon, a ↗) doesn't line up with the others. Since the UI review (Nov 16) the tests ask it of Sheet's
 lists (compact rows: the name and its marks on the first line, the rest under them, every row alike), and the check
-also fails a heading broken inside a word ("breaks a word"), a box's hint longer than the box ("cuts its hint"), and
+also fails a heading or a bold name broken inside a word, unless the word alone is wider than its room ("breaks a word"), a box's hint longer than the box ("cuts its hint"), and
 words drawn in a scaling picture under 9px ("unreadable"); the DM's Manage pages are checked as well as an admin's.
 
 ## Components

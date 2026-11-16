@@ -89,7 +89,7 @@
     <details class="seat">
       <summary class="seat-row"><span class="seat-pic">{% if pic %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{{ c.name[:1] }}</span>
         <span class="seat-who"><b>{{ c.name }}{% if c.copy_of_id %} <span class="tag faint">Test copy</span>{% endif %}</b><span class="note">{{ classes[c.id] }}</span></span>
-        <span class="tag">{% if c.owner_id %}{{ names.get(c.owner_id, "Someone") }} (not here){% else %}Nobody plays it{% endif %}</span></summary>
+        <span class="tag seat-owner">{% if c.owner_id %}{{ names.get(c.owner_id, "Someone") }} (not here){% else %}Nobody plays it{% endif %}</span></summary>
       <div class="seat-panel">
         {% if can_change %}<form method="post" action="{{ cbase }}/manage/table/characters/{{ c.id }}" class="seat-field">
           <label class="field"><span>Played by</span><select name="user_id" data-autosave aria-label="Who plays {{ c.name }}"><option value="">Nobody yet</option>{% for p in people if p.user %}<option value="{{ p.user.id }}">{{ p.name or p.email }}</option>{% endfor %}</select></label></form>{% endif %}

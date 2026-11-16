@@ -1025,6 +1025,7 @@ details.opt > summary b:hover { text-decoration: underline; text-decoration-colo
 .seat-pic.none { background: none; border: 1px dashed var(--line-strong); }
 .seat-who { display: grid; min-width: 0; }
 .seat-who b, .seat-who .note { overflow-wrap: anywhere; }
+@media (max-width: 640px) { .seat-row > .seat-owner { grid-column: 2 / -1; justify-self: start; } }  /* (who plays a character not at the table, a name and "not here", goes under it on a phone: beside it, it squeezed the name one letter per line) */
 .seat-dm { color: var(--amber); border-color: var(--amber); }
 .seat-panel { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-2); padding: var(--sp-2) var(--sp-3) var(--sp-3); border-top: 1px solid var(--line); }
 .seat-panel .form-narrow { grid-template-columns: minmax(0, 1fr); }
@@ -2097,7 +2098,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .dtr-total.nat20 { color: var(--green); } .dtr-total.nat1 { color: var(--red); }
 /* Manage › Dice tuning (manage_dice.html; docs/mockups/dice-tuning.html): sliders on the left, a preview that throws on the right */
 .tn-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: var(--sp-5); align-items: start; margin-bottom: var(--sp-5); }
-.section.tn-controls { padding: var(--sp-4) var(--sp-5) 0; margin: 0; }
+.section.tn-controls { padding: var(--sp-4) var(--sp-5) 0; margin: 0; container: tuner / inline-size; }
 .tn-controls .sub-tabs { margin-bottom: var(--sp-2); }
 .tn-why { font-size: var(--fs-sm); color: var(--muted); margin: 0 0 var(--sp-2); }
 .tn-group h3 { margin: var(--sp-4) 0 0; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
@@ -2112,6 +2113,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .tn-range::after { content: ""; position: absolute; left: calc(8px + (100% - 16px) * var(--now, 0)); bottom: -7px; width: 2px; height: 6px; margin-left: -1px; background: var(--faint); border-radius: var(--r-xs); }
 .tn-ctl output { min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; color: var(--text-strong); font-size: var(--fs-sm); font-weight: 600; }
 .tn-now { grid-column: 2; display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--faint); min-height: 18px; }
+@container tuner (max-width: 460px) { .tn-row { grid-template-columns: 1fr; } .tn-now { grid-column: 1; } }  /* (a knob's name over its slider when the column runs short, Table rolls open on a laptop: beside a 220px slider "Throw strength" broke one letter per line) */
 .tn-row.changed output { color: var(--amber); }
 .tn-reset { background: none; border: 0; padding: 0; color: var(--link); font: inherit; cursor: pointer; }
 .tn-save { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; background: var(--surface); border-top: 1px solid var(--line);
