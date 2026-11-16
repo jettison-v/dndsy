@@ -361,14 +361,24 @@ def _alias_text(e: Entity) -> str:
     return (f" Also: {', '.join(names)}." if names else "") + (f" Often misspelled: {', '.join(wrong)}." if wrong else "")
 
 
-def _known_world(db: Session, campaign: Campaign) -> str:
+def first_name(name: str | None) -> str:
+    """A person's first name only: all Claude needs to match a transcript's speaker to a character (the outside
+    review's A4: the one piece of personal data that went out on every call). An email address gives nothing."""
+    name = (name or "").strip()
+    return "" if "@" in name else name.split(" ")[0]
+
+
+def _known_world(db: Session, campaign: Campaign, players: bool = True) -> str:
+    """The campaign as Claude is given it. `players`: who plays each character and who runs the game, first names
+    only, for the passes that read what was said (a transcript, notes, the reviewer's account); a pass that reads none
+    (revise) gets the characters alone."""
     lines = [f"Campaign: {campaign.name}"]
-    if campaign.dm_name:
-        lines.append(f"Dungeon Master: {campaign.dm_name}")
-    lines.append("\nPlayer characters (character — player):")
+    if players and first_name(campaign.dm_name):
+        lines.append(f"Dungeon Master: {first_name(campaign.dm_name)}")
+    lines.append("\nPlayer characters (character — player):" if players else "\nPlayer characters:")
     for ch in campaign_characters(db, campaign.id):
-        player = ch.player_name or (ch.owner.name if ch.owner else "unknown")
-        lines.append(f"- {ch.name} — {player}{_alias_text(ch.entity)}")
+        player = first_name(ch.player_name or (ch.owner.name if ch.owner else "")) or "unknown"
+        lines.append(f"- {ch.name}" + (f" — {player}" if players else "") + _alias_text(ch.entity))
     lines.append("\nKnown people, places and things (name [kind]: summary; aliases):")
     # A hidden entry is as if it didn't exist until the DM shows it (Brett, Nov 6): never in what Claude is given, nor
     # its facts or relationships, so no recap, question or suggestion can come from it
@@ -519,7 +529,7 @@ def _hms(sec) -> str:
 
 def _current_draft(session: GameSession, latest: Recap) -> dict:
     """The draft as it stands (the recap, the full tale, key moments, awards), for an update or to keep a person's words."""
-    who = "Claude" if latest.author == "ai" else (latest.author_name or "someone at the table")
+    who = "Claude" if latest.author == "ai" else (first_name(latest.author_name) or "someone at the table")
     tale = "\n\n".join(f"## {c.get('title', '')} ({c.get('kind', 'story')}{', starts ' + _hms(c['at']) if c.get('at') is not None else ''})\n{c.get('text', '')}"
                         for c in latest.tale or [])
     drafts = [e for e in session.events if e.status == Status.DRAFT] or list(session.events)
@@ -622,7 +632,7 @@ def revise_messages(db: Session, session: GameSession) -> list[dict]:
     answers and the World, without the transcript, so it costs cents."""
     campaign = db.get(Campaign, session.campaign_id)
     pending, rejected = _pending_text(db, session)
-    content = [{"type": "text", "text": "<known_world>\n" + _known_world(db, campaign) + "\n</known_world>"},
+    content = [{"type": "text", "text": "<known_world>\n" + _known_world(db, campaign, players=False) + "\n</known_world>"},
                {"type": "text", "text": f"<session>{session_label(session)}</session>\n<suggestions>\n{pending}\n</suggestions>"}]
     if rejected:
         content.append({"type": "text", "text": f"<rejected_by_brett>\n{rejected}\n</rejected_by_brett>"})

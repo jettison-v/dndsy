@@ -262,3 +262,35 @@ def test_a_drafts_run_records_and_prices_the_fallback(db, monkeypatch):
     run = extract_session(db, session, Source("notes", "###### Session 29\n- fought devils"), answered_by("claude-opus-4-8"))
     assert run.status == "done", run.error
     assert run.model == "claude-opus-4-8" and run.cost_usd == round((1000 * 5 + 500 * 25) / 1e6, 4)
+
+
+def test_claude_is_given_first_names_only_and_none_where_nothing_was_said(db):
+    """The outside review's A4: who plays each character and who runs the game go to Claude as first names only, which
+    is all it needs to match a speaker to a character; the revise pass, which reads no transcript or notes, gets the
+    characters alone."""
+    from app.models import Campaign, Character
+
+    session = setup(db)
+    campaign = db.get(Campaign, session.campaign_id)
+    campaign.dm_name = "Mary Quentin Smith"
+    db.scalar(select(Character).where(Character.name == "No Name")).player_name = "Tim Ortega"
+    db.flush()
+    world = extraction._known_world(db, campaign)
+    assert "Dungeon Master: Mary\n" in world and "- No Name — Tim" in world
+    assert "Smith" not in world and "Ortega" not in world and "Quentin" not in world
+    text = json.dumps(extraction.revise_messages(db, session))
+    assert "No Name" in text and "Tim" not in text and "Mary" not in text  # (the characters, no players)
+    assert extraction.first_name("  Big   C  ") == "Big" and extraction.first_name("") == "" and extraction.first_name(None) == ""
+
+
+def test_a_reviewers_name_reaches_claude_as_a_first_name_never_an_email(db):
+    from app.conversation import conversation_text
+    from app.models import SessionMessage
+
+    session = setup(db)
+    db.add_all([SessionMessage(session_id=session.id, role="reviewer", author="Tim Ortega", body="We went to the cave."),
+                SessionMessage(session_id=session.id, role="reviewer", author="player@example.com", body="And a ship.")])
+    db.flush()
+    db.refresh(session)
+    text = conversation_text(session)
+    assert "Tim:\n" in text and "Reviewer:\n" in text and "Ortega" not in text and "@" not in text
