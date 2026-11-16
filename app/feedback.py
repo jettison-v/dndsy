@@ -29,7 +29,7 @@ import re
 import secrets
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Form, Header, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, Response, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -37,7 +37,7 @@ from sqlalchemy.orm import Session
 from app import access, config, files, picks, view_as, web
 from app.auth import current_user, is_admin
 from app.db import get_db
-from app.models import Feedback, User
+from app.models import Feedback, FeedbackPicture, User
 from app.templating import templates
 
 router = APIRouter()
@@ -51,6 +51,8 @@ OPEN = ("new", "question", "planned")
 KINDS = {"broken": ("Something's broken", "Broken", "What's wrong?"), "idea": ("An idea", "Idea", "What would be better?"),
          "question": ("A question", "Question", "What would you like to know?")}  # (in the window, its short tag, its box's ask)
 MAX_TEXT, MAX_HTML, MAX_CONTEXT = 4000, 3_000_000, 50_000
+MAX_PICS, MAX_PIC_BYTES = 4, 8_000_000  # screenshots added with Add to it, at most, each (feedback 64)
+PIC_TYPES = ("image/png", "image/jpeg", "image/webp")
 IMAGE = re.compile(r"^data:(image/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$")
 BACK = "/manage/feedback"
 
@@ -89,6 +91,41 @@ def _image(value) -> tuple[bytes, str] | None:
         return base64.b64decode(m.group(2), validate=True), m.group(1)
     except ValueError:
         return None
+
+
+def add_pictures(db: Session, fb: Feedback, uploads: list[UploadFile] | None) -> list[int]:
+    """Screenshots added to a note with Add to it (feedback 64, Nov 16): kept in file storage, each a row of its own
+    (so the nightly sweep keeps the file), named by the thread entry they came with. PNG, JPEG or WebP, 8 MB each."""
+    ups = [u for u in uploads or [] if u is not None and u.filename]
+    if len(ups) > MAX_PICS:
+        raise HTTPException(400, f"{MAX_PICS} screenshots at most, at a time.")
+    campaign, ids = web.campaign(db), []
+    for up in ups:
+        if up.content_type not in PIC_TYPES:
+            raise HTTPException(400, "A screenshot as PNG, JPEG or WebP, please.")
+        data = up.file.read(MAX_PIC_BYTES + 1)
+        if len(data) > MAX_PIC_BYTES:
+            raise HTTPException(400, "A screenshot is over 8 MB.")
+        if campaign is None:
+            raise HTTPException(400, "There's no campaign to keep it in.")
+        try:
+            key = files.put(db, campaign.id, data, up.content_type)
+        except (files.FileError, files.StorageNotReady) as e:
+            raise HTTPException(400, str(e)) from e
+        pic = FeedbackPicture(feedback_id=fb.id, key=key)
+        db.add(pic)
+        db.flush()
+        ids.append(pic.id)
+    return ids
+
+
+def picture_of(db: Session, fb: Feedback, pic_id: int):
+    """One of a note's added screenshots, served."""
+    pic = db.get(FeedbackPicture, pic_id)
+    if pic is None or pic.feedback_id != fb.id:
+        raise HTTPException(404)
+    content_type = next((t for t, (ext, _) in files.TYPES.items() if pic.key.endswith(ext)), "image/png")
+    return files.serve(pic.key, content_type, release=db)
 
 
 def waiting(db: Session) -> int:
@@ -231,7 +268,7 @@ def queue(request: Request, tab: str = "", kind: str = "", open: int = 0, db: Se
 
 @router.post("/manage/feedback/{feedback_id:int}")
 def change(request: Request, feedback_id: int, to: str = Form(...), answer: str = Form(""), kind: str = Form(""),
-           db: Session = Depends(get_db)):
+           pics: list[UploadFile] = File(default=[]), db: Session = Depends(get_db)):
     """Answer Claude's question, or add to a note any time (feedback 18, Brett, Nov 5: something forgotten): it's new
     again for Claude, unless it's planned. Or move a note: planned, done, back to new, deleted. A note from the table
     waiting for approval: Approve sends it to Claude (new), Delete drops it; adding to it approves it too. Or change
@@ -241,10 +278,12 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
         return denied
     fb = db.get(Feedback, feedback_id) or _missing()
     if to == "answer":
-        if not answer.strip():
+        added = add_pictures(db, fb, pics)
+        if not answer.strip() and not added:
             raise HTTPException(400, "Write your answer first.")
         asked, approving = fb.status == "question", fb.status == "review"
-        fb.thread = [*(fb.thread or []), {"who": "you", "text": answer.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat()}]
+        fb.thread = [*(fb.thread or []), {"who": "you", "text": answer.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat(),
+                                          **({"pics": added} if added else {})}]
         if fb.status != "planned":
             fb.status = "new"
         said = ("Answered: it's back with Claude" if asked else "Added and approved: it's with Claude" if approving
@@ -306,6 +345,18 @@ def _shot(db: Session, feedback_id: int, which: str):
     return files.serve(key, content_type, release=db)
 
 
+@router.get("/manage/feedback/{feedback_id:int}/pic/{pic_id:int}")
+def added_picture(request: Request, feedback_id: int, pic_id: int, db: Session = Depends(get_db)):
+    """A screenshot added to a note with Add to it; kept from an admin who is its sender's DM, as its page is."""
+    user, denied = web.require(request, is_admin, "Feedback is for admins.")
+    if denied:
+        return denied
+    fb = db.get(Feedback, feedback_id) or _missing()
+    if kept_from(db, fb, user["email"]):
+        raise HTTPException(404)
+    return picture_of(db, fb, pic_id)
+
+
 @router.get("/manage/feedback/{feedback_id:int}/{which}")
 def picture(request: Request, feedback_id: int, which: str, db: Session = Depends(get_db)):
     """A note's picture (`shot`, `pasted`), or the page as drawn (`page`, as text: it never runs here)."""
@@ -344,6 +395,12 @@ def api_list(status: str = ",".join(OPEN), kind: str = "", x_feedback_key: str |
 def api_one(feedback_id: int, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     _claude(x_feedback_key)
     return JSONResponse(_item(db.get(Feedback, feedback_id) or _missing(), html=True), headers={"Cache-Control": "no-store"})
+
+
+@router.get("/api/feedback/{feedback_id:int}/pic/{pic_id:int}")
+def api_added_picture(feedback_id: int, pic_id: int, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    _claude(x_feedback_key)
+    return picture_of(db, db.get(Feedback, feedback_id) or _missing(), pic_id)
 
 
 @router.get("/api/feedback/{feedback_id:int}/{which}")
@@ -418,7 +475,8 @@ def for_sender(fb: Feedback) -> dict:
     """A note as its sender sees it: never the admin's or Claude's notes to each other, nor the page as drawn."""
     label, sentence = says(fb)
     shown = [{"who": "You" if m.get("who") == "sender" else "Claude" if m.get("who") == "claude" else "An admin",
-              "mine": m.get("who") == "sender", "text": m.get("text", ""), "at": m.get("at", "")}
+              "mine": m.get("who") == "sender", "text": m.get("text", ""), "at": m.get("at", ""),
+              "pics": m.get("pics", []) if m.get("who") == "sender" else []}
              for m in fb.thread or [] if m.get("who") == "sender" or m.get("to") == "sender"]
     return {"id": fb.id, "text": fb.text, "status": fb.status, "kind": fb.kind, "label": label, "says": sentence, "page": (fb.context or {}).get("page") or fb.url,
             "url": fb.url, "at": fb.created_at, "thread": shown, "can_add": fb.status != "deleted"}

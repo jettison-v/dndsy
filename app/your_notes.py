@@ -15,7 +15,7 @@ used), a note sent to Claude, planned, fixed or closed, or a reply.
 
 import re
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -203,6 +203,15 @@ def _mark(rows: list[dict], notes: list, tab: str) -> None:
             fb.seen = fb.told = feedback.marker(fb)
 
 
+@router.get("/your-notes/feedback/{feedback_id:int}/pic/{pic_id:int}")
+def own_picture(request: Request, feedback_id: int, pic_id: int, db: Session = Depends(get_db)):
+    """A screenshot you added to your own note."""
+    fb = next((x for x in notes_of(db, current_user(request)) if x.id == feedback_id), None)
+    if fb is None:
+        raise HTTPException(404)
+    return feedback.picture_of(db, fb, pic_id)
+
+
 @router.get("/your-notes/seen")
 def seen(request: Request, tab: str = "", db: Session = Depends(get_db)):
     """Another tab opened on the page (app.js "your notes"): its notes are seen. The badge's new count comes back. A
@@ -219,15 +228,19 @@ def seen(request: Request, tab: str = "", db: Session = Depends(get_db)):
 
 
 @router.post("/your-notes/feedback/{feedback_id:int}")
-def add_to(request: Request, feedback_id: int, text: str = Form(""), db: Session = Depends(get_db)):
-    """Add to your own note about askdnd. From a player it goes to an admin first, as a new note does (Brett, Nov 6)."""
+def add_to(request: Request, feedback_id: int, text: str = Form(""), pics: list[UploadFile] = File(default=[]),
+           db: Session = Depends(get_db)):
+    """Add to your own note about askdnd, words and screenshots (feedback 64, Nov 16). From a player it goes to an admin
+    first, as a new note does (Brett, Nov 6)."""
     user = current_user(request)
     fb = next((x for x in notes_of(db, user) if x.id == feedback_id), None)
     if fb is None or fb.status == "deleted":
         raise HTTPException(404)
-    if not text.strip():
+    added = feedback.add_pictures(db, fb, pics)
+    if not text.strip() and not added:
         raise HTTPException(400, "Write what you'd add first.")
-    fb.thread = [*(fb.thread or []), {"who": "sender", "text": text.strip()[:feedback.MAX_TEXT], "at": feedback.now_iso()}]
+    fb.thread = [*(fb.thread or []), {"who": "sender", "text": text.strip()[:feedback.MAX_TEXT], "at": feedback.now_iso(),
+                                      **({"pics": added} if added else {})}]
     admin = access.level((user or {}).get("email")) == access.ADMIN
     fb.status = ("planned" if fb.status == "planned" else "new") if admin else "review"
     fb.seen = fb.told = feedback.marker(fb)

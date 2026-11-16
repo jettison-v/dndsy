@@ -1,0 +1,12 @@
+{# Screenshots added to a note after it was sent (Add to it, on Notes you sent and the feedback queue; feedback 64,
+   Nov 16; app/feedback.py add_pictures). The field: a file picker that looks like a regular button, and pasting a
+   screenshot into the form adds it too (app.js "screenshots in Add to it"). #}
+{% macro pics_field() -%}
+<div class="fb-pics-field row tight"><label class="btn small">Add screenshots<input type="file" name="pics" multiple accept="image/png,image/jpeg,image/webp" class="sr" data-pics-input></label>
+  <span class="note" data-pics-said>Or paste one here (<kbd>⌘V</kbd>)</span></div>
+{%- endmacro %}
+
+{# The screenshots a thread entry came with, each opening at full size #}
+{% macro added_pics(ids, base) -%}
+{% if ids %}<span class="fb-thread-pics">{% for p in ids %}<a href="{{ base }}/pic/{{ p }}" target="_blank" rel="noopener"><img src="{{ base }}/pic/{{ p }}" alt="A screenshot added to the note" loading="lazy"></a>{% endfor %}</span>{% endif %}
+{%- endmacro %}

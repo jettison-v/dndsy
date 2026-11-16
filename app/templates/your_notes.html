@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_lists.html" import search_box %}
+{% from "_feedback_pics.html" import pics_field, added_pics %}
 {% block title %}Notes you sent · askdnd{% endblock %}
 {# Your notes (app/your_notes.py; Brett, Nov 7: docs/mockups/your-notes/ Layout A and a badge, then
    docs/mockups/your-notes-2/ Layout B, feedback 54): what you sent, in two tabs that say who reads it, each the Reader
@@ -56,17 +57,18 @@
     <article class="reader-article nt-read" data-note-read="{{ n.key }}"{% if not (note == n.key or (note not in notes | map(attribute="key") | list and loop.first)) %} hidden{% endif %}>
       {{ status_track(n.track) }}
       <h2 class="nt-h">{{ n.title }}</h2>
-      {% if n.what %}<span class="tag" data-kind="{{ n.what_key }}">{{ n.what }}</span>{% endif %}
+      {% if n.what %}<span class="tag nt-kind" data-kind="{{ n.what_key }}">{{ n.what }}</span>{% endif %}
       <section class="nt-part"><h3 class="divider">You asked · {{ n.at.strftime("%b %-d") }}{% if n.where %} · {% if n.href %}<a href="{{ n.href }}" data-no-peek>{{ n.where }}</a>{% else %}{{ n.where }}{% endif %}{% endif %}</h3>
         <div class="nt-quote">{{ n.text }}</div>
-        {% for m in n.earlier if m.mine %}<div class="fb-msg you"><small>You added</small>{{ m.text }}</div>{% endfor %}</section>
+        {% for m in n.earlier if m.mine %}<div class="fb-msg you"><small>You added</small>{{ m.text }}{{ added_pics(m.pics, "/your-notes/feedback/" ~ n.id) }}</div>{% endfor %}</section>
       <section class="nt-part"><h3 class="divider">What happened</h3>
         {% for m in n.earlier if not m.mine %}<div class="fb-msg claude"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
         <div class="nt-answer st-{{ n.dot }}{{ ' st-open' if n.open }}"><small>{{ n.label }}{% if n.answer %} · {{ n.answer.who }}{% endif %}</small><span class="nt-said">{{ n.answer.text if n.answer else n.says }}</span>
           {%- if n.landed %}<a class="nt-landed" href="{{ n.landed.href }}" data-no-peek>{{ n.landed.text }} →</a>{% endif %}</div></section>
       {% if n.can_add %}<details class="fold fbm-add"><summary>Add to it</summary>
-        <form method="post" action="/your-notes/feedback/{{ n.id }}" class="fb-answer">
-          <label class="field"><span>Something you forgot, or what happened next</span><textarea name="text" rows="2" required></textarea></label>
+        <form method="post" action="/your-notes/feedback/{{ n.id }}" class="fb-answer" enctype="multipart/form-data" data-pics>
+          <label class="field"><span>Something you forgot, or what happened next</span><textarea name="text" rows="2"></textarea></label>
+          {{ pics_field() }}
           <button class="btn small" type="submit">Add</button>
         </form></details>{% endif %}
     </article>
