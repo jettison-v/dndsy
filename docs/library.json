@@ -1089,6 +1089,15 @@
   "link": "https://claude.ai/artifact/VqUtFJgPtenYyhZUYQrEVc"
  },
  {
+  "title": "Clearing Filters",
+  "kind": "design",
+  "status": "Waiting for your pick",
+  "date": "Nov 16",
+  "what": "Where Clear goes on every filtered list: at the top of the filters, one row above the list, or both (your feedback 67).",
+  "source": "docs/mockups/filter-clear/",
+  "link": "https://claude.ai/artifact/Vkako2RYRVibX69W3UiwsT"
+ },
+ {
   "title": "Compare",
   "kind": "design",
   "status": "Chose both",
