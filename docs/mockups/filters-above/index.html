@@ -71,6 +71,27 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
 .fold .clear { margin-left: auto; }
 .fold-body { display: grid; gap: 10px; padding: 10px 2px 4px; }
 .mark { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--amber); color: #1a1a1a; font: 700 .7rem/1 var(--sans); flex: none; }
+/* Round 2: the filters line itself (Brett: the bold FILTERS clouds what's filtered) */
+.r2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 18px; }
+.r2-col { display: grid; gap: 10px; align-content: start; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px; }
+.r2-col h3 { margin: 0; font: 600 1rem/1.3 var(--sans); color: var(--strong); }
+.state { display: grid; gap: 6px; }
+.state > small { font: 700 .7rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.ctl-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .86rem; }
+.ctl { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font: 400 .86rem/1 var(--sans); }
+.ctl .chev { color: var(--muted); font-size: .72rem; }
+.ctl .badge { background: var(--blue); color: #10131a; border-radius: 999px; padding: 2px 6px; font: 700 .7rem/1 var(--sans); }
+.ctl svg { width: 14px; height: 14px; stroke: var(--muted); fill: none; stroke-width: 2; }
+.ctl-lbl { color: var(--muted); font-size: .86rem; }
+.on-pill { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 9px; border-radius: 999px; background: var(--selected); border: 1px solid var(--blue); color: var(--text); font: 500 .78rem/1 var(--sans); }
+.on-pill b { color: var(--muted); font-weight: 500; }
+.bar { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: .86rem; color: var(--faint); }
+.bar .vals { flex: 1; min-width: 0; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar .clear, .ctl-row .clear { margin-left: auto; }
+.open-groups { display: grid; gap: 8px; padding: 8px 2px 2px; }
+.sortrow { display: flex; align-items: center; gap: 8px; font-size: .84rem; color: var(--muted); }
+.sortrow .ctl { min-height: 30px; }
+.sortrow .cnt { margin-left: auto; }
 .q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
 .q ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; }
 @media (max-width: 760px) { .reader { grid-template-columns: 1fr; min-height: 0; } .entry { display: none; } h1 { font-size: 1.7rem; } }
@@ -161,8 +182,63 @@ section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px sol
   </div>
 </section>
 
+<section class="board" id="round2">
+  <div class="intro">
+    <span class="lbl">Round 2 · the filters line itself</span>
+    <h2>Three ways to draw the folded line</h2>
+    <p>You said the built line's bold <b>FILTERS</b> clouds what's being filtered. That heading style belongs to a column's
+    title, not a control. Each version below is drawn as a control at regular weight, in three states: nothing filtered,
+    two on, and open. Each sits above the Sort row it's paired with on Notes.</p>
+  </div>
+  <div class="r2">
+    <div class="r2-col">
+      <h3>A · A control, like Sort, and what's on as pills</h3><span class="pick" style="margin:0">My pick</span>
+      <div class="state"><small>Nothing filtered</small>
+        <div class="ctl-row"><span class="ctl">Filters <span class="chev">▾</span></span></div>
+        <div class="sortrow">Sort <span class="ctl">Newest first <span class="chev">▾</span></span><span class="cnt">33 notes</span></div></div>
+      <div class="state"><small>Two on</small>
+        <div class="ctl-row"><span class="ctl">Filters <span class="badge">2</span> <span class="chev">▾</span></span><span class="on-pill">Something's broken ×</span><span class="on-pill">Planned ×</span><span class="clear">Clear</span></div>
+        <div class="sortrow">Sort <span class="ctl">Newest first <span class="chev">▾</span></span><span class="cnt">3 notes</span></div></div>
+      <div class="state"><small>Open</small>
+        <div class="ctl-row"><span class="ctl">Filters <span class="badge">2</span> <span class="chev">▴</span></span><span class="clear">Clear</span></div>
+        <div class="open-groups"><div class="group"><span>Where it stands</span><div class="chips"><span class="chip">With Claude <small>1</small></span><span class="chip" aria-pressed="true">Planned <small>4</small></span><span class="chip">Fixed <small>32</small></span></div></div>
+          <div class="group"><span>What it is</span><div class="chips"><span class="chip" aria-pressed="true">Something's broken <small>3</small></span><span class="chip">An idea <small>0</small></span><span class="chip">A question <small>0</small></span></div></div></div></div>
+      <p class="meta">The button looks like Sort's dropdown, so the two read as a pair of controls. What's on sits beside it as blue pills (each with ×, wrapping when there are many), never mixed into the button's words.</p>
+    </div>
+    <div class="r2-col">
+      <h3>B · An icon button with a count</h3>
+      <div class="state"><small>Nothing filtered</small>
+        <div class="ctl-row"><span class="ctl"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Filter</span></div></div>
+      <div class="state"><small>Two on</small>
+        <div class="ctl-row"><span class="ctl"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Filter <span class="badge">2</span></span><span class="on-pill">Something's broken ×</span><span class="on-pill">Planned ×</span></div></div>
+      <div class="state"><small>Open</small>
+        <div class="ctl-row"><span class="ctl"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v6l-4-2v-4z"/></svg>Filter <span class="badge">2</span></span><span class="clear">Clear</span></div>
+        <div class="open-groups"><div class="group"><span>Where it stands</span><div class="chips"><span class="chip" aria-pressed="true">Planned <small>4</small></span><span class="chip">Fixed <small>32</small></span></div></div></div></div>
+      <p class="meta">Smaller, with a funnel like most apps. Clear moves into the open filters (each pill's × clears one), so the closed line is shortest; the funnel is the only icon of its kind in askdnd so far.</p>
+    </div>
+    <div class="r2-col">
+      <h3>C · A bar that says what's showing</h3>
+      <div class="state"><small>Nothing filtered</small>
+        <div class="bar">Showing <span class="vals" style="color:var(--muted)">every note</span><span class="chev" style="color:var(--muted)">▾</span></div></div>
+      <div class="state"><small>Two on</small>
+        <div class="bar">Showing <span class="vals">Something's broken · Planned</span><span class="clear">Clear</span><span style="color:var(--muted)">▾</span></div></div>
+      <div class="state"><small>Open</small>
+        <div class="bar">Showing <span class="vals">Something's broken · Planned</span><span class="clear">Clear</span><span style="color:var(--muted)">▴</span></div>
+        <div class="open-groups"><div class="group"><span>Where it stands</span><div class="chips"><span class="chip" aria-pressed="true">Planned <small>4</small></span><span class="chip">Fixed <small>32</small></span></div></div></div></div>
+      <p class="meta">Reads as a sentence and takes one line, like the search box above it; with many on, the words cut off and you open it to see them all.</p>
+    </div>
+  </div>
+</section>
+
 <section class="board" id="picks">
-  <div class="intro"><span class="lbl">Your pick</span><h2>Two choices</h2></div>
+  <div class="intro"><span class="lbl">Your pick</span><h2>Choices</h2></div>
+  <div class="q"><b>Round 2: how should the folded filters line look?</b>
+    <ul>
+      <li><b>A, a control like Sort, with what's on as pills</b> (my pick).</li>
+      <li><b>B, an icon button with a count</b>.</li>
+      <li><b>C, a bar that says what's showing</b>.</li>
+    </ul>
+  </div>
   <div class="q"><b>1. Filters above a list (World, Notes you sent, Battle's See all)</b>
     <ul>
       <li><b>Folded to one line</b> (my pick): "Filters ▸ 2 · names · Clear", opening in place, remembered per list.</li>
