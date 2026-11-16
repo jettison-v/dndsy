@@ -936,7 +936,7 @@ class _Sheet:
                 old = entries.get(sp["name"])
                 rank = {"always": 4, "prepared": 3, "known": 3, "spellbook": 2, "available": 1}
                 if old is None or rank[state] > rank[old["state"]]:
-                    entries[sp["name"]] = {**sp, "state": state, "prep": prep(raw, state, sp)}
+                    entries[sp["name"]] = {**sp, "state": state, "prep": prep(raw, state, sp), "learn": learn(raw)}
 
             def prep(raw, state, sp):
                 """What preparing or unpreparing it on D&D Beyond names (app/ddb_fields.py "prep"): a leveled spell of a
@@ -945,6 +945,12 @@ class _Sheet:
                 ok = df.get("spellPrepareType") == 1 and sp["level"] and (state in ("prepared", "spellbook") or (state == "available" and not book))
                 ids = (c.get("id"), raw.get("id"), _d(raw, "definition", "id"), raw.get("entityTypeId"))
                 return {"cls": ids[0], "entry": ids[1], "def": ids[2], "etype": ids[3]} if ok and all(ids) else None
+
+            def learn(raw):
+                """What learning it, or letting it go, names on D&D Beyond (app/ddb_fields.py "learn"; Your spells,
+                app/spells_known.py): the class, its entry on the class's list, the spell and its type."""
+                ids = (c.get("id"), raw.get("id"), _d(raw, "definition", "id"), raw.get("entityTypeId"))
+                return {"cls": ids[0], "entry": ids[1], "def": ids[2], "etype": ids[3]} if all(ids) else None
 
             for s in sheet_lists.get(c.get("id"), []):
                 level = _d(s, "definition", "level") or 0
@@ -968,6 +974,7 @@ class _Sheet:
                 "level": lvl,
                 **casters[name],
                 "spellbook": book,
+                "learns": knows,  # (knows its spells: learned at a new level, not prepared after a rest)
                 "prepared_count": sum(1 for x in spells if x["state"] == "prepared"),
                 "prepared_max": at_level("levelPreparedSpellMaxes") or at_level("levelSpellKnownMaxes") or prepared_by_rules(name, lvl),
                 "cantrips_count": sum(1 for x in spells if x["state"] == "known" and not x["level"]),

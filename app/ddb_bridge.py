@@ -479,6 +479,11 @@ def plan(intents: list[dict], n: dict, every: bool = False) -> tuple[dict, list[
             vals[f] = bool(d["value"])
             extra[f] = {"spellId": d["def"], "entityTypeId": d["etype"]}
             touched.append(f)
+        elif kind == "learn":  # a spell learned or let go of: what learning it names comes with it (D&D Beyond's ids)
+            f = f"learn:{d['cls']}:{d['entry']}"
+            vals[f] = bool(d["value"])
+            extra[f] = {"spellId": d["def"], "entityTypeId": d["etype"]}
+            touched.append(f)
         elif kind == "add_item":
             f = f"add:{d['definition']}"
             vals[f] = (get(f) or 0) + d["quantity"]
@@ -584,6 +589,8 @@ def describe(kind: str, d: dict, n: dict) -> str:
         return f"{d['name']} ×{d['quantity']} added"
     if kind == "prepare":
         return f"{d['name']} {'prepared' if d['value'] else 'unprepared'}"
+    if kind == "learn":
+        return f"{d['name']} {'learned' if d['value'] else 'let go'}"
     return kind
 
 
@@ -1874,6 +1881,7 @@ CONNECTIONS = [
     ("A creature's Hit Points and maximum", ("creature", "creature_max"), ("creature-hp",), "yes"),
     ("A familiar: here or not, what it is, its name, a new form", ("creature_active", "creature_type", "creature_name", "familiar_add"), ("familiar",), "yes"),
     ("Wild Shape's known forms: one learned, one let go", ("wildshape",), ("wild-shape-forms",), "yes"),
+    ("Spells learned: a cantrip swapped, a spell learned or copied into a spellbook", ("learn",), ("learn-spells",), "yes"),
 ]
 
 

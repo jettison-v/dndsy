@@ -1024,6 +1024,41 @@ def wild_shape_forms(t: Table, seat: str = "player4") -> None:
     now = forms_known(record(sheet))
     tidy = [["DELETE", "creature", {"id": now[m]}] for m in now if m not in before]
     tidy += [["POST", "creature", {"groupId": 13, "monsterId": int(m), "names": [None]}] for m in before if m not in now]
+def spells_on(d: dict) -> dict:
+    """A sheet's spells on each class's list: {entry id: the request body that adds or removes it}."""
+    return {str(s.get("id")): {"characterClassId": cs.get("characterClassId"), "spellId": (s.get("definition") or {}).get("id"),
+                               "id": s.get("id"), "entityTypeId": s.get("entityTypeId")}
+            for cs in d.get("classSpells") or [] for s in cs.get("spells") or []}
+
+
+def learn_spells(t: Table, seat: str = "player4") -> None:
+    """Your spells (roadmap step 5, Nov 15; Levi, Druid / Warlock): Sheet › Spells › Swap a cantrip lets one cantrip go
+    and learns another, made on D&D Beyond with its own Manage Spells requests (DELETE and POST spell); Undo puts both
+    back. Anything left over is put back as found."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    connects(t, page)
+    before = spells_on(record(sheet))
+    page.goto(page.url.split("?")[0].removesuffix("/battle"), wait_until="domcontentloaded")
+    page.locator('[data-tab="t-spells"]').first.click(timeout=8000)
+    go(page, page.locator("[data-learn-spells]").first)
+    out = page.locator('input[name="out"]:not([value=""])').first
+    out_id = out.get_attribute("value")
+    out.check()
+    into = page.locator('select[name="in"] option:not([value=""]):not([disabled])').first
+    in_id = into.get_attribute("value")
+    page.locator('select[name="in"]').select_option(in_id)
+    print(f"  let go of {out_id}, learn {in_id}", flush=True)
+    page.locator("[data-use-go]").first.click(timeout=8000)
+    t.expect("the spell let go of is gone from D&D Beyond", lambda: out_id not in spells_on(record(sheet)), SLOW)
+    t.expect("and the new one is on the class's list there", lambda: in_id in spells_on(record(sheet)), SLOW)
+    page.wait_for_timeout(1500)
+    if undo(page):
+        t.expect("Undo lets the new one go", lambda: in_id not in spells_on(record(sheet)), SLOW)
+        t.expect("and learns the first again", lambda: out_id in spells_on(record(sheet)), SLOW)
+    now = spells_on(record(sheet))
+    tidy = [["DELETE", "spell", now[e]] for e in now if e not in before]
+    tidy += [["POST", "spell", before[e]] for e in before if e not in now]
     if tidy:
         print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], tidy]), flush=True)
 
@@ -1736,7 +1771,7 @@ RUNS = {"free-cast": free_cast, "closed-sheet": closed_sheet, "game-log": game_l
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp,
         "familiar": familiar, "initiative": initiative, "unreachable": unreachable,
-        "wild-companion": wild_companion, "wild-shape-forms": wild_shape_forms}
+        "wild-companion": wild_companion, "wild-shape-forms": wild_shape_forms, "learn-spells": learn_spells}
 
 
 def _twin_run(key: str):
