@@ -25,17 +25,19 @@
   title="{% if p.by_hand %}{{ p.name }}: {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} didn't go through to D&amp;D Beyond: Try again or Undo in this window{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif party %}How many of the party's D&amp;D Beyond sheets are connected{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd change together (the bridge){% elif p.via %}{{ p.name }}'s sheet is closed, so the DM's D&amp;D Beyond makes the changes. Open it so rolls reach D&amp;D Beyond's Game Log too{% elif ours %}Open {{ p.name }}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge{% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
   {#- Its words (Brett chose Menu Bar by Person, Nov 13, docs/mockups/menu-bar-people/ › The Live pill): connected is the
       green dot alone; every other state says what to do. `.lw-long` gives way to `.lw-short` below 1100px (the collapse
-      order, docs/DESIGN.md › Navigation), never to a bare "Live". -#}
+      order, docs/DESIGN.md › Navigation), never to a bare "Live" or a bare dot; a state that's short already (Not
+      connected, Open your sheet) keeps its words. One label shows at a time: without the bridge in this browser "Add
+      the bridge" takes the words' place (app.css), and a connected pill widens for it. -#}
   {%- set words = none %}{% set short = none %}
-  {%- if p.by_hand %}{% set words = "%d didn't go through" % p.by_hand %}
+  {%- if p.by_hand %}{% set words = "%d didn't go through" % p.by_hand %}{% set short = "%d not sent" % p.by_hand %}
   {%- elif party and tn.connected == tn.connectable %}{% set words = "" %}
   {%- elif party and tn.via %}{% set words = "%d of %d · %d via %s" % (tn.connected + tn.via, tn.connectable, tn.via, "you" if tn.dm else "the DM") %}{% set short = "%d of %d" % (tn.connected + tn.via, tn.connectable) %}
   {%- elif party and tn.connected %}{% set words = "%d of %d connected" % (tn.connected, tn.connectable) %}{% set short = "%d of %d" % (tn.connected, tn.connectable) %}
-  {%- elif party %}{% set words = "None connected" %}
+  {%- elif party %}{% set words = "None connected" %}{% set short = "0 of %d" % tn.connectable %}
   {%- elif p.step and p.mine %}{% set words = "" %}
-  {%- elif p.step %}{% set words = "%s connected" % p.name %}
+  {%- elif p.step %}{% set words = "%s connected" % p.name %}{% set short = "Connected" %}
   {%- elif p.via and p.mine %}{% set words = "Via the DM · open your sheet" %}{% set short = "Open your sheet" %}
-  {%- elif p.via %}{% set words = "%s: via the DM" % p.name %}
+  {%- elif p.via %}{% set words = "%s: via the DM" % p.name %}{% set short = "Via the DM" %}
   {%- elif p.failed %}{% set words = "D&D Beyond not answering" %}{% set short = "Not answering" %}
   {%- elif ours and tone == "bad" %}{% set words = "Open your sheet" %}
   {%- elif ours %}{% set words = "Not connected" %}

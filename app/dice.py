@@ -51,18 +51,19 @@ KNOBS = {
     "fade_out": ("Fades out over", "Everything goes away.", 0, 1.5, 0.05, "s"),
     "slide": ("Tray slides in and out over", "The dice are thrown once the tray is up.", 0, 1, 0.05, "s"),
 }
-# The three places dice are thrown: (key, name, when, the knobs in groups)
+# The places dice are thrown: (key, its tab's short name, when, the knobs in groups); the names short, so the tabs keep
+# to one line (the UI review, Nov 16), what each is in its own words under them
 _PAGE = [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "light"]),
          ("Shadow box: the page behind the dice", ["dim", "blur"]), ("Timing", ["fade_in", "stay", "fade_out"])]
 PLACES = [
-    ("mine", "Your roll", ("You rolled, on any page: your dice are thrown across the whole page, the page behind them goes dark, "
+    ("mine", "Yours", ("You rolled, on any page: your dice are thrown across the whole page, the page behind them goes dark, "
      "and the total shows at the top, clear of the roll window."), _PAGE),
-    ("tray", "Others' rolls in the tray", ("Someone else rolled, for a person who chose the dice tray (Your dice): a small "
+    ("tray", "Tray", ("Someone else rolled, for a person who chose the dice tray (Your dice): a small "
      "tray slides up in the corner, their dice tumble in it, and it shows who and the total."),
      [("The throw", ["strength", "gravity", "size"]), ("Light", ["shadows", "light"]), ("Timing", ["slide", "stay"])]),
-    ("vtt", "Others' rolls, full screen", ("Someone else rolled (everyone without the dice tray, and everyone on askdnd's table): "
+    ("vtt", "Full screen", ("Someone else rolled (everyone without the dice tray, and everyone on askdnd's table): "
      "their dice cross the whole screen with a tag saying who rolled."), _PAGE),
-    ("drama", "Dramatic rolls", ("A roll made dramatic (🎬 on the roll card): on every screen, the dice tray too, it's thrown big "
+    ("drama", "Dramatic", ("A roll made dramatic (🎬 on the roll card): on every screen, the dice tray too, it's thrown big "
      "and slow in the middle, the number held until the die stops; several beams or darts come one at a time."), _PAGE),
 ]
 # askdnd's own tuning (what it did before the Dice tuning page)

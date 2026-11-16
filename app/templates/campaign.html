@@ -27,7 +27,7 @@
         <div class="reader-nav-head">{# stays at the top while the names scroll #}
         <div class="ls-search">
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input type="search" placeholder="Search people, places and things" aria-label="Search people, places and things" data-ls-search>
+          <input type="search" placeholder="Search the world" aria-label="Search people, places and things" data-ls-search>
         </div>
         {{ view_switch([("all", "All"), ("recent", "Last session")], "Which ones") }}
         {% if latest_label %}<p class="note ls-which">Last session: <b>{{ latest_label }}</b>, the newest with a published recap. Its key moments' names get the dot.</p>{% endif %}

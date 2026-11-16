@@ -53,7 +53,7 @@
   <div class="layout">
     <div>
       <div class="tabbar review-steps" role="tablist" data-tab-param aria-label="Review steps">
-        {% for x in steps %}<button type="submit" role="tab" aria-selected="{{ 'true' if tab == x.key else 'false' }}" data-tab="t-{{ x.key }}"><span class="step-n">{{ x.n }}</span>{{ x.label }}{% if x.left and x.key != "recap" %} <span class="count notes-tab-new">{{ x.left }}</span>{% elif x.count is defined %} <span class="count">{{ x.count }}</span>{% elif not x.left %} <span class="step-done" aria-label="done">✓</span>{% endif %}</button>{% endfor %}
+        {% for x in steps %}<button type="submit" role="tab" aria-selected="{{ 'true' if tab == x.key else 'false' }}" data-tab="t-{{ x.key }}" title="{{ x.label }}"><span class="step-l"><span class="step-n">{{ x.n }}</span><span class="step-name">{{ x.tab or x.label }}</span></span><small class="step-st">{% if x.left and x.key != "recap" %}<span class="notes-tab-new">{{ x.left }} left</span>{% elif x.left %}to draft{% else %}<span class="step-done" aria-label="done">✓</span>{% if x.count is defined %} {{ x.count }}{% endif %}{% endif %}</small></button>{% endfor %}
       </div>
       {# 1. Questions #}
       <div id="t-questions" role="tabpanel"{% if tab != "questions" %} hidden{% endif %}>

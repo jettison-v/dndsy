@@ -11,6 +11,7 @@ from app import roll_recipes as rr
 
 COSTS = ["Action", "Bonus action", "Reaction", "Other"]
 COLUMN_LIMIT = 7  # options shown in a Battle column before "See all"
+RESETS_SAID = ("Dawn", "Long Rest", "Short or Long Rest", "Used up")  # an item's charges whose return Sheet states (app/ddb_sheet.py RESET)
 
 
 def _cost(activation: str) -> str:
@@ -233,7 +234,10 @@ def options(sheet: dict, starred: set[str] | None = None) -> list[dict]:
         cost, said = conditions.item_cost(it, choice)
         kinds = conditions.item_options(it)
         kind = next((c for c in (kinds or {}).get("choices") or [] if c["name"] == choice), None)
-        add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost=cost, name=it["name"], uses=uses,
+        # Sheet's right-hand column: game facts (which kind it is, when its charges come back), never a copy of the
+        # summary under its name (the UI review, Nov 16: the first sentence twice cut its tags to "…")
+        facts = [kind["name"] if kind else "", ch["reset_phrase"] if uses and ch["reset"] in RESETS_SAID else ""]
+        add(key=it["key"], oref=f"item:{it['base_name']}", kind="item", cost=cost, name=it["name"], uses=uses, mech=" · ".join(f for f in facts if f),
             tags=([said] if said and said.lower() != cost.lower() and cost != "No action" else []) + ([f"×{left}"] if left > 1 and not uses else []),
             meta=(kind or {}).get("what") or (first if len(first) <= 120 else first[:119].rsplit(" ", 1)[0] + "…"),
             text=it.get("text") or it["summary"], summary=it["summary"], common="healing" in it["name"].lower(),

@@ -22,7 +22,7 @@
     </div>
     {% if can_change %}<details class="fold"><summary>{{ "Fix D&amp;D Beyond link" | safe if c.ddb_id else "Link to D&amp;D Beyond" | safe }}</summary>
       <form method="post" action="{{ cbase }}/characters/{{ c.id }}/link" class="form-narrow">
-        <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link for {{ c.name }}" value="{{ 'https://www.dndbeyond.com/characters/' ~ c.ddb_id if c.ddb_id }}" placeholder="https://www.dndbeyond.com/characters/12345678" required>
+        <input type="text" name="ddb_link" aria-label="D&amp;D Beyond link for {{ c.name }}" value="{{ 'https://www.dndbeyond.com/characters/' ~ c.ddb_id if c.ddb_id }}" placeholder="dndbeyond.com/characters/…" required>
         <div><button class="btn small{{ ' primary' if not c.ddb_id }}" type="submit" data-busy="Fetching…">{{ "Save and refresh" if c.ddb_id else "Link and fetch" }}</button></div>
       </form>
       <p class="note">The character must be set to Public on D&amp;D Beyond.</p></details>{% endif %}
@@ -71,7 +71,7 @@
         {% if can_add_new %}<label class="field">Or someone new: their Google email<input type="text" name="new_email" placeholder="name@gmail.com"></label>
         <label class="field">Their name (optional, for a new email)<input type="text" name="name" maxlength="200"></label>{% endif %}
         <label class="field">Role here<select name="role">{% for r in roles %}<option value="{{ r }}" {{ "selected" if r == "player" }}>{{ role_labels[r] }}</option>{% endfor %}</select></label>
-        <label class="field">Their character: a D&amp;D Beyond link (optional)<input type="text" name="ddb_link" placeholder="https://www.dndbeyond.com/characters/12345678"></label>
+        <label class="field">Their character: a D&amp;D Beyond link (optional)<input type="text" name="ddb_link" placeholder="dndbeyond.com/characters/…"></label>
         <label class="field">Or a character's name, if it has no D&amp;D Beyond sheet<input type="text" name="char_name" maxlength="200"></label>
         <div class="row"><button class="btn primary" type="submit">Add to {{ campaign.name }}</button></div>
         {% if can_add_new %}<p class="note">A new email gets an account and can sign in. Google also needs them on its test-user list (Accounts says how).</p>{% endif %}

@@ -44,13 +44,14 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert [g.split("<")[0] for g in door(page, "admin").split('class="menu-group">')[1:]] == ["People", "Tuning"]
 
     band = page.split('class="manage-band')[1].split("</div>")[0]
-    assert band.startswith(' camp"') and "The Lost Mine" in band and 'href="/manage/askdnd">⚙ Admin' in band
+    assert band.startswith(' camp"') and "The Lost Mine" in band and 'class="manage-cross btn" href="/manage/askdnd"' in band
     side = page.split('class="manage-side"')[1].split("</nav>")[0]
     assert [s.split('class="manage-sec">')[1].split("<")[0] for s in side.split("<span")[1:] if 'manage-sec"' in s] == ["After the game", "The next game", "The table"]
     assert 'aria-current="page">Needs you' in side
     usage = admin.get("/manage/usage").text
     band = usage.split('class="manage-band')[1].split("</div>")[0]
-    assert band.startswith(' tool"') and "askdnd admin" in band and "The Lost Mine's Manage" in band
+    assert band.startswith(' tool"') and "askdnd admin" in band
+    assert 'class="manage-cross btn" href="/c/main/manage" title="The Lost Mine"' in band  # (short both ways, the campaign's name on hover: the UI review, Nov 16)
     side = usage.split('class="manage-side"')[1].split("</nav>")[0]
     assert 'aria-current="page">Usage' in side and "Inbox" not in side and ">askdnd history<" in side
     assert side.index(">Overview<") < side.index(">Usage<") < side.index(">Accounts<") < side.index(">Design system<")  # (the menu is the page list)
