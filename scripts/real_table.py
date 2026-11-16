@@ -991,6 +991,43 @@ def wild_shape(t: Table, seat: str = "player4", twin_key: str = "") -> None:
     t.expect("and Battle is the druid again", lambda: page.locator(".ws-form").count() == 0, 15)
 
 
+def forms_known(d: dict) -> dict:
+    """A sheet's known Wild Shape forms (group 13), by monster id: its creature id."""
+    return {str((c.get("definition") or {}).get("id")): c["id"] for c in d.get("creatures") or [] if c.get("groupId") == 13}
+
+
+def wild_shape_forms(t: Table, seat: str = "player4") -> None:
+    """Swap a Wild Shape form (roadmap step 5, Nov 15; Levi, Druid 6): Sheet › Wild Shape › Swap a form lets one known form
+    go and learns another, made on D&D Beyond with its own requests (a creature in group 13 deleted and added); Undo
+    puts both back. Anything left over is put back as found."""
+    sheet = t.sheet(seat)
+    page = t.battle(seat)
+    connects(t, page)
+    before = forms_known(record(sheet))
+    page.goto(page.url.split("?")[0].removesuffix("/battle"), wait_until="domcontentloaded")
+    page.locator('[data-tab="t-forms"]').first.click(timeout=8000)
+    go(page, page.locator("[data-swap-forms]").first)
+    out = page.locator('input[name="out"]:not([value=""])').first
+    out_mid = out.get_attribute("value")
+    out.check()
+    into = page.locator('select[name="in"] option:not([value=""]):not([disabled])').first
+    in_mid = into.get_attribute("value")
+    page.locator('select[name="in"]').select_option(in_mid)
+    print(f"  let go of {out_mid}, learn {in_mid}", flush=True)
+    page.locator("[data-use-go]").first.click(timeout=8000)
+    t.expect("the form let go of is gone from D&D Beyond", lambda: out_mid not in forms_known(record(sheet)), SLOW)
+    t.expect("and the new one is known there", lambda: in_mid in forms_known(record(sheet)), SLOW)
+    page.wait_for_timeout(1500)
+    if undo(page):
+        t.expect("Undo lets the new one go", lambda: in_mid not in forms_known(record(sheet)), SLOW)
+        t.expect("and knows the first again", lambda: out_mid in forms_known(record(sheet)), SLOW)
+    now = forms_known(record(sheet))
+    tidy = [["DELETE", "creature", {"id": now[m]}] for m in now if m not in before]
+    tidy += [["POST", "creature", {"groupId": 13, "monsterId": int(m), "names": [None]}] for m in before if m not in now]
+    if tidy:
+        print("  put back on D&D Beyond:", sheet.evaluate(TIDYING, [SHEETS[seat], tidy]), flush=True)
+
+
 def pact_used(d: dict) -> int:
     return sum(x.get("used") or 0 for x in d.get("pactMagic") or [])
 
@@ -1699,7 +1736,7 @@ RUNS = {"free-cast": free_cast, "closed-sheet": closed_sheet, "game-log": game_l
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp,
         "familiar": familiar, "initiative": initiative, "unreachable": unreachable,
-        "wild-companion": wild_companion}
+        "wild-companion": wild_companion, "wild-shape-forms": wild_shape_forms}
 
 
 def _twin_run(key: str):
