@@ -1,0 +1,215 @@
+<title>Filters Above a List</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (one look, as the app); laptop first, one column on a phone; the
+   table's own characters. Brett, Nov 16: the filter component has two cases, beside the list and above it. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0; --selected: rgba(126, 166, 224, .2);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.pick { color: var(--green); font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; margin-left: 8px; }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta { color: var(--muted); font-size: .88rem; }
+section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.intro { display: grid; gap: 8px; max-width: 88ch; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.notes > div { display: grid; gap: 4px; align-content: start; font-size: .9rem; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; align-items: start; }
+.cap { font: 700 .74rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
+
+/* The Reader: a narrow name column beside the entry */
+.reader { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 18px; background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px; min-height: 540px; }
+.col { display: grid; gap: 10px; align-content: start; min-width: 0; }
+.entry { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 8px; align-content: start; }
+.entry h3 { margin: 0; font: 600 1.3rem/1.2 var(--serif); color: var(--strong); }
+.search { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; color: var(--faint); font-size: .88rem; }
+.seg { display: flex; gap: 2px; padding: 3px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.seg button { flex: 1; min-height: 30px; border: 0; border-radius: 7px; background: none; color: var(--muted); font: 500 .86rem/1 var(--sans); white-space: nowrap; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--selected); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.seg small { color: var(--faint); margin-left: 4px; }
+.explain { font-size: .84rem; color: var(--muted); }
+.f-head { display: flex; align-items: center; gap: 10px; font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--amber); }
+.f-head .rule { flex: 1; height: 1px; background: var(--line); }
+.clear { font: 500 .82rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--red); background: none; border: 0; padding: 0; cursor: pointer; }
+.group { display: grid; gap: 5px; }
+.group > span { font-size: .76rem; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 9px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: 500 .78rem/1 var(--sans); cursor: pointer; }
+.chip small { color: var(--faint); font-size: .72rem; }
+.chip[aria-pressed="true"] { background: var(--selected); border-color: var(--blue); }
+.shown { font-size: .8rem; color: var(--muted); }
+.names { display: grid; border-top: 1px solid var(--line-soft); }
+.name { display: flex; align-items: center; gap: 8px; padding: 6px 4px; font-size: .9rem; border-bottom: 1px solid var(--line-soft); }
+.name .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--blue); flex: none; }
+.name .nodot { width: 7px; flex: none; }
+.note-row { display: grid; gap: 2px; padding: 8px 4px; border-bottom: 1px solid var(--line-soft); font-size: .88rem; }
+.note-row small { color: var(--muted); }
+.grouph { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); padding: 10px 4px 4px; }
+
+/* The folded line: Filters ▸ 2 · Clear (above a list) */
+.fold { display: flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); cursor: pointer; font: 600 .84rem/1 var(--sans); color: var(--text); width: 100%; text-align: left; }
+.fold .arrow { color: var(--muted); width: 10px; }
+.fold .n { background: var(--selected); border: 1px solid var(--blue); border-radius: 999px; padding: 2px 7px; font-size: .72rem; }
+.fold .on-names { flex: 1; min-width: 0; color: var(--muted); font-weight: 500; font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fold .clear { margin-left: auto; }
+.fold-body { display: grid; gap: 10px; padding: 10px 2px 4px; }
+.mark { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--amber); color: #1a1a1a; font: 700 .7rem/1 var(--sans); flex: none; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
+.q ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .92rem; }
+@media (max-width: 760px) { .reader { grid-template-columns: 1fr; min-height: 0; } .entry { display: none; } h1 { font-size: 1.7rem; } }
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:14px">
+  <span class="lbl">Mockup · Nov 16 · for Brett</span>
+  <h1>Filters above a list</h1>
+  <p class="lead">Every filtered list now shares one filter component. Lists use it two ways: <b>beside the list</b>
+  (the Spell Book, Sheet's lists, Party), where there's room and the list you read is on the right, and <b>above the
+  list</b>, in a narrow column (World, Notes you sent, Battle's See all), where every row the filters take pushes the list
+  down. This draws the second case: the filters fold to <b>one line</b>, "Filters ▸ 2 · Clear", that opens in place.
+  The pieces stay the same: chips, counts, Clear, and each list remembering what's on and whether it's open. The
+  beside-the-list layout doesn't change.</p>
+</header>
+
+<section class="board" id="today">
+  <div class="intro">
+    <span class="lbl">Today</span>
+    <h2>World's name column</h2>
+    <p>Search, the All · Last session switch (its count wraps under "Last session" in this width), two lines explaining
+    the dot, then the filters, open, all before the first name.</p>
+  </div>
+  <div class="reader">
+    <div class="col">
+      <div class="search">⌕ Search the world</div>
+      <div class="seg"><button aria-pressed="true">All <small>35</small></button><button aria-pressed="false" style="white-space:normal;line-height:1.3">Last session <small>14</small></button></div>
+      <p class="explain">Last session: <b>Nov 6, 2026</b>, the newest with a published recap. Its key moments' names get the dot.</p>
+      <div class="f-head">Filters <span class="rule"></span></div>
+      <div class="group"><span>Kind</span><div class="chips"><span class="chip">People <small>35</small></span><span class="chip">Places <small>15</small></span><span class="chip">Factions <small>4</small></span><span class="chip">Items <small>15</small></span><span class="chip">Creatures <small>3</small></span><span class="chip">Other <small>1</small></span></div></div>
+      <span class="shown">73 entries shown</span>
+      <div class="names"><div class="name"><span class="nodot"></span>Aleth</div><div class="name"><span class="dot"></span>Captain Rosalind</div><div class="name"><span class="nodot"></span>Celeste</div></div>
+    </div>
+    <div class="entry"><span class="meta">Person</span><h3>Aleth</h3><p class="meta">An entry opens here.</p></div>
+  </div>
+</section>
+
+<section class="board" id="world">
+  <div class="intro">
+    <span class="lbl">Folded above the list · World</span><span class="pick">My pick</span>
+    <h2>One line, until you open it</h2>
+    <p>The filters fold to one line under the switch: closed, it says how many are on and which, and Clear clears without
+    opening. Press it and the chip groups open in place; the list keeps its place under them. The explainer line goes:
+    the date is the Last session button's tooltip, and the dot says what it means when you point at it. The switch stays
+    on one line. Try it: open the filters, press Places, close them.</p>
+  </div>
+  <div class="reader" data-mock="world"></div>
+  <div class="notes">
+    <div><b>More of the list on screen</b><span class="meta">Closed, everything above the first name is the search, the switch and one line.</span></div>
+    <div><b>What's on, without opening</b><span class="meta">"Filters ▸ 2 · People, Places · Clear": the count, the names while they fit, and Clear.</span></div>
+    <div><b>Remembered</b><span class="meta">Open or closed is kept per list in this browser, as the chips already are.</span></div>
+  </div>
+</section>
+
+<section class="board" id="notes">
+  <div class="intro">
+    <span class="lbl">The same, for longer rows · Notes you sent</span>
+    <h2>Notes keeps more of its list</h2>
+    <p>Notes' rows are taller (a title and a line under it), so the room matters more. The same folded line, with Where
+    it stands and What it is inside it (and Sent from, once you've sent from more than one page), and the order (Newest ·
+    Oldest) at its foot.</p>
+  </div>
+  <div class="reader" data-mock="notes"></div>
+</section>
+
+<section class="board" id="panel">
+  <div class="intro">
+    <span class="lbl">The same, in a side panel · Battle's See all</span>
+    <h2>The panel's filters fold too</h2>
+    <p>Battle's See all actions is a narrow panel with the list below its filters: the same line. Beside-the-list lists
+    (the Spell Book, Sheet) keep their column; on a phone, every list already folds this way.</p>
+  </div>
+  <div class="pair">
+    <div><span class="cap">Closed</span><div class="col" style="background:var(--surface-2);border:1px solid var(--line-strong);border-radius:14px;padding:14px;max-width:420px">
+      <div class="search">⌕ Search actions</div>
+      <button class="fold" type="button"><span class="arrow">▸</span>Filters <span class="n">1</span><span class="on-names">Spells</span><span class="clear">Clear</span></button>
+      <div class="grouph">Cantrips</div><div class="names"><div class="name">Guidance</div><div class="name">Message</div><div class="name">Starry Wisp</div></div>
+      <div class="grouph">1st-level spells</div><div class="names"><div class="name">Cure Wounds</div><div class="name">Faerie Fire</div></div>
+    </div></div>
+    <div><span class="cap">Open</span><div class="col" style="background:var(--surface-2);border:1px solid var(--line-strong);border-radius:14px;padding:14px;max-width:420px">
+      <div class="search">⌕ Search actions</div>
+      <button class="fold" type="button"><span class="arrow">▾</span>Filters <span class="n">1</span><span class="on-names"></span><span class="clear">Clear</span></button>
+      <div class="fold-body"><div class="group"><span>Show only</span><div class="chips"><span class="chip">Attacks <small>1</small></span><span class="chip" aria-pressed="true">Spells <small>16</small></span><span class="chip">Items <small>2</small></span></div></div></div>
+      <div class="grouph">Cantrips</div><div class="names"><div class="name">Guidance</div><div class="name">Message</div></div>
+    </div></div>
+  </div>
+</section>
+
+<section class="board" id="picks">
+  <div class="intro"><span class="lbl">Your pick</span><h2>Two choices</h2></div>
+  <div class="q"><b>1. Filters above a list (World, Notes you sent, Battle's See all)</b>
+    <ul>
+      <li><b>Folded to one line</b> (my pick): "Filters ▸ 2 · names · Clear", opening in place, remembered per list.</li>
+      <li><b>Open, as today</b>: the chip groups always showing, Clear in their heading.</li>
+    </ul>
+  </div>
+  <div class="q"><b>2. World's "Last session" line</b>
+    <ul>
+      <li><b>Gone</b> (my pick): the date in the Last session button's tooltip, the dot explained on the dot.</li>
+      <li><b>One short line</b>: "Last session: Nov 6".</li>
+    </ul>
+  </div>
+</section>
+
+</div>
+
+<script>
+const WORLD = [["Aleth", "People", 0], ["Captain Rosalind", "People", 1], ["Celeste", "People", 0], ["Cole", "People", 1], ["Crow's Keep", "Places", 1],
+  ["Devin the Librarian", "People", 1], ["The Observatory", "Places", 1], ["Terra", "People", 1], ["The White Space", "Places", 0], ["Thieves' Guild", "Factions", 0]];
+const NOTES = [["The Rest button wraps.", "Fixed", "Something's broken"], ["Could Battle show the swim speed?", "On the Roadmap", "An idea"],
+  ["Why is my Speed 25?", "Answered", "A question"], ["The placement of Change forms…", "Planned", "Something's broken"], ["Add to it should take screenshots", "Fixed", "Something's broken"]];
+function mock(el, kind) {
+  const on = new Set(kind === "world" ? [] : ["What it is:Something's broken"]);
+  let open = false, view = "all";
+  const groups = kind === "world" ? [["Kind", ["People", "Places", "Factions"]]] : [["Where it stands", ["Planned", "On the Roadmap", "Fixed", "Answered"]], ["What it is", ["Something's broken", "An idea", "A question"]]];
+  const data = kind === "world" ? WORLD : NOTES;
+  const val = (row, g) => kind === "world" ? row[1] : g === "Where it stands" ? row[1] : row[2];
+  const passes = row => groups.every(([g]) => { const want = [...on].filter(k => k.startsWith(g + ":")).map(k => k.slice(g.length + 1)); return !want.length || want.includes(val(row, g)); }) && (view === "all" || row[2] === 1);
+  const draw = () => {
+    const shown = data.filter(passes), names = [...on].map(k => k.split(":")[1]).join(", ");
+    el.innerHTML = `<div class="col">
+      <div class="search">⌕ ${kind === "world" ? "Search the world" : "Search your notes"}</div>
+      ${kind === "world" ? `<div class="seg"><button data-view="all" aria-pressed="${view === "all"}">All <small>35</small></button><button data-view="last" aria-pressed="${view === "last"}" title="Last session: Nov 6, 2026, the newest with a published recap">Last session <small>14</small></button></div>` : ""}
+      <button class="fold" type="button" data-fold aria-expanded="${open}"><span class="arrow">${open ? "▾" : "▸"}</span>Filters ${on.size ? `<span class="n">${on.size}</span>` : ""}<span class="on-names">${open ? "" : names}</span>${on.size ? '<span class="clear" data-clear>Clear</span>' : ""}</button>
+      ${open ? `<div class="fold-body">${groups.map(([g, vs]) => `<div class="group"><span>${g}</span><div class="chips">${vs.map(v => `<button type="button" class="chip" data-v="${g}:${v}" aria-pressed="${on.has(g + ":" + v)}">${v} <small>${data.filter(r => val(r, g) === v).length}</small></button>`).join("")}</div></div>`).join("")}${kind === "notes" ? '<div class="seg" style="max-width:220px"><button aria-pressed="true">Newest</button><button aria-pressed="false">Oldest</button></div>' : ""}</div>` : ""}
+      <span class="shown">${shown.length} ${kind === "world" ? "entries" : "notes"} shown</span>
+      <div class="names">${shown.map(r => kind === "world" ? `<div class="name">${r[2] ? '<span class="dot" title="In last session\'s key moments"></span>' : '<span class="nodot"></span>'}${r[0]}</div>` : `<div class="note-row"><b>${r[0]}</b><small>${r[1]} · ${r[2]}</small></div>`).join("")}</div>
+    </div>
+    <div class="entry"><span class="meta">${kind === "world" ? "Person" : "Something's broken"}</span><h3>${kind === "world" ? "Aleth" : "The Rest button wraps."}</h3><p class="meta">${kind === "world" ? "An entry opens here." : "The note opens here."}</p></div>`;
+  };
+  el.addEventListener("click", e => {
+    if (e.target.closest("[data-clear]")) { on.clear(); draw(); return; }
+    if (e.target.closest("[data-fold]")) { open = !open; draw(); return; }
+    const c = e.target.closest(".chip[data-v]"); if (c) { on.has(c.dataset.v) ? on.delete(c.dataset.v) : on.add(c.dataset.v); draw(); return; }
+    const v = e.target.closest("[data-view]"); if (v) { view = v.dataset.view; draw(); }
+  });
+  draw();
+}
+document.querySelectorAll("[data-mock]").forEach(el => mock(el, el.dataset.mock));
+</script>
