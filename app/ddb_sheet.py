@@ -947,8 +947,8 @@ class _Sheet:
                 return {"cls": ids[0], "entry": ids[1], "def": ids[2], "etype": ids[3]} if ok and all(ids) else None
 
             def learn(raw):
-                """What learning it, or letting it go, names on D&D Beyond (app/ddb_fields.py "learn"; Your spells,
-                app/spells_known.py): the class, its entry on the class's list, the spell and its type."""
+                """What learning it, or letting it go, names on D&D Beyond (app/ddb_fields.py "learn"; Change spells,
+                app/choosing.py): the class, its entry on the class's list, the spell and its type."""
                 ids = (c.get("id"), raw.get("id"), _d(raw, "definition", "id"), raw.get("entityTypeId"))
                 return {"cls": ids[0], "entry": ids[1], "def": ids[2], "etype": ids[3]} if all(ids) else None
 

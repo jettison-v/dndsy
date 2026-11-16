@@ -43,9 +43,9 @@ from app import rules_terms as terms
 from app import spellbook as sb
 from app import wild_shape as ws
 from app.auth import can_run_table, can_set_house_rules, current_user, is_admin, is_dm, is_reviewer
+from app.choosing import spell_lists
 from app.db import get_db
 from app.models import Campaign, Character, HouseRule, TableRoll, ToolCorrection
-from app.preparing import books_to_prepare
 from app.templating import templates
 
 router = APIRouter()
@@ -670,7 +670,7 @@ def spellbook_modal(request: Request, character_id: int, db: Session = Depends(g
     return templates.TemplateResponse(request, "_spellbook.html", {
         **ctx, "spells": spells, "slots": sb.slot_levels(sheet), "groups": sb.filter_groups(spells, wild_shape=moon),
         "in_form": bool(ch.wild_shape and moon), "sc": (sheet.get("spellcasting") or [{}])[0], "conc": ch.concentration,
-        "can_prepare": ctx["can_play"] and bool(books_to_prepare(sheet))})  # Prepare spells (app/preparing.py)
+        "can_prepare": ctx["can_play"] and bool(spell_lists(sheet))})  # Change spells (app/choosing.py)
 
 
 def _concentration_reply(request: Request, db: Session, ch: Character, user: dict, toast: str, deliver: bool = False):

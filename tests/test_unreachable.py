@@ -38,7 +38,7 @@ def test_the_item_browser_and_prepare_spells_say_so_at_the_top(player, db, unrea
     w = player.get(f"/characters/{unreached.id}/items/browse").text
     assert 'class="unreached"' in w and w.index('class="unreached"') < w.index("data-ib-said")  # (at the top, not by the button)
     p = player.get(f"/characters/{unreached.id}/spells/prepare").text
-    assert "to prepare spells here" in p and p.index('class="unreached"') < p.index('class="use-said"')
+    assert "to change these here" in p and p.index('class="unreached"') < p.index("data-ls-rows")  # (at the top, above the list)
 
 
 def test_a_hide_roll_still_rolls_and_says_to_mark_invisible_on_the_sheet(player, db, unreached, monkeypatch):

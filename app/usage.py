@@ -38,7 +38,6 @@ FEATURES: list[tuple[str, str]] = [
     (r"^/characters/\{character_id\}/items/\{item_id\}/give$", "Giving"),
     (r"^/characters/\{character_id\}/items/", "Inventory"),
     (r"^/characters/\{character_id\}/(prepare|spells/prepare)$", "Preparing spells"),
-    (r"^/characters/\{character_id\}/spells/learn$", "Your spells (cantrips and learned spells)"),
     (r"^/characters/\{character_id\}/wild-shape", "Wild Shape"),
     (r"^/characters/\{character_id\}/bring/", "Items that bring a creature"),
     (r"^/characters/\{character_id\}/creatures/", "Your creatures"),

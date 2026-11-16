@@ -28,6 +28,7 @@ from app.campaigns_admin import router as campaigns_router
 from app.casting import router as casting_router
 from app.character_pages import router as character_router
 from app.check_numbers import router as check_numbers_router
+from app.choosing import router as choosing_router
 from app.companions import router as companions_router
 from app.creature_hp import router as creature_hp_router
 from app.db import SessionLocal
@@ -42,7 +43,6 @@ from app.errors import router as errors_router
 from app.feature_use import router as feature_use_router
 from app.feedback import router as feedback_router
 from app.fog import router as fog_router
-from app.form_swap import router as form_swap_router
 from app.giving import router as giving_router
 from app.heals import router as heals_router
 from app.help_pages import router as help_router
@@ -73,7 +73,6 @@ from app.rests import router as rests_router
 from app.scene_notes import router as scene_notes_router
 from app.search import router as search_router
 from app.shifting import router as shifting_router
-from app.spells_known import router as spells_known_router
 from app.story import router as story_router
 from app.suggestions import router as suggestions_router
 from app.table_creatures import router as table_creatures_router
@@ -234,8 +233,7 @@ app.include_router(rests_router)  # (through the bridge: on_for)
 app.include_router(level_up_router)
 app.include_router(inventory_router)  # (through the bridge: on_for)
 app.include_router(preparing_router)  # (through the bridge: on_for)
-app.include_router(form_swap_router)  # (through the bridge: on_for)
-app.include_router(spells_known_router)  # (through the bridge: on_for)
+app.include_router(choosing_router)  # (through the bridge: on_for)
 app.include_router(giving_router)  # (through the bridge: on_for)
 app.include_router(item_browser_router)  # (through the bridge: plays)
 app.include_router(creature_hp_router)  # (Your creatures: its Hit Points through the bridge)

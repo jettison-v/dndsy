@@ -3334,57 +3334,57 @@ button.br-st { border: 0; font-family: inherit; cursor: pointer; }  /* the bridg
 }
 .ds-field { max-width: 240px; }
 
-/* Prepare spells (app/preparing.py, _prepare_spells.html; Brett 2026-11-02, docs/mockups/prepare-spells/): a large
-   modal like the Spell Book. The count first and big, the filters as chips, the list beside your changes, Make at the
-   foot. On a phone the changes go under the list. */
-.peek-body.prep { display: grid; gap: var(--sp-3); align-content: start; }
-.prep-head { align-items: center; flex-wrap: wrap; }
-.prep-top { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; padding: var(--sp-2) var(--sp-3); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); }
-.prep-big { font-size: var(--fs-xl); line-height: 1; color: var(--text-strong); white-space: nowrap; }
-.prep-big b { font-weight: 800; }
-.prep-big b.over { color: var(--link); }
-.prep-of { color: var(--muted); font-weight: 600; }
-.prep-tally-words { color: var(--muted); white-space: nowrap; }
-.prep-tally-words > b { color: var(--text-strong); }
-.prep-boxes { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.prep-boxes i { width: 18px; height: 18px; border-radius: var(--r-sm); border: 1.5px solid var(--line-strong); background: var(--surface); }
-.prep-boxes i.on { background: var(--green); border-color: var(--green); }
-.prep-boxes.over i.on { background: var(--red); border-color: var(--red); }
-.prep-extra { color: var(--link); font-weight: 700; font-size: var(--fs-sm); margin-left: var(--sp-1); }
-.prep-warn { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); }
-.prep-filters { display: grid; gap: var(--sp-1); align-content: start; }
-.prep-fold { position: sticky; top: 0; align-self: start; min-width: 0; }
-.prep-filters .chips { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-bottom: var(--sp-2); }
-.prep-body { display: grid; grid-template-columns: 150px minmax(0, 1fr) 200px; gap: var(--sp-4); align-items: start; }
-.prep-list { display: grid; gap: 2px; min-width: 0; }
-.prep-level { font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--amber); padding: var(--sp-3) var(--sp-2) var(--sp-1); }
-.prep-row { display: grid; grid-template-columns: 32px minmax(0, 1fr) 80px 70px 20px; gap: var(--sp-2); align-items: center; padding: 6px var(--sp-2); border: 1px solid transparent; border-radius: var(--r-md); }
-.prep-row:hover { background: var(--surface-2); }
-/* A change (Brett, 2026-11-02, the UI pass): a green bar for a spell you're preparing, a grey bar and its name struck
-   through for one you're dropping; + and − in Your changes. No amber. */
-.prep-row.add { box-shadow: inset 3px 0 0 var(--green); }
-.prep-row.drop { box-shadow: inset 3px 0 0 var(--muted); }
-.prep-row.drop .prep-name .link-plain { text-decoration: line-through; color: var(--muted); }
-.prep-tick { width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border-radius: var(--r-sm); border: 1.5px solid var(--line-strong); background: var(--bg); color: transparent; font-weight: 700; cursor: pointer; }
-.prep-tick[aria-pressed="true"] { background: var(--green); border-color: var(--green); color: var(--bg); }
-.prep-tick.always { color: var(--cond-concentration); border-color: var(--cond-concentration); background: var(--surface-2); cursor: default; }
-.prep-name { min-width: 0; }
-/* A name that opens its side panel, plain (no link colour): Prepare spells, a character's card from Party */
+/* A name that opens its side panel, plain (no link colour): a character's card from Party */
 .link-plain { background: none; border: 0; padding: 0; font: inherit; color: var(--text-strong); cursor: pointer; text-align: left; }
 .link-plain:hover, .link-plain:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
-.prep-name .link-plain { display: inline-block; max-width: 100%; vertical-align: bottom; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.prep-name small { display: block; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.prep-col { color: var(--muted); font-size: var(--fs-sm); }
-.prep-fav { text-align: center; }  /* the shortlist's bookmark, as on every list (Brett, Nov 3: it was a star) */
-.prep-side { display: grid; gap: var(--sp-2); position: sticky; top: 0; }
-.prep-changes { display: grid; gap: var(--sp-1); }
-.prep-change { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; column-gap: var(--sp-2); align-items: baseline; padding: 2px 0; }
-.prep-change .prep-k { font-weight: 800; text-align: center; }
-.prep-change.add .prep-k { color: var(--green); }
-.prep-change.drop .prep-k, .prep-change.drop b { color: var(--muted); }
-.prep-change b { color: var(--text-strong); font-weight: 600; overflow-wrap: anywhere; }
-.prep-change small { color: var(--muted); font-size: var(--fs-xs); }
-.prep-fold > summary { display: none; }
+/* Change spells and Change forms (app/choosing.py, _change_window.html; Brett, Nov 16, D on docs/mockups/changing-spells/):
+   an immersive large modal over Sheet's own list. The head says why you're changing; a card per class (the class tabs)
+   holds a rule line per list; Your changes and Make stay along the bottom so the list keeps its full width. */
+@media (min-width: 901px) { .peek.modal.large:has(.chg) { width: min(1600px, calc(100% - 32px)); height: 94vh; max-height: 94vh; } }  /* immersive: nearly the whole screen (a phone's large modal is already) */
+.chg-head { flex-wrap: wrap; align-items: center; }
+.chg-why { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin-right: auto; }
+.peek-body.chg { display: grid; gap: var(--sp-3); align-content: start; padding-bottom: 0; }
+.chg-cards { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.chg-card { flex: 1 1 280px; min-width: 0; display: grid; gap: var(--sp-2); align-content: start; padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--text); font: inherit; text-align: left; }
+.chg-card.single { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+button.chg-card { cursor: pointer; }
+button.chg-card:hover { border-color: var(--faint); }
+.chg-card[aria-selected="true"] { border-color: var(--red); box-shadow: inset 0 3px 0 var(--red); }
+.chg-cn { display: flex; align-items: center; gap: var(--sp-2); font-weight: 700; color: var(--text-strong); }
+.chg-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.chg-dot.yes { background: var(--green); } .chg-dot.no { background: var(--amber); }
+/* The rule line (Manage › Design system): a list's count, when and how many by the 2024 rules, and Now or Not now */
+.rule-line { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px var(--sp-3); align-items: center; padding: 6px var(--sp-2); border-left: 3px solid var(--rl, var(--line-strong)); background: var(--surface-2); border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.rule-line.rest { --rl: var(--blue); } .rule-line.level { --rl: var(--violet); }
+.rl-name { font-weight: 700; color: var(--text-strong); white-space: nowrap; }
+.rl-count { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rl-count b { color: var(--text-strong); }
+.rl-when { color: var(--muted); min-width: 0; }
+.rl-now { font-size: var(--fs-xs); font-weight: 700; padding: 2px 8px; border-radius: var(--r-pill); white-space: nowrap; background: var(--surface-3, var(--surface)); color: var(--muted); }
+.rl-now.yes { background: var(--green-soft); color: var(--green); }
+.rl-now.no { background: var(--amber-soft); color: var(--amber); }
+.rl-full { grid-column: 1 / -1; color: var(--amber); font-size: var(--fs-xs); }
+.chg-warns:empty { display: none; }
+.chg-warns { display: grid; gap: var(--sp-1); }
+.chg-warn { margin: 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: var(--r-md); font-size: var(--fs-sm); }
+.chg-warn b { color: var(--amber); }
+/* A row's action where the pin and bell were, beside the bookmark */
+.chg-marks { grid-template-columns: 22px 7.5rem; column-gap: var(--sp-2); }
+.chg-act { width: 7.5rem; min-height: var(--control-h-sm); padding: 0 var(--sp-2); border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--bg); color: var(--text); font-size: var(--fs-xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
+.chg-act:hover:not(:disabled) { border-color: var(--faint); }
+.chg-act.mine { background: var(--red-soft); border-color: var(--red); color: var(--link); }
+.chg-act.undo { background: var(--surface-2); color: var(--muted); }
+.chg-act:disabled { opacity: .45; cursor: not-allowed; }
+.chg-lock { display: inline-block; width: 7.5rem; text-align: center; padding: 4px var(--sp-1); border: 1px dashed var(--line-strong); border-radius: var(--r-sm); color: var(--faint); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chg-cols > .ls-row.add { box-shadow: inset 3px 0 0 var(--green); background: var(--green-soft); }
+.chg-cols > .ls-row.drop { box-shadow: inset 3px 0 0 var(--muted); }
+.chg-cols > .ls-row.drop .ls-line > b { text-decoration: line-through; color: var(--muted); }
+.chg-tray { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0 -22px; padding: var(--sp-3) 22px; background: var(--surface-2); border-top: 1px solid var(--line); }
+.chg-list, .chg-list [data-chg-list] { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1); min-width: 0; }
+.chg-list { margin-right: auto; }
+.chg-chip { padding: 2px 8px; border-radius: var(--r-sm); background: var(--surface); border: 1px solid var(--line); font-size: var(--fs-sm); white-space: nowrap; }
+.chg-chip.add { color: var(--green); }
+.chg-chip.drop { color: var(--muted); text-decoration: line-through; }
 
 /* The item browser (_item_browser.html, app.js "Item browser"; Brett, 2026-11-03, docs/mockups/item-browser/): filters,
    the list and what the picked item is, side by side; Adding along the bottom. Narrower than 900px the item shows in

@@ -23,7 +23,11 @@ def changes(old: dict | None, new: dict) -> dict | None:
     have = {f["key"] for f in old.get("features") or []}
     spells = {s["key"] for s in old.get("spells") or []}
     slots = {s["level"]: s["max"] for s in (old.get("spell_slots") or {}).get("slots") or []}
+    had = {c.get("name"): c.get("level") or 0 for c in old.get("classes") or []}
+    grown = [c.get("name") for c in new.get("classes") or [] if (c.get("level") or 0) > had.get(c.get("name"), 0)]
     return {"from": was, "to": now,
+            # the spellcasting classes that gained the level: the card's Change spells, opened for that level (app/choosing.py)
+            "casting": [cls for cls in grown if any(b.get("class") == cls for b in new.get("spellbook") or [])],
             "hp": ((new.get("hit_points") or {}).get("max") or 0) - ((old.get("hit_points") or {}).get("max") or 0),
             "pb": new.get("proficiency_bonus") if new.get("proficiency_bonus") != old.get("proficiency_bonus") else None,
             "features": [{"key": f["key"], "name": f["name"]} for f in new.get("features") or [] if f["key"] not in have],
@@ -40,6 +44,7 @@ def merged(kept: dict | None, new: dict) -> dict:
         return kept[k] + [x for x in new[k] if x not in kept[k]]
 
     return {**new, "from": kept["from"], "hp": kept["hp"] + new["hp"], "pb": new["pb"] or kept["pb"], "features": more("features"), "spells": more("spells"),
+            "casting": kept.get("casting", []) + [c for c in new.get("casting", []) if c not in kept.get("casting", [])],
             "slots": more("slots")}
 
 

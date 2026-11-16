@@ -129,15 +129,15 @@ def _formula(spend: list[tuple[dict, int]], con: int) -> str:
 @router.get("/characters/{character_id:int}/rest")
 def window(request: Request, character_id: int, kind: str, db: Session = Depends(get_db)):
     """What Short Rest or Long Rest opens, in the roll window."""
-    from app.preparing import books_to_prepare
+    from app.choosing import spell_lists
 
     ch, _ = _guard(db, request, character_id)
     sheet = _sheet(db, ch)
     p = plan(sheet, _kind(kind), ch.concentration)
-    prepare = [b["class"] for b in books_to_prepare(sheet)] if kind == "long" else []  # (a Long Rest is when most classes change them)
+    prepare = kind == "long" and bool(spell_lists(sheet))  # (Change spells: a Long Rest is when most classes change them)
     from app import wild_shape
 
-    forms = kind == "long" and bool(wild_shape.druid(sheet))  # (and when a Druid can swap a known Wild Shape form)
+    forms = kind == "long" and bool(wild_shape.druid(sheet))  # (Change forms: and when a Druid can swap a known one)
     from app import companions
 
     wild = companions.wild_leaving(ch, sheet) if kind == "long" else []  # (Wild Companion: gone at the Long Rest)
