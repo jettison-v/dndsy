@@ -1,4 +1,5 @@
 {# An entity page's content. Actions post with HTMX and swap this block in place. #}
+{% from "_lists.html" import empty_state %}
 {% set hx = 'hx-target="#entity" hx-swap="outerHTML"' %}
 <div id="entity">
   <div class="entity-head">
@@ -36,7 +37,7 @@
         <span class="tag {{ '' if a.misspelling else 'done' }}">{{ "Misspelling" if a.misspelling else "Other name" }}</span>
         <form class="inline" hx-post="/campaign/{{ e.id }}/aliases/{{ a.id }}/toggle" {{ hx | safe }}><button type="submit" class="btn link">{{ "Mark as other name" if a.misspelling else "Mark as misspelling" }}</button></form>
         <form class="inline" hx-post="/campaign/{{ e.id }}/aliases/{{ a.id }}/delete" {{ hx | safe }} hx-confirm="Remove {{ a.alias }}?"><button type="submit" class="btn link danger">Remove</button></form></li>
-      {% else %}<li class="muted">None yet.</li>{% endfor %}
+      {% else %}<li>{{ empty_state("No other names yet.") }}</li>{% endfor %}
     </ul>
     <p class="note m-0 mt-2"><a href="{{ cbase }}/manage/history?table=entities&amp;row={{ e.id }}" data-no-peek>History of this entry</a>: every earlier name, description and status, with Restore.</p>
     <form class="row mt-3" hx-post="/campaign/{{ e.id }}/aliases" {{ hx | safe }}>

@@ -63,8 +63,8 @@
     {% endif %}
     <dt>Key moments</dt><dd>{{ moments | length if moments else "None yet" }}</dd>
     {% if part_of %}<dt>Part of</dt><dd class="part-of">{% for q in part_of %}<a class="chip-link" href="{{ cbase }}/campaign?tab=quests&amp;open={{ q.id }}" data-goto-quest="{{ q.id }}" data-no-peek>{{ q.name }} <span class="tag {{ 'done' if q.quest_open == false else 'draft' }}">{{ "Done" if q.quest_open == false else "Open" }}</span></a>{% endfor %}</dd>{% endif %}
-    {% if map_marker %}<dt>On the map</dt><dd><a href="{{ map_href }}" data-map-src="{{ map_src }}" data-map-at="{{ map_marker }}" data-no-peek>Show it ↗</a></dd>{% endif %}
-    {% if sheet %}<dt>Its sheet</dt><dd><a href="/characters/{{ sheet }}" data-no-peek>Open ↗</a></dd>{% endif %}
+    {% if map_marker %}<dt>On the map</dt><dd><a href="{{ map_href }}" data-map-src="{{ map_src }}" data-map-at="{{ map_marker }}" data-no-peek>Show it</a></dd>{% endif %}
+    {% if sheet %}<dt>Its sheet</dt><dd><a href="/characters/{{ sheet }}" data-no-peek>{{ e.name }}'s sheet</a></dd>{% endif %}{# (↗ only when leaving for D&D Beyond: the UI review) #}
   </dl>
 </div>
 <div class="ep-cols">
@@ -85,9 +85,8 @@
   {% endif %}
 </div>
 <div class="reader-foot row">
-  {% if can_edit %}<a class="btn primary" href="#" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Edit</a>{% endif %}
+  {% if can_edit %}<a class="btn" href="#" data-modal-url="/campaign/{{ e.id }}/edit" data-modal-size="large">Edit</a>{% endif %}{# (one red button a screen, its next step: Edit isn't it; the UI review) #}
   {% if can_edit and e.kind.value == "quest" %}{# A whole-page post: the quest moves between Open and Done at the top of the page #}
   <form method="post" action="/campaign/{{ e.id }}/quest"><input type="hidden" name="open" value="{{ '1' if e.quest_open == false else '0' }}"><button type="submit" class="btn">{{ "Reopen" if e.quest_open == false else "Mark done" }}</button></form>{% endif %}
-  <span class="note reader-keys">↑ ↓ move through the list</span>
 </div>
 </article>

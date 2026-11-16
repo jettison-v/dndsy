@@ -1,9 +1,10 @@
 {# What the table knows about an entry, with the DM's and reviewers' decisions and the form to add to it; shared by
    the side panel and the Reader (_peek.html, _entry_reader.html). #}
+{% from "_lists.html" import empty_state %}
   <h3>What the table knows</h3>
   {% if merged %}<ul class="plain peek-facts">{% for f in merged %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(f.text) }}
     {% if can_moderate %}<button type="submit" class="btn link small" hx-post="/campaign/facts/{{ f.id }}/done?in={{ w }}" {{ px | safe }} title="Take it off this list (it stays under Done)">Done</button>{% endif %}</li>{% endfor %}</ul>
-  {% else %}<p class="muted">Nothing yet. Add what the party learned below.</p>{% endif %}
+  {% else %}{{ empty_state("Nothing the party learned about it yet.") }}{% endif %}
   {% for f in pending %}
   <div class="item peek-pending"><p class="item-title">{{ f.text }}</p>
     <p class="note byline">{{ f.author_name or f.author_email or "Someone" }} · {{ f.created_at.strftime("%b %-d") }}</p>

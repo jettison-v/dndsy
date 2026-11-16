@@ -1,5 +1,6 @@
 {# Campaign › Sessions (Story's All sessions until Nov 13): every published session, newest first, each a rolled scroll;
    From the start reads them all in order. Story search (app.js) filters them. #}
+{% from "_lists.html" import empty_state %}
 {% from "_story_macros.html" import scroll, after with context %}{% from "_suggest_form.html" import suggest with context %}
 {% set items = st["items"] %}
   <div class="tale">
@@ -8,7 +9,6 @@
     <div class="ls-search story-search tale-search"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <input type="search" placeholder="Search the story" aria-label="Search the story" data-story-search></div>{% endif %}
   <div class="tale-order" data-story-sub>
-    <p class="subtitle">{{ "Every recap in order, from the first session." if from_start else "Every session the DM has published, newest first. Each opens into its scroll." }}</p>
     <nav class="seg" aria-label="Order">{# read them all, the first first and every scroll open (Brett, Nov 5) #}
       <a href="{{ cbase }}/campaign?tab=sessions"{% if not from_start %} aria-current="true"{% endif %}>Newest first</a>
       <a href="{{ cbase }}/campaign?tab=sessions&amp;order=start"{% if from_start %} aria-current="true"{% endif %}>From the start</a>
@@ -31,6 +31,6 @@
     </div>
   </details>
   {% else %}
-  <p class="muted">Nothing published yet.</p>
+  {{ empty_state("No sessions published yet.") }}
   {% endfor %}
   </div>

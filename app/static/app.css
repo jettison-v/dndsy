@@ -2941,13 +2941,11 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
 .moment-line .note { display: block; font-size: var(--fs-xs); }
 .reader-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--line); }
 .reader-foot form { margin: 0; }
-.reader-keys { margin-left: auto; font-size: var(--fs-xs); }
 @media (max-width: 900px) {
   .reader { grid-template-columns: 1fr; }
   .reader-nav { position: static; max-height: 50vh; }
   .reader-cols { grid-template-columns: 1fr; gap: 0; }
   .reader-article { padding: var(--sp-5); }
-  .reader-keys { display: none; }
 }
 
 /* Part of (an entry's quests) and other small link chips */
@@ -3591,6 +3589,7 @@ button.purse:hover .coin, button.purse:focus-visible .coin { background: var(--s
 .tbl-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); margin-bottom: var(--sp-3); }
 .tbl-places, .tbl-tools { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
 .tbl-places select { max-width: 260px; }
+.tbl-places .btn.small, .tbl-places .tbl-more > summary.btn.small { min-height: var(--control-h); }  /* (the same height as the place's dropdown beside them: the UI review) */
 .tbl-name { margin: 0; font-size: var(--fs-xl); }
 .tbl-shown { background: var(--green-soft); color: var(--green); }
 .tbl-more { position: relative; }

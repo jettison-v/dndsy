@@ -261,7 +261,7 @@ def test_your_notes_round_2_each_note_is_a_request_an_answer_and_a_track(admin, 
     page = player.get("/your-notes?tab=askdnd").text
     rows = page.split('id="t-askdnd"')[1].split('data-ls-rows>')[1].split("</aside>")[0]
     assert rows.index(f'data-note="f{loud.id}"') < rows.index(f'data-note="f{wraps.id}"')  # (both done: newest first)
-    assert '<span class="nt-title">The Rest button wraps.' in rows and "Fixed: Fixed: Rest stays on one line." in rows
+    assert '<span class="nt-title">The Rest button wraps.' in rows and "Fixed: Rest stays on one line.</span>" in rows and "Fixed: Fixed:" not in rows  # (the reply alone: no "Fixed: Fixed.", the UI review)
     assert 'data-group-newest="Done"' in rows and '"status": "Closed"' in rows
     read = page.split(f'data-note-read="f{loud.id}"')[1].split("</article>")[0]
     assert '<li class="st-stop">Closed</li>' in read and '<li class="st-skip">Fixed</li>' in read
@@ -448,9 +448,9 @@ def test_an_idea_and_a_question_say_where_they_stand_in_their_own_words(admin, p
     db.refresh(idea)
     db.refresh(question)
     shown = {fb.kind: askdnd_note(fb) for fb in (idea, question)}
-    assert shown["idea"]["label"] == "On the Roadmap" and [s["label"] for s in shown["idea"]["track"]] == ["Sent", "Approved", "On the Roadmap", "Built"]
+    assert shown["idea"]["label"] == "On the Roadmap" and [s["label"] for s in shown["idea"]["track"]] == ["Sent", "With Claude", "On the Roadmap", "Built"]
     assert [s["state"] for s in shown["idea"]["track"]] == ["done", "done", "done", "now"]
-    assert shown["question"]["label"] == "Answered" and [s["label"] for s in shown["question"]["track"]] == ["Sent", "Approved", "Answered"]
+    assert shown["question"]["label"] == "Answered" and [s["label"] for s in shown["question"]["track"]] == ["Sent", "With Claude", "Answered"]
     assert shown["question"]["track"][-1]["state"] == "done"
     for label in ("On the Roadmap", "Answered"):  # (their own status chips; Planned, Fixed and Closed always show)
         assert f'data-ls-value="{label}"' in page

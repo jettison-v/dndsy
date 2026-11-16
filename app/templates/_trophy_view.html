@@ -1,5 +1,6 @@
 {# One person's trophies (app/trophies.py one; the mockup's view A, docs/mockups/player-page/): the shelf of awards,
    their numbers, every d20 they rolled and their awards newest first, each opening its session. #}
+{% from "_lists.html" import empty_state %}
 {% set r = row %}{% set s = r.sheet %}
 <div class="peek-head">
   <div class="tr-head"><span class="roll-av hue{{ 5 if r.dm else (r.entity_id or 0) % 6 }}" aria-hidden="true">{{ "DM" if r.dm else r.name[:1] }}{% if r.picture %}<img src="{{ r.picture }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>
@@ -38,7 +39,7 @@
       <h3 class="tale-label">Awards, newest first</h3>
       {% if r.awards %}<ul class="plain tr-awards-list">
         {% for a in r.awards %}<li><a href="{{ cbase }}/sessions/{{ a.session }}"><span class="tag{{ ' dice' if a.dice }}">{{ a.award }}</span></a> <span>{% if a.quote %}<q>{{ a.quote }}</q> {% endif %}{{ a.why }}</span> <span class="note">{{ a.label }}</span></li>{% endfor %}
-      </ul>{% else %}<p class="muted">None yet.</p>{% endif %}
+      </ul>{% else %}{{ empty_state("No awards yet.") }}{% endif %}
     </section>
   </div>
   <p class="note">Counting {{ mode_says | lower }}, from the rolls everyone saw in Table rolls{% if r.dm %} with no character (the monsters'){% endif %}. Rolls made on paper or before askdnd's Table rolls aren't counted. For fun, never a ranking.</p>

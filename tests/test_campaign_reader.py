@@ -113,7 +113,7 @@ def test_player_characters_are_people_in_world(player, db):
     assert f'data-rd-id="{cole.id}"' in page and '"kind": "People"' in page[page.index(f'data-rd-id="{cole.id}"'):][:2000]
     assert f'data-reader-id="{cole.id}"' in page and "Player character" in page  # its World entry, not the side panel
     sheet = db.scalar(select(CampaignCharacter.character_id).where(CampaignCharacter.entity_id == cole.id))
-    assert f'<dt>Its sheet</dt><dd><a href="/characters/{sheet}" data-no-peek>Open ↗</a>' in page
+    assert f'<dt>Its sheet</dt><dd><a href="/characters/{sheet}" data-no-peek>Cole\'s sheet</a>' in page  # (no ↗: it stays in askdnd)
     assert 'data-noun="entry" data-nouns="entries"' in page  # "43 entries shown", not names
 
 

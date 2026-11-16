@@ -101,7 +101,7 @@ def story_note(r: dict) -> dict:
     says = {"Waiting": "The DM hasn't decided yet.", "Added": "The DM added it as you wrote it.",
             "Used": "The DM worked it in.", "Not used": "The DM decided not to use it."}[o]
     answer = {"who": "The DM", "text": x.reply, "mine": False} if getattr(x, "reply", "") else None
-    steps = ("Sent", "With the DM", o if o in ("Added", "Used") else "Added or used")
+    steps = ("Sent", "Waiting", o if o in ("Added", "Used") else "Added or used")  # (the states' own words: the UI review)
     return {"key": f"{'x' if fact else 's'}{x.id}", "id": x.id, "kind": "story", "title": title_of(x.text), "text": x.text,
             "at": x.created_at, "where": r["label"], "href": r["href"], "from": about,
             "label": o, "dot": STORY_DOT[o], "open": o == "Waiting", "answer": answer, "says": says,

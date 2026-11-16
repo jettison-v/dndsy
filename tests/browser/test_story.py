@@ -68,7 +68,7 @@ def test_the_nights_awards_start_face_down_and_stay_revealed_on_that_device(peop
 
     other = dm.open(f"/c/main/sessions/{sid}")
     assert other.locator("[data-award].face-down").count() == 2  # (another screen reveals for itself)
-    other.get_by_role("tab", name="The Tale").click()
+    other.locator('[data-tab="t-tale"]').click()
     other.wait_for_function("location.search === '?tab=tale'")
     other.get_by_text("The fog closed in.").wait_for()
     assert player.errors == [] and dm.errors == []
