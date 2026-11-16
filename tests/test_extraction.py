@@ -227,3 +227,38 @@ def test_the_dm_still_reads_a_moment_that_names_a_hidden_entry(db, dm):
     db.flush()
     db.expire_all()
     assert "The Veiled Duke fled the harbour." in dm.get(f"/c/main/campaign?open={hidden.id}").text
+
+
+def test_a_call_is_priced_by_the_model_that_answered():
+    """The outside review's A5: a declined call answered by its fallback (Opus 5, Opus 4.8) costs that model's prices,
+    and a model askdnd doesn't know is priced as the dearest, so the spending limit never undercounts."""
+    from app import extraction
+
+    used = SimpleNamespace(input_tokens=1000, output_tokens=500, cache_creation_input_tokens=300, cache_read_input_tokens=2000,
+                           cache_creation=SimpleNamespace(ephemeral_1h_input_tokens=100))
+    assert extraction._cost(used, "claude-opus-5-5") == round((1000 * 4 + 500 * 20 + 200 * 5 + 100 * 8 + 2000 * 0.2) / 1e6, 4)
+    assert extraction._cost(used, "claude-opus-5") == round((1000 * 5 + 500 * 25 + 200 * 6.25 + 100 * 10 + 2000 * 0.5) / 1e6, 4)
+    assert extraction._cost(used, "claude-opus-4-8") == extraction._cost(used, "claude-opus-5")
+    assert extraction._cost(used, "claude-someday-9") == extraction._cost(used, "claude-opus-5")  # (the dearest known)
+    assert extraction._cost(used, None) == extraction._cost(used, "claude-opus-5")
+    assert extraction._cost(used) == extraction._cost(used, extraction.MODEL)
+
+
+def test_a_drafts_run_records_and_prices_the_fallback(db, monkeypatch):
+    session = setup(db)
+    client = fake_client()
+
+    def answered_by(model):
+        inner = client()
+        stream = inner.beta.messages.stream
+
+        def wrapped(**kw):
+            s = stream(**kw)
+            s.response.model = model
+            return s
+
+        return lambda: SimpleNamespace(beta=SimpleNamespace(messages=SimpleNamespace(stream=wrapped)))
+
+    run = extract_session(db, session, Source("notes", "###### Session 29\n- fought devils"), answered_by("claude-opus-4-8"))
+    assert run.status == "done", run.error
+    assert run.model == "claude-opus-4-8" and run.cost_usd == round((1000 * 5 + 500 * 25) / 1e6, 4)

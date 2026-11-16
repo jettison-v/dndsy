@@ -217,7 +217,8 @@ def regenerate(db: Session, entity: Entity, client_factory: Callable[[], anthrop
             response.usage.cache_creation_input_tokens or 0
         )
         run.output_tokens = response.usage.output_tokens or 0
-        run.cost_usd = _cost(response.usage)
+        run.model = getattr(response, "model", MODEL) or MODEL  # (a declined call answered by its fallback)
+        run.cost_usd = _cost(response.usage, run.model)
         db.commit()
         return summary
     except (ExtractionError, anthropic.APIError, json.JSONDecodeError, KeyError, AttributeError) as e:

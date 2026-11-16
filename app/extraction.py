@@ -45,8 +45,19 @@ from app.traits import clean_traits, has_traits, traits_line
 MODEL = "claude-opus-5-5"
 EFFORT = "high"
 MAX_TOKENS = 32000
-# Claude Opus 5.5 prices per million tokens (input, output, cache write, cache read).
-PRICES = {"input": 4.00, "output": 20.00, "cache_write": 5.00, "cache_write_1h": 8.00, "cache_read": 0.20}
+# Prices per million tokens (input, output, cache write for 5 minutes and for an hour, cache read), by the model that
+# answered: Opus 5.5, or what a declined call falls back to (`fallbacks="default"`: Opus 5, Opus 4.8). A model not
+# here is priced as the dearest, so the spending limit never undercounts (the outside review's A5).
+PRICES = {
+    "claude-opus-5-5": {"input": 4.00, "output": 20.00, "cache_write": 5.00, "cache_write_1h": 8.00, "cache_read": 0.20},
+    "claude-opus-5": {"input": 5.00, "output": 25.00, "cache_write": 6.25, "cache_write_1h": 10.00, "cache_read": 0.50},
+    "claude-opus-4-8": {"input": 5.00, "output": 25.00, "cache_write": 6.25, "cache_write_1h": 10.00, "cache_read": 0.50},
+}
+
+
+def prices(model: str | None) -> dict:
+    """The prices for the model that answered: its own, or the dearest known."""
+    return PRICES.get(model or "") or max(PRICES.values(), key=lambda p: (p["output"], p["input"]))
 MAX_IMAGES = 12
 
 SYSTEM_PROMPT = """\
@@ -622,18 +633,21 @@ def revise_messages(db: Session, session: GameSession) -> list[dict]:
     return [{"role": "user", "content": content}]
 
 
-def _cost(usage) -> float:
+def _cost(usage, model: str | None = MODEL) -> float:
+    """What a call cost, priced by the model that answered (`response.model`)."""
+    p = prices(model)
+
     def g(name):
         return getattr(usage, name, 0) or 0
 
     hour = getattr(getattr(usage, "cache_creation", None), "ephemeral_1h_input_tokens", 0) or 0  # (an hour's write costs twice the input)
     return round(
         (
-            g("input_tokens") * PRICES["input"]
-            + g("output_tokens") * PRICES["output"]
-            + (g("cache_creation_input_tokens") - hour) * PRICES["cache_write"]
-            + hour * PRICES["cache_write_1h"]
-            + g("cache_read_input_tokens") * PRICES["cache_read"]
+            g("input_tokens") * p["input"]
+            + g("output_tokens") * p["output"]
+            + (g("cache_creation_input_tokens") - hour) * p["cache_write"]
+            + hour * p["cache_write_1h"]
+            + g("cache_read_input_tokens") * p["cache_read"]
         )
         / 1_000_000,
         4,
@@ -764,8 +778,8 @@ def _usage(run: ExtractionRun, response) -> None:
         response.usage.cache_creation_input_tokens or 0
     )
     run.output_tokens = response.usage.output_tokens or 0
-    run.cost_usd = _cost(response.usage)
     run.model = getattr(response, "model", MODEL) or MODEL
+    run.cost_usd = _cost(response.usage, run.model)
 
 
 def _keep_picks(awards: list[dict], before: Recap | None) -> list[dict]:
