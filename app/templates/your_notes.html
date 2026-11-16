@@ -15,7 +15,7 @@
 {% macro note_reader(kind, notes, placeholder, from_label, statuses, base=[]) %}
 {% set froms = notes | map(attribute="from") | unique | sort | list %}
 {% set present = notes | map(attribute="label") | list %}
-{% set whats = notes | map(attribute="what") | select | unique | list %}
+{% set whats = feedback_kinds.values() | map(attribute=0) | list if kind == "askdnd" else [] %}{# (Brett, Nov 16: always, each kind's count) #}
 <div class="reader notes-reader">
   <aside class="reader-nav" data-list="notes-{{ kind }}" data-noun="note" data-nouns="notes" data-default-sort="newest" aria-label="Your notes">
     <div class="reader-nav-head">
@@ -26,7 +26,7 @@
         <div class="reader-filters-head"><span>Where it stands</span><button type="button" class="btn link small" data-ls-clear>Clear</button></div>
         <div class="ls-chips">{% for v in statuses if v in (base or statuses) or v in present %}<button type="button" class="ls-chip" data-ls-group="status" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}
           <button type="button" class="ls-chip" data-ls-group="new" data-ls-value="New to you" aria-pressed="false">New to you <span class="ls-n" data-ls-n></span></button></div>
-        {% if whats | length > 1 %}<div class="reader-filters-head"><span>What it is</span></div>
+        {% if whats %}<div class="reader-filters-head"><span>What it is</span></div>
         <div class="ls-chips">{% for v in whats %}<button type="button" class="ls-chip" data-ls-group="what" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}</div>{% endif %}
         {% if froms | length > 1 %}<div class="reader-filters-head"><span>{{ from_label }}</span></div>
         <div class="ls-chips">{% for v in froms %}<button type="button" class="ls-chip" data-ls-group="from" data-ls-value="{{ v }}" aria-pressed="false">{{ v }} <span class="ls-n" data-ls-n></span></button>{% endfor %}</div>{% endif %}

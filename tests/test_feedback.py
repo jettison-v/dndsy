@@ -375,6 +375,8 @@ def test_a_note_says_what_it_is_and_nothing_picks_it_for_you(admin, db):
     assert db.scalar(select(func.count()).select_from(Feedback)) == 0
     assert note(admin, kind="question").status_code == 200
     assert db.scalar(select(Feedback)).kind == "question"
+    notes = admin.get("/your-notes?tab=askdnd").text  # (Notes you sent filters by it, even with one kind sent so far)
+    assert notes.count('data-ls-group="what"') == 3
     window = admin.get("/help").text  # (the window on every page: three choices, none on)
     assert window.count('data-fb-kind="') == 3 and 'class="chip on" role="radio"' not in window
 
@@ -440,7 +442,7 @@ def test_an_idea_and_a_question_say_where_they_stand_in_their_own_words(admin, p
     cards = [c["text"] for c in player.get("/your-notes/news").json()["cards"]]
     assert "On the Roadmap: “Could Battle show the swim speed?”" in cards and "Answered: “Why is my Speed 25?”" in cards
     page = player.get("/your-notes?tab=askdnd").text
-    assert page.count('data-ls-group="what"') == 2 and 'data-kind="idea"' in page and 'data-kind="question"' in page
+    assert page.count('data-ls-group="what"') == 3 and 'data-kind="idea"' in page and 'data-kind="question"' in page
     from app.your_notes import askdnd_note
 
     db.refresh(idea)
