@@ -20,6 +20,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
 .wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
 h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
@@ -39,7 +40,7 @@ header.top { display: grid; gap: 14px; }
 section.board { display: grid; gap: 16px; padding-top: 30px; border-top: 1px solid var(--line-soft); }
 .intro { display: grid; gap: 8px; max-width: 86ch; }
 .pick { color: var(--green); font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
-.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
 .notes > div { display: grid; gap: 4px; align-content: start; font-size: .9rem; }
 .notes > div b { font-size: .92rem; }
 
@@ -76,7 +77,35 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
 .tab[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: inset 0 3px 0 var(--red-btn); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
 .dot.yes { background: var(--green); } .dot.no { background: var(--amber); }
-.m-body { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 18px; padding: 14px 18px 16px; align-items: start; }
+.m-body { display: grid; grid-template-columns: 170px minmax(0, 1fr) 240px; gap: 18px; padding: 14px 18px 16px; align-items: start; }
+/* The list pattern (docs/DESIGN.md › Lists and filters): a left column of chip groups with live counts, the view
+   switch and search above the list, search pausing the filters and saying so, an active-filter row with Clear all */
+.flt-fold { position: sticky; top: 0; min-width: 0; }
+.flt-fold > summary { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); cursor: pointer; padding: 6px 0 10px; }
+.flt { display: grid; gap: 12px; transition: opacity .15s; }
+.flt.paused { opacity: .4; }
+.ls-group { display: grid; gap: 5px; }
+.ls-label { font-size: .8rem; color: var(--muted); }
+.ls-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.ls-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .78rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.ls-chip:hover { border-color: var(--faint); }
+.ls-chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); }
+.ls-chip.zero { color: var(--faint); }
+.ls-n { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+.ls-chip.zero .ls-n { color: var(--faint); }
+.ls-chip:focus-visible, .seg button:focus-visible, .ls-search input:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.ls-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.ls-search { display: flex; align-items: center; gap: 8px; flex: 1 1 220px; min-width: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; height: 32px; padding: 0 10px; color: var(--muted); }
+.ls-search input { flex: 1; min-width: 0; background: none; border: 0; color: var(--text); font: 400 .9rem/1 var(--sans); outline: none; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { font: 600 .8rem/1 var(--sans); padding: 0 11px; height: 32px; border: 0; background: var(--surface-2); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--blue-soft); color: var(--text); }
+.ls-searching { padding: 6px 10px; border-radius: 8px; background: var(--amber-soft); font-size: .84rem; }
+.ls-active { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .84rem; }
+.ls-active .ls-chip { min-height: 24px; }
+.linkish { background: none; border: 0; color: var(--blue); font: 600 .82rem/1 var(--sans); cursor: pointer; padding: 2px; }
+.none-match { color: var(--muted); font-size: .86rem; padding: 4px 8px; }
 .tabs + .m-body { border-top: 1px solid var(--line); }
 .list { display: grid; gap: 14px; min-width: 0; }
 .panel { display: grid; gap: 14px; min-width: 0; }
@@ -143,6 +172,8 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
   .where { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .notes { grid-template-columns: minmax(0, 1fr); }
   .m-body { grid-template-columns: minmax(0, 1fr); }
+  .flt-fold { position: static; }
+  .flt-fold:not([open]) > summary { padding-bottom: 0; }
   .side { position: static; }
 }
 @media (max-width: 560px) {
@@ -241,7 +272,7 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
           <div class="r" data-row data-name="Produce Flame" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Produce Flame">✓</button><span class="nm"><b>Produce Flame</b><small>Bonus Action · Self</small></span><span class="tag">Damage</span></div>
         </div>
 
-        <div class="sec" data-sec data-label="Druid prepared spells" data-when="change after a Long Rest" data-occ="rest" data-cap="10">
+        <div class="sec" data-sec data-label="Druid prepared spells" data-unlisted="6" data-when="change after a Long Rest" data-occ="rest" data-cap="10">
           <div class="rule rest">
             <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>10</b> of 10</span></div>
             <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>change any</span><span><i>From</i>Druid spells you have slots for</span></div>
@@ -256,7 +287,7 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
           <div class="lvl-h">2nd level</div>
           <div class="r" data-row data-name="Heat Metal" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Heat Metal">✓</button><span class="nm"><b>Heat Metal</b><small>Action · 60 ft · Concentration</small></span><span class="tag">Damage</span></div>
           <div class="r" data-row data-name="Pass without Trace" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Pass without Trace">✓</button><span class="nm"><b>Pass without Trace</b><small>Action · Self · Concentration</small></span><span class="tag">Buff</span></div>
-          <p class="note" style="padding: 4px 8px">… and the rest of his list, by level, with the filters as today.</p>
+          <p class="note" style="padding: 4px 8px">… and the rest of his list, by level.</p>
         </div>
       </div>
       <aside class="side" aria-label="Your changes"><span class="lb">Your changes</span><div data-changes></div><div data-warns></div></aside>
@@ -267,6 +298,7 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
   <div class="notes">
     <div><b>Why the reason at the top</b><span class="meta">The same window opens from the Long Rest window, a level-up card and Sheet. The reason it was opened for picks which rule lines say Now; the player can change it. Opened from Sheet it starts at Just looking: every rule shown, none marked.</span></div>
     <div><b>Past the rule: said, never blocked</b><span class="meta">A change the reason doesn't cover, or more swaps than a "replace one" allows, shows amber in Your changes, and Make still works, as going over the prepared number does today. The DM rules.</span></div>
+    <div><b>Search and filters</b><span class="meta">The list pattern, as every list: Yours · Not yours and the search above the list, Level and Effect in the left column (Class too for two classes in one list), live counts, Clear all. A section with nothing showing keeps its rule line.</span></div>
     <div><b>One Make, two kinds of change</b><span class="meta">A cantrip is learned or let go on D&amp;D Beyond; a spell is prepared or unprepared. One Make sends both, and one Undo puts both back.</span></div>
   </div>
 </section>
@@ -371,18 +403,18 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
     <div class="m-body">
       <div class="list">
         <div class="lvl-h" style="color: var(--red); font-size: .78rem">Paladin 6</div>
-        <div class="sec" data-sec data-label="Paladin prepared spells" data-when="replace one after a Long Rest" data-occ="rest" data-one="1" data-cap="6">
+        <div class="sec" data-sec data-label="Paladin prepared spells" data-unlisted="2" data-when="replace one after a Long Rest" data-occ="rest" data-one="1" data-cap="6">
           <div class="rule rest">
             <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>4</b> of 6</span></div>
             <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>replace one</span><span><i>From</i>Paladin spells</span></div>
             <span class="now" data-now></span>
           </div>
-          <div class="r" data-row data-name="Compelled Duel" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Compelled Duel">✓</button><span class="nm"><b>Compelled Duel</b><small>Bonus Action · 30 ft</small></span><span class="tag">Control</span></div>
-          <div class="r" data-row data-name="Shield of Faith" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shield of Faith">✓</button><span class="nm"><b>Shield of Faith</b><small>Bonus Action · 60 ft</small></span><span class="tag">Defense</span></div>
-          <div class="r" data-row data-name="Bless" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Bless">✓</button><span class="nm"><b>Bless</b><small>Action · 30 ft</small></span><span class="tag">Buff</span></div>
+          <div class="r" data-row data-level="1st" data-name="Compelled Duel" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Compelled Duel">✓</button><span class="nm"><b>Compelled Duel</b><small>Bonus Action · 30 ft</small></span><span class="tag">Control</span></div>
+          <div class="r" data-row data-level="1st" data-name="Shield of Faith" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shield of Faith">✓</button><span class="nm"><b>Shield of Faith</b><small>Bonus Action · 60 ft</small></span><span class="tag">Defense</span></div>
+          <div class="r" data-row data-level="1st" data-name="Bless" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Bless">✓</button><span class="nm"><b>Bless</b><small>Action · 30 ft</small></span><span class="tag">Buff</span></div>
         </div>
         <div class="lvl-h" style="color: var(--red); font-size: .78rem; padding-top: 14px">Sorcerer 2</div>
-        <div class="sec" data-sec data-label="Sorcerer cantrips" data-when="change when you gain a Sorcerer level" data-occ="level-sorcerer" data-one="1" data-cap="4">
+        <div class="sec" data-sec data-label="Sorcerer cantrips" data-unlisted="3" data-when="change when you gain a Sorcerer level" data-occ="level-sorcerer" data-one="1" data-cap="4">
           <div class="rule lvl">
             <div class="rule-name"><b>Cantrips</b><span class="cnt"><b data-count>4</b> of 4</span></div>
             <div class="bits"><span><i>When</i>you gain a Sorcerer level</span><span><i>How many</i>replace one</span><span><i>From</i>the Sorcerer list</span></div>
@@ -391,14 +423,14 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
           <div class="r" data-row data-name="Message" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Message">✓</button><span class="nm"><b>Message</b><small>Action · 120 ft</small></span><span class="tag">Communication</span></div>
           <div class="r" data-row data-name="Fire Bolt" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Fire Bolt">✓</button><span class="nm"><b>Fire Bolt</b><small>Action · 120 ft</small></span><span class="tag">Damage</span></div>
         </div>
-        <div class="sec" data-sec data-label="Sorcerer prepared spells" data-when="change when you gain a Sorcerer level" data-occ="level-sorcerer" data-one="1" data-cap="3">
+        <div class="sec" data-sec data-label="Sorcerer prepared spells" data-unlisted="2" data-when="change when you gain a Sorcerer level" data-occ="level-sorcerer" data-one="1" data-cap="3">
           <div class="rule lvl">
             <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>3</b> of 3</span></div>
             <div class="bits"><span><i>When</i>you gain a Sorcerer level</span><span><i>How many</i>replace one</span><span><i>From</i>Sorcerer spells</span></div>
             <span class="now" data-now></span>
           </div>
-          <div class="r" data-row data-name="Shield" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shield">✓</button><span class="nm"><b>Shield</b><small>Reaction · Self</small></span><span class="tag">Defense</span></div>
-          <div class="r" data-row data-name="Magic Missile" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Magic Missile">✓</button><span class="nm"><b>Magic Missile</b><small>Action · 120 ft</small></span><span class="tag">Damage</span></div>
+          <div class="r" data-row data-level="1st" data-name="Shield" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shield">✓</button><span class="nm"><b>Shield</b><small>Reaction · Self</small></span><span class="tag">Defense</span></div>
+          <div class="r" data-row data-level="1st" data-name="Magic Missile" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Magic Missile">✓</button><span class="nm"><b>Magic Missile</b><small>Action · 120 ft</small></span><span class="tag">Damage</span></div>
         </div>
       </div>
       <aside class="side" aria-label="Your changes"><span class="lb">Your changes</span><div data-changes></div><div data-warns></div></aside>
@@ -428,7 +460,7 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
     </div>
     <div class="m-body">
       <div class="list">
-        <div class="sec" data-sec data-label="Wizard cantrips" data-when="replace one after a Long Rest" data-occ="rest" data-one="1" data-cap="4">
+        <div class="sec" data-sec data-label="Wizard cantrips" data-unlisted="2" data-when="replace one after a Long Rest" data-occ="rest" data-one="1" data-cap="4">
           <div class="rule rest">
             <div class="rule-name"><b>Cantrips</b><span class="cnt"><b data-count>4</b> of 4</span></div>
             <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>replace one</span><span><i>From</i>the Wizard list</span></div>
@@ -438,7 +470,7 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
           <div class="r" data-row data-name="Shape Water" data-base="1" data-on="1"><button type="button" class="tick" data-tick aria-label="Shape Water">✓</button><span class="nm"><b>Shape Water</b><small>Action · 30 ft</small></span><span class="tag">Utility</span></div>
           <div class="r" data-row data-name="Mage Hand" data-base="" data-on=""><button type="button" class="tick" data-tick aria-label="Mage Hand">✓</button><span class="nm"><b>Mage Hand</b><small>Action · 30 ft</small></span><span class="tag">Utility</span></div>
         </div>
-        <div class="sec" data-sec data-label="Wizard prepared spells" data-when="change after a Long Rest" data-occ="rest" data-cap="11">
+        <div class="sec" data-sec data-label="Wizard prepared spells" data-unlisted="9" data-when="change after a Long Rest" data-occ="rest" data-cap="11">
           <div class="rule rest">
             <div class="rule-name"><b>Prepared spells</b><span class="cnt"><b data-count>11</b> of 11</span></div>
             <div class="bits"><span><i>When</i>after a Long Rest</span><span><i>How many</i>change any</span><span><i>From</i>your spellbook</span></div>
@@ -473,7 +505,7 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
     Beasts he can't take yet stay in the list, greyed, with the reason. The rule is one form per Long Rest; let two go to
     see it flagged.</p>
   </div>
-  <div class="modal" data-modal data-occasion="rest">
+  <div class="modal" data-modal data-forms data-occasion="rest">
     <div class="m-head">
       <div class="m-title"><span class="note">Cole · Druid 6 (Circle of the Moon)</span><h3>Known forms</h3></div>
       <div class="big"><span class="n"><b data-total>6</b><span> of 6</span></span><span class="boxes" data-total-boxes="6"></span><span class="note">known</span></div>
@@ -513,7 +545,7 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
     <div class="m-foot"><button type="button" class="btn small" data-reset>Start over</button><span class="note">Nothing changes until you press Make</span><button type="button" class="btn primary">Make these changes</button></div>
   </div>
   <div class="notes">
-    <div><b>The filters, as Prepare spells</b><span class="meta">Show (All, Known, Not known), CR, and movement (swim, climb, burrow), in the left column as on Prepare spells; left out here to keep the board short.</span></div>
+    <div><b>Search and filters, the list pattern</b><span class="meta">All · Known · Not known above the list with the search; CR, Movement and Size in the left column, each chip with its live count. Searching pauses the filters and says so.</span></div>
     <div><b>Greyed, with the reason</b><span class="meta">A Beast past his CR or with a Fly Speed stays listed so the player sees what Druid 8 brings. One askdnd has no D&amp;D Beyond id for says to learn it there.</span></div>
     <div><b>A name opens its stat block</b><span class="meta">As a spell's name opens its panel in Prepare spells, a Beast's name opens its stat block beside the list.</span></div>
   </div>
@@ -566,6 +598,7 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
         if (on && !base) adds.push(r.dataset.name);
         if (!on && base) drops.push(r.dataset.name);
       });
+      count += Number(s.dataset.unlisted || 0);  // (prepared, but not drawn on this board)
       var cnt = s.querySelector("[data-count]");
       var cap = Number(s.dataset.cap || 0);
       if (cap) { cnt.textContent = count; cnt.parentNode.classList.toggle("over", count > cap); }
@@ -597,6 +630,140 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
       var nowHere = Array.prototype.some.call(panel.querySelectorAll("[data-sec]"), function (s) { return s.dataset.isNow === "1"; });
       t.querySelector("[data-tab-dot]").className = "dot " + (occ === "look" ? "" : nowHere ? "yes" : "no");
     });
+    if (m._flt) applyFilters(m);
+  }
+
+  // ---- search and filters (docs/DESIGN.md › Lists and filters): chips OR within a group, AND across groups, a live
+  // count on each; a view switch above the list; search looks through everything and pauses the filters, and says so
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function facts(m, r) {
+    var small = (r.querySelector("small") || {}).textContent || "";
+    var tag = r.querySelector(".tag:not(.why-not)");
+    var sec = r.closest("[data-sec]");
+    if (m.hasAttribute("data-forms")) {
+      var parts = small.split(" · ");
+      return { CR: (parts[0] || "").replace("CR ", ""), Movement: (parts[1] || "").split(" ")[0], Size: tag ? tag.textContent : "" };
+    }
+    var level = r.dataset.level || "";
+    if (!level && sec && /cantrip/i.test(sec.dataset.label)) level = "Cantrip";
+    if (!level) { var h = r.previousElementSibling; while (h && !h.classList.contains("lvl-h")) h = h.previousElementSibling; if (h) level = h.textContent.split(" ")[0]; }
+    if (!level) { var mm = small.match(/^(\d+(st|nd|rd|th))/); if (mm) level = mm[1]; }
+    return { Level: level, Effect: tag ? tag.textContent : "", Class: sec ? sec.dataset.label.split(" ")[0] : "" };
+  }
+  function setupFilters(m) {
+    var forms = m.hasAttribute("data-forms"), body = m.querySelector(".m-body"), list = m.querySelector(".list");
+    var rows = Array.prototype.slice.call(m.querySelectorAll("[data-row], .r.cant"));
+    rows.forEach(function (r) { r._f = facts(m, r); });
+    var keys = forms ? ["CR", "Movement", "Size"] : ["Level", "Effect"];
+    if (!forms && !m.querySelector("[data-tab]")) {
+      var classes = {}; rows.forEach(function (r) { classes[r._f.Class] = 1; });
+      if (Object.keys(classes).length > 1) keys.unshift("Class");
+    }
+    var st = { q: "", view: "all", on: {}, keys: keys, rows: rows, forms: forms };
+    m._flt = st;
+    // the left column
+    var fold = el("details", "flt-fold"); fold.open = !matchMedia("(max-width: 900px)").matches;
+    var sum = el("summary", "", "Filters"); fold.appendChild(sum);
+    var col = el("div", "flt"); fold.appendChild(col);
+    keys.forEach(function (k) {
+      st.on[k] = {};
+      var g = el("div", "ls-group"); g.setAttribute("role", "group"); g.setAttribute("aria-label", k);
+      g.appendChild(el("span", "ls-label", k));
+      var chips = el("span", "ls-chips");
+      var seen = [];
+      rows.forEach(function (r) { var v = r._f[k]; if (v && seen.indexOf(v) === -1) seen.push(v); });
+      seen.forEach(function (v) {
+        var b = el("button", "ls-chip", v + " "); b.type = "button"; b.setAttribute("aria-pressed", "false");
+        b.dataset.k = k; b.dataset.v = v; b.appendChild(el("span", "ls-n"));
+        b.addEventListener("click", function () { st.on[k][v] = !st.on[k][v]; applyFilters(m); });
+        chips.appendChild(b);
+      });
+      g.appendChild(chips); col.appendChild(g);
+    });
+    body.insertBefore(fold, list);
+    // above the list: the view switch and search, the searching note, what's filtered
+    var top = el("div", "ls-top");
+    var seg = el("div", "seg"); seg.setAttribute("role", "group"); seg.setAttribute("aria-label", "Which ones");
+    (forms ? [["all", "All"], ["mine", "Known"], ["not", "Not known"]] : [["all", "All"], ["mine", "Yours"], ["not", "Not yours"]]).forEach(function (v) {
+      var b = el("button", "", v[1] + " "); b.type = "button"; b.dataset.view = v[0]; b.appendChild(el("span", "ls-n"));
+      b.addEventListener("click", function () { st.view = v[0]; applyFilters(m); });
+      seg.appendChild(b);
+    });
+    var box = el("label", "ls-search");
+    box.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+    var input = el("input"); input.type = "search"; input.placeholder = forms ? "Search Beasts" : "Search spells"; input.setAttribute("aria-label", input.placeholder);
+    input.id = "q-" + Array.prototype.indexOf.call(document.querySelectorAll("[data-modal]"), m);
+    input.addEventListener("input", function () { st.q = input.value.trim().toLowerCase(); applyFilters(m); });
+    box.appendChild(input);
+    top.appendChild(box); top.appendChild(seg);
+    var searching = el("p", "ls-searching", "Searching everything: the filters are paused until you clear the search. "); searching.hidden = true;
+    var clr = el("button", "linkish", "Clear search"); clr.type = "button";
+    clr.addEventListener("click", function () { input.value = ""; st.q = ""; applyFilters(m); });
+    searching.appendChild(clr);
+    var active = el("div", "ls-active"); active.hidden = true;
+    var head = el("div"); head.style.display = "grid"; head.style.gap = "8px";
+    head.appendChild(top); head.appendChild(searching); head.appendChild(active);
+    list.insertBefore(head, list.firstChild);
+    st.fold = fold; st.sum = sum; st.col = col; st.seg = seg; st.searching = searching; st.active = active;
+    m.querySelectorAll("[data-sec]").forEach(function (s) { var n = el("p", "none-match", "None match here."); n.hidden = true; n.dataset.none = ""; s.appendChild(n); });
+    applyFilters(m);
+  }
+  function inScope(r) { var p = r.closest("[data-panel]"); return !p || !p.hidden; }
+  function mine(r) { return r.dataset.on === "1"; }
+  function passView(st, r) { return st.view === "all" || (st.view === "mine") === mine(r); }
+  function passGroups(st, r, skip) {
+    return st.keys.every(function (k) {
+      if (k === skip) return true;
+      var picked = Object.keys(st.on[k]).filter(function (v) { return st.on[k][v]; });
+      return !picked.length || picked.indexOf(r._f[k]) !== -1;
+    });
+  }
+  function applyFilters(m) {
+    var st = m._flt, rows = st.rows.filter(inScope), searching = !!st.q;
+    rows.forEach(function (r) {
+      var name = (r.dataset.name || (r.querySelector(".nm b") || {}).textContent || "").toLowerCase();
+      r.hidden = searching ? name.indexOf(st.q) === -1 : !(passView(st, r) && passGroups(st, r));
+    });
+    // live counts: each chip, with the view and the other groups as they are
+    st.col.querySelectorAll(".ls-chip").forEach(function (b) {
+      var n = rows.filter(function (r) { return passView(st, r) && passGroups(st, r, b.dataset.k) && r._f[b.dataset.k] === b.dataset.v; }).length;
+      b.querySelector(".ls-n").textContent = n;
+      b.classList.toggle("zero", !n);
+      b.setAttribute("aria-pressed", String(!!st.on[b.dataset.k][b.dataset.v]));
+    });
+    st.seg.querySelectorAll("button").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.view === st.view));
+      b.querySelector(".ls-n").textContent = rows.filter(function (r) { return passGroups(st, r) && (b.dataset.view === "all" || (b.dataset.view === "mine") === mine(r)); }).length;
+    });
+    st.col.classList.toggle("paused", searching);
+    st.searching.hidden = !searching;
+    // what's filtered, each with ×, and Clear all
+    st.active.textContent = "";
+    var picked = [];
+    st.keys.forEach(function (k) { Object.keys(st.on[k]).forEach(function (v) { if (st.on[k][v]) picked.push([k, v]); }); });
+    st.active.hidden = !picked.length || searching;
+    st.sum.textContent = "Filters" + (picked.length ? " (" + picked.length + ")" : "");
+    if (picked.length) {
+      st.active.appendChild(el("span", "note", "Showing only:"));
+      picked.forEach(function (kv) {
+        var b = el("button", "ls-chip", kv[1] + " ×"); b.type = "button"; b.setAttribute("aria-pressed", "true"); b.setAttribute("aria-label", "Stop showing only " + kv[1]);
+        b.addEventListener("click", function () { st.on[kv[0]][kv[1]] = false; applyFilters(m); });
+        st.active.appendChild(b);
+      });
+      var all = el("button", "linkish", "Clear all"); all.type = "button";
+      all.addEventListener("click", function () { st.keys.forEach(function (k) { st.on[k] = {}; }); applyFilters(m); });
+      st.active.appendChild(all);
+    }
+    // a level heading with nothing under it goes; a section with nothing showing says so (its rule line stays)
+    m.querySelectorAll(".lvl-h").forEach(function (h) {
+      var n = h.nextElementSibling, shown = false;
+      while (n && !n.classList.contains("lvl-h") && !n.hasAttribute("data-none")) { if (n.classList.contains("r") && !n.hidden) shown = true; n = n.nextElementSibling; }
+      h.hidden = !shown;
+    });
+    m.querySelectorAll("[data-sec]").forEach(function (s) {
+      var rs = s.querySelectorAll(".r"); var any = Array.prototype.some.call(rs, function (r) { return !r.hidden; });
+      s.querySelector("[data-none]").hidden = any || !rs.length;
+    });
   }
   function line(kind, k, text) {
     var d = document.createElement("div"); d.className = "chg " + kind;
@@ -617,8 +784,10 @@ tr.split td, tr.split th { border-top: 2px solid var(--line); }
       t.addEventListener("click", function () {
         m.querySelectorAll("[data-tab]").forEach(function (x) { x.setAttribute("aria-selected", String(x === t)); });
         m.querySelectorAll("[data-panel]").forEach(function (p) { p.hidden = p.dataset.panel !== t.dataset.tab; });
+        if (m._flt) applyFilters(m);
       });
     });
+    setupFilters(m);
     var reset = m.querySelector("[data-reset]");
     if (reset) reset.addEventListener("click", function () { m.querySelectorAll("[data-row]").forEach(function (r) { r.dataset.on = r.dataset.base; }); render(m); });
     render(m);
