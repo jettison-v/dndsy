@@ -275,8 +275,9 @@ def test_d_and_d_beyonds_own_request_for_a_spell_learned():
     with the same body; the extension checks the class's list for the entry."""
     extra = {"spellId": 2618840, "entityTypeId": 435869154}
     body = {"characterId": 9, "characterClassId": 5, "spellId": 2618840, "id": 77, "entityTypeId": 435869154}
-    assert ddb_fields.write(9, "learn:5:77", True, {}, extra) == {"method": "POST", "path": "/character/v5/spell", "body": body}
-    assert ddb_fields.write(9, "learn:5:77", False, {}, extra) == {"method": "DELETE", "path": "/character/v5/spell", "body": body}
+    learned, let_go = ddb_fields.write(9, "learn:5:77", True, {}, extra), ddb_fields.write(9, "learn:5:77", False, {}, extra)
+    assert learned == {"method": "POST", "path": "/character/v5/spell", "body": body}
+    assert let_go == {"method": "DELETE", "path": "/character/v5/spell", "body": body}
     raw = {"classSpells": [{"characterClassId": 5, "spells": [{"id": 77, "definition": {"name": "Starry Wisp"}}]}],
            "askdnd": {"availableSpells": {"1": [{"id": 78, "definition": {"name": "Guidance"}}]}}}
     assert ddb_fields.value(raw, "learn:5:77") is True and ddb_fields.value(raw, "learn:5:78") is False
@@ -291,9 +292,9 @@ def test_d_and_d_beyonds_own_requests_for_a_known_form():
     creature (its id on the sheet); the extension checks it as the sum of the matching creatures' groups."""
     raw = {"creatures": [{"id": 7, "groupId": 13, "definition": {"id": 4775844, "name": "Spider"}},
                          {"id": 8, "groupId": 2, "definition": {"id": 4775844, "name": "Spider"}}]}
-    assert ddb_fields.write(1, f"wildshape:{DIRE_WOLF}", 1, raw) == {
-        "method": "POST", "path": "/character/v5/creature", "body": {"characterId": 1, "groupId": 13, "monsterId": int(DIRE_WOLF), "names": [None]}}
-    assert ddb_fields.write(1, "wildshape:4775844", 0, raw) == {"method": "DELETE", "path": "/character/v5/creature", "body": {"characterId": 1, "id": 7}}
+    learned, let_go = ddb_fields.write(1, f"wildshape:{DIRE_WOLF}", 1, raw), ddb_fields.write(1, "wildshape:4775844", 0, raw)
+    assert learned == {"method": "POST", "path": "/character/v5/creature", "body": {"characterId": 1, "groupId": 13, "monsterId": int(DIRE_WOLF), "names": [None]}}
+    assert let_go == {"method": "DELETE", "path": "/character/v5/creature", "body": {"characterId": 1, "id": 7}}
     assert ddb_fields.value(raw, "wildshape:4775844") == 1  # (the familiar Spider isn't a known form)
     read, frm, to = ddb_fields.wire("wildshape:4775844", raw, 1, 0)
     assert ddb_fields.pick(raw, read) == frm == 15 and to == 2  # (13 + 2, then the familiar's 2 alone)
