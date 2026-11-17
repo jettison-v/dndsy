@@ -971,12 +971,15 @@ class Check(Timestamped, Base):
     # what it needs open (testing.SETUPS): "laptop", "view_as", "iphone", "mac", "player", "claude"
     setup: Mapped[str] = mapped_column(String(20), default="laptop", server_default="laptop")
     as_who: Mapped[str] = mapped_column(String(120), default="", server_default="")  # through whose eyes, said: "Cole's player"; "" is you
+    # the character whose player it's seen through: Go turns on View as for their player (looked up then; no email kept)
+    as_character: Mapped[int | None] = mapped_column(ForeignKey("characters.id", ondelete="SET NULL"), nullable=True)
     path: Mapped[str] = mapped_column(String(500), default="", server_default="")  # the page Go opens ("/characters/1?tab=items")
     do: Mapped[str] = mapped_column(Text, default="", server_default="")  # the steps, a line each
     expect: Mapped[str] = mapped_column(Text, default="", server_default="")
     minutes: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     place: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # order within its setup
-    # ready → passed | failed (a feedback note) | skipped; failed → again (fixed, try again) → passed…; claude: Claude ran it
+    # ready → passed | failed (a feedback note) | skipped; failed → fixed (its PR on its way) → again (live: try it again)
+    # → passed…; claude: Claude ran it
     status: Mapped[str] = mapped_column(String(20), default="ready", server_default="ready", index=True)
     feedback_id: Mapped[int | None] = mapped_column(ForeignKey("feedback.id", ondelete="SET NULL"), nullable=True)  # the note it came from
     failed_id: Mapped[int | None] = mapped_column(ForeignKey("feedback.id", ondelete="SET NULL"), nullable=True)  # the note its failure made

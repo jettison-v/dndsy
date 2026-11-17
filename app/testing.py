@@ -35,10 +35,10 @@ router = APIRouter()
 # What a check needs open, in the order a round takes them (the Reader's groups)
 SETUPS = {"laptop": "On your laptop, as you", "view_as": "Through View as", "iphone": "On your iPhone", "mac": "On your Mac",
           "player": "With a player", "claude": "Claude ran these"}
-STATUSES = ("ready", "again", "failed", "passed", "skipped", "claude")
-SAYS = {"ready": "Ready", "again": "Fixed · try again", "failed": "Failed", "passed": "Passed", "skipped": "Skipped", "claude": "Claude ran it"}
+STATUSES = ("ready", "again", "failed", "fixed", "passed", "skipped", "claude")
+SAYS = {"ready": "Ready", "again": "Fixed · try again", "failed": "Failed", "fixed": "Fix on its way", "passed": "Passed", "skipped": "Skipped", "claude": "Claude ran it"}
 # The Reader's chips: which statuses each shows
-SHOWS = {"ready": ("ready", "again"), "again": ("again",), "failed": ("failed",), "claude": ("claude",), "done": ("passed", "skipped")}
+SHOWS = {"ready": ("ready", "again"), "again": ("again",), "failed": ("failed", "fixed"), "claude": ("claude",), "done": ("passed", "skipped")}
 SHOW_SAYS = {"ready": "Ready", "again": "Try again", "failed": "Failed", "claude": "Claude ran", "done": "Done"}
 TO_DO = ("ready", "again")  # what waits for the admin (the Manage menu's count)
 DENIED = "Testing is for admins."
@@ -83,7 +83,7 @@ def ordered(rows: list[Check]) -> list[Check]:
 
 def view(c: Check) -> dict:
     """A check as the Reader and the card show it."""
-    return {"id": c.id, "title": c.title, "area": c.area, "setup": c.setup, "group": SETUPS.get(c.setup, c.setup), "as_who": c.as_who,
+    return {"id": c.id, "title": c.title, "area": c.area, "setup": c.setup, "group": SETUPS.get(c.setup, c.setup), "as_who": c.as_who, "as_character": c.as_character,
             "path": c.path, "do": [line for line in (c.do or "").splitlines() if line.strip()], "expect": c.expect, "minutes": c.minutes,
             "status": c.status, "says": SAYS.get(c.status, c.status), "feedback_id": c.feedback_id, "failed_id": c.failed_id, "pr": c.pr,
             "said": c.said, "history": c.history or []}
@@ -157,7 +157,7 @@ def start_round(request: Request, form=web.FormBody, db: Session = Depends(get_d
         request.session["toast"] = web.notice("Nothing ready to try.")
         return RedirectResponse("/manage/testing", status_code=303)
     request.session[ROUND] = {"ids": ids, "i": 0}
-    return RedirectResponse(_page_of(db.get(Check, ids[0])), status_code=303)
+    return RedirectResponse(enter(request, db, db.get(Check, ids[0])), status_code=303)
 
 
 @router.post("/manage/testing/{check_id:int}/go")
@@ -171,7 +171,7 @@ def go(request: Request, check_id: int, db: Session = Depends(get_db)):
     if c is None:
         return web.not_found(request, "There's no such check.")
     request.session[ROUND] = {"ids": [c.id], "i": 0, "back": c.id}
-    return RedirectResponse(_page_of(c), status_code=303)
+    return RedirectResponse(enter(request, db, c), status_code=303)
 
 
 @router.post("/manage/testing/round/stop")
@@ -180,13 +180,45 @@ def stop_round(request: Request):
     if denied:
         return denied
     request.session[ROUND] = None
-    return RedirectResponse("/manage/testing", status_code=303)
+    return RedirectResponse(leave(request, "/manage/testing"), status_code=303)
 
 
 def next_page(request: Request, db: Session, after: int) -> str:
     """Where to go once a check is marked: the round's next check's page, else back to that check in the Reader."""
     now = current(request, db)
-    return _page_of(db.get(Check, now["check"]["id"])) if now else f"/manage/testing?show=failed&check={after}"
+    return enter(request, db, db.get(Check, now["check"]["id"])) if now else leave(request, f"/manage/testing?show=failed&check={after}")
+
+
+def enter(request: Request, db: Session, c: Check | None) -> str:
+    """A check's page, seen through its eyes (Brett's Board 1: Go turns on View as for that person first): View as for
+    its character's player, or your own view. Who may be viewed as is View as's own rule (`view_as.refusal`: never
+    yourself, never a player you're the DM of); refused, the page opens as you, with why."""
+    from app import view_as
+    from app.models import Character, User
+
+    target = None
+    if c is not None and c.as_character:
+        ch = db.get(Character, c.as_character)
+        owner = db.get(User, ch.owner_id) if ch is not None and ch.owner_id else None
+        real = ((request.session.get("user") or {}).get("email") or "").lower()
+        if owner is None:
+            request.session["toast"] = web.notice("Its character has no player in askdnd, so it opens as you.", "warn")
+        elif why := view_as.refusal(real, owner.email):
+            request.session["toast"] = web.notice(f"{why} It opens as you.", "warn")
+        else:
+            target = {"email": owner.email.lower(), "name": (owner.name if owner.name and owner.name != owner.email else None) or owner.email}
+    if target:
+        request.session["view_as"] = target
+        request.session["view_as_back"] = "/manage/testing"
+    else:
+        request.session.pop("view_as", None)
+    return _page_of(c)
+
+
+def leave(request: Request, back: str) -> str:
+    """Back to your own view, at `back` (a round's end, or Go's one check marked)."""
+    request.session.pop("view_as", None)
+    return back
 
 
 def _page_of(c: Check | None) -> str:
@@ -213,9 +245,9 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
     _advance(request, c.id)
     now = current(request, db) if r else None
     if now:
-        return RedirectResponse(_page_of(db.get(Check, now["check"]["id"])), status_code=303)
+        return RedirectResponse(enter(request, db, db.get(Check, now["check"]["id"])), status_code=303)
     request.session["toast"] = web.notice("That's the round done." if r and not single else f"{SAYS[status]}: {c.title}")
-    return RedirectResponse("/manage/testing" if r and not single else f"/manage/testing?check={c.id}", status_code=303)
+    return RedirectResponse(leave(request, "/manage/testing" if r and not single else f"/manage/testing?check={c.id}"), status_code=303)
 
 
 @router.get("/manage/testing/card", response_class=HTMLResponse)
@@ -257,6 +289,13 @@ def _fill(db: Session, c: Check, body: dict) -> None:
                 setattr(c, k, max(0, min(240, int(body[k]))))
             except (TypeError, ValueError):
                 raise HTTPException(400, f"{k}: a number") from None
+    if "as_character" in body:
+        from app.models import Character
+
+        cid = int(body["as_character"]) if str(body.get("as_character") or "").isdigit() else None
+        if cid is not None and db.get(Character, cid) is None:
+            raise HTTPException(400, f"There's no character {cid}.")
+        c.as_character = cid
     if "feedback_id" in body:
         fid = int(body["feedback_id"]) if str(body.get("feedback_id") or "").isdigit() else None
         if fid is not None and db.get(Feedback, fid) is None:

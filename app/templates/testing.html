@@ -5,7 +5,7 @@
 {# Manage › askdnd › Testing (app/testing.py; docs/mockups/testing/ Board 1, Brett's 1A, Nov 16): the Reader. The checks on
    the left, grouped by what they need open, each with where it came from and about how long; the one picked on the
    right with what to do, what you should see, why it's there (its note, the change), and Go, Passed, Failed…, Skip. #}
-{% set dots = {"ready": "claude", "again": "wait", "failed": "stop", "passed": "done", "skipped": "skip", "claude": "used"} %}
+{% set dots = {"ready": "claude", "again": "wait", "failed": "stop", "fixed": "planned", "passed": "done", "skipped": "skip", "claude": "used"} %}
 <main class="page manage-page testing-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Testing</h1>
@@ -38,7 +38,7 @@
       <article class="reader-article nt-read ts-read" data-check-read="{{ c.id }}">
         <p class="ts-where"><span class="st-dot st-{{ dots[c.status] }}" aria-hidden="true"></span> {{ c.says }}{% if c.area %} · {{ c.area }}{% endif %}{% if c.as_who %} · <span class="tag">Through View as · {{ c.as_who }}</span>{% endif %}</p>
         <h2 class="nt-h">{{ c.title }}</h2>
-        {% if c.path %}<form method="post" action="/manage/testing/{{ c.id }}/go"><button class="btn primary small" type="submit" data-check-go>Go: {{ c.area or "its page" }} →</button></form>{% endif %}{# (with its card: a round of one) #}
+        {% if c.path %}<form method="post" action="/manage/testing/{{ c.id }}/go"><button class="btn primary small" type="submit" data-check-go>Go: {{ c.area or "its page" }} →</button></form>{% endif %}{% if c.as_character %}<p class="note">Opens through View as for {{ c.as_who or "its player" }}, then back to your own view.</p>{% endif %}{# (with its card: a round of one) #}
         {% if c.do %}<section class="nt-part"><h3 class="divider">Do</h3><ol class="ts-do">{% for line in c.do %}<li>{{ line }}</li>{% endfor %}</ol></section>{% endif %}
         {% if c.expect %}<section class="nt-part"><h3 class="divider">You should see</h3><p>{{ c.expect }}</p></section>{% endif %}
         {% set from = notes.get(c.feedback_id) %}
