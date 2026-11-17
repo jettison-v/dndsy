@@ -12,3 +12,10 @@
 {% if issues %}<ul class="cc-issues">{% for f in issues %}<li data-issue="{{ f.id }}"><a href="/manage/feedback?tab=all&amp;open={{ f.id }}#fb-{{ f.id }}" data-no-peek>Note {{ f.id }}</a>
   <span class="cc-issue-text">{{ f.title or (f.text | truncate(70)) }}</span> <span class="tag{{ ' done' if f.status == 'done' }}">{{ {"broken": "Broken", "idea": "An idea", "question": "A question"}.get(f.kind, "A note") }}{% if f.status == "done" %} · fixed{% endif %}</span></li>{% endfor %}</ul>{% endif %}
 {%- endmacro %}
+
+{# What a row in For you is (Brett's note 104: drawn, so it sits centered at any size or font): a question from Claude
+   (amber ?) or a design pick (violet ◇) #}
+{% macro kind_mark(pick) -%}
+<span class="ts-k {{ 'pick' if pick else 'q' }}" aria-hidden="true">{% if pick %}<svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 3.2 12.8 8 8 12.8 3.2 8Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+{%- else %}<svg viewBox="0 0 16 16" width="12" height="12"><path d="M5.8 6a2.25 2.25 0 1 1 3 2.1c-.5.2-.8.6-.8 1.1v.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="8" cy="12.3" r="1" fill="currentColor"/></svg>{% endif %}</span>
+{%- endmacro %}
