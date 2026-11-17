@@ -396,10 +396,18 @@ def test_the_dms_table_tools_work_after_a_map_is_added(people, server, browser_d
         box = tok.bounding_box()
         page.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2)
         page.mouse.down()
-        page.mouse.move(box["x"] + box["width"] * 3, box["y"] + box["height"] / 2, steps=8)
-        assert " ft" in page.locator(".tmap-tip").inner_text()
+        page.mouse.move(box["x"] + box["width"] * 2, box["y"] + box["height"] / 2, steps=6)
+        before = page.locator(".tmap-tip").inner_text()
+        assert " ft" in before
+        # A fresh copy of the map can replace the token mid-drag (the live connection, Nov 17): the drag holds the new
+        # one, the same token, and the line keeps measuring
+        page.evaluate("() => { const t = document.querySelector('#tmap .tok-m.lifted'); t.replaceWith(t.cloneNode(true)); }")
+        page.mouse.move(box["x"] + box["width"] * 3, box["y"] + box["height"] / 2, steps=6)
+        page.wait_for_function("b => { const t = document.querySelector('.tmap-tip'); return t && t.textContent.trim() !== b.trim(); }", arg=before)
         page.mouse.up()
         page.locator(".tmap-tip").wait_for(state="detached")
+        page.reload()  # (the swap above was made by hand: start the rest from the page as the server draws it)
+        page.locator("#tmap .tok-m").first.wait_for()
         # Keys: ? lists them, A opens a spell's area, placed with a click
         page.keyboard.press("?")
         page.locator("#tbl-keys").wait_for(state="visible")
