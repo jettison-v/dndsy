@@ -396,6 +396,23 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     else if (e.target.matches('[data-hb-name]')) form.querySelectorAll('[data-hb-piece]').forEach(hbDraw);
   }));
 
+  // The step card (Testing, app/testing.py; Brett's 2A): — folds it to a pill and the pill brings it back, remembered
+  // for the round on this device
+  const ccFolded = () => { try { return localStorage.getItem('askdnd-check-card') === 'folded'; } catch (e) { return false; } };
+  const ccShow = cc => {
+    const folded = ccFolded();
+    cc.querySelectorAll('.cc-top, .cc-body').forEach(el => { el.hidden = folded; });
+    cc.querySelector('.cc-pill').hidden = !folded;
+    cc.classList.toggle('folded', folded);
+  };
+  document.addEventListener('htmx:afterSettle', e => { const cc = e.target.querySelector && e.target.querySelector('[data-check-card]'); if (cc) ccShow(cc); });
+  document.addEventListener('click', e => {
+    const f = e.target.closest('[data-check-card] [data-cc-fold]');
+    if (!f) return;
+    try { localStorage.setItem('askdnd-check-card', ccFolded() ? 'open' : 'folded'); } catch (err) { /* no storage: it stays as it is */ }
+    ccShow(f.closest('[data-check-card]'));
+  });
+
   // Key moments' Show fewer (feedback 79): folds the rest away again, keeping the list's top in view
   document.addEventListener('click', e => {
     const less = e.target.closest('[data-km-less]');
@@ -4851,7 +4868,8 @@ document.addEventListener('click', e => {
   const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
   const shotImg = win.querySelector('[data-fb-shot]'), shotNote = win.querySelector('[data-fb-shot-note]');
   const pastedImg = win.querySelector('[data-fb-pasted]'), dropNote = win.querySelector('[data-fb-drop-note]'), pointedNote = win.querySelector('[data-fb-pointed]');
-  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0, why = '', kind = '';
+  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0, why = '', kind = '', check = null;
+  const checkLine = win.querySelector('[data-fb-check-line]');
   // What it is (Brett, Nov 16): picked each time, never for you; the box's question follows it (feedback.KINDS)
   const kindChips = [...win.querySelectorAll('[data-fb-kind]')], ask = win.querySelector('[data-fb-ask]'), askFirst = ask.textContent;
   const pickKind = k => {
@@ -4889,7 +4907,7 @@ document.addEventListener('click', e => {
       // the whole picture)
       // Only what's on screen: anything hidden or scrolled out of view is left out, so a long list (the item browser's
       // 1,289 rows) costs what its visible rows cost (Brett, Nov 3: it was slow, and froze the tab once)
-      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || (n.classList && n.classList.contains('cond-halo')) || n.hidden || offscreen(n)),
+      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || n.id === 'check-card' || (n.classList && n.classList.contains('cond-halo')) || n.hidden || offscreen(n)),
     };
     // An attribute named with a colon (htmx's hx-on::after-request) is fine in a page but not in the picture's SVG, where
     // it stops the whole drawing: they're set aside while it's drawn, and put back
@@ -4967,12 +4985,16 @@ document.addEventListener('click', e => {
       .filter(([, v]) => v).forEach(([k, v]) => { dl.append(Object.assign(document.createElement('dt'), { textContent: k }), Object.assign(document.createElement('dd'), { textContent: v })); });
   }
   function unmark() { if (outlined) outlined.classList.remove('fb-pointed'); outlined = null; }
-  async function open() {
+  async function open(forCheck) {
     if (win.open) return;
     const mine = ++round;
     unmark(); pointed = null; pasted = null; shot = null;
     ctx = gather(); html = document.documentElement.outerHTML.slice(0, 3000000);
     form.reset(); say(''); send.disabled = false; pickKind('');
+    // Failed… on a check (Testing, Brett's 3A): Something's broken picked, the check named, and the note tied to it
+    check = forCheck || null;
+    if (check) pickKind('broken');
+    if (checkLine) { checkLine.hidden = !check; checkLine.querySelector('b').textContent = check ? check.title : ''; }
     shotImg.hidden = true; shotNote.hidden = false; shotNote.textContent = "Taking the page's picture…";
     pastedImg.hidden = true; dropNote.hidden = false; pointedNote.textContent = 'Click the thing you mean, if it helps';
     drawCtx();
@@ -5042,10 +5064,11 @@ document.addEventListener('click', e => {
     if (taking && !shot) { say("Finishing the page's picture…"); shot = await taking; say(''); }  // (Send pressed before it was drawn)
     try {
       const r = await fetch('/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, pointed }, html, shot, pasted }) });
+        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, pointed }, html, shot, pasted, ...(check ? { check: check.id } : {}) }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
       win.close(); unmark();
+      if (check) { location.href = j.next || '/manage/testing'; return; }  // (the check is failed: a round's next check, or the Reader)
       if (window.askdndToast) window.askdndToast(j.review ? 'Sent · an admin reads it before it goes to Claude' : 'In the queue · ' + j.waiting + ' new',
         { label: 'Your notes', run: () => { location.href = '/your-notes?tab=askdnd'; } });  // (where it goes from here)
     } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
@@ -5055,7 +5078,12 @@ document.addEventListener('click', e => {
     if (e.key !== '\\' || e.metaKey || e.ctrlKey || e.altKey || typing(document.activeElement) || document.querySelector('dialog[open]')) return;
     e.preventDefault(); open();
   });
-  document.addEventListener('click', e => { if (e.target.closest('[data-fb-open]')) { e.preventDefault(); open(); } });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-fb-open]');
+    if (!b) return;
+    e.preventDefault();
+    open(b.dataset.fbCheck ? { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '' } : null);
+  });
   const logo = document.querySelector('.brand');
   if (logo) {
     let held = null, fired = false;

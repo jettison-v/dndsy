@@ -165,7 +165,15 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
         if "id" in sent:
             return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": sent.get("review", True), "to_prod": True})
         note["context"] = {**context, "not_sent_to_prod": sent.get("error", "")[:300]}
+    check = body.get("check")
+    if isinstance(check, int) and is_admin(user):  # (Failed… on a check: Testing, 3A)
+        note["context"] = {**note["context"], "check": check}
     fb = _store(db, note)
+    if isinstance(check, int) and is_admin(user):
+        from app import testing
+
+        if testing.failed(request, db, check, fb):  # (and the page to go to: a round's next check, or the Reader)
+            return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "next": testing.next_page(request, db)})
     return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": fb.status == "review"})
 
 

@@ -958,6 +958,33 @@ class FeedbackPicture(Timestamped, Base):
 
 
 
+class Check(Timestamped, Base):
+    """A check for an admin to try in askdnd (Testing, app/testing.py; Brett's idea and picks, Nov 16,
+    docs/mockups/testing/): what to do and what to expect, on which page and through whose eyes, why it exists (the
+    note it came from, the change that made it), and where it stands. Claude writes them (`feedback.py check`); an admin
+    marks them in Manage › askdnd › Testing or on the page itself during a round."""
+
+    __tablename__ = "checks"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(160))
+    area: Mapped[str] = mapped_column(String(80), default="", server_default="")  # where on askdnd: "Sheet", "DM Tools"
+    # what it needs open (testing.SETUPS): "laptop", "view_as", "iphone", "mac", "player", "claude"
+    setup: Mapped[str] = mapped_column(String(20), default="laptop", server_default="laptop")
+    as_who: Mapped[str] = mapped_column(String(120), default="", server_default="")  # through whose eyes, said: "Cole's player"; "" is you
+    path: Mapped[str] = mapped_column(String(500), default="", server_default="")  # the page Go opens ("/characters/1?tab=items")
+    do: Mapped[str] = mapped_column(Text, default="", server_default="")  # the steps, a line each
+    expect: Mapped[str] = mapped_column(Text, default="", server_default="")
+    minutes: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    place: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # order within its setup
+    # ready → passed | failed (a feedback note) | skipped; failed → again (fixed, try again) → passed…; claude: Claude ran it
+    status: Mapped[str] = mapped_column(String(20), default="ready", server_default="ready", index=True)
+    feedback_id: Mapped[int | None] = mapped_column(ForeignKey("feedback.id", ondelete="SET NULL"), nullable=True)  # the note it came from
+    failed_id: Mapped[int | None] = mapped_column(ForeignKey("feedback.id", ondelete="SET NULL"), nullable=True)  # the note its failure made
+    pr: Mapped[str] = mapped_column(String(300), default="", server_default="")  # the change it checks
+    said: Mapped[str] = mapped_column(Text, default="", server_default="")  # Claude's word on it (a run's outcome, what was fixed)
+    history: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"at", "what", "who"}]
+
+
 class Place(Timestamped, Base):
     """A place on askdnd's table (app/places.py; docs/plans/2026-11-06-table-build-plan.md, D&D Beyond's Location): one map
     or none, its tokens, its own fog, and the DM's scenes pinned on it. A place can be a World place's (`entity_id`)."""

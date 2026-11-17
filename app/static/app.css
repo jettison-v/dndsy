@@ -3965,6 +3965,8 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .st-dot.st-claude, .st-dot.st-planned { background: var(--blue); }
 .st-dot.st-done { background: var(--green); }
 .st-dot.st-used { background: var(--violet); }
+.st-dot.st-stop { background: var(--red); }
+.st-dot.st-skip { background: transparent; border: 2px solid var(--faint); }
 
 /* An item that brings a creature (app/item_creatures.py): the DM's setup in the side panel, and its window's list */
 .bring-form { display: grid; gap: var(--sp-2); }
@@ -4186,3 +4188,35 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 /* Healing given to someone, waiting for them (app/heals.py): Table rolls' mark, and the card that stays */
 .roll-waiting { display: inline-block; font: 700 var(--fs-xs)/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); border-radius: var(--r-pill); padding: 4px 8px; }
 .card.k-heal { border-color: var(--green); }
+
+/* Testing (app/testing.py; docs/mockups/testing/, Brett's picks, Nov 16): the Reader of checks, and the step card */
+.tests-reader .ts-ready { margin: 0 0 var(--sp-2); }
+.ts-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
+.ts-chips .chip { text-decoration: none; color: var(--text); }
+.ts-group { margin: var(--sp-3) 0 var(--sp-1); padding: 0 var(--sp-2); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.ts-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px var(--sp-2); align-items: center; }
+.ts-row .ts-title { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.ts-row .nt-sum { grid-column: 2 / -1; }
+.ts-where { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; color: var(--muted); font-size: var(--fs-sm); margin: 0; }
+.ts-do { margin: 0; padding-left: 1.2em; display: grid; gap: var(--sp-1); }
+.ts-from { display: grid; gap: var(--sp-1); }
+.ts-hist { margin-top: var(--sp-3); }
+.ts-acts { margin-top: var(--sp-4); flex-wrap: wrap; }
+.ts-acts form, .cc-acts form { display: contents; }
+.btn.ts-pass { background: var(--green-soft); border-color: var(--green); color: var(--text); }
+.fb-check-line { display: flex; gap: var(--sp-2); align-items: center; margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+.check-card-slot { position: fixed; right: max(var(--sp-4), env(safe-area-inset-right, 0px)); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px)); z-index: 15; width: min(360px, calc(100vw - 2 * var(--sp-4))); }
+.check-card { background: var(--surface); border: 1px solid var(--line-strong); border-top: 3px solid var(--blue); border-radius: var(--r-lg); box-shadow: var(--lift); padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-2); font-size: var(--fs-sm); }
+.check-card.folded { background: none; border: 0; box-shadow: none; padding: 0; justify-items: end; }
+.cc-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+.cc-label { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+.cc-body { display: grid; gap: var(--sp-2); }
+.cc-prog { height: 4px; border-radius: var(--r-xs); background: var(--surface-3); overflow: hidden; }
+.cc-prog i { display: block; height: 100%; background: var(--blue); }
+.cc-title { margin: 0; font-weight: 600; color: var(--text); }
+.cc-do { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; }
+.cc-exp { background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); color: var(--muted); }
+.cc-exp b { display: block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 2px; }
+.cc-acts { flex-wrap: wrap; gap: var(--sp-2); }
+.cc-acts .cc-stop { display: contents; }
+.cc-pill { background: var(--surface); border: 1px solid var(--blue); border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); color: var(--text); font: inherit; font-size: var(--fs-sm); box-shadow: var(--lift); cursor: pointer; }

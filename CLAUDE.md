@@ -84,6 +84,7 @@ A companion app for one D&D 2024 table (4 players + DM, playing on Zoom with D&D
 - **The tour and Help › What askdnd adds**: app/tour.py
 - **D&D Beyond bridge**: app/ddb_bridge.py, scripts/build_extension.py, _char.html
 - **Feedback for Claude**: app/feedback.py, app/view_as.py, app/your_notes.py
+- **Testing in askdnd**: app/testing.py, testing.html, _check_card.html
 - **The Inbox digest**: app/digest.py, digest.html, _email_settings.html
 - **Which features get used**: app/usage.py, admin_features.html
 - **Trophy Case**: app/trophies.py, _trophies.html, _trophy_view.html

@@ -256,6 +256,8 @@
 
   <section class="section" id="panels">
     <h2>Panels, toasts and bands</h2>
+    {{ ds("Step card", "_check_card.html · .check-card (in .check-card-slot)", "A round of checks (Testing, admins): at the bottom right of every page while it's open, with what to do and see and Passed, Failed…, Skip; — folds it to a pill. Never in a feedback note's picture.") }}
+    <div class="ds-sample" style="max-width: 380px">{% with check = {"id": 0, "title": "Column headings stay while a list scrolls", "as_who": "Cole's player", "do": ["Scroll down the Inventory list."], "expect": "They stay under the tabs as a lighter band."}, n = 2, of = 3 %}{% include "_check_card.html" %}{% endwith %}</div>
     {{ ds("Three sizes", "--panel-w · --modal-w · --modal-lg-w", "Pick by what's inside, never by page. On phones every one is a sheet from the bottom.") }}
     <div class="table-scroll ds-sizes"><table class="list">
       <thead><tr><th>Size</th><th>Desktop</th><th>For</th><th>Open with</th><th></th></tr></thead>
