@@ -265,6 +265,137 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     });
   };
   document.addEventListener('scroll', () => { if (!headsQueued) { headsQueued = true; requestAnimationFrame(markHeads); } }, { capture: true, passive: true });
+  // Steppers (_form_bits.html stepper): − and + change the number within its min and max, as typing it does
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-stepper] .step');
+    if (!b) return;
+    const box = b.parentElement.querySelector('input[type=number]');
+    const min = box.min === '' ? -Infinity : +box.min, max = box.max === '' ? Infinity : +box.max;
+    const next = box.value === '' ? (+box.placeholder || (Number.isFinite(min) ? min : 0)) : +box.value + +b.dataset.step;
+    box.value = Math.min(max, Math.max(min, next));
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+
+  // Dice pickers (_form_bits.html dice_picker): how many, which die and the damage type write the dice box; typing in
+  // the box sets the pickers. The box is the form's field, so what's typed is what's saved.
+  const DICE_SAID = /^\s*(\d*)d(\d+)\s*([+-]\s*\d+)?\s*([a-z]+)?\s*$/i;
+  const dpSync = dp => {
+    const box = dp.querySelector('[data-dp="box"]'), m = box.value.match(DICE_SAID), flat = (box.value.match(/^\s*\+?(\d+)\s*$/) || [])[1];
+    if (m && m[1]) dp.querySelector('[data-dp="n"]').value = m[1];
+    dp.querySelectorAll('[data-dp-die]').forEach(c => c.setAttribute('aria-pressed', String(!!m && c.dataset.dpDie === m[2])));
+    dp.querySelectorAll('[data-dp-flat]').forEach(c => c.setAttribute('aria-pressed', String(!m && c.dataset.dpFlat === flat)));
+    dp.querySelectorAll('[data-dp-type]').forEach(c => c.setAttribute('aria-pressed', String(!!m && c.dataset.dpType === (m[4] || '').toLowerCase())));
+  };
+  const dpWrite = (dp, change) => {
+    const box = dp.querySelector('[data-dp="box"]'), m = box.value.match(DICE_SAID) || [];
+    const cur = { n: dp.querySelector('[data-dp="n"]').value || '1', die: m[2] || '', mod: (m[3] || '').replace(/\s+/g, ''), type: (m[4] || '').toLowerCase(), ...change };
+    if (cur.flat) box.value = '+' + cur.flat;
+    else if (cur.die) box.value = `${cur.n}d${cur.die}${cur.mod}${cur.type ? ' ' + cur.type : ''}`;
+    else return;
+    dpSync(dp);
+    box.dispatchEvent(new Event('input', { bubbles: true }));
+  };
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-dice-picker] [data-dp-die], [data-dice-picker] [data-dp-flat], [data-dice-picker] [data-dp-type]');
+    if (!c) return;
+    const dp = c.closest('[data-dice-picker]'), m = dp.querySelector('[data-dp="box"]').value.match(DICE_SAID);
+    if (c.dataset.dpDie) dpWrite(dp, { die: c.dataset.dpDie });
+    else if (c.dataset.dpFlat) dpWrite(dp, { flat: c.dataset.dpFlat });
+    else if (m) dpWrite(dp, { type: c.dataset.dpType });  // (a type needs dice first)
+  });
+  document.addEventListener('input', e => {
+    const dp = e.target.closest && e.target.closest('[data-dice-picker]');
+    if (!dp) return;
+    if (e.target.matches('[data-dp="box"]')) dpSync(dp);
+    else if (e.target.matches('[data-dp="n"]')) dpWrite(dp, {});
+  });
+  document.querySelectorAll('[data-dice-picker]').forEach(dpSync);
+
+  // The item builder (DM Tools › an item, docs/mockups/item-builder/): what it does in play a piece at a time. Each
+  // piece's sentence is written from its own fields; Edit opens its questions; + Add shows the next empty one.
+  const hbVal = (p, end) => {
+    const el = p.querySelector(`[name$="${end}"]:checked`) || p.querySelector(`[name$="${end}"]:not([type=radio])`);
+    return !el ? '' : el.type === 'checkbox' ? (el.checked ? el.value : '') : el.value.trim();
+  };
+  const HB_TO = { attack: 'attack rolls', save: 'saving throws', check: 'ability checks', damage: 'damage' };
+  const hbSays = {
+    roll: p => {
+      const dice = hbVal(p, '_dice'), how = hbVal(p, '_resolve');
+      if (!dice) return 'No dice yet';
+      if (how === 'save') return `${dice} · ${hbVal(p, '_save') || 'which'} save DC ${hbVal(p, '_dc') || '?'}, ${hbVal(p, '_half') ? 'half' : 'nothing'} on a success`;
+      if (how === 'attack') return `${dice} · an attack roll, on a hit`;
+      return { heal: `heals ${dice}`, temp: `${dice} Temporary Hit Points` }[hbVal(p, '_effect')] || dice;
+    },
+    add: p => {
+      const raw = hbVal(p, '_amount');
+      if (!raw) return 'Nothing added yet';
+      const amt = raw.startsWith('+') || raw.startsWith('-') ? raw : '+' + raw, to = HB_TO[hbVal(p, '_to')] || 'attack rolls', says = hbVal(p, '_says');
+      const when = { on_hit: `${amt} on a hit`, on_damage: `${amt} to its damage`, after_fail: `${amt} to ${to}, after a failure` }[hbVal(p, '_when')] || `${amt} to ${to}`;
+      return when + (hbVal(p, '_this') ? ' with this item' : '') + (says ? ` (${says})` : '');
+    },
+    charges: p => {
+      const n = hbVal(p, 'charges'), back = hbVal(p, 'charges_back'), regain = hbVal(p, 'charges_regain');
+      if (!n) return 'How many?';
+      return `${n} charge${n === '1' ? '' : 's'}` + (back ? `, back at ${back}${regain ? ` (${regain})` : ''}` : ", they don't come back");
+    },
+  };
+  const hbDraw = p => {
+    const kind = p.dataset.hbPiece, form = p.closest('[data-item-builder]'), how = hbVal(p, '_resolve');
+    const said = hbSays[kind](p);
+    p.querySelector('[data-hb-line]').textContent = said;
+    p.querySelector('[data-hb-says]').textContent = said;
+    const called = p.querySelector('[data-hb-called]');
+    p.querySelector('[data-hb-title]').textContent = (called && called.value.trim()) || (called && form.querySelector('[data-hb-name]').value.trim()) || p.dataset.hbKind;
+    p.querySelectorAll('[data-hb-when]').forEach(r => { r.hidden = r.dataset.hbWhen !== how; });
+    p.querySelectorAll('[data-hb-to]').forEach(r => { r.hidden = ['on_hit', 'on_damage'].includes(hbVal(p, '_when')); });
+    p.querySelectorAll('[data-hb-regain]').forEach(r => { r.hidden = !hbVal(p, 'charges_back'); });
+    const open = p.hasAttribute('data-open'), head = p.querySelector('.hb-head [data-hb-toggle]');
+    head.textContent = open ? 'Close' : 'Edit';
+    head.setAttribute('aria-expanded', String(open));
+  };
+  const hbRoom = form => form.querySelectorAll('[data-hb-new]').forEach(b => {
+    const left = form.querySelectorAll(`[data-hb-piece="${b.dataset.hbNew}"][hidden]`).length;
+    b.disabled = !left;
+    const note = b.querySelector('[data-hb-room]');
+    if (!note.dataset.said) note.dataset.said = note.textContent;
+    note.textContent = left ? note.dataset.said : b.dataset.hbNew === 'charges' ? 'It has them already' : 'As many as askdnd keeps';
+  });
+  document.querySelectorAll('[data-item-builder]').forEach(form => { form.querySelectorAll('[data-hb-piece]').forEach(hbDraw); hbRoom(form); });
+  document.addEventListener('click', e => {
+    const form = e.target.closest('[data-item-builder]');
+    if (!form) return;
+    const toggle = e.target.closest('[data-hb-toggle]'), remove = e.target.closest('[data-hb-remove]'), add = e.target.closest('[data-hb-new]');
+    if (toggle) { const p = toggle.closest('[data-hb-piece]'); p.toggleAttribute('data-open'); hbDraw(p); if (!p.hasAttribute('data-open')) p.querySelector('.hb-head [data-hb-toggle]').focus(); }
+    else if (remove) {
+      const p = remove.closest('[data-hb-piece]');
+      p.querySelectorAll('input[type=text], input[type=number]').forEach(i => { i.value = ''; });
+      p.querySelectorAll('input[type=checkbox]').forEach(i => { i.checked = false; });
+      p.querySelectorAll('[data-dice-picker]').forEach(dpSync);
+      p.removeAttribute('data-open');
+      p.hidden = true;
+      hbDraw(p);
+      hbRoom(form);
+      form.querySelector('[data-hb-add] > summary').focus();
+    } else if (add) {
+      const p = form.querySelector(`[data-hb-piece="${add.dataset.hbNew}"][hidden]`);
+      if (!p) return;
+      p.hidden = false;
+      p.setAttribute('data-open', '');
+      add.closest('details').open = false;
+      hbDraw(p);
+      hbRoom(form);
+      (p.querySelector('[data-dp="box"], input[name="charges"]') || p.querySelector('input')).focus();
+    }
+  });
+  ['input', 'change'].forEach(t => document.addEventListener(t, e => {
+    const form = e.target.closest && e.target.closest('[data-item-builder]');
+    if (!form) return;
+    const p = e.target.closest('[data-hb-piece]');
+    if (p) hbDraw(p);
+    else if (e.target.matches('[data-hb-name]')) form.querySelectorAll('[data-hb-piece]').forEach(hbDraw);
+  }));
+
   // Key moments' Show fewer (feedback 79): folds the rest away again, keeping the list's top in view
   document.addEventListener('click', e => {
     const less = e.target.closest('[data-km-less]');

@@ -40,6 +40,7 @@ SAVES = ("Str", "Dex", "Con", "Int", "Wis", "Cha")
 WHEN = {"before": "Before the roll", "on_hit": "On a hit", "on_damage": "To its damage", "after_fail": "After a failure"}
 TO = {"attack": "Attack rolls", "save": "Saving throws", "check": "Ability checks", "damage": "Damage"}
 BACK = ("", "dawn", "a Long Rest", "a Short or Long Rest")
+BACK_SAYS = {"": "Doesn't come back", "dawn": "Dawn", "a Long Rest": "A Long Rest", "a Short or Long Rest": "A Short or Long Rest"}
 MAX_ROLLS, MAX_ADDS = 3, 3
 # What else a DM makes (Brett's question on the mockup, Nov 13): listed as planned until each is built
 PLANNED = [("shops", "Shops", "What's for sale, at what price"), ("creatures", "Creatures", "A homebrew monster's stat block"),
@@ -166,16 +167,41 @@ def from_form(form) -> tuple[dict, list[str]]:
     return entry, errors
 
 
+TO_SAYS = {"attack": "attack rolls", "save": "saving throws", "check": "ability checks", "damage": "damage"}
+
+
+def roll_says(r: dict) -> str:
+    """A roll piece as one sentence (the item builder writes the same one as you pick: app.js "the item builder")."""
+    dice = " + ".join(r.get("dice") or [])
+    if r.get("resolve") == "save":
+        return f"{dice} · {r.get('save')} save DC {r.get('dc')}, {'half' if r.get('success') == 'half' else 'nothing'} on a success"
+    if r.get("resolve") == "attack":
+        return f"{dice} · an attack roll, on a hit"
+    return {"heal": f"heals {dice}", "temp": f"{dice} Temporary Hit Points"}.get(r.get("effect"), dice)
+
+
+def add_says(a: dict) -> str:
+    """A bonus piece as one sentence (as app.js writes it)."""
+    raw = str(a.get("amount") or "")
+    amt = raw if raw[:1] in "+-" else "+" + raw
+    to = TO_SAYS.get((a.get("to") or ["attack"])[0], "attack rolls")
+    when = {"on_hit": f"{amt} on a hit", "on_damage": f"{amt} to its damage", "after_fail": f"{amt} to {to}, after a failure"}.get(a.get("when"), f"{amt} to {to}")
+    return when + (" with this item" if "this_item" in (a.get("with") or []) else "") + (f" ({a['says']})" if a.get("says") else "")
+
+
+def charges_says(c: dict) -> str:
+    """The charges piece as one sentence (as app.js writes it)."""
+    n = c.get("count")
+    return f"{n} charge{'' if n == 1 else 's'}" + (f", back at {c['back']}" + (f" ({c['regain']})" if c.get("regain") else "") if c.get("back") else ", they don't come back")
+
+
 def says(data: dict) -> list[str]:
-    """What it does in play, in short lines for the list and the form's heading."""
+    """What it does in play, a sentence a piece, as the item builder shows them (DM Tools' list)."""
     play, out = data.get("play") or {}, []
-    for r in play.get("rolls") or []:
-        what = {"attack": "an attack: ", "save": f"{r.get('save')} save DC {r.get('dc')}: "}.get(r.get("resolve"), "")
-        out.append(f"{r.get('name')}: {what}{' + '.join(r.get('dice') or [])}" + ({"heal": " healing", "temp": " Temporary Hit Points"}.get(r.get("effect"), "")))
-    for a in play.get("adds") or []:
-        out.append(f"{a.get('name')}: +{a.get('amount')} {WHEN.get(a.get('when'), '').lower()}" + (" (with this item)" if "this_item" in (a.get("with") or []) else ""))
+    out += [f"{r.get('name')}: {roll_says(r)}" for r in play.get("rolls") or []]
+    out += [f"{a.get('name')}: {add_says(a)}" for a in play.get("adds") or []]
     if c := play.get("charges"):
-        out.append(f"{c['count']} charges" + (f", back at {c['back']}" if c.get("back") else "") + (f" ({c['regain']})" if c.get("regain") else ""))
+        out.append(charges_says(c))
     return out
 
 
@@ -259,8 +285,9 @@ def _form_page(request: Request, user, item: dict, key: str = "", errors: list[s
     return templates.TemplateResponse(request, "dm_item.html", {
         "user": user, "item": item, "key": key, "errors": errors or [], "rolls": (play.get("rolls") or []) + [{}] * (MAX_ROLLS - len(play.get("rolls") or [])),
         "adds": (play.get("adds") or []) + [{}] * (MAX_ADDS - len(play.get("adds") or [])), "charges": play.get("charges") or {},
-        "categories": CATEGORIES, "rarities": RARITIES, "resolve": RESOLVE, "effect": EFFECT, "saves": SAVES, "when": WHEN, "to": TO,
-        "back": BACK}, status_code=status)
+        "categories": CATEGORIES, "rarities": RARITIES, "effect": EFFECT, "when": WHEN, "to": TO,
+        "save_options": [(x, x) for x in SAVES], "back_options": [(b, BACK_SAYS[b]) for b in BACK],
+        "damage_types": rules_data.DAMAGE_TYPES}, status_code=status)
 
 
 @router.get("/dm/items/new", response_class=HTMLResponse)

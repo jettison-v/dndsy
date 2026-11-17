@@ -6,14 +6,12 @@
    Usage: {% from "_suggest_form.html" import suggest %}{{ suggest("/sessions/3/suggest", "this session") }} for a
    recap or the glossary; add_fold() directly for an entry's or a quest's own route. Import it "with context": the
    DM's go straight on, so they get different wording. #}
+{% from "_form_bits.html" import pick_chips %}
 {% macro add_fold(action, about, attrs='hx-swap="none"', kinds=True, dm=False, note="", label="+ Add what the party learned", placeholder="") -%}
 <details class="add-fold" data-add-fold>
   <summary>{{ label }}</summary>
   <form class="stack" hx-post="{{ action }}" {{ attrs | safe }} hx-disabled-elt="find button[type=submit]">
-    {% if kinds %}<div class="fold-chips" role="radiogroup" aria-label="What it is">
-      <label class="chip"><input type="radio" name="kind" value="addition" checked> Add something</label>
-      <label class="chip"><input type="radio" name="kind" value="correction"> Something here is wrong</label>
-    </div>
+    {% if kinds %}{{ pick_chips("kind", [("addition", "Add something"), ("correction", "Something here is wrong")], "addition", "What it is") }}
     {% else %}<input type="hidden" name="kind" value="addition">{% endif %}
     <textarea name="text" rows="3" required aria-label="{{ label | replace('+ ', '') }}" placeholder="{{ placeholder or ('Something the party learned about ' ~ about ~ (', or what\'s wrong' if kinds else '') ~ ' (type @ for a name)') }}"></textarea>
     <div class="row"><button type="submit" class="btn small{{ ' primary' if dm }}">{{ "Add" if dm else "Send" }}</button><button type="button" class="btn link small" data-fold-cancel>Cancel</button>{% if note %}<span class="note">{{ note }}</span>{% endif %}</div>

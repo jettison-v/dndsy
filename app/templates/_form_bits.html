@@ -1,0 +1,33 @@
+{# Pieces of a form you fill in and save with its button (the design system: Manage › askdnd › Design system, "Forms").
+   A setting that saves itself the moment it's pressed is _settings.html's switch or choice instead.
+
+   `pick_chips`: one of a few, as chips (a radio each; the chip is the control). `options`: [(value, words)].
+   `stepper`: a number with − and + beside it (app.js "steppers"); typing still works.
+   `dice_picker`: the dice box, with pickers that write it: how many, which die, and (`types`) the damage type;
+   typing in the box sets the pickers (app.js "dice pickers"). The box keeps the form's field `name`. #}
+
+{% macro pick_chips(name, options, current, label, extra="") -%}
+<div class="pick-chips" role="radiogroup" aria-label="{{ label }}"{{ extra | safe }}>
+  {%- for value, words in options %}<label class="chip" data-pick="{{ value }}"><input type="radio" name="{{ name }}" value="{{ value }}"{% if value == current %} checked{% endif %}> {{ words }}</label>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro stepper(name, value, label, min=0, max=99, placeholder="") -%}
+<span class="stepper" data-stepper>
+  <button type="button" class="step" data-step="-1" aria-label="{{ label }}: one less" tabindex="-1">−</button>
+  <input type="number" name="{{ name }}" value="{{ value }}" min="{{ min }}" max="{{ max }}" inputmode="numeric" aria-label="{{ label }}"{% if placeholder %} placeholder="{{ placeholder }}"{% endif %}>
+  <button type="button" class="step" data-step="1" aria-label="{{ label }}: one more" tabindex="-1">+</button>
+</span>
+{%- endmacro %}
+
+{% macro dice_picker(name, value, label, types=(), placeholder="2d6 force", flat=False) -%}
+<div class="dice-picker" data-dice-picker{% if flat %} data-flat{% endif %}>
+  <div class="dp-row">
+    <span class="stepper" data-stepper><button type="button" class="step" data-step="-1" aria-label="Fewer dice" tabindex="-1">−</button><input type="number" data-dp="n" min="1" max="20" value="1" inputmode="numeric" aria-label="How many dice"><button type="button" class="step" data-step="1" aria-label="More dice" tabindex="-1">+</button></span>
+    <span class="dp-dice" role="group" aria-label="Which die">{% for d in (4, 6, 8, 10, 12, 20) %}<button type="button" class="chip" data-dp-die="{{ d }}" aria-pressed="false">d{{ d }}</button>{% endfor %}</span>
+    {% if flat %}<span class="dp-flat" role="group" aria-label="Or a flat bonus">{% for b in (1, 2, 3) %}<button type="button" class="chip" data-dp-flat="{{ b }}" aria-pressed="false">+{{ b }}</button>{% endfor %}</span>{% endif %}
+  </div>
+  {% if types %}<div class="dp-types" role="group" aria-label="Damage type"><button type="button" class="chip" data-dp-type="" aria-pressed="false">No type</button>{% for t in types %}<button type="button" class="chip" data-dp-type="{{ t | lower }}" aria-pressed="false">{{ t }}</button>{% endfor %}</div>{% endif %}
+  <label class="dp-box">{{ label }} <input type="text" name="{{ name }}" value="{{ value }}" maxlength="40" placeholder="{{ placeholder }}" data-dp="box" autocomplete="off"></label>
+</div>
+{%- endmacro %}
