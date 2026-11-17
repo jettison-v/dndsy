@@ -1532,7 +1532,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (min-width: 1240px) {
   .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }
   .page.manage-page > .manage-band { margin-left: -228px; }
-  .manage-band:has(.manage-cross) ~ .title-row { padding-right: calc(var(--manage-cross-w) + var(--sp-3)); }  /* (no "All pages" control here: the list is down the left, and the way across sits beside the title) */
+  .manage-band:has(.manage-cross) ~ .title-row, .manage-band:has(.manage-cross) ~ .dm-main > .title-row { padding-right: calc(var(--manage-cross-w) + var(--sp-3)); }  /* (no "All pages" control here: the list is down the left, and the way across sits beside the title) */
   .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: calc(32px + 3px + var(--sp-5)); width: 200px; }  /* under the line */
   .manage-jump { display: none; }
 }

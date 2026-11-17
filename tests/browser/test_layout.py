@@ -343,6 +343,25 @@ def test_a_lists_column_headings_stay_while_it_scrolls(people, server):
     assert not player.errors, player.errors
 
 
+def test_nothing_covers_a_manage_pages_title_action(people, server):
+    """Brett, Nov 16: on DM Tools "+ New item" sat under "⚙ Admin" (the way to the other half, placed over the top
+    right), which kept room only beside a title placed straight under it, not one a page wraps (DM Tools' .dm-main).
+    On every Manage and DM Tools page, at a laptop's widths, the page title's action is what's on top at its middle."""
+    admin = people("admin")
+    page, found = admin.page, []
+    for width in (1280, 1440):
+        page.set_viewport_size({"width": width, "height": 900})
+        for path in PAGES["admin"]:
+            admin.open(path)
+            covered = page.evaluate("""() => [...(document.querySelector('main .title-row')?.querySelectorAll(':scope > .title-action') || [])].filter(a => a.checkVisibility()).filter(a => {
+                const b = a.getBoundingClientRect(), hit = document.elementFromPoint((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+                return !hit || !a.contains(hit); }).length""")
+            if covered:
+                found.append(f"{path} at {width}px: a title action is covered")
+    assert not found, "\n".join(found)
+    assert not admin.errors, admin.errors
+
+
 def _pills() -> dict:
     """The Live pill in each of its states, drawn by its own template (tn: what app/live.py hands it)."""
     from types import SimpleNamespace as N
