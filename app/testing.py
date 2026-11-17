@@ -232,6 +232,10 @@ def _fill(db: Session, c: Check, body: dict) -> None:
             setattr(c, k, str(body.get(k) or "")[:n])
     if c.setup not in SETUPS:
         raise HTTPException(400, f"setup: one of {', '.join(SETUPS)}")
+    if c.path and (not c.path.startswith("/") or c.path.startswith("//")):
+        raise HTTPException(400, "path: an askdnd page, starting with /")  # (it's Go's link and a round's redirect)
+    if c.pr and not c.pr.startswith("https://"):
+        raise HTTPException(400, "pr: an https:// link")
     for k in ("minutes", "place"):
         if k in body:
             try:

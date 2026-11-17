@@ -43,6 +43,8 @@ def test_claude_names_only_a_note_that_exists_and_a_known_setup(admin):
     assert admin.post("/api/checks", json={"title": "A", "feedback_id": 999999}, headers=KEY).status_code == 400
     assert admin.post("/api/checks", json={"title": "A", "setup": "moon"}, headers=KEY).status_code == 400
     assert admin.post("/api/checks", json={"title": ""}, headers=KEY).status_code == 400
+    for bad in ({"path": "javascript:alert(1)"}, {"path": "//elsewhere.example"}, {"pr": "javascript:alert(1)"}):  # (links on the page)
+        assert admin.post("/api/checks", json={"title": "A", **bad}, headers=KEY).status_code == 400
 
 
 def test_a_round_goes_page_to_page_and_failed_is_a_note_tied_to_its_check(admin, db):
