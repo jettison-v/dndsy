@@ -164,3 +164,56 @@ def test_check_live_brings_back_only_fixes_askdnd_runs(monkeypatch):
     monkeypatch.setattr(sp, "run", run)
     fbs.live("https://askdnd.example")
     assert moved == [("/api/checks/1", {"status": "again"})]
+
+
+def test_a_fixed_broken_note_comes_with_its_check(admin, db):
+    """Brett, Nov 16: every broken note gets its check. Claude marking an admin's broken note done with its PR makes one
+    (Fix on its way, with Claude's steps and the note's own page), once; it goes to the admin's queue when live."""
+    fb = note(admin).json()["id"]
+    admin.post(f"/api/feedback/{fb}", json={"kind": "broken", "tell": "Fixed: Speed shows the swim speed now."}, headers=KEY)
+    body = {"status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/405", "check_do": "Open Battle.\nLook at Speed.",
+            "check_expect": "Swim 50 under it."}
+    admin.post(f"/api/feedback/{fb}", json=body, headers=KEY)
+    admin.post(f"/api/feedback/{fb}", json=body, headers=KEY)  # (again: still one check)
+    rows = list(db.scalars(select(Check).where(Check.feedback_id == fb)))
+    assert len(rows) == 1
+    c = rows[0]
+    assert (c.status, c.setup, c.path, c.do, c.expect, c.pr) == ("fixed", "laptop", "/characters/1/battle", "Open Battle.\nLook at Speed.",
+                                                                 "Swim 50 under it.", body["pr"])
+    assert c.said == "Fixed: Speed shows the swim speed now."
+
+
+def test_a_players_fix_is_theirs_to_confirm_then_yours_after_three_days(admin, player, db):
+    """Brett's 6C: a fix to a player's note asks them, on Notes you sent, Does it work now? Yes passes it; Still broken
+    fails it and sends the note back with their words (to an admin first). Unanswered for three days, it's yours."""
+    from datetime import timedelta
+
+    from sqlalchemy import update
+
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    fb = note(player, text="The rolls panel closes by itself.").json()["id"]
+    admin.post(f"/api/feedback/{fb}", json={"kind": "broken", "status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/406"}, headers=KEY)
+    c = db.scalar(select(Check).where(Check.feedback_id == fb))
+    assert c.setup == "player" and c.status == "fixed"
+    assert 'data-try="' not in player.get(f"/your-notes?tab=askdnd&note=f{fb}").text  # (not until the fix is live)
+    admin.post(f"/api/checks/{c.id}", json={"status": "again"}, headers=KEY)  # (check live, once its PR is in)
+    assert f'data-try="{fb}"' in player.get(f"/your-notes?tab=askdnd&note=f{fb}").text
+    assert f'data-check="{c.id}"' not in admin.get("/manage/testing").text and f'data-check="{c.id}"' in admin.get("/manage/testing?show=player").text
+    assert admin.get("/c/main/manage/counts").json()["testing"] == 0  # (the player's, for now)
+
+    r = player.post(f"/your-notes/feedback/{fb}/works", data={"answer": "no", "text": "It still closes on a new roll."}, follow_redirects=False)
+    assert r.status_code == 303
+    db.expire_all()
+    assert db.get(Check, c.id).status == "failed" and db.get(Feedback, fb).status == "review"  # (back, to an admin first)
+    assert "It still closes on a new roll." in db.get(Feedback, fb).thread[-1]["text"]
+
+    db.execute(update(Check).where(Check.id == c.id).values(status="again", updated_at=Check.updated_at - timedelta(days=4)))
+    db.flush()
+    assert f'data-check="{c.id}"' in admin.get("/manage/testing").text  # (three days unanswered: the admin's)
+    assert player.post(f"/your-notes/feedback/{fb}/works", data={"answer": "yes"}).status_code in (200, 303)
+    db.expire_all()
+    assert db.get(Check, c.id).status == "passed"
+    assert admin.post(f"/your-notes/feedback/{fb}/works", data={"answer": "yes"}).status_code == 404  # (only its sender answers)

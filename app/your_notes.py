@@ -195,7 +195,10 @@ def page(request: Request, tab: str = "", note: str = "", db: Session = Depends(
     news = {"story": sum(r["new"] for r in rows), "askdnd": sum(_feedback_new(fb, "seen") for fb in notes)}
     if tab not in TABS or (tab == "askdnd" and not askdnd):
         tab = "askdnd" if askdnd and news["askdnd"] and not news["story"] else "story" if rows or not askdnd else "askdnd"
-    lists = {"story": ranked([story_note(r) for r in rows]), "askdnd": ranked([askdnd_note(fb) for fb in notes])}
+    from app import testing
+
+    trying = {fb.id: testing.view(c) for fb in notes if (c := testing.player_check(db, fb))}  # (Does it work now?: 6C)
+    lists = {"story": ranked([story_note(r) for r in rows]), "askdnd": ranked([{**askdnd_note(fb), "trying": trying.get(fb.id)} for fb in notes])}
     if not _looking(request):  # (the tab it opens on is seen; the other when it's opened, `seen`)
         _mark(rows, notes, tab)
         news[tab] = 0
@@ -268,6 +271,28 @@ def add_to(request: Request, feedback_id: int, text: str = Form(""), pics: list[
     fb.seen = fb.told = feedback.marker(fb)
     db.commit()
     request.session["toast"] = web.notice("Added: an admin reads it first" if not admin else "Added: it's with Claude")
+    return RedirectResponse(f"/your-notes?tab=askdnd&note=f{fb.id}", status_code=303)
+
+
+@router.post("/your-notes/feedback/{feedback_id:int}/works")
+def works(request: Request, feedback_id: int, answer: str = Form(""), text: str = Form(""), db: Session = Depends(get_db)):
+    """Does it work now? (Testing, Brett's 6C): the sender of a fixed note says. Yes passes its check; Still broken fails
+    it, and what they write goes to the note, which goes back as Add to it does (to an admin first, from a player)."""
+    from app import testing
+
+    user = current_user(request)
+    fb = next((x for x in notes_of(db, user) if x.id == feedback_id), None)
+    c = testing.player_check(db, fb) if fb is not None else None
+    if c is None or answer not in ("yes", "no"):
+        raise HTTPException(404)
+    testing.answered(db, c, answer == "yes", text.strip())
+    if answer == "no":
+        fb.thread = [*(fb.thread or []), {"who": "sender", "text": ("Still broken. " + text.strip()).strip()[:feedback.MAX_TEXT], "at": feedback.now_iso()}]
+        admin = access.level((user or {}).get("email")) == access.ADMIN
+        fb.status = "new" if admin else "review"
+        fb.seen = fb.told = feedback.marker(fb)
+    db.commit()
+    request.session["toast"] = web.notice("Thanks: it's marked fixed" if answer == "yes" else "Sent back: it's not fixed yet")
     return RedirectResponse(f"/your-notes?tab=askdnd&note=f{fb.id}", status_code=303)
 
 

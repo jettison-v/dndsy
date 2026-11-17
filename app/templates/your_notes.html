@@ -59,6 +59,15 @@
         {% for m in n.earlier if not m.mine %}<div class="fb-msg claude"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
         <div class="nt-answer st-{{ n.dot }}{{ ' st-open' if n.open }}"><small>{{ n.label }}{% if n.answer %} · {{ n.answer.who }}{% endif %}</small><span class="nt-said">{{ n.answer.text if n.answer else n.says }}</span>
           {%- if n.landed %}<a class="nt-landed" href="{{ n.landed.href }}" data-no-peek>{{ n.landed.text }} →</a>{% endif %}</div></section>
+      {% if n.trying %}<section class="nt-part nt-try" data-try="{{ n.id }}"><h3 class="divider">Does it work now?</h3>{# (Testing, Brett's 6C: whoever saw it confirms the fix) #}
+        {% if n.trying.do %}<ol class="ts-do">{% for line in n.trying.do %}<li>{{ line }}</li>{% endfor %}</ol>{% endif %}
+        {% if n.trying.expect %}<p class="note">{{ n.trying.expect }}</p>{% endif %}
+        <form method="post" action="/your-notes/feedback/{{ n.id }}/works" class="stack">
+          <div class="row"><button class="btn small ts-pass" type="submit" name="answer" value="yes" data-works="yes">Yes, it's fixed</button>
+            <details class="fold"><summary class="btn small">Still broken…</summary>
+              <label class="field"><span>What still happens</span><textarea name="text" rows="2"></textarea></label>
+              <button class="btn small" type="submit" name="answer" value="no" data-works="no">Send it back</button></details></div>
+        </form></section>{% endif %}
       {% if n.can_add %}<details class="fold fbm-add"><summary>Add to it</summary>
         <form method="post" action="/your-notes/feedback/{{ n.id }}" class="fb-answer" enctype="multipart/form-data" data-pics>
           <label class="field"><span>Something you forgot, or what happened next</span><textarea name="text" rows="2"></textarea></label>
