@@ -106,7 +106,7 @@ header.top { display: grid; gap: 10px; }
 .see { border-top: 1px solid var(--line-soft); padding-top: 10px; display: grid; gap: 4px; font-size: .88rem; }
 .problems { display: grid; gap: 6px; }
 .prob { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px 12px; font-size: .88rem; }
-.prob .n { width: 22px; height: 22px; border-radius: 50%; background: var(--red-soft); color: var(--red); display: grid; place-items: center; font: 700 .74rem/1 var(--sans); }
+.prob .n { min-width: 22px; padding: 0 6px; height: 22px; border-radius: 999px; background: var(--red-soft); color: var(--red); display: grid; place-items: center; font: 700 .74rem/1 var(--sans); }
 .hist { display: grid; gap: 0; }
 .badge { justify-self: start; display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: .82rem; cursor: pointer; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: transparent; }
 .tl { list-style: none; margin: 8px 0 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); display: grid; gap: 6px; font-size: .84rem; }
@@ -223,6 +223,8 @@ header.top { display: grid; gap: 10px; }
   <button type="button" class="shot" data-shot="issue"><small>9</small>An issue</button>
   <button type="button" class="shot" data-shot="ideas"><small>10</small>Ideas</button>
   <button type="button" class="shot" data-shot="areas"><small>11</small>Where it stands</button>
+  <button type="button" class="shot" data-shot="report"><small>12</small>Sending a report</button>
+  <button type="button" class="shot" data-shot="yours"><small>13</small>Notes you sent</button>
 </nav>
 
 <div class="why" aria-live="polite"><p id="why-text"></p><span class="notes-tag" id="why-notes"></span></div>
@@ -465,16 +467,78 @@ header.top { display: grid; gap: 10px; }
     <div class="page">
       <div class="ptitle"><h2>Testing</h2></div>
       <div class="tabs"><span class="tab">For you <span class="count">5</span></span><span class="tab on">Where it stands</span><span class="tab">Claude ran</span><span class="tab">Done</span></div>
-      <p class="note">Claude is listening · the area in Claude's hands is first; drag the rest into your order. Each says which Roadmap item it belongs to.</p>
+      <p class="note">Claude is listening · the area in Claude's hands is first; drag the rest into your order. Each says which Roadmap item it belongs to, and can be worked in a chat of its own that hears only that area.</p>
       <div class="areas">
-        <div class="area hot"><span class="grip"></span><div><b>Working with Claude</b><div class="ri">Roadmap: Feedback and Testing · 6 issues · 3 checks</div></div><div class="track"><span class="done">Found</span><span class="done">Claude asks</span><span class="now">Claude fixing</span><span>Ready for you</span><span>Done</span></div><span class="btn small">Open</span></div>
-        <div class="area"><span class="grip">⋮⋮</span><div><b>Item Builder</b><div class="ri">Roadmap: Homebrew items · 3 issues · 3 checks</div></div><div class="track"><span class="now" style="background:var(--surface-3);color:var(--text)">Found</span><span>Claude asks</span><span>Claude fixing</span><span>Ready for you</span><span>Done</span></div><span class="btn small">Open</span></div>
+        <div class="area hot"><span class="grip"></span><div><b>Working with Claude</b><div class="ri">Roadmap: Feedback and Testing · 6 issues · 3 checks</div></div><div class="track"><span class="done">Found</span><span class="done">Claude asks</span><span class="now">Claude fixing</span><span>Ready for you</span><span>Done</span></div><span class="sw claude" title="A chat of its own is working on it and listening to this area only">Its own chat · listening</span></div>
+        <div class="area"><span class="grip">⋮⋮</span><div><b>Item Builder</b><div class="ri">Roadmap: Homebrew items · 3 issues · 3 checks · <a>its brief</a></div></div><div class="track"><span class="now" style="background:var(--surface-3);color:var(--text)">Found</span><span>Claude asks</span><span>Claude fixing</span><span>Ready for you</span><span>Done</span></div><span class="btn small">Start its own chat…</span></div>
         <div class="area"><span class="grip">⋮⋮</span><div><b>Values that update by themselves</b><div class="ri">Roadmap: Feedback and Testing · 2 issues</div></div><div class="track"><span class="done">Found</span><span class="you">Claude asks</span><span>Claude fixing</span><span>Ready for you</span><span>Done</span></div><span class="btn small">Open</span></div>
         <div class="area"><span class="grip">⋮⋮</span><div><b>Manage</b><div class="ri">Roadmap: The UI and UX review · 5 issues</div></div><div class="track"><span class="now" style="background:var(--surface-3);color:var(--text)">Found</span><span>Claude asks</span><span>Claude fixing</span><span>Ready for you</span><span>Done</span></div><span class="btn small">Open</span></div>
+      </div>
+      <div class="panel"><span class="plabel">An area in a chat of its own (your note 123)</span>
+        <p class="note">Start its own chat… asks the main chat, which hands you a card in the desktop app to start it with one click (askdnd can't open a chat by itself). That chat starts from the area's brief (its notes, checks, your answers, the decisions and the code it touches, made by askdnd, not from memory), hears only this area, and does the fix, the full review and the pull request; the main chat keeps sorting and ordering, and checks its work before it reaches you. One area at a time still, so two chats never change the same thing. Built after a trial run in one area.</p></div>
+    </div>
+  </section>
+
+  <!-- 12 · Sending a report -->
+  <section data-screen="report" hidden>
+    <div class="ghostpage"><div class="page"><div class="ptitle"><h2>Party</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
+    <div class="scrim"><div class="win" role="dialog" aria-label="Send feedback">
+      <div class="hd"><b>Send feedback</b><span class="x">✕</span></div>
+      <div class="chips"><span class="chip on">Something's broken</span><span class="chip">An idea</span><span class="chip">A question</span></div>
+      <div class="chips"><span class="chip on">The page</span><span class="chip">Your picture 1</span><span class="chip">+ Paste or add a picture</span></div>
+      <div class="pic"><div class="lines"><i style="width:60%"></i><i style="width:85%"></i><i style="width:40%"></i></div><span class="mk" style="left:58%;top:52%;width:30%;height:30%"></span><span style="position:absolute;left:58%;top:30%;font:700 .78rem/1 var(--sans);color:var(--amber);background:rgba(15,17,19,.85);padding:3px 6px;border-radius:5px">Should be centered</span><div class="tools"><span>Box</span><span>Arrow</span><span>Draw</span><span style="border-color:var(--amber);color:var(--amber)">Text</span><span>Undo</span></div></div>
+      <label class="field">What's it about?<span class="input">The Party cards sit to the left on a wide screen.</span></label>
+      <div class="act"><span class="btn go">Send</span><span class="btn" data-hide>Hide while I take a screenshot</span><span class="btn quiet">Cancel</span></div>
+      <p class="note">Every picture can be marked up, the page's and any you add, with Box, Arrow, Draw and now Text (notes 88, 106). The page's picture is taken as your screen shows it, the same width and scroll (note 87).</p>
+    </div></div>
+    <div class="card" data-hidden-pill hidden style="width:auto;left:16px;right:16px;bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <b style="font-size:.9rem">Your feedback is waiting</b><span class="note">Take your screenshot (⇧⌘4 or ⇧⌘5), then press ⌘V here to add it.</span><span class="btn small" data-hide>Back to it</span></div>
+  </section>
+
+  <!-- 13 · Notes you sent (a player's view) -->
+  <section data-screen="yours" hidden>
+    <div class="page">
+      <div class="ptitle"><h2>Notes you sent</h2><span class="note">Big C, as a player sees it</span></div>
+      <div class="tabs"><span class="tab">The Story <span class="count">1</span></span><span class="tab on">Product Feedback <span class="count">2</span></span></div>
+      <div class="reader">
+        <aside class="rlist">
+          <div class="rhead">Counts are what's still open; closed ones stay below.</div>
+          <div class="row on" data-seen><b>The coins don't add up</b><span class="sw claude">With Claude</span><span class="sub">Nov 16 · <span class="sw again" data-new style="padding:2px 6px">new reply</span></span></div>
+          <div class="row"><b>Rest wraps on a phone</b><span class="sw fixed">Fixed</span><span class="sub">Does it work now?</span></div>
+          <div class="grp"><span>Closed</span></div>
+          <div class="row"><b>Dice tray in the corner</b><span class="sw quiet">On the Roadmap</span><span class="sub">An idea · 4 asked</span></div>
+        </aside>
+        <article class="detail">
+          <h3 class="big">The coins don't add up</h3>
+          <div class="sline"><span class="sw claude">With Claude</span>Claude has it, with Trah's report of the same thing.</div>
+          <div class="convo"><div class="bub you"><small>You</small>Moving the gold between characters left 10 gp missing.</div>
+            <div class="bub claude"><small>Claude</small>Thanks: I can see the 10 gp. It's on my list to fix with the Item Builder.</div></div>
+          <p class="note">Opening a note clears its "new" there and then, on this page, the menu's count and any other page you have open, without a refresh (note 109). The tabs say The Story and Product Feedback and count only what's open (note 110).</p>
+        </article>
       </div>
     </div>
   </section>
 </div>
+
+<section class="verdict" aria-labelledby="c-h">
+  <h2 id="c-h">What this change answers</h2>
+  <p class="meta">Every note you sent about Feedback and Testing, and where it's drawn. Each comes back to you as a check once it's built.</p>
+  <div class="problems">
+    <div class="prob"><span class="n">111</span><span>The ⋯ menu won't close · <b>no ⋯ any more</b>, named buttons</span><span class="sw quiet">Screens 1, 9</span></div>
+    <div class="prob"><span class="n">112</span><span>Write to doesn't say where it goes · <b>the line changes with who you pick</b></span><span class="sw quiet">Screen 9</span></div>
+    <div class="prob"><span class="n">113</span><span>What ⋯ holds is unclear · <b>every action says what it does</b></span><span class="sw quiet">Screens 1, 9</span></div>
+    <div class="prob"><span class="n">114</span><span>Done said twice · <b>the state said once</b></span><span class="sw quiet">Screens 8, 9</span></div>
+    <div class="prob"><span class="n">115</span><span>Three buttons to send a problem · <b>one, pressed per problem</b></span><span class="sw quiet">Screens 3, 4</span></div>
+    <div class="prob"><span class="n">116</span><span>Failed asked for one more issue · <b>the first problem fails it</b></span><span class="sw quiet">Screens 3, 4</span></div>
+    <div class="prob"><span class="n">121</span><span>The history didn't show the Failed · <b>it updates the moment you send</b></span><span class="sw quiet">Screen 4</span></div>
+    <div class="prob"><span class="n">87</span><span>The screenshot didn't match the screen · <b>taken as your screen shows it</b></span><span class="sw quiet">Screen 12</span></div>
+    <div class="prob"><span class="n">88</span><span>Text on the picture · <b>a Text tool beside Box, Arrow, Draw</b></span><span class="sw quiet">Screen 12</span></div>
+    <div class="prob"><span class="n">106</span><span>The window is in the way of a screenshot; mark up an added one · <b>Hide while I take a screenshot</b>; every picture can be marked</span><span class="sw quiet">Screen 12</span></div>
+    <div class="prob"><span class="n">109</span><span>A "new" stays until a refresh · <b>clears everywhere at once</b> (with a sweep of every such value)</span><span class="sw quiet">Screen 13</span></div>
+    <div class="prob"><span class="n">110</span><span>Notes you sent's tabs · <b>The Story, Product Feedback, open ones counted</b></span><span class="sw quiet">Screen 13</span></div>
+    <div class="prob"><span class="n">123</span><span>An area in a chat of its own · <b>its brief, its own listener, after one trial</b></span><span class="sw quiet">Screen 11</span></div>
+  </div>
+</section>
 
 <section class="verdict" aria-labelledby="v-h">
   <h2 id="v-h">Your verdict</h2>
@@ -504,7 +568,9 @@ header.top { display: grid; gap: 10px; }
     fblist: ["Feedback is the record: one list of issues, one word per state, several reports inside one issue.", "Notes 114; pick 1 (A)"],
     issue: ["An issue: its state said once, named buttons instead of ⋯, its reports, the conversation, and Write to whose line says who will read it.", "Notes 111 to 114"],
     ideas: ["Ideas and enhancements have their own tab: joined by everyone who asked, accepted onto the Roadmap or declined with why, and their senders hear when they ship.", "Pick 6 (A)"],
-    areas: ["Where it stands: each area says which Roadmap item it belongs to; you order them, Claude takes the first whole.", "Board 6 of the brief"],
+    areas: ["Where it stands: each area says which Roadmap item it belongs to; you order them, Claude takes the first whole. An area can be worked in a chat of its own that hears only that area.", "Board 6 of the brief; note 123"],
+    report: ["Sending a report from any page: what it is, the page's picture or one you add, each one marked up (now with Text), and a way to step aside while you take your own screenshot. Press Hide while I take a screenshot.", "Notes 87, 88, 106"],
+    yours: ["Notes you sent, as a player sees it: The Story and Product Feedback, counting only what's open; a new reply clears the moment it's read, everywhere.", "Notes 109, 110"],
   };
   const shots = document.querySelectorAll('.shot'), screens = document.querySelectorAll('[data-screen]');
   const go = name => {
@@ -520,6 +586,7 @@ header.top { display: grid; gap: 10px; }
     if (tg) { const el = document.getElementById(tg.dataset.toggle); el.hidden = !el.hidden; tg.textContent = (el.hidden ? '▸ ' : '▾ ') + tg.textContent.slice(2); return; }
     const p = e.target.closest('[data-pick]');
     if (p) { p.parentElement.querySelectorAll('[data-pick]').forEach(x => x.classList.toggle('on', x === p)); return; }
+    if (e.target.closest('[data-hide]')) { const sc = document.querySelector('[data-screen=report]'); sc.querySelector('.scrim').hidden = !sc.querySelector('.scrim').hidden; sc.querySelector('[data-hidden-pill]').hidden = !sc.querySelector('.scrim').hidden; return; }
     const to = e.target.closest('[data-to]');
     if (to) {
       to.parentElement.querySelectorAll('[data-to]').forEach(x => x.setAttribute('aria-pressed', String(x === to)));
