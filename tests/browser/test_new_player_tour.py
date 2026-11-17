@@ -53,7 +53,7 @@ def test_a_player_walks_every_stop_and_each_lights_something(people, server):
             assert page.locator(".tour-example").count() == 1, stop["title"]
         if stop["panel"]:
             assert page.locator(".peek.open").count() == 1, stop["title"]
-        assert page.locator(".tour-foot .count").inner_text() == f"{i + 1} of {len(stops)}"  # every stop, not groups
+        assert page.locator(".tour-foot .tour-n").inner_text() == f"{i + 1} of {len(stops)}"  # every stop, not groups
         if stop["at"] == '[data-tour="live"]':  # in the menu bar, over everything: lit where it is
             page.wait_for_function("""() => { const s = document.querySelector('.tour-spot').getBoundingClientRect(),
                 p = document.querySelector('[data-tour="live"]').getBoundingClientRect();

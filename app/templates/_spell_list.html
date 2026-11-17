@@ -19,7 +19,7 @@
           {% if show_picks %}{{ notes_toggle() }}{% endif %}
         </div>
         <div class="ls-rows sh-cols{{ ' chg-cols' if edit }}" data-ls-rows>
-          <div class="ls-head" aria-hidden="true"><span title="Prepared">✓</span><span>Spell</span><span>Time</span><span>Range</span><span>Duration</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
+          <div class="ls-head" aria-hidden="true"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Duration</span><span>Roll</span><span>Damage / Healing</span><span></span></div>
           {% for e in spells %}{% set note = picks.notes.get(e.key) if show_picks else "" %}{% set a = e.avgs.get(e.level) %}
           {% set healing = a and a.per in ("healed", "Temporary HP") %}
           <div class="ls-row spell-row{{ ' not-ready' if not e.ready }}" data-ls-row data-ref="{{ e.key }}" data-fav="{{ '1' if e.key in picks.fav else '0' }}"

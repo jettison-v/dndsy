@@ -421,8 +421,14 @@ h2 { font-size: var(--fs-lg); font-weight: 600; margin: 0; flex: 1; }
 h2 .num { color: var(--red); margin-right: 8px; font-weight: 700; }
 h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
 .hint { color: var(--muted); font-size: var(--fs-sm); margin: 0 0 20px; }
-.count { color: var(--muted); font-size: var(--fs-sm); }
-a .count { color: inherit; }  /* (a count inside a link is the link's own colour, as "(17)" was: feedback 74) */
+/* The Count (Brett's pick A, Nov 17, docs/mockups/counts-and-marks/; his note 84: too small to read as a count): the
+   number on a small rounded fill, a little bolder, figures that line up, sized to the words beside it. Where its words
+   have a colour (a link, a heading) it takes a tint of that colour; on the chosen tab, blue. */
+.count { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: var(--r-pill);
+         background: var(--surface-3); color: var(--text); font-size: .8em; font-weight: 600; line-height: 1; letter-spacing: 0;
+         font-variant-numeric: tabular-nums; text-transform: none; vertical-align: .08em; white-space: nowrap; }
+a .count, h3.divider .count { background: color-mix(in srgb, currentColor 16%, transparent); color: inherit; }
+.tabbar [aria-selected=true] .count { background: var(--blue-soft); color: var(--text-strong); }
 .muted { color: var(--muted); }
 .note { color: var(--muted); font-size: var(--fs-sm); }
 
@@ -520,7 +526,6 @@ details.done[open] > summary::before { transform: rotate(90deg); }
 .ask-card { border-left: 3px solid var(--amber); }
 .waiting { margin-top: 18px; }
 .waiting h3 { margin: 0 0 2px; color: var(--amber); }
-.waiting .count { font-weight: 400; }
 .callout { margin-top: 16px; padding: 16px; background: var(--amber-soft); border-radius: var(--r-md); }
 .callout.ready { background: var(--green-soft); }  /* Claude has enough to draft */
 
@@ -997,7 +1002,6 @@ details.feat > summary:hover { color: var(--text-strong); }
 .tabbar button[aria-selected=true] { color: var(--text-strong); box-shadow: inset 0 -2px 0 var(--red); }
 /* A focused tab's ring inside it: the bar scrolls sideways (phones), so a ring outside is cut to a stray red bar between tabs (Brett, Nov 10: seen on every tab bar when a key was pressed, a screenshot's shortcut included) */
 .tabbar button:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; border-radius: var(--r-sm); }
-.tabbar .count { font-size: var(--fs-xs); }
 details.opt { border-top: 1px solid var(--line); }
 details.opt > summary { list-style: none; cursor: pointer; padding: 9px 0; display: flex; gap: 8px; align-items: baseline; }
 details.opt > summary::-webkit-details-marker { display: none; }
@@ -1088,6 +1092,9 @@ button.switch { cursor: pointer; }
 .move:not(.static):hover b { color: var(--text-strong); text-decoration: underline; text-decoration-color: var(--faint); }
 .move .hit { float: right; margin-left: 8px; }
 .seeall { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
+/* Only the words are underlined, the count after them (no arrow): Brett, Nov 17, on PR 415, the pill looked odd inside the underline */
+.seeall a { text-decoration: none; }
+.seeall .sa-words { text-decoration: underline; }
 .lower { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
 .lower .section { margin: 0; }
 .peek.modal { top: 50%; left: 50%; right: auto; bottom: auto; width: min(var(--modal-w), calc(100% - 32px)); max-height: 86vh; overflow: hidden; transform: translate(-50%, -46%); opacity: 0; border: none; border-top: 3px solid var(--red); border-radius: var(--r-lg); transition: transform .18s ease, opacity .18s ease; }
@@ -1372,7 +1379,7 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid var(--line-s
 .k-reaction { --k: var(--k-reaction); --k-glyph: "↺"; } .k-other { --k: var(--k-other); --k-glyph: "●"; }
 h3.divider { display: flex; align-items: center; gap: 10px; padding: 0; border: none; font-size: var(--fs-xs); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--k, var(--amber)); margin: 26px 0 8px; }
 h3.divider::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--k, var(--amber)) 50%, transparent), transparent); }
-h3.divider .count { color: color-mix(in srgb, var(--k, var(--amber)) 70%, transparent); letter-spacing: 0; font-weight: 600; font-size: var(--fs-xs); }
+h3.divider .count { font-size: .95em; }
 h3.divider[class*="k-"]::before { content: var(--k-glyph); font-size: var(--fs-xs); letter-spacing: 0; margin-right: -2px; }
 h3.divider.big { font-size: var(--fs-sm); color: var(--k, var(--amber)); margin-top: 30px; }
 .econ h2.econ-head { font-size: var(--fs-sm); font-weight: 800; text-transform: uppercase; letter-spacing: .12em; color: var(--k); }
@@ -2269,7 +2276,6 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
   .econ-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 12px 0 8px; }
   .econ-tabs button { background: none; border: none; border-bottom: 2px solid var(--line); color: var(--muted); padding: 8px 0; font-weight: 500; min-height: 44px; }
   .econ-tabs button[aria-selected=true] { color: var(--k); border-bottom-color: var(--k); font-weight: 700; }
-  .econ-tabs .count { font-size: var(--fs-xs); opacity: .8; }
   .econ[data-econ-show=action] > [data-econ-col]:not([data-econ-col=action]),
   .econ[data-econ-show=bonus] > [data-econ-col]:not([data-econ-col=bonus]),
   .econ[data-econ-show=reaction] > [data-econ-col]:not([data-econ-col=reaction]) { display: none; }
@@ -3171,7 +3177,7 @@ table.list td.end, table.list th.end { text-align: right; white-space: nowrap; }
 .tour-progress { height: 3px; border-radius: var(--r-xs); background: var(--line); overflow: hidden; }
 .tour-progress i { display: block; height: 100%; background: var(--amber); transition: width .2s ease; }
 .tour-foot { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); }
-.tour-foot .count { margin-right: auto; color: var(--faint); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
+.tour-foot .tour-n { margin-right: auto; color: var(--faint); font-size: var(--fs-xs); font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .tour-card, .tour-card.alone { left: 8px !important; right: 8px; top: auto !important; bottom: calc(8px + env(safe-area-inset-bottom, 0px)); width: auto; transform: none; }
 }
@@ -3900,7 +3906,7 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .notes-dot-badge { position: absolute; top: -4px; right: -6px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: var(--r-pill); background: var(--red); color: var(--text-strong); font-size: var(--fs-xs); font-weight: 700; line-height: 1; display: inline-grid; place-items: center; font-variant-numeric: tabular-nums; border: 2px solid var(--chrome); }  /* (its number centered in the box its border leaves: note 96) */
 .bottom-nav .notes-dot-badge { top: 2px; right: 8px; }
 .notes-count { display: inline-block; min-width: 18px; padding: 0 6px; border-radius: var(--r-pill); background: var(--red); color: var(--text-strong); font-size: var(--fs-xs); font-weight: 700; text-align: center; }
-.tabbar .count.notes-tab-new, .review-steps .notes-tab-new { color: var(--red); font-weight: 700; }
+.tabbar .count.notes-tab-new, .review-steps .notes-tab-new { background: var(--red-soft); color: var(--red); font-weight: 700; }
 .notes-who { display: flex; gap: var(--sp-3); align-items: flex-start; padding: var(--sp-3); margin: var(--sp-3) 0; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); font-size: var(--fs-sm); }
 .notes-who p { margin: 0; }
 .notes-ico { flex: none; width: 30px; height: 30px; border-radius: var(--r-sm); display: grid; place-items: center; font-weight: 700; font-size: var(--fs-xs); }

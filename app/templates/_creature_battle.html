@@ -3,7 +3,7 @@
    says whose it is and when its turn comes; the top row is its own Hit Points, AC, Speed, Initiative and saves; its stat
    block's actions are rows to roll, in the three columns. Its rolls say whose they are (the body's data-who). #}
 {% from "_char.html" import ntile, save_tiles, roll_attrs, hit, sync_attrs %}
-{% from "_lists.html" import empty_state %}
+{% from "_lists.html" import empty_state, count_pill %}
 {% set k = creature %}{% set sync_of = (s.sync or {}).get("creature:" ~ k.id) %}
 <div class="battlebar">
   <div class="ws-form cr-band">
@@ -64,7 +64,7 @@
 
 {% set econ = [("Action", "On its turn", "action"), ("Bonus action", "On its turn", "bonus"), ("Reaction", "One per round", "reaction")] %}
 <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
-  {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }} <span class="count">{{ k.columns[cost].shown | length }}</span></button>{% endfor %}
+  {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }}{{ count_pill(k.columns[cost].shown | length) }}</button>{% endfor %}
 </div>
 <div class="econ{{ ' cr-not-here' if k.cast and k.where != 'here' }}" data-econ-show="action">
   {% for cost, sub, slug in econ %}{% set col = k.columns[cost] %}

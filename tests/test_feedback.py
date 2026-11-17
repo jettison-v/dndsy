@@ -209,6 +209,7 @@ def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, pla
     assert 'href="/your-notes"' in player.get("/help").text  # (the account menu and More)
     page = player.get("/your-notes?tab=askdnd").text
     assert "The Rest button wraps." in page and "Waiting for an admin" in page and "Battle</body>" not in page
+    assert 'data-notes-tab="story" hidden>0<' in page and 'data-notes-tab="askdnd">1<' in page  # (a 0 isn't shown: the Count, note 84)
     assert [c["text"] for c in player.get("/your-notes/news").json()["cards"]] == []  # (seen on the page: nothing to tell)
     # Approved, then Claude's question to the admin (not for the player) and a reply meant for the player
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "new"})

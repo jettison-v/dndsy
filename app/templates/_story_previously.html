@@ -1,3 +1,4 @@
+{% from "_lists.html" import count_pill %}
 {# Campaign › Previously on… (Story's first tab until Nov 13; docs/plans/2026-11-13-menu-bar-build.md): questions for you,
    then the latest session's recap, key moments and open threads. `st` is the published story (story.published_story). #}
 {% from "_story_macros.html" import scroll, after with context %}{% from "_suggest_form.html" import suggest with context %}
@@ -5,7 +6,7 @@
 {% if waiting %}<p class="flash">{{ waiting }} suggestion{{ "s" if waiting != 1 }} or draft{{ "s" if waiting != 1 }} {{ "are" if waiting != 1 else "is" }} waiting for an OK from you, the DM or a reviewer. <a href="{{ cbase }}/manage/inbox">Open the inbox →</a></p>{% endif %}
   {% if questions %}
   <section class="section ask-card" id="questions-for-you">
-    <div class="section-head"><h2>Questions for you</h2><span class="count">{{ questions | length }}</span></div>
+    <div class="section-head"><h2>Questions for you</h2>{{ count_pill(questions | length) }}</div>
     <p class="hint">Claude wasn't sure about these while drafting a recap, and a reviewer thought you'd know. Your answer goes into the next draft.</p>
     {% for item in questions %}{% set c = item.c %}{% set fid = "ask" ~ c.id %}
     <div class="item">

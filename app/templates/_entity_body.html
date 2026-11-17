@@ -1,5 +1,5 @@
 {# An entity page's content. Actions post with HTMX and swap this block in place. #}
-{% from "_lists.html" import empty_state %}
+{% from "_lists.html" import empty_state, count_pill %}
 {% from "_moments.html" import moment_list %}
 {% from "_suggest_form.html" import add_fold %}
 {% set hx = 'hx-target="#entity" hx-swap="outerHTML"' %}
@@ -119,7 +119,7 @@
   </section>
 
   <section class="section" id="facts">
-    <div class="section-head"><h2>What the table knows</h2>{% if pending %}<span class="count">{{ pending | length }} to review</span>{% endif %}</div>
+    <div class="section-head"><h2>What the table knows</h2>{% if pending %}{{ count_pill(pending | length, "to review") }}{% endif %}</div>
     <p class="hint">Facts added by people at the table. They appear here as written once the DM, an admin or a reviewer adds them.</p>
     {% if merged %}
     <ul class="facts">{% for f in merged %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ ln.text(f.text) }}<small>{{ f.author_name or "Someone" }} · {{ f.created_at.strftime("%b %-d, %Y") }}{% if can_moderate %} · <button type="submit" class="btn link small" hx-post="/campaign/facts/{{ f.id }}/done" {{ hx | safe }} title="Take it off this list (it stays under Done)">Done</button>{% endif %}</small></li>{% endfor %}</ul>

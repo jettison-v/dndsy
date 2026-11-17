@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_lists.html" import count_pill %}
 {% block title %}Inbox · askdnd{% endblock %}
 {# Manage › Inbox (content workflows step 2): everything waiting for the DM's OK. The table's suggestions all get
    the same actions (Accept · Edit · Ask Claude to work it in · Dismiss), Claude's description drafts open the
@@ -11,7 +12,7 @@
 {%- endmacro %}
 <main class="page manage-page inbox">
   {% include "_manage_head.html" %}
-  <div class="title-row"><h1>Inbox</h1>{% set n = items | length + drafts | length %}{% if n %}<span class="count">{{ n }} waiting</span>{% endif %}</div>
+  <div class="title-row"><h1>Inbox</h1>{% set n = items | length + drafts | length %}{% if n %}{{ count_pill(n, "waiting") }}{% endif %}</div>
   <p class="subtitle">Everything waiting for an OK from the DM, a reviewer or an admin. Nothing reaches the table until one of you decides. Players see what happened to theirs on Your notes: Added, Used or Not used, and your word to them if you write one.</p>
 
   <section class="section">

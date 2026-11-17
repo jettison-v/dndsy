@@ -39,7 +39,7 @@
         {% if end %}<span class="ls-end">{{ end }}</span>{% endif %}
       </div>
       <div class="ls-rows it-cols" data-ls-rows>
-        <div class="ls-head" aria-hidden="true"><span title="Equipped or attuned">✓</span><span>Item</span><span>Kind</span><span>Uses</span><span>Details</span><span></span></div>
+        <div class="ls-head" aria-hidden="true"><span></span><span>Item</span><span>Kind</span><span>Uses</span><span>Details</span><span></span></div>
         {% for it in items %}{% set note = picks.notes.get(it.key) if show_picks else "" %}
         {% set gi = (GROUPS | map(attribute=0) | list).index(it.group) if it.group in (GROUPS | map(attribute=0) | list) else 6 %}
         {% set on = it.equipped or it.attunement == "attuned" %}

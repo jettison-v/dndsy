@@ -1,6 +1,6 @@
 {% from "_char.html" import comp_mark, pips, count_pips, sync, pick_btn, pin_icon, battle_strip, save_tiles, resource_row, insp_mark, portrait, spends, adv, hit, roll_attrs, sync_attrs, rest_btn, basic_actions %}
 {% from "_notes_macros.html" import combo_body %}
-{% from "_lists.html" import empty_state %}
+{% from "_lists.html" import empty_state, count_pill %}
 {% from "_cond_icons.html" import cond_icon, cond_halo with context %}
 {% set s = sheet %}
 {# Character › Battle (character_pages._battle_ctx). A new copy and the Wild Shape switch swap this whole block. #}
@@ -41,7 +41,7 @@
     {%- set ws_act = s.actions | selectattr("name", "equalto", "Wild Shape") | selectattr("uses") | first if s else none %}
     <span class="ws-label">Wild Shape{% if druid.uses %} {{ count_pips(c if can_play else none, "uses:" ~ ws_act.id if ws_act and ws_act.id else "", druid.uses, "Wild Shape", sync(s, "uses:" ~ ws_act.id) if ws_act else "") }}{% endif %}</span>
     {% if can_pick %}
-    <button type="button" class="fold-btn" data-fold="ws" aria-expanded="false">Forms <span class="count">{{ known_forms | length }}</span></button>{# (a phone: folded until opened, feedback 29) #}
+    <button type="button" class="fold-btn" data-fold="ws" aria-expanded="false">Forms{{ count_pill(known_forms | length) }}</button>{# (a phone: folded until opened, feedback 29) #}
     {# A pill opens the Shift window (app/shifting.py): the form's cost and Temporary Hit Points, then Shift; Normal opens Leave #}
     <button type="button" class="ws-chip{{ ' on' if not form }}"{% if form %} data-use-url="/characters/{{ c.id }}/wild-shape"{% endif %} aria-pressed="{{ 'false' if form else 'true' }}">Normal</button>
     {% for kf in known_forms %}{% set here = form and form.beast.name == kf.name %}<button type="button" class="ws-chip{{ ' on' if here }}"{% if loop.first %} data-tour="ws-form"{% endif %}{% if not here %} data-use-url="/characters/{{ c.id }}/wild-shape?form={{ kf.name | urlencode }}"{% endif %}
@@ -112,7 +112,7 @@
   {# Said once, above the columns, however many are empty (Brett, 2026-10-31, docs/mockups/usability/) #}
   {# Each column says what goes there when it has nothing (the empty state; the UI review, Nov 16: no help lines) #}
   <div class="econ-tabs" role="tablist" aria-label="Action, bonus action or reaction">
-    {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }}{% if columns[cost].shown %} <span class="count">{{ columns[cost].shown | length }}</span>{% endif %}</button>{% endfor %}
+    {% for cost, sub, slug in econ %}<button type="button" role="tab" class="k-{{ slug }}" data-econ="{{ slug }}" aria-selected="{{ 'true' if loop.first else 'false' }}">{{ {"Bonus action": "Bonus"}.get(cost, cost) }}{% if columns[cost].shown %}{{ count_pill(columns[cost].shown | length) }}{% endif %}</button>{% endfor %}
   </div>
   <div class="econ" data-econ-show="action" data-tour="battle">
     {% for cost, sub, slug in econ %}
@@ -148,11 +148,11 @@
       {% if col.item_count %}{# Items follow pinning; the rest are in the side panel (Brett, 2026-10-30) #}
       <h3 class="items-head">Items</h3>
       {% if col["items"] %}<div class="moves"{% if can_pick and not form %} data-sort-column="{{ cost }} items" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>{% for o in col["items"] %}{{ move(o) }}{% endfor %}</div>{% endif %}
-      <div class="seeall items-all"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?items=1">All items <span class="count">{{ col.item_count }}</span> →</a></div>
+      <div class="seeall items-all"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}?items=1"><span class="sa-words">All items</span>{{ count_pill(col.item_count) }}</a></div>
       {% endif %}
       {% if cost == "Action" and form %}<div class="move static"><b>{{ basic_actions(c, basic_names | reject("equalto", "Ready")) }}</b><div class="meta">What anyone can do. Magic covers features like Land's Aid; spells only {{ "as listed above" if form.castable else "if a feature allows it" }}.</div></div>
       {% elif cost == "Action" %}<div class="move static"><b>{{ basic_actions(c, basic_names) }}</b><div class="meta">What anyone can do</div></div>{% endif %}
-      {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}">See all {{ cost | lower }}s <span class="count">{{ col.count }}</span> →</a></div>{% endif %}
+      {% if col.count > col.shown | length %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/{{ slug }}"><span class="sa-words">See all {{ cost | lower }}s</span>{{ count_pill(col.count) }}</a></div>{% endif %}
     </div>
     {% endfor %}
   </div>
@@ -162,7 +162,7 @@
     <div class="sec-head"><h2>No action needed</h2></div>
     {% for o in unprompted.shown %}{{ move(o) }}{% endfor %}
     {% if unprompted["items"] %}<div class="moves"{% if can_pick and not form %} data-sort-column="No action items" data-sort-url="/characters/{{ c.id }}/order"{% endif %}>{% for o in unprompted["items"] %}{{ move(o) }}{% endfor %}</div>{% endif %}
-    {% if unprompted.item_count %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/none?items=1">All items <span class="count">{{ unprompted.item_count }}</span> →</a></div>{% endif %}
+    {% if unprompted.item_count %}<div class="seeall"><a href="/characters/{{ c.id }}" data-panel-url="/characters/{{ c.id }}/all/none?items=1"><span class="sa-words">All items</span>{{ count_pill(unprompted.item_count) }}</a></div>{% endif %}
   </div>
   {% endif %}
   {% if riders and not form %}
