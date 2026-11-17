@@ -1055,7 +1055,7 @@
  {
   "title": "Found, Fixed, Tried: Audit",
   "kind": "plan",
-  "status": "For your read",
+  "status": "Done: built into v2",
   "date": "Nov 17",
   "what": "Devil's-advocate audit (Brett, Nov 17): three independent reviewers (architecture, workflows and design, the live code) plus Claude's pass, main claims checked in the code. Three standing-rule breaks to fix now; the model needs a run, check versions and questions, one table of state changes, and a trust and privacy layer; a dozen missing workflows; colour by whose turn; what to cut.",
   "source": "docs/artifacts/found-fixed-tried-audit.html",
@@ -1064,7 +1064,7 @@
  {
   "title": "Found, Fixed, Tried: Screens",
   "kind": "design",
-  "status": "For your look",
+  "status": "v2: for your verdict",
   "date": "Nov 17",
   "what": "The agreed model drawn as askdnd's screens, clickable: For you, trying a check, Something's wrong…, Failed with problems, Change result, Can't try…, a question and a mockup as one entry, Feedback's list, an issue with its reports, Ideas, and Where it stands. One verdict saved on the page.",
   "source": "docs/mockups/found-fixed-tried/index.html",
@@ -1073,7 +1073,7 @@
  {
   "title": "Found, Fixed, Tried (the brief)",
   "kind": "design",
-  "status": "Agreed: every pick A",
+  "status": "v2: revised after the audit and review",
   "date": "Nov 17",
   "what": "Brett, Nov 17: confused which items go where between Feedback and Testing, and it may go to an enterprise use next. Today's five joins, what TestRail, Xray, Zephyr, Qase, Linear, Jira, GitHub, Marker.io, BugHerd, Canny and others do, one model (report, issue, check, result, area), the workflows, the screens, building it to lift out, and six picks.",
   "source": "docs/mockups/feedback-and-testing/index.html",

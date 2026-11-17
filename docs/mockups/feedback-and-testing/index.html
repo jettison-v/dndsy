@@ -127,6 +127,7 @@ svg { max-width: 100%; height: auto; display: block; }
         nothing anyone writes is read as an instruction (section 6).</li>
       <li><b>Every workflow end to end</b>, including the twelve the audit found missing (section 7).</li>
       <li><b>Whose turn it is</b> as the one colour rule, and far fewer words (section 4).</li>
+      <li><b>One order: the Roadmap's.</b> Every area belongs to one item; bug and polish batches live in a standing item, Fixes and polish, that you drag like any other; askdnd picks what's next by rule, not my memory (R15; an independent review of v2 found the two mockups disagreeing).</li>
       <li>Cut: two-way sync with Jira; deferred: an area in a chat of its own until its groundwork exists (section 9).</li>
     </ul></div>
 </header>
@@ -179,11 +180,11 @@ svg { max-width: 100%; height: auto; display: block; }
       <tr><td><b>Issue</b><span class="term">issue · defect</span></td><td>The work: a problem to fix, made from one or more notes ("same as" joins another note to it). Has a reason when closed.</td><td>You approve a note into one; Claude files one from a try</td><td>Feedback</td></tr>
       <tr><td><b>Idea</b><span class="term">idea · insight</span></td><td>An idea note, kept on its own list; added to a Roadmap item, made one, or declined with why.</td><td>From notes</td><td>Feedback › Ideas (the Roadmap's players' ideas once it exists)</td></tr>
       <tr><td><b>Check</b><span class="term">test case</span><span class="v2">versions</span></td><td>What to try, as a walkthrough. Every edit is a new version; a try records which version it followed.</td><td>Claude, with each fix</td><td>Testing</td></tr>
-      <tr><td><b>Try</b><span class="term">test run · result</span><span class="v2">new</span></td><td>One go at a check: who, on what device (laptop, iPhone…), which deployed version, and how it went (Passed, Failed with its issues, Can't try with why). Never edited: a correction is a new try that replaces it, with why.</td><td>You, a player, or the Mac Mini</td><td>Testing, as the check's history</td></tr>
+      <tr><td><b>Try</b><span class="term">test run · result</span><span class="v2">new</span></td><td>One go at a check: who, on what device (laptop, iPhone, the Mac Mini), where (askdnd.ai, staging or your local copy), which version, and how it went (Passed, Failed with its issues, Can't try with why). Never edited: a correction is a new try that replaces it, with why. A check names the devices it must pass on (your laptop unless it says more).</td><td>You, a player, or the Mac Mini</td><td>Testing, as the check's history</td></tr>
       <tr><td><b>Round</b><span class="term">test session</span></td><td>One sitting of tries, page by page with the card; ends when you end it.</td><td>You</td><td>The card</td></tr>
       <tr><td><b>Question</b><span class="v2">new</span></td><td>Something Claude asks you, about an issue, a check, an area or a design; answers to tap or your words; one place to answer.</td><td>Claude</td><td>Testing › For you</td></tr>
       <tr><td><b>Decision</b><span class="v2">new</span></td><td>A question with a mockup attached: you look, then give one verdict (build it, with changes, redraw); kept in askdnd with the version you saw.</td><td>Claude</td><td>For you; the mockup in Manage › Documents</td></tr>
-      <tr><td><b>Area</b><span class="term">cycle</span></td><td>Issues fixed together and checks tried together, in rounds; one in Claude's hands at a time; belongs to a Roadmap item.</td><td>Claude sorts; you order</td><td>Testing › Where it stands</td></tr>
+      <tr><td><b>Area</b><span class="term">cycle</span><span class="v2">changed</span></td><td>A batch of Claude's work (issues, a build slice, or both) with its checks, tried together in rounds; under exactly one Roadmap item ("Fixes and polish" for bug batches with no feature of their own).</td><td>Claude sorts; you order items on the Roadmap, and areas within an item</td><td>The Roadmap; Testing › Where it stands shows the same queue</td></tr>
       <tr><td><b>Event</b><span class="term">audit log</span><span class="v2">new</span></td><td>Every change to any of the above: who, what, from, to, when. Kept for good; private words can be erased without breaking it.</td><td>askdnd</td><td>Under everything; each thing's history reads it</td></tr>
     </tbody></table></div>
   <figure>
@@ -214,24 +215,24 @@ svg { max-width: 100%; height: auto; display: block; }
 <section class="board">
   <div class="intro"><span class="lbl">4 · Whose turn, and the words</span><h2>One colour rule, a short set of words</h2>
     <p class="meta">The audit counted over 25 state words that collided. Now every pill says <b>whose turn it is</b>, and
-    one sentence beside it says what. Red is kept for one meaning only: a failed try.</p></div>
+    one sentence beside it says what. Buttons: a red fill is the one main action on a screen; red text or ✗ means failed; green ✓ means passed.</p></div>
   <div class="grid3">
     <div class="card"><span class="turnpill tp-y">Yours</span><p class="small">You act: a check to try, a question or a design to decide, a note to approve, an idea to place.</p></div>
     <div class="card"><span class="turnpill tp-c">Claude's</span><p class="small">I act: an issue to fix, a check to rewrite, a question you answered.</p></div>
-    <div class="card"><span class="turnpill tp-p">Big C's</span><p class="small">A player acts: does their fix work now? (three days, then it's yours).</p></div>
+    <div class="card"><span class="turnpill" style="background:var(--blue-soft);color:var(--blue)">Big C's</span><p class="small">A player acts: does their fix work now? (three days, then it's yours).</p></div>
     <div class="card"><span class="turnpill tp-x">Closed</span><p class="small">Nobody: with its reason (works now, won't do, same as, can't reproduce, withdrawn, retired).</p></div>
   </div>
   <div class="scroll"><table>
     <thead><tr><th>Thing</th><th>The words (only these)</th></tr></thead>
     <tbody>
       <tr><td><b>Note</b></td><td>Waiting for you (a player's) · Filed (as an issue, an idea, or answered) · Declined (with why)</td></tr>
-      <tr><td><b>Issue</b></td><td>Claude's: to fix · Yours: Claude asks · Claude's: fixing · Yours (or a player's): ready to try · Closed: works now, won't do, same as, can't reproduce, withdrawn</td></tr>
-      <tr><td><b>Check</b></td><td>To try · Passed · Failed · Can't try: later, blocked by an issue, check is wrong · Retired; shown per device when they differ</td></tr>
+      <tr><td><b>Issue</b></td><td>Claude's: to fix (queued) · Claude's: fixing (in hand) · Yours: Claude asks · Yours: fix ready, your OK to merge · Yours (or a player's): ready to try · Closed: works now, won't do, same as, can't reproduce, withdrawn · reopened: came back</td></tr>
+      <tr><td><b>Check</b></td><td>To try (first time, or again once a fix is live) · Passed · Failed · Can't try: later, blocked by an issue, check is wrong · Claude asks · Retired; shown per required device when they differ</td></tr>
       <tr><td><b>Try</b></td><td>Passed · Failed · Can't try · and "replaced by" when corrected</td></tr>
       <tr><td><b>Idea</b></td><td>New · On the Roadmap (which item) · Shipped · Declined</td></tr>
       <tr><td><b>Area</b></td><td>Yours: round N to try · Claude's: fixing · Yours: Claude asks · Done</td></tr>
     </tbody></table></div>
-  <p class="meta">"Note" is what anyone sends, everywhere (on every page, in Notes you sent, in Feedback); "issue" is
+  <p class="meta">For you is a view of everything that's your turn, wherever it lives (a check, a question, a decision, a note to approve, an idea to place, a fix to OK, a Roadmap step that's yours); it owns nothing, so nothing has two homes. "Note" is what anyone sends, everywhere (on every page, in Notes you sent, in Feedback); "issue" is
   only ever the work. The words live in one catalog, so they're the same on every page and can be translated.</p>
 </section>
 
@@ -246,15 +247,19 @@ svg { max-width: 100%; height: auto; display: block; }
     <div class="rule"><span class="id">R2</span><span class="when">You approve a note as "same as" an issue</span><span class="then">It joins that issue; its sender hears the issue's outcome, never another reporter's words or title. Unjoin is always possible from the issue's history.</span></div>
     <div class="rule"><span class="id">R3</span><span class="when">A try fails</span><span class="then">One Failed try, naming each issue: new ones (Claude's: to fix), or ones "still happening" (reopened: came back). An issue marked "doesn't stop it passing" doesn't hold the check.</span></div>
     <div class="rule"><span class="id">R4</span><span class="when">An issue's fix is merged and live</span><span class="then">Issue: ready to try. Each check it held, once none of its blocking issues remain unfixed: To try again, for whoever failed it on that device (a player's to that player first).</span></div>
-    <div class="rule"><span class="id">R5</span><span class="when">A try passes</span><span class="then">The check is Passed on that device. Each issue on it: closed (works now) if you reported it or it's yours to confirm; a player's waits for them ("Big C's turn") and becomes yours after three days.</span></div>
+    <div class="rule"><span class="id">R5</span><span class="when">A try passes</span><span class="then">The check is Passed on that device. Only its <b>blocking</b> issues with no failing try left on another check or a required device close: works now if you reported them; a player's waits for them ("Big C's turn") and becomes yours after three days. Non-blocking issues stay open. Senders are told after the minute Undo lasts.</span></div>
     <div class="rule"><span class="id">R6</span><span class="when">A try is corrected</span><span class="then">A new try replaces it, with why, both kept in the history. An issue that try alone created, with no other note or fix, closes as withdrawn; any other is only unlinked.</span></div>
     <div class="rule"><span class="id">R7</span><span class="when">Can't try</span><span class="then">Later: stays yours. Blocked by an issue: waits for it, back when it's fixed. Check is wrong: to Claude, who writes a new version (the earlier tries keep theirs).</span></div>
     <div class="rule"><span class="id">R8</span><span class="when">An issue is moved to another area, deferred, closed or merged</span><span class="then">Its checks are re-worked out by R3 to R5; a check is never left Failed with no open issue holding it.</span></div>
     <div class="rule"><span class="id">R9</span><span class="when">A fix is rolled back</span><span class="then">Its issues return to Claude's: fixing; checks waiting on them leave To try.</span></div>
     <div class="rule"><span class="id">R10</span><span class="when">The Mac Mini's run fails a check</span><span class="then">Adds to the open issue (or files one). An automated pass never confirms a fix: only a person does.</span></div>
-    <div class="rule"><span class="id">R11</span><span class="when">An area's round is open</span><span class="then">askdnd refuses to let Claude start fixing it (only sort and acknowledge), unless you mark an issue "this stops my round". One area is Claude's at a time: the lock has an owner and lapses if unused.</span></div>
-    <div class="rule"><span class="id">R12</span><span class="when">An area's issues are all closed and its checks passed or retired</span><span class="then">It's done. Issues found in its round that don't block it go to its next round or another area, so an area always finishes.</span></div>
+    <div class="rule"><span class="id">R11</span><span class="when">A round is open</span><span class="then">Nothing merges to askdnd.ai while you test, so the page never changes under you; Claude only sorts what you send, and may build the next area on a branch that merges when the round ends. An issue marked "this stops my round" is the exception: fixed now. End round any time (the unfinished checks stay in For you); a round left idle 12 hours ends itself. One area is Claude's at a time: the lock has an owner and lapses if unused.</span></div>
+    <div class="rule"><span class="id">R12</span><span class="when">An area's issues are all closed and its checks passed or retired</span><span class="then">It's done. Issues found in its round that it doesn't own go to its item's next area, or to Fixes and polish when unrelated, so an area always finishes.</span></div>
     <div class="rule"><span class="id">R13</span><span class="when">Claude asks</span><span class="then">The issue, check or area shows Claude asks (yours); your answer moves it back to Claude's. A question is answered in one place, and an answer names the question it answers.</span></div>
+    <div class="rule"><span class="id">R15</span><span class="when">Claude picks what's next</span><span class="then">By rule, in askdnd: a blocker first (an issue that stops your round, a standing-rule break, an error on askdnd.ai); otherwise the Roadmap from the top, each item's areas in your order, skipping an item whose next step is yours and an area in your open round; the first area that's Claude's. One order only: the Roadmap's.</span></div>
+    <div class="rule"><span class="id">R16</span><span class="when">An automated run passes, or a fix needs no check</span><span class="then">The Mac Mini's pass is recorded (device: Mac Mini) but confirms nothing. "Fixed, no check needed" (a typo) is yours to confirm: a row in For you, one press.</span></div>
+    <div class="rule"><span class="id">R17</span><span class="when">A fix was prompted by anyone but you</span><span class="then">Its issue shows "fix ready: your OK to merge" (yours) before it merges; your OK is one press in For you.</span></div>
+    <div class="rule"><span class="id">R18</span><span class="when">A check's automatic try (before it reaches you) fails</span><span class="then">It never reaches you; it's Claude's, rewritten or its fix finished first.</span></div>
     <div class="rule"><span class="id">R14</span><span class="when">Anyone marks something from a page that's out of date</span><span class="then">Refused with what changed (another tab, another person), never applied over it. Every page shows the change the moment it's made, everywhere it's open.</span></div>
   </div>
 </section>
@@ -265,11 +270,11 @@ svg { max-width: 100%; height: auto; display: block; }
     <p class="meta">The audit found your standing rules broken in today's code. They're not patched now (the rebuild
     replaces that code); they're requirements, with their tests already written (kept on the branch privacy-rules).</p></div>
   <div class="card">
-    <div class="req"><span class="id">T1</span><span><b>Nothing unapproved reaches Claude.</b> A player's note, its additions and their "still broken" words reach Claude only once you approve them: not the inbox, the API, a check's history or an area's list.</span></div>
+    <div class="req"><span class="id">T1</span><span><b>Nothing unapproved reaches Claude.</b> A player's note, its additions, their "still broken" words, and anything they write on the Roadmap reach Claude only once you approve them: not the inbox, the API, a check's history, an area's list or what Claude reads next.</span></div>
     <div class="req"><span class="id">T2</span><span><b>First names only.</b> Claude never gets an email or a full name; who was viewing as is a first name too.</span></div>
     <div class="req"><span class="id">T3</span><span><b>Words are labelled and quoted.</b> Everything Claude reads says who wrote it and their role; notes and pages are quoted evidence, never instructions. A change prompted by anyone but you waits for you to merge it.</span></div>
     <div class="req"><span class="id">T4</span><span><b>The page as drawn only when needed.</b> Claude fetches a note's page only when the picture isn't enough; it can hold what a player sees and their DM doesn't.</span></div>
-    <div class="req"><span class="id">T5</span><span><b>Evidence keeps its visibility.</b> A player's picture is kept from their DM, and so is anything written from it (an issue's title, a check); a reporter sees only their own note, its title and replies meant for them.</span></div>
+    <div class="req"><span class="id">T5</span><span><b>Evidence keeps its visibility.</b> The page's picture is taken with a player's private parts (their character's notes) blurred, so the copy you approve from, Claude and their DM all see is safe; only the player keeps the full one. Claude writes titles and checks from approved words and safe copies only. A reporter sees only their own note, its title and replies meant for them.</span></div>
     <div class="req"><span class="id">T6</span><span><b>A key per actor and place.</b> Claude's key on askdnd.ai, staging's and the Mac Mini's are different and limited: staging may only relay notes (which always wait for you); no key of Claude's can confirm a fix.</span></div>
     <div class="req"><span class="id">T7</span><span><b>History is kept, private words can go.</b> Events are never rewritten; a person's words can be erased on request without breaking the record.</span></div>
     <div class="req"><span class="id">T8</span><span><b>Claude's inbox per listener.</b> Each listener (the main chat, later an area's own) has its own read mark, so none takes another's items; nothing is skipped when two changes save out of order.</span></div>
@@ -287,7 +292,7 @@ svg { max-width: 100%; height: auto; display: block; }
       <div class="step"><span class="n">3</span><p><span class="who w-you">You</span> approve a player's: as an issue, same as one already filed (with a preview of what that does), as an idea, answered as a question, or declined with why. Undo for a minute <span class="v2">new</span>.</p></div>
     </div></div>
     <div class="card"><h3>Claude fixes an area</h3><div class="flow">
-      <div class="step"><span class="n">1</span><p><span class="who w-claude">Claude</span> takes the first area in your order when its round is closed (R11), reads all of it, and asks what only you can decide (questions, a design as one decision).</p></div>
+      <div class="step"><span class="n">1</span><p><span class="who w-claude">Claude</span> takes the next area by R15 (the Roadmap's order; blockers first), reads all of it, and asks what only you can decide (questions, a design as one decision). Work done while your round is open merges when it ends (R11).</p></div>
       <div class="step"><span class="n">2</span><p>Fixes it as one change; writes a check per issue (or adds the issue to one), each tried automatically before it reaches you <span class="v2">new</span>: its page opens and everything its steps name exists. "Fixed, no check needed" for a typo <span class="v2">new</span>.</p></div>
       <div class="step"><span class="n">3</span><p><span class="who w-askdnd">askdnd</span>: merged and live, its issues are ready to try; checks come back (R4); a rollback undoes it (R9). Passed checks the change touched are offered to re-try <span class="v2">new</span>.</p></div>
     </div></div>
@@ -301,6 +306,7 @@ svg { max-width: 100%; height: auto; display: block; }
       <div class="step"><span class="n">1</span><p><span class="who w-player">A player</span>: does it work now? Yes, or still broken (words to you first). Asked for more by Claude, they answer on Notes you sent <span class="v2">new</span>.</p></div>
       <div class="step"><span class="n">2</span><p><span class="who w-claude">Claude</span> closes with a reason the sender is told: works now, won't do (as designed, with why), can't reproduce, same as <span class="v2">new</span>.</p></div>
       <div class="step"><span class="n">3</span><p>Reopen any closed issue; it says it came back <span class="v2">new</span>.</p></div>
+      <div class="step"><span class="n">4</span><p>Email (each person's own switch): a player hears when their note is declined, answered, ready to try or shipped; you get the daily digest of For you <span class="v2">new</span>.</p></div>
     </div></div>
     <div class="card"><h3>Areas</h3><div class="flow">
       <div class="step"><span class="n">1</span><p>Move an issue to another area; rename, merge or archive an area; an empty area drops off <span class="v2">new</span>.</p></div>
@@ -318,7 +324,7 @@ svg { max-width: 100%; height: auto; display: block; }
   <div class="intro"><span class="lbl">8 · Built to lift out</span><h2>Ready for another project, or a company</h2></div>
   <div class="grid3">
     <div class="card"><h3>Its own pieces</h3><p class="small">Its own tables and pages, a workspace on every row, and one adapter the host fills in: who people are and their roles, viewing as one, where pictures are stored, and the policy hooks a company supplies (who can see, redact, notify).</p></div>
-    <div class="card"><h3>Three capabilities, not five roles</h3><p class="small">Report, test, develop (a person or Claude), plus approve; a company maps its groups onto them later.</p></div>
+    <div class="card"><h3>Four capabilities, not five roles</h3><p class="small">Report, test, develop (a person or Claude), approve (which includes changing someone else's result); a company maps its groups onto them later.</p></div>
     <div class="card"><h3>Events underneath</h3><p class="small">Every state is worked out from the record of events, and tested that way; nothing is rewritten.</p></div>
     <div class="card"><h3>Is the fix live?</h3><p class="small">The host's deploy tells askdnd which version is live (today: a script on your Mac); rollbacks included.</p></div>
     <div class="card"><h3>Issues here, or in their tracker</h3><p class="small">An issue lives here or in a company's Jira or Linear, with a link and an export, not two-way sync (the audit: the costliest, least distinctive part).</p></div>
@@ -330,7 +336,7 @@ svg { max-width: 100%; height: auto; display: block; }
 <section class="board">
   <div class="intro"><span class="lbl">9 · Cut and deferred</span><h2>What it doesn't do, on purpose</h2></div>
   <div class="grid2">
-    <div class="card"><h3>Cut</h3><ul><li>Two-way sync with other trackers (a link and an export instead).</li><li>Editing a try's result (a correcting try instead).</li><li>Five roles (three capabilities instead).</li></ul></div>
+    <div class="card"><h3>Cut</h3><ul><li>Two-way sync with other trackers (a link and an export instead).</li><li>Editing a try's result (a correcting try instead).</li><li>Five roles (four capabilities instead).</li></ul></div>
     <div class="card"><h3>Deferred</h3><ul><li>An area in a chat of its own (note 123): after per-listener inboxes (T8), area locks with an owner (R11) and scoped keys (T6), then one trial area.</li><li>Severity, priority and assignment beyond one tester: designed for, not drawn.</li></ul></div>
   </div>
 </section>

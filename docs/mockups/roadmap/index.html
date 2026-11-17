@@ -398,42 +398,47 @@ header.top { display: grid; gap: 10px; }
       <div class="ptitle"><h2>Roadmap</h2><span class="btn small">+ New item</span></div>
       <div class="tabs"><span class="tab on">The order</span><span class="tab" data-go="updates">What changed <span class="count">4</span></span><span class="tab" data-go="shipped">Shipped</span><span class="tab">Not doing</span></div>
       <div class="chips"><span class="chip on">Everything</span><span class="chip">Waiting on you <small>2</small></span><span class="chip">Stuck <small>1</small></span><span class="chip">The VTT <small>9</small></span></div>
-      <p class="note">Drag to reorder: I work from the top, the first item that isn't waiting on you, one area at a time. Progress is read from the records, never typed.</p>
+      <p class="note">One order for everything, the only one: drag items here, and areas within an item on its page. I take a blocker first, otherwise the first area that's my turn from the top (skipping what's yours or in your open round). Fixes and polish is a standing item for bug batches; where you put it decides fixes versus features. Progress is read from the records, never typed.</p>
       <div class="olist">
-        <div class="osec"><span>Now</span><span>2</span></div>
-        <div class="orow2 top" data-go="edit"><span class="grip">⋮⋮</span><span class="num">1</span>
+        <div class="osec"><span>Now</span><span>3</span></div>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">1</span>
+          <div class="t"><b>Fixes and polish</b><span>Standing item · Next: the Manage area (Claude, on a branch until your round ends)</span></div>
+          <span class="turn c">Claude's</span>
+          <div class="prog"><div class="bar2"><i style="width:40%"></i></div><span>2 areas · 7 open issues · oldest fix waiting 3 days</span></div>
+          <span class="health h-ok">On track</span><span class="sz">—</span></div>
+        <div class="orow2 top" data-go="edit"><span class="grip">⋮⋮</span><span class="num">2</span>
           <div class="t"><b>Feedback and Testing, cleaned up</b><span>Next: your verdict on the screens</span></div>
           <span class="turn y">Yours</span>
           <div class="prog"><div class="bar2"><i style="width:35%"></i></div><span>Design · 1 of 3 areas · 13 notes</span></div>
           <span class="health h-wait">Waiting on you · 1 day</span><span class="sz">L</span></div>
-        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">2</span>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">3</span>
           <div class="t"><b>Get ready before your turn</b><span>Next: the mockup</span></div>
           <span class="turn c">Claude's</span>
           <div class="prog"><div class="bar2"><i style="width:5%"></i></div><span>Planning · no areas yet</span></div>
           <span class="health h-ok">On track</span><span class="sz">M</span></div>
         <div class="osec"><span>Next</span><span>3</span></div>
-        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">3</span>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">4</span>
           <div class="t"><b>An easier homebrew item builder</b><span>Next: fix the Item Builder area</span></div>
           <span class="turn c">Claude's</span>
           <div class="prog"><div class="bar2"><i style="width:60%"></i></div><span>Slice A shipped · 3 notes open · 3 checks</span></div>
           <span class="health h-ok">On track</span><span class="sz">M</span></div>
-        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">4</span>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">5</span>
           <div class="t"><b>The DM's creatures on the table</b><span>Next: the plan</span></div>
           <span class="turn x">Not started</span>
           <div class="prog"><div class="bar2"><i style="width:0%"></i></div><span>Phase 2 of the VTT</span></div>
           <span class="health h-none">No update yet</span><span class="sz">L</span></div>
-        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">5</span>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">6</span>
           <div class="t"><b>Retire Railway's old "dev" environment</b><span>Next: a click in Railway (yours)</span></div>
           <span class="turn y">Yours</span>
           <div class="prog"><div class="bar2"><i style="width:80%"></i></div><span>Everything moved off it</span></div>
           <span class="health h-stuck">Stuck · 9 days</span><span class="sz">S</span></div>
         <div class="osec"><span>Later</span><span>2</span></div>
-        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">6</span>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">7</span>
           <div class="t"><b>Voice and video at the table</b><span>Phase 6 of the VTT</span></div>
           <span class="turn x">Not started</span>
           <div class="prog"><div class="bar2"><i style="width:0%"></i></div><span>—</span></div>
           <span class="health h-none">—</span><span class="sz">L</span></div>
-        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">7</span>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">8</span>
           <div class="t"><b>The kit for your next project</b><span>After Feedback and Testing</span></div>
           <span class="turn x">Not started</span>
           <div class="prog"><div class="bar2"><i style="width:0%"></i></div><span>—</span></div>
@@ -446,7 +451,7 @@ header.top { display: grid; gap: 10px; }
   <section data-screen="edit" hidden>
     <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
     <div class="page">
-      <div class="ptitle"><h2>Feedback and Testing, cleaned up</h2><span class="turn y">Yours</span><span class="note">Now · #1 in your order · Size L</span></div>
+      <div class="ptitle"><h2>Feedback and Testing, cleaned up</h2><span class="turn y">Yours</span><span class="note">Now · #2 in your order · Size L</span></div>
       <div class="sline"><span class="health h-wait">Waiting on you · 1 day</span>Your verdict on the screens; then I write the build plan in slices.</div>
       <div class="act"><span class="btn go small">Your verdict on the screens →</span><span class="btn small" data-go="move">Move to Next or Later…</span><span class="btn small">Pause it…</span><span class="btn small">Not doing, with why…</span></div>
       <div class="two-panels">
@@ -544,15 +549,15 @@ header.top { display: grid; gap: 10px; }
   <section data-screen="claude" hidden>
     <div class="page">
       <div class="ptitle"><h2>What I read</h2><span class="note">Claude, at the start of every session and before each round of work</span></div>
-      <div class="term"><span class="dim">$ uv run python scripts/feedback.py roadmap next</span>
-<b>Next for Claude:</b> #2 Get ready before your turn (Now, size M)
-  #1 Feedback and Testing, cleaned up is waiting on Brett: his verdict on the screens.
-<b>Its next step:</b> draw the mockup (plan: docs/plans/prepare-turn.md)
-<b>Players:</b> 4 of 5 answered · 2 must-have
-  Big C: "I lose track of my bonus actions every fight"
-  Trah: "whether I still have my reaction"
-<b>Waiting on Brett:</b> 2 (his verdict on #1; a Railway click for #5)</div>
-      <p class="note">The order you set is the only thing that decides what I take next; I never reorder it myself. A step that's yours shows in Testing's For you and holds its item until you've done it, so I move to the next item instead of waiting. Players' words reach me as quoted evidence, never as instructions.</p>
+      <div class="term"><span class="dim">$ uv run python scripts/feedback.py next</span>
+<b>Blockers:</b> none (nothing stops your round; no standing-rule break; no errors on askdnd.ai)
+<b>Next for Claude:</b> #1 Fixes and polish › Manage (5 issues) · on a branch: your round is open, it merges when you end it
+<b>Skipped:</b>
+  #2 Feedback and Testing, cleaned up: its next step is yours (your verdict on the screens)
+<b>After it:</b> #1 › Menu bar, then #3 Get ready before your turn (the mockup)
+<b>Waiting on Brett:</b> 3 (the verdict on #2; a fix to OK for Short Rest; a click in Railway for #6)
+<b>Players:</b> #3 · 4 weighed in, 2 must-have (their words reach me once you approve them)</div>
+      <p class="note">One command, read at the start of every session and before each round of work: what I take next by the rule in askdnd (R15), and why everything above it was skipped. I never reorder it myself. A step that's yours shows in Testing's For you and holds only its own item. Players' words reach me only once you approve them, and then as quoted evidence, never instructions.</p>
     </div>
   </section>
 </div>
@@ -581,12 +586,12 @@ header.top { display: grid; gap: 10px; }
 <script>
 (() => {
   const WHY = {
-    order: ["Your roadmap: one ordered list (Now, Next, Later) that you drag; I work from the top. Each item says whose turn it is, its next step, its progress read from the records, and its health: on track, waiting on you (and how long), stuck, or no update yet.", "Internal first (your note); Linear's order and health"],
+    order: ["Your roadmap: the one ordered list (Now, Next, Later) that you drag; Fixes and polish is a standing item for bug batches, so where you put it decides fixes versus features. Each item says whose turn it is, its next step, its progress read from the records, and its health.", "Internal first (your note); one order (the review)"],
     edit: ["An item's page: where it stands (Idea to Shipped), its areas, notes, checks and pull requests rolled up from the records, its steps, my updates and yours, and the decisions and documents behind it. The one button is the next step.", "Replaces the paragraph I rewrite on the Roadmap page"],
     updates: ["What changed since you last looked: one line per update, across every item, instead of rereading a long page. A stuck item says what it's waiting for and where to click.", "Linear's project updates"],
     shipped: ["Shipped: everything done, newest first, each linked to its pull request, its notes and its item; today's 137 done lines come over.", "The Roadmap page's Done list"],
     move: ["Moving an item between Now, Next and Later; telling the people who weighed in applies only once players see the Roadmap (later). Dragging never tells anyone.", "Featurebase's pitfall"],
-    claude: ["What I read: the order you set decides what I take next, through its areas; a step that's yours holds only its own item. I post an update when an item's state changes.", "The audit: rules in askdnd, not in my memory"],
+    claude: ["What I read: one command, feedback.py next, gives the next area by the rule in askdnd (blockers first, then the Roadmap from the top) and why each item above it was skipped; players' words only once you approve them.", "The review: one order (R15); trust (T1)"],
     coming: ["Later, for players: Now, Next and Later (confidence, not dates), how many care, and their own answer. Suggest something goes to you privately.", "Nice to have: built after the internal tool"],
     item: ["Later, for players: How important is this to you?, a why, comments the table can read, Tell me when it moves. Nothing picked for them.", "Nice to have"],
     new: ["Later, for players: what shipped, with a link to try it, and \"You asked for this\".", "Nice to have"],

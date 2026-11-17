@@ -205,7 +205,7 @@ header.top { display: grid; gap: 10px; }
 /* v2 (after the audit): whose turn, tries per device, the card on the left, windows that ask */
 .turn { font: 700 .72rem/1 var(--sans); padding: 4px 9px; border-radius: 999px; white-space: nowrap; align-self: start; }
 .turn.y { background: var(--amber-soft); color: var(--amber); } .turn.c { background: var(--violet-soft); color: var(--violet); }
-.turn.p { background: var(--green-soft); color: var(--green); } .turn.x { background: var(--surface-3); color: var(--muted); }
+.turn.p { background: var(--blue-soft); color: var(--blue); } .turn.x { background: var(--surface-3); color: var(--muted); }
 .btn.wrong { background: var(--surface-2); border-color: var(--line-strong); color: var(--text); }
 .btn.wrong::first-letter { color: var(--red); }
 .fail { color: var(--red); font-weight: 600; }
@@ -237,7 +237,7 @@ header.top { display: grid; gap: 10px; }
 .areas2 { display: grid; gap: 8px; }
 .area2 { display: grid; grid-template-columns: 22px minmax(0, 1.4fr) auto minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
 .area2 .ri { font-size: .78rem; color: var(--muted); }
-.area2.lockd { border-color: var(--violet); }
+.area2.lockd { border-color: var(--amber); }
 .banner { display: flex; gap: 10px; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 9px 12px; font-size: .86rem; }
 .app { min-height: 780px; }
 .scrim { overflow-y: auto; align-items: start; }
@@ -256,8 +256,8 @@ header.top { display: grid; gap: 10px; }
   <h1>Found, fixed, tried: the screens</h1>
   <p class="meta">The <a href="https://claude.ai/artifact/LQMNBNHQpZ7Gand4mu1cyK" target="_blank" rel="noopener">brief v2</a> drawn as askdnd's pages, with every
   finding of the <a href="https://claude.ai/artifact/Wa9Eh4jCBhd5Cxqx9pX3k6" target="_blank" rel="noopener">audit</a> built in. Press a screen, or the buttons inside one. Each
-  pill says <b>whose turn</b> it is (amber yours, violet mine, green a player's, grey closed); red means only a failed
-  try. Your one verdict is at the bottom.</p>
+  pill says <b>whose turn</b> it is (amber yours, violet mine, blue a player's, grey closed); a red fill is the one
+  main action, red text means failed. Your one verdict is at the bottom.</p>
 </header>
 
 <nav class="shots" aria-label="Screens">
@@ -285,38 +285,40 @@ header.top { display: grid; gap: 10px; }
 <div class="why" aria-live="polite"><p id="why-text"></p><span class="notes-tag" id="why-notes"></span></div>
 
 <div class="app" id="app">
-  <div class="mbar"><span class="logo"></span><b>askdnd</b><span>The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span class="pill">Cole</span><span class="pill">Party ▾</span><span class="search">Search</span><span class="sp"></span><span class="pill">Manage ▾</span><span>⚙</span><span class="av">B<i>6</i></span></div>
+  <div class="mbar"><span class="logo"></span><b>askdnd</b><span>The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span class="pill">Cole</span><span class="pill">Party ▾</span><span class="search">Search</span><span class="sp"></span><span class="pill">Manage ▾</span><span>⚙</span><span class="av">B<i>8</i></span></div>
 
   <!-- 1 · For you -->
   <section data-screen="foryou">
     <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
     <div class="page">
       <div class="ptitle"><h2>Testing</h2><span class="btn small" data-go="round">▶ Start round · 2 checks</span></div>
-      <div class="tabs"><span class="tab on">For you <span class="count">6</span></span><span class="tab" data-go="areas">Where it stands</span><span class="tab">Claude's</span><span class="tab">Done</span></div>
+      <div class="tabs"><span class="tab on">For you <span class="count">8</span></span><span class="tab" data-go="areas">Where it stands</span><span class="tab">Claude's</span><span class="tab">Done</span></div>
       <div class="reader">
         <aside class="rlist">
-          <div class="rhead"><b>6 are your turn</b>2 checks (about 4 minutes) · 1 question · 1 decision · 1 note to approve · 1 idea to place</div>
+          <div class="rhead"><b>8 are your turn</b>2 checks (about 4 minutes) · 1 question · 1 decision · 1 fix to OK · 1 note to approve · 1 idea · 1 Roadmap step</div>
           <div class="groupname"><span>Found, Fixed, Tried</span><a style="color:var(--blue);text-decoration:none;font:600 .76rem/1 var(--sans);letter-spacing:0;text-transform:none">▶ Just this area</a></div>
-          <div class="row on"><b>Write back from one box</b><span class="turn y">Yours</span><span class="sub">Try again: the fix is live · 2 min</span></div>
+          <div class="row on"><b>Write back from one box</b><span class="turn y">Yours</span><span class="sub">To try again · 2 min</span></div>
           <div class="row"><b>Claude's links open in a new tab</b><span class="turn y">Yours</span><span class="sub">To try · on your iPhone · 2 min</span></div>
           <div class="row" data-go="asks"><b>How should a closed issue say why?</b><span class="turn y">Yours</span><span class="sub">Claude asks</span></div>
           <div class="row" data-go="asks"><b>Found, Fixed, Tried: the screens, v2</b><span class="turn y">Yours</span><span class="sub">A decision: look, then one verdict</span></div>
+          <div class="row"><b>Short Rest restores spell slots</b><span class="turn y">Yours</span><span class="sub">Fix ready: your OK to merge (players asked)</span></div>
           <div class="groupname"><span>From the table</span></div>
           <div class="row" data-go="approve"><b>My spell slots came back after a Short Rest</b><span class="turn y">Yours</span><span class="sub">No Name's note waits for you</span></div>
           <div class="row"><b>A dice tray I can drag anywhere</b><span class="turn y">Yours</span><span class="sub">Cole's idea to place</span></div>
+          <div class="groupname"><span>From the Roadmap</span></div>
+          <div class="row"><b>Retire Railway's old "dev" environment</b><span class="turn y">Yours</span><span class="sub">A click in Railway: Settings › Environments</span></div>
         </aside>
         <article class="detail">
           <span class="where">Found, Fixed, Tried · on Feedback · <span class="ver">v2</span></span>
           <h3 class="big">Write back from one box</h3>
-          <div class="sline"><span class="turn y">Yours</span>Try again: Claude fixed the 4 issues you found, and the fix is live.</div>
-          <div class="devices"><span><b>Laptop</b> · try again</span><span><b>iPhone</b> · not tried</span></div>
+          <div class="sline"><span class="turn y">Yours</span>To try again: the 4 issues you found are fixed and live. On your laptop; your iPhone after.</div>
           <div class="act"><span class="btn go" data-go="round">▶ Try it</span><span class="btn ok">✓ Passed</span><span class="btn wrong" data-go="wrong">✗ Something's wrong…</span><span class="btn quiet" data-go="cant">Can't try…</span></div>
           <div class="panel"><span class="plabel">On the page, the card says</span>
             <ol class="steps"><li><span class="box"></span><span>Look at the note open on the right, sent by a player.</span></li>
               <li><span class="box"></span><span>In <b>Write to</b>, press the player's name.</span></li>
               <li><span class="box"></span><span>Read the line under <span class="press">Send</span>.</span></li></ol>
             <div class="see"><span class="plabel">You should see</span><p>The line under Send says who will read it: Claude (and whether a session is listening), or the player on their Notes you sent.</p></div></div>
-          <p class="whyline"><b>Why</b> · Your last try failed with 4 issues; all are fixed and live. <span class="more" data-go="history">History ›</span></p>
+          <p class="whyline"><b>Why</b> · The ⋯ menu wouldn't close, Write to didn't say where your words go, ⋯ was unclear, and Done showed twice. <span class="more" data-go="history">History ›</span></p>
         </article>
       </div>
     </div>
@@ -357,11 +359,11 @@ header.top { display: grid; gap: 10px; }
     <div class="ghostpage"><div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div><div class="page"><div class="ptitle"><h2>Feedback</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:330px"></div></article></div></div></div>
     <div class="scrim"><div class="win" role="dialog" aria-label="Something's wrong" style="width:min(620px,100%)">
       <div class="hd"><b>What's wrong?</b><span class="x">✕</span></div>
-      <p class="note">On <b>Write back from one box</b>, step 3 · laptop · askdnd 4239fae</p>
-      <div class="ask2"><span>Still happening? This check's earlier issues, fixed since:</span>
-        <div class="opt-row" data-pick><span>The line beside Send still says Claude after picking a player</span><small>fixed Nov 17 · reopen it</small></div>
-        <div class="opt-row" data-pick><span>The ⋯ menu won't close</span><small>fixed Nov 17 · reopen it</small></div>
-        <div class="opt-row on" data-pick><span><b>Something new</b></span><small>describe it below</small></div></div>
+      <p class="note">On <b>Write back from one box</b>, step 3 · your laptop · askdnd.ai as of Nov 17, 21:50</p>
+      <div class="ask2"><span>Still happening? The issues this check found last time, fixed since:</span>
+        <div class="opt-row" data-pick><span>The line beside Send still says Claude after picking a player</span><small>fixed, not confirmed · still happening</small></div>
+        <div class="opt-row" data-pick><span>The ⋯ menu won't close</span><small>fixed, not confirmed · still happening</small></div>
+        <div class="opt-row" data-pick><span><b>Something new</b></span><small>describe it below</small></div></div>
       <div class="pic"><div class="lines"><i style="width:60%"></i><i style="width:85%"></i><i style="width:40%"></i></div><span class="mk" style="left:60%;top:56%;width:30%;height:30%"></span><div class="tools"><span>Box</span><span>Arrow</span><span>Draw</span><span>Text</span></div><div class="tools" style="left:auto;right:8px"><span>↶ Undo</span><span>Clear</span></div></div>
       <label class="field">In your words<span class="input">Big C's name is cut off in Write to.</span></label>
       <div class="ask2"><span>Does it stop this check passing?</span><div class="pair"><span class="chip" aria-pressed="false" data-pick2>It stops it</span><span class="chip" aria-pressed="false" data-pick2>It doesn't (send it on its own)</span></div></div>
@@ -395,7 +397,7 @@ header.top { display: grid; gap: 10px; }
             <h3 class="big">Write back from one box</h3>
             <div class="sline"><span class="turn c">Claude's</span>Your try failed with 2 issues; it comes back to you once they're fixed and live.</div>
             <div class="problems">
-              <div class="prob"><span class="n">1</span><span>The line beside Send still says Claude <span class="note">· reopened (came back)</span></span><span class="turn c">Claude's</span></div>
+              <div class="prob"><span class="n">1</span><span>The line beside Send still says Claude <span class="note">· still happening: back to Claude</span></span><span class="turn c">Claude's</span></div>
               <div class="prob"><span class="n">2</span><span>Big C's name is cut off in Write to <span class="note">· new</span></span><span class="turn c">Claude's</span></div></div>
             <ol class="tl2"><li><span><span class="fail">Failed</span> by you · laptop · v2 · 2 issues</span><span>now</span></li><li><span>Fixed by Claude · live (PR 416)</span><span>21:50</span></li><li class="muted"><span>Failed by you · laptop · v1 · 4 issues</span><span>21:36</span></li></ol>
             <p class="note">Updated the moment you sent it, here and everywhere it's open, without a reload.</p>
@@ -411,11 +413,11 @@ header.top { display: grid; gap: 10px; }
     <div class="scrim"><div class="win" role="dialog" aria-label="Change result">
       <div class="hd"><b>Correct this try</b><span class="x">✕</span></div>
       <p class="note">It's <span class="fail">Failed</span> with 2 issues (laptop, just now). It should have been:</p>
-      <div class="radios"><span class="radio" data-pick>Passed</span><span class="radio" data-pick>Can't try</span><span class="radio" data-pick>Not tried yet</span></div>
+      <div class="radios"><span class="radio" data-pick>Passed</span><span class="radio" data-pick>Can't try</span><span class="radio" data-pick>To try (back to your list)</span></div>
       <label class="field">Why (for the history)<span class="input ph">Pressed the wrong one</span></label>
       <div class="panel" style="padding:10px 12px"><span class="plabel">What happens to its issues</span>
         <p class="note">"Big C's name is cut off": this try created it and nothing else uses it, so it closes as withdrawn (still findable).</p>
-        <p class="note">"The line beside Send" was reopened by this try, so it goes back to how it was: fixed.</p></div>
+        <p class="note">"The line beside Send" was marked still happening by this try, so it goes back to fixed and ready to try.</p></div>
       <div class="act"><span class="btn go" data-go="history">Correct it</span><span class="btn quiet">Cancel</span></div>
       <p class="note">Nothing is deleted: the history keeps the Failed, with "replaced by" and your why.</p>
     </div></div>
@@ -430,7 +432,8 @@ header.top { display: grid; gap: 10px; }
         <div class="opt-row" data-pick><span><b>Later</b> · not tonight, needs my phone or a second person</span><small>stays yours</small></div>
         <div class="opt-row" data-pick><span><b>Blocked by an issue</b> · something else is broken first</span><small>back when it's fixed</small></div>
         <div class="opt-row" data-pick><span><b>The check is wrong</b> · the data isn't there, or the steps don't match</span><small>to Claude, rewritten</small></div></div>
-      <label class="field">Which issue, or what's wrong (anything to add)<span class="input ph">Pick the issue, or say what's missing</span></label>
+      <label class="field">Blocked by which issue? (for Blocked)<span class="input ph">Search issues: rest, slots…</span></label>
+      <label class="field">What's wrong (for The check is wrong; anything to add)<span class="input ph">No player's note was open</span></label>
       <div class="act"><span class="btn" data-go="foryou">Can't try it</span><span class="btn quiet">Cancel</span></div>
     </div></div>
   </section>
@@ -447,7 +450,7 @@ header.top { display: grid; gap: 10px; }
           <div class="devices"><span><b>Laptop</b> · try again</span><span><b>iPhone</b> · not tried</span><span><b>Version</b> · v2, since Nov 17</span></div>
           <span class="plabel">History · every try, fix and change, newest first</span>
           <ol class="tl2">
-            <li><span><s>Failed by you · laptop · v2 · 2 issues</s> · replaced by "not tried yet": pressed the wrong one</span><span>Nov 17, 23:58</span></li>
+            <li><span><s>Failed by you · laptop · v2 · 2 issues</s> · replaced by "to try": pressed the wrong one</span><span>Nov 17, 23:58</span></li>
             <li><span>Version 2 by Claude · its steps now open a player's note (you said the check was wrong: none was open)</span><span>Nov 17, 22:05</span></li>
             <li><span>Fixed by Claude, live (PR 416) · its 4 issues ready to try · back to you</span><span>Nov 17, 21:50</span></li>
             <li><span><span class="fail">Failed</span> by you · laptop · v1 · 4 issues (111 to 114)</span><span>Nov 17, 21:36</span></li>
@@ -508,6 +511,7 @@ header.top { display: grid; gap: 10px; }
         <div class="pic"><div class="lines"><i style="width:60%"></i><i style="width:85%"></i><i style="width:40%"></i></div><span class="mk" style="left:58%;top:52%;width:30%;height:30%"></span><span style="position:absolute;left:58%;top:30%;font:700 .78rem/1 var(--sans);color:var(--amber);background:rgba(15,17,19,.85);padding:3px 6px;border-radius:5px">Should be centered</span><div class="tools"><span>Box</span><span>Arrow</span><span>Draw</span><span style="border-color:var(--amber);color:var(--amber)">Text</span></div><div class="tools" style="left:auto;right:8px"><span>↶ Undo</span><span>Clear</span></div></div>
         <label class="field">What's it about?<span class="input">The Party cards sit to the left on a wide screen.</span></label>
         <div class="sendline"><span class="btn go">Send</span><span class="btn" data-view-go="hidden">Hide while I take a screenshot</span><span class="listen"><i></i>Claude is listening: it reads it within a minute</span></div>
+        <p class="note">A player sees instead: "An admin reads it first, then Claude." With no Claude session listening, the line says so: "It waits for Claude's next session."</p>
       </div></div>
     </div>
     <div data-view="hidden" hidden>
@@ -527,7 +531,7 @@ header.top { display: grid; gap: 10px; }
         <article class="detail">
           <span class="where">From No Name, a player · Claude sees none of it until you approve it</span>
           <h3 class="big">My spell slots came back after a Short Rest</h3>
-          <div class="report"><span class="thumb"></span><div><b>No Name</b> · Nov 17 · No Name · Battle<p>I took a Short Rest and all my spell slots came back.</p></div></div>
+          <div class="report"><span class="thumb" title="Safe copy"></span><div><b>No Name</b> · Nov 17 · No Name · Battle · <span class="note">safe copy: their character's notes blurred</span><p>I took a Short Rest and all my spell slots came back.</p></div></div>
           <div class="ask2"><span>Approve it as:</span>
             <div class="act"><span class="btn go small">A new issue</span><span class="btn small" data-go="sameas">Same as…</span><span class="btn small">An idea</span><span class="btn small">A question, answered…</span><span class="btn quiet small">Decline with why…</span></div></div>
           <p class="note">Whichever you press, a corner card offers Undo for a minute. No Name hears the outcome on Notes you sent.</p>
@@ -543,7 +547,7 @@ header.top { display: grid; gap: 10px; }
       <div class="hd"><b>Same as which issue?</b><span class="x">✕</span></div>
       <span class="input ph">Search issues: rest, slots…</span>
       <div class="ask2">
-        <div class="opt-row on" data-pick><span><b>Short Rest restores spell slots</b> · Cole, Trah · 2 notes</span><small>Claude's · fixing</small></div>
+        <div class="opt-row" data-pick><span><b>Short Rest restores spell slots</b> · Cole, Trah · 2 notes</span><small>Claude's · to fix</small></div>
         <div class="opt-row" data-pick><span><b>Long Rest doesn't reset Wild Shape</b> · 1 note</span><small>closed: works now</small></div></div>
       <div class="panel" style="padding:10px 12px"><span class="plabel">What this does</span>
         <p class="note">No Name's note joins "Short Rest restores spell slots". No Name hears that issue's outcome; they don't see Cole's or Trah's notes or the issue's title. You can unjoin it from the issue's history.</p></div>
@@ -560,7 +564,7 @@ header.top { display: grid; gap: 10px; }
       <div class="reader">
         <aside class="rlist">
           <div class="rhead"><div class="chips"><span class="chip">From players</span><span class="chip">From checks</span><span class="chip">This area</span></div></div>
-          <div class="row on" data-go="issue"><b>Short Rest restores spell slots</b><span class="turn c">Claude's</span><span class="sub">Fixing · Item Builder · Cole, Trah, No Name</span></div>
+          <div class="row on" data-go="issue"><b>Short Rest restores spell slots</b><span class="turn c">Claude's</span><span class="sub">To fix · next in order · Item Builder · Cole, Trah, No Name</span></div>
           <div class="row"><b>The line beside Send still says Claude</b><span class="turn c">Claude's</span><span class="sub">To fix · came back · from a check</span></div>
           <div class="row"><b>A "new" stays until the page reloads</b><span class="turn y">Yours</span><span class="sub">Claude asks</span></div>
           <div class="row"><b>Fold away Manage's list of pages</b><span class="turn c">Claude's</span><span class="sub">To fix · Manage</span></div>
@@ -582,15 +586,15 @@ header.top { display: grid; gap: 10px; }
     <div class="page">
       <div class="ptitle"><h2>Feedback</h2></div>
       <div class="reader">
-        <aside class="rlist"><div class="row on"><b>Short Rest restores spell slots</b><span class="turn c">Claude's</span><span class="sub">Fixing · 3 notes</span></div><div class="row"><b>The line beside Send still says Claude</b><span class="turn c">Claude's</span></div></aside>
+        <aside class="rlist"><div class="row on"><b>Short Rest restores spell slots</b><span class="turn c">Claude's</span><span class="sub">To fix · 3 notes</span></div><div class="row"><b>The line beside Send still says Claude</b><span class="turn c">Claude's</span></div></aside>
         <article class="detail">
           <span class="where">Item Builder · a problem · from 3 notes</span>
           <h3 class="big">Short Rest restores spell slots</h3>
-          <div class="sline"><span class="turn c">Claude's</span>Fixing: in the Item Builder area, next in your order.</div>
+          <div class="sline"><span class="turn c">Claude's</span>To fix: in the Item Builder area, next in the Roadmap's order.</div>
           <div class="act"><span class="btn small">Move to another area…</span><span class="btn small" data-go="sameas">Same as…</span><span class="btn small" data-go="close">Close with a reason…</span></div>
           <div class="reports"><span class="plabel">3 notes</span>
             <div class="report"><span class="thumb"></span><div><b>Cole</b> · Nov 16 · Cole · Battle<p>After a Short Rest my 2nd-level slots were full again.</p></div></div>
-            <div class="report"><span class="kept">Kept from you: you're the DM of Trah's campaign, and their page can show their character's notes</span><div><b>Trah</b> · Nov 17 · Battle<p>Same here after resting.</p></div></div>
+            <div class="report"><span class="kept">Safe copy: Trah's character's notes blurred (only Trah sees the full picture)</span><div><b>Trah</b> · Nov 17 · Battle<p>Same here after resting.</p></div></div>
             <div class="report"><span class="thumb"></span><div><b>No Name</b> · Nov 17 · joined by you<p>I took a Short Rest and all my spell slots came back.</p></div></div></div>
           <div class="convo"><span class="plabel">Conversation</span>
             <div class="bub claude"><small>Claude, to Cole, Trah and No Name</small>Thanks: I can see it. A Short Rest shouldn't restore slots except a Warlock's.</div>
@@ -626,7 +630,7 @@ header.top { display: grid; gap: 10px; }
         <aside class="rlist">
           <div class="rhead">Counted: what's still open. Your notes only.</div>
           <div class="row on"><b>My spell slots came back after a Short Rest</b><span class="turn c">Claude's</span><span class="sub">Nov 17 · <span class="mine-tag" style="font:700 .7rem/1 var(--sans);padding:2px 6px;border-radius:999px;background:var(--blue-soft);color:var(--blue)">new reply</span></span></div>
-          <div class="row"><b>Rest wraps on a phone</b><span class="turn y">Yours</span><span class="sub">Does it work now?</span></div>
+          <div class="row"><b>Long Rest doesn't reset Wild Shape</b><span class="turn y">Yours</span><span class="sub">Does it work now?</span></div>
           <div class="groupname"><span>Closed</span></div>
           <div class="row"><b>Dice in the corner</b><span class="turn x">Closed</span><span class="sub">Taken up as an idea</span></div>
         </aside>
@@ -644,18 +648,36 @@ header.top { display: grid; gap: 10px; }
 
   <!-- 16 · Where it stands -->
   <section data-screen="areas" hidden>
+    <div data-view="on">
     <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
     <div class="page">
       <div class="ptitle"><h2>Testing</h2></div>
-      <div class="tabs"><span class="tab" data-go="foryou">For you <span class="count">6</span></span><span class="tab on">Where it stands</span><span class="tab">Claude's</span><span class="tab">Done</span></div>
-      <div class="banner"><span class="listen"><i></i>Claude is listening (main chat, since 21:02)</span><span class="note">· Round 2 of Found, Fixed, Tried is open: Claude only sorts it until you end the round.</span></div>
+      <div class="tabs"><span class="tab" data-go="foryou">For you <span class="count">8</span></span><span class="tab on">Where it stands</span><span class="tab">Claude's</span><span class="tab">Done</span></div>
+      <div class="banner"><span class="listen"><i></i>Claude is listening (main chat, since 21:02)</span><span class="note">· Round 2 is open: nothing merges to askdnd.ai until you end it; Claude only sorts what you send.</span><span class="btn small" style="margin-left:auto">End round</span></div>
+      <p class="note">The same queue as the Roadmap, in its order, grouped by item; reorder items there, and areas within an item. Claude takes the first area that's its turn.</p>
+      <div class="groupname"><span>1 · Fixes and polish</span><span>oldest fix waiting 3 days</span></div>
       <div class="areas2">
-        <div class="area2 lockd"><span class="grip"></span><div><b>Found, Fixed, Tried · round 2</b><div class="ri">Roadmap: Feedback and Testing · 13 issues · 2 checks to try</div></div><span class="turn y">Yours</span><span class="note">Round open · 1 issue stops your round</span><span class="btn small">Open</span></div>
-        <div class="area2"><span class="grip">⋮⋮</span><div><b>Item Builder</b><div class="ri">Roadmap: Homebrew items · 4 issues · 3 checks</div></div><span class="turn c">Claude's</span><span class="note">Next: Claude takes it once your round ends</span><span class="btn small">Open</span></div>
-        <div class="area2"><span class="grip">⋮⋮</span><div><b>Manage</b><div class="ri">Roadmap: The UI and UX review · 5 issues</div></div><span class="turn c">Claude's</span><span class="note">Waits its turn</span><span class="btn small">Open</span></div>
-        <div class="area2"><span class="grip">⋮⋮</span><div><b>Menu bar</b><div class="ri">Roadmap: The UI and UX review · 2 issues</div></div><span class="turn c">Claude's</span><span class="note">Waits its turn</span><span class="btn small">Open</span></div>
+        <div class="area2"><span class="grip">⋮⋮</span><div><b>Manage</b><div class="ri">5 issues</div></div><span class="turn c">Claude's</span><span class="note"><b style="color:var(--violet)">Next for Claude</b> · building on a branch; merges when your round ends</span><span class="btn small">Open</span></div>
+        <div class="area2"><span class="grip">⋮⋮</span><div><b>Menu bar</b><div class="ri">2 issues</div></div><span class="turn c">Claude's</span><span class="note">After Manage</span><span class="btn small">Open</span></div>
       </div>
-      <div class="act"><span class="btn small">Rename…</span><span class="btn small">Merge into…</span><span class="btn small">Archive</span><span class="note">An area with nothing in it drops off by itself.</span></div>
+      <div class="groupname"><span>2 · Feedback and Testing, cleaned up</span><span>skipped: its next step is yours</span></div>
+      <div class="areas2">
+        <div class="area2 lockd"><span class="grip">⋮⋮</span><div><b>Found, Fixed, Tried · round 2</b><div class="ri">13 issues · 2 checks to try</div></div><span class="turn y">Yours</span><span class="note">In your open round · 1 issue stops your round (Claude may fix that one now)</span><span class="btn small">Open</span></div>
+      </div>
+      <div class="groupname"><span>3 · An easier homebrew item builder</span><span>after the two above</span></div>
+      <div class="areas2">
+        <div class="area2"><span class="grip">⋮⋮</span><div><b>Item Builder</b><div class="ri">4 issues · 3 checks</div></div><span class="turn c">Claude's</span><span class="note">Waits its turn</span><span class="btn small">Open</span></div>
+      </div>
+      <div class="act"><span class="btn small">Rename…</span><span class="btn small">Merge into…</span><span class="btn small">Move to another item…</span><span class="btn small">Archive</span><span class="note">An empty area drops off by itself.</span><button type="button" class="btn quiet small" data-view-go="off">If no Claude session is listening →</button></div>
+    </div>
+    </div>
+    <div data-view="off" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Testing</h2><button type="button" class="btn small" data-view-go="on">← Back</button></div>
+      <div class="banner"><span class="listen off"><i></i>No Claude session is listening (last heard 2 hours ago)</span><span class="note">· What you send waits and is read at the next session's start. To start one, open the Claude app and say "check askdnd".</span></div>
+      <p class="note">Every "Claude reads it within a minute" line in askdnd says this instead while no session listens: on Send, on Write to, and here.</p>
+    </div>
     </div>
   </section>
 </div>
@@ -676,7 +698,8 @@ header.top { display: grid; gap: 10px; }
     <div class="prob"><span class="n">Audit</span><span>Approve with Undo · Same as with a preview · unjoin · kept-from-you · reporters see only their own</span><span class="sw quiet">10, 11, 13, 15</span></div>
     <div class="prob"><span class="n">Audit</span><span>Close with a reason the senders read · reopen</span><span class="sw quiet">14</span></div>
     <div class="prob"><span class="n">Audit</span><span>Claude listening or not · round locks the area · area rename, merge, archive</span><span class="sw quiet">9, 13, 16</span></div>
-    <div class="prob"><span class="n">Audit</span><span>Colour by whose turn; red only for a failed try; title actions secondary</span><span class="sw quiet">all</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Colour by whose turn; a red fill is the one main action, red text means failed; title actions secondary</span><span class="sw quiet">all</span></div>
+    <div class="prob"><span class="n">Review</span><span>One order (the Roadmap's), Fixes and polish, what Claude takes next and why · a fix waiting for your OK · safe copies</span><span class="sw quiet">1, 10, 13, 16</span></div>
   </div>
 </section>
 
@@ -697,22 +720,22 @@ header.top { display: grid; gap: 10px; }
 <script>
 (() => {
   const WHY = {
-    foryou: ["For you holds everything that's your turn, and its count matches its rows: checks, a question, a decision, a player's note to approve, an idea to place. The check says where it stands per device and which version it is; its marks say what they do; title actions stay secondary.", "Audit: For you, colours, versions"],
-    round: ["A round: the card sits on the left (corner cards stay bottom right), ✓ Passed moves straight on with a corner card offering Undo and + Note, keys P, F, C, and End round any time. Press ✓ Passed to see it.", "Audit: End round, Passed moves on, keys"],
-    wrong: ["Something's wrong…: the check's earlier issues first (still happening reopens one), or something new; whether it stops the check passing and whether it stops your round. Each issue is its own press; nothing is picked for you.", "Notes 115, 116; audit: reopen, hostage, round"],
+    foryou: ["For you is a view of everything that's your turn, wherever it lives, and its count matches its rows: checks, a question, a decision, a fix waiting for your OK to merge (players asked for it), a note to approve, an idea, a Roadmap step. The check says its state once; its marks say what they do; title actions stay secondary.", "Audit; the review: For you, state said once"],
+    round: ["A round: the card starts on the left (corner cards stay bottom right) and can be dragged to any corner, remembered; on a phone it's a bar at the foot of the screen. ✓ Passed moves straight on with a corner card offering Undo and + Note (senders are told after that minute); keys P, F, C; End round any time. Press ✓ Passed to see it.", "Audit: End round, Passed moves on, keys"],
+    wrong: ["Something's wrong…: the issues this check found last time first (still happening sends one back to Claude), or something new; whether it stops the check passing, and whether it stops your round (the one thing Claude may fix mid-round). Each issue is its own press; nothing is picked for you.", "Notes 115, 116; audit: still happening, hostage, round"],
     failed: ["After a fail you stay on the page; the card folds to the try's outcome with Another…, Change result… and Next check. Testing shows it at once, reopened and new issues marked (How Testing shows it).", "Note 121; audit: card folds"],
     change: ["Correct this try: a new result replaces it with why; the history keeps both. It says what happens to each issue before you confirm: one it alone created is withdrawn; one it reopened goes back to fixed.", "Audit: append-only, withdraw rules"],
     cant: ["Can't try…: later (stays yours), blocked by an issue (back when it's fixed), or the check is wrong (to Claude, rewritten as a new version). None picked for you.", "Audit: Can't try's three jobs"],
     history: ["A check's history: every try with device and versions, fixes going live, versions with why, and a correction struck through with what replaced it. Nothing is deleted.", "Audit: runs, versions, events"],
     asks: ["Claude's questions are answered here only, nothing preselected, and the answer names its question. A decision opens the mockup from the repo's copy in askdnd's Documents, with the verdict kept in askdnd with the version you saw (press the decision row).", "Audit: questions and decisions"],
     send: ["Sending a note: what it is (nothing picked), the page's picture or one you add, marked up with Text too, Undo apart from the tools, and a step aside for your own screenshot (Mac and iPhone). The line says whether Claude is listening.", "Notes 87, 88, 106; audit: truthful line"],
-    approve: ["Approving a player's note: as a new issue, same as one already filed, an idea, an answered question, or declined with why; Undo for a minute. Claude sees none of it until you do.", "Audit: approve, trust (T1)"],
+    approve: ["Approving a player's note: as a new issue, same as one already filed, an idea, an answered question, or declined with why; Undo for a minute. You see a safe copy of the page (their character's notes blurred), the same copy Claude gets once you approve.", "Audit: approve, trust (T1, T5)"],
     sameas: ["Same as…: search, pick, and see exactly what joining does before you do it; the sender hears that issue's outcome but never sees other notes or its title. Unjoin from the issue's history.", "Audit: mistaken merges, privacy"],
     fblist: ["Feedback is the record: one list of the work, a whose-turn pill and one line of what, the same words everywhere. Ideas wait in their own tab until the Roadmap takes them.", "Note 114; audit: words"],
     issue: ["An issue: whose turn and what, said once; named actions; its notes, with a player's picture kept from you when you're their DM; the conversation; Write to whose line says who reads it and whether Claude is listening; the history with unjoin.", "Notes 111 to 113; audit: kept-from-you, listening"],
     close: ["Closing needs a reason its senders read, each on their own Notes you sent: works now, won't do, can't reproduce, same as, withdrawn. Reopen is always there.", "Audit: closing reasons"],
     yours: ["Notes you sent, as a player: their notes only, counts of what's open, a reply to Claude's question for more, Does it work now? on a fixed one, and \"new reply\" clearing everywhere at once.", "Notes 109, 110; audit: ask for more"],
-    areas: ["Where it stands: Claude listening (which chat), the open round locking its area so Claude only sorts, one issue flagged as stopping your round, each area's Roadmap item, and rename, merge, archive; an empty area drops off.", "Note 123's groundwork; audit: rules in askdnd"],
+    areas: ["Where it stands: the Roadmap's one queue, grouped by item, with Fixes and polish as a standing item; what Claude takes next and why the others are skipped; your open round (nothing merges until you end it; Claude builds on a branch meanwhile); and the state when no Claude session is listening.", "The review: one order (R15), rounds (R11), listening"],
   };
   const shots = document.querySelectorAll('.shot'), screens = document.querySelectorAll('[data-screen]');
   const go = name => {
