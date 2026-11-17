@@ -290,6 +290,50 @@ def test_the_sheets_lists_line_up_at_every_width(people, server):
     assert not found, "\n".join(found)
 
 
+STAYS = """head => {  // where a list's column headings are once its rows have scrolled under them
+    const box = head.getBoundingClientRect(), hit = document.elementFromPoint(box.left + 40, box.top + box.height / 2);
+    return { top: Math.round(box.top), onTop: head.contains(hit) };
+}"""
+
+
+def test_a_lists_column_headings_stay_while_it_scrolls(people, server):
+    """Feedback 73 (Brett, Nov 16): in Change Wild Shape forms the column headings scrolled away, and the numbers under
+    them meant nothing. Every list's headings stay at the top: on Sheet under the tabs, in a window at its top edge
+    (the window's padding doesn't leave a gap the rows show through); a row brought into view lands below them."""
+    player = people("player")
+    page = player.page
+    page.set_viewport_size({"width": 1440, "height": 700})
+    player.open(f"/characters/{server['cole']}")
+    seen = 0
+    for tab in ("t-features", "t-spells", "t-forms", "t-items"):
+        page.click(f'main [data-tab="{tab}"]')
+        head = page.locator(f"#{tab} .ls-head")
+        if not head.is_visible():
+            continue
+        seen += 1
+        rows = page.locator(f"#{tab} .ls-rows")
+        page.evaluate("r => scrollTo(0, r.getBoundingClientRect().top + scrollY + 300)", rows.element_handle())
+        tabs = page.evaluate("document.querySelector('main .tabbar').getBoundingClientRect().bottom")
+        at = head.evaluate(STAYS)
+        assert at["onTop"] and abs(at["top"] - tabs) <= 1, (tab, at, tabs)
+        last = page.locator(f"#{tab} .ls-row").last
+        last.evaluate("r => r.scrollIntoView({ block: 'start' })")
+        assert last.evaluate("r => r.getBoundingClientRect().top") >= head.evaluate("h => h.getBoundingClientRect().bottom") - 1 or page.evaluate(
+            "innerHeight + scrollY >= document.documentElement.scrollHeight - 1"), tab  # (or the page can't scroll further)
+    assert seen >= 2, seen  # (the test Cole: the lists wide enough for their headings)
+
+    page.set_viewport_size({"width": 1440, "height": 420})  # the Spell Book's window, short enough to scroll
+    player.open(f"/characters/{server['cole']}/battle")
+    page.click('[data-modal-url$="/spellbook"]')
+    body = page.locator(".peek.open .peek-body")
+    head = body.locator(".ls-head")
+    head.wait_for()
+    assert body.evaluate("b => (b.scrollTop = b.scrollHeight) > 0 && b.scrollTop > 0"), "the Spell Book's list doesn't scroll"
+    at = head.evaluate(STAYS)
+    assert at["onTop"] and abs(at["top"] - body.evaluate("b => b.getBoundingClientRect().top")) <= 1, at
+    assert not player.errors, player.errors
+
+
 def _pills() -> dict:
     """The Live pill in each of its states, drawn by its own template (tn: what app/live.py hands it)."""
     from types import SimpleNamespace as N

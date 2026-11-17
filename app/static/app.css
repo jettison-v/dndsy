@@ -914,7 +914,7 @@ a.ent:hover { text-decoration-color: var(--red); color: var(--text-strong); }
 .peek.open { transform: none; }
 .peek-head { display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 20px 22px 8px; }
 .peek-head h2 { font-size: var(--fs-lg); margin: 2px 0; }
-.peek-body { padding: 8px 22px 16px; overflow-y: auto; flex: 1; }
+.peek-body { --pb-top: 8px; padding: var(--pb-top) 22px 16px; overflow-y: auto; flex: 1; --ls-head-top: calc(-1 * var(--pb-top)); }  /* (a list's column headings stay at the window's top edge, over its padding: feedback 73) */
 .peek-body .story { padding: 14px 18px; }
 .peek-body h3 { font-size: var(--fs-md); margin: 18px 0 6px; }
 .peek-foot { padding: 14px 22px; border-top: 1px solid var(--line); }
@@ -2371,10 +2371,16 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ls-toolbar > .note:first-child { margin-right: auto; }
 .ls-select { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--muted); }
 .ls-select select { background: var(--surface-2); }
-.ls-head { font-size: var(--fs-xs); color: var(--muted); letter-spacing: .04em; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+/* A list's column headings stay in view while its rows scroll (feedback 73, Brett, Nov 16: the numbers had no context
+   once they scrolled away): under the menu bar (and Sheet's or Plan's tabs) on a page, at the top edge of a window
+   (.peek-body sets --ls-head-top). The surface behind every list, so rows pass under it; under the tabs (z 4) and
+   Sheet's dividers (z 3). A row brought into view lands below it. */
+.ls-head { font-size: var(--fs-xs); color: var(--muted); letter-spacing: .04em; padding: 6px 4px; border-bottom: 1px solid var(--line);
+  position: sticky; top: var(--ls-head-top, var(--stick-top, 0px)); z-index: 2; background: var(--surface); }
+.sheet { --ls-head-top: calc(var(--stick-top, 62px) + var(--tabs-h, 41px)); }
 .ls-grouphead { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); padding: 12px 4px 4px; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
 .ls-group-note { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }  /* (a heading's note: a container's coins, feedback 49) */
-.ls-row { font-size: var(--fs-sm); align-items: center; padding: 7px 4px; border-top: 1px solid var(--line-soft); cursor: pointer; border-radius: var(--r-sm); }
+.ls-row { font-size: var(--fs-sm); align-items: center; padding: 7px 4px; border-top: 1px solid var(--line-soft); cursor: pointer; border-radius: var(--r-sm); scroll-margin-top: calc(var(--ls-head-top, var(--stick-top, 0px)) + 40px); }
 .ls-row:hover, .ls-row:focus-visible { background: var(--row-hover); }
 .ls-pk { display: inline-flex; }
 .ls-name { min-width: 0; display: flex; flex-direction: column; }
