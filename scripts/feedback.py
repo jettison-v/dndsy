@@ -12,6 +12,17 @@ When Brett says "review the feedback", pull the queue from askdnd, then answer o
     uv run python scripts/feedback.py title 42 "Change forms beside Change spells"     # a short title, when taking it up
     uv run python scripts/feedback.py pull --kind none            # notes sent before kinds, to sort once
 
+Testing (app/testing.py; Brett's picks, Nov 16): a check for Brett to try, with why it's there. Write one with every
+fix to a broken note (--note) and every change he should look at (--pr); a run on the Mac Mini sets one `claude`:
+
+    uv run python scripts/feedback.py check list                     # every check (--status ready,again,…)
+    uv run python scripts/feedback.py check add "Column headings stay while a list scrolls" --area Sheet \
+        --setup view_as --as "Cole's player" --path "/characters/1?tab=items" --minutes 2 --note 73 --pr <url> \
+        --do "Scroll down the Inventory list." --do "Then Change forms, and scroll." --expect "They stay under the tabs." \
+        --said "Fixed: every list's headings now stay at the top."
+    uv run python scripts/feedback.py check set 12 again --said "Fixed in PR 401: …"   # ready | again | claude | …
+    uv run python scripts/feedback.py check set 12 claude --said "12 of 12 on the Mini's seats"
+
 Give each note a short title when you take it up (Brett, Nov 16: a few words saying what it's about; its sender sees it on
 Notes you sent, and the queue lists it). What each kind gets (Brett, Nov 16): **broken**, fix it in the next round (one people would see still goes to Brett as a
 local link first); **idea**, add it to the Roadmap's Ideas from feedback with a size (S, M or L) and set it planned:
@@ -104,6 +115,22 @@ def pull(base: str, status: str, kind: str = "") -> None:
     print(f"{len(items)} note(s) in {OUT.relative_to(ROOT)}/")
 
 
+def check(a) -> None:
+    """Testing's checks (app/testing.py): list them, add one, or move one on."""
+    if a.do_what == "list":
+        for c in json.loads(call(a.base, "/api/checks" + (f"?status={a.status}" if a.status else "")))["items"]:
+            print(f"{c['id']:>4}  {c['status']:<8} {c['group']:<24} {c['title']}" + (f"  (note {c['feedback_id']})" if c["feedback_id"] else ""))
+    elif a.do_what == "add":
+        body = {"title": a.title, "area": a.area, "setup": a.setup or "laptop", "as_who": a.as_who, "path": a.path, "do": "\n".join(a.steps),
+                "expect": a.expect, "pr": a.pr, "said": a.said, "minutes": a.minutes, "place": a.place,
+                **({"feedback_id": a.note} if a.note else {})}
+        c = json.loads(call(a.base, "/api/checks", body))
+        print(f"Check {c['id']}: {c['title']} ({c['says']})")
+    else:
+        c = json.loads(call(a.base, f"/api/checks/{a.id}", {"status": a.status, **({"said": a.said} if a.said else {})}))
+        print(f"Check {c['id']}: {c['says']}")
+
+
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--base", default=os.getenv("ASKDND_BASE", DEFAULT_BASE))
@@ -131,7 +158,26 @@ def main() -> None:
     st.add_argument("status", choices=["new", "question", "planned", "done", "deleted"])
     st.add_argument("--note", default="")
     st.add_argument("--pr", default="")
+    ck = sub.add_parser("check", help="Testing: checks for Brett to try")
+    cks = ck.add_subparsers(dest="do_what", required=True)
+    cl = cks.add_parser("list")
+    cl.add_argument("--status", default="")
+    ca = cks.add_parser("add")
+    ca.add_argument("title")
+    for flag, dest in (("--area", "area"), ("--setup", "setup"), ("--as", "as_who"), ("--path", "path"), ("--expect", "expect"), ("--pr", "pr"), ("--said", "said")):
+        ca.add_argument(flag, dest=dest, default="")
+    ca.add_argument("--do", dest="steps", action="append", default=[], help="a step; once for each")
+    ca.add_argument("--minutes", type=int, default=1)
+    ca.add_argument("--place", type=int, default=0)
+    ca.add_argument("--note", type=int, default=None, help="the feedback note it came from")
+    cs = cks.add_parser("set")
+    cs.add_argument("id", type=int)
+    cs.add_argument("status", choices=["ready", "again", "failed", "passed", "skipped", "claude"])
+    cs.add_argument("--said", default="")
     a = p.parse_args()
+    if a.cmd == "check":
+        check(a)
+        return
     if a.cmd == "pull":
         pull(a.base, a.status, a.kind)
         if a.base == DEFAULT_BASE:  # (and staging's own queue: notes sent from staging.askdnd.ai, filed as staging-<id>)

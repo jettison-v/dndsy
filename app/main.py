@@ -80,6 +80,7 @@ from app.table_fight import router as table_fight_router
 from app.table_page import router as table_router
 from app.table_rolls import router as table_rolls_router
 from app.templating import templates
+from app.testing import router as testing_router
 from app.tokens import router as tokens_router
 from app.tool_corrections_pages import router as tool_corrections_router
 from app.trophies import router as trophies_router
@@ -282,6 +283,7 @@ app.include_router(areas_router)
 app.include_router(initiative_router)  # the DM changes the fight's order (Labs: Initiative from askdnd)
 app.include_router(shifting_router)  # Wild Shape: shifting and leaving
 app.include_router(feedback_router)  # notes for Claude from any page, and the queue
+app.include_router(testing_router)  # Testing in askdnd: checks for an admin to try (app/testing.py)
 app.include_router(your_notes_router)  # Your notes: what each person sent, about the story and about askdnd
 
 LOGIN_ERRORS = {

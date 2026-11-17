@@ -39,7 +39,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
     assert "guide" in items(page, "account") and "guide" not in items(page, "manage")  # (read, not run: Help in your menu)
     assert 'href="/c/main/manage/inbox"' in menu and "/manage/askdnd" not in menu
     assert "askdnd admin" in door(page, "admin")
-    assert items(page, "admin") == ["overview", "feedback", "documents", "usage", "backups", "accounts", "campaigns",
+    assert items(page, "admin") == ["overview", "feedback", "testing", "documents", "usage", "backups", "accounts", "campaigns",
                                     "features", "askdnd-history", "corrections", "dice", "design"]
     assert [g.split("<")[0] for g in door(page, "admin").split('class="menu-group">')[1:]] == ["People", "Tuning"]
 
@@ -58,7 +58,7 @@ def test_admin_sees_both_groups_in_the_menu(monkeypatch, db):
 
     overview = admin.get("/manage/askdnd").text
     assert "<h1>askdnd admin</h1>" in overview and "No backup recorded yet" in overview and 'href="/manage/accounts"' in overview
-    assert admin.get("/c/main/manage/counts").json() == {"needs": 1, "inbox": 0, "feedback": 0}  # (the backup to check; notes for Claude, admins)
+    assert admin.get("/c/main/manage/counts").json() == {"needs": 1, "inbox": 0, "feedback": 0, "testing": 0}  # (the backup to check; notes for Claude and checks to try, admins)
 
 
 def test_reviewers_see_campaign_pages_only_and_players_none(monkeypatch, db):

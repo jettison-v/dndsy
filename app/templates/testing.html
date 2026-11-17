@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_lists.html" import empty_state %}
+{% block title %}Testing · Manage · askdnd{% endblock %}
+{% block content %}
+{# Manage › askdnd › Testing (app/testing.py; docs/mockups/testing/ Board 1, Brett's 1A, Nov 16): the Reader. The checks on
+   the left, grouped by what they need open, each with where it came from and about how long; the one picked on the
+   right with what to do, what you should see, why it's there (its note, the change), and Go, Passed, Failed…, Skip. #}
+{% set dots = {"ready": "claude", "again": "wait", "failed": "stop", "passed": "done", "skipped": "skip", "claude": "used"} %}
+<main class="page manage-page testing-page">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Testing</h1>
+    {% if show == "ready" and groups %}<form method="post" action="/manage/testing/round" class="title-action"><button class="btn primary" type="submit" data-round-start>▶ Start round</button></form>{% endif %}</div>
+  <p class="subtitle">Checks for you to try, each with why it's there: the note it came from or the change it checks. Start a round to go through them on their own pages, with the step's card at the bottom right; Failed… sends a feedback note tied to the check.</p>
+
+  <div class="reader rows tests-reader">
+    <aside class="reader-nav" aria-label="Checks">
+      <div class="reader-nav-head">
+        {% if show == "ready" and groups %}<p class="ts-ready"><b>{{ groups.values() | map("length") | sum }} ready for you</b> <span class="note">about {{ ready_minutes }} minute{{ "s" if ready_minutes != 1 }}</span></p>{% endif %}
+        <nav class="ts-chips" aria-label="Which checks">{% for key, label, n in chips %}<a href="?show={{ key }}" class="chip{{ ' on' if key == show }}" data-show="{{ key }}"{% if key == show %} aria-current="true"{% endif %}>{{ label }}{% if n %} <span class="ls-n">{{ n }}</span>{% endif %}</a>{% endfor %}</nav>
+      </div>
+      <div class="reader-rows">
+        {% for group, items in groups.items() %}
+        <p class="ts-group">{{ group }}</p>
+        {% for c in items %}
+        <a class="rd-item ts-row{{ ' sel' if picked and picked.id == c.id }}" href="?show={{ show }}&amp;check={{ c.id }}" data-check="{{ c.id }}"{% if picked and picked.id == c.id %} aria-current="true"{% endif %}>
+          <span class="st-dot st-{{ dots[c.status] }}" role="img" aria-label="{{ c.says }}"></span>
+          <span class="ts-title">{{ c.title }}</span>
+          <span class="nt-date">{% if c.status == "again" %}<span class="tag new">Try again</span>{% else %}{{ c.minutes }} min{% endif %}</span>
+          <span class="nt-sum">{{ c.area }}{% if c.feedback_id %} · from note {{ c.feedback_id }}{% elif c.pr %} · {{ c.pr | replace("https://github.com/jettison-v/dndsy/pull/", "PR ") }}{% endif %}{% if c.as_who %} · as {{ c.as_who }}{% endif %}</span>
+        </a>
+        {% endfor %}
+        {% endfor %}
+      </div>
+      {% if not groups %}{{ empty_state("Nothing here." if show != "ready" else "Nothing to try right now.") }}{% endif %}
+    </aside>
+    <div class="notes-read">
+      {% if picked %}{% set c = picked %}
+      <article class="reader-article nt-read ts-read" data-check-read="{{ c.id }}">
+        <p class="ts-where"><span class="st-dot st-{{ dots[c.status] }}" aria-hidden="true"></span> {{ c.says }}{% if c.area %} · {{ c.area }}{% endif %}{% if c.as_who %} · <span class="tag">Through View as · {{ c.as_who }}</span>{% endif %}</p>
+        <h2 class="nt-h">{{ c.title }}</h2>
+        {% if c.path %}<form method="post" action="/manage/testing/{{ c.id }}/go"><button class="btn primary small" type="submit" data-check-go>Go: {{ c.area or "its page" }} →</button></form>{% endif %}{# (with its card: a round of one) #}
+        {% if c.do %}<section class="nt-part"><h3 class="divider">Do</h3><ol class="ts-do">{% for line in c.do %}<li>{{ line }}</li>{% endfor %}</ol></section>{% endif %}
+        {% if c.expect %}<section class="nt-part"><h3 class="divider">You should see</h3><p>{{ c.expect }}</p></section>{% endif %}
+        {% set from = notes.get(c.feedback_id) %}
+        {% if from or c.pr or c.said %}<section class="nt-part"><h3 class="divider">Why it's here</h3>
+          {% if from %}<div class="ts-from"><p class="ts-from-head"><a href="/manage/feedback?tab=all&amp;open={{ from.id }}#fb-{{ from.id }}" data-no-peek><b>Note {{ from.id }}</b></a>{% if from.title %} · {{ from.title }}{% endif %} <span class="note">· {{ from.created_at.strftime("%b %-d") }}</span></p>
+            <div class="nt-quote">{{ from.text | truncate(240) }}</div></div>{% endif %}
+          {% if c.said %}<div class="fb-msg claude"><small>Claude</small>{{ c.said }}</div>{% endif %}
+          {% if c.pr %}<p class="note"><a href="{{ c.pr }}" target="_blank" rel="noopener">The change ↗</a></p>{% endif %}
+        </section>{% endif %}
+        {% if c.failed_id %}{% set f = notes.get(c.failed_id) %}<section class="nt-part"><h3 class="divider">When it failed</h3>
+          <p><a href="/manage/feedback?tab=all&amp;open={{ c.failed_id }}#fb-{{ c.failed_id }}" data-no-peek>Note {{ c.failed_id }}</a>{% if f %}: {{ f.text | truncate(160) }}{% endif %}</p></section>{% endif %}
+        {% if c.history | length > 1 %}<ol class="st-track ts-hist" aria-label="What happened to it">{% for h in c.history[-4:] %}<li class="st-done">{{ h.what }}</li>{% endfor %}</ol>{% endif %}
+        {% if c.status not in ("claude",) %}
+        <div class="row ts-acts">
+          <form method="post" action="/manage/testing/{{ c.id }}"><input type="hidden" name="result" value="passed"><button class="btn small ts-pass" type="submit" data-check-result="passed">✓ Passed</button></form>
+          <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}">✗ Failed…</button>
+          <form method="post" action="/manage/testing/{{ c.id }}"><input type="hidden" name="result" value="{{ 'ready' if c.status in ('passed', 'skipped', 'failed') else 'skipped' }}"><button class="btn link small" type="submit" data-check-result="{{ 'ready' if c.status in ('passed', 'skipped', 'failed') else 'skipped' }}">{{ "Try it again" if c.status in ('passed', 'skipped', 'failed') else "Skip" }}</button></form>
+        </div>
+        {% endif %}
+      </article>
+      {% else %}
+      <article class="reader-article">{{ empty_state("Pick a check to see it here.") }}</article>
+      {% endif %}
+    </div>
+  </div>
+</main>
+{% endblock %}

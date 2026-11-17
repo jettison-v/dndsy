@@ -5,6 +5,7 @@
 <dialog class="fb-win" id="fb-win" aria-labelledby="fb-title">
   <form method="dialog" class="fb-form">
     <div class="row"><h2 id="fb-title">Feedback for Claude</h2><span class="note">Goes to the queue, not to Claude right away</span></div>
+    <p class="fb-check-line" data-fb-check-line hidden><span class="tag">Failed</span> A check: <b></b></p>{# (Failed… on a check: Testing, app/testing.py) #}
     <div class="fb-kinds" role="radiogroup" aria-labelledby="fb-kind-q"><span class="note" id="fb-kind-q">What is it?</span>
       {% for k, (said, _, ask) in feedback_kinds.items() %}<button type="button" class="chip" role="radio" aria-checked="false" data-fb-kind="{{ k }}" data-ask="{{ ask }}">{{ said }}</button>{% endfor %}</div>
     <label class="field"><span data-fb-ask>What's it about?</span><textarea name="text" rows="4" required maxlength="4000"></textarea></label>

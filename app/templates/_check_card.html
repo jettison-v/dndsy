@@ -1,0 +1,21 @@
+{# The step card (app/testing.py; docs/mockups/testing/ Board 2, Brett's 2A, Nov 16): while a round of checks is open,
+   at the bottom right of every askdnd page, with what to do and what to see, and Passed, Failed…, Skip. — folds it to
+   a pill (app.js "the step card"); it's left out of a feedback note's picture (data-fb-skip). #}
+{% set c = check %}
+<aside class="check-card" data-check-card="{{ c.id }}" data-fb-skip aria-label="Testing: {{ c.title }}">
+  <div class="cc-top"><span class="cc-label">Testing · {{ n }} of {{ of }}</span>
+    <button type="button" class="btn link small" data-cc-fold aria-expanded="true" aria-label="Fold the card">—</button></div>
+  <div class="cc-body">
+    <div class="cc-prog" role="progressbar" aria-valuemin="0" aria-valuemax="{{ of }}" aria-valuenow="{{ n - 1 }}"><i style="width: {{ ((n - 1) * 100 / of) | round }}%"></i></div>
+    <p class="cc-title">{{ c.title }}{% if c.as_who %} <span class="tag">as {{ c.as_who }}</span>{% endif %}</p>
+    {% if c.do %}<ol class="cc-do">{% for line in c.do %}<li>{{ line }}</li>{% endfor %}</ol>{% endif %}
+    {% if c.expect %}<div class="cc-exp"><b>You should see</b>{{ c.expect }}</div>{% endif %}
+    <div class="row cc-acts">
+      <form method="post" action="/manage/testing/{{ c.id }}"><input type="hidden" name="result" value="passed"><button class="btn small ts-pass" type="submit" data-check-result="passed">✓ Passed</button></form>
+      <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}">✗ Failed…</button>
+      <form method="post" action="/manage/testing/{{ c.id }}"><input type="hidden" name="result" value="skipped"><button class="btn link small" type="submit" data-check-result="skipped">Skip</button></form>
+      <form method="post" action="/manage/testing/round/stop" class="cc-stop"><button class="btn link small" type="submit" data-round-stop>End round</button></form>
+    </div>
+  </div>
+  <button type="button" class="cc-pill" data-cc-fold hidden>Testing · {{ n }} of {{ of }}</button>
+</aside>

@@ -57,6 +57,7 @@ PAGES = (
     ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, TABLE, "moderate", ()),
     ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", "admin", ()),
     ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, "", "admin", ()),
+    ("testing", "Testing", "/manage/testing", "Checks to try, each with why it's there, and rounds through them", ASKDND, "", "admin", ()),
     ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, "", "admin", ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, "", "admin", ()),
     ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, "", "admin", ()),
@@ -72,10 +73,10 @@ PAGES = (
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, "admin", ()),
 )
 IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "scene-notes", "places", "table", "house", "settings", "history",
-           "overview", "feedback", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
+           "overview", "feedback", "testing", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
 NEEDS = {"scene-notes": "vtt_table", "places": "vtt_table"}  # (a page that comes with a feature: listed only where it's on)
 UNLISTED = ("guide",)  # (a page of the list that no menu or list down the left shows: the DM guide is the account menu's)
-COUNTED = ("needs", "inbox", "feedback")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
+COUNTED = ("needs", "inbox", "feedback", "testing")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
 
 
 def may(user: dict | None, allowed) -> bool:
@@ -249,11 +250,11 @@ def needs_you(request: Request, db: Session = Depends(get_db)):
 def counts(request: Request, db: Session = Depends(get_db)):
     """What's waiting, for the counts beside Needs you and Inbox (asked for when the Manage menu opens, and by Manage
     pages, so no other page waits for them)."""
-    from app import feedback
+    from app import feedback, testing
     from app.suggestions import waiting_count
 
     user = current_user(request)
-    mine = {"feedback": feedback.for_you(db)} if is_admin(user) else {}  # (notes waiting for an admin: to approve, or Claude's questions)
+    mine = {"feedback": feedback.for_you(db), "testing": testing.waiting(db)} if is_admin(user) else {}  # (notes waiting for an admin: to approve, or Claude's questions)
     if not user or not can_moderate(user) or web.campaign(db) is None:
         return JSONResponse(mine, headers={"Cache-Control": "no-store"})
     return JSONResponse({"needs": len(needs(db, user)), "inbox": waiting_count(db), **mine}, headers={"Cache-Control": "no-store"})
