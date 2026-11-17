@@ -35,7 +35,7 @@
     </aside>
     <div class="notes-read">
       {% if picked %}{% set c = picked %}
-      <article class="reader-article ts-read" data-check-read="{{ c.id }}">
+      <article class="reader-article nt-read ts-read" data-check-read="{{ c.id }}">
         <p class="ts-where"><span class="st-dot st-{{ dots[c.status] }}" aria-hidden="true"></span> {{ c.says }}{% if c.area %} · {{ c.area }}{% endif %}{% if c.as_who %} · <span class="tag">Through View as · {{ c.as_who }}</span>{% endif %}</p>
         <h2 class="nt-h">{{ c.title }}</h2>
         {% if c.path %}<p><a class="btn primary small" href="{{ c.path }}" data-check-go>Go: {{ c.area or "its page" }} →</a></p>{% endif %}
@@ -43,7 +43,7 @@
         {% if c.expect %}<section class="nt-part"><h3 class="divider">You should see</h3><p>{{ c.expect }}</p></section>{% endif %}
         {% set from = notes.get(c.feedback_id) %}
         {% if from or c.pr or c.said %}<section class="nt-part"><h3 class="divider">Why it's here</h3>
-          {% if from %}<div class="ts-from"><a href="/manage/feedback?tab=all&amp;open={{ from.id }}#fb-{{ from.id }}" data-no-peek><b>Note {{ from.id }}</b></a>{% if from.title %} · {{ from.title }}{% endif %}<span class="note"> · {{ from.created_at.strftime("%b %-d") }}</span>
+          {% if from %}<div class="ts-from"><p class="ts-from-head"><a href="/manage/feedback?tab=all&amp;open={{ from.id }}#fb-{{ from.id }}" data-no-peek><b>Note {{ from.id }}</b></a>{% if from.title %} · {{ from.title }}{% endif %} <span class="note">· {{ from.created_at.strftime("%b %-d") }}</span></p>
             <div class="nt-quote">{{ from.text | truncate(240) }}</div></div>{% endif %}
           {% if c.said %}<div class="fb-msg claude"><small>Claude</small>{{ c.said }}</div>{% endif %}
           {% if c.pr %}<p class="note"><a href="{{ c.pr }}" target="_blank" rel="noopener">The change ↗</a></p>{% endif %}

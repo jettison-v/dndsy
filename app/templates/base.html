@@ -161,7 +161,7 @@
 </div>
 {% include "_table_rolls.html" %}
 {% if feedback_send(request) %}{% include "_feedback_window.html" %}{% endif %}
-{% if request.session.get("check_round") %}<div class="check-card-slot" id="check-card" hx-get="/manage/testing/card" hx-trigger="load" hx-swap="innerHTML"></div>{% endif %}{# (a round of checks is open: its step card, app/testing.py) #}
+{% if request.session.get("check_round") and not request.url.path.endswith("/manage/testing") %}<div class="check-card-slot" id="check-card" hx-get="/manage/testing/card" hx-trigger="load" hx-swap="innerHTML"></div>{% endif %}{# (a round of checks is open: its step card, app/testing.py) #}
 {% endif %}
 {% block content %}{% endblock %}
 {% endblock %}
