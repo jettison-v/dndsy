@@ -20,7 +20,7 @@
   {% endif %}
 
   {{ add_fold("/campaign/" ~ e.id ~ "/facts?in=" ~ w, e.name, px, dm=is_dm,
-              note="You're the DM, so it goes straight on." if is_dm else ("Merge it above to show it." if can_moderate else "The DM or a reviewer adds it.")) }}
+              note="You're the DM, so it goes straight on." if is_dm else ("Then press Accept on it above to show it." if can_moderate else "The DM or a reviewer adds it.")) }}
 
   {% if finished %}
   <details class="done"><summary>Done ({{ finished | length }})</summary>

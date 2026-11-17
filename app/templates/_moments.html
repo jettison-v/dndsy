@@ -21,6 +21,7 @@
 {% set rest = items | reject("in", shown) | list %}
 <ol class="moment-line" data-moments>{% for m in shown %}{{ key_moment(m, lk, skip, latest and loop.first) }}{% endfor %}</ol>
 {% if rest %}<details class="km-more"><summary>Show the other {{ rest | length }} key moments</summary>
-  <ol class="moment-line">{% for m in rest %}{{ key_moment(m, lk, skip) }}{% endfor %}</ol></details>{% endif %}
+  <ol class="moment-line">{% for m in rest %}{{ key_moment(m, lk, skip) }}{% endfor %}</ol>
+  <button type="button" class="km-less" data-km-less>Show fewer</button></details>{% endif %}{# (opened, it folds back: feedback 79) #}
 {% elif empty %}{{ empty_state(empty) }}{% endif %}
 {%- endmacro %}

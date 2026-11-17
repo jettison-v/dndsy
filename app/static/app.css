@@ -422,6 +422,7 @@ h2 .num { color: var(--red); margin-right: 8px; font-weight: 700; }
 h3 { font-size: var(--fs-md); font-weight: 600; margin: 1.4em 0 .5em; }
 .hint { color: var(--muted); font-size: var(--fs-sm); margin: 0 0 20px; }
 .count { color: var(--muted); font-size: var(--fs-sm); }
+a .count { color: inherit; }  /* (a count inside a link is the link's own colour, as "(17)" was: feedback 74) */
 .muted { color: var(--muted); }
 .note { color: var(--muted); font-size: var(--fs-sm); }
 
@@ -1314,7 +1315,7 @@ table.calc tr.total td { border-bottom: none; border-top: 2px solid var(--line-s
 .peek .ri > .ri-main { grid-area: main; }
 .peek .ri > .ri-mech { grid-area: mech; text-align: left; white-space: normal; max-width: none; overflow: visible; }
 .peek .ri > .ri-hit { grid-area: hit; padding-top: 1px; }
-.peek .ri > .ri-pk.end { grid-area: end; padding-top: 2px; }
+.peek .ri > .ri-pk.end { grid-area: end; padding-top: 1px; min-height: calc(var(--control-h-sm) + 1px); align-items: center; }  /* (the bell centred on the Roll or Cast pill beside it: feedback 75) */
 .peek .ri-line { white-space: normal; }
 .peek .ri-what { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .peek .ri-mech:empty { display: none; }
@@ -2948,6 +2949,7 @@ details.km-more { margin: 0; }
 details.km-more > summary { list-style: none; cursor: pointer; width: fit-content; padding: 0 0 var(--sp-2) var(--sp-4); color: var(--link); font-size: var(--fs-sm); }
 details.km-more > summary::-webkit-details-marker { display: none; }
 details.km-more[open] > summary { display: none; }  /* opened, its moments simply carry on the list */
+.km-less { display: block; background: none; border: 0; padding: 0 0 var(--sp-2) var(--sp-4); color: var(--link); font: inherit; font-size: var(--fs-sm); cursor: pointer; }
 
 /* Adding what the party learned (_suggest_form.html add_fold; Key Moments Everywhere, Nov 16): closed until pressed,
    then the form in place of its line; Cancel or Escape closes it. */

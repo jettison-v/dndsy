@@ -8,5 +8,5 @@
   {% if facts %}<ul class="plain">{% for f in facts %}<li>{% if f.kind == "correction" %}<span class="tag edited">Correction</span> {% endif %}{{ qln.text(f.text) }}</li>{% endfor %}</ul>
   {% else %}{{ empty_state("Nothing the party learned about it yet.") }}{% endif %}
   {{ add_fold("/campaign/" ~ q.id ~ "/facts?in=quest", q.name, 'hx-target="closest .ql-knows" hx-swap="outerHTML"', dm=is_dm,
-              note="You're the DM, so it goes straight on." if is_dm else ("Merge it on its entry to show it." if can_moderate else "The DM or a reviewer adds it.")) }}
+              note="You're the DM, so it goes straight on." if is_dm else ("Then Accept it on its entry, or in the Inbox, to show it." if can_moderate else "The DM or a reviewer adds it.")) }}
 </div>
