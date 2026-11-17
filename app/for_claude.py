@@ -46,11 +46,11 @@ def tell(db: Session, what: str, text: str, feedback_id: int | None = None, chec
 
 
 def _setting(db: Session, key: str) -> ToolSetting:
-    row = db.get(ToolSetting, key)
-    if row is None:
-        row = ToolSetting(key=key, value="")
-        db.add(row)
-    return row
+    """The setting's row, made if it isn't there (two asks at once on a fresh database never collide)."""
+    from sqlalchemy.dialects.postgresql import insert
+
+    db.execute(insert(ToolSetting).values(key=key, value="").on_conflict_do_nothing(index_elements=["key"]))
+    return db.get(ToolSetting, key)
 
 
 def read_upto(db: Session) -> int:
@@ -80,14 +80,15 @@ def item(i: InboxItem) -> dict:
 
 
 @router.get("/api/claude/inbox")
-def inbox(after: int | None = None, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """What's waiting for Claude: everything after its last read (or after `after`), oldest first. Asking is also how
-    askdnd knows a session is listening (`heard`)."""
+def inbox(after: int | None = None, listening: bool = False, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """What's waiting for Claude: everything after its last read (or after `after`), oldest first. `feedback.py wait`
+    asks with `listening`: that's how askdnd knows a session is waiting on it (`heard`); a one-off read isn't."""
     _claude(x_feedback_key)
     upto = read_upto(db) if after is None else max(0, after)
     rows = db.scalars(select(InboxItem).where(InboxItem.id > upto).order_by(InboxItem.id).limit(PAGE)).all()
-    _setting(db, HEARD).value = datetime.now(UTC).isoformat(timespec="seconds")
-    db.commit()
+    if listening:
+        _setting(db, HEARD).value = datetime.now(UTC).isoformat(timespec="seconds")
+        db.commit()
     return JSONResponse({"read": read_upto(db), "items": [item(i) for i in rows], "more": len(rows) == PAGE},
                         headers={"Cache-Control": "no-store"})
 

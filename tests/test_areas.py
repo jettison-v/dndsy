@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app import config
 from app.importer import import_bundle
-from app.models import Area, Check, InboxItem
+from app.models import Area, Check, Feedback, InboxItem
 from tests.table_setup import BUNDLE
 from tests.test_feedback import note
 
@@ -117,8 +117,9 @@ def test_claudes_inbox_hears_what_brett_does_and_keeps_its_place(admin, player, 
     assert admin.post("/api/claude/inbox/read", json={"upto": last}, headers=KEY).json()["read"] == last
     assert inbox(admin) == []
     assert admin.post("/api/claude/inbox/read", json={"upto": 1}, headers=KEY).json()["read"] == last  # (never back)
-    stands = admin.get("/manage/testing?show=areas").text
-    assert 'data-listening="on"' in stands
+    assert 'data-listening="off"' in admin.get("/manage/testing?show=areas").text  # (a one-off read isn't listening)
+    admin.get("/api/claude/inbox?listening=1", headers=KEY)  # (feedback.py wait)
+    assert 'data-listening="on"' in admin.get("/manage/testing?show=areas").text
 
 
 def test_a_standing_rule_areas_and_the_inbox_are_for_admins_and_claude_only(player, dm, admin, db):
@@ -131,3 +132,14 @@ def test_a_standing_rule_areas_and_the_inbox_are_for_admins_and_claude_only(play
     assert admin.post("/api/areas", json={"title": "Sneaky"}).status_code == 404
     assert not any(i.what == "order" for i in db.scalars(select(InboxItem)))
     assert db.scalar(select(Area).where(Area.title == "Sneaky")) is None
+
+
+def test_a_failed_check_is_one_item_in_the_inbox_with_its_words(admin, db):
+    """Failed… sends a note and fails its check: Claude hears it once, as the check's failure with the note's words, and
+    the note joins the check's area."""
+    c = check(admin, "Headings stay")
+    a = area(admin, "Sheet", checks=[c])
+    sent = note(admin, text="There's a sliver above the headings.", check=c).json()["id"]
+    items = [i for i in inbox(admin) if i["feedback_id"] == sent]
+    assert len(items) == 1 and items[0]["what"] == "check" and "sliver" in items[0]["text"] and items[0]["area_id"] == a["id"]
+    assert db.get(Feedback, sent).area_id == a["id"]

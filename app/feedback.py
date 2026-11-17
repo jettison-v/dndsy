@@ -174,13 +174,13 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
                                      "next": testing.next_page(request, db, check, followed)})
             return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": sent.get("review", True), "to_prod": True})
         note["context"] = {**note["context"], "not_sent_to_prod": sent.get("error", "")[:300]}
-    fb = _store(db, note)
+    fb = _store(db, note, tell=check is None)
     if check is not None and testing.failed(request, db, check, fb):  # (and the page to go to: a round's next check, or the Reader)
         return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "next": testing.next_page(request, db, check, followed)})
     return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": fb.status == "review"})
 
 
-def _store(db: Session, note: dict, staging: bool = False) -> Feedback:
+def _store(db: Session, note: dict, staging: bool = False, tell: bool = True) -> Feedback:
     """Keep a note in this askdnd's queue: who sent it (as what, here), its pictures in file storage, waiting for an
     admin unless an admin sent it."""
     campaign = web.campaign(db)
@@ -205,7 +205,7 @@ def _store(db: Session, note: dict, staging: bool = False) -> Feedback:
                   context=context, html=str(note.get("html") or "")[:MAX_HTML], shot_key=keys.get("shot"), pasted_key=keys.get("pasted"))
     fb.seen = fb.told = marker(fb)  # (its sender knows what they just did: no "Sent to Claude" card on their next page; feedback 78)
     db.add(fb)
-    if fb.status == "new":  # (with Claude now; a player's waits for an admin's Approve: `change`)
+    if fb.status == "new" and tell:  # (with Claude now; a player's waits for an admin's Approve: `change`; Failed…'s, its check tells)
         db.flush()
         tell_claude(db, fb, "note", "sent")
     db.commit()

@@ -140,7 +140,8 @@ def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, pr
     mark(db, c, "failed", said=f"note {fb.id}" if fb is not None else f"note {prod_note} on askdnd.ai")
     if fb is not None and fb.area_id is None:
         fb.area_id = c.area_id  # (a failure is about its check's area)
-    for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed, " + (f"note {fb.id}" if fb is not None else f"note {prod_note} on askdnd.ai"),
+    for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed, " + (f"note {fb.id}: " + " ".join((fb.text or "").split())[:240] if fb is not None
+                                                                         else f"note {prod_note} on askdnd.ai"),
                     feedback_id=fb.id if fb is not None else None, check_id=c.id, area_id=c.area_id)
     db.commit()
     return c
@@ -233,7 +234,11 @@ def stage(a: Area, notes: list[Feedback], checks: list[Check]) -> int:
 def areas_view(db: Session) -> list[dict]:
     """Every area with its notes and checks and where it is, in the order they run (Where it stands, `/api/areas`)."""
     out = []
-    notes, checks = db.scalars(select(Feedback).where(Feedback.area_id.is_not(None))).all(), db.scalars(select(Check).where(Check.area_id.is_not(None))).all()
+    from sqlalchemy.orm import load_only
+
+    notes = db.scalars(select(Feedback).options(load_only(Feedback.id, Feedback.title, Feedback.text, Feedback.status, Feedback.kind, Feedback.area_id))
+                       .where(Feedback.area_id.is_not(None))).all()  # (never a note's page or context: only what the rows show)
+    checks = db.scalars(select(Check).where(Check.area_id.is_not(None))).all()
     for a in area_order(db):
         ns, cs = [f for f in notes if f.area_id == a.id], [c for c in checks if c.area_id == a.id]
         i = stage(a, ns, cs)
@@ -250,8 +255,9 @@ def areas_view(db: Session) -> list[dict]:
 
 
 def unsorted(db: Session) -> list[Feedback]:
-    """Open notes about askdnd in no area yet (Claude sorts them after a round)."""
-    return list(db.scalars(select(Feedback).where(Feedback.area_id.is_(None), Feedback.status.in_(NOTE_OPEN)).order_by(Feedback.id)))
+    """Notes with Claude in no area yet (Claude sorts them after a round): not a player's still waiting for an admin, nor
+    an idea planned on the Roadmap."""
+    return list(db.scalars(select(Feedback).where(Feedback.area_id.is_(None), Feedback.status.in_(("new", "question"))).order_by(Feedback.id)))
 
 
 @router.get("/manage/testing", response_class=HTMLResponse)
@@ -278,13 +284,12 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
         rows = ordered(db, list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
         rows = [c for c in rows if _with_player(c)] if show == "player" else _for_admin(rows) if show in ("ready", "again") else rows
     items = [view(c, titles) for c in rows]
-    groups: dict[str, list[dict]] = {}
+    groups: dict[str, dict] = {}  # (by area id, never by its title: two areas may share one)
     for i in items:
-        groups.setdefault(i["group"], []).append(i)
+        groups.setdefault(f"a{i['area_id']}" if i["area_id"] else i["group"], {"title": i["group"], "area": i["area_id"], "rows": []})["rows"].append(i)
     picked = next((i for i in items if i["id"] == check), items[0] if items else None)
     notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({x for i in items for x in (i["feedback_id"], i["failed_id"]) if x})))}
-    group_ids = {i["group"]: i["area_id"] for i in items if i["area_id"]}  # (an area's ▶ Just this area)
-    return templates.TemplateResponse(request, "testing.html", {**base, "groups": groups, "group_ids": group_ids, "picked": picked, "notes": notes,
+    return templates.TemplateResponse(request, "testing.html", {**base, "groups": groups, "picked": picked, "notes": notes,
         "chips": [(k, SHOW_SAYS[k], players if k == "player"
                    else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k == "ready" else players_again if k == "again" else 0)
                    - (sum(claudes.get(s, 0) for s in SHOWS[k]) if k in ("ready", "again") else 0)) for k in FOR_YOU],

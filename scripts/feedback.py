@@ -177,10 +177,18 @@ def live(base: str) -> None:
 
 
 def _get(base: str, path: str) -> dict | None:
-    """A read that never ends the script (`wait` rides out a deploy or a dropped connection)."""
+    """A read that rides out a deploy or a dropped connection (None), but ends the script on an answer that won't change
+    by asking again: a wrong FEEDBACK_KEY (404) or a refusal, so `wait` never sits deaf for hours."""
+    req = urllib.request.Request(base.rstrip("/") + path, headers={"X-Feedback-Key": key(), "Accept": "application/json",
+                                                                   "User-Agent": "askdnd-feedback-script"})
     try:
-        return json.loads(call(base, path))
-    except (SystemExit, urllib.error.URLError, TimeoutError, ValueError, OSError):
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:
+        if e.code in (400, 401, 403, 404):
+            sys.exit(f"askdnd answered {e.code} for {path}: is FEEDBACK_KEY the same as askdnd.ai's? wait stopped.")
+        return None
+    except (urllib.error.URLError, TimeoutError, ValueError, OSError):
         return None
 
 
@@ -212,7 +220,7 @@ def wait(a) -> None:
 
     until, misses = time.monotonic() + a.hours * 3600, 0
     while time.monotonic() < until:
-        got = _get(a.base, "/api/claude/inbox")
+        got = _get(a.base, "/api/claude/inbox?listening=1")
         if got is None:
             misses += 1
             if misses in (5, 30):
