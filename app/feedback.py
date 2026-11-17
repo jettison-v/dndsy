@@ -302,6 +302,7 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
     if denied:
         return denied
     fb = db.get(Feedback, feedback_id) or _missing()
+    asked = approving = approved = False  # (what Claude's inbox hears, below)
     if to == "answer":
         added = add_pictures(db, fb, pics)
         if not answer.strip() and not added:
