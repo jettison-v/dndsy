@@ -68,3 +68,20 @@ def test_brett_answers_claudes_question_in_for_you(people, server, browser_db):
     assert status == "new" and thread[-1]["choice"] == 1 and heard == "answer"
     assert page.locator(f'[data-ask="{fb}"]').count() == 0
     assert not admin.errors, admin.errors
+
+
+def test_for_yous_chips_open_what_they_say(people, server, browser_db):
+    """Brett's note 98 (Nov 17): pressing Try again did nothing and the page threw. The chips were marked like the
+    page's show-a-section toggles (data-show); each chip is a link, and pressing it opens its list."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO checks (title, area, setup, path, \"do\", expect, minutes, place, status) VALUES "
+                          "('Comes back', 'Sheet', 'laptop', '/party', 'Look.', 'Fixed.', 1, 0, 'again')"))
+    engine.dispose()
+    admin = people("admin")
+    page = admin.open("/manage/testing")
+    for key in ("again", "player", "failed", "ready"):
+        page.locator(f'[data-ts-show="{key}"]').click()
+        page.wait_for_url(f"**/manage/testing?show={key}")
+        assert page.locator(f'[data-ts-show="{key}"]').get_attribute("aria-current") == "true"
+    assert not admin.errors, admin.errors

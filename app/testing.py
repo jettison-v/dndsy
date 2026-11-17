@@ -564,6 +564,12 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
     if c is None:
         return web.not_found(request, "There's no such check.")
     status = str(form.get("result") or "")
+    if status == "undo":  # (Undo Failed on the card: Brett's note 101; the round stays on it, and what was sent stays sent)
+        if c.status == "failed":
+            mark(db, c, "again" if c.asked_at else "ready", said="Failed undone")
+            for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed undone (its notes stay)", check_id=c.id, area_id=c.area_id)
+            db.commit()
+        return RedirectResponse(_page_of(c) if on_round(request, c.id) else f"/manage/testing?check={c.id}", status_code=303)
     if status not in ("passed", "skipped", "ready"):
         raise HTTPException(400, "Passed, skipped or ready.")
     mark(db, c, status)
