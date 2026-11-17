@@ -1,6 +1,7 @@
 """Testing in askdnd in a real browser (app/testing.py; Brett's picks 1A, 2A, 3A, Nov 16; docs/mockups/testing/): a round
 goes page to page with the step card at the bottom right; Passed moves on; Failed… opens the feedback window naming the
-check with Something's broken picked, and sending it goes on to the next check's page; — folds the card to a pill."""
+check with Something's broken picked, and the card stays on it for every issue until Done · Next check (2A, Nov 17); —
+folds the card to a pill and its top bar drags it to a corner, both drawn so on the next page (6A, notes 83, 85)."""
 
 from sqlalchemy import create_engine, text
 
@@ -29,27 +30,50 @@ def test_a_round_goes_page_to_page_with_its_card(people, server, browser_db):
     card = page.locator(f'[data-check-card="{two}"]')
     card.wait_for()
 
-    card.locator("[data-cc-fold]").first.click()  # — folds it to a pill, and the pill stays folded on the next page
+    card.locator("[data-cc-fold]").first.click()  # — folds it to a pill, and it's drawn folded on the next page (note 85)
     assert card.locator(".cc-pill").is_visible() and not card.locator(".cc-body").is_visible()
+    page.reload()
+    card = page.locator(f'[data-check-card="{two}"]')
+    card.wait_for()
+    assert "folded" in card.get_attribute("class").split() and not card.locator(".cc-body").is_visible()  # (folded as drawn)
     card.locator(".cc-pill").click()
     assert card.locator(".cc-body").is_visible()
 
-    card.locator("[data-fb-open]").click()  # Failed…: the feedback window, the check named, broken picked
+    bar = card.locator("[data-cc-drag]")  # dragged by its top bar to the top left, it stays there (6A, note 83)
+    box = bar.bounding_box()
+    page.mouse.move(box["x"] + 20, box["y"] + box["height"] / 2)
+    page.mouse.down()
+    page.mouse.move(60, 160, steps=8)
+    page.mouse.up()
+    assert card.get_attribute("data-corner") == "tl"
+    assert card.bounding_box()["x"] < 100 and card.bounding_box()["y"] < 300
+
+    card.locator('[data-fb-open]:not([data-fb-issue])').first.click()  # Failed…: the feedback window, the check named, broken picked
     win = page.locator("#fb-win")
     win.wait_for()
     assert win.locator("[data-fb-check-line]").is_visible()
     assert win.locator('[data-fb-kind="broken"]').get_attribute("aria-checked") == "true"
     win.locator("textarea[name=text]").fill("It doesn't look right.")
     win.locator("[data-fb-send]").click()
+    issue = card.locator("[data-issue]")  # (the card stays on the check, listing it: Brett's 2A)
+    issue.first.wait_for()
+    card.locator("[data-fb-open]").first.click()  # + Another issue
+    win.wait_for()
+    win.locator('[data-fb-kind="idea"]').click()
+    win.locator("textarea[name=text]").fill("And the heading could be bigger.")
+    win.locator("[data-fb-send]").click()
+    page.wait_for_function("document.querySelectorAll('[data-check-card] [data-issue]').length === 2")
+    card.locator("[data-check-next]").click()  # Done · Next check
     page.wait_for_url("**/party")
     page.locator(f'[data-check-card="{three}"]').wait_for()
+    assert page.locator(f'[data-check-card="{three}"]').get_attribute("data-corner") == "tl"  # (where it was left)
 
     engine = create_engine(browser_db[0])
     with engine.connect() as conn:
         rows = dict(conn.execute(text("SELECT id, status FROM checks WHERE id IN (:a, :b)"), {"a": one, "b": two}).all())
-        failed_with = conn.execute(text("SELECT failed_id FROM checks WHERE id = :b"), {"b": two}).scalar()
+        sent = conn.execute(text("SELECT count(*) FROM feedback WHERE check_id = :b"), {"b": two}).scalar()
     engine.dispose()
-    assert rows == {one: "passed", two: "failed"} and failed_with
+    assert rows == {one: "passed", two: "failed"} and sent == 2
     page.locator(f'[data-check-card="{three}"] [data-check-result="skipped"]').click()
     page.wait_for_url("**/manage/testing")
     assert page.locator("[data-check-card]").count() == 0  # (the round is done: no card)

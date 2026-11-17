@@ -398,22 +398,68 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     else if (e.target.matches('[data-hb-name]')) form.querySelectorAll('[data-hb-piece]').forEach(hbDraw);
   }));
 
-  // The step card (Testing, app/testing.py; Brett's 2A): — folds it to a pill and the pill brings it back, remembered
-  // for the round on this device
-  const ccFolded = () => { try { return localStorage.getItem('askdnd-check-card') === 'folded'; } catch (e) { return false; } };
-  const ccShow = cc => {
-    const folded = ccFolded();
+  // The step card (Testing, app/testing.py; Brett's 2A, and his 6A, Nov 17): — folds it to a pill and the pill brings it
+  // back; its top bar drags it to any corner, where it settles. Both kept in a cookie (testing.card_prefs), so the
+  // server draws it as it was left on the next page: never open and then folding (note 85).
+  const ccPrefs = cc => { document.cookie = 'askdnd-cc=' + (cc.classList.contains('folded') ? 'folded.' : '') + (cc.dataset.corner || 'br') + '; path=/; max-age=31536000; samesite=lax'; };
+  const ccFold = cc => {
+    const folded = !cc.classList.contains('folded');
+    cc.classList.toggle('folded', folded);
     cc.querySelectorAll('.cc-top, .cc-body').forEach(el => { el.hidden = folded; });
     cc.querySelector('.cc-pill').hidden = !folded;
-    cc.classList.toggle('folded', folded);
+    ccPrefs(cc);
   };
-  document.addEventListener('htmx:afterSettle', e => { const cc = e.target.querySelector && e.target.querySelector('[data-check-card]'); if (cc) ccShow(cc); });
   document.addEventListener('click', e => {
     const f = e.target.closest('[data-check-card] [data-cc-fold]');
-    if (!f) return;
-    try { localStorage.setItem('askdnd-check-card', ccFolded() ? 'open' : 'folded'); } catch (err) { /* no storage: it stays as it is */ }
-    ccShow(f.closest('[data-check-card]'));
+    if (f) ccFold(f.closest('[data-check-card]'));
   });
+  document.addEventListener('pointerdown', e => {
+    const bar = e.target.closest('[data-check-card] [data-cc-drag]');
+    if (!bar || e.button !== 0 || e.target.closest('button, a, input')) return;
+    const cc = bar.closest('[data-check-card]'), x0 = e.clientX, y0 = e.clientY;
+    let moved = false;
+    bar.setPointerCapture(e.pointerId);
+    const move = ev => {
+      const dx = ev.clientX - x0, dy = ev.clientY - y0;
+      if (!moved && Math.hypot(dx, dy) < 4) return;
+      moved = true;
+      cc.classList.add('dragging');
+      cc.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+    };
+    const end = ev => {
+      bar.removeEventListener('pointermove', move);
+      bar.removeEventListener('pointerup', end);
+      bar.removeEventListener('pointercancel', end);
+      cc.classList.remove('dragging');
+      cc.style.transform = '';
+      if (!moved || ev.type === 'pointercancel') return;
+      const r = cc.getBoundingClientRect();  // (where it sat; plus how far it was dragged: its middle where it was let go)
+      const px = r.left + r.width / 2 + (ev.clientX - x0), py = r.top + r.height / 2 + (ev.clientY - y0);
+      cc.dataset.corner = (py < innerHeight / 2 ? 't' : 'b') + (px < innerWidth / 2 ? 'l' : 'r');
+      ccPrefs(cc);
+    };
+    bar.addEventListener('pointermove', move);
+    bar.addEventListener('pointerup', end);
+    bar.addEventListener('pointercancel', end);
+  });
+
+  // The walkthrough's ticks (Brett's 3A, Nov 17): only to keep your place, kept on this device for the check you're on
+  // and cleared once you're on another
+  const ticksKept = () => { try { return JSON.parse(sessionStorage.getItem('askdnd-ticks') || '{}'); } catch (e) { return {}; } };
+  const ticksShow = root => root.querySelectorAll('[data-ticks]').forEach(list => {
+    const kept = ticksKept()[list.dataset.ticks] || [];
+    list.querySelectorAll('[data-tick]').forEach(t => { t.checked = kept.includes(+t.dataset.tick); });
+  });
+  document.addEventListener('change', e => {
+    const t = e.target.closest('[data-tick]');
+    if (!t) return;
+    const list = t.closest('[data-ticks]');
+    const on = [...list.querySelectorAll('[data-tick]')].filter(x => x.checked).map(x => +x.dataset.tick);
+    try { sessionStorage.setItem('askdnd-ticks', JSON.stringify({ [list.dataset.ticks]: on })); } catch (err) { /* no storage: ticks last the page */ }
+    document.querySelectorAll('[data-ticks="' + list.dataset.ticks + '"] [data-tick="' + t.dataset.tick + '"]').forEach(x => { x.checked = t.checked; });
+  });
+  ticksShow(document);
+  document.addEventListener('htmx:afterSettle', e => { if (e.target.querySelector) ticksShow(e.target); });
 
   // Key moments' Show fewer (feedback 79): folds the rest away again, keeping the list's top in view
   document.addEventListener('click', e => {
@@ -4996,8 +5042,12 @@ document.addEventListener('click', e => {
     form.reset(); say(''); send.disabled = false; pickKind('');
     // Failed… on a check (Testing, Brett's 3A): Something's broken picked, the check named, and the note tied to it
     check = forCheck || null;
-    if (check) pickKind('broken');
-    if (checkLine) { checkLine.hidden = !check; checkLine.querySelector('b').textContent = check ? check.title : ''; }
+    if (check && check.fail) pickKind('broken');  // (Failed…: broken; + Issue: picked, as any note)
+    if (checkLine) {
+      checkLine.hidden = !check;
+      checkLine.querySelector('b').textContent = check ? check.title : '';
+      checkLine.querySelector('.tag').hidden = !(check && check.fail);
+    }
     shotImg.hidden = true; shotNote.hidden = false; shotNote.textContent = "Taking the page's picture…";
     win.querySelector('[data-fb-mark]').hidden = true; form.classList.remove('marking'); win.querySelector('[data-fb-markview]').hidden = true;
     pastedImg.hidden = true; dropNote.hidden = false; pointedNote.textContent = 'Click the thing you mean, if it helps';
@@ -5115,11 +5165,18 @@ document.addEventListener('click', e => {
     if (taking && !shot) { say("Finishing the page's picture…"); shot = await taking; say(''); }  // (Send pressed before it was drawn)
     try {
       const r = await fetch('/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, pointed }, html, shot, pasted, ...(check ? { check: check.id } : {}) }) });
+        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, pointed }, html, shot, pasted, ...(check ? { check: check.id, fail: check.fail } : {}) }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
       win.close(); unmark();
-      if (check) { location.href = j.next || '/manage/testing'; return; }  // (the check is failed: a round's next check, or the Reader)
+      if (check) {  // (sent from a check: the card stays on it, listing it, for the next issue or Done · Next check; 2A)
+        const slot = document.getElementById('check-card');
+        if (slot && slot.querySelector('[data-check-card="' + check.id + '"]')) {
+          htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
+          if (window.askdndToast) window.askdndToast('Sent: it\'s tied to the check');
+        } else location.reload();  // (from the Reader: it shows the check failed, with what was sent)
+        return;
+      }
       if (window.askdndToast) window.askdndToast(j.review ? 'Sent · an admin reads it before it goes to Claude' : 'In the queue · ' + j.waiting + ' new',
         { label: 'Your notes', run: () => { location.href = '/your-notes?tab=askdnd'; } });  // (where it goes from here)
     } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
@@ -5133,7 +5190,7 @@ document.addEventListener('click', e => {
     const b = e.target.closest('[data-fb-open]');
     if (!b) return;
     e.preventDefault();
-    open(b.dataset.fbCheck ? { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '' } : null);
+    open(b.dataset.fbCheck ? { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '', fail: !('fbIssue' in b.dataset) } : null);
   });
   const logo = document.querySelector('.brand');
   if (logo) {

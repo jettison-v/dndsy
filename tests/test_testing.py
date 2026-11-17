@@ -49,7 +49,8 @@ def test_claude_names_only_a_note_that_exists_and_a_known_setup(admin):
 
 def test_a_round_goes_page_to_page_and_failed_is_a_note_tied_to_its_check(admin, db):
     """2A and 3A: ▶ Start round opens the first check's page with its card; Passed goes to the next one's; Failed… sends
-    a feedback note that marks the check failed, ties it, and answers with the next page; the last one ends the round."""
+    a feedback note that marks the check failed and ties it, and the card stays on it (Brett's 2A, Nov 17) until Done ·
+    Next check; the last one ends the round."""
     one, two, three = (add(admin, title=t, path=p, place=i) for i, (t, p) in enumerate((("One", "/characters/1/battle"), ("Two", "/c/main/dm"),
                                                                                          ("Three", "/party"))))
     r = admin.post("/manage/testing/round", data={}, follow_redirects=False)
@@ -61,8 +62,12 @@ def test_a_round_goes_page_to_page_and_failed_is_a_note_tied_to_its_check(admin,
     sent = note(admin, text="The list says it differently.", check=two["id"]).json()
     db.expire_all()
     failed = db.get(Check, two["id"])
-    assert failed.status == "failed" and failed.failed_id == sent["id"] and sent["next"] == "/party"
+    assert failed.status == "failed" and db.get(Feedback, sent["id"]).check_id == two["id"] and sent["check"] == two["id"]
     assert db.get(Feedback, sent["id"]).context["check"] == two["id"]
+    card = admin.get("/manage/testing/card").text
+    assert f'data-check-card="{two["id"]}"' in card and "data-check-next" in card and f'data-issue="{sent["id"]}"' in card  # (it stays)
+    r = admin.post(f"/manage/testing/{two['id']}/next", follow_redirects=False)
+    assert r.headers["location"] == "/party"
     r = admin.post(f"/manage/testing/{three['id']}", data={"result": "skipped"}, follow_redirects=False)
     assert r.headers["location"] == "/manage/testing" and admin.get("/manage/testing/card").status_code == 204  # (the round is done)
     assert [h["what"] for h in db.get(Check, two["id"]).history][-1].startswith("Failed")
@@ -99,7 +104,7 @@ def test_a_standing_rule_testing_is_for_admins_and_claude_only(player, dm, admin
     assert admin.post("/api/checks", json={"title": "A"}).status_code == 404  # (no key)
     db.expire_all()
     assert db.get(Check, c["id"]).status == "ready"
-    assert db.scalar(select(Check).where(Check.failed_id.is_not(None))) is None
+    assert db.scalar(select(Feedback).where(Feedback.check_id.is_not(None))) is None
 
 
 def test_go_sees_a_check_through_its_players_eyes_and_comes_back_to_your_own(admin, db):
@@ -289,4 +294,4 @@ def test_the_code_reviews_edges(admin, player, db, monkeypatch):
     three = add(admin, title="Three")
     sent = note(admin, check=three["id"]).json()
     db.expire_all()
-    assert db.get(Check, three["id"]).status == "failed" and "4242" in db.get(Check, three["id"]).history[-1]["what"] and sent["next"]
+    assert db.get(Check, three["id"]).status == "failed" and "4242" in db.get(Check, three["id"]).history[-1]["what"] and sent["check"] == three["id"]

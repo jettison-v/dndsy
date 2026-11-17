@@ -52,6 +52,7 @@ KINDS = {"broken": ("Something's broken", "Broken", "What's wrong?"), "idea": ("
          "question": ("A question", "Question", "What would you like to know?")}  # (in the window, its short tag, its box's ask)
 MAX_TEXT, MAX_HTML, MAX_CONTEXT, MAX_TITLE = 4000, 3_000_000, 50_000, 120
 MAX_PICS, MAX_PIC_BYTES = 4, 8_000_000  # screenshots added with Add to it, at most, each (feedback 64)
+MAX_CHOICES = 4  # answers to tap on Claude's question (Working with Claude, Brett's 5A, Nov 17)
 PIC_TYPES = ("image/png", "image/jpeg", "image/webp")
 IMAGE = re.compile(r"^data:(image/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$")
 BACK = "/manage/feedback"
@@ -134,8 +135,60 @@ def waiting(db: Session) -> int:
 
 
 def for_you(db: Session) -> int:
-    """Notes waiting for an admin: the table's to approve, and Claude's questions."""
-    return db.scalar(select(func.count()).select_from(Feedback).where(Feedback.status.in_(("review", "question")))) or 0
+    """Notes waiting for an admin to approve (the table's). Claude's questions are Testing's For you (Brett's 1A, Nov 17:
+    one place for what needs you), counted there."""
+    return db.scalar(select(func.count()).select_from(Feedback).where(Feedback.status == "review")) or 0
+
+
+def asks(db: Session) -> list[Feedback]:
+    """Notes Claude has asked a question on, waiting for an admin's answer, oldest first."""
+    return list(db.scalars(select(Feedback).where(Feedback.status == "question").order_by(Feedback.id)))
+
+
+def question_of(fb: Feedback) -> dict | None:
+    """Claude's latest question on a note: {text, at, ask: {choices: [{label, detail, pic}], mine} or None, n (its place
+    in the thread)}, or None when it's asked none."""
+    for n in range(len(fb.thread or []) - 1, -1, -1):
+        m = fb.thread[n]
+        if m.get("who") == "claude" and m.get("to") != "sender" and not m.get("kind"):
+            return {"text": m.get("text", ""), "at": m.get("at", ""), "ask": m.get("ask"), "n": n}
+    return None
+
+
+def _asking(db: Session, fb: Feedback, body: dict) -> dict | None:
+    """Claude's question as answers to tap (Brett's 5A): `choices` [{label, detail, pic: a data: URL}] (2 to 4) and
+    `mine`, the one Claude would pick. A question whose answers are pictures is a design pick (Board 3)."""
+    raw = body.get("choices")
+    if raw is None:
+        return None
+    if not isinstance(raw, list) or not 2 <= len(raw) <= MAX_CHOICES or not all(isinstance(c, dict) for c in raw):
+        raise HTTPException(400, f"choices: 2 to {MAX_CHOICES}, each {{label, detail, pic}}.")
+    out = []
+    for c in raw:
+        label = " ".join(str(c.get("label") or "").split())[:120]
+        if not label:
+            raise HTTPException(400, "Each choice needs its label.")
+        pic = None
+        if c.get("pic"):
+            img = _image(c["pic"])
+            if img is None or len(img[0]) > MAX_PIC_BYTES:
+                raise HTTPException(400, "A choice's picture is a PNG, JPEG or WebP data: URL, 8 MB at most.")
+            campaign = web.campaign(db)
+            if campaign is None:
+                raise HTTPException(400, "There's no campaign to keep it in.")
+            try:
+                key = files.put(db, campaign.id, *img)
+            except (files.FileError, files.StorageNotReady) as e:
+                raise HTTPException(400, str(e)) from e
+            row = FeedbackPicture(feedback_id=fb.id, key=key)
+            db.add(row)
+            db.flush()
+            pic = row.id
+        out.append({"label": label, "detail": " ".join(str(c.get("detail") or "").split())[:300], "pic": pic})
+    mine = body.get("mine")
+    if mine is not None and (type(mine) is not int or not 0 <= mine < len(out)):
+        raise HTTPException(400, "mine: the index of Claude's pick.")
+    return {"choices": out, "mine": mine}
 
 
 @router.post("/feedback")
@@ -160,23 +213,23 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
         context |= {"viewing_as": viewing.get("name") or viewing["email"], "viewing_as_email": viewing["email"].lower()}
     note = {"email": user["email"].lower(), "name": user.get("name") or "", "text": text, "kind": kind, "url": str(body.get("url") or "")[:1000],
             "context": context, "html": str(body.get("html") or "")[:MAX_HTML], "shot": body.get("shot"), "pasted": body.get("pasted")}
-    check = body.get("check") if type(body.get("check")) is int and is_admin(user) else None  # (Failed… on a check: Testing, 3A)
+    # Failed… or + Issue on a check (Testing, 3A and 2A): tied to it; the card stays on the check for the next issue
+    check = body.get("check") if type(body.get("check")) is int and is_admin(user) else None
+    fail = body.get("fail") is not False  # (+ Issue sends False: it doesn't fail the check)
     if check is not None:
         from app import testing
 
         note["context"] = {**note["context"], "check": check}
-        followed = testing.on_round(request, check)  # (the round's own check: then it goes on to the next)
     if config.STAGING:
         sent = to_prod(note)
         if "id" in sent:
-            if check is not None and testing.failed(request, db, check, None, prod_note=sent["id"]):  # (staging's check, askdnd.ai's note)
-                return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": False, "to_prod": True,
-                                     "next": testing.next_page(request, db, check, followed)})
+            if check is not None and testing.failed(request, db, check, None, prod_note=sent["id"], fail=fail):  # (staging's check, askdnd.ai's note)
+                return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": False, "to_prod": True, "check": check})
             return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": sent.get("review", True), "to_prod": True})
         note["context"] = {**note["context"], "not_sent_to_prod": sent.get("error", "")[:300]}
     fb = _store(db, note, tell=check is None)
-    if check is not None and testing.failed(request, db, check, fb):  # (and the page to go to: a round's next check, or the Reader)
-        return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "next": testing.next_page(request, db, check, followed)})
+    if check is not None and testing.failed(request, db, check, fb, fail=fail):
+        return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "check": check})
     return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": fb.status == "review"})
 
 
@@ -282,7 +335,7 @@ def queue(request: Request, tab: str = "", kind: str = "", open: int = 0, db: Se
         q = q.where(Feedback.kind == ("" if kind == "none" else kind))
     items = list(db.scalars(q.limit(200)))
     me = user["email"]
-    return templates.TemplateResponse(request, "manage_feedback.html", {
+    return templates.TemplateResponse(request, "manage_feedback.html", {"question_of": question_of,
         "items": items, "kept": {f.id for f in items if kept_from(db, f, me)}, "tab": tab, "open": open, "counts": counts, "labels": LABELS,
         "kind": kind, "kinds": KINDS, "kind_chips": [(k, v[1], in_tab.get(k, 0)) for k, v in KINDS.items()]
         + ([("none", "Not sorted", in_tab[""])] if in_tab.get("") and tab in ("review", *OPEN) else []),  # (an old note done is done)
@@ -292,7 +345,7 @@ def queue(request: Request, tab: str = "", kind: str = "", open: int = 0, db: Se
 
 
 @router.post("/manage/feedback/{feedback_id:int}")
-def change(request: Request, feedback_id: int, to: str = Form(...), answer: str = Form(""), kind: str = Form(""),
+def change(request: Request, feedback_id: int, to: str = Form(...), answer: str = Form(""), kind: str = Form(""), choice: str = Form(""),
            pics: list[UploadFile] = File(default=[]), db: Session = Depends(get_db)):
     """Answer Claude's question, or add to a note any time (feedback 18, Brett, Nov 5: something forgotten): it's new
     again for Claude, unless it's planned. Or move a note: planned, done, back to new, deleted. A note from the table
@@ -305,11 +358,20 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
     asked = approving = approved = False  # (what Claude's inbox hears, below)
     if to == "answer":
         added = add_pictures(db, fb, pics)
-        if not answer.strip() and not added:
-            raise HTTPException(400, "Write your answer first.")
         asked, approving = fb.status == "question", fb.status == "review"
-        fb.thread = [*(fb.thread or []), {"who": "you", "text": answer.strip()[:MAX_TEXT], "at": datetime.now(UTC).isoformat(),
-                                          **({"pics": added} if added else {})}]
+        q = question_of(fb) if asked else None
+        choices = ((q or {}).get("ask") or {}).get("choices") or []
+        picked = int(choice) if choice.isdigit() and int(choice) < len(choices) else None
+        if choice and picked is None:
+            raise HTTPException(400, "That isn't one of the answers.")
+        if not answer.strip() and not added and picked is None:
+            if request.query_params.get("back") == "testing":  # (For you: back to the question, saying what's missing)
+                request.session["toast"] = web.notice("Pick an answer or write one first.", "warn")
+                return RedirectResponse(f"/manage/testing?ask={fb.id}", status_code=303)
+            raise HTTPException(400, "Write your answer first.")
+        said_text = (f"Picked {'ABCD'[picked]}: {choices[picked]['label']}." if picked is not None else "") + (" " if picked is not None and answer.strip() else "") + answer.strip()
+        fb.thread = [*(fb.thread or []), {"who": "you", "text": said_text[:MAX_TEXT], "at": datetime.now(UTC).isoformat(),
+                                          **({"choice": picked} if picked is not None else {}), **({"pics": added} if added else {})}]
         if fb.status != "planned":
             fb.status = "new"
         said = ("Answered: it's back with Claude" if asked else "Added and approved: it's with Claude" if approving
@@ -341,6 +403,8 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
         tell_claude(db, fb, "added", f"changed to {fb.kind}")
     db.commit()
     request.session["toast"] = said
+    if request.query_params.get("back") == "testing":  # (answered in Testing's For you: back there, at the next thing for you)
+        return RedirectResponse("/manage/testing", status_code=303)
     back_kind = request.query_params.get("kind", "")
     return RedirectResponse(f"{BACK}?tab={request.query_params.get('tab', '')}&kind={back_kind if back_kind in (*KINDS, 'none') else ''}",
                             status_code=303)
@@ -386,7 +450,8 @@ def added_picture(request: Request, feedback_id: int, pic_id: int, db: Session =
     if denied:
         return denied
     fb = db.get(Feedback, feedback_id) or _missing()
-    if kept_from(db, fb, user["email"]):
+    claudes = {c.get("pic") for m in fb.thread or [] if m.get("who") == "claude" for c in (m.get("ask") or {}).get("choices") or []}
+    if pic_id not in claudes and kept_from(db, fb, user["email"]):  # (Claude's own drawings for a pick are never the sender's)
         raise HTTPException(404)
     return picture_of(db, fb, pic_id)
 
@@ -454,12 +519,20 @@ def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None =
         if not isinstance(body["kind"], str) or body["kind"] not in KINDS:
             raise HTTPException(400, f"A kind is one of {', '.join(KINDS)}.")
         _rekind(fb, body["kind"], str(body.get("why") or ""), "claude")
+    if body.get("check_do"):  # (its check's steps follow the walkthrough's rules before anything changes: testing.step_problems)
+        from app import testing
+
+        if wrong := testing.step_problems(str(body["check_do"])):
+            raise HTTPException(400, " ".join(wrong) + " (docs/testing-guide.md)")
     tell = str(body.get("tell") or "").strip()[:MAX_TEXT]
     if tell:  # (a reply its sender sees: `feedback.py tell`)
         fb.thread = [*(fb.thread or []), {"who": "claude", "to": "sender", "text": tell, "at": datetime.now(UTC).isoformat()}]
     note = str(body.get("note") or "").strip()[:MAX_TEXT]
+    ask = _asking(db, fb, body)
+    if ask and not note:
+        raise HTTPException(400, "Choices come with the question (note).")
     if note:
-        fb.thread = [*(fb.thread or []), {"who": "claude", "text": note, "at": datetime.now(UTC).isoformat()}]
+        fb.thread = [*(fb.thread or []), {"who": "claude", "text": note, "at": datetime.now(UTC).isoformat(), **({"ask": ask} if ask else {})}]
     status = body.get("status") or ("question" if note else None)
     if status:
         if status not in STATUSES:

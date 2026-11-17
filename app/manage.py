@@ -254,7 +254,7 @@ def counts(request: Request, db: Session = Depends(get_db)):
     from app.suggestions import waiting_count
 
     user = current_user(request)
-    mine = {"feedback": feedback.for_you(db), "testing": testing.waiting(db)} if is_admin(user) else {}  # (notes waiting for an admin: to approve, or Claude's questions)
+    mine = {"feedback": feedback.for_you(db), "testing": testing.for_you(db)} if is_admin(user) else {}  # (notes waiting for an admin: to approve, or Claude's questions)
     if not user or not can_moderate(user) or web.campaign(db) is None:
         return JSONResponse(mine, headers={"Cache-Control": "no-store"})
     return JSONResponse({"needs": len(needs(db, user)), "inbox": waiting_count(db), **mine}, headers={"Cache-Control": "no-store"})

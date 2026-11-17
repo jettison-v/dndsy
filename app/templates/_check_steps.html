@@ -1,0 +1,14 @@
+{# A check's steps as a walkthrough (app/testing.py `walk`; Working with Claude, Brett's 3A, Nov 17): a step a line, one
+   action each, numbered, with a box to tick as you go (kept on this device for this check only: app.js "the
+   walkthrough's ticks"); what to type in a dashed box, a button drawn as one, a box's name in bold, and why under it. #}
+{% macro walkthrough(c, ticks=true) -%}
+<ol class="walk" data-ticks="{{ c.id }}">{% for st in c.steps %}<li>{% if ticks %}<input type="checkbox" class="walk-tick" data-tick="{{ loop.index0 }}" aria-label="Step {{ loop.index }} done">{% endif %}<span class="walk-do">
+  {%- for p in st.parts %}{% if p.kind == "typed" %}<code class="typed">{{ p.text }}</code>{% elif p.kind == "press" %}<span class="press">{{ p.text }}</span>{% elif p.kind == "box" %}<b>{{ p.text }}</b>{% else %}{{ p.text }}{% endif %}{% endfor %}
+  {%- if st.why %}<span class="walk-why">{{ st.why }}</span>{% endif %}</span></li>{% endfor %}</ol>
+{%- endmacro %}
+
+{# The notes sent from a check (Failed…, + Issue): each its own, fixed and confirmed on its own (2A) #}
+{% macro issue_list(issues) -%}
+{% if issues %}<ul class="cc-issues">{% for f in issues %}<li data-issue="{{ f.id }}"><a href="/manage/feedback?tab=all&amp;open={{ f.id }}#fb-{{ f.id }}" data-no-peek>Note {{ f.id }}</a>
+  <span class="cc-issue-text">{{ f.title or (f.text | truncate(70)) }}</span> <span class="tag{{ ' done' if f.status == 'done' }}">{{ {"broken": "Broken", "idea": "An idea", "question": "A question"}.get(f.kind, "A note") }}{% if f.status == "done" %} · fixed{% endif %}</span></li>{% endfor %}</ul>{% endif %}
+{%- endmacro %}
