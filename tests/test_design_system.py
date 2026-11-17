@@ -107,3 +107,13 @@ def test_only_askdnds_three_fonts():
         for link in re.findall(r"fonts\.googleapis\.com/css2\?([^\"']+)", text):
             loaded = {f.replace("+", " ").split(":")[0] for f in re.findall(r"family=([^&]+)", link)}
             assert loaded == set(FONTS.values()), f"{p.name} loads {sorted(loaded)}"
+
+
+def test_every_count_is_the_one_count():
+    """One way for each thing (CLAUDE.md): a number beside a tab, heading or See all link is `count_pill` (_lists.html),
+    never a hand-made `<span class="count">`, so the Count's look changes in one place (Battle and Sheet, Brett's note
+    84, Nov 17). A count a script keeps current keeps the class and says so here."""
+    live = {"your_notes.html", "_lists.html", "design.html"}  # (Your notes' tabs, the Filters fold, the design page's samples)
+    made = [f"{p.name}:{n}" for p in (Path(__file__).parent.parent / "app" / "templates").rglob("*.html") if p.name not in live
+            for n, line in enumerate(p.read_text().splitlines(), 1) if re.search(r'class="count[" ]', line)]
+    assert not made, f"Use count_pill(n) from _lists.html: {made}"
