@@ -6011,7 +6011,7 @@ document.addEventListener('askdnd:mention', e => {
         if (!j) return;
         badge(j.count);
         const n = document.querySelector('[data-notes-tab="' + tab + '"]');
-        if (n && n.classList.contains('notes-tab-new')) { n.classList.remove('notes-tab-new'); n.textContent = e.target.querySelectorAll('[data-ls-row]').length; }
+        if (n && n.classList.contains('notes-tab-new')) { n.classList.remove('notes-tab-new'); const rows = e.target.querySelectorAll('[data-ls-row]').length; n.textContent = rows; n.hidden = !rows; }  // (a 0 isn't shown: Count)
       }).catch(() => {});
   });
   // Your notes' Reader (round 2, Layout B): a row opens its note beside the list (on a phone, under it), and the address
