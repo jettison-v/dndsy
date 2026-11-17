@@ -4252,7 +4252,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .cc-pill { background: var(--surface); border: 1px solid var(--blue); border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); color: var(--text); font: inherit; font-size: var(--fs-sm); box-shadow: var(--lift); cursor: pointer; }
 /* The card moves (Brett's 6A, Nov 17; note 83): dragged by its top bar, it settles in the nearest corner, kept on the device */
 .check-card-slot:has(.check-card[data-corner="bl"]), .check-card-slot:has(.check-card[data-corner="tl"]) { right: auto; left: max(var(--sp-4), env(safe-area-inset-left, 0px)); }
-.check-card-slot:has(.check-card[data-corner="tr"]), .check-card-slot:has(.check-card[data-corner="tl"]) { bottom: auto; top: calc(var(--sp-4) + 56px + env(safe-area-inset-top, 0px)); }
+.check-card-slot:has(.check-card[data-corner="tr"]), .check-card-slot:has(.check-card[data-corner="tl"]) { bottom: auto; top: calc(var(--bar-h) + 3 * var(--sp-4) + env(safe-area-inset-top, 0px)); }  /* (below the menu bar) */
 .cc-top[data-cc-drag] { cursor: grab; touch-action: none; user-select: none; }
 .check-card.dragging { cursor: grabbing; opacity: .92; }
 .cc-gap { flex: 1; }

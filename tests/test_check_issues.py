@@ -61,6 +61,11 @@ def test_an_issue_can_go_with_a_check_that_passes(admin, db):
     db.expire_all()
     assert db.get(Check, c).status == "ready" and db.get(Feedback, sent).check_id == c
     assert db.get(Check, c).history[-1]["what"].startswith("An issue")
+    admin.post(f"/manage/testing/{c}", data={"result": "passed"})
+    admin.post(f"/api/feedback/{sent}", json={"kind": "broken", "status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/503"}, headers=KEY)
+    db.expire_all()
+    own = db.scalar(select(Check).where(Check.feedback_id == sent))
+    assert own is not None and own.status == "fixed" and db.get(Check, c).status == "passed"  # (its fix comes back to be tried)
 
 
 def test_steps_are_a_walkthrough_held_to_its_rules(admin):

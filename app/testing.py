@@ -93,17 +93,21 @@ def for_note(db: Session, fb: Feedback, do: str = "", expect: str = "", admin_se
     pr = fb.pr if fb.pr.startswith("https://") else ""
     said = next((m.get("text", "") for m in reversed(fb.thread or []) if m.get("to") == "sender"), "")
     known = db.scalars(select(Check).where((Check.feedback_id == fb.id) | (Check.id == fb.check_id))).all()
-    if known:  # (fixed again: the check that failed comes back, never a second one; the code review, Nov 16)
-        for c in known:
-            if c.status != "failed":
-                continue
-            c.pr, c.said = pr or c.pr, said or c.said
-            left = [n for n in issues(db, c) if n.id != fb.id and n.kind != "idea" and n.status in NOTE_OPEN]
-            if left:  # (it comes back once every issue that broke it is fixed; an idea doesn't hold it back: 2A)
-                _note(c, f"Note {fb.id} fixed; " + ", ".join(f"note {n.id}" for n in left) + " still to go", "claude")
-            else:
-                mark(db, c, "fixed", who="claude")
-        return None
+    handled = any(c.feedback_id == fb.id for c in known)  # (its own check already: never a second one; the code review, Nov 16)
+    for c in known:
+        if c.status in ("fixed", "again") and c.id == fb.check_id:
+            handled = True  # (another issue of a check already coming back: its one retry covers this fix too)
+        if c.status != "failed":
+            continue
+        handled = True
+        c.pr, c.said = pr or c.pr, said or c.said
+        left = [n for n in issues(db, c) if n.id != fb.id and n.kind != "idea" and n.status in NOTE_OPEN]
+        if left:  # (it comes back once every issue that broke it is fixed; an idea doesn't hold it back: 2A)
+            _note(c, f"Note {fb.id} fixed; " + ", ".join(f"note {n.id}" for n in left) + " still to go", "claude")
+        else:
+            mark(db, c, "fixed", who="claude")
+    if handled:
+        return None  # (an issue sent with + Issue on a check that passed gets a check of its own, below)
     from urllib.parse import urlsplit
 
     page = urlsplit(fb.url or "")
