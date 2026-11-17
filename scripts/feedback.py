@@ -142,7 +142,8 @@ def live(base: str) -> None:
     import subprocess
 
     subprocess.run(["git", "fetch", "-q", "origin"], cwd=ROOT, check=False)  # (the running commit is known here)
-    running = json.loads(urllib.request.urlopen(base.rstrip("/") + "/health", timeout=30).read())["version"]
+    health = urllib.request.Request(base.rstrip("/") + "/health", headers={"User-Agent": "askdnd-feedback-script"})  # (a bare client is turned away)
+    running = json.loads(urllib.request.urlopen(health, timeout=30).read())["version"]
     for c in json.loads(call(base, "/api/checks?status=fixed"))["items"]:
         m = re.search(r"/pull/(\d+)", c["pr"] or "")
         if not m:

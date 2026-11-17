@@ -150,7 +150,8 @@ def test_check_live_brings_back_only_fixes_askdnd_runs(monkeypatch):
               {"id": 3, "pr": "https://github.com/jettison-v/dndsy/pull/12"}, {"id": 4, "pr": ""}]
     moved = []
     monkeypatch.setattr(fbs, "call", lambda base, path, body=None: (moved.append((path, body)) or b"{}") if body else _json.dumps({"items": checks}).encode())
-    monkeypatch.setattr(fbs.urllib.request, "urlopen", lambda url, timeout=0: io.BytesIO(b'{"version": "abc123"}'))
+    asked = []
+    monkeypatch.setattr(fbs.urllib.request, "urlopen", lambda req, timeout=0: (asked.append(req), io.BytesIO(b'{"version": "abc123"}'))[1])
     prs = {"10": {"state": "MERGED", "mergeCommit": {"oid": "inside"}}, "11": {"state": "OPEN", "mergeCommit": None},
            "12": {"state": "MERGED", "mergeCommit": {"oid": "later"}}}
 
@@ -164,3 +165,4 @@ def test_check_live_brings_back_only_fixes_askdnd_runs(monkeypatch):
     monkeypatch.setattr(sp, "run", run)
     fbs.live("https://askdnd.example")
     assert moved == [("/api/checks/1", {"status": "again"})]
+    assert asked[0].get_header("User-agent") == "askdnd-feedback-script"  # (askdnd.ai turns a bare client away: 403)
