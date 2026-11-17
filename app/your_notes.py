@@ -282,7 +282,7 @@ def works(request: Request, feedback_id: int, answer: str = Form(""), text: str 
 
     user = current_user(request)
     fb = next((x for x in notes_of(db, user) if x.id == feedback_id), None)
-    c = testing.player_check(db, fb) if fb is not None else None
+    c = testing.player_check(db, fb) if fb is not None and fb.status != "deleted" else None  # (a closed note isn't reopened)
     if c is None or answer not in ("yes", "no"):
         raise HTTPException(404)
     testing.answered(db, c, answer == "yes", text.strip())

@@ -143,13 +143,18 @@ def live(base: str) -> None:
     import subprocess
 
     subprocess.run(["git", "fetch", "-q", "origin"], cwd=ROOT, check=False)  # (the running commit is known here)
-    running = json.loads(urllib.request.urlopen(base.rstrip("/") + "/health", timeout=30).read())["version"]
+    health = urllib.request.Request(base.rstrip("/") + "/health", headers={"User-Agent": "askdnd-feedback-script"})  # (a bare client is turned away)
+    running = json.loads(urllib.request.urlopen(health, timeout=30).read())["version"]
     for c in json.loads(call(base, "/api/checks?status=fixed"))["items"]:
-        m = re.search(r"/pull/(\d+)", c["pr"] or "")
+        m = re.search(r"github\.com/jettison-v/dndsy/pull/(\d+)", c["pr"] or "")  # (only this repository's changes)
         if not m:
             print(f"Check {c['id']}: fixed, but no PR to follow")
             continue
-        pr = json.loads(subprocess.run(["gh", "pr", "view", m.group(1), "--json", "state,mergeCommit"], capture_output=True, text=True, check=True).stdout)
+        got = subprocess.run(["gh", "pr", "view", m.group(1), "--json", "state,mergeCommit"], capture_output=True, text=True, check=False)
+        if got.returncode:
+            print(f"Check {c['id']}: couldn't read PR {m.group(1)} ({got.stderr.strip()[:80]})")
+            continue
+        pr = json.loads(got.stdout)
         sha = (pr.get("mergeCommit") or {}).get("oid") or ""
         merged = pr.get("state") == "MERGED" and sha
         inside = merged and subprocess.run(["git", "merge-base", "--is-ancestor", sha, running], cwd=ROOT, capture_output=True).returncode == 0

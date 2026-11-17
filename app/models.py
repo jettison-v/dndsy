@@ -986,6 +986,8 @@ class Check(Timestamped, Base):
     pr: Mapped[str] = mapped_column(String(300), default="", server_default="")  # the change it checks
     said: Mapped[str] = mapped_column(Text, default="", server_default="")  # Claude's word on it (a run's outcome, what was fixed)
     history: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"at", "what", "who"}]
+    # when it came back to be tried (Try again): a player's three days and the fix-to-try email count from it
+    asked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class Place(Timestamped, Base):

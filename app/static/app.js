@@ -346,7 +346,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     p.querySelector('[data-hb-line]').textContent = said;
     p.querySelector('[data-hb-says]').textContent = said;
     const called = p.querySelector('[data-hb-called]');
-    p.querySelector('[data-hb-title]').textContent = (called && called.value.trim()) || (called && form.querySelector('[data-hb-name]').value.trim()) || p.dataset.hbKind;
+    // its own name when it has one; the kind (A roll, A bonus) when it's only the item's own name (Brett's design review)
+    const own = called && called.value.trim(), item = form.querySelector('[data-hb-name]').value.trim();
+    p.querySelector('[data-hb-title]').textContent = own && own !== item ? own : p.dataset.hbKind;
     p.querySelectorAll('[data-hb-when]').forEach(r => { r.hidden = r.dataset.hbWhen !== how; });
     p.querySelectorAll('[data-hb-to]').forEach(r => { r.hidden = ['on_hit', 'on_damage'].includes(hbVal(p, '_when')); });
     p.querySelectorAll('[data-hb-regain]').forEach(r => { r.hidden = !hbVal(p, 'charges_back'); });
@@ -5090,6 +5092,7 @@ document.addEventListener('click', e => {
   canvas.addEventListener('pointerdown', e => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [at(e)] }; });
   canvas.addEventListener('pointermove', e => { if (!drag) return; const p = at(e); if (drag.tool === 'draw') drag.pts.push(p); else drag.pts[1] = p; redraw(); });
   canvas.addEventListener('pointerup', () => { if (drag && drag.pts.length > 1) marks.push(drag); drag = null; redraw(); });
+  canvas.addEventListener('pointercancel', () => { drag = null; redraw(); });  // (a gesture the browser took over: no half mark)
   win.querySelectorAll('[data-fb-tool]').forEach(b => b.addEventListener('click', () => {
     tool = b.dataset.fbTool;
     win.querySelectorAll('[data-fb-tool]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -5720,7 +5723,7 @@ document.addEventListener('change', e => {
       const el = drag.el, sq = +el.dataset.sq || 1;
       el.style.left = (drag.left + dx / view.z) + 'px'; el.style.top = (drag.top + dy / view.z) + 'px'; el.classList.add('lifted');
       const to = snap(m, el), me = tokensOn(m).find(t => t.el === el);
-      measureLine(m, { x: me.x, y: me.y }, to, sq, me);
+      if (me) measureLine(m, { x: me.x, y: me.y }, to, sq, me);  // (a fresh copy of the map can replace the token mid-drag: no line then)
     }
   });
   function snap(m, el) {

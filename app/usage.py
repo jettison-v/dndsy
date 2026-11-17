@@ -68,7 +68,7 @@ FEATURES: list[tuple[str, str]] = [
     (r"^/dice$", "Your dice"),
     (r"^/feedback$", "Feedback for Claude"),
     (r"^/your-notes/", "Your notes"),
-    (r"^/email/inbox$", "Email settings"),
+    (r"^/email/(inbox|fixes)$", "Email settings"),
     (r"^/rules/terms/", "Rule terms"),
     (r"^/view-as", "View as"),
 ]

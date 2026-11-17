@@ -34,12 +34,13 @@ router = APIRouter()
 
 # What a check needs open, in the order a round takes them (the Reader's groups)
 SETUPS = {"laptop": "On your laptop, as you", "view_as": "Through View as", "iphone": "On your iPhone", "mac": "On your Mac",
-          "player": "With a player", "claude": "Claude ran these"}
+          "player": "With a player", "claude": "Claude runs these"}
 STATUSES = ("ready", "again", "failed", "fixed", "passed", "skipped", "claude")
 SAYS = {"ready": "Ready", "again": "Fixed · try again", "failed": "Failed", "fixed": "Fix on its way", "passed": "Passed", "skipped": "Skipped", "claude": "Claude ran it"}
 # The Reader's chips: which statuses each shows
 SHOWS = {"ready": ("ready", "again"), "again": ("again",), "player": (), "failed": ("failed", "fixed"), "claude": ("claude",), "done": ("passed", "skipped")}
-SHOW_SAYS = {"ready": "Ready", "again": "Try again", "player": "With a player", "failed": "Failed", "claude": "Claude ran", "done": "Done"}
+SHOW_OF = {"passed": "done", "skipped": "done", "ready": "ready", "failed": "failed"}  # (where a check marked so is listed)
+SHOW_SAYS = {"ready": "Ready", "again": "Try again", "player": "With a player", "failed": "Failed", "claude": "Claude's", "done": "Done"}
 TO_DO = ("ready", "again")  # what waits for the admin (the Manage menu's count)
 PLAYER_DAYS = 3  # a check on a player's note is theirs to confirm first; yours after this many days (Brett's 6C)
 DENIED = "Testing is for admins."
@@ -51,11 +52,13 @@ ROUND = "check_round"  # the session's open round: {"ids": [...], "i": n}
 
 def _with_player(c: Check) -> bool:
     """A check on a player's note, still theirs to confirm (asked fewer than PLAYER_DAYS days ago)."""
-    return c.setup == "player" and c.status in TO_DO and (datetime.now(UTC) - (c.updated_at or datetime.now(UTC))).days < PLAYER_DAYS
+    asked = c.asked_at or c.updated_at or datetime.now(UTC)
+    return c.setup == "player" and c.status in TO_DO and (datetime.now(UTC) - asked).days < PLAYER_DAYS
 
 
 def _for_admin(rows: list[Check]) -> list[Check]:
-    return [c for c in rows if not _with_player(c)]
+    """What's the admin's to try: not a player's still theirs, not one Claude runs on the Mac Mini's seats."""
+    return [c for c in rows if not _with_player(c) and c.setup != "claude"]
 
 
 def waiting(db: Session) -> int:
@@ -67,16 +70,25 @@ def for_note(db: Session, fb: Feedback, do: str = "", expect: str = "", admin_se
     """The check a broken note's fix comes with (Brett, Nov 16: every broken note gets its check), made when Claude marks
     it done with its PR: Fix on its way until the fix is live (`feedback.py check live`). One per note. A player's note
     is theirs to confirm (6C: setup "player"); an admin's goes to the queue."""
-    if db.scalar(select(Check).where(Check.feedback_id == fb.id)) is not None:
+    if fb.kind == "idea" and not admin_sent:
+        return None  # (a built idea isn't a fix for its sender to confirm)
+    pr = fb.pr if fb.pr.startswith("https://") else ""
+    said = next((m.get("text", "") for m in reversed(fb.thread or []) if m.get("to") == "sender"), "")
+    known = db.scalars(select(Check).where((Check.feedback_id == fb.id) | (Check.failed_id == fb.id))).all()
+    if known:  # (fixed again: the check that failed comes back, never a second one; the code review, Nov 16)
+        for c in known:
+            if c.status == "failed":
+                c.pr, c.said = pr or c.pr, said or c.said
+                mark(db, c, "fixed", who="claude")
         return None
     from urllib.parse import urlsplit
 
     page = urlsplit(fb.url or "")
-    path = (page.path + (f"?{page.query}" if page.query else "")) if page.path.startswith("/") and not page.path.startswith("//") else ""
-    said = next((m.get("text", "") for m in reversed(fb.thread or []) if m.get("to") == "sender"), "")
+    path = page.path + (f"?{page.query}" if page.query else "")
+    path = path if local_path(path) else ""
     c = Check(title=(fb.title or (fb.text or "").split(".")[0])[:160] or f"Note {fb.id}", area=str((fb.context or {}).get("page") or "")[:80],
               setup="laptop" if admin_sent else "player", path=path[:500], do=do or "Try what your note was about, where you saw it.",
-              expect=expect or "It works now.", minutes=2, feedback_id=fb.id, pr=fb.pr if fb.pr.startswith("https://") else "", said=said,
+              expect=expect or "It works now.", minutes=2, feedback_id=fb.id, pr=pr, said=said,
               status="fixed", history=[])
     _note(c, "Fix on its way", "claude")
     db.add(c)
@@ -101,20 +113,34 @@ def _note(c: Check, what: str, who: str) -> None:
 def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "") -> None:
     if status not in STATUSES:
         raise HTTPException(400, "Passed, failed, skipped or ready.")
+    if status == "again" and c.status != "again":
+        c.asked_at = datetime.now(UTC)  # (when it came back to be tried: a player's three days and their email count from it)
     c.status = status
     _note(c, SAYS[status] + (f": {said}" if said else ""), who)
 
 
-def failed(request: Request, db: Session, check_id: int, fb: Feedback) -> Check | None:
-    """The note an admin sent with Failed… on a check: the check is failed and tied to it (3A), and a round moves on."""
+def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, prod_note: int | None = None) -> Check | None:
+    """The note an admin sent with Failed… on a check: the check is failed and tied to it (3A), and a round moves on.
+    On staging the note goes to askdnd.ai's queue: the check here says which (`prod_note`)."""
     c = db.get(Check, check_id)
     if c is None:
         return None
-    c.failed_id = fb.id
-    mark(db, c, "failed", said=f"note {fb.id}")
+    c.failed_id = fb.id if fb is not None else None
+    mark(db, c, "failed", said=f"note {fb.id}" if fb is not None else f"note {prod_note} on askdnd.ai")
     db.commit()
-    _advance(request, c.id)
     return c
+
+
+def on_round(request: Request, check_id: int) -> bool:
+    """Whether this check is the round's current one (only then does marking it follow the round)."""
+    r = _round(request)
+    return bool(r) and r["i"] < len(r["ids"]) and r["ids"][r["i"]] == check_id
+
+
+def local_path(p: str) -> bool:
+    """An address on askdnd itself: starts with one /, never //, a backslash (browsers read /\\ as //) or a control
+    character (the code review, Nov 16: a note's address made a check's link that left askdnd)."""
+    return bool(p) and p.startswith("/") and not p.startswith("//") and "\\" not in p and not any(ord(ch) < 32 or ord(ch) == 127 for ch in p)
 
 
 def ordered(rows: list[Check]) -> list[Check]:
@@ -171,9 +197,14 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
         return denied
     show = show if show in SHOWS else "ready"
     counts = dict(db.execute(select(Check.status, func.count()).group_by(Check.status)).all())
-    players = sum(1 for c in db.scalars(select(Check).where(Check.setup == "player", Check.status.in_(TO_DO))) if _with_player(c))
-    rows = ordered(list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
-    rows = [c for c in rows if _with_player(c)] if show == "player" else _for_admin(rows) if show in ("ready", "again") else rows
+    waiting_players = [c for c in db.scalars(select(Check).where(Check.setup == "player", Check.status.in_(TO_DO))) if _with_player(c)]
+    players, players_again = len(waiting_players), sum(1 for c in waiting_players if c.status == "again")
+    claudes = dict(db.execute(select(Check.status, func.count()).where(Check.setup == "claude").group_by(Check.status)).all())
+    if show == "claude":  # (Claude's: the ones it runs on the Mac Mini, to run and run)
+        rows = ordered(list(db.scalars(select(Check).where(Check.setup == "claude", Check.status.in_(("ready", "again", "claude"))))))
+    else:
+        rows = ordered(list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
+        rows = [c for c in rows if _with_player(c)] if show == "player" else _for_admin(rows) if show in ("ready", "again") else rows
     items = [view(c) for c in rows]
     groups: dict[str, list[dict]] = {}
     for i in items:
@@ -182,8 +213,9 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
     notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({x for i in items for x in (i["feedback_id"], i["failed_id"]) if x})))}
     return templates.TemplateResponse(request, "testing.html", {
         "user": user, "show": show, "groups": groups, "picked": picked, "notes": notes,
-        "chips": [(k, SHOW_SAYS[k], players if k == "player" else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k in ("ready", "again") else 0))
-                  for k in SHOWS],
+        "chips": [(k, SHOW_SAYS[k], players if k == "player" else sum(claudes.get(s, 0) for s in ("ready", "again", "claude")) if k == "claude"
+                   else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k == "ready" else players_again if k == "again" else 0)
+                   - (sum(claudes.get(s, 0) for s in SHOWS[k]) if k in ("ready", "again") else 0)) for k in SHOWS],
         "ready_minutes": sum(i["minutes"] for i in items) if show == "ready" else 0, "round": current(request, db),
         "toast": request.session.pop("toast", None)})
 
@@ -227,8 +259,12 @@ def stop_round(request: Request):
     return RedirectResponse(leave(request, "/manage/testing"), status_code=303)
 
 
-def next_page(request: Request, db: Session, after: int) -> str:
-    """Where to go once a check is marked: the round's next check's page, else back to that check in the Reader."""
+def next_page(request: Request, db: Session, after: int, followed: bool = True) -> str:
+    """Where to go once a check is marked: the round's next check's page when it was the round's, else back to that
+    check in the Reader (a check marked from the list leaves a round where it was; the code review, Nov 16)."""
+    if not followed:
+        return f"/manage/testing?show=failed&check={after}"
+    _advance(request, after)
     now = current(request, db)
     return enter(request, db, db.get(Check, now["check"]["id"])) if now else leave(request, f"/manage/testing?show=failed&check={after}")
 
@@ -254,19 +290,22 @@ def enter(request: Request, db: Session, c: Check | None) -> str:
     if target:
         request.session["view_as"] = target
         request.session["view_as_back"] = "/manage/testing"
+        request.session["view_as_testing"] = True  # (Testing's own: leave() ends it, never one started from Accounts)
     else:
-        request.session.pop("view_as", None)
+        leave(request, "")
     return _page_of(c)
 
 
 def leave(request: Request, back: str) -> str:
-    """Back to your own view, at `back` (a round's end, or Go's one check marked)."""
-    request.session.pop("view_as", None)
+    """Back to your own view, at `back` (a round's end, or Go's one check marked): a View as Testing turned on ends; one
+    the admin started from Accounts stays."""
+    if request.session.pop("view_as_testing", None):
+        request.session.pop("view_as", None)
     return back
 
 
 def _page_of(c: Check | None) -> str:
-    return (c.path if c and c.path.startswith("/") and not c.path.startswith("//") else "/manage/testing") if c else "/manage/testing"
+    return c.path if c is not None and local_path(c.path) else "/manage/testing"
 
 
 @router.post("/manage/testing/{check_id:int}")
@@ -284,14 +323,17 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
         raise HTTPException(400, "Passed, skipped or ready.")
     mark(db, c, status)
     db.commit()
-    r = _round(request)
-    single = bool(r and r.get("back"))  # (Go: a round of one)
+    back = f"/manage/testing?show={SHOW_OF.get(status, 'ready')}&check={c.id}"  # (back to it, where it now is: the code review)
+    if not on_round(request, c.id):  # (marked from the list: a round stays where it was)
+        request.session["toast"] = web.notice(f"{SAYS[status]}: {c.title}")
+        return RedirectResponse(back, status_code=303)
+    single = bool(_round(request).get("back"))  # (Go: a round of one)
     _advance(request, c.id)
-    now = current(request, db) if r else None
+    now = current(request, db)
     if now:
         return RedirectResponse(enter(request, db, db.get(Check, now["check"]["id"])), status_code=303)
-    request.session["toast"] = web.notice("That's the round done." if r and not single else f"{SAYS[status]}: {c.title}")
-    return RedirectResponse(leave(request, "/manage/testing" if r and not single else f"/manage/testing?check={c.id}"), status_code=303)
+    request.session["toast"] = web.notice(f"{SAYS[status]}: {c.title}" if single else "That's the round done.")
+    return RedirectResponse(leave(request, back if single else "/manage/testing"), status_code=303)
 
 
 @router.get("/manage/testing/card", response_class=HTMLResponse)
@@ -323,7 +365,7 @@ def _fill(db: Session, c: Check, body: dict) -> None:
             setattr(c, k, str(body.get(k) or "")[:n])
     if c.setup not in SETUPS:
         raise HTTPException(400, f"setup: one of {', '.join(SETUPS)}")
-    if c.path and (not c.path.startswith("/") or c.path.startswith("//")):
+    if c.path and not local_path(c.path):
         raise HTTPException(400, "path: an askdnd page, starting with /")  # (it's Go's link and a round's redirect)
     if c.pr and not c.pr.startswith("https://"):
         raise HTTPException(400, "pr: an https:// link")

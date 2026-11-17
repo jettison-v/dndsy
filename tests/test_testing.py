@@ -76,7 +76,8 @@ def test_go_brings_the_check_with_its_card_and_comes_back_to_it(admin, db):
     assert r.status_code == 303 and r.headers["location"] == "/party"
     assert f'data-check-card="{c["id"]}"' in admin.get("/manage/testing/card").text
     r = admin.post(f"/manage/testing/{c['id']}", data={"result": "passed"}, follow_redirects=False)
-    assert r.headers["location"] == f"/manage/testing?check={c['id']}" and admin.get("/manage/testing/card").status_code == 204
+    assert r.headers["location"] == f"/manage/testing?show=done&check={c['id']}" and admin.get("/manage/testing/card").status_code == 204
+    assert f'data-check-read="{c["id"]}"' in admin.get(r.headers["location"]).text  # (back to it, where it's now listed)
 
 
 def test_claude_moves_a_fixed_check_back_to_try_again(admin, db):
@@ -116,7 +117,7 @@ def test_go_sees_a_check_through_its_players_eyes_and_comes_back_to_your_own(adm
     assert "Viewing as" in admin.get("/").text  # (View as is on)
     assert f'data-check-card="{c["id"]}"' in admin.get("/manage/testing/card").text  # (the card is still the admin's)
     r = admin.post(f"/manage/testing/{c['id']}", data={"result": "passed"}, follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == f"/manage/testing?check={c['id']}"  # (not refused while viewing)
+    assert r.status_code == 303 and r.headers["location"] == f"/manage/testing?show=done&check={c['id']}"  # (not refused while viewing)
     assert "Viewing as" not in admin.get("/").text  # (back to your own view)
 
     own = add(admin, path="/party", as_character=cole.id)
@@ -150,7 +151,8 @@ def test_check_live_brings_back_only_fixes_askdnd_runs(monkeypatch):
               {"id": 3, "pr": "https://github.com/jettison-v/dndsy/pull/12"}, {"id": 4, "pr": ""}]
     moved = []
     monkeypatch.setattr(fbs, "call", lambda base, path, body=None: (moved.append((path, body)) or b"{}") if body else _json.dumps({"items": checks}).encode())
-    monkeypatch.setattr(fbs.urllib.request, "urlopen", lambda url, timeout=0: io.BytesIO(b'{"version": "abc123"}'))
+    asked = []
+    monkeypatch.setattr(fbs.urllib.request, "urlopen", lambda req, timeout=0: (asked.append(req), io.BytesIO(b'{"version": "abc123"}'))[1])
     prs = {"10": {"state": "MERGED", "mergeCommit": {"oid": "inside"}}, "11": {"state": "OPEN", "mergeCommit": None},
            "12": {"state": "MERGED", "mergeCommit": {"oid": "later"}}}
 
@@ -164,6 +166,7 @@ def test_check_live_brings_back_only_fixes_askdnd_runs(monkeypatch):
     monkeypatch.setattr(sp, "run", run)
     fbs.live("https://askdnd.example")
     assert moved == [("/api/checks/1", {"status": "again"})]
+    assert asked[0].get_header("User-agent") == "askdnd-feedback-script"  # (askdnd.ai turns a bare client away: 403)
 
 
 def test_a_fixed_broken_note_comes_with_its_check(admin, db):
@@ -210,10 +213,80 @@ def test_a_players_fix_is_theirs_to_confirm_then_yours_after_three_days(admin, p
     assert db.get(Check, c.id).status == "failed" and db.get(Feedback, fb).status == "review"  # (back, to an admin first)
     assert "It still closes on a new roll." in db.get(Feedback, fb).thread[-1]["text"]
 
-    db.execute(update(Check).where(Check.id == c.id).values(status="again", updated_at=Check.updated_at - timedelta(days=4)))
+    db.execute(update(Check).where(Check.id == c.id).values(status="again", asked_at=Check.asked_at - timedelta(days=4)))
     db.flush()
     assert f'data-check="{c.id}"' in admin.get("/manage/testing").text  # (three days unanswered: the admin's)
     assert player.post(f"/your-notes/feedback/{fb}/works", data={"answer": "yes"}).status_code in (200, 303)
     db.expire_all()
     assert db.get(Check, c.id).status == "passed"
     assert admin.post(f"/your-notes/feedback/{fb}/works", data={"answer": "yes"}).status_code == 404  # (only its sender answers)
+
+
+def test_claudes_own_checks_stay_out_of_the_admins_list(admin, db):
+    """The ones Claude runs on the Mac Mini's seats (setup claude) are Claude's: under Claude's chip, to run or run, never
+    in the admin's Ready list, round or count."""
+    mine = add(admin, title="On the seats", setup="claude")
+    ran = add(admin, title="Ran on the seats", setup="claude")
+    admin.post(f"/api/checks/{ran['id']}", json={"status": "claude", "said": "12 of 12"}, headers=KEY)
+    ready = admin.get("/manage/testing").text
+    assert f'data-check="{mine["id"]}"' not in ready and admin.get("/c/main/manage/counts").json()["testing"] == 0
+    claude = admin.get("/manage/testing?show=claude").text
+    assert f'data-check="{mine["id"]}"' in claude and f'data-check="{ran["id"]}"' in claude
+
+
+def test_the_code_reviews_edges(admin, player, db, monkeypatch):
+    """The code review (Nov 16): a check marked from the list leaves a round where it was; a failed check comes back
+    when its note is fixed again (never a second one); a player's idea gets no check; a note's address that would leave
+    askdnd (a backslash) makes no link; a later edit doesn't restart a player's three days; a check id that isn't a
+    number is ignored, not a server error; Still broken on a closed note is refused; Failed… on staging marks the check
+    with askdnd.ai's note."""
+    from datetime import UTC, datetime, timedelta
+
+    from app import feedback as fbm
+    from tests.roles import set_role
+
+    one, two = add(admin, title="One", path="/party"), add(admin, title="Two", path="/c/main/dm")
+    admin.post("/manage/testing/round", data={})
+    r = admin.post(f"/manage/testing/{two['id']}", data={"result": "skipped"}, follow_redirects=False)  # (not the round's current one)
+    assert r.headers["location"] == f"/manage/testing?show=done&check={two['id']}"
+    assert f'data-check-card="{one["id"]}"' in admin.get("/manage/testing/card").text  # (the round is still on One)
+
+    fb = note(admin).json()["id"]
+    admin.post(f"/api/feedback/{fb}", json={"kind": "broken", "status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/1"}, headers=KEY)
+    c = db.scalar(select(Check).where(Check.feedback_id == fb))
+    admin.post(f"/api/checks/{c.id}", json={"status": "failed"}, headers=KEY)
+    admin.post(f"/api/feedback/{fb}", json={"status": "new"}, headers=KEY)
+    admin.post(f"/api/feedback/{fb}", json={"status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/2"}, headers=KEY)
+    db.expire_all()
+    assert [(x.id, x.status, x.pr) for x in db.scalars(select(Check).where(Check.feedback_id == fb))] == [(c.id, "fixed", "https://github.com/jettison-v/dndsy/pull/2")]
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    idea = note(player, kind="idea").json()["id"]
+    admin.post(f"/api/feedback/{idea}", json={"status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/3"}, headers=KEY)
+    assert db.scalar(select(Check).where(Check.feedback_id == idea)) is None
+    sly = note(player, url="https://askdnd.ai/\\evil.example/x").json()["id"]
+    admin.post(f"/api/feedback/{sly}", json={"status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/4"}, headers=KEY)
+    assert db.scalar(select(Check).where(Check.feedback_id == sly)).path == ""
+
+    mine = db.scalar(select(Check).where(Check.feedback_id == sly))
+    admin.post(f"/api/checks/{mine.id}", json={"status": "again"}, headers=KEY)
+    db.expire_all()
+    mine = db.get(Check, mine.id)
+    mine.asked_at = datetime.now(UTC) - timedelta(days=4)
+    db.commit()
+    admin.post(f"/api/checks/{mine.id}", json={"title": "Renamed"}, headers=KEY)  # (an edit: still asked four days ago)
+    assert f'data-check="{mine.id}"' in admin.get("/manage/testing").text
+
+    assert note(admin, check=True).status_code == 200  # (true isn't a check id)
+    closed = db.get(Feedback, sly)
+    closed.status = "deleted"
+    db.commit()
+    assert player.post(f"/your-notes/feedback/{sly}/works", data={"answer": "no"}).status_code == 404
+
+    monkeypatch.setattr(config, "STAGING", True)
+    monkeypatch.setattr(fbm, "to_prod", lambda n: {"id": 4242, "review": False})
+    three = add(admin, title="Three")
+    sent = note(admin, check=three["id"]).json()
+    db.expire_all()
+    assert db.get(Check, three["id"]).status == "failed" and "4242" in db.get(Check, three["id"]).history[-1]["what"] and sent["next"]
