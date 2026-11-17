@@ -202,6 +202,25 @@ header.top { display: grid; gap: 10px; }
 }
 </style>
 <style>
+.orow2 { display: grid; grid-template-columns: 22px 24px minmax(0, 1.5fr) auto minmax(0, 1.3fr) minmax(0, .9fr) 34px; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: .88rem; cursor: pointer; }
+.orow2.top { border-color: var(--amber); }
+.orow2 .num { color: var(--faint); font: 700 .8rem/1 var(--sans); text-align: right; }
+.orow2 .t b { display: block; font-size: .92rem; } .orow2 .t span { color: var(--muted); font-size: .76rem; }
+.orow2 .sz { color: var(--muted); font-size: .78rem; text-align: center; }
+.orow2 > .turn, .orow2 > .health { justify-self: start; }
+.prog { display: grid; gap: 4px; min-width: 0; } .prog span { color: var(--muted); font-size: .74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar2 { height: 6px; border-radius: 999px; background: var(--surface-3); overflow: hidden; } .bar2 i { display: block; height: 100%; background: var(--green); border-radius: 999px; }
+.health { font: 700 .7rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; white-space: nowrap; }
+.h-ok { background: var(--green-soft); color: var(--green); } .h-wait { background: var(--amber-soft); color: var(--amber); } .h-stuck { background: transparent; box-shadow: inset 0 0 0 1px var(--amber); color: var(--amber); }  /* (red is kept for a failed try only: brief v2) */ .h-none { background: var(--surface-3); color: var(--muted); }
+.stages { display: flex; flex-wrap: wrap; gap: 4px; } .stages span { font: 600 .72rem/1 var(--sans); padding: 5px 8px; border-radius: 6px; background: var(--surface); color: var(--faint); }
+.stages .done { color: var(--muted); } .stages .now { background: var(--amber-soft); color: var(--amber); }
+.kv { display: grid; grid-template-columns: 96px 110px minmax(0, 1fr); gap: 10px; font-size: .86rem; align-items: baseline; } .kv span:first-child { color: var(--muted); } .kv span:last-child { color: var(--muted); font-size: .8rem; }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .88rem; }
+.checklist li { display: flex; gap: 8px; align-items: center; color: var(--muted); } .checklist li::before { content: "○"; color: var(--faint); }
+.checklist li.done { color: var(--text); } .checklist li.done::before { content: "✓"; color: var(--green); } .checklist li.cur { color: var(--strong); font-weight: 600; } .checklist li.cur::before { content: "●"; color: var(--amber); }
+.upd { display: grid; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); font-size: .86rem; } .upd:last-child { border-bottom: 0; } .upd b { font-size: .78rem; color: var(--muted); font-weight: 600; }
+.feed { display: grid; gap: 8px; } .fitem { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 12px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; } .fitem p { color: var(--muted); font-size: .86rem; } .fitem > .turn, .fitem > .health { justify-self: start; }
+@media (max-width: 900px) { .orow2 { grid-template-columns: 22px minmax(0, 1fr) auto; } .orow2 .num, .orow2 .sz, .orow2 .prog, .orow2 .health { display: none; } .kv { grid-template-columns: 90px minmax(0, 1fr); } .kv span:last-child { grid-column: 1 / -1; } .fitem { grid-template-columns: minmax(0, 1fr); } }
 /* The Roadmap (Brett, Nov 17): players see, weigh in and comment; Brett sets the order Claude works in. */
 .cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
 .col { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 10px; align-content: start; min-width: 0; }
@@ -265,29 +284,32 @@ header.top { display: grid; gap: 10px; }
 
 <div class="wrap">
 <header class="top">
-  <span class="lbl">Mockup · Nov 17 · the Roadmap · players weigh in, you set the order</span>
+  <span class="lbl">Mockup · Nov 17 · the Roadmap · an internal tool first</span>
   <h1>The Roadmap</h1>
-  <p class="meta">What's coming to askdnd, as players see it (what's coming, how much it matters to them, a word on it)
-  and as you run it (one ordered list; I work from the top). It replaces the long Roadmap page with data you reorder,
-  and sits on top of <a href="https://claude.ai/artifact/LQMNBNHQpZ7Gand4mu1cyK" target="_blank" rel="noopener">Found, Fixed, Tried</a>: an item is
-  delivered in areas. Drawn from how Productboard, Canny, Jira Product Discovery, Aha!, Featurebase and Linear do it
-  (research kept with this page).</p>
+  <p class="meta">Where every piece of work stands, in the order I work in. It replaces the long Roadmap page I rewrite
+  by hand: each item's progress is read from the real records (its areas, issues, checks and pull requests), says whose
+  turn it is and what's next, and keeps its updates, decisions and documents. Players seeing it and weighing in is the
+  nice-to-have, drawn last and built later. It sits on top of <a href="https://claude.ai/artifact/LQMNBNHQpZ7Gand4mu1cyK" target="_blank" rel="noopener">Found, Fixed, Tried</a>:
+  an item is delivered in areas.</p>
   <div class="where-lives">
-    <div><b>For everyone at the table</b>? › What's coming (/roadmap): Now, Next, Later and What's new. Players weigh in and comment; nothing about the build shows.</div>
-    <div><b>For you</b>Manage › askdnd › Roadmap: the one ordered list, each item's public words and its internal notes, the players' votes, and what's waiting on you (also in Testing's For you).</div>
-    <div><b>For me</b>The top item that isn't waiting on you is what I work on next, through its areas; I read the order from askdnd, never from a page I wrote.</div>
+    <div><b>For you</b>Manage › askdnd › Roadmap: the ordered list with each item's progress and health, what changed since you last looked, each item's page, and everything shipped. What's waiting on you also shows in Testing's For you.</div>
+    <div><b>For me</b>The top item that isn't waiting on you is what I work on next, through its areas. I post an update to an item when its state changes, so you read what changed instead of a long page.</div>
+    <div><b>For players, later</b>? › What's coming: Now, Next, Later and What's new, with how much each matters to them. Drawn at the end; not part of the first build.</div>
   </div>
 </header>
 
 <nav class="shots" aria-label="Screens">
-  <button type="button" class="shot" data-shot="coming" aria-pressed="true"><small>1</small>What's coming</button>
-  <button type="button" class="shot" data-shot="item"><small>2</small>Weighing in</button>
-  <button type="button" class="shot" data-shot="new"><small>3</small>What's new</button>
-  <button type="button" class="shot" data-shot="order"><small>4</small>Your order</button>
-  <button type="button" class="shot" data-shot="edit"><small>5</small>An item</button>
-  <button type="button" class="shot" data-shot="move"><small>6</small>Moving it</button>
-  <button type="button" class="shot" data-shot="ideas"><small>7</small>Players' ideas</button>
-  <button type="button" class="shot" data-shot="claude"><small>8</small>What I read</button>
+  <button type="button" class="shot" data-shot="order" aria-pressed="true"><small>1</small>Your roadmap</button>
+  <button type="button" class="shot" data-shot="edit"><small>2</small>An item's progress</button>
+  <button type="button" class="shot" data-shot="updates"><small>3</small>What changed</button>
+  <button type="button" class="shot" data-shot="shipped"><small>4</small>Shipped</button>
+  <button type="button" class="shot" data-shot="move"><small>5</small>Moving it</button>
+  <button type="button" class="shot" data-shot="claude"><small>6</small>What I read</button>
+  <span class="note" style="align-self:center;margin:0 4px">For players, later:</span>
+  <button type="button" class="shot" data-shot="coming"><small>7</small>What's coming</button>
+  <button type="button" class="shot" data-shot="item"><small>8</small>Weighing in</button>
+  <button type="button" class="shot" data-shot="new"><small>9</small>What's new</button>
+  <button type="button" class="shot" data-shot="ideas"><small>10</small>Players' ideas</button>
 </nav>
 
 <div class="why" aria-live="polite"><p id="why-text"></p><span class="notes-tag" id="why-notes"></span></div>
@@ -374,20 +396,48 @@ header.top { display: grid; gap: 10px; }
     <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
     <div class="page">
       <div class="ptitle"><h2>Roadmap</h2><span class="btn small">+ New item</span></div>
-      <div class="tabs"><span class="tab on">The order</span><span class="tab" data-go="ideas">Players' ideas <span class="count">2</span></span><span class="tab">Shipped</span><span class="tab">Not doing</span></div>
-      <div class="chips"><span class="chip on">Everything</span><span class="chip">Waiting on you <small>2</small></span><span class="chip">Players see <small>6</small></span><span class="chip">Internal only <small>3</small></span></div>
-      <p class="note">Drag to reorder. I work from the top: the first item that isn't waiting on you, one area at a time. Players' interest informs you; it never moves anything by itself.</p>
+      <div class="tabs"><span class="tab on">The order</span><span class="tab" data-go="updates">What changed <span class="count">4</span></span><span class="tab" data-go="shipped">Shipped</span><span class="tab">Not doing</span></div>
+      <div class="chips"><span class="chip on">Everything</span><span class="chip">Waiting on you <small>2</small></span><span class="chip">Stuck <small>1</small></span><span class="chip">The VTT <small>9</small></span></div>
+      <p class="note">Drag to reorder: I work from the top, the first item that isn't waiting on you, one area at a time. Progress is read from the records, never typed.</p>
       <div class="olist">
         <div class="osec"><span>Now</span><span>2</span></div>
-        <div class="orow top"><span class="grip">⋮⋮</span><span class="num">1</span><div class="t"><b>Feedback and Testing, cleaned up</b><span>Found, Fixed, Tried · areas: 1 of 3 done</span></div><span class="turn y">Yours</span><span class="lock">Internal only</span><span class="sz">L</span><span class="ar">Your verdict on the screens</span></div>
-        <div class="orow" data-go="edit"><span class="grip">⋮⋮</span><span class="num">2</span><div class="t"><b>Get ready before your turn</b><span>Prepare for your turn · no areas yet</span></div><span class="turn c">Claude's</span><span class="care"><i>●●●</i> 4 care · 2 must</span><span class="sz">M</span><span class="ar">Next: the mockup</span></div>
+        <div class="orow2 top" data-go="edit"><span class="grip">⋮⋮</span><span class="num">1</span>
+          <div class="t"><b>Feedback and Testing, cleaned up</b><span>Next: your verdict on the screens</span></div>
+          <span class="turn y">Yours</span>
+          <div class="prog"><div class="bar2"><i style="width:35%"></i></div><span>Design · 1 of 3 areas · 13 notes</span></div>
+          <span class="health h-wait">Waiting on you · 1 day</span><span class="sz">L</span></div>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">2</span>
+          <div class="t"><b>Get ready before your turn</b><span>Next: the mockup</span></div>
+          <span class="turn c">Claude's</span>
+          <div class="prog"><div class="bar2"><i style="width:5%"></i></div><span>Planning · no areas yet</span></div>
+          <span class="health h-ok">On track</span><span class="sz">M</span></div>
         <div class="osec"><span>Next</span><span>3</span></div>
-        <div class="orow"><span class="grip">⋮⋮</span><span class="num">3</span><div class="t"><b>An easier homebrew item builder</b><span>Item Builder area waiting · 3 notes</span></div><span class="turn c">Claude's</span><span class="care"><i>●●</i> 2 care</span><span class="sz">M</span><span class="ar">Item Builder</span></div>
-        <div class="orow"><span class="grip">⋮⋮</span><span class="num">4</span><div class="t"><b>The DM's creatures on the table</b><span>Phase 2 of the VTT</span></div><span class="turn c">Claude's</span><span class="care"><i>●●●</i> 3 care · 1 must</span><span class="sz">L</span><span class="ar">—</span></div>
-        <div class="orow"><span class="grip">⋮⋮</span><span class="num">5</span><div class="t"><b>Retire Railway's old "dev" environment</b><span>Housekeeping</span></div><span class="turn y">Yours</span><span class="lock">Internal only</span><span class="sz">S</span><span class="ar">A Railway click</span></div>
-        <div class="osec"><span>Later</span><span>3</span></div>
-        <div class="orow"><span class="grip">⋮⋮</span><span class="num">6</span><div class="t"><b>Voice and video at the table</b><span>Phase 6</span></div><span class="turn x">Not started</span><span class="care"><i>●●</i> 2 care</span><span class="sz">L</span><span class="ar">—</span></div>
-        <div class="orow"><span class="grip">⋮⋮</span><span class="num">7</span><div class="t"><b>The kit for your next project</b><span>After Feedback and Testing</span></div><span class="turn x">Not started</span><span class="lock">Internal only</span><span class="sz">L</span><span class="ar">—</span></div>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">3</span>
+          <div class="t"><b>An easier homebrew item builder</b><span>Next: fix the Item Builder area</span></div>
+          <span class="turn c">Claude's</span>
+          <div class="prog"><div class="bar2"><i style="width:60%"></i></div><span>Slice A shipped · 3 notes open · 3 checks</span></div>
+          <span class="health h-ok">On track</span><span class="sz">M</span></div>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">4</span>
+          <div class="t"><b>The DM's creatures on the table</b><span>Next: the plan</span></div>
+          <span class="turn x">Not started</span>
+          <div class="prog"><div class="bar2"><i style="width:0%"></i></div><span>Phase 2 of the VTT</span></div>
+          <span class="health h-none">No update yet</span><span class="sz">L</span></div>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">5</span>
+          <div class="t"><b>Retire Railway's old "dev" environment</b><span>Next: a click in Railway (yours)</span></div>
+          <span class="turn y">Yours</span>
+          <div class="prog"><div class="bar2"><i style="width:80%"></i></div><span>Everything moved off it</span></div>
+          <span class="health h-stuck">Stuck · 9 days</span><span class="sz">S</span></div>
+        <div class="osec"><span>Later</span><span>2</span></div>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">6</span>
+          <div class="t"><b>Voice and video at the table</b><span>Phase 6 of the VTT</span></div>
+          <span class="turn x">Not started</span>
+          <div class="prog"><div class="bar2"><i style="width:0%"></i></div><span>—</span></div>
+          <span class="health h-none">—</span><span class="sz">L</span></div>
+        <div class="orow2"><span class="grip">⋮⋮</span><span class="num">7</span>
+          <div class="t"><b>The kit for your next project</b><span>After Feedback and Testing</span></div>
+          <span class="turn x">Not started</span>
+          <div class="prog"><div class="bar2"><i style="width:0%"></i></div><span>—</span></div>
+          <span class="health h-none">—</span><span class="sz">L</span></div>
       </div>
     </div>
   </section>
@@ -396,28 +446,63 @@ header.top { display: grid; gap: 10px; }
   <section data-screen="edit" hidden>
     <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
     <div class="page">
-      <div class="ptitle"><h2>Get ready before your turn</h2><span class="turn c">Claude's</span><span class="note">Now · #2 in your order · Size M</span></div>
-      <div class="act"><span class="btn small" data-go="move">Move to… ▾</span><span class="btn small">Players see it</span><span class="btn small">Close with a reason…</span></div>
+      <div class="ptitle"><h2>Feedback and Testing, cleaned up</h2><span class="turn y">Yours</span><span class="note">Now · #1 in your order · Size L</span></div>
+      <div class="sline"><span class="health h-wait">Waiting on you · 1 day</span>Your verdict on the screens; then I write the build plan in slices.</div>
+      <div class="act"><span class="btn go small">Your verdict on the screens →</span><span class="btn small" data-go="move">Move to Next or Later…</span><span class="btn small">Pause it…</span><span class="btn small">Not doing, with why…</span></div>
       <div class="two-panels">
-        <div class="pbox"><span class="plabel">What players see</span>
-          <label class="field">Name<span class="input">Get ready before your turn</span></label>
-          <label class="field">In a sentence or two (the problem, not the build)<span class="input">See your options, slots and what's ready while others play, so your turn starts fast.</span></label></div>
-        <div class="pbox internal"><span class="plabel">Only you and Claude</span>
-          <p style="font-size:.88rem"><b>Next step:</b> Claude draws the mockup; then your picks.</p>
-          <p style="font-size:.88rem"><b>Plan:</b> <a>prepare-turn.md</a> · <b>Mockups:</b> none yet</p>
-          <p style="font-size:.88rem"><b>Areas:</b> none yet · <b>Notes and ideas:</b> 2 from players, 1 yours</p>
-          <label class="field">Notes<span class="input ph">For the build; players never see these</span></label></div>
+        <div class="pbox"><span class="plabel">Progress · read from the records</span>
+          <div class="stages"><span class="done">Idea</span><span class="done">Research</span><span class="now">Design</span><span>Build</span><span>Try</span><span>Shipped</span></div>
+          <div class="kv"><span>Areas</span><b>1 of 3 done</b><span>Working with Claude done · Found, Fixed, Tried waiting on you · Values that update · not started</span></div>
+          <div class="kv"><span>Notes</span><b>13 open</b><span>87, 88, 106, 109 to 116, 121, 123 · in Found, Fixed, Tried</span></div>
+          <div class="kv"><span>Checks</span><b>16 passed, 1 failed</b><span>check 46 failed with 4 issues</span></div>
+          <div class="kv"><span>Pull requests</span><b>9 merged</b><span>408 to 416 · live on askdnd.ai</span></div></div>
+        <div class="pbox"><span class="plabel">Steps</span>
+          <ol class="checklist"><li class="done">Research the tools that do this</li><li class="done">Brief, agreed (every pick A)</li><li class="done">Devil's-advocate audit</li><li class="done">Brief v2 and the screens</li><li class="cur">Your verdict on the screens <span class="turn y">Yours</span></li><li>Build plan in slices</li><li>Slice 1: the record and the things</li><li>Slices 2 to 5</li></ol></div>
       </div>
-      <div class="pbox"><span class="plabel">How much it matters to them · 4 of 5 answered</span>
-        <div class="votes">
-          <div class="vote"><b>Big C</b><span>Must have</span><span>I lose track of my bonus actions every fight</span></div>
-          <div class="vote"><b>Trah</b><span>Must have</span><span>Whether I still have my reaction</span></div>
-          <div class="vote"><b>Cole</b><span>Important</span><span>Wild Shape forms there too</span></div>
-          <div class="vote"><b>No Name</b><span>Nice to have</span><span class="note">no reason given</span></div></div></div>
-      <div class="pbox"><span class="plabel">3 comments</span>
-        <div class="convo"><div class="bub them"><small>Cole</small>Would love to see my Wild Shape forms there too.</div>
-          <div class="bub them"><small>Trah</small>And whether I still have my reaction.</div></div>
-        <div class="sendline"><span class="input ph" style="flex:1">Reply to the table</span><span class="btn small">Comment</span><span class="btn quiet small">Hide a comment…</span></div></div>
+      <div class="two-panels">
+        <div class="pbox"><span class="plabel">Updates · newest first</span>
+          <div class="upd"><b>Claude · Nov 17, 23:40</b><p>Brief v2 and the screens are drawn with every audit finding; waiting on your verdict.</p></div>
+          <div class="upd"><b>Claude · Nov 17, 23:05</b><p>Audit done: the direction holds; three standing-rule breaks become rebuild requirements (tests kept).</p></div>
+          <div class="upd"><b>You · Nov 17, 22:10</b><p>Agreed every recommendation; asked for a real mockup.</p></div></div>
+        <div class="pbox"><span class="plabel">Decisions and documents</span>
+          <div class="kv"><span>Brief</span><b>v2</b><span>Found, Fixed, Tried · agreed v1</span></div>
+          <div class="kv"><span>Screens</span><b>v2</b><span>waiting on your verdict</span></div>
+          <div class="kv"><span>Audit</span><b>Nov 17</b><span>read</span></div>
+          <div class="kv"><span>Decided</span><b>6</b><span>every pick A · migration not a concern · fix in the rebuild</span></div>
+          <details class="fold"><summary class="note">Players (later): none weigh in on an internal item</summary></details></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What changed -->
+  <section data-screen="updates" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Roadmap</h2></div>
+      <div class="tabs"><span class="tab" data-go="order">The order</span><span class="tab on">What changed <span class="count">4</span></span><span class="tab" data-go="shipped">Shipped</span><span class="tab">Not doing</span></div>
+      <p class="note">Since you last looked (Nov 17, 21:00). Each line is an update on one item; opening an item marks its updates read, everywhere at once.</p>
+      <div class="feed">
+        <div class="fitem"><span class="turn y">Yours</span><div><b>Feedback and Testing, cleaned up</b><p>Brief v2 and the screens drawn; waiting on your verdict.</p></div><span class="note">23:40</span></div>
+        <div class="fitem"><span class="turn c">Claude's</span><div><b>Get ready before your turn</b><p>Moved to Now by you; next: the mockup.</p></div><span class="note">22:30</span></div>
+        <div class="fitem"><span class="turn x">Shipped</span><div><b>Counts you can read at a glance</b><p>Battle and Sheet's area done: both checks passed; PR 415 live.</p></div><span class="note">21:38</span></div>
+        <div class="fitem"><span class="health h-stuck">Stuck</span><div><b>Retire Railway's old "dev" environment</b><p>Waiting 9 days on a click in Railway: Settings › Environments › dev › Delete.</p></div><span class="note">daily</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Shipped -->
+  <section data-screen="shipped" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Roadmap</h2></div>
+      <div class="tabs"><span class="tab" data-go="order">The order</span><span class="tab" data-go="updates">What changed <span class="count">4</span></span><span class="tab on">Shipped</span><span class="tab">Not doing</span></div>
+      <div class="chips"><span class="chip on">All 137</span><span class="chip">This week <small>18</small></span><span class="chip">The VTT</span><span class="chip">Feedback and Testing</span></div>
+      <div class="shipped">
+        <div class="ship"><span class="d">Nov 17</span><div><b>Working with Claude, round 2</b><p>Undo Failed leaves nothing; Claude's links clickable. PR 416 · item: Feedback and Testing</p></div><span class="btn small">PR ↗</span></div>
+        <div class="ship"><span class="d">Nov 17</span><div><b>Counts you can read at a glance</b><p>The Count as a pill; no heading over status marks. PR 415 · notes 84, 86</p></div><span class="btn small">PR ↗</span></div>
+        <div class="ship"><span class="d">Nov 17</span><div><b>Feedback's note, rebuilt</b><p>Evidence first, the conversation, one main action. PR 414</p></div><span class="btn small">PR ↗</span></div>
+      </div>
+      <p class="note">Each shipped piece links its pull request, its notes and its item; the Roadmap page's 137 done lines come over as these.</p>
     </div>
   </section>
 
@@ -474,20 +559,15 @@ header.top { display: grid; gap: 10px; }
 
 <section class="verdict" aria-labelledby="v-h">
   <h2 id="v-h">Your picks and verdict</h2>
-  <p class="meta">Four choices the research left open, with mine marked, then one verdict for the whole mockup. Saved on this page, where I read it.</p>
+  <p class="meta">Two choices for the internal tool, mine marked, then one verdict. Saved on this page, where I read it. The Roadmap then pauses while Found, Fixed, Tried is built.</p>
   <form class="decide">
-    <fieldset data-q="vote" data-kind="one"><legend>1 · How players weigh in</legend><div class="choices">
-      <label class="choice"><input type="radio" name="vote" value="importance">How important is this to you? (4 levels, a why) · mine</label>
-      <label class="choice"><input type="radio" name="vote" value="upvote">A simple vote, one per item</label></div></fieldset>
-    <fieldset data-q="counts" data-kind="one"><legend>2 · What players see of others' votes</legend><div class="choices">
-      <label class="choice"><input type="radio" name="counts" value="summary">How many care, and their reasons · mine</label>
-      <label class="choice"><input type="radio" name="counts" value="own">Only their own answer</label></div></fieldset>
-    <fieldset data-q="comments" data-kind="one"><legend>3 · Comments</legend><div class="choices">
-      <label class="choice"><input type="radio" name="comments" value="open">Open to the table, you can hide one · mine</label>
-      <label class="choice"><input type="radio" name="comments" value="private">Only to you, privately</label></div></fieldset>
-    <fieldset data-q="layout" data-kind="one"><legend>4 · How players see the plan</legend><div class="choices">
-      <label class="choice"><input type="radio" name="layout" value="nnl">Now, Next, Later · mine</label>
-      <label class="choice"><input type="radio" name="layout" value="list">One list in your order</label></div></fieldset>
+    <fieldset data-q="grouping" data-kind="one"><legend>1 · Your list</legend><div class="choices">
+      <label class="choice"><input type="radio" name="grouping" value="nnl">Now, Next, Later sections, each in your order · mine</label>
+      <label class="choice"><input type="radio" name="grouping" value="list">One numbered list</label></div></fieldset>
+    <fieldset data-q="health" data-kind="one"><legend>2 · An item's health</legend><div class="choices">
+      <label class="choice"><input type="radio" name="health" value="auto">Worked out from the records and my updates (waiting on you, stuck after a week) · mine</label>
+      <label class="choice"><input type="radio" name="health" value="manual">Set by you or me on each item</label></div></fieldset>
+    <p class="meta">The player side's choices (how they weigh in, what they see of others, comments, layout) wait until it's built.</p>
     <fieldset data-q="verdict" data-kind="one"><legend>Build it as drawn?</legend><div class="choices">
       <label class="choice"><input type="radio" name="verdict" value="build">Yes, build it</label>
       <label class="choice"><input type="radio" name="verdict" value="changes">Yes, with the changes below</label>
@@ -501,14 +581,16 @@ header.top { display: grid; gap: 10px; }
 <script>
 (() => {
   const WHY = {
-    coming: ["What players see: Now, Next and Later (confidence, not dates), each item in a sentence about the problem, how many care, and their own answer. Suggest something goes to you privately.", "Research: Productboard, Now/Next/Later"],
-    item: ["Weighing in: How important is this to you? with a why, changeable any time; comments the table can read; Tell me when it moves. Nothing is picked for them.", "Research: Productboard's portal; your rule on preselection"],
-    new: ["What's new: what shipped, with a link to try it, and \"You asked for this\" where they weighed in. Each person hears it once.", "Research: Canny's changelog"],
-    order: ["Your order: one list, Now, Next, Later, dragged into the order I work in. Whose turn it is says who acts (amber yours, violet mine). Internal items never show to players. Interest informs you; it never moves anything.", "Research: Linear's order; the audit's colours"],
-    edit: ["An item: what players see (its name and a problem-shaped sentence) apart from what only you and I see (next step, plan, mockups, areas, notes). Every player's answer with their why; comments you can answer or hide.", "Research: Productboard, Canny's internal comments"],
-    move: ["Moving it between Now, Next and Later asks once whether to tell the people who weighed in, with a word from you. Dragging never notifies anyone by itself.", "Research: Featurebase's pitfall"],
-    ideas: ["Players' ideas stay private until you act: add to an item, make it one, send a small one to Feedback, or say no with why. An idea never goes on the plan by itself.", "Research: Productboard's lesson on voting forums"],
-    claude: ["What I read: the order you set decides what I take next, through its areas; a step that's yours shows in For you and holds only its own item. Players' words reach me as quoted evidence.", "The audit: trust and untrusted words"],
+    order: ["Your roadmap: one ordered list (Now, Next, Later) that you drag; I work from the top. Each item says whose turn it is, its next step, its progress read from the records, and its health: on track, waiting on you (and how long), stuck, or no update yet.", "Internal first (your note); Linear's order and health"],
+    edit: ["An item's page: where it stands (Idea to Shipped), its areas, notes, checks and pull requests rolled up from the records, its steps, my updates and yours, and the decisions and documents behind it. The one button is the next step.", "Replaces the paragraph I rewrite on the Roadmap page"],
+    updates: ["What changed since you last looked: one line per update, across every item, instead of rereading a long page. A stuck item says what it's waiting for and where to click.", "Linear's project updates"],
+    shipped: ["Shipped: everything done, newest first, each linked to its pull request, its notes and its item; today's 137 done lines come over.", "The Roadmap page's Done list"],
+    move: ["Moving an item between Now, Next and Later; telling the people who weighed in applies only once players see the Roadmap (later). Dragging never tells anyone.", "Featurebase's pitfall"],
+    claude: ["What I read: the order you set decides what I take next, through its areas; a step that's yours holds only its own item. I post an update when an item's state changes.", "The audit: rules in askdnd, not in my memory"],
+    coming: ["Later, for players: Now, Next and Later (confidence, not dates), how many care, and their own answer. Suggest something goes to you privately.", "Nice to have: built after the internal tool"],
+    item: ["Later, for players: How important is this to you?, a why, comments the table can read, Tell me when it moves. Nothing picked for them.", "Nice to have"],
+    new: ["Later, for players: what shipped, with a link to try it, and \"You asked for this\".", "Nice to have"],
+    ideas: ["Later, for players: their ideas stay private until you act: add to an item, make one, send a small one to Feedback, or say no with why.", "Nice to have"],
   };
   const shots = document.querySelectorAll('.shot'), screens = document.querySelectorAll('[data-screen]');
   const go = name => {
@@ -525,7 +607,7 @@ header.top { display: grid; gap: 10px; }
     const c = e.target.closest('.chip[aria-pressed]');
     if (c) c.setAttribute('aria-pressed', String(c.getAttribute('aria-pressed') !== 'true'));
   });
-  go('coming');
+  go('order');
 })();
 (() => {
   const form = document.querySelector('form.decide');

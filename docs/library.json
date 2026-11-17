@@ -1046,9 +1046,9 @@
  {
   "title": "Roadmap: Screens",
   "kind": "design",
-  "status": "For your look",
+  "status": "Paused: internal tool first",
   "date": "Nov 17",
-  "what": "Brett, Nov 17: players see, weigh in on and comment on the roadmap (as Productboard's portal did), and Brett sets the order Claude works in. What's coming (Now, Next, Later), How important is this to you?, What's new, the ordered list, an item's public and internal sides, moving it (telling who weighed in), players' ideas, and what Claude reads. Four picks and one verdict on the page; research beside it.",
+  "what": "Brett, Nov 17: the Roadmap in askdnd, an internal tool first (his correction: tracking the work in progress; players weighing in is a later nice-to-have). One ordered list with each item's progress read from its areas, notes, checks and pull requests, whose turn, health and next step; an item's page with its steps, updates, decisions and documents; what changed since you last looked; shipped. The player side drawn last. Paused until Found, Fixed, Tried is built.",
   "source": "docs/mockups/roadmap/index.html",
   "link": "https://claude.ai/artifact/3s1frjfKcyQGD7HFzPYn1x"
  },
