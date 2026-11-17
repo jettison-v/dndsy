@@ -4996,6 +4996,7 @@ document.addEventListener('click', e => {
     if (check) pickKind('broken');
     if (checkLine) { checkLine.hidden = !check; checkLine.querySelector('b').textContent = check ? check.title : ''; }
     shotImg.hidden = true; shotNote.hidden = false; shotNote.textContent = "Taking the page's picture…";
+    win.querySelector('[data-fb-mark]').hidden = true; form.classList.remove('marking'); win.querySelector('[data-fb-markview]').hidden = true;
     pastedImg.hidden = true; dropNote.hidden = false; pointedNote.textContent = 'Click the thing you mean, if it helps';
     drawCtx();
     win.showModal();
@@ -5009,6 +5010,7 @@ document.addEventListener('click', e => {
     shot = pic;
     if (!shot) ctx.picture = 'Not taken: ' + why;  // (so a note says why it came without one)
     if (shot) { shotImg.src = shot; shotImg.hidden = false; shotNote.hidden = true; } else shotNote.textContent = "No picture this time: paste one if it helps";
+    win.querySelector('[data-fb-mark]').hidden = !shot;  // (marking it, once there's a picture)
   }
   function describe(el) {
     const t = el.closest('[aria-label], [title], [data-tour], .nt, .ri, button, a, h1, h2, h3, label, li, td') || el;
@@ -5055,6 +5057,51 @@ document.addEventListener('click', e => {
   win.querySelector('[data-fb-file]').addEventListener('change', e => take(e.target.files[0]));
   win.querySelector('[data-fb-cancel]').addEventListener('click', () => { win.close(); unmark(); });
   win.addEventListener('cancel', unmark);
+  // Marking the picture (Testing's 3A, for every note): a box, an arrow or a line, drawn at the picture's own size and
+  // kept in it when Done is pressed; Cancel (or Escape) goes back with the picture as it was
+  const markBtn = win.querySelector('[data-fb-mark]'), markView = win.querySelector('[data-fb-markview]'), canvas = win.querySelector('[data-fb-canvas]');
+  let marks = [], tool = 'box', drag = null, base = null;
+  const redraw = () => {
+    const g = canvas.getContext('2d'), w = canvas.width;
+    g.drawImage(base, 0, 0);
+    g.strokeStyle = g.fillStyle = '#e5484d'; g.lineWidth = Math.max(3, w / 320); g.lineCap = g.lineJoin = 'round';
+    for (const m of drag ? [...marks, drag] : marks) {
+      const [a, b] = [m.pts[0], m.pts[m.pts.length - 1]];
+      g.beginPath();
+      if (m.tool === 'box') g.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
+      else if (m.tool === 'draw') { m.pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
+      else {
+        const t = Math.atan2(b.y - a.y, b.x - a.x), h = g.lineWidth * 5;
+        g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+        g.beginPath(); g.moveTo(b.x, b.y);
+        g.lineTo(b.x - h * Math.cos(t - 0.45), b.y - h * Math.sin(t - 0.45)); g.lineTo(b.x - h * Math.cos(t + 0.45), b.y - h * Math.sin(t + 0.45));
+        g.closePath(); g.fill();
+      }
+    }
+  };
+  const marking = on => { markView.hidden = !on; form.classList.toggle('marking', on); };
+  const at = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; };
+  markBtn.addEventListener('click', () => {
+    if (!shot) return;
+    base = new Image();
+    base.onload = () => { canvas.width = base.naturalWidth; canvas.height = base.naturalHeight; marks = []; redraw(); marking(true); };
+    base.src = shot;
+  });
+  canvas.addEventListener('pointerdown', e => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [at(e)] }; });
+  canvas.addEventListener('pointermove', e => { if (!drag) return; const p = at(e); if (drag.tool === 'draw') drag.pts.push(p); else drag.pts[1] = p; redraw(); });
+  canvas.addEventListener('pointerup', () => { if (drag && drag.pts.length > 1) marks.push(drag); drag = null; redraw(); });
+  win.querySelectorAll('[data-fb-tool]').forEach(b => b.addEventListener('click', () => {
+    tool = b.dataset.fbTool;
+    win.querySelectorAll('[data-fb-tool]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+  win.querySelector('[data-fb-undo]').addEventListener('click', () => { marks.pop(); redraw(); });
+  win.querySelector('[data-fb-clear]').addEventListener('click', () => { marks = []; redraw(); });
+  win.querySelector('[data-fb-mark-cancel]').addEventListener('click', () => marking(false));
+  win.querySelector('[data-fb-mark-done]').addEventListener('click', () => {
+    if (marks.length) { shot = canvas.toDataURL('image/jpeg', 0.85); shotImg.src = shot; ctx.marked = String(marks.length); }
+    marking(false);
+  });
+  win.addEventListener('cancel', e => { if (!markView.hidden) { e.preventDefault(); marking(false); } }, true);
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const text = form.text.value.trim();

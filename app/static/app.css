@@ -4220,3 +4220,10 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .cc-acts { flex-wrap: wrap; gap: var(--sp-2); }
 .cc-acts .cc-stop { display: contents; }
 .cc-pill { background: var(--surface); border: 1px solid var(--blue); border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3); color: var(--text); font: inherit; font-size: var(--fs-sm); box-shadow: var(--lift); cursor: pointer; }
+
+/* Marking the picture in the feedback window (Testing's 3A, every note): the picture large, its tools above */
+.fb-form.marking > :not(.fb-markview):not(.row:first-child) { display: none; }
+.fb-markview { display: grid; gap: var(--sp-2); }
+.fb-win:has(.fb-form.marking) { width: min(1100px, calc(100vw - 2 * var(--sp-4))); max-width: none; }  /* (the picture large while marking) */
+.fb-mark-tools { flex-wrap: wrap; }
+.fb-mark-canvas { width: 100%; height: auto; border: 1px solid var(--line-strong); border-radius: var(--r-md); touch-action: none; cursor: crosshair; background: var(--bg); }
