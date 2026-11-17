@@ -16,7 +16,7 @@ Email addresses stay out of this file because the repo is treated as public. Eac
 | **Role in VTT test** | DM | Player | Player | Player |
 | **Role across askdnd** | Member | Member | Member | Member |
 
-The D&D Beyond campaign is [VTT test](https://www.dndbeyond.com/campaigns/8224496).
+The D&D Beyond campaign is [VTT test](https://www.dndbeyond.com/campaigns/8224496), **named "Intro to Stormwreck Isle" on D&D Beyond since Nov 16** (the seats' My Characters say so; askdnd follows the campaign's number, so nothing changed for it). It's still VTT test in askdnd.
 
 **Player 2 plays Cathartic in askdnd** (VTT test › Manage › Table › Played by): the automated runs open that seat's own character and expect it to be Cathartic (Nov 3: every run that needs a connected sheet missed while the seat played another character). The live test's setup check now says so before any run.
 

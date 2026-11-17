@@ -34,7 +34,7 @@
 {% macro filter_column(groups) -%}
 {%- set more = groups | selectattr("more") | list -%}
 <details class="ls-fold" data-ls-fold>
-  <summary>Filters <span class="count" data-ls-fold-count hidden></span>{{ clear_filters() }}</summary>
+  <summary>Filters <span class="count" data-ls-fold-count hidden></span> <span class="ls-above-chev" aria-hidden="true"></span>{{ clear_filters() }}</summary>{# (one row, one Clear: Brett's iPhone test, Nov 16) #}
   <aside class="ls-filters" aria-label="Filters">
     {{ filter_head() }}
     {% for g in groups if not g.more %}{{ chip_group(g) }}{% endfor %}

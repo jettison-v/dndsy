@@ -301,6 +301,76 @@ def hit_points(t: Table, seat: str = "player2") -> None:
     t.expect("the real sheet shows it back", lambda: on_sheet_hp(sheet, start, down), SLOW)
 
 
+# What a page counts as a roll arriving for it: its dice thrown, or a corner card where dice can't play
+WATCH_ARRIVALS = """() => { if (window.__arrivals) { window.__arrivals.n = 0; window.__arrivals.what = []; return; }
+  window.__arrivals = { n: 0, what: [] }; const t = window.askdndThrowing.throwing;
+  window.askdndThrowing.throwing = id => { window.__arrivals.n++; window.__arrivals.what.push('dice:' + id); t(id); };
+  new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.classList && n.classList.contains('card')) {
+    window.__arrivals.n++; window.__arrivals.what.push('card:' + n.textContent.trim().slice(0, 60)); } })))
+    .observe(document.getElementById('cards') || document.body, { childList: true }); }"""
+
+
+def rolls_open(page: Page) -> None:
+    if page.evaluate("document.body.classList.contains('rolls-closed')"):
+        page.locator(".rs-edge").click(timeout=5000)
+
+
+def heal_apply(t: Table, seat: str = "player2") -> None:
+    """Healing applied from Table rolls (Brett's test, Nov 16): Levi rolls Cure Wounds and Cathartic's player applies
+    it. It reaches Cathartic's real sheet; the other seats saw the roll arrive once and throw no dice again when it's
+    applied; and the Hit Points beside Cathartic's name in the DM's Apply to… follow the sheet."""
+    sheet = t.sheet("player2")
+    cath = t.battle("player2")
+    levi = t.battle("player4")
+    dm = t.page("dm", f"{BETA}/campaign")
+    connects(t, cath)
+    start, down = hp(cath), record(sheet)["removedHitPoints"]
+    change_hp(cath, 0, 3)
+    t.expect("Cathartic is hurt by 3", lambda: hp(cath) == start - 3, 10)
+    t.expect("D&D Beyond confirms the hurt", lambda: settled(cath), SLOW)
+    hurt = start - 3
+    for p in (cath, dm):
+        rolls_open(p)
+        p.evaluate(WATCH_ARRIVALS)
+    levi_id = int(re.search(r"/characters/(\d+)", levi.url).group(1))
+    make = """async ([id, label]) => { const r = await fetch('/rolls', { method: 'POST', headers: { 'X-Requested-With': 'fetch' },
+        body: new URLSearchParams({ character: id, kind: 'heal', label, dmg: '2d8+3', to: 'table' }) });
+        const j = await r.json(); if (!j.roll) throw new Error('roll refused: ' + (j.error || r.status)); return j.roll.id; }"""
+    other = levi.evaluate(make, [levi_id, "Healing Word"])  # (still waiting after the first is applied: its list shows Cathartic's Hit Points)
+    rid = levi.evaluate(make, [levi_id, "Cure Wounds"])
+    t.expect("the other seats see the roll arrive", lambda: cath.evaluate("window.__arrivals.n") > 0 and dm.evaluate("window.__arrivals.n") > 0, 20)
+    for p in (cath, dm):
+        p.evaluate(WATCH_ARRIVALS)  # (counting again from here)
+    cath_id = re.search(r"/characters/(\d+)", cath.url).group(1)
+    item = cath.locator(f'#roll-log .roll-item[data-id="{rid}"]')
+    button = item.locator(f'[data-modal-url*="/characters/{cath_id}/hp?roll={rid}"]').first
+    t.expect("Apply to Cathartic is on the roll", lambda: button.count() > 0, 20)
+    fold = item.locator("details.roll-apply-to > summary")  # (a seat that plays several characters picks from Apply to…'s list)
+    if fold.count() and not button.is_visible():
+        fold.first.click(timeout=5000)
+    button.click(timeout=8000)
+    cath.wait_for_timeout(800)
+    cath.locator('.peek.open .hp-form button[type="submit"]:not([disabled])').first.click(timeout=10000)
+    t.expect("Cathartic is healed", lambda: hp(cath) > hurt, 15)
+    t.expect("D&D Beyond confirms the healing", lambda: settled(cath), SLOW)
+    healed = hp(cath)
+    t.expect("the real sheet shows it", lambda: on_sheet_hp(sheet, healed, down + (start - healed)), SLOW)
+    cath.wait_for_timeout(4000)
+    seen = {name: p.evaluate("window.__arrivals.what") for name, p in (("Cathartic's page", cath), ("the DM's", dm))}
+    print("  arrived after applying:", seen, flush=True)
+    rerolled = [w for ws in seen.values() for w in ws if w in (f"dice:{rid}", f"dice:{other}") or "Cure Wounds" in w]
+    t.expect("no seat threw the heal's dice again when it was applied", lambda: not rerolled, 2)
+    pill = f'[data-hp-of="{cath_id}"]'
+    beside = f'#roll-log .roll-item[data-id="{other}"] {pill}'
+    t.expect("the DM's Hit Points beside Cathartic (on the other roll) follow the sheet",
+             lambda: dm.evaluate(f"(document.querySelector('{beside}') || {{dataset: {{}}}}).dataset.hp || ''").startswith(f"{healed}/"), 20)
+    if healed != start:  # (tidy: back to where it started)
+        cath.keyboard.press("Escape")
+        change_hp(cath, 1 if healed < start else 0, abs(start - healed))
+        t.expect("Cathartic is back where it started", lambda: hp(cath) == start, 15)
+        t.expect("D&D Beyond confirms it", lambda: settled(cath), SLOW)
+
+
 def condition(t: Table, seat: str = "player2", name: str = "Poisoned") -> None:
     """A condition started in askdnd lands on the real sheet; ended in askdnd, it leaves it."""
     sheet = t.sheet(seat)
@@ -1798,7 +1868,8 @@ RUNS = {"free-cast": free_cast, "closed-sheet": closed_sheet, "game-log": game_l
         "loot": loot, "add-item": add_item, "dm-backup": dm_backup, "wild-shape": wild_shape,
         "pact-cast": pact_cast, "cross-cast": cross_cast, "short-rest": short_rest, "in-form": in_form, "creature-hp": creature_hp,
         "familiar": familiar, "initiative": initiative, "unreachable": unreachable,
-        "wild-companion": wild_companion, "wild-shape-forms": wild_shape_forms, "learn-spells": learn_spells}
+        "wild-companion": wild_companion, "wild-shape-forms": wild_shape_forms, "learn-spells": learn_spells,
+        "heal-apply": heal_apply}
 
 
 def _twin_run(key: str):
