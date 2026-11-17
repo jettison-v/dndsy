@@ -1,0 +1,378 @@
+<title>Found, Fixed, Tried</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (one look, as the app); laptop first, one column on a phone.
+   Brett, Nov 17: "I am slightly confused with which items go where, why, and how they interact"; draw it as a mockup,
+   after researching tools that already do this; it may be applied to an enterprise use case next. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-soft: rgba(214, 69, 69, .16); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 34px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 44px; }
+h1, h2, h3, h4 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.3rem/1.15 var(--serif); }
+h2 { font: 600 1.45rem/1.25 var(--serif); }
+h3 { font: 600 1.05rem/1.3 var(--sans); }
+h4 { font: 600 .95rem/1.3 var(--sans); }
+p { margin: 0; }
+b, strong { color: var(--strong); font-weight: 600; }
+a { color: var(--link); }
+ul, ol { margin: 0; padding-left: 20px; display: grid; gap: 5px; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.mine { color: var(--green); font: 700 .74rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; margin-left: 8px; }
+.lead { max-width: 82ch; font-size: 1.05rem; }
+.meta { color: var(--muted); font-size: .9rem; max-width: 86ch; }
+.small { font-size: .84rem; color: var(--muted); }
+section.board { display: grid; gap: 18px; padding-top: 32px; border-top: 1px solid var(--line-soft); }
+.intro { display: grid; gap: 8px; max-width: 90ch; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card.rec { border-color: var(--green); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.tag { display: inline-flex; align-items: center; min-height: 22px; padding: 0 9px; border-radius: 999px; font: 600 .76rem/1 var(--sans); background: var(--surface-3); color: var(--text); white-space: nowrap; }
+.t-red { background: var(--red-soft); color: var(--red); } .t-amber { background: var(--amber-soft); color: var(--amber); }
+.t-green { background: var(--green-soft); color: var(--green); } .t-blue { background: var(--blue-soft); color: var(--blue); }
+.t-violet { background: var(--violet-soft); color: var(--violet); } .t-quiet { background: var(--surface-3); color: var(--muted); }
+.term { font: 600 .74rem/1 var(--cond); letter-spacing: .06em; text-transform: uppercase; color: var(--faint); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .88rem; min-width: 760px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--line-soft); }
+th { font: 700 .74rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+td b { display: block; }
+figure { margin: 0; display: grid; gap: 8px; }
+figcaption { color: var(--muted); font-size: .86rem; max-width: 90ch; }
+svg { max-width: 100%; height: auto; display: block; }
+.tangle { display: grid; gap: 8px; }
+.tangle li { color: var(--text); }
+.tangle li small { color: var(--muted); }
+.flow { display: grid; gap: 10px; }
+.step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; }
+.step .n { width: 24px; height: 24px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font: 700 .78rem/1 var(--sans); color: var(--strong); }
+.who { font: 700 .72rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.w-you { color: var(--amber); } .w-claude { color: var(--violet); } .w-askdnd { color: var(--blue); } .w-player { color: var(--green); }
+
+/* The screens, drawn small */
+.screen { background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.screen .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: 600 .84rem/1 var(--sans); white-space: nowrap; }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: #10141a; }
+.btn.ok { border-color: var(--green); color: var(--green); }
+.btn.no { border-color: var(--red); color: var(--red); }
+.btn.quiet { border-color: transparent; color: var(--muted); }
+.stateline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: .88rem; color: var(--muted); }
+.box { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 8px 10px; color: var(--faint); font-size: .86rem; }
+.issue { display: flex; gap: 8px; align-items: baseline; font-size: .88rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font: 500 .82rem/1 var(--sans); }
+.chip.on { border-color: var(--blue); background: var(--blue-soft); }
+.hist { display: grid; gap: 4px; font-size: .84rem; border-left: 2px solid var(--line); padding-left: 10px; }
+.hist span { color: var(--muted); }
+.picks { display: grid; gap: 14px; }
+.pick { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 10px; }
+.pick > header { display: grid; gap: 4px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.opt { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; font-size: .9rem; }
+.opt.rec { border-color: var(--green); }
+.opt b { font-size: .92rem; }
+.note-src { font-size: .8rem; color: var(--faint); }
+@media (max-width: 760px) { h1 { font-size: 1.75rem; } .grid2, .grid3 { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:14px">
+  <span class="lbl">Mockup · Nov 17 · for Brett · Feedback and Testing, cleaned up</span>
+  <h1>Found, fixed, tried</h1>
+  <p class="lead">How what anyone finds, what I fix and what you try fit together: one model with one name and one
+  home for each thing, drawn from how the established tools do it, and built to lift out of askdnd for another
+  project or a company.</p>
+  <p class="meta">Why: tonight you were "slightly confused with which items go where, why, and how they interact".
+  Notes 111 to 116 and 121 all come from the same joins. Nothing here is built; your picks at the end decide it.
+  Where a word below has an industry name, it's in small capitals beside it.</p>
+</header>
+
+<!-- 1 · Today -->
+<section class="board">
+  <div class="intro"><span class="lbl">1 · Today</span><h2>Two lists, five joins</h2>
+    <p class="meta">Feedback holds notes; Testing holds checks; areas group both. Each join was added for a good reason,
+    one at a time, and together they make the same thing appear in two places with two sets of words.</p></div>
+  <figure>
+    <svg viewBox="0 0 1180 330" role="img" aria-label="Today: Feedback's notes and Testing's checks joined five ways">
+      <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a29d93"/></marker></defs>
+      <rect x="20" y="40" width="380" height="250" rx="14" fill="#1f2226" stroke="#4a4f57"/>
+      <text x="40" y="72" fill="#fff" font-size="17" font-weight="600" font-family="Inter, sans-serif">Feedback · notes</text>
+      <text x="40" y="98" fill="#a29d93" font-size="13" font-family="Inter, sans-serif">Broken · Idea · Question, from anyone</text>
+      <g font-family="Inter, sans-serif" font-size="12.5">
+        <rect x="40" y="116" width="102" height="26" rx="13" fill="rgba(232,179,75,.15)"/><text x="91" y="133" fill="#e8b34b" text-anchor="middle">To approve</text>
+        <rect x="150" y="116" width="102" height="26" rx="13" fill="rgba(185,163,227,.15)"/><text x="201" y="133" fill="#b9a3e3" text-anchor="middle">With Claude</text>
+        <rect x="260" y="116" width="102" height="26" rx="13" fill="rgba(232,179,75,.15)"/><text x="311" y="133" fill="#e8b34b" text-anchor="middle">Claude asks</text>
+        <rect x="40" y="150" width="102" height="26" rx="13" fill="rgba(126,166,224,.15)"/><text x="91" y="167" fill="#7ea6e0" text-anchor="middle">Planned</text>
+        <rect x="150" y="150" width="102" height="26" rx="13" fill="rgba(91,191,127,.15)"/><text x="201" y="167" fill="#5bbf7f" text-anchor="middle">Done</text>
+        <rect x="260" y="150" width="102" height="26" rx="13" fill="#30353b"/><text x="311" y="167" fill="#a29d93" text-anchor="middle">Closed</text>
+      </g>
+      <text x="40" y="214" fill="#a29d93" font-size="12.5" font-family="Inter, sans-serif">6 states · its own tabs and count</text>
+      <rect x="780" y="40" width="380" height="250" rx="14" fill="#1f2226" stroke="#4a4f57"/>
+      <text x="800" y="72" fill="#fff" font-size="17" font-weight="600" font-family="Inter, sans-serif">Testing · checks</text>
+      <text x="800" y="98" fill="#a29d93" font-size="13" font-family="Inter, sans-serif">What to try, as a walkthrough</text>
+      <g font-family="Inter, sans-serif" font-size="12.5">
+        <rect x="800" y="116" width="102" height="26" rx="13" fill="rgba(126,166,224,.15)"/><text x="851" y="133" fill="#7ea6e0" text-anchor="middle">Ready</text>
+        <rect x="910" y="116" width="102" height="26" rx="13" fill="rgba(232,179,75,.15)"/><text x="961" y="133" fill="#e8b34b" text-anchor="middle">Try again</text>
+        <rect x="1020" y="116" width="102" height="26" rx="13" fill="rgba(214,69,69,.16)"/><text x="1071" y="133" fill="#f08a8a" text-anchor="middle">Failed</text>
+        <rect x="800" y="150" width="102" height="26" rx="13" fill="rgba(185,163,227,.15)"/><text x="851" y="167" fill="#b9a3e3" text-anchor="middle">With Claude</text>
+        <rect x="910" y="150" width="102" height="26" rx="13" fill="rgba(91,191,127,.15)"/><text x="961" y="167" fill="#5bbf7f" text-anchor="middle">Passed</text>
+        <rect x="1020" y="150" width="102" height="26" rx="13" fill="#30353b"/><text x="1071" y="167" fill="#a29d93" text-anchor="middle">Skipped</text>
+      </g>
+      <text x="800" y="214" fill="#a29d93" font-size="12.5" font-family="Inter, sans-serif">7 states · its own tabs and count</text>
+      <g font-family="Inter, sans-serif" font-size="12.5" fill="#ebe7df">
+        <line x1="400" y1="80" x2="778" y2="80" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a1)"/><text x="590" y="72" text-anchor="middle">① a fixed note makes a check</text>
+        <line x1="778" y1="122" x2="402" y2="122" stroke="#f08a8a" stroke-width="1.5" marker-end="url(#a1)"/><text x="590" y="114" text-anchor="middle">② Failed… sends a note</text>
+        <line x1="778" y1="164" x2="402" y2="164" stroke="#f08a8a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#a1)"/><text x="590" y="156" text-anchor="middle">③ + Note, + Another issue send notes</text>
+        <line x1="400" y1="206" x2="778" y2="206" stroke="#e8b34b" stroke-width="1.5" marker-end="url(#a1)"/><text x="590" y="198" text-anchor="middle">④ Claude's questions show in both</text>
+        <line x1="778" y1="248" x2="402" y2="248" stroke="#a29d93" stroke-width="1.5" stroke-dasharray="2 4" marker-end="url(#a1)"/><text x="590" y="240" text-anchor="middle">⑤ Undo Failed takes notes back</text>
+      </g>
+      <rect x="420" y="282" width="340" height="38" rx="10" fill="#272b30" stroke="#4a4f57"/>
+      <text x="590" y="306" fill="#ebe7df" font-size="13" text-anchor="middle" font-family="Inter, sans-serif">Areas group notes and checks · 5 stages</text>
+    </svg>
+    <figcaption>Two lists, each with its own states and counts, joined five ways. An issue you find while trying a check
+    is a note in Feedback and a line on the check in Testing; a question from me shows on both pages, called something
+    different on each.</figcaption>
+  </figure>
+  <div class="card"><h3>Where it tangles (your notes tonight)</h3>
+    <ul class="tangle">
+      <li>Three buttons send a note from a check (Failed…, + Note, + Another issue); they differ only in whether the
+        check fails. Failing after three + Notes still asked for a fourth. <small>(note 116; check 46's note 115)</small></li>
+      <li>The ⋯ menu hides the rare actions, doesn't say what's in it, sits oddly and won't close. <small>(notes 111, 113)</small></li>
+      <li>A note says its state twice, as a word and as a pill. <small>(note 114)</small></li>
+      <li>Write to doesn't say where your words are going. <small>(note 112)</small></li>
+      <li>After a Failed from the card, the check behind it doesn't show it until the page reloads. <small>(note 121, and 109)</small></li>
+      <li>Undo Failed deletes what was filed, so the record of what happened is gone. <small>(tonight's build; the research disagrees, board 2)</small></li>
+    </ul></div>
+</section>
+
+<!-- 2 · Research -->
+<section class="board">
+  <div class="intro"><span class="lbl">2 · What the established tools do</span><h2>They all keep the same five things apart</h2>
+    <p class="meta">Test management (TestRail, Xray and Zephyr for Jira, Qase, Testmo), issue trackers (Linear, Jira,
+    GitHub) and feedback tools (Marker.io, BugHerd, Usersnap, Jam, Sentry's User Feedback; Canny and Productboard for
+    ideas), read from their own documentation.</p></div>
+  <div class="scroll"><table>
+    <thead><tr><th>The thing</th><th>What it is</th><th>Their names</th><th>What they agree on</th></tr></thead>
+    <tbody>
+      <tr><td><b>A report</b></td><td>What someone sent, with its evidence (screenshot, marks, page, browser)</td><td>Feedback (Sentry, Marker.io), Note (Productboard), a jam (Jam)</td><td>One capture tool for anyone; guests get a short form and see only their own; it becomes an issue in triage</td></tr>
+      <tr><td><b>Triage</b></td><td>Deciding what a report becomes</td><td>Triage inbox (Linear), Feedback column (BugHerd)</td><td>Accept, decline with a reason, merge into a duplicate, or wait for an answer</td></tr>
+      <tr><td><b>An issue</b></td><td>The work: what gets fixed</td><td>Issue (Linear, GitHub), Defect (Qase, Xray), Bug</td><td>Closed with a reason (fixed, not planned, duplicate); a merged change can mark it fixed by itself (Linear, GitHub)</td></tr>
+      <tr><td><b>A check</b></td><td>What to try, written once and tried many times</td><td>Test case (all of them)</td><td>Steps and an expected result; kept apart from any one try of it</td></tr>
+      <tr><td><b>A result</b></td><td>One try of a check: who, when, how it went</td><td>Result (TestRail, Qase, Testmo), Test run (Xray), Execution (Zephyr)</td><td>Never edited: a retest adds a new result and the old failure stays in the history; the latest result is where it stands</td></tr>
+    </tbody></table></div>
+  <div class="grid2">
+    <div class="card"><h3>Where they agree, in short</h3><ul>
+      <li><b>Failing is one action</b>: the status, your words, the picture and "a new issue, or one already filed",
+        in one window, as many issues as you found (TestRail, Xray, Qase).</li>
+      <li><b>Failed is set by the tester</b>, never worked out from the issues.</li>
+      <li><b>Results are append-only</b>. A mistake is corrected by a new result (TestRail allows editing only for a
+        short while, with its own permission; Qase locks finished runs).</li>
+      <li><b>A fix sends the check back to whoever failed it</b> to try again; trying it again stays a person's step
+        (BugHerd: "Done, not yet verified").</li>
+      <li><b>"Needs info" is a waiting state</b> that flips back when the reporter answers (Jira Service Management).</li>
+      <li><b>Ideas have their own intake</b> from bugs (Canny, Productboard: votes, merging, "tell me when it ships").</li>
+    </ul></div>
+    <div class="card"><h3>Where they differ, and what I'd take</h3><ul>
+      <li><b>Retest</b>: a status (TestRail, Testmo) or a new run (Xray, Zephyr, Qase). Take: a new result, shown as
+        <span class="tag t-amber">Try again</span>.</li>
+      <li><b>Moving forward by itself</b>: only trackers do it (Linear's pull request rules). Take: askdnd already does
+        it (a fix goes live, its checks come back), so keep it.</li>
+      <li><b>Can't try it</b>: "Blocked" in every test tool, with why. Take: it replaces Skip.</li>
+      <li><b>What reporters see</b>: their own reports and the replies meant for them, never the internal notes
+        (Marker.io, BugHerd). askdnd already works this way for players.</li>
+    </ul>
+    <p class="small">Sources: TestRail, Xray, Zephyr, Qase, Testmo, Linear, Jira, GitHub, Marker.io, BugHerd, Usersnap,
+    Jam, Sentry, Canny and Productboard help pages (the research report is kept with this page).</p></div>
+  </div>
+</section>
+
+<!-- 3 · The model -->
+<section class="board">
+  <div class="intro"><span class="lbl">3 · The model</span><h2>Five things, each with one home and one set of words</h2>
+    <p class="meta">The same five as the tools, in askdnd's plain words. An area stays: it's the group fixed and tried
+    together (a <span class="term">cycle</span> in Linear, a <span class="term">test plan</span> elsewhere).</p></div>
+  <figure>
+    <svg viewBox="0 -30 1180 330" role="img" aria-label="The model: a report becomes an issue; a check is tried, each try a result; a failed result names its issues; a fixed issue brings its checks back">
+      <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a29d93"/></marker></defs>
+      <g font-family="Inter, sans-serif">
+        <rect x="20" y="40" width="200" height="96" rx="12" fill="#1f2226" stroke="#4a4f57"/>
+        <text x="40" y="70" fill="#fff" font-size="16" font-weight="600">Report</text><text x="40" y="92" fill="#a29d93" font-size="12.5">what someone sent,</text><text x="40" y="110" fill="#a29d93" font-size="12.5">with its picture</text>
+        <rect x="320" y="40" width="220" height="96" rx="12" fill="#1f2226" stroke="#b9a3e3"/>
+        <text x="340" y="70" fill="#fff" font-size="16" font-weight="600">Issue</text><text x="340" y="92" fill="#a29d93" font-size="12.5">what Claude fixes:</text><text x="340" y="110" fill="#a29d93" font-size="12.5">a problem or an idea</text>
+        <rect x="640" y="40" width="220" height="96" rx="12" fill="#1f2226" stroke="#7ea6e0"/>
+        <text x="660" y="70" fill="#fff" font-size="16" font-weight="600">Check</text><text x="660" y="92" fill="#a29d93" font-size="12.5">what to try,</text><text x="660" y="110" fill="#a29d93" font-size="12.5">written once</text>
+        <rect x="960" y="40" width="200" height="96" rx="12" fill="#1f2226" stroke="#e8b34b"/>
+        <text x="980" y="70" fill="#fff" font-size="16" font-weight="600">Result</text><text x="980" y="92" fill="#a29d93" font-size="12.5">one try: passed,</text><text x="980" y="110" fill="#a29d93" font-size="12.5">failed or can't try</text>
+        <line x1="220" y1="88" x2="318" y2="88" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a2)"/><text x="269" y="80" fill="#ebe7df" font-size="12" text-anchor="middle">becomes</text>
+        <line x1="640" y1="88" x2="542" y2="88" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a2)"/><text x="591" y="80" fill="#ebe7df" font-size="12" text-anchor="middle">tries the fix of</text>
+        <line x1="860" y1="88" x2="958" y2="88" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a2)"/><text x="909" y="80" fill="#ebe7df" font-size="12" text-anchor="middle">each try</text>
+        <path d="M1060 136 C1060 230, 430 230, 430 138" fill="none" stroke="#f08a8a" stroke-width="1.5" marker-end="url(#a2)"/><text x="745" y="222" fill="#f08a8a" font-size="12.5" text-anchor="middle">a failed result names the issues it found (new ones, or ones already filed)</text>
+        <path d="M480 40 C480 4, 750 4, 750 38" fill="none" stroke="#5bbf7f" stroke-width="1.5" marker-end="url(#a2)"/><text x="615" y="-12" fill="#5bbf7f" font-size="12.5" text-anchor="middle">fixed and live: its checks come back as Try again</text>
+        <rect x="20" y="250" width="1140" height="40" rx="10" fill="#272b30" stroke="#4a4f57"/>
+        <text x="590" y="275" fill="#ebe7df" font-size="13" text-anchor="middle">An area: the issues fixed together and the checks tried together, one at a time, in your order</text>
+      </g>
+    </svg>
+    <figcaption>Every link goes one way and means one thing. A report never fails a check; a check never closes an
+    issue; you see each thing in one place.</figcaption>
+  </figure>
+  <div class="scroll"><table>
+    <thead><tr><th>Thing</th><th>Its states (the one set of words, everywhere)</th><th>Who moves it</th><th>Where it lives</th></tr></thead>
+    <tbody>
+      <tr><td><b>Report</b><span class="term">feedback</span></td><td><span class="tag t-amber">To approve</span> (a player's) → <span class="tag t-quiet">Filed</span> as an issue, or merged into one already filed, or declined with why</td><td>Anyone sends; you approve a player's</td><td>Feedback</td></tr>
+      <tr><td><b>Issue</b><span class="term">issue · defect</span></td><td><span class="tag t-violet">With Claude</span> → <span class="tag t-amber">Claude asks</span> (back to With Claude when you answer) → <span class="tag t-blue">Fixing</span> → <span class="tag t-green">Fixed</span> (live, waiting for its checks) → <span class="tag t-quiet">Closed</span>: verified, not planned, duplicate or withdrawn</td><td>Claude, and askdnd when a fix goes live</td><td>Feedback</td></tr>
+      <tr><td><b>Check</b><span class="term">test case</span></td><td>Where it stands is its latest result: <span class="tag t-blue">To try</span> · <span class="tag t-amber">Try again</span> · <span class="tag t-green">Passed</span> · <span class="tag t-red">Failed</span> · <span class="tag t-quiet">Can't try</span></td><td>Claude writes it; you try it</td><td>Testing</td></tr>
+      <tr><td><b>Result</b><span class="term">test result</span></td><td>Passed · Failed (with its issues) · Can't try (why) · each with who, when and words; never changed, only followed by another</td><td>You (or a player, or Claude on the Mac Mini)</td><td>Testing, as the check's history</td></tr>
+      <tr><td><b>Area</b><span class="term">cycle · test plan</span></td><td>Found → Claude asks → Claude fixing → Ready for you → Done, worked out from the rest</td><td>Claude sorts; you order them</td><td>Testing › Where it stands</td></tr>
+    </tbody></table></div>
+</section>
+
+<!-- 4 · The workflows -->
+<section class="board">
+  <div class="intro"><span class="lbl">4 · The workflows</span><h2>Who does what, end to end</h2>
+    <p class="meta"><span class="who w-you">You</span> · <span class="who w-player">a player</span> ·
+    <span class="who w-claude">Claude</span> · <span class="who w-askdnd">askdnd by itself</span></p></div>
+  <div class="grid2">
+    <div class="card"><h3>Someone finds something</h3><div class="flow">
+      <div class="step"><span class="n">1</span><p><span class="who w-player">Anyone</span> presses the feedback button on any page: words, the picture (marked up, or one they add), what it is (a problem, an idea, a question).</p></div>
+      <div class="step"><span class="n">2</span><p><span class="who w-you">You</span> approve a player's report; yours go straight on. Approving files it as an issue, or as more evidence on one already filed ("same as").</p></div>
+      <div class="step"><span class="n">3</span><p><span class="who w-claude">Claude</span> sorts the issue into an area and answers its sender.</p></div>
+    </div></div>
+    <div class="card"><h3>Claude fixes an area</h3><div class="flow">
+      <div class="step"><span class="n">1</span><p><span class="who w-claude">Claude</span> takes the first area in your order, reads all of it together, and asks you what only you can decide (the issue says <span class="tag t-amber">Claude asks</span>; you answer in For you).</p></div>
+      <div class="step"><span class="n">2</span><p><span class="who w-claude">Claude</span> fixes it as one change and writes a check for each issue (or adds the issue to a check it already has).</p></div>
+      <div class="step"><span class="n">3</span><p><span class="who w-askdnd">askdnd</span>: once the change is live, its issues turn <span class="tag t-green">Fixed</span> and their checks come back as <span class="tag t-amber">Try again</span>, to whoever failed them (a player's to that player first).</p></div>
+    </div></div>
+    <div class="card"><h3>You try a check</h3><div class="flow">
+      <div class="step"><span class="n">1</span><p><span class="who w-you">You</span> start the area's round; each check opens its page with the walkthrough card.</p></div>
+      <div class="step"><span class="n">2</span><p>It works: <b>✓ Passed</b>. Its issues close as verified.</p></div>
+      <div class="step"><span class="n">3</span><p>It doesn't: <b>✗ Something's wrong…</b> opens one window: your words, the picture, and "a new issue, or one you already sent from this check". Add as many as you found; <b>Fail it</b> records one Failed result naming them all.</p></div>
+      <div class="step"><span class="n">4</span><p>You can't try it (the data isn't there, the check is written wrong): <b>Can't try…</b> with why. Claude fixes the check.</p></div>
+      <div class="step"><span class="n">5</span><p>Pressed the wrong one: <b>Change result</b> on the latest result (see pick 4).</p></div>
+    </div></div>
+    <div class="card"><h3>Something that works, but…</h3><div class="flow">
+      <div class="step"><span class="n">1</span><p>On a check that works with something to add: <b>✓ Passed</b>, then <b>+ Note</b> files an idea (or a small problem) from it without failing it.</p></div>
+      <div class="step"><span class="n">2</span><p>Anywhere else: the feedback button, as always.</p></div>
+      <p class="small">So a check has three marks, each one action: Passed, Something's wrong…, Can't try…; + Note is the only extra.</p>
+    </div></div>
+  </div>
+</section>
+
+<!-- 5 · The screens -->
+<section class="board">
+  <div class="intro"><span class="lbl">5 · The screens</span><h2>Testing is where you work; Feedback is the record</h2>
+    <p class="meta">Testing's For you holds everything waiting on you: checks to try and my questions. Feedback holds
+    every report and issue, where they came from and what happened to them, and where you approve a player's.</p></div>
+  <div class="grid2">
+    <div class="screen"><span class="term">Testing · a check</span>
+      <h3>Write back from one box</h3>
+      <div class="stateline"><span class="tag t-amber">Try again</span>Claude fixed what you found; the fix is live.</div>
+      <div class="bar"><span class="btn primary">▶ Try it</span><span class="btn ok">✓ Passed</span><span class="btn no">✗ Something's wrong…</span><span class="btn quiet">Can't try…</span></div>
+      <div class="box">The walkthrough, as the card shows it</div>
+      <div class="hist"><b>History</b><span>Nov 17, 21:36 · Failed by you: 4 issues (111 to 114)</span><span>Nov 17, 21:50 · Fixed by Claude · live</span><span>now · Try again</span></div>
+      <p class="small">No ⋯: every action says what it does. The history updates the moment you mark it (note 121).</p></div>
+    <div class="screen"><span class="term">Testing · ✗ Something's wrong…</span>
+      <h3>What's wrong with Write back from one box?</h3>
+      <div class="box">In your words…</div>
+      <div class="chips"><span class="chip on">A new issue</span><span class="chip">Same as one already sent ▾</span></div>
+      <div class="box">The page's picture, marked up · or one you add</div>
+      <div class="issue"><span class="tag t-red">1</span>The ⋯ menu won't close</div>
+      <div class="issue"><span class="tag t-red">2</span>Write to doesn't say where it goes</div>
+      <div class="bar"><span class="btn">+ Another</span><span class="btn no">Fail it with 2 issues</span><span class="btn quiet">Cancel</span></div>
+      <p class="small">One window for every issue on a try, then one Failed result. Issues you already sent with + Note can be picked here instead of written again (note 116).</p></div>
+    <div class="screen"><span class="term">Feedback · an issue</span>
+      <h3>The ⋯ menu won't close</h3>
+      <div class="stateline"><span class="tag t-green">Fixed</span>Live; waiting for you to try it (check: Write back from one box).</div>
+      <div class="box">What you saw: the picture, large, with the page and browser beside it</div>
+      <div class="hist"><b>Conversation</b><span>You: I do not have the option to cancel the "…" menu.</span><span>Claude: Got it: pressing ⋯ again, Escape or a click elsewhere should close it.</span></div>
+      <div class="chips"><span class="chip on">Reply to Claude</span><span class="chip">Reply to the sender</span></div>
+      <div class="box">Your words go to Claude (it's in Claude's inbox within a minute)</div>
+      <p class="small">The state said once (note 114). The line under the box changes with who you're writing to (note 112). Rare actions (what it is, close with a reason, same as) are named buttons in a row below, not a ⋯ (note 113).</p></div>
+    <div class="screen"><span class="term">Feedback · the list</span>
+      <div class="chips"><span class="chip on">To approve 1</span><span class="chip">With Claude 6</span><span class="chip">Fixed 4</span><span class="chip">Closed</span><span class="chip">Ideas</span></div>
+      <div class="issue"><span class="tag t-amber">To approve</span>Cathartic: the coins don't add up</div>
+      <div class="issue"><span class="tag t-violet">With Claude</span>Fold away Manage's list of pages</div>
+      <div class="issue"><span class="tag t-green">Fixed</span>The ⋯ menu won't close</div>
+      <p class="small">Questions from me aren't a tab here any more: they're in Testing's For you, and the issue just says <span class="tag t-amber">Claude asks</span> with a link there.</p></div>
+  </div>
+</section>
+
+<!-- 6 · Built to lift out -->
+<section class="board">
+  <div class="intro"><span class="lbl">6 · Built to lift out</span><h2>What makes it ready for another project, or a company</h2></div>
+  <div class="grid3">
+    <div class="card"><h3>Its own pieces</h3><p class="small">Its own tables (reports, issues, checks, results, areas,
+      events) and pages, talking to the host app through one small adapter: who the people are and their roles, how to
+      view as one of them, what the pages are, where pictures are stored. askdnd becomes its first host.</p></div>
+    <div class="card"><h3>Roles</h3><p class="small">Reporter (sends, sees their own), Tester (tries checks), Triager
+      (approves, merges, closes), Developer (a person or Claude: fixes, writes checks, asks), Admin. A company maps its
+      own groups onto these.</p></div>
+    <div class="card"><h3>A full history</h3><p class="small">Every change to any of them is an event: who, what, when,
+      from what to what. Never edited or deleted; states can be retired but never removed, so old history keeps its
+      meaning (Qase's rule).</p></div>
+    <div class="card"><h3>Connections</h3><p class="small">Issues sync both ways with Jira, Linear or GitHub through a
+      map of states (Qase, Marker.io do this); a merged change marks its issues fixed (Linear, GitHub "fixes #n");
+      notices by email or Slack.</p></div>
+    <div class="card"><h3>The developer can be Claude</h3><p class="small">What's new since Claude last read is its inbox
+      (what feedback.py's inbox and wait read today), its questions are answered in For you, and its key is its own: the part no tool in
+      the research has, and the reason to build rather than buy.</p></div>
+    <div class="card"><h3>What stays askdnd's</h3><p class="small">The table's own rules: a player's report waits for
+      you, the DM never sees a player's character notes in a picture, first names only to Claude.</p></div>
+  </div>
+</section>
+
+<!-- 7 · Picks -->
+<section class="board">
+  <div class="intro"><span class="lbl">7 · Your picks</span><h2>Six decisions</h2>
+    <p class="meta">You'll answer them in Testing's For you, mine marked. Then I write the plan in slices; the first
+    slice changes nothing you'd notice except the fixes for notes 111 to 116 and 121.</p></div>
+  <div class="picks">
+    <div class="pick"><header><h3>1 · Report and issue: one thing or two?</h3><p class="meta">Today a note is both what was sent and the work.</p></header>
+      <div class="opts">
+        <div class="opt rec"><b>A · Two, shown as one <span class="mine">Mine</span></b>A report is what someone sent; an issue is the work. Usually one each, but several reports of the same thing join one issue (each sender still hears back). Feedback shows the issue with its reports inside.</div>
+        <div class="opt"><b>B · One</b>A note stays both; a duplicate is closed with "same as" a link. Simpler now, harder for a company with many reporters.</div>
+      </div></div>
+    <div class="pick"><header><h3>2 · Failing a check</h3><p class="meta">Notes 115 and 116.</p></header>
+      <div class="opts">
+        <div class="opt rec"><b>A · One window, then Fail it <span class="mine">Mine</span></b>✗ Something's wrong… collects every issue (new, or one already sent), then one Failed result names them all. + Note stays only for "it works, but…".</div>
+        <div class="opt"><b>B · As now, simplified</b>Failed… fails it with the first issue; + Another issue adds more; Failed with issues already sent asks "fail with these?"</div>
+      </div></div>
+    <div class="pick"><header><h3>3 · Can't try a check</h3><p class="meta">Skip today, always with a reason.</p></header>
+      <div class="opts">
+        <div class="opt rec"><b>A · Can't try… <span class="mine">Mine</span></b>The test tools' "Blocked": you couldn't try it (why), so it comes back to Claude, not to Done. Skip goes away.</div>
+        <div class="opt"><b>B · Keep Skip</b>Skipped with a reason, and it counts as done.</div>
+      </div></div>
+    <div class="pick"><header><h3>4 · Pressing the wrong mark</h3><p class="meta">Tonight you picked "nothing you'd see" for Undo Failed, and it's built. Every test tool does the opposite: the record stays, and a correction is added.</p></header>
+      <div class="opts">
+        <div class="opt rec"><b>A · Change result, kept in the history <span class="mine">Mine</span></b>The latest result can be changed; the history shows "Failed, changed to Try again by you", and any issue it filed is closed as withdrawn (still findable), not deleted. The record of what happened stays true, which a company will need.</div>
+        <div class="opt"><b>B · Nothing you'd see (tonight's)</b>Undo takes the Failed and its issues out of the history as if it never happened.</div>
+      </div></div>
+    <div class="pick"><header><h3>5 · Claude's questions</h3><p class="meta">Today in both places.</p></header>
+      <div class="opts">
+        <div class="opt rec"><b>A · Answered in For you only <span class="mine">Mine</span></b>The issue says Claude asks, linking there; answering moves it back to With Claude.</div>
+        <div class="opt"><b>B · Both places, as now</b>The same form in For you and on the issue in Feedback.</div>
+      </div></div>
+    <div class="pick"><header><h3>6 · Ideas</h3><p class="meta">Today an idea is a note like a problem.</p></header>
+      <div class="opts">
+        <div class="opt rec"><b>A · One button, their own list <span class="mine">Mine</span></b>The feedback button sends both; ideas get their own tab in Feedback, can be joined ("me too") and say when they ship, as Canny does. Problems stay the fix-and-try flow.</div>
+        <div class="opt"><b>B · As now</b>Ideas and problems in the same lists.</div>
+      </div></div>
+  </div>
+</section>
+
+</div>

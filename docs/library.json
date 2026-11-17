@@ -1044,6 +1044,15 @@
   "link": "https://claude.ai/artifact/8qfS3KYY3UXNsot4wM2jtX"
  },
  {
+  "title": "Found, Fixed, Tried",
+  "kind": "design",
+  "status": "For your pick",
+  "date": "Nov 17",
+  "what": "Brett, Nov 17: confused which items go where between Feedback and Testing, and it may go to an enterprise use next. Today's five joins, what TestRail, Xray, Zephyr, Qase, Linear, Jira, GitHub, Marker.io, BugHerd, Canny and others do, one model (report, issue, check, result, area), the workflows, the screens, building it to lift out, and six picks.",
+  "source": "docs/mockups/feedback-and-testing/index.html",
+  "link": "https://claude.ai/artifact/LQMNBNHQpZ7Gand4mu1cyK"
+ },
+ {
   "title": "Counts and Status Marks",
   "kind": "design",
   "status": "Chose A and A · built",
