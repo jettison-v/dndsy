@@ -4446,7 +4446,7 @@ document.addEventListener('click', e => {
     asking = false;
     card.innerHTML = `<div class="tour-progress" role="progressbar" aria-label="Tour progress" aria-valuemin="1" aria-valuemax="${n}" aria-valuenow="${tour.i + 1}"><i style="width:${((tour.i + 1) / n * 100).toFixed(1)}%"></i></div>`
       + `<h3>${esc(s.title)}</h3><p>${s.what}</p><p class="why">${s.why}</p>`  // the words are askdnd's own (app/tour.py), with <b> for names
-      + `<div class="tour-foot"><span class="count">${tour.i + 1} of ${n}</span>`
+      + `<div class="tour-foot"><span class="tour-n">${tour.i + 1} of ${n}</span>`
       + (tour.i ? '<button type="button" class="btn small" data-tour-go="-1">Back</button>' : '')
       + `<button type="button" class="btn small primary" data-tour-go="1">${last ? 'Done' : 'Next'}</button>`
       + '<button type="button" class="btn small link" data-tour-end aria-label="End the tour">✕</button></div>';
@@ -4457,7 +4457,7 @@ document.addEventListener('click', e => {
     card.querySelector('h3').textContent = 'End the tour?';
     card.querySelectorAll('p').forEach(x => x.remove());
     card.querySelector('h3').insertAdjacentHTML('afterend', '<p>Take it again any time from <b>?</b> › Take the tour.</p>');
-    card.querySelector('.tour-foot').innerHTML = '<span class="count"></span><button type="button" class="btn small" data-tour-resume>Keep going</button>'
+    card.querySelector('.tour-foot').innerHTML = '<span class="tour-n"></span><button type="button" class="btn small" data-tour-resume>Keep going</button>'
       + '<button type="button" class="btn small primary" data-tour-end-now>End tour</button>';
     place();
     card.querySelector('[data-tour-end-now]').focus({ preventScroll: true });
