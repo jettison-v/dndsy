@@ -29,13 +29,13 @@
         <a class="rd-item fb-row{{ ' sel' if picked and picked.id == f.id }}" href="?{{ base_q }}&amp;open={{ f.id }}" hx-get="/manage/feedback?{{ base_q }}&amp;open={{ f.id }}" hx-select="#fb-article" hx-target="#fb-article" hx-swap="outerHTML" hx-push-url="true" data-rd-id="f{{ f.id }}" data-note="{{ f.id }}"{% if picked and picked.id == f.id %} aria-current="true"{% endif %}>
           <span class="ts-title">{{ f.title or f.text | truncate(90) }}</span>
           {{ state_word(w[0], w[1], ' data-state="' ~ f.status ~ '"') }}
-          <span class="nt-sum">{% if f.kind in kinds %}<span class="tag" data-kind="{{ f.kind }}">{{ kinds[f.kind][1] }}</span>{% elif f.status not in ("done", "deleted") %}<span class="tag" data-kind="none">Not sorted</span>{% endif %}{% if (f.context or {}).staging %} <span class="tag staging-tag">Staging</span>{% endif %} {{ "you" if f.sender.endswith("(admin)") else f.sender.split(" (")[0] }} · {{ f.created_at | ago }}</span>
+          <span class="nt-sum">{% if f.kind in kinds %}<span class="tag" data-kind="{{ f.kind }}">{{ kinds[f.kind][1] }}</span>{% elif f.status not in ("done", "deleted") %}<span class="tag" data-kind="none">Not sorted</span>{% endif %}{% if (f.context or {}).staging %} <span class="tag staging-tag">Staging</span>{% endif %} {{ "you" if f.user_id and f.user_id == me_id else f.sender.split(" (")[0] }} · {{ f.created_at | ago }}</span>
         </a>
         {% else %}<p class="note">{{ "Nothing new. Press \\ on any page to send a note." if tab == "new" else "Nothing here." }}</p>{% endfor %}
       </div>
     </aside>
     <div class="notes-read" id="fb-article">
-      {% if picked %}{% set f = picked %}{% set ctx = f.context or {} %}{% set hide = f.id in kept %}{% set who = f.sender.split(" (")[0] or "Its sender" %}{% set mine = f.sender.endswith("(admin)") %}
+      {% if picked %}{% set f = picked %}{% set ctx = f.context or {} %}{% set hide = f.id in kept %}{% set who = f.sender.split(" (")[0] or "Its sender" %}{% set mine = f.user_id and f.user_id == me_id %}
       {% set act = "/manage/feedback/" ~ f.id ~ "?" ~ base_q %}
       <article class="reader-article fb-read" id="fb-{{ f.id }}" data-reader-id="f{{ f.id }}" data-note-read="{{ f.id }}">
         <p class="note ts-where">{{ ctx.page or f.url }} · from {{ "you" if mine else who }}{% if ctx.viewing_as %}, viewing as {{ ctx.viewing_as }}{% endif %}{% if f.kind in kinds %} · <span class="tag" data-kind="{{ f.kind }}">{{ kinds[f.kind][1] }}</span>{% endif %}</p>

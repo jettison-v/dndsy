@@ -342,7 +342,8 @@ def queue(request: Request, tab: str = "", kind: str = "", open: int = 0, db: Se
     items = list(db.scalars(q.limit(200)))
     me = user["email"]
     picked = next((f for f in items if f.id == open), items[0] if items else None)  # (the Reader: the note open beside the list)
-    return templates.TemplateResponse(request, "manage_feedback.html", {"question_of": question_of, "picked": picked, "words": WORD, "sentences": SENTENCE,
+    me_row = picks.user_row(db, user)  # (yours, by who you are: never by the "(admin)" in a sender's name)
+    return templates.TemplateResponse(request, "manage_feedback.html", {"question_of": question_of, "picked": picked, "words": WORD, "sentences": SENTENCE, "me_id": me_row.id if me_row else None,
         "items": items, "kept": {f.id for f in items if kept_from(db, f, me)}, "tab": tab, "open": open, "counts": counts, "labels": LABELS,
         "kind": kind, "kinds": KINDS, "kind_chips": [(k, v[1], in_tab.get(k, 0)) for k, v in KINDS.items()]
         + ([("none", "Not sorted", in_tab[""])] if in_tab.get("") and tab in ("review", *OPEN) else []),  # (an old note done is done)
