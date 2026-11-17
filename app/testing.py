@@ -10,7 +10,12 @@ whose eyes, how long it takes, and why it exists (the note it came from, the cha
 - **A round** (▶ Start round): the checks in order, each on its own page, with the step card at the bottom right of
   every askdnd page (2A, `_check_card.html`, loaded by base.html while a round is open); Passed or Skip moves on.
 - **Failed…** opens the feedback window (3A) with Something's broken picked and the check named; the note it sends
-  marks the check failed and is tied to it (`failed`), so a failure is a feedback note like any other.
+  marks the check failed and is tied to it (`failed`), so a failure is a feedback note like any other. The card stays on
+  the check (Brett's 2A, Nov 17): **+ Another issue** sends the next, each its own note (`Feedback.check_id`, `issues`),
+  and **Done · Next check** moves on. **+ Issue** sends one without failing the check (it works, but…).
+- **Steps as a walkthrough** (3A, Nov 17): a step a line, one action each; `typed` is what to type, [Button] a button,
+  **Box** a box's name, and "(why: …)" why (`walk`). `step_problems` refuses a step that does two things or a word to type
+  that isn't marked, and a check that `makes` something must run in a test campaign (Board 6). docs/testing-guide.md.
 
 **Areas** (Working with Claude, Brett's picks Nov 17, docs/mockups/working-together/): Claude sorts what a round sent
 into areas (`/api/areas`, `feedback.py area`), the notes and checks fixed and tried together; Brett drags them into his
@@ -22,6 +27,7 @@ It's kept to itself so it can go to another project with Feedback (Board 5 of th
 routes, and askdnd's people and pages only through `web`, `auth.is_admin` and the feedback key.
 """
 
+import re
 import secrets
 from datetime import UTC, datetime
 
@@ -56,6 +62,7 @@ TO_DO = ("ready", "again")  # what waits for the admin (the Manage menu's count)
 PLAYER_DAYS = 3  # a check on a player's note is theirs to confirm first; yours after this many days (Brett's 6C)
 DENIED = "Testing is for admins."
 ROUND = "check_round"  # the session's open round: {"ids": [...], "i": n}
+HOME = "check_home"  # the campaign the admin was in when a round began: a round in VTT Test ends back there (Board 6)
 
 
 # ------------------------------------------------------------------ the engine's side
@@ -85,11 +92,16 @@ def for_note(db: Session, fb: Feedback, do: str = "", expect: str = "", admin_se
         return None  # (a built idea isn't a fix for its sender to confirm)
     pr = fb.pr if fb.pr.startswith("https://") else ""
     said = next((m.get("text", "") for m in reversed(fb.thread or []) if m.get("to") == "sender"), "")
-    known = db.scalars(select(Check).where((Check.feedback_id == fb.id) | (Check.failed_id == fb.id))).all()
+    known = db.scalars(select(Check).where((Check.feedback_id == fb.id) | (Check.id == fb.check_id))).all()
     if known:  # (fixed again: the check that failed comes back, never a second one; the code review, Nov 16)
         for c in known:
-            if c.status == "failed":
-                c.pr, c.said = pr or c.pr, said or c.said
+            if c.status != "failed":
+                continue
+            c.pr, c.said = pr or c.pr, said or c.said
+            left = [n for n in issues(db, c) if n.id != fb.id and n.kind != "idea" and n.status in NOTE_OPEN]
+            if left:  # (it comes back once every issue that broke it is fixed; an idea doesn't hold it back: 2A)
+                _note(c, f"Note {fb.id} fixed; " + ", ".join(f"note {n.id}" for n in left) + " still to go", "claude")
+            else:
                 mark(db, c, "fixed", who="claude")
         return None
     from urllib.parse import urlsplit
@@ -130,18 +142,24 @@ def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "") -
     _note(c, SAYS[status] + (f": {said}" if said else ""), who)
 
 
-def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, prod_note: int | None = None) -> Check | None:
-    """The note an admin sent with Failed… on a check: the check is failed and tied to it (3A), and a round moves on.
-    On staging the note goes to askdnd.ai's queue: the check here says which (`prod_note`)."""
+def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, prod_note: int | None = None, fail: bool = True) -> Check | None:
+    """A note an admin sent from a check: Failed… (3A) fails it, + Issue only adds to it; either way the note is tied
+    to it, one of as many as were found (2A, Nov 17), and the card stays on the check until Done · Next check. On
+    staging the note goes to askdnd.ai's queue: the check here says which (`prod_note`)."""
     c = db.get(Check, check_id)
     if c is None:
         return None
-    c.failed_id = fb.id if fb is not None else None
-    mark(db, c, "failed", said=f"note {fb.id}" if fb is not None else f"note {prod_note} on askdnd.ai")
-    if fb is not None and fb.area_id is None:
-        fb.area_id = c.area_id  # (a failure is about its check's area)
-    for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed, " + (f"note {fb.id}: " + " ".join((fb.text or "").split())[:240] if fb is not None
-                                                                         else f"note {prod_note} on askdnd.ai"),
+    which = f"note {fb.id}" if fb is not None else f"note {prod_note} on askdnd.ai"
+    if fb is not None:
+        fb.check_id = c.id
+        if fb.area_id is None:
+            fb.area_id = c.area_id  # (an issue is about its check's area)
+    if fail and c.status != "failed":
+        mark(db, c, "failed", said=which)
+    else:
+        _note(c, ("Another issue: " if c.status == "failed" else "An issue: ") + which, "you")
+    words = " ".join(((fb.text if fb is not None else "") or "").split())[:240]
+    for_claude.tell(db, "check", f"Check {c.id} ({c.title}): " + ("Failed, " if fail else "an issue, ") + which + (f": {words}" if words else ""),
                     feedback_id=fb.id if fb is not None else None, check_id=c.id, area_id=c.area_id)
     db.commit()
     return c
@@ -157,6 +175,65 @@ def local_path(p: str) -> bool:
     """An address on askdnd itself: starts with one /, never //, a backslash (browsers read /\\ as //) or a control
     character (the code review, Nov 16: a note's address made a check's link that left askdnd)."""
     return bool(p) and p.startswith("/") and not p.startswith("//") and "\\" not in p and not any(ord(ch) < 32 or ord(ch) == 127 for ch in p)
+
+
+STEP_MARKS = re.compile(r"(`[^`]+`|\[[^\]]+\]|\*\*[^*]+\*\*)")
+WHY = re.compile(r"\s*\(why:\s*([^)]*)\)\s*$", re.I)
+TWO_THINGS = re.compile(r",\s*then\b|;\s*then\b|\band then\b|\bthen press\b", re.I)
+UNMARKED_TYPING = re.compile(r"\b(type|enter|write|fill in)\s+(?!it\b|in\b|a\b|an\b|the\b|your\b|something\b)\w", re.I)
+
+
+def walk(do: str) -> list[dict]:
+    """A check's steps as the walkthrough shows them (3A): each line a step in parts: text, `typed` (what to type),
+    [Button] (a button, drawn as one), **Box** (a box's name), and its (why: …) last."""
+    out = []
+    for line in (do or "").splitlines():
+        if not line.strip():
+            continue
+        why = WHY.search(line)
+        body = line[: why.start()] if why else line
+        parts = []
+        for bit in STEP_MARKS.split(body.strip()):
+            if not bit:
+                continue
+            kind = "typed" if bit.startswith("`") else "press" if bit.startswith("[") else "box" if bit.startswith("**") else "text"
+            parts.append({"kind": kind, "text": bit.strip("`*") if kind in ("typed", "box") else bit[1:-1] if kind == "press" else bit})
+        out.append({"parts": parts, "why": why.group(1).strip() if why else ""})
+    return out
+
+
+def step_problems(do: str) -> list[str]:
+    """What breaks the walkthrough's rules (docs/testing-guide.md): a step that does two things, or a word to type that
+    isn't `marked` (Brett, Nov 17: "type lots in Or type it" read as an instruction to decode)."""
+    found = []
+    for n, line in enumerate((x for x in (do or "").splitlines() if x.strip()), 1):
+        bare = STEP_MARKS.sub(" ", WHY.sub("", line))
+        if TWO_THINGS.search(bare):
+            found.append(f"Step {n} does two things: one action a step.")
+        if UNMARKED_TYPING.search(bare):
+            found.append(f"Step {n}: what to type goes in `backticks`.")
+    return found
+
+
+def test_campaign_of(db: Session, path: str) -> str:
+    """The test campaign a check's page is in (its name), or "": `/c/<slug>/…`, or a character in one."""
+    from app.models import Campaign, CampaignCharacter
+
+    m = re.match(r"^/c/([^/?#]+)", path or "")
+    if m:
+        camp = db.scalar(select(Campaign).where(Campaign.slug == m.group(1)))
+        return camp.name if camp is not None and camp.is_test else ""
+    m = re.match(r"^/characters/(\d+)", path or "")
+    if m:
+        camp = db.scalar(select(Campaign).join(CampaignCharacter, CampaignCharacter.campaign_id == Campaign.id)
+                         .where(CampaignCharacter.character_id == int(m.group(1)), CampaignCharacter.left_on.is_(None), Campaign.is_test.is_(True)))
+        return camp.name if camp is not None else ""
+    return ""
+
+
+def issues(db: Session, c: Check) -> list[Feedback]:
+    """The notes sent from a check (Failed… and + Issue; Brett's 2A: as many as were found), oldest first."""
+    return list(db.scalars(select(Feedback).where(Feedback.check_id == c.id, Feedback.status != "deleted").order_by(Feedback.id)))
 
 
 def area_order(db: Session) -> list[Area]:
@@ -177,8 +254,8 @@ def view(c: Check, areas: dict[int, str] | None = None) -> dict:
     return {"id": c.id, "title": c.title, "area": c.area, "area_id": c.area_id, "setup": c.setup, "group": group,
             "needs": NEEDS.get(c.setup, ""), "as_who": c.as_who, "as_character": c.as_character,
             "path": c.path, "do": [line for line in (c.do or "").splitlines() if line.strip()], "expect": c.expect, "minutes": c.minutes,
-            "status": c.status, "says": SAYS.get(c.status, c.status), "feedback_id": c.feedback_id, "failed_id": c.failed_id, "pr": c.pr,
-            "said": c.said, "history": c.history or []}
+            "status": c.status, "says": SAYS.get(c.status, c.status), "feedback_id": c.feedback_id, "pr": c.pr,
+            "said": c.said, "history": c.history or [], "makes": c.makes, "steps": walk(c.do)}
 
 
 # ------------------------------------------------------------------ the round
@@ -288,7 +365,10 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
     for i in items:
         groups.setdefault(f"a{i['area_id']}" if i["area_id"] else i["group"], {"title": i["group"], "area": i["area_id"], "rows": []})["rows"].append(i)
     picked = next((i for i in items if i["id"] == check), items[0] if items else None)
-    notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({x for i in items for x in (i["feedback_id"], i["failed_id"]) if x})))}
+    if picked:
+        pc = db.get(Check, picked["id"])
+        picked = {**picked, "issues": issues(db, pc), "test_campaign": test_campaign_of(db, pc.path)}
+    notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({i["feedback_id"] for i in items if i["feedback_id"]})))}
     return templates.TemplateResponse(request, "testing.html", {**base, "groups": groups, "picked": picked, "notes": notes,
         "chips": [(k, SHOW_SAYS[k], players if k == "player"
                    else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k == "ready" else players_again if k == "again" else 0)
@@ -309,7 +389,7 @@ def start_round(request: Request, form=web.FormBody, db: Session = Depends(get_d
     if not ids:
         request.session["toast"] = web.notice("Nothing ready to try.")
         return RedirectResponse("/manage/testing", status_code=303)
-    request.session[ROUND] = {"ids": ids, "i": 0}
+    begin(request, ids)
     return RedirectResponse(enter(request, db, db.get(Check, ids[0])), status_code=303)
 
 
@@ -341,27 +421,57 @@ def go(request: Request, check_id: int, db: Session = Depends(get_db)):
     c = db.get(Check, check_id)
     if c is None:
         return web.not_found(request, "There's no such check.")
-    request.session[ROUND] = {"ids": [c.id], "i": 0, "back": c.id}
+    begin(request, [c.id], back=c.id)
     return RedirectResponse(enter(request, db, c), status_code=303)
 
 
 @router.post("/manage/testing/round/stop")
-def stop_round(request: Request):
+def stop_round(request: Request, db: Session = Depends(get_db)):
     _, denied = web.require(request, is_admin, DENIED)
     if denied:
         return denied
     request.session[ROUND] = None
-    return RedirectResponse(leave(request, "/manage/testing"), status_code=303)
+    return RedirectResponse(home(request, db, leave(request, "/manage/testing")), status_code=303)
 
 
-def next_page(request: Request, db: Session, after: int, followed: bool = True) -> str:
-    """Where to go once a check is marked: the round's next check's page when it was the round's, else back to that
-    check in the Reader (a check marked from the list leaves a round where it was; the code review, Nov 16)."""
-    if not followed:
-        return f"/manage/testing?show=failed&check={after}"
-    _advance(request, after)
+def begin(request: Request, ids: list[int], back: int | None = None) -> None:
+    """A round opens (▶ Start round, or Go's round of one): where the admin was, so its end comes back there."""
+    from app import access
+
+    here = access.current_campaign(((request.session.get("user") or {}).get("email") or "").lower())
+    request.session[ROUND] = {"ids": ids, "i": 0, **({"back": back} if back else {})}
+    request.session[HOME] = here["id"] if here else None
+
+
+def home(request: Request, db: Session, back: str) -> str:
+    """A round's end: back in the campaign the admin began it in (a check in VTT Test made it the current one)."""
+    from app import access, campaign_paths
+
+    was = request.session.pop(HOME, None)
+    email = ((request.session.get("user") or {}).get("email") or "").lower()
+    here = access.current_campaign(email)
+    if was and email and (here is None or here["id"] != was):
+        campaign_paths.remember_in(db, email, was)
+    return back
+
+
+@router.post("/manage/testing/{check_id:int}/next")
+def done_with(request: Request, check_id: int, db: Session = Depends(get_db)):
+    """Done · Next check (Brett's 2A, Nov 17): every issue sent, the round goes on to the next check's page; the last
+    one (or Go's one check) comes back to the Reader."""
+    _, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    back = f"/manage/testing?show=failed&check={check_id}"
+    if not on_round(request, check_id):
+        return RedirectResponse(back, status_code=303)
+    single = bool(_round(request).get("back"))
+    _advance(request, check_id)
     now = current(request, db)
-    return enter(request, db, db.get(Check, now["check"]["id"])) if now else leave(request, f"/manage/testing?show=failed&check={after}")
+    if now:
+        return RedirectResponse(enter(request, db, db.get(Check, now["check"]["id"])), status_code=303)
+    request.session["toast"] = web.notice("That's the round done." if not single else "Sent: it's with Claude.")
+    return RedirectResponse(home(request, db, leave(request, back if single else "/manage/testing")), status_code=303)
 
 
 def enter(request: Request, db: Session, c: Check | None) -> str:
@@ -429,19 +539,33 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
     if now:
         return RedirectResponse(enter(request, db, db.get(Check, now["check"]["id"])), status_code=303)
     request.session["toast"] = web.notice(f"{SAYS[status]}: {c.title}" if single else "That's the round done.")
-    return RedirectResponse(leave(request, back if single else "/manage/testing"), status_code=303)
+    return RedirectResponse(home(request, db, leave(request, back if single else "/manage/testing")), status_code=303)
 
 
 @router.get("/manage/testing/card", response_class=HTMLResponse)
-def card(request: Request, db: Session = Depends(get_db)):
-    """The step card (2A) for the round's check, loaded on every page while a round is open."""
+def card(request: Request, at: str = "", db: Session = Depends(get_db)):
+    """The step card (2A) for the round's check, loaded on every page while a round is open (`at`: the page it's on).
+    On Testing itself only when the check is about Testing (note 91). Folded and where it sits come from the admin's
+    cookie (`card_prefs`), so it draws as it was left, never open and then folding (note 85)."""
     user, denied = web.require(request, is_admin, DENIED)
     if denied:
         return denied
     now = current(request, db)
-    if now is None:
+    if now is None or (at.startswith("/manage/testing") and not now["check"]["path"].startswith("/manage/testing")):
         return HTMLResponse("", status_code=204)
-    return templates.TemplateResponse(request, "_check_card.html", {"user": user, **now})
+    c = db.get(Check, now["check"]["id"])
+    return templates.TemplateResponse(request, "_check_card.html", {"user": user, **now, **card_prefs(request), "issues": issues(db, c),
+                                                                    "test_campaign": test_campaign_of(db, c.path)})
+
+
+CARD_COOKIE, CORNERS = "askdnd-cc", ("br", "bl", "tr", "tl")
+
+
+def card_prefs(request: Request) -> dict:
+    """The step card as the admin left it on this device (app.js "the step card" writes the cookie): folded or open,
+    and the corner it was dragged to (Brett's 6A, Nov 17; bottom right until moved)."""
+    parts = (request.cookies.get(CARD_COOKIE) or "").split(".")
+    return {"folded": "folded" in parts, "corner": next((x for x in parts if x in CORNERS), "br")}
 
 
 # ------------------------------------------------------------------ Claude's side (the feedback key)
@@ -461,6 +585,14 @@ def _fill(db: Session, c: Check, body: dict) -> None:
             setattr(c, k, str(body.get(k) or "")[:n])
     if c.setup not in SETUPS:
         raise HTTPException(400, f"setup: one of {', '.join(SETUPS)}")
+    if "do" in body and (wrong := step_problems(c.do)):
+        raise HTTPException(400, " ".join(wrong) + " (docs/testing-guide.md)")
+    if "makes" in body:
+        if type(body["makes"]) is not bool:
+            raise HTTPException(400, "makes: true or false")
+        c.makes = body["makes"]
+    if c.makes and not test_campaign_of(db, c.path):
+        raise HTTPException(400, "A check that makes something runs in a test campaign (VTT Test): give it a page there.")
     if c.path and not local_path(c.path):
         raise HTTPException(400, "path: an askdnd page, starting with /")  # (it's Go's link and a round's redirect)
     if c.pr and not c.pr.startswith("https://"):

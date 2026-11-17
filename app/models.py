@@ -945,6 +945,8 @@ class Feedback(Timestamped, Base):
     pr: Mapped[str] = mapped_column(String(300), default="", server_default="")
     told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last had a card about (feedback.marker)
     area_id: Mapped[int | None] = mapped_column(ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)  # its area (Testing)
+    # the check it was sent from (Failed… or + Add an issue on a check; several per check, Brett's 2A, Nov 17)
+    check_id: Mapped[int | None] = mapped_column(ForeignKey("checks.id", ondelete="SET NULL", use_alter=True, name="feedback_check_id_fkey"), nullable=True, index=True)
     seen: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last saw on Your notes (the badge)
 
 
@@ -983,7 +985,7 @@ class Check(Timestamped, Base):
     # → passed…; claude: Claude ran it
     status: Mapped[str] = mapped_column(String(20), default="ready", server_default="ready", index=True)
     feedback_id: Mapped[int | None] = mapped_column(ForeignKey("feedback.id", ondelete="SET NULL"), nullable=True)  # the note it came from
-    failed_id: Mapped[int | None] = mapped_column(ForeignKey("feedback.id", ondelete="SET NULL"), nullable=True)  # the note its failure made
+    makes: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())  # it makes something: runs in a test campaign
     pr: Mapped[str] = mapped_column(String(300), default="", server_default="")  # the change it checks
     said: Mapped[str] = mapped_column(Text, default="", server_default="")  # Claude's word on it (a run's outcome, what was fixed)
     history: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"at", "what", "who"}]

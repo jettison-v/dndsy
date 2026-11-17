@@ -160,23 +160,23 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
         context |= {"viewing_as": viewing.get("name") or viewing["email"], "viewing_as_email": viewing["email"].lower()}
     note = {"email": user["email"].lower(), "name": user.get("name") or "", "text": text, "kind": kind, "url": str(body.get("url") or "")[:1000],
             "context": context, "html": str(body.get("html") or "")[:MAX_HTML], "shot": body.get("shot"), "pasted": body.get("pasted")}
-    check = body.get("check") if type(body.get("check")) is int and is_admin(user) else None  # (Failed… on a check: Testing, 3A)
+    # Failed… or + Issue on a check (Testing, 3A and 2A): tied to it; the card stays on the check for the next issue
+    check = body.get("check") if type(body.get("check")) is int and is_admin(user) else None
+    fail = body.get("fail") is not False  # (+ Issue sends False: it doesn't fail the check)
     if check is not None:
         from app import testing
 
         note["context"] = {**note["context"], "check": check}
-        followed = testing.on_round(request, check)  # (the round's own check: then it goes on to the next)
     if config.STAGING:
         sent = to_prod(note)
         if "id" in sent:
-            if check is not None and testing.failed(request, db, check, None, prod_note=sent["id"]):  # (staging's check, askdnd.ai's note)
-                return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": False, "to_prod": True,
-                                     "next": testing.next_page(request, db, check, followed)})
+            if check is not None and testing.failed(request, db, check, None, prod_note=sent["id"], fail=fail):  # (staging's check, askdnd.ai's note)
+                return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": False, "to_prod": True, "check": check})
             return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": sent.get("review", True), "to_prod": True})
         note["context"] = {**note["context"], "not_sent_to_prod": sent.get("error", "")[:300]}
     fb = _store(db, note, tell=check is None)
-    if check is not None and testing.failed(request, db, check, fb):  # (and the page to go to: a round's next check, or the Reader)
-        return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "next": testing.next_page(request, db, check, followed)})
+    if check is not None and testing.failed(request, db, check, fb, fail=fail):
+        return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "check": check})
     return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": fb.status == "review"})
 
 
@@ -454,6 +454,11 @@ def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None =
         if not isinstance(body["kind"], str) or body["kind"] not in KINDS:
             raise HTTPException(400, f"A kind is one of {', '.join(KINDS)}.")
         _rekind(fb, body["kind"], str(body.get("why") or ""), "claude")
+    if body.get("check_do"):  # (its check's steps follow the walkthrough's rules before anything changes: testing.step_problems)
+        from app import testing
+
+        if wrong := testing.step_problems(str(body["check_do"])):
+            raise HTTPException(400, " ".join(wrong) + " (docs/testing-guide.md)")
     tell = str(body.get("tell") or "").strip()[:MAX_TEXT]
     if tell:  # (a reply its sender sees: `feedback.py tell`)
         fb.thread = [*(fb.thread or []), {"who": "claude", "to": "sender", "text": tell, "at": datetime.now(UTC).isoformat()}]

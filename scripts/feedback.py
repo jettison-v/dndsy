@@ -14,12 +14,14 @@ When Brett says "review the feedback", pull the queue from askdnd, then answer o
     uv run python scripts/feedback.py pull --kind none            # notes sent before kinds, to sort once
 
 Testing (app/testing.py; Brett's picks, Nov 16): a check for Brett to try, with why it's there. Write one with every
-fix to a broken note (--note) and every change he should look at (--pr); a run on the Mac Mini sets one `claude`:
+fix to a broken note (--note) and every change he should look at (--pr); a run on the Mac Mini sets one `claude`.
+Every check is a walkthrough by docs/testing-guide.md: one action a --do, `typed` values, [Buttons], **Box** names,
+(why: …); --makes for one that makes something (its page in VTT Test). askdnd refuses one that breaks the rules:
 
     uv run python scripts/feedback.py check list                     # every check (--status ready,again,…)
     uv run python scripts/feedback.py check add "Column headings stay while a list scrolls" --area Sheet \
         --setup view_as --as "Cole's player" --path "/characters/1?tab=items" --minutes 2 --note 73 --pr <url> \
-        --do "Scroll down the Inventory list." --do "Then Change forms, and scroll." --expect "They stay under the tabs." \
+        --do "Scroll down the Inventory list." --do "Press [Change forms]." --do "Scroll the forms." --expect "They stay under the tabs." \
         --said "Fixed: every list's headings now stay at the top."
     uv run python scripts/feedback.py check set 12 again --said "Fixed in PR 401: …"   # ready | again | claude | …
     uv run python scripts/feedback.py check set 12 claude --said "12 of 12 on the Mini's seats"
@@ -137,7 +139,7 @@ def check(a) -> None:
     elif a.do_what == "add":
         body = {"title": a.title, "area": a.area, "setup": a.setup or "laptop", "as_who": a.as_who, "path": a.path, "do": "\n".join(a.steps),
                 "expect": a.expect, "pr": a.pr, "said": a.said, "minutes": a.minutes, "place": a.place,
-                **({"feedback_id": a.note} if a.note else {}), **({"area_id": a.area_id} if a.area_id else {})}
+                **({"feedback_id": a.note} if a.note else {}), **({"area_id": a.area_id} if a.area_id else {}), **({"makes": True} if a.makes else {})}
         c = json.loads(call(a.base, "/api/checks", body))
         print(f"Check {c['id']}: {c['title']} ({c['says']})")
     elif a.do_what == "live":
@@ -327,6 +329,7 @@ def main() -> None:
     ca.add_argument("--place", type=int, default=0)
     ca.add_argument("--note", type=int, default=None, help="the feedback note it came from")
     ca.add_argument("--area-id", dest="area_id", type=int, default=None, help="its area (feedback.py area list)")
+    ca.add_argument("--makes", action="store_true", help="it makes something: its page is in a test campaign (VTT Test)")
     cs = cks.add_parser("set")
     cs.add_argument("id", type=int)
     cs.add_argument("status", choices=["ready", "again", "failed", "fixed", "passed", "skipped", "claude"])
