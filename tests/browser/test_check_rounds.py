@@ -74,7 +74,10 @@ def test_a_round_goes_page_to_page_with_its_card(people, server, browser_db):
         sent = conn.execute(text("SELECT count(*) FROM feedback WHERE check_id = :b"), {"b": two}).scalar()
     engine.dispose()
     assert rows == {one: "passed", two: "failed"} and sent == 2
-    page.locator(f'[data-check-card="{three}"] [data-check-result="skipped"]').click()
+    card = page.locator(f'[data-check-card="{three}"]')  # Skip… says why (Brett, Nov 17)
+    card.locator("[data-check-skip]").click()
+    card.locator('[data-skip-form] input[value="data"]').check()
+    card.locator('[data-check-result="skipped"]').click()
     page.wait_for_url("**/manage/testing")
     assert page.locator("[data-check-card]").count() == 0  # (the round is done: no card)
     assert not admin.errors, admin.errors

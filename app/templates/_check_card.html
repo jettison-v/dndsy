@@ -4,7 +4,7 @@
    — folds it to a pill (`folded`; both from the admin's cookie, testing.card_prefs, so it draws as it was left). After
    Failed… it stays on the check, listing what was sent, until Done · Next check (2A). Never in a note's picture. #}
 {% from "_lists.html" import grip %}
-{% from "_check_steps.html" import walkthrough, issue_list %}
+{% from "_check_steps.html" import walkthrough, issue_list, skip_form %}
 {% set c = check %}
 <aside class="check-card{{ ' folded' if folded }}" data-check-card="{{ c.id }}" data-corner="{{ corner }}" data-fb-skip aria-label="Testing: {{ c.title }}">
   <div class="cc-top" data-cc-drag{% if folded %} hidden{% endif %}><span class="cc-label">{{ grip() }}Testing · {{ n }} of {{ of }}</span>
@@ -26,7 +26,7 @@
       <form method="post" action="/manage/testing/{{ c.id }}"><input type="hidden" name="result" value="passed"><button class="btn small ts-pass" type="submit" data-check-result="passed">✓ Passed</button></form>
       <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}">✗ Failed…</button>
       <button type="button" class="btn link small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-fb-issue>+ Issue</button>
-      <form method="post" action="/manage/testing/{{ c.id }}"><input type="hidden" name="result" value="skipped"><button class="btn link small" type="submit" data-check-result="skipped">Skip</button></form>
+      <details class="cc-skip"><summary class="btn link small" data-check-skip>Skip…</summary>{{ skip_form(c, "") }}</details>
       {% endif %}
       <form method="post" action="/manage/testing/round/stop" class="cc-stop"><button class="btn link small" type="submit" data-round-stop>End round</button></form>
     </div>

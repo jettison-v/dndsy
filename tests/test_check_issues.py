@@ -131,3 +131,35 @@ def test_after_failed_the_steps_stay_and_failed_can_be_undone(admin, db):
     db.expire_all()
     assert db.get(Check, c).status == "ready" and db.get(Feedback, sent).check_id == c
     assert 'data-check-result="passed"' in admin.get("/manage/testing/card").text
+
+
+def test_skip_always_says_why_and_claude_hears_it(admin, db):
+    """Brett's comment on Readers, Rebuilt (Nov 17): Skip always has a reason, most often the data isn't there or the
+    check is written wrong; without one nothing changes, and the reason reaches Claude's inbox."""
+    c = add(admin)
+    r = admin.post(f"/manage/testing/{c}", data={"result": "skipped"}, follow_redirects=False)
+    db.expire_all()
+    assert r.status_code == 303 and db.get(Check, c).status == "ready"  # (no reason: not skipped)
+    assert admin.post(f"/manage/testing/{c}", data={"result": "skipped", "why": "other"}, follow_redirects=False).status_code == 303
+    db.expire_all()
+    assert db.get(Check, c).status == "ready"  # (Something else needs words)
+    admin.post(f"/manage/testing/{c}", data={"result": "skipped", "why": "wrong"})
+    db.expire_all()
+    assert db.get(Check, c).status == "skipped"
+    heard = admin.get("/api/claude/inbox", headers=KEY).json()["items"][-1]
+    assert heard["check_id"] == c and "written wrong" in heard["text"]
+    page = admin.get(f"/manage/testing?show=done&check={c}").text
+    assert "data-history" in page and 'class="tl-skipped' not in page and "tl-quiet" in page  # (the timeline, from keys)
+
+
+def test_a_checks_view_says_its_state_in_words_and_why_without_numbers(admin, db):
+    """Readers, Rebuilt (Brett's 1A, 2A, 4A and comments): the state as a word and a sentence, the walkthrough as the card
+    shows it, Why in words, the note and change numbers one click down, the history folded to a badge."""
+    fb = note(admin, text="Clicking on the filtered does not do anything.").json()["id"]
+    c = add(admin, feedback_id=fb, said="Fixed: the chips open their lists now.")
+    page = admin.get(f"/manage/testing?check={c}").text
+    art = page.split(f'data-check-read="{c}"')[1].split("</article>")[0]
+    assert 'class="state-line"' in art and "sw-ready" in art and 'data-check-go' in art and 'class="walk"' in art
+    assert "Clicking on the filtered" in art and f"Note {fb}" in art.split('class="fold ts-more"')[1]  # (the number only under More)
+    assert f"Note {fb}" not in art.split('class="fold ts-more"')[0]
+    assert '<details class="timeline" data-history>' in art  # (folded: a badge)

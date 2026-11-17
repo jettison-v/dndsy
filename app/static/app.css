@@ -4224,10 +4224,61 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
   .ar-row { grid-template-columns: auto minmax(0, 1fr); }
   .ar-row .st-track, .ar-next { grid-column: 2; justify-self: start; }
 }
-.ts-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px var(--sp-2); align-items: center; }
+.ts-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--sp-2); align-items: start; }
 .ts-row .ts-title { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.ts-row .nt-sum { grid-column: 2 / -1; }
+.ts-row .nt-sum { grid-column: 1 / -1; }
 .ts-where { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; color: var(--muted); font-size: var(--fs-sm); margin: 0; }
+/* Admin pieces (Readers, Rebuilt: Brett's picks, Nov 17; _admin_bits.html): a state as a word in its colour, the line
+   that says what it means, the action bar (one main button, the marks as a small set, ⋯ for the rest), the timeline */
+.state-word { display: inline-block; font-size: var(--fs-xs); font-weight: 700; padding: 3px 8px; border-radius: var(--r-pill); white-space: nowrap; line-height: 1.2; }
+.sw-ready { background: var(--blue-soft); color: var(--blue); }
+.sw-again, .sw-ask { background: var(--amber-soft); color: var(--amber); }
+.sw-failed { background: var(--red-soft); color: var(--red); }
+.sw-passed { background: var(--green-soft); color: var(--green); }
+.sw-claude, .sw-pick { background: var(--violet-soft); color: var(--violet); }
+.sw-quiet { background: var(--surface-3); color: var(--muted); }
+.state-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin: 0; color: var(--text); }
+.act-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.act-bar form { display: contents; }
+.act-set { display: inline-flex; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; }
+.act-set form { display: contents; }
+.act-set button { font: inherit; font-size: var(--fs-sm); font-weight: 600; background: var(--surface-2); color: var(--text); border: 0; border-right: 1px solid var(--line); padding: 0 var(--sp-3); min-height: var(--control-h-sm); cursor: pointer; white-space: nowrap; }
+.act-set > :last-child, .act-set > form:last-child button { border-right: 0; }
+.act-set button:hover { background: var(--surface-3); }
+.act-set .act-ok { color: var(--green); }
+.act-set .act-no { color: var(--red); }
+.act-more { position: relative; }
+.act-more > summary { list-style: none; cursor: pointer; display: inline-grid; place-items: center; min-width: var(--control-h-sm); min-height: var(--control-h-sm); border: 1px solid var(--line); border-radius: var(--r-md); color: var(--muted); }
+.act-more > summary::-webkit-details-marker { display: none; }
+.act-menu { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; min-width: 180px; display: grid; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--lift); padding: var(--sp-1); }
+.act-menu button { font: inherit; font-size: var(--fs-sm); text-align: left; background: none; border: 0; color: var(--text); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); cursor: pointer; }
+.act-menu button:hover { background: var(--surface-2); }
+.timeline > summary { list-style: none; cursor: pointer; }
+.timeline > summary::-webkit-details-marker { display: none; }
+.tl-badge { display: inline-block; font-size: var(--fs-xs); font-weight: 600; padding: 3px 9px; border-radius: var(--r-pill); background: var(--surface-3); color: var(--muted); }
+.tl-badge::before { content: "▸ "; }
+.timeline[open] .tl-badge::before { content: "▾ "; }
+.tl { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; font-size: var(--fs-sm); }
+.tl li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: var(--sp-2); align-items: start; padding-bottom: var(--sp-2); position: relative; }
+.tl li::before { content: ""; width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; background: var(--line-strong); }
+.tl li:not(:last-child)::after { content: ""; position: absolute; left: 4px; top: 17px; bottom: 0; width: 2px; background: var(--line-soft); }
+.tl .tl-ready::before { background: var(--blue); } .tl .tl-again::before { background: var(--amber); } .tl .tl-failed::before { background: var(--red); }
+.tl .tl-passed::before { background: var(--green); } .tl .tl-claude::before { background: var(--violet); }
+.tl-when { white-space: nowrap; }
+/* Testing's check (Readers, Rebuilt): the card's walkthrough as it'll show, why in words, then the history badge */
+.ts-check { display: grid; gap: var(--sp-3); }
+.ts-plabel { display: block; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: var(--sp-1); }
+.ts-preview { background: var(--surface-2); border: 1px solid var(--line-soft); border-top: 3px solid var(--blue); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-2); }
+.ts-see { border-top: 1px solid var(--line-soft); padding-top: var(--sp-2); }
+.ts-see p, .ts-why p { margin: 0; }
+.ts-said { color: var(--muted); }
+.skip-why { display: grid; gap: var(--sp-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
+.skip-whys { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); min-width: 0; }
+.skip-whys .chip input { margin: 0 4px 0 0; accent-color: var(--blue); }
+.skip-whys .chip:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
+.cc-skip > summary { list-style: none; }
+.cc-skip > summary::-webkit-details-marker { display: none; }
+.cc-skip[open] { flex-basis: 100%; }
 .ts-do { margin: 0; padding-left: 1.2em; display: grid; gap: var(--sp-1); }
 .ts-from { display: grid; gap: var(--sp-2); }
 .ts-read p { margin: 0; }  /* (the article's grid spaces its parts, as Notes you sent's: no paragraph's own margin on top) */
@@ -4274,15 +4325,6 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .ts-hist li { white-space: normal; }  /* (a step's name wraps, never widens the page: note 95) */
 /* Claude's questions and picks in For you (Brett's 5A and Board 3, Nov 17): a question amber "?", a pick violet "◇";
    answers to tap, Claude's own marked; a pick's drawings side by side, one press each */
-.ts-k { width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; }
-.ts-k svg { display: block; }
-.ts-k.q { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber); }
-.ts-k.pick { background: var(--violet-soft); color: var(--violet); border: 1px solid var(--violet); border-radius: var(--r-xs); }
-.ts-where .ts-k { vertical-align: middle; }
-.ts-key { margin: var(--sp-2) 0 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); font-size: var(--fs-xs); }  /* For you's key (note 99) */
-.ts-key > span { display: inline-flex; align-items: center; gap: 5px; }
-.ts-key .ts-k { width: 16px; height: 16px; }
-.ts-key .ts-k svg { width: 10px; height: 10px; }
 .qa-form { display: grid; gap: var(--sp-3); }
 .qa-choices { border: 0; margin: 0; padding: 0; display: grid; gap: var(--sp-2); min-width: 0; }
 .qa-choice { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2) var(--sp-3); align-items: start; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); cursor: pointer; }
