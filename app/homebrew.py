@@ -195,6 +195,20 @@ def charges_says(c: dict) -> str:
     return f"{n} charge{'' if n == 1 else 's'}" + (f", back at {c['back']}" + (f" ({c['regain']})" if c.get("regain") else "") if c.get("back") else ", they don't come back")
 
 
+def as_typed(form) -> dict:
+    """Every piece as the DM typed it, mistakes too, for the form shown again with what's wrong: a piece with a problem
+    stays on the page, opened, instead of being dropped (the research's pitfall: never lose what was typed)."""
+    get = lambda k: _clean(form.get(k))
+    rolls = [{"name": get(f"roll{i}_name"), "dice": [get(f"roll{i}_dice")], "resolve": get(f"roll{i}_resolve"), "effect": get(f"roll{i}_effect"),
+              "save": get(f"roll{i}_save"), "dc": get(f"roll{i}_dc"), "success": "half" if form.get(f"roll{i}_half") else "none", "note": get(f"roll{i}_note")}
+             for i in range(MAX_ROLLS) if get(f"roll{i}_dice")]
+    adds = [{"name": get(f"add{i}_name"), "amount": get(f"add{i}_amount"), "when": get(f"add{i}_when"), "to": [get(f"add{i}_to")],
+             **({"with": ["this_item"]} if form.get(f"add{i}_this") else {}), "says": get(f"add{i}_says")}
+            for i in range(MAX_ADDS) if get(f"add{i}_amount")]
+    charges = {"count": get("charges"), "back": get("charges_back"), "regain": get("charges_regain")} if get("charges") else {}
+    return {"rolls": rolls, "adds": adds, **({"charges": charges} if charges else {})}
+
+
 def says(data: dict) -> list[dict]:
     """What it does in play, a piece at a time ({kind, name, said}: what it's called, its sentence as the item builder
     shows it), for DM Tools' list."""
@@ -330,7 +344,7 @@ def save_item(request: Request, form=web.FormBody, db: Session = Depends(get_db)
     if clash is not None and clash is not old:
         errors.append(f"There's already a homebrew item called {clash.name}.")
     if errors:
-        return _form_page(request, user, entry, key=key, errors=errors, status=422)
+        return _form_page(request, user, {**entry, "play": as_typed(form)}, key=key, errors=errors, status=422)
     if old is not None and old.key != rules_data.slug(entry["name"]):
         db.delete(old)  # (renamed: saved again under its new name)
         db.flush()

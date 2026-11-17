@@ -75,6 +75,7 @@ def test_the_form_says_what_is_wrong_and_keeps_what_was_typed(dm, db, sheet):
     r = dm.post("/c/main/dm/items", data=bad)
     assert r.status_code == 422 and "Give it a name." in r.text and "write its dice" in r.text and "Charges: a number" in r.text
     assert "Its needle points" in r.text and db.scalar(select(CampaignContent)) is None
+    assert 'value="lots"' in r.text and 'name="charges" value="99"' in r.text  # (what was typed stays, mistakes too: the item builder, Nov 16)
     save = {**FORM, "roll0_dice": "2d6 force", "roll0_dc": ""}
     assert "needs its ability and DC" in dm.post("/c/main/dm/items", data=save).text
     dm.post("/c/main/dm/items", data=FORM)
