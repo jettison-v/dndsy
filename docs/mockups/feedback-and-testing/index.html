@@ -261,7 +261,7 @@ svg { max-width: 100%; height: auto; display: block; }
     <div class="card"><h3>You try a check</h3><div class="flow">
       <div class="step"><span class="n">1</span><p><span class="who w-you">You</span> start the area's round; each check opens its page with the walkthrough card.</p></div>
       <div class="step"><span class="n">2</span><p>It works: <b>✓ Passed</b>. Its issues close as verified.</p></div>
-      <div class="step"><span class="n">3</span><p>It doesn't: <b>✗ Something's wrong…</b> opens one window: your words, the picture, and "a new issue, or one you already sent from this check". Add as many as you found; <b>Fail it</b> records one Failed result naming them all.</p></div>
+      <div class="step"><span class="n">3</span><p>It doesn't: <b>✗ Something's wrong…</b>, your words and the picture. The first one marks this try Failed; each problem you find after it is the same button again, added to the same try. No separate + Note while trying, nothing to fail at the end, nothing written twice.</p></div>
       <div class="step"><span class="n">4</span><p>You can't try it (the data isn't there, the check is written wrong): <b>Can't try…</b> with why. Claude fixes the check.</p></div>
       <div class="step"><span class="n">5</span><p>Pressed the wrong one: <b>Change result</b> on the latest result (see pick 4).</p></div>
     </div></div>
@@ -286,15 +286,13 @@ svg { max-width: 100%; height: auto; display: block; }
       <div class="box">The walkthrough, as the card shows it</div>
       <div class="hist"><b>History</b><span>Nov 17, 21:36 · Failed by you: 4 issues (111 to 114)</span><span>Nov 17, 21:50 · Fixed by Claude · live</span><span>now · Try again</span></div>
       <p class="small">No ⋯: every action says what it does. The history updates the moment you mark it (note 121).</p></div>
-    <div class="screen"><span class="term">Testing · ✗ Something's wrong…</span>
-      <h3>What's wrong with Write back from one box?</h3>
-      <div class="box">In your words…</div>
-      <div class="chips"><span class="chip on">A new issue</span><span class="chip">Same as one already sent ▾</span></div>
-      <div class="box">The page's picture, marked up · or one you add</div>
+    <div class="screen"><span class="term">Testing · after ✗ Something's wrong…, twice</span>
+      <h3>Write back from one box</h3>
+      <div class="stateline"><span class="tag t-red">Failed</span>You found 2 problems on this try. With Claude: it comes back once they're fixed.</div>
       <div class="issue"><span class="tag t-red">1</span>The ⋯ menu won't close</div>
       <div class="issue"><span class="tag t-red">2</span>Write to doesn't say where it goes</div>
-      <div class="bar"><span class="btn">+ Another</span><span class="btn no">Fail it with 2 issues</span><span class="btn quiet">Cancel</span></div>
-      <p class="small">One window for every issue on a try, then one Failed result. Issues you already sent with + Note can be picked here instead of written again (note 116).</p></div>
+      <div class="bar"><span class="btn no">✗ Something else wrong…</span><span class="btn quiet">Change result</span><span class="btn">Done · next check</span></div>
+      <p class="small">Each problem is its own press, as you find it: the first marks the try Failed, the rest join it (note 116: no fourth issue to fail it at the end).</p></div>
     <div class="screen"><span class="term">Feedback · an issue</span>
       <h3>The ⋯ menu won't close</h3>
       <div class="stateline"><span class="tag t-green">Fixed</span>Live; waiting for you to try it (check: Write back from one box).</div>
@@ -312,9 +310,57 @@ svg { max-width: 100%; height: auto; display: block; }
   </div>
 </section>
 
-<!-- 6 · Built to lift out -->
+<!-- 6 · The Roadmap -->
 <section class="board">
-  <div class="intro"><span class="lbl">6 · Built to lift out</span><h2>What makes it ready for another project, or a company</h2></div>
+  <div class="intro"><span class="lbl">6 · Where the Roadmap fits</span><h2>A plan above it all: the macro view</h2>
+    <p class="meta">You log enhancements with the feedback button today, and the Roadmap is coming into askdnd, not yet
+    designed. This is only how they'd fit together, so this model doesn't paint the Roadmap into a corner; the Roadmap
+    gets its own mockup. The tools have the same layer: Linear's projects and initiatives, Jira's epics, Productboard's
+    features.</p></div>
+  <figure>
+    <svg viewBox="0 0 1180 330" role="img" aria-label="The Roadmap above areas: ideas are accepted onto it as roadmap items; each item is delivered in areas; areas hold issues and checks; status rolls up">
+      <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a29d93"/></marker></defs>
+      <g font-family="Inter, sans-serif">
+        <rect x="20" y="20" width="1140" height="70" rx="12" fill="#1f2226" stroke="#5bbf7f"/>
+        <text x="40" y="50" fill="#fff" font-size="16" font-weight="600">Roadmap</text>
+        <text x="40" y="72" fill="#a29d93" font-size="12.5">items in order (the VTT, the kit, Feedback and Testing…), each with whose turn it is; "Yours" items are For you's</text>
+        <rect x="20" y="130" width="360" height="70" rx="12" fill="#1f2226" stroke="#4a4f57"/>
+        <text x="40" y="160" fill="#fff" font-size="15" font-weight="600">Ideas and enhancements</text>
+        <text x="40" y="182" fill="#a29d93" font-size="12.5">from the feedback button, joined, accepted or declined</text>
+        <rect x="420" y="130" width="740" height="70" rx="12" fill="#272b30" stroke="#4a4f57"/>
+        <text x="440" y="160" fill="#fff" font-size="15" font-weight="600">Areas</text>
+        <text x="440" y="182" fill="#a29d93" font-size="12.5">how an item is delivered: one at a time, in your order, each fixed and tried whole</text>
+        <rect x="420" y="240" width="350" height="70" rx="12" fill="#1f2226" stroke="#b9a3e3"/>
+        <text x="440" y="270" fill="#fff" font-size="15" font-weight="600">Issues</text><text x="440" y="292" fill="#a29d93" font-size="12.5">problems found, and the work</text>
+        <rect x="810" y="240" width="350" height="70" rx="12" fill="#1f2226" stroke="#7ea6e0"/>
+        <text x="830" y="270" fill="#fff" font-size="15" font-weight="600">Checks and results</text><text x="830" y="292" fill="#a29d93" font-size="12.5">tried, passed, failed</text>
+        <line x1="200" y1="130" x2="200" y2="92" stroke="#5bbf7f" stroke-width="1.5" marker-end="url(#a3)"/><text x="210" y="116" fill="#5bbf7f" font-size="12">accepted onto it</text>
+        <line x1="790" y1="92" x2="790" y2="128" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a3)"/><text x="800" y="116" fill="#ebe7df" font-size="12">delivered in</text>
+        <line x1="595" y1="200" x2="595" y2="238" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a3)"/>
+        <line x1="985" y1="200" x2="985" y2="238" stroke="#a29d93" stroke-width="1.5" marker-end="url(#a3)"/>
+        <path d="M1150 240 C1175 200, 1175 120, 1150 92" fill="none" stroke="#e8b34b" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#a3)"/><text x="1000" y="226" fill="#e8b34b" font-size="12">where it stands rolls up</text>
+      </g>
+    </svg>
+    <figcaption>An idea you log is accepted onto the Roadmap (or declined with why); a Roadmap item is delivered in one
+    or more areas; an area's issues and checks are the work and the proof; where an item stands is worked out from its
+    areas, never typed by hand.</figcaption>
+  </figure>
+  <div class="grid3">
+    <div class="card"><h3>What the Roadmap adds</h3><p class="small">One object, the roadmap item: its title, why, whose turn
+      (yours or Claude's, with exactly what to do), its order, its size, and links to its plan and mockups. Kept as data
+      in askdnd, not written by hand on a page.</p></div>
+    <div class="card"><h3>What it reads from this model</h3><p class="small">Its areas' stages, so an item says "Claude
+      fixing", "Ready for you" or "Done" by itself; the picks waiting on you; the pull requests that shipped it. Your
+      "Yours" steps and For you become the same list.</p></div>
+    <div class="card"><h3>What it decides here</h3><p class="small">Which area comes next: the Roadmap's order, the areas
+      under the item at the top. Problems found while trying land in that item's area; a new idea waits to be accepted
+      onto an item.</p></div>
+  </div>
+</section>
+
+<!-- 7 · Built to lift out -->
+<section class="board">
+  <div class="intro"><span class="lbl">7 · Built to lift out</span><h2>What makes it ready for another project, or a company</h2></div>
   <div class="grid3">
     <div class="card"><h3>Its own pieces</h3><p class="small">Its own tables (reports, issues, checks, results, areas,
       events) and pages, talking to the host app through one small adapter: who the people are and their roles, how to
@@ -338,7 +384,7 @@ svg { max-width: 100%; height: auto; display: block; }
 
 <!-- 7 · Picks -->
 <section class="board">
-  <div class="intro"><span class="lbl">7 · Your picks</span><h2>Six decisions</h2>
+  <div class="intro"><span class="lbl">8 · Your picks</span><h2>Six decisions</h2>
     <p class="meta">You'll answer them in Testing's For you, mine marked. Then I write the plan in slices; the first
     slice changes nothing you'd notice except the fixes for notes 111 to 116 and 121.</p></div>
   <div class="picks">
@@ -349,8 +395,8 @@ svg { max-width: 100%; height: auto; display: block; }
       </div></div>
     <div class="pick"><header><h3>2 · Failing a check</h3><p class="meta">Notes 115 and 116.</p></header>
       <div class="opts">
-        <div class="opt rec"><b>A · One window, then Fail it <span class="mine">Mine</span></b>✗ Something's wrong… collects every issue (new, or one already sent), then one Failed result names them all. + Note stays only for "it works, but…".</div>
-        <div class="opt"><b>B · As now, simplified</b>Failed… fails it with the first issue; + Another issue adds more; Failed with issues already sent asks "fail with these?"</div>
+        <div class="opt rec"><b>A · One button, as you go <span class="mine">Mine</span></b>✗ Something's wrong… sends a problem and marks the try Failed; each further problem is the same button, joining the same try. + Note only after Passed, for "it works, but…".</div>
+        <div class="opt"><b>B · As now, simplified</b>Failed… fails it with the first issue; + Another issue adds more; + Note sends one without failing, and Failed after those asks "fail with these?"</div>
       </div></div>
     <div class="pick"><header><h3>3 · Can't try a check</h3><p class="meta">Skip today, always with a reason.</p></header>
       <div class="opts">
@@ -367,9 +413,9 @@ svg { max-width: 100%; height: auto; display: block; }
         <div class="opt rec"><b>A · Answered in For you only <span class="mine">Mine</span></b>The issue says Claude asks, linking there; answering moves it back to With Claude.</div>
         <div class="opt"><b>B · Both places, as now</b>The same form in For you and on the issue in Feedback.</div>
       </div></div>
-    <div class="pick"><header><h3>6 · Ideas</h3><p class="meta">Today an idea is a note like a problem.</p></header>
+    <div class="pick"><header><h3>6 · Ideas and enhancements</h3><p class="meta">Today an idea (an enhancement you log with the feedback button) is a note like a problem. Either way, an accepted one can go onto the Roadmap (board 6).</p></header>
       <div class="opts">
-        <div class="opt rec"><b>A · One button, their own list <span class="mine">Mine</span></b>The feedback button sends both; ideas get their own tab in Feedback, can be joined ("me too") and say when they ship, as Canny does. Problems stay the fix-and-try flow.</div>
+        <div class="opt rec"><b>A · One button, their own list <span class="mine">Mine</span></b>The feedback button sends both; ideas and enhancements get their own tab in Feedback, can be joined ("me too"), are accepted onto the Roadmap or declined with why, and tell their senders when they ship, as Canny does. Problems stay the fix-and-try flow.</div>
         <div class="opt"><b>B · As now</b>Ideas and problems in the same lists.</div>
       </div></div>
   </div>

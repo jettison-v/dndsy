@@ -1044,9 +1044,18 @@
   "link": "https://claude.ai/artifact/8qfS3KYY3UXNsot4wM2jtX"
  },
  {
-  "title": "Found, Fixed, Tried",
+  "title": "Found, Fixed, Tried: Screens",
   "kind": "design",
-  "status": "For your pick",
+  "status": "For your look",
+  "date": "Nov 17",
+  "what": "The agreed model drawn as askdnd's screens, clickable: For you, trying a check, Something's wrong…, Failed with problems, Change result, Can't try…, a question and a mockup as one entry, Feedback's list, an issue with its reports, Ideas, and Where it stands. One verdict saved on the page.",
+  "source": "docs/mockups/found-fixed-tried/index.html",
+  "link": "https://claude.ai/artifact/F7sCCmdGCTebmHk1YCvmrZ"
+ },
+ {
+  "title": "Found, Fixed, Tried (the brief)",
+  "kind": "design",
+  "status": "Agreed: every pick A",
   "date": "Nov 17",
   "what": "Brett, Nov 17: confused which items go where between Feedback and Testing, and it may go to an enterprise use next. Today's five joins, what TestRail, Xray, Zephyr, Qase, Linear, Jira, GitHub, Marker.io, BugHerd, Canny and others do, one model (report, issue, check, result, area), the workflows, the screens, building it to lift out, and six picks.",
   "source": "docs/mockups/feedback-and-testing/index.html",
