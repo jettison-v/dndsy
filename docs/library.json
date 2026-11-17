@@ -1125,6 +1125,15 @@
   "link": "https://claude.ai/artifact/RBZzVknwiTcXb5UQBzW7ZC"
  },
  {
+  "title": "The Live Pill",
+  "kind": "design",
+  "status": "Chose the chain link (round 2) · built in its PR",
+  "date": "Nov 16",
+  "what": "From your iPhone test: every state of the menu bar's Live pill, and three ways to make \"connected\" (a green dot alone today) and the DM's count (\"4 of 14\") say what they mean.",
+  "source": "docs/mockups/live-pill/",
+  "link": "https://claude.ai/artifact/8w3nUi6NDwVeSLBGBaPnUt"
+ },
+ {
   "title": "Compare",
   "kind": "design",
   "status": "Chose both",

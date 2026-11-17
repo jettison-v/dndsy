@@ -154,7 +154,7 @@ a.char-btn > span:not(.char-av, .cond-dots) { overflow: hidden; text-overflow: e
 .live { position: relative; }
 .live-pill { display: inline-flex; align-items: center; gap: 8px; min-height: var(--bar-h); background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 0 12px; font-size: var(--fs-sm); white-space: nowrap; }
 .live-pill:hover { color: var(--text); }
-.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+.live-link { width: 18px; height: 18px; flex: none; color: var(--faint); }  /* the chain link (Brett chose it, Nov 16, docs/mockups/live-pill/): whole or broken, in the tone's colour */
 .live-noext, .live-noext-box, .lw-short { display: none; }
 .live-pill.dot { width: var(--bar-h); padding: 0; justify-content: center; }  /* connected: the green dot alone (Menu Bar by Person, Nov 13) */
 body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-noext { display: inline; }  /* the extension isn't in this browser (app.js), and this campaign has the bridge: say so, with the steps in the window */
@@ -177,12 +177,12 @@ body.no-bridge:not(.bridge-elsewhere) .live-pill[data-wants-bridge] .live-ago { 
 body.no-bridge:not(.bridge-elsewhere) .live-pill.dot[data-wants-bridge] { width: auto; padding: 0 12px; }  /* (connected elsewhere: the dot's own width can't hold "Add the bridge", which spilled 35px; the UI review, Nov 16) */
 /* Its colour (DM Backup, Brett 2026-11-02): green your own sheet, yellow through the DM, red can't while the table plays
    or something to make by hand, grey no one's connected; warn: couldn't refresh */
-.live-pill.warn .live-dot { background: var(--amber); }
-.live-pill.step .live-dot { background: var(--green); }
+.live-pill.warn .live-link { color: var(--amber); }
+.live-pill.step .live-link { color: var(--green); }
 .live-pill.via { border-color: var(--amber); color: var(--text); }
-.live-pill.via .live-dot { background: var(--amber); }
+.live-pill.via .live-link { color: var(--amber); }
 .live-pill.bad { border-color: var(--red-line); color: var(--text); }
-.live-pill.bad .live-dot { background: var(--red); }
+.live-pill.bad .live-link { color: var(--red); }
 body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-noext { display: none; }  /* (a phone: the DM carries it, no nag) */
 body.no-bridge:not(.bridge-elsewhere) .live-pill.via[data-wants-bridge] .live-ago { display: inline; }
 .live-pill.htmx-request { opacity: .7; }

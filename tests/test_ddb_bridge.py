@@ -1052,9 +1052,10 @@ def test_someone_with_no_character_sees_how_many_sheets_are_connected(player, dm
     set_role(db, "dm@example.com", "dm")
     player.post("/bridge/closed/75423618")
     pill = lambda: dm.get("/c/main/").text.split('id="live-pill"')[1].split("</button>")[0]
-    assert "1 of 2 connected" in pill() and 'live-ago sr">Connected<' not in pill() and " step" not in pill().split(">")[0]
+    assert "1 of 2 sheets" in pill() and 'live-ago sr">Connected<' not in pill() and " step" not in pill().split(">")[0]
     player.post("/bridge/heard/75423618?pull=1")
-    assert 'live-ago sr">Connected<' in pill() and " step dot" in pill().split(">")[0]  # every sheet: the dot alone
+    assert 'live-ago sr">Connected<' in pill() and " step dot" in pill().split(">")[0]  # every sheet: the link alone
+    assert 'data-link="whole"' in pill()  # (the chain link, whole: Brett chose it, Nov 16)
 
 
 def test_the_pill_says_how_long_a_sheet_counts_as_open_and_the_window_links_the_extension(player, db, sheet):

@@ -1,0 +1,7 @@
+{# The Live pill's chain link (Brett chose it, Nov 16, docs/mockups/live-pill/): whole while a change can reach a sheet,
+   broken when nothing can; its colour comes from the pill's tone (app.css .live-link). #}
+{% macro live_link(broken=False) -%}
+<svg class="live-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" data-link="{{ 'broken' if broken else 'whole' }}">
+{%- if broken %}<path d="M7 9.5l-1.8 1.8a2.8 2.8 0 0 0 4 4L11 13.5M13 10.5l1.8-1.8a2.8 2.8 0 0 0-4-4L9 6.5M3.5 3.5l2 2M16.5 16.5l-2-2"/>
+{%- else %}<path d="M8.5 11.5l3-3M7 9.5l-1.8 1.8a2.8 2.8 0 0 0 4 4L11 13.5M13 10.5l1.8-1.8a2.8 2.8 0 0 0-4-4L9 6.5"/>{% endif %}</svg>
+{%- endmacro %}
