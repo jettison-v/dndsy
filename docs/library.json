@@ -1044,6 +1044,15 @@
   "link": "https://claude.ai/artifact/8qfS3KYY3UXNsot4wM2jtX"
  },
  {
+  "title": "Item Builder",
+  "kind": "design",
+  "status": "Waiting for your picks",
+  "date": "Nov 16",
+  "what": "Homebrew items, round 2 (feedback 72 and the Roadmap's step 2): build an item a piece at a time with pickers, start from a base weapon or armor or a copy, and give it to a character, who takes it onto their D&D Beyond sheet. With how D&D Beyond, Foundry and Roll20 do it.",
+  "source": "docs/mockups/item-builder/index.html",
+  "link": "https://claude.ai/artifact/UvGQuLq642F6ihdw6EBcKB"
+ },
+ {
   "title": "Homebrew Items",
   "kind": "design",
   "status": "Chose 1B, 2A, 3A; slice 1 built",
