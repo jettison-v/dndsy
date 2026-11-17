@@ -44,8 +44,14 @@ router = APIRouter()
 # "review": a note from someone at the table (not an admin) waits for an admin to approve it before Claude sees it
 # (Brett, Nov 6); approved, it's "new". Claude's queue (OPEN, /api/feedback) never holds a note waiting for approval.
 STATUSES = ("review", "new", "question", "planned", "done", "deleted")
-LABELS = {"review": "Waiting for you", "new": "New", "question": "Question for you", "planned": "Planned", "done": "Done", "deleted": "Deleted"}
+LABELS = {"review": "To approve", "new": "With Claude", "question": "Claude asks", "planned": "Planned", "done": "Done", "deleted": "Closed"}  # (the tabs, in the state words: Readers, Rebuilt)
 OPEN = ("new", "question", "planned")
+# Readers, Rebuilt (Brett's picks, Nov 17, docs/mockups/readers/ Board 3): a note's state as a word and what it means
+WORD = {"review": ("To approve", "ask"), "new": ("With Claude", "claude"), "question": ("Claude asks", "ask"), "planned": ("Planned", "ready"),
+        "done": ("Done", "passed"), "deleted": ("Closed", "quiet")}
+SENTENCE = {"review": "From the table: it reaches Claude once you approve it.", "new": "With Claude: it's in Claude's inbox.",
+            "question": "Claude asks you something: answer below.", "planned": "Planned: on the Roadmap or in its area, waiting its turn.",
+            "done": "Done.", "deleted": "Closed."}
 # What a note is (Brett, Nov 16): how it's said in the window, and its short tag on the queue. A note sent before then
 # has "" until it's sorted (`feedback.py kind`).
 KINDS = {"broken": ("Something's broken", "Broken", "What's wrong?"), "idea": ("An idea", "Idea", "What would be better?"),
@@ -335,7 +341,9 @@ def queue(request: Request, tab: str = "", kind: str = "", open: int = 0, db: Se
         q = q.where(Feedback.kind == ("" if kind == "none" else kind))
     items = list(db.scalars(q.limit(200)))
     me = user["email"]
-    return templates.TemplateResponse(request, "manage_feedback.html", {"question_of": question_of,
+    picked = next((f for f in items if f.id == open), items[0] if items else None)  # (the Reader: the note open beside the list)
+    me_row = picks.user_row(db, user)  # (yours, by who you are: never by the "(admin)" in a sender's name)
+    return templates.TemplateResponse(request, "manage_feedback.html", {"question_of": question_of, "picked": picked, "words": WORD, "sentences": SENTENCE, "me_id": me_row.id if me_row else None,
         "items": items, "kept": {f.id for f in items if kept_from(db, f, me)}, "tab": tab, "open": open, "counts": counts, "labels": LABELS,
         "kind": kind, "kinds": KINDS, "kind_chips": [(k, v[1], in_tab.get(k, 0)) for k, v in KINDS.items()]
         + ([("none", "Not sorted", in_tab[""])] if in_tab.get("") and tab in ("review", *OPEN) else []),  # (an old note done is done)

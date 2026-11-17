@@ -44,8 +44,7 @@ def test_backslash_point_and_send(people, server, browser_db):
     # the ✕ closes them (Brett, Nov 16)
     page.keyboard.press("Escape")
     admin.open("/manage/feedback?tab=new")
-    page.locator(".fb-item summary").first.click()
-    pic = page.locator(".fb-item details[open] .fb-pic").first
+    pic = page.locator("[data-note-read] .fb-pic").first  # (the Reader opens on the newest note: Readers, Rebuilt)
     pic.wait_for()
     before = page.url
     pic.click()

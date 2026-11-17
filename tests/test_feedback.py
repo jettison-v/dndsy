@@ -40,7 +40,7 @@ def test_an_admin_sends_a_note_with_the_page(admin, db):
     assert fb.status == "new" and fb.sender.endswith("(admin)") and fb.context["pointed"]["label"] == "Speed"
     assert fb.shot_key and fb.pasted_key and fb.html.startswith("<html>") and fb.context["server_at"]
     page = admin.get("/manage/feedback").text
-    assert "Speed should show the swim speed too." in page and "pointed at Speed" in page
+    assert "Speed should show the swim speed too." in page and "data-pointed>Speed<" in page
     assert admin.get(f"/manage/feedback/{fb.id}/shot").headers["content-type"] == "image/png"
     as_text = admin.get(f"/manage/feedback/{fb.id}/page")
     assert as_text.headers["content-type"].startswith("text/plain") and as_text.text == "<html><body>Battle</body></html>"  # (never run here)
@@ -164,7 +164,7 @@ def test_a_note_can_be_added_to_any_time(admin, db):
     stays planned)."""
     note(admin)
     fb = db.scalar(select(Feedback))
-    assert "Add to this note" in admin.get("/manage/feedback?tab=new").text
+    assert "data-composer" in admin.get("/manage/feedback?tab=new").text
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "planned"})
     admin.post(f"/manage/feedback/{fb.id}", data={"to": "answer", "answer": "I retried from the extension too."})
     db.refresh(fb)
@@ -234,7 +234,7 @@ def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, pla
     assert db.get(Feedback, fb.id).status == "review"
     assert admin.get("/api/feedback", headers=claude).json()["items"] == []  # (not Claude's until approved)
     queue = admin.get("/manage/feedback").text
-    assert "It wraps on Sheet too." in queue and "Reply to " in queue
+    assert "It wraps on Sheet too." in queue and 'name="to" value="tell"' in queue
     # Someone else's note is none of theirs
     other = Feedback(text="Someone else's", sender="x (player)", status="new")
     db.add(other)
@@ -335,14 +335,14 @@ def test_a_notes_page_is_kept_from_an_admin_who_is_its_senders_dm(admin, player,
     assert note(player, text="The Rest button wraps.", pasted=png()).status_code == 200
     fb = db.scalar(select(Feedback))
     page = admin.get("/manage/feedback").text  # (not the DM: everything)
-    assert f"/manage/feedback/{fb.id}/shot" in page and 'data-kept="0"' in page and "pointed at Speed" in page
+    assert f"/manage/feedback/{fb.id}/shot" in page and 'data-kept="0"' in page and "data-pointed>Speed<" in page
     assert admin.get(f"/manage/feedback/{fb.id}/page").status_code == 200
 
     set_role(db, "admin@example.com", "dm")  # the admin becomes this campaign's DM
     access.invalidate()
     page = admin.get("/manage/feedback").text
     assert "The Rest button wraps." in page and 'data-kept="1"' in page  # (its words stay)
-    assert f"/manage/feedback/{fb.id}/shot" not in page and f"/manage/feedback/{fb.id}/page" not in page and "pointed at Speed" not in page
+    assert f"/manage/feedback/{fb.id}/shot" not in page and f"/manage/feedback/{fb.id}/page" not in page and "data-pointed" not in page
     for which in ("shot", "pasted", "page"):
         assert admin.get(f"/manage/feedback/{fb.id}/{which}").status_code == 404
 
