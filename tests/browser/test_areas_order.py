@@ -85,3 +85,40 @@ def test_for_yous_chips_open_what_they_say(people, server, browser_db):
         page.wait_for_url(f"**/manage/testing?show={key}")
         assert page.locator(f'[data-ts-show="{key}"]').get_attribute("aria-current") == "true"
     assert not admin.errors, admin.errors
+
+
+def test_for_you_changes_in_place_and_its_marks_sit_centered(people, server, browser_db):
+    """Brett's notes 103, 104 and 96 (Nov 17): a chip or a row changes the list or the check beside it in place, never
+    reloading the page; the ? and ◇ marks and the count on your picture sit centered in their circles."""
+    import json
+
+    engine = create_engine(browser_db[0])
+    ask = {"choices": [{"label": "A", "detail": "", "pic": None}, {"label": "B", "detail": "", "pic": None}], "mine": 0}
+    with engine.begin() as conn:
+        ids = [conn.execute(text("INSERT INTO checks (title, area, setup, path, \"do\", expect, minutes, place, status) VALUES "
+                                 "(:t, 'Sheet', 'laptop', '/party', 'Look.', 'Fine.', 1, :n, 'ready') RETURNING id"), {"t": t, "n": n}).scalar()
+               for n, t in enumerate(("First", "Second"))]
+        conn.execute(text("INSERT INTO feedback (text, status, kind, thread, sender) VALUES ('Which?', 'question', 'question', CAST(:t AS jsonb), "
+                          "'Brett (admin)')"), {"t": json.dumps([{"who": "claude", "text": "Which?", "at": "2026-11-17T10:00:00+00:00", "ask": ask}])})
+    engine.dispose()
+    admin = people("admin")
+    page = admin.open(f"/manage/testing?show=ready&check={ids[0]}")
+    page.evaluate("window.__stayed = true")
+    page.locator(f'[data-check="{ids[1]}"]').click()
+    page.locator(f'[data-check-read="{ids[1]}"]').wait_for()
+    assert page.evaluate("window.__stayed === true") and page.locator(f'[data-check="{ids[1]}"]').get_attribute("aria-current") == "true"
+    page.locator('[data-ts-show="failed"]').click()
+    page.wait_for_url("**/manage/testing?show=failed")
+    assert page.evaluate("window.__stayed === true")  # (no reload: the list changed in place, note 103)
+    assert page.locator("[data-round-start]").count() == 0  # (the whole page body follows the chip: no Start round on Failed)
+
+    page = admin.open("/manage/testing?show=ready")
+    off = page.evaluate("""() => [...document.querySelectorAll('.ts-k')].map(k => {
+        const a = k.getBoundingClientRect(), b = k.querySelector('svg').getBoundingClientRect();
+        return Math.max(Math.abs((a.left + a.right) / 2 - (b.left + b.right) / 2), Math.abs((a.top + a.bottom) / 2 - (b.top + b.bottom) / 2)); })""")
+    assert off and max(off) < 1, off  # (note 104)
+    badge = page.evaluate("""() => { const b = document.querySelector('.avatar [data-notes-count]'); b.hidden = false; b.textContent = '5';
+        const r = b.getBoundingClientRect(), t = document.createRange(); t.selectNodeContents(b); const s = t.getBoundingClientRect();
+        return Math.abs((r.top + r.bottom) / 2 - (s.top + s.bottom) / 2); }""")
+    assert badge < 1.5, badge  # (note 96)
+    assert not admin.errors, admin.errors

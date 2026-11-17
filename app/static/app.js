@@ -4222,17 +4222,21 @@ document.addEventListener('click', e => {
   function mark() {  // each Reader (World, Glossary) marks the name its page shows
     document.querySelectorAll('.reader').forEach(r => {
       const art = r.querySelector('.reader-article'); if (!art) return;
-      r.querySelectorAll('[data-rd-id]').forEach(n => n.classList.toggle('sel', n.dataset.rdId === art.dataset.readerId));
+      r.querySelectorAll('[data-rd-id]').forEach(n => {
+        const on = n.dataset.rdId === art.dataset.readerId;
+        n.classList.toggle('sel', on);
+        if (on) n.setAttribute('aria-current', 'true'); else n.removeAttribute('aria-current');
+      });
     });
   }
   // Opening the page at an entry's address: show its name in the list
   document.querySelectorAll('.rd-item.sel').forEach(sel => { const nav = sel.closest('.reader-nav');
     if (nav) nav.scrollTop = sel.offsetTop - nav.clientHeight / 3; });
   document.body.addEventListener('htmx:afterSwap', e => {
-    const id = e.detail.target && e.detail.target.id;
-    if (id !== 'reader-article' && id !== 'glossary-article') return;
+    const id = e.detail.target && e.detail.target.id;  // (a Reader's article swapped in: World, Glossary, Testing's)
+    const art = id && document.getElementById(id);
+    if (!art || !(art.matches('.reader-article') || art.querySelector('.reader-article'))) return;
     mark();
-    const art = document.getElementById(id);
     if (art && matchMedia('(max-width: 900px)').matches) art.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
   document.addEventListener('keydown', e => {
