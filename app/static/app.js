@@ -5782,10 +5782,14 @@ document.addEventListener('change', e => {
     m.classList.add('dragging');
     if (drag.kind === 'pan') { view = { ...view, x: drag.vx + dx, y: drag.vy + dy }; apply(m); }
     else if (drag.kind === 'tok') {
+      if (!drag.el.isConnected) {  // (a fresh copy of the map replaced the token mid-drag: hold the new one, the same token)
+        const now = m.querySelector('.tok-m[data-token="' + drag.el.dataset.token + '"]');
+        if (now) drag.el = now;
+      }
       const el = drag.el, sq = +el.dataset.sq || 1;
       el.style.left = (drag.left + dx / view.z) + 'px'; el.style.top = (drag.top + dy / view.z) + 'px'; el.classList.add('lifted');
       const to = snap(m, el), me = tokensOn(m).find(t => t.el === el);
-      if (me) measureLine(m, { x: me.x, y: me.y }, to, sq, me);  // (a fresh copy of the map can replace the token mid-drag: no line then)
+      if (me) measureLine(m, { x: me.x, y: me.y }, to, sq, me);  // (the token gone from the map altogether: no line)
     }
   });
   function snap(m, el) {
