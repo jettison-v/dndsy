@@ -1532,7 +1532,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 @media (min-width: 1240px) {
   .page.manage-page { position: relative; max-width: calc(1120px + 228px); padding-left: calc(24px + 228px); }
   .page.manage-page > .manage-band { margin-left: -228px; }
-  .manage-band:has(.manage-cross) ~ .title-row { padding-right: calc(var(--manage-cross-w) + var(--sp-3)); }  /* (no "All pages" control here: the list is down the left, and the way across sits beside the title) */
+  .manage-band:has(.manage-cross) ~ .title-row, .manage-band:has(.manage-cross) ~ .dm-main > .title-row { padding-right: calc(var(--manage-cross-w) + var(--sp-3)); }  /* (no "All pages" control here: the list is down the left, and the way across sits beside the title) */
   .manage-side { display: grid; align-content: start; position: absolute; left: 24px; top: calc(32px + 3px + var(--sp-5)); width: 200px; }  /* under the line */
   .manage-jump { display: none; }
 }
@@ -2967,11 +2967,11 @@ details.add-fold > summary { list-style: none; cursor: pointer; width: fit-conte
 details.add-fold > summary::-webkit-details-marker { display: none; }
 details.add-fold[open] > summary { display: none; }
 details.add-fold > form { min-width: 0; }
-.fold-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
-.fold-chips label.chip > input[type="radio"] { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }  /* (the chip is the control: its radio stays focusable, in a corner off the words) */
-.fold-chips label.chip { position: relative; }
-.fold-chips label.chip:has(input:checked) { background: var(--selected-bg); border-color: var(--blue); }
-.fold-chips label.chip:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
+.pick-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
+.pick-chips label.chip > input[type="radio"] { position: absolute; top: 0; left: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }  /* (the chip is the control: its radio stays focusable, in a corner off the words) */
+.pick-chips label.chip { position: relative; }
+.pick-chips label.chip:has(input:checked) { background: var(--selected-bg); border-color: var(--blue); }
+.pick-chips label.chip:has(input:focus-visible) { outline: 2px solid var(--blue); outline-offset: 2px; }
 .reader-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--line); }
 .reader-foot form { margin: 0; }
 @media (max-width: 900px) {
@@ -4122,8 +4122,43 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .dm-form > .section > .field { display: grid; gap: 4px; color: var(--muted); font-size: var(--fs-sm); }
 .dm-check { display: flex !important; align-items: center; gap: var(--sp-2); align-self: end; padding-bottom: 6px; }
 .dm-wide { grid-column: 1 / -1; }
-.dm-piece { border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4) 0; margin: 0 0 var(--sp-3); }
-.dm-piece legend { padding: 0 var(--sp-2); color: var(--muted); font-size: var(--fs-sm); }
+/* What an item does in play, a piece at a time (docs/mockups/item-builder/, Brett's 1A, Nov 16): each piece one line
+   that reads as a sentence; Edit opens its questions in place; + Add offers the kinds askdnd plays */
+.hb-pieces { display: grid; gap: var(--sp-2); }
+.hb-piece { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-md); }
+.hb-piece[data-open] { background: var(--surface); border-color: var(--blue); }
+.hb-head { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); }
+.hb-ico { width: 28px; height: 28px; border-radius: var(--r-sm); display: grid; place-items: center; background: var(--surface-3, var(--line)); font-size: var(--fs-md); }
+.hb-what { min-width: 0; display: grid; }
+.hb-what b { font-size: var(--fs-md); }
+.hb-what .note { overflow-wrap: anywhere; }
+.hb-body { display: grid; gap: var(--sp-3); padding: 0 var(--sp-3) var(--sp-3); }
+.hb-piece:not([data-open]) .hb-body { display: none; }
+.hb-row { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
+.hb-row > .hb-k { color: var(--muted); font-size: var(--fs-sm); }
+.hb-row input[type=text] { width: 100%; max-width: 26rem; min-width: 0; }
+.hb-row[hidden] { display: none; }
+.hb-says { font-weight: 600; color: var(--strong, var(--text)); background: var(--bg); border: 1px solid var(--line-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
+.hb-add > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: var(--sp-2); border: 1px dashed var(--line-strong); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); color: var(--muted); width: 100%; }
+.hb-add > summary::-webkit-details-marker { display: none; }
+.hb-add > summary b { color: var(--text); white-space: nowrap; }
+.hb-menu { display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: var(--sp-2); margin-top: var(--sp-2); }
+.hb-menu button { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 var(--sp-3); align-items: center; text-align: left; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-md); border: 1px solid var(--line-soft); background: var(--surface-2); color: var(--text); font: inherit; cursor: pointer; }
+.hb-menu button .hb-ico { grid-row: span 2; }
+.hb-menu button .note { font-size: var(--fs-xs); }
+.hb-menu button:disabled { opacity: .45; cursor: default; }
+@media (max-width: 640px) { .hb-row { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); } }
+/* A number with − and + (_form_bits.html stepper) */
+.stepper { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; background: var(--bg); }
+.stepper .step { background: var(--surface-2); border: 0; color: var(--text); min-width: var(--control-h-sm); font: 700 var(--fs-md)/1 var(--sans); cursor: pointer; }
+.stepper .step:hover { background: var(--row-hover); }
+.stepper input[type=number] { width: 3.2em; border: 0; border-radius: 0; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; padding-inline: 2px; }
+.stepper input[type=number]::-webkit-inner-spin-button, .stepper input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* The dice box with its pickers (_form_bits.html dice_picker) */
+.dice-picker { display: grid; gap: var(--sp-2); min-width: 0; }
+.dp-row, .dp-dice, .dp-flat, .dp-types { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); align-items: center; }
+.dp-box { display: flex; align-items: center; gap: var(--sp-2); color: var(--muted); font-size: var(--fs-sm); flex-wrap: wrap; }
+.dp-box input { width: 12rem; max-width: 100%; }
 .dm-go { margin-top: var(--sp-4); }
 .dm-retire { margin-top: var(--sp-4); display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
 

@@ -3,6 +3,7 @@
 {% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above %}
 {% from "_moments.html" import moment_list %}
 {% from "_settings.html" import switch, set_row, choice %}
+{% from "_form_bits.html" import pick_chips, stepper, dice_picker %}
 {% from "_live_link.html" import live_link %}
 {% from "_suggest_form.html" import add_fold %}
 {% from "_manage.html" import inline_edit %}
@@ -23,7 +24,7 @@
 
   <nav class="ds-jump" aria-label="On this page" data-ds-jump>
     <a href="#" class="ds-top" data-ds-top>↑ Top</a>
-    {% for id, label in [("colors", "Colors"), ("type", "Fonts and sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("pills", "Pills"),
+    {% for id, label in [("colors", "Colors"), ("type", "Fonts and sizes"), ("space", "Space and corners"), ("buttons", "Buttons"), ("switches", "Switches"), ("forms", "Forms"), ("pills", "Pills"),
                          ("headings", "Headings"), ("surfaces", "Sections and tiles"), ("lists", "Lists"), ("marks", "Marks and pips"),
                          ("help", "Help and empty states"), ("panels", "Panels, toasts and bands"), ("menubar", "Menu bar"), ("narrow", "Narrow screens"), ("story", "Story text"), ("manage", "Manage pages"), ("conditions", "Conditions"), ("ddb", "D&D Beyond states")] %}<a href="#{{ id }}">{{ label }}</a>{% endfor %}
   </nav>
@@ -105,6 +106,16 @@
       {% call set_row("What Party's Trophies counts") %}{{ choice("#", "counts", [("sessions", "During sessions", ""), ("all", "Every roll", "")], "sessions", "Sample choice") }}{% endcall %}</div>
     {{ ds("Tabs", ".tabbar[role=tablist] > [role=tab] · .cut-l, .cut-r", "A page's parts (Sheet's Spells, Inventory…). On a phone a row that doesn't fit scrolls sideways with the open tab always in view, and fades the edge it's cut at, so you can see there's more (the UI pass, 2026-11-02).") }}
     <div class="ds-narrow"><div class="tabbar cut-r" role="tablist" aria-label="Sample tabs"><button type="button" role="tab" aria-selected="false">Combos <span class="count">4</span></button><button type="button" role="tab" aria-selected="true">Leveling <span class="count">1</span></button><button type="button" role="tab" aria-selected="false">Quests <span class="count">1</span></button><button type="button" role="tab" aria-selected="false">Notes <span class="count">2</span></button><button type="button" role="tab" aria-selected="false">Reminders <span class="count">3</span></button></div></div>
+  </section>
+
+  <section class="section" id="forms">
+    <h2>Forms</h2>
+    {{ ds("Choice chips", "_form_bits.html pick_chips(name, options, current, label) · .pick-chips", "One of a few, inside a form you fill in and save with its button: a radio each, the chip the control (blue when picked). Two that save themselves the moment they're pressed are the two-way switch instead.") }}
+    <div class="ds-row">{{ pick_chips("ds_how", [("attack", "An attack roll"), ("save", "A saving throw"), ("none", "Just the dice")], "save", "Sample choice") }}</div>
+    {{ ds("Stepper", "_form_bits.html stepper(name, value, label, min, max, placeholder) · .stepper", "A number with − and + beside it (a save's DC, charges); typing still works. From empty, + takes the hint shown in the box.") }}
+    <div class="ds-row">{{ stepper("ds_dc", 14, "Sample DC", min=1, max=30) }}</div>
+    {{ ds("Dice picker", "_form_bits.html dice_picker(name, value, label, types, flat) · .dice-picker", "The dice box with pickers that write it: how many, which die, a flat bonus (flat) and the damage type (types). Typing in the box sets the pickers; the box is what the form saves (the item builder, DM Tools).") }}
+    <div class="ds-sample" style="max-width: 640px">{{ dice_picker("ds_dice", "2d6 force", "Or type it", types=["Fire", "Force", "Lightning"]) }}</div>
   </section>
 
   <section class="section" id="pills">

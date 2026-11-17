@@ -1,0 +1,466 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Testing in askdnd</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens; laptop first, one column on a phone. Testing inside askdnd (Nov 16). */
+
+/* askdnd's mockups: dark, in askdnd's own tokens; laptop first, one column on a phone; the table's own characters.
+   Round 2 of Homebrew Items (docs/mockups/homebrew-items/): building an item a piece at a time, and giving it. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 38px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+ul, ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+a { color: var(--blue); }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta, .note { color: var(--muted); font-size: .9rem; }
+header.top { display: grid; gap: 14px; }
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.where b { display: block; margin-bottom: 2px; }
+.board { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.board.wide { grid-template-columns: minmax(0, 1fr); }
+.say { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.stage { display: grid; gap: 12px; min-width: 0; }
+.cap { color: var(--muted); font-size: .84rem; }
+.cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); }
+.cost span { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px 10px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.before, .after { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.before > .lbl { color: var(--muted); } .after > .lbl { color: var(--green); }
+
+/* askdnd's pieces */
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; font-size: .9rem; box-shadow: 0 14px 34px rgba(0,0,0,.35); min-width: 0; }
+.win .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.win .hd b { font-size: 1.1rem; }
+.win .x { color: var(--muted); }
+.sub { color: var(--muted); font-size: .86rem; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { font: 600 .88rem/1 var(--sans); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+button.btn, button.chip, button.step { cursor: pointer; }
+.btn:focus-visible, .chip:focus-visible, .step:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.chip { font: 600 .8rem/1 var(--sans); padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font: 600 .72rem/1 var(--sans); padding: 3px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
+.tag.ok { background: var(--green-soft); color: var(--green); }
+.tag.warn { background: var(--amber-soft); color: var(--amber); }
+.field { display: grid; gap: 4px; font-size: .82rem; color: var(--muted); min-width: 0; }
+.input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--text); font: 400 .9rem/1.3 var(--sans); min-width: 0; }
+.input.ph { color: var(--faint); }
+.av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: inline-grid; place-items: center; font: 700 .8rem/1 var(--sans); color: #1b1b1b; }
+.av.c { background: #8fb39a; } .av.b { background: #e0b878; } .av.n { background: #b39ad8; } .av.t { background: #90b4e0; }
+.mbar2 { display: flex; gap: 12px; align-items: center; background: #0f1113; border: 1px solid var(--line); border-bottom: 2px solid var(--red-btn); border-radius: 10px 10px 0 0; padding: 8px 12px; font-size: .84rem; color: var(--muted); flex-wrap: wrap; }
+.mbar2 .logo { width: 20px; height: 20px; border-radius: 6px; background: var(--red-btn); }
+.mbar2 b { color: var(--strong); } .mbar2 .sp { flex: 1; }
+.mbar2 .door { color: var(--strong); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: 999px; padding: 2px 10px; }
+
+</style>
+<style>
+/* Testing: the queue, the step card, a failed step's note, the loop */
+.shell { display: grid; grid-template-columns: 190px minmax(0, 1fr); background: var(--surface); border: 1px solid var(--line); border-radius: 0 0 12px 12px; overflow: hidden; }
+.shell nav { border-right: 1px solid var(--line); padding: 12px; display: grid; gap: 2px; align-content: start; font-size: .86rem; }
+.shell nav span { padding: 6px 8px; border-radius: 6px; color: var(--muted); display: flex; justify-content: space-between; gap: 6px; }
+.shell nav span.on { background: var(--surface-2); color: var(--strong); font-weight: 600; }
+.shell nav .grp { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 10px 8px 4px; }
+.shell nav em { font-style: normal; font-size: .72rem; color: var(--red); font-weight: 700; }
+.shell .main { padding: 14px 16px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.tbar { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tbar span { font: 600 .84rem/1 var(--sans); color: var(--muted); padding: 9px 10px; border-bottom: 2px solid transparent; }
+.tbar span.on { color: var(--strong); border-bottom-color: var(--red); }
+.tbar small { color: var(--faint); font-weight: 600; margin-left: 4px; }
+.grp-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.grp-h b { font-size: .95rem; }
+.grp-h .sub { font-size: .8rem; }
+.step-r { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line-soft); font-size: .86rem; }
+.step-r .n { font: 700 .78rem/1 var(--sans); color: var(--faint); width: 1.3rem; text-align: right; }
+.step-r .tx b { font-weight: 500; color: var(--text); }
+.step-r .tx span { display: block; color: var(--muted); font-size: .78rem; }
+.st { font: 600 .72rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; white-space: nowrap; background: var(--surface-3); color: var(--muted); }
+.st.pass { background: var(--green-soft); color: var(--green); }
+.st.fail { background: var(--red-soft); color: var(--red); }
+.st.again { background: var(--amber-soft); color: var(--amber); }
+.st.claude { background: var(--violet-soft); color: var(--violet); }
+.as { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; color: var(--muted); background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 2px 8px 2px 3px; }
+.as .av { width: 18px; height: 18px; font-size: .62rem; }
+.av.dm { background: #d6a36e; } .av.me { background: #c7c2b8; }
+
+/* a page with the step card docked */
+.page { position: relative; background: var(--bg); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 12px 12px; min-height: 430px; overflow: hidden; }
+.page .fake { padding: 14px 16px; display: grid; gap: 8px; opacity: .55; }
+.page .fake i { display: block; height: 14px; border-radius: 5px; background: var(--surface-2); }
+.page .fake .blk { height: 64px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line-soft); }
+.vabar { background: rgba(232, 179, 75, .12); border-bottom: 2px solid var(--amber); color: var(--amber); font-size: .78rem; text-align: center; padding: 5px 8px; }
+.tcard { position: absolute; right: 14px; bottom: 14px; width: min(360px, calc(100% - 28px)); background: var(--surface); border: 1px solid var(--line-strong); border-top: 3px solid var(--blue); border-radius: 12px; box-shadow: 0 16px 36px rgba(0,0,0,.5); padding: 12px 14px; display: grid; gap: 8px; font-size: .86rem; }
+.tcard .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.tcard .top .lbl { color: var(--blue); }
+.tcard .prog { height: 4px; border-radius: 4px; background: var(--surface-3); overflow: hidden; }
+.tcard .prog i { display: block; height: 100%; width: 37%; background: var(--blue); }
+.tcard .do { color: var(--strong); font-weight: 500; }
+.tcard .exp { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; color: var(--muted); font-size: .82rem; }
+.tcard .exp b { display: block; font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.tcard .acts { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.btn.pass { background: var(--green); border-color: var(--green); color: #0f1510; }
+.btn.fail { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.tpill { position: absolute; right: 14px; bottom: 14px; display: inline-flex; gap: 8px; align-items: center; background: var(--surface); border: 1px solid var(--blue); border-radius: 999px; padding: 6px 12px; font-size: .8rem; box-shadow: 0 10px 24px rgba(0,0,0,.45); }
+
+/* the note window, filled */
+.fbwin { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; font-size: .86rem; box-shadow: 0 16px 36px rgba(0,0,0,.45); }
+.fbwin .linked { display: flex; gap: 8px; align-items: center; background: var(--blue-soft); border: 1px solid var(--blue); border-radius: 10px; padding: 8px 10px; font-size: .82rem; }
+.shot { position: relative; height: 150px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; }
+.shot .rows { position: absolute; inset: 14px; display: grid; gap: 7px; align-content: start; opacity: .6; }
+.shot .rows i { display: block; height: 12px; border-radius: 4px; background: var(--surface-2); }
+.shot .box { position: absolute; left: 48%; top: 34%; width: 36%; height: 30%; border: 2px solid var(--red); border-radius: 6px; }
+.shot .arr { position: absolute; left: 30%; top: 66%; font-size: 1.3rem; color: var(--red); transform: rotate(-30deg); }
+.marks { display: flex; gap: 6px; flex-wrap: wrap; }
+.ta { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--text); min-height: 52px; }
+
+/* the loop */
+.loop { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.loop > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; align-content: start; font-size: .84rem; }
+.loop .n { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.loop .who { font-size: .76rem; color: var(--faint); }
+/* Board 1, from the ground up: the Reader */
+.rd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); background: var(--surface); border: 1px solid var(--line); border-radius: 0 0 12px 12px; overflow: hidden; }
+.rd-list { border-right: 1px solid var(--line); padding: 12px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.rd-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-bottom: 6px; }
+.rd-ready b { display: block; font-size: 1rem; } .rd-ready .sub { font-size: .8rem; }
+.rd-filters { padding-bottom: 6px; } .rd-filters small { color: var(--muted); font-weight: 600; margin-left: 3px; }
+.rd-g { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 10px 6px 4px; }
+.rd-i { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; align-items: center; padding: 8px; border-radius: 8px; font-size: .84rem; }
+.rd-i .t b { display: block; font-weight: 600; color: var(--text); } .rd-i .t span { display: block; color: var(--muted); font-size: .76rem; }
+.rd-i.on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--blue); }
+.rd-i .dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--blue); }
+.rd-i.again .dot { border-color: var(--amber); background: var(--amber); }
+.rd-i.wait .dot { border-color: var(--faint); }
+.rd-art { padding: 16px 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.rd-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rd-do { display: grid; gap: 4px; font-size: .88rem; } .rd-do > b { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.rd-from { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; font-size: .84rem; }
+.rd-fh { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rd-pic { height: 64px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line-soft); padding: 10px; display: grid; gap: 6px; align-content: start; }
+.rd-pic i { display: block; height: 7px; border-radius: 3px; background: var(--surface-3); }
+.rd-reply { color: var(--text); } .rd-reply b { color: var(--violet); }
+.rd-hist { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .8rem; } .rd-hist .arrow { color: var(--faint); }
+@media (max-width: 900px) { .rd { grid-template-columns: minmax(0, 1fr); } .rd-list { border-right: 0; border-bottom: 1px solid var(--line); } }
+@media (max-width: 900px) { .loop { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+@media (max-width: 700px) { .shell { grid-template-columns: minmax(0, 1fr); } .shell nav { display: none; } .loop { grid-template-columns: minmax(0, 1fr); } .step-r { grid-template-columns: auto minmax(0, 1fr) auto; } .step-r .as { display: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lbl">askdnd for testing · Feedback, extended</div>
+    <h1>Testing inside askdnd</h1>
+    <p class="lead">Your idea (Nov 16): a queue of things to test, each a link straight to its page, as the right person through View as, its instructions staying on screen while you try it, and a screenshot with your comment when something fails. Today the steps live on a claude.ai page with no pictures, and a failure's note has none of the page's context. Here, a failed step <b>is</b> a feedback note, and every broken note comes with its check, so there's one queue for me and one loop for you. Round 2 (your look, Nov 16): Board 1 redrawn from the ground up, a check for every note (4b), and the kit for your next project (5).</p>
+    <div class="where">
+      <div><b>Where it lives</b>Beside Feedback, in Manage › askdnd (question 1), with its count on the Manage menu. The step card rides along on every page while a run is open.</div>
+      <div><b>Who uses it</b>You (admins): I add the checks from my side, one with every note I fix; you mark them. A player confirms the fix to their own note (question 6). Question 5: your own test accounts too, for the iPhone checks.</div>
+      <div><b>Six decisions</b>How the queue looks, how the card sits, what Fail opens, how a fixed check comes back, who sees it, and who confirms a player's fix. My picks at the bottom.</div>
+    </div>
+  </header>
+
+  <!-- Board 1 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 1 · Testing, from the ground up</div>
+      <h2>A Reader: the checks on the left, the one you're on, with its whole story, on the right</h2>
+      <p style="max-width:88ch">The page answers what you need when you sit down to test: <b>what's ready and how long it takes</b>, <b>what you'll need open</b>, and for each check <b>why it exists</b> (the note or change it came from, with its picture and my reply), so you can judge it without opening anything else. It's the Reader you already know from World and Notes you sent: pick a check on the left; it opens on the right with <b>Go</b>, <b>Passed</b> and <b>Failed…</b>.</p>
+    </div>
+    <div class="stage">
+      <div class="mbar2"><span class="logo"></span><b>The Adventure Begins</b><span>Campaign</span><span>Table ↗</span><span class="sp"></span><span>DM Tools</span><span class="door">Manage · 6</span></div>
+      <div class="rd" aria-label="Manage › askdnd › Testing, a Reader">
+        <div class="rd-list">
+          <div class="rd-top">
+            <div class="rd-ready"><b>6 ready for you</b><span class="sub">about 12 minutes · 3 need View as</span></div>
+            <span class="btn primary small">▶ Start round</span>
+          </div>
+          <div class="chips rd-filters"><span class="chip" aria-pressed="true">Ready <small>6</small></span><span class="chip">Try again <small>1</small></span><span class="chip">With a player <small>2</small></span><span class="chip">Claude ran <small>9</small></span><span class="chip">Done</span></div>
+          <div class="rd-g">On your laptop, as you</div>
+          <div class="rd-i"><span class="dot"></span><span class="t"><b>See all's count and bell</b><span>Battle · from your note 74</span></span><span class="mini">1 min</span></div>
+          <div class="rd-g">Through View as · Cole's player</div>
+          <div class="rd-i on"><span class="dot"></span><span class="t"><b>Column headings stay while a list scrolls</b><span>Sheet › Inventory · from your note 73</span></span><span class="mini">2 min</span></div>
+          <div class="rd-i"><span class="dot"></span><span class="t"><b>Headings in Change forms</b><span>Wild Shape · same fix</span></span><span class="mini">1 min</span></div>
+          <div class="rd-i again"><span class="dot"></span><span class="t"><b>Show fewer under key moments</b><span>A quest · fixed since it failed</span></span><span class="st again">Try again</span></div>
+          <div class="rd-g">On your iPhone</div>
+          <div class="rd-i"><span class="dot"></span><span class="t"><b>The Filters row, one Clear</b><span>Spell Book · from your iPhone test</span></span><span class="mini">2 min</span></div>
+          <div class="rd-g">With a player</div>
+          <div class="rd-i wait"><span class="dot"></span><span class="t"><b>Rolls panel stays open</b><span>From a player's note 85 · asked them</span></span><span class="st">Asked them</span></div>
+        </div>
+        <div class="rd-art">
+          <div class="rd-head"><span class="lbl" style="color:var(--blue)">Check · Sheet</span><span class="as"><span class="av c">C</span>Through View as · Cole's player</span></div>
+          <h3 style="font:600 1.25rem/1.25 var(--serif)">Column headings stay while a list scrolls</h3>
+          <div class="btns"><span class="btn primary small">Go: Cole's Sheet › Inventory ↗</span><span class="sub">turns on View as for Cole's player first</span></div>
+          <div class="rd-do"><b>Do</b><ol><li>Scroll down the Inventory list.</li><li>Then Wild Shape › Change forms, Just looking, and scroll the forms.</li></ol></div>
+          <div class="rd-do"><b>You should see</b><p>Item, Kind, Uses… stay under the tabs as a lighter band, rows sliding under them; in Change forms, at the window's top. Narrow the window until the list goes compact: no headings there.</p></div>
+          <div class="rd-from">
+            <div class="rd-fh"><span class="tag warn">Broken</span><b>Your note 73</b><span class="sub">· Nov 16 · Sheet</span></div>
+            <div class="rd-pic" aria-label="The note's picture"><i></i><i style="width:70%"></i><i></i><i style="width:60%"></i></div>
+            <p class="sub">"The header bar does not scroll with the page…"</p>
+            <p class="rd-reply"><b>Claude:</b> Fixed, carefully as you asked: every list's headings now stay at the top…</p>
+          </div>
+          <div class="rd-hist"><span class="st fail">Failed · a sliver above</span><span class="arrow">→</span><span class="st">Fixed · PR 399</span><span class="arrow">→</span><span class="st again">Live on askdnd.ai</span></div>
+          <div class="btns" style="margin-top:4px"><button class="btn pass" type="button">✓ Passed</button><button class="btn fail" type="button">✗ Failed…</button><button class="btn link" type="button">Skip</button><span style="flex:1"></span><span class="sub">2 of 6</span><button class="btn small" type="button">Next ›</button></div>
+        </div>
+      </div>
+      <p class="cap">Left: what's ready, grouped by what you need open, each with where it came from and about how long. Right: the check you're on, its note or change, its picture and my reply, and what happened to it so far.</p>
+    </div>
+    <div class="split">
+      <div class="say">
+        <h3>What's new against the first draft</h3>
+        <ul>
+          <li><b>The top says how long</b> (each check's minutes, roughly) and what it needs (View as, the iPhone), so you can pick a round that fits the time you have.</li>
+          <li><b>Every check carries its story</b>: the note it came from with its picture, my reply, and its history (failed, fixed in a PR, live). No opening Feedback or a PR to know what to look for.</li>
+          <li><b>Pass or fail right here</b> for a quick look; <b>▶ Start round</b> or Go hands you to the page with the step card (Board 2) for the ones you try on the page.</li>
+          <li><b>With a player</b>: checks for a player's note, asked of them (Board 4b); you see when they answer.</li>
+        </ul>
+      </div>
+      <div class="say">
+        <h3>Where it lives</h3>
+        <p>Manage › askdnd › Testing, beside Feedback, its count on the Manage menu. On a phone the Reader is one column (the list, then the check), as World is.</p>
+        <div class="cost"><span>Build: M for the Reader, Go with View as, and minutes (the first draft's S grows: the story panel reads the note and its PR)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Board 2 -->
+  <section class="board">
+    <div class="stage">
+      <div class="mbar2"><span class="logo"></span><b>The Adventure Begins</b><span>Campaign</span><span class="sp"></span><span class="door">Manage · 6</span></div>
+      <div class="page" aria-label="A page with the step card">
+        <div class="vabar">Viewing as Cole's player · Stop</div>
+        <div class="fake"><i style="width:40%"></i><div class="blk"></div><i style="width:70%"></i><i style="width:55%"></i><i style="width:64%"></i><div class="blk"></div><i style="width:48%"></i></div>
+        <div class="tcard" aria-label="The step card">
+          <div class="top"><span class="lbl">Testing · Character pages · 2 of 3</span><span class="btn small link" title="Fold it to a pill">—</span></div>
+          <div class="prog"><i></i></div>
+          <div class="do">Sheet › Inventory: scroll down the list.</div>
+          <div class="exp"><b>Expect</b>Item, Kind, Uses… stay under the tabs as a lighter band, rows sliding under them. Narrow the window until it goes compact: no headings there.</div>
+          <div class="acts"><button class="btn small pass" type="button">✓ Passed</button><button class="btn small fail" type="button">✗ Failed…</button><button class="btn small link" type="button">Skip</button><span style="flex:1"></span><button class="btn small link" type="button">Back</button><button class="btn small" type="button">Next ›</button></div>
+        </div>
+      </div>
+      <p class="cap">Docked at the bottom right, over the page, like the tour's card. It stays as you click around and come back; — folds it to a pill.</p>
+    </div>
+    <div class="say">
+      <div class="lbl">Board 2 · the step card</div>
+      <h2>The instructions stay on screen</h2>
+      <p>While a run is open, every askdnd page you go to shows the step's card: what to do, what to expect, and <b>Passed</b>, <b>Failed…</b>, <b>Skip</b>. Passed moves on to the next step and opens its page; the last one brings you back to the queue with the run's tally.</p>
+      <p>The card is yours alone, never in a screenshot it takes for a note, and it never covers what it points you at: <b>—</b> folds it to a pill (<i>Testing · 2 of 3</i>) you can press to bring it back.</p>
+      <div style="position:relative;height:52px"><span class="tpill" style="right:auto;left:0;bottom:6px"><span class="lbl" style="color:var(--blue)">Testing</span> 2 of 3 · Sheet › Inventory</span></div>
+      <div class="cost"><span>Build: S · the card, kept across pages</span></div>
+    </div>
+  </section>
+
+  <!-- Board 3 -->
+  <section class="board">
+    <div class="stage">
+      <div class="fbwin" aria-label="Failed: the note window, filled in">
+        <div class="hd" style="display:flex;justify-content:space-between"><b style="font-size:1.05rem">A note for Claude</b><span class="x">×</span></div>
+        <div class="linked"><span class="st fail">Failed</span><span>Step 2 · Sheet › Inventory: scroll down the list</span></div>
+        <div class="chips"><span class="chip" aria-pressed="true">Something's broken</span><span class="chip">An idea</span><span class="chip">A question</span></div>
+        <div class="shot" aria-label="The page as it was, marked"><div class="rows"><i style="width:60%"></i><i></i><i style="width:80%"></i><i></i><i style="width:70%"></i><i></i></div><span class="box"></span><span class="arr">➜</span></div>
+        <div class="marks"><span class="chip" aria-pressed="true">▢ Box</span><span class="chip">➜ Arrow</span><span class="chip">✎ Draw</span><span class="chip">↶ Undo</span><span class="btn small link">Point at it instead</span></div>
+        <div class="ta">There's a sliver of the rows above the headings.</div>
+        <div class="btns"><button class="btn primary" type="button">Send</button><span class="sub">With the page, where, the browser, and who you're viewing as</span></div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Board 3 · Failed…</div>
+      <h2>A failure is a feedback note, already filled in</h2>
+      <p><b>Failed…</b> opens the feedback window you know (<kbd>\</kbd>), with <b>Something's broken</b> picked, the step attached, and the page's picture already taken. You can point at the part as now, or <b>mark the picture</b>: a box, an arrow or a line, then a sentence.</p>
+      <p>It lands in Feedback like any note, tagged with its step, so I read it with everything else and you follow it in Notes you sent. The step shows <span class="st fail">Failed · note 81</span> until it's fixed.</p>
+      <p class="meta">The mark-up is new for every note, not only a test's: it's what you'd want on a phone too, where pointing is hard.</p>
+      <div class="cost"><span>Build: S for the link · S for marking a picture</span></div>
+    </div>
+  </section>
+
+  <!-- Board 4 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 4 · the loop</div>
+      <h2>A fixed step comes back to you by itself</h2>
+      <p style="max-width:85ch">Today you check pull requests to know when to try again. Here, my reply on the note says what I changed; once that change is live on askdnd.ai (askdnd knows its own version), the step moves to <b>Try again</b> with my reply on its card. Passed closes the note too, so neither of us has to.</p>
+    </div>
+    <div class="loop">
+      <div><span class="n">1 · You</span><b>Failed…</b> with a marked picture<span class="who">Note 81, tagged Step 2</span><span class="st fail" style="justify-self:start">Failed · note 81</span></div>
+      <div><span class="n">2 · Me</span>Fix it, reply in plain words, tie the note to the change<span class="who">feedback.py tell 81 "…" --pr 399</span><span class="st" style="justify-self:start">Fix on its way</span></div>
+      <div><span class="n">3 · askdnd</span>Runs the fix on askdnd.ai: the step moves itself<span class="who">/health's version includes PR 399</span><span class="st again" style="justify-self:start">Fixed · try again</span></div>
+      <div><span class="n">4 · You</span><b>Passed</b>: the step is done and note 81 closes (you see Built)<span class="who">Failed again: the note opens again, with a new picture</span><span class="st pass" style="justify-self:start">Passed</span></div>
+    </div>
+    <div class="say">
+      <p class="meta" style="max-width:85ch"><b>What moves over:</b> the steps still open on the Test Steps page come across with their marks and my replies; that page then says where they went. Its "Claude runs these" group becomes the Claude ran tab, filled by the Mac Mini's runs.</p>
+      <div class="cost"><span>Build: S · re-test by version, moving Test Steps over · the whole: M, in three slices</span></div>
+    </div>
+  </section>
+
+  <!-- Board 4b -->
+  <section class="board">
+    <div class="stage">
+      <div class="fbwin" aria-label="Notes you sent, a player's note, fixed">
+        <div class="hd" style="display:flex;justify-content:space-between"><b>The rolls panel closes by itself</b><span class="st again">Fixed · try it</span></div>
+        <p class="sub">You sent this Nov 15 · Something's broken</p>
+        <p class="rd-reply"><b>Claude:</b> Fixed: the Table rolls panel now stays open when a new roll arrives. It's on askdnd.ai now.</p>
+        <div class="rd-do"><b>Does it work now?</b><p>Open Table rolls on Battle, then roll something.</p></div>
+        <div class="btns"><button class="btn pass small" type="button">Yes, it's fixed</button><button class="btn small" type="button">Still broken…</button><span class="sub">Still broken adds to your note, with a picture</span></div>
+      </div>
+      <p class="cap">On the player's Notes you sent, and once as a corner card when the fix goes live.</p>
+    </div>
+    <div class="say">
+      <div class="lbl">Board 4b · every note gets its check</div>
+      <h2>A broken note comes with its check, and whoever saw it confirms the fix</h2>
+      <p>When I take up a <b>Something's broken</b> note, I write its check with it (what to do, what you should see), so every fix comes back to be confirmed, never just closed. An <b>idea</b> that's built gets one too.</p>
+      <p><b>Your notes</b> land in your Testing queue, as on Board 1. <b>A player's note</b> asks them first: <i>Does it work now?</i> on Notes you sent. Yes closes it (they see Built); Still broken opens it again with their picture. It's in your queue under <b>With a player</b>, so you see the answer, and it comes to you after three days without one (question 6).</p>
+      <div class="cost"><span>Build: S · the check made with the note, Does it work now? on Notes you sent</span></div>
+    </div>
+  </section>
+
+  <!-- Board 5 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 5 · for your next project</div>
+      <h2>Feedback, Testing, View as and the Mac Mini, as one kit to take along</h2>
+      <p style="max-width:88ch">These are how you and I work, more than they are askdnd: you notice something, send it with a picture, I fix it, the check comes back, you confirm. They're built so they can move to another project with little change:</p>
+    </div>
+    <div class="loop">
+      <div><span class="n">Feedback</span>Notes with pictures, kinds, a thread, Notes you sent<span class="who">its own tables and pages; the \ key</span></div>
+      <div><span class="n">Testing</span>Checks, rounds, the step card, does it work now?<span class="who">its own tables; reads Feedback</span></div>
+      <div><span class="n">View as</span>See any page through someone's eyes, changing nothing for them<span class="who">one rule for what it hides</span></div>
+      <div><span class="n">The Mac Mini</span>Runs with several real seats; nightly checks; reports to Sentry<span class="who">scripts, kept apart from the app</span></div>
+    </div>
+    <div class="say">
+      <p class="meta" style="max-width:88ch">What makes them portable: each keeps to its own folder and tables, and talks to the rest of the app through one small adapter (who the people are, how to switch to one, what the pages are). My command line (<code>feedback.py</code>, and a <code>testing</code> part of it) uses the same keys. When it's built, <b>docs/toolkit.md</b> says how to bring the kit into a new project, step by step, as the setup log does for hosting and domains.</p>
+      <div class="cost"><span>Build: part of each slice (the boundaries are how it's built, not extra work) · the guide: S</span></div>
+    </div>
+  </section>
+
+  <section class="pick" aria-labelledby="pick-h">
+    <div class="lbl">Your pick</div>
+    <h2 id="pick-h">Six answers</h2>
+    <p class="meta">My picks: <b>1A, 2A, 3A, 4A, 5B, 6C</b>. Tick yours and Save; you can come back and change it.</p>
+    <form class="decide">
+      <fieldset data-q="where" data-kind="one"><legend>1 · How the queue looks</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="where" value="A">A · A Reader beside Feedback (Board 1) <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="where" value="B">B · A list beside Feedback (the first draft)</label>
+        <label class="choice one"><input type="radio" name="where" value="C">C · A tab on the Feedback page</label>
+      </div></fieldset>
+      <fieldset data-q="card" data-kind="one"><legend>2 · The step card</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="card" value="A">A · A card at the bottom right, folds to a pill <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="card" value="B">B · A slim bar across the bottom of the page</label>
+      </div></fieldset>
+      <fieldset data-q="fail" data-kind="one"><legend>3 · Failed…</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="fail" value="A">A · The feedback window, filled in, with marking the picture <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="fail" value="B">B · The same, without marking</label>
+        <label class="choice one"><input type="radio" name="fail" value="C">C · A short note on the step only</label>
+      </div></fieldset>
+      <fieldset data-q="again" data-kind="one"><legend>4 · A fixed step</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="again" value="A">A · Comes back by itself once the fix is live <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="again" value="B">B · Comes back when I say so</label>
+      </div></fieldset>
+      <fieldset data-q="who" data-kind="one"><legend>5 · Who sees the queue and the card</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="who" value="A">A · Admins only</label>
+        <label class="choice one"><input type="radio" name="who" value="B">B · Admins, and your test accounts (for the iPhone steps) <span class="mine-tag">My pick</span></label>
+      </div></fieldset>
+      <fieldset data-q="player" data-kind="one"><legend>6 · Who confirms a fix from a player's note</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="player" value="A">A · You, in your queue</label>
+        <label class="choice one"><input type="radio" name="player" value="B">B · The player, on Notes you sent</label>
+        <label class="choice one"><input type="radio" name="player" value="C">C · The player first; yours after three days without an answer <span class="mine-tag">My pick</span></label>
+      </div></fieldset>
+      <fieldset><legend>Your notes</legend><textarea name="notes" aria-label="Your notes" placeholder="Anything to change, an order, a question"></textarea></fieldset>
+      <div class="save-row"><button type="submit">Save</button><span class="saved" role="status">Loading…</span></div>
+    </form>
+  </section>
+</div>
+
+<style>
+.pick { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide { display: grid; gap: 16px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.decide legend { font-weight: 600; color: var(--strong); padding: 0; margin-bottom: 8px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 14px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; color: var(--text); }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.choice:has(input:checked) { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.choice:has(input:checked)::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--surface-2); }
+.choice:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+.choice .mine-tag { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.decide textarea { width: 100%; min-height: 84px; box-sizing: border-box; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font: 400 1rem/1.4 var(--sans); resize: vertical; }
+.save-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.save-row button { background: var(--red-btn); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: 600 .95rem/1 var(--sans); cursor: pointer; }
+.save-row button:disabled { opacity: .6; cursor: default; }
+.saved { color: var(--muted); font-size: .88rem; }
+.saved.ok { color: var(--green); }
+</style>
+<script>
+// Your pick: saved in this page's own store, where Claude reads it
+(() => {
+  const form = document.querySelector('form.decide');
+  if (!form) return;
+  const said = form.querySelector('.saved'), btn = form.querySelector('button');
+  let db = null;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle('ok', !!ok); };
+  const collect = () => {
+    const out = {};
+    form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+      const picked = [...fs.querySelectorAll('input:checked')].map(i => i.value);
+      out[fs.dataset.q] = fs.dataset.kind === 'one' ? (picked[0] || '') : picked;
+    });
+    return out;
+  };
+  form.addEventListener('change', () => show('Not saved yet'));
+  form.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') show('Not saved yet'); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString();
+    try {
+      await db.collection('answers').doc('pick').set({ answers: collect(), notes: form.querySelector('textarea').value.trim(), at });
+      show('Saved ' + when(at) + ' · Claude reads it from here', true);
+    } catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) { show('Nothing saved yet'); return; }
+      const a = d.data(), ans = a.answers || {};
+      form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+        const v = ans[fs.dataset.q], vs = Array.isArray(v) ? v : [v];
+        fs.querySelectorAll('input').forEach(i => { i.checked = vs.includes(i.value); });
+      });
+      form.querySelector('textarea').value = a.notes || '';
+      show('Saved ' + when(a.at) + ' · change anything and Save again', true);
+    } catch (err) { show('Nothing saved yet'); }
+  })();
+})();
+</script>

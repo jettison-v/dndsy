@@ -1044,6 +1044,24 @@
   "link": "https://claude.ai/artifact/8qfS3KYY3UXNsot4wM2jtX"
  },
  {
+  "title": "Testing in askdnd",
+  "kind": "design",
+  "status": "Chose 1A, 2A, 3A, 4A, 5B, 6C",
+  "date": "Nov 16",
+  "what": "Brett, Nov 16: testing inside askdnd, part of Feedback. Round 2: the queue as a Reader (each check with its note, picture, my reply and history), a check made with every broken note (a player confirms their own fix), and the kit (Feedback, Testing, View as, the Mac Mini) built to take to another project.",
+  "source": "docs/mockups/testing/index.html",
+  "link": "https://claude.ai/artifact/SEC5iBRGJVMCsT6uAfhY2q"
+ },
+ {
+  "title": "Item Builder",
+  "kind": "design",
+  "status": "Chose 1A, 2B, 3A, 4A",
+  "date": "Nov 16",
+  "what": "Homebrew items, round 2 (feedback 72 and the Roadmap's step 2): build an item a piece at a time with pickers, start from a base weapon or armor or a copy, and give it to a character, who takes it onto their D&D Beyond sheet. With how D&D Beyond, Foundry and Roll20 do it.",
+  "source": "docs/mockups/item-builder/index.html",
+  "link": "https://claude.ai/artifact/UvGQuLq642F6ihdw6EBcKB"
+ },
+ {
   "title": "Homebrew Items",
   "kind": "design",
   "status": "Chose 1B, 2A, 3A; slice 1 built",

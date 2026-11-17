@@ -1,0 +1,513 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Item Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens; laptop first, one column on a phone; the table's own characters.
+   Round 2 of Homebrew Items (docs/mockups/homebrew-items/): building an item a piece at a time, and giving it. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 38px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+ul, ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+a { color: var(--blue); }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta, .note { color: var(--muted); font-size: .9rem; }
+header.top { display: grid; gap: 14px; }
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.where b { display: block; margin-bottom: 2px; }
+.board { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.board.wide { grid-template-columns: minmax(0, 1fr); }
+.say { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.stage { display: grid; gap: 12px; min-width: 0; }
+.cap { color: var(--muted); font-size: .84rem; }
+.cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); }
+.cost span { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px 10px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.before, .after { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.before > .lbl { color: var(--muted); } .after > .lbl { color: var(--green); }
+
+/* askdnd's pieces */
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; font-size: .9rem; box-shadow: 0 14px 34px rgba(0,0,0,.35); min-width: 0; }
+.win .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.win .hd b { font-size: 1.1rem; }
+.win .x { color: var(--muted); }
+.sub { color: var(--muted); font-size: .86rem; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { font: 600 .88rem/1 var(--sans); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+button.btn, button.chip, button.step { cursor: pointer; }
+.btn:focus-visible, .chip:focus-visible, .step:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.chip { font: 600 .8rem/1 var(--sans); padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font: 600 .72rem/1 var(--sans); padding: 3px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
+.tag.ok { background: var(--green-soft); color: var(--green); }
+.tag.warn { background: var(--amber-soft); color: var(--amber); }
+.field { display: grid; gap: 4px; font-size: .82rem; color: var(--muted); min-width: 0; }
+.input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--text); font: 400 .9rem/1.3 var(--sans); min-width: 0; }
+.input.ph { color: var(--faint); }
+.av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: inline-grid; place-items: center; font: 700 .8rem/1 var(--sans); color: #1b1b1b; }
+.av.c { background: #8fb39a; } .av.b { background: #e0b878; } .av.n { background: #b39ad8; } .av.t { background: #90b4e0; }
+.mbar2 { display: flex; gap: 12px; align-items: center; background: #0f1113; border: 1px solid var(--line); border-bottom: 2px solid var(--red-btn); border-radius: 10px 10px 0 0; padding: 8px 12px; font-size: .84rem; color: var(--muted); flex-wrap: wrap; }
+.mbar2 .logo { width: 20px; height: 20px; border-radius: 6px; background: var(--red-btn); }
+.mbar2 b { color: var(--strong); } .mbar2 .sp { flex: 1; }
+.mbar2 .door { color: var(--strong); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: 999px; padding: 2px 10px; }
+
+/* the old form, drawn small */
+.oldform { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 8px; max-height: 470px; overflow: hidden; position: relative; }
+.oldform::after { content: ""; position: absolute; inset: auto 0 0; height: 90px; background: linear-gradient(transparent, var(--surface)); }
+.oldform .h { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding-top: 4px; }
+.oldform .fs { border: 1px solid var(--line-soft); border-radius: 8px; padding: 8px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.oldform .fs i { display: block; height: 22px; border-radius: 5px; background: var(--bg); border: 1px solid var(--line-soft); }
+.oldform .fs span { font-size: .66rem; color: var(--faint); }
+.count-old { font: 700 2.2rem/1 var(--sans); color: var(--amber); }
+
+/* the builder */
+.core { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: 10px; align-items: end; }
+.base { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+.base b { font-size: .88rem; }
+.does { display: grid; gap: 8px; }
+.does > .t { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.piece { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 9px 11px; }
+.piece .ico { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-3); font-size: .95rem; }
+.piece .say1 b { display: block; font-size: .9rem; }
+.piece .say1 span { color: var(--muted); font-size: .84rem; }
+.piece.open { grid-template-columns: minmax(0, 1fr); border-color: var(--blue); background: var(--surface); gap: 12px; }
+.addmenu { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: 12px; padding: 10px; box-shadow: 0 12px 28px rgba(0,0,0,.4); }
+.addmenu .o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 10px; border-radius: 9px; border: 1px solid var(--line-soft); background: var(--surface-2); }
+.addmenu .o .ico { grid-row: span 2; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--surface-3); }
+.addmenu .o b { font-size: .88rem; } .addmenu .o span { font-size: .78rem; color: var(--muted); }
+.addmenu .o.used { opacity: .45; }
+.addbtn { display: flex; align-items: center; gap: 8px; border: 1px dashed var(--line-strong); border-radius: 10px; padding: 9px 12px; color: var(--muted); font-size: .88rem; }
+.addbtn b { color: var(--text); white-space: nowrap; }
+
+/* a piece opened: pickers */
+.prow { display: grid; grid-template-columns: 7.5rem minmax(0, 1fr); gap: 10px; align-items: center; }
+.prow > .k { font-size: .82rem; color: var(--muted); }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.stepper .step { background: var(--surface-2); border: 0; color: var(--text); width: 30px; height: 30px; font: 700 1rem/1 var(--sans); }
+.stepper output { min-width: 34px; text-align: center; font: 700 .95rem/1 var(--sans); color: var(--strong); font-variant-numeric: tabular-nums; }
+.readout { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--bg); border: 1px solid var(--line-soft); border-radius: 10px; padding: 9px 12px; }
+.readout .big { font: 700 1.05rem/1.2 var(--sans); color: var(--strong); }
+.readout .sub { font-size: .8rem; }
+.typeit { font-size: .8rem; color: var(--muted); }
+.typeit code { background: var(--surface-3); border-radius: 4px; padding: 1px 5px; color: var(--text); }
+
+/* Battle row and the roll card, small */
+.brow { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 9px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.brow .nm b { display: block; } .brow .nm span { color: var(--muted); font-size: .82rem; }
+.pips { color: var(--green); letter-spacing: 2px; }
+.hit { font: 700 .9rem/1 var(--sans); color: var(--strong); background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; }
+
+/* start from */
+.starts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.start { display: grid; gap: 6px; align-content: start; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px; }
+.start.on { border-color: var(--blue); background: var(--blue-soft); }
+.start b { font-size: .95rem; } .start p { font-size: .84rem; color: var(--muted); }
+.pickrow { display: flex; gap: 6px; flex-wrap: wrap; }
+.mini { font-size: .8rem; color: var(--muted); }
+
+/* giving */
+.who { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.who .p { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--line-soft); background: var(--surface-2); }
+.who .p.on { border-color: var(--blue); background: var(--blue-soft); }
+.who .p span { font-size: .8rem; color: var(--muted); display: block; }
+.goes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.goes div { background: var(--bg); border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; font-size: .84rem; color: var(--muted); display: grid; gap: 4px; align-content: start; }
+.goes div > b { font-size: .78rem; font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.ccard { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--green); border-left: 4px solid var(--green); border-radius: 10px; padding: 12px 14px; box-shadow: 0 12px 26px rgba(0,0,0,.4); max-width: 380px; font-size: .88rem; }
+.ccard .t { color: var(--green); font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.flow { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.flow .goes { grid-template-columns: minmax(0, 1fr); }
+.flow > div { display: grid; gap: 8px; min-width: 0; }
+.flow .n { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* baseline */
+table.cmp { width: 100%; border-collapse: collapse; font-size: .86rem; }
+table.cmp th { text-align: left; font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--line); }
+table.cmp td { padding: 9px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; color: var(--muted); }
+table.cmp td:first-child { color: var(--strong); font-weight: 600; white-space: nowrap; }
+table.cmp td.take { color: var(--text); }
+.scroll { overflow-x: auto; }
+
+@media (max-width: 900px) {
+  .board, .split, .flow, .goes { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .where, .starts { grid-template-columns: minmax(0, 1fr); }
+  .addmenu { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  h1 { font-size: 1.8rem; }
+  .core, .addmenu, .who { grid-template-columns: minmax(0, 1fr); }
+  .prow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lbl">The DM's toolkit · homebrew items, round 2</div>
+    <h1>Building an item a piece at a time, then giving it</h1>
+    <p class="lead">Your note from DM Tools (feedback 72): making an item is hard because every option shows at once. Build it piece by piece instead (add a roll, add charges), with more pickers and less typing, and look first at how other tools do it. This is also the Roadmap's step 2: <b>Give to a character</b>, which puts the item on their D&amp;D Beyond sheet.</p>
+    <div class="where">
+      <div><b>Where it lives</b>DM Tools › Items › an item (your pick 1B in <a href="https://claude.ai/artifact/N4aDw8QCRoDy2aZBYJrp2V">Homebrew Items</a>). Nothing moves; the item's page is redrawn.</div>
+      <div><b>Who uses it</b>The campaign's DM (and admins). A player sees an item once they've taken it (your pick 3A), and only its effect on their own sheet.</div>
+      <div><b>Four decisions</b>How pieces are added, what you can start from, how dice are picked, and what happens when the player's sheet can't be reached. Each has my pick at the bottom.</div>
+    </div>
+  </header>
+
+  <!-- Baseline -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">The baseline you asked for</div>
+      <h2>How other tools build an item</h2>
+      <p class="meta" style="max-width:85ch">From each tool's public help pages and forums (the links). Everyone ends up with an item made of small pieces; they differ in how much shows at once.</p>
+    </div>
+    <div class="scroll">
+      <table class="cmp">
+        <thead><tr><th>Tool</th><th>How you start</th><th>How it does things</th><th>What people say</th><th>What we take</th></tr></thead>
+        <tbody>
+          <tr><td>D&amp;D Beyond</td><td>A short first step (name, rarity, base type, attunement), or copy an existing item as a template. A base weapon or armor brings its own numbers.</td><td>Modifiers added one at a time from chained pickers (Bonus › Magic › 1). Charges with when they come back. Spells priced in charges.</td><td>An item can't give an action; some fields are only notes; a published item can't be edited (<a href="https://www.dndbeyond.com/posts/1103-how-to-create-a-homebrew-magic-item-using-d-d">guide</a>, <a href="https://www.dndbeyond.com/forums/d-d-beyond-general/d-d-beyond-feedback/79301-why-cant-magic-items-grant-actions">forum</a>). A custom item added to one sheet is only a name, words, cost and weight.</td><td class="take">Start from a base or a copy · a small core first · spells cost charges</td></tr>
+          <tr><td>Foundry VTT</td><td>A blank item sheet in tabs.</td><td>"+" then pick what kind: Attack, Save, Damage, Heal, Cast, Summon… Each is its own card. Drop a spell on the item for a ready-made Cast. Uses shared by the whole item.</td><td>Powerful, but deep: tabs inside each piece (<a href="https://github.com/foundryvtt/dnd5e/wiki/Activities">Activities</a>).</td><td class="take">+ Add, then pick a kind · each piece one card · charges the pieces spend</td></tr>
+          <tr><td>Roll20</td><td>Create Custom Item in the Loot Manager; staff advise starting from a similar item.</td><td>"Add New Damage" rows, effects with a +.</td><td>Effects not tied to the item; an Advanced switch once cleared what was typed (<a href="https://app.roll20.net/forum/permalink/12061773">forum</a>).</td><td class="take">One row per damage · never lose what's typed</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="cap">What to avoid, from all three: fields that look like they do something but are only notes, pieces inside pieces, and an item that can't be changed once given. askdnd's homebrew plays by its name, so changing it changes it for whoever carries it.</p>
+  </section>
+
+  <!-- Board 1 -->
+  <section class="board">
+    <div class="stage">
+      <div class="split">
+        <div class="before">
+          <div class="lbl">Today</div>
+          <div class="oldform" aria-label="Today's form, drawn small">
+            <div class="h">The item</div>
+            <div class="fs"><span>Name</span><span>Kind</span><span>Rarity</span><span>Attune</span><i></i><i></i><i></i><i></i><span>Cost</span><span>Weight</span><span></span><span></span><i></i><i></i></div>
+            <div class="h">A roll · 1 of 3</div>
+            <div class="fs"><span>Called</span><span>Dice</span><span>How</span><span>Does</span><i></i><i></i><i></i><i></i><span>Save</span><span>DC</span><span>Half</span><span>Note</span><i></i><i></i><i></i><i></i></div>
+            <div class="h">A roll · 2 of 3</div>
+            <div class="fs"><span>Called</span><span>Dice</span><span>How</span><span>Does</span><i></i><i></i><i></i><i></i><span>Save</span><span>DC</span><span>Half</span><span>Note</span><i></i><i></i><i></i><i></i></div>
+            <div class="h">A roll · 3 of 3</div>
+            <div class="fs"><span>Called</span><span>Dice</span><span>How</span><span>Does</span><i></i><i></i><i></i><i></i></div>
+          </div>
+          <p class="cap"><span class="count-old">45</span> boxes before you've said what the item does: three rolls, three bonuses and charges, all open.</p>
+        </div>
+        <div class="after">
+          <div class="lbl">The builder</div>
+          <div class="win" aria-label="The item, built a piece at a time">
+            <div class="hd"><b>Leviathan Compass</b><span class="tag">Rare · attunement</span></div>
+            <div class="does">
+              <div class="t"><b>What it does in play</b><span class="sub">2 pieces</span></div>
+              <div class="piece"><span class="ico">⟳</span><span class="say1"><b>Charges</b><span>3, back at dawn (1d3)</span></span><button class="btn small link" type="button">Edit</button></div>
+              <div class="piece"><span class="ico">🎲</span><span class="say1"><b>Find the heart</b><span>2d6 force · Dex save DC 14, half · 1 charge</span></span><button class="btn small link" type="button">Edit</button></div>
+              <div class="addbtn"><b>+ Add</b> a roll, a bonus, charges, a spell, a creature…</div>
+            </div>
+          </div>
+          <p class="cap">Each piece is one line that reads as a sentence. Edit opens it in place (board 2).</p>
+        </div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Board 1 · the item's page</div>
+      <h2>Only what the item has, and + Add for the rest</h2>
+      <p>A new item starts with its core (name, kind, rarity, attunement, its words) and nothing under <b>What it does in play</b>. <b>+ Add</b> opens a short menu of what askdnd can play; picking one adds that piece, opened, ready to fill in. Close it and it folds to its one line.</p>
+      <div class="addmenu" aria-label="The + Add menu">
+        <div class="o"><span class="ico">🎲</span><b>A roll</b><span>an attack, a save or dice</span></div>
+        <div class="o"><span class="ico">＋</span><b>A bonus</b><span>to attacks, saves, checks or damage</span></div>
+        <div class="o used"><span class="ico">⟳</span><b>Charges</b><span>it has them already</span></div>
+        <div class="o"><span class="ico">✦</span><b>A spell it casts</b><span>for charges, or once a day</span></div>
+        <div class="o"><span class="ico">🐾</span><b>A creature it brings</b><span>as the Beasty Bone does</span></div>
+        <div class="o"><span class="ico">⚖</span><b>A check it asks for</b><span>a DC, when it's used</span></div>
+      </div>
+      <p class="meta">Every kind in the menu is one askdnd already plays on Battle and the roll card, so nothing in the builder is only a note. A piece the item can have only once (charges) greys out once it's there.</p>
+      <div class="cost"><span>Build: M · the page and its pieces are new; what they make is today's</span></div>
+    </div>
+  </section>
+
+  <!-- Board 2 -->
+  <section class="board">
+    <div class="stage">
+      <div class="win" aria-label="A roll, opened">
+        <div class="piece open" id="rollpiece">
+          <div class="hd" style="display:flex;justify-content:space-between;gap:10px"><b>🎲 A roll</b><span class="sub">Called <span class="input" style="padding:3px 8px">Find the heart</span></span></div>
+          <div class="readout" aria-live="polite"><span class="big" data-out="say">2d6 force · Dex save DC 14, half on a success</span><span class="sub" data-out="avg">about 7</span></div>
+          <div class="prow"><span class="k">How it lands</span><div class="chips" data-g="how">
+            <button class="chip" type="button" data-v="attack" aria-pressed="false">An attack roll</button>
+            <button class="chip" type="button" data-v="save" aria-pressed="true">A saving throw</button>
+            <button class="chip" type="button" data-v="none" aria-pressed="false">Just the dice</button></div></div>
+          <div class="prow"><span class="k">Dice</span><div class="btns">
+            <span class="stepper"><button class="step" type="button" data-step="n" data-d="-1" aria-label="Fewer dice">−</button><output data-out="n">2</output><button class="step" type="button" data-step="n" data-d="1" aria-label="More dice">+</button></span>
+            <div class="chips" data-g="die">
+              <button class="chip" type="button" data-v="4" aria-pressed="false">d4</button><button class="chip" type="button" data-v="6" aria-pressed="true">d6</button><button class="chip" type="button" data-v="8" aria-pressed="false">d8</button><button class="chip" type="button" data-v="10" aria-pressed="false">d10</button><button class="chip" type="button" data-v="12" aria-pressed="false">d12</button></div></div></div>
+          <div class="prow"><span class="k">It does</span><div class="chips" data-g="kind">
+            <button class="chip" type="button" data-v="damage" aria-pressed="true">Damage</button><button class="chip" type="button" data-v="heal" aria-pressed="false">Healing</button><button class="chip" type="button" data-v="temp" aria-pressed="false">Temp HP</button></div></div>
+          <div class="prow" data-show="damage"><span class="k">Damage type</span><div class="chips" data-g="type">
+            <button class="chip" type="button" data-v="force" aria-pressed="true">Force</button><button class="chip" type="button" data-v="fire" aria-pressed="false">Fire</button><button class="chip" type="button" data-v="cold" aria-pressed="false">Cold</button><button class="chip" type="button" data-v="lightning" aria-pressed="false">Lightning</button><button class="chip" type="button" data-v="thunder" aria-pressed="false">Thunder</button><button class="chip" type="button" data-v="necrotic" aria-pressed="false">Necrotic</button><button class="chip" type="button" data-v="radiant" aria-pressed="false">Radiant</button><button class="chip" type="button" data-v="more" aria-pressed="false">More…</button></div></div>
+          <div class="prow" data-show="save"><span class="k">Save</span><div class="btns"><div class="chips" data-g="save">
+            <button class="chip" type="button" data-v="Str" aria-pressed="false">Str</button><button class="chip" type="button" data-v="Dex" aria-pressed="true">Dex</button><button class="chip" type="button" data-v="Con" aria-pressed="false">Con</button><button class="chip" type="button" data-v="Int" aria-pressed="false">Int</button><button class="chip" type="button" data-v="Wis" aria-pressed="false">Wis</button><button class="chip" type="button" data-v="Cha" aria-pressed="false">Cha</button></div>
+            <span class="mini">DC</span><span class="stepper"><button class="step" type="button" data-step="dc" data-d="-1" aria-label="Lower DC">−</button><output data-out="dc">14</output><button class="step" type="button" data-step="dc" data-d="1" aria-label="Higher DC">+</button></span></div></div>
+          <div class="prow" data-show="save"><span class="k">On a success</span><div class="chips" data-g="half">
+            <button class="chip" type="button" data-v="half" aria-pressed="true">Half</button><button class="chip" type="button" data-v="none" aria-pressed="false">Nothing</button></div></div>
+          <div class="prow" data-show="attack"><span class="k">To hit</span><div class="chips" data-g="hit">
+            <button class="chip" type="button" data-v="char" aria-pressed="true">The character's own</button><button class="chip" type="button" data-v="fixed" aria-pressed="false">A fixed +7</button></div></div>
+          <div class="prow"><span class="k">Costs</span><div class="chips" data-g="costs">
+            <button class="chip" type="button" data-v="0" aria-pressed="false">Nothing</button><button class="chip" type="button" data-v="1" aria-pressed="true">1 charge</button><button class="chip" type="button" data-v="2" aria-pressed="false">2 charges</button></div></div>
+          <p class="typeit">Faster to type? <code>2d6 force</code> in the dice box fills the pickers, and the pickers write it back.</p>
+          <div class="btns"><button class="btn small" type="button">Done</button><button class="btn small link" type="button">Remove this roll</button></div>
+        </div>
+      </div>
+      <p class="cap">Press the chips: the line at the top is what the roll card will say, and the pieces that don't apply go away (a save's DC only for a save; damage types only for damage).</p>
+    </div>
+    <div class="say">
+      <div class="lbl">Board 2 · a piece, opened</div>
+      <h2>Pickers that write a sentence</h2>
+      <p>Opening a piece shows only its own questions, each a row of chips or a − + stepper: how it lands, the dice, what it does, the save and DC, what a success does, and what it costs from the item's charges. The sentence at the top updates as you pick, so you read what you made instead of checking boxes.</p>
+      <p>Words stay typed only where they're words: the item's name and what the table reads. The dice box still takes typing for anyone faster that way; it fills the pickers.</p>
+      <div class="lbl" style="color:var(--muted)">On Battle, for whoever carries it</div>
+      <div class="brow"><div class="nm"><b>Leviathan Compass</b><span>Find the heart · 2d6 force, Dex DC 14 · <span class="pips">●●○</span> charges</span></div><span class="hit">DC 14</span><span class="btn small">Use</span></div>
+      <p class="meta">The same row askdnd draws for a book's item today: its charges as pips, Use, the roll card.</p>
+      <div class="cost"><span>Build: part of board 1's M</span></div>
+    </div>
+  </section>
+
+  <!-- Board 3 -->
+  <section class="board">
+    <div class="stage">
+      <div class="win" aria-label="+ New item">
+        <div class="hd"><b>New item</b><span class="x">×</span></div>
+        <p class="sub">What it starts from</p>
+        <div class="starts">
+          <div class="start"><b>Nothing</b><p>A name, a kind, its words; then add what it does.</p></div>
+          <div class="start on"><b>A weapon or armor</b><p>Its damage, properties or AC come with it; add only what's magic.</p>
+            <div class="pickrow"><span class="chip">Longsword</span><span class="chip" aria-pressed="true">Scimitar</span><span class="chip">Shortbow</span><span class="chip">Chain Mail</span><span class="chip">More…</span></div></div>
+          <div class="start"><b>A copy of an item</b><p>One of the campaign's, or one from the books, to change.</p>
+            <div class="pickrow"><span class="chip">Wand of Magic Missiles</span><span class="chip">Beasty Bone</span><span class="chip">Search…</span></div></div>
+        </div>
+        <div class="core" style="margin-top:6px">
+          <label class="field">Name<span class="input">Stormwreck Cutlass</span></label>
+          <label class="field">Rarity<span class="input">Uncommon</span></label>
+          <label class="field">Attunement<span class="input">No</span></label>
+        </div>
+        <div class="base"><span class="tag">From the Scimitar</span><b>1d6 slashing</b> · Finesse, Light, Nick · 3 lb · 25 GP</div>
+        <div class="does">
+          <div class="piece"><span class="ico">＋</span><span class="say1"><b>+1 weapon</b><span>+1 to attack and damage rolls with it</span></span><button class="btn small link" type="button">Edit</button></div>
+          <div class="piece"><span class="ico">＋</span><span class="say1"><b>Storm's edge</b><span>+1d6 lightning on a hit with it</span></span><button class="btn small link" type="button">Edit</button></div>
+          <div class="addbtn"><b>+ Add</b> a roll, a bonus, charges, a spell…</div>
+        </div>
+      </div>
+    </div>
+    <div class="say">
+      <div class="lbl">Board 3 · + New item</div>
+      <h2>Start from something</h2>
+      <p>The advice in every tool's forum is the same: start from something close and change it. <b>+ New item</b> asks once what it starts from:</p>
+      <ul>
+        <li><b>Nothing</b>: today's blank item.</li>
+        <li><b>A weapon or armor</b> from the 2024 Player's Handbook: its dice, properties, weight and cost come with it, so a magic weapon is the base plus its bonuses. A bonus added to it is "with this item" already (askdnd's <i>Only with this item</i>, ticked for you).</li>
+        <li><b>A copy of an item</b>: one of the campaign's own, or a book's magic item askdnd plays (its charges, rolls and spells come as pieces you can change). The copy is the campaign's own; the book's stays as it is.</li>
+      </ul>
+      <div class="cost"><span>Build: S for Nothing and a weapon or armor · S more for a copy</span></div>
+    </div>
+  </section>
+
+  <!-- Board 4 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 4 · Give to a character (the Roadmap's step 2)</div>
+      <h2>The DM gives it; the player takes it onto their sheet</h2>
+      <p style="max-width:85ch">On D&amp;D Beyond only a sheet's own player can change it, so giving works the way giving healing does today: the DM picks who, and that player gets a card on every askdnd page they have open, with <b>Take it</b>. Their bridge adds the item to their D&amp;D Beyond inventory as a custom item (its name, its words, cost and weight: all D&amp;D Beyond keeps for one), and askdnd plays what it does, because it's carried by name. Undo takes it back off.</p>
+    </div>
+    <div class="flow">
+      <div>
+        <span class="n">1 · The DM, on the item</span>
+        <div class="win" aria-label="Give to a character">
+          <div class="hd"><b>Give Leviathan Compass</b><span class="x">×</span></div>
+          <div class="who">
+            <div class="p"><span class="av b">B</span><div><b>Big C</b></div></div>
+            <div class="p"><span class="av c">C</span><div><b>Cole</b></div></div>
+            <div class="p on"><span class="av t">T</span><div><b>Trah</b></div></div>
+            <div class="p"><span class="av n">N</span><div><b>No Name</b></div></div>
+          </div>
+          <div class="goes">
+            <div><b>Onto Trah's D&amp;D Beyond sheet</b>A custom item: its name, its words, 1 lb. It needs attunement: Trah attunes on the sheet, as with any item.</div>
+            <div><b>askdnd plays</b>Find the heart (2d6 force, Dex DC 14) and 3 charges, back at dawn.</div>
+          </div>
+          <div class="btns"><button class="btn primary" type="button">Give to Trah</button><button class="btn link" type="button">Cancel</button></div>
+        </div>
+      </div>
+      <div>
+        <span class="n">2 · Trah's player, on any askdnd page</span>
+        <div class="ccard" aria-label="A corner card">
+          <span class="t">From the DM</span>
+          <div><b>Leviathan Compass</b> <span class="sub">· Rare · attunement</span></div>
+          <p class="sub">Its needle points to the Leviathan's heart…</p>
+          <div class="btns"><button class="btn small primary" type="button" style="background:var(--green);border-color:var(--green);color:#10140f">Take it</button><button class="btn small link" type="button">Not now</button></div>
+        </div>
+        <p class="cap">Green and staying, like "Healing for you", until taken; Not now hides it until the next page. The DM sees it waiting under Needs you.</p>
+      </div>
+      <div>
+        <span class="n">3 · Taken</span>
+        <div class="ccard" style="border-color:var(--line);border-left-color:var(--green)">
+          <div>✓ <b>Leviathan Compass</b> is in Trah's inventory on D&amp;D Beyond.</div>
+          <div class="btns"><button class="btn small link" type="button">Undo</button></div>
+        </div>
+        <div class="brow"><div class="nm"><b>Leviathan Compass</b><span>Find the heart · <span class="pips">●●●</span></span></div><span class="hit">DC 14</span><span class="btn small">Use</span></div>
+        <p class="cap">On Trah's Battle as soon as the sheet has it. The DM's item list says "Trah has it".</p>
+      </div>
+    </div>
+    <div class="say">
+      <p class="meta" style="max-width:85ch"><b>First, a recording.</b> askdnd doesn't yet send D&amp;D Beyond's "add a custom item" request. I record the one D&amp;D Beyond's own sheet sends, on a test seat on the Mac Mini (never your account), as was done for preparing spells; then the bridge sends it, with Undo. If it needs a new extension permission, that's another Chrome Web Store review (a few days).</p>
+      <div class="cost"><span>Build: M · the recording, the bridge's new change, the card and Needs you</span></div>
+    </div>
+  </section>
+
+  <section class="pick" aria-labelledby="pick-h">
+    <div class="lbl">Your pick</div>
+    <h2 id="pick-h">Four answers</h2>
+    <p class="meta">My picks: <b>1A, 2B, 3A, 4A</b>. Tick yours and Save; you can come back and change it.</p>
+    <form class="decide">
+      <fieldset data-q="add" data-kind="one"><legend>1 · How pieces are added</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="add" value="A">A · + Add, then pick a kind (boards 1 and 2) <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="add" value="B">B · Questions in turn ("Does it roll?", "Does it have charges?")</label>
+        <label class="choice one"><input type="radio" name="add" value="C">C · Today's form, its empty parts folded</label>
+      </div></fieldset>
+      <fieldset data-q="start" data-kind="one"><legend>2 · What a new item can start from</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="start" value="A">A · Nothing, or a weapon or armor</label>
+        <label class="choice one"><input type="radio" name="start" value="B">B · Those, or a copy of an item (board 3) <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="start" value="C">C · Always nothing, as today</label>
+      </div></fieldset>
+      <fieldset data-q="dice" data-kind="one"><legend>3 · Dice</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="dice" value="A">A · Pickers, and typing fills them <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="dice" value="B">B · Pickers only</label>
+      </div></fieldset>
+      <fieldset data-q="away" data-kind="one"><legend>4 · Giving when the player's sheet can't be reached</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="away" value="A">A · The card waits until they can take it <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="away" value="B">B · askdnd says to add it by hand on D&amp;D Beyond</label>
+      </div></fieldset>
+      <fieldset><legend>Your notes</legend><textarea name="notes" aria-label="Your notes" placeholder="Anything to change, an order, a question"></textarea></fieldset>
+      <div class="save-row"><button type="submit">Save</button><span class="saved" role="status">Loading…</span></div>
+    </form>
+  </section>
+</div>
+
+<style>
+.pick { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide { display: grid; gap: 16px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.decide legend { font-weight: 600; color: var(--strong); padding: 0; margin-bottom: 8px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 14px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; color: var(--text); }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.choice:has(input:checked) { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.choice:has(input:checked)::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--surface-2); }
+.choice:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+.choice .mine-tag { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.decide textarea { width: 100%; min-height: 84px; box-sizing: border-box; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font: 400 1rem/1.4 var(--sans); resize: vertical; }
+.save-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.save-row button { background: var(--red-btn); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: 600 .95rem/1 var(--sans); cursor: pointer; }
+.save-row button:disabled { opacity: .6; cursor: default; }
+.saved { color: var(--muted); font-size: .88rem; }
+.saved.ok { color: var(--green); }
+</style>
+<script>
+// Board 2: the roll's pickers write its sentence
+(() => {
+  const p = document.getElementById('rollpiece');
+  if (!p) return;
+  const st = { how: 'save', die: 6, n: 2, kind: 'damage', type: 'force', save: 'Dex', dc: 14, half: 'half', hit: 'char', costs: '1' };
+  const draw = () => {
+    p.querySelectorAll('.chips[data-g]').forEach(g => g.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(String(st[g.dataset.g]) === c.dataset.v))));
+    p.querySelector('[data-out="n"]').textContent = st.n;
+    p.querySelector('[data-out="dc"]').textContent = st.dc;
+    p.querySelectorAll('[data-show]').forEach(r => { r.hidden = !(r.dataset.show === st.how || r.dataset.show === st.kind) || (r.dataset.show === 'damage' && st.kind !== 'damage'); });
+    const dice = `${st.n}d${st.die}`;
+    const what = st.kind === 'damage' ? `${dice} ${st.type === 'more' ? 'acid' : st.type}` : st.kind === 'heal' ? `heals ${dice}` : `${dice} temporary Hit Points`;
+    const how = st.how === 'save' ? ` · ${st.save} save DC ${st.dc}${st.kind === 'damage' ? (st.half === 'half' ? ', half on a success' : ', nothing on a success') : ''}`
+      : st.how === 'attack' ? ` · an attack roll, ${st.hit === 'char' ? "the character's to-hit" : '+7 to hit'}` : '';
+    const cost = st.costs === '0' ? '' : ` · ${st.costs} charge${st.costs === '1' ? '' : 's'}`;
+    p.querySelector('[data-out="say"]').textContent = what + how + cost;
+    p.querySelector('[data-out="avg"]').textContent = 'about ' + Math.round(st.n * (st.die + 1) / 2);
+  };
+  p.addEventListener('click', e => {
+    const c = e.target.closest('.chips[data-g] .chip');
+    if (c) { const g = c.closest('.chips').dataset.g; st[g] = g === 'die' ? +c.dataset.v : c.dataset.v; draw(); return; }
+    const s = e.target.closest('.step');
+    if (s) { const k = s.dataset.step, d = +s.dataset.d; st[k] = k === 'n' ? Math.min(20, Math.max(1, st.n + d)) : Math.min(30, Math.max(5, st.dc + d)); draw(); }
+  });
+  draw();
+})();
+
+// Your pick: saved in this page's own store, where Claude reads it
+(() => {
+  const form = document.querySelector('form.decide');
+  if (!form) return;
+  const said = form.querySelector('.saved'), btn = form.querySelector('button');
+  let db = null;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle('ok', !!ok); };
+  const collect = () => {
+    const out = {};
+    form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+      const picked = [...fs.querySelectorAll('input:checked')].map(i => i.value);
+      out[fs.dataset.q] = fs.dataset.kind === 'one' ? (picked[0] || '') : picked;
+    });
+    return out;
+  };
+  form.addEventListener('change', () => show('Not saved yet'));
+  form.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') show('Not saved yet'); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString();
+    try {
+      await db.collection('answers').doc('pick').set({ answers: collect(), notes: form.querySelector('textarea').value.trim(), at });
+      show('Saved ' + when(at) + ' · Claude reads it from here', true);
+    } catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) { show('Nothing saved yet'); return; }
+      const a = d.data(), ans = a.answers || {};
+      form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+        const v = ans[fs.dataset.q], vs = Array.isArray(v) ? v : [v];
+        fs.querySelectorAll('input').forEach(i => { i.checked = vs.includes(i.value); });
+      });
+      form.querySelector('textarea').value = a.notes || '';
+      show('Saved ' + when(a.at) + ' · change anything and Save again', true);
+    } catch (err) { show('Nothing saved yet'); }
+  })();
+})();
+</script>

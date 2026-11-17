@@ -14,12 +14,12 @@
       {% if items %}
       <ul class="records dm-items">
         {% for i in items %}
-        <li class="record">
+        <li class="record" data-item="{{ i.key }}">
           <div class="record-main"><b><a href="{{ cbase }}/dm/items/{{ i.key }}">{{ i.name }}</a></b>
             <span class="note">{{ i.data.category or "Wondrous Item" }} · {{ (i.data.rarity or "") | lower }}{% if i.data.attunement %} · attunement{% endif %}{% if i.who %} · {{ i.who | join(", ") }} {{ "has" if i.who | length == 1 else "have" }} it{% else %} · no one has it yet{% endif %}</span>
-            {% if i.says %}<span class="note dm-says">{{ i.says | join(" · ") }}</span>{% else %}<span class="note">Nothing set for play yet: its words only.</span>{% endif %}</div>
-          <span class="tag{{ ' ok' if i.who }}">{{ "In play" if i.who else "Ready" }}</span>
-          <a class="btn small" href="{{ cbase }}/dm/items/{{ i.key }}">Open</a>
+            {% if i.says %}<span class="note dm-says">{% for x in i.says %}<span data-say="{{ x.kind }}">{% if x.name %}{{ x.name }}: {% endif %}<span data-said>{{ x.said }}</span></span>{{ " · " if not loop.last }}{% endfor %}</span>{% else %}<span class="note">Nothing set for play yet: its words only.</span>{% endif %}</div>
+          <div class="record-actions"><span class="tag{{ ' ok' if i.who }}">{{ "In play" if i.who else "Ready" }}</span>
+            <a class="btn small" href="{{ cbase }}/dm/items/{{ i.key }}">Open</a></div>
         </li>
         {% endfor %}
       </ul>
