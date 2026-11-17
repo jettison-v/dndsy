@@ -140,6 +140,24 @@ def test_a_folded_filter_column_on_a_phone_is_one_row_with_one_clear(people, ser
     assert not player.errors, player.errors
 
 
+def test_see_alls_count_is_its_links_colour_and_the_bell_sits_on_the_pill(people, server):
+    """Feedback 74 and 75 (Brett, Nov 16): "See all actions 17" had its count grey inside the red link (it was the link's
+    colour as "(17)"), and in the See all panel each row's bell sat above the middle of the Roll or Cast pill beside it."""
+    player = people("player")
+    page = player.open(f"/characters/{server['cole']}/battle")
+    link = page.locator("div.seeall a:has(.count)").first
+    assert link.evaluate("a => getComputedStyle(a.querySelector('.count')).color === getComputedStyle(a).color")
+    page.locator('a[data-panel-url*="/all/"]:visible').first.click()
+    page.locator(".peek.open .ri").first.wait_for()
+    off = page.evaluate("""() => [...document.querySelectorAll('.peek.open .ri')].map(r => {
+        const bell = r.querySelector('.ri-pk.end .pick.remind'), hit = r.querySelector('.ri-hit button, .ri-hit .btn');
+        if (!bell || !hit || !bell.checkVisibility() || !hit.checkVisibility()) return 0;
+        const mid = e => { const b = e.getBoundingClientRect(); return b.top + b.height / 2; };
+        return Math.abs(mid(bell) - mid(hit)); })""")
+    assert off and max(off) <= 3, off
+    assert not player.errors, player.errors
+
+
 def test_a_long_group_of_resources_fits_a_phone(people, server):
     """Oct 31: Eldritch Cannon's rows on one line made Party 647px wide on a 375px phone."""
     player = people("player")

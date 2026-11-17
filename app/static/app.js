@@ -254,6 +254,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const fold = e.target;
     if (fold.matches && fold.matches('details.add-fold') && fold.open) fold.querySelector('textarea')?.focus();
   }, true);
+  // Key moments' Show fewer (feedback 79): folds the rest away again, keeping the list's top in view
+  document.addEventListener('click', e => {
+    const less = e.target.closest('[data-km-less]');
+    const more = less && less.closest('details.km-more');
+    if (!more) return;
+    more.open = false;
+    const list = more.previousElementSibling || more;
+    if (list.getBoundingClientRect().top < 0) list.scrollIntoView({ block: 'start' });
+    more.querySelector('summary').focus({ preventScroll: true });
+  });
   document.addEventListener('click', e => {
     const cancel = e.target.closest('[data-fold-cancel]');
     const fold = cancel && cancel.closest('details.add-fold');

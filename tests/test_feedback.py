@@ -183,6 +183,15 @@ def test_only_the_tabs_that_need_you_have_a_badge(admin, db):
     assert "mcount" not in done and ">1<" in done
 
 
+def test_a_note_you_just_sent_brings_no_second_card(admin, db):
+    """Feedback 78 (Brett, Nov 16): sending a note gives its corner card ("In the queue"), then the next page gave
+    another, "Sent to Claude", for the same note, page after page as notes were sent. A note is already known to the
+    one who sent it."""
+    note(admin, text="The bell is out of line.")
+    assert [c["text"] for c in admin.get("/your-notes/news").json()["cards"]] == []
+    assert admin.get("/your-notes/news").json()["tabs"]["askdnd"] == 0  # (and nothing new to read in it)
+
+
 def test_your_feedback_shows_a_player_their_notes_and_closes_the_loop(admin, player, dm, db, monkeypatch):
     """Brett, Nov 7: a feedback workflow for the players who send it. Your notes › About askdnd lists each sender's own notes and
     where they stand in their words; replies meant for them (from an admin on the queue, or Claude with its key) show

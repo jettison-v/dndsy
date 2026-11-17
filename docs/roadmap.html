@@ -106,7 +106,7 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
 
 <div class="wrap">
   <header class="top">
-    <div class="eyebrow">askdnd · roadmap · updated Nov 15, 2026</div>
+    <div class="eyebrow">askdnd · roadmap · updated Nov 16, 2026</div>
     <h1>askdnd roadmap</h1>
     <p class="lead">One list of everything left to do, in the order it happens, whoever it's waiting on. Yours are marked <span class="chip yours">Yours</span> and say exactly where to click; tick one when it's done (the ticks stay in this browser) and tell me. Everything already done is at the bottom, most recent first.</p>
     <nav class="jump" aria-label="On this page"><a href="#todo">To do</a><a href="#vtt">The VTT</a><a href="#done">Done</a><a href="#documents">Every plan and mockup</a></nav>
@@ -154,7 +154,17 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     </div>
     <div class="sec-head" id="ideas"><div class="eyebrow">To do · when you move one up</div><h2>Ideas from feedback</h2>
       <p class="why">A note sent as <b>An idea</b> lands here with a size (S, M or L), and nothing here is built until you move it up into the list above (Nov 16). Something sent as broken is fixed in the next round instead, and a question is answered in its note.</p></div>
-    <p class="why" data-ideas-empty>None yet.</p>
+    <div class="steps" data-ideas>
+      <div class="step" data-step="idea-72"><span class="n"></span><div class="body"><h3>An easier homebrew item builder (feedback 72)</h3>
+        <p>Your note from DM Tools: making an item shows every option at once. Build it a piece at a time instead (add a roll, add a charge), with more pickers and less typing. First a look at how other tools do it (D&amp;D Beyond's homebrew, Foundry, Roll20) as a baseline, then a mockup before anything is decided.</p></div>
+        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Idea</span><span class="chip eff">L</span></div></div>
+      <div class="step" data-step="idea-76"><span class="n"></span><div class="body"><h3>All items on Battle (feedback 76)</h3>
+        <p>"All items →" sits in the middle of a column and gives little more than the filter in See all. Options: fold items into See all's own list (with its Items filter), or put the column's items as rows in place. A small mockup first.</p></div>
+        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Idea</span><span class="chip eff">S</span></div></div>
+      <div class="step" data-step="idea-77"><span class="n"></span><div class="body"><h3>One filter group shows, not folded (feedback 77)</h3>
+        <p>When a list has only one group of filters (See all's Show only), the Filters fold costs a click and takes more room than the chips themselves. The shared list piece would show a single group open, and fold only when there are several. One change in the design system, so every list follows.</p></div>
+        <div class="tags"><span class="chip claude">Claude</span><span class="chip s-todo">Idea</span><span class="chip eff">S</span></div></div>
+    </div>
   </section>
 
   <section id="vtt">
@@ -207,6 +217,10 @@ footer { color: var(--faint); font-size: .82rem; border-top: 1px solid var(--lin
     <div class="sec-head"><div class="eyebrow">Done</div><h2>Most recent first</h2></div>
     <div class="done-list">
       <div class="day"><span class="d">Nov 16</span><ul>
+        <li><b>Your feedback from the test round</b> (<a href="https://github.com/jettison-v/dndsy/pull/397">PR 397</a>, notes 74, 75, 78, 79 and 80): See all's count in its link's colour, the bell in line with the pill beside it, one "Sent to Claude" card per note, Show fewer under a list of key moments, and a suggested fact's note says Accept. Notes 72, 76 and 77 are under Ideas from feedback; 73, column headings that stay while a list scrolls, comes next on its own.</li>
+        <li><b>The Live pill's chain link</b> (<a href="https://github.com/jettison-v/dndsy/pull/396">PR 396</a>, your pick on <a href="https://claude.ai/artifact/8w3nUi6NDwVeSLBGBaPnUt">The Live Pill</a>): connected is a green link, broken when nothing reaches the sheet; the DM's count says sheets.</li>
+        <li><b>A folded Filters row on a phone</b> (<a href="https://github.com/jettison-v/dndsy/pull/395">PR 395</a>, your iPhone test): one row with one Clear. The heal-apply live run on the Mini's seats, 12 of 12.</li>
+        <li><b>Applying healing throws nobody's dice again</b> (<a href="https://github.com/jettison-v/dndsy/pull/394">PR 394</a>, your test of PR 316): Apply to's Hit Points stay current; the Processor installs in Applications and Recording to Recap says how to open it.</li>
         <li><b>Manage's written rules</b> (<a href="https://github.com/jettison-v/dndsy/pull/393">PR 393</a>): each page's own action at its title's right, a form in a window; one red button a screen; Remove the quiet red link that asks; no code words; every admin page says so; money, dates and session names one way; Documents on the shared list pieces.</li>
         <li><b>One switch on Manage</b> (<a href="https://github.com/jettison-v/dndsy/pull/392">PR 392</a>, your pick 1, drawn on <a href="https://claude.ai/artifact/RBZzVknwiTcXb5UQBzW7ZC">One Switch for Settings</a>): every yes/no setting a switch at its row's right that saves itself; Trophy Case's two-way switch; Accounts' Admin and Feedback columns.</li>
         <li><b>Counts and the Glossary Reader</b> (<a href="https://github.com/jettison-v/dndsy/pull/391">PR 391</a>, your picks 4 and 5): a count only when there's something, World counted; Glossary a Reader as World is.</li>

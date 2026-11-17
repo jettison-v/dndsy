@@ -6,7 +6,7 @@ from datetime import date
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
-from app.models import GameSession, GlossaryTerm, Recap, Status
+from app.models import EventKind, GameSession, GlossaryTerm, Recap, Status, StoryEvent
 
 
 def test_story_search_finds_the_sessions_that_mention_every_word(people, server, browser_db):
@@ -152,6 +152,31 @@ def test_add_what_the_party_learned_is_one_fold_that_opens_in_place(people, serv
     page.set_viewport_size({"width": 375, "height": 800})  # open on a phone, it stays in its column
     fold.locator("summary").click()
     assert fold.evaluate("d => d.querySelector('form').scrollWidth <= d.querySelector('form').clientWidth")
+    assert player.errors == []
+
+
+def test_show_fewer_folds_the_other_key_moments_back(people, server, browser_db):
+    """Feedback 79 (Brett, Nov 16): "Show the other N key moments" opened them but nothing closed them again. Show fewer,
+    at the foot of the rest, folds them back and leaves the fold's own control in focus."""
+    engine = create_engine(browser_db[0])
+    with Session(engine) as db:
+        s = GameSession(campaign_id=server["campaign"], number=98, played_on=date(2099, 1, 2), source="notes", title="The Climb")
+        db.add(s)
+        db.flush()
+        db.add(Recap(session_id=s.id, version=1, body="Cole and Trah climbed.", author="brett", status=Status.PUBLISHED))
+        for n in range(6):
+            db.add(StoryEvent(session_id=s.id, position=n, kind=EventKind.EVENT, text=f"Step {n} up the cliff.", status=Status.PUBLISHED, major=n < 2))  # (two major: the rest fold)
+        db.commit()
+    engine.dispose()
+
+    player = people("player")
+    page = player.open("/c/main/campaign")
+    more = page.locator("#t-previously details.km-more").first
+    more.locator("summary").click()
+    assert more.evaluate("d => d.open")
+    more.locator("[data-km-less]").click()
+    assert not more.evaluate("d => d.open")
+    assert page.evaluate("document.activeElement.matches('details.km-more > summary')")
     assert player.errors == []
 
 

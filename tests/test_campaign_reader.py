@@ -122,7 +122,7 @@ def test_key_moments_one_look_and_a_quests_fold_answers_in_place(player, db, mon
     card = page[page.index(f'id="quest-{quest.id}"'):page.index('id="t-relationships"')]
     first = card[card.index("data-moments"):card.index("</ol>", card.index("data-moments"))]
     assert first.count('class="ev ') == 3 and "Step 5 on the way." in first and "Step 2 on the way." not in first  # the newest 3
-    assert "Show the other 2 key moments" in card
+    assert "Show the other 2 key moments" in card and "data-km-less" in card  # (and Show fewer folds them back: feedback 79)
     assert '<span class="km-slot"><span class="kind event">' in first and " · Session 5 · Feb 5</span>" in first  # the kind and the date, one slot
     names = " ".join(re.findall(r"<small>(.*?)</small>", first))
     assert f"open={lillippi(db).id}\"" in names and f"open={quest.id}\"" not in names  # the names under it, not its own

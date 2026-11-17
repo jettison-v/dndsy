@@ -192,6 +192,7 @@ def _store(db: Session, note: dict, staging: bool = False) -> Feedback:
     fb = Feedback(user_id=me.id if me else None, sender=sender[:300], text=note["text"][:MAX_TEXT], kind=kind, url=str(note.get("url") or "")[:1000],
                   status="new" if admin else "review",  # (the table's notes wait for an admin's approval)
                   context=context, html=str(note.get("html") or "")[:MAX_HTML], shot_key=keys.get("shot"), pasted_key=keys.get("pasted"))
+    fb.seen = fb.told = marker(fb)  # (its sender knows what they just did: no "Sent to Claude" card on their next page; feedback 78)
     db.add(fb)
     db.commit()
     return fb

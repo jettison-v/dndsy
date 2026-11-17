@@ -137,7 +137,7 @@
     {% endfor %}
 
     {{ add_fold("/campaign/" ~ e.id ~ "/facts", e.name, hx, dm=is_dm,
-                note="You're the DM, so it goes straight on." if is_dm else ("Merge it below to show it." if can_moderate else "The DM or a reviewer adds it.")) }}
+                note="You're the DM, so it goes straight on." if is_dm else ("Then press Accept on it below to show it." if can_moderate else "The DM or a reviewer adds it.")) }}
 
     {% if done_facts %}
     <details class="done"><summary>Done ({{ done_facts | length }})</summary>
