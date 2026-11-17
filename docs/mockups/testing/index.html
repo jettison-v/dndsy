@@ -146,6 +146,29 @@ button.btn, button.chip, button.step { cursor: pointer; }
 .loop > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: grid; gap: 6px; align-content: start; font-size: .84rem; }
 .loop .n { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .loop .who { font-size: .76rem; color: var(--faint); }
+/* Board 1, from the ground up: the Reader */
+.rd { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); background: var(--surface); border: 1px solid var(--line); border-radius: 0 0 12px 12px; overflow: hidden; }
+.rd-list { border-right: 1px solid var(--line); padding: 12px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.rd-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; padding-bottom: 6px; }
+.rd-ready b { display: block; font-size: 1rem; } .rd-ready .sub { font-size: .8rem; }
+.rd-filters { padding-bottom: 6px; } .rd-filters small { color: var(--muted); font-weight: 600; margin-left: 3px; }
+.rd-g { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 10px 6px 4px; }
+.rd-i { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; align-items: center; padding: 8px; border-radius: 8px; font-size: .84rem; }
+.rd-i .t b { display: block; font-weight: 600; color: var(--text); } .rd-i .t span { display: block; color: var(--muted); font-size: .76rem; }
+.rd-i.on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--blue); }
+.rd-i .dot { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--blue); }
+.rd-i.again .dot { border-color: var(--amber); background: var(--amber); }
+.rd-i.wait .dot { border-color: var(--faint); }
+.rd-art { padding: 16px 18px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.rd-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rd-do { display: grid; gap: 4px; font-size: .88rem; } .rd-do > b { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.rd-from { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; font-size: .84rem; }
+.rd-fh { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rd-pic { height: 64px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line-soft); padding: 10px; display: grid; gap: 6px; align-content: start; }
+.rd-pic i { display: block; height: 7px; border-radius: 3px; background: var(--surface-3); }
+.rd-reply { color: var(--text); } .rd-reply b { color: var(--violet); }
+.rd-hist { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .8rem; } .rd-hist .arrow { color: var(--faint); }
+@media (max-width: 900px) { .rd { grid-template-columns: minmax(0, 1fr); } .rd-list { border-right: 0; border-bottom: 1px solid var(--line); } }
 @media (max-width: 900px) { .loop { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 @media (max-width: 700px) { .shell { grid-template-columns: minmax(0, 1fr); } .shell nav { display: none; } .loop { grid-template-columns: minmax(0, 1fr); } .step-r { grid-template-columns: auto minmax(0, 1fr) auto; } .step-r .as { display: none; } }
 </style>
@@ -154,42 +177,74 @@ button.btn, button.chip, button.step { cursor: pointer; }
   <header class="top">
     <div class="lbl">askdnd for testing · Feedback, extended</div>
     <h1>Testing inside askdnd</h1>
-    <p class="lead">Your idea (Nov 16): a queue of things to test, each a link straight to its page, as the right person through View as, its instructions staying on screen while you try it, and a screenshot with your comment when something fails. Today the steps live on a claude.ai page with no pictures, and a failure's note has none of the page's context. Here, a failed step <b>is</b> a feedback note, so there's one queue for me and one loop for you.</p>
+    <p class="lead">Your idea (Nov 16): a queue of things to test, each a link straight to its page, as the right person through View as, its instructions staying on screen while you try it, and a screenshot with your comment when something fails. Today the steps live on a claude.ai page with no pictures, and a failure's note has none of the page's context. Here, a failed step <b>is</b> a feedback note, and every broken note comes with its check, so there's one queue for me and one loop for you. Round 2 (your look, Nov 16): Board 1 redrawn from the ground up, a check for every note (4b), and the kit for your next project (5).</p>
     <div class="where">
       <div><b>Where it lives</b>Beside Feedback, in Manage › askdnd (question 1), with its count on the Manage menu. The step card rides along on every page while a run is open.</div>
-      <div><b>Who uses it</b>You (admins). I add the steps from my side, as I answer notes; you mark them. Question 5: your own test accounts too, for the iPhone steps.</div>
-      <div><b>Five decisions</b>Where the queue lives, how the card sits, what Fail opens, how a fixed step comes back, and who sees it. My picks at the bottom.</div>
+      <div><b>Who uses it</b>You (admins): I add the checks from my side, one with every note I fix; you mark them. A player confirms the fix to their own note (question 6). Question 5: your own test accounts too, for the iPhone checks.</div>
+      <div><b>Six decisions</b>How the queue looks, how the card sits, what Fail opens, how a fixed check comes back, who sees it, and who confirms a player's fix. My picks at the bottom.</div>
     </div>
   </header>
 
   <!-- Board 1 -->
-  <section class="board">
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 1 · Testing, from the ground up</div>
+      <h2>A Reader: the checks on the left, the one you're on, with its whole story, on the right</h2>
+      <p style="max-width:88ch">The page answers what you need when you sit down to test: <b>what's ready and how long it takes</b>, <b>what you'll need open</b>, and for each check <b>why it exists</b> (the note or change it came from, with its picture and my reply), so you can judge it without opening anything else. It's the Reader you already know from World and Notes you sent: pick a check on the left; it opens on the right with <b>Go</b>, <b>Passed</b> and <b>Failed…</b>.</p>
+    </div>
     <div class="stage">
       <div class="mbar2"><span class="logo"></span><b>The Adventure Begins</b><span>Campaign</span><span>Table ↗</span><span class="sp"></span><span>DM Tools</span><span class="door">Manage · 6</span></div>
-      <div class="shell" aria-label="Manage › askdnd › Testing">
-        <nav><span class="grp">askdnd</span><span>Accounts</span><span>Features</span><span>Feedback <em>2</em></span><span class="on">Testing <em>6</em></span><span>Usage</span><span>Backups</span><span>Design system</span></nav>
-        <div class="main">
-          <div class="btns" style="justify-content:space-between"><b style="font-size:1.05rem">Testing</b><span class="btn primary small">▶ Start: Character pages</span></div>
-          <div class="tbar"><span class="on">To test <small>6</small></span><span>Try again <small>1</small></span><span>Claude ran <small>9</small></span><span>Passed <small>31</small></span></div>
-          <div class="grp-h"><b>Character pages</b><span class="sub">your account · a laptop · 3 to test</span></div>
-          <div class="step-r"><span class="n">1</span><span class="tx"><b>Battle: See all actions, then open it</b><span>The number is red like the link; each bell sits level with its pill</span></span><span class="as"><span class="av me">Y</span>You</span><span class="btn small">Go</span></div>
-          <div class="step-r"><span class="n">2</span><span class="tx"><b>Sheet › Inventory: scroll the list</b><span>Headings stay under the tabs, a lighter band</span></span><span class="as"><span class="av c">C</span>As Cole's player</span><span class="btn small">Go</span></div>
-          <div class="step-r"><span class="n">3</span><span class="tx"><b>Change forms: scroll the forms</b><span>Headings stay at the window's top</span></span><span class="as"><span class="av c">C</span>As Cole's player</span><span class="btn small">Go</span></div>
-          <div class="grp-h" style="margin-top:6px"><b>Campaign</b><span class="sub">your account · 1 to try again</span></div>
-          <div class="step-r"><span class="n">4</span><span class="tx"><b>A quest: Show the other key moments, then Show fewer</b><span>Folds back, no jump</span></span><span class="st again">Fixed · try again</span><span class="btn small">Go</span></div>
-          <div class="grp-h" style="margin-top:6px"><b>Several seats at once</b><span class="sub">Claude runs these on the Mac Mini</span></div>
-          <div class="step-r"><span class="n">5</span><span class="tx"><b>Heal applied on the real seats</b><span>12 of 12, Nov 16 · 6:40 PM</span></span><span class="st claude">Claude ran it</span><span class="btn small link">How</span></div>
+      <div class="rd" aria-label="Manage › askdnd › Testing, a Reader">
+        <div class="rd-list">
+          <div class="rd-top">
+            <div class="rd-ready"><b>6 ready for you</b><span class="sub">about 12 minutes · 3 need View as</span></div>
+            <span class="btn primary small">▶ Start round</span>
+          </div>
+          <div class="chips rd-filters"><span class="chip" aria-pressed="true">Ready <small>6</small></span><span class="chip">Try again <small>1</small></span><span class="chip">With a player <small>2</small></span><span class="chip">Claude ran <small>9</small></span><span class="chip">Done</span></div>
+          <div class="rd-g">On your laptop, as you</div>
+          <div class="rd-i"><span class="dot"></span><span class="t"><b>See all's count and bell</b><span>Battle · from your note 74</span></span><span class="mini">1 min</span></div>
+          <div class="rd-g">Through View as · Cole's player</div>
+          <div class="rd-i on"><span class="dot"></span><span class="t"><b>Column headings stay while a list scrolls</b><span>Sheet › Inventory · from your note 73</span></span><span class="mini">2 min</span></div>
+          <div class="rd-i"><span class="dot"></span><span class="t"><b>Headings in Change forms</b><span>Wild Shape · same fix</span></span><span class="mini">1 min</span></div>
+          <div class="rd-i again"><span class="dot"></span><span class="t"><b>Show fewer under key moments</b><span>A quest · fixed since it failed</span></span><span class="st again">Try again</span></div>
+          <div class="rd-g">On your iPhone</div>
+          <div class="rd-i"><span class="dot"></span><span class="t"><b>The Filters row, one Clear</b><span>Spell Book · from your iPhone test</span></span><span class="mini">2 min</span></div>
+          <div class="rd-g">With a player</div>
+          <div class="rd-i wait"><span class="dot"></span><span class="t"><b>Rolls panel stays open</b><span>From a player's note 85 · asked them</span></span><span class="st">Asked them</span></div>
+        </div>
+        <div class="rd-art">
+          <div class="rd-head"><span class="lbl" style="color:var(--blue)">Check · Sheet</span><span class="as"><span class="av c">C</span>Through View as · Cole's player</span></div>
+          <h3 style="font:600 1.25rem/1.25 var(--serif)">Column headings stay while a list scrolls</h3>
+          <div class="btns"><span class="btn primary small">Go: Cole's Sheet › Inventory ↗</span><span class="sub">turns on View as for Cole's player first</span></div>
+          <div class="rd-do"><b>Do</b><ol><li>Scroll down the Inventory list.</li><li>Then Wild Shape › Change forms, Just looking, and scroll the forms.</li></ol></div>
+          <div class="rd-do"><b>You should see</b><p>Item, Kind, Uses… stay under the tabs as a lighter band, rows sliding under them; in Change forms, at the window's top. Narrow the window until the list goes compact: no headings there.</p></div>
+          <div class="rd-from">
+            <div class="rd-fh"><span class="tag warn">Broken</span><b>Your note 73</b><span class="sub">· Nov 16 · Sheet</span></div>
+            <div class="rd-pic" aria-label="The note's picture"><i></i><i style="width:70%"></i><i></i><i style="width:60%"></i></div>
+            <p class="sub">"The header bar does not scroll with the page…"</p>
+            <p class="rd-reply"><b>Claude:</b> Fixed, carefully as you asked: every list's headings now stay at the top…</p>
+          </div>
+          <div class="rd-hist"><span class="st fail">Failed · a sliver above</span><span class="arrow">→</span><span class="st">Fixed · PR 399</span><span class="arrow">→</span><span class="st again">Live on askdnd.ai</span></div>
+          <div class="btns" style="margin-top:4px"><button class="btn pass" type="button">✓ Passed</button><button class="btn fail" type="button">✗ Failed…</button><button class="btn link" type="button">Skip</button><span style="flex:1"></span><span class="sub">2 of 6</span><button class="btn small" type="button">Next ›</button></div>
         </div>
       </div>
-      <p class="cap">Groups by what you need open, as Test Steps are now. Each step says whose eyes it's through: you, or someone through View as.</p>
+      <p class="cap">Left: what's ready, grouped by what you need open, each with where it came from and about how long. Right: the check you're on, its note or change, its picture and my reply, and what happened to it so far.</p>
     </div>
-    <div class="say">
-      <div class="lbl">Board 1 · your queue</div>
-      <h2>Your own queue, a Go on every step</h2>
-      <p><b>Testing</b> sits beside Feedback in Manage › askdnd, with its count on the Manage menu (as Feedback's is). Tabs say where each step stands: <b>To test</b>, <b>Try again</b> (fixed since it failed), <b>Claude ran</b> (my Mac Mini runs, with what they found) and <b>Passed</b>.</p>
-      <p><b>Go</b> opens the step's own page. When a step is through someone else's eyes ("As Cole's player"), Go turns on View as for that person first, so you see their Battle, their sheet, their notes. <b>▶ Start</b> runs a whole group, step after step.</p>
-      <p class="meta">View as only shows: it changes nothing for that person. So a step where someone else <i>acts</i> (Take it as Trah's player, two seats in one fight) stays in my Mac Mini runs; you see their outcome under Claude ran.</p>
-      <div class="cost"><span>Build: S · the page, its tabs, Go with View as</span></div>
+    <div class="split">
+      <div class="say">
+        <h3>What's new against the first draft</h3>
+        <ul>
+          <li><b>The top says how long</b> (each check's minutes, roughly) and what it needs (View as, the iPhone), so you can pick a round that fits the time you have.</li>
+          <li><b>Every check carries its story</b>: the note it came from with its picture, my reply, and its history (failed, fixed in a PR, live). No opening Feedback or a PR to know what to look for.</li>
+          <li><b>Pass or fail right here</b> for a quick look; <b>▶ Start round</b> or Go hands you to the page with the step card (Board 2) for the ones you try on the page.</li>
+          <li><b>With a player</b>: checks for a player's note, asked of them (Board 4b); you see when they answer.</li>
+        </ul>
+      </div>
+      <div class="say">
+        <h3>Where it lives</h3>
+        <p>Manage › askdnd › Testing, beside Feedback, its count on the Manage menu. On a phone the Reader is one column (the list, then the check), as World is.</p>
+        <div class="cost"><span>Build: M for the Reader, Go with View as, and minutes (the first draft's S grows: the story panel reads the note and its PR)</span></div>
+      </div>
     </div>
   </section>
 
@@ -262,15 +317,55 @@ button.btn, button.chip, button.step { cursor: pointer; }
     </div>
   </section>
 
+  <!-- Board 4b -->
+  <section class="board">
+    <div class="stage">
+      <div class="fbwin" aria-label="Notes you sent, a player's note, fixed">
+        <div class="hd" style="display:flex;justify-content:space-between"><b>The rolls panel closes by itself</b><span class="st again">Fixed · try it</span></div>
+        <p class="sub">You sent this Nov 15 · Something's broken</p>
+        <p class="rd-reply"><b>Claude:</b> Fixed: the Table rolls panel now stays open when a new roll arrives. It's on askdnd.ai now.</p>
+        <div class="rd-do"><b>Does it work now?</b><p>Open Table rolls on Battle, then roll something.</p></div>
+        <div class="btns"><button class="btn pass small" type="button">Yes, it's fixed</button><button class="btn small" type="button">Still broken…</button><span class="sub">Still broken adds to your note, with a picture</span></div>
+      </div>
+      <p class="cap">On the player's Notes you sent, and once as a corner card when the fix goes live.</p>
+    </div>
+    <div class="say">
+      <div class="lbl">Board 4b · every note gets its check</div>
+      <h2>A broken note comes with its check, and whoever saw it confirms the fix</h2>
+      <p>When I take up a <b>Something's broken</b> note, I write its check with it (what to do, what you should see), so every fix comes back to be confirmed, never just closed. An <b>idea</b> that's built gets one too.</p>
+      <p><b>Your notes</b> land in your Testing queue, as on Board 1. <b>A player's note</b> asks them first: <i>Does it work now?</i> on Notes you sent. Yes closes it (they see Built); Still broken opens it again with their picture. It's in your queue under <b>With a player</b>, so you see the answer, and it comes to you after three days without one (question 6).</p>
+      <div class="cost"><span>Build: S · the check made with the note, Does it work now? on Notes you sent</span></div>
+    </div>
+  </section>
+
+  <!-- Board 5 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 5 · for your next project</div>
+      <h2>Feedback, Testing, View as and the Mac Mini, as one kit to take along</h2>
+      <p style="max-width:88ch">These are how you and I work, more than they are askdnd: you notice something, send it with a picture, I fix it, the check comes back, you confirm. They're built so they can move to another project with little change:</p>
+    </div>
+    <div class="loop">
+      <div><span class="n">Feedback</span>Notes with pictures, kinds, a thread, Notes you sent<span class="who">its own tables and pages; the \ key</span></div>
+      <div><span class="n">Testing</span>Checks, rounds, the step card, does it work now?<span class="who">its own tables; reads Feedback</span></div>
+      <div><span class="n">View as</span>See any page through someone's eyes, changing nothing for them<span class="who">one rule for what it hides</span></div>
+      <div><span class="n">The Mac Mini</span>Runs with several real seats; nightly checks; reports to Sentry<span class="who">scripts, kept apart from the app</span></div>
+    </div>
+    <div class="say">
+      <p class="meta" style="max-width:88ch">What makes them portable: each keeps to its own folder and tables, and talks to the rest of the app through one small adapter (who the people are, how to switch to one, what the pages are). My command line (<code>feedback.py</code>, and a <code>testing</code> part of it) uses the same keys. When it's built, <b>docs/toolkit.md</b> says how to bring the kit into a new project, step by step, as the setup log does for hosting and domains.</p>
+      <div class="cost"><span>Build: part of each slice (the boundaries are how it's built, not extra work) · the guide: S</span></div>
+    </div>
+  </section>
+
   <section class="pick" aria-labelledby="pick-h">
     <div class="lbl">Your pick</div>
-    <h2 id="pick-h">Five answers</h2>
-    <p class="meta">My picks: <b>1A, 2A, 3A, 4A, 5B</b>. Tick yours and Save; you can come back and change it.</p>
+    <h2 id="pick-h">Six answers</h2>
+    <p class="meta">My picks: <b>1A, 2A, 3A, 4A, 5B, 6C</b>. Tick yours and Save; you can come back and change it.</p>
     <form class="decide">
-      <fieldset data-q="where" data-kind="one"><legend>1 · Where the queue lives</legend><div class="choices">
-        <label class="choice one"><input type="radio" name="where" value="A">A · Manage › askdnd › Testing, beside Feedback <span class="mine-tag">My pick</span></label>
-        <label class="choice one"><input type="radio" name="where" value="B">B · A tab on the Feedback page</label>
-        <label class="choice one"><input type="radio" name="where" value="C">C · A tab on Notes you sent</label>
+      <fieldset data-q="where" data-kind="one"><legend>1 · How the queue looks</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="where" value="A">A · A Reader beside Feedback (Board 1) <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="where" value="B">B · A list beside Feedback (the first draft)</label>
+        <label class="choice one"><input type="radio" name="where" value="C">C · A tab on the Feedback page</label>
       </div></fieldset>
       <fieldset data-q="card" data-kind="one"><legend>2 · The step card</legend><div class="choices">
         <label class="choice one"><input type="radio" name="card" value="A">A · A card at the bottom right, folds to a pill <span class="mine-tag">My pick</span></label>
@@ -288,6 +383,11 @@ button.btn, button.chip, button.step { cursor: pointer; }
       <fieldset data-q="who" data-kind="one"><legend>5 · Who sees the queue and the card</legend><div class="choices">
         <label class="choice one"><input type="radio" name="who" value="A">A · Admins only</label>
         <label class="choice one"><input type="radio" name="who" value="B">B · Admins, and your test accounts (for the iPhone steps) <span class="mine-tag">My pick</span></label>
+      </div></fieldset>
+      <fieldset data-q="player" data-kind="one"><legend>6 · Who confirms a fix from a player's note</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="player" value="A">A · You, in your queue</label>
+        <label class="choice one"><input type="radio" name="player" value="B">B · The player, on Notes you sent</label>
+        <label class="choice one"><input type="radio" name="player" value="C">C · The player first; yours after three days without an answer <span class="mine-tag">My pick</span></label>
       </div></fieldset>
       <fieldset><legend>Your notes</legend><textarea name="notes" aria-label="Your notes" placeholder="Anything to change, an order, a question"></textarea></fieldset>
       <div class="save-row"><button type="submit">Save</button><span class="saved" role="status">Loading…</span></div>
