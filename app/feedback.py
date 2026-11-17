@@ -365,6 +365,9 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
         if choice and picked is None:
             raise HTTPException(400, "That isn't one of the answers.")
         if not answer.strip() and not added and picked is None:
+            if request.query_params.get("back") == "testing":  # (For you: back to the question, saying what's missing)
+                request.session["toast"] = web.notice("Pick an answer or write one first.", "warn")
+                return RedirectResponse(f"/manage/testing?ask={fb.id}", status_code=303)
             raise HTTPException(400, "Write your answer first.")
         said_text = (f"Picked {'ABCD'[picked]}: {choices[picked]['label']}." if picked is not None else "") + (" " if picked is not None and answer.strip() else "") + answer.strip()
         fb.thread = [*(fb.thread or []), {"who": "you", "text": said_text[:MAX_TEXT], "at": datetime.now(UTC).isoformat(),
@@ -447,7 +450,8 @@ def added_picture(request: Request, feedback_id: int, pic_id: int, db: Session =
     if denied:
         return denied
     fb = db.get(Feedback, feedback_id) or _missing()
-    if kept_from(db, fb, user["email"]):
+    claudes = {c.get("pic") for m in fb.thread or [] if m.get("who") == "claude" for c in (m.get("ask") or {}).get("choices") or []}
+    if pic_id not in claudes and kept_from(db, fb, user["email"]):  # (Claude's own drawings for a pick are never the sender's)
         raise HTTPException(404)
     return picture_of(db, fb, pic_id)
 

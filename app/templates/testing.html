@@ -58,7 +58,7 @@
       </div>
       <div class="reader-rows">
         {% for key, g in groups.items() %}
-        <div class="ts-group" data-group="{{ g.area or '' }}"><span>{{ g.title }}</span>{% if show == "ready" and g.area and groups | length > 1 %}<form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ g.area }}"><button class="btn link small" type="submit" data-round-area="{{ g.area }}">▶ Just this area</button></form>{% endif %}</div>
+        <div class="ts-group" data-group="{{ g.area or '' }}"><span>{{ g.title }}</span>{% if show == "ready" and g.area and groups | length > 1 and g.rows | rejectattr("ask") | list %}<form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ g.area }}"><button class="btn link small" type="submit" data-round-area="{{ g.area }}">▶ Just this area</button></form>{% endif %}</div>
         {% for c in g.rows %}
         {% if c.ask %}
         <a class="rd-item ts-row ts-ask{{ ' sel' if asked and asked.id == c.id }}" href="?ask={{ c.id }}" data-ask="{{ c.id }}"{% if asked and asked.id == c.id %} aria-current="true"{% endif %}>

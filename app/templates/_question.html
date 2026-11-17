@@ -14,10 +14,10 @@
       <div class="qa-pic-top"><b>{{ "ABCD"[loop.index0] }} · {{ ch.label }}</b>{% if ask.mine == loop.index0 %}<span class="tag draft">Claude's pick</span>{% endif %}</div>
       {% if ch.pic %}<img class="fb-pic" src="/manage/feedback/{{ f.id }}/pic/{{ ch.pic }}" alt="{{ ch.label }}" loading="lazy">{% endif %}
       {% if ch.detail %}<figcaption class="note">{{ ch.detail }}</figcaption>{% endif %}
-      <button class="btn small{{ ' primary' if ask.mine == loop.index0 }}" type="submit" name="choice" value="{{ loop.index0 }}" data-answer-choice="{{ loop.index0 }}">Pick {{ "ABCD"[loop.index0] }}</button>
+      <button class="btn small{{ ' primary' if ask.mine == loop.index0 }}" type="submit" name="choice" value="{{ loop.index0 }}" data-answer-choice="{{ loop.index0 }}" formnovalidate>Pick {{ "ABCD"[loop.index0] }}</button>
     </figure>{% endfor %}</div>
   <details class="fold qa-neither"><summary>Neither: say why…</summary>
-    <label class="field"><span>What you'd want instead</span><textarea name="answer" rows="2"></textarea></label>
+    <label class="field"><span>What you'd want instead</span><textarea name="answer" rows="2" required></textarea></label>
     {{ pics_field() }}
     <button class="btn small" type="submit" data-answer>Send</button></details>
   {% else %}

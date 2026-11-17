@@ -88,3 +88,27 @@ def test_a_corner_card_says_claude_asked_once(admin, player, db):
     assert any(c["href"] == "/manage/testing" for c in cards)
     assert not any(c["href"] == "/manage/testing" for c in admin.get("/your-notes/news").json()["cards"])  # (once)
     assert not any(c["href"] == "/manage/testing" for c in player.get("/your-notes/news").json()["cards"])
+
+
+def test_claudes_pictures_show_to_the_dm_and_an_empty_answer_says_what_s_missing(admin, player, db):
+    """A standing rule kept (CLAUDE.md › Visibility; the outside review's C9): a player's note's own pictures stay kept
+    from an admin who is their DM, but Claude's drawings for a pick on it are Claude's, never the player's, so the DM
+    sees them. An answer sent empty from For you comes back to the question, saying what's missing."""
+    from app import access
+    from tests.roles import set_role
+
+    set_role(db, "player@example.com", "player")
+    admin.post("/manage/accounts/feedback", data={"email": "player@example.com", "on": "1"})
+    access.invalidate()
+    fb = note(player, text="The Rest button wraps.", pasted=png()).json()["id"]
+    admin.post(f"/manage/feedback/{fb}", data={"to": "new"})
+    ask(admin, fb, choices=[{"label": "Wrap it", "pic": png()}, {"label": "Shorten it", "pic": png()}])
+    pic = db.get(Feedback, fb).thread[-1]["ask"]["choices"][0]["pic"]
+    set_role(db, "admin@example.com", "dm")  # the admin becomes this campaign's DM
+    access.invalidate()
+    assert admin.get(f"/manage/feedback/{fb}/pasted").status_code == 404 and admin.get(f"/manage/feedback/{fb}/pic/{pic}").status_code == 200
+
+    r = admin.post(f"/manage/feedback/{fb}?back=testing", data={"to": "answer"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == f"/manage/testing?ask={fb}"
+    db.expire_all()
+    assert db.get(Feedback, fb).status == "question"
