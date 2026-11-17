@@ -119,6 +119,27 @@ def test_pages_hold_together_in_safari_on_a_phone_and_a_tablet(webkit, playwrigh
     assert not found, "\n".join(found)
 
 
+def test_a_folded_filter_column_on_a_phone_is_one_row_with_one_clear(people, server):
+    """Brett's iPhone test, Nov 16: in the Spell Book's folded Filters, "Filters" sat out of line with Clear, and opened
+    it showed a second Clear by the yellow FILTERS heading. One row (Filters, its count, the arrow, Clear), one Clear."""
+    player = people("player")
+    player.page.set_viewport_size({"width": 375, "height": 812})
+    page = player.open(f"/characters/{server['cole']}/battle")
+    page.locator(".spellbook-btn").first.click()
+    fold = page.locator(".ls-fold").first
+    fold.locator("> summary").click()
+    fold.locator(".ls-chip").first.click()
+    clears = page.evaluate("() => [...document.querySelectorAll('.ls-fold [data-ls-clear]')].filter(e => e.checkVisibility()).length")
+    assert clears == 1
+    row = page.evaluate("""() => { const s = document.querySelector('.ls-fold > summary');
+      const mid = e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
+      return Math.abs(mid(s.firstChild.parentElement.querySelector('.ls-above-chev')) - mid(s.querySelector('[data-ls-clear]'))); }""")
+    assert row < 4  # (Filters' arrow and Clear on one line, centred together)
+    found = problems(page, "The Spell Book's folded filters at 375px")
+    assert not found, "\n".join(found)
+    assert not player.errors, player.errors
+
+
 def test_a_long_group_of_resources_fits_a_phone(people, server):
     """Oct 31: Eldritch Cannon's rows on one line made Party 647px wide on a 375px phone."""
     player = people("player")

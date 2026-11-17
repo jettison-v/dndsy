@@ -2342,7 +2342,7 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
 .ls-searching { margin: 0; padding: 6px 10px; border-radius: var(--r-md); background: var(--amber-soft); color: var(--text); font-size: var(--fs-sm); }
 .ls-is-searching .ls-filters { opacity: .45; pointer-events: none; }
 .ls-filters-head .ls-clear { margin-left: auto; flex: none; }  /* Clear by the Filters heading (feedback 67) */
-.ls-fold > summary .ls-clear { float: right; }
+.ls-fold > summary .ls-clear { margin-left: auto; }
 /* Filters above a list (filters_above; Brett chose A, Nov 16, docs/mockups/filters-above/): a control like Sort's
    dropdown, what's on as blue pills beside it (two, then "+1"), Clear at the end; it wraps to two lines at most and never
    grows past its column (min-width: 0 all the way down: Nov 16, three kinds on pushed World's column wider) */
@@ -2387,7 +2387,10 @@ body:has(.peek.open:not(.modal)) .cards { right: calc(var(--panel-w) + 14px); }
    into one Filters line until opened (app.js init uses the same width; the UI pass, 2026-11-02) */
 @media (max-width: 900px) {
   .ls-layout { grid-template-columns: 1fr; }
-  .ls-fold > summary { display: block; cursor: pointer; font-weight: 600; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-md); }
+  .ls-fold > summary { display: flex; align-items: center; gap: var(--sp-2); list-style: none; cursor: pointer; font-weight: 600; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-md); }
+  .ls-fold > summary::-webkit-details-marker { display: none; }
+  .ls-fold[open] > summary .ls-above-chev { transform: rotate(180deg); }
+  .ls-fold .ls-filters-head { display: none; }  /* (the folded row is its heading, with the one Clear: Brett's iPhone test, Nov 16) */
   .ls-fold[open] > summary { margin-bottom: 10px; }
   .ls-filters { position: static; }
 }
