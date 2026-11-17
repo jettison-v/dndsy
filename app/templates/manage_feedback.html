@@ -22,6 +22,7 @@
   </div>
 
   {% set base_q = "tab=" ~ tab ~ "&kind=" ~ kind %}
+  {% if not items %}{{ empty_state("Nothing new. Press \\ on any page to send a note." if tab == "new" else "Nothing here.") }}{% else %}
   <div class="reader rows fb-reader" id="fb-reader">
     <aside class="reader-nav" aria-label="Notes">
       <div class="reader-rows">
@@ -31,7 +32,7 @@
           {{ state_word(w[0], w[1], ' data-state="' ~ f.status ~ '"') }}
           <span class="nt-sum">{% if f.kind in kinds %}<span class="tag" data-kind="{{ f.kind }}">{{ kinds[f.kind][1] }}</span>{% elif f.status not in ("done", "deleted") %}<span class="tag" data-kind="none">Not sorted</span>{% endif %}{% if (f.context or {}).staging %} <span class="tag staging-tag">Staging</span>{% endif %} {{ "you" if f.user_id and f.user_id == me_id else f.sender.split(" (")[0] }} · {{ f.created_at | ago }}</span>
         </a>
-        {% else %}<p class="note">{{ "Nothing new. Press \\ on any page to send a note." if tab == "new" else "Nothing here." }}</p>{% endfor %}
+        {% endfor %}
       </div>
     </aside>
     <div class="notes-read" id="fb-article">
@@ -107,10 +108,9 @@
         </form>
         {% endif %}
       </article>
-      {% else %}
-      <article class="reader-article">{{ empty_state("Pick a note to read it here.") }}</article>
       {% endif %}
     </div>
   </div>
+  {% endif %}
 </main>
 {% endblock %}
