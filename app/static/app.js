@@ -502,9 +502,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     }
     // Read/edit toggles: data-show="id" reveals #id and hides data-hide targets
     const show = e.target.closest('[data-show]');
-    if (show) {
+    const target = show && document.getElementById(show.dataset.show);  // (only a toggle with something to show: a link stays a link)
+    if (target) {
       e.preventDefault();
-      const target = document.getElementById(show.dataset.show);
       (show.dataset.hide || '').split(' ').filter(Boolean).forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
       target.hidden = false;
       const field = target.querySelector('textarea, input[type=text]');

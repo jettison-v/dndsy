@@ -54,7 +54,7 @@
     <aside class="reader-nav" aria-label="Checks">
       <div class="reader-nav-head">
         {% if show == "ready" and groups %}{% set n_checks = groups.values() | map(attribute="rows") | map("length") | sum - questions %}<p class="ts-ready"><b>{{ n_checks + questions }} for you</b> <span class="note">{% if n_checks %}{{ n_checks }} check{{ "s" if n_checks != 1 }}, about {{ ready_minutes }} minute{{ "s" if ready_minutes != 1 }}{% endif %}{% if n_checks and questions %} · {% endif %}{% if questions %}{{ questions }} question{{ "s" if questions != 1 }} or pick{{ "s" if questions != 1 }} from Claude{% endif %}</span></p>{% endif %}
-        {% if chips and show in ("ready", "again", "player", "failed") %}<nav class="ts-chips" aria-label="Which checks">{% for key, label, n in chips %}<a href="?show={{ key }}" class="chip{{ ' on' if key == show }}" data-show="{{ key }}"{% if key == show %} aria-current="true"{% endif %}>{{ label }}{% if n %} <span class="ls-n">{{ n }}</span>{% endif %}</a>{% endfor %}</nav>{% endif %}
+        {% if chips and show in ("ready", "again", "player", "failed") %}<nav class="ts-chips" aria-label="Which checks">{% for key, label, n in chips %}<a href="?show={{ key }}" class="chip{{ ' on' if key == show }}" data-ts-show="{{ key }}"{% if key == show %} aria-current="true"{% endif %}>{{ label }}{% if n %} <span class="ls-n">{{ n }}</span>{% endif %}</a>{% endfor %}</nav>{% endif %}
       </div>
       <div class="reader-rows">
         {% for key, g in groups.items() %}
