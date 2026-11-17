@@ -104,3 +104,38 @@ def test_no_email_without_a_key_or_on_staging(monkeypatch):
     monkeypatch.setattr(config, "RESEND_API_KEY", "re_test")
     monkeypatch.setattr(config, "STAGING", True)
     assert not digest.enabled()
+
+
+def test_a_fix_to_try_emails_its_sender_once_a_day_counts_only(db, sent, campaign, player):
+    """Brett's 6C and his note (Nov 16: players get the digest email for it, on by default at his table): a fix to a note
+    someone sent, live and waiting for their Does it work now?, sends them one email that day (counts and a link, never
+    what the note said); the one-click stop turns it off; Email digest has its switch."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+    from app.models import Check, Feedback
+
+    pat = db.scalar(select(User).where(User.email == "player@example.com"))
+    fb = Feedback(user_id=pat.id, sender="Pat (player)", text="A secret about the rolls panel.", kind="broken", status="done", url="/party")
+    db.add(fb)
+    db.flush()
+    check = Check(title="The panel stays", setup="player", status="again", feedback_id=fb.id, history=[])
+    db.add(check)
+    db.flush()
+    check.updated_at = _at(12)  # (live, and waiting for them, since noon)
+    db.commit()
+    first = digest.run_day(db, _at(18))
+    assert ("player@example.com", "fixes") in first
+    mail = next(m for to, m in sent if to == "player@example.com")
+    assert mail["subject"] == "askdnd: 1 fix to try" and "/your-notes?tab=askdnd" in mail["text"] and "A secret" not in mail["html"] + mail["text"]
+    assert ("player@example.com", "fixes") not in digest.run_day(db, _at(21))  # (once a day)
+    assert ("player@example.com", "fixes") not in digest.run_day(db, _at(18, day=10))  # (nothing new since)
+
+    assert 'data-email="fixes"' in player.get("/email").text  # (a switch, for someone who sends notes)
+    page = TestClient(app).get(mail["stop"][len(config.PROD_URL):])
+    assert page.status_code == 200 and "No more fix emails" in page.text
+    db.expire_all()
+    assert db.scalar(select(User).where(User.email == "player@example.com")).emails["fixes"] is False
+    assert player.post("/email/fixes", data={"on": "1"}).status_code == 200
+    db.expire_all()
+    assert digest.wants_fixes(db.scalar(select(User).where(User.email == "player@example.com")))

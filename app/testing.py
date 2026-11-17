@@ -34,12 +34,12 @@ router = APIRouter()
 
 # What a check needs open, in the order a round takes them (the Reader's groups)
 SETUPS = {"laptop": "On your laptop, as you", "view_as": "Through View as", "iphone": "On your iPhone", "mac": "On your Mac",
-          "player": "With a player", "claude": "Claude ran these"}
+          "player": "With a player", "claude": "Claude runs these"}
 STATUSES = ("ready", "again", "failed", "fixed", "passed", "skipped", "claude")
 SAYS = {"ready": "Ready", "again": "Fixed · try again", "failed": "Failed", "fixed": "Fix on its way", "passed": "Passed", "skipped": "Skipped", "claude": "Claude ran it"}
 # The Reader's chips: which statuses each shows
 SHOWS = {"ready": ("ready", "again"), "again": ("again",), "player": (), "failed": ("failed", "fixed"), "claude": ("claude",), "done": ("passed", "skipped")}
-SHOW_SAYS = {"ready": "Ready", "again": "Try again", "player": "With a player", "failed": "Failed", "claude": "Claude ran", "done": "Done"}
+SHOW_SAYS = {"ready": "Ready", "again": "Try again", "player": "With a player", "failed": "Failed", "claude": "Claude's", "done": "Done"}
 TO_DO = ("ready", "again")  # what waits for the admin (the Manage menu's count)
 PLAYER_DAYS = 3  # a check on a player's note is theirs to confirm first; yours after this many days (Brett's 6C)
 DENIED = "Testing is for admins."
@@ -55,7 +55,8 @@ def _with_player(c: Check) -> bool:
 
 
 def _for_admin(rows: list[Check]) -> list[Check]:
-    return [c for c in rows if not _with_player(c)]
+    """What's the admin's to try: not a player's still theirs, not one Claude runs on the Mac Mini's seats."""
+    return [c for c in rows if not _with_player(c) and c.setup != "claude"]
 
 
 def waiting(db: Session) -> int:
@@ -172,8 +173,12 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
     show = show if show in SHOWS else "ready"
     counts = dict(db.execute(select(Check.status, func.count()).group_by(Check.status)).all())
     players = sum(1 for c in db.scalars(select(Check).where(Check.setup == "player", Check.status.in_(TO_DO))) if _with_player(c))
-    rows = ordered(list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
-    rows = [c for c in rows if _with_player(c)] if show == "player" else _for_admin(rows) if show in ("ready", "again") else rows
+    claudes = dict(db.execute(select(Check.status, func.count()).where(Check.setup == "claude").group_by(Check.status)).all())
+    if show == "claude":  # (Claude's: the ones it runs on the Mac Mini, to run and run)
+        rows = ordered(list(db.scalars(select(Check).where(Check.setup == "claude", Check.status.in_(("ready", "again", "claude"))))))
+    else:
+        rows = ordered(list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
+        rows = [c for c in rows if _with_player(c)] if show == "player" else _for_admin(rows) if show in ("ready", "again") else rows
     items = [view(c) for c in rows]
     groups: dict[str, list[dict]] = {}
     for i in items:
@@ -182,8 +187,9 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
     notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({x for i in items for x in (i["feedback_id"], i["failed_id"]) if x})))}
     return templates.TemplateResponse(request, "testing.html", {
         "user": user, "show": show, "groups": groups, "picked": picked, "notes": notes,
-        "chips": [(k, SHOW_SAYS[k], players if k == "player" else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k in ("ready", "again") else 0))
-                  for k in SHOWS],
+        "chips": [(k, SHOW_SAYS[k], players if k == "player" else sum(claudes.get(s, 0) for s in ("ready", "again", "claude")) if k == "claude"
+                   else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k in ("ready", "again") else 0)
+                   - (sum(claudes.get(s, 0) for s in SHOWS[k]) if k in ("ready", "again") else 0)) for k in SHOWS],
         "ready_minutes": sum(i["minutes"] for i in items) if show == "ready" else 0, "round": current(request, db),
         "toast": request.session.pop("toast", None)})
 

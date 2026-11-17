@@ -99,8 +99,9 @@ def _stopper() -> URLSafeSerializer:
     return URLSafeSerializer(config.SESSION_SECRET, salt="email-stop")
 
 
-def stop_link(user: User, campaign: Campaign) -> str:
-    return f"{config.PROD_URL}/email/stop?t={_stopper().dumps([user.id, campaign.id])}"
+def stop_link(user: User, campaign: Campaign | None) -> str:
+    """The email's one-click stop: a campaign's Inbox digest, or (no campaign, 0) the fix-to-try emails."""
+    return f"{config.PROD_URL}/email/stop?t={_stopper().dumps([user.id, campaign.id if campaign else 0])}"
 
 
 def compose(campaign: Campaign, counts: dict[str, int], user: User, role: str | None) -> dict:
@@ -116,6 +117,66 @@ def compose(campaign: Campaign, counts: dict[str, int], user: User, role: str | 
     text = "\n".join([f"{campaign.name}: {title}", "", *[f"- {w}: {n}" for w, n in rows], "", f"Open the Inbox: {link}", "",
                       f"{why} Stop these emails: {stop}"])
     return {"subject": f"{campaign.name}: {title}", "html": html, "text": text, "stop": stop}
+
+
+# ------------------------------------------------------------------ a fix to try (Testing, Brett's 6C, Nov 16)
+
+
+def wants_fixes(user: User) -> bool:
+    """A fix to try, on by default (Brett: on for the players at his table), off once they say so."""
+    return (user.emails or {}).get("fixes", True) is not False
+
+
+def fixes_waiting(db: Session, user: User, since: datetime) -> int:
+    """The fixes to notes this person sent that are live and wait for their Does it work now? since then."""
+    from app.models import Check, Feedback
+
+    return db.scalar(select(func.count()).select_from(Check).join(Feedback, Check.feedback_id == Feedback.id)
+                     .where(Feedback.user_id == user.id, Check.setup == "player", Check.status == "again", Check.updated_at > since)) or 0
+
+
+def compose_fixes(user: User, n: int) -> dict:
+    """The email: a count and a link to Notes you sent, never what the note said."""
+    title = f"{n} {'fix' if n == 1 else 'fixes'} to try"
+    link = f"{config.PROD_URL}/your-notes?tab=askdnd"
+    why = "You get this because something you said was broken is fixed and waits for your Does it work now?"
+    stop = stop_link(user, None)
+    intro = "Something you sent askdnd as broken is fixed. Does it work now? Say so on the note."
+    html = templates.get_template("email/digest.html").render(campaign=None, title=title, rows=[], link=link, why=why, stop=stop, intro=intro,
+                                                               button="Open your notes")
+    text = "\n".join([f"askdnd: {title}", "", intro, "", f"Your notes: {link}", "", f"{why} Stop these emails: {stop}"])
+    return {"subject": f"askdnd: {title}", "html": html, "text": text, "stop": stop}
+
+
+def _fixes_day(db: Session, now: datetime, today: str) -> list[tuple[str, str]]:
+    """Once a day, each person with a fix newly waiting for them: one email (counts and a link)."""
+    from app.models import Check, Feedback
+
+    sent = []
+    users = db.scalars(select(User).join(Feedback, Feedback.user_id == User.id).join(Check, Check.feedback_id == Feedback.id)
+                       .where(Check.setup == "player", Check.status == "again").distinct())
+    for user in users:
+        e = dict(user.emails or {})
+        if not wants_fixes(user) or e.get("fixes_checked") == today:
+            continue
+        since = datetime.fromisoformat(e["fixes_at"]) if e.get("fixes_at") else now - timedelta(days=PLAYER_LOOK_BACK)
+        n = fixes_waiting(db, user, since)
+        if n:
+            try:
+                ok = SEND(user.email, compose_fixes(user, n))
+            except Exception:
+                log.warning("A fix-to-try email didn't go out this time", exc_info=True)
+                continue
+            if not ok:
+                continue
+            e["fixes_at"] = now.isoformat()
+            sent.append((user.email, "fixes"))
+        e["fixes_checked"] = today
+        user.emails = e
+    return sent
+
+
+PLAYER_LOOK_BACK = 7  # (days: a first email covers the last week's fixes)
 
 
 def _resend(to: str, mail: dict) -> bool:
@@ -163,6 +224,7 @@ def run_day(db: Session, now: datetime | None = None) -> list[tuple[str, str]]:
                 sent.append((user.email, campaign.name))
             e["checked"] = {**(e.get("checked") or {}), cid: today}
             user.emails = e
+    sent += _fixes_day(db, now, today)
     db.commit()
     return sent
 
@@ -213,7 +275,28 @@ def settings(request: Request, db: Session = Depends(get_db)):
     if me is None:
         return HTMLResponse("", status_code=401)
     return templates.TemplateResponse(request, "_email_settings.html", {"rows": may_choose(db, me), "hour": config.DIGEST_HOUR,
-                                                                        "sending": enabled()})
+                                                                        "sending": enabled(), "fixes": _fixes_row(db, me)})
+
+
+def _fixes_row(db: Session, user: User) -> bool | None:
+    """The fix-to-try switch, for someone who sends notes (on or off), else None (no row)."""
+    from app.models import Feedback
+
+    if not db.scalar(select(func.count()).select_from(Feedback).where(Feedback.user_id == user.id)):
+        return None
+    return wants_fixes(user)
+
+
+@router.post("/email/fixes")
+def choose_fixes(request: Request, on: str = Form(""), db: Session = Depends(get_db)):
+    me = _me(db, request)
+    if me is None or _fixes_row(db, me) is None:
+        return HTMLResponse("", status_code=403)
+    me.emails = {**(me.emails or {}), "fixes": on == "1"}
+    db.commit()
+    resp = templates.TemplateResponse(request, "_email_settings.html", {"rows": may_choose(db, me), "fixes": _fixes_row(db, me), "only_rows": True})
+    resp.headers["HX-Trigger"] = json.dumps({"toast": "Fix emails " + ("on" if on == "1" else "off")})
+    return resp
 
 
 @router.post("/email/inbox")
@@ -224,16 +307,23 @@ def choose(request: Request, campaign: int = Form(...), on: str = Form(""), db: 
     _set(me, campaign, on == "1")
     db.commit()
     access.invalidate()  # (the account menu says On or Off from the access cache)
-    resp = templates.TemplateResponse(request, "_email_settings.html", {"rows": may_choose(db, me), "only_rows": True})
+    resp = templates.TemplateResponse(request, "_email_settings.html", {"rows": may_choose(db, me), "fixes": _fixes_row(db, me), "only_rows": True})
     resp.headers["HX-Trigger"] = json.dumps({"toast": "Inbox digest " + ("on" if on == "1" else "off")})
     return resp
 
 
-def _stop(db: Session, t: str) -> tuple[User, Campaign] | None:
+def _stop(db: Session, t: str) -> tuple[User, Campaign | None] | None:
     try:
         uid, cid = _stopper().loads(t)
     except (BadSignature, ValueError, TypeError):
         return None
+    if cid == 0:  # (the fix-to-try emails)
+        user = db.get(User, uid)
+        if not user:
+            return None
+        user.emails = {**(user.emails or {}), "fixes": False}
+        db.commit()
+        return user, None
     user, campaign = db.get(User, uid), db.get(Campaign, cid)
     if not user or not campaign:
         return None
@@ -249,6 +339,8 @@ def stop_page(request: Request, t: str = "", db: Session = Depends(get_db)):
     done = _stop(db, t)
     if not done:
         return web.message(request, "That link doesn't work", "It may be from another copy of askdnd. Your picture › Email digest turns it off.", 400)
+    if done[1] is None:
+        return web.message(request, "No more fix emails", "You won't get an email when a fix to your note waits for you. Your picture › Email digest turns it back on.")
     return web.message(request, "No more Inbox emails", f"You won't get {done[1].name}'s Inbox digest any more. Your picture › Email digest turns it back on.")
 
 

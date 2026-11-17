@@ -217,3 +217,15 @@ def test_a_players_fix_is_theirs_to_confirm_then_yours_after_three_days(admin, p
     db.expire_all()
     assert db.get(Check, c.id).status == "passed"
     assert admin.post(f"/your-notes/feedback/{fb}/works", data={"answer": "yes"}).status_code == 404  # (only its sender answers)
+
+
+def test_claudes_own_checks_stay_out_of_the_admins_list(admin, db):
+    """The ones Claude runs on the Mac Mini's seats (setup claude) are Claude's: under Claude's chip, to run or run, never
+    in the admin's Ready list, round or count."""
+    mine = add(admin, title="On the seats", setup="claude")
+    ran = add(admin, title="Ran on the seats", setup="claude")
+    admin.post(f"/api/checks/{ran['id']}", json={"status": "claude", "said": "12 of 12"}, headers=KEY)
+    ready = admin.get("/manage/testing").text
+    assert f'data-check="{mine["id"]}"' not in ready and admin.get("/c/main/manage/counts").json()["testing"] == 0
+    claude = admin.get("/manage/testing?show=claude").text
+    assert f'data-check="{mine["id"]}"' in claude and f'data-check="{ran["id"]}"' in claude

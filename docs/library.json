@@ -1262,7 +1262,7 @@
  {
   "title": "askdnd Test Steps",
   "kind": "guide",
-  "status": "Current",
+  "status": "Moved into askdnd (Testing), Nov 16",
   "date": "Nov 13",
   "what": "Brett, Nov 13: every change Claude builds lands with the steps to try it; Brett marks each Passed, Failed (with a note Claude reads) or Skip. The steps and marks are in the page's own store (groups, steps, results).",
   "source": "docs/artifacts/test-steps.html",
