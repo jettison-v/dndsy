@@ -82,7 +82,7 @@ header.top { display: grid; gap: 10px; }
 .sw { font: 700 .7rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; white-space: nowrap; align-self: start; letter-spacing: .02em; }
 .sw.ready { background: var(--blue-soft); color: var(--blue); } .sw.again, .sw.ask { background: var(--amber-soft); color: var(--amber); }
 .sw.failed { background: var(--red-soft); color: var(--red); } .sw.passed, .sw.fixed { background: var(--green-soft); color: var(--green); }
-.sw.claude, .sw.look { background: var(--violet-soft); color: var(--violet); } .sw.quiet { background: var(--surface-3); color: var(--muted); }
+.sw.claude, .sw.look { background: var(--violet-soft); color: var(--violet); } .sw.fixing { background: var(--blue-soft); color: var(--blue); } .sw.quiet { background: var(--surface-3); color: var(--muted); }
 .detail { padding: 18px 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
 .where { color: var(--muted); font-size: .8rem; }
 .detail h3.big { font: 600 1.35rem/1.25 var(--serif); }
@@ -215,7 +215,7 @@ header.top { display: grid; gap: 10px; }
   <button type="button" class="shot" data-shot="foryou" aria-pressed="true"><small>1</small>For you</button>
   <button type="button" class="shot" data-shot="round"><small>2</small>Trying it</button>
   <button type="button" class="shot" data-shot="wrong"><small>3</small>Something's wrong…</button>
-  <button type="button" class="shot" data-shot="failed"><small>4</small>Failed, 2 problems</button>
+  <button type="button" class="shot" data-shot="failed"><small>4</small>Failed, 2 issues</button>
   <button type="button" class="shot" data-shot="change"><small>5</small>Change result</button>
   <button type="button" class="shot" data-shot="cant"><small>6</small>Can't try…</button>
   <button type="button" class="shot" data-shot="asks"><small>7</small>Claude asks · a mockup</button>
@@ -253,7 +253,7 @@ header.top { display: grid; gap: 10px; }
         <article class="detail">
           <span class="where">Working with Claude · on Feedback</span>
           <h3 class="big">Write back from one box</h3>
-          <div class="sline"><span class="sw again">Try again</span>Claude fixed the 4 problems you found; the fix is live. Try it again.</div>
+          <div class="sline"><span class="sw again">Try again</span>Claude fixed the 4 issues you found; the fix is live. Try it again.</div>
           <div class="act"><span class="btn go" data-go="round">▶ Try it</span><span class="btn ok">✓ Passed</span><span class="btn no" data-go="wrong">✗ Something's wrong…</span><span class="btn quiet" data-go="cant">Can't try…</span></div>
           <div class="panel"><span class="plabel">On the page, the card says</span>
             <ol class="steps"><li><span class="box"></span><span>Look at the note open on the right, sent by a player.</span></li>
@@ -262,7 +262,7 @@ header.top { display: grid; gap: 10px; }
             <div class="see"><span class="plabel">You should see</span><p>The line beside Send says who will read it: Claude, or the player on their Notes you sent.</p></div></div>
           <p class="whyline"><b>Why</b> · You found the ⋯ menu wouldn't close, Write to didn't say where your words go, ⋯ was unclear, and Done showed twice. All four are fixed. <span class="more">More</span></p>
           <div class="hist"><button type="button" class="badge" data-toggle="tl1">▸ 3 changes</button>
-            <ol class="tl" id="tl1" hidden><li class="t-again"><span><b>Try again</b> · the fix is live</span><span>21:50</span></li><li class="t-fixed"><span><b>Fixed by Claude</b></span><span>21:44</span></li><li class="t-failed"><span><b>Failed by you</b> · 4 problems</span><span>21:36</span></li></ol></div>
+            <ol class="tl" id="tl1" hidden><li class="t-again"><span><b>Try again</b> · the fix is live</span><span>21:50</span></li><li class="t-fixed"><span><b>Fixed by Claude</b></span><span>21:44</span></li><li class="t-failed"><span><b>Failed by you</b> · 4 issues</span><span>21:36</span></li></ol></div>
         </article>
       </div>
     </div>
@@ -276,13 +276,23 @@ header.top { display: grid; gap: 10px; }
         <div class="reader"><aside class="rlist"><div class="row on"><b>The coins don't add up</b><span class="sw claude">With Claude</span><span class="sub">Big C · 2 reports</span></div><div class="row"><b>Fold away Manage's list</b><span class="sw claude">With Claude</span></div></aside>
           <article class="detail"><h3 class="big">The coins don't add up</h3><div class="panel" style="height:220px"></div></article></div></div>
     </div>
+    <div data-view="card">
     <div class="card" role="dialog" aria-label="The check's card">
       <div class="hd"><span>Check 1 of 3 · Working with Claude<b>Write back from one box</b></span><span>— ⤡</span></div>
       <ol class="steps"><li><span class="box on"></span><span>Look at the note open on the right, sent by a player.</span></li>
         <li><span class="box on"></span><span>In <b>Write to</b>, press the player's name.</span></li>
         <li><span class="box"></span><span>Read the line beside <span class="press">Send</span>.</span></li></ol>
       <div class="see"><span class="plabel">You should see</span><p>The line beside Send says who will read it.</p></div>
-      <div class="act"><span class="btn ok small">✓ Passed</span><span class="btn no small" data-go="wrong">✗ Something's wrong…</span><span class="btn quiet small" data-go="cant">Can't try…</span></div>
+      <div class="act"><span class="btn ok small" data-view-go="passed">✓ Passed</span><span class="btn no small" data-go="wrong">✗ Something's wrong…</span><span class="btn quiet small" data-go="cant">Can't try…</span></div>
+    </div>
+    </div>
+    <div data-view="passed" hidden>
+    <div class="card" role="dialog" aria-label="The check's card, passed" style="border-top-color:var(--green)">
+      <div class="hd"><span>Check 1 of 3 · Working with Claude<b>Write back from one box</b></span><span>— ⤡</span></div>
+      <div class="sline" style="font-size:.84rem"><span class="sw passed">Passed</span>Its 4 issues close as verified, and their senders hear it worked.</div>
+      <div class="act"><span class="btn small">+ Note: it works, but…</span><span class="btn quiet small" data-view-go="card">Change result…</span><span class="btn go small">Done · next check</span></div>
+      <p class="note">+ Note sends an idea or a small issue from this check without failing it.</p>
+    </div>
     </div>
   </section>
 
@@ -295,7 +305,7 @@ header.top { display: grid; gap: 10px; }
       <div class="pic"><div class="lines"><i style="width:60%"></i><i style="width:85%"></i><i style="width:40%"></i></div><span class="mk" style="left:62%;top:58%;width:30%;height:30%"></span><div class="tools"><span>Box</span><span>Arrow</span><span>Draw</span><span>+ Add a picture</span></div></div>
       <label class="field">In your words<span class="input">The line beside Send still says Claude after I pick Big C.</span></label>
       <div class="act"><span class="btn no" data-go="failed">Send · marks this try Failed</span><span class="btn quiet">Cancel</span></div>
-      <p class="note">Found something else too? Press ✗ Something's wrong… again: each problem is its own, all on this one try.</p>
+      <p class="note">Found something else too? Press ✗ Something's wrong… again: each issue is its own, all on this one try.</p>
     </div></div>
   </section>
 
@@ -308,9 +318,9 @@ header.top { display: grid; gap: 10px; }
           <div class="reader"><aside class="rlist"><div class="row on"><b>The coins don't add up</b><span class="sw claude">With Claude</span><span class="sub">Big C · 2 reports</span></div><div class="row"><b>Fold away Manage's list</b><span class="sw claude">With Claude</span></div></aside>
             <article class="detail"><h3 class="big">The coins don't add up</h3><div class="panel" style="height:220px"></div></article></div></div>
       </div>
-      <div class="card" role="dialog" aria-label="The check's card, after a problem was sent" style="border-top-color:var(--red)">
+      <div class="card" role="dialog" aria-label="The check's card, after an issue was sent" style="border-top-color:var(--red)">
         <div class="hd"><span>Check 1 of 3 · Working with Claude<b>Write back from one box</b></span><span>— ⤡</span></div>
-        <div class="sline" style="font-size:.84rem"><span class="sw failed">Failed</span>2 problems sent; still on this page.</div>
+        <div class="sline" style="font-size:.84rem"><span class="sw failed">Failed</span>2 issues sent; still on this page.</div>
         <div class="problems">
           <div class="prob" style="padding:6px 10px;font-size:.82rem"><span class="n">1</span><span>The line beside Send still says Claude</span><span></span></div>
           <div class="prob" style="padding:6px 10px;font-size:.82rem"><span class="n">2</span><span>Big C's name is cut off in Write to</span><span></span></div></div>
@@ -326,19 +336,19 @@ header.top { display: grid; gap: 10px; }
       <div class="tabs"><span class="tab on">For you <span class="count">4</span></span><span class="tab">Where it stands</span><span class="tab">Claude ran</span><span class="tab">Done</span></div>
       <div class="reader">
         <aside class="rlist"><div class="grp"><span>Working with Claude</span></div>
-          <div class="row on"><b>Write back from one box</b><span class="sw failed">Failed</span><span class="sub">2 problems · with Claude</span></div>
+          <div class="row on"><b>Write back from one box</b><span class="sw failed">Failed</span><span class="sub">2 issues · with Claude</span></div>
           <div class="row"><b>Claude's links open in a new tab</b><span class="sw ready">To try</span><span class="sub">1 min</span></div></aside>
         <article class="detail">
           <span class="where">Working with Claude · on Feedback</span>
           <h3 class="big">Write back from one box</h3>
-          <div class="sline"><span class="sw failed">Failed</span>You found 2 problems on this try. With Claude: it comes back once they're fixed.</div>
+          <div class="sline"><span class="sw failed">Failed</span>You found 2 issues on this try. With Claude: it comes back once they're fixed.</div>
           <div class="problems">
             <div class="prob"><span class="n">1</span><span>The line beside Send still says Claude after I pick Big C.</span><span class="sw claude">With Claude</span></div>
             <div class="prob"><span class="n">2</span><span>Big C's name is cut off in Write to.</span><span class="sw claude">With Claude</span></div>
           </div>
           <div class="act"><span class="btn no" data-go="wrong">✗ Something else wrong…</span><span class="btn" data-go="change">Change result…</span><span class="btn go">Done · next check</span></div>
           <div class="hist"><button type="button" class="badge" data-toggle="tl2">▾ 4 changes</button>
-            <ol class="tl" id="tl2"><li class="t-failed"><span><b>Failed by you</b> · 2 problems</span><span>now</span></li><li class="t-again"><span><b>Try again</b> · the fix is live</span><span>21:50</span></li><li class="t-fixed"><span><b>Fixed by Claude</b></span><span>21:44</span></li><li class="t-failed"><span><b>Failed by you</b> · 4 problems</span><span>21:36</span></li></ol></div>
+            <ol class="tl" id="tl2"><li class="t-failed"><span><b>Failed by you</b> · 2 issues</span><span>now</span></li><li class="t-again"><span><b>Try again</b> · the fix is live</span><span>21:50</span></li><li class="t-fixed"><span><b>Fixed by Claude</b></span><span>21:44</span></li><li class="t-failed"><span><b>Failed by you</b> · 4 issues</span><span>21:36</span></li></ol></div>
         </article>
       </div>
     </div>
@@ -350,11 +360,11 @@ header.top { display: grid; gap: 10px; }
     <div class="ghostpage"><div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div><div class="page"><div class="ptitle"><h2>Testing</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
     <div class="scrim"><div class="win" role="dialog" aria-label="Change result">
       <div class="hd"><b>Change this try's result</b><span class="x">✕</span></div>
-      <p class="note">It's <b>Failed</b> with 2 problems. Change it to:</p>
+      <p class="note">It's <b>Failed</b> with 2 issues. Change it to:</p>
       <div class="radios"><span class="radio on" data-pick>Not tried yet<small>back to Try again</small></span><span class="radio" data-pick>Passed</span><span class="radio" data-pick>Can't try</span></div>
       <label class="field">Why (for the history; leave it blank if you like)<span class="input ph">Pressed the wrong one</span></label>
       <div class="act"><span class="btn go" data-go="foryou">Change result</span><span class="btn quiet">Cancel</span></div>
-      <p class="note">The history keeps the Failed and shows the change ("Failed, changed to Try again by you"). Its 2 problems are closed as withdrawn: gone from the check and from Claude's list, still findable in Feedback › Closed.</p>
+      <p class="note">The history keeps the Failed and shows the change ("Failed, changed to Try again by you"). Its 2 issues are closed as withdrawn: gone from the check and from Claude's list, still findable in Feedback › Closed.</p>
     </div></div>
   </section>
 
@@ -398,26 +408,48 @@ header.top { display: grid; gap: 10px; }
 
   <!-- 8 · Feedback's list -->
   <section data-screen="fblist" hidden>
+    <div data-view="list">
     <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
     <div class="page">
       <div class="ptitle"><h2>Feedback</h2><span class="note">Everything found, from anyone, and what happened to it</span></div>
-      <div class="tabs"><span class="tab">To approve <span class="count">1</span></span><span class="tab on">With Claude <span class="count">6</span></span><span class="tab">Fixed <span class="count">3</span></span><span class="tab">Closed</span><span class="tab" data-go="ideas">Ideas <span class="count">4</span></span></div>
+      <div class="tabs"><span class="tab" data-view-go="approve" style="cursor:pointer">To approve <span class="count">1</span></span><span class="tab on">With Claude <span class="count">6</span></span><span class="tab">Fixed <span class="count">3</span></span><span class="tab">Closed</span><span class="tab" data-go="ideas">Ideas <span class="count">4</span></span></div>
       <div class="reader">
         <aside class="rlist">
           <div class="rhead"><div class="chips"><span class="chip on">Problems</span><span class="chip">From players</span><span class="chip">From checks</span></div></div>
           <div class="row on" data-go="issue"><b>The coins don't add up</b><span class="sw claude">With Claude</span><span class="sub">Big C, Trah · 2 reports · Item Builder</span></div>
           <div class="row"><b>Fold away Manage's list of pages</b><span class="sw claude">With Claude</span><span class="sub">You · Manage</span></div>
-          <div class="row"><b>The line beside Send still says Claude</b><span class="sw claude">With Claude</span><span class="sub">You, from a check · Working with Claude</span></div>
-          <div class="row"><b>A "new" stays until the page reloads</b><span class="sw ask">Claude asks</span><span class="sub">You · Values that update</span></div>
-          <div class="row"><b>Notes you sent: count only what's open</b><span class="sw claude">With Claude</span><span class="sub">You · Notes you sent</span></div>
+          <div class="row"><b>The line beside Send still says Claude</b><span class="sw fixing">Fixing</span><span class="sub">You, from a check · Working with Claude, in Claude's hands now</span></div>
+          <div class="row"><b>A "new" stays until the page reloads</b><span class="sw ask">Claude asks</span><span class="sub">You · Found, Fixed, Tried</span></div>
+          <div class="row"><b>Notes you sent: count only what's open</b><span class="sw claude">With Claude</span><span class="sub">You · Found, Fixed, Tried</span></div>
         </aside>
         <article class="detail">
           <span class="where">Feedback is the record</span>
           <h3 class="big">One list, one word per state</h3>
-          <p class="note">Every row is an issue: the work. Its state is one word, the same words everywhere (With Claude, Claude asks, Fixed, Closed). Several reports of the same thing sit inside one issue, so the list counts work, not messages. Problems found while trying a check are here too, marked "from a check".</p>
+          <p class="note">Every row is an issue: the work. Its state is one word, the same words everywhere: With Claude, Claude asks, Fixing, Fixed, Closed (with why: verified, not planned, duplicate or withdrawn). Several reports of the same thing sit inside one issue, so the list counts work, not messages. Issues found while trying a check are here too, marked "from a check".</p>
           <div class="act"><span class="btn" data-go="issue">Open The coins don't add up →</span></div>
         </article>
       </div>
+    </div>
+    </div>
+    <div data-view="approve" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Feedback</h2><span class="note">Everything found, from anyone, and what happened to it</span></div>
+      <div class="tabs"><span class="tab on">To approve <span class="count">1</span></span><span class="tab" data-view-go="list" style="cursor:pointer">With Claude <span class="count">6</span></span><span class="tab">Fixed <span class="count">3</span></span><span class="tab">Closed</span><span class="tab" data-go="ideas">Ideas <span class="count">4</span></span></div>
+      <div class="reader">
+        <aside class="rlist">
+          <div class="row on"><b>My spell slots came back after a Short Rest</b><span class="sw ask">To approve</span><span class="sub">No Name, a player · Nov 17 · a problem</span></div>
+        </aside>
+        <article class="detail">
+          <span class="where">A report from a player · waits for you before Claude sees it</span>
+          <h3 class="big">My spell slots came back after a Short Rest</h3>
+          <div class="sline"><span class="sw ask">To approve</span>From the table: it reaches Claude once you approve it.</div>
+          <div class="report"><span class="thumb"></span><div><b>No Name</b> · Nov 17 · No Name · Battle<p>I took a Short Rest and all my spell slots came back.</p></div></div>
+          <div class="act"><span class="btn go">Approve as a new issue</span><span class="btn">Approve: same as… ▾</span><span class="btn quiet">Decline with why…</span></div>
+          <p class="note">Approving files it as an issue with Claude. Same as joins it to an issue already filed, so its sender hears back with the others. Declining tells No Name why, on their Notes you sent. Your own reports skip this step.</p>
+        </article>
+      </div>
+    </div>
     </div>
   </section>
 
@@ -504,7 +536,7 @@ header.top { display: grid; gap: 10px; }
     <div class="ghostpage"><div class="page"><div class="ptitle"><h2>Party</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
     <div class="scrim"><div class="win" role="dialog" aria-label="Send feedback">
       <div class="hd"><b>Send feedback</b><span class="x">✕</span></div>
-      <div class="chips"><span class="chip on">Something's broken</span><span class="chip">An idea</span><span class="chip">A question</span></div>
+      <div class="chips"><span class="chip on">A problem</span><span class="chip">An idea</span><span class="chip">A question</span></div>
       <div class="chips"><span class="chip on">The page</span><span class="chip">Your picture 1</span><span class="chip">+ Paste or add a picture</span></div>
       <div class="pic"><div class="lines"><i style="width:60%"></i><i style="width:85%"></i><i style="width:40%"></i></div><span class="mk" style="left:58%;top:52%;width:30%;height:30%"></span><span style="position:absolute;left:58%;top:30%;font:700 .78rem/1 var(--sans);color:var(--amber);background:rgba(15,17,19,.85);padding:3px 6px;border-radius:5px">Should be centered</span><div class="tools"><span>Box</span><span>Arrow</span><span>Draw</span><span style="border-color:var(--amber);color:var(--amber)">Text</span></div><div class="tools" style="left:auto;right:8px" aria-label="Changes to the marks"><span>↶ Undo</span><span>Clear</span></div></div>
       <label class="field">What's it about?<span class="input">The Party cards sit to the left on a wide screen.</span></label>
@@ -548,8 +580,8 @@ header.top { display: grid; gap: 10px; }
     <div class="prob"><span class="n">112</span><span>Write to doesn't say where it goes · <b>the line changes with who you pick</b></span><span class="sw quiet">Screen 9</span></div>
     <div class="prob"><span class="n">113</span><span>What ⋯ holds is unclear · <b>every action says what it does</b></span><span class="sw quiet">Screens 1, 9</span></div>
     <div class="prob"><span class="n">114</span><span>Done said twice · <b>the state said once</b></span><span class="sw quiet">Screens 8, 9</span></div>
-    <div class="prob"><span class="n">115</span><span>Three buttons to send a problem · <b>one, pressed per problem</b></span><span class="sw quiet">Screens 3, 4</span></div>
-    <div class="prob"><span class="n">116</span><span>Failed asked for one more issue · <b>the first problem fails it</b></span><span class="sw quiet">Screens 3, 4</span></div>
+    <div class="prob"><span class="n">115</span><span>Three buttons to send an issue · <b>one, pressed per issue</b></span><span class="sw quiet">Screens 3, 4</span></div>
+    <div class="prob"><span class="n">116</span><span>Failed asked for one more issue · <b>the first issue fails it</b></span><span class="sw quiet">Screens 3, 4</span></div>
     <div class="prob"><span class="n">121</span><span>The history didn't show the Failed · <b>it updates the moment you send</b></span><span class="sw quiet">Screen 4</span></div>
     <div class="prob"><span class="n">87</span><span>The screenshot didn't match the screen · <b>taken as your screen shows it</b></span><span class="sw quiet">Screen 12</span></div>
     <div class="prob"><span class="n">88</span><span>Text on the picture · <b>a Text tool beside Box, Arrow, Draw</b></span><span class="sw quiet">Screen 12</span></div>
@@ -579,13 +611,13 @@ header.top { display: grid; gap: 10px; }
 (() => {
   const WHY = {
     foryou: ["Testing › For you: everything waiting on you, by area. A check has three marks, each one action, and no ⋯. A question and a mockup are one row each.", "Notes 111, 113, 115"],
-    round: ["Trying it: a round opens each check's page with its card. The card has the same three marks as the page.", "Note 116"],
-    wrong: ["✗ Something's wrong… is the feedback window, with the check named and the page's picture to mark up. Sending marks this try Failed; another problem is the same button again.", "Notes 115, 116"],
-    failed: ["After you send it: you stay on the page you're testing. The card turns Failed and lists what you sent, with ✗ Something else wrong… for the next problem, Change result, and Done · next check. Testing shows the same at once, history included, without a reload (press How it reads in Testing).", "Notes 116, 121; your question on the card"],
-    change: ["Pressed the wrong one: Change result. The history keeps the Failed and shows the change; its problems are withdrawn, still findable.", "Pick 4 (A)"],
+    round: ["Trying it: a round opens each check's page with its card, with the same three marks as Testing. Press ✓ Passed to see what follows: its issues close as verified, and + Note sends \"it works, but…\" without failing it.", "Notes 115, 116"],
+    wrong: ["✗ Something's wrong… is the feedback window, with the check named and the page's picture to mark up. Sending marks this try Failed; another issue is the same button again.", "Notes 115, 116"],
+    failed: ["After you send it: you stay on the page you're testing. The card turns Failed and lists what you sent, with ✗ Something else wrong… for the next issue, Change result, and Done · next check. Testing shows the same at once, history included, without a reload (press How it reads in Testing).", "Notes 116, 121; your question on the card"],
+    change: ["Pressed the wrong one: Change result. The history keeps the Failed and shows the change; its issues are withdrawn, still findable.", "Pick 4 (A)"],
     cant: ["Can't try… replaces Skip: the check goes back to Claude to fix, not to Done.", "Pick 3 (A)"],
     asks: ["Claude's question is answered here only; a mockup is one row, and its choices are made on its own page.", "Pick 5 (A); your note on mockups"],
-    fblist: ["Feedback is the record: one list of issues, one word per state, several reports inside one issue.", "Notes 114; pick 1 (A)"],
+    fblist: ["Feedback is the record: one list of issues, one word per state (Fixing included), several reports inside one issue. Press To approve to see a player's report waiting for you: approve it as a new issue, join it to one already filed, or decline with why.", "Note 114; pick 1 (A)"],
     issue: ["An issue: its state said once, named buttons instead of ⋯, its reports, the conversation, and Write to whose line says who will read it.", "Notes 111 to 114"],
     ideas: ["Ideas and enhancements have their own tab: joined by everyone who asked, accepted onto the Roadmap or declined with why, and their senders hear when they ship.", "Pick 6 (A)"],
     areas: ["Where it stands: each area says which Roadmap item it belongs to; you order them, Claude takes the first whole. An area can be worked in a chat of its own that hears only that area.", "Board 6 of the brief; note 123"],
