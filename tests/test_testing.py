@@ -99,3 +99,68 @@ def test_a_standing_rule_testing_is_for_admins_and_claude_only(player, dm, admin
     db.expire_all()
     assert db.get(Check, c["id"]).status == "ready"
     assert db.scalar(select(Check).where(Check.failed_id.is_not(None))) is None
+
+
+def test_go_sees_a_check_through_its_players_eyes_and_comes_back_to_your_own(admin, db):
+    """Brett's Board 1 (Nov 16): Go turns on View as for the check's character's player first; Testing stays the
+    admin's own while viewing (its card, its marks); marking it ends View as. View as's own rule decides who may be
+    viewed: refused, the check opens as you, with why."""
+    from tests.table_setup import char, owned_by
+
+    cole = char(db, "Cole")
+    owned_by(db, cole, "player@example.com")
+    db.flush()
+    c = add(admin, path=f"/characters/{cole.id}/battle", as_character=cole.id, as_who="Cole's player")
+    r = admin.post(f"/manage/testing/{c['id']}/go", follow_redirects=False)
+    assert r.headers["location"] == f"/characters/{cole.id}/battle"
+    assert "Viewing as" in admin.get("/").text  # (View as is on)
+    assert f'data-check-card="{c["id"]}"' in admin.get("/manage/testing/card").text  # (the card is still the admin's)
+    r = admin.post(f"/manage/testing/{c['id']}", data={"result": "passed"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == f"/manage/testing?check={c['id']}"  # (not refused while viewing)
+    assert "Viewing as" not in admin.get("/").text  # (back to your own view)
+
+    own = add(admin, path="/party", as_character=cole.id)
+    owned_by(db, cole, "admin@example.com")  # (the admin's own character: View as never views yourself)
+    db.flush()
+    r = admin.post(f"/manage/testing/{own['id']}/go", follow_redirects=False)
+    assert r.headers["location"] == "/party" and "Viewing as" not in admin.get("/party").text
+
+
+def test_a_fix_on_its_way_waits_under_failed_until_its_live(admin, db):
+    """Brett's 4A: Claude marks a failed check fixed with its PR; it waits under Failed (Fix on its way) until the fix is
+    live, when `feedback.py check live` brings it back as Try again."""
+    c = add(admin)
+    r = admin.post(f"/api/checks/{c['id']}", json={"status": "fixed", "pr": "https://github.com/jettison-v/dndsy/pull/402"}, headers=KEY).json()
+    assert r["status"] == "fixed" and r["says"] == "Fix on its way"
+    assert f'data-check="{c["id"]}"' in admin.get("/manage/testing?show=failed").text
+    assert f'data-check="{c["id"]}"' not in admin.get("/manage/testing").text  # (not Ready until it's live)
+    assert admin.post("/api/checks", json={"title": "A", "as_character": 999999}, headers=KEY).status_code == 400
+
+
+def test_check_live_brings_back_only_fixes_askdnd_runs(monkeypatch):
+    """`feedback.py check live` (deploy_check.py runs it after each deploy): a fixed check whose PR is merged and inside
+    the running commit comes back as Try again; one whose PR isn't merged, or merged after what runs, waits."""
+    import io
+    import json as _json
+    import subprocess as sp
+
+    from scripts import feedback as fbs
+
+    checks = [{"id": 1, "pr": "https://github.com/jettison-v/dndsy/pull/10"}, {"id": 2, "pr": "https://github.com/jettison-v/dndsy/pull/11"},
+              {"id": 3, "pr": "https://github.com/jettison-v/dndsy/pull/12"}, {"id": 4, "pr": ""}]
+    moved = []
+    monkeypatch.setattr(fbs, "call", lambda base, path, body=None: (moved.append((path, body)) or b"{}") if body else _json.dumps({"items": checks}).encode())
+    monkeypatch.setattr(fbs.urllib.request, "urlopen", lambda url, timeout=0: io.BytesIO(b'{"version": "abc123"}'))
+    prs = {"10": {"state": "MERGED", "mergeCommit": {"oid": "inside"}}, "11": {"state": "OPEN", "mergeCommit": None},
+           "12": {"state": "MERGED", "mergeCommit": {"oid": "later"}}}
+
+    def run(cmd, **kw):
+        if cmd[:3] == ["gh", "pr", "view"]:
+            return sp.CompletedProcess(cmd, 0, stdout=_json.dumps(prs[cmd[3]]))
+        if cmd[:2] == ["git", "merge-base"]:
+            return sp.CompletedProcess(cmd, 0 if cmd[3] == "inside" and cmd[4] == "abc123" else 1)
+        return sp.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(sp, "run", run)
+    fbs.live("https://askdnd.example")
+    assert moved == [("/api/checks/1", {"status": "again"})]

@@ -27,6 +27,7 @@ from app.models import User
 router = APIRouter()
 STOP = "/view-as/stop"
 FEEDBACK = "/feedback"  # (a note for Claude is the admin's own, sent while viewing as someone: app/feedback.py)
+TESTING = "/manage/testing"  # (a check is the admin's own, tried while viewing as someone: app/testing.py, Go)
 
 
 def viewing(session: dict | None) -> dict | None:
@@ -70,7 +71,7 @@ class ViewAs:
             if session and session.get("view_as"):
                 session.pop("view_as", None)  # no longer allowed (removed, or no longer an admin)
             return await self.app(scope, receive, send)
-        if scope["path"] in (STOP, FEEDBACK):  # stopping, and a note for Claude, are the real person's
+        if scope["path"] in (STOP, FEEDBACK) or scope["path"].startswith(TESTING):  # stopping, a note for Claude and testing are the real person's
             return await self.app(scope, receive, send)
         if scope["method"] not in ("GET", "HEAD"):
             return await _refuse(scope, session, target)(scope, receive, send)

@@ -22,6 +22,8 @@ fix to a broken note (--note) and every change he should look at (--pr); a run o
         --said "Fixed: every list's headings now stay at the top."
     uv run python scripts/feedback.py check set 12 again --said "Fixed in PR 401: …"   # ready | again | claude | …
     uv run python scripts/feedback.py check set 12 claude --said "12 of 12 on the Mini's seats"
+    uv run python scripts/feedback.py check set 12 fixed --pr <url> --said "Fixed: …"   # comes back by itself once live
+    uv run python scripts/feedback.py check live                    # (deploy_check.py runs it after each deploy)
 
 Give each note a short title when you take it up (Brett, Nov 16: a few words saying what it's about; its sender sees it on
 Notes you sent, and the queue lists it). What each kind gets (Brett, Nov 16): **broken**, fix it in the next round (one people would see still goes to Brett as a
@@ -126,9 +128,35 @@ def check(a) -> None:
                 **({"feedback_id": a.note} if a.note else {})}
         c = json.loads(call(a.base, "/api/checks", body))
         print(f"Check {c['id']}: {c['title']} ({c['says']})")
+    elif a.do_what == "live":
+        live(a.base)
     else:
-        c = json.loads(call(a.base, f"/api/checks/{a.id}", {"status": a.status, **({"said": a.said} if a.said else {})}))
+        c = json.loads(call(a.base, f"/api/checks/{a.id}", {"status": a.status, **({"said": a.said} if a.said else {}), **({"pr": a.pr} if a.pr else {})}))
         print(f"Check {c['id']}: {c['says']}")
+
+
+def live(base: str) -> None:
+    """Every check marked fixed whose PR is merged and in what askdnd runs now (its /health version) comes back as
+    Try again (Brett's 4A): a fix is tried once it's where he'll try it, never before."""
+    import re
+    import subprocess
+
+    subprocess.run(["git", "fetch", "-q", "origin"], cwd=ROOT, check=False)  # (the running commit is known here)
+    running = json.loads(urllib.request.urlopen(base.rstrip("/") + "/health", timeout=30).read())["version"]
+    for c in json.loads(call(base, "/api/checks?status=fixed"))["items"]:
+        m = re.search(r"/pull/(\d+)", c["pr"] or "")
+        if not m:
+            print(f"Check {c['id']}: fixed, but no PR to follow")
+            continue
+        pr = json.loads(subprocess.run(["gh", "pr", "view", m.group(1), "--json", "state,mergeCommit"], capture_output=True, text=True, check=True).stdout)
+        sha = (pr.get("mergeCommit") or {}).get("oid") or ""
+        merged = pr.get("state") == "MERGED" and sha
+        inside = merged and subprocess.run(["git", "merge-base", "--is-ancestor", sha, running], cwd=ROOT, capture_output=True).returncode == 0
+        if inside:
+            call(base, f"/api/checks/{c['id']}", {"status": "again"})
+            print(f"Check {c['id']}: live, back as Try again")
+        else:
+            print(f"Check {c['id']}: PR {m.group(1)} isn't live yet")
 
 
 def main() -> None:
@@ -172,8 +200,10 @@ def main() -> None:
     ca.add_argument("--note", type=int, default=None, help="the feedback note it came from")
     cs = cks.add_parser("set")
     cs.add_argument("id", type=int)
-    cs.add_argument("status", choices=["ready", "again", "failed", "passed", "skipped", "claude"])
+    cs.add_argument("status", choices=["ready", "again", "failed", "fixed", "passed", "skipped", "claude"])
     cs.add_argument("--said", default="")
+    cs.add_argument("--pr", default="", help="the fix (with fixed: it comes back as Try again once live)")
+    cks.add_parser("live", help="checks whose fix is now on askdnd.ai: Try again (deploy_check.py runs it)")
     a = p.parse_args()
     if a.cmd == "check":
         check(a)
