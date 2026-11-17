@@ -1044,9 +1044,18 @@
   "link": "https://claude.ai/artifact/8qfS3KYY3UXNsot4wM2jtX"
  },
  {
-  "title": "Working with Claude",
+  "title": "Readers, Rebuilt",
   "kind": "design",
   "status": "For your pick",
+  "date": "Nov 17",
+  "what": "Brett, Nov 17: Testing's Reader was confusing, hard to read and complicated, borrowed from Feedback. Both rebuilt for their jobs: a check's state in words with one main action and the walkthrough as the card shows it; a note's evidence first and its thread as a conversation; and the shared pieces (state header, state words, action bar, timeline, conversation, evidence) for the design system.",
+  "source": "docs/mockups/readers/index.html",
+  "link": "https://claude.ai/artifact/4Zpc4M36ff2bMmK4rkUNz6"
+ },
+ {
+  "title": "Working with Claude",
+  "kind": "design",
+  "status": "Chose all A · built (PRs 408–411)",
   "date": "Nov 17",
   "what": "Testing, round 3 (Brett, Nov 17, after his first round): one queue for checks, Claude's questions and design picks, by area; one area in Claude's hands at a time, shown in Where it stands; steps as a walkthrough; several issues on one check; checks that make things run in VTT Test; fresh sessions as a trial with a way back to one chat.",
   "source": "docs/mockups/working-together/index.html",

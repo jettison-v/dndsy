@@ -1,0 +1,491 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Readers, Rebuilt</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens; laptop first, one column on a phone. Readers, rebuilt (Nov 17). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .14);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .14);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .14);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 38px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.35rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+ul, ol { margin: 0; padding-left: 18px; display: grid; gap: 5px; }
+a { color: var(--blue); }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta, .note { color: var(--muted); font-size: .9rem; }
+header.top { display: grid; gap: 14px; }
+.where { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.where div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); }
+.where > div > b:first-child { display: block; margin-bottom: 2px; }
+.board { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 28px; align-items: start; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.board.wide { grid-template-columns: minmax(0, 1fr); }
+.say { display: grid; gap: 12px; min-width: 0; align-content: start; }
+.stage { display: grid; gap: 12px; min-width: 0; }
+.cap { color: var(--muted); font-size: .84rem; }
+.cost { display: flex; gap: 8px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); }
+.cost span { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 999px; padding: 3px 10px; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.before, .after { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.before > .lbl { color: var(--muted); } .after > .lbl { color: var(--green); }
+
+/* askdnd's pieces */
+.win { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: grid; gap: 12px; font-size: .9rem; box-shadow: 0 14px 34px rgba(0,0,0,.35); min-width: 0; }
+.win .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.win .hd b { font-size: 1.1rem; }
+.win .x { color: var(--muted); }
+.sub { color: var(--muted); font-size: .86rem; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.btn { font: 600 .88rem/1 var(--sans); padding: 9px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.btn.primary { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.small { padding: 6px 10px; font-size: .8rem; }
+.btn.link { background: none; border-color: transparent; color: var(--muted); }
+button.btn, button.chip, button.step { cursor: pointer; }
+.btn:focus-visible, .chip:focus-visible, .step:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.chip { font: 600 .8rem/1 var(--sans); padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font: 600 .72rem/1 var(--sans); padding: 3px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
+.tag.ok { background: var(--green-soft); color: var(--green); }
+.tag.warn { background: var(--amber-soft); color: var(--amber); }
+.field { display: grid; gap: 4px; font-size: .82rem; color: var(--muted); min-width: 0; }
+.input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--text); font: 400 .9rem/1.3 var(--sans); min-width: 0; }
+.input.ph { color: var(--faint); }
+.av { width: 30px; height: 30px; border-radius: 50%; flex: none; display: inline-grid; place-items: center; font: 700 .8rem/1 var(--sans); color: #1b1b1b; }
+.av.c { background: #8fb39a; } .av.b { background: #e0b878; } .av.n { background: #b39ad8; } .av.t { background: #90b4e0; }
+.mbar2 { display: flex; gap: 12px; align-items: center; background: #0f1113; border: 1px solid var(--line); border-bottom: 2px solid var(--red-btn); border-radius: 10px 10px 0 0; padding: 8px 12px; font-size: .84rem; color: var(--muted); flex-wrap: wrap; }
+.mbar2 .logo { width: 20px; height: 20px; border-radius: 6px; background: var(--red-btn); }
+.mbar2 b { color: var(--strong); } .mbar2 .sp { flex: 1; }
+.mbar2 .door { color: var(--strong); border: 1px solid var(--amber); background: var(--amber-soft); border-radius: 999px; padding: 2px 10px; }
+
+</style>
+<style>
+/* Readers, rebuilt (Nov 17): Testing's check and Feedback's note, each built for its job. */
+.frame { background: var(--surface); border: 1px solid var(--line); border-radius: 0 0 12px 12px; overflow: hidden; }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); padding: 0 14px; flex-wrap: wrap; }
+.tabs span { font: 600 .86rem/1 var(--sans); color: var(--muted); padding: 11px 10px; border-bottom: 2px solid transparent; }
+.tabs span.on { color: var(--strong); border-bottom-color: var(--red); }
+.tabs small { color: var(--faint); font-weight: 600; margin-left: 4px; }
+.tabs small.hot { color: var(--amber); }
+.two { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.6fr); }
+.list { border-right: 1px solid var(--line); padding: 10px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.lhead { padding: 4px 6px 10px; display: grid; gap: 8px; }
+.lhead b { font-size: 1rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 600 .78rem/1 var(--sans); padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); white-space: nowrap; }
+.chip.on { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chip small { color: var(--muted); margin-left: 3px; }
+.grp { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px 6px 4px; font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
+.grp a { font: 600 .74rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--blue); text-decoration: none; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 10px; border-radius: 8px; font-size: .86rem; }
+.row b { font-weight: 600; color: var(--text); min-width: 0; }
+.row .sub2 { grid-column: 1 / -1; color: var(--muted); font-size: .76rem; }
+.row.on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--blue); }
+/* state, said in words (no dots to decode) */
+.state { font: 700 .7rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; white-space: nowrap; align-self: start; letter-spacing: .02em; }
+.state.ready { background: var(--blue-soft); color: var(--blue); }
+.state.again { background: var(--amber-soft); color: var(--amber); }
+.state.failed { background: var(--red-soft); color: var(--red); }
+.state.passed { background: var(--green-soft); color: var(--green); }
+.state.ask { background: var(--amber-soft); color: var(--amber); }
+.state.pick { background: var(--violet-soft); color: var(--violet); }
+.state.waiting { background: var(--surface-3); color: var(--muted); }
+/* the detail side */
+.detail { padding: 18px 20px; display: grid; gap: 16px; align-content: start; min-width: 0; }
+.shead { display: grid; gap: 8px; }
+.shead h3 { font: 600 1.3rem/1.25 var(--serif); }
+.sline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: .9rem; color: var(--text); }
+.sline .state { font-size: .74rem; padding: 5px 10px; }
+.meta2 { color: var(--muted); font-size: .8rem; }
+.act { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.pass { background: transparent; border-color: var(--green); color: var(--green); }
+.btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg span { font: 600 .82rem/1 var(--sans); padding: 8px 12px; color: var(--text); border-right: 1px solid var(--line); background: var(--surface-2); }
+.seg span:last-child { border-right: 0; }
+.seg .ok { color: var(--green); } .seg .no { color: var(--red); }
+.more { font-size: 1.1rem; color: var(--muted); padding: 2px 8px; border: 1px solid var(--line); border-radius: 8px; line-height: 1.2; }
+/* the walkthrough, as the card draws it */
+.panel { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; }
+.panel.card { border-top: 3px solid var(--blue); }
+.plabel { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; counter-reset: s; }
+.steps li { display: grid; grid-template-columns: 18px 18px minmax(0, 1fr); gap: 8px; align-items: start; counter-increment: s; line-height: 1.5; font-size: .9rem; }
+.steps li::before { content: counter(s); font: 700 .74rem/1.9 var(--sans); color: var(--faint); text-align: right; }
+.steps .box { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--line-strong); margin-top: 3px; }
+.press { font: 600 .8rem/1 var(--sans); background: var(--surface-3); border: 1px solid var(--line-strong); color: var(--strong); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+.typed { font: 600 .84rem/1 var(--sans); background: var(--bg); border: 1px dashed var(--line-strong); color: var(--strong); border-radius: 5px; padding: 2px 6px; }
+.see { border-top: 1px solid var(--line-soft); padding-top: 10px; display: grid; gap: 4px; font-size: .88rem; }
+/* why it's here: one line, opens */
+.why { display: grid; gap: 8px; font-size: .86rem; }
+.whyline { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; color: var(--text); }
+.whyline a { color: var(--blue); text-decoration: none; }
+.fold { color: var(--muted); font-size: .8rem; }
+/* the issues it sent */
+.iss { display: grid; gap: 6px; }
+.irow { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 7px 10px; font-size: .84rem; }
+.thumb { height: 34px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line); position: relative; overflow: hidden; }
+.thumb::after { content: ""; position: absolute; left: 35%; top: 22%; width: 45%; height: 50%; border: 1.5px solid var(--red); border-radius: 3px; }
+/* timeline: newest first, coloured by what happened */
+.tl { list-style: none; margin: 0; padding: 0 0 0 4px; display: grid; gap: 0; font-size: .82rem; }
+.tl li { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding-bottom: 10px; position: relative; }
+.tl li::before { content: ""; width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; background: var(--line-strong); }
+.tl li:not(:last-child)::after { content: ""; position: absolute; left: 4px; top: 16px; bottom: 0; width: 2px; background: var(--line-soft); }
+.tl li.red::before { background: var(--red); } .tl li.amber::before { background: var(--amber); } .tl li.green::before { background: var(--green); } .tl li.blue::before { background: var(--blue); } .tl li.violet::before { background: var(--violet); }
+.tl .when { color: var(--faint); font-size: .76rem; white-space: nowrap; }
+/* feedback: the evidence and the conversation */
+.ev { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.pic { position: relative; height: 190px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; }
+.pic .rows { position: absolute; inset: 14px; display: grid; gap: 8px; align-content: start; opacity: .6; }
+.pic .rows i { display: block; height: 12px; border-radius: 4px; background: var(--surface-2); }
+.pic .mk { position: absolute; left: 58%; top: 18%; width: 22%; height: 26%; border: 2px solid var(--red); border-radius: 6px; }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; font-size: .8rem; }
+.facts dt { color: var(--faint); } .facts dd { margin: 0; color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.facts dd a { color: var(--blue); text-decoration: none; }
+.thread { display: grid; gap: 8px; }
+.bub { max-width: 88%; padding: 9px 12px; border-radius: 12px; font-size: .86rem; display: grid; gap: 3px; }
+.bub small { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+.bub.them { background: var(--surface-2); border: 1px solid var(--line-soft); justify-self: start; border-bottom-left-radius: 4px; }
+.bub.them small { color: var(--muted); }
+.bub.claude { background: var(--violet-soft); border: 1px solid rgba(185,163,227,.35); justify-self: start; border-bottom-left-radius: 4px; }
+.bub.claude small { color: var(--violet); }
+.bub.you { background: var(--blue-soft); border: 1px solid rgba(126,166,224,.35); justify-self: end; border-bottom-right-radius: 4px; }
+.bub.you small { color: var(--blue); }
+.composer { display: grid; gap: 8px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.composer .ta { min-height: 40px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; color: var(--faint); font-size: .86rem; }
+.to { display: flex; gap: 6px; align-items: center; font-size: .78rem; color: var(--muted); flex-wrap: wrap; }
+.kind { font: 700 .7rem/1 var(--sans); padding: 4px 8px; border-radius: 6px; }
+.kind.broken { background: var(--red-soft); color: var(--red); } .kind.idea { background: var(--violet-soft); color: var(--violet); } .kind.question { background: var(--blue-soft); color: var(--blue); }
+/* states, small */
+.states { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.mini { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; align-content: start; font-size: .84rem; min-width: 0; }
+.mini h4 { margin: 0; font: 600 .98rem/1.3 var(--sans); color: var(--strong); }
+.pieces { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.pieces > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; align-content: start; font-size: .84rem; min-width: 0; }
+.pieces .n { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+.bad { display: grid; gap: 6px; font-size: .86rem; }
+.bad li { color: var(--muted); }
+.bad b { color: var(--text); }
+@media (max-width: 900px) {
+  .two, .ev { grid-template-columns: minmax(0, 1fr); }
+  .list { border-right: 0; border-bottom: 1px solid var(--line); }
+  .states, .pieces { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="lbl">askdnd admin · Testing and Feedback · Nov 17</div>
+    <h1>Readers, built for the job</h1>
+    <p class="lead">Your note on Testing's Reader (Nov 17): it's confusing, hard to read and complicated, because it borrowed Feedback's parts instead of being built for testing. This draws both again from what each one is for. <b>Testing</b> answers one question: <i>what do I do with this check now?</i> <b>Feedback</b> answers another: <i>what did they see, and where does it stand?</i> They share a few new pieces, added to the design system, and each is laid out for its own job.</p>
+    <div class="where">
+      <div><b>Where they live</b>Manage › askdnd › Testing (For you) and Manage › askdnd › Feedback, as today. Admins only, so new pieces in the design system are fine (your note).</div>
+      <div><b>What's wrong today</b>
+        <ul class="bad">
+          <li><b>A status line that mixes two things</b>: "Failed · Testing · Manage" is the state and the page it's about.</li>
+          <li><b>The title three times</b>, six headings that all look alike, and a history whose Failed is a green dot.</li>
+          <li><b>Four equal buttons</b>: Passed, Failed…, + Issue and an unclear Try it again. Feedback is an accordion of long lines.</li>
+        </ul></div>
+      <div><b>Six decisions</b>How state is said, what the check shows first, where you mark it, the history, Feedback's layout, and how much they share. My picks at the bottom.</div>
+    </div>
+  </header>
+
+  <!-- Board 1 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 1 · Testing, For you</div>
+      <h2>The check you're on: what it is, where it stands, and the one thing to do next</h2>
+      <p style="max-width:88ch">Top to bottom, the order you need it in. <b>The title, once.</b> <b>Where it stands in one sentence</b>, its state as a word in its colour (no dots to decode, no key). <b>One main button</b> for what comes next, here <i>Try it</i>: its page with the card. Marking it sits beside, as one small set: Passed, Failed…, + Note. Then <b>the walkthrough exactly as the card shows it</b>, so you know what you'll see on the page. Why it's here and its history are one line each, opened when you want them.</p>
+    </div>
+    <div class="stage">
+      <div class="mbar2"><span class="logo"></span><b>The Adventure Begins</b><span>Campaign</span><span class="sp"></span><span class="door">Manage · 4</span></div>
+      <div class="frame" aria-label="Testing, For you, a check that's back to try again">
+        <div class="tabs"><span class="on">For you <small class="hot">4</small></span><span>Where it stands</span><span>Claude ran</span><span>Done</span></div>
+        <div class="two">
+          <div class="list">
+            <div class="lhead"><b>4 for you</b><div class="chips"><span class="chip on">All <small>4</small></span><span class="chip">Try again <small>2</small></span><span class="chip">Questions <small>1</small></span><span class="chip">With a player <small>1</small></span></div></div>
+            <div class="grp">Working with Claude <a>▶ Just this area</a></div>
+            <div class="row on"><b>Testing's chips open their lists</b><span class="state again">Try again</span><span class="sub2">from your note 98 · 1 min</span></div>
+            <div class="row"><b>For you goes area by area</b><span class="state again">Try again</span><span class="sub2">from your note 99 · 1 min</span></div>
+            <div class="grp">Item Builder</div>
+            <div class="row"><b>Help beside the less clear choices</b><span class="state ask">Question</span><span class="sub2">your note 89 · Claude asks</span></div>
+            <div class="grp">With a player</div>
+            <div class="row"><b>The rolls panel stays open</b><span class="state waiting">Asked them</span><span class="sub2">their note · 2 days left</span></div>
+          </div>
+          <div class="detail">
+            <div class="shead">
+              <span class="meta2">Check 39 · Testing · Working with Claude</span>
+              <h3>Testing's chips open their lists</h3>
+              <div class="sline"><span class="state again">Try again</span><span>Claude fixed what you found; the fix is live.</span></div>
+              <div class="act"><span class="btn go">▶ Try it</span><span class="seg"><span class="ok">✓ Passed</span><span class="no">✗ Failed…</span><span>+ Note</span></span><span class="more" title="More: Skip, Ready again">⋯</span></div>
+            </div>
+            <div class="panel card">
+              <span class="plabel">On the page, the card says</span>
+              <ol class="steps">
+                <li><span class="box"></span><span>Press the <span class="press">Try again</span> chip.</span></li>
+                <li><span class="box"></span><span>Press the <span class="press">Failed</span> chip.</span></li>
+              </ol>
+              <div class="see"><span class="plabel">You should see</span><span>Each chip opens its list in place, the page staying put, and is underlined as the one you're on.</span></div>
+            </div>
+            <div class="why">
+              <div class="whyline"><span class="plabel">Why</span><span>Your <a>note 98</a>, “Clicking on the filtered does not do anything.” Fixed in <a>change 410</a>.</span><span class="fold">▸ The note and Claude's reply</span></div>
+              <div class="whyline"><span class="plabel">History</span><span>Failed by you, Nov 17 · fixed, Nov 17</span><span class="fold">▸ All 4</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="cap">The list says each check's state in a word; the check says it in a sentence. ⋯ holds what you rarely need (Skip, set it Ready again).</p>
+    </div>
+  </section>
+
+  <!-- Board 2 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 2 · the same view, in each state</div>
+      <h2>The sentence and the main button change with the state; nothing else moves</h2>
+      <p style="max-width:88ch">Every state has its own word, colour, sentence and next step, so you always know what's asked of you. When it failed, its issues come first, each with its picture and where it stands; when it passed, it's a record.</p>
+    </div>
+    <div class="states">
+      <div class="mini">
+        <span class="meta2">Check 34 · Ready</span>
+        <h4>Send several issues from one check</h4>
+        <div class="sline"><span class="state ready">Ready</span><span>New: try it for the first time.</span></div>
+        <div class="act"><span class="btn go small">▶ Try it</span><span class="seg"><span class="ok">✓</span><span class="no">✗</span><span>+ Note</span></span></div>
+        <span class="meta2">Then the walkthrough, as on Board 1.</span>
+      </div>
+      <div class="mini">
+        <span class="meta2">Check 32 · Failed</span>
+        <h4>For you goes area by area</h4>
+        <div class="sline"><span class="state failed">Failed</span><span>You found 2 issues. With Claude: it comes back once they're fixed.</span></div>
+        <div class="iss">
+          <div class="irow"><span class="thumb"></span><span>The ? and ◇ sit off-center<br><span class="meta2">note 104</span></span><span class="state waiting">With Claude</span></div>
+          <div class="irow"><span class="thumb"></span><span>The dots need a key<br><span class="meta2">note 99</span></span><span class="state passed">Fixed</span></div>
+        </div>
+        <div class="act"><span class="btn small">+ Another issue</span><span class="btn ghost small">Undo Failed</span></div>
+      </div>
+      <div class="mini">
+        <span class="meta2">Check 31 · Passed</span>
+        <h4>Drag the areas into your order</h4>
+        <div class="sline"><span class="state passed">Passed</span><span>You passed it, Nov 17. Nothing to do.</span></div>
+        <ol class="tl">
+          <li class="green"><span>Passed by you</span><span class="when">Nov 17</span></li>
+          <li class="blue"><span>Ready: made by Claude</span><span class="when">Nov 17</span></li>
+        </ol>
+        <div class="act"><span class="btn ghost small">Try it again</span></div>
+      </div>
+    </div>
+    <div class="split">
+      <div class="say">
+        <h3>The history, read top down</h3>
+        <ol class="tl">
+          <li class="amber"><span><b>Back to try</b>: the fix is live</span><span class="when">Nov 17, 10:50</span></li>
+          <li class="violet"><span><b>Claude fixed it</b> in change 410</span><span class="when">Nov 17, 10:44</span></li>
+          <li class="red"><span><b>You failed it</b>: “Clicking on the filtered does not do anything”</span><span class="when">Nov 17, 10:28</span></li>
+          <li class="blue"><span><b>Ready</b>: made from your note 98</span><span class="when">Nov 17, 10:20</span></li>
+        </ol>
+      </div>
+      <div class="say">
+        <h3>What it fixes</h3>
+        <ul>
+          <li><b>Newest first</b>, each line saying who did what, coloured by what it means: red failed, violet Claude, amber back to try, green passed.</li>
+          <li><b>One line folded</b> under the check (Board 1), opened when you want the story.</li>
+          <li>A question in For you uses the same header: its state <span class="state ask">Question</span>, the sentence “Claude asks: which do you want?”, the answers as today.</li>
+        </ul>
+        <div class="cost"><span>Build: M · the header, the set of marks, the timeline, state words in the list</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Board 3 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 3 · Feedback, rebuilt</div>
+      <h2>A note: what they saw, what they said, the conversation, and where it stands</h2>
+      <p style="max-width:88ch">Feedback is a different job: reading what someone found and moving it along. So the same list on the left as Testing (kind and state as words, newest first), and on the right <b>the evidence first</b>: their picture, large, with their marks, and the page's facts beside it (where, when, the browser, what they pointed at). Then <b>the conversation as a conversation</b>: their words, Claude's replies and yours as messages, with one box to answer, to Claude or to them. <b>Where it stands</b> is the same header as a check, its next step the main button.</p>
+    </div>
+    <div class="stage">
+      <div class="mbar2"><span class="logo"></span><b>The Adventure Begins</b><span>Campaign</span><span class="sp"></span><span class="door">Manage · 2</span></div>
+      <div class="frame" aria-label="Feedback, a note open">
+        <div class="tabs"><span class="on">Waiting <small class="hot">2</small></span><span>With Claude <small>5</small></span><span>Planned <small>3</small></span><span>Done</span></div>
+        <div class="two">
+          <div class="list">
+            <div class="lhead"><div class="chips"><span class="chip on">All</span><span class="chip">Broken <small>4</small></span><span class="chip">Ideas <small>2</small></span><span class="chip">Questions <small>1</small></span></div></div>
+            <div class="row on"><b>The rolls panel closes by itself</b><span class="state waiting">To approve</span><span class="sub2"><span class="kind broken">Broken</span> · Cole's player · 10 min ago</span></div>
+            <div class="row"><b>A spell list for Trah's forms</b><span class="state waiting">To approve</span><span class="sub2"><span class="kind idea">Idea</span> · Trah's player · 1 hour ago</span></div>
+            <div class="row"><b>The count on your picture sits off-center</b><span class="state ready">With Claude</span><span class="sub2"><span class="kind broken">Broken</span> · you · today</span></div>
+          </div>
+          <div class="detail">
+            <div class="shead">
+              <span class="meta2">Note 105 · Battle · from Cole's player</span>
+              <h3>The rolls panel closes by itself</h3>
+              <div class="sline"><span class="state waiting">To approve</span><span>From the table: it reaches Claude once you approve it.</span></div>
+              <div class="act"><span class="btn go">Approve: send to Claude</span><span class="seg"><span>Reply to them</span><span>It's an idea</span></span><span class="more" title="More: Delete with a reason">⋯</span></div>
+            </div>
+            <div class="ev">
+              <div class="pic"><div class="rows"><i style="width:60%"></i><i></i><i style="width:80%"></i><i></i><i style="width:70%"></i><i></i><i style="width:50%"></i></div><span class="mk"></span></div>
+              <dl class="facts">
+                <dt>Page</dt><dd><a>Cole · Battle ↗</a></dd>
+                <dt>When</dt><dd>Nov 17, 8:11 PM</dd>
+                <dt>Pointed at</dt><dd>Table rolls panel</dd>
+                <dt>On</dt><dd>Chrome on a laptop, 1440 × 900</dd>
+                <dt>Live pill</dt><dd>Connected</dd>
+                <dt></dt><dd><span class="fold">▸ Everything sent with it</span></dd>
+              </dl>
+            </div>
+            <div class="thread">
+              <div class="bub them"><small>Cole's player</small>When a new roll comes in, the Table rolls panel closes by itself and I lose my place.</div>
+              <div class="bub them"><small>Cole's player · added</small>It happens on the phone too.</div>
+            </div>
+            <div class="composer">
+              <div class="to"><span>Write to</span><span class="chip on">Claude</span><span class="chip">Cole's player</span></div>
+              <div class="ta">Something to add, or an answer</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="cap">The picture is the evidence, so it leads; the facts sit beside it, not in a run-on line. Who you write to is chosen above the box, so a reply never goes to the wrong person.</p>
+    </div>
+  </section>
+
+  <!-- Board 4 -->
+  <section class="board wide">
+    <div class="say">
+      <div class="lbl">Board 4 · one set of pieces, two purposes</div>
+      <h2>What's shared, added to the design system</h2>
+      <p style="max-width:88ch">Shared where the job is the same, built for each where it isn't. The pieces go in Manage › askdnd › Design system as admin pieces, each with its rules, and every admin page that shows something with a state uses them (Where it stands, Notes you sent's admin side later).</p>
+    </div>
+    <div class="pieces">
+      <div><span class="n">State header</span><span>Title once; its state as a word in its colour; one sentence saying what that means for you; the main button and the set of marks.</span><div class="sline"><span class="state again">Try again</span><span class="meta2">Claude fixed it; it's live.</span></div></div>
+      <div><span class="n">State words</span><span>One word per state, one colour each, the same in lists and headers: Ready, Try again, Failed, Passed, Question, Pick, To approve, With Claude, Asked them.</span><div class="chips"><span class="state ready">Ready</span><span class="state again">Try again</span><span class="state failed">Failed</span><span class="state passed">Passed</span><span class="state pick">Pick</span></div></div>
+      <div><span class="n">Action bar</span><span>One main button for the next step, a small set for the rest, ⋯ for what you rarely need. Never four buttons of equal weight.</span><div class="act"><span class="btn go small">▶ Try it</span><span class="seg"><span class="ok">✓</span><span class="no">✗</span><span>+</span></span><span class="more">⋯</span></div></div>
+      <div><span class="n">Timeline</span><span>History newest first, who did what, coloured by meaning, folded to one line by default.</span></div>
+      <div><span class="n">Conversation</span><span>A thread as messages: theirs on the left, Claude's violet, yours on the right; one box below that says who it goes to.</span></div>
+      <div><span class="n">Evidence</span><span>A note's picture large with its marks, and the page's facts as a short list beside it; everything else folded.</span></div>
+    </div>
+  </section>
+
+  <section class="pick" aria-labelledby="pick-h">
+    <div class="lbl">Your pick</div>
+    <h2 id="pick-h">Six answers</h2>
+    <p class="meta">My picks: <b>1A, 2A, 3A, 4A, 5A, 6A</b>. Tick yours and Save; you can come back and change it.</p>
+    <form class="decide">
+      <fieldset data-q="state" data-kind="one"><legend>1 · How a check's state is said</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="state" value="A">A · A word in its colour, in the list and the header, no key <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="state" value="B">B · Dots with a key, as now</label>
+      </div></fieldset>
+      <fieldset data-q="first" data-kind="one"><legend>2 · What a check shows first</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="first" value="A">A · Its state sentence and one main button, then the walkthrough as the card shows it <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="first" value="B">B · The walkthrough first, the state below</label>
+      </div></fieldset>
+      <fieldset data-q="mark" data-kind="one"><legend>3 · Marking a check from the Reader</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="mark" value="A">A · A small set beside Try it (✓ ✗ + Note), Skip under ⋯ <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="mark" value="B">B · Only on its page, with the card</label>
+      </div></fieldset>
+      <fieldset data-q="history" data-kind="one"><legend>4 · The history</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="history" value="A">A · A timeline, newest first, folded to one line <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="history" value="B">B · Always open</label>
+      </div></fieldset>
+      <fieldset data-q="feedback" data-kind="one"><legend>5 · Feedback's layout</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="feedback" value="A">A · A Reader like Testing's: the list, then the evidence and the conversation <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="feedback" value="B">B · Keep the accordion, restyled with the new pieces</label>
+      </div></fieldset>
+      <fieldset data-q="share" data-kind="one"><legend>6 · How much they share</legend><div class="choices">
+        <label class="choice one"><input type="radio" name="share" value="A">A · The pieces on Board 4, each page laid out for its job <span class="mine-tag">My pick</span></label>
+        <label class="choice one"><input type="radio" name="share" value="B">B · One Reader for both, the same layout</label>
+        <label class="choice one"><input type="radio" name="share" value="C">C · Nothing shared</label>
+      </div></fieldset>
+      <fieldset><legend>Your notes</legend><textarea name="notes" aria-label="Your notes" placeholder="Anything to change, an order, a question"></textarea></fieldset>
+      <div class="save-row"><button type="submit">Save</button><span class="saved" role="status">Loading…</span></div>
+    </form>
+  </section>
+</div>
+<style>
+.pick { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide { display: grid; gap: 16px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.decide legend { font-weight: 600; color: var(--strong); padding: 0; margin-bottom: 8px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 14px; border-radius: 999px;
+  background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; color: var(--text); }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.choice:has(input:checked) { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.choice:has(input:checked)::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--surface-2); }
+.choice:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+.choice .mine-tag { font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.decide textarea { width: 100%; min-height: 84px; box-sizing: border-box; background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; color: var(--text); font: 400 1rem/1.4 var(--sans); resize: vertical; }
+.save-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.save-row button { background: var(--red-btn); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: 600 .95rem/1 var(--sans); cursor: pointer; }
+.save-row button:disabled { opacity: .6; cursor: default; }
+.saved { color: var(--muted); font-size: .88rem; }
+.saved.ok { color: var(--green); }
+</style>
+<script>
+// Your pick: saved in this page's own store, where Claude reads it
+(() => {
+  const form = document.querySelector('form.decide');
+  if (!form) return;
+  const said = form.querySelector('.saved'), btn = form.querySelector('button');
+  let db = null;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle('ok', !!ok); };
+  const collect = () => {
+    const out = {};
+    form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+      const picked = [...fs.querySelectorAll('input:checked')].map(i => i.value);
+      out[fs.dataset.q] = fs.dataset.kind === 'one' ? (picked[0] || '') : picked;
+    });
+    return out;
+  };
+  form.addEventListener('change', () => show('Not saved yet'));
+  form.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') show('Not saved yet'); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString();
+    try {
+      await db.collection('answers').doc('pick').set({ answers: collect(), notes: form.querySelector('textarea').value.trim(), at });
+      show('Saved ' + when(at) + ' · Claude reads it from here', true);
+    } catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    try {
+      const d = await db.collection('answers').doc('pick').get();
+      if (!d.exists) { show('Nothing saved yet'); return; }
+      const a = d.data(), ans = a.answers || {};
+      form.querySelectorAll('fieldset[data-q]').forEach(fs => {
+        const v = ans[fs.dataset.q], vs = Array.isArray(v) ? v : [v];
+        fs.querySelectorAll('input').forEach(i => { i.checked = vs.includes(i.value); });
+      });
+      form.querySelector('textarea').value = a.notes || '';
+      show('Saved ' + when(a.at) + ' · change anything and Save again', true);
+    } catch (err) { show('Nothing saved yet'); }
+  })();
+})();
+</script>
