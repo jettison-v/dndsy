@@ -5723,7 +5723,7 @@ document.addEventListener('change', e => {
       const el = drag.el, sq = +el.dataset.sq || 1;
       el.style.left = (drag.left + dx / view.z) + 'px'; el.style.top = (drag.top + dy / view.z) + 'px'; el.classList.add('lifted');
       const to = snap(m, el), me = tokensOn(m).find(t => t.el === el);
-      measureLine(m, { x: me.x, y: me.y }, to, sq, me);
+      if (me) measureLine(m, { x: me.x, y: me.y }, to, sq, me);  // (a fresh copy of the map can replace the token mid-drag: no line then)
     }
   });
   function snap(m, el) {
