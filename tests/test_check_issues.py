@@ -188,3 +188,21 @@ def test_steps_come_as_lines_or_a_list_and_nothing_else(admin, db):
     assert admin.post(f"/api/checks/{c}", json={"expect": ["It opens."]}, headers=KEY).status_code == 400
     db.expire_all()
     assert db.get(Check, c).do == "Press [+ New item].\nPress [Save]."
+
+
+def test_undo_failed_keeps_an_issue_claude_already_fixed(admin, db):
+    """The review of note 108's fix: Undo withdraws the Failed's notes, but one Claude has already fixed (done, the
+    check still failed over another) keeps its fix; a fixed note's steps may come as a list too."""
+    c = add(admin)
+    admin.post("/manage/testing/round", data={})
+    first = note(admin, text="First issue.", check=c).json()["id"]
+    second = note(admin, text="Second issue.", check=c).json()["id"]
+    r = admin.post(f"/api/feedback/{first}", json={"kind": "broken", "status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/501",
+                                                   "check_do": ["Press [+ New item].", "Press [Save]."]}, headers=KEY)
+    assert r.status_code == 200, r.text
+    db.expire_all()
+    assert db.get(Check, c).status == "failed"  # (the second issue still to go)
+    admin.post(f"/manage/testing/{c}", data={"result": "undo"})
+    db.expire_all()
+    assert db.get(Feedback, first).status == "done" and db.get(Feedback, second).status == "deleted"
+    assert admin.post(f"/api/feedback/{second}", json={"check_do": 7}, headers=KEY).status_code == 400

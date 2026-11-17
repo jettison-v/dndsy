@@ -172,14 +172,15 @@ def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "", k
 def undo_failed(db: Session, c: Check) -> list[int]:
     """Undo Failed takes back everything the Failed did (Brett's pick A on his note 108, Nov 17: "nothing you'd see"):
     the check goes back to where it was, the notes it sent (Failed's and each + Another issue since) are withdrawn,
-    closed with a line saying why, and its history drops those lines. Returns the notes withdrawn."""
+    closed with a line saying why, and its history drops those lines. One Claude has already fixed (done) stays: its
+    fix is real. Returns the notes withdrawn."""
     hist = list(c.history or [])
     start = max((i for i, h in enumerate(hist) if h.get("key") == "failed"), default=None)
     if start is None:
         return []
     sent = [h["note"] for h in hist[start:] if h.get("note")]
     withdrawn = []
-    for fb in db.scalars(select(Feedback).where(Feedback.id.in_(sent), Feedback.check_id == c.id, Feedback.status != "deleted")) if sent else []:
+    for fb in db.scalars(select(Feedback).where(Feedback.id.in_(sent), Feedback.check_id == c.id, Feedback.status.not_in(("deleted", "done")))) if sent else []:
         fb.status = "deleted"
         fb.thread = [*(fb.thread or []), {"who": "you", "text": "Withdrawn: Failed was undone on its check", "at": datetime.now(UTC).isoformat(),
                                           "event": "withdrawn"}]
