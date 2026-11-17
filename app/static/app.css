@@ -4253,6 +4253,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .act-menu { position: absolute; z-index: 5; top: calc(100% + 4px); left: 0; min-width: 180px; display: grid; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r-md); box-shadow: var(--lift); padding: var(--sp-1); }
 .act-menu button { font: inherit; font-size: var(--fs-sm); text-align: left; background: none; border: 0; color: var(--text); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); cursor: pointer; }
 .act-menu button:hover { background: var(--surface-2); }
+.timeline { flex: 1 1 100%; min-width: 0; }  /* (in a row, it takes the row: its lines never squeeze) */
 .timeline > summary { list-style: none; cursor: pointer; }
 .timeline > summary::-webkit-details-marker { display: none; }
 .tl-badge { display: inline-block; font-size: var(--fs-xs); font-weight: 600; padding: 3px 9px; border-radius: var(--r-pill); background: var(--surface-3); color: var(--muted); }
