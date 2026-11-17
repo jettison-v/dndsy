@@ -346,7 +346,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     p.querySelector('[data-hb-line]').textContent = said;
     p.querySelector('[data-hb-says]').textContent = said;
     const called = p.querySelector('[data-hb-called]');
-    p.querySelector('[data-hb-title]').textContent = (called && called.value.trim()) || (called && form.querySelector('[data-hb-name]').value.trim()) || p.dataset.hbKind;
+    // its own name when it has one; the kind (A roll, A bonus) when it's only the item's own name (Brett's design review)
+    const own = called && called.value.trim(), item = form.querySelector('[data-hb-name]').value.trim();
+    p.querySelector('[data-hb-title]').textContent = own && own !== item ? own : p.dataset.hbKind;
     p.querySelectorAll('[data-hb-when]').forEach(r => { r.hidden = r.dataset.hbWhen !== how; });
     p.querySelectorAll('[data-hb-to]').forEach(r => { r.hidden = ['on_hit', 'on_damage'].includes(hbVal(p, '_when')); });
     p.querySelectorAll('[data-hb-regain]').forEach(r => { r.hidden = !hbVal(p, 'charges_back'); });

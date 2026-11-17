@@ -4141,6 +4141,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .hb-what .note { overflow-wrap: anywhere; }
 .hb-body { display: grid; gap: var(--sp-3); padding: 0 var(--sp-3) var(--sp-3); }
 .hb-piece:not([data-open]) .hb-body { display: none; }
+.hb-piece[data-open] .hb-head [data-hb-line] { display: none; }  /* (open, its sentence is the box under the head: once, not twice) */
 .hb-row { display: grid; grid-template-columns: 8.5rem minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
 .hb-row > .hb-k { color: var(--muted); font-size: var(--fs-sm); }
 .hb-row input[type=text] { width: 100%; max-width: 26rem; min-width: 0; }
