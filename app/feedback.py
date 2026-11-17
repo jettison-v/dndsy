@@ -205,8 +205,21 @@ def _store(db: Session, note: dict, staging: bool = False) -> Feedback:
                   context=context, html=str(note.get("html") or "")[:MAX_HTML], shot_key=keys.get("shot"), pasted_key=keys.get("pasted"))
     fb.seen = fb.told = marker(fb)  # (its sender knows what they just did: no "Sent to Claude" card on their next page; feedback 78)
     db.add(fb)
+    if fb.status == "new":  # (with Claude now; a player's waits for an admin's Approve: `change`)
+        db.flush()
+        tell_claude(db, fb, "note", "sent")
     db.commit()
     return fb
+
+
+def tell_claude(db: Session, fb: Feedback, what: str, how: str) -> None:
+    """Claude's inbox hears of it (app/for_claude.py): note 96 (broken) from Brett, sent: "…". First names only."""
+    from app import for_claude
+
+    who = (fb.sender or "").split(" (")[0].split(" ")[0] or "someone"
+    words = ((fb.thread or [{}])[-1].get("text") if what in ("added", "answer") else fb.text) or ""
+    for_claude.tell(db, what, f"Note {fb.id}" + (f" ({fb.kind})" if fb.kind else "") + f" from {who}, {how}: " + " ".join(words.split())[:280],
+                    feedback_id=fb.id, area_id=fb.area_id)
 
 
 SEND = None  # tests replace it: (url, payload, key) -> dict
@@ -317,6 +330,14 @@ def change(request: Request, feedback_id: int, to: str = Form(...), answer: str 
                                "deleted": "Deleted"}[to]
     else:
         raise HTTPException(400)
+    if to == "answer":
+        tell_claude(db, fb, "answer" if asked else "note" if approving else "added", "answered" if asked else "approved" if approving else "added to")
+    elif to == "new" and approved:
+        tell_claude(db, fb, "note", "approved")
+    elif to in ("done", "deleted"):
+        tell_claude(db, fb, "closed", "marked " + to + " by Brett")
+    elif to == "kind":
+        tell_claude(db, fb, "added", f"changed to {fb.kind}")
     db.commit()
     request.session["toast"] = said
     back_kind = request.query_params.get("kind", "")

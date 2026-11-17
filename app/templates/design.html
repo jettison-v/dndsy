@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_char.html" import pips, pin_icon, bookmark_icon, bell, ri, spends, ntile, adv, purse %}
-{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above %}
+{% from "_lists.html" import search_box, chip_group, view_switch, empty_state, filter_head, filters_above, grip %}
 {% from "_moments.html" import moment_list %}
 {% from "_settings.html" import switch, set_row, choice %}
 {% from "_form_bits.html" import pick_chips, stepper, dice_picker %}
@@ -78,8 +78,11 @@
 
   <section class="section" id="switches">
     <h2>Switches</h2>
-    {{ ds("Status track", ".st-track > li.st-done · .st-now · .st-todo · .st-stop · .st-skip · .st-dot", "Where something stands as its steps, the one it's at lit (Your notes, docs/mockups/your-notes-2/, Nov 7): green done, blue under way, grey for the step that ended it with the skipped ones struck through. A list's row shows the same as one dot.") }}
+    {{ ds("Status track", ".st-track > li.st-done · .st-now · .st-todo · .st-stop · .st-skip · .st-dot", "Where something stands as its steps, the one it's at lit (Your notes, docs/mockups/your-notes-2/, Nov 7): green done, blue under way, amber when it waits on you (st-you, Testing's areas, Nov 17), grey for the step that ended it with the skipped ones struck through. A list's row shows the same as one dot. _lists.html status_track.") }}
     <div class="ds-row"><ol class="st-track" aria-label="Sample"><li class="st-done">Sent</li><li class="st-done">Approved</li><li class="st-now">Planned</li><li class="st-todo">Fixed</li></ol></div>
+    <div class="ds-row"><ol class="st-track" aria-label="Sample, waiting on you"><li class="st-done">Found</li><li class="st-you">Questions</li><li class="st-todo">Claude fixing</li><li class="st-todo">Ready for you</li><li class="st-todo">Done</li></ol> <span class="note">Amber: it waits on you (Testing's areas)</span></div>
+    {{ ds("Drag handle", "_lists.html grip · .grip", "A row dragged into order (the fight's turn order, Testing's areas): the dots at its start; the list says so in words too (drag, or press and hold on a phone). Sortable with data-sort-column, data-sort-url, data-key per row and data-sort-n for numbers that follow.") }}
+    <div class="ds-row">{{ grip() }} <span>Item Builder</span></div>
     <div class="ds-row"><ol class="st-track" aria-label="Sample, turned down"><li class="st-done">Sent</li><li class="st-stop">Closed</li><li class="st-skip">Planned</li><li class="st-skip">Fixed</li></ol>
       <span class="st-dot st-wait"></span><span class="st-dot st-claude"></span><span class="st-dot st-done"></span><span class="st-dot st-used"></span><span class="st-dot st-closed"></span></div>
     {{ ds("Award card", ".award-cards > .award-card(.dice) · .award-name · .award-who · .award-line · .award-why", "A session's awards on its own page (Session Story, Nov 7, docs/mockups/session-story/): the award in amber over a gold edge, blue for one from the dice; who by portrait; Line of the Night's line; why.") }}

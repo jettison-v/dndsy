@@ -944,6 +944,7 @@ class Feedback(Timestamped, Base):
     thread: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     pr: Mapped[str] = mapped_column(String(300), default="", server_default="")
     told: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last had a card about (feedback.marker)
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)  # its area (Testing)
     seen: Mapped[str] = mapped_column(String(40), default="", server_default="")  # what its sender last saw on Your notes (the badge)
 
 
@@ -988,6 +989,35 @@ class Check(Timestamped, Base):
     history: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")  # [{"at", "what", "who"}]
     # when it came back to be tried (Try again): a player's three days and the fix-to-try email count from it
     asked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("areas.id", ondelete="SET NULL"), nullable=True, index=True)  # its area
+
+
+class Area(Timestamped, Base):
+    """Notes and checks fixed and tried together (Working with Claude, Brett's picks Nov 17, docs/mockups/working-together/):
+    Claude sorts what a round sent into areas; Brett sets their order (dragging them on Testing's Where it stands); one
+    at a time is in Claude's hands (`fixing`), finished before the next. Where it is (found, questions, fixing, ready
+    for you, done) is worked out from its notes and checks (testing.stage), never kept."""
+
+    __tablename__ = "areas"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str] = mapped_column(String(80))
+    place: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    fixing: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+
+
+class InboxItem(Base):
+    """Something that happened in askdnd for Claude to read (app/for_claude.py): a note sent or added to, a check
+    marked, an answer, the areas' order. Claude reads what's after its last read (`feedback.py inbox`), and waits for
+    the next one (`feedback.py wait`), so nothing Brett does in askdnd needs telling in chat."""
+
+    __tablename__ = "claude_inbox"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    what: Mapped[str] = mapped_column(String(30))  # for_claude.WHATS
+    text: Mapped[str] = mapped_column(String(400), default="", server_default="")
+    feedback_id: Mapped[int | None] = mapped_column(ForeignKey("feedback.id", ondelete="SET NULL"), nullable=True)
+    check_id: Mapped[int | None] = mapped_column(ForeignKey("checks.id", ondelete="SET NULL"), nullable=True)
+    area_id: Mapped[int | None] = mapped_column(ForeignKey("areas.id", ondelete="SET NULL"), nullable=True)
 
 
 class Place(Timestamped, Base):

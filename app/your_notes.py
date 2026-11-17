@@ -269,6 +269,8 @@ def add_to(request: Request, feedback_id: int, text: str = Form(""), pics: list[
     admin = access.level((user or {}).get("email")) == access.ADMIN
     fb.status = ("planned" if fb.status == "planned" else "new") if admin else "review"
     fb.seen = fb.told = feedback.marker(fb)
+    if admin:  # (a player's waits for an admin's Approve, as a new note does)
+        feedback.tell_claude(db, fb, "added", "added to")
     db.commit()
     request.session["toast"] = web.notice("Added: an admin reads it first" if not admin else "Added: it's with Claude")
     return RedirectResponse(f"/your-notes?tab=askdnd&note=f{fb.id}", status_code=303)
@@ -286,6 +288,10 @@ def works(request: Request, feedback_id: int, answer: str = Form(""), text: str 
     if c is None or answer not in ("yes", "no"):
         raise HTTPException(404)
     testing.answered(db, c, answer == "yes", text.strip())
+    from app import for_claude
+
+    for_claude.tell(db, "works", f"Note {fb.id}: its sender says " + ("it works now" if answer == "yes" else "it's still broken: " + " ".join(text.split())[:200]),
+                    feedback_id=fb.id, check_id=c.id, area_id=c.area_id)
     if answer == "no":
         fb.thread = [*(fb.thread or []), {"who": "sender", "text": ("Still broken. " + text.strip()).strip()[:feedback.MAX_TEXT], "at": feedback.now_iso()}]
         admin = access.level((user or {}).get("email")) == access.ADMIN

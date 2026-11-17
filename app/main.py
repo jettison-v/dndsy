@@ -43,6 +43,7 @@ from app.errors import router as errors_router
 from app.feature_use import router as feature_use_router
 from app.feedback import router as feedback_router
 from app.fog import router as fog_router
+from app.for_claude import router as for_claude_router
 from app.giving import router as giving_router
 from app.heals import router as heals_router
 from app.help_pages import router as help_router
@@ -284,6 +285,7 @@ app.include_router(initiative_router)  # the DM changes the fight's order (Labs:
 app.include_router(shifting_router)  # Wild Shape: shifting and leaving
 app.include_router(feedback_router)  # notes for Claude from any page, and the queue
 app.include_router(testing_router)  # Testing in askdnd: checks for an admin to try (app/testing.py)
+app.include_router(for_claude_router)  # what's waiting for Claude: askdnd's half of the loop with the Claude app
 app.include_router(your_notes_router)  # Your notes: what each person sent, about the story and about askdnd
 
 LOGIN_ERRORS = {

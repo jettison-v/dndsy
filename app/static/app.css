@@ -293,7 +293,7 @@ body.pt-rows .pt-with-track { display: none; }
 .ft-wait { margin: 0; padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line); color: var(--muted); font-size: var(--fs-sm); }
 .ft-wait b { color: var(--text-strong); }
 .pt-track.ft-order .ft-init { display: flex; align-items: center; gap: var(--sp-1); flex-wrap: wrap; }
-.pt-track .ft-grip { color: var(--faint); cursor: grab; display: inline-grid; place-items: center; }
+.grip { color: var(--faint); cursor: grab; display: inline-grid; place-items: center; }  /* (a drag handle: _lists.html grip) */
 .pt-track .ft-num { background: none; border: 1px solid transparent; border-radius: var(--r-sm); padding: 2px 6px; color: var(--text-strong); font: inherit; font-weight: 700; cursor: pointer; min-width: 2.4em; }
 .pt-track .ft-num:hover { border-color: var(--line-strong); }
 .pt-track .ft-pending { text-decoration: underline dashed var(--amber); text-underline-offset: 4px; }
@@ -3961,6 +3961,8 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .st-track .st-done + li::before { background: var(--green); }
 .st-track .st-now { color: var(--text-strong); font-weight: 600; }
 .st-track .st-now::after { background: var(--blue); border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); }
+.st-track .st-you { color: var(--text-strong); font-weight: 600; }  /* (waiting on you: Testing's areas, Nov 17) */
+.st-track .st-you::after { background: var(--amber); border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); }
 .st-track .st-stop { color: var(--text-strong); font-weight: 600; }
 .st-track .st-stop::after { background: var(--muted); border-color: var(--muted); }
 .st-track .st-skip { opacity: .55; text-decoration: line-through; }
@@ -4199,7 +4201,29 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .tests-reader .ts-ready { margin: 0 0 var(--sp-2); }
 .ts-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
 .ts-chips .chip { text-decoration: none; color: var(--text); }
-.ts-group { margin: var(--sp-3) 0 var(--sp-1); padding: 0 var(--sp-2); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.ts-group { margin: var(--sp-3) 0 var(--sp-1); padding: 0 var(--sp-2); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
+.ts-group form { display: contents; }
+.ts-group .btn { text-transform: none; letter-spacing: 0; font-weight: 600; }
+/* Where it stands (Working with Claude, Brett's picks Nov 17): an area a row, dragged into his order; the one in
+   Claude's hands first and lit; whether Claude is listening on top */
+.ar { display: grid; gap: var(--sp-3); }
+.ar-listen { margin: 0; display: flex; gap: var(--sp-2); align-items: baseline; font-size: var(--fs-sm); color: var(--muted); }
+.ar-listen b { color: var(--text-strong); }
+.ar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
+.ar-row { display: grid; grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: var(--sp-3); align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
+.ar-row.now { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); }
+.ar-row.ar-move { cursor: grab; }
+.ar-ord { display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 2.2em; color: var(--muted); font-size: var(--fs-sm); }
+.ar-area { display: grid; gap: 2px; min-width: 0; }
+.ar-area > b { color: var(--text-strong); overflow-wrap: anywhere; }
+.ar-what summary { cursor: pointer; }
+.ar-items { margin: var(--sp-1) 0 0; padding-left: 1.1em; display: grid; gap: 2px; font-size: var(--fs-sm); }
+.ar-next { justify-self: end; }
+.ar-done summary { cursor: pointer; }
+@media (max-width: 900px) {
+  .ar-row { grid-template-columns: auto minmax(0, 1fr); }
+  .ar-row .st-track, .ar-next { grid-column: 2; justify-self: start; }
+}
 .ts-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px var(--sp-2); align-items: center; }
 .ts-row .ts-title { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .ts-row .nt-sum { grid-column: 2 / -1; }

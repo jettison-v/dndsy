@@ -12,6 +12,12 @@ whose eyes, how long it takes, and why it exists (the note it came from, the cha
 - **Failed…** opens the feedback window (3A) with Something's broken picked and the check named; the note it sends
   marks the check failed and is tied to it (`failed`), so a failure is a feedback note like any other.
 
+**Areas** (Working with Claude, Brett's picks Nov 17, docs/mockups/working-together/): Claude sorts what a round sent
+into areas (`/api/areas`, `feedback.py area`), the notes and checks fixed and tried together; Brett drags them into his
+order on **Where it stands**, which shows where each is (`stage`) and whether Claude is listening (app/for_claude.py).
+One area at a time is in Claude's hands (`fixing`). For you lists the checks by area, in that order, and a round
+takes them so (4A); what a check needs open is a tag on it.
+
 It's kept to itself so it can go to another project with Feedback (Board 5 of the mockup): its own table, its own
 routes, and askdnd's people and pages only through `web`, `auth.is_admin` and the feedback key.
 """
@@ -24,10 +30,10 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import config, web
+from app import config, for_claude, web
 from app.auth import is_admin
 from app.db import get_db
-from app.models import Check, Feedback
+from app.models import Area, Check, Feedback
 from app.templating import templates
 
 router = APIRouter()
@@ -41,6 +47,11 @@ SAYS = {"ready": "Ready", "again": "Fixed · try again", "failed": "Failed", "fi
 SHOWS = {"ready": ("ready", "again"), "again": ("again",), "player": (), "failed": ("failed", "fixed"), "claude": ("claude",), "done": ("passed", "skipped")}
 SHOW_OF = {"passed": "done", "skipped": "done", "ready": "ready", "failed": "failed"}  # (where a check marked so is listed)
 SHOW_SAYS = {"ready": "Ready", "again": "Try again", "player": "With a player", "failed": "Failed", "claude": "Claude's", "done": "Done"}
+FOR_YOU = ("ready", "again", "player", "failed")  # (For you's chips; Claude ran and Done are tabs of their own, as is Where it stands)
+TABS = {"ready": "For you", "areas": "Where it stands", "claude": "Claude ran", "done": "Done"}
+NEEDS = {"view_as": "View as", "iphone": "iPhone", "mac": "Mac", "player": "A player"}  # (what a check needs open, as its tag)
+STAGES = ("Found", "Questions", "Claude fixing", "Ready for you", "Done")  # (where an area is: `stage`)
+NOTE_OPEN = ("review", "new", "question", "planned")
 TO_DO = ("ready", "again")  # what waits for the admin (the Manage menu's count)
 PLAYER_DAYS = 3  # a check on a player's note is theirs to confirm first; yours after this many days (Brett's 6C)
 DENIED = "Testing is for admins."
@@ -89,7 +100,7 @@ def for_note(db: Session, fb: Feedback, do: str = "", expect: str = "", admin_se
     c = Check(title=(fb.title or (fb.text or "").split(".")[0])[:160] or f"Note {fb.id}", area=str((fb.context or {}).get("page") or "")[:80],
               setup="laptop" if admin_sent else "player", path=path[:500], do=do or "Try what your note was about, where you saw it.",
               expect=expect or "It works now.", minutes=2, feedback_id=fb.id, pr=pr, said=said,
-              status="fixed", history=[])
+              status="fixed", history=[], area_id=fb.area_id)
     _note(c, "Fix on its way", "claude")
     db.add(c)
     return c
@@ -127,6 +138,10 @@ def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, pr
         return None
     c.failed_id = fb.id if fb is not None else None
     mark(db, c, "failed", said=f"note {fb.id}" if fb is not None else f"note {prod_note} on askdnd.ai")
+    if fb is not None and fb.area_id is None:
+        fb.area_id = c.area_id  # (a failure is about its check's area)
+    for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed, " + (f"note {fb.id}" if fb is not None else f"note {prod_note} on askdnd.ai"),
+                    feedback_id=fb.id if fb is not None else None, check_id=c.id, area_id=c.area_id)
     db.commit()
     return c
 
@@ -143,14 +158,23 @@ def local_path(p: str) -> bool:
     return bool(p) and p.startswith("/") and not p.startswith("//") and "\\" not in p and not any(ord(ch) < 32 or ord(ch) == 127 for ch in p)
 
 
-def ordered(rows: list[Check]) -> list[Check]:
-    keys = list(SETUPS)
-    return sorted(rows, key=lambda c: (keys.index(c.setup) if c.setup in keys else len(keys), c.place, c.id))
+def area_order(db: Session) -> list[Area]:
+    """The areas in the order they run: the one in Claude's hands, then Brett's order (`place`)."""
+    return sorted(db.scalars(select(Area)), key=lambda a: (not a.fixing, a.place, a.id))
 
 
-def view(c: Check) -> dict:
-    """A check as the Reader and the card show it."""
-    return {"id": c.id, "title": c.title, "area": c.area, "setup": c.setup, "group": SETUPS.get(c.setup, c.setup), "as_who": c.as_who, "as_character": c.as_character,
+def ordered(db: Session, rows: list[Check]) -> list[Check]:
+    """Checks in the order a round takes them (Brett's 4A): by area, in the areas' order, then each area's own order
+    (`place`, the page order Claude gives them); checks in no area after."""
+    at = {a.id: i for i, a in enumerate(area_order(db))}
+    return sorted(rows, key=lambda c: (at.get(c.area_id, len(at)), c.place, c.id))
+
+
+def view(c: Check, areas: dict[int, str] | None = None) -> dict:
+    """A check as the Reader and the card show it; `group` is its area's title (`areas`), else what it needs open."""
+    group = (areas or {}).get(c.area_id) or ("Claude runs these" if c.setup == "claude" else "Not in an area yet")
+    return {"id": c.id, "title": c.title, "area": c.area, "area_id": c.area_id, "setup": c.setup, "group": group,
+            "needs": NEEDS.get(c.setup, ""), "as_who": c.as_who, "as_character": c.as_character,
             "path": c.path, "do": [line for line in (c.do or "").splitlines() if line.strip()], "expect": c.expect, "minutes": c.minutes,
             "status": c.status, "says": SAYS.get(c.status, c.status), "feedback_id": c.feedback_id, "failed_id": c.failed_id, "pr": c.pr,
             "said": c.said, "history": c.history or []}
@@ -189,51 +213,117 @@ def current(request: Request, db: Session) -> dict | None:
 # ------------------------------------------------------------------ pages
 
 
+def stage(a: Area, notes: list[Feedback], checks: list[Check]) -> int:
+    """Where an area is (STAGES), worked out from its notes and checks: in Claude's hands while `fixing` (or a fix of
+    it on its way to askdnd.ai); Questions while Claude waits on an answer; Ready for you while a check waits for you;
+    Done once every note is closed and every check passed or skipped; else Found, waiting its turn."""
+    if a.fixing:
+        return 2
+    if any(f.status == "question" for f in notes):
+        return 1
+    if _for_admin([c for c in checks if c.status in TO_DO]):
+        return 3
+    if any(c.status == "fixed" for c in checks):
+        return 2
+    if (notes or checks) and all(f.status not in NOTE_OPEN for f in notes) and all(c.status in ("passed", "skipped", "claude") for c in checks):
+        return 4
+    return 0
+
+
+def areas_view(db: Session) -> list[dict]:
+    """Every area with its notes and checks and where it is, in the order they run (Where it stands, `/api/areas`)."""
+    out = []
+    notes, checks = db.scalars(select(Feedback).where(Feedback.area_id.is_not(None))).all(), db.scalars(select(Check).where(Check.area_id.is_not(None))).all()
+    for a in area_order(db):
+        ns, cs = [f for f in notes if f.area_id == a.id], [c for c in checks if c.area_id == a.id]
+        i = stage(a, ns, cs)
+        asked, ready = sum(1 for f in ns if f.status == "question"), len(_for_admin([c for c in cs if c.status in TO_DO]))
+        nxt = ("Claude's on it" if a.fixing else "On its way to askdnd.ai") if i == 2 else \
+            f"{asked} question{'s' if asked != 1 else ''} for you" if i == 1 else f"{ready} check{'s' if ready != 1 else ''} for you" if i == 3 else \
+            "Done" if i == 4 else "Waits its turn"
+        out.append({"id": a.id, "title": a.title, "place": a.place, "fixing": a.fixing, "stage": i, "says": STAGES[i], "next": nxt,
+                    "yours": i in (1, 3), "track": [{"label": x, "state": "done" if j < i or i == 4 else ("you" if i in (1, 3) else "now") if j == i else "todo"}
+                                                    for j, x in enumerate(STAGES)],
+                    "notes": [{"id": f.id, "title": f.title or (f.text or "")[:60], "status": f.status, "kind": f.kind} for f in sorted(ns, key=lambda f: f.id)],
+                    "checks": [{"id": c.id, "title": c.title, "status": c.status} for c in sorted(cs, key=lambda c: (c.place, c.id))]})
+    return out
+
+
+def unsorted(db: Session) -> list[Feedback]:
+    """Open notes about askdnd in no area yet (Claude sorts them after a round)."""
+    return list(db.scalars(select(Feedback).where(Feedback.area_id.is_(None), Feedback.status.in_(NOTE_OPEN)).order_by(Feedback.id)))
+
+
 @router.get("/manage/testing", response_class=HTMLResponse)
 def page(request: Request, show: str = "ready", check: int = 0, db: Session = Depends(get_db)):
-    """Manage › askdnd › Testing: the Reader of checks (1A)."""
+    """Manage › askdnd › Testing: For you, the Reader of checks by area (1A, 4A); Where it stands, every area; Claude
+    ran; Done."""
     user, denied = web.require(request, is_admin, DENIED)
     if denied:
         return denied
-    show = show if show in SHOWS else "ready"
+    show = show if show in SHOWS or show == "areas" else "ready"
+    titles = {a.id: a.title for a in db.scalars(select(Area))}
+    base = {"user": user, "show": show, "tab": show if show in TABS else "ready", "tabs": TABS, "round": current(request, db),
+            "toast": request.session.pop("toast", None), "listening": for_claude.listening(db), "for_you": waiting(db)}
+    if show == "areas":
+        return templates.TemplateResponse(request, "testing.html", {**base, "areas": areas_view(db), "unsorted": unsorted(db),
+                                                                    "groups": {}, "picked": None, "notes": {}, "chips": []})
     counts = dict(db.execute(select(Check.status, func.count()).group_by(Check.status)).all())
     waiting_players = [c for c in db.scalars(select(Check).where(Check.setup == "player", Check.status.in_(TO_DO))) if _with_player(c)]
     players, players_again = len(waiting_players), sum(1 for c in waiting_players if c.status == "again")
     claudes = dict(db.execute(select(Check.status, func.count()).where(Check.setup == "claude").group_by(Check.status)).all())
     if show == "claude":  # (Claude's: the ones it runs on the Mac Mini, to run and run)
-        rows = ordered(list(db.scalars(select(Check).where(Check.setup == "claude", Check.status.in_(("ready", "again", "claude"))))))
+        rows = ordered(db, list(db.scalars(select(Check).where(Check.setup == "claude", Check.status.in_(("ready", "again", "claude"))))))
     else:
-        rows = ordered(list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
+        rows = ordered(db, list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
         rows = [c for c in rows if _with_player(c)] if show == "player" else _for_admin(rows) if show in ("ready", "again") else rows
-    items = [view(c) for c in rows]
+    items = [view(c, titles) for c in rows]
     groups: dict[str, list[dict]] = {}
     for i in items:
         groups.setdefault(i["group"], []).append(i)
     picked = next((i for i in items if i["id"] == check), items[0] if items else None)
     notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({x for i in items for x in (i["feedback_id"], i["failed_id"]) if x})))}
-    return templates.TemplateResponse(request, "testing.html", {
-        "user": user, "show": show, "groups": groups, "picked": picked, "notes": notes,
-        "chips": [(k, SHOW_SAYS[k], players if k == "player" else sum(claudes.get(s, 0) for s in ("ready", "again", "claude")) if k == "claude"
+    group_ids = {i["group"]: i["area_id"] for i in items if i["area_id"]}  # (an area's ▶ Just this area)
+    return templates.TemplateResponse(request, "testing.html", {**base, "groups": groups, "group_ids": group_ids, "picked": picked, "notes": notes,
+        "chips": [(k, SHOW_SAYS[k], players if k == "player"
                    else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k == "ready" else players_again if k == "again" else 0)
-                   - (sum(claudes.get(s, 0) for s in SHOWS[k]) if k in ("ready", "again") else 0)) for k in SHOWS],
-        "ready_minutes": sum(i["minutes"] for i in items) if show == "ready" else 0, "round": current(request, db),
-        "toast": request.session.pop("toast", None)})
+                   - (sum(claudes.get(s, 0) for s in SHOWS[k]) if k in ("ready", "again") else 0)) for k in FOR_YOU],
+        "ready_minutes": sum(i["minutes"] for i in items) if show == "ready" else 0})
 
 
 @router.post("/manage/testing/round")
 def start_round(request: Request, form=web.FormBody, db: Session = Depends(get_db)):
-    """▶ Start round: the ready checks (or one group's), in order; opens the first one's page with its card."""
+    """▶ Start round: the ready checks in order, area by area (or one area's: ▶ Just this area); opens the first one's
+    page with its card."""
     _, denied = web.require(request, is_admin, DENIED)
     if denied:
         return denied
-    group = str(form.get("setup") or "")
-    rows = _for_admin(ordered(list(db.scalars(select(Check).where(Check.status.in_(TO_DO))))))
-    ids = [c.id for c in rows if c.setup != "claude" and (not group or c.setup == group)]
+    area = int(form.get("area")) if str(form.get("area") or "").isdigit() else None
+    rows = _for_admin(ordered(db, list(db.scalars(select(Check).where(Check.status.in_(TO_DO))))))
+    ids = [c.id for c in rows if area is None or c.area_id == area]
     if not ids:
         request.session["toast"] = web.notice("Nothing ready to try.")
         return RedirectResponse("/manage/testing", status_code=303)
     request.session[ROUND] = {"ids": ids, "i": 0}
     return RedirectResponse(enter(request, db, db.get(Check, ids[0])), status_code=303)
+
+
+@router.post("/manage/testing/areas/order")
+def area_order_set(request: Request, form=web.FormBody, db: Session = Depends(get_db)):
+    """Brett drags the areas into his order on Where it stands (7A): the order goes to Claude's inbox."""
+    _, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    ids = [int(k) for k in form.getlist("keys") if str(k).isdigit()]
+    known = {a.id: a for a in db.scalars(select(Area).where(Area.id.in_(ids)))} if ids else {}
+    order = [known[i] for i in dict.fromkeys(ids) if i in known]
+    if not order:
+        raise HTTPException(400, "Which areas, in order.")
+    for n, a in enumerate(order):
+        a.place = n
+    for_claude.tell(db, "order", "Brett put the areas in this order: " + ", ".join(a.title for a in order))
+    db.commit()
+    return JSONResponse({"ok": True})
 
 
 @router.post("/manage/testing/{check_id:int}/go")
@@ -322,6 +412,7 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
     if status not in ("passed", "skipped", "ready"):
         raise HTTPException(400, "Passed, skipped or ready.")
     mark(db, c, status)
+    for_claude.tell(db, "check", f"Check {c.id} ({c.title}): {SAYS[status] if status != 'ready' else 'back to try again'}", check_id=c.id, area_id=c.area_id)
     db.commit()
     back = f"/manage/testing?show={SHOW_OF.get(status, 'ready')}&check={c.id}"  # (back to it, where it now is: the code review)
     if not on_round(request, c.id):  # (marked from the list: a round stays where it was)
@@ -382,6 +473,11 @@ def _fill(db: Session, c: Check, body: dict) -> None:
         if cid is not None and db.get(Character, cid) is None:
             raise HTTPException(400, f"There's no character {cid}.")
         c.as_character = cid
+    if "area_id" in body:
+        aid = int(body["area_id"]) if str(body.get("area_id") or "").isdigit() else None
+        if aid is not None and db.get(Area, aid) is None:
+            raise HTTPException(400, f"There's no area {aid}.")
+        c.area_id = aid
     if "feedback_id" in body:
         fid = int(body["feedback_id"]) if str(body.get("feedback_id") or "").isdigit() else None
         if fid is not None and db.get(Feedback, fid) is None:
@@ -393,13 +489,15 @@ def _fill(db: Session, c: Check, body: dict) -> None:
 def api_list(status: str = ",".join(STATUSES), x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     _claude(x_feedback_key)
     wanted = [s for s in status.split(",") if s in STATUSES] or list(STATUSES)
-    return JSONResponse({"items": [view(c) for c in ordered(list(db.scalars(select(Check).where(Check.status.in_(wanted)))))]},
+    titles = {a.id: a.title for a in db.scalars(select(Area))}
+    return JSONResponse({"items": [view(c, titles) for c in ordered(db, list(db.scalars(select(Check).where(Check.status.in_(wanted)))))]},
                         headers={"Cache-Control": "no-store"})
 
 
 @router.post("/api/checks")
 def api_add(body=web.JsonBody, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """Claude adds a check: title, area, setup, as_who, path, do (a line a step), expect, minutes, place, feedback_id, pr."""
+    """Claude adds a check: title, area (where on askdnd), area_id (its area), setup, as_who, path, do (a line a step),
+    expect, minutes, place (its order in the area), feedback_id, pr."""
     _claude(x_feedback_key)
     body = body if isinstance(body, dict) else {}
     if not str(body.get("title") or "").strip():
@@ -426,3 +524,73 @@ def api_change(check_id: int, body=web.JsonBody, x_feedback_key: str | None = He
         mark(db, c, str(body["status"]), who="claude", said=str(body.get("said") or "")[:300])
     db.commit()
     return JSONResponse(view(c))
+
+
+def _ids(body: dict, key: str) -> list[int]:
+    v = body.get(key) or []
+    if not isinstance(v, list) or not all(type(x) is int for x in v):
+        raise HTTPException(400, f"{key}: a list of ids")
+    return v
+
+
+def _place_in(db: Session, a: Area, body: dict) -> None:
+    """Notes and checks into (or out of) an area: notes, checks add them; drop_notes, drop_checks take them out."""
+    for key, model in (("notes", Feedback), ("checks", Check)):
+        ids = _ids(body, key)
+        rows = db.scalars(select(model).where(model.id.in_(ids))).all() if ids else []
+        if len(rows) != len(set(ids)):
+            raise HTTPException(400, f"{key}: no such " + ", ".join(str(i) for i in set(ids) - {r.id for r in rows}))
+        for r in rows:
+            r.area_id = a.id
+        for r in db.scalars(select(model).where(model.id.in_(_ids(body, "drop_" + key)), model.area_id == a.id)) if body.get("drop_" + key) else []:
+            r.area_id = None
+
+
+@router.get("/api/areas")
+def api_areas(x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Every area with its notes, checks and where it is, in the order they run; and the open notes in none yet."""
+    _claude(x_feedback_key)
+    return JSONResponse({"areas": areas_view(db), "unsorted": [{"id": f.id, "title": f.title or (f.text or "")[:60], "kind": f.kind, "status": f.status}
+                                                                for f in unsorted(db)]}, headers={"Cache-Control": "no-store"})
+
+
+@router.post("/api/areas")
+def api_area_add(body=web.JsonBody, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Claude makes an area: title, and the notes and checks in it; it goes last in Brett's order."""
+    _claude(x_feedback_key)
+    body = body if isinstance(body, dict) else {}
+    title = str(body.get("title") or "").strip()[:80]
+    if not title:
+        raise HTTPException(400, "An area needs its title.")
+    a = Area(title=title, place=(db.scalar(select(func.max(Area.place))) or 0) + 1, fixing=False)
+    db.add(a)
+    db.flush()
+    _place_in(db, a, body)
+    db.commit()
+    return JSONResponse(next(x for x in areas_view(db) if x["id"] == a.id))
+
+
+@router.post("/api/areas/{area_id:int}")
+def api_area_change(area_id: int, body=web.JsonBody, x_feedback_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """Claude changes an area: title, place, notes/checks in or out, and `fixing` (true when it takes the area up, false
+    when it's merged and live). One area at a time is in Claude's hands: taking up a second is refused (409)."""
+    _claude(x_feedback_key)
+    body = body if isinstance(body, dict) else {}
+    a = db.get(Area, area_id)
+    if a is None:
+        raise HTTPException(404)
+    if "title" in body and str(body["title"] or "").strip():
+        a.title = str(body["title"]).strip()[:80]
+    if "place" in body:
+        if type(body["place"]) is not int:
+            raise HTTPException(400, "place: a number")
+        a.place = body["place"]
+    if "fixing" in body:
+        if body["fixing"] is True:
+            other = db.scalar(select(Area).where(Area.fixing.is_(True), Area.id != a.id))
+            if other is not None:
+                raise HTTPException(409, f"Area {other.id} ({other.title}) is in Claude's hands: finish it first (fixing false).")
+        a.fixing = body["fixing"] is True
+    _place_in(db, a, body)
+    db.commit()
+    return JSONResponse(next(x for x in areas_view(db) if x["id"] == a.id))
