@@ -3,13 +3,13 @@
 {% from "_spell_list.html" import spell_list %}
 {% from "_form_list.html" import form_list %}
 {% from "_notes_macros.html" import note_summary %}
-{% from "_lists.html" import empty_state %}
+{% from "_lists.html" import empty_state, count_pill %}
 <section class="section" data-tour="plan">
   <div class="tabbar" role="tablist">
-    {% for kind, meta, notes in player_notes %}<button type="submit" role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %} <span class="count">{{ notes | length }}</span>{% endif %}</button>
-    {% endfor %}<button type="submit" role="tab" aria-selected="false" data-tab="t-forget" title="Reminders">Reminders{% if reminders %} <span class="count">{{ reminders | length }}</span>{% endif %}</button>
-    <button type="submit" role="tab" aria-selected="false" data-tab="t-spell-list" title="Spell shortlist">Spells{% if fav_spells %} <span class="count">{{ fav_spells | length }}</span>{% endif %}</button>
-    {% if druid %}<button type="submit" role="tab" aria-selected="false" data-tab="t-form-list" title="Wild Shape shortlist">Wild Shapes{% if fav_forms %} <span class="count">{{ fav_forms | length }}</span>{% endif %}</button>{% endif %}
+    {% for kind, meta, notes in player_notes %}<button type="submit" role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %}{{ count_pill(notes | length) }}{% endif %}</button>
+    {% endfor %}<button type="submit" role="tab" aria-selected="false" data-tab="t-forget" title="Reminders">Reminders{% if reminders %}{{ count_pill(reminders | length) }}{% endif %}</button>
+    <button type="submit" role="tab" aria-selected="false" data-tab="t-spell-list" title="Spell shortlist">Spells{% if fav_spells %}{{ count_pill(fav_spells | length) }}{% endif %}</button>
+    {% if druid %}<button type="submit" role="tab" aria-selected="false" data-tab="t-form-list" title="Wild Shape shortlist">Wild Shapes{% if fav_forms %}{{ count_pill(fav_forms | length) }}{% endif %}</button>{% endif %}
   </div>
 
   {% for kind, meta, notes in player_notes %}

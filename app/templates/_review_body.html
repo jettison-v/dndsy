@@ -1,3 +1,4 @@
+{% from "_lists.html" import count_pill %}
 {# The whole review area. Actions post with HTMX and swap this block in place. #}
 {% set hx = 'hx-target="#review" hx-swap="outerHTML"' %}
 {# The review as a wizard (Brett, Nov 7): a tab per step, each ending with the way to the next; the open one is in the
@@ -58,7 +59,7 @@
       {# 1. Questions #}
       <div id="t-questions" role="tabpanel"{% if tab != "questions" %} hidden{% endif %}>
       <section class="section" id="questions">
-        <div class="section-head"><h2><span class="num">1</span>Claude's questions</h2><span class="count">{% if open_questions %}{{ open_questions | length }} to answer{% endif %}</span></div>
+        <div class="section-head"><h2><span class="num">1</span>Claude's questions</h2>{{ count_pill(open_questions | length, "to answer") }}</div>
         <p class="hint">Answer what you know and skip the rest. {% if s.source == "transcript" %}Once the last one is settled, your answers go into the suggestions by themselves, and into the recap when you draft it.{% else %}Answers make the next draft more accurate.{% endif %}</p>
         {% for q in open_questions %}{% set qid = "q" ~ loop.index %}
         <div class="item">
@@ -90,7 +91,7 @@
 
         {% for person, asks in waiting %}
         <div class="waiting">
-          <h3>Waiting on {{ person }} <span class="count">({{ asks | length }})</span></h3>
+          <h3>Waiting on {{ person }}{{ count_pill(asks | length) }}</h3>
           {% for c in asks %}{% set wid = "w" ~ c.id %}
           <div class="item">
             <p class="item-title">{{ c.before }}</p>
@@ -145,7 +146,7 @@
       {# 2. Suggested updates #}
       <div id="t-suggestions" role="tabpanel"{% if tab != "suggestions" %} hidden{% endif %}>
       <section class="section" id="suggestions">
-        <div class="section-head"><h2><span class="num">2</span>Suggested updates</h2><span class="count">{% if open_proposals %}{{ open_proposals | length }} to review{% endif %}</span></div>
+        <div class="section-head"><h2><span class="num">2</span>Suggested updates</h2>{{ count_pill(open_proposals | length, "to review") }}</div>
         <p class="hint">Changes to what askdnd knows about people, places, relationships and spellings.{% if s.source == "transcript" %} Settle these before drafting the recap, so it uses the right names and links to the entries you accept.{% endif %}</p>
         {% if answers_for_suggestions and not drafting %}
         <div class="callout" id="suggestions-update"><div class="row">
@@ -201,7 +202,7 @@
         {% if new_entries %}
         {# New in the World (Brett, Nov 7): what this session's suggestions added, with a picture of each from here #}
         <div class="new-entries">
-          <h3>New in the World <span class="count">{{ new_entries | length }}</span></h3>
+          <h3>New in the World{{ count_pill(new_entries | length) }}</h3>
           <ul class="plain">
             {% for e in new_entries %}{% set pic = new_pictures.get(e.id) %}
             <li class="new-entry"><span class="roll-av hue{{ e.id % 6 }}" aria-hidden="true">{{ e.name[:1] }}{% if pic %}<img src="{{ pic.thumb }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>
@@ -295,7 +296,7 @@
       {# 4. The full tale (Session Story, Brett Nov 7): the session's own page (from Campaign › Sessions), a chapter per scene #}
       <div id="t-tale" role="tabpanel"{% if tab != "tale" %} hidden{% endif %}>
       <section class="section" id="tale">
-        <div class="section-head"><h2><span class="num">4</span>The full tale</h2><span class="count">{{ chapters | length }} chapters{% if listen_full and vtt_on("recap_listen") %} · Listen: {{ "about " ~ listen_full.says[2:] if listen_full.estimate else listen_full.says }}{% endif %}</span></div>
+        <div class="section-head"><h2><span class="num">4</span>The full tale</h2>{{ count_pill(chapters | length, "chapters") }}{% if listen_full and vtt_on("recap_listen") %}<span class="note">Listen: {{ "about " ~ listen_full.says[2:] if listen_full.estimate else listen_full.says }}</span>{% endif %}</div>
         <p class="hint">The long telling, on the session's own page, from <b>The full tale</b>. Each chapter is a scene; its kind and time make <i>Fights and story</i>.</p>
         {% for c in chapters %}{% set cid = "ch" ~ loop.index0 %}
         <div class="item tale-chapter">
@@ -358,7 +359,7 @@
       {# 6. Awards: Claude's from the session, the dice's from Table rolls on the night #}
       <div id="t-awards" role="tabpanel"{% if tab != "awards" %} hidden{% endif %}>
       <section class="section" id="awards">
-        <div class="section-head"><h2><span class="num">6</span>Awards</h2><span class="count">{% if awards %}{{ awards | length }}{% endif %}</span></div>
+        <div class="section-head"><h2><span class="num">6</span>Awards</h2>{{ count_pill(awards | length) }}</div>
         <p class="hint">On the session's page after the full tale. Claude gives them only where the session earned one, with a few nominees each: pick who it goes to (Claude's first choice until you do). Hardest Luck and Damage King come from the rolls everyone saw that night.</p>
         {% for a in awards %}{% set aid = "aw" ~ loop.index0 %}
         <div class="item">

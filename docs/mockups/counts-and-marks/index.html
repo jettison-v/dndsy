@@ -1,0 +1,261 @@
+<title>Counts and Status Marks</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens (one look, as the app); laptop first, one column on a phone; the
+   table's own characters. Battle and Sheet (Nov 17): Brett's notes 84 (See all's count) and 86 (the status column's
+   heading). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #d64545; --red-soft: rgba(214, 69, 69, .14); --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+h3 { font: 600 1.05rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.mine { color: var(--green); font: 700 .76rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; margin-left: 8px; }
+.lead { max-width: 80ch; font-size: 1.04rem; }
+.meta { color: var(--muted); font-size: .88rem; max-width: 80ch; }
+section.board { display: grid; gap: 18px; padding-top: 30px; border-top: 1px solid var(--line-soft); }
+.intro { display: grid; gap: 8px; max-width: 88ch; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 16px; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.opt.rec { border-color: var(--green); }
+.opt > header { display: grid; gap: 4px; }
+.opt > header p { color: var(--muted); font-size: .88rem; }
+.today { background: var(--surface); border: 1px dashed var(--line-strong); border-radius: 14px; padding: 16px; display: grid; gap: 12px; }
+.places { display: grid; gap: 10px; }
+.place { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px; align-items: center; }
+.place > small { color: var(--faint); font-size: .74rem; line-height: 1.25; }
+.stage { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; }
+
+/* The places a count shows, drawn as askdnd draws them */
+.seeall { color: var(--link); text-decoration: underline; text-underline-offset: 3px; font-size: 1rem; display: inline-flex; align-items: center; gap: 6px; }
+.seeall:hover { text-decoration-thickness: 2px; }
+.divider { font: 800 .75rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--red); display: inline-flex; align-items: center; gap: 8px; }
+.divider.amber { color: var(--amber); }
+.tabs { display: flex; flex-wrap: wrap; gap: 4px 16px; border-bottom: 1px solid var(--line); padding-bottom: 0; min-width: 0; }
+.tab { font-size: .95rem; color: var(--muted); padding: 4px 0 8px; display: inline-flex; align-items: center; gap: 6px; }
+.tab.on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red); }
+.fold { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; font: 600 .88rem/1 var(--sans); }
+.sechead { display: inline-flex; align-items: baseline; gap: 10px; }
+.sechead h4 { margin: 0; font: 600 1.05rem/1.2 var(--sans); color: var(--strong); }
+
+/* Today's count: small grey text (in a link, the link's colour) */
+.c0 { font-size: .875rem; color: var(--muted); }
+.seeall .c0 { color: inherit; }
+.divider .c0 { font-size: .75rem; color: inherit; opacity: .7; letter-spacing: 0; font-weight: 600; }
+
+/* A: a count pill: the number on a soft fill, rounded, a touch bolder, figures that don't jiggle */
+.cA { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; background: var(--surface-3);
+      color: var(--text); font: 600 .8em/1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: 0; text-decoration: none; }
+.seeall .cA { background: var(--red-soft); color: var(--link); }
+.divider .cA { background: color-mix(in srgb, currentColor 16%, transparent); color: inherit; font-size: .95em; }
+.tab.on .cA { background: var(--blue-soft); color: var(--strong); }
+.cA.words { padding: 0 .6em; }
+
+/* B: the number in the words' own size and weight, after a thin dot */
+.cB { font-variant-numeric: tabular-nums; color: inherit; font-weight: 600; }
+.cB::before { content: "·"; margin-right: 6px; font-weight: 400; opacity: .6; }
+.c-plain .cB { color: var(--strong); }
+
+/* C: an outline: the number in a thin ring, no fill */
+.cC { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; border: 1px solid currentColor;
+      color: inherit; font: 600 .8em/1 var(--sans); font-variant-numeric: tabular-nums; letter-spacing: 0; opacity: .85; }
+.tab .cC, .sechead .cC, .fold .cC { color: var(--muted); }
+
+/* Sheet's lists, as drawn */
+.list { display: grid; grid-template-columns: 26px minmax(0, 1fr) 80px 70px 56px; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 4px 10px 6px; min-width: 0; }
+.list.items { grid-template-columns: 26px minmax(0, 1fr) 90px 60px; }
+.list.forms { grid-template-columns: 26px 34px minmax(0, 1fr) 46px 64px; }
+.list > div { display: contents; }
+.lh > span { font-size: .75rem; color: var(--muted); letter-spacing: .04em; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+.lr > span { padding: 7px 4px; border-bottom: 1px solid var(--line-soft); font-size: .9rem; align-self: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lr > span.nm b { font-weight: 600; }
+.lr > span.mut { color: var(--muted); font-size: .84rem; }
+.mk { font-size: 1rem; font-weight: 700; line-height: 1; text-align: center; }
+.mk.on { color: var(--green); }
+.mk.off { color: var(--faint); }
+.lh > span.h0 { text-align: center; }
+.lh > span.hB { text-align: left; white-space: nowrap; }
+.list.wideB { grid-template-columns: 84px minmax(0, 1fr) 80px 70px 56px; }
+.list.items.wideB { grid-template-columns: 84px minmax(0, 1fr) 90px 60px; }
+.list.forms.wideB { grid-template-columns: 62px 34px minmax(0, 1fr) 46px 64px; }
+.pic { width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); display: inline-block; vertical-align: middle; }
+.tip { position: relative; }
+.tipbox { display: inline-block; background: var(--surface-3); border: 1px solid var(--line-strong); border-radius: 6px; padding: 3px 8px; font-size: .78rem; color: var(--text); margin-left: 6px; }
+.lists { display: grid; gap: 12px; }
+.cap { font: 700 .72rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: -6px; }
+.why { display: grid; gap: 6px; font-size: .9rem; }
+.why li { color: var(--muted); }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.after { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; max-width: 92ch; }
+@media (max-width: 760px) { h1 { font-size: 1.7rem; } .place { grid-template-columns: 1fr; } .opts { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+
+<header style="display:grid;gap:14px">
+  <span class="lbl">Mockup · Nov 17 · Battle and Sheet · your notes 84 and 86</span>
+  <h1>Counts and status marks</h1>
+  <p class="lead">Two small things you found on Cole's pages, both of them pieces of the design system, so whichever
+  you pick changes every place they show, not just the one you pointed at.</p>
+  <ul class="meta">
+    <li><b>The Count</b> (Design system › Pills › Count): the number beside a See all link, a tab, a section's heading or a
+    fold. It's in about 20 places: Battle's See all and All items, Sheet's and Battle's headings (Actions 5), Plan's
+    tabs, Party's tabs, Story, Campaign, Filters, Manage's Inbox, Review and Corrections. You said it's too small next to
+    the words and doesn't read as a count.</li>
+    <li><b>The status column's heading</b>: the ✓ over the first column of Sheet's Spells (Prepared), Inventory
+    (Equipped or attuned) and Wild Shape (Known) lists, and Change spells and forms. It's 12px over marks drawn at 16px.
+    You weren't sure it needs a heading at all. A phone already hides the heading row.</li>
+  </ul>
+</header>
+
+<section class="board">
+  <div class="intro"><span class="lbl">1 · The Count</span><h2>A number beside words, everywhere</h2>
+    <p class="meta">Each option is drawn in the same six places: Battle's See all link (your note), a heading on Sheet
+    and Battle, Plan's tabs with one chosen, Battle's Forms fold on a phone, Filters, and a Manage section head. One
+    rule stays whatever you pick: nothing at 0, and never "(17)" in the words.</p></div>
+
+  <div class="today">
+    <span class="cap">Today</span>
+    <div class="places">
+      <div class="place"><small>Battle · See all</small><div class="stage"><a class="seeall">See all actions <span class="c0">17</span> →</a><a class="seeall">All items <span class="c0">2</span> →</a></div></div>
+      <div class="place"><small>Sheet · a heading</small><div class="stage"><span class="divider">· Actions <span class="c0">5</span></span><span class="divider amber">· Bonus actions <span class="c0">11</span></span></div></div>
+      <div class="place"><small>Plan · tabs</small><div class="stage"><div class="tabs"><span class="tab on">Combos <span class="c0">4</span></span><span class="tab">Reminders <span class="c0">2</span></span><span class="tab">Spells <span class="c0">12</span></span></div></div></div>
+    </div>
+  </div>
+
+  <div class="opts">
+    <article class="opt rec"><header><h3>A · A count pill <span class="mine">Mine</span></h3>
+      <p>The number on a small rounded fill, a little bolder, figures that line up. In a link it takes the link's tint; on
+      the chosen tab, blue. It reads as "how many", apart from the words, at any size.</p></header>
+      <div class="places">
+        <div class="place"><small>Battle · See all</small><div class="stage"><a class="seeall">See all actions <span class="cA">17</span> →</a><a class="seeall">All items <span class="cA">2</span> →</a></div></div>
+        <div class="place"><small>Sheet · a heading</small><div class="stage"><span class="divider">· Actions <span class="cA">5</span></span><span class="divider amber">· Bonus actions <span class="cA">11</span></span></div></div>
+        <div class="place"><small>Plan · tabs</small><div class="stage"><div class="tabs"><span class="tab on">Combos <span class="cA">4</span></span><span class="tab">Reminders <span class="cA">2</span></span><span class="tab">Spells <span class="cA">128</span></span></div></div></div>
+        <div class="place"><small>Battle · a phone's fold</small><div class="stage"><span class="fold">Forms <span class="cA">6</span></span></div></div>
+        <div class="place"><small>Filters</small><div class="stage"><span class="fold">Filters <span class="cA">3</span> ▾</span></div></div>
+        <div class="place"><small>Manage · a section</small><div class="stage"><span class="sechead"><h4>Inbox</h4><span class="cA words">4 waiting</span></span></div></div>
+      </div></article>
+
+    <article class="opt"><header><h3>B · Full size, after a dot</h3>
+      <p>No shape: the number in the words' own size, a touch bolder, after a thin dot. Quieter than A; it reads as part
+      of the line more than as a count.</p></header>
+      <div class="places">
+        <div class="place"><small>Battle · See all</small><div class="stage"><a class="seeall">See all actions <span class="cB">17</span> →</a><a class="seeall">All items <span class="cB">2</span> →</a></div></div>
+        <div class="place"><small>Sheet · a heading</small><div class="stage"><span class="divider">· Actions <span class="cB">5</span></span><span class="divider amber">· Bonus actions <span class="cB">11</span></span></div></div>
+        <div class="place"><small>Plan · tabs</small><div class="stage"><div class="tabs"><span class="tab on">Combos <span class="cB">4</span></span><span class="tab">Reminders <span class="cB">2</span></span><span class="tab">Spells <span class="cB">128</span></span></div></div></div>
+        <div class="place"><small>Battle · a phone's fold</small><div class="stage"><span class="fold">Forms <span class="cB">6</span></span></div></div>
+        <div class="place"><small>Filters</small><div class="stage"><span class="fold">Filters <span class="cB">3</span> ▾</span></div></div>
+        <div class="place"><small>Manage · a section</small><div class="stage c-plain"><span class="sechead"><h4>Inbox</h4><span class="cB">4 waiting</span></span></div></div>
+      </div></article>
+
+    <article class="opt"><header><h3>C · An outline</h3>
+      <p>The pill's shape as a thin ring, no fill: the same "this is a count" as A, lighter on the page, but the ring
+      competes with chips and buttons, which are rings too.</p></header>
+      <div class="places">
+        <div class="place"><small>Battle · See all</small><div class="stage"><a class="seeall">See all actions <span class="cC">17</span> →</a><a class="seeall">All items <span class="cC">2</span> →</a></div></div>
+        <div class="place"><small>Sheet · a heading</small><div class="stage"><span class="divider">· Actions <span class="cC">5</span></span><span class="divider amber">· Bonus actions <span class="cC">11</span></span></div></div>
+        <div class="place"><small>Plan · tabs</small><div class="stage"><div class="tabs"><span class="tab on">Combos <span class="cC">4</span></span><span class="tab">Reminders <span class="cC">2</span></span><span class="tab">Spells <span class="cC">128</span></span></div></div></div>
+        <div class="place"><small>Battle · a phone's fold</small><div class="stage"><span class="fold">Forms <span class="cC">6</span></span></div></div>
+        <div class="place"><small>Filters</small><div class="stage"><span class="fold">Filters <span class="cC">3</span> ▾</span></div></div>
+        <div class="place"><small>Manage · a section</small><div class="stage"><span class="sechead"><h4>Inbox</h4><span class="cC">4 waiting</span></span></div></div>
+      </div></article>
+  </div>
+</section>
+
+<section class="board">
+  <div class="intro"><span class="lbl">2 · The status column</span><h2>What heads the first column of marks</h2>
+    <p class="meta">Each option on the three lists that have it: Spells (● prepared, ○ not), Inventory (● equipped or
+    attuned) and Wild Shape (● a form you know). On a laptop only; a phone has no heading row.</p></div>
+
+  <div class="today">
+    <span class="cap">Today</span>
+    <div class="list"><div class="lh"><span class="h0" title="Prepared">✓</span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span></div>
+      <div class="lr"><span class="mk on">●</span><span class="nm"><b>Moonbeam</b></span><span class="mut">Action</span><span class="mut">120 ft</span><span class="mut">2d10</span></div>
+      <div class="lr"><span class="mk off">○</span><span class="nm"><b>Thorn Whip</b></span><span class="mut">Action</span><span class="mut">30 ft</span><span class="mut">+7</span></div></div>
+  </div>
+
+  <div class="opts">
+    <article class="opt rec"><header><h3>A · No heading over the marks <span class="mine">Mine</span></h3>
+      <p>The heading cell is empty. The marks say it themselves: green filled is on, a hollow ring is off, hovering one
+      says what it means ("Prepared on D&amp;D Beyond"), and the Filters beside the list name both (Prepared 19, Not
+      prepared 49). One less thing to read on every list.</p></header>
+      <div class="lists">
+        <span class="cap">Spells</span>
+        <div class="list"><div class="lh"><span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span></div>
+          <div class="lr"><span class="mk on">●</span><span class="nm"><b>Moonbeam</b></span><span class="mut">Action</span><span class="mut">120 ft</span><span class="mut">2d10</span></div>
+          <div class="lr"><span class="mk off">○</span><span class="nm"><b>Thorn Whip</b></span><span class="mut">Action</span><span class="mut">30 ft</span><span class="mut">+7</span></div></div>
+        <p class="meta">Hover on a mark: <span class="tipbox">Prepared on D&amp;D Beyond</span></p>
+        <span class="cap">Inventory</span>
+        <div class="list items"><div class="lh"><span></span><span>Item</span><span>Kind</span><span>Uses</span></div>
+          <div class="lr"><span class="mk on">●</span><span class="nm"><b>Ring of Invisibility</b></span><span class="mut">Ring</span><span class="mut">—</span></div>
+          <div class="lr"><span class="mk off">○</span><span class="nm"><b>Potion of Healing</b></span><span class="mut">Potion</span><span class="mut">×2</span></div></div>
+        <span class="cap">Wild Shape</span>
+        <div class="list forms"><div class="lh"><span></span><span></span><span>Form</span><span>AC</span><span>Speed</span></div>
+          <div class="lr"><span class="mk on">●</span><span><i class="pic"></i></span><span class="nm"><b>Polar Bear</b></span><span class="mut">12</span><span class="mut">40 ft</span></div>
+          <div class="lr"><span class="mk off">○</span><span><i class="pic"></i></span><span class="nm"><b>Giant Octopus</b></span><span class="mut">11</span><span class="mut">10 ft</span></div></div>
+      </div></article>
+
+    <article class="opt"><header><h3>B · The heading in words</h3>
+      <p>Prepared, Equipped, Known, in the heading's own size like every other column. Clear on its own, but the column
+      grows from 26px to about 84px, so every name moves right and long names cut sooner.</p></header>
+      <div class="lists">
+        <span class="cap">Spells</span>
+        <div class="list wideB"><div class="lh"><span class="hB">Prepared</span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span></div>
+          <div class="lr"><span class="mk on">●</span><span class="nm"><b>Moonbeam</b></span><span class="mut">Action</span><span class="mut">120 ft</span><span class="mut">2d10</span></div>
+          <div class="lr"><span class="mk off">○</span><span class="nm"><b>Thorn Whip</b></span><span class="mut">Action</span><span class="mut">30 ft</span><span class="mut">+7</span></div></div>
+        <span class="cap">Inventory</span>
+        <div class="list items wideB"><div class="lh"><span class="hB">Equipped</span><span>Item</span><span>Kind</span><span>Uses</span></div>
+          <div class="lr"><span class="mk on">●</span><span class="nm"><b>Ring of Invisibility</b></span><span class="mut">Ring</span><span class="mut">—</span></div>
+          <div class="lr"><span class="mk off">○</span><span class="nm"><b>Potion of Healing</b></span><span class="mut">Potion</span><span class="mut">×2</span></div></div>
+        <span class="cap">Wild Shape</span>
+        <div class="list forms wideB"><div class="lh"><span class="hB">Known</span><span></span><span>Form</span><span>AC</span><span>Speed</span></div>
+          <div class="lr"><span class="mk on">●</span><span><i class="pic"></i></span><span class="nm"><b>Polar Bear</b></span><span class="mut">12</span><span class="mut">40 ft</span></div>
+          <div class="lr"><span class="mk off">○</span><span><i class="pic"></i></span><span class="nm"><b>Giant Octopus</b></span><span class="mut">11</span><span class="mut">10 ft</span></div></div>
+      </div></article>
+
+    <article class="opt"><header><h3>C · The mark itself, full size</h3>
+      <p>The heading is a green ● at the marks' own size, like a key: "the filled ones are on". Keeps a heading without
+      widening the column, but it's still a symbol to work out.</p></header>
+      <div class="lists">
+        <span class="cap">Spells</span>
+        <div class="list"><div class="lh"><span class="h0"><span class="mk on">●</span></span><span>Spell</span><span>Time</span><span>Range</span><span>Roll</span></div>
+          <div class="lr"><span class="mk on">●</span><span class="nm"><b>Moonbeam</b></span><span class="mut">Action</span><span class="mut">120 ft</span><span class="mut">2d10</span></div>
+          <div class="lr"><span class="mk off">○</span><span class="nm"><b>Thorn Whip</b></span><span class="mut">Action</span><span class="mut">30 ft</span><span class="mut">+7</span></div></div>
+        <span class="cap">Inventory</span>
+        <div class="list items"><div class="lh"><span class="h0"><span class="mk on">●</span></span><span>Item</span><span>Kind</span><span>Uses</span></div>
+          <div class="lr"><span class="mk on">●</span><span class="nm"><b>Ring of Invisibility</b></span><span class="mut">Ring</span><span class="mut">—</span></div>
+          <div class="lr"><span class="mk off">○</span><span class="nm"><b>Potion of Healing</b></span><span class="mut">Potion</span><span class="mut">×2</span></div></div>
+        <span class="cap">Wild Shape</span>
+        <div class="list forms"><div class="lh"><span class="h0"><span class="mk on">●</span></span><span></span><span>Form</span><span>AC</span><span>Speed</span></div>
+          <div class="lr"><span class="mk on">●</span><span><i class="pic"></i></span><span class="nm"><b>Polar Bear</b></span><span class="mut">12</span><span class="mut">40 ft</span></div>
+          <div class="lr"><span class="mk off">○</span><span><i class="pic"></i></span><span class="nm"><b>Giant Octopus</b></span><span class="mut">11</span><span class="mut">10 ft</span></div></div>
+      </div></article>
+  </div>
+</section>
+
+<section class="board">
+  <div class="after"><span class="lbl">After your picks</span>
+    <p>One pull request for the whole area. The Count changes once, in the design system, and every count made by hand
+    on a page (one of them still written in brackets) goes through the one piece. The status heading
+    changes on every list that has it. Then the Design system page, the layout checks at every width and the
+    before-and-after pictures, and your notes and check 9 come back to you as checks to try.</p>
+    <p class="meta">You answer in Manage › askdnd › Testing › For you: one design pick for each board, mine marked.</p></div>
+</section>
+
+</div>

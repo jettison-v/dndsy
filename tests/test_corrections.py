@@ -166,7 +166,7 @@ def test_no_action_needed_is_its_own_section_that_follows_pinning(admin, player,
     player.post(f"/characters/{cole.id}/items/{fid}/kind", data={"kind": "Gem"})
     page = player.get(f"/characters/{cole.id}/battle").text
     assert "No action needed" in page and f"/characters/{cole.id}/all/none?items=1" in page
-    assert 'All items <span class="count">1</span>' in page.split("No action needed", 1)[1]
+    assert 'All items <span class="count" data-count="1">' in page.split("No action needed", 1)[1]
     assert "you can teleport" not in page  # not pinned, so not listed
     picks.toggle(db, cole, "star", f"item:{fid}", "Focus")
     db.commit()

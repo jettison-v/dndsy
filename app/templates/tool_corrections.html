@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_lists.html" import count_pill %}
 {% block title %}Tool corrections · Manage · askdnd{% endblock %}
 {% block content %}
 {% from "_manage.html" import inline_edit %}
@@ -18,7 +19,7 @@
   <p class="subtitle">Fixes to how askdnd reads D&amp;D Beyond, made from a character's side panel (the Admin box, or an underlined rule term's pop-up). Each one patches askdnd for every character until askdnd's own code is fixed; then it moves to <b>Built into askdnd</b> and can be removed. A DM's rulings for one table are <a href="{{ cbase }}/manage/house-rules">House rules</a> instead. Only admins can see this page.</p>
 
   <section class="section">
-    <div class="section-head"><h2>Needs a fix in askdnd</h2>{% if open %}<span class="count">{{ open | length }}</span>{% endif %}</div>
+    <div class="section-head"><h2>Needs a fix in askdnd</h2>{% if open %}{{ count_pill(open | length) }}{% endif %}</div>
     <p class="hint">Ask Claude to “build in the tool corrections”: each one becomes part of askdnd, with a test, and moves down here on its own. A few words on why help.</p>
     {% if open %}
     <ul class="records cols-3">{% for o in open %}{{ row(o) }}{% endfor %}</ul>
@@ -28,7 +29,7 @@
 
   {% if built %}
   <section class="section">
-    <div class="section-head"><h2>Built into askdnd</h2><span class="count">{{ built | length }}</span></div>
+    <div class="section-head"><h2>Built into askdnd</h2>{{ count_pill(built | length) }}</div>
     <p class="hint">askdnd now chooses the same on its own, so these corrections change nothing. Remove them to tidy up.</p>
     <ul class="records cols-3">{% for o in built %}{{ row(o, built=True) }}{% endfor %}</ul>
   </section>
