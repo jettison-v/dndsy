@@ -1046,7 +1046,7 @@
  {
   "title": "Readers, Rebuilt",
   "kind": "design",
-  "status": "For your pick",
+  "status": "Picked, with your four comments · built",
   "date": "Nov 17",
   "what": "Brett, Nov 17: Testing's Reader was confusing, hard to read and complicated, borrowed from Feedback. Both rebuilt for their jobs: a check's state in words with one main action and the walkthrough as the card shows it; a note's evidence first and its thread as a conversation; and the shared pieces (state header, state words, action bar, timeline, conversation, evidence) for the design system.",
   "source": "docs/mockups/readers/index.html",
