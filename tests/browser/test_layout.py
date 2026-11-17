@@ -608,3 +608,23 @@ def test_filters_above_a_list_stay_in_their_column_whatever_is_on(people, server
             assert chips.evaluate_all("cs => cs.filter(c => c.getAttribute('aria-pressed') === 'true').length") == 0, where
             assert above.locator(".ls-pill").count() == 0 and above.locator("[data-ls-clear-filters]").is_hidden(), where
     assert not found, "\n".join(found)
+
+
+def test_the_menu_bar_never_runs_wider_than_a_phone(people, server, long_names):
+    """GitHub's runs on main (Nov 16, twice): on askdnd's table at 375px, with a long campaign name, the menu bar spilled
+    4px when the Live pill showed words (GitHub's fonts are a little wider than a Mac's). Every pill state, in the real bar
+    at 320px, the narrowest iPhone (narrow enough to fail here without the fix): the bar stays inside the screen (the
+    pill's words give way with …)."""
+    player = people("player")
+    page = player.page
+    page.set_viewport_size({"width": 320, "height": 812})
+    player.open("/c/main/campaign")
+    found = []
+    for state, html in _pills().items():
+        spill = page.evaluate("""html => { const old = document.getElementById('live-pill'), t = document.createElement('template');
+            t.innerHTML = html.trim(); old.replaceWith(t.content.firstElementChild);
+            const bar = document.querySelector('header.topbar');
+            return bar.scrollWidth - bar.clientWidth; }""", html)
+        if spill > 0:
+            found.append(f"{state}: {spill}px wider than the screen")
+    assert not found, "\\n".join(found)

@@ -896,6 +896,11 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .lw-short { display: inline; }
   .live .menu.live-menu { position: fixed; top: 64px; right: 12px; }
   .topbar-inner { gap: 10px; padding: 0 16px; }
+  /* (the bar never runs wider than the screen: when a long campaign name and the Live pill's words don't both fit, the
+     pill's words give way with …, the pill keeping its icon; a 4px spill on askdnd's table at 375px, Nov 16) */
+  .bar-end, .bar-end > .live { flex-shrink: 1; min-width: 0; }
+  .bar-end > .live .live-pill { max-width: 100%; min-width: 0; }
+  .live-pill .live-ago { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .page { padding: 24px 16px 120px; }
   .section { padding: 22px 18px; }
   .story { padding: 18px 20px; }
