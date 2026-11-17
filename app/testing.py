@@ -158,13 +158,13 @@ def _note(c: Check, what: str, who: str, key: str = "") -> None:
     c.history = [*(c.history or []), {"at": datetime.now(UTC).isoformat(timespec="seconds"), "what": what, "who": who, **({"key": key} if key else {})}]
 
 
-def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "") -> None:
+def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "", key: str = "") -> None:
     if status not in STATUSES:
         raise HTTPException(400, "Passed, failed, skipped or ready.")
     if status == "again" and c.status != "again":
         c.asked_at = datetime.now(UTC)  # (when it came back to be tried: a player's three days and their email count from it)
     c.status = status
-    _note(c, SAYS[status] + (f": {said}" if said else ""), who, key=status)
+    _note(c, SAYS[status] + (f": {said}" if said else ""), who, key=key or status)
 
 
 def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, prod_note: int | None = None, fail: bool = True) -> Check | None:
@@ -284,6 +284,7 @@ TIMELINE = {  # (a history key: who did what, and its tone)
     "ready": ("Ready", "ready"), "again": ("Back to try: the fix is live", "again"), "failed": ("Failed", "failed"),
     "fixed": ("Claude fixed it", "claude"), "fixing": ("Claude fixed one of its issues", "claude"), "passed": ("Passed", "passed"),
     "skipped": ("Skipped", "quiet"), "claude": ("Claude ran it", "claude"), "issue": ("An issue sent", "failed"),
+    "undone": ("Failed undone", "quiet"),
 }
 WHO = {"you": "you", "claude": "Claude", "sender": "its sender"}
 
@@ -312,7 +313,7 @@ def timeline(c: Check) -> list[dict]:
     for h in reversed(c.history or []):
         label, tone = TIMELINE.get(h.get("key", ""), (h.get("what", ""), "quiet"))
         who = WHO.get(h.get("who", ""), "")
-        if h.get("key") in ("failed", "passed", "skipped") and who:
+        if h.get("key") in ("failed", "passed", "skipped", "undone", "issue") and who:
             label = f"{label} by {who}"
         detail = h.get("what", "").split(": ", 1)[1] if h.get("key") == "skipped" and ": " in h.get("what", "") else ""  # (its reason; never a number)
         out.append({"label": label, "detail": detail, "tone": tone, "at": h.get("at", "")})
@@ -622,7 +623,7 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
     status = str(form.get("result") or "")
     if status == "undo":  # (Undo Failed on the card: Brett's note 101; the round stays on it, and what was sent stays sent)
         if c.status == "failed":
-            mark(db, c, "again" if c.asked_at else "ready", said="Failed undone")
+            mark(db, c, "again" if c.asked_at else "ready", said="Failed undone", key="undone")
             for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed undone (its notes stay)", check_id=c.id, area_id=c.area_id)
             db.commit()
         return RedirectResponse(_page_of(c) if on_round(request, c.id) else f"/manage/testing?check={c.id}", status_code=303)

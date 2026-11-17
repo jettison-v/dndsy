@@ -130,6 +130,7 @@ def test_after_failed_the_steps_stay_and_failed_can_be_undone(admin, db):
     assert r.status_code == 303 and r.headers["location"] == "/party"  # (the round stays on it)
     db.expire_all()
     assert db.get(Check, c).status == "ready" and db.get(Feedback, sent).check_id == c
+    assert db.get(Check, c).history[-1]["key"] == "undone"  # (its timeline says Failed undone, never "Ready")
     assert 'data-check-result="passed"' in admin.get("/manage/testing/card").text
 
 
