@@ -112,3 +112,21 @@ def test_claudes_pictures_show_to_the_dm_and_an_empty_answer_says_what_s_missing
     assert r.status_code == 303 and r.headers["location"] == f"/manage/testing?ask={fb}"
     db.expire_all()
     assert db.get(Feedback, fb).status == "question"
+
+
+def test_an_address_in_claudes_words_is_a_link_and_a_senders_isnt(admin, db):
+    """Brett's note 105 (Nov 17): the mockup's address in Claude's question came through as words, not a link. Claude's
+    questions and replies show every https:// address as a link that opens in a new tab (the full stop after it left
+    out); anything else in the words stays escaped, and a sender's own words aren't turned into links."""
+    from app.render import linked
+
+    out = str(linked('See https://claude.ai/artifact/AbC12. Then <b>pick</b> & "go".'))
+    assert out == ('See <a href="https://claude.ai/artifact/AbC12" target="_blank" rel="noopener">https://claude.ai/artifact/AbC12</a>. '
+                   'Then &lt;b&gt;pick&lt;/b&gt; &amp; &#34;go&#34;.')
+    assert "<script" not in str(linked('https://x.test/"><script>alert(1)</script>'))  # (the address stops at a quote or bracket)
+    fb = note(admin, text="Look at https://example.test/mine please.").json()["id"]
+    ask(admin, fb, note="Which look? Drawn on https://claude.ai/artifact/AbC12.", choices=CHOICES, mine=0)
+    page = admin.get(f"/manage/testing?ask={fb}").text
+    assert '<a href="https://claude.ai/artifact/AbC12" target="_blank" rel="noopener">' in page
+    assert 'href="https://example.test/mine"' not in admin.get(f"/manage/feedback?tab=all&open={fb}").text  # (the sender's words: no link)
+    assert '<a href="https://claude.ai/artifact/AbC12" target="_blank" rel="noopener">' in admin.get(f"/manage/feedback?tab=all&open={fb}").text

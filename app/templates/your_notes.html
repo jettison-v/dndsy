@@ -51,7 +51,7 @@
         {% if n.kind == "askdnd" and n.id not in kept %}{{ sent_pics(n.shots, "/your-notes/feedback/" ~ n.id) }}{% endif %}
         {% for m in n.earlier if m.mine %}<div class="fb-msg you"><small>You added</small>{{ m.text }}{% if n.id not in kept %}{{ added_pics(m.pics, "/your-notes/feedback/" ~ n.id) }}{% endif %}</div>{% endfor %}</section>
       <section class="nt-part"><h3 class="divider">What happened</h3>
-        {% for m in n.earlier if not m.mine %}<div class="fb-msg claude"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
+        {% for m in n.earlier if not m.mine %}<div class="fb-msg claude"><small>{{ m.who }}</small>{{ m.text | linked }}</div>{% endfor %}
         <div class="nt-answer st-{{ n.dot }}{{ ' st-open' if n.open }}"><small>{{ n.label }}{% if n.answer %} · {{ n.answer.who }}{% endif %}</small><span class="nt-said">{{ n.answer.text if n.answer else n.says }}</span>
           {%- if n.landed %}<a class="nt-landed" href="{{ n.landed.href }}" data-no-peek>{{ n.landed.text }} →</a>{% endif %}</div></section>
       {% if n.trying %}<section class="nt-part nt-try" data-try="{{ n.id }}"><h3 class="divider">Does it work now?</h3>{# (Testing, Brett's 6C: whoever saw it confirms the fix) #}
