@@ -301,9 +301,28 @@ header.top { display: grid; gap: 10px; }
 
   <!-- 4 · Failed, 2 problems -->
   <section data-screen="failed" hidden>
+    <div data-view="page">
+      <div class="ghostpage">
+        <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+        <div class="page"><div class="ptitle"><h2>Feedback</h2></div>
+          <div class="reader"><aside class="rlist"><div class="row on"><b>The coins don't add up</b><span class="sw claude">With Claude</span><span class="sub">Big C · 2 reports</span></div><div class="row"><b>Fold away Manage's list</b><span class="sw claude">With Claude</span></div></aside>
+            <article class="detail"><h3 class="big">The coins don't add up</h3><div class="panel" style="height:220px"></div></article></div></div>
+      </div>
+      <div class="card" role="dialog" aria-label="The check's card, after a problem was sent" style="border-top-color:var(--red)">
+        <div class="hd"><span>Check 1 of 3 · Working with Claude<b>Write back from one box</b></span><span>— ⤡</span></div>
+        <div class="sline" style="font-size:.84rem"><span class="sw failed">Failed</span>2 problems sent; still on this page.</div>
+        <div class="problems">
+          <div class="prob" style="padding:6px 10px;font-size:.82rem"><span class="n">1</span><span>The line beside Send still says Claude</span><span></span></div>
+          <div class="prob" style="padding:6px 10px;font-size:.82rem"><span class="n">2</span><span>Big C's name is cut off in Write to</span><span></span></div></div>
+        <ol class="steps"><li><span class="box on"></span><span>Look at the note open on the right.</span></li><li><span class="box on"></span><span>In <b>Write to</b>, press the player's name.</span></li><li><span class="box on"></span><span>Read the line beside <span class="press">Send</span>.</span></li></ol>
+        <div class="act"><span class="btn no small" data-go="wrong">✗ Something else wrong…</span><span class="btn quiet small" data-go="change">Change result…</span><span class="btn go small">Done · next check</span></div>
+      </div>
+      <div style="position:absolute;left:16px;bottom:16px"><button type="button" class="btn small" data-view-go="testing">How it reads in Testing →</button></div>
+    </div>
+    <div data-view="testing" hidden>
     <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
     <div class="page">
-      <div class="ptitle"><h2>Testing</h2></div>
+      <div class="ptitle"><h2>Testing</h2><button type="button" class="btn small" data-view-go="page">← Back to the page you were testing</button></div>
       <div class="tabs"><span class="tab on">For you <span class="count">4</span></span><span class="tab">Where it stands</span><span class="tab">Claude ran</span><span class="tab">Done</span></div>
       <div class="reader">
         <aside class="rlist"><div class="grp"><span>Working with Claude</span></div>
@@ -322,6 +341,7 @@ header.top { display: grid; gap: 10px; }
             <ol class="tl" id="tl2"><li class="t-failed"><span><b>Failed by you</b> · 2 problems</span><span>now</span></li><li class="t-again"><span><b>Try again</b> · the fix is live</span><span>21:50</span></li><li class="t-fixed"><span><b>Fixed by Claude</b></span><span>21:44</span></li><li class="t-failed"><span><b>Failed by you</b> · 4 problems</span><span>21:36</span></li></ol></div>
         </article>
       </div>
+    </div>
     </div>
   </section>
 
@@ -561,7 +581,7 @@ header.top { display: grid; gap: 10px; }
     foryou: ["Testing › For you: everything waiting on you, by area. A check has three marks, each one action, and no ⋯. A question and a mockup are one row each.", "Notes 111, 113, 115"],
     round: ["Trying it: a round opens each check's page with its card. The card has the same three marks as the page.", "Note 116"],
     wrong: ["✗ Something's wrong… is the feedback window, with the check named and the page's picture to mark up. Sending marks this try Failed; another problem is the same button again.", "Notes 115, 116"],
-    failed: ["After it: the check is Failed with its problems listed, each with where it stands. The history shows it the moment you send, without reloading.", "Note 121"],
+    failed: ["After you send it: you stay on the page you're testing. The card turns Failed and lists what you sent, with ✗ Something else wrong… for the next problem, Change result, and Done · next check. Testing shows the same at once, history included, without a reload (press How it reads in Testing).", "Notes 116, 121; your question on the card"],
     change: ["Pressed the wrong one: Change result. The history keeps the Failed and shows the change; its problems are withdrawn, still findable.", "Pick 4 (A)"],
     cant: ["Can't try… replaces Skip: the check goes back to Claude to fix, not to Done.", "Pick 3 (A)"],
     asks: ["Claude's question is answered here only; a mockup is one row, and its choices are made on its own page.", "Pick 5 (A); your note on mockups"],
@@ -574,7 +594,7 @@ header.top { display: grid; gap: 10px; }
   };
   const shots = document.querySelectorAll('.shot'), screens = document.querySelectorAll('[data-screen]');
   const go = name => {
-    screens.forEach(s => { s.hidden = s.dataset.screen !== name; });
+    screens.forEach(s => { s.hidden = s.dataset.screen !== name; s.querySelectorAll('[data-view]').forEach((v, i) => { v.hidden = i > 0; }); });
     shots.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shot === name)));
     document.getElementById('why-text').textContent = WHY[name][0];
     document.getElementById('why-notes').textContent = WHY[name][1];
@@ -582,6 +602,8 @@ header.top { display: grid; gap: 10px; }
   shots.forEach(b => b.addEventListener('click', () => go(b.dataset.shot)));
   document.getElementById('app').addEventListener('click', e => {
     const t = e.target.closest('[data-go]'); if (t) { go(t.dataset.go); return; }
+    const vg = e.target.closest('[data-view-go]');
+    if (vg) { const sc = vg.closest('[data-screen]'); sc.querySelectorAll('[data-view]').forEach(v => { v.hidden = v.dataset.view !== vg.dataset.viewGo; }); return; }
     const tg = e.target.closest('[data-toggle]');
     if (tg) { const el = document.getElementById(tg.dataset.toggle); el.hidden = !el.hidden; tg.textContent = (el.hidden ? '▸ ' : '▾ ') + tg.textContent.slice(2); return; }
     const p = e.target.closest('[data-pick]');
