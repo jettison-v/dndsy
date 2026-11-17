@@ -9,6 +9,7 @@
    through your own sheet (step), yellow through the DM's browser while your sheet is closed (via: it still asks you to
    open it, as only your sheet sends rolls to the Game Log), red when it can't while the table is playing or something
    waits to be made by hand (bad), grey when no one at the table is connected. #}
+{% from "_live_link.html" import live_link %}
 {% set p = tn.pill %}
 {% if p %}{% set fid = tn.focus.id if tn.focus else "" %}{% set m = p if p.mine else tn.mine %}{% set ours = p.connects and p.mine %}{% set party = tn.connectable and not tn.mine %}
 {% set playing = tn.playing or fight_now() %}
@@ -24,16 +25,16 @@
   hx-get="/live{{ '?c=%s' % fid if fid }}" hx-target="#live-menu" hx-trigger="click" data-focus="{{ fid }}" data-every="{{ tn.every }}"{% if tn.connectable %} data-wants-bridge="1"{% endif %}{% if m and m.in_game %} data-log="{{ 'on' if m.step else 'sheet' }}" data-log-until="{{ m.step_until }}" data-sheet="https://www.dndbeyond.com/characters/{{ m.ddb_id }}"{% else %} data-log="" data-log-until="0"{% endif %}{% if oob %} hx-swap-oob="true"{% endif %}
   title="{% if p.by_hand %}{{ p.name }}: {{ p.by_hand }} change{{ 's' if p.by_hand != 1 }} didn't go through to D&amp;D Beyond: Try again or Undo in this window{% elif p.failed %}Couldn't refresh {{ p.name }} from D&amp;D Beyond; showing the copy from {{ p.fetched_at | ago }}{% elif party %}How many of the party's D&amp;D Beyond sheets are connected{% elif p.step %}{{ p.name }}'s D&amp;D Beyond sheet and askdnd change together (the bridge){% elif p.via %}{{ p.name }}'s sheet is closed, so the DM's D&amp;D Beyond makes the changes. Open it so rolls reach D&amp;D Beyond's Game Log too{% elif ours %}Open {{ p.name }}'s D&amp;D Beyond sheet in Chrome with the askdnd bridge{% elif tn.party_pill %}The party's slowest copy from D&amp;D Beyond ({{ p.name }}){% else %}{{ p.name }}, from D&amp;D Beyond{% endif %}">
   {#- Its words (Brett chose Menu Bar by Person, Nov 13, docs/mockups/menu-bar-people/ › The Live pill): connected is the
-      green dot alone; every other state says what to do. `.lw-long` gives way to `.lw-short` below 1100px (the collapse
+      green chain link alone (it was a dot until Nov 16); every other state says what to do. `.lw-long` gives way to `.lw-short` below 1100px (the collapse
       order, docs/DESIGN.md › Navigation), never to a bare "Live" or a bare dot; a state that's short already (Not
       connected, Open your sheet) keeps its words. One label shows at a time: without the bridge in this browser "Add
       the bridge" takes the words' place (app.css), and a connected pill widens for it. -#}
   {%- set words = none %}{% set short = none %}
   {%- if p.by_hand %}{% set words = "%d didn't go through" % p.by_hand %}{% set short = "%d not sent" % p.by_hand %}
   {%- elif party and tn.connected == tn.connectable %}{% set words = "" %}
-  {%- elif party and tn.via %}{% set words = "%d of %d · %d via %s" % (tn.connected + tn.via, tn.connectable, tn.via, "you" if tn.dm else "the DM") %}{% set short = "%d of %d" % (tn.connected + tn.via, tn.connectable) %}
-  {%- elif party and tn.connected %}{% set words = "%d of %d connected" % (tn.connected, tn.connectable) %}{% set short = "%d of %d" % (tn.connected, tn.connectable) %}
-  {%- elif party %}{% set words = "None connected" %}{% set short = "0 of %d" % tn.connectable %}
+  {%- elif party and tn.via %}{% set words = "%d of %d sheets · %d via %s" % (tn.connected + tn.via, tn.connectable, tn.via, "you" if tn.dm else "the DM") %}{% set short = "%d of %d sheets" % (tn.connected + tn.via, tn.connectable) %}
+  {%- elif party and tn.connected %}{% set words = "%d of %d sheets" % (tn.connected, tn.connectable) %}{# (4 of what: sheets; Brett's iPhone test, Nov 16) #}
+  {%- elif party %}{% set words = "None connected" %}{% set short = "0 of %d sheets" % tn.connectable %}
   {%- elif p.step and p.mine %}{% set words = "" %}
   {%- elif p.step %}{% set words = "%s connected" % p.name %}{% set short = "Connected" %}
   {%- elif p.via and p.mine %}{% set words = "Via the DM · open your sheet" %}{% set short = "Open your sheet" %}
@@ -43,7 +44,7 @@
   {%- elif ours %}{% set words = "Not connected" %}
   {%- elif tn.party_pill %}{% set words = "Slowest sheet " ~ ((p.fetched_at | ago) or "never") %}
   {%- else %}{% set words = "Updated " ~ ((p.fetched_at | ago) or "never") %}{% endif %}
-  <span class="live-dot" aria-hidden="true"></span>
+  {%- set broken = (ours and not p.step and not p.via) or (party and not tn.connected and not tn.via) %}{{ live_link(broken) }}
   {%- if words %}<span class="live-ago"><span class="lw-long">{{ words }}</span>{% if short %}<span class="lw-short">{{ short }}</span>{% endif %}</span>
   {%- else %}<span class="live-ago sr">Connected</span>{% endif %}<span class="live-noext">Add the bridge</span></button>
 {% endif %}

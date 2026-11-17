@@ -170,6 +170,7 @@ def test_the_live_pill_is_yellow_through_the_dm_red_while_playing_grey_otherwise
     cole = table
     page = player.get(f"/characters/{cole.id}").text
     assert tone(page) == "none" and ">Not connected<" in page  # grey: no one's connected (the words: what to do)
+    assert 'data-link="broken"' in page.split('id="live-pill"')[1].split("</button>")[0]  # (nothing reaches the sheet: the link broken)
 
     other = next(c for c in db.scalars(select(Character)) if c.id != cole.id and c.ddb_id)
     other.sheet_heard_at = datetime.now(UTC)  # someone at the table is

@@ -1,0 +1,212 @@
+<title>The Live Pill</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens and sizes (app.css: the menu bar's controls --bar-h 36px, 44px on a
+   phone; 14px text; the pill's tones green, amber, red). Brett's iPhone test, Nov 16: the green dot alone didn't say
+   what it meant, and "4 of 14" didn't say 4 of what. Every state of the Live pill, today and three ways to say it. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-line: #8a4242; --amber: #e8b34b; --green: #5bbf7f; --blue: #7ea6e0;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  --bar-h: 36px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 34px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+.wrap > * { min-width: 0; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2.2rem/1.15 var(--serif); }
+h2 { font: 600 1.4rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+.lbl { font: 700 .76rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.pick { color: var(--green); margin-left: 8px; }
+.lead { max-width: 82ch; font-size: 1.04rem; }
+.note { color: var(--muted); font-size: .86rem; }
+section { display: grid; gap: 14px; padding-top: 26px; border-top: 1px solid #2c3036; min-width: 0; }
+.intro { display: grid; gap: 6px; max-width: 90ch; }
+
+/* the menu bar, as askdnd draws it */
+.bar { display: flex; align-items: center; gap: 10px; min-height: 60px; padding: 0 16px; background: #111316; border-bottom: 2px solid #c94a4a; border-radius: 10px; min-width: 0; overflow: hidden; }
+.bar .logo { width: 30px; height: 30px; border-radius: 8px; background: #3a1e22; flex: none; }
+.bar .ctl { display: inline-flex; align-items: center; min-height: var(--bar-h); padding: 0 12px; border-radius: 8px; color: var(--muted); font-size: .9rem; white-space: nowrap; }
+.bar .ctl.box { border: 1px solid var(--line); }
+.bar .search { flex: 1 1 auto; min-width: 40px; height: var(--bar-h); border: 1px solid var(--line); border-radius: 8px; color: var(--faint); font-size: .85rem; display: flex; align-items: center; padding: 0 10px; overflow: hidden; white-space: nowrap; }
+.bar .me { width: 34px; height: 34px; border-radius: 50%; background: #7a2a3a; flex: none; }
+.bar.phone { --bar-h: 44px; max-width: 375px; gap: 8px; padding: 0 10px; }
+
+/* the pill */
+.pill { display: inline-flex; align-items: center; gap: 8px; height: var(--bar-h); padding: 0 12px; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; font-size: .875rem; white-space: nowrap; flex: none; }
+.pill.dot { width: var(--bar-h); padding: 0; justify-content: center; }
+.pill.icon { padding: 0 10px; }
+.pill .d { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
+.pill.step .d { background: var(--green); } .pill.via .d { background: var(--amber); } .pill.bad .d { background: var(--red); }
+.pill.via { border-color: var(--amber); color: var(--text); } .pill.bad { border-color: var(--red-line); color: var(--text); }
+.pill.step.worded { color: var(--text); }
+.pill svg { width: 22px; height: 22px; flex: none; }
+.pill.step svg .ink { stroke: var(--green); }
+.pill svg .ink { stroke: currentColor; }
+
+/* the grid of states × ways */
+.grid { display: grid; grid-template-columns: minmax(0, 15rem) repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); }
+.grid.g6 { grid-template-columns: minmax(0, 11rem) repeat(5, minmax(0, 1fr)); }
+.scroll-x .grid.g6 { min-width: 1080px; }
+.ic-name { display: block; }
+.ic-name small { display: block; color: var(--muted); font-size: .78rem; }
+.grid > div { padding: 12px 10px; border-bottom: 1px solid var(--line); display: flex; align-items: center; min-width: 0; }
+.grid .h { color: var(--faint); font: 700 .72rem/1.2 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.grid .s { display: block; font-size: .88rem; }
+.grid .s small { display: block; color: var(--muted); font-size: .78rem; }
+.scroll-x { overflow-x: auto; }
+.scroll-x .grid { min-width: 900px; }
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.opt { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; align-content: start; gap: 8px; font-size: .9rem; }
+.opt.mine { border-color: var(--green); }
+.opt ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 4px; }
+.phones { display: flex; flex-wrap: wrap; gap: 16px; }
+.phones > div { display: grid; gap: 6px; min-width: 0; flex: 1 1 340px; max-width: 375px; }
+.tip { display: inline-block; margin-left: 8px; padding: 4px 8px; background: #000; color: var(--text); border-radius: 6px; font-size: .78rem; white-space: nowrap; }
+</style>
+
+<div class="wrap">
+<header style="display:grid;gap:12px">
+  <span class="lbl">Mockup · Nov 16 · from your iPhone test (On your iPhone, step 2)</span>
+  <h1>The Live pill: what "connected" looks like</h1>
+  <p class="lead">The pill answers one question: will a change you make in askdnd reach your D&amp;D Beyond sheet?
+  Every state says what to do in words, except the good one, which is a green dot alone, and that didn't say what it
+  meant. The DM's count ("4 of 14") didn't say 4 of what either. Here is every state, today and three ways to say it,
+  at its real size in the menu bar.</p>
+</header>
+
+<section>
+  <div class="intro"><span class="lbl">Where it lives</span><h2>In the menu bar, after Search</h2>
+    <p class="note">On The Adventure Begins as Cole's player, a laptop and a phone. Pressing it opens the Live window (unchanged: each sheet and how it's connected).</p></div>
+  <div class="bar" id="bar-laptop"></div>
+  <div class="bar phone" id="bar-phone"></div>
+</section>
+
+<section>
+  <div class="intro"><span class="lbl">Every state</span><h2>Today, and A, B, C</h2>
+    <p class="note">Only the first row and the DM's count change; every other state keeps its words and colour (they already say what to do), shown here with each way's mark so you can see them side by side.</p></div>
+  <div class="scroll-x"><div class="grid" id="grid"></div></div>
+</section>
+
+<section>
+  <div class="intro"><span class="lbl">On a phone</span><h2>Where space is shortest</h2>
+    <p class="note">375px wide. Connected, then your sheet closed (the DM's browser carries it).</p></div>
+  <div class="phones" id="phones"></div>
+</section>
+
+<section>
+  <div class="intro"><span class="lbl">Round 2 · your comment: the connected route, other icons</span><h2>Five ways to draw "connected"</h2>
+    <p class="note">The sheet read as a document. Each icon below is drawn in the pill's real size and tones: connected (green), your sheet closed with the DM carrying it (amber), not connected while playing (red, the icon broken where it can be), between games (grey), and the DM's count. Hover any pill for its words.</p></div>
+  <div class="scroll-x"><div class="grid g6" id="icons"></div></div>
+  <div class="intro"><span class="lbl">On a phone</span><p class="note">Connected and Open your sheet, at 375px.</p></div>
+  <div class="phones" id="icon-phones"></div>
+</section>
+
+<section>
+  <div class="intro"><span class="lbl">Round 1, side by side</span><h2>What each is better at</h2></div>
+  <div class="opts">
+    <div class="opt"><b>A · Your sheet, with a badge</b> <span class="note">(round 1: you read it as a document)</span><ul>
+      <li>Says what's connected: your sheet, the thing the question is about.</li>
+      <li>The same mark in every state, only the badge changes (✓ green, … amber, ! red), so the pill reads at a glance and the words carry the rest.</li>
+      <li>The DM's count is a stack of sheets: "4 of 14" reads as sheets.</li>
+      <li>One more icon to learn, though it's the sheet you already have open.</li></ul></div>
+    <div class="opt"><b>B · The dot, with a word</b><ul>
+      <li>"Connected" in plain words; nothing to learn.</li>
+      <li>Wider: the word costs about 90px, on a laptop and a phone.</li>
+      <li>Doesn't say connected to what.</li></ul></div>
+    <div class="opt"><b>C · A plug</b><ul>
+      <li>Reads as "connected" across apps.</li>
+      <li>Suggests a cable or power more than your D&amp;D Beyond sheet; unplugged for the bad states looks like an error even when the DM carries it.</li></ul></div>
+  </div>
+</section>
+
+<section>
+  <div class="intro"><span class="lbl">Your pick</span><h2>One choice</h2>
+    <p>Which icon should "connected" be: the chain link (my pick now: it reads as linked at a glance, and a broken link says not connected without words), two ends joined, sync arrows, live waves or the plug? Whichever you pick, its tooltip says it in words ("Cole's D&amp;D Beyond sheet is connected"), and the DM's count says sheets ("4 of 14 sheets").</p></div>
+</section>
+</div>
+
+<script>
+const SHEET = (badge, colour) => `<svg viewBox="0 0 20 20" aria-hidden="true"><path class="ink" d="M5 2.5h6.5L15 6v10.5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1z" fill="none" stroke-width="1.4"/><path class="ink" d="M11.5 2.5V6H15M6.5 9h6M6.5 11.5h4" fill="none" stroke-width="1.2" opacity=".7"/>` +
+  (badge ? `<circle cx="14.6" cy="14.6" r="4.6" fill="${colour}" stroke="#1f2226" stroke-width="1.6"/>` + ({ ok: '<path d="M12.6 14.7l1.4 1.4 2.6-2.8" fill="none" stroke="#10241a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>', wait: '<path d="M12.7 14.6h.01M14.6 14.6h.01M16.5 14.6h.01" stroke="#2a1d05" stroke-width="1.8" stroke-linecap="round"/>', bad: '<path d="M14.6 12.4v2.6M14.6 16.8h.01" stroke="#2a0d0d" stroke-width="1.7" stroke-linecap="round"/>', off: '' })[badge] : '') + `</svg>`;
+const STACK = (badge, colour) => `<svg viewBox="0 0 20 20" aria-hidden="true"><path class="ink" d="M7 4.5h6.5a1 1 0 0 1 1 1v9" fill="none" stroke-width="1.2" opacity=".6"/><path class="ink" d="M4.5 6.5h7a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z" fill="none" stroke-width="1.4"/>` +
+  (badge ? `<circle cx="14.6" cy="14.6" r="4.6" fill="${colour}" stroke="#1f2226" stroke-width="1.6"/>` + (badge === "ok" ? '<path d="M12.6 14.7l1.4 1.4 2.6-2.8" fill="none" stroke="#10241a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>' : badge === "bad" ? '<path d="M14.6 12.4v2.6M14.6 16.8h.01" stroke="#2a0d0d" stroke-width="1.7" stroke-linecap="round"/>' : '<path d="M12.7 14.6h.01M14.6 14.6h.01M16.5 14.6h.01" stroke="#2a1d05" stroke-width="1.8" stroke-linecap="round"/>') : '') + `</svg>`;
+const PLUG = (on) => `<svg viewBox="0 0 20 20" aria-hidden="true"><path class="ink" d="M7 3v4M13 3v4M5 7h10v3a5 5 0 0 1-10 0V7zM10 15v3" fill="none" stroke-width="1.5" stroke-linecap="round"/>${on ? '' : '<path d="M3 3l14 14" stroke="#f08a8a" stroke-width="1.6" stroke-linecap="round"/>'}</svg>`;
+const C = { ok: "#5bbf7f", wait: "#e8b34b", bad: "#f08a8a" };
+
+const STATES = [
+  { k: "Your sheet is connected", sub: "everything you change reaches D&D Beyond", tone: "step", badge: "ok", words: "",
+    today: '<span class="pill dot step"><span class="d"></span></span>',
+    b: '<span class="pill step worded"><span class="d"></span>Connected</span>',
+    tip: "Cole's D&amp;D Beyond sheet is connected" },
+  { k: "Your sheet closed", sub: "the DM's browser carries your changes", tone: "via", badge: "wait", words: "Via the DM · open your sheet" },
+  { k: "Not connected, while playing", sub: "nothing can reach your sheet", tone: "bad", badge: "bad", words: "Open your sheet" },
+  { k: "A change didn't go through", sub: "Try again or Undo in the Live window", tone: "bad", badge: "bad", words: "1 didn't go through" },
+  { k: "Not connected, between games", sub: "", tone: "", badge: "off", words: "Not connected" },
+  { k: "The DM: every sheet connected", sub: "the party's count, all in", tone: "step", badge: "ok", party: true, words: "",
+    today: '<span class="pill dot step"><span class="d"></span></span>', b: '<span class="pill step worded"><span class="d"></span>All 4 sheets</span>' },
+  { k: "The DM: some connected", sub: "VTT test holds 14 characters (twins and test ones)", tone: "bad", badge: "bad", party: true, words: "4 of 14 connected", newWords: "4 of 14 sheets" },
+  { k: "No bridge in this browser", sub: "the extension isn't added here", tone: "", badge: "off", words: "Add the bridge" },
+];
+const pill = (tone, mark, words, cls = "") => `<span class="pill ${tone} ${cls}${words ? "" : " icon"}">${mark}${words ? `<span>${words}</span>` : ""}</span>`;
+const g = document.getElementById("grid");
+g.innerHTML = ["State", "Today", "A · your sheet", "B · dot and word", "C · a plug"].map(h => `<div class="h">${h}</div>`).join("") + STATES.map(s => {
+  const words = s.newWords || s.words;
+  const today = s.today || `<span class="pill ${s.tone}"><span class="d"></span><span>${s.words}</span></span>`;
+  const a = pill(s.tone, (s.party ? STACK : SHEET)(s.badge === "off" ? "" : s.badge, C[s.badge]), s.party && !words ? "4 of 4" : words, s.tone === "step" ? "worded" : "");
+  const b = s.b || `<span class="pill ${s.tone}"><span class="d"></span><span>${words}</span></span>`;
+  const c = pill(s.tone, PLUG(s.tone === "step" || s.tone === "via"), s.party && !words ? "4 of 4" : words, s.tone === "step" ? "worded" : "");
+  return `<div><span class="s">${s.k}${s.sub ? `<small>${s.sub}</small>` : ""}</span></div><div>${today}</div><div>${a}</div><div>${b}</div><div>${c}</div>`;
+}).join("");
+
+const barOf = (p, phone) => `<span class="logo"></span>${phone ? "" : '<span class="ctl">The Adventure Begins</span><span class="ctl box">Campaign</span><span class="ctl box">Cole</span><span class="ctl box">Party ▾</span>'}<span class="search">${phone ? "⌕" : "⌕ Search your character, the rules, the story"}</span>${p}${phone ? "" : '<span class="ctl box">Manage ▾</span>'}<span class="me"></span>`;
+document.getElementById("bar-laptop").innerHTML = barOf(pill("step", SHEET("ok", C.ok), "", "worded") + '<span class="tip">Cole\'s D&amp;D Beyond sheet is connected</span>', false);
+document.getElementById("bar-phone").innerHTML = barOf(pill("step", SHEET("ok", C.ok), "", "worded"), true);
+
+const P = document.getElementById("phones");
+const ways = [["Today", '<span class="pill dot step"><span class="d"></span></span>', '<span class="pill via"><span class="d"></span><span>Open your sheet</span></span>'],
+              ["A · your sheet", pill("step", SHEET("ok", C.ok), "", "worded"), pill("via", SHEET("wait", C.wait), "Open your sheet")],
+              ["B · dot and word", '<span class="pill step worded"><span class="d"></span>Connected</span>', '<span class="pill via"><span class="d"></span><span>Open your sheet</span></span>'],
+              ["C · a plug", pill("step", PLUG(true), "", "worded"), pill("via", PLUG(true), "Open your sheet")]];
+P.innerHTML = ways.map(([n, ok, via]) => `<div><span class="note">${n}</span><div class="bar phone">${barOf(ok, true)}</div><div class="bar phone">${barOf(via, true)}</div></div>`).join("");
+
+// Round 2: icons for "connected" (Brett's comment: the sheet read as a document; the connected route)
+const svg = (inner) => `<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const ICONS = [
+  { k: "link", n: "A chain link", why: "two links joined; broken when nothing reaches your sheet",
+    ok: '<path class="ink" d="M8.5 11.5l3-3M7 9.5l-1.8 1.8a2.8 2.8 0 0 0 4 4L11 13.5M13 10.5l1.8-1.8a2.8 2.8 0 0 0-4-4L9 6.5"/>',
+    bad: '<path class="ink" d="M7 9.5l-1.8 1.8a2.8 2.8 0 0 0 4 4L11 13.5M13 10.5l1.8-1.8a2.8 2.8 0 0 0-4-4L9 6.5M3.5 3.5l2 2M16.5 16.5l-2-2"/>' },
+  { k: "nodes", n: "Two ends joined", why: "askdnd and D&D Beyond, a line between; the line gaps when not",
+    ok: '<circle class="ink" cx="5" cy="10" r="2.6"/><circle class="ink" cx="15" cy="10" r="2.6"/><path class="ink" d="M7.6 10h4.8"/>',
+    bad: '<circle class="ink" cx="5" cy="10" r="2.6"/><circle class="ink" cx="15" cy="10" r="2.6"/><path class="ink" d="M7.6 10h1.2M11.2 10h1.2"/>' },
+  { k: "sync", n: "Sync arrows", why: "changes going both ways; a gap when they stop",
+    ok: '<path class="ink" d="M15.5 8A6 6 0 0 0 5 6.2M4.5 12A6 6 0 0 0 15 13.8"/><path class="ink" d="M5 3.2v3h3M15 16.8v-3h-3"/>',
+    bad: '<path class="ink" d="M15.5 8A6 6 0 0 0 11 4.2M4.5 12A6 6 0 0 0 9 15.8"/><path class="ink" d="M3.5 3.5l13 13"/>' },
+  { k: "signal", n: "Live waves", why: "on air, like a live stream; flat when not",
+    ok: '<circle class="ink" cx="10" cy="10" r="1.6"/><path class="ink" d="M6.6 6.6a4.8 4.8 0 0 0 0 6.8M13.4 6.6a4.8 4.8 0 0 1 0 6.8M4.2 4.2a8.2 8.2 0 0 0 0 11.6M15.8 4.2a8.2 8.2 0 0 1 0 11.6"/>',
+    bad: '<circle class="ink" cx="10" cy="10" r="1.6"/><path class="ink" d="M3.5 3.5l13 13"/>' },
+  { k: "plug", n: "A plug", why: "for comparison (C in round 1)",
+    ok: '<path class="ink" d="M7 3v4M13 3v4M5 7h10v3a5 5 0 0 1-10 0V7zM10 15v3"/>',
+    bad: '<path class="ink" d="M7 3v4M13 3v4M5 7h10v3a5 5 0 0 1-10 0V7zM10 15v3"/><path d="M3 3l14 14" stroke="#f08a8a"/>' },
+];
+const ICON_STATES = [
+  { k: "Connected", tone: "step", good: true, words: "", tip: "Cole's D&D Beyond sheet is connected" },
+  { k: "Sheet closed", sub: "the DM carries it", tone: "via", good: true, words: "Open your sheet", tip: "Via the DM: open your sheet so your rolls reach the Game Log" },
+  { k: "Not connected, playing", tone: "bad", good: false, words: "Open your sheet", tip: "Nothing reaches your sheet" },
+  { k: "Between games", tone: "", good: false, words: "Not connected", tip: "Not connected" },
+  { k: "The DM's count", tone: "bad", good: true, words: "4 of 14 sheets", tip: "4 of the party's 14 sheets connected" },
+];
+const ipill = (ic, st) => `<span class="pill ${st.tone}${st.tone === "step" ? " worded" : ""}${st.words ? "" : " icon"}" title="${st.tip}">${svg(st.good ? ic.ok : ic.bad)}${st.words ? `<span>${st.words}</span>` : ""}</span>`;
+document.getElementById("icons").innerHTML = ["Icon"].concat(ICON_STATES.map(st => st.k)).map(h => `<div class="h">${h}</div>`).join("") +
+  ICONS.map(ic => `<div><span class="ic-name"><b>${ic.n}</b><small>${ic.why}</small></span></div>` + ICON_STATES.map(st => `<div>${ipill(ic, st)}</div>`).join("")).join("");
+document.getElementById("icon-phones").innerHTML = ICONS.map(ic => `<div><span class="note">${ic.n}</span><div class="bar phone">${barOf(ipill(ic, ICON_STATES[0]), true)}</div><div class="bar phone">${barOf(ipill(ic, ICON_STATES[1]), true)}</div></div>`).join("");
+</script>
