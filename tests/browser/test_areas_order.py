@@ -119,3 +119,40 @@ def test_for_you_changes_in_place_and_its_marks_sit_centered(people, server, bro
         return Math.abs((r.top + r.bottom) / 2 - (s.top + s.bottom) / 2); }""")
     assert badge < 1.5, badge  # (note 96)
     assert not admin.errors, admin.errors
+
+
+def test_feedback_reads_a_note_and_writes_to_claude_or_them(people, server, browser_db):
+    """Readers, Rebuilt (Board 3): Feedback is a Reader; a row opens its note in place (no reload) with its state in
+    words; ⋯ opens Change what it is; one box writes to Claude or to its sender."""
+    import json
+
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        uid = conn.execute(text("SELECT id FROM users WHERE email = 'player@example.com'")).scalar()
+        ids = [conn.execute(text("INSERT INTO feedback (text, status, kind, thread, sender, user_id, context) VALUES (:t, 'new', 'broken', '[]', "
+                                 "'Cathartic (player)', :u, CAST(:c AS jsonb)) RETURNING id"),
+                            {"t": t, "u": uid, "c": json.dumps({"page": "Cole · Battle", "pointed": {"label": "Speed", "path": "main"}})}).scalar()
+               for t in ("The rolls panel closes by itself.", "Speed should show the swim speed too.")]
+    engine.dispose()
+    admin = people("admin")
+    page = admin.open("/manage/feedback?tab=new")
+    page.evaluate("window.__stayed = true")
+    page.locator(f'[data-note="{ids[0]}"]').click()
+    page.locator(f'[data-note-read="{ids[0]}"]').wait_for()
+    assert page.evaluate("window.__stayed === true") and page.locator(f'[data-note="{ids[0]}"]').get_attribute("aria-current") == "true"
+    art = page.locator(f'[data-note-read="{ids[0]}"]')
+    assert art.locator(".state-line .sw-claude").count() == 1
+    art.locator(".act-more summary").click()
+    art.locator(f'[data-show="fbkind-{ids[0]}"]').click()
+    assert page.locator(f"#fbkind-{ids[0]}").is_visible() and not art.locator(".act-more").evaluate("d => d.open")
+    composer = art.locator("[data-composer]")
+    composer.locator('input[value="tell"]').check()
+    composer.locator("textarea[name=answer]").fill("Fixed soon, thanks.")
+    composer.locator("[data-composer-send]").click()
+    page.wait_for_url("**/manage/feedback**")
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        thread = conn.execute(text("SELECT thread FROM feedback WHERE id = :i"), {"i": ids[0]}).scalar()
+    engine.dispose()
+    assert thread[-1]["to"] == "sender" and thread[-1]["text"] == "Fixed soon, thanks."
+    assert not admin.errors, admin.errors

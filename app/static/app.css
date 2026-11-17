@@ -3793,28 +3793,6 @@ kbd { display: inline-block; border: 1px solid var(--line-strong); border-bottom
 body.fb-pointing, body.fb-pointing * { cursor: crosshair !important; }
 .fb-pointed { outline: 2px solid var(--amber) !important; outline-offset: 3px; }
 body[data-feedback] .brand { -webkit-touch-callout: none; user-select: none; }  /* (pressing and holding it opens the window on a phone) */
-.fb-list { list-style: none; margin: var(--sp-4) 0 0; padding: 0; display: grid; border-top: 1px solid var(--line); }
-.fb-item { border-bottom: 1px solid var(--line); }
-.fb-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; padding: var(--sp-3) var(--sp-2); cursor: pointer; list-style: none; }
-.fb-row::-webkit-details-marker { display: none; }
-.fb-item details[open] > .fb-row { background: var(--surface); }
-.fb-thumb { width: 72px; height: 46px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--chrome); object-fit: cover; object-position: top left; display: block; }
-.fb-main { display: grid; gap: 2px; min-width: 0; }
-.fb-main b { color: var(--text-strong); font-weight: 600; }
-.fb-st { border-radius: var(--r-pill); padding: 2px var(--sp-2); font-size: var(--fs-xs); font-weight: 600; white-space: nowrap; }
-.fb-st.new { background: var(--red-soft); color: var(--link); }
-.fb-st.question { background: var(--amber-soft); color: var(--amber); }
-.fb-st.review { background: var(--amber-soft); color: var(--amber); }  /* the table's note, waiting for an admin */
-.fb-st.planned { background: var(--blue-soft); color: var(--blue); }
-.fb-st.done { background: var(--green-soft); color: var(--green); }
-/* Your feedback (a sender's own notes) */
-.fb-st.deleted { background: var(--surface-3); color: var(--muted); }
-.fb-open { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-3) var(--sp-2) var(--sp-4) calc(72px + var(--sp-5)); background: var(--surface); }
-@media (max-width: 900px) { .fb-open { grid-template-columns: minmax(0, 1fr); padding-left: var(--sp-2); } }
-.fb-pics { display: grid; gap: var(--sp-2); align-content: start; }
-.fb-pics img { width: 100%; border: 1px solid var(--line-strong); border-radius: var(--r-md); display: block; }
-.fb-side { display: grid; gap: var(--sp-3); align-content: start; min-width: 0; }
-.fb-text { margin: 0; white-space: pre-wrap; }
 .fb-msg { border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); font-size: var(--fs-sm); background: var(--surface-3); white-space: pre-wrap; }
 .fb-msg.you { background: var(--red-soft); }
 .fb-msg small { display: block; color: var(--faint); font-size: var(--fs-xs); }
@@ -4280,6 +4258,35 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .cc-skip > summary { list-style: none; }
 .cc-skip > summary::-webkit-details-marker { display: none; }
 .cc-skip[open] { flex-basis: 100%; }
+/* Feedback's Reader (Readers, Rebuilt, Board 3): what they saw first (the picture large, the page's facts beside it),
+   the conversation as messages, one box to write to Claude or to them */
+.fb-read { display: grid; gap: var(--sp-3); }
+.fb-reader .fb-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--sp-2); align-items: start; }
+.fb-reader .fb-row .nt-sum { grid-column: 1 / -1; }
+.fb-fold { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
+.fb-evidence { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--sp-3); align-items: start; }
+.fb-shots-big { display: grid; gap: var(--sp-2); min-width: 0; }
+.fb-shots-big .fb-pic { width: 100%; height: auto; max-height: 340px; object-fit: contain; object-position: left top; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--bg); }
+.fb-facts { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
+.fb-facts dt { color: var(--faint); }
+.fb-facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.convo { display: grid; gap: var(--sp-2); }
+.bub { max-width: 88%; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); display: grid; gap: 2px; font-size: var(--fs-sm); min-width: 0; overflow-wrap: anywhere; }
+.bub p { margin: 0; white-space: pre-wrap; }
+.bub > small { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.bub.them { justify-self: start; background: var(--surface-2); border: 1px solid var(--line-soft); border-bottom-left-radius: var(--r-xs); }
+.bub.them > small { color: var(--muted); }
+.bub.claude { justify-self: start; background: var(--violet-soft); border: 1px solid var(--line-soft); border-bottom-left-radius: var(--r-xs); }
+.bub.claude > small { color: var(--violet); }
+.bub.you { justify-self: end; background: var(--blue-soft); border: 1px solid var(--line-soft); border-bottom-right-radius: var(--r-xs); }
+.bub.you > small { color: var(--blue); }
+.convo-aside { margin: 0; text-align: center; }
+.composer { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-lg); padding: var(--sp-2) var(--sp-3); display: grid; gap: var(--sp-2); }
+.composer-to { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); align-items: center; min-width: 0; }
+.composer-to legend { float: left; margin-right: var(--sp-2); }
+.composer-to .chip input { margin: 0 4px 0 0; accent-color: var(--blue); }
+.composer-to .chip:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
+@media (max-width: 900px) { .fb-evidence { grid-template-columns: minmax(0, 1fr); } .bub { max-width: 100%; } }
 .ts-do { margin: 0; padding-left: 1.2em; display: grid; gap: var(--sp-1); }
 .ts-from { display: grid; gap: var(--sp-2); }
 .ts-read p { margin: 0; }  /* (the article's grid spaces its parts, as Notes you sent's: no paragraph's own margin on top) */
