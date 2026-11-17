@@ -200,8 +200,9 @@ def local_path(p: str) -> bool:
     return bool(p) and p.startswith("/") and not p.startswith("//") and "\\" not in p and not any(ord(ch) < 32 or ord(ch) == 127 for ch in p)
 
 
-STEP_MARKS = re.compile(r"(`[^`]+`|\[[^\]]+\]|\*\*[^*]+\*\*)")
-WHY = re.compile(r"\s*\(why:\s*([^)]*)\)\s*$", re.I)
+STEP_MARKS = re.compile(r"(`[^`\n]+`|\[[^\[\]\n]+\]|\*\*[^*\n]+\*\*)")  # (each part can't hold its own opener: linear on any input, CodeQL)
+WHY = re.compile(r"\(why:([^()]*)\)$", re.I)  # (on a stripped line)
+STEP_MAX = 500  # (a step's length, at most)
 TWO_THINGS = re.compile(r",\s*then\b|;\s*then\b|\band then\b|\bthen press\b", re.I)
 UNMARKED_TYPING = re.compile(r"\b(type|enter|write|fill in)\s+(?!it\b|in\b|a\b|an\b|the\b|your\b|something\b)\w", re.I)
 
@@ -211,7 +212,8 @@ def walk(do: str) -> list[dict]:
     [Button] (a button, drawn as one), **Box** (a box's name), and its (why: …) last."""
     out = []
     for line in (do or "").splitlines():
-        if not line.strip():
+        line = line.strip()[:STEP_MAX]
+        if not line:
             continue
         why = WHY.search(line)
         body = line[: why.start()] if why else line
@@ -229,7 +231,7 @@ def step_problems(do: str) -> list[str]:
     """What breaks the walkthrough's rules (docs/testing-guide.md): a step that does two things, or a word to type that
     isn't `marked` (Brett, Nov 17: "type lots in Or type it" read as an instruction to decode)."""
     found = []
-    for n, line in enumerate((x for x in (do or "").splitlines() if x.strip()), 1):
+    for n, line in enumerate((x.strip()[:STEP_MAX] for x in (do or "").splitlines() if x.strip()), 1):
         bare = STEP_MARKS.sub(" ", WHY.sub("", line))
         if TWO_THINGS.search(bare):
             found.append(f"Step {n} does two things: one action a step.")
@@ -497,11 +499,14 @@ def done_with(request: Request, check_id: int, db: Session = Depends(get_db)):
     _, denied = web.require(request, is_admin, DENIED)
     if denied:
         return denied
-    back = f"/manage/testing?show=failed&check={check_id}"
-    if not on_round(request, check_id):
+    c = db.get(Check, check_id)
+    if c is None:
+        return web.not_found(request, "There's no such check.")
+    back = f"/manage/testing?show=failed&check={c.id}"  # (from the check itself, never the address it was asked with)
+    if not on_round(request, c.id):
         return RedirectResponse(back, status_code=303)
     single = bool(_round(request).get("back"))
-    _advance(request, check_id)
+    _advance(request, c.id)
     now = current(request, db)
     if now:
         return RedirectResponse(enter(request, db, db.get(Check, now["check"]["id"])), status_code=303)
