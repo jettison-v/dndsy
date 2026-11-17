@@ -150,6 +150,15 @@ def _ini_shown(n) -> str:
 
 
 templates.env.filters["md"] = _markdown
+
+
+def _linked(text: object) -> Markup:
+    from app.render import linked
+
+    return linked(text)
+
+
+templates.env.filters["linked"] = _linked  # Claude's words with their addresses as links (note 105)
 templates.env.filters["res_groups"] = res_groups
 templates.env.filters["res_short"] = res_short
 templates.env.filters["creature_short"] = creature_short  # (Your creatures' switch by the name)

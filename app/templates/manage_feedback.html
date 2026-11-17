@@ -91,8 +91,8 @@
         <div class="convo" aria-label="The conversation">{# (theirs on the left, Claude's violet, yours on the right) #}
           <div class="bub {{ 'you' if mine else 'them' }}"><small>{{ "You" if mine else who }}</small><p>{{ f.text }}</p></div>
           {% for m in f.thread or [] %}
-          {% if m.kind %}<p class="note convo-aside">{{ m.text }}</p>
-          {% else %}<div class="bub {{ 'claude' if m.who == 'claude' else 'you' if m.who == 'you' or (m.who == 'sender' and mine) else 'them' }}"><small>{{ "Claude" if m.who == "claude" else ("You" if mine else who) if m.who == "sender" else "You" }}{% if m.to == "sender" %}, to {{ "you" if mine else who }}{% endif %}</small><p>{{ m.text }}</p>{% if not hide %}{{ added_pics(m.pics, "/manage/feedback/" ~ f.id) }}{% endif %}</div>{% endif %}
+          {% if m.kind or m.event %}<p class="note convo-aside">{{ m.text }}</p>
+          {% else %}<div class="bub {{ 'claude' if m.who == 'claude' else 'you' if m.who == 'you' or (m.who == 'sender' and mine) else 'them' }}"><small>{{ "Claude" if m.who == "claude" else ("You" if mine else who) if m.who == "sender" else "You" }}{% if m.to == "sender" %}, to {{ "you" if mine else who }}{% endif %}</small><p>{{ m.text | linked if m.who == "claude" else m.text }}</p>{% if not hide %}{{ added_pics(m.pics, "/manage/feedback/" ~ f.id) }}{% endif %}</div>{% endif %}
           {% endfor %}
         </div>
         {% if f.status == "question" %}{{ answer_form(f, question_of(f), act) }}{# (the same as Testing's For you: answers to tap; 5A) #}

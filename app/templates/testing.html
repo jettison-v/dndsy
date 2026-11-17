@@ -85,8 +85,8 @@
         <h2 class="nt-h">{{ asked.title }}</h2>
         {{ state_line("Pick" if asked.pick else "Question", "pick" if asked.pick else "ask", "Claude asks you to pick one." if asked.pick else "Claude asks you: answer when you can.") }}
         <section class="nt-part"><h3 class="divider">{{ "You sent" if f.sender.endswith("(admin)") else f.sender.split(" (")[0] ~ " sent" }}</h3><div class="nt-quote">{{ f.text | truncate(400) }}</div>
-          {% for m in asked.earlier %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else "You" if m.who == "you" else "Its sender" }}</small>{{ m.text }}</div>{% endfor %}</section>
-        {% if q %}<div class="fb-msg claude" data-question-text><small>Claude asks</small>{{ q.text }}</div>{% endif %}
+          {% for m in asked.earlier %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else "You" if m.who == "you" else "Its sender" }}</small>{{ m.text | linked if m.who == "claude" else m.text }}</div>{% endfor %}</section>
+        {% if q %}<div class="fb-msg claude" data-question-text><small>Claude asks</small>{{ q.text | linked }}</div>{% endif %}
         {{ answer_form(f, q, "/manage/feedback/" ~ f.id ~ "?back=testing") }}
       </article>
       {% elif picked %}{% set c = picked %}

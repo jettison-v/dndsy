@@ -57,3 +57,18 @@ def word_diff(old: str, new: str) -> Markup:
         elif added:
             out.append(escape(added))
     return Markup("").join(out)
+
+
+LINK = re.compile(r"https://[^\s<>\"']+")
+
+
+def linked(text: object) -> Markup:
+    """Words with every https:// address made a link that opens in a new tab, the rest escaped: Claude's questions and
+    replies, which often point at a mockup (Brett's note 105, Nov 17: the link should come through as a hyperlink)."""
+    t, out, last = str(text or ""), [], 0
+    for m in LINK.finditer(t):
+        url = m.group(0).rstrip(".,;:!?)")  # (a sentence's own full stop or bracket isn't part of the address)
+        out += [escape(t[last:m.start()]), Markup('<a href="{0}" target="_blank" rel="noopener">{0}</a>').format(url)]  # (format escapes the address)
+        last = m.start() + len(url)
+    out.append(escape(t[last:]))
+    return Markup("").join(out)  # (every piece above is escaped)

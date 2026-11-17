@@ -530,6 +530,10 @@ def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None =
     if body.get("check_do"):  # (its check's steps follow the walkthrough's rules before anything changes: testing.step_problems)
         from app import testing
 
+        if isinstance(body["check_do"], list) and all(isinstance(x, str) for x in body["check_do"]):
+            body["check_do"] = "\n".join(body["check_do"])  # (steps as a list, one each, as /api/checks takes them)
+        elif not isinstance(body["check_do"], str):
+            raise HTTPException(400, "check_do: words, or a list of steps")
         if wrong := testing.step_problems(str(body["check_do"])):
             raise HTTPException(400, " ".join(wrong) + " (docs/testing-guide.md)")
     tell = str(body.get("tell") or "").strip()[:MAX_TEXT]

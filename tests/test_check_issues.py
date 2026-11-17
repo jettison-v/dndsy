@@ -118,19 +118,31 @@ def test_the_card_draws_as_it_was_left_and_on_testing_only_for_a_check_about_it(
     assert f'data-check-card="{about_testing}"' in admin.get("/manage/testing/card?at=/manage/testing").text
 
 
-def test_after_failed_the_steps_stay_and_failed_can_be_undone(admin, db):
+def test_after_failed_the_steps_stay_and_undo_failed_leaves_nothing_of_it(admin, db):
     """Brett's note 101 (Nov 17): after Failed… the card hid the steps, so the rest couldn't be followed, and there was
-    no way back. The steps stay; Undo Failed puts the check back as it was, on the same page, its notes kept."""
+    no way back. The steps stay, and Undo Failed puts the check back on the same page. His note 108 (pick A, "nothing
+    you'd see"): the notes the Failed sent (its own and + Another issue's) are withdrawn and its history loses them;
+    a note sent with + Note before it stays, and Claude hears what was withdrawn."""
     c = add(admin, do="Press [Failed…].\nPress [+ Another issue].")
     admin.post("/manage/testing/round", data={})
-    sent = note(admin, text="First issue.", check=c).json()["id"]
+    kept = note(admin, text="A thought first.", check=c, fail=False).json()["id"]
+    first = note(admin, text="First issue.", check=c).json()["id"]
+    second = note(admin, text="Second issue.", check=c).json()["id"]
+    db.expire_all()
+    before = [h for h in db.get(Check, c).history if h.get("key") != "failed" and h.get("note") not in (first, second)]
     card = admin.get("/manage/testing/card").text
     assert 'class="walk"' in card and 'data-check-result="undo"' in card
     r = admin.post(f"/manage/testing/{c}", data={"result": "undo"}, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/party"  # (the round stays on it)
     db.expire_all()
-    assert db.get(Check, c).status == "ready" and db.get(Feedback, sent).check_id == c
-    assert db.get(Check, c).history[-1]["key"] == "undone"  # (its timeline says Failed undone, never "Ready")
+    chk = db.get(Check, c)
+    assert chk.status == "ready" and chk.history == before  # (no Failed, no issue lines, no "Failed undone")
+    assert [db.get(Feedback, i).status for i in (first, second)] == ["deleted", "deleted"] and db.get(Feedback, kept).status != "deleted"
+    assert db.get(Feedback, first).thread[-1]["event"] == "withdrawn"
+    assert [f.id for f in testing.issues(db, chk)] == [kept]
+    assert f'data-issue="{first}"' not in admin.get(f"/manage/testing?check={c}").text
+    heard = admin.get("/api/claude/inbox", headers=KEY).json()["items"][-1]
+    assert heard["check_id"] == c and f"{first}, {second}" in heard["text"]
     assert 'data-check-result="passed"' in admin.get("/manage/testing/card").text
 
 
@@ -164,3 +176,33 @@ def test_a_checks_view_says_its_state_in_words_and_why_without_numbers(admin, db
     assert "Clicking on the filtered" in art and f"Note {fb}" in art.split('class="fold ts-more"')[1]  # (the number only under More)
     assert f"Note {fb}" not in art.split('class="fold ts-more"')[0]
     assert '<details class="timeline" data-history>' in art  # (folded: a badge)
+
+
+def test_steps_come_as_lines_or_a_list_and_nothing_else(admin, db):
+    """Nov 17: a check's steps sent as a list were kept as the list's Python text, one garbled step on Brett's card.
+    A list of steps is one a line; any field that isn't words is refused."""
+    c = add(admin, do=["Press [+ New item].", "Press [Save]."])
+    db.expire_all()
+    assert db.get(Check, c).do == "Press [+ New item].\nPress [Save]."
+    assert admin.post(f"/api/checks/{c}", json={"do": [1, 2]}, headers=KEY).status_code == 400
+    assert admin.post(f"/api/checks/{c}", json={"expect": ["It opens."]}, headers=KEY).status_code == 400
+    db.expire_all()
+    assert db.get(Check, c).do == "Press [+ New item].\nPress [Save]."
+
+
+def test_undo_failed_keeps_an_issue_claude_already_fixed(admin, db):
+    """The review of note 108's fix: Undo withdraws the Failed's notes, but one Claude has already fixed (done, the
+    check still failed over another) keeps its fix; a fixed note's steps may come as a list too."""
+    c = add(admin)
+    admin.post("/manage/testing/round", data={})
+    first = note(admin, text="First issue.", check=c).json()["id"]
+    second = note(admin, text="Second issue.", check=c).json()["id"]
+    r = admin.post(f"/api/feedback/{first}", json={"kind": "broken", "status": "done", "pr": "https://github.com/jettison-v/dndsy/pull/501",
+                                                   "check_do": ["Press [+ New item].", "Press [Save]."]}, headers=KEY)
+    assert r.status_code == 200, r.text
+    db.expire_all()
+    assert db.get(Check, c).status == "failed"  # (the second issue still to go)
+    admin.post(f"/manage/testing/{c}", data={"result": "undo"})
+    db.expire_all()
+    assert db.get(Feedback, first).status == "done" and db.get(Feedback, second).status == "deleted"
+    assert admin.post(f"/api/feedback/{second}", json={"check_do": 7}, headers=KEY).status_code == 400

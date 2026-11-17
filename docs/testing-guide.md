@@ -29,6 +29,12 @@ check is made: `feedback.py check add --do …` and `feedback.py set <id> done -
    page). Go takes Brett there, the card says *In VTT Test*, and the round ends back in his own campaign. Anything that
    can't be deleted afterwards (a homebrew item, today) must never be made in the table's campaign.
 10. **One check per thing tried**, in an area (`--area-id`), with `--place` giving its order in that area's pages.
+11. **Every check can end in ✓ Passed** (Brett on check 42, Nov 17: "This is the test case, it should pass"). A check
+    about Skip, Undo Failed or anything else that marks a check stops before the mark (open the reasons, look, close
+    ⋯), or tries it on a check added for that, never on itself.
+12. **A check points at something that's there** (check 46, Nov 17: "a note a player sent" when none was open). Before
+    adding it, look that what its steps need exists on askdnd.ai (a player's note, a spell, an item), and give its
+    `path` straight to it (`/manage/feedback?tab=all&open=2`), not "find one".
 
 ## Example
 

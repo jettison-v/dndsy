@@ -152,19 +152,43 @@ def answered(db: Session, c: Check, works: bool, words: str = "") -> None:
     mark(db, c, "passed" if works else "failed", who="sender", said=words[:160])
 
 
-def _note(c: Check, what: str, who: str, key: str = "") -> None:
+def _note(c: Check, what: str, who: str, key: str = "", note: int | None = None) -> None:
     """A line in the check's history; `key` says what happened (a status, "issue", "fixing"), so its timeline is drawn
-    from keys, never from the words (Readers, Rebuilt, Nov 17)."""
-    c.history = [*(c.history or []), {"at": datetime.now(UTC).isoformat(timespec="seconds"), "what": what, "who": who, **({"key": key} if key else {})}]
+    from keys, never from the words (Readers, Rebuilt, Nov 17); `note`, the feedback note it sent (Undo Failed finds
+    them by it)."""
+    c.history = [*(c.history or []), {"at": datetime.now(UTC).isoformat(timespec="seconds"), "what": what, "who": who,
+                                      **({"key": key} if key else {}), **({"note": note} if note else {})}]
 
 
-def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "", key: str = "") -> None:
+def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "", key: str = "", note: int | None = None) -> None:
     if status not in STATUSES:
         raise HTTPException(400, "Passed, failed, skipped or ready.")
     if status == "again" and c.status != "again":
         c.asked_at = datetime.now(UTC)  # (when it came back to be tried: a player's three days and their email count from it)
     c.status = status
-    _note(c, SAYS[status] + (f": {said}" if said else ""), who, key=key or status)
+    _note(c, SAYS[status] + (f": {said}" if said else ""), who, key=key or status, note=note)
+
+
+def undo_failed(db: Session, c: Check) -> list[int]:
+    """Undo Failed takes back everything the Failed did (Brett's pick A on his note 108, Nov 17: "nothing you'd see"):
+    the check goes back to where it was, the notes it sent (Failed's and each + Another issue since) are withdrawn,
+    closed with a line saying why, and its history drops those lines. One Claude has already fixed (done) stays: its
+    fix is real. Returns the notes withdrawn."""
+    hist = list(c.history or [])
+    start = max((i for i, h in enumerate(hist) if h.get("key") == "failed"), default=None)
+    if start is None:
+        return []
+    sent = [h["note"] for h in hist[start:] if h.get("note")]
+    withdrawn = []
+    for fb in db.scalars(select(Feedback).where(Feedback.id.in_(sent), Feedback.check_id == c.id, Feedback.status.not_in(("deleted", "done")))) if sent else []:
+        fb.status = "deleted"
+        fb.thread = [*(fb.thread or []), {"who": "you", "text": "Withdrawn: Failed was undone on its check", "at": datetime.now(UTC).isoformat(),
+                                          "event": "withdrawn"}]
+        withdrawn.append(fb.id)
+    before = next((h.get("key") for h in reversed(hist[:start]) if h.get("key") in STATUSES), None)
+    c.history = hist[:start]
+    c.status = before if before in ("ready", "again") else ("again" if c.asked_at else "ready")
+    return sorted(withdrawn)
 
 
 def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, prod_note: int | None = None, fail: bool = True) -> Check | None:
@@ -179,10 +203,11 @@ def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, pr
         fb.check_id = c.id
         if fb.area_id is None:
             fb.area_id = c.area_id  # (an issue is about its check's area)
+    nid = fb.id if fb is not None else None
     if fail and c.status != "failed":
-        mark(db, c, "failed", said=which)
+        mark(db, c, "failed", said=which, note=nid)
     else:
-        _note(c, ("Another issue: " if c.status == "failed" else "An issue: ") + which, "you", key="issue")
+        _note(c, ("Another issue: " if c.status == "failed" else "An issue: ") + which, "you", key="issue", note=nid)
     words = " ".join(((fb.text if fb is not None else "") or "").split())[:240]
     for_claude.tell(db, "check", f"Check {c.id} ({c.title}): " + ("Failed, " if fail else "an issue, ") + which + (f": {words}" if words else ""),
                     feedback_id=fb.id if fb is not None else None, check_id=c.id, area_id=c.area_id)
@@ -621,10 +646,11 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
     if c is None:
         return web.not_found(request, "There's no such check.")
     status = str(form.get("result") or "")
-    if status == "undo":  # (Undo Failed on the card: Brett's note 101; the round stays on it, and what was sent stays sent)
+    if status == "undo":  # (Undo Failed on the card: Brett's note 101; the round stays on it; nothing of the Failed left, his note 108)
         if c.status == "failed":
-            mark(db, c, "again" if c.asked_at else "ready", said="Failed undone", key="undone")
-            for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed undone (its notes stay)", check_id=c.id, area_id=c.area_id)
+            gone = undo_failed(db, c)
+            for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed undone" + (f", notes {', '.join(map(str, gone))} withdrawn" if gone else ""),
+                            check_id=c.id, area_id=c.area_id)
             db.commit()
         return RedirectResponse(_page_of(c) if on_round(request, c.id) else f"/manage/testing?check={c.id}", status_code=303)
     if status not in ("passed", "skipped", "ready"):
@@ -691,9 +717,14 @@ FIELDS = {"title": 160, "area": 80, "setup": 20, "as_who": 120, "path": 500, "do
 
 
 def _fill(db: Session, c: Check, body: dict) -> None:
+    if isinstance(body.get("do"), list) and all(isinstance(x, str) for x in body["do"]):
+        body = {**body, "do": "\n".join(body["do"])}  # (steps as a list, one each; Nov 17: a list was kept as its Python text)
     for k, n in FIELDS.items():
         if k in body:
-            setattr(c, k, str(body.get(k) or "")[:n])
+            v = body.get(k)
+            if v is not None and not isinstance(v, str):
+                raise HTTPException(400, f"{k}: words" + (" (or a list of steps)" if k == "do" else ""))
+            setattr(c, k, (v or "")[:n])
     if c.setup not in SETUPS:
         raise HTTPException(400, f"setup: one of {', '.join(SETUPS)}")
     if "do" in body and (wrong := step_problems(c.do)):
