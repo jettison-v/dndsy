@@ -85,7 +85,7 @@
             {% for k, label in (("signed_in_as", "Signed in as"), ("viewing_as", "Viewing as"), ("at", "When"), ("window", "Window"), ("screen", "Screen"), ("zoom", "Zoom"), ("browser", "Browser"), ("extension", "askdnd bridge"), ("live", "Live pill"), ("tab", "Tab"), ("panel", "Side panel"), ("errors", "Page errors")) if ctx[k] %}
             <dt>{{ label }}</dt><dd>{{ ctx[k] if ctx[k] is string else ctx[k] | tojson }}</dd>{% endfor %}
             {% if ctx.pointed and not hide %}<dt>Pointed at</dt><dd>{{ ctx.pointed.label }} <span class="note">{{ ctx.pointed.path }}</span></dd>{% endif %}
-            <dt>The page itself</dt><dd>{% if hide %}Kept from you{% elif f.html %}<a href="/manage/feedback/{{ f.id }}/page" target="_blank" rel="noopener">As drawn ({{ (f.html | length / 1024) | round | int }} KB)</a>{% else %}Not kept{% endif %}</dd>
+            <dt>The page itself</dt><dd>{% if hide %}Kept from you{% elif f.html %}<a href="/manage/feedback/{{ f.id }}/page" target="_blank" rel="noopener">As drawn ({{ [f.html | length // 1024, 1] | max }} KB)</a>{% else %}Not kept{% endif %}</dd>
           </dl>
         </details>
         <div class="convo" aria-label="The conversation">{# (theirs on the left, Claude's violet, yours on the right) #}
