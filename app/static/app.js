@@ -1418,6 +1418,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         onEnd: () => {
           const body = new URLSearchParams({ column: list.dataset.sortColumn });
           list.querySelectorAll('[data-key]').forEach(m => body.append('keys', m.dataset.key));
+          list.querySelectorAll('[data-sort-n]').forEach((n, i) => { n.textContent = i + (+list.dataset.sortFrom || 1); });  // (numbered rows: Testing's areas)
           fetch(list.dataset.sortUrl, { method: 'POST', body }).then(r => { if (!r.ok) toast("Couldn't save the order", null, 'error'); });
         },
       });

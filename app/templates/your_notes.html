@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_lists.html" import search_box, filters_above, empty_state %}
+{% from "_lists.html" import search_box, filters_above, empty_state, status_track %}
 {% from "_feedback_pics.html" import pics_field, added_pics, sent_pics %}
 {% block title %}Notes you sent · askdnd{% endblock %}
 {# Your notes (app/your_notes.py; Brett, Nov 7: docs/mockups/your-notes/ Layout A and a badge, then
@@ -7,11 +7,6 @@
    (a list beside the note, as the World tab and the quest log): search, the status and where-from chips, Newest or
    Oldest first, Open and Done as the list's headings. Each note has the same three parts: what you asked, what
    happened, and where it stands (the status track). #}
-
-{# A note's track: the steps for its tab, the one it's at lit; one turned down stops in grey, the rest struck through #}
-{% macro status_track(steps) -%}
-<ol class="st-track" aria-label="Where it stands">{% for s in steps %}<li class="st-{{ s.state }}">{{ s.label }}</li>{% endfor %}</ol>
-{%- endmacro %}
 
 {% macro note_reader(kind, notes, placeholder, from_label, statuses, base=[]) %}
 {% set froms = notes | map(attribute="from") | unique | sort | list %}
