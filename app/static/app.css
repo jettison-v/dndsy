@@ -1092,6 +1092,9 @@ button.switch { cursor: pointer; }
 .move:not(.static):hover b { color: var(--text-strong); text-decoration: underline; text-decoration-color: var(--faint); }
 .move .hit { float: right; margin-left: 8px; }
 .seeall { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
+/* Only the words are underlined, the count after them (no arrow): Brett, Nov 17, on PR 415, the pill looked odd inside the underline */
+.seeall a { text-decoration: none; }
+.seeall .sa-words { text-decoration: underline; }
 .lower { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
 .lower .section { margin: 0; }
 .peek.modal { top: 50%; left: 50%; right: auto; bottom: auto; width: min(var(--modal-w), calc(100% - 32px)); max-height: 86vh; overflow: hidden; transform: translate(-50%, -46%); opacity: 0; border: none; border-top: 3px solid var(--red); border-radius: var(--r-lg); transition: transform .18s ease, opacity .18s ease; }
