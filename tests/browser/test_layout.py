@@ -290,16 +290,22 @@ def test_the_sheets_lists_line_up_at_every_width(people, server):
     assert not found, "\n".join(found)
 
 
-STAYS = """head => {  // where a list's column headings are once its rows have scrolled under them
+STAYS = """head => {  // where a list's column headings are once its rows have scrolled under them, against the edge
+    // they stay at (a window's top, else Sheet's tabs), measured in one go: a window still opening moves both (Nov 16)
     const box = head.getBoundingClientRect(), hit = document.elementFromPoint(box.left + 40, box.top + box.height / 2);
-    return { top: Math.round(box.top), onTop: head.contains(hit) };
+    const win = head.closest('.peek-body'), edge = win ? win.getBoundingClientRect().top : document.querySelector('main .tabbar').getBoundingClientRect().bottom;
+    const above = document.elementFromPoint(box.left + 40, box.top - 0.5);  // nothing of the rows shows above them
+    return { off: box.top - edge, onTop: head.contains(hit), stuck: head.hasAttribute('data-stuck'),
+             rowsAbove: !!(above && above.closest('.ls-row, .ls-grouphead')) };
 }"""
 
 
 def test_a_lists_column_headings_stay_while_it_scrolls(people, server):
     """Feedback 73 (Brett, Nov 16): in Change Wild Shape forms the column headings scrolled away, and the numbers under
     them meant nothing. Every list's headings stay at the top: on Sheet under the tabs, in a window at its top edge
-    (the window's padding doesn't leave a gap the rows show through); a row brought into view lands below them."""
+    (the window's padding doesn't leave a gap the rows show through); a row brought into view lands below them. Brett,
+    trying it: a sliver of the rows showed above them (the tabs' height had been rounded), and floating they were hard
+    to tell from the rows: no gap now, and floating (`data-stuck`) they carry a shadow."""
     player = people("player")
     page = player.page
     page.set_viewport_size({"width": 1440, "height": 700})
@@ -313,9 +319,9 @@ def test_a_lists_column_headings_stay_while_it_scrolls(people, server):
         seen += 1
         rows = page.locator(f"#{tab} .ls-rows")
         page.evaluate("r => scrollTo(0, r.getBoundingClientRect().top + scrollY + 300)", rows.element_handle())
-        tabs = page.evaluate("document.querySelector('main .tabbar').getBoundingClientRect().bottom")
+        page.wait_for_function("h => h.hasAttribute('data-stuck')", arg=head.element_handle())  # (marked on the frame after a scroll)
         at = head.evaluate(STAYS)
-        assert at["onTop"] and abs(at["top"] - tabs) <= 1, (tab, at, tabs)
+        assert at["onTop"] and at["stuck"] and not at["rowsAbove"] and abs(at["off"]) < 0.1, (tab, at)
         last = page.locator(f"#{tab} .ls-row").last
         last.evaluate("r => r.scrollIntoView({ block: 'start' })")
         assert last.evaluate("r => r.getBoundingClientRect().top") >= head.evaluate("h => h.getBoundingClientRect().bottom") - 1 or page.evaluate(
@@ -329,8 +335,11 @@ def test_a_lists_column_headings_stay_while_it_scrolls(people, server):
     head = body.locator(".ls-head")
     head.wait_for()
     assert body.evaluate("b => (b.scrollTop = b.scrollHeight) > 0 && b.scrollTop > 0"), "the Spell Book's list doesn't scroll"
+    page.wait_for_function("h => h.hasAttribute('data-stuck')", arg=head.element_handle())
     at = head.evaluate(STAYS)
-    assert at["onTop"] and abs(at["top"] - body.evaluate("b => b.getBoundingClientRect().top")) <= 1, at
+    assert at["onTop"] and at["stuck"] and not at["rowsAbove"] and abs(at["off"]) < 0.1, at
+    body.evaluate("b => b.scrollTop = 0")
+    page.wait_for_function("h => !h.hasAttribute('data-stuck')", arg=head.element_handle())  # (at rest it's a plain heading again)
     assert not player.errors, player.errors
 
 

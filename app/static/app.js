@@ -254,6 +254,17 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const fold = e.target;
     if (fold.matches && fold.matches('details.add-fold') && fold.open) fold.querySelector('textarea')?.focus();
   }, true);
+  // A list's column headings that are floating over its rows (sticky, feedback 73) are marked data-stuck, so they
+  // stand apart from the rows passing under them; once a frame, after any scroll (the page's or a window's)
+  let headsQueued = false;
+  const markHeads = () => {
+    headsQueued = false;
+    document.querySelectorAll('.ls-head').forEach(h => {
+      const stuck = h.checkVisibility() && h.getBoundingClientRect().top - h.parentElement.getBoundingClientRect().top > 1;
+      if (stuck !== h.hasAttribute('data-stuck')) h.toggleAttribute('data-stuck', stuck);
+    });
+  };
+  document.addEventListener('scroll', () => { if (!headsQueued) { headsQueued = true; requestAnimationFrame(markHeads); } }, { capture: true, passive: true });
   // Key moments' Show fewer (feedback 79): folds the rest away again, keeping the list's top in view
   document.addEventListener('click', e => {
     const less = e.target.closest('[data-km-less]');
@@ -1376,8 +1387,9 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // Sticky headings sit below the top bar.
   function stickTop() {
     const bar = $('.topbar'), tabs = $('.sheet .tabbar');
-    document.documentElement.style.setProperty('--stick-top', (bar ? bar.offsetHeight : 0) + 'px');
-    if (tabs) document.documentElement.style.setProperty('--tabs-h', tabs.offsetHeight + 'px');
+    // (exact heights, not rounded: a list's headings under the tabs left a sliver of its rows showing; feedback 73)
+    document.documentElement.style.setProperty('--stick-top', (bar ? bar.getBoundingClientRect().height : 0) + 'px');
+    if (tabs) document.documentElement.style.setProperty('--tabs-h', tabs.getBoundingClientRect().height + 'px');
   }
   stickTop();
   window.addEventListener('resize', stickTop);
