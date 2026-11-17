@@ -160,20 +160,23 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
         context |= {"viewing_as": viewing.get("name") or viewing["email"], "viewing_as_email": viewing["email"].lower()}
     note = {"email": user["email"].lower(), "name": user.get("name") or "", "text": text, "kind": kind, "url": str(body.get("url") or "")[:1000],
             "context": context, "html": str(body.get("html") or "")[:MAX_HTML], "shot": body.get("shot"), "pasted": body.get("pasted")}
+    check = body.get("check") if type(body.get("check")) is int and is_admin(user) else None  # (Failed… on a check: Testing, 3A)
+    if check is not None:
+        from app import testing
+
+        note["context"] = {**note["context"], "check": check}
+        followed = testing.on_round(request, check)  # (the round's own check: then it goes on to the next)
     if config.STAGING:
         sent = to_prod(note)
         if "id" in sent:
+            if check is not None and testing.failed(request, db, check, None, prod_note=sent["id"]):  # (staging's check, askdnd.ai's note)
+                return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": False, "to_prod": True,
+                                     "next": testing.next_page(request, db, check, followed)})
             return JSONResponse({"ok": True, "id": sent["id"], "waiting": waiting(db), "review": sent.get("review", True), "to_prod": True})
-        note["context"] = {**context, "not_sent_to_prod": sent.get("error", "")[:300]}
-    check = body.get("check")
-    if isinstance(check, int) and is_admin(user):  # (Failed… on a check: Testing, 3A)
-        note["context"] = {**note["context"], "check": check}
+        note["context"] = {**note["context"], "not_sent_to_prod": sent.get("error", "")[:300]}
     fb = _store(db, note)
-    if isinstance(check, int) and is_admin(user):
-        from app import testing
-
-        if testing.failed(request, db, check, fb):  # (and the page to go to: a round's next check, or the Reader)
-            return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "next": testing.next_page(request, db, check)})
+    if check is not None and testing.failed(request, db, check, fb):  # (and the page to go to: a round's next check, or the Reader)
+        return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "next": testing.next_page(request, db, check, followed)})
     return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": fb.status == "review"})
 
 

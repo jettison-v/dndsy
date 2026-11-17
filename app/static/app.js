@@ -5092,6 +5092,7 @@ document.addEventListener('click', e => {
   canvas.addEventListener('pointerdown', e => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [at(e)] }; });
   canvas.addEventListener('pointermove', e => { if (!drag) return; const p = at(e); if (drag.tool === 'draw') drag.pts.push(p); else drag.pts[1] = p; redraw(); });
   canvas.addEventListener('pointerup', () => { if (drag && drag.pts.length > 1) marks.push(drag); drag = null; redraw(); });
+  canvas.addEventListener('pointercancel', () => { drag = null; redraw(); });  // (a gesture the browser took over: no half mark)
   win.querySelectorAll('[data-fb-tool]').forEach(b => b.addEventListener('click', () => {
     tool = b.dataset.fbTool;
     win.querySelectorAll('[data-fb-tool]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));

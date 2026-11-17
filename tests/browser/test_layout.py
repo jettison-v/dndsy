@@ -627,4 +627,4 @@ def test_the_menu_bar_never_runs_wider_than_a_phone(people, server, long_names):
             return bar.scrollWidth - bar.clientWidth; }""", html)
         if spill > 0:
             found.append(f"{state}: {spill}px wider than the screen")
-    assert not found, "\\n".join(found)
+    assert not found, "\n".join(found)

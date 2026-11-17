@@ -132,7 +132,8 @@ def fixes_waiting(db: Session, user: User, since: datetime) -> int:
     from app.models import Check, Feedback
 
     return db.scalar(select(func.count()).select_from(Check).join(Feedback, Check.feedback_id == Feedback.id)
-                     .where(Feedback.user_id == user.id, Check.setup == "player", Check.status == "again", Check.updated_at > since)) or 0
+                     .where(Feedback.user_id == user.id, Check.setup == "player", Check.status == "again",
+                            func.coalesce(Check.asked_at, Check.updated_at) > since)) or 0  # (asked since: not any later edit)
 
 
 def compose_fixes(user: User, n: int) -> dict:
@@ -155,9 +156,11 @@ def _fixes_day(db: Session, now: datetime, today: str) -> list[tuple[str, str]]:
     sent = []
     users = db.scalars(select(User).join(Feedback, Feedback.user_id == User.id).join(Check, Check.feedback_id == Feedback.id)
                        .where(Check.setup == "player", Check.status == "again").distinct())
+    from app import access
+
     for user in users:
         e = dict(user.emails or {})
-        if not wants_fixes(user) or e.get("fixes_checked") == today:
+        if not access.level(user.email) or not wants_fixes(user) or e.get("fixes_checked") == today:  # (only who can still sign in)
             continue
         since = datetime.fromisoformat(e["fixes_at"]) if e.get("fixes_at") else now - timedelta(days=PLAYER_LOOK_BACK)
         n = fixes_waiting(db, user, since)

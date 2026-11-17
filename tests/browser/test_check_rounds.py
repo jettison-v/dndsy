@@ -66,7 +66,8 @@ def test_go_opens_the_checks_page_with_its_card(people, server, browser_db):
     card = page.locator(f'[data-check-card="{only}"]')
     card.wait_for()
     card.locator('[data-check-result="passed"]').click()
-    page.wait_for_url(f"**/manage/testing?check={only}")
+    page.wait_for_url(f"**/manage/testing?show=done&check={only}")
+    assert page.locator(f'[data-check-read="{only}"]').is_visible()  # (back to it, where it now is)
     assert page.locator("[data-check-card]").count() == 0
     assert not admin.errors, admin.errors
 

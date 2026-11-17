@@ -251,7 +251,7 @@ def main() -> None:
         say(f"Beta runs {sha[:7]}." if up else f"Beta still runs {now or 'an unknown version'}, not {sha[:7]}.")
     if up:  # (checks whose fix is now live come back to Brett as Try again: Testing, his 4A)
         r = subprocess.run([sys.executable, str(Path(__file__).with_name("feedback.py")), "check", "live"], capture_output=True, text=True)
-        for line in (r.stdout or r.stderr).strip().splitlines():
+        for line in (r.stdout + r.stderr).strip().splitlines():  # (both: a crash after some output still shows)
             say(line)
     sys.exit(0 if ok and up else 1)
 
