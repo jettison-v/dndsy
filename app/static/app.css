@@ -4272,6 +4272,24 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px dashed var(--line-strong); color: var(--text-strong); border-radius: var(--r-xs); padding: 0 5px; overflow-wrap: anywhere; }
 .press { display: inline-block; font-size: .92em; font-weight: 600; background: var(--surface-3); border: 1px solid var(--line-strong); color: var(--text-strong); border-radius: var(--r-sm); padding: 0 6px; line-height: 1.5; }
 .ts-hist li { white-space: normal; }  /* (a step's name wraps, never widens the page: note 95) */
+/* Claude's questions and picks in For you (Brett's 5A and Board 3, Nov 17): a question amber "?", a pick violet "◇";
+   answers to tap, Claude's own marked; a pick's drawings side by side, one press each */
+.ts-k { width: 18px; height: 18px; border-radius: 50%; display: inline-grid; place-items: center; font-size: var(--fs-xs); font-weight: 700; flex: none; }
+.ts-k.q { background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber); }
+.ts-k.pick { background: var(--violet-soft); color: var(--violet); border: 1px solid var(--violet); border-radius: var(--r-xs); }
+.ts-where .ts-k { vertical-align: middle; }
+.qa-form { display: grid; gap: var(--sp-3); }
+.qa-choices { border: 0; margin: 0; padding: 0; display: grid; gap: var(--sp-2); min-width: 0; }
+.qa-choice { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2) var(--sp-3); align-items: start; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); cursor: pointer; }
+.qa-choice:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
+.qa-choice input { margin: 3px 0 0; accent-color: var(--blue); }
+.qa-words { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.qa-pics { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--sp-3); }
+.qa-pic { margin: 0; display: grid; gap: var(--sp-2); align-content: start; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2); min-width: 0; }
+.qa-pic.mine { border-color: var(--blue); }
+.qa-pic-top { display: flex; justify-content: space-between; gap: var(--sp-2); align-items: baseline; flex-wrap: wrap; }
+.qa-pic img { width: 100%; height: auto; border-radius: var(--r-sm); border: 1px solid var(--line-soft); }
+.qa-pic .btn { justify-self: start; }
 .ts-read { min-width: 0; }
 
 /* Marking the picture in the feedback window (Testing's 3A, every note): the picture large, its tools above */

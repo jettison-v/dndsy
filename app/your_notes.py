@@ -338,6 +338,20 @@ def news(request: Request, db: Session = Depends(get_db)):
         db.commit()
     if len(cards) > MOST_CARDS:
         cards, tab_of = [f"{len(cards)} of your notes moved on"], [max(set(tab_of), key=tab_of.count)]
-    return JSONResponse({"count": sum(tabs.values()), "tabs": tabs,
-                         "cards": [{"text": c, "href": f"/your-notes?tab={t}"} for c, t in zip(cards, tab_of, strict=True)]},
-                        headers={"Cache-Control": "no-store"})
+    shown = [{"text": c, "href": f"/your-notes?tab={t}"} for c, t in zip(cards, tab_of, strict=True)]
+    if access.level((user or {}).get("email")) == access.ADMIN and (asked := _new_asks(request, db)):  # (Working with Claude, 5A)
+        shown.append({"text": f"Claude asked you {asked} question{'s' if asked != 1 else ''}", "href": "/manage/testing"})
+    return JSONResponse({"count": sum(tabs.values()), "tabs": tabs, "cards": shown}, headers={"Cache-Control": "no-store"})
+
+
+ASKS_SEEN = "asks_seen"  # (the latest of Claude's questions an admin had a card about, on this device's session)
+
+
+def _new_asks(request: Request, db: Session) -> int:
+    """Claude's questions asked since this admin's last card about them (one card, then quiet until another comes)."""
+    times = [q["at"] for fb in feedback.asks(db) if (q := feedback.question_of(fb)) and q.get("at")]
+    seen = request.session.get(ASKS_SEEN) or ""
+    fresh = [t for t in times if t > seen]
+    if fresh:
+        request.session[ASKS_SEEN] = max(times)
+    return len(fresh)

@@ -40,3 +40,31 @@ def test_brett_drags_the_areas_into_his_order(people, server, browser_db):
     assert heard and heard.endswith("Battle and Sheet, Item Builder")
 
     assert check(admin, server, ["/manage/testing?show=areas", "/manage/testing"]) == []
+
+
+def test_brett_answers_claudes_question_in_for_you(people, server, browser_db):
+    """Brett's 5A: Claude's question waits in For you with answers to tap, Claude's own chosen to start with; Brett
+    picks another, adds a word, sends; askdnd puts it on the note and in Claude's inbox, and For you moves on."""
+    import json
+
+    engine = create_engine(browser_db[0])
+    ask = {"choices": [{"label": "Keep it", "detail": "", "pic": None}, {"label": "Remove it", "detail": "", "pic": None}], "mine": 0}
+    with engine.begin() as conn:
+        fb = conn.execute(text("INSERT INTO feedback (text, status, kind, thread, sender) VALUES ('Why a free-form box?', 'question', 'question', "
+                               "CAST(:t AS jsonb), 'Brett (admin)') RETURNING id"),
+                          {"t": json.dumps([{"who": "claude", "text": "Keep the box?", "at": "2026-11-17T10:00:00+00:00", "ask": ask}])}).scalar()
+    admin = people("admin")
+    page = admin.open(f"/manage/testing?ask={fb}")
+    form = page.locator(f'[data-question="{fb}"]')
+    assert form.locator('[data-choice="0"] input').is_checked()
+    form.locator('[data-choice="1"]').click()
+    form.locator("textarea[name=answer]").fill("And say why in the help.")
+    form.locator("[data-answer]").click()
+    page.wait_for_url("**/manage/testing**")
+    with engine.connect() as conn:
+        status, thread = conn.execute(text("SELECT status, thread FROM feedback WHERE id = :f"), {"f": fb}).one()
+        heard = conn.execute(text("SELECT what FROM claude_inbox WHERE feedback_id = :f ORDER BY id DESC LIMIT 1"), {"f": fb}).scalar()
+    engine.dispose()
+    assert status == "new" and thread[-1]["choice"] == 1 and heard == "answer"
+    assert page.locator(f'[data-ask="{fb}"]').count() == 0
+    assert not admin.errors, admin.errors

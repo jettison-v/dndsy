@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_lists.html" import empty_state, status_track, grip %}
 {% from "_check_steps.html" import walkthrough, issue_list %}
+{% from "_question.html" import answer_form %}
 {% block title %}Testing · Manage · askdnd{% endblock %}
 {% block head %}{% if show == "areas" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
@@ -52,26 +53,44 @@
 <div class="reader rows tests-reader">
     <aside class="reader-nav" aria-label="Checks">
       <div class="reader-nav-head">
-        {% if show == "ready" and groups %}<p class="ts-ready"><b>{{ groups.values() | map(attribute="rows") | map("length") | sum }} ready for you</b> <span class="note">about {{ ready_minutes }} minute{{ "s" if ready_minutes != 1 }}</span></p>{% endif %}
+        {% if show == "ready" and groups %}{% set n_checks = groups.values() | map(attribute="rows") | map("length") | sum - questions %}<p class="ts-ready"><b>{{ n_checks + questions }} for you</b> <span class="note">{% if n_checks %}{{ n_checks }} check{{ "s" if n_checks != 1 }}, about {{ ready_minutes }} minute{{ "s" if ready_minutes != 1 }}{% endif %}{% if n_checks and questions %} · {% endif %}{% if questions %}{{ questions }} question{{ "s" if questions != 1 }} or pick{{ "s" if questions != 1 }} from Claude{% endif %}</span></p>{% endif %}
         {% if chips and show in ("ready", "again", "player", "failed") %}<nav class="ts-chips" aria-label="Which checks">{% for key, label, n in chips %}<a href="?show={{ key }}" class="chip{{ ' on' if key == show }}" data-show="{{ key }}"{% if key == show %} aria-current="true"{% endif %}>{{ label }}{% if n %} <span class="ls-n">{{ n }}</span>{% endif %}</a>{% endfor %}</nav>{% endif %}
       </div>
       <div class="reader-rows">
         {% for key, g in groups.items() %}
         <div class="ts-group" data-group="{{ g.area or '' }}"><span>{{ g.title }}</span>{% if show == "ready" and g.area and groups | length > 1 %}<form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ g.area }}"><button class="btn link small" type="submit" data-round-area="{{ g.area }}">▶ Just this area</button></form>{% endif %}</div>
         {% for c in g.rows %}
+        {% if c.ask %}
+        <a class="rd-item ts-row ts-ask{{ ' sel' if asked and asked.id == c.id }}" href="?ask={{ c.id }}" data-ask="{{ c.id }}"{% if asked and asked.id == c.id %} aria-current="true"{% endif %}>
+          <span class="ts-k {{ 'pick' if c.pick else 'q' }}" aria-hidden="true">{{ "◇" if c.pick else "?" }}</span>
+          <span class="ts-title">{{ c.title }}</span>
+          <span class="nt-date"><span class="tag {{ 'custom' if c.pick else 'draft' }}">{{ "Pick" if c.pick else "Ask" }}</span></span>
+          <span class="nt-sum">Your note {{ c.id }} · {{ "a design pick" if c.pick else "a question from Claude" }}</span>
+        </a>
+        {% else %}
         <a class="rd-item ts-row{{ ' sel' if picked and picked.id == c.id }}" href="?show={{ show }}&amp;check={{ c.id }}" data-check="{{ c.id }}"{% if picked and picked.id == c.id %} aria-current="true"{% endif %}>
           <span class="st-dot st-{{ dots[c.status] }}" role="img" aria-label="{{ c.says }}"></span>
           <span class="ts-title">{{ c.title }}</span>
           <span class="nt-date">{% if c.status == "again" %}<span class="tag new">Try again</span>{% else %}{{ c.minutes }} min{% endif %}</span>
           <span class="nt-sum">{{ c.area }}{% if c.feedback_id %} · from note {{ c.feedback_id }}{% elif c.pr %} · {{ c.pr | replace("https://github.com/jettison-v/dndsy/pull/", "PR ") }}{% endif %}{% if c.as_who %} · as {{ c.as_who }}{% endif %}{% if c.needs and c.setup != "view_as" %} <span class="tag" data-needs="{{ c.setup }}">{{ c.needs }}</span>{% endif %}</span>
         </a>
+        {% endif %}
         {% endfor %}
         {% endfor %}
       </div>
       {% if not groups %}{{ empty_state("Nothing here." if show != "ready" else "Nothing to try right now.") }}{% endif %}
     </aside>
     <div class="notes-read">
-      {% if picked %}{% set c = picked %}
+      {% if asked %}{% set f = asked.note %}{% set q = asked.question %}
+      <article class="reader-article nt-read ts-read" data-ask-read="{{ f.id }}">
+        <p class="ts-where"><span class="ts-k {{ 'pick' if asked.pick else 'q' }}" aria-hidden="true">{{ "◇" if asked.pick else "?" }}</span> {{ "A pick" if asked.pick else "A question" }} from Claude{% if asked.area_id %} · {{ asked.group }}{% endif %} · <a href="/manage/feedback?tab=all&amp;open={{ f.id }}#fb-{{ f.id }}" data-no-peek>note {{ f.id }}</a></p>
+        <h2 class="nt-h">{{ asked.title }}</h2>
+        <section class="nt-part"><h3 class="divider">{{ "You sent" if f.sender.endswith("(admin)") else f.sender.split(" (")[0] ~ " sent" }}</h3><div class="nt-quote">{{ f.text | truncate(400) }}</div>
+          {% for m in asked.earlier %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else "You" if m.who == "you" else "Its sender" }}</small>{{ m.text }}</div>{% endfor %}</section>
+        {% if q %}<div class="fb-msg claude" data-question-text><small>Claude asks</small>{{ q.text }}</div>{% endif %}
+        {{ answer_form(f, q, "/manage/feedback/" ~ f.id ~ "?back=testing") }}
+      </article>
+      {% elif picked %}{% set c = picked %}
       <article class="reader-article nt-read ts-read" data-check-read="{{ c.id }}">
         <p class="ts-where"><span class="st-dot st-{{ dots[c.status] }}" aria-hidden="true"></span> {{ c.says }}{% if c.area %} · {{ c.area }}{% endif %}{% if c.as_who %} · <span class="tag">Through View as · {{ c.as_who }}</span>{% endif %}{% if c.test_campaign %} · <span class="tag draft" data-in-test>In {{ c.test_campaign }}</span>{% endif %}</p>
         <h2 class="nt-h">{{ c.title }}</h2>

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_feedback_pics.html" import pics_field, added_pics %}
+{% from "_question.html" import answer_form %}
 {% block title %}Feedback · Manage · askdnd{% endblock %}
 {% block content %}
 {# Manage › askdnd › Feedback (app/feedback.py; docs/mockups/feedback-queue/, Queue): every note for Claude by where it
@@ -8,7 +9,7 @@
 <main class="page manage-page">
   {% include "_manage_head.html" %}
   <div class="title-row"><h1>Feedback for Claude</h1></div>
-  <p class="subtitle">Notes sent from any page with <kbd>\</kbd> or your account menu (and by the accounts you let send it, on Accounts), each saying what it is. Claude reads them when you say "review the feedback": it fixes what's broken, puts an idea on the Roadmap's Ideas from feedback for you to move up, and answers a question in its thread. A question it asks you shows here for your answer, and a note it fixed says which change did it. Only admins can see this page.</p>
+  <p class="subtitle">Notes sent from any page with <kbd>\</kbd> or your account menu (and by the accounts you let send it, on Accounts), each saying what it is. Claude reads them when you say "review the feedback": it fixes what's broken, puts an idea on the Roadmap's Ideas from feedback for you to move up, and answers a question in its thread. A question it asks you (answers to tap, or pictures to pick from) shows here and in Testing's For you, where everything that needs you is; a note it fixed says which change did it. Only admins can see this page.</p>
 
   <nav class="sub-tabs" aria-label="Where each stands">
     {% for key, label, n in tabs %}<a href="?tab={{ key }}{% if kind %}&amp;kind={{ kind }}{% endif %}" class="{{ 'on' if key == tab }}">{{ label }}{% if n and key in ("review", "new", "question", "planned") %} <span class="mcount">{{ n }}</span>{% elif n %} <span class="note">{{ n }}</span>{% endif %}</a>{% endfor %}
@@ -38,7 +39,8 @@
             {% set who = f.sender.split(" (")[0] or "Its sender" %}
             {% for m in f.thread or [] %}<div class="fb-msg {{ m.who }}"><small>{{ "Claude" if m.who == "claude" else who if m.who == "sender" else "You" }}{% if m.to == "sender" %}, to {{ who }}{% elif m.kind %}, what it is{% endif %}</small>{{ m.text }}{% if not hide %}{{ added_pics(m.pics, "/manage/feedback/" ~ f.id) }}{% endif %}</div>{% endfor %}
             {% if f.pr %}<p class="note">Fixed in <a href="{{ f.pr }}" target="_blank" rel="noopener">{{ f.pr }}</a></p>{% endif %}
-            {% if f.status != "deleted" %}{% set asked = f.status == "question" %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer" enctype="multipart/form-data" data-pics>
+            {% if f.status == "question" %}{{ answer_form(f, question_of(f), "/manage/feedback/" ~ f.id ~ "?tab=" ~ tab ~ "&kind=" ~ kind) }}{# (the same as Testing's For you: answers to tap; 5A) #}
+            {% elif f.status != "deleted" %}{% set asked = false %}<form method="post" action="/manage/feedback/{{ f.id }}?tab={{ tab }}&amp;kind={{ kind }}" class="fb-answer" enctype="multipart/form-data" data-pics>
               <label class="field"><span>{{ "Your answer" if asked else "Add to it and send it to Claude" if f.status == "review" else "Add to this note" }}</span><textarea name="answer" rows="2"{% if not asked %} placeholder="Something you forgot, or what happened next"{% endif %}></textarea></label>
               {{ pics_field() }}
               <input type="hidden" name="to" value="answer"><button class="btn {{ 'primary' if asked }} small" type="submit">{{ "Answer" if asked else "Add" }}</button></form>{% endif %}

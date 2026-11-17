@@ -84,6 +84,25 @@ def waiting(db: Session) -> int:
     return len(_for_admin(list(db.scalars(select(Check).where(Check.status.in_(TO_DO))))))
 
 
+def for_you(db: Session) -> int:
+    """Everything For you holds (Brett's 1A, Nov 17): the checks waiting, and Claude's questions and picks (the Manage
+    menu's count for Testing)."""
+    from app import feedback
+
+    return waiting(db) + len(feedback.asks(db))
+
+
+def ask_view(fb: Feedback, areas: dict[int, str]) -> dict:
+    """A question (or a pick) as For you lists it, beside the checks of its area."""
+    from app import feedback
+
+    q = feedback.question_of(fb) or {}
+    ask = q.get("ask") or {}
+    return {"ask": True, "id": fb.id, "title": fb.title or " ".join((fb.text or "").split())[:70], "area_id": fb.area_id,
+            "group": areas.get(fb.area_id) or "Not in an area yet", "pick": any(c.get("pic") for c in ask.get("choices") or []),
+            "minutes": 0}
+
+
 def for_note(db: Session, fb: Feedback, do: str = "", expect: str = "", admin_sent: bool = True) -> Check | None:
     """The check a broken note's fix comes with (Brett, Nov 16: every broken note gets its check), made when Claude marks
     it done with its PR: Fix on its way until the fix is live (`feedback.py check live`). One per note. A player's note
@@ -342,7 +361,7 @@ def unsorted(db: Session) -> list[Feedback]:
 
 
 @router.get("/manage/testing", response_class=HTMLResponse)
-def page(request: Request, show: str = "ready", check: int = 0, db: Session = Depends(get_db)):
+def page(request: Request, show: str = "ready", check: int = 0, ask: int = 0, db: Session = Depends(get_db)):
     """Manage › askdnd › Testing: For you, the Reader of checks by area (1A, 4A); Where it stands, every area; Claude
     ran; Done."""
     user, denied = web.require(request, is_admin, DENIED)
@@ -351,7 +370,7 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
     show = show if show in SHOWS or show == "areas" else "ready"
     titles = {a.id: a.title for a in db.scalars(select(Area))}
     base = {"user": user, "show": show, "tab": show if show in TABS else "ready", "tabs": TABS, "round": current(request, db),
-            "toast": request.session.pop("toast", None), "listening": for_claude.listening(db), "for_you": waiting(db)}
+            "toast": request.session.pop("toast", None), "listening": for_claude.listening(db), "for_you": for_you(db)}
     if show == "areas":
         return templates.TemplateResponse(request, "testing.html", {**base, "areas": areas_view(db), "unsorted": unsorted(db),
                                                                     "groups": {}, "picked": None, "notes": {}, "chips": []})
@@ -364,20 +383,32 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
     else:
         rows = ordered(db, list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
         rows = [c for c in rows if _with_player(c)] if show == "player" else _for_admin(rows) if show in ("ready", "again") else rows
+    from app import feedback
+
     items = [view(c, titles) for c in rows]
-    groups: dict[str, dict] = {}  # (by area id, never by its title: two areas may share one)
-    for i in items:
+    questions = [ask_view(f, titles) for f in feedback.asks(db)] if show == "ready" else []  # (Claude's questions and picks: 1A, 5A)
+    at = {a.id: n for n, a in enumerate(area_order(db))}
+    groups: dict[str, dict] = {}  # (by area id, never by its title: two areas may share one; in the areas' order, a question first)
+    for i in sorted(questions, key=lambda q: at.get(q["area_id"], len(at))) + items:
         groups.setdefault(f"a{i['area_id']}" if i["area_id"] else i["group"], {"title": i["group"], "area": i["area_id"], "rows": []})["rows"].append(i)
-    picked = next((i for i in items if i["id"] == check), items[0] if items else None)
+    groups = dict(sorted(groups.items(), key=lambda kv: at.get(kv[1]["area"], len(at))))
+    asked = next((q for q in questions if q["id"] == ask), None)
+    if asked:
+        fb = db.get(Feedback, asked["id"])
+        asked = {**asked, "note": fb, "question": feedback.question_of(fb), "earlier": (fb.thread or [])[:(feedback.question_of(fb) or {}).get("n", 0)]}
+    first = next(iter(groups.values()))["rows"][0] if groups else None
+    picked = None if asked else next((i for i in items if i["id"] == check), None) or (first if first and not first.get("ask") else None)
+    if not asked and not picked and first and first.get("ask"):  # (For you opens on its first thing, a question as much as a check)
+        return RedirectResponse(f"/manage/testing?ask={first['id']}", status_code=303)
     if picked:
         pc = db.get(Check, picked["id"])
         picked = {**picked, "issues": issues(db, pc), "test_campaign": test_campaign_of(db, pc.path)}
     notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({i["feedback_id"] for i in items if i["feedback_id"]})))}
-    return templates.TemplateResponse(request, "testing.html", {**base, "groups": groups, "picked": picked, "notes": notes,
+    return templates.TemplateResponse(request, "testing.html", {**base, "groups": groups, "picked": picked, "asked": asked, "notes": notes,
         "chips": [(k, SHOW_SAYS[k], players if k == "player"
                    else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k == "ready" else players_again if k == "again" else 0)
                    - (sum(claudes.get(s, 0) for s in SHOWS[k]) if k in ("ready", "again") else 0)) for k in FOR_YOU],
-        "ready_minutes": sum(i["minutes"] for i in items) if show == "ready" else 0})
+        "ready_minutes": sum(i["minutes"] for i in items) if show == "ready" else 0, "questions": len(questions)})
 
 
 @router.post("/manage/testing/round")

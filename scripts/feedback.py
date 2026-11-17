@@ -4,7 +4,11 @@ When Brett says "review the feedback", pull the queue from askdnd, then answer o
 
     uv run python scripts/feedback.py pull                       # new, question and planned notes
     uv run python scripts/feedback.py pull --status done         # any states, comma-separated
-    uv run python scripts/feedback.py ask 42 "Do you mean …?"    # a question for Brett, on the note
+    uv run python scripts/feedback.py ask 42 "Do you mean …?"    # a question for Brett, on the note (in Testing's For you)
+    uv run python scripts/feedback.py ask 82 "Keep the free-form box?" --choice "Keep it, check it as you type|A red line until it's a roll" \
+        --choice "Remove it|The picker only" --mine 1           # answers to tap, your pick marked (Brett's 5A); he can add his own words
+    uv run python scripts/feedback.py ask 90 "Manage's Overview?" --choice "What needs you" --pic a.png --choice "A tile per page" --pic b.png --mine 1
+                                                                 # a design pick: a picture per answer (--pic after its --choice), one press
     uv run python scripts/feedback.py set 42 planned             # new | question | planned | done | deleted
     uv run python scripts/feedback.py set 42 done --pr https://github.com/jettison-v/dndsy/pull/190  # a broken note (or a built idea) gets its check:
     #   add --do "…" (once a step) --expect "…"; it comes back to Brett (or asks the player who sent it) once live
@@ -98,7 +102,11 @@ def note_md(item: dict) -> str:
         lines.append(f"- Page errors: {json.dumps(c['errors'])}")
     if item.get("thread"):
         lines += ["", "## Thread", *[f"- **{'Claude' if m['who'] == 'claude' else 'Brett'}:** {m['text']}"
-                                     + (f" (screenshots: {', '.join(f'added-{p}' for p in m['pics'])})" if m.get("pics") else "") for m in item["thread"]]]
+                                     + (f" (screenshots: {', '.join(f'added-{p}' for p in m['pics'])})" if m.get("pics") else "")
+                                     + "".join(f"\n  - {'ABCD'[i]}: {c['label']}" + (f" ({c['detail']})" if c.get("detail") else "")
+                                               + (" ← Claude's pick" if (m.get("ask") or {}).get("mine") == i else "")
+                                               for i, c in enumerate((m.get("ask") or {}).get("choices") or []))
+                                     for m in item["thread"]]]
     if item.get("pr"):
         lines += ["", f"Fixed in {item['pr']}"]
     return "\n".join(lines) + "\n"
@@ -306,6 +314,9 @@ def main() -> None:
     ask = sub.add_parser("ask")
     ask.add_argument("id", type=int)
     ask.add_argument("question")
+    ask.add_argument("--choice", dest="choices", action="append", default=[], help="an answer to tap: 'label|detail' (2 to 4)")
+    ask.add_argument("--pic", dest="pics", action="append", default=[], help="a picture for the --choice before it (a design pick)")
+    ask.add_argument("--mine", type=int, default=None, help="which --choice you'd pick (1 is the first)")
     tl = sub.add_parser("tell")
     tl.add_argument("id", type=int)
     tl.add_argument("text")
@@ -378,7 +389,19 @@ def main() -> None:
     elif a.cmd == "tell":
         print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"tell": a.text}))["status"])
     elif a.cmd == "ask":
-        print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"note": a.question, "status": "question"}))["status"])
+        body = {"note": a.question, "status": "question"}
+        if a.choices:
+            import base64
+            import mimetypes
+
+            if a.pics and len(a.pics) != len(a.choices):
+                sys.exit("A design pick has one --pic per --choice.")
+            body["choices"] = [{"label": c.split("|", 1)[0], "detail": c.split("|", 1)[1] if "|" in c else "",
+                                **({"pic": f"data:{mimetypes.guess_type(a.pics[i])[0]};base64," + base64.b64encode(Path(a.pics[i]).read_bytes()).decode()}
+                                   if a.pics else {})} for i, c in enumerate(a.choices)]
+            if a.mine is not None:
+                body["mine"] = a.mine - 1
+        print(json.loads(call(a.base, f"/api/feedback/{a.id}", body))["status"])
     else:
         body = {"status": a.status, "note": a.note, "pr": a.pr, **({"check_do": "\n".join(a.steps)} if a.steps else {}),
                 **({"check_expect": a.expect} if a.expect else {})}

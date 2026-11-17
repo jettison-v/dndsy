@@ -1,0 +1,33 @@
+{# Claude's question on a note, answered (Working with Claude, Brett's picks 5A and Board 3, Nov 17; app/feedback.py
+   question_of, change): answers to tap, Claude's own marked, and room for your own words; when the answers are
+   pictures it's a design pick, answered in one press, or Neither with why. The same form in Testing's For you and on
+   Feedback; it answers as `to=answer`, `choice` the answer's place. `back`: where it comes back to. #}
+{% from "_feedback_pics.html" import pics_field %}
+{% macro answer_form(f, q, action) -%}
+{% set ask = (q or {}).get("ask") or {} %}{% set choices = ask.get("choices") or [] %}
+{% set pick = choices | selectattr("pic") | list | length > 0 %}
+<form method="post" action="{{ action }}" class="fb-answer qa-form{{ ' qa-pick' if pick }}" enctype="multipart/form-data" data-pics data-question="{{ f.id }}">
+  <input type="hidden" name="to" value="answer">
+  {% if pick %}
+  <div class="qa-pics">{% for ch in choices %}
+    <figure class="qa-pic{{ ' mine' if ask.mine == loop.index0 }}" data-choice="{{ loop.index0 }}">
+      <div class="qa-pic-top"><b>{{ "ABCD"[loop.index0] }} · {{ ch.label }}</b>{% if ask.mine == loop.index0 %}<span class="tag draft">Claude's pick</span>{% endif %}</div>
+      {% if ch.pic %}<img class="fb-pic" src="/manage/feedback/{{ f.id }}/pic/{{ ch.pic }}" alt="{{ ch.label }}" loading="lazy">{% endif %}
+      {% if ch.detail %}<figcaption class="note">{{ ch.detail }}</figcaption>{% endif %}
+      <button class="btn small{{ ' primary' if ask.mine == loop.index0 }}" type="submit" name="choice" value="{{ loop.index0 }}" data-answer-choice="{{ loop.index0 }}">Pick {{ "ABCD"[loop.index0] }}</button>
+    </figure>{% endfor %}</div>
+  <details class="fold qa-neither"><summary>Neither: say why…</summary>
+    <label class="field"><span>What you'd want instead</span><textarea name="answer" rows="2"></textarea></label>
+    {{ pics_field() }}
+    <button class="btn small" type="submit" data-answer>Send</button></details>
+  {% else %}
+  {% if choices %}<fieldset class="qa-choices"><legend class="note">Which do you want?</legend>
+    {% for ch in choices %}<label class="qa-choice" data-choice="{{ loop.index0 }}"><input type="radio" name="choice" value="{{ loop.index0 }}"{% if ask.mine == loop.index0 %} checked{% endif %}>
+      <span class="qa-words"><b>{{ ch.label }}</b>{% if ch.detail %}<span class="note">{{ ch.detail }}</span>{% endif %}</span>{% if ask.mine == loop.index0 %}<span class="tag draft">Claude's pick</span>{% endif %}</label>{% endfor %}
+  </fieldset>{% endif %}
+  <label class="field"><span>{{ "Or in your words (or both)" if choices else "Your answer" }}</span><textarea name="answer" rows="2"></textarea></label>
+  {{ pics_field() }}
+  <div class="row"><button class="btn primary small" type="submit" data-answer>Send answer</button><span class="note">It goes on note {{ f.id }}; Claude hears it within a minute when it's listening.</span></div>
+  {% endif %}
+</form>
+{%- endmacro %}

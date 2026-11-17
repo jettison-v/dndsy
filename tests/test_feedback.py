@@ -114,14 +114,16 @@ def test_viewing_as_someone_a_note_is_still_the_admins(admin, db):
 
 
 def test_the_admin_menu_counts_whats_waiting_for_you(admin, db):
-    """The Admin menu's count is what needs an admin: the table's notes to approve and Claude's questions (an
-    admin's own note goes straight to Claude)."""
+    """The Admin menu's count is what needs an admin: Feedback's, the table's notes to approve (an admin's own note goes
+    straight to Claude); Testing's, the checks and Claude's questions (Brett's 1A, Nov 17: one place for what needs you,
+    counted once)."""
     note(admin)
     slug = db.scalar(select(__import__("app.models", fromlist=["Campaign"]).Campaign.slug))
     assert admin.get(f"/c/{slug}/manage/counts").json()["feedback"] == 0
     db.scalar(select(Feedback)).status = "question"
     db.flush()
-    assert admin.get(f"/c/{slug}/manage/counts").json()["feedback"] == 1
+    counts = admin.get(f"/c/{slug}/manage/counts").json()
+    assert counts["feedback"] == 0 and counts["testing"] == 1
 
 
 def test_a_note_from_the_table_waits_for_an_admins_approval(admin, player, db, monkeypatch):
