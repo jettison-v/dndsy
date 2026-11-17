@@ -132,3 +132,63 @@ def test_point_at_leaves_the_roll_window_open_to_point_inside_it(people, server)
     page.keyboard.press("Escape")
     assert page.locator("#fb-win").is_hidden() and page.locator(".roll-win").count() == 1
     assert not admin.errors, admin.errors
+
+
+def test_marking_the_picture_draws_into_what_is_sent(people, server, browser_db):
+    """Testing's 3A, for every note (Brett, Nov 16): ✎ Mark it opens the page's picture large in the same window; a box
+    or an arrow dragged on it is drawn into the picture that's sent; Cancel and Escape go back with it as it was."""
+    admin = people("admin")
+    page = admin.open("/party")
+    page.wait_for_load_state("networkidle")
+    page.keyboard.press("\\")
+    win = page.locator("#fb-win")
+    mark = win.locator("[data-fb-mark]")
+    mark.wait_for(state="visible", timeout=15000)  # (once there's a picture)
+    first = win.locator("[data-fb-shot]").get_attribute("src")
+
+    mark.click()
+    canvas = win.locator("[data-fb-canvas]")
+    canvas.wait_for()
+    page.keyboard.press("Escape")  # (back to the note, the window still open, the picture as it was)
+    assert win.is_visible() and win.locator("[data-fb-markview]").is_hidden() and win.locator("[data-fb-shot]").get_attribute("src") == first
+
+    mark.click()
+    canvas.wait_for(state="visible")  # (it opens once the picture has loaded into it)
+    box = canvas.bounding_box()
+    page.mouse.move(box["x"] + 40, box["y"] + 40)
+    page.mouse.down()
+    page.mouse.move(box["x"] + 200, box["y"] + 120, steps=5)
+    page.mouse.up()
+    win.locator("[data-fb-mark-done]").click()
+    marked = win.locator("[data-fb-shot]").get_attribute("src")
+    assert marked != first and marked.startswith("data:image/jpeg")
+
+    page.fill("#fb-win textarea[name=text]", "This, marked.")
+    page.click("[data-fb-kind=broken]")
+    page.click("[data-fb-send]")
+    page.locator("#cards > .card").first.wait_for(timeout=10000)
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        row = conn.execute(text("SELECT shot_key, context->>'marked' FROM feedback WHERE text = 'This, marked.'")).first()
+    engine.dispose()
+    assert row and row[0] and row[1] == "1"  # (sent with its picture, which carries one mark)
+    assert not admin.errors, admin.errors
+
+
+def test_marking_fits_a_phone_and_a_laptop(people, server):
+    """The marking view at a phone's width and a laptop's: the picture large, its tools wrapped, nothing spilling."""
+    from tests.browser.test_layout import problems
+
+    admin = people("admin")
+    page, found = admin.page, []
+    for width in (375, 1280):
+        page.set_viewport_size({"width": width, "height": 812 if width < 640 else 900})
+        admin.open("/party")
+        page.wait_for_load_state("networkidle")
+        page.evaluate("document.dispatchEvent(new KeyboardEvent('keydown', { key: '\\\\', bubbles: true }))")
+        page.locator("#fb-win [data-fb-mark]").wait_for(state="visible", timeout=15000)
+        page.locator("#fb-win [data-fb-mark]").click()
+        page.locator("#fb-win [data-fb-canvas]").wait_for(state="visible")
+        found += problems(page, f"marking at {width}px")
+    assert not found, "\n".join(found)
+    assert not admin.errors, admin.errors
