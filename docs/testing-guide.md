@@ -19,11 +19,16 @@ check is made: `feedback.py check add --do …` and `feedback.py set <id> done -
 5. **A box's name goes in bold**: `In **Or type it**, type `` `lots` ``.`. Name it exactly as the page shows it.
 6. **Why it matters goes at the end of the step**: `(why: not a dice roll, on purpose)`. Use it whenever the step is
    wrong on purpose or the reason isn't obvious. It shows under the step.
-7. **You should see** (`--expect`) says what's on screen when it works, and where.
-8. **A check that makes something runs in VTT Test** (`--makes`, with a `/c/vtt-test/…` path or a VTT Test character's
+7. **You should see** (`--expect`) says what's on screen when it works, where, and what it looks like, in full
+   sentences (Brett, Nov 17: on its own page as a walkthrough, a check can be longer and plainer than a line in a
+   document). Say what not to see too when that's the point ("the page doesn't reload: it doesn't go blank or jump
+   to the top").
+8. **Why** (the check's word, `--said`, and a fixed note's reply) says what Brett found and what changed, in words.
+   Numbers (the note, the change, the check) are never the sentence; askdnd shows them one click down.
+9. **A check that makes something runs in VTT Test** (`--makes`, with a `/c/vtt-test/…` path or a VTT Test character's
    page). Go takes Brett there, the card says *In VTT Test*, and the round ends back in his own campaign. Anything that
    can't be deleted afterwards (a homebrew item, today) must never be made in the table's campaign.
-9. **One check per thing tried**, in an area (`--area-id`), with `--place` giving its order in that area's pages.
+10. **One check per thing tried**, in an area (`--area-id`), with `--place` giving its order in that area's pages.
 
 ## Example
 

@@ -443,6 +443,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     bar.addEventListener('pointercancel', end);
   });
 
+  // An action bar's ⋯ (_admin_bits.html more_menu): a choice in it, a click elsewhere or Escape closes it
+  document.addEventListener('click', e => {
+    document.querySelectorAll('details.act-more[open]').forEach(d => { if (!d.contains(e.target) || e.target.closest('.act-menu button')) d.open = false; });
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('details.act-more[open]').forEach(d => { d.open = false; }); });
+
   // The walkthrough's ticks (Brett's 3A, Nov 17): only to keep your place, kept on this device for the check you're on
   // and cleared once you're on another
   const ticksKept = () => { try { return JSON.parse(sessionStorage.getItem('askdnd-ticks') || '{}'); } catch (e) { return {}; } };

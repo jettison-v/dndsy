@@ -1,0 +1,25 @@
+{# Admin pieces (Readers, Rebuilt: Brett's picks and comments, Nov 17, docs/mockups/readers/; Manage › askdnd › Design
+   system › Admin): what Testing and Feedback share, so a state reads the same everywhere and the kit can go to the next
+   project. #}
+
+{# A state as a word in its colour: one word, one tone (ready, again, failed, passed, claude, ask, pick, quiet) #}
+{% macro state_word(word, tone, attrs="") -%}
+<span class="state-word sw-{{ tone }}"{{ attrs | safe }}>{{ word }}</span>
+{%- endmacro %}
+
+{# The state line under a title: the word, then one sentence saying what it means for you #}
+{% macro state_line(word, tone, sentence) -%}
+<p class="state-line">{{ state_word(word, tone) }}<span>{{ sentence }}</span></p>
+{%- endmacro %}
+
+{# A history as a timeline, newest first, folded to a badge ("▸ 4 changes"; Brett: nothing else until opened).
+   entries: [{label, detail, tone, at}] #}
+{% macro timeline(entries, attrs="") -%}
+{% if entries %}<details class="timeline"{{ attrs | safe }}><summary class="tl-badge">{{ entries | length }} change{{ "s" if entries | length != 1 }}</summary>
+  <ol class="tl">{% for e in entries %}<li class="tl-{{ e.tone }}"><span><b>{{ e.label }}</b>{% if e.detail %}: {{ e.detail }}{% endif %}</span><span class="note tl-when">{{ e.at[5:10] | replace("-", "/") }}</span></li>{% endfor %}</ol></details>{% endif %}
+{%- endmacro %}
+
+{# The action bar's ⋯: what's rarely needed. The caller puts its buttons inside. #}
+{% macro more_menu(label="More") -%}
+<details class="act-more"><summary aria-label="{{ label }}">⋯</summary><div class="act-menu" role="group" aria-label="{{ label }}">{{ caller() }}</div></details>
+{%- endmacro %}

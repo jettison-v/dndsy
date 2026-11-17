@@ -68,7 +68,7 @@ def test_a_round_goes_page_to_page_and_failed_is_a_note_tied_to_its_check(admin,
     assert f'data-check-card="{two["id"]}"' in card and "data-check-next" in card and f'data-issue="{sent["id"]}"' in card  # (it stays)
     r = admin.post(f"/manage/testing/{two['id']}/next", follow_redirects=False)
     assert r.headers["location"] == "/party"
-    r = admin.post(f"/manage/testing/{three['id']}", data={"result": "skipped"}, follow_redirects=False)
+    r = admin.post(f"/manage/testing/{three['id']}", data={"result": "skipped", "why": "data"}, follow_redirects=False)
     assert r.headers["location"] == "/manage/testing" and admin.get("/manage/testing/card").status_code == 204  # (the round is done)
     assert [h["what"] for h in db.get(Check, two["id"]).history][-1].startswith("Failed")
 
@@ -87,7 +87,7 @@ def test_go_brings_the_check_with_its_card_and_comes_back_to_it(admin, db):
 
 def test_claude_moves_a_fixed_check_back_to_try_again(admin, db):
     c = add(admin)
-    admin.post(f"/manage/testing/{c['id']}", data={"result": "skipped"})
+    admin.post(f"/manage/testing/{c['id']}", data={"result": "skipped", "why": "data"})
     r = admin.post(f"/api/checks/{c['id']}", json={"status": "again", "said": "Fixed in PR 401."}, headers=KEY).json()
     assert r["status"] == "again" and r["said"] == "Fixed in PR 401."
     assert "Try again" in admin.get("/manage/testing?show=again").text
@@ -252,7 +252,7 @@ def test_the_code_reviews_edges(admin, player, db, monkeypatch):
 
     one, two = add(admin, title="One", path="/party"), add(admin, title="Two", path="/c/main/dm")
     admin.post("/manage/testing/round", data={})
-    r = admin.post(f"/manage/testing/{two['id']}", data={"result": "skipped"}, follow_redirects=False)  # (not the round's current one)
+    r = admin.post(f"/manage/testing/{two['id']}", data={"result": "skipped", "why": "data"}, follow_redirects=False)  # (not the round's current one)
     assert r.headers["location"] == f"/manage/testing?show=done&check={two['id']}"
     assert f'data-check-card="{one["id"]}"' in admin.get("/manage/testing/card").text  # (the round is still on One)
 

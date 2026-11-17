@@ -122,7 +122,7 @@ def for_note(db: Session, fb: Feedback, do: str = "", expect: str = "", admin_se
         c.pr, c.said = pr or c.pr, said or c.said
         left = [n for n in issues(db, c) if n.id != fb.id and n.kind != "idea" and n.status in NOTE_OPEN]
         if left:  # (it comes back once every issue that broke it is fixed; an idea doesn't hold it back: 2A)
-            _note(c, f"Note {fb.id} fixed; " + ", ".join(f"note {n.id}" for n in left) + " still to go", "claude")
+            _note(c, f"Note {fb.id} fixed; " + ", ".join(f"note {n.id}" for n in left) + " still to go", "claude", key="fixing")
         else:
             mark(db, c, "fixed", who="claude")
     if handled:
@@ -136,7 +136,7 @@ def for_note(db: Session, fb: Feedback, do: str = "", expect: str = "", admin_se
               setup="laptop" if admin_sent else "player", path=path[:500], do=do or "Try what your note was about, where you saw it.",
               expect=expect or "It works now.", minutes=2, feedback_id=fb.id, pr=pr, said=said,
               status="fixed", history=[], area_id=fb.area_id)
-    _note(c, "Fix on its way", "claude")
+    _note(c, "Fix on its way", "claude", key="fixed")
     db.add(c)
     return c
 
@@ -152,17 +152,19 @@ def answered(db: Session, c: Check, works: bool, words: str = "") -> None:
     mark(db, c, "passed" if works else "failed", who="sender", said=words[:160])
 
 
-def _note(c: Check, what: str, who: str) -> None:
-    c.history = [*(c.history or []), {"at": datetime.now(UTC).isoformat(timespec="seconds"), "what": what, "who": who}]
+def _note(c: Check, what: str, who: str, key: str = "") -> None:
+    """A line in the check's history; `key` says what happened (a status, "issue", "fixing"), so its timeline is drawn
+    from keys, never from the words (Readers, Rebuilt, Nov 17)."""
+    c.history = [*(c.history or []), {"at": datetime.now(UTC).isoformat(timespec="seconds"), "what": what, "who": who, **({"key": key} if key else {})}]
 
 
-def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "") -> None:
+def mark(db: Session, c: Check, status: str, who: str = "you", said: str = "", key: str = "") -> None:
     if status not in STATUSES:
         raise HTTPException(400, "Passed, failed, skipped or ready.")
     if status == "again" and c.status != "again":
         c.asked_at = datetime.now(UTC)  # (when it came back to be tried: a player's three days and their email count from it)
     c.status = status
-    _note(c, SAYS[status] + (f": {said}" if said else ""), who)
+    _note(c, SAYS[status] + (f": {said}" if said else ""), who, key=key or status)
 
 
 def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, prod_note: int | None = None, fail: bool = True) -> Check | None:
@@ -180,7 +182,7 @@ def failed(request: Request, db: Session, check_id: int, fb: Feedback | None, pr
     if fail and c.status != "failed":
         mark(db, c, "failed", said=which)
     else:
-        _note(c, ("Another issue: " if c.status == "failed" else "An issue: ") + which, "you")
+        _note(c, ("Another issue: " if c.status == "failed" else "An issue: ") + which, "you", key="issue")
     words = " ".join(((fb.text if fb is not None else "") or "").split())[:240]
     for_claude.tell(db, "check", f"Check {c.id} ({c.title}): " + ("Failed, " if fail else "an issue, ") + which + (f": {words}" if words else ""),
                     feedback_id=fb.id if fb is not None else None, check_id=c.id, area_id=c.area_id)
@@ -273,6 +275,58 @@ def ordered(db: Session, rows: list[Check]) -> list[Check]:
     return sorted(rows, key=lambda c: (at.get(c.area_id, len(at)), c.place, c.id))
 
 
+# Readers, Rebuilt (Brett's picks and comments, Nov 17, docs/mockups/readers/): a check's state as a word in its
+# colour (`_admin_bits.html state_word`), a sentence saying what it means for you, and its history as a timeline
+STATE_WORD = {"ready": ("Ready", "ready"), "again": ("Try again", "again"), "failed": ("Failed", "failed"), "fixed": ("With Claude", "claude"),
+              "passed": ("Passed", "passed"), "skipped": ("Skipped", "quiet"), "claude": ("Claude runs it", "claude")}
+SKIP_WHY = {"data": "The data it needs isn't there", "wrong": "The check is written wrong", "other": "Something else"}  # (Brett: always a reason)
+TIMELINE = {  # (a history key: who did what, and its tone)
+    "ready": ("Ready", "ready"), "again": ("Back to try: the fix is live", "again"), "failed": ("Failed", "failed"),
+    "fixed": ("Claude fixed it", "claude"), "fixing": ("Claude fixed one of its issues", "claude"), "passed": ("Passed", "passed"),
+    "skipped": ("Skipped", "quiet"), "claude": ("Claude ran it", "claude"), "issue": ("An issue sent", "failed"),
+    "undone": ("Failed undone", "quiet"),
+}
+WHO = {"you": "you", "claude": "Claude", "sender": "its sender"}
+
+
+def sentence(c: Check, n_issues: int = 0) -> str:
+    """What a check's state means for you, in one sentence."""
+    if c.setup == "player" and _with_player(c):
+        return "Asked its sender first: it's yours if they haven't answered in three days."
+    last = next((h for h in reversed(c.history or []) if h.get("key") == "skipped"), {})
+    return {
+        "ready": "New: try it for the first time." if not c.asked_at else "Ready to try again.",
+        "again": "Claude fixed what you found; the fix is live. Try it again.",
+        "failed": f"You found {n_issues} issue{'s' if n_issues != 1 else ''}. With Claude: it comes back once they're fixed." if n_issues
+                  else "You failed it. With Claude: it comes back once it's fixed.",
+        "fixed": "Claude fixed it; it comes back to you once the fix is live.",
+        "passed": "You passed it. Nothing to do.",
+        "skipped": "You skipped it" + (f": {last['what'].split(': ', 1)[1]}" if ": " in last.get("what", "") else ".") ,
+        "claude": "Claude runs this one on the Mac Mini's seats.",
+    }.get(c.status, "")
+
+
+def timeline(c: Check) -> list[dict]:
+    """The check's history, newest first, each line who did what in its tone (keys only; an older line without one
+    keeps its words, in a quiet tone)."""
+    out = []
+    for h in reversed(c.history or []):
+        label, tone = TIMELINE.get(h.get("key", ""), (h.get("what", ""), "quiet"))
+        who = WHO.get(h.get("who", ""), "")
+        if h.get("key") in ("failed", "passed", "skipped", "undone", "issue") and who:
+            label = f"{label} by {who}"
+        detail = h.get("what", "").split(": ", 1)[1] if h.get("key") == "skipped" and ": " in h.get("what", "") else ""  # (its reason; never a number)
+        out.append({"label": label, "detail": detail, "tone": tone, "at": h.get("at", "")})
+    return out
+
+
+def why_words(c: Check, note: Feedback | None) -> dict:
+    """Why a check is here, in words (Brett: numbers one click down): what was found, and what Claude said or changed."""
+    found = " ".join((note.text or "").split())[:220] if note is not None else ""
+    return {"found": found, "who": "you" if note is None or (note.sender or "").endswith("(admin)") else (note.sender or "").split(" (")[0],
+            "said": c.said, "note": note.id if note is not None else None, "pr": c.pr}
+
+
 def view(c: Check, areas: dict[int, str] | None = None) -> dict:
     """A check as the Reader and the card show it; `group` is its area's title (`areas`), else what it needs open."""
     group = (areas or {}).get(c.area_id) or ("Claude runs these" if c.setup == "claude" else "Not in an area yet")
@@ -280,7 +334,8 @@ def view(c: Check, areas: dict[int, str] | None = None) -> dict:
             "needs": NEEDS.get(c.setup, ""), "as_who": c.as_who, "as_character": c.as_character,
             "path": c.path, "do": [line for line in (c.do or "").splitlines() if line.strip()], "expect": c.expect, "minutes": c.minutes,
             "status": c.status, "says": SAYS.get(c.status, c.status), "feedback_id": c.feedback_id, "pr": c.pr,
-            "said": c.said, "history": c.history or [], "makes": c.makes, "steps": walk(c.do)}
+            "said": c.said, "history": c.history or [], "makes": c.makes, "steps": walk(c.do),
+            "word": STATE_WORD.get(c.status, (c.status, "quiet")), "player_wait": c.setup == "player" and _with_player(c)}
 
 
 # ------------------------------------------------------------------ the round
@@ -404,7 +459,9 @@ def page(request: Request, show: str = "ready", check: int = 0, ask: int = 0, db
         return RedirectResponse(f"/manage/testing?ask={first['id']}", status_code=303)
     if picked:
         pc = db.get(Check, picked["id"])
-        picked = {**picked, "issues": issues(db, pc), "test_campaign": test_campaign_of(db, pc.path)}
+        found = issues(db, pc)
+        picked = {**picked, "issues": found, "test_campaign": test_campaign_of(db, pc.path), "sentence": sentence(pc, len(found)),
+                  "timeline": timeline(pc), "why": why_words(pc, db.get(Feedback, pc.feedback_id) if pc.feedback_id else None)}
     notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({i["feedback_id"] for i in items if i["feedback_id"]})))}
     return templates.TemplateResponse(request, "testing.html", {**base, "groups": groups, "picked": picked, "asked": asked, "notes": notes,
         "chips": [(k, SHOW_SAYS[k], players if k == "player"
@@ -566,14 +623,22 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
     status = str(form.get("result") or "")
     if status == "undo":  # (Undo Failed on the card: Brett's note 101; the round stays on it, and what was sent stays sent)
         if c.status == "failed":
-            mark(db, c, "again" if c.asked_at else "ready", said="Failed undone")
+            mark(db, c, "again" if c.asked_at else "ready", said="Failed undone", key="undone")
             for_claude.tell(db, "check", f"Check {c.id} ({c.title}): Failed undone (its notes stay)", check_id=c.id, area_id=c.area_id)
             db.commit()
         return RedirectResponse(_page_of(c) if on_round(request, c.id) else f"/manage/testing?check={c.id}", status_code=303)
     if status not in ("passed", "skipped", "ready"):
         raise HTTPException(400, "Passed, skipped or ready.")
-    mark(db, c, status)
-    for_claude.tell(db, "check", f"Check {c.id} ({c.title}): {SAYS[status] if status != 'ready' else 'back to try again'}", check_id=c.id, area_id=c.area_id)
+    said = ""
+    if status == "skipped":  # (always with why: Brett, Nov 17; most often the data isn't there or the check is written wrong)
+        why, words = str(form.get("why") or ""), " ".join(str(form.get("words") or "").split())[:200]
+        if why not in SKIP_WHY or (why == "other" and not words):
+            request.session["toast"] = web.notice("Say why you're skipping it first.", "warn")
+            return RedirectResponse(_page_of(c) if on_round(request, c.id) else f"/manage/testing?check={c.id}", status_code=303)
+        said = SKIP_WHY[why] + (f": {words}" if words else "") if why != "other" else words
+    mark(db, c, status, said=said)
+    for_claude.tell(db, "check", f"Check {c.id} ({c.title}): {SAYS[status] if status != 'ready' else 'back to try again'}" + (f", {said}" if said else ""),
+                    check_id=c.id, area_id=c.area_id)
     db.commit()
     back = f"/manage/testing?show={SHOW_OF.get(status, 'ready')}&check={c.id}"  # (back to it, where it now is: the code review)
     if not on_round(request, c.id):  # (marked from the list: a round stays where it was)
@@ -687,7 +752,7 @@ def api_add(body=web.JsonBody, x_feedback_key: str | None = Header(default=None)
         raise HTTPException(400, "A check needs its title.")
     c = Check(title="", setup="laptop", status="ready", history=[])
     _fill(db, c, body)
-    _note(c, "Ready", "claude")
+    _note(c, "Ready", "claude", key="ready")
     db.add(c)
     db.commit()
     return JSONResponse(view(c))
