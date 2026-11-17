@@ -160,6 +160,20 @@ def start_round(request: Request, form=web.FormBody, db: Session = Depends(get_d
     return RedirectResponse(_page_of(db.get(Check, ids[0])), status_code=303)
 
 
+@router.post("/manage/testing/{check_id:int}/go")
+def go(request: Request, check_id: int, db: Session = Depends(get_db)):
+    """Go (Brett, Nov 16: the card should come with it): this one check's page with its card, a round of one; marking it
+    comes back to it in the Reader."""
+    _, denied = web.require(request, is_admin, DENIED)
+    if denied:
+        return denied
+    c = db.get(Check, check_id)
+    if c is None:
+        return web.not_found(request, "There's no such check.")
+    request.session[ROUND] = {"ids": [c.id], "i": 0, "back": c.id}
+    return RedirectResponse(_page_of(c), status_code=303)
+
+
 @router.post("/manage/testing/round/stop")
 def stop_round(request: Request):
     _, denied = web.require(request, is_admin, DENIED)
@@ -169,10 +183,10 @@ def stop_round(request: Request):
     return RedirectResponse("/manage/testing", status_code=303)
 
 
-def next_page(request: Request, db: Session) -> str:
-    """Where to go once a check is marked: the round's next check's page, or the Reader when there's no round."""
+def next_page(request: Request, db: Session, after: int) -> str:
+    """Where to go once a check is marked: the round's next check's page, else back to that check in the Reader."""
     now = current(request, db)
-    return _page_of(db.get(Check, now["check"]["id"])) if now else "/manage/testing"
+    return _page_of(db.get(Check, now["check"]["id"])) if now else f"/manage/testing?show=failed&check={after}"
 
 
 def _page_of(c: Check | None) -> str:
@@ -194,13 +208,14 @@ def result(request: Request, check_id: int, form=web.FormBody, db: Session = Dep
         raise HTTPException(400, "Passed, skipped or ready.")
     mark(db, c, status)
     db.commit()
-    in_round = _round(request) is not None
+    r = _round(request)
+    single = bool(r and r.get("back"))  # (Go: a round of one)
     _advance(request, c.id)
-    now = current(request, db) if in_round else None
+    now = current(request, db) if r else None
     if now:
         return RedirectResponse(_page_of(db.get(Check, now["check"]["id"])), status_code=303)
-    request.session["toast"] = web.notice("That's the round done." if in_round else f"{SAYS[status]}: {c.title}")
-    return RedirectResponse(f"/manage/testing?check={c.id}" if not in_round else "/manage/testing", status_code=303)
+    request.session["toast"] = web.notice("That's the round done." if r and not single else f"{SAYS[status]}: {c.title}")
+    return RedirectResponse("/manage/testing" if r and not single else f"/manage/testing?check={c.id}", status_code=303)
 
 
 @router.get("/manage/testing/card", response_class=HTMLResponse)

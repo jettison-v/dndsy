@@ -54,3 +54,18 @@ def test_a_round_goes_page_to_page_with_its_card(people, server, browser_db):
     page.wait_for_url("**/manage/testing")
     assert page.locator("[data-check-card]").count() == 0  # (the round is done: no card)
     assert not admin.errors, admin.errors
+
+
+def test_go_opens_the_checks_page_with_its_card(people, server, browser_db):
+    """Brett, Nov 16: Go from the Reader brings the check's card along; Passed comes back to it in the Reader."""
+    (only,) = _checks(browser_db[0], [("One check", "/party")])
+    admin = people("admin")
+    page = admin.open(f"/manage/testing?check={only}")
+    page.locator("[data-check-go]").click()
+    page.wait_for_url("**/party")
+    card = page.locator(f'[data-check-card="{only}"]')
+    card.wait_for()
+    card.locator('[data-check-result="passed"]').click()
+    page.wait_for_url(f"**/manage/testing?check={only}")
+    assert page.locator("[data-check-card]").count() == 0
+    assert not admin.errors, admin.errors

@@ -68,6 +68,17 @@ def test_a_round_goes_page_to_page_and_failed_is_a_note_tied_to_its_check(admin,
     assert [h["what"] for h in db.get(Check, two["id"]).history][-1].startswith("Failed")
 
 
+def test_go_brings_the_check_with_its_card_and_comes_back_to_it(admin, db):
+    """Brett, Nov 16 ("I am not getting the cards after clicking on the links"): Go opens the check's page with its card
+    (a round of one), and marking it comes back to it in the Reader."""
+    c = add(admin, path="/party")
+    r = admin.post(f"/manage/testing/{c['id']}/go", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/party"
+    assert f'data-check-card="{c["id"]}"' in admin.get("/manage/testing/card").text
+    r = admin.post(f"/manage/testing/{c['id']}", data={"result": "passed"}, follow_redirects=False)
+    assert r.headers["location"] == f"/manage/testing?check={c['id']}" and admin.get("/manage/testing/card").status_code == 204
+
+
 def test_claude_moves_a_fixed_check_back_to_try_again(admin, db):
     c = add(admin)
     admin.post(f"/manage/testing/{c['id']}", data={"result": "skipped"})

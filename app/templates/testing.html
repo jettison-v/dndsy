@@ -38,7 +38,7 @@
       <article class="reader-article nt-read ts-read" data-check-read="{{ c.id }}">
         <p class="ts-where"><span class="st-dot st-{{ dots[c.status] }}" aria-hidden="true"></span> {{ c.says }}{% if c.area %} · {{ c.area }}{% endif %}{% if c.as_who %} · <span class="tag">Through View as · {{ c.as_who }}</span>{% endif %}</p>
         <h2 class="nt-h">{{ c.title }}</h2>
-        {% if c.path %}<p><a class="btn primary small" href="{{ c.path }}" data-check-go>Go: {{ c.area or "its page" }} →</a></p>{% endif %}
+        {% if c.path %}<form method="post" action="/manage/testing/{{ c.id }}/go"><button class="btn primary small" type="submit" data-check-go>Go: {{ c.area or "its page" }} →</button></form>{% endif %}{# (with its card: a round of one) #}
         {% if c.do %}<section class="nt-part"><h3 class="divider">Do</h3><ol class="ts-do">{% for line in c.do %}<li>{{ line }}</li>{% endfor %}</ol></section>{% endif %}
         {% if c.expect %}<section class="nt-part"><h3 class="divider">You should see</h3><p>{{ c.expect }}</p></section>{% endif %}
         {% set from = notes.get(c.feedback_id) %}

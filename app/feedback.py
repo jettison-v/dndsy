@@ -173,7 +173,7 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
         from app import testing
 
         if testing.failed(request, db, check, fb):  # (and the page to go to: a round's next check, or the Reader)
-            return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "next": testing.next_page(request, db)})
+            return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": False, "next": testing.next_page(request, db, check)})
     return JSONResponse({"ok": True, "id": fb.id, "waiting": waiting(db), "review": fb.status == "review"})
 
 
