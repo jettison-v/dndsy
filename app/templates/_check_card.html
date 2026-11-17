@@ -13,12 +13,13 @@
     <div class="cc-prog" role="progressbar" aria-valuemin="0" aria-valuemax="{{ of }}" aria-valuenow="{{ n - 1 }}"><i style="width: {{ ((n - 1) * 100 / of) | round }}%"></i></div>
     <p class="cc-title">{{ c.title }}{% if test_campaign %} <span class="tag draft" data-in-test>In {{ test_campaign }}</span>{% endif %}{% if c.as_who %} <span class="tag">as {{ c.as_who }}</span>{% endif %}
       {% if c.status == "failed" %} <span class="tag error" data-cc-failed>Failed · {{ issues | length }} issue{{ "s" if issues | length != 1 }}</span>{% endif %}</p>
-    {% if c.status != "failed" %}{{ walkthrough(c) }}
-    {% if c.expect %}<div class="cc-exp"><b>You should see</b>{{ c.expect }}</div>{% endif %}{% endif %}
+    {{ walkthrough(c) }}{# (the steps stay after Failed…, so the rest can be followed: Brett's note 101) #}
+    {% if c.expect %}<div class="cc-exp"><b>You should see</b>{{ c.expect }}</div>{% endif %}
     {{ issue_list(issues) }}
     <div class="row cc-acts">
       {% if c.status == "failed" %}
       <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}">+ Another issue</button>
+      <form method="post" action="/manage/testing/{{ c.id }}"><input type="hidden" name="result" value="undo"><button class="btn link small" type="submit" data-check-result="undo" title="Back as it was; the notes you sent stay">Undo Failed</button></form>
       <span class="cc-gap"></span>
       <form method="post" action="/manage/testing/{{ c.id }}/next"><button class="btn small primary" type="submit" data-check-next>Done · Next check ›</button></form>
       {% else %}

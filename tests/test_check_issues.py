@@ -116,3 +116,18 @@ def test_the_card_draws_as_it_was_left_and_on_testing_only_for_a_check_about_it(
     assert 'data-corner="tl"' in card and 'class="check-card folded"' in card
     admin.post(f"/manage/testing/{about_testing}/go")
     assert f'data-check-card="{about_testing}"' in admin.get("/manage/testing/card?at=/manage/testing").text
+
+
+def test_after_failed_the_steps_stay_and_failed_can_be_undone(admin, db):
+    """Brett's note 101 (Nov 17): after Failed… the card hid the steps, so the rest couldn't be followed, and there was
+    no way back. The steps stay; Undo Failed puts the check back as it was, on the same page, its notes kept."""
+    c = add(admin, do="Press [Failed…].\nPress [+ Another issue].")
+    admin.post("/manage/testing/round", data={})
+    sent = note(admin, text="First issue.", check=c).json()["id"]
+    card = admin.get("/manage/testing/card").text
+    assert 'class="walk"' in card and 'data-check-result="undo"' in card
+    r = admin.post(f"/manage/testing/{c}", data={"result": "undo"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/party"  # (the round stays on it)
+    db.expire_all()
+    assert db.get(Check, c).status == "ready" and db.get(Feedback, sent).check_id == c
+    assert 'data-check-result="passed"' in admin.get("/manage/testing/card").text
