@@ -444,6 +444,12 @@ def api_change(feedback_id: int, body=web.JsonBody, x_feedback_key: str | None =
         fb.pr = str(body["pr"])[:300]
     if isinstance(body.get("title"), str):
         fb.title = " ".join(body["title"].split())[:MAX_TITLE]
+    if fb.status == "done" and fb.kind in ("broken", "idea") and fb.pr:  # (every fixed note gets its check: Testing, Brett Nov 16)
+        from app import testing
+
+        sent_by = db.get(User, fb.user_id) if fb.user_id else None
+        testing.for_note(db, fb, str(body.get("check_do") or ""), str(body.get("check_expect") or ""),
+                         admin_sent=bool(sent_by) and access.level(sent_by.email) == access.ADMIN)
     db.commit()
     return JSONResponse(_item(fb))
 

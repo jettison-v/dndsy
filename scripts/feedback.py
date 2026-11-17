@@ -6,7 +6,8 @@ When Brett says "review the feedback", pull the queue from askdnd, then answer o
     uv run python scripts/feedback.py pull --status done         # any states, comma-separated
     uv run python scripts/feedback.py ask 42 "Do you mean …?"    # a question for Brett, on the note
     uv run python scripts/feedback.py set 42 planned             # new | question | planned | done | deleted
-    uv run python scripts/feedback.py set 42 done --pr https://github.com/jettison-v/dndsy/pull/190
+    uv run python scripts/feedback.py set 42 done --pr https://github.com/jettison-v/dndsy/pull/190  # a broken note (or a built idea) gets its check:
+    #   add --do "…" (once a step) --expect "…"; it comes back to Brett (or asks the player who sent it) once live
     uv run python scripts/feedback.py tell 42 "Rest stays on one line now …"   # a reply its sender sees on Notes you sent (not starting with its status: the note shows that)
     uv run python scripts/feedback.py kind 42 idea "It's a new feature, not a fix"   # what it is, and why
     uv run python scripts/feedback.py title 42 "Change forms beside Change spells"     # a short title, when taking it up
@@ -186,6 +187,8 @@ def main() -> None:
     st.add_argument("status", choices=["new", "question", "planned", "done", "deleted"])
     st.add_argument("--note", default="")
     st.add_argument("--pr", default="")
+    st.add_argument("--do", dest="steps", action="append", default=[], help="with done: its check's steps (once each)")
+    st.add_argument("--expect", default="", help="with done: what its check should see")
     ck = sub.add_parser("check", help="Testing: checks for Brett to try")
     cks = ck.add_subparsers(dest="do_what", required=True)
     cl = cks.add_parser("list")
@@ -222,7 +225,9 @@ def main() -> None:
     elif a.cmd == "ask":
         print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"note": a.question, "status": "question"}))["status"])
     else:
-        print(json.loads(call(a.base, f"/api/feedback/{a.id}", {"status": a.status, "note": a.note, "pr": a.pr}))["status"])
+        body = {"status": a.status, "note": a.note, "pr": a.pr, **({"check_do": "\n".join(a.steps)} if a.steps else {}),
+                **({"check_expect": a.expect} if a.expect else {})}
+        print(json.loads(call(a.base, f"/api/feedback/{a.id}", body))["status"])
 
 
 if __name__ == "__main__":

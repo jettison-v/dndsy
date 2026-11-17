@@ -69,3 +69,28 @@ def test_go_opens_the_checks_page_with_its_card(people, server, browser_db):
     page.wait_for_url(f"**/manage/testing?check={only}")
     assert page.locator("[data-check-card]").count() == 0
     assert not admin.errors, admin.errors
+
+
+def test_a_player_says_whether_their_fix_works(people, server, browser_db):
+    """Brett's 6C: a fix to a player's note asks them on Notes you sent, Does it work now?; Yes passes its check."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        uid = conn.execute(text("SELECT id FROM users WHERE email = 'player@example.com'")).scalar()
+        conn.execute(text("UPDATE users SET feedback = true WHERE id = :u"), {"u": uid})
+        fb = conn.execute(text("INSERT INTO feedback (user_id, sender, text, kind, status, url) VALUES (:u, 'Cole (player)', 'The panel closes.', 'broken', 'done', '/party') RETURNING id"),
+                          {"u": uid}).scalar()
+        check = conn.execute(text("INSERT INTO checks (title, setup, path, \"do\", expect, status, feedback_id) VALUES ('The panel stays', 'player', '/party', 'Open it.', 'It stays.', 'again', :f) RETURNING id"),
+                             {"f": fb}).scalar()
+    engine.dispose()
+    player = people("player")
+    page = player.open(f"/your-notes?tab=askdnd&note=f{fb}")
+    box = page.locator(f'[data-try="{fb}"]')
+    box.wait_for()
+    box.locator('[data-works="yes"]').click()
+    page.wait_for_url(f"**note=f{fb}")
+    assert page.locator(f'[data-try="{fb}"]').count() == 0
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT status FROM checks WHERE id = :c"), {"c": check}).scalar() == "passed"
+    engine.dispose()
+    assert not player.errors, player.errors

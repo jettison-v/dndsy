@@ -38,9 +38,10 @@ SETUPS = {"laptop": "On your laptop, as you", "view_as": "Through View as", "iph
 STATUSES = ("ready", "again", "failed", "fixed", "passed", "skipped", "claude")
 SAYS = {"ready": "Ready", "again": "Fixed · try again", "failed": "Failed", "fixed": "Fix on its way", "passed": "Passed", "skipped": "Skipped", "claude": "Claude ran it"}
 # The Reader's chips: which statuses each shows
-SHOWS = {"ready": ("ready", "again"), "again": ("again",), "failed": ("failed", "fixed"), "claude": ("claude",), "done": ("passed", "skipped")}
-SHOW_SAYS = {"ready": "Ready", "again": "Try again", "failed": "Failed", "claude": "Claude ran", "done": "Done"}
+SHOWS = {"ready": ("ready", "again"), "again": ("again",), "player": (), "failed": ("failed", "fixed"), "claude": ("claude",), "done": ("passed", "skipped")}
+SHOW_SAYS = {"ready": "Ready", "again": "Try again", "player": "With a player", "failed": "Failed", "claude": "Claude ran", "done": "Done"}
 TO_DO = ("ready", "again")  # what waits for the admin (the Manage menu's count)
+PLAYER_DAYS = 3  # a check on a player's note is theirs to confirm first; yours after this many days (Brett's 6C)
 DENIED = "Testing is for admins."
 ROUND = "check_round"  # the session's open round: {"ids": [...], "i": n}
 
@@ -48,9 +49,49 @@ ROUND = "check_round"  # the session's open round: {"ids": [...], "i": n}
 # ------------------------------------------------------------------ the engine's side
 
 
+def _with_player(c: Check) -> bool:
+    """A check on a player's note, still theirs to confirm (asked fewer than PLAYER_DAYS days ago)."""
+    return c.setup == "player" and c.status in TO_DO and (datetime.now(UTC) - (c.updated_at or datetime.now(UTC))).days < PLAYER_DAYS
+
+
+def _for_admin(rows: list[Check]) -> list[Check]:
+    return [c for c in rows if not _with_player(c)]
+
+
 def waiting(db: Session) -> int:
-    """How many checks wait for an admin (ready, or fixed and ready to try again)."""
-    return db.scalar(select(func.count()).select_from(Check).where(Check.status.in_(TO_DO))) or 0
+    """How many checks wait for an admin (ready, or fixed and ready to try again; a player's, once it has waited)."""
+    return len(_for_admin(list(db.scalars(select(Check).where(Check.status.in_(TO_DO))))))
+
+
+def for_note(db: Session, fb: Feedback, do: str = "", expect: str = "", admin_sent: bool = True) -> Check | None:
+    """The check a broken note's fix comes with (Brett, Nov 16: every broken note gets its check), made when Claude marks
+    it done with its PR: Fix on its way until the fix is live (`feedback.py check live`). One per note. A player's note
+    is theirs to confirm (6C: setup "player"); an admin's goes to the queue."""
+    if db.scalar(select(Check).where(Check.feedback_id == fb.id)) is not None:
+        return None
+    from urllib.parse import urlsplit
+
+    page = urlsplit(fb.url or "")
+    path = (page.path + (f"?{page.query}" if page.query else "")) if page.path.startswith("/") and not page.path.startswith("//") else ""
+    said = next((m.get("text", "") for m in reversed(fb.thread or []) if m.get("to") == "sender"), "")
+    c = Check(title=(fb.title or (fb.text or "").split(".")[0])[:160] or f"Note {fb.id}", area=str((fb.context or {}).get("page") or "")[:80],
+              setup="laptop" if admin_sent else "player", path=path[:500], do=do or "Try what your note was about, where you saw it.",
+              expect=expect or "It works now.", minutes=2, feedback_id=fb.id, pr=fb.pr if fb.pr.startswith("https://") else "", said=said,
+              status="fixed", history=[])
+    _note(c, "Fix on its way", "claude")
+    db.add(c)
+    return c
+
+
+def player_check(db: Session, fb: Feedback) -> Check | None:
+    """The check a player is asked about on their own note (Does it work now?), when its fix is live."""
+    c = db.scalar(select(Check).where(Check.feedback_id == fb.id, Check.setup == "player"))
+    return c if c is not None and c.status == "again" else None
+
+
+def answered(db: Session, c: Check, works: bool, words: str = "") -> None:
+    """The player's answer (6C): Yes passes it; Still broken fails it, and their words go to the note."""
+    mark(db, c, "passed" if works else "failed", who="sender", said=words[:160])
 
 
 def _note(c: Check, what: str, who: str) -> None:
@@ -130,7 +171,9 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
         return denied
     show = show if show in SHOWS else "ready"
     counts = dict(db.execute(select(Check.status, func.count()).group_by(Check.status)).all())
-    rows = ordered(list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show])))))
+    players = sum(1 for c in db.scalars(select(Check).where(Check.setup == "player", Check.status.in_(TO_DO))) if _with_player(c))
+    rows = ordered(list(db.scalars(select(Check).where(Check.status.in_(SHOWS[show] if show != "player" else TO_DO)))))
+    rows = [c for c in rows if _with_player(c)] if show == "player" else _for_admin(rows) if show in ("ready", "again") else rows
     items = [view(c) for c in rows]
     groups: dict[str, list[dict]] = {}
     for i in items:
@@ -139,7 +182,8 @@ def page(request: Request, show: str = "ready", check: int = 0, db: Session = De
     notes = {f.id: f for f in db.scalars(select(Feedback).where(Feedback.id.in_({x for i in items for x in (i["feedback_id"], i["failed_id"]) if x})))}
     return templates.TemplateResponse(request, "testing.html", {
         "user": user, "show": show, "groups": groups, "picked": picked, "notes": notes,
-        "chips": [(k, SHOW_SAYS[k], sum(counts.get(s, 0) for s in SHOWS[k])) for k in SHOWS],
+        "chips": [(k, SHOW_SAYS[k], players if k == "player" else sum(counts.get(s, 0) for s in SHOWS[k]) - (players if k in ("ready", "again") else 0))
+                  for k in SHOWS],
         "ready_minutes": sum(i["minutes"] for i in items) if show == "ready" else 0, "round": current(request, db),
         "toast": request.session.pop("toast", None)})
 
@@ -151,8 +195,8 @@ def start_round(request: Request, form=web.FormBody, db: Session = Depends(get_d
     if denied:
         return denied
     group = str(form.get("setup") or "")
-    rows = ordered(list(db.scalars(select(Check).where(Check.status.in_(TO_DO)))))
-    ids = [c.id for c in rows if c.setup not in ("player", "claude") and (not group or c.setup == group)]
+    rows = _for_admin(ordered(list(db.scalars(select(Check).where(Check.status.in_(TO_DO))))))
+    ids = [c.id for c in rows if c.setup != "claude" and (not group or c.setup == group)]
     if not ids:
         request.session["toast"] = web.notice("Nothing ready to try.")
         return RedirectResponse("/manage/testing", status_code=303)
