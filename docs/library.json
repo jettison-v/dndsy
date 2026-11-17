@@ -1046,7 +1046,7 @@
  {
   "title": "Testing in askdnd",
   "kind": "design",
-  "status": "Waiting for your picks",
+  "status": "Chose 1A, 2A, 3A, 4A, 5B, 6C",
   "date": "Nov 16",
   "what": "Brett, Nov 16: testing inside askdnd, part of Feedback. Round 2: the queue as a Reader (each check with its note, picture, my reply and history), a check made with every broken note (a player confirms their own fix), and the kit (Feedback, Testing, View as, the Mac Mini) built to take to another project.",
   "source": "docs/mockups/testing/index.html",

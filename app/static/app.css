@@ -4150,7 +4150,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 @media (max-width: 640px) { .hb-row { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); } }
 /* A number with − and + (_form_bits.html stepper) */
 .stepper { display: inline-flex; align-items: stretch; border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; background: var(--bg); }
-.stepper .step { background: var(--surface-2); border: 0; color: var(--text); min-width: var(--control-h-sm); font: 700 var(--fs-md)/1 var(--font, inherit); cursor: pointer; }
+.stepper .step { background: var(--surface-2); border: 0; color: var(--text); min-width: var(--control-h-sm); font: 700 var(--fs-md)/1 var(--sans); cursor: pointer; }
 .stepper .step:hover { background: var(--row-hover); }
 .stepper input[type=number] { width: 3.2em; border: 0; border-radius: 0; text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; appearance: textfield; padding-inline: 2px; }
 .stepper input[type=number]::-webkit-inner-spin-button, .stepper input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }

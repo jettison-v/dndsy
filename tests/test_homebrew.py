@@ -55,7 +55,7 @@ def test_a_homebrew_item_plays_for_whoever_carries_it(dm, db, sheet):
     row = db.scalar(select(CampaignContent))
     assert row.name == "Leviathan Compass" and row.source == "Homebrew" and row.data["play"]["charges"] == {"count": 3, "back": "dawn", "regain": "1d3"}
     page = dm.get("/c/main/dm").text
-    assert "Leviathan Compass" in page and "Pulse: 2d6 force · Dex save DC 14, half on a success" in page and "Cole has it" in page
+    assert "Leviathan Compass" in page and "Pulse: <span data-said>2d6 force · Dex save DC 14, half on a success</span>" in page and "Cole has it" in page
     homebrew.invalidate()
     raw = characters.character_summary(cole)
     s = views.apply_overrides(raw, house_rules.sheet_overrides(db, cole.campaign_id))

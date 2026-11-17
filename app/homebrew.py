@@ -195,13 +195,14 @@ def charges_says(c: dict) -> str:
     return f"{n} charge{'' if n == 1 else 's'}" + (f", back at {c['back']}" + (f" ({c['regain']})" if c.get("regain") else "") if c.get("back") else ", they don't come back")
 
 
-def says(data: dict) -> list[str]:
-    """What it does in play, a sentence a piece, as the item builder shows them (DM Tools' list)."""
+def says(data: dict) -> list[dict]:
+    """What it does in play, a piece at a time ({kind, name, said}: what it's called, its sentence as the item builder
+    shows it), for DM Tools' list."""
     play, out = data.get("play") or {}, []
-    out += [f"{r.get('name')}: {roll_says(r)}" for r in play.get("rolls") or []]
-    out += [f"{a.get('name')}: {add_says(a)}" for a in play.get("adds") or []]
+    out += [{"kind": "roll", "name": r.get("name"), "said": roll_says(r)} for r in play.get("rolls") or []]
+    out += [{"kind": "add", "name": a.get("name"), "said": add_says(a)} for a in play.get("adds") or []]
     if c := play.get("charges"):
-        out.append(charges_says(c))
+        out.append({"kind": "charges", "name": "", "said": charges_says(c)})
     return out
 
 
