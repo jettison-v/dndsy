@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_lists.html" import search_box, filters_above, empty_state, status_track %}
+{% from "_lists.html" import search_box, filters_above, empty_state, status_track, count_pill %}
 {% from "_feedback_pics.html" import pics_field %}
 {% from "_admin_bits.html" import state_word, state_line %}
 {% block title %}Notes you sent · askdnd{% endblock %}
@@ -68,10 +68,10 @@
     <p class="note rhead">Counted: what's still open. Your notes only.</p>
     <div class="reader-rows">
       {% for n in notes %}
-      {% if not n.open and (loop.first or loop.previtem.open) %}<h3 class="divider fft-closed-head">Closed</h3>{% endif %}
+      {% if not n.open and (loop.first or loop.previtem.open) %}<div class="ls-grouphead" data-group="closed"><span>Closed</span>{{ count_pill(notes | rejectattr("open") | list | length) }}</div>{% endif %}{# (the lists' group heading, as on Feedback) #}
       <a class="rd-item fb-row{{ ' sel' if note == n.key or (not note and loop.first) }}" data-note="{{ n.key }}" href="/your-notes?tab=askdnd&amp;note={{ n.key }}">
         <span class="ts-title">{{ n.title }}</span>{{ state_word(n.says.word, n.says.tone, ' data-turn="' ~ n.says.turn ~ '"') }}
-        <span class="nt-sum">{{ n.at.strftime("%b %-d") }}{% if n.new %} · <span class="notes-dot" title="New since you last looked" data-new-reply>new reply</span>{% elif n.trying %} · Does it work now?{% endif %}</span>
+        <span class="nt-sum">{{ n.at.strftime("%b %-d") }}{% if n.new %} · <span class="notes-dot" title="New since you last looked" data-new-reply="{{ 'reply' if n.new_reply else 'moved' }}">{{ "new reply" if n.new_reply else "updated" }}</span>{% elif n.trying %} · Does it work now?{% endif %}</span>
       </a>
       {% endfor %}
     </div>

@@ -202,6 +202,19 @@ def test_a_question_an_admin_sends_waits_on_open_for_claude_then_its_answer_come
     assert "Press End round on the round" in admin.get(f"/your-notes?tab=askdnd&note=f{q.id}").text
 
 
+def test_a_note_that_only_moved_on_says_updated_and_one_with_a_reply_says_new_reply(admin, sender, db):
+    """Issue 25 (Brett's round, Nov 18): a note whose status had only moved on said "new reply" in Notes you sent. It
+    says updated until someone writes to its sender; then new reply. (Opening the tab shows what's new, then clears it.)"""
+    send(sender, text="Rest wraps on a phone.")
+    n = _note(db)
+    assert "data-new-reply" not in sender.get("/your-notes?tab=askdnd").text  # (just sent: nothing new to its sender)
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})  # (approved: it moved on, nobody wrote)
+    assert 'data-new-reply="moved"' in sender.get("/your-notes?tab=askdnd").text
+    rules.add_line(db, "claude", "Thanks: it's being fixed.", issue=db.get(FftIssue, n.issue_id), to="sender")
+    db.flush()
+    assert 'data-new-reply="reply"' in sender.get("/your-notes?tab=askdnd").text
+
+
 # ------------------------------------------------------------------ an issue (screens 13, 14)
 
 

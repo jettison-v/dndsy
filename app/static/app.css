@@ -4355,7 +4355,6 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-opt.btn-plain { grid-template-columns: minmax(0, 1fr); }
 .fft-unjoin { margin: 0; }
 .fft-history .tl { margin: var(--sp-2) 0 0; padding-left: var(--sp-4); display: grid; gap: var(--sp-1); font-size: var(--fs-sm); }
-.fft-closed-head { margin: var(--sp-3) 0 var(--sp-1); }
 @media (max-width: 640px) { .fft-report { grid-template-columns: minmax(0, 1fr); } .fft-pic { width: 100%; height: auto; max-height: 180px; } }
 
 /* Testing (Found, Fixed, Tried, screens 1–8): For you's groups by area, a check's devices and problems, what the card

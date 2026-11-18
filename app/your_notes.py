@@ -38,6 +38,13 @@ TABS = ("story", "askdnd")
 MOST_CARDS = 3  # (more at once: one card that says how many)
 
 
+def _line_of(mark: str | None) -> int:
+    """The last line a note's marker counts (`fft.views.markers`: "word:line"): a newer one is a new reply, not just a
+    change of where it stands (Brett's round, Nov 18, issue 25: a note that only moved on said "new reply")."""
+    tail = (mark or "").rsplit(":", 1)[-1]
+    return int(tail) if tail.isdigit() else 0
+
+
 def _short(text: str) -> str:
     return text if len(text) <= 60 else text[:57].rstrip() + "…"
 
@@ -145,7 +152,7 @@ def fft_note(db: Session, note: FftNote, me_id: int | None) -> dict:
         trying = {"issue": issue.id, "steps": v.steps if v else [], "expect": v.expect if v else ""}
     return {"key": f"f{note.id}", "id": note.id, "title": title_of(note.text), "text": note.text, "at": note.created_at,
             "where": note.page, "href": fft_views.local_href(note.url), "says": says,
-            "open": says["open"], "new": note.seen != fft_views.marker(db, note, me_id), "lines": lines,
+            "open": says["open"], "new": note.seen != (mark := fft_views.marker(db, note, me_id)), "new_reply": _line_of(mark) > _line_of(note.seen), "lines": lines,
             "pics": [p for p in pics if p.note_id == note.id], "line_pics": {p.line_id: p for p in pics if p.line_id},
             "kind_said": fft_views.KIND_SAID.get(note.kind, ""), "trying": trying, "admin": note.role == "admin",
             "closed_words": issue.close_words if issue is not None and issue.state == "closed" else "", "can_add": says["open"] or note.state == "waiting"}
