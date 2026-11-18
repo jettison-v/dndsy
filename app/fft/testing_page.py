@@ -345,7 +345,7 @@ def stands(db: Session) -> dict:
         why = skipped.get(it.title, "")
         items.append({"it": it, "n": n, "areas": rows, "why": f"skipped: {why}" if why else ""})
     li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()
-    return {"rows": items, "done": done, "round": r, "listener": li, "listening": views.listening(db),
+    return {"rows": items, "done": done, "round": r, "listener": li, "listening": views.listening(db), "missed": views.gaps(db),
             "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
             "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))}
 

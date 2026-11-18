@@ -278,3 +278,57 @@ def event_words(ev) -> str:
     if "to" in d:
         return f"{ev.thing.title()} {ev.thing_id}: {d.get('from')} → {d.get('to')}"
     return f"{ev.thing.title()} {ev.thing_id}: {ev.kind.replace('_', ' ')}"
+
+
+# ------------------------------------------------------------------ what Claude left half done
+
+
+def gaps(db: Session) -> list[dict]:
+    """What Claude left half done, each Claude's to close now (Brett, Nov 17: "how are we going to make sure that you do
+    not miss something?"): a fix with no check to try it; a check Claude hasn't tried itself (R18); something said on an
+    open issue, a note, a failed try, a line or an answer, that Claude hasn't replied to; an open issue in no area.
+    `feedback.py gaps` prints them, Claude Code's end-of-turn hook won't let a turn end on one, and Where it stands
+    shows them as Claude missed. Nothing waiting on Brett is a gap."""
+    from app.fft.models import FftCheck, FftCheckIssue, FftTry, FftTryIssue
+
+    out = []
+    checked = set(db.scalars(select(FftCheckIssue.issue_id).join(FftCheck, FftCheck.id == FftCheckIssue.check_id)
+                             .where(FftCheck.retired.is_(False))))
+    issues = list(db.scalars(select(FftIssue).where(FftIssue.state != "closed").order_by(FftIssue.id)))
+    for i in issues:
+        if i.pr and i.id not in checked:
+            out.append({"kind": "no_check", "thing": "issue", "id": i.id, "title": i.title,
+                        "says": "Fixed, with no check to try it: write one (--issue), try it yourself, mark it passed."})
+    for c in db.scalars(select(FftCheck).where(FftCheck.retired.is_(False), FftCheck.preflight != "passed").order_by(FftCheck.id)):
+        out.append({"kind": "not_tried", "thing": "check", "id": c.id, "title": c.title,
+                    "says": "Not tried by Claude yet (R18): try it, then preflight pass (or fail, and fix)."})
+    ids = [i.id for i in issues] or [0]
+    notes = list(db.scalars(select(FftNote).where(FftNote.issue_id.in_(ids), FftNote.state == "filed")))
+    lines = list(db.scalars(select(FftLine).where((FftLine.issue_id.in_(ids)) | (FftLine.note_id.in_([n.id for n in notes] or [0])))))
+    asked = list(db.scalars(select(FftQuestion).where(FftQuestion.about == "issue", FftQuestion.about_id.in_(ids))))
+    tries = db.execute(select(FftTryIssue.issue_id, FftTry.created_at).join(FftTry, FftTry.id == FftTryIssue.try_id)
+                       .where(FftTryIssue.issue_id.in_(ids), FftTry.replaced.is_(False), FftTry.actor == "person")).all()
+    of_note = {n.id: n.issue_id for n in notes}
+    said: dict[int, list] = {i.id: [] for i in issues}  # issue -> [(when, by Claude?)]
+    for n in notes:
+        said[n.issue_id].append((n.created_at, False))
+    for x in lines:
+        iid = x.issue_id or of_note.get(x.note_id)
+        if iid in said and x.who != "askdnd" and (x.who == "claude" or x.approved):
+            said[iid].append((x.created_at, x.who == "claude"))
+    for q in asked:
+        said[q.about_id].append((q.created_at, True))
+        if q.answered_at:
+            said[q.about_id].append((q.answered_at, False))
+    for iid, at in tries:
+        said[iid].append((at, False))
+    for i in issues:
+        theirs = [at for at, claude in said[i.id] if not claude]
+        mine = [at for at, claude in said[i.id] if claude]
+        if theirs and i.state != "asks" and (not mine or max(theirs) > max(mine)):
+            out.append({"kind": "unanswered", "thing": "issue", "id": i.id, "title": i.title,
+                        "says": "Said to Claude and not answered: reply (feedback.py issue <id> tell … --to brett) with what you'll do."})
+        if i.area_id is None:
+            out.append({"kind": "no_area", "thing": "issue", "id": i.id, "title": i.title,
+                        "says": "In no area: move it into one (feedback.py issue <id> move <area>)."})
+    return out
