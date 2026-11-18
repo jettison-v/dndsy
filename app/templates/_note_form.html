@@ -1,13 +1,13 @@
 {# Large modal: add or edit a player note. Repeating rows (turns, levels, steps) use [data-repeat] in app.js. #}
 {% set d = data %}
-<div class="peek-head fm-head">
+<div class="peek-head fm-head" data-private>
   <div class="fm-title"><div class="note">{{ c.name }} · {{ meta.label }}</div>
     <h2 id="peek-title">{{ n.title if n else meta.new }}</h2>
     <div class="note">{{ meta.about }}</div></div>
   <button class="btn link peek-close" type="button" aria-label="Close">✕</button>
 </div>
 {# hx-post: saving updates the page in place (no reload, you stay on your tab); the plain post is the fallback #}
-<form class="peek-form" method="post" action="/characters/{{ c.id }}/notes" hx-post="/characters/{{ c.id }}/notes" hx-swap="none">
+<form class="peek-form" data-private method="post" action="/characters/{{ c.id }}/notes" hx-post="/characters/{{ c.id }}/notes" hx-swap="none">
 <div class="peek-body note-form">
   {% if n %}<input type="hidden" name="note_id" value="{{ n.id }}">{% else %}<input type="hidden" name="kind" value="{{ kind }}">{% endif %}
   <label class="field"><span>Title</span><input type="text" name="title" maxlength="200" value="{{ n.title if n else '' }}"

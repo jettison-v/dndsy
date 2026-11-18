@@ -10,7 +10,7 @@
         {% if can_use and o.use %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/use/{{ o.use.id }}"{% if not o.use.left %} disabled title="{{ o.use.back }}"{% endif %}>{{ o.use.verb }}</button></span>{% endif %}{% if not (can_use and o.use and o.use.gives and o.heal) and not (can_play and o.cast) %}{{ hit(o) }}{% endif %}{% if can_pick and o.starts and o.starts not in active_conditions %}<span class="hit"><button type="submit" class="roll-chip item-go cond-go" hx-post="/characters/{{ c.id }}/conditions" hx-vals='{{ {"name": o.starts, "source": o.item, "note": o.note or ""} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML" title="Shows {{ o.starts }} under the header for the whole table">{{ o.name | capitalize }}</button></span>{% elif can_pick and o.ends and o.ends in active_conditions %}<span class="hit"><button type="submit" class="roll-chip item-go cond-go" hx-post="/characters/{{ c.id }}/conditions/end" hx-vals='{{ {"name": o.ends} | tojson }}' hx-target="#battle-body" hx-swap="outerHTML">{{ o.name | capitalize }}</button></span>{% endif %}{% if can_play and o.cast %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/cast?key={{ o.key | urlencode }}">Cast</button></span>{% endif %}{% if can_play and o.use_window %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/feature?key={{ o.key | urlencode }}" data-feature-use>Use</button></span>{% endif %}{% if can_bring and o.bring and o.bring.state == "ready" %}<span class="hit"><button type="button" class="roll-chip item-go" data-use-url="/characters/{{ c.id }}/bring/{{ o.bring.id }}">{{ o.bring.verb }}</button></span>{% endif %}
         {% if pin %}{{ pick_btn(c, "star", o.key, false, can_pick) }}{% endif %}{% if o.starred and show_picks %}<span class="pick star on static" title="Pinned to Battle">{{ pin_icon() }}</span>{% endif %}{% set st = (s.sync or {}) %}<b{% if o.use %}{{ sync_attrs(st.get("item:" ~ o.use.id) or st.get("charges:" ~ o.use.id)) }}{% endif %}>{{ o.name }}</b> {{ pips(o.uses) }}{% if o.tags or o.spends or o.need %} <span class="tag-run">{% for t in o.tags %}<span class="tag">{{ t }}</span>{% endfor %}{{ spends(o.spends) }}{{ comp_mark(o.need) }}</span>{% endif %}
         {% if o.meta %}<div class="meta">{{ o.meta }}</div>{% endif %}
-        {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note">✎ {{ picks.notes[o.key] }}</div>{% endif %}
+        {% if show_picks and picks.notes.get(o.key) %}<div class="meta move-note" title="Your note" data-private>✎ {{ picks.notes[o.key] }}</div>{% endif %}
       </div>
 {% endmacro %}
 
@@ -180,7 +180,7 @@
   <div class="lower">
     {% if show_picks %}{% include "_forget.html" %}{% endif %}{# (the DM never sees a player's reminders: no card saying so; the UI review) #}
     {% if show_picks and (combos or can_pick) %}
-    <div class="section">
+    <div class="section" data-private>{# (a player's own notes: blurred in a feedback note's safe copy, app/fft) #}
       <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a class="head-add" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Battle combo</a>{% endif %}</div>
       {% for n in combos %}
       <details class="combo-fold"><summary><b>{{ n.title }}</b>{% if n.data.when %} <span class="muted">· {{ n.data.when }}</span>{% endif %}</summary>{{ combo_body(n, nl) }}</details>

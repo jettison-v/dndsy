@@ -41,7 +41,7 @@
           <span class="fm-pic">{% if fm.image %}<img src="{{ fm.image }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}</span>
           <span class="ls-name"><span class="ls-line"><b{% if edit and fm.going %} data-sync="on" title="On its way to D&amp;D Beyond"{% endif %}>{{ fm.name }}</b> <span class="tag">CR {{ fm.cr_label }}</span> <span class="tag">{{ fm.size }}</span>{% if fm.book %} <span class="tag" title="From a book this campaign uses (Manage › Settings › Books)">{{ fm.book }}</span>{% endif %}{% if fm.why_not %} <span class="tag faint">{{ fm.why_not }}</span>{% endif %}</span>
             <span class="ls-what">{{ k.attack or "No attack" }}{% for t in k.bonus %} · Bonus: {{ t }}{% endfor %}{% for t in k.reactions %} · Reaction: {{ t }}{% endfor %}</span>
-            {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+            {% if note %}<span class="ls-note" title="{{ note }}" data-private>✎ {{ note }}</span>{% endif %}</span>
           <span title="{{ 'Circle Forms: 13 + your Wisdom modifier' if k.ac_moon else 'The form\'s AC' }}">{{ k.ac }}</span>
           <span title="Temporary Hit Points when you shift">+{{ k.temp_hp }}</span>
           <span>{{ k.hit or "—" }}{% if k.attack_adv %} {{ adv(k.attack_adv) }}{% endif %}</span>

@@ -1,0 +1,372 @@
+<title>Feedback's Reader: Sections</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens; laptop first, one column on a phone.
+   Brett, Nov 17 (a note on Feedback, issue 4): "I would like to improve the UI for the reader. I think additional
+   sections would help. Can you mock up alternate options? It all just blends together." */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1, h2, h3, h4 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+a { color: var(--link); }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+header.top { display: grid; gap: 10px; }
+
+/* the screen picker */
+.shots { display: flex; flex-wrap: wrap; gap: 6px; }
+.shot { display: inline-flex; gap: 6px; align-items: center; min-height: 34px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .84rem/1 var(--sans); cursor: pointer; }
+.shot small { color: var(--faint); font-weight: 700; }
+.shot[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.shot .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.why { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.why p { font-size: .92rem; max-width: 110ch; }
+.why .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+
+/* askdnd's chrome */
+.app { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); padding: 9px 14px; font-size: .86rem; color: var(--muted); flex-wrap: wrap; }
+.mbar .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--red-btn); }
+.mbar b { color: var(--strong); }
+.mbar .sp { flex: 1; }
+.mbar .pill { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; }
+.mbar .search { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; min-width: 180px; color: var(--faint); }
+.mbar .av { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-3); display: inline-grid; place-items: center; color: var(--strong); font-weight: 700; font-size: .78rem; }
+.shell { display: grid; grid-template-columns: 170px minmax(0, 1fr); }
+.side { border-right: 1px solid var(--line-soft); padding: 14px 10px; display: grid; gap: 2px; align-content: start; font-size: .84rem; color: var(--muted); }
+.side span { padding: 5px 9px; border-radius: 7px; }
+.side span.on { background: var(--surface-2); color: var(--strong); font-weight: 600; }
+.side .h { font: 700 .66rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding: 12px 9px 4px; }
+.page { padding: 16px 18px 22px; display: grid; gap: 12px; min-width: 0; }
+.page h2.pt { font: 700 1.5rem/1.2 var(--sans); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { padding: 9px 12px; color: var(--muted); font-weight: 500; font-size: .9rem; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.tab.on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red-btn); }
+.count { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; background: var(--surface-3); color: var(--text); font: 600 .78em/1 var(--sans); font-variant-numeric: tabular-nums; }
+.tab.on .count { background: var(--blue-soft); color: var(--strong); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; gap: 5px; align-items: center; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font: 600 .78rem/1 var(--sans); white-space: nowrap; }
+
+/* the Reader */
+.reader { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.rlist { border-right: 1px solid var(--line); padding: 8px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 10px; border-radius: 8px; font-size: .86rem; }
+.row b { font-weight: 600; color: var(--text); }
+.row .sub { grid-column: 1 / -1; color: var(--muted); font-size: .76rem; }
+.row.on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--blue); }
+.sw { font: 700 .7rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; white-space: nowrap; align-self: start; letter-spacing: .02em; }
+.sw.claude { background: var(--violet-soft); color: var(--violet); } .sw.you { background: var(--amber-soft); color: var(--amber); }
+.sw.failed { background: var(--red-soft); color: var(--red); } .sw.passed { background: var(--green-soft); color: var(--green); }
+.sw.player { background: var(--blue-soft); color: var(--blue); } .sw.quiet { background: var(--surface-3); color: var(--muted); }
+.detail { padding: 18px 22px 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.where { color: var(--muted); font-size: .8rem; }
+.big { font: 600 1.35rem/1.25 var(--serif); color: var(--strong); }
+.sline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: .92rem; }
+.sline .sw { font-size: .74rem; padding: 5px 10px; }
+.act { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.quiet { background: transparent; border-color: transparent; color: var(--muted); }
+.plabel { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* shared pieces */
+.report { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 12px; font-size: .88rem; }
+.thumb { height: 80px; border-radius: 8px; border: 1px solid var(--line); background: linear-gradient(180deg, #1c1f23 0 22%, #2a2e33 22%); position: relative; overflow: hidden; }
+.thumb::after { content: ""; position: absolute; left: 20%; top: 46%; width: 54%; height: 26%; border: 2px solid var(--amber); border-radius: 5px; }
+.words { font-size: .95rem; color: var(--text); }
+.convo { display: grid; gap: 8px; }
+.bub { max-width: 82%; border-radius: 12px; padding: 8px 12px; font-size: .88rem; display: grid; gap: 3px; }
+.bub small { font: 700 .7rem/1 var(--sans); color: var(--muted); }
+.bub.claude { background: var(--violet-soft); justify-self: start; border: 1px solid rgba(185,163,227,.3); }
+.bub.you { background: var(--blue-soft); justify-self: end; }
+.qa { justify-self: start; max-width: 88%; border: 1px solid rgba(185,163,227,.35); border-radius: 12px; overflow: hidden; font-size: .88rem; }
+.qa .q { background: var(--violet-soft); padding: 8px 12px; display: grid; gap: 3px; }
+.qa .q small, .qa .a small { font: 700 .7rem/1 var(--sans); color: var(--muted); }
+.qa .opts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.qa .opts span { font: 600 .74rem/1 var(--sans); border: 1px solid var(--line); border-radius: 999px; padding: 4px 8px; color: var(--muted); }
+.qa .a { background: var(--surface-2); padding: 8px 12px; display: grid; gap: 3px; border-top: 1px solid var(--line-soft); }
+.trial { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; font-size: .86rem; }
+.trial .sub { grid-column: 2 / -1; color: var(--muted); font-size: .78rem; }
+.composer { display: grid; gap: 8px; }
+.toline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .82rem; color: var(--muted); }
+.box { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; min-height: 52px; padding: 8px 10px; color: var(--faint); font-size: .86rem; }
+.sendline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: .82rem; color: var(--muted); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; }
+.tl { list-style: none; margin: 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); display: grid; gap: 6px; font-size: .84rem; }
+.tl li { display: flex; justify-content: space-between; gap: 12px; }
+.tl li span:last-child { color: var(--faint); white-space: nowrap; }
+.fold { color: var(--muted); font-size: .84rem; }
+.fold::before { content: "▸ "; }
+
+/* A: sections as cards */
+.sec { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; display: grid; }
+.sec > header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); }
+.sec > header .plabel { color: var(--text); }
+.sec > header .count { margin-left: 2px; }
+.sec > header .sp { flex: 1; }
+.sec > .in { padding: 12px 14px; display: grid; gap: 10px; }
+.sec.stand { border-left: 3px solid var(--violet); }
+.sec.quietsec > header { border-bottom: 0; }
+.sec .report .thumb { height: 74px; }
+
+/* B: tabs inside the issue */
+.head { display: grid; gap: 10px; padding-bottom: 4px; }
+.itabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.itab { padding: 8px 12px; color: var(--muted); font-size: .86rem; font-weight: 500; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; border: 0; background: none; }
+.itab[aria-selected="true"] { color: var(--strong); box-shadow: inset 0 -2px 0 var(--blue); }
+.itab .dotnew { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); }
+
+/* C: the story and the facts */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) 250px; gap: 18px; align-items: start; }
+.story { display: grid; gap: 16px; min-width: 0; }
+.story .hr { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.story .hr::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.facts { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; display: grid; gap: 12px; font-size: .84rem; }
+.fact { display: grid; gap: 4px; padding-bottom: 12px; border-bottom: 1px solid var(--line-soft); }
+.fact:last-child { border-bottom: 0; padding-bottom: 0; }
+.fact .v { color: var(--text); }
+.fact .acts { display: grid; gap: 6px; }
+.fact .acts .btn { justify-content: flex-start; }
+
+/* picks */
+.verdict { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.verdict fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.verdict legend { font-weight: 600; color: var(--strong); padding: 0; margin-bottom: 8px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.choice:has(input:checked) { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.choice:has(input:checked)::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--surface-2); }
+.choice:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+.choice .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.verdict textarea { width: 100%; min-height: 96px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--text); font: 400 1rem/1.4 var(--sans); resize: vertical; }
+.save-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.save-row button { background: var(--red-btn); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: 600 .95rem/1 var(--sans); cursor: pointer; }
+.saved { color: var(--muted); font-size: .88rem; }
+.saved.ok { color: var(--green); }
+.shot:focus-visible, .itab:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+@media (max-width: 1180px) { .two { grid-template-columns: minmax(0, 1fr); } .facts { order: -1; } }
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { display: none; }
+  .reader { grid-template-columns: minmax(0, 1fr); }
+  .rlist { border-right: 0; border-bottom: 1px solid var(--line); }
+  .mbar .search { display: none; }
+  .report { grid-template-columns: minmax(0, 1fr); }
+  .bub, .qa { max-width: 100%; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="lbl">askdnd · Manage › Feedback</span>
+    <h1>Feedback's reader: clearer sections</h1>
+    <p class="meta">You said the reader "all just blends together". Below are today's reader and three ways to split it into sections, all showing the same issue: the item builder one you found tonight. Pick one at the bottom of the page. Each option also fixes two gaps I found while drawing it: my question to you and your answer now appear in the issue, and so does the check that found it.</p>
+  </header>
+
+  <div class="shots" role="group" aria-label="Screens">
+    <button class="shot" type="button" data-shot="today"><small>0</small>Today</button>
+    <button class="shot" type="button" data-shot="cards"><small>A</small>Sections as cards <span class="mine">my pick</span></button>
+    <button class="shot" type="button" data-shot="tabs"><small>B</small>Tabs inside the issue</button>
+    <button class="shot" type="button" data-shot="facts"><small>C</small>The story, and a column of facts</button>
+  </div>
+  <div class="why"><span class="tag" id="why-tag"></span><p id="why-text"></p></div>
+
+  <div class="app" id="app">
+    <div class="mbar"><span class="logo"></span><b>askdnd</b><b>The Adventure Begins ▾</b><span>Campaign</span><span>Table ↗</span><span class="sp"></span><span class="search">Search ⌘F</span><span class="pill">Manage ▾</span><span class="av">B</span></div>
+    <div class="shell">
+      <nav class="side" aria-label="Manage"><span class="h">askdnd</span><span>Overview</span><span class="on">Feedback</span><span>Testing</span><span>Documents</span><span>Usage</span><span class="h">People</span><span>Accounts</span><span>Campaigns</span></nav>
+      <div class="page">
+        <h2 class="pt">Feedback</h2>
+        <div class="tabs"><span class="tab">To approve</span><span class="tab on">Open <span class="count">3</span></span><span class="tab">Ready to try</span><span class="tab">Closed</span><span class="tab">Ideas</span></div>
+        <div class="chips"><span class="chip">From players</span><span class="chip">From checks</span><span class="chip">Every area ▾</span></div>
+        <div class="reader">
+          <div class="rlist">
+            <div class="row on"><b>The item builder takes a value that makes no sense without an error</b><span class="sw claude">Claude's</span><span class="sub">To fix · Item Builder · from a check</span></div>
+            <div class="row"><b>Feedback's reader blends together</b><span class="sw claude">Claude's</span><span class="sub">To fix · Feedback and Testing</span></div>
+            <div class="row"><b>An Overview page for Manage</b><span class="sw claude">Claude's</span><span class="sub">To fix · The Testing card</span></div>
+          </div>
+
+          <!-- 0 · Today -->
+          <div class="detail" data-screen="today">
+            <p class="where">Item Builder · from 1 note</p>
+            <p class="big">The item builder takes a value that makes no sense without an error</p>
+            <div class="sline"><span class="sw claude">Claude's</span>To fix: Claude's in the Item Builder area.</div>
+            <div class="act"><span class="btn">Move to another area…</span><span class="btn">Same as…</span><span class="btn">Close with a reason…</span><span class="btn quiet">⋯</span></div>
+            <b>1 note</b>
+            <div class="report"><div class="thumb"></div><div><p class="note"><b>You</b> · Nov 17, 8:23 PM · <a>New item · DM Tools</a> · <a>the page as drawn</a></p><p class="words">It did not work</p></div></div>
+            <b>Conversation</b>
+            <p class="note">Nothing said yet.</p>
+            <div class="composer"><div class="toline">Write to <span class="chip">◉ Claude</span></div><div class="box">Something to add, or an answer</div><div class="sendline"><span class="btn go">Send</span><span class="dot"></span>Claude reads it within a minute (a session is listening).</div></div>
+            <p class="fold">History · 6 events</p>
+          </div>
+
+          <!-- A · Sections as cards -->
+          <div class="detail" data-screen="cards" hidden>
+            <p class="where">Item Builder · from a check and 1 note</p>
+            <p class="big">The item builder takes a value that makes no sense without an error</p>
+            <section class="sec stand"><header><span class="plabel">Where it stands</span></header>
+              <div class="in"><div class="sline"><span class="sw claude">Claude's</span>To fix: Claude takes up the Item Builder area once your round is over.</div>
+                <div class="act"><span class="btn">Move to another area…</span><span class="btn">Same as…</span><span class="btn">Close with a reason…</span><span class="btn quiet">⋯</span></div></div></section>
+            <section class="sec"><header><span class="plabel">What was found</span><span class="count">2</span></header>
+              <div class="in">
+                <div class="trial"><span class="sw failed">Failed</span><span><b>The item builder</b> (check) · on the laptop</span><span class="note">8:23 PM</span><span class="sub">You marked it as stopping your round.</span></div>
+                <div class="report"><div class="thumb"></div><div><p class="note"><b>You</b> · Nov 17, 8:23 PM · <a>New item · DM Tools</a> · <a>the page as drawn</a></p><p class="words">It did not work</p></div></div></div></section>
+            <section class="sec"><header><span class="plabel">Conversation</span><span class="count">3</span></header>
+              <div class="in"><div class="convo">
+                <div class="qa"><div class="q"><small>Claude asked you · 8:25 PM</small>I tried the item builder's steps on the local copy and the roll saved as 2d6 force · Dex save DC 14. What went wrong for you?<div class="opts"><span>A button did nothing</span><span>The roll line was wrong</span><span>Save didn't keep it</span><span>The steps were unclear</span></div></div>
+                  <div class="a"><small>You answered · 8:26 PM</small>I was able to type in a value that did not make any sense and it did not show an error.</div></div>
+                <div class="bub claude"><small>Claude, to you · 8:27 PM</small>Thanks: I renamed it to say that, and I'll fix it with the Item Builder area.</div>
+              </div>
+              <div class="composer"><div class="toline">Write to <span class="chip">◉ Claude</span></div><div class="box">Something to add, or an answer</div><div class="sendline"><span class="btn go">Send</span><span class="dot"></span>Claude reads it within a minute.</div></div></div></section>
+            <section class="sec quietsec"><header><span class="plabel">History</span><span class="count">7</span><span class="sp"></span><span class="note">Show ▾</span></header></section>
+          </div>
+
+          <!-- B · Tabs inside the issue -->
+          <div class="detail" data-screen="tabs" hidden>
+            <div class="head">
+              <p class="where">Item Builder · from a check and 1 note</p>
+              <p class="big">The item builder takes a value that makes no sense without an error</p>
+              <div class="sline"><span class="sw claude">Claude's</span>To fix: Claude takes up the Item Builder area once your round is over.</div>
+              <div class="act"><span class="btn">Move to another area…</span><span class="btn">Same as…</span><span class="btn">Close with a reason…</span><span class="btn quiet">⋯</span></div>
+            </div>
+            <div class="itabs" role="tablist" aria-label="This issue">
+              <button class="itab" type="button" role="tab" data-itab="talk" aria-selected="true">Conversation <span class="count">3</span><span class="dotnew" title="Something new"></span></button>
+              <button class="itab" type="button" role="tab" data-itab="found" aria-selected="false">What was found <span class="count">2</span></button>
+              <button class="itab" type="button" role="tab" data-itab="hist" aria-selected="false">History <span class="count">7</span></button>
+            </div>
+            <div data-ipane="talk" class="convo">
+              <div class="qa"><div class="q"><small>Claude asked you · 8:25 PM</small>I tried the item builder's steps on the local copy and the roll saved as 2d6 force · Dex save DC 14. What went wrong for you?<div class="opts"><span>A button did nothing</span><span>The roll line was wrong</span><span>Save didn't keep it</span><span>The steps were unclear</span></div></div>
+                <div class="a"><small>You answered · 8:26 PM</small>I was able to type in a value that did not make any sense and it did not show an error.</div></div>
+              <div class="bub claude"><small>Claude, to you · 8:27 PM</small>Thanks: I renamed it to say that, and I'll fix it with the Item Builder area.</div>
+              <div class="composer"><div class="toline">Write to <span class="chip">◉ Claude</span></div><div class="box">Something to add, or an answer</div><div class="sendline"><span class="btn go">Send</span><span class="dot"></span>Claude reads it within a minute.</div></div>
+            </div>
+            <div data-ipane="found" hidden style="display:grid;gap:12px">
+              <div class="trial"><span class="sw failed">Failed</span><span><b>The item builder</b> (check) · on the laptop</span><span class="note">8:23 PM</span><span class="sub">You marked it as stopping your round.</span></div>
+              <div class="report"><div class="thumb"></div><div><p class="note"><b>You</b> · Nov 17, 8:23 PM · <a>New item · DM Tools</a> · <a>the page as drawn</a></p><p class="words">It did not work</p></div></div>
+            </div>
+            <div data-ipane="hist" hidden>
+              <ol class="tl"><li><span>Claude renamed it</span><span>8:27 PM</span></li><li><span>You answered Claude's question</span><span>8:26 PM</span></li><li><span>Claude asked you a question</span><span>8:25 PM</span></li><li><span>Your note joined it</span><span>8:23 PM</span></li><li><span>The item builder check linked</span><span>8:23 PM</span></li><li><span>Found when The item builder failed on the laptop</span><span>8:23 PM</span></li><li><span>Issue opened</span><span>8:23 PM</span></li></ol>
+            </div>
+          </div>
+
+          <!-- C · The story, and a column of facts -->
+          <div class="detail" data-screen="facts" hidden>
+            <p class="big">The item builder takes a value that makes no sense without an error</p>
+            <div class="two">
+              <div class="story">
+                <div class="hr plabel">What was found</div>
+                <div class="trial"><span class="sw failed">Failed</span><span><b>The item builder</b> (check) · on the laptop</span><span class="note">8:23 PM</span><span class="sub">You marked it as stopping your round.</span></div>
+                <div class="report"><div class="thumb"></div><div><p class="note"><b>You</b> · Nov 17, 8:23 PM · <a>New item · DM Tools</a> · <a>the page as drawn</a></p><p class="words">It did not work</p></div></div>
+                <div class="hr plabel">Conversation</div>
+                <div class="convo">
+                  <div class="qa"><div class="q"><small>Claude asked you · 8:25 PM</small>I tried the item builder's steps on the local copy and the roll saved as 2d6 force · Dex save DC 14. What went wrong for you?<div class="opts"><span>A button did nothing</span><span>The roll line was wrong</span><span>Save didn't keep it</span><span>The steps were unclear</span></div></div>
+                    <div class="a"><small>You answered · 8:26 PM</small>I was able to type in a value that did not make any sense and it did not show an error.</div></div>
+                  <div class="bub claude"><small>Claude, to you · 8:27 PM</small>Thanks: I renamed it to say that, and I'll fix it with the Item Builder area.</div>
+                </div>
+                <div class="composer"><div class="toline">Write to <span class="chip">◉ Claude</span></div><div class="box">Something to add, or an answer</div><div class="sendline"><span class="btn go">Send</span><span class="dot"></span>Claude reads it within a minute.</div></div>
+              </div>
+              <aside class="facts" aria-label="About this issue">
+                <div class="fact"><span class="plabel">Whose turn</span><div class="sline"><span class="sw claude">Claude's</span></div><span class="v">To fix, once your round is over.</span></div>
+                <div class="fact"><span class="plabel">Area</span><span class="v">Item Builder</span></div>
+                <div class="fact"><span class="plabel">Its fix</span><span class="note">No pull request yet</span></div>
+                <div class="fact"><span class="plabel">Checks that try it</span><span class="v">The item builder · <span style="color:var(--red)">failed</span></span></div>
+                <div class="fact"><div class="acts"><span class="btn">Move to another area…</span><span class="btn">Same as…</span><span class="btn">Close with a reason…</span><span class="btn">Rename…</span></div></div>
+                <div class="fact"><span class="plabel">History</span><span class="note">Opened 8:23 PM · 7 events ▾</span></div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="verdict" aria-labelledby="v-h">
+    <h2 id="v-h">Your pick</h2>
+    <p class="meta">Choose one layout. My pick is marked. It's saved on this page, where I read it. The same layout then goes on every reader that shows a note or an issue: To approve, Open, Ready to try, Closed and Ideas.</p>
+    <form class="decide">
+      <fieldset data-q="layout"><legend>Which reader?</legend><div class="choices">
+        <label class="choice"><input type="radio" name="layout" value="cards">A · Sections as cards <span class="mine">my pick</span></label>
+        <label class="choice"><input type="radio" name="layout" value="tabs">B · Tabs inside the issue</label>
+        <label class="choice"><input type="radio" name="layout" value="facts">C · The story, and a column of facts</label>
+        <label class="choice"><input type="radio" name="layout" value="none">None yet: redraw</label></div></fieldset>
+      <fieldset><legend>Anything to change?</legend><textarea name="notes" placeholder="Optional"></textarea></fieldset>
+      <div class="save-row"><button type="submit">Save</button><span class="saved" aria-live="polite">Loading…</span></div>
+    </form>
+  </section>
+</div>
+
+<script>
+(() => {
+  const WHY = {
+    today: ["Today", "Everything sits on one surface with the same small headings, so the state, the note, the conversation and the history run together. My question to you and your answer are missing from it, and so is the check that found it."],
+    cards: ["My pick", "Each part gets its own card with a heading and a count: Where it stands (with its actions), What was found (the checks and notes), Conversation (questions and answers too, with the box to write in), and History, folded. It's the smallest change from today, so it fits every width, from a 13\" laptop to a phone, and works the same way on every tab."],
+    tabs: ["Option B", "The title, whose turn it is and the actions stay at the top. The rest goes into tabs, opening on Conversation, and a dot marks a tab with something new. It's the shortest of the three, but what was found sits behind a tab, so you'd click to see the evidence."],
+    facts: ["Option C", "The story runs down the left: what was found, then the conversation. A column on the right keeps the facts: whose turn, area, its fix, the checks and the actions. It's like an issue page on GitHub. On a 13\" laptop the column would drop above the story, because the reader is only about 650 pixels wide there."],
+  };
+  const shots = document.querySelectorAll('.shot'), screens = document.querySelectorAll('[data-screen]');
+  const go = name => {
+    screens.forEach(s => { s.hidden = s.dataset.screen !== name; });
+    shots.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shot === name)));
+    document.getElementById('why-tag').textContent = WHY[name][0];
+    document.getElementById('why-text').textContent = WHY[name][1];
+  };
+  shots.forEach(b => b.addEventListener('click', () => go(b.dataset.shot)));
+  document.querySelectorAll('.itab').forEach(t => t.addEventListener('click', () => {
+    document.querySelectorAll('.itab').forEach(x => x.setAttribute('aria-selected', String(x === t)));
+    document.querySelectorAll('[data-ipane]').forEach(p => { p.hidden = p.dataset.ipane !== t.dataset.itab; });
+  }));
+  go('cards');
+})();
+(() => {
+  const form = document.querySelector('form.decide');
+  const said = form.querySelector('.saved'), btn = form.querySelector('button');
+  let db = null;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle('ok', !!ok); };
+  form.addEventListener('change', () => show('Not saved yet'));
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), v = form.querySelector('input[name=layout]:checked');
+    try { await db.collection('answers').doc('verdict').set({ layout: v ? v.value : '', notes: form.querySelector('textarea').value.trim(), at }); show('Saved ' + when(at) + ' · Claude reads it from here', true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    try {
+      const d = await db.collection('answers').doc('verdict').get();
+      if (!d.exists) { show('Nothing saved yet'); return; }
+      const a = d.data();
+      form.querySelectorAll('input[name=layout]').forEach(i => { i.checked = a.layout === i.value; });
+      form.querySelector('textarea').value = a.notes || '';
+      show('Saved ' + when(a.at) + ' · change anything and Save again', true);
+    } catch (err) { show('Nothing saved yet'); }
+  })();
+})();
+</script>

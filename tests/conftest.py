@@ -102,6 +102,17 @@ def _ensure_database(url) -> None:
         admin.dispose()
 
 
+def drop_everything(engine) -> None:
+    """Every table askdnd's models make, each dropped in its own transaction (with what depends on it): one
+    transaction dropping them all ran out of Postgres's locks once there were enough tables (Nov 17,
+    "max_locks_per_transaction"), however the run was split."""
+    from app.db import Base
+
+    for table in reversed(Base.metadata.sorted_tables):
+        with engine.begin() as conn:
+            conn.execute(text(f'DROP TABLE IF EXISTS "{table.name}" CASCADE'))
+
+
 @pytest.fixture(scope="session")
 def db_engine():
     """Fresh schema in the local test database. Skips if Postgres isn't running."""
@@ -117,10 +128,10 @@ def db_engine():
         if os.getenv("CI"):  # on GitHub a missing database must fail the run, not skip every test
             raise
         pytest.skip("local test database not available (brew services start postgresql@18)")
-    Base.metadata.drop_all(engine)
+    drop_everything(engine)
     Base.metadata.create_all(engine)
     yield engine
-    Base.metadata.drop_all(engine)
+    drop_everything(engine)
     engine.dispose()
 
 

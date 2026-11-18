@@ -41,9 +41,12 @@ from app.documents import router as documents_router
 from app.entity_pages import router as entity_router
 from app.errors import router as errors_router
 from app.feature_use import router as feature_use_router
-from app.feedback import router as feedback_router
+from app.fft import live as _fft_live  # noqa: F401  (Found, Fixed, Tried's changes reach every open page)
+from app.fft.api import router as fft_router
+from app.fft.feedback_page import router as fft_feedback_router
+from app.fft.sending import router as fft_sending_router
+from app.fft.testing_page import router as fft_testing_router
 from app.fog import router as fog_router
-from app.for_claude import router as for_claude_router
 from app.giving import router as giving_router
 from app.heals import router as heals_router
 from app.help_pages import router as help_router
@@ -81,7 +84,6 @@ from app.table_fight import router as table_fight_router
 from app.table_page import router as table_router
 from app.table_rolls import router as table_rolls_router
 from app.templating import templates
-from app.testing import router as testing_router
 from app.tokens import router as tokens_router
 from app.tool_corrections_pages import router as tool_corrections_router
 from app.trophies import router as trophies_router
@@ -283,9 +285,10 @@ app.include_router(fog_router)
 app.include_router(areas_router)
 app.include_router(initiative_router)  # the DM changes the fight's order (Labs: Initiative from askdnd)
 app.include_router(shifting_router)  # Wild Shape: shifting and leaving
-app.include_router(feedback_router)  # notes for Claude from any page, and the queue
-app.include_router(testing_router)  # Testing in askdnd: checks for an admin to try (app/testing.py)
-app.include_router(for_claude_router)  # what's waiting for Claude: askdnd's half of the loop with the Claude app
+app.include_router(fft_sending_router)  # Found, Fixed, Tried: sending a note from any page (\\)
+app.include_router(fft_feedback_router)  # Found, Fixed, Tried: Manage › askdnd › Feedback
+app.include_router(fft_testing_router)  # Found, Fixed, Tried: Manage › askdnd › Testing and the round's card
+app.include_router(fft_router)  # Found, Fixed, Tried: Claude's side, the staging relay and the Mac Mini, each by its own key
 app.include_router(your_notes_router)  # Your notes: what each person sent, about the story and about askdnd
 
 LOGIN_ERRORS = {

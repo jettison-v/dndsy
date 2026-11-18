@@ -106,7 +106,7 @@ def rename(request: Request, email: str = Form(...), name: str = Form(""), db: S
 @router.post("/feedback")
 def feedback(request: Request, email: str = Form(...), on: str = Form(""), db: Session = Depends(get_db)):
     """Whether an account that isn't an admin can send feedback for Claude with the backslash key (Brett's test accounts, Nov 3;
-    app/feedback.py). It only sends: the queue stays admins'."""
+    app/fft/sending.py). It only sends: Feedback stays admins'."""
     _, denied = web.require(request, is_admin, DENIED)
     if denied:
         return denied

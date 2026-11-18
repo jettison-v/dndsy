@@ -37,7 +37,10 @@ KINDS = (
     ("design", "Designs", "Mockups and proposals, with what was chosen and whether it's built"),
     ("earlier", "Earlier and superseded", "Kept for the record; a newer page took over"),
 )
-SANDBOX = ("sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; default-src 'self' 'unsafe-inline' data: blob:; "
+# (allow-forms so a mockup's form reaches its own script, its Save my picks; form-action 'none' so no form sends anywhere:
+# Brett's round, Nov 18)
+SANDBOX = ("sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox; form-action 'none'; "
+           "default-src 'self' 'unsafe-inline' data: blob:; "
            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; "
            "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; "
            "img-src 'self' data: blob: https:")
@@ -106,8 +109,9 @@ def library_page(request: Request):
 
 
 @router.get("/manage/documents/{did}")
-def document_page(request: Request, did: str, page: str = ""):
-    """One document: a plan in the page, anything else in the sealed frame, a design's boards as tabs."""
+def document_page(request: Request, did: str, page: str = "", part: int = 0):
+    """One document: a plan in the page, anything else in the sealed frame, a design's boards as tabs. `part=1`: the
+    page alone in a window nearly as big as the screen (For you's Open mockup, Brett, Nov 17: "a large modal")."""
     _, stop = web.require(request, is_admin, "askdnd's documents are for admins.")
     if stop:
         return stop
@@ -115,10 +119,12 @@ def document_page(request: Request, did: str, page: str = ""):
     pages = pages_of(entry) if entry else []
     if not pages:
         return web.not_found(request, "That document isn't in the library.")
-    current = page if page in pages else pages[0]
+    current = next((p for p in pages if p == page), pages[0])  # (one of its own listed pages, never the address's text)
     body = None
     if current.endswith(".md"):
         body = Markup(markdown_to_html((DOCS / current).read_text(), lambda _name: None))  # noqa: S704
+    if part and not body:
+        return templates.TemplateResponse(request, "_document_window.html", {"e": entry, "frame": file_url(current)})
     return templates.TemplateResponse(request, "manage_document.html", {
         "e": entry, "pages": pages, "current": current, "body": body, "frame": None if body else file_url(current),
         "label": lambda p: Path(p).name.removesuffix(".dc.html").removesuffix(".html")})

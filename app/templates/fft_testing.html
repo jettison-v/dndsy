@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% from "_admin_bits.html" import state_word, state_line, more_menu %}
+{% from "_lists.html" import empty_state, count_pill, grip %}
+{% from "_check_steps.html" import walkthrough %}
+{% from "_fft_bits.html" import its_checks with context %}
+{% block title %}Testing · Manage · askdnd{% endblock %}
+{% block head %}{% if show == "stands" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
+{% block content %}
+{# Manage › askdnd › Testing (app/fft/testing_page.py; screens 1–8 of docs/mockups/found-fixed-tried/): For you is
+   everything that's your turn, in the one order; a check reads as the card will show it; a round takes the checks
+   for this device page by page. #}
+<main class="page manage-page" data-fft-page="testing">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Testing</h1>
+    {% if round_open %}<form method="post" action="/manage/testing/round/end"><button class="btn title-action" type="submit" data-do="end-round">End round</button></form>
+    {% elif round_n %}<form method="post" action="/manage/testing/round"><button class="btn primary title-action" type="submit" data-do="start-round">▶ Start round · {{ round_n }} check{{ "s" if round_n != 1 }}</button></form>{% endif %}</div>
+  <p class="subtitle">What's your turn, and trying what Claude built: each check says what to do on the page and what you should see. Only admins can see this page.</p>
+
+  <nav class="sub-tabs" aria-label="Testing">
+    {% for key, label in shows %}<a href="?show={{ key }}" class="{{ 'on' if key == show }}" data-tab="{{ key }}">{{ label }}{% if key == "foryou" %}{{ count_pill(summary.n) }}{% endif %}</a>{% endfor %}
+  </nav>
+
+  {% if show == "stands" %}{% set st = stands %}
+  {# ---- Where it stands (screen 16): the same queue as the Roadmap, in its order, by item; drag items, and areas within
+     an item. Claude takes the first area that's its turn (R15). #}
+  <section class="fft-stands" data-stands>
+    <div class="fft-banner" data-listening="{{ 1 if st.listening else 0 }}">
+      {% if st.listening %}<span class="fb-line fb-listening">Claude is listening{% if st.listener %} ({{ st.listener.name }}, heard <time datetime="{{ st.listener.heard_at.isoformat() }}" data-clock="ago">{{ st.listener.heard_at | ago }}</time>){% endif %}</span>
+      {% else %}<span class="fb-line">No Claude session is listening{% if st.listener and st.listener.heard_at %} (last heard <time datetime="{{ st.listener.heard_at.isoformat() }}" data-clock="ago">{{ st.listener.heard_at | ago }}</time>){% endif %}</span><span class="note">· What you send waits and is read at the next session's start. To start one, open the Claude app and say "check askdnd".</span>{% endif %}
+      {% if st.round %}<span class="note">· A round is open: nothing merges to askdnd.ai until you end it; Claude only sorts what you send.</span>
+        <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form>{% endif %}
+    </div>
+    {% if st.missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
+      <h3 class="plabel" id="fft-missed-h">Claude missed · {{ st.missed | length }}</h3>
+      <p class="note">Things Claude left half done. Its session won't end a turn while any are here; if one stays, tell Claude in a note.</p>
+      <ul class="fft-missed-list">{% for g in st.missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/testing?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
+        <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet", "question": "a question you sent, not answered yet"}[g.kind] }}</span></li>{% endfor %}</ul>
+    </section>{% endif %}
+    <p class="note">The Roadmap's order, by item: drag items, and areas within an item. Claude takes the first area that's its turn.</p>
+    <ol class="fft-items" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item=".fft-item" data-sort-handle=".fft-item-head .grip">
+      {% for x in st.rows %}
+      <li class="fft-item" data-key="{{ x.it.id }}" data-item="{{ x.it.id }}">
+        <div class="fft-item-head">{{ grip() }}<b><span data-sort-n>{{ x.n }}</span> · {{ x.it.title }}</b>{% if x.it.standing %} <span class="tag">standing</span>{% endif %}
+          <span class="note">{% if x.it.next_whose == "brett" %}{{ state_word("Yours", "ask") }} {{ x.it.next_step }}{% elif x.why %}{{ x.why }}{% endif %}</span></div>
+        {% if x.areas %}<ul class="fft-areas" data-sort-column="item-{{ x.it.id }}" data-sort-url="/manage/testing/order" data-sort-item=".fft-area" data-sort-handle=".fft-area > .grip">
+          {% for r in x.areas %}{% set w = {"yours": ("Yours", "ask"), "claude": ("Claude's", "claude")}[r.turn] %}
+          <li class="fft-area" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}">
+            {{ grip() }}<span class="fft-area-name"><b>{{ r.a.title }}</b><span class="note">{{ r.counts }}</span></span>
+            {{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}
+            <span class="note fft-area-note">{{ r.note }}{% if r.locked %} · in hand ({{ r.locked }}){% endif %}</span>
+            <a class="btn small" href="/manage/feedback?tab=open&amp;{{ 'pa=' ~ r.a.key if r.a.key else 'area=' ~ r.a.id }}" data-do="open-area">Open</a>
+            {% if r.features %}<span class="fft-feat-tags" data-features>{% for t, n in r.features %}<span class="chip">{{ t }}{{ count_pill(n) }}</span>{% endfor %}</span>{% endif %}
+            {% if not r.a.key %}{# (a Product Area's batch follows app/data/taxonomy.json: nothing to rename, merge, move or archive) #}
+            {% call more_menu("More for " ~ r.a.title) %}
+              <button type="button" data-show="fft-rename-{{ r.a.id }}">Rename…</button>
+              <button type="button" data-show="fft-merge-{{ r.a.id }}">Merge into…</button>
+              <button type="button" data-show="fft-moveto-{{ r.a.id }}">Move to another item…</button>
+              <form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="archive"><button type="submit">Archive</button></form>
+            {% endcall %}
+            <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold fft-area-form" id="fft-rename-{{ r.a.id }}" hidden><input type="hidden" name="do" value="rename">
+              <label class="field"><span>Name</span><input type="text" name="title" value="{{ r.a.title }}" maxlength="80" required></label><div class="row tight"><button class="btn primary small" type="submit">Rename</button></div></form>
+            <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold fft-area-form" id="fft-merge-{{ r.a.id }}" hidden><input type="hidden" name="do" value="merge">
+              <label class="field"><span>Its issues and checks join</span><select name="into" class="ls-select" required>{% for o in st.all_areas if o.id != r.a.id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Merge</button></div></form>
+            <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold fft-area-form" id="fft-moveto-{{ r.a.id }}" hidden><input type="hidden" name="do" value="move">
+              <label class="field"><span>To the item</span><select name="item" class="ls-select" required>{% for o in st.all_items if o.id != x.it.id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Move</button></div></form>
+            {% endif %}
+          </li>{% endfor %}
+        </ul>{% else %}<p class="note fft-empty-item">Nothing open under it.</p>{% endif %}
+      </li>
+      {% else %}<li>{{ empty_state("Nothing on the Roadmap yet: Claude adds items as work comes in.") }}</li>{% endfor %}
+    </ol>
+    {% if st.done %}<details class="fold" data-done-areas><summary class="note">Done · {{ st.done | length }} area{{ "s" if st.done | length != 1 }} with nothing open</summary>
+      <ul class="fft-done">{% for d in st.done %}<li data-area="{{ d.a.id }}"><b>{{ d.a.title }}</b> <span class="note">· {{ d.item.title }}</span>
+        <form method="post" action="/manage/testing/areas/{{ d.a.id }}"><input type="hidden" name="do" value="archive"><button class="btn link small" type="submit">Archive</button></form></li>{% endfor %}</ul></details>{% endif %}
+  </section>
+
+  {% elif not groups %}{{ empty_state({"foryou": "Nothing is your turn. Claude's working on what's next.", "claudes": "Nothing is with Claude.", "done": "Nothing passed yet."}[show]) }}
+  {% else %}
+  <div class="reader rows fb-reader" id="ts-reader">
+    <aside class="reader-nav" aria-label="{{ dict(shows)[show] }}">
+      {% if show == "foryou" %}<p class="note rhead"><b>{{ summary.n }} {{ "is" if summary.n == 1 else "are" }} your turn</b><br>{{ summary.line }}</p>{% endif %}
+      <div class="reader-rows">
+        {% for g in groups %}
+        <div class="fft-group" data-group="{{ g.key }}"><span class="fft-group-name">{{ g.title }}</span>
+          {% if show == "foryou" and g.checks and g.area_id and not round_open %}<form method="post" action="/manage/testing/round"><input type="hidden" name="area" value="{{ g.area_id }}"><button class="btn link small" type="submit" data-do="area-round">▶ Just this area</button></form>{% endif %}</div>
+        {% for r in g.rows %}{% set w = ("Yours", "ask") if show == "foryou" else ("Claude's", "claude") if r.turn == "claude" else ("Done", "quiet") %}
+        <a class="rd-item fb-row{{ ' sel' if r.key == pick }}" href="?show={{ show }}&amp;open={{ r.key }}" data-row="{{ r.key }}" data-kind="{{ r.kind }}"{% if r.key == pick %} aria-current="true"{% endif %}>
+          <span class="ts-title">{{ r.title }}</span>{{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}<span class="nt-sum">{{ r.sub }}</span></a>
+        {% endfor %}{% endfor %}
+      </div>
+    </aside>
+    <div class="notes-read" id="ts-article">
+      {% if picked and picked.kind == "check" %}{% set c = picked.c %}{% set v = picked.v %}
+      {# ---- a check (screens 1, 4, 7) #}
+      <article class="reader-article fb-read" data-fft-check="{{ c.id }}" data-state="{{ picked.state.state }}">
+        <p class="note ts-where">{{ picked.area.title if picked.area else "No area yet" }}{% if v and v.path %} · <a href="{{ picked.page }}">its page</a>{% endif %} · <span class="tag" data-version>v{{ c.version }}</span>{% if c.makes %} · <span class="tag draft">makes something: in a test campaign</span>{% endif %}</p>
+        <h2 class="nt-h">{{ c.title }}</h2>
+        {% set w = {"yours": ("Yours", "ask"), "claude": ("Claude's", "claude"), "closed": ("Done", "quiet")}[picked.turn] %}
+        {{ state_line(w[0], w[1], picked.sentence) }}
+        <div class="fft-devices" data-devices>{% for d, s in picked.devices.items() %}<span data-device="{{ d }}"><b>{{ device_said[d].replace("your ", "") | capitalize }}</b> · {{ check_words.get(s, s) }}</span>{% endfor %}</div>
+        {% if picked.turn == "yours" %}
+        <div class="act-bar" data-check-acts>
+          <form method="post" action="/manage/testing/checks/{{ c.id }}/go"><button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>
+          {% if picked.here %}<form method="post" action="/manage/testing/checks/{{ c.id }}/try"><input type="hidden" name="result" value="passed"><input type="hidden" name="seen" value="{{ picked.devices.get(device, '') }}"><button class="btn small ts-pass" type="submit" data-do="passed">✓ Passed</button></form>
+          <button class="btn small" type="button" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-do="wrong">✗ Something's wrong…</button>{% endif %}
+          <button class="btn link small" type="button" data-modal-url="/manage/testing/checks/{{ c.id }}/cant" data-do="cant">Can't try…</button>
+        </div>
+        {% elif picked.last_failed %}
+        <div class="act-bar"><button class="btn small" type="button" data-modal-url="/manage/testing/tries/{{ picked.last_failed.id }}/change" data-do="change">Change result…</button></div>
+        {% endif %}
+        {% if picked.issues %}<ol class="fft-problems" data-problems>{% for i in picked.issues %}{% set t = picked.turn %}
+          <li data-issue="{{ i.id }}"><span><a href="/manage/feedback?tab={{ 'closed' if i.state == 'closed' else 'ready' if i.state == 'ready' else 'open' }}&amp;open=i{{ i.id }}">{{ i.title }}</a> <span class="note">· {{ {"to_fix": "to fix", "fixing": "being fixed", "asks": "Claude asks", "merge_ok": "your OK to merge", "ready": "fixed and live", "closed": "closed"}[i.state] }}</span></span></li>{% endfor %}</ol>{% endif %}
+        <section class="panel fft-card-says"><h3 class="plabel">On the page, the card says</h3>
+          {% if v %}{{ walkthrough({"id": c.id, "steps": picked.steps}) }}{% endif %}
+          {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}</section>
+        {% if picked.why %}<p class="note fft-why"><b>Why</b> · {{ picked.why }}</p>{% endif %}
+        <details class="fold fft-history" data-history><summary class="note">History · every try, fix and change</summary>
+          <ol class="tl fft-tl">{% for h in picked.history %}<li class="tl-{{ h.tone }}"><span>{% if h.struck %}<s>{{ h.line }}</s> · {{ h.replaced }}{% else %}{{ h.line }}{% if h.why %}: {{ h.why }}{% endif %}{% endif %}</span> <span class="note tl-when"><time datetime="{{ h.at.isoformat() }}" data-clock="date">{{ h.at | ago }}</time></span></li>{% endfor %}</ol></details>
+      </article>
+
+      {% elif picked and picked.kind == "question" %}{% set q = picked.q %}
+      {# ---- a question or a decision (screen 8) #}
+      <article class="reader-article fb-read" data-fft-question="{{ q.id }}">
+        <p class="note ts-where">{{ "A decision" if q.about == "document" else "A question" }}{% if picked.about.said %} about {% if picked.about.href %}<a href="{{ picked.about.href }}">{{ picked.about.said }}</a>{% else %}{{ picked.about.said }}{% endif %}{% endif %}{% if picked.about.version %} · <span class="tag">{{ picked.about.version }}</span>{% endif %} · asked <time datetime="{{ q.created_at.isoformat() }}" data-clock="date">{{ q.created_at | ago }}</time></p>
+        {% set qt = q.text | note_title %}<h2 class="nt-h">{{ qt }}</h2>
+        {% if q.text.strip() != qt %}<div class="bub claude"><small>Claude asks</small><p>{{ q.text }}</p></div>{% endif %}
+        {% if picked.doc %}<div class="act-bar fft-doc" data-doc><a class="btn primary small" href="{{ picked.doc.href }}" data-modal-url="{{ picked.doc.href }}?part=1" data-modal-size="full" data-open-doc>Open mockup</a>{% if picked.doc.link %}<a class="btn link small" href="{{ picked.doc.link }}" target="_blank" rel="noopener">On claude.ai ↗</a>{% endif %}<span class="note">Look at “{{ picked.doc.title }}” first, then answer here.</span></div>{% endif %}
+        <form method="post" action="/manage/testing/questions/{{ q.id }}" class="composer" data-answer>
+          {% if q.choices %}<div class="fft-options" role="radiogroup" aria-label="Answers">{% for ch in q.choices %}
+            <label class="fft-opt" data-choice="{{ loop.index0 }}"><input type="radio" name="choice" value="{{ loop.index0 }}"><span><b>{{ ch.label }}</b>{% if ch.detail %} · {{ ch.detail }}{% endif %}</span><small class="note">{% if q.mine == loop.index0 %}Claude's pick{% endif %}</small></label>{% endfor %}</div>{% endif %}
+          <label class="field"><span>{{ "Or in your words" if q.choices else "Your answer" }}</span><textarea name="text" rows="2" maxlength="4000"></textarea></label>
+          <div class="row tight"><button class="btn primary small" type="submit" data-do="answer">Send answer</button></div>
+        </form>
+        <p class="note">Nothing is picked for you. Your answer names this question, so a newer one can't take it.</p>
+      </article>
+
+      {% elif picked %}
+      {# ---- something of yours that lives on Feedback or the Roadmap #}
+      <article class="reader-article fb-read" data-fft-elsewhere="{{ pick }}">
+        {% if picked.kind == "issue" %}{% set i = picked.i %}
+          <h2 class="nt-h">{{ i.title }}</h2>{{ state_line(picked.pill[0], picked.pill[1], picked.sentence) }}
+          {{ its_checks(picked.checks) }}
+          <div class="act-bar"><a class="btn primary small" href="/manage/feedback?tab={{ 'ready' if i.state == 'ready' else 'open' }}&amp;open=i{{ i.id }}">Open it in Feedback</a></div>
+        {% elif picked.kind == "note" %}{% set n = picked.n %}
+          <h2 class="nt-h">{{ n.text | note_title }}</h2>{{ state_line("Yours", "ask", n.first_name ~ "'s note waits for you: Claude sees none of it until you approve it.") }}
+          <div class="act-bar"><a class="btn primary small" href="/manage/feedback?tab=approve&amp;open=n{{ n.id }}">Approve it in Feedback</a></div>
+        {% elif picked.kind == "idea" %}{% set d = picked.d %}
+          <h2 class="nt-h">{{ d.title }}</h2>{{ state_line("Yours", "ask", "An idea to place: on the Roadmap, or declined with why.") }}
+          <div class="act-bar"><a class="btn primary small" href="/manage/feedback?tab=ideas&amp;open=d{{ d.id }}">Place it in Feedback</a></div>
+        {% elif picked.kind == "roadmap" %}{% set it = picked.it %}
+          <h2 class="nt-h">{{ it.title }}</h2>{{ state_line("Yours", "ask", it.next_step or "Its next step is yours.") }}
+        {% endif %}
+      </article>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</main>
+{% endblock %}

@@ -53,10 +53,10 @@ DEV_LOGIN_EMAIL = "" if IS_PRODUCTION else os.getenv("DEV_LOGIN_EMAIL", "").stri
 # The D&D Beyond bridge (app/ddb_bridge.py, extension/askdnd-bridge) may run where DDB_BRIDGE=1 (beta since 2026-10-28,
 # roadmap step 4); each campaign still has it only once switched on (the VTT piece "ddb_bridge", app/vtt.py)
 DDB_BRIDGE = os.getenv("DDB_BRIDGE", "").strip() == "1"
-# Claude's key to the feedback queue (app/feedback.py `/api/feedback`, scripts/feedback.py): set with scripts/set-secret.sh;
+# Claude's key to Found, Fixed, Tried (app/fft/api.py `/api/fft`, scripts/feedback.py): set with scripts/set-secret.sh;
 # unset, the API answers nothing
 FEEDBACK_KEY = os.getenv("FEEDBACK_KEY", "").strip()
-# Prod's address: staging sends its feedback notes there (app/feedback.py to_prod; Brett, Nov 6: one queue)
+# Prod's address: staging relays its notes there (app/fft/sending.py relay; Brett, Nov 6: one place for Feedback)
 PROD_URL = os.getenv("PROD_URL", "https://askdnd.ai").rstrip("/")
 # The Inbox digest (app/digest.py): Resend's key, the address it's sent from (askdnd.ai's, verified at Resend) and the
 # hour of the table's day it goes out (America/Los_Angeles, 0-23). No key: no email (locally, and on staging anyway).

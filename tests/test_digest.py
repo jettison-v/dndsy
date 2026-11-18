@@ -112,17 +112,15 @@ def test_a_fix_to_try_emails_its_sender_once_a_day_counts_only(db, sent, campaig
     what the note said); the one-click stop turns it off; Email digest has its switch."""
     from fastapi.testclient import TestClient
 
+    from app.fft import rules
     from app.main import app
-    from app.models import Check, Feedback
 
     pat = db.scalar(select(User).where(User.email == "player@example.com"))
-    fb = Feedback(user_id=pat.id, sender="Pat (player)", text="A secret about the rolls panel.", kind="broken", status="done", url="/party")
-    db.add(fb)
-    db.flush()
-    check = Check(title="The panel stays", setup="player", status="again", feedback_id=fb.id, history=[])
-    db.add(check)
-    db.flush()
-    check.updated_at = _at(12)  # (live, and waiting for them, since noon)
+    note = rules.send_note(db, user_id=pat.id, first_name="Pat", role="player", kind="problem", text="A secret about the rolls panel.", url="/party")
+    issue = rules.file_issue(db, "user:1", note)
+    rules.start_fixing(db, "claude", issue)
+    rules.fix_live(db, "askdnd", issue, "abc")
+    issue.confirm_since = _at(12)  # (live, and waiting for them, since noon)
     db.commit()
     first = digest.run_day(db, _at(18))
     assert ("player@example.com", "fixes") in first

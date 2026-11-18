@@ -41,7 +41,7 @@
           data-panel-url="/characters/{{ c.id }}/detail?ref={{ e.key | urlencode }}" tabindex="0" role="button" aria-label="{{ e.name }}: details">
           <span class="ls-pk">{% if show_picks %}{{ pick_btn(c, "star", e.key, e.key in picks.star, can_pick) }}{% endif %}</span>
           <span class="ls-name"><span class="ls-line"><b>{{ e.name }}</b>{% if conc and conc.key == e.key %} <span class="tag sb-conc-tag" data-cond="concentration">{{ cond_icon("Concentration") }}Concentration</span>{% elif e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}{{ comp_mark(e.need) }}</span>
-            {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+            {% if note %}<span class="ls-note" title="{{ note }}" data-private>✎ {{ note }}</span>{% endif %}</span>
           <span class="sb-time">{{ {"Bonus action": "Bonus"}.get(e.time, e.time) }}</span>
           <span class="sb-range">{{ e.range or "—" }}</span>
           <span class="sb-roll-col">{% if e.attack %}{{ e.attack }} to hit{% elif e.save %}{{ e.save }}{% else %}<span class="note">—</span>{% endif %}

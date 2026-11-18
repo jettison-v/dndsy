@@ -64,10 +64,13 @@ _lock = threading.Lock()
 _pages: dict[int, set[_Page]] = {}  # campaign id → its pages connected here
 
 
+EVERYONE = 0  # a campaign id no campaign has: every page on every campaign (Found, Fixed, Tried's changes: app/fft/live.py)
+
+
 def deliver(campaign_id: int, msg: str) -> None:
-    """Hand a message to this copy's pages in the campaign. Safe from any thread."""
+    """Hand a message to this copy's pages in the campaign (every page, for EVERYONE). Safe from any thread."""
     with _lock:
-        pages = list(_pages.get(campaign_id, ()))
+        pages = [p for ps in _pages.values() for p in ps] if campaign_id == EVERYONE else list(_pages.get(campaign_id, ()))
     for page in pages:
         try:
             page.loop.call_soon_threadsafe(page.offer, msg)

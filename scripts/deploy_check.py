@@ -34,7 +34,7 @@ SERVICES = ["askdnd-v2", "askdnd-backup"]
 # must be here (tests/test_deploy.py checks), so a new column in app/models.py still reaches the nightly backup.
 # Railway keeps this list in the service's settings; --set-backup-watch copies it there. (Railway's config files are
 # deprecated, and its replacement manages the whole project, the legacy service included, so we set just this.)
-BACKUP_WATCH = ["scripts/backup_db.py", "app/__init__.py", "app/backup.py", "app/books.py", "app/config.py", "app/db.py", "app/errors.py",
+BACKUP_WATCH = ["scripts/backup_db.py", "app/__init__.py", "app/fft/__init__.py", "app/fft/models.py", "app/backup.py", "app/books.py", "app/config.py", "app/db.py", "app/errors.py",
                 "app/files.py", "app/history.py", "app/models.py", "pyproject.toml", "uv.lock", ".python-version"]
 # The app's watch paths: what beta runs. A merge that changes only what's left out (docs, tests, the workflow, notes)
 # doesn't rebuild beta (Brett, Nov 4: each deploy costs). tests/test_deploy.py checks every file in git is in one list
@@ -249,8 +249,8 @@ def main() -> None:
         now = version(want=sha)
         up = bool(now) and (sha.startswith(now) or now.startswith(sha))
         say(f"Beta runs {sha[:7]}." if up else f"Beta still runs {now or 'an unknown version'}, not {sha[:7]}.")
-    if up:  # (checks whose fix is now live come back to Brett as Try again: Testing, his 4A)
-        r = subprocess.run([sys.executable, str(Path(__file__).with_name("feedback.py")), "check", "live"], capture_output=True, text=True)
+    if up:  # (fixes now live: their issues are ready to try, Found, Fixed, Tried's R4; Testing brings their checks back)
+        r = subprocess.run([sys.executable, str(Path(__file__).with_name("feedback.py")), "live"], capture_output=True, text=True)
         for line in (r.stdout + r.stderr).strip().splitlines():  # (both: a crash after some output still shows)
             say(line)
     sys.exit(0 if ok and up else 1)

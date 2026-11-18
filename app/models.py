@@ -88,7 +88,7 @@ class User(Timestamped, Base):
     current_campaign_id: Mapped[int | None] = mapped_column(ForeignKey("campaigns.id", ondelete="SET NULL"), nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     dice: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # their dice: set, material, by_type (app/dice.py)
-    # Can send feedback for Claude with \ though not an admin (Brett's test accounts; app/feedback.py), set on Accounts
+    # Can send feedback for Claude with \ though not an admin (Brett's test accounts; app/fft/sending.py), set on Accounts
     feedback: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
     # Email (app/digest.py): {"inbox": {campaign id: on/off, a person's own choice}, "at": {campaign id: when the last
     # digest went out}, "checked": {campaign id: the table's date it was last looked at}}
@@ -916,7 +916,9 @@ class BridgeKey(Timestamped, Base):
 
 
 class Feedback(Timestamped, Base):
-    """A note for Claude, sent from any askdnd page by an admin or an account that can send feedback (app/feedback.py;
+    """The old tool's (replaced by Found, Fixed, Tried, app/fft/; kept unread until a later change drops it, its open rows
+    carried over by app/fft/carry.py). A note for Claude, sent from any askdnd page by an admin or an account that can
+    send feedback (the old app/feedback.py;
     Brett, 2026-11-03, docs/mockups/feedback-queue/), with what the page was at that moment: where and when, the screen,
     the browser and the extension's version (`context`), the page as drawn (`html`), its picture and a pasted one. It
     waits in Manage › askdnd › Feedback until Claude works through the queue: new → question (Claude asked, in
@@ -962,7 +964,8 @@ class FeedbackPicture(Timestamped, Base):
 
 
 class Check(Timestamped, Base):
-    """A check for an admin to try in askdnd (Testing, app/testing.py; Brett's idea and picks, Nov 16,
+    """The old tool's (replaced by app/fft/; kept unread until dropped, its open rows carried over). A check for an admin
+    to try in askdnd (Testing, the old app/testing.py; Brett's idea and picks, Nov 16,
     docs/mockups/testing/): what to do and what to expect, on which page and through whose eyes, why it exists (the
     note it came from, the change that made it), and where it stands. Claude writes them (`feedback.py check`); an admin
     marks them in Manage › askdnd › Testing or on the page itself during a round."""
@@ -1008,7 +1011,8 @@ class Area(Timestamped, Base):
 
 
 class InboxItem(Base):
-    """Something that happened in askdnd for Claude to read (app/for_claude.py): a note sent or added to, a check
+    """The old tool's (replaced by app/fft/ events and read marks; kept unread until dropped). Something that happened in
+    askdnd for Claude to read (app/for_claude.py): a note sent or added to, a check
     marked, an answer, the areas' order. Claude reads what's after its last read (`feedback.py inbox`), and waits for
     the next one (`feedback.py wait`), so nothing Brett does in askdnd needs telling in chat."""
 
@@ -1118,3 +1122,7 @@ class UsageEvent(Base):
     page: Mapped[str] = mapped_column(String(30), default="", server_default="")
     version: Mapped[str] = mapped_column(String(12), default="", server_default="")  # the deploy it happened on
 
+
+
+# Found, Fixed, Tried (app/fft/): its own tables, registered here so the metadata and migrations see them
+from app.fft import models as _fft_models  # noqa: F401

@@ -48,8 +48,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       const d = new Date(t.getAttribute('datetime'));
       if (isNaN(d)) return;
       const o = { hour: 'numeric', minute: '2-digit' };
-      if (t.dataset.clock === 'date') Object.assign(o, { month: 'short', day: 'numeric' }, d.getFullYear() !== year ? { year: 'numeric' } : {});
-      t.textContent = d.toLocaleString([], o);
+      // ('when': the time alone today, Yesterday and the time, else the day and the time; a conversation's lines, issue 32)
+      const day = n => new Date(Date.now() - n * 864e5).toDateString(), ago = t.dataset.clock === 'when' ? [0, 1].find(n => d.toDateString() === day(n)) : undefined;
+      if (t.dataset.clock === 'date' || (t.dataset.clock === 'when' && ago === undefined)) Object.assign(o, { month: 'short', day: 'numeric' }, d.getFullYear() !== year ? { year: 'numeric' } : {});
+      t.textContent = (ago === 1 ? 'Yesterday, ' : '') + d.toLocaleString([], o);
       t.title = d.toLocaleString([], { dateStyle: 'full', timeStyle: 'short' });
     });
   }
@@ -63,6 +65,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // done 4 seconds, for your information and someone's roll 6, refused 10, an error until closed; one with a button
   // (Undo, Keep going) 20. Hovering a card keeps it. The server says which kind (web.notice: its text alone is "done").
   const CARD = { ok: ['✓', 4000], info: ['i', 6000], roll: ['', 6000], warn: ['!', 10000], error: ['✕', 0], heal: ['+', 0] };
+  // (a round's card, app/fft/testing_page.py, sits at the foot of the screen too: its height is kept in --cc-h so the corner
+  // cards stack just above it where they share a corner, never over it; Brett's round, Nov 18, issue 28)
+  const ccSlot = document.getElementById('check-card');
+  if (ccSlot && window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty('--cc-h', ccSlot.offsetHeight + 'px')).observe(ccSlot);
   function card(content, { kind = 'ok', action, actions, icon, stay } = {}) {
     const box = $('#cards');
     if (!box || !content) return null;
@@ -161,6 +167,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   }
   // A message: its text, or {text, kind} from the server (web.notice); action: {label, run}, a button on the card
   function toast(message, action, kind) {
+    // (an Undo the server offers with what it did, web.notice's `undo`: a POST to that address of askdnd's own; Feedback's
+    // approvals, for a minute)
+    let undoTo = null;
+    try { undoTo = message && typeof message === 'object' && typeof message.undo === 'string' ? new URL(message.undo, location.origin) : null; } catch (e) { undoTo = null; }
+    if (undoTo && undoTo.origin === location.origin) {  // (a form posted as a page: the server answers with where to go and what it did)
+      action = { label: 'Undo', run: () => {
+        const f = Object.assign(document.createElement('form'), { method: 'post', action: undoTo.pathname + undoTo.search });
+        document.body.append(f); f.submit();
+      } };
+    }
     if (message && typeof message === 'object') { kind = message.kind; message = message.text; }
     if (message) card(document.createTextNode(message), { kind: kind || 'ok', action });
   }
@@ -398,8 +414,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     else if (e.target.matches('[data-hb-name]')) form.querySelectorAll('[data-hb-piece]').forEach(hbDraw);
   }));
 
-  // The step card (Testing, app/testing.py; Brett's 2A, and his 6A, Nov 17): — folds it to a pill and the pill brings it
-  // back; its top bar drags it to any corner, where it settles. Both kept in a cookie (testing.card_prefs), so the
+  // The round's card (Testing, app/fft/testing_page.py; Brett's 2A, and his 6A, Nov 17): — folds it to a pill and the pill
+  // brings it back; its top bar drags it to any corner, where it settles. Both kept in a cookie (testing_page.card_prefs), so the
   // server draws it as it was left on the next page: never open and then folding (note 85).
   const ccPrefs = cc => { document.cookie = 'askdnd-cc=' + (cc.classList.contains('folded') ? 'folded.' : '') + (cc.dataset.corner || 'br') + '; path=/; max-age=31536000; samesite=lax'; };
   const ccFold = cc => {
@@ -441,6 +457,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     bar.addEventListener('pointermove', move);
     bar.addEventListener('pointerup', end);
     bar.addEventListener('pointercancel', end);
+  });
+
+  // The round's card keys (Found, Fixed, Tried, screen 2): P passed, F something's wrong, C can't try; never while typing
+  // or with a window open, and only while the card is open
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !/^[pfc]$/i.test(e.key)) return;
+    const a = document.activeElement;
+    if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || document.querySelector('dialog[open], .peek.open')) return;
+    const b = document.querySelector('[data-fft-card]:not(.folded) [data-key="' + e.key.toLowerCase() + '"]');
+    if (b) { e.preventDefault(); b.click(); }
   });
 
   // An action bar's ⋯ (_admin_bits.html more_menu): a choice in it, a click elsewhere or Escape closes it
@@ -697,7 +723,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (id && /^\d+$/.test(id) && !(shown && shown.dataset.readerId === id) && !document.getElementById('quest-' + id)) { history.replaceState(null, '', location.pathname + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
 
   // Any element with data-panel-url opens that fragment in a side panel (Battle: "See all", an
-  // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide
+  // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide, "full" nearly the whole window
   // (a Wild Shape form, the Spell Book). A side panel opened from inside a modal goes on the top
   // layer. Opening something from inside a panel remembers what was there, so "← Back" returns to it.
   function openPanel(url, opener, fallback, modal, back) {
@@ -708,15 +734,34 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const { panel, backdrop } = layer;
     if (layer.name === 'base' && !back && layers.top) closeLayer(layers.top);
     const inside = isOpen(layer) && opener && panel.contains(opener);
-    if (back) { /* returning: the history entry was already taken off */ }
+    if (back && back.nodes && !back.stale) {  // returning: the window comes back as it was left, what was typed in it too
+      panel.replaceChildren(...back.nodes);
+      panel.dataset.url = back.url;
+      panel.classList.toggle('modal', !!back.modal);
+      panel.classList.toggle('large', back.modal === 'large' || back.modal === 'full');
+      panel.classList.toggle('full', back.modal === 'full');
+      backdrop.classList.toggle('dim', !!back.modal);
+      const body = panel.querySelector('.peek-body');
+      if (body) body.scrollTop = back.scroll;
+      if (back.title) panel.setAttribute('aria-label', back.title);
+      panel.focus({ preventScroll: true });
+      return;
+    }
+    if (back) { /* returning to a window that changed something since: drawn again */ }
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
-      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
-                           title: title ? title.textContent.trim() : '', layer });
+      // (its own nodes are kept, not a copy, when something was typed or picked in it: those words, picks and their
+      // handlers come back as they were, Brett, Nov 17; any other window is fetched fresh, so Back never shows one that
+      // changed meanwhile, by someone else or another page; the review of #417)
+      const typed = [...panel.querySelectorAll('input, textarea, select')].some(f => (f.type === 'checkbox' || f.type === 'radio') ? f.checked !== f.defaultChecked
+        : f.tagName === 'SELECT' ? [...f.options].some(o => o.selected !== o.defaultSelected) : f.type !== 'hidden' && f.value !== f.defaultValue);
+      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('full') ? 'full' : panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
+                           title: title ? title.textContent.trim() : '', layer, nodes: typed ? [...panel.childNodes] : null });
     } else layer.history = [];
     if (!inside && !back) { if (layer.name === 'top') layer.focus = opener; else lastFocus = opener; }
     panel.classList.toggle('modal', !!modal);
-    panel.classList.toggle('large', modal === 'large');
+    panel.classList.toggle('large', modal === 'large' || modal === 'full');
+    panel.classList.toggle('full', modal === 'full');  // (nearly the whole window: a mockup to look at)
     backdrop.classList.toggle('dim', !!modal);
     fetch(url, { headers: { 'HX-Request': 'true' } })
       .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
@@ -752,6 +797,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     });
     head.prepend(b);
   }
+  // A window that changes something (an htmx post inside it) leaves the windows behind it out of date: Back draws them again
+  document.addEventListener('htmx:beforeRequest', e => {
+    const verb = ((e.detail && e.detail.requestConfig && e.detail.requestConfig.verb) || 'get').toLowerCase();
+    if (verb === 'get') return;
+    Object.values(layers).forEach(l => { if (l && l.panel.contains(e.target)) l.history.forEach(h => { h.stale = true; }); });
+  });
   window.askdndPanel = openPanel;
   // Close the layer holding `el` (Table rolls' Roll window, behind the roll it just opened), without a click: a click
   // elsewhere closes the roll window
@@ -773,7 +824,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const own = e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details, a[data-no-peek], .ft-init button, .ft-init input');
     if ((own && (own === t || t.contains(own))) || t.closest('summary')) return;
     e.preventDefault();
-    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
+    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), ['large', 'full'].includes(t.dataset.modalSize) ? t.dataset.modalSize : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
   });
   document.addEventListener('keydown', e => {
@@ -1176,6 +1227,15 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   document.addEventListener('askdnd:live', e => {
     const t = e.detail.type;
     if (t === 'game') { showInPlace(); return; }
+    if (t === 'fft') {  // (Found, Fixed, Tried changed: Feedback, Testing and Notes you sent show their new copy; a round's card too)
+      // (never over something half done: words typed but not sent, a fold opened, a row being dragged; the next change catches up)
+      const drafting = [...document.querySelectorAll('main textarea, main input[type=text], main input[type=search]')].some(el => el.value !== el.defaultValue)
+        || document.querySelector('main .fb-fold:not([hidden]), main .sortable-chosen, main details.act-more[open]');
+      if (document.querySelector('[data-fft-page], [data-fft-yours]') && !drafting) showInPlace();
+      const slot = document.getElementById('check-card');
+      if (slot && window.htmx && !slot.contains(document.activeElement)) htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
+      return;
+    }
     if (t === 'table') { if (/^(\/c\/[^/]+)?\/table$/.test(location.pathname)) showInPlace(); return; }  // (askdnd's table: a place, a token, a scene)
     if (t === 'deliver') { window.postMessage({ askdndBridge: 'deliver', ddbId: String(e.detail.ddb) }, location.origin); return; }  // (a change another one waited for may go now: ddb_bridge._release)  // the fight moved on: every page, once it isn't in the way of a pop-up
     if (t !== 'character' && t !== 'resync') return;
@@ -1465,12 +1525,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (!window.Sortable) return;
     document.querySelectorAll('[data-sort-column]').forEach(list => {
       if (list._sortable) return;
+      // (only the list's own rows: a list inside a row, Where it stands' areas inside its items, keeps its own order; a
+      // list may name its handle, data-sort-handle, so dragging an inner row never drags the outer one)
+      const rows = () => [...list.children].filter(el => el.matches(list.dataset.sortItem || '.move'));
       list._sortable = Sortable.create(list, {
         draggable: list.dataset.sortItem || '.move', animation: 150, delay: 180, delayOnTouchOnly: true, ghostClass: 'drag-ghost',
+        ...(list.dataset.sortHandle ? { handle: list.dataset.sortHandle } : {}),
         onEnd: () => {
           const body = new URLSearchParams({ column: list.dataset.sortColumn });
-          list.querySelectorAll('[data-key]').forEach(m => body.append('keys', m.dataset.key));
-          list.querySelectorAll('[data-sort-n]').forEach((n, i) => { n.textContent = i + (+list.dataset.sortFrom || 1); });  // (numbered rows: Testing's areas)
+          rows().forEach(m => { const k = m.dataset.key || (m.querySelector('[data-key]') || m).dataset.key; if (k) body.append('keys', k); });
+          rows().forEach((m, i) => { const n = m.querySelector('[data-sort-n]'); if (n) n.textContent = i + (+list.dataset.sortFrom || 1); });  // (numbered rows: Where it stands' items)
           fetch(list.dataset.sortUrl, { method: 'POST', body }).then(r => { if (!r.ok) toast("Couldn't save the order", null, 'error'); });
         },
       });
@@ -1610,6 +1674,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
 
   // Flash message from a full page load
   if (document.body.dataset.toast) { try { toast(JSON.parse(document.body.dataset.toast)); } catch (e) { /* not a message */ } }
+  try { const said = sessionStorage.getItem('askdnd-said'); if (said) { sessionStorage.removeItem('askdnd-said'); toast(said); } } catch (e) { /* no storage */ }
 })();
 
 
@@ -4914,22 +4979,83 @@ document.addEventListener('click', e => {
   document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-ib]'); if (root) start(root); });
 })();
 
-// ---------------------------------------------------------------- feedback for Claude
-// (app/feedback.py; Brett, 2026-11-03, docs/mockups/feedback-queue/) A note for Claude from any page, for whoever the
-// page lets send one (body[data-feedback]: admins and the accounts switched on for it on Accounts). \ opens it (never
-// while typing), as do the account menu's item and More's (admins), and pressing and holding the askdnd logo (a phone,
-// as a test account). The window opens at once; the page's picture is drawn just after (html-to-image, vendored; the
-// window itself is left out of it), only what's on screen, one at a time, and sent with the note, where it was pointed at, a pasted or chosen screenshot, the page as drawn, and where, when
-// and how the page was.
+// ---------------------------------------------------------------- picks from a mockup
+// A mockup opened inside askdnd (Documents, For you's Open mockup) sits in a sealed frame that can't save anything
+// itself, so its Save my picks hands its picks here, which saves them as the answer to the question asking about it,
+// and opening it again shows them (Brett's round, Nov 18: his picks were lost). The frame names nothing: askdnd knows
+// which document each of its frames holds (`data-doc`), and answers only a frame of its own.
+(() => {
+  const frameOf = src => [...document.querySelectorAll('iframe.doc-frame[data-doc]')].find(f => f.contentWindow === src);
+  addEventListener('message', async e => {
+    const d = e.data, f = frameOf(e.source);
+    if (!f || !d || typeof d !== 'object' || !/^picks-(load|save)$/.test(d.askdnd || '')) return;
+    const reply = msg => e.source.postMessage({ askdnd: 'picks', ...msg }, '*');
+    try {
+      if (d.askdnd === 'picks-load') {
+        const r = await fetch('/manage/testing/picks?doc=' + encodeURIComponent(f.dataset.doc), { headers: { Accept: 'application/json' } });
+        if (r.ok) reply({ ...(await r.json()), loaded: true });
+        return;
+      }
+      const r = await fetch('/manage/testing/picks', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ doc: f.dataset.doc, picks: Array.isArray(d.picks) ? d.picks : [], notes: String(d.notes || '') }) });
+      const j = await r.json().catch(() => ({}));
+      reply(r.ok ? { saved: true, at: j.at, picks: d.picks, notes: d.notes } : { saved: false, said: j.detail || "Couldn't save them. Try again." });
+    } catch (err) { reply({ saved: false, said: "Couldn't reach askdnd. Try again." }); }
+  });
+})();
+
+// ---------------------------------------------------------------- send a note
+// (Found, Fixed, Tried: app/fft/sending.py; screen 9 of docs/mockups/found-fixed-tried/) A note from any page, for
+// whoever the page lets send one (body[data-feedback]). \ opens it (never while typing), as do the account menu's item
+// and More's, and pressing and holding the askdnd logo. What it is is picked each time. The page's picture is drawn just
+// after the window shows (html-to-image, vendored; the window left out), only what's on screen, and comes as two copies:
+// the full one, its sender's alone, and the safe copy with every [data-private] part on screen (a player's character
+// notes) covered, which an admin, the DM and Claude see (T5). More pictures are pasted (⌘V), dropped or chosen. Each
+// picture is marked with Box, Arrow, Draw and Text; Undo and Clear sit apart. Take a screenshot puts the window away,
+// keeping everything, until Back to it (or a paste) brings it back; Cancel closes it (Brett's pick 3A, issue 18).
 (function () {
   const win = document.getElementById('fb-win');
   if (!win || document.body.dataset.feedback === undefined) return;
   const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
-  const shotImg = win.querySelector('[data-fb-shot]'), shotNote = win.querySelector('[data-fb-shot-note]');
-  const pastedImg = win.querySelector('[data-fb-pasted]'), dropNote = win.querySelector('[data-fb-drop-note]'), pointedNote = win.querySelector('[data-fb-pointed]');
-  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0, why = '', kind = '', check = null;
-  const checkLine = win.querySelector('[data-fb-check-line]');
-  // What it is (Brett, Nov 16): picked each time, never for you; the box's question follows it (feedback.KINDS)
+  const chips = win.querySelector('[data-fb-chips]'), addChip = win.querySelector('.fb-add-pic'), shotChip = win.querySelector('[data-fb-shot]'), stageNote = win.querySelector('[data-fb-stage-note]');
+  const wrap = win.querySelector('[data-fb-wrap]'), canvas = win.querySelector('[data-fb-canvas]'), tools = win.querySelector('[data-fb-tools]'), edits = win.querySelector('[data-fb-edits]');
+  const covered = win.querySelector('[data-fb-covered]'), lineEl = win.querySelector('[data-fb-line]'), titleEl = win.querySelector('[data-fb-title]');
+  const wrongParts = [...win.querySelectorAll('[data-fb-wrong]')], stillBox = win.querySelector('[data-fb-still]'), kindRow = win.querySelector('[data-fb-kind-row]');
+  const blockChips = [...win.querySelectorAll('[data-fb-block]')], stopsBox = win.querySelector('[data-fb-stops]');
+  let pics = [], reading = 0, at = -1, html = '', ctx = {}, lib = null, taking = null, round = 0, why = '', kind = '', checking = null, blocking = null, hidden = false, hideCard = null;
+  // Something's wrong… on a check (Testing, screen 3): whether it stops the check, picked each time like what it is
+  const pickBlock = v => {
+    blocking = v === 'yes' ? true : v === 'no' ? false : null;
+    blockChips.forEach(c => { const on = c.dataset.fbBlock === v; c.classList.toggle('on', on); c.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    stopsBox.disabled = blocking !== true;
+    if (blocking !== true) stopsBox.checked = false;
+  };
+  blockChips.forEach(c => c.addEventListener('click', () => { pickBlock(c.dataset.fbBlock); say(''); }));
+  function checkMode(c) {  // the window as What's wrong? for a check, or back to Send a note
+    checking = c;
+    wrongParts.forEach(el => { el.hidden = !c; });
+    kindRow.hidden = !!c;
+    titleEl.textContent = c ? "What's wrong?" : 'Send a note';
+    pickBlock('');
+    stillBox.replaceChildren();
+    if (!c) return;
+    win.querySelector('[data-fb-wrong-where]').textContent = 'On ' + c.title;
+    fetch('/manage/testing/checks/' + c.id + '/wrong', { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : null)).then(j => {
+      if (!j || checking !== c) return;
+      c.try = c.another ? j.try : null;  // (✗ Another… adds to the try just failed; Something's wrong… starts a new one)
+      win.querySelector('[data-fb-wrong-where]').textContent = 'On ' + j.title + ' · ' + j.device + ' · v' + j.version + ' · askdnd' + (j.where === 'live' ? '.ai' : ' (' + j.where + ')') + ' as of ' + j.app_version;
+      const opt = (value, label, small) => {
+        const l = Object.assign(document.createElement('label'), { className: 'fft-opt' });
+        const i = Object.assign(document.createElement('input'), { type: 'radio', name: 'fb-still', value });
+        if (value === '') i.checked = true;
+        l.dataset.still = value;
+        l.append(i, Object.assign(document.createElement('span'), { textContent: label }), Object.assign(document.createElement('small'), { className: 'note', textContent: small }));
+        stillBox.append(l);
+      };
+      j.issues.forEach(i => opt(String(i.id), i.title, i.said + ' · still happening'));
+      if (j.issues.length) opt('', 'Something new', 'describe it below');
+    }).catch(() => { /* the window works without the list: it's something new */ });
+  }
   const kindChips = [...win.querySelectorAll('[data-fb-kind]')], ask = win.querySelector('[data-fb-ask]'), askFirst = ask.textContent;
   const pickKind = k => {
     kind = k;
@@ -4952,29 +5078,114 @@ document.addEventListener('click', e => {
     return (r.width || r.height) && (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth);
   };
   const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-  async function picture() {  // what's on screen: the page drawn again as an image (the 3D dice and some fonts may differ)
+  // The parts of the page that are a player's own (their character's notes): where they are on screen, to cover
+  const privateRects = () => [...document.querySelectorAll('[data-private]')].map(el => el.getBoundingClientRect())
+    .filter(r => r.width && r.height && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth);
+  function cover(c, rects) {  // the safe copy: each private part painted over, hatched, saying what it was
+    const g = c.getContext('2d');
+    rects.forEach(r => {
+      g.save();
+      g.fillStyle = getComputedStyle(document.body).backgroundColor || '#15171a'; g.fillRect(r.left, r.top, r.width, r.height);
+      g.beginPath(); g.rect(r.left, r.top, r.width, r.height); g.clip();
+      g.strokeStyle = 'rgba(128,128,128,.35)'; g.lineWidth = 2;
+      for (let x = r.left - r.height; x < r.right; x += 14) { g.beginPath(); g.moveTo(x, r.bottom); g.lineTo(x + r.height, r.top); g.stroke(); }
+      g.fillStyle = 'rgba(128,128,128,.9)'; g.font = '600 13px system-ui, sans-serif';
+      g.fillText('Private notes', r.left + 10, r.top + 22);
+      g.restore();
+    });
+  }
+  // askdnd's own fonts (the page's Google Fonts, their Latin faces) as data, made once a visit (read from their stylesheet,
+  // never setting a font: tests/test_design.py): the picture is drawn in
+  // them, not in a wider stand-in that wraps words onto lines the page doesn't have (Brett's round, Nov 18: a heading
+  // wrapped over its rows in the picture, never on the page)
+  let fontsCSS = null;
+  const embedFonts = () => fontsCSS || (fontsCSS = (async () => {
+    await document.fonts.ready;
+    const link = document.querySelector('link[rel="stylesheet"][href^="https://fonts.googleapis.com/"]');
+    if (!link) return '';
+    const css = await (await fetch(link.href)).text();
+    // (only the faces the page is drawing with: a font loaded too late on a first visit stays out of the page for that
+    // visit, display=optional, though it counts as loaded; drawn in the picture, its wider letters wrapped the page's
+    // words, GitHub's machines, Nov 18. A face is in use when a word set in it, with a plain fallback, comes out a
+    // different width from the fallback alone)
+    const probe = document.createElement('span');
+    Object.assign(probe.style, { position: 'absolute', left: '-9999px', top: '0', fontSize: '40px', whiteSpace: 'nowrap', visibility: 'hidden' });
+    probe.textContent = 'Hamburgefonstiv 0123';
+    document.body.append(probe);
+    const width = (family, weight) => { probe.style.fontFamily = family; probe.style.fontWeight = weight; return probe.getBoundingClientRect().width; };
+    const used = f => { const fam = f.family.replace(/["']/g, ''); return width(`"${fam}", monospace`, f.weight) !== width('monospace', f.weight); };
+    const shown = new Set([...document.fonts].filter(f => f.status === 'loaded' && used(f)).map(f => f.family.replace(/["']/g, '') + ' ' + f.weight));
+    probe.remove();
+    const faces = css.split('@font-face').slice(1).map(b => '@font-face' + b.slice(0, b.indexOf('}') + 1))
+      .filter(f => /U\+0000-00FF/.test(f) && shown.has(((/font-family\s*:\s*'?([^';]+)/.exec(f) || [])[1] || '') + ' ' + ((/font-weight\s*:\s*(\d+)/.exec(f) || [])[1] || '')));
+    const inline = await Promise.all(faces.map(async f => {
+      const m = f.match(/url\((https:[^)]+)\)/);
+      if (!m) return '';
+      const blob = await (await fetch(m[1])).blob();
+      const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(blob); });
+      return f.replace(m[1], data);
+    }));
+    return inline.join('\n');
+  })().catch(() => ''));
+  async function picture() {  // what's on screen, drawn again as an image (the 3D dice may differ)
     let h;
     try { h = await loadLib(); } catch (e) { why = "the picture's code didn't load"; return null; }
-    // (fonts aren't embedded: Google's stylesheet can't be read from here, so the picture uses the browser's own font)
+    const fonts = await embedFonts();
     const options = {
-      quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK,
+      quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK, ...(fonts ? { fontEmbedCSS: fonts } : {}),
       backgroundColor: getComputedStyle(document.body).backgroundColor,
-      // (scrolled by a margin, not a transform: a transform would carry what's fixed on screen, a modal like the item
-      // browser, down the whole page's height and out of the picture)
+      // (scrolled by a margin, not a transform: a transform would carry what's fixed on screen down the page's height)
       style: { margin: '0', marginTop: -scrollY + 'px', marginLeft: -scrollX + 'px' },
-      // (not this window or the corner cards, and not Battle's condition edge: its border-image comes out as a wash over
-      // the whole picture)
-      // Only what's on screen: anything hidden or scrolled out of view is left out, so a long list (the item browser's
-      // 1,289 rows) costs what its visible rows cost (Brett, Nov 3: it was slow, and froze the tab once)
-      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || n.id === 'check-card' || (n.classList && n.classList.contains('cond-halo')) || n.hidden || offscreen(n)),
+      // (not this window, the corner cards or Battle's condition edge; nothing below the screen, so a long list costs
+      // what its rows down to the screen's foot cost)
+      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || n.id === 'check-card' || (n.classList && n.classList.contains('cond-halo')) || n.hidden || gone.has(n)),
     };
-    // An attribute named with a colon (htmx's hx-on::after-request) is fine in a page but not in the picture's SVG, where
-    // it stops the whole drawing: they're set aside while it's drawn, and put back
+    // True to what's on screen (Brett's round, Nov 18: parts of the page came out blank). The picture is drawn from the
+    // page with nothing scrolled. Only what's below or right of the screen is left out (what's above it holds up what's
+    // on it: left out, everything under it moved up). A part that stays put as you scroll is held where it is, and
+    // what's scrolled inside a box is moved up by as much; all put back once it's drawn, its scrolling too.
+    // (the private parts measured as the screen shows them, before anything is held or moved for the drawing: measured
+    // after, a part inside a scrolled box was off by its scroll, and the covering missed it; the review of #417)
+    const rects = privateRects();
+    const all = [...document.body.querySelectorAll('*')];
+    const past = n => { const r = n.getBoundingClientRect(); return (r.width || r.height) && (r.top > innerHeight || r.left > innerWidth); };
+    const gone = new Set(all.filter(past));
+    const scrolled = all.filter(el => el.scrollTop || el.scrollLeft).map(el => [el, el.scrollTop, el.scrollLeft]);
+    const held = [];
+    const hold = (el, props) => { held.push([el, el.getAttribute('style')]); Object.assign(el.style, props); };
+    all.filter(el => !gone.has(el) && getComputedStyle(el).position === 'sticky').map(el => {
+      const stuck = el.getBoundingClientRect(), was = el.getAttribute('style');
+      Object.assign(el.style, { position: 'relative', top: '0px', left: '0px' });
+      const free = el.getBoundingClientRect();
+      if (was === null) el.removeAttribute('style'); else el.setAttribute('style', was);
+      return [el, stuck.top - free.top, stuck.left - free.left];
+    }).forEach(([el, dy, dx]) => { if (Math.abs(dy) > 0.5 || Math.abs(dx) > 0.5) hold(el, { position: 'relative', top: dy + 'px', left: dx + 'px' }); });
+    scrolled.filter(([box]) => !gone.has(box)).forEach(([box, top, left]) => {
+      [...box.children].forEach(ch => hold(ch, { translate: -left + 'px ' + -top + 'px' }));
+    });
+    // (words the screen shows on one line stay on one: the picture's letters can come out a hair wider than the screen's,
+    // and a box as wide as its words then drops the last letter onto a line of its own, "Part / y"; Brett's round, Nov 18)
+    // (and a name the screen shows whole isn't cut short with … in the picture)
+    // (every measure first, then every change: changing as it went made the page lay itself out again for each line, and a
+    // long list froze the tab; what's above the screen counts too, as its lines set where the rest falls; the review of
+    // #417)
+    const keep = [];
+    all.forEach(el => {
+      if (gone.has(el)) return;
+      const words = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
+      if (!words.length) return;
+      const cs = getComputedStyle(el);
+      if (cs.textOverflow === 'ellipsis' && el.scrollWidth <= el.clientWidth) { keep.push([el, { textOverflow: 'clip', overflow: 'visible' }]); return; }
+      if (cs.whiteSpace !== 'normal') return;
+      const tops = new Set();
+      words.forEach(n => { const r = document.createRange(); r.selectNodeContents(n); [...r.getClientRects()].forEach(x => tops.add(Math.round(x.top))); });
+      if (tops.size === 1) keep.push([el, { whiteSpace: 'nowrap' }]);
+    });
+    keep.forEach(([el, props]) => hold(el, props));
+    // (an attribute named with a colon stops the picture's SVG: set aside while it's drawn, and put back)
     const aside = [], blanked = [];
-    document.querySelectorAll('*').forEach(el => { for (const at of [...el.attributes]) if (at.name.includes(':')) { aside.push([el, at.name, at.value]); el.removeAttribute(at.name); } });
-    // A picture the page couldn't load would stop the drawing, and one from another site (a D&D Beyond portrait, an
-    // item's picture) can't be read from here: each is drawn blank at its own size, so what's around it stays in place
-    // (left out, the item browser's details ran into each other)
+    document.querySelectorAll('*').forEach(el => { for (const a of [...el.attributes]) if (a.name.includes(':')) { aside.push([el, a.name, a.value]); el.removeAttribute(a.name); } });
+    // (a picture from another site can't be read from here: drawn blank at its own size)
     document.querySelectorAll('img').forEach(im => {
       if (im.complete && im.naturalWidth && im.src.startsWith(location.origin + '/')) return;
       const r = im.getBoundingClientRect();
@@ -4982,8 +5193,7 @@ document.addEventListener('click', e => {
       Object.assign(im.style, { width: r.width + 'px', height: r.height + 'px' });
       im.removeAttribute('srcset'); im.src = BLANK;
     });
-    // The 3D dice are drawn in WebGL, which keeps no copy of its last frame, so a copy of the page drew them blank
-    // (feedback 7): each box on screen draws once more and is copied at once into a picture over its canvas
+    // (the 3D dice keep no copy of their last frame: each box on screen draws once more into a picture over its canvas)
     const stills = [];
     (window.askdndDice || []).forEach(b => {
       const c = b.renderer && b.renderer.domElement, r = c && c.getBoundingClientRect();
@@ -4997,23 +5207,39 @@ document.addEventListener('click', e => {
       stills.push(im);
     });
     try {
-      // Drawn as an SVG first: a character XML can't hold (a NUL, another control character; another extension's text
-      // carried one on Nov 4) stopped the whole picture, so they're taken out before it's painted
       const svg = (await h.toSvg(document.body, options)).replace(/%(?:0[0-8BbCcEeFf]|1[0-9A-Fa-f])/g, '');
       const im = new Image();
       await new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error("the page's drawing wouldn't load")); im.src = svg; });
       const c = Object.assign(document.createElement('canvas'), { width: innerWidth, height: innerHeight }), g = c.getContext('2d');
       g.fillStyle = options.backgroundColor; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
-      return c.toDataURL('image/jpeg', 0.8);
+      const full = c.toDataURL('image/jpeg', 0.8);
+      if (!rects.length) return { full, safe: null };
+      cover(c, rects);
+      return { full, safe: c.toDataURL('image/jpeg', 0.8) };
     } catch (e) { why = (e && (e.message || e.type)) || 'unknown'; return null; } finally {
+      held.reverse().forEach(([el, style]) => { if (style === null) el.removeAttribute('style'); else el.setAttribute('style', style); });
+      scrolled.forEach(([el, top, left]) => { el.scrollTop = top; el.scrollLeft = left; });
       stills.forEach(im => im.remove());
       aside.forEach(([el, name, value]) => el.setAttribute(name, value));
       blanked.forEach(([im, src, srcset, w, hgt]) => { if (srcset !== null) im.setAttribute('srcset', srcset); if (src !== null) im.setAttribute('src', src); else im.removeAttribute('src'); im.style.width = w; im.style.height = hgt; });
     }
   }
+  // The page as drawn, with its private parts emptied (only ever shown to an admin as text, and to Claude on request)
+  function drawn() {
+    const copy = document.documentElement.cloneNode(true);
+    copy.querySelectorAll('[data-private]').forEach(el => {  // (its words, and any attribute that could carry them: a title)
+      el.replaceChildren();
+      [...el.attributes].forEach(a => { if (a.name !== 'class' && a.name !== 'data-private') el.removeAttribute(a.name); });
+      el.setAttribute('data-private', 'emptied');
+      // (a window holding it is labelled with its title, a player's note's own: never in the copy; the review of #417)
+      for (let up = el.parentElement; up; up = up.parentElement) ['aria-label', 'title'].forEach(n => up.removeAttribute(n));
+    });
+    copy.querySelectorAll('#fb-win, script').forEach(el => el.remove());
+    return copy.outerHTML.slice(0, 3000000);
+  }
   function browser() {
     const ua = navigator.userAgent, d = navigator.userAgentData;
-    const brands = d && d.brands ? d.brands.filter(b => !/Not.?A.?Brand/i.test(b.brand)) : [];  // (the made-up one every Chrome lists)
+    const brands = d && d.brands ? d.brands.filter(b => !/Not.?A.?Brand/i.test(b.brand)) : [];
     const brand = brands.find(b => b.brand !== 'Chromium') || brands[0] || null;
     const safari = /Version\/([\d.]+).*Safari/.exec(ua), firefox = /Firefox\/([\d.]+)/.exec(ua);
     const name = brand ? brand.brand + ' ' + brand.version : safari ? 'Safari ' + safari[1] : firefox ? 'Firefox ' + firefox[1] : ua.slice(0, 60);
@@ -5023,7 +5249,7 @@ document.addEventListener('click', e => {
   function gather() {
     const pill = document.getElementById('live-pill'), body = document.body;
     const tab = document.querySelector('main [role=tab][aria-selected=true], main .tabbar .on, main .sub-tabs .on, main .tabs .on');
-    const panel = document.querySelector('.peek:not([hidden]) #peek-title');
+    const panel = [...document.querySelectorAll('.peek:not([hidden]) #peek-title')].find(t => !t.closest('[data-private]'));  // (a player's own note's title stays theirs)
     const zoom = window.visualViewport ? visualViewport.scale : 1, outer = outerWidth && innerWidth ? outerWidth / innerWidth : 1;
     const now = new Date();
     return {
@@ -5043,152 +5269,235 @@ document.addEventListener('click', e => {
      ['askdnd bridge', ctx.extension], ['Live pill', ctx.live], ['Page errors', String(ctx.errors.length)], ['The page itself', 'As drawn (' + Math.round(html.length / 1024) + ' KB)']]
       .filter(([, v]) => v).forEach(([k, v]) => { dl.append(Object.assign(document.createElement('dt'), { textContent: k }), Object.assign(document.createElement('dd'), { textContent: v })); });
   }
-  function unmark() { if (outlined) outlined.classList.remove('fb-pointed'); outlined = null; }
-  async function open(forCheck) {
-    if (win.open) return;
-    const mine = ++round;
-    unmark(); pointed = null; pasted = null; shot = null;
-    ctx = gather(); html = document.documentElement.outerHTML.slice(0, 3000000);
-    form.reset(); say(''); send.disabled = false; pickKind('');
-    // Failed… on a check (Testing, Brett's 3A): Something's broken picked, the check named, and the note tied to it
-    check = forCheck || null;
-    if (check && check.fail) pickKind('broken');  // (Failed…: broken; + Issue: picked, as any note)
-    if (checkLine) {
-      checkLine.hidden = !check;
-      checkLine.querySelector('b').textContent = check ? check.title : '';
-      checkLine.querySelector('.tag').hidden = !(check && check.fail);
-    }
-    shotImg.hidden = true; shotNote.hidden = false; shotNote.textContent = "Taking the page's picture…";
-    win.querySelector('[data-fb-mark]').hidden = true; form.classList.remove('marking'); win.querySelector('[data-fb-markview]').hidden = true;
-    pastedImg.hidden = true; dropNote.hidden = false; pointedNote.textContent = 'Click the thing you mean, if it helps';
-    drawCtx();
-    win.showModal();
-    form.text.focus();
-    // The picture once the window has shown (it's left out of the picture), and never two at once: pressing \ again
-    // while one is drawn waits for that one
-    await new Promise(r => { requestAnimationFrame(() => setTimeout(r, 0)); setTimeout(r, 100); });  // (a tab out of sight never paints)
-    taking = taking || picture().finally(() => { taking = null; });
-    const pic = await taking;
-    if (mine !== round) return;  // (closed and opened again meanwhile: the newer window draws its own)
-    shot = pic;
-    if (!shot) ctx.picture = 'Not taken: ' + why;  // (so a note says why it came without one)
-    if (shot) { shotImg.src = shot; shotImg.hidden = false; shotNote.hidden = true; } else shotNote.textContent = "No picture this time: paste one if it helps";
-    win.querySelector('[data-fb-mark]').hidden = !shot;  // (marking it, once there's a picture)
+  // ---- the pictures: a chip each, the chosen one on the stage with its marks
+  function drawChips() {
+    chips.querySelectorAll('[data-fb-pic], [data-fb-unpic]').forEach(c => c.remove());
+    let added = 0;
+    pics.forEach((p, i) => {
+      const name = p.kind === 'page' ? 'The page' : 'Your picture ' + (++added);
+      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip' + (i === at ? ' on' : ''), textContent: name });
+      b.dataset.fbPic = String(i); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(i === at));
+      b.addEventListener('click', () => show(i));
+      if (p.kind === 'page') { chips.insertBefore(b, shotChip); return; }  // (the page's own picture stays: it says where you were; Brett's round, Nov 18)
+      // (a picture you added: one pill, its name and its ✕, each a button of its own)
+      const pair = Object.assign(document.createElement('span'), { className: 'chip chip-pair' + (i === at ? ' on' : '') });
+      pair.dataset.fbPic = String(i); b.className = 'chip-name'; delete b.dataset.fbPic;
+      const x = Object.assign(document.createElement('button'), { type: 'button', className: 'chip-x', textContent: '✕' });
+      x.dataset.fbUnpic = String(i); x.setAttribute('aria-label', 'Remove ' + name);
+      x.addEventListener('click', () => { pics.splice(i, 1); show(pics.length ? Math.min(at > i ? at - 1 : at, pics.length - 1) : -1); if (!pics.length) stageNote.textContent = 'No picture: paste or add one if it helps.'; });
+      pair.append(b, x);
+      chips.insertBefore(pair, shotChip);
+    });
+    addChip.hidden = shotChip.hidden = pics.length + (taking ? 1 : 0) >= 4;  // (four pictures at most, the page's own counted while it's drawn)
   }
-  function describe(el) {
-    const t = el.closest('[aria-label], [title], [data-tour], .nt, .ri, button, a, h1, h2, h3, label, li, td') || el;
-    const words = (t.getAttribute('aria-label') || t.getAttribute('title') || t.textContent || '').trim().replace(/\s+/g, ' ');
-    return words.slice(0, 60) || t.tagName.toLowerCase();
-  }
-  function where(el) {  // a short path to it, for finding it in the page's HTML
-    const out = [];
-    for (let n = el; n && n !== document.body && out.length < 6; n = n.parentElement) {
-      out.unshift(n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + (n.classList.length ? '.' + [...n.classList].slice(0, 2).join('.') : ''));
-    }
-    return out.join(' > ');
-  }
-  win.querySelector('[data-fb-point]').addEventListener('click', () => {
-    win.close();
-    document.body.classList.add('fb-pointing');
-    const done = () => { document.removeEventListener('click', pick, true); document.removeEventListener('keydown', esc, true); document.body.classList.remove('fb-pointing'); win.showModal(); };
-    const pick = e => {
-      e.preventDefault(); e.stopPropagation();
-      unmark();
-      outlined = e.target; outlined.classList.add('fb-pointed');
-      pointed = { label: describe(e.target), path: where(e.target), text: (e.target.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 160) };
-      pointedNote.textContent = 'Pointed at: ' + pointed.label;
-      done();
+  function show(i) {
+    at = i; drawChips();
+    const p = pics[i];
+    wrap.hidden = tools.hidden = edits.hidden = !p; stageNote.hidden = !!p;
+    covered.hidden = !(p && (p.safe || p.kind === 'added'));
+    if (p) covered.textContent = p.kind === 'added' ? 'A picture you add is shown as it is to an admin, the DM and Claude.' : "Your character's notes are covered in the copy an admin and Claude see; only you see them.";
+    if (!p) return;
+    const im = new Image();
+    im.onload = () => {
+      if (pics[at] !== p) return;  // (another picture was chosen meanwhile: it draws itself)
+      p.img = im; canvas.width = im.naturalWidth; canvas.height = im.naturalHeight; fit(); redraw();
     };
-    const esc = e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(); } };
-    setTimeout(() => { document.addEventListener('click', pick, true); document.addEventListener('keydown', esc, true); }, 0);
-  });
-  function take(file) {
-    if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) return say('A picture as PNG, JPEG or WebP, please.');
-    if (file.size > 8e6) return say('That picture is over 8 MB.');
-    const r = new FileReader();
-    r.onload = () => { pasted = r.result; pastedImg.src = pasted; pastedImg.hidden = false; dropNote.hidden = true; say(''); };
-    r.readAsDataURL(file);
+    im.src = p.full;
   }
-  win.addEventListener('paste', e => {
-    const f = [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
-    if (f) { e.preventDefault(); take(f); }
-  });
-  const drop = win.querySelector('[data-fb-drop]');
-  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
-  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); take(e.dataTransfer.files[0]); });
-  win.querySelector('[data-fb-file]').addEventListener('change', e => take(e.target.files[0]));
-  win.querySelector('[data-fb-cancel]').addEventListener('click', () => { win.close(); unmark(); });
-  win.addEventListener('cancel', unmark);
-  // Marking the picture (Testing's 3A, for every note): a box, an arrow or a line, drawn at the picture's own size and
-  // kept in it when Done is pressed; Cancel (or Escape) goes back with the picture as it was
-  const markBtn = win.querySelector('[data-fb-mark]'), markView = win.querySelector('[data-fb-markview]'), canvas = win.querySelector('[data-fb-canvas]');
-  let marks = [], tool = 'box', drag = null, base = null;
-  const redraw = () => {
-    const g = canvas.getContext('2d'), w = canvas.width;
-    g.drawImage(base, 0, 0);
-    g.strokeStyle = g.fillStyle = '#e5484d'; g.lineWidth = Math.max(3, w / 320); g.lineCap = g.lineJoin = 'round';
-    for (const m of drag ? [...marks, drag] : marks) {
-      const [a, b] = [m.pts[0], m.pts[m.pts.length - 1]];
+  // The canvas keeps its picture's shape (never letterboxed, so a mark lands where it's drawn): as wide as the window
+  // allows, no taller than about half the screen
+  const fit = () => {
+    if (!canvas.width || !canvas.height) return;
+    canvas.style.width = Math.max(120, Math.min(wrap.clientWidth || canvas.width, innerHeight * 0.46 * canvas.width / canvas.height)) + 'px';
+  };
+  addEventListener('resize', () => { if (win.open) fit(); });
+  const MARK = '#f0a020';
+  // Marks are sized as they look on your screen, whatever the picture's own size (Brett's round, Nov 18, issue 16: on a
+  // large screenshot shown small, the arrow came out thin with a small head): each mark keeps `k`, the picture's pixels
+  // per screen pixel as it was drawn, so it's the same in the picture that's sent
+  const shownAt = () => canvas.width / (canvas.getBoundingClientRect().width || canvas.width);
+  function paint(g, w, list) {
+    g.strokeStyle = g.fillStyle = MARK; g.lineCap = g.lineJoin = 'round';
+    for (const m of list) {
+      const k = m.k || Math.max(1, w / 800), [a, b] = [m.pts[0], m.pts[m.pts.length - 1]];
+      g.lineWidth = 3.5 * k;
       g.beginPath();
       if (m.tool === 'box') g.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-      else if (m.tool === 'draw') { m.pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
-      else {
-        const t = Math.atan2(b.y - a.y, b.x - a.x), h = g.lineWidth * 5;
-        g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+      else if (m.tool === 'draw') { m.pts.forEach((p, n) => (n ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
+      else if (m.tool === 'text') {
+        const size = Math.round(16 * k), pad = 4 * k;
+        g.font = '700 ' + size + 'px system-ui, sans-serif';
+        const tw = g.measureText(m.text).width;
+        g.fillStyle = 'rgba(15,17,19,.85)'; g.fillRect(a.x - pad, a.y - size, tw + 2 * pad, size + 2 * pad);
+        g.fillStyle = MARK; g.fillText(m.text, a.x, a.y);
+      } else {
+        const t = Math.atan2(b.y - a.y, b.x - a.x), hd = 20 * k;  // (its head 20 screen pixels long)
+        const end = { x: b.x - hd * 0.6 * Math.cos(t), y: b.y - hd * 0.6 * Math.sin(t) };  // (the shaft stops inside the head: a sharp point)
+        g.moveTo(a.x, a.y); g.lineTo(end.x, end.y); g.stroke();
         g.beginPath(); g.moveTo(b.x, b.y);
-        g.lineTo(b.x - h * Math.cos(t - 0.45), b.y - h * Math.sin(t - 0.45)); g.lineTo(b.x - h * Math.cos(t + 0.45), b.y - h * Math.sin(t + 0.45));
+        g.lineTo(b.x - hd * Math.cos(t - 0.45), b.y - hd * Math.sin(t - 0.45)); g.lineTo(b.x - hd * Math.cos(t + 0.45), b.y - hd * Math.sin(t + 0.45));
         g.closePath(); g.fill();
       }
     }
+  }
+  let tool = 'box', drag = null, typingAt = null;
+  const redraw = () => {
+    const p = pics[at];
+    if (!p || !p.img) return;
+    const g = canvas.getContext('2d');
+    g.drawImage(p.img, 0, 0);
+    paint(g, canvas.width, drag ? [...p.marks, drag] : p.marks);
   };
-  const marking = on => { markView.hidden = !on; form.classList.toggle('marking', on); };
-  const at = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; };
-  markBtn.addEventListener('click', () => {
-    if (!shot) return;
-    base = new Image();
-    base.onload = () => { canvas.width = base.naturalWidth; canvas.height = base.naturalHeight; marks = []; redraw(); marking(true); };
-    base.src = shot;
+  const point = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; };
+  canvas.addEventListener('pointerdown', e => {
+    if (!pics[at]) return;
+    e.preventDefault();
+    if (tool === 'text') return placeText(e);
+    canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [point(e)], k: shownAt() };
   });
-  canvas.addEventListener('pointerdown', e => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [at(e)] }; });
-  canvas.addEventListener('pointermove', e => { if (!drag) return; const p = at(e); if (drag.tool === 'draw') drag.pts.push(p); else drag.pts[1] = p; redraw(); });
-  canvas.addEventListener('pointerup', () => { if (drag && drag.pts.length > 1) marks.push(drag); drag = null; redraw(); });
-  canvas.addEventListener('pointercancel', () => { drag = null; redraw(); });  // (a gesture the browser took over: no half mark)
+  canvas.addEventListener('pointermove', e => { if (!drag) return; const p = point(e); if (drag.tool === 'draw') drag.pts.push(p); else drag.pts[1] = p; redraw(); });
+  canvas.addEventListener('pointerup', () => { if (drag && drag.pts.length > 1) pics[at].marks.push(drag); drag = null; redraw(); });
+  canvas.addEventListener('pointercancel', () => { drag = null; redraw(); });
+  function placeText(e) {  // Text: a box where you clicked; Enter (or leaving it) puts the words on the picture
+    if (typingAt) typingAt.blur();
+    const r = canvas.getBoundingClientRect(), wr = wrap.getBoundingClientRect(), p = point(e);
+    const box = Object.assign(document.createElement('input'), { type: 'text', className: 'fb-text-input', maxLength: 80, placeholder: 'Type, then Enter' });
+    box.setAttribute('aria-label', 'Words on the picture');
+    Object.assign(box.style, { left: (e.clientX - wr.left) + 'px', top: (e.clientY - wr.top - 14) + 'px', maxWidth: (r.right - e.clientX) + 'px' });
+    wrap.append(box); box.focus(); typingAt = box;
+    let ended = false;
+    const done = keep => {  // (once: removing the box blurs it, which would end it again)
+      if (ended) return;
+      ended = true;
+      const t = box.value.trim(); typingAt = null; box.remove();
+      if (keep && t && pics[at]) { pics[at].marks.push({ tool: 'text', pts: [p], text: t, k: shownAt() }); redraw(); }
+    };
+    box.addEventListener('keydown', k => { if (k.key === 'Enter') { k.preventDefault(); done(true); } else if (k.key === 'Escape') { k.preventDefault(); k.stopPropagation(); done(false); } });
+    box.addEventListener('blur', () => done(true));
+  }
   win.querySelectorAll('[data-fb-tool]').forEach(b => b.addEventListener('click', () => {
     tool = b.dataset.fbTool;
     win.querySelectorAll('[data-fb-tool]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   }));
-  win.querySelector('[data-fb-undo]').addEventListener('click', () => { marks.pop(); redraw(); });
-  win.querySelector('[data-fb-clear]').addEventListener('click', () => { marks = []; redraw(); });
-  win.querySelector('[data-fb-mark-cancel]').addEventListener('click', () => marking(false));
-  win.querySelector('[data-fb-mark-done]').addEventListener('click', () => {
-    if (marks.length) { shot = canvas.toDataURL('image/jpeg', 0.85); shotImg.src = shot; ctx.marked = String(marks.length); }
-    marking(false);
+  win.querySelector('[data-fb-undo]').addEventListener('click', () => { if (pics[at]) { pics[at].marks.pop(); redraw(); } });
+  win.querySelector('[data-fb-clear]').addEventListener('click', () => { if (pics[at]) { pics[at].marks = []; redraw(); } });
+  // What's sent: each picture with its marks drawn in, the full copy and (where there is one) the safe copy
+  const flat = (src, marks) => (!marks.length ? Promise.resolve(src) : new Promise(ok => {
+    const im = new Image();
+    im.onload = () => {
+      const c = Object.assign(document.createElement('canvas'), { width: im.naturalWidth, height: im.naturalHeight }), g = c.getContext('2d');
+      g.drawImage(im, 0, 0); paint(g, c.width, marks); ok(c.toDataURL('image/jpeg', 0.85));
+    };
+    im.onerror = () => ok(src);
+    im.src = src;
+  }));
+  const outgoing = () => Promise.all(pics.map(async p => ({ kind: p.kind, full: await flat(p.full, p.marks), safe: p.safe ? await flat(p.safe, p.marks) : null, marks: p.marks.length })));
+  function take(file) {
+    if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) return say('A picture as PNG, JPEG or WebP, please.');
+    if (file.size > 8e6) return say('That picture is over 8 MB.');
+    // (four at most, counting the page's own picture while it's still being drawn and any still being read: the review
+    // of #417, five could be added on a slow page and Send then refused them all)
+    if (pics.length + reading + (taking ? 1 : 0) >= 4) return say('Four pictures at most.');
+    const r = new FileReader();
+    reading += 1;
+    r.onloadend = () => { reading -= 1; };
+    r.onload = () => { pics.push({ kind: 'added', full: r.result, safe: null, marks: [] }); say(''); show(pics.length - 1); };
+    r.readAsDataURL(file);
+  }
+  const pasted = e => [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
+  win.addEventListener('paste', e => { const f = pasted(e); if (f) { e.preventDefault(); take(f); } });
+  document.addEventListener('paste', e => {  // (hidden for a screenshot: pasting it anywhere brings the window back with it)
+    if (!hidden || !hideCard || !hideCard.isConnected) return;  // (its card closed: the note waits for \ or the logo, and pastes elsewhere are theirs)
+    const f = pasted(e);
+    if (f) { e.preventDefault(); back(); take(f); }
   });
-  win.addEventListener('cancel', e => { if (!markView.hidden) { e.preventDefault(); marking(false); } }, true);
+  const stage = win.querySelector('[data-fb-stage]');
+  stage.addEventListener('dragover', e => { e.preventDefault(); stage.classList.add('over'); });
+  stage.addEventListener('dragleave', () => stage.classList.remove('over'));
+  stage.addEventListener('drop', e => { e.preventDefault(); stage.classList.remove('over'); take(e.dataTransfer.files[0]); });
+  win.querySelector('[data-fb-file]').addEventListener('change', e => { take(e.target.files[0]); e.target.value = ''; });
+  // ---- opening, hiding for a screenshot, closing
+  async function open(opts) {
+    if (win.open) return;
+    if (hidden) {  // (the note put away for a screenshot comes back, unless this is for another check or none: then it's a new one)
+      const want = opts && opts.check ? opts.check.id : null, have = checking ? checking.id : null;
+      if (want === have) return back();
+      hidden = false;
+      if (hideCard && hideCard._close) hideCard._close();
+      hideCard = null;
+    }
+    const mine = ++round;
+    pics = []; at = -1;
+    ctx = gather(); html = drawn();
+    form.reset(); say(''); send.disabled = false; pickKind('');
+    checkMode((opts && opts.check) || null);
+    show(-1); stageNote.textContent = "Taking the page's picture…";
+    drawCtx();
+    lineEl.textContent = '';
+    fetch('/feedback/line', { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : null)).then(j => {
+      if (!j) return;
+      lineEl.textContent = j.line; lineEl.classList.toggle('fb-listening', !!j.listening);
+    }).catch(() => { /* the line stays empty */ });
+    win.showModal();
+    form.text.focus();
+    // (the picture once the window has shown, so it's left out; never two at once)
+    await new Promise(r => { requestAnimationFrame(() => setTimeout(r, 0)); setTimeout(r, 100); });
+    taking = taking || picture().finally(() => { taking = null; });
+    const got = await taking;
+    if (mine !== round) return;
+    if (!got) { ctx.picture = 'Not taken: ' + why; stageNote.textContent = 'No picture of the page this time: paste one if it helps.'; return; }
+    pics.unshift({ kind: 'page', full: got.full, safe: got.safe, marks: [] });
+    show(at < 0 ? 0 : at + 1);
+  }
+  function hide() {  // Take a screenshot: everything kept; a card says how, and brings it back
+    hidden = true; win.close();
+    const mac = /Mac/.test(navigator.platform || navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent);
+    const box = document.createElement('div');
+    box.append(Object.assign(document.createElement('b'), { textContent: 'Your note is waiting' }), document.createElement('br'),
+      document.createTextNode(/iPhone|iPad/.test(navigator.userAgent) ? 'Take your screenshot (the side and volume-up buttons), then Back to it and add it.'
+        : mac ? 'Take your screenshot: ⇧⌘3 for the whole screen, ⇧⌘4 for a part (hold ⌃ too to copy it), then ⌘V here.' : 'Take your screenshot, then paste it here (Ctrl+V).'));
+    hideCard = window.askdndCard ? window.askdndCard(box, { kind: 'info', stay: true, actions: [{ label: 'Back to it', run: back }] }) : null;
+  }
+  function back() {
+    hidden = false;
+    if (hideCard && hideCard._close) hideCard._close();
+    hideCard = null;
+    if (!win.open) win.showModal();
+  }
+  shotChip.addEventListener('click', hide);
+  const close = () => { win.close(); hidden = false; pics = []; };
+  win.querySelectorAll('[data-fb-cancel]').forEach(b => b.addEventListener('click', close));  // (✕ and Cancel)
+  win.addEventListener('cancel', e => { if (typingAt) { e.preventDefault(); return; } pics = []; });
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const text = form.text.value.trim();
-    if (!kind) return say('Pick what it is first: something broken, an idea or a question.');
-    if (!text) return say("Say what it's about first.");
+    if (checking && blocking === null) return say('Say whether it stops this check passing.');
+    if (!checking && !kind) return say('Say what it is first: a problem, an idea or a question.');
+    if (!text) return say(checking ? "Say what's wrong first." : "Say what it's about first.");
     send.disabled = true; say('');
-    if (taking && !shot) { say("Finishing the page's picture…"); shot = await taking; say(''); }  // (Send pressed before it was drawn)
+    if (taking && !pics.some(p => p.kind === 'page')) { say("Finishing the page's picture…"); await taking; say(''); }
     try {
-      const r = await fetch('/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, pointed }, html, shot, pasted, ...(check ? { check: check.id, fail: check.fail } : {}) }) });
+      const pictures = await outgoing();
+      const common = { text, url: location.href, context: { ...ctx, marked: pictures.reduce((n, p) => n + p.marks, 0) }, html, pictures: pictures.map(({ kind: k, full, safe }) => ({ kind: k, full, safe })) };
+      const still = checking && stillBox.querySelector('input:checked');
+      const r = await fetch(checking ? '/manage/testing/checks/' + checking.id + '/wrong' : '/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(checking ? { ...common, blocking, stops_round: stopsBox.checked, issue: still && still.value ? +still.value : null, try: (checking.another && checking.try) || null } : { ...common, kind }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
-      win.close(); unmark();
-      if (check) {  // (sent from a check: the card stays on it, listing it, for the next issue or Done · Next check; 2A)
+      const was = checking;
+      close();
+      if (was) {  // (from a check: the card shows what was sent, in place; on Testing, the page shows it)
         const slot = document.getElementById('check-card');
-        if (slot && slot.querySelector('[data-check-card="' + check.id + '"]')) {
+        if (slot && slot.querySelector('[data-fft-card]') && window.htmx) {
           htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
-          if (window.askdndToast) window.askdndToast('Sent: it\'s tied to the check');
-        } else location.reload();  // (from the Reader: it shows the check failed, with what was sent)
+          if (window.askdndToast) window.askdndToast(j.said || 'Sent');
+        } else {  // (the page shows what was sent: its card comes after the reload)
+          try { sessionStorage.setItem('askdnd-said', j.said || 'Sent'); } catch (err) { /* no storage: the page says it */ }
+          location.reload();
+        }
         return;
       }
-      if (window.askdndToast) window.askdndToast(j.review ? 'Sent · an admin reads it before it goes to Claude' : 'In the queue · ' + j.waiting + ' new',
-        { label: 'Your notes', run: () => { location.href = '/your-notes?tab=askdnd'; } });  // (where it goes from here)
+      if (window.askdndToast) window.askdndToast(j.said || 'Sent', { label: 'Notes you sent', run: () => { location.href = '/your-notes?tab=askdnd'; } });
     } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
   });
   // \ anywhere but a field; the menus' item; pressing and holding the logo
@@ -5200,8 +5509,9 @@ document.addEventListener('click', e => {
     const b = e.target.closest('[data-fb-open]');
     if (!b) return;
     e.preventDefault();
-    open(b.dataset.fbCheck ? { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '', fail: !('fbIssue' in b.dataset) } : null);
+    open(b.dataset.fbCheck ? { check: { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '', another: 'fbAnother' in b.dataset } } : null);
   });
+  window.askdndSendNote = open;
   const logo = document.querySelector('.brand');
   if (logo) {
     let held = null, fired = false;
@@ -5950,7 +6260,7 @@ document.addEventListener('change', e => {
 // or Esc closes it. A picture that is itself a button or link (your creature's, which opens the Picture window; a
 // party card) keeps doing that.
 (() => {
-  const PICS = '.ws-pic, .ep-pic img, .ep-mark, .peek-pic, img.portrait, .ib-pic, .fm-pic, .fb-pic';  // (.fb-pic: a feedback note's screenshots, Nov 16)
+  const PICS = '.ws-pic, .ep-pic img, .ep-mark, .peek-pic, img.portrait, .ib-pic, .fm-pic, .fb-pic, .fft-pic';  // (.fb-pic: a feedback note's screenshots, Nov 16)
   const big = pic => pic.matches(PICS) && !pic.closest('a, button, [data-panel-url], [data-modal-url], [data-use-url], label');
   document.addEventListener('click', e => {
     const pic = e.target.closest && e.target.closest('img');
@@ -6032,7 +6342,7 @@ document.addEventListener('askdnd:mention', e => {
     const a = tab.querySelector('[data-note-read]:not([hidden])');
     tab.querySelectorAll('[data-note]').forEach(r => r.classList.toggle('sel', !!a && r.dataset.note === a.dataset.noteRead));
   });
-  fetch('/your-notes/news', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+  const news = () => fetch('/your-notes/news', { headers: { Accept: 'application/json' }, cache: 'no-store' })
     .then(r => (r.ok ? r.json() : { count: 0, cards: [] }))
     .then(j => {
       badge(j.count);
@@ -6040,6 +6350,10 @@ document.addEventListener('askdnd:mention', e => {
       (j.cards || []).forEach(c => window.askdndToast && window.askdndToast(c.text, { label: 'See it', run: () => { location.href = c.href; } }, 'info'));
     })
     .catch(() => {});
+  news();
+  // A change in Found, Fixed, Tried (app/fft/live.py): the badge and its card come at once, not on the next page
+  let newsTick = null;
+  document.addEventListener('askdnd:live', e => { if (e.detail.type === 'fft') { clearTimeout(newsTick); newsTick = setTimeout(news, 400); } });
 })();
 
 // ---------------------------------------------------------------- markers instead of inline handlers

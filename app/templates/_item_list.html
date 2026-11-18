@@ -56,7 +56,7 @@
             {%- if it.attunement == "attuned" %} <span class="tag done">Attuned</span>{% elif it.attunement == "required" %} <span class="tag faint">Needs attunement</span>{% endif %}
             {%- if it.custom %} <span class="tag custom">Custom</span>{% endif %}{% if it.changes %} <span class="tag edited">Changed</span>{% endif %}{% if item_notes.get(it.key) %} <span class="tag">Note</span>{% endif %}</span>
             {% if it.summary %}<span class="ls-what">{{ it.summary }}</span>{% endif %}
-            {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+            {% if note %}<span class="ls-note" title="{{ note }}" data-private>✎ {{ note }}</span>{% endif %}</span>
           <span>{{ it.kind_label }}{% if it.magic and it.rarity %}<span class="note it-rarity">{{ it.rarity }}</span>{% endif %}</span>
           <span{{ sync_attrs(sync.get("charges:" ~ iid)) }}>{% if it.charges %}{{ count_pips(c if play and it.key.startswith("item:") else none, "charges:" ~ iid, it.charges, it.name, show=("" if it.charges.reset != "Used up" else '<span class="note">%s left</span>' % it.charges.left) | safe) }}{% else %}<span class="note">—</span>{% endif %}</span>
           {%- set holds = coins_text(coins.get(iid, {})) if it.bag else "" %}

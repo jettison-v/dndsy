@@ -1,0 +1,459 @@
+<title>Product Taxonomy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens; laptop first, one column on a phone.
+   Brett, Nov 17 (chat): "we should most likely create a Product Taxonomy which can help with grouping these requests
+   more consistently. That should make the subchats more consistent as well." Nov 18: "a 2-level taxonomy with Product
+   Area (top) and Product Feature (below)?" (an idea, from having worked with one before). Issue 12. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); }
+.wrap { max-width: 1440px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1, h2, h3, h4 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+a { color: var(--link); }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .92rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+header.top { display: grid; gap: 10px; }
+.terms { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 4px; font-size: .9rem; }
+.term .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+
+/* the screen picker */
+.shots { display: flex; flex-wrap: wrap; gap: 6px; }
+.shot { display: inline-flex; gap: 6px; align-items: center; min-height: 34px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .84rem/1 var(--sans); cursor: pointer; }
+.shot small { color: var(--faint); font-weight: 700; }
+.shot[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.shot .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; }
+.why { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.why p { font-size: .92rem; max-width: 110ch; }
+.why .tag { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); }
+
+/* askdnd's chrome */
+.app { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); padding: 9px 14px; font-size: .86rem; color: var(--muted); flex-wrap: wrap; }
+.mbar .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--red-btn); }
+.mbar b { color: var(--strong); }
+.mbar .sp { flex: 1; }
+.mbar .pill { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; }
+.mbar .search { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; min-width: 180px; color: var(--faint); }
+.mbar .av { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-3); display: inline-grid; place-items: center; color: var(--strong); font-weight: 700; font-size: .78rem; }
+.shell { display: grid; grid-template-columns: 170px minmax(0, 1fr); }
+.side { border-right: 1px solid var(--line-soft); padding: 14px 10px; display: grid; gap: 2px; align-content: start; font-size: .84rem; color: var(--muted); }
+.side span { padding: 5px 9px; border-radius: 7px; }
+.side span.on { background: var(--surface-2); color: var(--strong); font-weight: 600; }
+.side span.new { color: var(--amber); }
+.side .h { font: 700 .66rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding: 12px 9px 4px; }
+.page { padding: 16px 18px 22px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.page h2.pt { font: 700 1.5rem/1.2 var(--sans); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { padding: 9px 12px; color: var(--muted); font-weight: 500; font-size: .9rem; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.tab.on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red-btn); }
+.count { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; background: var(--surface-3); color: var(--text); font: 600 .78em/1 var(--sans); font-variant-numeric: tabular-nums; }
+.tab.on .count { background: var(--blue-soft); color: var(--strong); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.chip { display: inline-flex; gap: 6px; align-items: center; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font: 600 .78rem/1 var(--sans); white-space: nowrap; cursor: pointer; color: var(--text); }
+.chip.on { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.chip.dim { color: var(--muted); }
+/* the Features of the Product Area picked above: a tray hung under that area, not a second line of areas */
+.feat-tray { margin-left: 18px; padding: 8px 10px; border-left: 2px solid var(--blue); background: var(--surface); border-radius: 0 10px 10px 0; }
+.feat-tray .of { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--blue); margin-right: 4px; white-space: nowrap; }
+.chip .count { font-size: .72rem; }
+.sel { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); font-size: .84rem; color: var(--text); }
+.sel::after { content: "▾"; color: var(--faint); }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.quiet { background: transparent; border-color: transparent; color: var(--muted); }
+
+/* Screen 1: the list */
+.pa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.pa { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; align-content: start; }
+.pa > header { display: grid; gap: 2px; padding: 11px 14px 9px; border-bottom: 1px solid var(--line-soft); }
+.pa > header .t { display: flex; gap: 8px; align-items: center; }
+.pa > header h3 { font: 700 1rem/1.25 var(--sans); flex: 1; }
+.pa > header .what { color: var(--muted); font-size: .8rem; }
+.pa ul { list-style: none; margin: 0; padding: 6px; display: grid; gap: 1px; }
+.pa li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 8px; border-radius: 7px; font-size: .86rem; }
+.pa li:hover { background: var(--surface-2); }
+.pa li .count { background: var(--amber-soft); color: var(--amber); }
+.pa li .k { color: var(--faint); font-size: .74rem; }
+
+/* Feedback's reader */
+.reader { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.rlist { border-right: 1px solid var(--line); padding: 8px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.grp { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); padding: 12px 10px 5px; display: flex; justify-content: space-between; }
+.grp:first-child { padding-top: 4px; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 10px; border-radius: 8px; font-size: .86rem; cursor: pointer; }
+.row b { font-weight: 600; color: var(--text); }
+.row .sub { grid-column: 1 / -1; color: var(--muted); font-size: .76rem; }
+.row.on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--blue); }
+.sw { font: 700 .7rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; white-space: nowrap; align-self: start; letter-spacing: .02em; }
+.sw.claude { background: var(--violet-soft); color: var(--violet); } .sw.you { background: var(--amber-soft); color: var(--amber); }
+.detail { padding: 18px 22px 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.crumb { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .82rem; color: var(--muted); }
+.crumb .path { display: inline-flex; gap: 6px; align-items: center; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); color: var(--text); font-weight: 600; }
+.crumb .path i { font-style: normal; color: var(--faint); }
+.crumb .set { color: var(--faint); }
+.big { font: 600 1.35rem/1.25 var(--serif); color: var(--strong); }
+.sec { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; display: grid; }
+.sec > header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
+.sec > .in { padding: 12px 14px; display: grid; gap: 10px; font-size: .9rem; }
+.bub { max-width: 82%; border-radius: 12px; padding: 8px 12px; font-size: .88rem; display: grid; gap: 3px; }
+.bub small { font: 700 .7rem/1 var(--sans); color: var(--muted); }
+.bub.claude { background: var(--violet-soft); justify-self: start; border: 1px solid rgba(185,163,227,.3); }
+.bub.you { background: var(--blue-soft); justify-self: end; }
+
+/* the Feature picker */
+.picker { border: 1px solid var(--blue); border-radius: 12px; background: var(--surface); display: grid; grid-template-columns: 210px minmax(0, 1fr); overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+.picker .areas { border-right: 1px solid var(--line); padding: 6px; display: grid; gap: 1px; align-content: start; }
+.picker .areas button, .picker .feats button { text-align: left; border: 0; background: none; padding: 6px 10px; border-radius: 7px; font-size: .85rem; cursor: pointer; color: var(--text); display: flex; justify-content: space-between; gap: 8px; }
+.picker .areas button[aria-pressed="true"] { background: var(--blue-soft); color: var(--strong); font-weight: 600; }
+.picker .feats { padding: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 1px; align-content: start; }
+.picker .feats button:hover, .picker .areas button:hover { background: var(--surface-2); }
+.picker .feats button.cur { box-shadow: inset 0 0 0 1px var(--blue); }
+.picker .ph { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
+
+/* Where it stands */
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; }
+.item > header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line-soft); }
+.item > header h3 { font: 700 1rem/1.2 var(--sans); flex: 1; }
+.item .grip { color: var(--faint); }
+.arow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 3px 12px; padding: 9px 14px; border-top: 1px solid var(--line-soft); align-items: center; font-size: .88rem; }
+.arow:first-of-type { border-top: 0; }
+.arow .sub { grid-column: 2 / -1; color: var(--muted); font-size: .78rem; }
+.arow .sess { display: inline-flex; gap: 6px; align-items: center; color: var(--violet); font-size: .78rem; }
+.arow .sess::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.feat-tags { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+.feat-tags span { font-size: .72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .82rem; }
+.decide label.opt .mine { color: var(--amber); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 80px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .84rem; }
+.decide .saved.ok { color: var(--green); }
+
+@media (max-width: 900px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { display: none; }
+  .reader { grid-template-columns: minmax(0, 1fr); }
+  .rlist { border-right: 0; border-bottom: 1px solid var(--line); }
+  .picker { grid-template-columns: minmax(0, 1fr); }
+  .picker .areas { border-right: 0; border-bottom: 1px solid var(--line); grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .mbar .search { min-width: 0; flex: 1; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="lbl">Mockup · Issue 12</span>
+    <h1>A Product Taxonomy: every issue in one Feature, every Feature in one Product Area</h1>
+    <p class="meta">You asked for a fixed list to sort requests into, so they group the same way every time and each session starts from the same place. Here it is in two levels, as you suggested: <b>10 Product Areas</b>, and <b>62 Features</b> under them, built from docs/MAP.md, the map of every feature I keep.</p>
+  </header>
+
+  <section class="terms" aria-label="Where you'll find it">
+    <div class="term"><span class="tag">Where you'll find it</span><p><b>Feedback</b> groups its issues by Product Area, and each issue says its <b>Product Area › Feature</b> at the top. <b>Testing › Where it stands</b> shows which session is working on which Product Area.</p></div>
+    <div class="term"><span class="tag">Who sorts</span><p>Nobody picks a Feature when sending a note. I set it when I sort the note, along with the title. You can change it on the issue with <b>Change…</b></p></div>
+    <div class="term"><span class="tag">Where the list lives</span><p>The list itself is <b>Manage › askdnd › Product areas</b>. The same list orders docs/MAP.md, so each Feature has the notes on how it works, and a test keeps the two the same.</p></div>
+  </section>
+
+  <div class="shots" role="group" aria-label="Screens">
+    <button class="shot" type="button" data-shot="list"><small>1</small>The list</button>
+    <button class="shot" type="button" data-shot="fbA"><small>2A</small>Feedback grouped by Product Area <span class="mine">my pick</span></button>
+    <button class="shot" type="button" data-shot="fbB"><small>2B</small>Feedback with a filter menu</button>
+    <button class="shot" type="button" data-shot="issue"><small>3</small>An issue's Feature</button>
+    <button class="shot" type="button" data-shot="wsA"><small>4A</small>A session per Product Area <span class="mine">my pick</span></button>
+    <button class="shot" type="button" data-shot="wsB"><small>4B</small>Batches made by hand</button>
+  </div>
+  <div class="why"><span class="tag" id="why-tag"></span><p id="why-text"></p></div>
+
+  <div class="app">
+    <div class="mbar"><span class="logo"></span><b>askdnd</b><span class="pill">Campaign</span><span class="pill">Table</span><span class="pill">Manage</span><span class="sp"></span><span class="search">Search</span><span class="av">B</span></div>
+    <div class="shell">
+      <nav class="side" aria-label="Manage">
+        <span class="h">askdnd</span><span>Overview</span><span>Accounts</span><span data-side="list">Product areas</span><span data-side="fb">Feedback</span><span data-side="ws">Testing</span><span>Documents</span><span>Usage</span>
+      </nav>
+
+      <!-- 1: the list -->
+      <section class="page" data-screen="list">
+        <h2 class="pt">Product areas</h2>
+        <p class="note">Every part of askdnd, in two levels. The number by a Feature is its open issues; press one to see them in Feedback.</p>
+        <div class="pa-grid" id="pa-grid"></div>
+      </section>
+
+      <!-- 2A: Feedback grouped -->
+      <section class="page" data-screen="fbA">
+        <h2 class="pt">Feedback</h2>
+        <div class="tabs"><span class="tab">To approve</span><span class="tab on">Open <span class="count">9</span></span><span class="tab">Ready to try <span class="count">6</span></span><span class="tab">Closed</span><span class="tab">Ideas</span></div>
+        <div class="chips" id="fbA-chips" role="group" aria-label="Product Area"></div>
+        <div class="chips feat-tray" id="fbA-feats" role="group" aria-label="Feature" hidden></div>
+        <div class="reader">
+          <div class="rlist" id="fbA-list"></div>
+          <div class="detail" id="fbA-detail"></div>
+        </div>
+      </section>
+
+      <!-- 2B: Feedback with a menu -->
+      <section class="page" data-screen="fbB">
+        <h2 class="pt">Feedback</h2>
+        <div class="tabs"><span class="tab">To approve</span><span class="tab on">Open <span class="count">9</span></span><span class="tab">Ready to try <span class="count">6</span></span><span class="tab">Closed</span><span class="tab">Ideas</span></div>
+        <div class="chips"><span class="chip dim">From players</span><span class="chip dim">From checks</span><span class="sel">Every Product Area</span><span class="sel">Every Feature</span></div>
+        <div class="reader">
+          <div class="rlist" id="fbB-list"></div>
+          <div class="detail"><p class="note">Today's list as it is, newest first: the Product Area and Feature are two menus above it, like today's area menu.</p></div>
+        </div>
+      </section>
+
+      <!-- 3: an issue's Feature -->
+      <section class="page" data-screen="issue">
+        <h2 class="pt">Feedback</h2>
+        <div class="tabs"><span class="tab">To approve</span><span class="tab on">Open <span class="count">9</span></span><span class="tab">Ready to try <span class="count">6</span></span><span class="tab">Closed</span><span class="tab">Ideas</span></div>
+        <div class="detail" style="padding: 4px 0 0">
+          <div class="crumb"><span class="path" id="iss-path"><span id="iss-area">Manage</span><i>›</i><span id="iss-feat">DM Tools and homebrew items</span></span><button class="btn small quiet" type="button" id="iss-change">Change…</button><span class="set" id="iss-set">Set by Claude when it sorted your note</span></div>
+          <div class="picker" id="picker" hidden>
+            <div class="ph"><span>Which Feature is this about?</span><button class="btn quiet" type="button" id="pick-close">✕</button></div>
+            <div class="areas" id="pick-areas"></div>
+            <div class="feats" id="pick-feats"></div>
+          </div>
+          <div class="big">The item builder takes a value that makes no sense, without an error</div>
+          <div class="sec"><header>What was seen</header><div class="in"><p>On DM Tools › a new item, a damage box took a value it can't read, and Save said nothing.</p></div></div>
+          <div class="sec"><header>Conversation</header><div class="in">
+            <div class="bub you"><small>You</small>It did not work.</div>
+            <div class="bub claude"><small>Claude</small>Thanks. I'll make it refuse a value it can't read and say what it expects, with the Item Builder's other fixes.</div>
+          </div></div>
+        </div>
+      </section>
+
+      <!-- 4A: Where it stands by Product Area -->
+      <section class="page" data-screen="wsA">
+        <h2 class="pt">Testing</h2>
+        <div class="tabs"><span class="tab">For you <span class="count">4</span></span><span class="tab on">Where it stands</span><span class="tab">Claude's</span><span class="tab">Done</span></div>
+        <div class="item">
+          <header><span class="grip">⠿</span><h3>Fixes and polish</h3><span class="note">one batch per Product Area, in your order</span></header>
+          <div class="arow"><span class="grip">⠿</span><b>Feedback and Testing</b><span class="sw you">Your turn · 4 to try</span><span class="sub"><span class="sess">Session “Feedback and Testing” · waiting on your tries</span> · <span class="feat-tags"><span>Feedback 3</span><span>Testing 2</span><span>Where it stands 1</span></span></span></div>
+          <div class="arow"><span class="grip">⠿</span><b>Manage</b><span class="sw claude">Claude's turn · 2 open</span><span class="sub"><span class="sess">Session “Manage” · working</span> · <span class="feat-tags"><span>DM Tools and homebrew items 1</span><span>Overview and Documents 1</span></span></span></div>
+          <div class="arow"><span class="grip">⠿</span><b>Battle</b><span class="sw claude">Claude's turn · 1 open</span><span class="sub">No session yet: starts when Manage is done (one at a time) · <span class="feat-tags"><span>Hit points 1</span></span></span></div>
+        </div>
+        <div class="item">
+          <header><span class="grip">⠿</span><h3>The Roadmap in askdnd</h3><span class="note">a build: its own batch</span></header>
+          <div class="arow"><span class="grip">⠿</span><b>Build</b><span class="sw claude">Not started</span><span class="sub">Product Area: Feedback and Testing › The Roadmap</span></div>
+        </div>
+      </section>
+
+      <!-- 4B: hand-made batches -->
+      <section class="page" data-screen="wsB">
+        <h2 class="pt">Testing</h2>
+        <div class="tabs"><span class="tab">For you <span class="count">4</span></span><span class="tab on">Where it stands</span><span class="tab">Claude's</span><span class="tab">Done</span></div>
+        <div class="item">
+          <header><span class="grip">⠿</span><h3>Fixes and polish</h3><span class="note">batches as today, named by Claude</span></header>
+          <div class="arow"><span class="grip">⠿</span><b>Feedback and Testing</b><span class="sw you">Your turn · 4 to try</span><span class="sub"><span class="feat-tags"><span>Feedback and Testing › Feedback</span><span>Feedback and Testing › Testing</span><span>Manage › Overview and Documents</span></span></span></div>
+          <div class="arow"><span class="grip">⠿</span><b>Item Builder</b><span class="sw claude">Claude's turn · 1 open</span><span class="sub"><span class="feat-tags"><span>Manage › DM Tools and homebrew items</span></span></span></div>
+          <div class="arow"><span class="grip">⠿</span><b>Phone polish</b><span class="sw claude">Claude's turn · 2 open</span><span class="sub"><span class="feat-tags"><span>Battle › Hit points</span><span>Getting around › Menus</span></span></span></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <form class="decide" aria-label="Your picks">
+    <h2>Your picks</h2>
+    <fieldset><legend>1 · How many levels?</legend>
+      <label class="opt"><input type="radio" name="levels" value="two"><span>Two: Product Area › Feature <span class="mine">my pick</span></span><small>About 10 Product Areas a session can take up whole, and about 60 Features an issue is about. Each Feature is one section of the feature map, so a session reads just those.</small></label>
+      <label class="opt"><input type="radio" name="levels" value="one"><span>One: Product Areas only</span><small>Simpler to sort, but an area like Battle holds a dozen things, so its issues don't group any finer.</small></label>
+      <label class="opt"><input type="radio" name="levels" value="three"><span>Three: Product Area › Feature › Part</span><small>Finer still (Hit points › Temporary HP), but too fine for askdnd's size today: sorting would take longer than it saves.</small></label>
+    </fieldset>
+    <fieldset><legend>2 · How fixes are batched (screens 4A and 4B)</legend>
+      <label class="opt"><input type="radio" name="batch" value="area"><span>A · Each Product Area is a batch, with one session for it <span class="mine">my pick</span></span><small>The word “area” then means only Product Area. A build from the Roadmap stays its own batch. Sessions always split the same way.</small></label>
+      <label class="opt"><input type="radio" name="batch" value="hand"><span>B · Batches made by hand, as today, each issue also given a Feature</span><small>Freer, but two similar issues can still land in different batches, which is what you wanted to stop.</small></label>
+    </fieldset>
+    <fieldset><legend>3 · Feedback's list (screens 2A and 2B)</legend>
+      <label class="opt"><input type="radio" name="fb" value="grouped"><span>A · Grouped under Product Area headings, with a chip for each <span class="mine">my pick</span></span><small>See at a glance where the open issues are; press an area, then a Feature, to narrow.</small></label>
+      <label class="opt"><input type="radio" name="fb" value="menu"><span>B · Newest first, with two filter menus</span><small>Today's list as it is, with the area menu split in two.</small></label>
+    </fieldset>
+    <label><b>Renames and moves</b> <span class="note">(a Feature in the wrong area, a name you'd say differently, something missing)</span><textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="btn go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const AREAS = [
+    ["battle", "Battle", "A character in play, on the Battle tab", [["hp", "Hit points", 1], ["cond", "Conditions and concentration"], ["death", "Death saves"], ["use", "Actions and the Use window"], ["cast", "Casting and spell slots"], ["change", "Changing spells and forms"], ["components", "Spell components"], ["items", "Items and charges"], ["hide", "Hide and Ready"], ["shape", "Wild Shape"], ["creatures", "Your creatures"], ["heal", "Healing someone"], ["resources", "Resources and rests"]]],
+    ["rolls", "Rolls and dice", "Every roll, from the button to the result", [["dice", "Dice"], ["card", "The roll card"], ["plan", "What each option rolls"], ["math", "Show the Math"], ["tablerolls", "Table rolls"]]],
+    ["table", "The table", "Playing together, live", [["tablepage", "askdnd's table"], ["live", "The live connection"], ["fight", "The fight and initiative"], ["party", "Party"], ["pictures", "Pictures"]]],
+    ["ddb", "D&D Beyond", "What askdnd reads from it and sends to it", [["bridge", "The extension"], ["sync", "Sheets from D&D Beyond"], ["gamelog", "Rolls into the Game Log"], ["corrections", "Corrections"], ["notes", "Your notes"]]],
+    ["story", "Campaign and story", "The campaign's memory", [["previously", "Previously on…"], ["sessions", "Sessions and drafting"], ["processor", "Recording to recap"], ["moments", "Key moments and suggestions"], ["world", "World entries"], ["trophies", "Trophy Case"], ["history", "Version history"]]],
+    ["rules", "Rules and books", "Answers that cite the page", [["answers", "Rules answers"], ["books", "Books"], ["srd", "Rules content"]]],
+    ["manage", "Manage", "The DM's week and askdnd's admin", [["needs", "Needs you and Inbox"], ["homebrew", "DM Tools and homebrew items", 1], ["switches", "Features and Labs"], ["digest", "The Inbox email"], ["guide", "DM guide"], ["accounts", "Accounts and View as"], ["overview", "Overview and Documents", 1], ["spending", "Usage and spending"], ["usage", "Which features get used"], ["campaigns", "Campaigns"]]],
+    ["around", "Getting around", "What every page shares", [["menus", "Menus and the menu bar"], ["search", "Search"], ["cards", "Corner cards"], ["help", "Help and the tour"], ["signin", "Signing in"]]],
+    ["fft", "Feedback and Testing", "Found, Fixed, Tried", [["send", "Sending a note"], ["feedback", "Feedback", 3], ["testing", "Testing", 2], ["stands", "Where it stands", 1], ["roadmap", "The Roadmap"]]],
+    ["behind", "Behind the scenes", "What no one sees until it breaks", [["speed", "Speed"], ["errors", "Errors"], ["backups", "Backups and staging"], ["deploys", "Deploys and tests"]]],
+  ];
+  const AREA = Object.fromEntries(AREAS.map(a => [a[0], a]));
+  const FEAT = {};
+  AREAS.forEach(([ak, , , fs]) => fs.forEach(([fk, name]) => { FEAT[fk] = [ak, name]; }));
+  const ISSUES = [
+    ["fft", "feedback", "A product taxonomy: one fixed list every issue is sorted into", "claude", "Claude's turn", "from your chat note · today"],
+    ["fft", "feedback", "Feedback's reader blends together: clearer sections", "claude", "Claude's turn", "1 note · you picked A"],
+    ["fft", "testing", "Local test of Failed… on a check", "claude", "Claude's turn", "from a check"],
+    ["fft", "stands", "Claude missed: show what was left half done", "you", "Your turn", "ready to try"],
+    ["fft", "feedback", "Back cleared what you'd typed", "you", "Your turn", "ready to try"],
+    ["fft", "testing", "Open mockup: a large window over For you", "you", "Your turn", "ready to try"],
+    ["manage", "homebrew", "The item builder takes a value that makes no sense, without an error", "claude", "Claude's turn", "1 note · Nov 17"],
+    ["manage", "overview", "Overview: a tile per page", "claude", "Claude's turn", "1 note · you answered"],
+    ["battle", "hp", "Cole's Hit points window: the Temp HP box is cramped on a phone", "claude", "Claude's turn", "an example"],
+  ];
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const count = n => el("span", "count", String(n));
+
+  // 1: the list
+  const grid = document.getElementById("pa-grid");
+  AREAS.forEach(([ak, name, what, fs]) => {
+    const card = el("section", "pa"); card.dataset.area = ak;
+    const h = el("header"), t = el("div", "t");
+    t.append(el("h3", "", name));
+    const open = fs.reduce((s, f) => s + (f[2] || 0), 0);
+    if (open) t.append(count(open));
+    t.append(el("span", "k", fs.length + " features"));
+    h.append(t, el("span", "what", what));
+    const ul = el("ul");
+    fs.forEach(([fk, fname, n]) => { const li = el("li"); li.dataset.feature = fk; li.append(el("span", "", fname)); if (n) li.append(count(n)); ul.append(li); });
+    card.append(h, ul); grid.append(card);
+  });
+
+  // 2A: Feedback grouped
+  const chipsA = document.getElementById("fbA-chips"), featsA = document.getElementById("fbA-feats"), listA = document.getElementById("fbA-list"), detA = document.getElementById("fbA-detail");
+  let fArea = "", fFeat = "", picked = 0;
+  const row = (iss, i, onclick) => {
+    const r = el("div", "row" + (i === picked ? " on" : "")); r.dataset.row = i;
+    r.append(el("b", "", iss[2]), el("span", "sw " + iss[3], iss[4]), el("span", "sub", FEAT[iss[1]][1] + " · " + iss[5]));
+    r.addEventListener("click", () => onclick(i)); return r;
+  };
+  const showDetail = i => {
+    const iss = ISSUES[i]; detA.replaceChildren();
+    const c = el("div", "crumb"), p = el("span", "path");
+    p.append(el("span", "", AREA[iss[0]][1]), el("i", "", "›"), el("span", "", FEAT[iss[1]][1]));
+    c.append(p, el("span", "set", "Change… is on the issue (screen 3)"));
+    detA.append(c, el("div", "big", iss[2]), el("p", "note", "The rest of the issue as in the reader you picked (Sections as cards)."));
+  };
+  const renderA = () => {
+    chipsA.replaceChildren();
+    const all = el("button", "chip" + (fArea ? "" : " on"), "Every Product Area"); all.type = "button"; all.append(count(ISSUES.length));
+    all.addEventListener("click", () => { fArea = ""; fFeat = ""; renderA(); }); chipsA.append(all);
+    AREAS.forEach(([ak, name]) => {
+      const n = ISSUES.filter(x => x[0] === ak).length; if (!n) return;
+      const b = el("button", "chip" + (fArea === ak ? " on" : ""), name); b.type = "button"; b.dataset.area = ak; b.append(count(n));
+      b.addEventListener("click", () => { fArea = fArea === ak ? "" : ak; fFeat = ""; renderA(); }); chipsA.append(b);
+    });
+    featsA.hidden = !fArea; featsA.replaceChildren();
+    if (fArea) featsA.append(el("span", "of", AREA[fArea][1] + "'s features ›"));
+    if (fArea) AREA[fArea][3].forEach(([fk, fname]) => {
+      const n = ISSUES.filter(x => x[1] === fk).length; if (!n) return;
+      const b = el("button", "chip" + (fFeat === fk ? " on" : " dim"), fname); b.type = "button"; b.dataset.feature = fk; b.append(count(n));
+      b.addEventListener("click", () => { fFeat = fFeat === fk ? "" : fk; renderA(); }); featsA.append(b);
+    });
+    listA.replaceChildren();
+    const seen = ISSUES.map((x, i) => [x, i]).filter(([x]) => (!fArea || x[0] === fArea) && (!fFeat || x[1] === fFeat)).map(([, i]) => i);
+    if (seen.length && !seen.includes(picked)) picked = seen[0];  // (the open issue is always one the list shows)
+    AREAS.forEach(([ak, name]) => {
+      const mine = ISSUES.map((x, i) => [x, i]).filter(([x]) => x[0] === ak && (!fArea || fArea === ak) && (!fFeat || x[1] === fFeat));
+      if (!mine.length) return;
+      const g = el("div", "grp"); g.append(el("span", "", name), el("span", "", String(mine.length))); listA.append(g);
+      mine.forEach(([x, i]) => listA.append(row(x, i, j => { picked = j; renderA(); })));
+    });
+    showDetail(picked);
+  };
+  renderA();
+
+  // 2B: newest first
+  const listB = document.getElementById("fbB-list");
+  ISSUES.forEach((x, i) => { const r = row(x, i, () => {}); r.classList.toggle("on", i === 6); r.querySelector(".sub").textContent = AREA[x[0]][1] + " › " + FEAT[x[1]][1] + " · " + x[5]; listB.append(r); });
+
+  // 3: the picker
+  const picker = document.getElementById("picker"), pA = document.getElementById("pick-areas"), pF = document.getElementById("pick-feats");
+  let cur = ["manage", "homebrew"], showing = "manage";
+  const renderPick = () => {
+    pA.replaceChildren(); pF.replaceChildren();
+    AREAS.forEach(([ak, name, , fs]) => { const b = el("button", "", name); b.type = "button"; b.setAttribute("aria-pressed", String(ak === showing)); b.append(el("span", "note", String(fs.length))); b.addEventListener("click", () => { showing = ak; renderPick(); }); pA.append(b); });
+    AREA[showing][3].forEach(([fk, fname]) => { const b = el("button", fk === cur[1] ? "cur" : "", fname); b.type = "button"; b.addEventListener("click", () => {
+      cur = [showing, fk]; document.getElementById("iss-area").textContent = AREA[showing][1]; document.getElementById("iss-feat").textContent = fname;
+      document.getElementById("iss-set").textContent = "Changed by you · Claude sees it"; picker.hidden = true; }); pF.append(b); });
+  };
+  document.getElementById("iss-change").addEventListener("click", () => { showing = cur[0]; renderPick(); picker.hidden = !picker.hidden; });
+  document.getElementById("pick-close").addEventListener("click", () => { picker.hidden = true; });
+
+  // screens
+  const WHY = {
+    list: ["1 · The list", "The whole taxonomy as I'd start it. Ten Product Areas, named by where you meet them in askdnd; the Features under each are the feature map's sections, some merged. Tell me below what you'd rename or move."],
+    fbA: ["2A · My pick", "Feedback's Open tab with its issues under Product Area headings and a chip per area. Press Manage, then a Feature, to narrow. Try it: the chips and rows are live."],
+    fbB: ["2B", "The same issues newest first, with the Product Area and Feature as two menus where today's area menu is."],
+    issue: ["3 · An issue's Feature", "At the top of every issue: its Product Area › Feature. I set it when I sort a note; press Change… to move it. Try it."],
+    wsA: ["4A · My pick", "Where it stands with fixes batched by Product Area: one session per Product Area, one at a time, in your order. A Roadmap build (like the Roadmap in askdnd) stays its own batch."],
+    wsB: ["4B", "Batches made by hand as today, each issue also showing its Feature. Similar issues can still end up in different batches."],
+  };
+  const shots = document.querySelectorAll(".shot");
+  const SIDE = { list: "list", fbA: "fb", fbB: "fb", issue: "fb", wsA: "ws", wsB: "ws" };
+  const go = name => {
+    shots.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.shot === name)));
+    document.querySelectorAll("[data-screen]").forEach(s => { s.hidden = s.dataset.screen !== name; });
+    document.querySelectorAll("[data-side]").forEach(s => s.classList.toggle("on", s.dataset.side === SIDE[name]));
+    document.getElementById("why-tag").textContent = WHY[name][0];
+    document.getElementById("why-text").textContent = WHY[name][1];
+  };
+  shots.forEach(b => b.addEventListener("click", () => go(b.dataset.shot)));
+  go("list");
+})();
+(() => {
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["levels", "batch", "fb"];
+  let db = null;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
+  form.addEventListener("input", () => show("Not saved yet"));
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    if (!db) { show("Open this page on claude.ai, signed in, to save (On claude.ai ↗ above it in askdnd)."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes: form.querySelector("textarea").value.trim(), at };
+    NAMES.forEach(n => { const v = form.querySelector(`input[name=${n}]:checked`); doc[n] = v ? v.value : ""; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { show("Open this page on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      NAMES.forEach(n => form.querySelectorAll(`input[name=${n}]`).forEach(i => { i.checked = a[n] === i.value; }));
+      form.querySelector("textarea").value = a.notes || "";
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

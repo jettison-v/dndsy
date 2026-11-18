@@ -1,0 +1,796 @@
+<title>Found, Fixed, Tried: Screens</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's mockups: dark, in askdnd's own tokens; laptop first, one column on a phone; the table's own characters.
+   Found, Fixed, Tried as screens (Brett, Nov 17: "this is not a mockup, and I would like to create one before
+   proceeding"; every recommendation on the design brief agreed, docs/mockups/feedback-and-testing/). */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #8f8a81; --link: #f08a8a;
+  --red: #f08a8a; --red-btn: #d64545; --red-soft: rgba(214, 69, 69, .15);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15); --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); }
+.wrap { max-width: 1360px; margin: 0 auto; padding-block: 28px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 26px; }
+h1, h2, h3, h4 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 600 2rem/1.15 var(--serif); }
+h2 { font: 600 1.3rem/1.25 var(--serif); }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+a { color: var(--link); }
+button { font: inherit; color: inherit; }
+.lbl { font: 700 .74rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--red); }
+.meta { color: var(--muted); font-size: .9rem; max-width: 92ch; }
+.note { color: var(--muted); font-size: .84rem; }
+header.top { display: grid; gap: 10px; }
+
+/* The screen picker */
+.shots { display: flex; flex-wrap: wrap; gap: 6px; }
+.shot { display: inline-flex; gap: 6px; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; }
+.shot small { color: var(--faint); font-weight: 700; }
+.shot[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.why { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+.why p { font-size: .92rem; }
+.why .notes-tag { font: 700 .7rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; color: var(--amber); white-space: nowrap; }
+.nav-steps { display: flex; gap: 8px; }
+
+/* askdnd's chrome */
+.app { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); position: relative; min-height: 640px; }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--red-btn); padding: 9px 14px; font-size: .86rem; color: var(--muted); flex-wrap: wrap; }
+.mbar .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--red-btn); }
+.mbar b { color: var(--strong); }
+.mbar .sp { flex: 1; }
+.mbar .pill { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; }
+.mbar .search { border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; min-width: 200px; color: var(--faint); }
+.mbar .av { width: 26px; height: 26px; border-radius: 50%; background: var(--surface-3); display: inline-grid; place-items: center; color: var(--strong); font-weight: 700; font-size: .78rem; position: relative; }
+.mbar .av i { position: absolute; top: -5px; right: -7px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 999px; background: var(--red-btn); color: #fff; font: 700 .66rem/17px var(--sans); font-style: normal; text-align: center; }
+.mband { display: flex; gap: 10px; align-items: center; padding: 8px 18px; border-bottom: 1px solid var(--line-soft); font-size: .84rem; color: var(--muted); }
+.mband .bar { width: 4px; height: 16px; background: var(--blue); border-radius: 2px; }
+.page { padding: 16px 18px 22px; display: grid; gap: 14px; }
+.ptitle { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.ptitle h2 { font: 600 1.5rem/1.2 var(--sans); }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tab { padding: 9px 12px; color: var(--muted); font-weight: 500; font-size: .92rem; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.tab.on { color: var(--strong); box-shadow: inset 0 -2px 0 var(--red-btn); }
+.count { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; background: var(--surface-3); color: var(--text); font: 600 .78em/1 var(--sans); font-variant-numeric: tabular-nums; }
+.tab.on .count { background: var(--blue-soft); color: var(--strong); }
+
+/* the Reader */
+.reader { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); min-height: 470px; }
+.rlist { border-right: 1px solid var(--line); padding: 10px; display: grid; gap: 2px; align-content: start; min-width: 0; }
+.rhead { padding: 4px 6px 10px; display: grid; gap: 8px; font-size: .86rem; color: var(--muted); }
+.rhead b { font-size: .98rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; gap: 5px; align-items: center; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font: 600 .78rem/1 var(--sans); white-space: nowrap; cursor: pointer; }
+.chip.on, .chip[aria-pressed="true"] { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.grp { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px 6px 4px; font: 800 .7rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.grp a { font: 600 .76rem/1 var(--sans); letter-spacing: 0; text-transform: none; color: var(--blue); text-decoration: none; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 8px 10px; border-radius: 8px; font-size: .88rem; cursor: pointer; }
+.row b { font-weight: 600; color: var(--text); }
+.row .sub { grid-column: 1 / -1; color: var(--muted); font-size: .76rem; }
+.row.on { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--blue); }
+.sw { font: 700 .7rem/1 var(--sans); padding: 4px 8px; border-radius: 999px; white-space: nowrap; align-self: start; letter-spacing: .02em; }
+.sw.ready { background: var(--blue-soft); color: var(--blue); } .sw.again, .sw.ask { background: var(--amber-soft); color: var(--amber); }
+.sw.failed { background: var(--red-soft); color: var(--red); } .sw.passed, .sw.fixed { background: var(--green-soft); color: var(--green); }
+.sw.claude, .sw.look { background: var(--violet-soft); color: var(--violet); } .sw.fixing { background: var(--blue-soft); color: var(--blue); } .sw.quiet { background: var(--surface-3); color: var(--muted); }
+.detail { padding: 18px 22px; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.where { color: var(--muted); font-size: .8rem; }
+.detail h3.big { font: 600 1.35rem/1.25 var(--serif); }
+.sline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: .92rem; }
+.sline .sw { font-size: .74rem; padding: 5px 10px; }
+.act { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 13px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .86rem/1 var(--sans); white-space: nowrap; cursor: pointer; }
+.btn.go { background: var(--red-btn); border-color: var(--red-btn); color: #fff; }
+.btn.ok { background: transparent; border-color: var(--green); color: var(--green); }
+.btn.no { background: transparent; border-color: var(--red); color: var(--red); }
+.btn.quiet { background: transparent; border-color: transparent; color: var(--muted); }
+.btn.small { min-height: 28px; padding: 0 10px; font-size: .8rem; }
+.panel { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; }
+.plabel { font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.steps { list-style: none; padding: 0; margin: 0; display: grid; gap: 7px; counter-reset: s; }
+.steps li { display: grid; grid-template-columns: 16px 16px minmax(0, 1fr); gap: 8px; align-items: start; counter-increment: s; font-size: .9rem; }
+.steps li::before { content: counter(s); font: 700 .74rem/1.9 var(--sans); color: var(--faint); text-align: right; }
+.steps .box { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--line-strong); margin-top: 3px; }
+.steps .box.on { background: var(--green); border-color: var(--green); }
+.press { font: 600 .8rem/1 var(--sans); background: var(--surface-3); border: 1px solid var(--line-strong); color: var(--strong); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+.see { border-top: 1px solid var(--line-soft); padding-top: 10px; display: grid; gap: 4px; font-size: .88rem; }
+.problems { display: grid; gap: 6px; }
+.prob { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 8px 12px; font-size: .88rem; }
+.prob .n { min-width: 22px; padding: 0 6px; height: 22px; border-radius: 999px; background: var(--red-soft); color: var(--red); display: grid; place-items: center; font: 700 .74rem/1 var(--sans); }
+.hist { display: grid; gap: 0; }
+.badge { justify-self: start; display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: .82rem; cursor: pointer; border: 1px solid var(--line); border-radius: 999px; padding: 4px 10px; background: transparent; }
+.tl { list-style: none; margin: 8px 0 0; padding: 0 0 0 12px; border-left: 2px solid var(--line); display: grid; gap: 6px; font-size: .84rem; }
+.tl li { display: flex; justify-content: space-between; gap: 12px; }
+.tl li span:last-child { color: var(--faint); white-space: nowrap; }
+.tl .t-failed b { color: var(--red); } .tl .t-fixed b { color: var(--violet); } .tl .t-again b { color: var(--amber); } .tl .t-changed b { color: var(--blue); }
+.whyline { font-size: .88rem; }
+.whyline .more { color: var(--blue); font-size: .8rem; }
+
+/* windows and the card */
+.scrim { position: absolute; inset: 44px 0 0; background: rgba(8, 9, 11, .55); display: grid; place-items: center; padding: 16px; }
+.win { width: min(560px, 100%); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 14px; padding: 18px 20px; display: grid; gap: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.5); }
+.win .hd { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.win .hd b { font-size: 1.08rem; }
+.win .x { color: var(--muted); }
+.field { display: grid; gap: 5px; font-size: .82rem; color: var(--muted); }
+.input { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; color: var(--text); font: 400 .92rem/1.4 var(--sans); min-height: 38px; }
+.input.ph { color: var(--faint); }
+.pic { position: relative; height: 150px; border-radius: 10px; border: 1px solid var(--line); background: linear-gradient(180deg, #1c1f23 0 18%, #23272c 18% 100%); overflow: hidden; }
+.pic .mk { position: absolute; border: 2px solid var(--amber); border-radius: 6px; }
+.pic .tools { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 4px; }
+.pic .tools span { font: 600 .72rem/1 var(--sans); background: rgba(15,17,19,.9); border: 1px solid var(--line); border-radius: 6px; padding: 4px 7px; color: var(--text); }
+.pic .lines { position: absolute; inset: 34px 18px auto; display: grid; gap: 9px; }
+.pic .lines i { display: block; height: 9px; border-radius: 4px; background: var(--surface-3); }
+.radios { display: grid; gap: 6px; }
+.radio { display: flex; gap: 10px; align-items: center; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: .9rem; cursor: pointer; background: var(--surface-2); }
+.radio::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.radio.on { border-color: var(--blue); background: var(--blue-soft); }
+.radio.on::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--surface-2); }
+.radio small { color: var(--muted); margin-left: auto; font-size: .8rem; }
+.card { position: absolute; right: 16px; bottom: 16px; width: 360px; background: var(--surface); border: 1px solid var(--line-strong); border-top: 3px solid var(--blue); border-radius: 12px; padding: 12px 14px; display: grid; gap: 10px; box-shadow: 0 16px 40px rgba(0,0,0,.5); }
+.card .hd { display: flex; justify-content: space-between; gap: 8px; font-size: .78rem; color: var(--muted); }
+.card .hd b { font-size: .94rem; color: var(--strong); display: block; }
+.ghostpage { opacity: .5; pointer-events: none; }
+
+/* Feedback's issue */
+.reports { display: grid; gap: 8px; }
+.report { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px; font-size: .86rem; }
+.report .thumb { height: 72px; border-radius: 8px; border: 1px solid var(--line); background: linear-gradient(180deg, #1c1f23 0 22%, #2a2e33 22%); }
+.convo { display: grid; gap: 8px; }
+.bub { max-width: 78%; border-radius: 12px; padding: 8px 12px; font-size: .88rem; display: grid; gap: 2px; }
+.bub small { font: 700 .7rem/1 var(--sans); color: var(--muted); }
+.bub.them { background: var(--surface-2); justify-self: start; }
+.bub.claude { background: var(--violet-soft); justify-self: start; border: 1px solid rgba(185,163,227,.3); }
+.bub.you { background: var(--blue-soft); justify-self: end; }
+.aside { justify-self: center; font-size: .78rem; color: var(--faint); }
+.composer { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; }
+.toline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: .82rem; color: var(--muted); }
+.sendline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.sendline .note b { color: var(--text); }
+.metoo { font: 700 .74rem/1 var(--sans); color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+
+/* Where it stands */
+.areas { display: grid; gap: 8px; }
+.area { display: grid; grid-template-columns: 22px minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.area.hot { border-color: var(--violet); }
+.grip { color: var(--faint); letter-spacing: -2px; }
+.area .ri { font-size: .78rem; color: var(--muted); }
+.track { display: flex; gap: 4px; flex-wrap: wrap; }
+.track span { font: 600 .7rem/1 var(--sans); padding: 4px 7px; border-radius: 6px; background: var(--surface-2); color: var(--faint); white-space: nowrap; }
+.track span.done { color: var(--muted); }
+.track span.now { background: var(--violet-soft); color: var(--violet); }
+.track span.you { background: var(--amber-soft); color: var(--amber); }
+
+/* Picks */
+.verdict { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.verdict fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 8px; min-width: 0; }
+.verdict legend { font-weight: 600; color: var(--strong); padding: 0; margin-bottom: 8px; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice { position: relative; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 7px 14px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); cursor: pointer; font-size: .9rem; }
+.choice input { position: absolute; opacity: 0; pointer-events: none; }
+.choice::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--muted); flex: none; }
+.choice:has(input:checked) { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
+.choice:has(input:checked)::before { background: var(--blue); border-color: var(--blue); box-shadow: inset 0 0 0 2px var(--surface-2); }
+.choice:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+.verdict textarea { width: 100%; min-height: 96px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; color: var(--text); font: 400 1rem/1.4 var(--sans); resize: vertical; }
+.save-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.save-row button { background: var(--red-btn); color: #fff; border: 0; border-radius: 10px; padding: 10px 18px; font: 600 .95rem/1 var(--sans); cursor: pointer; }
+.saved { color: var(--muted); font-size: .88rem; }
+.saved.ok { color: var(--green); }
+.btn:focus-visible, .shot:focus-visible, .row:focus-visible, .chip:focus-visible, .radio:focus-visible, .badge:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+@media (max-width: 900px) {
+  .reader { grid-template-columns: minmax(0, 1fr); }
+  .rlist { border-right: 0; border-bottom: 1px solid var(--line); }
+  .card { position: static; width: auto; margin: 0 12px 12px; }
+  .scrim { position: static; background: none; padding: 12px; }
+  .area { grid-template-columns: 22px minmax(0, 1fr); }
+  .area .track, .area > .btn { grid-column: 2; }
+  .mbar .search { display: none; }
+  .why { grid-template-columns: minmax(0, 1fr); }
+  .report { grid-template-columns: minmax(0, 1fr); }
+}
+</style>
+<style>
+/* v2 (after the audit): whose turn, tries per device, the card on the left, windows that ask */
+.turn { font: 700 .72rem/1 var(--sans); padding: 4px 9px; border-radius: 999px; white-space: nowrap; align-self: start; }
+.turn.y { background: var(--amber-soft); color: var(--amber); } .turn.c { background: var(--violet-soft); color: var(--violet); }
+.turn.p { background: var(--blue-soft); color: var(--blue); } .turn.x { background: var(--surface-3); color: var(--muted); }
+.btn.wrong { background: var(--surface-2); border-color: var(--line-strong); color: var(--text); }
+.btn.wrong::first-letter { color: var(--red); }
+.fail { color: var(--red); font-weight: 600; }
+.devices { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .84rem; color: var(--muted); }
+.devices b { color: var(--text); font-weight: 600; }
+.ver { font: 700 .7rem/1 var(--sans); padding: 3px 7px; border-radius: 6px; background: var(--surface-3); color: var(--muted); }
+.card.left { right: auto; left: 16px; }
+.keys { color: var(--faint); font-size: .74rem; }
+.keys kbd { font: 600 .7rem/1 var(--sans); border: 1px solid var(--line-strong); border-radius: 4px; padding: 2px 5px; color: var(--text); }
+.corner { position: absolute; right: 16px; bottom: 16px; width: 300px; background: var(--surface); border: 1px solid var(--line-strong); border-left: 3px solid var(--green); border-radius: 10px; padding: 10px 12px; display: grid; gap: 6px; box-shadow: 0 12px 30px rgba(0,0,0,.45); font-size: .86rem; }
+.ask2 { display: grid; gap: 6px; }
+.ask2 > span { font-size: .84rem; color: var(--muted); }
+.pair { display: flex; gap: 8px; flex-wrap: wrap; }
+.opt-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); font-size: .88rem; cursor: pointer; }
+.opt-row.on { border-color: var(--blue); background: var(--blue-soft); }
+.opt-row small { color: var(--muted); }
+.checkline { display: flex; gap: 8px; align-items: center; font-size: .86rem; }
+.checkline::before { content: ""; width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--line-strong); flex: none; }
+.tl2 { list-style: none; margin: 0; padding: 0 0 0 14px; border-left: 2px solid var(--line); display: grid; gap: 8px; font-size: .85rem; }
+.tl2 li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+.tl2 li span:last-child { color: var(--faint); white-space: nowrap; }
+.tl2 .muted { color: var(--muted); }
+.tl2 s { color: var(--faint); }
+.listen { display: flex; gap: 8px; align-items: center; font-size: .8rem; color: var(--muted); }
+.listen i { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; }
+.listen.off i { background: var(--faint); }
+.kept { display: grid; place-items: center; min-height: 72px; font-size: .68rem !important; line-height: 1.3; border-radius: 8px; border: 1px dashed var(--line-strong); color: var(--faint); font-size: .76rem; text-align: center; padding: 6px; }
+.frame { background: #fff; border-radius: 10px; height: 300px; display: grid; place-items: center; color: #555; font-size: .9rem; border: 1px solid var(--line-strong); background: repeating-linear-gradient(45deg, #2a2e33, #2a2e33 10px, #262a2f 10px, #262a2f 20px); color: var(--muted); }
+.areas2 { display: grid; gap: 8px; }
+.area2 { display: grid; grid-template-columns: 22px minmax(0, 1.4fr) auto minmax(0, 1fr) auto; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.area2 .ri { font-size: .78rem; color: var(--muted); }
+.area2.lockd { border-color: var(--amber); }
+.banner { display: flex; gap: 10px; align-items: center; background: var(--surface-2); border: 1px solid var(--line); border-left: 3px solid var(--amber); border-radius: 10px; padding: 9px 12px; font-size: .86rem; }
+.app { min-height: 780px; }
+.scrim { overflow-y: auto; align-items: start; }
+.scrim .win { margin-block: 8px; }
+.groupname { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px 6px 4px; font: 800 .7rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.navgrp { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); align-self: center; margin: 0 2px 0 8px; }
+@media (max-width: 900px) {
+  .card.left { margin: 0 12px 12px; } .corner { position: static; width: auto; margin: 0 12px 12px; }
+  .area2 { grid-template-columns: 22px minmax(0, 1fr); } .area2 > :nth-child(n+3) { grid-column: 2; justify-self: start; }
+}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <span class="lbl">Mockup · v2 · Nov 17 · Found, Fixed, Tried · the screens</span>
+  <h1>Found, fixed, tried: the screens</h1>
+  <p class="meta">The <a href="https://claude.ai/artifact/LQMNBNHQpZ7Gand4mu1cyK" target="_blank" rel="noopener">brief v2</a> drawn as askdnd's pages, with every
+  finding of the <a href="https://claude.ai/artifact/Wa9Eh4jCBhd5Cxqx9pX3k6" target="_blank" rel="noopener">audit</a> built in. Press a screen, or the buttons inside one. Each
+  pill says <b>whose turn</b> it is (amber yours, violet mine, blue a player's, grey closed); a red fill is the one
+  main action, red text means failed. Your one verdict is at the bottom.</p>
+</header>
+
+<nav class="shots" aria-label="Screens">
+  <span class="navgrp">Testing</span>
+  <button type="button" class="shot" data-shot="foryou" aria-pressed="true"><small>1</small>For you</button>
+  <button type="button" class="shot" data-shot="round"><small>2</small>A round</button>
+  <button type="button" class="shot" data-shot="wrong"><small>3</small>Something's wrong…</button>
+  <button type="button" class="shot" data-shot="failed"><small>4</small>After a fail</button>
+  <button type="button" class="shot" data-shot="change"><small>5</small>Change result</button>
+  <button type="button" class="shot" data-shot="cant"><small>6</small>Can't try…</button>
+  <button type="button" class="shot" data-shot="history"><small>7</small>A check's history</button>
+  <button type="button" class="shot" data-shot="asks"><small>8</small>Questions and decisions</button>
+  <span class="navgrp">Feedback</span>
+  <button type="button" class="shot" data-shot="send"><small>9</small>Sending a note</button>
+  <button type="button" class="shot" data-shot="approve"><small>10</small>Approving a note</button>
+  <button type="button" class="shot" data-shot="sameas"><small>11</small>Same as…</button>
+  <button type="button" class="shot" data-shot="fblist"><small>12</small>Feedback</button>
+  <button type="button" class="shot" data-shot="issue"><small>13</small>An issue</button>
+  <button type="button" class="shot" data-shot="close"><small>14</small>Closing it</button>
+  <button type="button" class="shot" data-shot="yours"><small>15</small>Notes you sent</button>
+  <span class="navgrp">Areas</span>
+  <button type="button" class="shot" data-shot="areas"><small>16</small>Where it stands</button>
+</nav>
+
+<div class="why" aria-live="polite"><p id="why-text"></p><span class="notes-tag" id="why-notes"></span></div>
+
+<div class="app" id="app">
+  <div class="mbar"><span class="logo"></span><b>askdnd</b><span>The Adventure Begins ▾</span><span>Campaign</span><span>Table ↗</span><span class="pill">Cole</span><span class="pill">Party ▾</span><span class="search">Search</span><span class="sp"></span><span class="pill">Manage ▾</span><span>⚙</span><span class="av">B<i>8</i></span></div>
+
+  <!-- 1 · For you -->
+  <section data-screen="foryou">
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Testing</h2><span class="btn small" data-go="round">▶ Start round · 2 checks</span></div>
+      <div class="tabs"><span class="tab on">For you <span class="count">8</span></span><span class="tab" data-go="areas">Where it stands</span><span class="tab">Claude's</span><span class="tab">Done</span></div>
+      <div class="reader">
+        <aside class="rlist">
+          <div class="rhead"><b>8 are your turn</b>2 checks (about 4 minutes) · 1 question · 1 decision · 1 fix to OK · 1 note to approve · 1 idea · 1 Roadmap step</div>
+          <div class="groupname"><span>Found, Fixed, Tried</span><a style="color:var(--blue);text-decoration:none;font:600 .76rem/1 var(--sans);letter-spacing:0;text-transform:none">▶ Just this area</a></div>
+          <div class="row on"><b>Write back from one box</b><span class="turn y">Yours</span><span class="sub">To try again · 2 min</span></div>
+          <div class="row"><b>Claude's links open in a new tab</b><span class="turn y">Yours</span><span class="sub">To try · on your iPhone · 2 min</span></div>
+          <div class="row" data-go="asks"><b>How should a closed issue say why?</b><span class="turn y">Yours</span><span class="sub">Claude asks</span></div>
+          <div class="row" data-go="asks"><b>Found, Fixed, Tried: the screens, v2</b><span class="turn y">Yours</span><span class="sub">A decision: look, then one verdict</span></div>
+          <div class="row"><b>Short Rest restores spell slots</b><span class="turn y">Yours</span><span class="sub">Fix ready: your OK to merge (players asked)</span></div>
+          <div class="groupname"><span>From the table</span></div>
+          <div class="row" data-go="approve"><b>My spell slots came back after a Short Rest</b><span class="turn y">Yours</span><span class="sub">No Name's note waits for you</span></div>
+          <div class="row"><b>A dice tray I can drag anywhere</b><span class="turn y">Yours</span><span class="sub">Cole's idea to place</span></div>
+          <div class="groupname"><span>From the Roadmap</span></div>
+          <div class="row"><b>Retire Railway's old "dev" environment</b><span class="turn y">Yours</span><span class="sub">A click in Railway: Settings › Environments</span></div>
+        </aside>
+        <article class="detail">
+          <span class="where">Found, Fixed, Tried · on Feedback · <span class="ver">v2</span></span>
+          <h3 class="big">Write back from one box</h3>
+          <div class="sline"><span class="turn y">Yours</span>To try again: the 4 issues you found are fixed and live. On your laptop; your iPhone after.</div>
+          <div class="act"><span class="btn go" data-go="round">▶ Try it</span><span class="btn ok">✓ Passed</span><span class="btn wrong" data-go="wrong">✗ Something's wrong…</span><span class="btn quiet" data-go="cant">Can't try…</span></div>
+          <div class="panel"><span class="plabel">On the page, the card says</span>
+            <ol class="steps"><li><span class="box"></span><span>Look at the note open on the right, sent by a player.</span></li>
+              <li><span class="box"></span><span>In <b>Write to</b>, press the player's name.</span></li>
+              <li><span class="box"></span><span>Read the line under <span class="press">Send</span>.</span></li></ol>
+            <div class="see"><span class="plabel">You should see</span><p>The line under Send says who will read it: Claude (and whether a session is listening), or the player on their Notes you sent.</p></div></div>
+          <p class="whyline"><b>Why</b> · The ⋯ menu wouldn't close, Write to didn't say where your words go, ⋯ was unclear, and Done showed twice. <span class="more" data-go="history">History ›</span></p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · A round -->
+  <section data-screen="round" hidden>
+    <div class="ghostpage">
+      <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+      <div class="page"><div class="ptitle"><h2>Feedback</h2></div>
+        <div class="reader"><aside class="rlist"><div class="row on"><b>The coins don't add up</b><span class="turn c">Claude's</span></div><div class="row"><b>Fold away Manage's list</b><span class="turn c">Claude's</span></div></aside>
+          <article class="detail"><h3 class="big">The coins don't add up</h3><div class="panel" style="height:240px"></div></article></div></div>
+    </div>
+    <div data-view="card">
+      <div class="card left" role="dialog" aria-label="The round's card">
+        <div class="hd"><span>Check 1 of 2 · Found, Fixed, Tried · laptop<b>Write back from one box</b></span><span>— ⤡</span></div>
+        <ol class="steps"><li><span class="box on"></span><span>Look at the note open on the right, sent by a player.</span></li>
+          <li><span class="box on"></span><span>In <b>Write to</b>, press the player's name.</span></li>
+          <li><span class="box"></span><span>Read the line under <span class="press">Send</span>.</span></li></ol>
+        <div class="see"><span class="plabel">You should see</span><p>The line under Send says who will read it.</p></div>
+        <div class="act"><span class="btn ok small" data-view-go="passed">✓ Passed</span><span class="btn wrong small" data-go="wrong">✗ Something's wrong…</span><span class="btn quiet small" data-go="cant">Can't try…</span></div>
+        <div class="sendline"><span class="keys"><kbd>P</kbd> passed · <kbd>F</kbd> wrong · <kbd>C</kbd> can't try</span><span class="btn quiet small" data-go="foryou">End round</span></div>
+      </div>
+    </div>
+    <div data-view="passed" hidden>
+      <div class="card left" role="dialog" aria-label="The round's card, next check">
+        <div class="hd"><span>Check 2 of 2 · Found, Fixed, Tried · laptop<b>Claude's links open in a new tab</b></span><span>— ⤡</span></div>
+        <ol class="steps"><li><span class="box"></span><span>Look at Claude's reply at the bottom of the conversation.</span></li><li><span class="box"></span><span>Press the address in it.</span></li></ol>
+        <div class="act"><span class="btn ok small">✓ Passed</span><span class="btn wrong small" data-go="wrong">✗ Something's wrong…</span><span class="btn quiet small" data-go="cant">Can't try…</span></div>
+        <div class="sendline"><span class="keys"><kbd>P</kbd> · <kbd>F</kbd> · <kbd>C</kbd></span><span class="btn quiet small" data-go="foryou">End round</span></div>
+      </div>
+      <div class="corner"><b>Passed: Write back from one box</b><span class="note">Its 4 issues are closed: works now.</span><div class="act"><span class="btn small" data-view-go="card">Undo</span><span class="btn small">+ Note: it works, but…</span></div></div>
+    </div>
+  </section>
+
+  <!-- 3 · Something's wrong… -->
+  <section data-screen="wrong" hidden>
+    <div class="ghostpage"><div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div><div class="page"><div class="ptitle"><h2>Feedback</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:330px"></div></article></div></div></div>
+    <div class="scrim"><div class="win" role="dialog" aria-label="Something's wrong" style="width:min(620px,100%)">
+      <div class="hd"><b>What's wrong?</b><span class="x">✕</span></div>
+      <p class="note">On <b>Write back from one box</b>, step 3 · your laptop · askdnd.ai as of Nov 17, 21:50</p>
+      <div class="ask2"><span>Still happening? The issues this check found last time, fixed since:</span>
+        <div class="opt-row" data-pick><span>The line beside Send still says Claude after picking a player</span><small>fixed, not confirmed · still happening</small></div>
+        <div class="opt-row" data-pick><span>The ⋯ menu won't close</span><small>fixed, not confirmed · still happening</small></div>
+        <div class="opt-row" data-pick><span><b>Something new</b></span><small>describe it below</small></div></div>
+      <div class="pic"><div class="lines"><i style="width:60%"></i><i style="width:85%"></i><i style="width:40%"></i></div><span class="mk" style="left:60%;top:56%;width:30%;height:30%"></span><div class="tools"><span>Box</span><span>Arrow</span><span>Draw</span><span>Text</span></div><div class="tools" style="left:auto;right:8px"><span>↶ Undo</span><span>Clear</span></div></div>
+      <label class="field">In your words<span class="input">Big C's name is cut off in Write to.</span></label>
+      <div class="ask2"><span>Does it stop this check passing?</span><div class="pair"><span class="chip" aria-pressed="false" data-pick2>It stops it</span><span class="chip" aria-pressed="false" data-pick2>It doesn't (send it on its own)</span></div></div>
+      <span class="checkline">It stops my round: Claude may fix it now</span>
+      <div class="act"><span class="btn go" data-go="failed">Send</span><span class="btn quiet">Cancel</span></div>
+      <p class="note">The first issue that stops the check marks this try Failed; found another? The same button again. Nothing is picked for you.</p>
+    </div></div>
+  </section>
+
+  <!-- 4 · After a fail -->
+  <section data-screen="failed" hidden>
+    <div data-view="page">
+      <div class="ghostpage">
+        <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+        <div class="page"><div class="ptitle"><h2>Feedback</h2></div><div class="reader"><aside class="rlist"><div class="row on"><b>The coins don't add up</b><span class="turn c">Claude's</span></div></aside><article class="detail"><h3 class="big">The coins don't add up</h3><div class="panel" style="height:240px"></div></article></div></div>
+      </div>
+      <div class="card left" role="dialog" aria-label="The card, folded after a fail" style="border-top-color:var(--red)">
+        <div class="hd"><span>Check 1 of 2 · laptop<b>Write back from one box</b></span><span>⤢</span></div>
+        <div class="sline" style="font-size:.84rem"><span class="fail">✗ Failed</span>2 issues sent · now Claude's</div>
+        <div class="act"><span class="btn wrong small" data-go="wrong">✗ Another…</span><span class="btn quiet small" data-go="change">Change result…</span><span class="btn go small">Next check →</span></div>
+      </div>
+      <div style="position:absolute;right:16px;bottom:16px"><button type="button" class="btn small" data-view-go="testing">How Testing shows it →</button></div>
+    </div>
+    <div data-view="testing" hidden>
+      <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+      <div class="page">
+        <div class="ptitle"><h2>Testing</h2><button type="button" class="btn small" data-view-go="page">← Back to the page you were testing</button></div>
+        <div class="reader">
+          <aside class="rlist"><div class="groupname"><span>Found, Fixed, Tried</span></div><div class="row on"><b>Write back from one box</b><span class="turn c">Claude's</span><span class="sub">Failed · 2 issues to fix</span></div></aside>
+          <article class="detail">
+            <h3 class="big">Write back from one box</h3>
+            <div class="sline"><span class="turn c">Claude's</span>Your try failed with 2 issues; it comes back to you once they're fixed and live.</div>
+            <div class="problems">
+              <div class="prob"><span class="n">1</span><span>The line beside Send still says Claude <span class="note">· still happening: back to Claude</span></span><span class="turn c">Claude's</span></div>
+              <div class="prob"><span class="n">2</span><span>Big C's name is cut off in Write to <span class="note">· new</span></span><span class="turn c">Claude's</span></div></div>
+            <ol class="tl2"><li><span><span class="fail">Failed</span> by you · laptop · v2 · 2 issues</span><span>now</span></li><li><span>Fixed by Claude · live (PR 416)</span><span>21:50</span></li><li class="muted"><span>Failed by you · laptop · v1 · 4 issues</span><span>21:36</span></li></ol>
+            <p class="note">Updated the moment you sent it, here and everywhere it's open, without a reload.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · Change result -->
+  <section data-screen="change" hidden>
+    <div class="ghostpage"><div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div><div class="page"><div class="ptitle"><h2>Feedback</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
+    <div class="scrim"><div class="win" role="dialog" aria-label="Change result">
+      <div class="hd"><b>Correct this try</b><span class="x">✕</span></div>
+      <p class="note">It's <span class="fail">Failed</span> with 2 issues (laptop, just now). It should have been:</p>
+      <div class="radios"><span class="radio" data-pick>Passed</span><span class="radio" data-pick>Can't try</span><span class="radio" data-pick>To try (back to your list)</span></div>
+      <label class="field">Why (for the history)<span class="input ph">Pressed the wrong one</span></label>
+      <div class="panel" style="padding:10px 12px"><span class="plabel">What happens to its issues</span>
+        <p class="note">"Big C's name is cut off": this try created it and nothing else uses it, so it closes as withdrawn (still findable).</p>
+        <p class="note">"The line beside Send" was marked still happening by this try, so it goes back to fixed and ready to try.</p></div>
+      <div class="act"><span class="btn go" data-go="history">Correct it</span><span class="btn quiet">Cancel</span></div>
+      <p class="note">Nothing is deleted: the history keeps the Failed, with "replaced by" and your why.</p>
+    </div></div>
+  </section>
+
+  <!-- 6 · Can't try… -->
+  <section data-screen="cant" hidden>
+    <div class="ghostpage"><div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div><div class="page"><div class="ptitle"><h2>Testing</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
+    <div class="scrim"><div class="win" role="dialog" aria-label="Can't try">
+      <div class="hd"><b>Can't try it?</b><span class="x">✕</span></div>
+      <div class="ask2">
+        <div class="opt-row" data-pick><span><b>Later</b> · not tonight, needs my phone or a second person</span><small>stays yours</small></div>
+        <div class="opt-row" data-pick><span><b>Blocked by an issue</b> · something else is broken first</span><small>back when it's fixed</small></div>
+        <div class="opt-row" data-pick><span><b>The check is wrong</b> · the data isn't there, or the steps don't match</span><small>to Claude, rewritten</small></div></div>
+      <label class="field">Blocked by which issue? (for Blocked)<span class="input ph">Search issues: rest, slots…</span></label>
+      <label class="field">What's wrong (for The check is wrong; anything to add)<span class="input ph">No player's note was open</span></label>
+      <div class="act"><span class="btn" data-go="foryou">Can't try it</span><span class="btn quiet">Cancel</span></div>
+    </div></div>
+  </section>
+
+  <!-- 7 · A check's history -->
+  <section data-screen="history" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Testing</h2></div>
+      <div class="reader">
+        <aside class="rlist"><div class="groupname"><span>Found, Fixed, Tried</span></div><div class="row on"><b>Write back from one box</b><span class="turn y">Yours</span><span class="sub">Try again</span></div></aside>
+        <article class="detail">
+          <h3 class="big">Write back from one box</h3>
+          <div class="devices"><span><b>Laptop</b> · try again</span><span><b>iPhone</b> · not tried</span><span><b>Version</b> · v2, since Nov 17</span></div>
+          <span class="plabel">History · every try, fix and change, newest first</span>
+          <ol class="tl2">
+            <li><span><s>Failed by you · laptop · v2 · 2 issues</s> · replaced by "to try": pressed the wrong one</span><span>Nov 17, 23:58</span></li>
+            <li><span>Version 2 by Claude · its steps now open a player's note (you said the check was wrong: none was open)</span><span>Nov 17, 22:05</span></li>
+            <li><span>Fixed by Claude, live (PR 416) · its 4 issues ready to try · back to you</span><span>Nov 17, 21:50</span></li>
+            <li><span><span class="fail">Failed</span> by you · laptop · v1 · 4 issues (111 to 114)</span><span>Nov 17, 21:36</span></li>
+            <li><span>Written by Claude · v1</span><span>Nov 17, 20:41</span></li>
+          </ol>
+          <p class="note">Each try records who, the device, the version of the check and askdnd's deployed version. A correction never deletes: it's shown struck through with what replaced it.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · Questions and decisions -->
+  <section data-screen="asks" hidden>
+    <div data-view="question">
+      <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+      <div class="page">
+        <div class="ptitle"><h2>Testing</h2></div>
+        <div class="reader">
+          <aside class="rlist"><div class="groupname"><span>Found, Fixed, Tried</span></div>
+            <div class="row on"><b>How should a closed issue say why?</b><span class="turn y">Yours</span><span class="sub">Claude asks</span></div>
+            <div class="row" data-view-go="decision"><b>Found, Fixed, Tried: the screens, v2</b><span class="turn y">Yours</span><span class="sub">A decision</span></div></aside>
+          <article class="detail">
+            <span class="where">A question about the issue page · asked Nov 17</span>
+            <h3 class="big">How should a closed issue say why?</h3>
+            <div class="bub claude"><small>Claude asks</small>Closing needs a reason its sender is told. Should the reason be words in the line under the title, or a pill beside it? Drawn on screen 14 of <a href="#" onclick="return false">the screens ↗</a></div>
+            <div class="radios"><span class="radio" data-pick>Words in the line under the title<small>Claude's pick</small></span><span class="radio" data-pick>A pill beside the title</span></div>
+            <label class="field">Or in your words<span class="input ph">Anything to add</span></label>
+            <div class="act"><span class="btn go">Send answer</span></div>
+            <p class="note">Nothing is picked for you. Your answer names this question, so a newer one can't take it. The issue shows "Claude asks" with a link here.</p>
+          </article>
+        </div>
+      </div>
+    </div>
+    <div data-view="decision" hidden>
+      <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+      <div class="page">
+        <div class="ptitle"><h2>Documents</h2><span class="note">Found, Fixed, Tried: the screens · v2 · Nov 17</span><button type="button" class="btn small" data-view-go="question">← For you</button></div>
+        <div class="two-col" style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:14px">
+          <div class="frame">The mockup, from the repo's copy, in a sealed frame</div>
+          <div class="panel"><span class="plabel">Your decision</span>
+            <div class="radios"><span class="radio" data-pick>Build it as drawn</span><span class="radio" data-pick>Build it, with my changes</span><span class="radio" data-pick>Redraw what I say</span></div>
+            <label class="field">Changes, by screen<span class="input ph">Screen 4: …</span></label>
+            <div class="act"><span class="btn go">Save decision</span></div>
+            <p class="note">Kept in askdnd with the version you saw; Claude reads it from here. Redraw makes v3, a new decision linked to this one.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · Sending a note -->
+  <section data-screen="send" hidden>
+    <div data-view="window">
+      <div class="ghostpage"><div class="page"><div class="ptitle"><h2>Party</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
+      <div class="scrim"><div class="win" role="dialog" aria-label="Send a note">
+        <div class="hd"><b>Send a note</b><span class="x">✕</span></div>
+        <div class="ask2"><span>What is it?</span><div class="pair"><span class="chip" aria-pressed="false" data-pick2>A problem</span><span class="chip" aria-pressed="false" data-pick2>An idea</span><span class="chip" aria-pressed="false" data-pick2>A question</span></div></div>
+        <div class="chips"><span class="chip on">The page</span><span class="chip">Your picture 1</span><span class="chip">+ Paste or add a picture</span></div>
+        <div class="pic"><div class="lines"><i style="width:60%"></i><i style="width:85%"></i><i style="width:40%"></i></div><span class="mk" style="left:58%;top:52%;width:30%;height:30%"></span><span style="position:absolute;left:58%;top:30%;font:700 .78rem/1 var(--sans);color:var(--amber);background:rgba(15,17,19,.85);padding:3px 6px;border-radius:5px">Should be centered</span><div class="tools"><span>Box</span><span>Arrow</span><span>Draw</span><span style="border-color:var(--amber);color:var(--amber)">Text</span></div><div class="tools" style="left:auto;right:8px"><span>↶ Undo</span><span>Clear</span></div></div>
+        <label class="field">What's it about?<span class="input">The Party cards sit to the left on a wide screen.</span></label>
+        <div class="sendline"><span class="btn go">Send</span><span class="btn" data-view-go="hidden">Hide while I take a screenshot</span><span class="listen"><i></i>Claude is listening: it reads it within a minute</span></div>
+        <p class="note">A player sees instead: "An admin reads it first, then Claude." With no Claude session listening, the line says so: "It waits for Claude's next session."</p>
+      </div></div>
+    </div>
+    <div data-view="hidden" hidden>
+      <div class="ghostpage"><div class="page"><div class="ptitle"><h2>Party</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
+      <div class="corner" style="border-left-color:var(--amber);width:min(520px,calc(100% - 32px))"><b>Your note is waiting</b><span class="note">Take your screenshot: ⇧⌘3 for the whole screen, ⇧⌘4 for a part (hold ⌃ too to copy it), then ⌘V here. On an iPhone: the side and volume-up buttons, then Back.</span><div class="act"><span class="btn small" data-view-go="window">Back to it</span></div></div>
+    </div>
+  </section>
+
+  <!-- 10 · Approving a note -->
+  <section data-screen="approve" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Feedback</h2></div>
+      <div class="tabs"><span class="tab on">To approve <span class="count">1</span></span><span class="tab" data-go="fblist">Open <span class="count">6</span></span><span class="tab">Ready to try <span class="count">2</span></span><span class="tab">Closed</span><span class="tab">Ideas <span class="count">1</span></span></div>
+      <div class="reader">
+        <aside class="rlist"><div class="row on"><b>My spell slots came back after a Short Rest</b><span class="turn y">Yours</span><span class="sub">No Name · Nov 17 · a problem</span></div></aside>
+        <article class="detail">
+          <span class="where">From No Name, a player · Claude sees none of it until you approve it</span>
+          <h3 class="big">My spell slots came back after a Short Rest</h3>
+          <div class="report"><span class="thumb" title="Safe copy"></span><div><b>No Name</b> · Nov 17 · No Name · Battle · <span class="note">safe copy: their character's notes blurred</span><p>I took a Short Rest and all my spell slots came back.</p></div></div>
+          <div class="ask2"><span>Approve it as:</span>
+            <div class="act"><span class="btn go small">A new issue</span><span class="btn small" data-go="sameas">Same as…</span><span class="btn small">An idea</span><span class="btn small">A question, answered…</span><span class="btn quiet small">Decline with why…</span></div></div>
+          <p class="note">Whichever you press, a corner card offers Undo for a minute. No Name hears the outcome on Notes you sent.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · Same as… -->
+  <section data-screen="sameas" hidden>
+    <div class="ghostpage"><div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div><div class="page"><div class="ptitle"><h2>Feedback</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
+    <div class="scrim"><div class="win" role="dialog" aria-label="Same as" style="width:min(620px,100%)">
+      <div class="hd"><b>Same as which issue?</b><span class="x">✕</span></div>
+      <span class="input ph">Search issues: rest, slots…</span>
+      <div class="ask2">
+        <div class="opt-row" data-pick><span><b>Short Rest restores spell slots</b> · Cole, Trah · 2 notes</span><small>Claude's · to fix</small></div>
+        <div class="opt-row" data-pick><span><b>Long Rest doesn't reset Wild Shape</b> · 1 note</span><small>closed: works now</small></div></div>
+      <div class="panel" style="padding:10px 12px"><span class="plabel">What this does</span>
+        <p class="note">No Name's note joins "Short Rest restores spell slots". No Name hears that issue's outcome; they don't see Cole's or Trah's notes or the issue's title. You can unjoin it from the issue's history.</p></div>
+      <div class="act"><span class="btn go" data-go="issue">Join it</span><span class="btn quiet">Cancel</span></div>
+    </div></div>
+  </section>
+
+  <!-- 12 · Feedback -->
+  <section data-screen="fblist" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Feedback</h2><span class="note">Every note and issue, and what became of it</span></div>
+      <div class="tabs"><span class="tab" data-go="approve">To approve <span class="count">1</span></span><span class="tab on">Open <span class="count">6</span></span><span class="tab">Ready to try <span class="count">2</span></span><span class="tab">Closed</span><span class="tab">Ideas <span class="count">1</span></span></div>
+      <div class="reader">
+        <aside class="rlist">
+          <div class="rhead"><div class="chips"><span class="chip">From players</span><span class="chip">From checks</span><span class="chip">This area</span></div></div>
+          <div class="row on" data-go="issue"><b>Short Rest restores spell slots</b><span class="turn c">Claude's</span><span class="sub">To fix · next in order · Item Builder · Cole, Trah, No Name</span></div>
+          <div class="row"><b>The line beside Send still says Claude</b><span class="turn c">Claude's</span><span class="sub">To fix · came back · from a check</span></div>
+          <div class="row"><b>A "new" stays until the page reloads</b><span class="turn y">Yours</span><span class="sub">Claude asks</span></div>
+          <div class="row"><b>Fold away Manage's list of pages</b><span class="turn c">Claude's</span><span class="sub">To fix · Manage</span></div>
+          <div class="row"><b>Rest wraps on a phone</b><span class="turn p">Big C's</span><span class="sub">Ready to try: does it work for them?</span></div>
+        </aside>
+        <article class="detail">
+          <span class="where">Feedback is the record</span>
+          <h3 class="big">One list of the work</h3>
+          <p class="note">Each row is an issue, with the notes that became it. The pill is whose turn it is; the line under it says what. The same words on every page: to fix, Claude asks, fixing, ready to try, closed (with why). Ideas are their own tab until the Roadmap takes them.</p>
+          <div class="act"><span class="btn" data-go="issue">Open Short Rest restores spell slots →</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 · An issue -->
+  <section data-screen="issue" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Feedback</h2></div>
+      <div class="reader">
+        <aside class="rlist"><div class="row on"><b>Short Rest restores spell slots</b><span class="turn c">Claude's</span><span class="sub">To fix · 3 notes</span></div><div class="row"><b>The line beside Send still says Claude</b><span class="turn c">Claude's</span></div></aside>
+        <article class="detail">
+          <span class="where">Item Builder · a problem · from 3 notes</span>
+          <h3 class="big">Short Rest restores spell slots</h3>
+          <div class="sline"><span class="turn c">Claude's</span>To fix: in the Item Builder area, next in the Roadmap's order.</div>
+          <div class="act"><span class="btn small">Move to another area…</span><span class="btn small" data-go="sameas">Same as…</span><span class="btn small" data-go="close">Close with a reason…</span></div>
+          <div class="reports"><span class="plabel">3 notes</span>
+            <div class="report"><span class="thumb"></span><div><b>Cole</b> · Nov 16 · Cole · Battle<p>After a Short Rest my 2nd-level slots were full again.</p></div></div>
+            <div class="report"><span class="kept">Safe copy: Trah's character's notes blurred (only Trah sees the full picture)</span><div><b>Trah</b> · Nov 17 · Battle<p>Same here after resting.</p></div></div>
+            <div class="report"><span class="thumb"></span><div><b>No Name</b> · Nov 17 · joined by you<p>I took a Short Rest and all my spell slots came back.</p></div></div></div>
+          <div class="convo"><span class="plabel">Conversation</span>
+            <div class="bub claude"><small>Claude, to Cole, Trah and No Name</small>Thanks: I can see it. A Short Rest shouldn't restore slots except a Warlock's.</div>
+            <div class="bub you"><small>You, to Claude</small>Check the Wizard's Arcane Recovery too.</div></div>
+          <div class="composer">
+            <div class="toline">Write to <span class="chip" aria-pressed="true" data-to="claude">Claude</span><span class="chip" aria-pressed="false" data-to="notes">The 3 who sent notes</span></div>
+            <span class="input ph">Something to add, or an answer</span>
+            <div class="sendline"><span class="btn go small">Send</span><span class="note" id="to-line"><span class="listen" style="display:inline-flex"><i></i></span> <b>Claude</b> reads it within a minute (a session is listening); the 3 who sent notes don't see it.</span></div></div>
+          <details class="fold"><summary class="note">History · 6 events</summary><p class="note">Nov 17 · No Name's note joined by you · <a>unjoin</a></p></details>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 · Closing it -->
+  <section data-screen="close" hidden>
+    <div class="ghostpage"><div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div><div class="page"><div class="ptitle"><h2>Feedback</h2></div><div class="reader"><aside class="rlist"></aside><article class="detail"><div class="panel" style="height:300px"></div></article></div></div></div>
+    <div class="scrim"><div class="win" role="dialog" aria-label="Close with a reason">
+      <div class="hd"><b>Close it: why?</b><span class="x">✕</span></div>
+      <div class="radios"><span class="radio" data-pick>Works now<small>fixed and confirmed</small></span><span class="radio" data-pick>Won't do<small>as designed, or not worth it</small></span><span class="radio" data-pick>Can't reproduce</span><span class="radio" data-pick>Same as another issue…</span><span class="radio" data-pick>Withdrawn</span></div>
+      <label class="field">What Cole, Trah and No Name read (each on their own Notes you sent)<span class="input ph">Short Rests don't restore slots by the 2024 rules, except a Warlock's Pact Magic.</span></label>
+      <div class="act"><span class="btn go" data-go="fblist">Close it</span><span class="btn quiet">Cancel</span></div>
+      <p class="note">Reopen is always there on a closed issue; it says it came back.</p>
+    </div></div>
+  </section>
+
+  <!-- 15 · Notes you sent (a player) -->
+  <section data-screen="yours" hidden>
+    <div class="page">
+      <div class="ptitle"><h2>Notes you sent</h2><span class="note">No Name, a player</span></div>
+      <div class="tabs"><span class="tab">The Story <span class="count">1</span></span><span class="tab on">Product Feedback <span class="count">2</span></span></div>
+      <div class="reader">
+        <aside class="rlist">
+          <div class="rhead">Counted: what's still open. Your notes only.</div>
+          <div class="row on"><b>My spell slots came back after a Short Rest</b><span class="turn c">Claude's</span><span class="sub">Nov 17 · <span class="mine-tag" style="font:700 .7rem/1 var(--sans);padding:2px 6px;border-radius:999px;background:var(--blue-soft);color:var(--blue)">new reply</span></span></div>
+          <div class="row"><b>Long Rest doesn't reset Wild Shape</b><span class="turn y">Yours</span><span class="sub">Does it work now?</span></div>
+          <div class="groupname"><span>Closed</span></div>
+          <div class="row"><b>Dice in the corner</b><span class="turn x">Closed</span><span class="sub">Taken up as an idea</span></div>
+        </aside>
+        <article class="detail">
+          <h3 class="big">My spell slots came back after a Short Rest</h3>
+          <div class="sline"><span class="turn c">Claude's</span>Claude is fixing it, and asked you something.</div>
+          <div class="convo"><div class="bub you"><small>You</small>I took a Short Rest and all my spell slots came back.</div>
+            <div class="bub claude"><small>Claude</small>Thanks: I can see it. Which class were you playing when it happened?</div></div>
+          <div class="composer"><span class="input ph">Your answer</span><div class="sendline"><span class="btn go small">Send</span><span class="note">Goes to an admin first, then Claude.</span></div></div>
+          <p class="note">Reading it clears "new reply" here, on the menu's count and on any page you have open, at once. You never see other players' notes about the same thing.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 · Where it stands -->
+  <section data-screen="areas" hidden>
+    <div data-view="on">
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Testing</h2></div>
+      <div class="tabs"><span class="tab" data-go="foryou">For you <span class="count">8</span></span><span class="tab on">Where it stands</span><span class="tab">Claude's</span><span class="tab">Done</span></div>
+      <div class="banner"><span class="listen"><i></i>Claude is listening (main chat, since 21:02)</span><span class="note">· Round 2 is open: nothing merges to askdnd.ai until you end it; Claude only sorts what you send.</span><span class="btn small" style="margin-left:auto">End round</span></div>
+      <p class="note">The same queue as the Roadmap, in its order, grouped by item; reorder items there, and areas within an item. Claude takes the first area that's its turn.</p>
+      <div class="groupname"><span>1 · Fixes and polish</span><span>oldest fix waiting 3 days</span></div>
+      <div class="areas2">
+        <div class="area2"><span class="grip">⋮⋮</span><div><b>Manage</b><div class="ri">5 issues</div></div><span class="turn c">Claude's</span><span class="note"><b style="color:var(--violet)">Next for Claude</b> · building on a branch; merges when your round ends</span><span class="btn small">Open</span></div>
+        <div class="area2"><span class="grip">⋮⋮</span><div><b>Menu bar</b><div class="ri">2 issues</div></div><span class="turn c">Claude's</span><span class="note">After Manage</span><span class="btn small">Open</span></div>
+      </div>
+      <div class="groupname"><span>2 · Feedback and Testing, cleaned up</span><span>skipped: its next step is yours</span></div>
+      <div class="areas2">
+        <div class="area2 lockd"><span class="grip">⋮⋮</span><div><b>Found, Fixed, Tried · round 2</b><div class="ri">13 issues · 2 checks to try</div></div><span class="turn y">Yours</span><span class="note">In your open round · 1 issue stops your round (Claude may fix that one now)</span><span class="btn small">Open</span></div>
+      </div>
+      <div class="groupname"><span>3 · An easier homebrew item builder</span><span>after the two above</span></div>
+      <div class="areas2">
+        <div class="area2"><span class="grip">⋮⋮</span><div><b>Item Builder</b><div class="ri">4 issues · 3 checks</div></div><span class="turn c">Claude's</span><span class="note">Waits its turn</span><span class="btn small">Open</span></div>
+      </div>
+      <div class="act"><span class="btn small">Rename…</span><span class="btn small">Merge into…</span><span class="btn small">Move to another item…</span><span class="btn small">Archive</span><span class="note">An empty area drops off by itself.</span><button type="button" class="btn quiet small" data-view-go="off">If no Claude session is listening →</button></div>
+    </div>
+    </div>
+    <div data-view="off" hidden>
+    <div class="mband"><span class="bar"></span>⚙ Admin · askdnd</div>
+    <div class="page">
+      <div class="ptitle"><h2>Testing</h2><button type="button" class="btn small" data-view-go="on">← Back</button></div>
+      <div class="banner"><span class="listen off"><i></i>No Claude session is listening (last heard 2 hours ago)</span><span class="note">· What you send waits and is read at the next session's start. To start one, open the Claude app and say "check askdnd".</span></div>
+      <p class="note">Every "Claude reads it within a minute" line in askdnd says this instead while no session listens: on Send, on Write to, and here.</p>
+    </div>
+    </div>
+  </section>
+</div>
+
+<section class="verdict" aria-labelledby="c-h">
+  <h2 id="c-h">What this answers</h2>
+  <p class="meta">Your notes, and the audit's findings, each with where it's drawn.</p>
+  <div class="problems">
+    <div class="prob"><span class="n">111–114</span><span>The ⋯ menu, Write to's line, Done twice · <b>named buttons, the state said once, a truthful line</b></span><span class="sw quiet">1, 13</span></div>
+    <div class="prob"><span class="n">115–116</span><span>Three buttons, an extra issue to fail · <b>one button per issue; the first fails the try</b></span><span class="sw quiet">3, 4</span></div>
+    <div class="prob"><span class="n">121</span><span>History not updating · <b>updates the moment you send, everywhere</b></span><span class="sw quiet">4, 7</span></div>
+    <div class="prob"><span class="n">87, 88, 106</span><span>The picture, Text, screenshots · <b>Text, any picture marked, Undo apart, stepping aside</b></span><span class="sw quiet">9</span></div>
+    <div class="prob"><span class="n">109, 110</span><span>Notes you sent · <b>open counts, The Story and Product Feedback, "new" clears at once</b></span><span class="sw quiet">15</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Still happening (reopen) · stops it passing · stops my round · End round · Passed moves on</span><span class="sw quiet">2, 3</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Tries per device and version · check versions · corrections kept</span><span class="sw quiet">1, 5, 7</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Can't try: later, blocked by, check is wrong</span><span class="sw quiet">6</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Questions and decisions in askdnd, nothing picked for you</span><span class="sw quiet">8</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Approve with Undo · Same as with a preview · unjoin · kept-from-you · reporters see only their own</span><span class="sw quiet">10, 11, 13, 15</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Close with a reason the senders read · reopen</span><span class="sw quiet">14</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Claude listening or not · round locks the area · area rename, merge, archive</span><span class="sw quiet">9, 13, 16</span></div>
+    <div class="prob"><span class="n">Audit</span><span>Colour by whose turn; a red fill is the one main action, red text means failed; title actions secondary</span><span class="sw quiet">all</span></div>
+    <div class="prob"><span class="n">Review</span><span>One order (the Roadmap's), Fixes and polish, what Claude takes next and why · a fix waiting for your OK · safe copies</span><span class="sw quiet">1, 10, 13, 16</span></div>
+  </div>
+</section>
+
+<section class="verdict" aria-labelledby="v-h">
+  <h2 id="v-h">Your verdict</h2>
+  <p class="meta">One answer for the whole mockup, and anything to change, by screen. Saved on this page, where I read it. (Once built, a decision like this is answered in askdnd: screen 8.)</p>
+  <form class="decide">
+    <fieldset data-q="verdict" data-kind="one"><legend>Build it as drawn?</legend><div class="choices">
+      <label class="choice"><input type="radio" name="verdict" value="build">Yes, build it</label>
+      <label class="choice"><input type="radio" name="verdict" value="changes">Yes, with the changes below</label>
+      <label class="choice"><input type="radio" name="verdict" value="redraw">Not yet: redraw what's below</label></div></fieldset>
+    <fieldset><legend>Anything to change</legend><textarea name="notes" aria-label="Anything to change" placeholder="Which screen, and what you'd want instead"></textarea></fieldset>
+    <div class="save-row"><button type="submit">Save</button><span class="saved" role="status">Loading…</span></div>
+  </form>
+</section>
+</div>
+
+<script>
+(() => {
+  const WHY = {
+    foryou: ["For you is a view of everything that's your turn, wherever it lives, and its count matches its rows: checks, a question, a decision, a fix waiting for your OK to merge (players asked for it), a note to approve, an idea, a Roadmap step. The check says its state once; its marks say what they do; title actions stay secondary.", "Audit; the review: For you, state said once"],
+    round: ["A round: the card starts on the left (corner cards stay bottom right) and can be dragged to any corner, remembered; on a phone it's a bar at the foot of the screen. ✓ Passed moves straight on with a corner card offering Undo and + Note (senders are told after that minute); keys P, F, C; End round any time. Press ✓ Passed to see it.", "Audit: End round, Passed moves on, keys"],
+    wrong: ["Something's wrong…: the issues this check found last time first (still happening sends one back to Claude), or something new; whether it stops the check passing, and whether it stops your round (the one thing Claude may fix mid-round). Each issue is its own press; nothing is picked for you.", "Notes 115, 116; audit: still happening, hostage, round"],
+    failed: ["After a fail you stay on the page; the card folds to the try's outcome with Another…, Change result… and Next check. Testing shows it at once, reopened and new issues marked (How Testing shows it).", "Note 121; audit: card folds"],
+    change: ["Correct this try: a new result replaces it with why; the history keeps both. It says what happens to each issue before you confirm: one it alone created is withdrawn; one it reopened goes back to fixed.", "Audit: append-only, withdraw rules"],
+    cant: ["Can't try…: later (stays yours), blocked by an issue (back when it's fixed), or the check is wrong (to Claude, rewritten as a new version). None picked for you.", "Audit: Can't try's three jobs"],
+    history: ["A check's history: every try with device and versions, fixes going live, versions with why, and a correction struck through with what replaced it. Nothing is deleted.", "Audit: runs, versions, events"],
+    asks: ["Claude's questions are answered here only, nothing preselected, and the answer names its question. A decision opens the mockup from the repo's copy in askdnd's Documents, with the verdict kept in askdnd with the version you saw (press the decision row).", "Audit: questions and decisions"],
+    send: ["Sending a note: what it is (nothing picked), the page's picture or one you add, marked up with Text too, Undo apart from the tools, and a step aside for your own screenshot (Mac and iPhone). The line says whether Claude is listening.", "Notes 87, 88, 106; audit: truthful line"],
+    approve: ["Approving a player's note: as a new issue, same as one already filed, an idea, an answered question, or declined with why; Undo for a minute. You see a safe copy of the page (their character's notes blurred), the same copy Claude gets once you approve.", "Audit: approve, trust (T1, T5)"],
+    sameas: ["Same as…: search, pick, and see exactly what joining does before you do it; the sender hears that issue's outcome but never sees other notes or its title. Unjoin from the issue's history.", "Audit: mistaken merges, privacy"],
+    fblist: ["Feedback is the record: one list of the work, a whose-turn pill and one line of what, the same words everywhere. Ideas wait in their own tab until the Roadmap takes them.", "Note 114; audit: words"],
+    issue: ["An issue: whose turn and what, said once; named actions; its notes, with a player's picture kept from you when you're their DM; the conversation; Write to whose line says who reads it and whether Claude is listening; the history with unjoin.", "Notes 111 to 113; audit: kept-from-you, listening"],
+    close: ["Closing needs a reason its senders read, each on their own Notes you sent: works now, won't do, can't reproduce, same as, withdrawn. Reopen is always there.", "Audit: closing reasons"],
+    yours: ["Notes you sent, as a player: their notes only, counts of what's open, a reply to Claude's question for more, Does it work now? on a fixed one, and \"new reply\" clearing everywhere at once.", "Notes 109, 110; audit: ask for more"],
+    areas: ["Where it stands: the Roadmap's one queue, grouped by item, with Fixes and polish as a standing item; what Claude takes next and why the others are skipped; your open round (nothing merges until you end it; Claude builds on a branch meanwhile); and the state when no Claude session is listening.", "The review: one order (R15), rounds (R11), listening"],
+  };
+  const shots = document.querySelectorAll('.shot'), screens = document.querySelectorAll('[data-screen]');
+  const go = name => {
+    screens.forEach(s => { s.hidden = s.dataset.screen !== name; s.querySelectorAll('[data-view]').forEach((v, i) => { v.hidden = i > 0; }); });
+    shots.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.shot === name)));
+    document.getElementById('why-text').textContent = WHY[name][0];
+    document.getElementById('why-notes').textContent = WHY[name][1];
+  };
+  shots.forEach(b => b.addEventListener('click', () => go(b.dataset.shot)));
+  document.getElementById('app').addEventListener('click', e => {
+    const vg = e.target.closest('[data-view-go]');
+    if (vg) { const sc = vg.closest('[data-screen]'); sc.querySelectorAll('[data-view]').forEach(v => { v.hidden = v.dataset.view !== vg.dataset.viewGo; }); return; }
+    const t = e.target.closest('[data-go]'); if (t) { go(t.dataset.go); return; }
+    const p = e.target.closest('[data-pick]');
+    if (p) { p.parentElement.querySelectorAll('[data-pick]').forEach(x => x.classList.toggle('on', x === p)); return; }
+    const p2 = e.target.closest('[data-pick2]');
+    if (p2) { p2.parentElement.querySelectorAll('[data-pick2]').forEach(x => x.setAttribute('aria-pressed', String(x === p2))); return; }
+    const to = e.target.closest('[data-to]');
+    if (to) {
+      to.parentElement.querySelectorAll('[data-to]').forEach(x => x.setAttribute('aria-pressed', String(x === to)));
+      document.getElementById('to-line').innerHTML = to.dataset.to === 'claude'
+        ? '<b>Claude</b> reads it within a minute (a session is listening); the 3 who sent notes don\'t see it.'
+        : '<b>Cole, Trah and No Name</b> each see it on their own Notes you sent; Claude sees it too.';
+    }
+  });
+  go('foryou');
+})();
+(() => {
+  const form = document.querySelector('form.decide');
+  const said = form.querySelector('.saved'), btn = form.querySelector('button');
+  let db = null;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return ''; } };
+  const show = (text, ok) => { said.textContent = text; said.classList.toggle('ok', !!ok); };
+  form.addEventListener('change', () => show('Not saved yet'));
+  form.addEventListener('input', e => { if (e.target.tagName === 'TEXTAREA') show('Not saved yet'); });
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), v = form.querySelector('input[name=verdict]:checked');
+    try { await db.collection('answers').doc('verdict-v2').set({ verdict: v ? v.value : '', notes: form.querySelector('textarea').value.trim(), at, version: 'v2' }); show('Saved ' + when(at) + ' · Claude reads it from here', true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  (async () => {
+    try { db = await claude.use('db'); } catch (e) { db = null; }
+    if (!db) { show('Open this page on claude.ai, signed in, to save.'); return; }
+    try {
+      const d = await db.collection('answers').doc('verdict-v2').get();
+      if (!d.exists) { show('Nothing saved for v2 yet'); return; }
+      const a = d.data();
+      form.querySelectorAll('input[name=verdict]').forEach(i => { i.checked = i.value === a.verdict; });
+      form.querySelector('textarea').value = a.notes || '';
+      show('Saved ' + when(a.at) + ' · change anything and Save again', true);
+    } catch (err) { show('Nothing saved for v2 yet'); }
+  })();
+})();
+</script>

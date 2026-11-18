@@ -5,14 +5,18 @@ on screen, step by step, without guessing. His example of what not to write: *"N
 type lots in Or type it, then Save."* It packs five actions into one line, and nothing says that `lots` is a word to
 type on purpose.
 
-`app/testing.py` (`walk` draws a step, `step_problems` refuses one) holds every check to these rules, from both ways a
-check is made: `feedback.py check add --do …` and `feedback.py set <id> done --do …`.
+`app/fft/steps.py` (`walk` draws a step, `step_problems` refuses one) holds every check to these rules when it's written
+or given a new version (`feedback.py check new … --step …`, `feedback.py check <id> version … --why …`). Found, Fixed,
+Tried (Nov 17) adds three: **try it yourself first** (`feedback.py check <id> preflight pass`, R18: it reaches Brett's
+For you only then, and again after each new version); **tie it to the issues it tries the fix of** (`--issue`, so it
+comes back to him once they're live); and **name the devices it must pass on** (`--device laptop --device iphone`; the
+Mac Mini's own runs are `mac_mini`).
 
 ## The rules
 
 1. **One action per step**, numbered in the order Brett does them. A step with ", then", "and then" or "then press" is
    refused.
-2. **The page it starts on is the check's `path`**: Go takes Brett there, so step 1 starts on that page.
+2. **The page it starts on is the check's `path`**: ▶ Try it takes Brett there, so step 1 starts on that page.
 3. **What to type goes in backticks**: `` type `Test Compass 2` ``. A step that says "type", "enter" or "write" before an
    unmarked word is refused. The card shows the word in a dashed box.
 4. **A button goes in brackets**: `Press [Save].` It's drawn as a button.
@@ -23,28 +27,30 @@ check is made: `feedback.py check add --do …` and `feedback.py set <id> done -
    sentences (Brett, Nov 17: on its own page as a walkthrough, a check can be longer and plainer than a line in a
    document). Say what not to see too when that's the point ("the page doesn't reload: it doesn't go blank or jump
    to the top").
-8. **Why** (the check's word, `--said`, and a fixed note's reply) says what Brett found and what changed, in words.
-   Numbers (the note, the change, the check) are never the sentence; askdnd shows them one click down.
-9. **A check that makes something runs in VTT Test** (`--makes`, with a `/c/vtt-test/…` path or a VTT Test character's
-   page). Go takes Brett there, the card says *In VTT Test*, and the round ends back in his own campaign. Anything that
+8. **Why** (`--why`: on a new version, what changed and why) says what Brett found and what changed, in words. Numbers
+   (the issue, the change, the check) are never the sentence; askdnd shows the issues it tries by their titles.
+9. **A check that makes something runs in VTT Test** (`--makes`, with a `/c/vtt-test/…` path or a VTT Test character's page). ▶ Try
+   it takes Brett there, the card says *in a test campaign*, and the round ends back in his own campaign. Anything that
    can't be deleted afterwards (a homebrew item, today) must never be made in the table's campaign.
-10. **One check per thing tried**, in an area (`--area-id`), with `--place` giving its order in that area's pages.
+10. **One check per thing tried**, in an area (`--area`).
 11. **Every check can end in ✓ Passed** (Brett on check 42, Nov 17: "This is the test case, it should pass"). A check
-    about Skip, Undo Failed or anything else that marks a check stops before the mark (open the reasons, look, close
-    ⋯), or tries it on a check added for that, never on itself.
+    about Can't try…, Change result… or anything else that marks a check stops before the mark (open the reasons,
+    look, close it), or tries it on a check added for that, never on itself.
 12. **A check points at something that's there** (check 46, Nov 17: "a note a player sent" when none was open). Before
-    adding it, look that what its steps need exists on askdnd.ai (a player's note, a spell, an item), and give its
-    `path` straight to it (`/manage/feedback?tab=all&open=2`), not "find one".
+    adding it, look that what its steps need exists where Brett tries it (a player's note, an issue, a spell), and give
+    its `path` straight to it (`/manage/feedback?tab=ready&open=i33`), not "find one"; and never at something another
+    check of the same round will close (check 13, Nov 18).
 
 ## Example
 
 ```bash
-uv run python scripts/feedback.py check add "A mistake keeps what you typed" --area "DM Tools" --area-id 2 --place 2 \
-  --path "/c/vtt-test/dm/items/new" --makes --minutes 2 \
-  --do "In **Name**, type \`Test Compass 2\`." \
-  --do "Press [+ Add]." \
-  --do "Press [A roll]." \
-  --do "In **Or type it**, type \`lots\`. (why: not a dice roll, on purpose: this check is about the error)" \
-  --do "Press [Save]." \
+uv run python scripts/feedback.py check new "A mistake keeps what you typed" --area 2 --issue 14 \
+  --path "/c/vtt-test/dm/items/new" --makes --device laptop \
+  --step "In **Name**, type \`Test Compass 2\`." \
+  --step "Press [+ Add]." \
+  --step "Press [A roll]." \
+  --step "In **Or type it**, type \`lots\`. (why: not a dice roll, on purpose: this check is about the error)" \
+  --step "Press [Save]." \
   --expect "A red line under the roll says how to write it (like 2d6 force). The name and the roll are still there as you typed them."
+uv run python scripts/feedback.py check 9 preflight pass
 ```

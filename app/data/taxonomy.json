@@ -1,0 +1,87 @@
+{
+ "about": "askdnd's Product Taxonomy (Brett, Nov 18, docs/mockups/product-taxonomy/): every issue is about one Feature, every Feature is in one Product Area. Each Product Area is a batch of fixes on Testing › Where it stands, taken up by one session. `map` names the docs/MAP.md sections a Feature owns; docs/MAP.md is ordered by this list (tests/test_taxonomy.py). Keys never change once used: an issue keeps its key. Rename a title freely.",
+ "areas": [
+  {"key": "battle", "title": "Battle", "what": "A character in play, on the Battle tab", "features": [
+   {"key": "hp", "title": "Hit points", "map": ["Hit points window"]},
+   {"key": "cond", "title": "Conditions and concentration", "map": ["Conditions on Battle"]},
+   {"key": "death", "title": "Death saves", "map": ["Death saves"]},
+   {"key": "use", "title": "Actions and the Use window", "map": ["The Use window", "Every Battle's rows are ready the same way", "Battle against the rules text"]},
+   {"key": "cast", "title": "Casting and spell slots", "map": ["Live state"]},
+   {"key": "change", "title": "Changing spells and forms", "map": ["Changing spells and forms"]},
+   {"key": "components", "title": "Spell components", "map": ["Spell components"]},
+   {"key": "items", "title": "Items and charges", "map": ["Using an item"]},
+   {"key": "hide", "title": "Hide and Ready", "map": ["Hide and Ready on Battle"]},
+   {"key": "shape", "title": "Wild Shape", "map": ["Playing in Wild Shape"]},
+   {"key": "creatures", "title": "Your creatures", "map": ["Your creatures", "Items that bring a creature"]},
+   {"key": "heal", "title": "Healing someone", "map": ["Healing given to someone"]},
+   {"key": "resources", "title": "Resources and rests", "map": ["The usability round"]}
+  ]},
+  {"key": "rolls", "title": "Rolls and dice", "what": "Every roll, from the button to the result", "features": [
+   {"key": "dice", "title": "Dice", "map": ["Dice"]},
+   {"key": "card", "title": "The roll card", "map": ["The roll card"]},
+   {"key": "plan", "title": "What each option rolls", "map": ["The roll plan"]},
+   {"key": "math", "title": "Show the Math", "map": ["Show the Math"]},
+   {"key": "tablerolls", "title": "Table rolls", "map": ["The table has no modes"]}
+  ]},
+  {"key": "table", "title": "The table", "what": "Playing together, live", "features": [
+   {"key": "tablepage", "title": "askdnd's table", "map": []},
+   {"key": "live", "title": "The live connection", "map": ["Live table connection"]},
+   {"key": "fight", "title": "The fight and initiative", "map": ["The fight", "Initiative from askdnd"]},
+   {"key": "party", "title": "Party", "map": []},
+   {"key": "pictures", "title": "Pictures", "map": ["Pictures"]}
+  ]},
+  {"key": "ddb", "title": "D&D Beyond", "what": "What askdnd reads from it and sends to it", "features": [
+   {"key": "bridge", "title": "The extension", "map": ["D&D Beyond bridge"]},
+   {"key": "sync", "title": "Sheets from D&D Beyond", "map": []},
+   {"key": "gamelog", "title": "Rolls into the Game Log", "map": ["Rolls into D&D Beyond's Game Log"]},
+   {"key": "corrections", "title": "Corrections", "map": ["Corrections"]},
+   {"key": "notes", "title": "Your notes", "map": []}
+  ]},
+  {"key": "story", "title": "Campaign and story", "what": "The campaign's memory", "features": [
+   {"key": "previously", "title": "Previously on…", "map": ["Campaign page", "Story is Campaign's first two tabs", "Listen to the recap"]},
+   {"key": "sessions", "title": "Sessions and drafting", "map": ["Session Story"]},
+   {"key": "processor", "title": "Recording to recap", "map": []},
+   {"key": "moments", "title": "Key moments and suggestions", "map": ["Key moments and adding to the record"]},
+   {"key": "world", "title": "World entries", "map": []},
+   {"key": "trophies", "title": "Trophy Case", "map": ["Trophy Case", "Drops to 0 and deaths"]},
+   {"key": "history", "title": "Version history", "map": ["Version history"]}
+  ]},
+  {"key": "rules", "title": "Rules and books", "what": "Answers that cite the page", "features": [
+   {"key": "answers", "title": "Rules answers", "map": []},
+   {"key": "books", "title": "Books", "map": ["Books", "Rule books"]},
+   {"key": "srd", "title": "Rules content", "map": ["Rules content"]}
+  ]},
+  {"key": "manage", "title": "Manage", "what": "The DM's week and askdnd's admin", "features": [
+   {"key": "needs", "title": "Needs you and Inbox", "map": ["The DM's Workspace", "Manage"]},
+   {"key": "homebrew", "title": "DM Tools and homebrew items", "map": ["DM Tools and homebrew items"]},
+   {"key": "switches", "title": "Features and Labs", "map": ["Features and Labs"]},
+   {"key": "digest", "title": "The Inbox email", "map": ["The Inbox digest"]},
+   {"key": "guide", "title": "DM guide", "map": []},
+   {"key": "accounts", "title": "Accounts and View as", "map": []},
+   {"key": "overview", "title": "Overview and Documents", "map": []},
+   {"key": "spending", "title": "Usage and spending", "map": ["Spending limit"]},
+   {"key": "usage", "title": "Which features get used", "map": ["Which features get used"]},
+   {"key": "campaigns", "title": "Campaigns", "map": ["Campaigns"]}
+  ]},
+  {"key": "around", "title": "Getting around", "what": "What every page shares", "features": [
+   {"key": "menus", "title": "Menus and the menu bar", "map": ["The Three Menus", "Menu bar"]},
+   {"key": "search", "title": "Search", "map": ["Search, like Spotlight"]},
+   {"key": "cards", "title": "Corner cards", "map": ["Corner cards"]},
+   {"key": "help", "title": "Help and the tour", "map": ["The tour and Help › What askdnd adds"]},
+   {"key": "signin", "title": "Signing in and links", "map": ["Signing in returns you", "One address per page"]}
+  ]},
+  {"key": "fft", "title": "Feedback and Testing", "what": "Found, Fixed, Tried", "features": [
+   {"key": "send", "title": "Sending a note", "map": []},
+   {"key": "feedback", "title": "Feedback", "map": ["Found, Fixed, Tried"]},
+   {"key": "testing", "title": "Testing", "map": []},
+   {"key": "stands", "title": "Where it stands", "map": []},
+   {"key": "roadmap", "title": "The Roadmap", "map": []}
+  ]},
+  {"key": "behind", "title": "Behind the scenes", "what": "What no one sees until it breaks", "features": [
+   {"key": "speed", "title": "Speed", "map": ["Where a slow request's time went"]},
+   {"key": "errors", "title": "Errors", "map": ["Error reporting"]},
+   {"key": "backups", "title": "Backups and staging", "map": ["Backups", "Local data"]},
+   {"key": "deploys", "title": "Deploys and tests", "map": []}
+  ]}
+ ]
+}

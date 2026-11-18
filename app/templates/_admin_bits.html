@@ -1,10 +1,19 @@
 {# Admin pieces (Readers, Rebuilt: Brett's picks and comments, Nov 17, docs/mockups/readers/; Manage › askdnd › Design
    system › Admin): what Testing and Feedback share, so a state reads the same everywhere and the kit can go to the next
    project. #}
+{% from "_lists.html" import count_pill %}
 
 {# A state as a word in its colour: one word, one tone (ready, again, failed, passed, claude, ask, pick, quiet) #}
 {% macro state_word(word, tone, attrs="") -%}
 <span class="state-word sw-{{ tone }}"{{ attrs | safe }}>{{ word }}</span>
+{%- endmacro %}
+
+{# A part of a reader, as a card (Brett's pick A, Nov 18, docs/mockups/fft-reader/, issue 4: "it all just blends
+   together"): a small label with its count, then what's in it. `tone`: a state's tone (state_word's) for the part that
+   says where something stands: its left edge in that colour. #}
+{% macro rd_section(label, count=0, tone="", attrs="") -%}
+<section class="rd-sec"{% if tone %} data-tone="{{ tone }}"{% endif %}{{ attrs | safe }}><header class="rd-sec-h"><h3 class="rd-sec-label">{{ label }}</h3>{{ count_pill(count) }}</header>
+<div class="rd-sec-in">{{ caller() }}</div></section>
 {%- endmacro %}
 
 {# The state line under a title: the word, then one sentence saying what it means for you #}

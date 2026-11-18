@@ -18,14 +18,14 @@ KINDS = {
     # a server test checking a page's words ('>Needs you<' in page)
     "server tests": (["tests/*.py"], r"[\"']>[A-Z][a-z][^<\"']{2,40}<"),
     # the app deciding by a display label (a roll named "Initiative", a page labelled "Sessions")
-    "app logic": (["app/*.py", "app/templates/*.html"], r"\blabel\s*==\s*[\"']|\.label\s*==|label\.startswith\([\"']|selectattr\(\"label\""),
+    "app logic": (["app/**/*.py", "app/templates/*.html"], r"\blabel\s*==\s*[\"']|\.label\s*==|label\.startswith\([\"']|selectattr\(\"label\""),
     # app.js deciding by what an element says
     "app.js": (["app/static/app.js"], r"textContent\s*(?:===|==|!==)|(?:textContent|innerText)\.(?:includes|startsWith|indexOf|match)\("),
 }
 SELF = {"tests/test_no_text_refs.py"}
 
 # The work left (Nov 13). Lower a number when you convert some; never raise it.
-BASELINE = {"browser tests": 121, "server tests": 89, "app logic": 8, "app.js": 1}
+BASELINE = {"browser tests": 119, "server tests": 86, "app logic": 8, "app.js": 1}
 
 
 def count(kind: str) -> tuple[int, dict[str, int]]:

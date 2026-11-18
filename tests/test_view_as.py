@@ -87,14 +87,16 @@ def test_viewing_as_a_player_shows_their_notes_only_and_marks_nothing_seen(setup
     """Brett, Nov 7: viewing as Mark, Your notes showed Brett's own feedback. It shows the viewed person's, and looking
     changes nothing for them: their badge and cards stay theirs (View as is read-only)."""
     from app import picks
-    from app.models import Feedback
+    from app.fft import rules
+    from app.fft.models import FftNote
 
     db = setup
     admin = client_for(monkeypatch, db, "brett@example.com")
     mark = picks.user_row(db, {"email": "mark@example.com", "name": "Mark"})
     brett = picks.user_row(db, {"email": "brett@example.com", "name": "Brett"})
-    db.add_all([Feedback(user_id=brett.id, sender="Brett (admin)", text="Brett's own note", status="done"),
-                Feedback(user_id=mark.id, sender="Mark (player)", text="Mark's note", status="done")])
+    rules.send_note(db, user_id=brett.id, first_name="Brett", role="admin", kind="problem", text="Brett's own note")
+    marks = rules.send_note(db, user_id=mark.id, first_name="Mark", role="player", kind="problem", text="Mark's note")
+    rules.file_issue(db, f"user:{brett.id}", marks)
     db.flush()
     admin.post("/view-as", data={"email": "mark@example.com"})
     page = admin.get("/your-notes?tab=askdnd").text
@@ -103,4 +105,4 @@ def test_viewing_as_a_player_shows_their_notes_only_and_marks_nothing_seen(setup
     assert news["count"] == 1 and news["cards"] == []  # (his count; his cards stay his)
     assert admin.get("/your-notes/seen?tab=askdnd").json()["count"] == 1  # (opening his tab clears nothing for him)
     db.expire_all()
-    assert db.scalar(select(Feedback).where(Feedback.user_id == mark.id)).seen == ""  # (nothing marked seen for him)
+    assert db.scalar(select(FftNote).where(FftNote.user_id == mark.id)).seen == ""  # (nothing marked seen for him)

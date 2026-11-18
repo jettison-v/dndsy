@@ -35,7 +35,7 @@
           data-panel-url="/characters/{{ c.id }}/detail?ref={{ f.key | urlencode }}" tabindex="0" role="button" aria-label="{{ f.name }}: details">
           <span class="ls-name"><span class="ls-line"><b>{{ f.name }}</b></span>
             {% if f.summary %}<span class="ls-what">{{ f.summary }}</span>{% endif %}
-            {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+            {% if note %}<span class="ls-note" title="{{ note }}" data-private>✎ {{ note }}</span>{% endif %}</span>
           <span>{{ f.source }}</span>
           <span>{{ f.level or "—" }}</span>
           <span>{{ f.turn | reject("equalto", "Other") | join(", ") or "—" }}</span>

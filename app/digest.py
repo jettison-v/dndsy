@@ -128,12 +128,12 @@ def wants_fixes(user: User) -> bool:
 
 
 def fixes_waiting(db: Session, user: User, since: datetime) -> int:
-    """The fixes to notes this person sent that are live and wait for their Does it work now? since then."""
-    from app.models import Check, Feedback
+    """The fixes to notes this person sent that are live and wait for their Does it work now? since then (Found, Fixed,
+    Tried R5: a fix a player's note prompted is theirs to confirm first)."""
+    from app.fft.models import FftIssue
 
-    return db.scalar(select(func.count()).select_from(Check).join(Feedback, Check.feedback_id == Feedback.id)
-                     .where(Feedback.user_id == user.id, Check.setup == "player", Check.status == "again",
-                            func.coalesce(Check.asked_at, Check.updated_at) > since)) or 0  # (asked since: not any later edit)
+    return db.scalar(select(func.count()).select_from(FftIssue)
+                     .where(FftIssue.confirm_by == user.id, FftIssue.state == "ready", FftIssue.confirm_since > since)) or 0  # (asked since: not any later edit)
 
 
 def compose_fixes(user: User, n: int) -> dict:
@@ -151,11 +151,10 @@ def compose_fixes(user: User, n: int) -> dict:
 
 def _fixes_day(db: Session, now: datetime, today: str) -> list[tuple[str, str]]:
     """Once a day, each person with a fix newly waiting for them: one email (counts and a link)."""
-    from app.models import Check, Feedback
+    from app.fft.models import FftIssue
 
     sent = []
-    users = db.scalars(select(User).join(Feedback, Feedback.user_id == User.id).join(Check, Check.feedback_id == Feedback.id)
-                       .where(Check.setup == "player", Check.status == "again").distinct())
+    users = db.scalars(select(User).join(FftIssue, FftIssue.confirm_by == User.id).where(FftIssue.state == "ready").distinct())
     from app import access
 
     for user in users:
@@ -283,9 +282,9 @@ def settings(request: Request, db: Session = Depends(get_db)):
 
 def _fixes_row(db: Session, user: User) -> bool | None:
     """The fix-to-try switch, for someone who sends notes (on or off), else None (no row)."""
-    from app.models import Feedback
+    from app.fft.models import FftNote
 
-    if not db.scalar(select(func.count()).select_from(Feedback).where(Feedback.user_id == user.id)):
+    if not db.scalar(select(func.count()).select_from(FftNote).where(FftNote.user_id == user.id)):
         return None
     return wants_fixes(user)
 

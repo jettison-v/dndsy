@@ -56,8 +56,9 @@ PAGES = (
     # (the DM guide is read, not run: it's in the account menu's Help, not Manage's list; UNLISTED)
     ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, TABLE, "moderate", ()),
     ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", "admin", ()),
-    ("feedback", "Feedback", "/manage/feedback", "Notes for Claude from any page, and where each stands", ASKDND, "", "admin", ()),
-    ("testing", "Testing", "/manage/testing", "Checks to try, each with why it's there, and rounds through them", ASKDND, "", "admin", ()),
+    ("feedback", "Feedback", "/manage/feedback", "Every note and issue, and what became of it", ASKDND, "", "admin", ()),
+    ("testing", "Testing", "/manage/testing", "What's your turn, and trying what Claude built", ASKDND, "", "admin", ()),
+    ("product-areas", "Product areas", "/manage/product-areas", "Every part of askdnd in two levels, and what's open in each", ASKDND, "", "admin", ()),
     ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, "", "admin", ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, "", "admin", ()),
     ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, "", "admin", ()),
@@ -73,7 +74,7 @@ PAGES = (
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, "admin", ()),
 )
 IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "scene-notes", "places", "table", "house", "settings", "history",
-           "overview", "feedback", "testing", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
+           "overview", "feedback", "testing", "product-areas", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
 NEEDS = {"scene-notes": "vtt_table", "places": "vtt_table"}  # (a page that comes with a feature: listed only where it's on)
 UNLISTED = ("guide",)  # (a page of the list that no menu or list down the left shows: the DM guide is the account menu's)
 COUNTED = ("needs", "inbox", "feedback", "testing")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
@@ -144,6 +145,17 @@ def _plural(n: int, one: str, many: str | None = None) -> str:
     return f"{n} {one if n == 1 else (many or one + 's')}"
 
 
+def _product_areas(db: Session) -> str:
+    """The Overview card for Product areas: the list's size, and how many issues are open with no Feature yet."""
+    from app.fft import taxonomy
+    from app.fft.models import FftIssue
+
+    areas = taxonomy.areas()
+    loose = db.scalar(select(func.count()).select_from(FftIssue).where(FftIssue.state != "closed", FftIssue.feature == "")) or 0
+    return (f"{_plural(len(areas), 'Product Area')}, {_plural(sum(len(a.features) for a in areas), 'Feature')}"
+            + (f" · {loose} open with no Feature yet" if loose else ""))
+
+
 def needs(db: Session, user: dict) -> list[dict]:
     """What's waiting in the campaign, most important first: one line each, with where to go.
     Admins also get askdnd-wide items (backups, spending), marked `admin`."""
@@ -206,12 +218,12 @@ def needs(db: Session, user: dict) -> list[dict]:
         if n:
             out.append({"text": f"{n} tool correction{'s' if n != 1 else ''} to build into askdnd", "admin": True,
                         "sub": "Ask Claude to build them in; each is a patch until then", "href": "/manage/tool-corrections", "go": "Tool corrections"})
-        from app import feedback
+        from app.fft import views as fft_views
 
-        notes = db.scalar(select(func.count()).select_from(feedback.Feedback).where(feedback.Feedback.status == "review")) or 0
+        notes = fft_views.to_approve(db)
         if notes:  # (the table's notes for Claude wait for an admin's approval, Brett, Nov 6)
             out.append({"text": f"{notes} note{'s' if notes != 1 else ''} from the table to approve", "admin": True,
-                        "sub": "Approve sends one to Claude; Delete drops it", "href": "/manage/feedback?tab=review", "go": "Feedback"})
+                        "sub": "Claude sees none of it until you approve it", "href": "/manage/feedback?tab=approve", "go": "Feedback"})
         b = backup_status(db)
         if b["attention"]:
             out.append({"text": b["text"], "sub": "Only admins see askdnd-wide items like this", "href": "/manage/backups",
@@ -250,11 +262,13 @@ def needs_you(request: Request, db: Session = Depends(get_db)):
 def counts(request: Request, db: Session = Depends(get_db)):
     """What's waiting, for the counts beside Needs you and Inbox (asked for when the Manage menu opens, and by Manage
     pages, so no other page waits for them)."""
-    from app import feedback, testing
+    from app.fft import testing_page
+    from app.fft import views as fft_views
     from app.suggestions import waiting_count
 
     user = current_user(request)
-    mine = {"feedback": feedback.for_you(db), "testing": testing.for_you(db)} if is_admin(user) else {}  # (notes waiting for an admin: to approve, or Claude's questions)
+    # (Feedback: notes waiting for your approval; Testing: everything that's your turn, For you's count)
+    mine = {"feedback": fft_views.to_approve(db), "testing": testing_page.summary(testing_page.for_you(db, testing_page.device_of(request)))["n"]} if is_admin(user) else {}
     if not user or not can_moderate(user) or web.campaign(db) is None:
         return JSONResponse(mine, headers={"Cache-Control": "no-store"})
     return JSONResponse({"needs": len(needs(db, user)), "inbox": waiting_count(db), **mine}, headers={"Cache-Control": "no-store"})
@@ -284,6 +298,7 @@ def overview(request: Request, db: Session = Depends(get_db)):
         "campaigns": (f"{_plural(len(camps), 'campaign')}" + (f", {sum(1 for c in camps if c.is_test)} test" if any(c.is_test for c in camps) else ""), ""),
         "corrections": (f"{fixes} to build into askdnd" if fixes else "Nothing to build in", "warn" if fixes else "ok"),
         "documents": (_plural(len(documents.library()), "document"), ""),
+        "product-areas": (_product_areas(db), ""),
     }
     if config.DDB_BRIDGE:
         from app import ddb_bridge

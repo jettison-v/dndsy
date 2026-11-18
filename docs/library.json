@@ -1044,9 +1044,81 @@
   "link": "https://claude.ai/artifact/8qfS3KYY3UXNsot4wM2jtX"
  },
  {
+  "title": "Roadmap: Screens",
+  "kind": "design",
+  "status": "Paused: internal tool first",
+  "date": "Nov 17",
+  "what": "Brett, Nov 17: the Roadmap in askdnd, an internal tool first (his correction: tracking the work in progress; players weighing in is a later nice-to-have). One ordered list with each item's progress read from its areas, notes, checks and pull requests, whose turn, health and next step; an item's page with its steps, updates, decisions and documents; what changed since you last looked; shipped. The player side drawn last. Paused until Found, Fixed, Tried is built.",
+  "source": "docs/mockups/roadmap/index.html",
+  "link": "https://claude.ai/artifact/3s1frjfKcyQGD7HFzPYn1x"
+ },
+ {
+  "title": "Found, Fixed, Tried: the build plan",
+  "kind": "plan",
+  "status": "Built: for your local trial",
+  "date": "Nov 17",
+  "what": "How v2 is built: one branch, Brett tries it locally, one merge replaces today's Feedback and Testing; old tables kept a few days; the model in app/fft/ (its own tables), the rules R1–R18 in one place with their tests, the trust layer tests first, and the slices.",
+  "source": "docs/plans/2026-11-17-found-fixed-tried-build.md",
+  "link": ""
+ },
+ {
+  "title": "Found, Fixed, Tried: Audit",
+  "kind": "plan",
+  "status": "Done: built into v2",
+  "date": "Nov 17",
+  "what": "Devil's-advocate audit (Brett, Nov 17): three independent reviewers (architecture, workflows and design, the live code) plus Claude's pass, main claims checked in the code. Three standing-rule breaks to fix now; the model needs a run, check versions and questions, one table of state changes, and a trust and privacy layer; a dozen missing workflows; colour by whose turn; what to cut.",
+  "source": "docs/artifacts/found-fixed-tried-audit.html",
+  "link": "https://claude.ai/artifact/Wa9Eh4jCBhd5Cxqx9pX3k6"
+ },
+ {
+  "title": "Feedback's Reader: Sections",
+  "kind": "design",
+  "status": "Brett picked A (sections as cards)",
+  "date": "Nov 17",
+  "what": "Brett's note on his local trial: Feedback's reader \"all just blends together\". Today's reader and three ways to split it into sections (cards, tabs inside the issue, the story and a column of facts), each showing the issue's check and Claude's question with its answer. One pick saved on the page.",
+  "source": "docs/mockups/fft-reader/index.html",
+  "link": "https://claude.ai/artifact/Er4mH2fa5VeF7epiRGaqrt"
+ },
+ {
+  "title": "Product Taxonomy",
+  "kind": "design",
+  "status": "Brett picked two levels, A and A; built Nov 18",
+  "date": "Nov 18",
+  "what": "Brett's idea (Nov 17 and 18): a fixed two-level list, Product Area › Feature, every issue is sorted into, so requests group the same way and each session starts from the same place. The draft list (10 Product Areas, 62 Features, from docs/MAP.md), Feedback grouped by Product Area or with a menu, an issue's Feature and its Change… picker, and Where it stands with a session per Product Area or batches made by hand. Three picks and a notes box saved on the page.",
+  "source": "docs/mockups/product-taxonomy/index.html",
+  "link": "https://claude.ai/artifact/D672VnBzfYXTKUK4R6vkYD"
+ },
+ {
+  "title": "Feedback and Testing, Round 2",
+  "kind": "design",
+  "status": "waiting on Brett's pick",
+  "date": "Nov 18",
+  "what": "Three decisions from Brett's round on Nov 18: what Claude missed becomes (a quiet count of what's in Claude's hands, amber only when something waits too long, or a queue always shown), splitting a note into several issues (Split… on any issue, or only while approving), and a screenshot-first Send a note (Take a screenshot steps aside and you paste, or the browser takes the tab). Three picks and a notes box saved on the page.",
+  "source": "docs/mockups/fft-round-2/index.html",
+  "link": "https://claude.ai/artifact/FrF4GE6KaAiQbXeiAmpmn6"
+ },
+ {
+  "title": "Found, Fixed, Tried: Screens",
+  "kind": "design",
+  "status": "v2: built",
+  "date": "Nov 17",
+  "what": "The agreed model drawn as askdnd's screens, clickable: For you, trying a check, Something's wrong…, Failed with problems, Change result, Can't try…, a question and a mockup as one entry, Feedback's list, an issue with its reports, Ideas, and Where it stands. One verdict saved on the page.",
+  "source": "docs/mockups/found-fixed-tried/index.html",
+  "link": "https://claude.ai/artifact/F7sCCmdGCTebmHk1YCvmrZ"
+ },
+ {
+  "title": "Found, Fixed, Tried (the brief)",
+  "kind": "design",
+  "status": "v2: revised after the audit and review",
+  "date": "Nov 17",
+  "what": "Brett, Nov 17: confused which items go where between Feedback and Testing, and it may go to an enterprise use next. Today's five joins, what TestRail, Xray, Zephyr, Qase, Linear, Jira, GitHub, Marker.io, BugHerd, Canny and others do, one model (report, issue, check, result, area), the workflows, the screens, building it to lift out, and six picks.",
+  "source": "docs/mockups/feedback-and-testing/index.html",
+  "link": "https://claude.ai/artifact/LQMNBNHQpZ7Gand4mu1cyK"
+ },
+ {
   "title": "Counts and Status Marks",
   "kind": "design",
-  "status": "For your pick",
+  "status": "Chose A and A · built",
   "date": "Nov 17",
   "what": "Battle and Sheet, Brett's notes 84 and 86: the design system's Count (beside See all, tabs, headings and folds) too small to read as a count, and the ✓ heading over Sheet's status column too small and maybe not needed. Three looks for each, drawn in every place they show.",
   "source": "docs/mockups/counts-and-marks/index.html",
@@ -1294,5 +1366,14 @@
   "what": "Brett, Nov 13: every change Claude builds lands with the steps to try it; Brett marks each Passed, Failed (with a note Claude reads) or Skip. The steps and marks are in the page's own store (groups, steps, results).",
   "source": "docs/artifacts/test-steps.html",
   "link": "https://claude.ai/artifact/Jbd6VR8w6thqm951FxKqGV"
+ },
+ {
+  "title": "askdnd Work Flow",
+  "kind": "plan",
+  "status": "Draft",
+  "date": "Nov 18",
+  "what": "How a note or a Roadmap item becomes built and tested work, and where you steer it: Work, Start, the dev plan, For you. Drawn to agree on before askdnd changes.",
+  "source": "docs/artifacts/work-flow.html",
+  "link": "https://claude.ai/artifact/TbkPaPK9FbmrFT8hSFpx8g"
  }
 ]

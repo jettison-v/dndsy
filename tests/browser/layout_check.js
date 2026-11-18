@@ -9,6 +9,8 @@
 // - "breaks a word": a heading or a bold name wrapped inside a word rather than between words
 // - "cuts its hint": a box's placeholder longer than the box
 // - "unreadable": words drawn in a scaling picture (an SVG's <text>) under 9px
+// - "repeats an id": two elements with one id, so a script finds the wrong one (Help's FAQ had id="cards", the corner
+//   cards' own: every card on Help landed in a folded answer; Nov 17)
 // - "misaligned", only when asked ({rows: true}): rows of one list whose small last item (an icon, a ↗) doesn't line up
 //   with the rest. scripts/layout_sweep.py asks; the tests don't yet, since it finds rows on the Character page that
 //   wrap differently on a phone (Nov 2), a design question before it can be a rule.
@@ -186,5 +188,8 @@ ask => {
       ends.filter(e => Math.abs(e.end - mode) > 2).forEach(e => add('misaligned', e.row, `its last item ends at ${e.end}px, ${most} of ${ends.length} rows at ${mode}px: ${e.row.textContent}`));
     }
   }
+  const ids = new Map();
+  document.querySelectorAll('[id]').forEach(el => { if (el.id) ids.set(el.id, (ids.get(el.id) || 0) + 1); });
+  ids.forEach((n, id) => { if (n > 1) add('repeats an id', document.getElementById(id), `#${id} on ${n} elements`); });
   return problems;
 }
