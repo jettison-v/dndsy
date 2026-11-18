@@ -1,0 +1,10 @@
+{# A document alone in a window nearly the whole screen (app/documents.py `document_page`, part=1): For you's Open
+   mockup, so ✕ comes back to the question (Brett, Nov 17). The same sealed frame as its Documents page. #}
+<div class="peek-head">
+  <div><div class="note">Mockup</div><h2 id="peek-title">{{ e.title }}</h2></div>
+  <div class="row tight">{% if e.link %}<a class="btn link small" href="{{ e.link }}" target="_blank" rel="noopener noreferrer">On claude.ai ↗</a>{% endif %}
+    <button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
+</div>
+<div class="peek-body doc-window">
+  <iframe class="doc-frame" src="{{ frame }}" title="{{ e.title }}" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"></iframe>
+</div>

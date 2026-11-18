@@ -106,8 +106,9 @@ def library_page(request: Request):
 
 
 @router.get("/manage/documents/{did}")
-def document_page(request: Request, did: str, page: str = ""):
-    """One document: a plan in the page, anything else in the sealed frame, a design's boards as tabs."""
+def document_page(request: Request, did: str, page: str = "", part: int = 0):
+    """One document: a plan in the page, anything else in the sealed frame, a design's boards as tabs. `part=1`: the
+    page alone in a window nearly as big as the screen (For you's Open mockup, Brett, Nov 17: "a large modal")."""
     _, stop = web.require(request, is_admin, "askdnd's documents are for admins.")
     if stop:
         return stop
@@ -119,6 +120,8 @@ def document_page(request: Request, did: str, page: str = ""):
     body = None
     if current.endswith(".md"):
         body = Markup(markdown_to_html((DOCS / current).read_text(), lambda _name: None))  # noqa: S704
+    if part and not body:
+        return templates.TemplateResponse(request, "_document_window.html", {"e": entry, "frame": file_url(current)})
     return templates.TemplateResponse(request, "manage_document.html", {
         "e": entry, "pages": pages, "current": current, "body": body, "frame": None if body else file_url(current),
         "label": lambda p: Path(p).name.removesuffix(".dc.html").removesuffix(".html")})

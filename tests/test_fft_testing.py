@@ -221,7 +221,10 @@ def test_a_mockup_asked_about_an_issue_opens_from_for_you_and_shows_in_its_conve
                   choices=[{"label": "Cards"}, {"label": "Tabs"}], mine=0, doc_path="docs/mockups/fft-reader/index.html")
     db.flush()
     page = admin.get(f"/manage/testing?open=q{q.id}").text
-    assert 'href="/manage/documents/mockups-fft-reader-index" data-open-doc>Open mockup</a>' in page and "Feedback&#39;s Reader: Sections" in page
+    assert 'data-modal-url="/manage/documents/mockups-fft-reader-index?part=1" data-modal-size="full" data-open-doc>Open mockup</a>' in page
+    assert "Feedback&#39;s Reader: Sections" in page
+    window = admin.get("/manage/documents/mockups-fft-reader-index?part=1").text  # (the mockup alone, in a window over For you)
+    assert 'id="peek-title"' in window and 'class="doc-frame"' in window and "<main" not in window
     reader = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
     assert f'data-question="{q.id}"' in reader and f'href="/manage/testing?open=q{q.id}" data-do="answer"' in reader
     assert reader.index("I&#39;ll draw it.") < reader.index(f'data-question="{q.id}"')

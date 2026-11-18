@@ -717,7 +717,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (id && /^\d+$/.test(id) && !(shown && shown.dataset.readerId === id) && !document.getElementById('quest-' + id)) { history.replaceState(null, '', location.pathname + location.hash); openPanel('/campaign/' + id + '/peek', null, null); } }
 
   // Any element with data-panel-url opens that fragment in a side panel (Battle: "See all", an
-  // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide
+  // option's details). data-modal-url opens a centered modal; data-modal-size="large" makes it wide, "full" nearly the whole window
   // (a Wild Shape form, the Spell Book). A side panel opened from inside a modal goes on the top
   // layer. Opening something from inside a panel remembers what was there, so "← Back" returns to it.
   function openPanel(url, opener, fallback, modal, back) {
@@ -732,7 +732,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       panel.replaceChildren(...back.nodes);
       panel.dataset.url = back.url;
       panel.classList.toggle('modal', !!back.modal);
-      panel.classList.toggle('large', back.modal === 'large');
+      panel.classList.toggle('large', back.modal === 'large' || back.modal === 'full');
+      panel.classList.toggle('full', back.modal === 'full');
       backdrop.classList.toggle('dim', !!back.modal);
       const body = panel.querySelector('.peek-body');
       if (body) body.scrollTop = back.scroll;
@@ -743,12 +744,13 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
       // (its own nodes are kept, not a copy: typed words, picks and their handlers stay as they were, Brett, Nov 17)
-      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
+      layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('full') ? 'full' : panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
                            title: title ? title.textContent.trim() : '', layer, nodes: [...panel.childNodes] });
     } else layer.history = [];
     if (!inside && !back) { if (layer.name === 'top') layer.focus = opener; else lastFocus = opener; }
     panel.classList.toggle('modal', !!modal);
-    panel.classList.toggle('large', modal === 'large');
+    panel.classList.toggle('large', modal === 'large' || modal === 'full');
+    panel.classList.toggle('full', modal === 'full');  // (nearly the whole window: a mockup to look at)
     backdrop.classList.toggle('dim', !!modal);
     fetch(url, { headers: { 'HX-Request': 'true' } })
       .then(r => (r.ok ? r.text() : Promise.reject(r.status)))
@@ -811,7 +813,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const own = e.target.closest('button[hx-post], form, [data-roll], [data-use-url], details, a[data-no-peek], .ft-init button, .ft-init input');
     if ((own && (own === t || t.contains(own))) || t.closest('summary')) return;
     e.preventDefault();
-    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), t.dataset.modalSize === 'large' ? 'large' : true);
+    if (t.dataset.modalUrl) openPanel(t.dataset.modalUrl, t, t.getAttribute('href'), ['large', 'full'].includes(t.dataset.modalSize) ? t.dataset.modalSize : true);
     else openPanel(t.dataset.panelUrl, t, t.getAttribute('href'));
   });
   document.addEventListener('keydown', e => {

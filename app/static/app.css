@@ -54,7 +54,7 @@
   --selected-bg: #2a3550;  /* a chip or view that's on: blue on a dark tint */
   /* Panels and modals: side panel (also inside a modal) · regular modal (forms) · large (a Wild Shape form, combos,
      leveling, the Spell Book) */
-  --panel-w: 420px; --modal-w: 720px; --modal-lg-w: 1180px;
+  --panel-w: 420px; --modal-w: 720px; --modal-lg-w: 1180px; --modal-full-w: 1600px;
   /* Screen widths (media queries can't use variables): phone ≤ 640px, tablet ≤ 900px, wide ≥ 1100px */
   /* Conditions (docs/mockups/conditions-on-battle.html): each one's colour, and Blinded's black on the page's edge */
   --cond-blinded: #e6e9ee; --cond-charmed: #ec84b8; --cond-deafened: #c3b08a; --cond-exhaustion: #d08a4c; --cond-frightened: #a983e6; --cond-grappled: #e59a52; --cond-incapacitated: #ef6a5e; --cond-invisible: #f4f6f9; --cond-paralyzed: #f0d24a;
@@ -1457,6 +1457,7 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 
 /* Large modal (Wild Shape forms): wide on desktop, a full-height sheet on phones */
 .peek.modal.large { width: min(var(--modal-lg-w), calc(100% - 48px)); max-height: 90vh; height: 90vh; }
+@media (min-width: 901px) { .peek.modal.full { width: min(var(--modal-full-w), calc(100% - 32px)); height: 94vh; max-height: 94vh; } }  /* nearly the whole window (a mockup in For you) */
 .fm-head { align-items: center; padding: 18px 22px 12px; border-bottom: 1px solid var(--line); }
 .fm-pic { width: 88px; height: 88px; border-radius: var(--r-lg); object-fit: cover; border: 1px solid var(--line); flex: none; }
 .fm-title { flex: 1; min-width: 0; }
@@ -1576,6 +1577,8 @@ h2.econ-title::before { content: var(--k-glyph); font-size: .9em; margin-right: 
 .doc-text { max-width: 860px; overflow-x: auto; }
 .doc-text table { border-collapse: collapse; }
 .doc-text th, .doc-text td { border: 1px solid var(--line); padding: var(--sp-1) var(--sp-2); text-align: left; vertical-align: top; }
+.doc-window { display: flex; flex-direction: column; gap: var(--sp-2); padding-bottom: var(--sp-3); }  /* a mockup in a full window (_document_window.html) */
+.doc-window .doc-frame { flex: 1; height: auto; min-height: 0; }
 .doc-frame { display: block; width: 100%; height: calc(100vh - 220px); min-height: 480px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
 .ov-state { font-size: var(--fs-sm); }
 .ov-state.ok { color: var(--green); } .ov-state.warn { color: var(--amber); }
