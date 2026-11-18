@@ -107,9 +107,13 @@ next`), Help's About and FAQ, the DM guide where it mentions feedback, docs/test
   by hand), app/fft/rules.py (R1–R18; `check_state` works a check's state out per device; `pick_next` is R15),
   tests/test_fft_rules.py (each rule, a randomized invariant run, the record matching the rows). Test databases now
   drop tables one per transaction (tests/conftest.py `drop_everything`).
-- **Slice 2, building**: app/fft/keys.py (a key per actor and place, hashed, with scopes), app/fft/api.py (Claude's
-  API under /api/fft: approved words only, first names, quoted and labelled, the page only on request), the new CLI
-  `scripts/fft.py` (it becomes scripts/feedback.py at the merge: the old CLI keeps talking to askdnd.ai's old tool
-  until then, so the listener loop isn't broken mid-build), tests/test_fft_api.py (the privacy tests from branch
-  privacy-rules, ported).
+- **Slice 2, done**: app/fft/keys.py (Claude's FEEDBACK_KEY, staging's FFT_RELAY_KEY, the Mini's FFT_MINI_KEY, and
+  hashed keys made in the app, each with its scopes; header `X-Fft-Key`, trusted by app/same_site.py), app/fft/api.py
+  (`/api/fft`: inbox per listener leaving out Claude's own changes, next, notes and issues with only filed notes and
+  approved lines, first names, every text quoted with who wrote it, the page only with `page=1`, a picture only as its
+  safe copy; issues, checks, questions, areas and items, deploy, the relay, the Mini's tries; Claude can't close an
+  issue as working), app/fft/steps.py (the walkthrough's rules, moved from app/testing.py, which imports them),
+  `scripts/fft.py` (tried against the local server end to end), tests/test_fft_api.py (the privacy tests from
+  privacy-rules, ported, plus keys and listeners). Left for slice 3: a picture added to a line (`_line` lists none yet).
+- **Slice 3, next**: sending, approving, Notes you sent.
 - At the merge: run `scripts/deploy_check.py --set-backup-watch` (app/fft joined BACKUP_WATCH).
