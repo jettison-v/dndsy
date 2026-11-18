@@ -728,11 +728,23 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const { panel, backdrop } = layer;
     if (layer.name === 'base' && !back && layers.top) closeLayer(layers.top);
     const inside = isOpen(layer) && opener && panel.contains(opener);
-    if (back) { /* returning: the history entry was already taken off */ }
+    if (back && back.nodes && !back.stale) {  // returning: the window comes back as it was left, what was typed in it too
+      panel.replaceChildren(...back.nodes);
+      panel.dataset.url = back.url;
+      panel.classList.toggle('modal', !!back.modal);
+      panel.classList.toggle('large', back.modal === 'large');
+      backdrop.classList.toggle('dim', !!back.modal);
+      const body = panel.querySelector('.peek-body');
+      if (body) body.scrollTop = back.scroll;
+      panel.focus({ preventScroll: true });
+      return;
+    }
+    if (back) { /* returning to a window that changed something since: drawn again */ }
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
+      // (its own nodes are kept, not a copy: typed words, picks and their handlers stay as they were, Brett, Nov 17)
       layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
-                           title: title ? title.textContent.trim() : '', layer });
+                           title: title ? title.textContent.trim() : '', layer, nodes: [...panel.childNodes] });
     } else layer.history = [];
     if (!inside && !back) { if (layer.name === 'top') layer.focus = opener; else lastFocus = opener; }
     panel.classList.toggle('modal', !!modal);
@@ -772,6 +784,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     });
     head.prepend(b);
   }
+  // A window that changes something (an htmx post inside it) leaves the windows behind it out of date: Back draws them again
+  document.addEventListener('htmx:beforeRequest', e => {
+    const verb = ((e.detail && e.detail.requestConfig && e.detail.requestConfig.verb) || 'get').toLowerCase();
+    if (verb === 'get') return;
+    Object.values(layers).forEach(l => { if (l && l.panel.contains(e.target)) l.history.forEach(h => { h.stale = true; }); });
+  });
   window.askdndPanel = openPanel;
   // Close the layer holding `el` (Table rolls' Roll window, behind the roll it just opened), without a click: a click
   // elsewhere closes the roll window

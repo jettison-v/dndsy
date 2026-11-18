@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_admin_bits.html" import state_word, state_line, more_menu %}
 {% from "_lists.html" import empty_state, count_pill %}
-{% from "_fft_bits.html" import report, convo_line, history with context %}
+{% from "_fft_bits.html" import report, convo_line, history, asked_bub with context %}
 {% block title %}Feedback · Manage · askdnd{% endblock %}
 {% block content %}
 {# Manage › askdnd › Feedback (app/fft/feedback_page.py; screens 10–14 of docs/mockups/found-fixed-tried/): the record
@@ -103,7 +103,7 @@
           {% for nv in v.notes %}{{ report(nv, unjoin=("/manage/feedback/issues/" ~ i.id ~ "?tab=" ~ tab) if v.notes | length > 1 and i.state != "closed" else "") }}{% endfor %}</section>{% endif %}
         {% set lines = v.lines + (v.notes | map(attribute="lines") | sum(start=[])) %}
         <section class="convo" aria-label="The conversation"><h3 class="plabel">Conversation</h3>
-          {% for x in lines | sort(attribute="id") %}{{ convo_line(x, "", v.senders) }}{% else %}<p class="note">Nothing said yet.</p>{% endfor %}</section>
+          {% for at, x in talk(lines, v.asked) %}{% if x.q is defined %}{{ asked_bub(x) }}{% else %}{{ convo_line(x, "", v.senders) }}{% endif %}{% else %}<p class="note">Nothing said yet.</p>{% endfor %}</section>
         {% if i.state != "closed" %}
         <form method="post" action="/manage/feedback/issues/{{ i.id }}?tab={{ tab }}" class="composer" data-composer><input type="hidden" name="do" value="line">
           <fieldset class="composer-to"><legend class="note">Write to</legend>

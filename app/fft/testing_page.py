@@ -194,7 +194,7 @@ def for_you(db: Session, device: str) -> list[dict]:
             aid = c.area_id
         elif q.about == "area":
             aid = q.about_id
-        decision = q.about == "document"
+        decision = q.about == "document" or bool(q.doc_path)  # (a mockup to look at first, whatever it's about)
         rows.append((area_key(aid), aid, {"key": f"q{q.id}", "title": views.title_of(q.text), "kind": "decision" if decision else "question",
                                           "sub": "A decision: look, then one verdict" if decision else "Claude asks"}))
     for i in db.scalars(select(FftIssue).where(FftIssue.state == "merge_ok").order_by(FftIssue.id)):
@@ -278,7 +278,7 @@ def _picked(db: Session, pick: str, device: str) -> dict | None:
         return {"kind": "check", **cv, "why": why_line(db, c, cv["v"]), "history": history(db, c), "page": page_of(db, c),
                 "last_failed": _last_failed(db, c, device)}
     if kind == "q" and (q := db.get(FftQuestion, ident)):
-        return {"kind": "question", "q": q, "about": _about(db, q)}
+        return {"kind": "question", "q": q, "about": _about(db, q), "doc": views.doc_of(q.doc_path)}
     if kind == "i" and (i := db.get(FftIssue, ident)):
         return {"kind": "issue", "i": i, "sentence": views.issue_sentence(db, i), "pill": views.turn_pill(*views.issue_turn(db, i))}
     if kind == "n" and (n := db.get(FftNote, ident)):
@@ -298,8 +298,8 @@ def _about(db: Session, q: FftQuestion) -> dict:
         return {"said": f"the check “{c.title}”", "href": f"{BACK}?open=c{c.id}"}
     if q.about == "area" and q.about_id and (a := db.get(FftArea, q.about_id)):
         return {"said": f"the {a.title} area", "href": f"{BACK}?show=stands"}
-    if q.about == "document" and q.doc_path:
-        return {"said": q.doc_path.rsplit("/", 2)[-2] if "/" in q.doc_path else q.doc_path, "href": "/manage/documents", "doc": q.doc_path, "version": q.doc_version}
+    if q.about == "document" and (doc := views.doc_of(q.doc_path)):
+        return {"said": doc["title"], "href": doc["href"], "version": q.doc_version}
     return {"said": "", "href": ""}
 
 

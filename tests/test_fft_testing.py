@@ -206,6 +206,30 @@ def test_a_question_answered_in_for_you_names_itself(admin, db):
     assert q.answer_choice == 1 and issue.state == "to_fix"
 
 
+def test_a_mockup_asked_about_an_issue_opens_from_for_you_and_shows_in_its_conversation(admin, db):
+    """Brett, Nov 17: a mockup asked as a loose decision had no link to it, sat in no area, and wasn't on the issue it
+    answers. Asked about the issue with its document, For you opens the mockup by its name, and the issue's
+    conversation shows the question, the answers with Claude's pick, then the answer, in the order it happened."""
+    from app.fft.models import FftLine
+
+    issue = rules.new_issue(db, "claude", "The reader blends together")
+    db.add(FftLine(issue_id=issue.id, who="claude", to="", text="I'll draw it."))
+    db.flush()
+    with pytest.raises(rules.RuleError):  # (only a mockup Manage › Documents lists)
+        rules.ask(db, "claude", about="issue", about_id=issue.id, text="Which?", doc_path="docs/mockups/nothing-here/index.html")
+    q = rules.ask(db, "claude", about="issue", about_id=issue.id, text="Which reader should I build?",
+                  choices=[{"label": "Cards"}, {"label": "Tabs"}], mine=0, doc_path="docs/mockups/fft-reader/index.html")
+    db.flush()
+    page = admin.get(f"/manage/testing?open=q{q.id}").text
+    assert 'href="/manage/documents/mockups-fft-reader-index" data-open-doc' in page and "Feedback&#39;s Reader: Sections" in page
+    reader = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    assert f'data-question="{q.id}"' in reader and f'href="/manage/testing?open=q{q.id}" data-do="answer"' in reader
+    assert reader.index("I&#39;ll draw it.") < reader.index(f'data-question="{q.id}"')
+    admin.post(f"/manage/testing/questions/{q.id}", data={"choice": "0", "text": "with counts"})
+    reader = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    assert "data-answered" in reader and 'data-choice="0" class="on"' in reader and "with counts" in reader
+
+
 def test_try_it_sees_a_check_through_its_players_eyes(admin, db):
     """Brett's Board 1 (Nov 16): ▶ Try it turns on View as for the check's character's player; Testing stays the
     admin's own while viewing; marking it ends View as. View as's own rule decides: refused, it opens as you."""

@@ -74,3 +74,27 @@ def test_same_as_searches_and_joins_in_its_window(people, server, browser_db):
     (issue_a,), (issue_b,) = _one(browser_db[0], "SELECT issue_id FROM fft_notes WHERE id = :i", i=first), _one(browser_db[0], "SELECT issue_id FROM fft_notes WHERE id = :i", i=second)
     assert issue_a == issue_b and page.locator(f'[data-fft-issue="{issue_a}"] [data-report]').count() == 2
     assert not admin.errors, admin.errors
+
+
+def test_back_to_a_window_keeps_what_was_typed(people, server, browser_db):
+    """Brett, Nov 17: in Close it: why?, he typed a reason, pressed Same as another issue… by mistake, and ← Back brought
+    the window back empty. Back now brings a window back as it was left, its words and picks too."""
+    nid = _waiting_note(browser_db[0], "The rest button does nothing.")
+    admin = people("admin")
+    page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
+    page.locator(f'[data-fft-note="{nid}"] [data-do="issue"]').click()
+    page.wait_for_url("**/manage/feedback?tab=open&open=i*")
+    page.locator('[data-fft-issue] [data-do="close"]').click()
+    win = page.locator("#peek")
+    win.locator('[data-reason="withdrawn"] input').check()
+    win.locator("textarea[name=words]").fill("Typed before Same as")
+    win.locator('[data-reason="same"]').click()
+    win.locator("#fft-same-options").wait_for()
+    win.locator(".peek-back").click()
+    win.locator('[data-reason="withdrawn"]').wait_for()
+    assert win.locator("textarea[name=words]").input_value() == "Typed before Same as"
+    assert win.locator('[data-reason="withdrawn"] input').is_checked()
+    win.locator('[data-do="close"]').click()
+    page.wait_for_url("**/manage/feedback?**")
+    assert _one(browser_db[0], "SELECT i.state, i.close_words FROM fft_issues i JOIN fft_notes n ON n.issue_id = i.id WHERE n.id = :i", i=nid) == ("closed", "Typed before Same as")
+    assert not admin.errors, admin.errors

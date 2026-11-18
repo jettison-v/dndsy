@@ -4370,3 +4370,13 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-done li { display: flex; gap: var(--sp-2); align-items: baseline; }
 .fft-done form { display: inline; }
 @media (max-width: 900px) { .fft-area { grid-template-columns: auto minmax(0, 1fr) auto; } .fft-area-note { grid-column: 2 / -1; } }
+/* A question Claude asked, in an issue's conversation (app/templates/_fft_bits.html `asked_bub`) */
+.fft-asked { gap: var(--sp-2); }
+.fft-asked .fft-doc { flex-wrap: wrap; }
+.fft-asked-choices { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+.fft-asked-choices li { border: 1px solid var(--line); border-radius: var(--r-pill); padding: 2px var(--sp-2); font-size: var(--fs-xs); color: var(--muted); }
+.fft-asked-choices li b { color: inherit; font-weight: 600; }
+.fft-asked-choices li.on { border-color: var(--blue); background: var(--blue-soft); color: var(--strong); }
+.fft-answered { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); display: grid; gap: 2px; }
+.fft-answered > small { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
+.fft-answered p { margin: 0; white-space: pre-wrap; }

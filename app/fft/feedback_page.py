@@ -20,7 +20,7 @@ from app import files, web
 from app.auth import is_admin
 from app.db import get_db
 from app.fft import rules, views
-from app.fft.models import FftArea, FftCheckIssue, FftEvent, FftIdea, FftIssue, FftLine, FftNote, FftPicture
+from app.fft.models import FftArea, FftCheckIssue, FftEvent, FftIdea, FftIssue, FftLine, FftNote, FftPicture, FftQuestion
 from app.templating import templates
 
 router = APIRouter()
@@ -129,7 +129,9 @@ def issue_view(db: Session, issue: FftIssue, viewer_id: int | None) -> dict:
     events = list(db.scalars(select(FftEvent).where(or_((FftEvent.thing == "issue") & (FftEvent.thing_id == issue.id),
                                                         (FftEvent.thing == "note") & FftEvent.thing_id.in_([n.id for n in notes] or [0])))
                              .order_by(FftEvent.id.desc())))
-    return {"i": issue, "turn": turn, "pill": views.turn_pill(turn, name), "sentence": views.issue_sentence(db, issue),
+    asked = [views.question_view(q) for q in db.scalars(select(FftQuestion).where(FftQuestion.about == "issue", FftQuestion.about_id == issue.id)
+                                                           .order_by(FftQuestion.id))]
+    return {"i": issue, "turn": turn, "pill": views.turn_pill(turn, name), "sentence": views.issue_sentence(db, issue), "asked": asked,
             "area": db.get(FftArea, issue.area_id) if issue.area_id else None, "notes": [note_view(db, n, viewer_id) for n in notes],
             "senders": senders(notes), "lines": list(db.scalars(select(FftLine).where(FftLine.issue_id == issue.id).order_by(FftLine.id))),
             "may_merge": rules.may_merge(db, issue), "events": events, "listening": views.listening(db),
@@ -383,5 +385,6 @@ def line_approve(request: Request, line_id: int, db: Session = Depends(get_db)):
 
 
 templates.env.globals["event_words"] = views.event_words
+templates.env.globals["talk"] = views.talk
 templates.env.filters["local_href"] = views.local_href
 templates.env.filters["note_title"] = views.title_of

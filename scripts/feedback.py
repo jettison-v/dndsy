@@ -37,7 +37,9 @@ runs it first (`preflight`); only a passed preflight reaches Brett (R18):
 
 Questions for Brett (answered in Testing's For you; the answer names its question):
 
-    uv run python scripts/feedback.py ask issue 7 "Keep the free-form box?" --choice "Keep it|checked as you type" --choice "Remove it" --mine 0
+    uv run python scripts/feedback.py ask issue 7 "Keep the free-form box?" --choice "Keep it|checked as you type" --choice "Remove it" --mine 1
+    uv run python scripts/feedback.py ask issue 4 "Which reader?" --doc docs/mockups/fft-reader/index.html --choice "A|…" --choice "B|…" --mine 1
+        (a mockup for an issue: asked about the issue, so its conversation shows it; --mine counts from 1)
     uv run python scripts/feedback.py questions [--all]
 
 Areas sit under the Roadmap's items, in Brett's order (one at a time in Claude's hands):
@@ -268,8 +270,9 @@ def check(a) -> None:
 
 def ask(a) -> None:
     choices = [{"label": c.split("|", 1)[0], "detail": c.split("|", 1)[1] if "|" in c else ""} for c in a.choice]
+    doc = a.about_id if a.about == "document" else (a.doc or "")
     got = call(a.base, "/questions", {"about": a.about, "about_id": None if a.about == "document" else int(a.about_id),
-                                      "text": a.text, "choices": choices, "mine": a.mine, "doc_path": a.about_id if a.about == "document" else ""})
+                                      "text": a.text, "choices": choices, "mine": None if a.mine is None else a.mine - 1, "doc_path": doc})
     print(f"Asked: question {got['id']}.")
 
 
@@ -386,7 +389,8 @@ def main() -> None:
     s.add_argument("about_id", help="its id (a document: its path)")
     s.add_argument("text")
     s.add_argument("--choice", action="append", default=[])
-    s.add_argument("--mine", type=int)
+    s.add_argument("--mine", type=int, help="your pick: the choice's number, counting from 1")
+    s.add_argument("--doc", help="the mockup it asks about (its docs/ path, listed in docs/library.json): For you opens it")
     s = sub.add_parser("questions")
     s.add_argument("--all", action="store_true")
     sub.add_parser("areas")

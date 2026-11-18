@@ -51,6 +51,30 @@ def local_href(url: str) -> str:
     return path if local_path(path) else ""
 
 
+def doc_of(path: str) -> dict | None:
+    """The mockup a question asks on, as Manage › Documents lists it: its name, its page in askdnd, its claude.ai link."""
+    if not path:
+        return None
+    from app.documents import doc_id, find
+
+    e = find(doc_id(path))
+    if e is None:
+        return {"title": path.rsplit("/", 2)[-2] if "/" in path else path, "href": "/manage/documents", "link": ""}
+    return {"title": e["title"], "href": f"/manage/documents/{e['id']}", "link": e.get("link") or ""}
+
+
+def question_view(q: FftQuestion) -> dict:
+    """A question as the conversation and For you show it: its words, answers to tap, Claude's pick, its mockup, Brett's answer."""
+    picked = (q.choices or [])[q.answer_choice] if q.answer_choice is not None and q.answer_choice < len(q.choices or []) else None
+    return {"q": q, "doc": doc_of(q.doc_path), "picked": picked}
+
+
+def talk(lines: list, asked: list[dict]) -> list[tuple]:
+    """An issue's conversation in the order it happened: its lines and Claude's questions (question_view) together."""
+    said = [(x.created_at, 0, x.id, x) for x in lines] + [(a["q"].created_at, 1, a["q"].id, a) for a in asked]
+    return [(at, x) for at, _, _, x in sorted(said, key=lambda t: t[:3])]
+
+
 def first_name_of(db: Session, user_id: int | None) -> str:
     u = db.get(User, user_id) if user_id else None
     return ((u.name or "").split(" ")[0] if u else "") or "A player"

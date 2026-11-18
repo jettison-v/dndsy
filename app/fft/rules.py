@@ -866,6 +866,13 @@ def ask(db: Session, actor: str, *, about: str, about_id: int | None, text: str,
         raise RuleError("bad", "Two to four answers to tap.")
     if mine is not None and not 0 <= mine < len(choices):
         raise RuleError("bad", "Your pick is one of the answers.")
+    if about == "document" and not doc_path:
+        raise RuleError("bad", "A decision names its document.")
+    if doc_path:  # (whatever it's about, the mockup it asks on: one Manage › Documents lists, so For you can open it)
+        from app.documents import doc_id, find
+
+        if find(doc_id(doc_path)) is None:
+            raise RuleError("bad", "That document isn't in docs/library.json.")
     q = FftQuestion(about=about, about_id=about_id, text=text.strip(), choices=choices, mine=mine, doc_path=doc_path, doc_version=doc_version)
     db.add(q)
     db.flush()
