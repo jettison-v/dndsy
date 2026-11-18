@@ -45,7 +45,7 @@ def actor_for(db: Session, key: str | None) -> Actor | None:
     if not key or len(key) < 24:
         return None
     for name, value in _env_keys():
-        if secrets.compare_digest(key, value):
+        if secrets.compare_digest(key.encode(), value.encode()):  # (bytes: a key with other characters is no one, never a 500)
             return Actor(name, SCOPES[name])
     row = db.scalar(select(FftKey).where(FftKey.key_hash == digest(key), FftKey.revoked.is_(False)))
     if row is not None and row.actor in SCOPES:

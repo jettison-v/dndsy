@@ -163,9 +163,13 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   function toast(message, action, kind) {
     // (an Undo the server offers with what it did, web.notice's `undo`: a POST to that address of askdnd's own; Feedback's
     // approvals, for a minute)
-    if (message && typeof message === 'object' && typeof message.undo === 'string' && message.undo.startsWith('/') && !message.undo.startsWith('//')) {
-      const to = message.undo;
-      action = { label: 'Undo', run: () => fetch(to, { method: 'POST', headers: { Accept: 'application/json' } }).then(r => { if (r.redirected) location.href = r.url; else if (r.ok) location.reload(); else r.text().then(t => toast({ text: t || "It's too late to undo that.", kind: 'warn' })); }) };
+    let undoTo = null;
+    try { undoTo = message && typeof message === 'object' && typeof message.undo === 'string' ? new URL(message.undo, location.origin) : null; } catch (e) { undoTo = null; }
+    if (undoTo && undoTo.origin === location.origin) {  // (a form posted as a page: the server answers with where to go and what it did)
+      action = { label: 'Undo', run: () => {
+        const f = Object.assign(document.createElement('form'), { method: 'post', action: undoTo.pathname + undoTo.search });
+        document.body.append(f); f.submit();
+      } };
     }
     if (message && typeof message === 'object') { kind = message.kind; message = message.text; }
     if (message) card(document.createTextNode(message), { kind: kind || 'ok', action });
@@ -1193,7 +1197,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     const t = e.detail.type;
     if (t === 'game') { showInPlace(); return; }
     if (t === 'fft') {  // (Found, Fixed, Tried changed: Feedback, Testing and Notes you sent show their new copy; a round's card too)
-      if (document.querySelector('[data-fft-page], [data-fft-yours]')) showInPlace();
+      // (never over something half done: words typed but not sent, a fold opened, a row being dragged; the next change catches up)
+      const drafting = [...document.querySelectorAll('main textarea, main input[type=text], main input[type=search]')].some(el => el.value !== el.defaultValue)
+        || document.querySelector('main .fb-fold:not([hidden]), main .sortable-chosen, main details.act-more[open]');
+      if (document.querySelector('[data-fft-page], [data-fft-yours]') && !drafting) showInPlace();
       const slot = document.getElementById('check-card');
       if (slot && window.htmx && !slot.contains(document.activeElement)) htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
       return;
@@ -1610,12 +1617,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
 
   // A select with data-autosave saves as you pick (Manage › Table)
   document.addEventListener('change', e => { if (e.target.matches('select[data-autosave]')) e.target.form.requestSubmit(); });
-  // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures); a select with it, as
-  // soon as one is picked (Feedback's area)
-  document.addEventListener('change', e => {
-    if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit();
-    else if (e.target.matches('select[data-autosubmit]')) e.target.form.requestSubmit();
-  });
+  // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures).
+  document.addEventListener('change', e => { if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit(); });
 
   // Sticky headings sit below the top bar.
   function stickTop() {
@@ -1640,6 +1643,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
 
   // Flash message from a full page load
   if (document.body.dataset.toast) { try { toast(JSON.parse(document.body.dataset.toast)); } catch (e) { /* not a message */ } }
+  try { const said = sessionStorage.getItem('askdnd-said'); if (said) { sessionStorage.removeItem('askdnd-said'); toast(said); } } catch (e) { /* no storage */ }
 })();
 
 
@@ -4982,7 +4986,7 @@ document.addEventListener('click', e => {
     win.querySelector('[data-fb-wrong-where]').textContent = 'On ' + c.title;
     fetch('/manage/testing/checks/' + c.id + '/wrong', { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : null)).then(j => {
       if (!j || checking !== c) return;
-      c.try = j.try;
+      c.try = c.another ? j.try : null;  // (✗ Another… adds to the try just failed; Something's wrong… starts a new one)
       win.querySelector('[data-fb-wrong-where]').textContent = 'On ' + j.title + ' · ' + j.device + ' · v' + j.version + ' · askdnd' + (j.where === 'live' ? '.ai' : ' (' + j.where + ')') + ' as of ' + j.app_version;
       const opt = (value, label, small) => {
         const l = Object.assign(document.createElement('label'), { className: 'fft-opt' });
@@ -5090,7 +5094,11 @@ document.addEventListener('click', e => {
   // The page as drawn, with its private parts emptied (only ever shown to an admin as text, and to Claude on request)
   function drawn() {
     const copy = document.documentElement.cloneNode(true);
-    copy.querySelectorAll('[data-private]').forEach(el => { el.replaceChildren(); el.setAttribute('data-private', 'emptied'); });
+    copy.querySelectorAll('[data-private]').forEach(el => {  // (its words, and any attribute that could carry them: a title)
+      el.replaceChildren();
+      [...el.attributes].forEach(a => { if (a.name !== 'class' && a.name !== 'data-private') el.removeAttribute(a.name); });
+      el.setAttribute('data-private', 'emptied');
+    });
     copy.querySelectorAll('#fb-win, script').forEach(el => el.remove());
     return copy.outerHTML.slice(0, 3000000);
   }
@@ -5106,7 +5114,7 @@ document.addEventListener('click', e => {
   function gather() {
     const pill = document.getElementById('live-pill'), body = document.body;
     const tab = document.querySelector('main [role=tab][aria-selected=true], main .tabbar .on, main .sub-tabs .on, main .tabs .on');
-    const panel = document.querySelector('.peek:not([hidden]) #peek-title');
+    const panel = [...document.querySelectorAll('.peek:not([hidden]) #peek-title')].find(t => !t.closest('[data-private]'));  // (a player's own note's title stays theirs)
     const zoom = window.visualViewport ? visualViewport.scale : 1, outer = outerWidth && innerWidth ? outerWidth / innerWidth : 1;
     const now = new Date();
     return {
@@ -5142,12 +5150,23 @@ document.addEventListener('click', e => {
     at = i; drawChips();
     const p = pics[i];
     wrap.hidden = tools.hidden = edits.hidden = !p; stageNote.hidden = !!p;
-    covered.hidden = !(p && p.safe);
+    covered.hidden = !(p && (p.safe || p.kind === 'added'));
+    if (p) covered.textContent = p.kind === 'added' ? 'A picture you add is shown as it is to an admin, the DM and Claude.' : "Your character's notes are covered in the copy an admin and Claude see; only you see them.";
     if (!p) return;
     const im = new Image();
-    im.onload = () => { p.img = im; canvas.width = im.naturalWidth; canvas.height = im.naturalHeight; redraw(); };
+    im.onload = () => {
+      if (pics[at] !== p) return;  // (another picture was chosen meanwhile: it draws itself)
+      p.img = im; canvas.width = im.naturalWidth; canvas.height = im.naturalHeight; fit(); redraw();
+    };
     im.src = p.full;
   }
+  // The canvas keeps its picture's shape (never letterboxed, so a mark lands where it's drawn): as wide as the window
+  // allows, no taller than about half the screen
+  const fit = () => {
+    if (!canvas.width || !canvas.height) return;
+    canvas.style.width = Math.max(120, Math.min(wrap.clientWidth || canvas.width, innerHeight * 0.46 * canvas.width / canvas.height)) + 'px';
+  };
+  addEventListener('resize', () => { if (win.open) fit(); });
   const MARK = '#f0a020';
   function paint(g, w, list) {
     g.strokeStyle = g.fillStyle = MARK; g.lineWidth = Math.max(3, w / 320); g.lineCap = g.lineJoin = 'round';
@@ -5234,7 +5253,7 @@ document.addEventListener('click', e => {
   const pasted = e => [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
   win.addEventListener('paste', e => { const f = pasted(e); if (f) { e.preventDefault(); take(f); } });
   document.addEventListener('paste', e => {  // (hidden for a screenshot: pasting it anywhere brings the window back with it)
-    if (!hidden) return;
+    if (!hidden || !hideCard || !hideCard.isConnected) return;  // (its card closed: the note waits for \ or the logo, and pastes elsewhere are theirs)
     const f = pasted(e);
     if (f) { e.preventDefault(); back(); take(f); }
   });
@@ -5246,7 +5265,13 @@ document.addEventListener('click', e => {
   // ---- opening, hiding for a screenshot, closing
   async function open(opts) {
     if (win.open) return;
-    if (hidden) return back();
+    if (hidden) {  // (the note put away for a screenshot comes back, unless this is for another check or none: then it's a new one)
+      const want = opts && opts.check ? opts.check.id : null, have = checking ? checking.id : null;
+      if (want === have) return back();
+      hidden = false;
+      if (hideCard && hideCard._close) hideCard._close();
+      hideCard = null;
+    }
     const mine = ++round;
     pics = []; at = -1;
     ctx = gather(); html = drawn();
@@ -5302,16 +5327,20 @@ document.addEventListener('click', e => {
       const common = { text, url: location.href, context: { ...ctx, marked: pictures.reduce((n, p) => n + p.marks, 0) }, html, pictures: pictures.map(({ kind: k, full, safe }) => ({ kind: k, full, safe })) };
       const still = checking && stillBox.querySelector('input:checked');
       const r = await fetch(checking ? '/manage/testing/checks/' + checking.id + '/wrong' : '/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(checking ? { ...common, blocking, stops_round: stopsBox.checked, issue: still && still.value ? +still.value : null, try: checking.try || null } : { ...common, kind }) });
+        body: JSON.stringify(checking ? { ...common, blocking, stops_round: stopsBox.checked, issue: still && still.value ? +still.value : null, try: (checking.another && checking.try) || null } : { ...common, kind }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
       const was = checking;
       close();
       if (was) {  // (from a check: the card shows what was sent, in place; on Testing, the page shows it)
         const slot = document.getElementById('check-card');
-        if (slot && slot.querySelector('[data-fft-card]') && window.htmx) htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
-        else location.reload();
-        if (window.askdndToast) window.askdndToast(j.said || 'Sent');
+        if (slot && slot.querySelector('[data-fft-card]') && window.htmx) {
+          htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
+          if (window.askdndToast) window.askdndToast(j.said || 'Sent');
+        } else {  // (the page shows what was sent: its card comes after the reload)
+          try { sessionStorage.setItem('askdnd-said', j.said || 'Sent'); } catch (err) { /* no storage: the page says it */ }
+          location.reload();
+        }
         return;
       }
       if (window.askdndToast) window.askdndToast(j.said || 'Sent', { label: 'Notes you sent', run: () => { location.href = '/your-notes?tab=askdnd'; } });
@@ -5326,7 +5355,7 @@ document.addEventListener('click', e => {
     const b = e.target.closest('[data-fb-open]');
     if (!b) return;
     e.preventDefault();
-    open(b.dataset.fbCheck ? { check: { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '' } } : null);
+    open(b.dataset.fbCheck ? { check: { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '', another: 'fbAnother' in b.dataset } } : null);
   });
   window.askdndSendNote = open;
   const logo = document.querySelector('.brand');

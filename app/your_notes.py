@@ -192,8 +192,9 @@ def _mark(db: Session, rows: list[dict], notes: list, tab: str, me_id: int | Non
         for r in rows:
             r["x"].seen = r["x"].told = r["x"].status
     else:
+        marks = fft_views.markers(db, notes, me_id)
         for n in notes:
-            n.seen = n.told = fft_views.marker(db, n, me_id)
+            n.seen = n.told = marks[n.id]
 
 
 def _own(db: Session, request: Request, note_id: int) -> tuple[FftNote, int]:
@@ -229,7 +230,8 @@ def seen(request: Request, tab: str = "", db: Session = Depends(get_db)):
     if not _looking(request):
         _mark(db, rows, notes, tab, me_id)
         db.commit()
-    count = sum(_story_new(r["x"], "seen") for r in rows) + sum(n.seen != fft_views.marker(db, n, me_id) for n in notes)
+    marks = fft_views.markers(db, notes, me_id)
+    count = sum(_story_new(r["x"], "seen") for r in rows) + sum(n.seen != marks[n.id] for n in notes)
     return JSONResponse({"count": count}, headers={"Cache-Control": "no-store"})
 
 
@@ -301,7 +303,7 @@ def news(request: Request, db: Session = Depends(get_db)):
     me_id = me.id if me else None
     rows = story(db, user)
     notes = fft_views.notes_of(db, me_id)
-    markers = {n.id: fft_views.marker(db, n, me_id) for n in notes}
+    markers = fft_views.markers(db, notes, me_id)
     tabs = {"story": sum(r["new"] for r in rows), "askdnd": sum(n.seen != markers[n.id] for n in notes)}
     if _looking(request):
         return JSONResponse({"count": sum(tabs.values()), "tabs": tabs, "cards": []}, headers={"Cache-Control": "no-store"})

@@ -25,7 +25,7 @@ from app import access, config, files, view_as, web
 from app.auth import current_user
 from app.db import get_db
 from app.fft import rules, views
-from app.fft.models import FftPicture
+from app.fft.models import FftPicture, FftTry
 from app.templating import templates
 
 router = APIRouter()
@@ -69,18 +69,31 @@ def _pictures(body: dict) -> list[dict]:
     return out
 
 
-def keep_pictures(db: Session, pics: list[dict], *, note_id: int | None = None, line_id: int | None = None, safe_only: bool = False) -> None:
-    """Each picture into file storage: `key` the full copy (its sender's), `safe_key` the one everyone else sees."""
+def store_pictures(db: Session, pics: list[dict], safe_only: bool = False) -> list[tuple[str, str, str]]:
+    """Each picture into file storage first: (full key, safe key, kind). Done before a note's event is written, so a
+    slow upload never holds a change open that Claude's inbox may already have passed (T8)."""
     campaign = web.campaign(db)
+    out = []
     if campaign is None or not pics:
-        return
+        return out
     for p in pics:
         try:
             safe = files.put(db, campaign.id, *image(p["safe"])) if p.get("safe") else None
             full = safe if safe_only and safe else files.put(db, campaign.id, *image(p["full"]))
         except (files.FileError, files.StorageNotReady) as e:
             raise HTTPException(400, str(e)) from e
-        db.add(FftPicture(note_id=note_id, line_id=line_id, kind=p["kind"], key=full, safe_key=safe or full))
+        out.append((full, safe or full, p["kind"]))
+    return out
+
+
+def attach_pictures(db: Session, stored: list[tuple[str, str, str]], *, note_id: int | None = None, line_id: int | None = None) -> None:
+    """`key` the full copy (its sender's), `safe_key` the one everyone else sees."""
+    for full, safe, kind in stored:
+        db.add(FftPicture(note_id=note_id, line_id=line_id, kind=kind, key=full, safe_key=safe))
+
+
+def keep_pictures(db: Session, pics: list[dict], *, note_id: int | None = None, line_id: int | None = None, safe_only: bool = False) -> None:
+    attach_pictures(db, store_pictures(db, pics, safe_only), note_id=note_id, line_id=line_id)
 
 
 @router.post("/feedback")
@@ -106,6 +119,8 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
         pics = [p | {"full": p["safe"] or p["full"]} for p in pics]
     me = views.person(db, user)
     try_id = body.get("try") if type(body.get("try")) is int and me["admin"] else None
+    if try_id is not None and db.get(FftTry, try_id) is None:
+        raise HTTPException(400, "That try isn't there.")
     fields = {"kind": kind, "text": text, "url": str(body.get("url") or "")[:1000], "page": str(context.get("page") or "")[:120],
               "context": context, "html": str(body.get("html") or "")[:MAX_HTML]}
     if config.STAGING:
@@ -113,12 +128,13 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
         if "id" in sent:
             return JSONResponse({"ok": True, "id": sent["id"], "waits": True, "said": "Sent to askdnd.ai: an admin reads it first."})
         fields["context"] = {**fields["context"], "not_relayed": sent.get("error", "")[:300]}
+    stored = store_pictures(db, pics)
     try:
         note = rules.send_note(db, user_id=me["id"], first_name=me["first_name"], role=me["role"], try_id=try_id,
                                staging=config.STAGING, **fields)
     except rules.RuleError as e:
         raise HTTPException(400, e.words) from e
-    keep_pictures(db, pics, note_id=note.id)
+    attach_pictures(db, stored, note_id=note.id)
     note.seen = note.told = views.marker(db, note, me["id"])  # (its sender knows what they just did)
     db.commit()
     waits = note.state == "waiting"

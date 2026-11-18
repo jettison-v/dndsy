@@ -89,12 +89,16 @@ def issue_sentence(db: Session, issue: FftIssue) -> str:
 # ------------------------------------------------------------------ a note, as its sender sees it
 
 
-def sender_says(db: Session, note: FftNote, me_id: int | None) -> dict:
-    """What a note's sender reads on Notes you sent: {turn, word, tone, sentence, open}. Never another sender's words,
-    the issue's title or anything only an admin sees (R2)."""
-    def out(turn, sentence, open_=True, word=None):
+_FETCH = object()  # (not given: sender_says looks it up itself)
+
+
+def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, idea=_FETCH, lines: list | None = None) -> dict:
+    """What a note's sender reads on Notes you sent: {turn, word, tone, sentence, open, asked}. Never another sender's
+    words, the issue's title or anything only an admin sees (R2). `issue`, `idea` and `lines` (sender_lines) may be
+    given, already read (`markers`, for many notes at once)."""
+    def out(turn, sentence, open_=True, word=None, asked=False):
         w, tone = turn_pill(turn)
-        return {"turn": turn, "word": word or w, "tone": tone, "sentence": sentence, "open": open_}
+        return {"turn": turn, "word": word or w, "tone": tone, "sentence": sentence, "open": open_, "asked": asked}
 
     if note.state == "waiting":
         return out("player", "An admin reads it first, then Claude.", word="With an admin")
@@ -103,14 +107,14 @@ def sender_says(db: Session, note: FftNote, me_id: int | None) -> dict:
     if note.filed_as == "answered":
         return out("closed", "Answered: below.", open_=False, word="Answered")
     if note.filed_as == "idea":
-        idea = db.get(FftIdea, note.idea_id) if note.idea_id else None
+        idea = (db.get(FftIdea, note.idea_id) if note.idea_id else None) if idea is _FETCH else idea
         st = idea.state if idea else "new"
         if st == "shipped":
             return out("closed", "Built: it's in askdnd now.", open_=False, word="Built")
         if st == "declined":
             return out("closed", "Not taken up as an idea" + (f": {idea.reason}" if idea and idea.reason else "."), open_=False)
         return out("claude", "Taken up as an idea: on the Roadmap" if st == "roadmap" else "Taken up as an idea: it waits its turn.", word="An idea")
-    issue = db.get(FftIssue, note.issue_id) if note.issue_id else None
+    issue = (db.get(FftIssue, note.issue_id) if note.issue_id else None) if issue is _FETCH else issue
     if issue is None:
         return out("closed", "Closed.", open_=False)
     if issue.state == "closed":
@@ -122,15 +126,15 @@ def sender_says(db: Session, note: FftNote, me_id: int | None) -> dict:
         if issue.confirm_by and issue.confirm_by == me_id:
             return out("yours", "Fixed and live: does it work now?")
         return out("claude", "Fixed and live: being tried.", word="Fixed")
-    asked = _asked_sender(db, note)
-    return out("claude", "Claude is fixing it" + (", and asked you something." if asked else "."))
+    asked = _asked(lines if lines is not None else sender_lines(db, note))
+    return out("claude", "Claude is fixing it" + (", and asked you something." if asked else "."), asked=asked)
 
 
-def _asked_sender(db: Session, note: FftNote) -> bool:
+def _asked(lines: list) -> bool:
     """Claude's or an admin's last line to its senders is newer than anything the sender said."""
-    last_to = db.scalar(select(func.max(FftLine.id)).where(_their_lines(note), FftLine.to == "sender"))
-    last_from = db.scalar(select(func.max(FftLine.id)).where(FftLine.note_id == note.id, FftLine.who == "sender"))
-    return bool(last_to and last_to > (last_from or 0))
+    last_to = max((x.id for x in lines if x.to == "sender"), default=0)
+    last_from = max((x.id for x in lines if x.who == "sender"), default=0)
+    return bool(last_to and last_to > last_from)
 
 
 def _their_lines(note: FftNote):
@@ -150,8 +154,28 @@ def sender_lines(db: Session, note: FftNote) -> list[FftLine]:
 
 def marker(db: Session, note: FftNote, me_id: int | None) -> str:
     """Where a note stands for its sender and the last line they can read: when it differs from `seen`, it's new."""
-    last = max([x.id for x in sender_lines(db, note) if x.who != "sender"], default=0)
-    return f"{sender_says(db, note, me_id)['word']}:{last}"[:40]
+    return markers(db, [note], me_id)[note.id]
+
+
+def markers(db: Session, notes: list[FftNote], me_id: int | None) -> dict[int, str]:
+    """`marker` for many notes in four reads, not several per note (Notes you sent's badge runs on every page)."""
+    if not notes:
+        return {}
+    issue_ids = {n.issue_id for n in notes if n.issue_id}
+    idea_ids = {n.idea_id for n in notes if n.idea_id}
+    issues = {i.id: i for i in db.scalars(select(FftIssue).where(FftIssue.id.in_(issue_ids)))} if issue_ids else {}
+    ideas = {i.id: i for i in db.scalars(select(FftIdea).where(FftIdea.id.in_(idea_ids)))} if idea_ids else {}
+    cond = FftLine.note_id.in_([n.id for n in notes])
+    if issue_ids:
+        cond = cond | (FftLine.issue_id.in_(issue_ids) & (FftLine.to == "sender"))
+    lines = list(db.scalars(select(FftLine).where(cond).order_by(FftLine.id)))
+    out = {}
+    for n in notes:
+        mine = [x for x in lines if (x.note_id == n.id or (n.issue_id and x.issue_id == n.issue_id and x.to == "sender"))
+                and (x.who == "sender" or x.to == "sender")]
+        word = sender_says(db, n, me_id, issue=issues.get(n.issue_id), idea=ideas.get(n.idea_id), lines=mine)["word"]
+        out[n.id] = f"{word}:{max((x.id for x in mine if x.who != 'sender'), default=0)}"[:40]
+    return out
 
 
 def notes_of(db: Session, user_id: int | None) -> list[FftNote]:
@@ -167,11 +191,13 @@ def person(db: Session, user: dict | None) -> dict | None:
     """The person a note is from: their row, first name and role here (T2: no email leaves this)."""
     if not user:
         return None
+    from app.extraction import first_name
+
     email = (user.get("email") or "").lower()
     row = picks.user_row(db, user)
     admin = access.level(email) == access.ADMIN
     role = "admin" if admin else (access.role(email) or "member")
-    name = (user.get("name") or (row.name if row else "") or "").split(" ")[0]
+    name = first_name(user.get("name") or (row.name if row else "") or "")  # (T2: never an email, never a full name)
     return {"row": row, "id": row.id if row else None, "email": email, "first_name": name or "Someone", "role": role, "admin": admin}
 
 

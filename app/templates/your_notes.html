@@ -104,7 +104,7 @@
       </section>{% endif %}
       {% if n.can_add and not looking %}
       <form method="post" action="/your-notes/notes/{{ n.id }}" class="composer" enctype="multipart/form-data" data-pics data-composer>
-        <label class="field"><span>{{ "Your answer" if n.says.sentence.endswith("asked you something.") else "Something to add" }}</span><textarea name="text" rows="2"></textarea></label>
+        <label class="field"><span>{{ "Your answer" if n.says.asked else "Something to add" }}</span><textarea name="text" rows="2"></textarea></label>
         {{ pics_field() }}
         <div class="row tight"><button class="btn small primary" type="submit" data-composer-send>Send</button><span class="note">{{ "Goes to Claude." if n.admin else "Goes to an admin first, then Claude." }}</span></div>
       </form>{% endif %}

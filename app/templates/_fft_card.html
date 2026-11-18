@@ -5,15 +5,15 @@
    picture. `sample`: drawn on the Design system page, with no address to open. #}
 {% from "_lists.html" import grip %}
 {% from "_check_steps.html" import walkthrough %}
-<aside class="check-card fft-card{{ ' folded' if folded }}{{ ' fft-card-failed' if failed }}" data-check-card="{{ c.id }}" data-fft-card data-corner="{{ corner }}" data-fb-skip aria-label="Testing: {{ c.title }}">
-  <div class="cc-top" data-cc-drag{% if folded %} hidden{% endif %}><span class="cc-label">{{ grip() }}Check {{ n }} of {{ of }}{% if area %} · {{ area.title }}{% endif %} · {{ device_said[device].replace("your ", "") }}</span>
-    <button type="button" class="btn link small" data-cc-fold aria-expanded="true" aria-label="Fold the card">—</button></div>
+<aside class="check-card fft-card{{ ' folded' if folded }}{{ ' fft-card-failed' if failed }}"{% if not sample %} data-check-card="{{ c.id }}" data-fft-card{% endif %} data-corner="{{ corner }}" data-fb-skip aria-label="Testing: {{ c.title }}">
+  <div class="cc-top"{% if not sample %} data-cc-drag{% endif %}{% if folded %} hidden{% endif %}><span class="cc-label">{{ grip() }}Check {{ n }} of {{ of }}{% if area %} · {{ area.title }}{% endif %} · {{ device_said[device].replace("your ", "") }}</span>
+    <button type="button" class="btn link small"{% if not sample %} data-cc-fold{% endif %} aria-expanded="true" aria-label="Fold the card">—</button></div>
   <div class="cc-body"{% if folded %} hidden{% endif %}>
     <p class="cc-title">{{ c.title }}{% if c.makes %} <span class="tag draft">in a test campaign</span>{% endif %}</p>
     {% if failed %}
     <p class="state-line" data-cc-failed><span class="state-word sw-failed">✗ Failed</span><span>{{ sent }} issue{{ "s" if sent != 1 }} sent · now Claude's</span></p>
     <div class="row cc-acts">
-      <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-do="another">✗ Another…</button>
+      <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-fb-another data-do="another">✗ Another…</button>
       <button type="button" class="btn link small" data-modal-url="/manage/testing/tries/{{ failed.id }}/change" data-do="change">Change result…</button>
       <span class="cc-gap"></span>
       <form method="post" action="/manage/testing/round/next"><button class="btn small primary" type="submit" data-do="next">Next check →</button></form>
@@ -21,14 +21,15 @@
     {% else %}
     {{ walkthrough({"id": c.id, "steps": steps}) }}
     {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}
-    <div class="row cc-acts">
+    {% if sample %}<div class="row cc-acts"><button class="btn small ts-pass" type="button">✓ Passed</button><button type="button" class="btn small">✗ Something's wrong…</button><button type="button" class="btn link small">Can't try…</button></div>
+    {% else %}<div class="row cc-acts">
       <form method="post" action="/manage/testing/checks/{{ c.id }}/try"><input type="hidden" name="result" value="passed"><input type="hidden" name="seen" value="{{ devices.get(device, '') }}"><button class="btn small ts-pass" type="submit" data-do="passed" data-key="p">✓ Passed</button></form>
       <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-do="wrong" data-key="f">✗ Something's wrong…</button>
-      <button type="button" class="btn link small"{% if not sample %} data-modal-url="/manage/testing/checks/{{ c.id }}/cant"{% endif %} data-do="cant" data-key="c">Can't try…</button>
-    </div>
+      <button type="button" class="btn link small" data-modal-url="/manage/testing/checks/{{ c.id }}/cant" data-do="cant" data-key="c">Can't try…</button>
+    </div>{% endif %}
     {% endif %}
     <div class="row cc-foot"><span class="note fft-keys">{% if not failed %}<kbd>P</kbd> passed · <kbd>F</kbd> wrong · <kbd>C</kbd> can't try{% endif %}</span>
-      <form method="post" action="/manage/testing/round/end" class="cc-stop"><button class="btn link small" type="submit" data-do="end-round">End round</button></form></div>
+      {% if sample %}<button class="btn link small" type="button">End round</button>{% else %}<form method="post" action="/manage/testing/round/end" class="cc-stop"><button class="btn link small" type="submit" data-do="end-round">End round</button></form>{% endif %}</div>
   </div>
-  <button type="button" class="cc-pill" data-cc-fold{% if not folded %} hidden{% endif %}>Check {{ n }} of {{ of }}</button>
+  <button type="button" class="cc-pill"{% if not sample %} data-cc-fold{% endif %}{% if not folded %} hidden{% endif %}>Check {{ n }} of {{ of }}</button>
 </aside>

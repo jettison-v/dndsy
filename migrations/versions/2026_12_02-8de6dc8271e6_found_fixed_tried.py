@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table('fft_events',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('workspace_id', sa.Integer(), server_default='1', nullable=False),
-    sa.Column('at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.Column('at', sa.DateTime(timezone=True), server_default=sa.text('clock_timestamp()'), nullable=False),
     sa.Column('actor', sa.String(length=40), nullable=False),
     sa.Column('kind', sa.String(length=30), nullable=False),
     sa.Column('thing', sa.String(length=10), nullable=False),

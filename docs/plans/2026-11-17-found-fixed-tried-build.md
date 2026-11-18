@@ -144,5 +144,22 @@ next`), Help's About and FAQ, the DM guide where it mentions feedback, docs/test
   Help's FAQ reused the ids `cards` (so every corner card on Help vanished into a folded answer) and `wild-shape`;
   renamed, and the layout check now fails a page that repeats an id. Tests: tests/test_fft_testing.py,
   tests/browser/test_fft_round.py; tests/test_testing.py retired.
-- **Slice 6, next**: Where it stands whole, live updates, menu counts, the carry-over, retiring the old modules.
+- **Slice 6, done** (9f77b56d): Where it stands (the Roadmap's items and their areas in Brett's order, dragged; each
+  area's turn and what it means; listening; an open round's End round; Rename, Merge into, Move to another item,
+  Archive; rules `order_items`, `order_areas`, `rename_area`, `move_area`, `merge_area`, `archive_area`); live updates
+  (app/fft/live.py: any change tells every open page, `realtime.EVERYONE`; Feedback, Testing, Notes you sent, the card
+  and the badge refresh); Manage's counts, Needs you and the daily fix email on the new tables; the carry-over
+  (app/fft/carry.py, migration 3f9c1a7e5b20, tests/test_fft_carry.py; run on the local copy of beta); app/feedback.py,
+  app/testing.py, app/for_claude.py and their templates and CSS retired; scripts/feedback.py is the new CLI (with
+  `live`, which deploy_check.py runs). CLAUDE.md, MAP, Help's FAQ, the testing guide and DECISIONS updated.
+- **Slice 7, under way**: visual_compare (14 of 72 pictures changed, each one meant to), the code review at high effort
+  (two independent reviewers, server and pages: 30 findings, fixed: every player note drawn is now marked private and
+  guarded by tests/test_private_marks.py; the page as drawn loses private attributes too; marks land where drawn; Undo
+  is a real page and says when it's too late; ✗ Another… alone joins the last failed try; the hidden window, a draft
+  and a reload's message are kept; Undo of a pass reopens what it closed; Same as moves a check's hold; R17 for a
+  player joining a fix; locks are their owner's; the three days' hand-off runs; a round of one never ends the round it
+  joined; an approval names the lines it saw; first names at any depth; the carry-over keeps a player's old page and
+  pictures to them; Notes you sent's badge in four reads; tests/test_fft_review.py). Left as they are: a pinch-zoomed
+  iPhone's cover may sit off its notes; /manage/counts works For you out per check. Next: Brett's local trial with the
+  listener on localhost, then one PR.
 - At the merge: run `scripts/deploy_check.py --set-backup-watch` (app/fft joined BACKUP_WATCH).

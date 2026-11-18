@@ -13,7 +13,7 @@
 </div>
 <form method="post" class="peek-form" action="{{ '/manage/feedback/notes/' ~ note.id ~ '?tab=approve' if note else '/manage/feedback/issues/' ~ issue.id ~ '?tab=open' }}">
   <div class="peek-body stack">
-    <input type="hidden" name="do" value="{{ 'same' if note else 'close' }}">{% if issue %}<input type="hidden" name="reason" value="same">{% endif %}
+    <input type="hidden" name="do" value="{{ 'same' if note else 'close' }}">{% if note %}<input type="hidden" name="seen" value="{{ seen }}">{% endif %}{% if issue %}<input type="hidden" name="reason" value="same">{% endif %}
     <input type="search" class="search-input" name="q" value="{{ q }}" placeholder="Search issues: rest, slots…" aria-label="Search issues" autocomplete="off"
            hx-get="/manage/feedback/same?part=1&amp;{{ 'note=' ~ note.id if note else 'issue=' ~ issue.id }}" hx-trigger="input changed delay:250ms" hx-target="#fft-same-options" hx-swap="outerHTML" hx-include="this">
     {{ opts() }}

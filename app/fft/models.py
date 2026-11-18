@@ -245,7 +245,7 @@ class FftEvent(Base):
     __tablename__ = "fft_events"
     id: Mapped[int] = mapped_column(primary_key=True)
     workspace_id: Mapped[int] = mapped_column(Integer, default=1, server_default="1", index=True)
-    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.clock_timestamp(), index=True)  # (when written, not the transaction's start: T8's settle)
     actor: Mapped[str] = mapped_column(String(40))  # "user:3", "claude", "mini", "askdnd"
     kind: Mapped[str] = mapped_column(String(30), index=True)  # rules.EVENTS
     thing: Mapped[str] = mapped_column(String(10))  # note, issue, idea, check, try, area, item, question, round

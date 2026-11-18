@@ -119,13 +119,13 @@
 {# The player's one note on a thing: a box for them (saved as they type), the text for other players. #}
 {% macro note_box(c, ref, note, can_pick) -%}
 {% if can_pick %}
-<form class="pick-note-form" hx-post="/characters/{{ c.id }}/pick/note" hx-trigger="input changed delay:700ms from:find textarea, submit" hx-target="find .pick-note-saved" hx-swap="innerHTML">
+<form class="pick-note-form" data-private hx-post="/characters/{{ c.id }}/pick/note" hx-trigger="input changed delay:700ms from:find textarea, submit" hx-target="find .pick-note-saved" hx-swap="innerHTML">
   <input type="hidden" name="ref" value="{{ ref }}">
   <label class="note" for="note-{{ ref | replace(':', '-') | replace(' ', '-') }}">✎ Your note</label>
   <textarea id="note-{{ ref | replace(':', '-') | replace(' ', '-') }}" name="note" rows="2" maxlength="500" placeholder="Why it matters, when to use it. Shows wherever this appears.">{{ note }}</textarea>
   <span class="pick-note-saved" aria-live="polite"></span>
 </form>
-{% elif note %}<p class="pick-note-text">✎ {{ note }}</p>{% endif %}
+{% elif note %}<p class="pick-note-text" data-private>✎ {{ note }}</p>{% endif %}
 {%- endmacro %}
 
 {# At 0 Hit Points the HP tile is the Dying tile (app/death_saves.py, docs/mockups/death-saves.html): the death save
@@ -312,7 +312,7 @@
   <span class="ri-pk">{% if image %}<img class="ri-pic" src="{{ image }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-hide-broken>{% endif %}{% if fav %}{{ pick_btn(c, "fav", key, key in picks.fav, can_pick) }}{% endif %}{% if star %}{{ pick_btn(c, "star", key, key in picks.star, can_pick) }}{% endif %}</span>
   <span class="ri-main"><span class="ri-line"><span class="ri-name">{{ name }}</span>{% if uses %} {{ pips(uses) }}{% endif %}{% if chips | select | list or spend %} <span class="tag-run">{% for t in chips if t %}<span class="tag {{ '' if t is string else t[1] }}">{{ t if t is string else t[0] }}</span>{% endfor %}{% if spend %}{{ spends(spend) }}{% endif %}</span>{% endif %}</span>{# (tags and cost inline, as on Battle; the UI review) #}
     {% if what %}<span class="ri-what">{{ what }}</span>{% endif %}
-    {% for n in notes %}<span class="ri-note" title="Your note">✎ {{ n }}</span>{% endfor %}</span>
+    {% for n in notes %}<span class="ri-note" title="Your note" data-private>✎ {{ n }}</span>{% endfor %}</span>
   <span class="ri-mech">{{ mech }}</span>
   <span class="ri-hit">{% if roll %}{{ hit_btn(roll) }}{% else %}{{ hit }}{% if hit_adv %} {{ adv(hit_adv) }}{% endif %}{% endif %}</span>
   <span class="ri-pk end">{{ pick_btn(c, "remind", key, key in picks.remind, can_pick) }}</span>

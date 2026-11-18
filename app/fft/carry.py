@@ -44,7 +44,9 @@ def _role(sender: str) -> str:
 
 
 def _first(sender: str) -> str:
-    return (sender.split(" (")[0].split(" ")[0] or "Someone")[:60]
+    from app.extraction import first_name
+
+    return (first_name(sender.split(" (")[0]) or "Someone")[:60]  # (T2: never an email)
 
 
 def carry_over(db: Session) -> dict:
@@ -71,7 +73,8 @@ def carry_over(db: Session) -> dict:
         admin = role == "admin"
         note = FftNote(user_id=fb.user_id, first_name=_first(fb.sender or ""), role=role, kind=KIND.get(fb.kind, "problem"),
                        text=fb.text, url=fb.url or "", page=str((fb.context or {}).get("page") or "")[:120],
-                       context=rules._clean_context(fb.context or {}), html=fb.html or "", staging=bool((fb.context or {}).get("staging")))
+                       context=rules._clean_context(fb.context or {}), staging=bool((fb.context or {}).get("staging")),
+                       html=fb.html or "" if admin else "")  # (a player's old page wasn't emptied of their notes: kept from everyone)
         db.add(note)
         db.flush()
         done["notes"] += 1
@@ -99,12 +102,13 @@ def carry_over(db: Session) -> dict:
                            approved=not (waiting and who == "sender")))
         if fb.shot_key:
             db.add(FftPicture(note_id=note.id, kind="page", key=fb.shot_key, safe_key=fb.shot_key if admin else None))
+        # (a player's pictures were kept from their DM before (the outside review's C9): only their sender sees them now)
         if fb.pasted_key:
-            db.add(FftPicture(note_id=note.id, kind="added", key=fb.pasted_key, safe_key=fb.pasted_key))
+            db.add(FftPicture(note_id=note.id, kind="added", key=fb.pasted_key, safe_key=fb.pasted_key if admin else None))
         for p in db.scalars(select(FeedbackPicture).where(FeedbackPicture.feedback_id == fb.id)):
             if any(c.get("pic") == p.id for m in fb.thread or [] for c in ((m.get("ask") or {}).get("choices") or [])):
                 continue  # (Claude's own picture for a design pick: not the sender's)
-            db.add(FftPicture(note_id=note.id, kind="added", key=p.key, safe_key=p.key))
+            db.add(FftPicture(note_id=note.id, kind="added", key=p.key, safe_key=p.key if admin else None))
         if fb.status == "question" and fb.id in issues:
             ask = next((m for m in reversed(fb.thread or []) if m.get("who") == "claude" and m.get("to") != "sender" and not m.get("kind")), None)
             if ask is not None:
@@ -127,12 +131,14 @@ def carry_over(db: Session) -> dict:
             found.append(issues[c.feedback_id])
         for i in found:
             rules.link_issue(db, ACTOR, check, i)
+        dev = check.devices[0]
+        who = "mini" if dev == "mac_mini" else ACTOR  # (the try is on its own device, by whoever ran it)
         if c.status in ("failed", "fixed") and found:
-            rules.record_try(db, ACTOR, check, result="failed", found=[rules.Found(issue_id=i.id) for i in found], why="Carried over")
+            rules.record_try(db, who, check, result="failed", device=dev, found=[rules.Found(issue_id=i.id) for i in found], why="Carried over")
             for i in found if c.status == "fixed" else []:  # (Claude's fix is on its way: after the try, which says still to fix)
-                i.state, i.pr = "fixing", i.pr or c.pr or ""
+                i.state, i.pr = ("merge_ok" if i.from_player and (i.pr or c.pr) else "fixing"), i.pr or c.pr or ""  # (R17)
         elif c.status == "skipped":
-            rules.record_try(db, ACTOR, check, result="cant", cant_kind="later", why="Skipped before the carry-over")
+            rules.record_try(db, who, check, result="cant", cant_kind="later", device=dev, why="Skipped before the carry-over")
         done["checks"] += 1
     rules._event(db, ACTOR, "carried_over", "item", item.id, **done)
     db.flush()

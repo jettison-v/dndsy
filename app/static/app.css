@@ -4301,7 +4301,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fb-stage.over { border-color: var(--amber); background: var(--amber-soft); }
 .fb-stage-note { margin: auto; text-align: center; }
 .fb-canvas-wrap { position: relative; min-width: 0; }
-.fb-canvas-wrap .fb-mark-canvas { display: block; max-height: 46vh; object-fit: contain; }
+.fb-canvas-wrap .fb-mark-canvas { display: block; height: auto; max-width: 100%; }  /* (its width set to keep its shape: app.js fit) */
 .fb-tools { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
 .fb-stage:has(.fb-canvas-wrap:not([hidden])) { grid-template-columns: minmax(0, 1fr) auto; }
 .fb-stage .fb-canvas-wrap, .fb-stage .fb-stage-note, .fb-stage .fb-covered { grid-column: 1 / -1; }

@@ -21,7 +21,7 @@
   <script src="{{ static('app.js') }}" defer></script>
   {% block head %}{% endblock %}
 </head>
-{% if not toast and request.session.get("toast") %}{% set toast = request.session.pop("toast") %}{% endif %}{# (a card waiting from the last change shows on whichever page comes next: a round goes page to page) #}
+{% if not toast and request.session.get("toast") and request.headers.get("HX-Request") != "true" %}{% set toast = request.session.pop("toast") %}{% endif %}{# (a card waiting from the last change shows on whichever page comes next: a round goes page to page) #}
 {% set fr = fight_now() %}<body{% if staging %} data-staging{% endif %}{% if toast %} data-toast='{{ toast | tojson }}'{% endif %}{% if user and here %} class="at-table"{% endif %}{% if fr and fr.id %} data-fight="{{ fr.id }}"{% endif %}{% if user %}{% if here %} data-campaign="{{ here.id }}"{% endif %}{% if bridge_on and vtt_on("ddb_bridge") %} data-bridge-on{% endif %} data-me="{{ my_id() or '' }}"{% if fr and fr.reminders %} data-reminders='{{ fr.reminders | tojson }}'{% endif %} data-dice='{{ my_dice() | tojson }}' data-dice-tuning='{{ dice_tuning() | tojson }}'{% if feedback_send(request) %} data-feedback{% endif %}{% endif %}>
 <script src="{{ static('early.js') }}"></script>{# the sidebar's place and broken pictures, before anything is drawn #}
 {% block body %}

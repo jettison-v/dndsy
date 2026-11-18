@@ -138,12 +138,14 @@ def inbox(listener: str = "main", peek: int = 0, area: int = 0, x_fft_key: str |
 def next_work(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """R15: what Claude takes next, why each item above it was skipped, and what waits on Brett."""
     keys.require(db, x_fft_key, "read")
+    rules.confirm_due(db)
     pick = rules.pick_next(db)
     waiting = []
     for i in db.scalars(select(FftIssue).where(FftIssue.state.in_(("asks", "merge_ok")))):
         waiting.append({"issue": i.id, "title": i.title, "why": "Claude asks" if i.state == "asks" else "your OK to merge"})
     waiting += [{"item": it.id, "title": it.title, "why": it.next_step} for it in db.scalars(select(FftItem).where(FftItem.next_whose == "brett"))]
     waiting += [{"notes_to_approve": n} for n in [len(list(db.scalars(select(FftNote.id).where(FftNote.state == "waiting"))))] if n]
+    db.commit()  # (the three days' hand-off, R5)
     return _ok({"next": {"area_id": pick.area.id, "title": pick.why} if pick.area else None, "blocker": pick.blocker,
                 "skipped": [{"what": w, "why": y} for w, y in pick.skipped], "waiting_on_brett": waiting,
                 "round_open": rules.round_open(db) is not None})

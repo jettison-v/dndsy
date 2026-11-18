@@ -68,14 +68,17 @@ def _expect(row, attr: str, seen: str | None) -> None:
 
 
 def _clean_context(ctx: dict) -> dict:
-    """T2: no email, ever, in what's kept about a note's page (who was signed in or viewing as, in full)."""
-    out = {}
-    for k, v in (ctx or {}).items():
-        if "email" in k or k in ("signed_in_as",):
-            continue
-        if isinstance(v, str) and "@" in v:
-            continue
-        out[k] = v
+    """T2: no email and no full name, ever, in what's kept about a note's page (who was signed in or viewing as), at any
+    depth."""
+    def clean(v):
+        if isinstance(v, dict):
+            return {k: clean(x) for k, x in v.items() if "email" not in k and k != "signed_in_as" and not (isinstance(x, str) and "@" in x)}
+        if isinstance(v, list):
+            return [clean(x) for x in v if not (isinstance(x, str) and "@" in x)]
+        return v
+    out = clean(ctx or {})
+    if isinstance(out.get("viewing_as"), str):
+        out["viewing_as"] = out["viewing_as"].split(" ")[0]  # (a first name only)
     return out
 
 
@@ -94,7 +97,8 @@ def send_note(db: Session, *, user_id: int | None, first_name: str, role: str, k
         raise RuleError("bad", "Write what it's about.")
     if role not in ROLES:
         role = "member"
-    note = FftNote(user_id=user_id, first_name=(first_name or "Someone").split(" ")[0][:60], role=role, kind=kind,
+    first_name = "" if "@" in (first_name or "") else (first_name or "").split(" ")[0]
+    note = FftNote(user_id=user_id, first_name=(first_name or "Someone")[:60], role=role, kind=kind,
                    text=text.strip(), url=url[:1000], page=page[:120], context=_clean_context(context or {}),
                    html=html or "", staging=staging, try_id=try_id)
     db.add(note)
@@ -142,6 +146,8 @@ def join_issue(db: Session, actor: str, note: FftNote, issue: FftIssue) -> FftIs
     note.state, note.filed_as, note.issue_id = "filed", "issue", issue.id
     if note.role != "admin":
         issue.from_player = True
+        if issue.state == "fixing" and issue.pr:  # (R17: a fix a player's words now share waits for Brett's OK too)
+            _set_issue(db, actor, issue, "merge_ok", "issue_merge_ok", pr=issue.pr)
     _approve_lines(db, note)
     _event(db, actor, "note_joined", "note", note.id, issue=issue.id, area_id=issue.area_id)
     return issue
@@ -322,6 +328,19 @@ def rollback(db: Session, actor: str, commit: str) -> list[int]:
     return [i.id for i in back]
 
 
+def _relink(db: Session, issue: FftIssue, to: FftIssue) -> None:
+    """Every check and try that named `issue` names `to` instead (Same as)."""
+    for ci in list(db.scalars(select(FftCheckIssue).where(FftCheckIssue.issue_id == issue.id))):
+        if db.get(FftCheckIssue, (ci.check_id, to.id)) is None:
+            db.add(FftCheckIssue(check_id=ci.check_id, issue_id=to.id))
+        db.delete(ci)
+    for ti in list(db.scalars(select(FftTryIssue).where(FftTryIssue.issue_id == issue.id))):
+        if db.get(FftTryIssue, (ti.try_id, to.id)) is None:
+            db.add(FftTryIssue(try_id=ti.try_id, issue_id=to.id, blocking=ti.blocking, how=ti.how, stops_round=ti.stops_round))
+        db.delete(ti)
+    db.flush()
+
+
 def close(db: Session, actor: str, issue: FftIssue, reason: str, words: str = "", same_as: FftIssue | None = None,
           seen: str | None = None) -> None:
     """Closing needs a reason its senders read. "Same as" moves its notes to the other issue (R2, R8)."""
@@ -336,6 +355,7 @@ def close(db: Session, actor: str, issue: FftIssue, reason: str, words: str = ""
         issue.same_as_id = same_as.id
         for note in db.scalars(select(FftNote).where(FftNote.issue_id == issue.id)):
             note.issue_id = same_as.id
+        _relink(db, issue, same_as)  # (R8: a check this one held is now held by the other, never released early)
     issue.close_reason, issue.close_words = reason, words.strip()
     _set_issue(db, actor, issue, "closed", "issue_closed", reason=reason)
 
@@ -598,7 +618,8 @@ def correct_try(db: Session, actor: str, t: FftTry, result: str, why: str, user_
             if not used:
                 issue.close_reason = "withdrawn"
                 _set_issue(db, actor, issue, "closed", "issue_closed", reason="withdrawn", by_correction=new.id)
-                db.execute(FftCheckIssue.__table__.delete().where(FftCheckIssue.check_id == check.id, FftCheckIssue.issue_id == issue.id))
+            # (withdrawn, or kept for its other uses: either way this check no longer holds it, R6)
+            db.execute(FftCheckIssue.__table__.delete().where(FftCheckIssue.check_id == check.id, FftCheckIssue.issue_id == issue.id))
         elif ti.how == "still" and issue.state == "to_fix":
             prior = db.scalar(select(FftEvent.data).where(FftEvent.thing == "issue", FftEvent.thing_id == issue.id,
                                                           FftEvent.kind.in_(("issue_still_happening", "issue_reopened"))).order_by(FftEvent.id.desc()))
@@ -606,6 +627,14 @@ def correct_try(db: Session, actor: str, t: FftTry, result: str, why: str, user_
             if back == "closed":
                 issue.close_reason = "works"
             _set_issue(db, actor, issue, back if back in ISSUE_STATES else "ready", "issue_unmarked", by_correction=new.id)
+    if t.result == "passed":  # (a pass undone: what it closed as working is ready to try again, R5 and R6)
+        for ev in db.scalars(select(FftEvent).where(FftEvent.kind == "issue_closed", FftEvent.thing == "issue",
+                                                    FftEvent.data["by_try"].as_integer() == t.id)):
+            if True:
+                issue = db.get(FftIssue, ev.thing_id)
+                if issue is not None and issue.state == "closed" and issue.close_reason == "works":
+                    issue.close_reason = ""
+                    _set_issue(db, actor, issue, "ready", "issue_unmarked", by_correction=new.id)
     if result == "passed":
         _passed(db, actor, check, new, user_id)
     return new
@@ -693,11 +722,15 @@ def lock_area(db: Session, owner: str, area: FftArea) -> None:
     held = db.scalar(select(FftArea).where(FftArea.lock_owner != "", FftArea.lock_until > now(), FftArea.id != area.id))
     if held is not None:
         raise RuleError("busy", f"{held.title} is already in hand ({held.lock_owner}); one area at a time.")
+    if area.lock_owner and area.lock_owner != owner[:60] and area.lock_until and area.lock_until > now():
+        raise RuleError("busy", f"It's already in hand ({area.lock_owner}).")
     area.lock_owner, area.lock_until = owner[:60], now() + LOCK
     _event(db, owner, "area_locked", "area", area.id, area_id=area.id)
 
 
 def unlock_area(db: Session, owner: str, area: FftArea) -> None:
+    if area.lock_owner and area.lock_owner != owner[:60] and area.lock_until and area.lock_until > now():
+        raise RuleError("busy", f"It's in someone else's hand ({area.lock_owner}).")
     area.lock_owner, area.lock_until = "", None
     _event(db, owner, "area_unlocked", "area", area.id, area_id=area.id)
 

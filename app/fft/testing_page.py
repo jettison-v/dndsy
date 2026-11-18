@@ -253,6 +253,7 @@ def page(request: Request, show: str = "", open: str = "", db: Session = Depends
     if denied:
         return denied
     rules._expire_rounds(db)
+    rules.confirm_due(db)  # (R5: a player's three days to say whether it works are up: it's yours)
     device = device_of(request)
     show = show if show in dict(SHOWS) else "foryou"
     groups = for_you(db, device) if show == "foryou" else others(db, show, device) if show in ("claudes", "done") else []
@@ -425,7 +426,7 @@ def _next_page(db: Session, request: Request) -> str:
 
 def _end(request: Request, db: Session) -> str:
     r = request.session.pop(ROUND, None)
-    if r and (row := db.get(rules.FftRound, r["id"])) and row.ended_at is None:
+    if r and r.get("owns", True) and (row := db.get(rules.FftRound, r["id"])) and row.ended_at is None:  # (a round of one never ends the round it joined)
         rules.end_round(db, "user", row)
     was = (r or {}).get("home")
     email = ((request.session.get("user") or {}).get("email") or "").lower()
@@ -499,12 +500,14 @@ def go(request: Request, check_id: int, db: Session = Depends(get_db)):
         return denied
     c = db.get(FftCheck, check_id) or _missing()
     me = views.person(db, user)
+    was = rules.round_open(db)
     try:
-        r = rules.round_open(db) or rules.open_round(db, f"user:{me['id']}", me["id"], c.area_id)
+        r = rules.open_round(db, f"user:{me['id']}", me["id"], c.area_id)
     except rules.RuleError as e:
         raise HTTPException(409, e.words) from e
     here = access.current_campaign(me["email"])
-    request.session[ROUND] = {"id": r.id, "checks": [c.id], "i": 0, "device": device_of(request), "home": here["id"] if here else None, "one": True}
+    request.session[ROUND] = {"id": r.id, "checks": [c.id], "i": 0, "device": device_of(request), "home": here["id"] if here else None,
+                              "one": True, "owns": was is None or was.id != r.id}
     to = enter(request, db, c, page_of(db, c))
     db.commit()
     return RedirectResponse(to, status_code=303)
@@ -565,6 +568,8 @@ def tried(request: Request, check_id: int, result: str = Form(...), cant: str = 
     c = db.get(FftCheck, check_id) or _missing()
     if result not in ("passed", "cant"):
         raise HTTPException(400)
+    if blocked_by and db.get(FftIssue, blocked_by) is None:
+        raise HTTPException(400, "No such issue.")
     t = _record(request, db, c, result=result, cant_kind=cant, blocked_by=blocked_by or None, why=why.strip()[:1000], seen=seen or None)
     on_round = _on_round(request, c)
     if on_round:
@@ -587,11 +592,12 @@ def undo(request: Request, try_id: int, db: Session = Depends(get_db)):
         return denied
     t = db.get(FftTry, try_id) or _missing()
     me = views.person(db, user)
+    c = db.get(FftCheck, t.check_id)
     try:
         rules.correct_try(db, f"user:{me['id']}", t, "untried", "Undone", user_id=me["id"])
     except rules.RuleError as e:
-        raise HTTPException(409, e.words) from e
-    c = db.get(FftCheck, t.check_id)
+        request.session["toast"] = web.notice(e.words, "warn")
+        return RedirectResponse(f"{BACK}?open=c{c.id}", status_code=303)
     r = _round(request)
     if r and c.id in r["checks"]:
         r["i"] = r["checks"].index(c.id)

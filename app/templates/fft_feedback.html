@@ -18,7 +18,7 @@
   <div class="fb-kind-chips" role="group" aria-label="Show only">
     {% for k, label in (("players", "From players"), ("checks", "From checks")) %}<a href="?tab={{ tab }}{% if k != chip %}&amp;chip={{ k }}{% endif %}{% if area %}&amp;area={{ area }}{% endif %}" class="chip{{ ' on' if k == chip }}" data-chip="{{ k }}"{% if k == chip %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
     {% if areas %}<form method="get" class="row tight"><input type="hidden" name="tab" value="{{ tab }}">{% if chip %}<input type="hidden" name="chip" value="{{ chip }}">{% endif %}
-      <select name="area" class="ls-select" aria-label="Area" data-autosubmit data-area-pick><option value="0">Every area</option>{% for a in areas %}<option value="{{ a.id }}"{% if a.id == area %} selected{% endif %}>{{ a.title }}</option>{% endfor %}</select></form>{% endif %}
+      <select name="area" class="ls-select" aria-label="Area" data-autosave data-area-pick><option value="0">Every area</option>{% for a in areas %}<option value="{{ a.id }}"{% if a.id == area %} selected{% endif %}>{{ a.title }}</option>{% endfor %}</select></form>{% endif %}
   </div>
   {% endif %}
 
@@ -44,18 +44,18 @@
         <div class="fft-approve" data-approve>
           <span class="note">Approve it as:</span>
           <div class="act-bar">
-            <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve"><input type="hidden" name="do" value="issue"><button class="btn primary small" type="submit" data-do="issue">A new issue</button></form>
+            <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve"><input type="hidden" name="do" value="issue"><input type="hidden" name="seen" value="{{ v.seen }}"><button class="btn primary small" type="submit" data-do="issue">A new issue</button></form>
             <button class="btn small" type="button" data-modal-url="/manage/feedback/same?note={{ n.id }}" data-do="same">Same as…</button>
-            <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve"><input type="hidden" name="do" value="idea"><button class="btn small" type="submit" data-do="idea">An idea</button></form>
+            <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve"><input type="hidden" name="do" value="idea"><input type="hidden" name="seen" value="{{ v.seen }}"><button class="btn small" type="submit" data-do="idea">An idea</button></form>
             <button class="btn small" type="button" data-show="fft-answer-{{ n.id }}" data-do="answer">A question, answered…</button>
             <button class="btn link small" type="button" data-show="fft-decline-{{ n.id }}" data-do="decline">Decline with why…</button>
           </div>
           <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve" class="composer fb-fold" id="fft-answer-{{ n.id }}" hidden>
-            <input type="hidden" name="do" value="answer">
+            <input type="hidden" name="do" value="answer"><input type="hidden" name="seen" value="{{ v.seen }}">
             <label class="field"><span>Your answer, for {{ n.first_name }} (on Notes you sent)</span><textarea name="words" rows="2" required maxlength="4000"></textarea></label>
             <div class="row tight"><button class="btn primary small" type="submit">Answer</button></div></form>
           <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve" class="composer fb-fold" id="fft-decline-{{ n.id }}" hidden>
-            <input type="hidden" name="do" value="decline">
+            <input type="hidden" name="do" value="decline"><input type="hidden" name="seen" value="{{ v.seen }}">
             <label class="field"><span>Why, for {{ n.first_name }} (they read it on Notes you sent; leave it blank if you like)</span><textarea name="words" rows="2" maxlength="1000"></textarea></label>
             <div class="row tight"><button class="btn small danger" type="submit">Decline</button></div></form>
           <p class="note">Whichever you press, a corner card offers Undo for a minute. {{ n.first_name }} hears the outcome on Notes you sent.</p>

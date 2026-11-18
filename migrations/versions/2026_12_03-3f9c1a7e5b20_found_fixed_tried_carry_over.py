@@ -20,7 +20,11 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    from app.fft.carry import carry_over
+    import sqlalchemy as sa
+
+    if not sa.inspect(op.get_bind()).has_table("feedback"):
+        return  # (a database made after the old tables went: nothing to carry)
+    from app.fft.carry import carry_over  # (the change that drops the old tables makes this migration a no-op first)
 
     db = Session(bind=op.get_bind())
     carry_over(db)

@@ -110,11 +110,17 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
     return out
 
 
+def last_line(db: Session, note: FftNote) -> int:
+    """The newest line on a note: an approval names it, so words added after the page was drawn aren't approved
+    unseen (T1, R14)."""
+    return db.scalar(select(func.max(FftLine.id)).where(FftLine.note_id == note.id)) or 0
+
+
 def note_view(db: Session, note: FftNote, viewer_id: int | None) -> dict:
     pics = pictures(db, note)
     return {"n": note, "pics": pics, "covered": any(p.key != p.safe_key for p in pics),
             "lines": list(db.scalars(select(FftLine).where(FftLine.note_id == note.id).order_by(FftLine.id))),
-            "mine": note.user_id and note.user_id == viewer_id}
+            "mine": note.user_id and note.user_id == viewer_id, "seen": last_line(db, note)}
 
 
 def issue_view(db: Session, issue: FftIssue, viewer_id: int | None) -> dict:
@@ -174,7 +180,7 @@ def _act(fn):
 
 @router.post("/manage/feedback/notes/{note_id:int}")
 def note_change(request: Request, note_id: int, do: str = Form(...), issue: int = Form(0), words: str = Form(""),
-                db: Session = Depends(get_db)):
+                seen: str = Form(""), db: Session = Depends(get_db)):
     """Approve a waiting note (as an issue, joined to one, an idea, a question answered), decline it with why, or undo
     that within a minute (R1, R2). Adding a line to a note's conversation (to its sender, or to Claude)."""
     user, denied = _admin(request)
@@ -183,6 +189,9 @@ def note_change(request: Request, note_id: int, do: str = Form(...), issue: int 
     note = db.get(FftNote, note_id) or _missing()
     actor = f"user:{views.person(db, user)['id']}"
     undo = f"/manage/feedback/notes/{note.id}/undo"
+    if do != "tell" and note.state == "waiting" and seen.isdigit() and int(seen) != last_line(db, note):
+        request.session["toast"] = web.notice(f"{note.first_name} added to it while you were looking: read it again first.", "warn")
+        return RedirectResponse(f"{BACK}?tab=approve&open=n{note.id}", status_code=303)
     if do == "issue":
         made = _act(lambda: rules.file_issue(db, actor, note))
         _said(request, "Approved as a new issue: it's Claude's to fix", undo)
@@ -224,7 +233,11 @@ def note_undo(request: Request, note_id: int, db: Session = Depends(get_db)):
     if denied:
         return denied
     note = db.get(FftNote, note_id) or _missing()
-    _act(lambda: rules.undo_decision(db, f"user:{views.person(db, user)['id']}", note))
+    try:
+        rules.undo_decision(db, f"user:{views.person(db, user)['id']}", note)
+    except rules.RuleError as e:
+        request.session["toast"] = web.notice(e.words, "warn")
+        return RedirectResponse(f"{BACK}?open=n{note.id}", status_code=303)
     db.commit()
     request.session["toast"] = "Undone: it's waiting for you again"
     return RedirectResponse(f"{BACK}?tab=approve&open=n{note.id}", status_code=303)
@@ -240,6 +253,8 @@ def issue_change(request: Request, issue_id: int, do: str = Form(...), words: st
     me = views.person(db, user)
     actor = f"user:{me['id']}"
     if do == "move":
+        if area and db.get(FftArea, area) is None:
+            raise HTTPException(400, "No such area.")
         _act(lambda: rules.move_issue(db, actor, i, area or None))
         a = db.get(FftArea, area) if area else None
         _said(request, f"Moved to {a.title}" if a else "Out of its area")
@@ -315,7 +330,7 @@ def same_window(request: Request, note: int = 0, issue: int = 0, q: str = "", pa
         found = found.where(FftIssue.title.ilike(f"%{q.strip()[:60]}%"))
     options = [{"i": i, "notes": notes_of_issue(db, i), "word": views.ISSUE_WORD[i.state] if i.state != "closed" else "closed: " + views.CLOSED_WORD.get(i.close_reason or "", "").lower()}
                for i in db.scalars(found.limit(20))]
-    return templates.TemplateResponse(request, "_fft_same.html", {"note": n, "issue": this, "q": q, "options": options,
+    return templates.TemplateResponse(request, "_fft_same.html", {"note": n, "issue": this, "q": q, "options": options, "seen": last_line(db, n) if n else 0,
                                                                     "senders": senders, "partial": bool(part)})
 
 

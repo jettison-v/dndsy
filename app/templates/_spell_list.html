@@ -38,7 +38,7 @@
               {%- if e.conc %} <span class="tag">Conc.</span>{% endif %}{% if e.ritual %} <span class="tag">Ritual</span>{% endif %}{{ comp_mark(e.need) }}
               {%- if e.core == false %} <span class="tag faint">Not core: {{ e.book }}</span>{% endif %}</span>
               {% if e.summary %}<span class="ls-what">{{ e.summary }}</span>{% endif %}
-              {% if note %}<span class="ls-note" title="{{ note }}">✎ {{ note }}</span>{% endif %}</span>
+              {% if note %}<span class="ls-note" title="{{ note }}" data-private>✎ {{ note }}</span>{% endif %}</span>
             <span>{{ {"Bonus action": "Bonus"}.get(e.time, e.time) }}</span>
             <span class="sb-range">{{ e.range or "—" }}</span>
             <span class="sb-range">{{ (e.duration | replace("Concentration, up to ", "") | replace("Instantaneous", "Instant")) or "—" }}</span>
