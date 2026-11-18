@@ -200,6 +200,10 @@ def test_after_the_last_check_the_round_waits_for_end_round(people, server, brow
         assert _one(browser_db[0], "SELECT count(*) FROM fft_rounds WHERE ended_at IS NULL") == [(1,)]
         end = done.locator('[data-do="end-round"]')
         assert end.is_visible()
+        done.locator(".cc-top [data-cc-fold]").click()  # (it folds like the round's card: the review of #417)
+        done.locator(".cc-pill").wait_for()
+        done.locator(".cc-pill").click()
+        end.wait_for()
         end.click()
         page.wait_for_url("**/manage/testing**")
         page.wait_for_function("() => !document.querySelector('[data-round-done]')")

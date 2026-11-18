@@ -404,3 +404,22 @@ def test_a_standing_rule_the_page_as_drawn_never_keeps_a_players_private_parts(a
     admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})
     drawn = admin.get(f"/manage/feedback/notes/{n.id}/page").text
     assert "My secret plan" not in drawn and "The party" in drawn
+
+
+def test_every_picture_added_to_a_note_shows_and_one_without_a_safe_copy_is_never_served_viewing_as(admin, sender, db):
+    """The review of PR #417: Add to it takes up to four screenshots, and Notes you sent showed only the last; and a
+    carried-over picture with no safe copy made the page fail for an admin viewing as its sender."""
+    send(sender)
+    n = _note(db)
+    shots = [("pics", (f"s{i}.png", base64.b64decode(ADDED.split(",")[1]), "image/png")) for i in range(3)]
+    assert sender.post(f"/your-notes/notes/{n.id}", data={"text": "Three more"}, files=shots).status_code in (200, 303)
+    mine = sender.get(f"/your-notes?tab=askdnd&note=f{n.id}").text
+    line_pics = db.scalars(select(FftPicture).where(FftPicture.line_id.isnot(None))).all()
+    assert len(line_pics) == 3 and all(f"/your-notes/pictures/{p.id}" in mine for p in line_pics)
+    page = db.scalar(select(FftPicture).where(FftPicture.note_id == n.id, FftPicture.kind == "page"))
+    page.safe_key = None  # (as carry.py keeps a player's carried-over page picture)
+    db.flush()
+    set_role(db, "player@example.com", "player")
+    admin.post("/view-as", data={"email": "player@example.com"})
+    assert admin.get(f"/your-notes/pictures/{page.id}").status_code == 404
+    admin.post("/view-as/stop")

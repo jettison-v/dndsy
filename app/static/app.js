@@ -743,15 +743,20 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       backdrop.classList.toggle('dim', !!back.modal);
       const body = panel.querySelector('.peek-body');
       if (body) body.scrollTop = back.scroll;
+      if (back.title) panel.setAttribute('aria-label', back.title);
       panel.focus({ preventScroll: true });
       return;
     }
     if (back) { /* returning to a window that changed something since: drawn again */ }
     else if (inside && panel.dataset.url) {
       const title = panel.querySelector('#peek-title');
-      // (its own nodes are kept, not a copy: typed words, picks and their handlers stay as they were, Brett, Nov 17)
+      // (its own nodes are kept, not a copy, when something was typed or picked in it: those words, picks and their
+      // handlers come back as they were, Brett, Nov 17; any other window is fetched fresh, so Back never shows one that
+      // changed meanwhile, by someone else or another page; the review of #417)
+      const typed = [...panel.querySelectorAll('input, textarea, select')].some(f => (f.type === 'checkbox' || f.type === 'radio') ? f.checked !== f.defaultChecked
+        : f.tagName === 'SELECT' ? [...f.options].some(o => o.selected !== o.defaultSelected) : f.type !== 'hidden' && f.value !== f.defaultValue);
       layer.history.push({ url: panel.dataset.url, modal: panel.classList.contains('full') ? 'full' : panel.classList.contains('large') ? 'large' : panel.classList.contains('modal'), scroll: (panel.querySelector('.peek-body') || {}).scrollTop || 0,
-                           title: title ? title.textContent.trim() : '', layer, nodes: [...panel.childNodes] });
+                           title: title ? title.textContent.trim() : '', layer, nodes: typed ? [...panel.childNodes] : null });
     } else layer.history = [];
     if (!inside && !back) { if (layer.name === 'top') layer.focus = opener; else lastFocus = opener; }
     panel.classList.toggle('modal', !!modal);
@@ -5017,7 +5022,7 @@ document.addEventListener('click', e => {
   const covered = win.querySelector('[data-fb-covered]'), lineEl = win.querySelector('[data-fb-line]'), titleEl = win.querySelector('[data-fb-title]');
   const wrongParts = [...win.querySelectorAll('[data-fb-wrong]')], stillBox = win.querySelector('[data-fb-still]'), kindRow = win.querySelector('[data-fb-kind-row]');
   const blockChips = [...win.querySelectorAll('[data-fb-block]')], stopsBox = win.querySelector('[data-fb-stops]');
-  let pics = [], at = -1, html = '', ctx = {}, lib = null, taking = null, round = 0, why = '', kind = '', checking = null, blocking = null, hidden = false, hideCard = null;
+  let pics = [], reading = 0, at = -1, html = '', ctx = {}, lib = null, taking = null, round = 0, why = '', kind = '', checking = null, blocking = null, hidden = false, hideCard = null;
   // Something's wrong… on a check (Testing, screen 3): whether it stops the check, picked each time like what it is
   const pickBlock = v => {
     blocking = v === 'yes' ? true : v === 'no' ? false : null;
@@ -5152,17 +5157,22 @@ document.addEventListener('click', e => {
     // (words the screen shows on one line stay on one: the picture's letters can come out a hair wider than the screen's,
     // and a box as wide as its words then drops the last letter onto a line of its own, "Part / y"; Brett's round, Nov 18)
     // (and a name the screen shows whole isn't cut short with … in the picture)
+    // (every measure first, then every change: changing as it went made the page lay itself out again for each line, and a
+    // long list froze the tab; what's above the screen counts too, as its lines set where the rest falls; the review of
+    // #417)
+    const keep = [];
     all.forEach(el => {
       if (gone.has(el)) return;
       const words = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
       if (!words.length) return;
       const cs = getComputedStyle(el);
-      if (cs.textOverflow === 'ellipsis' && el.scrollWidth <= el.clientWidth) { hold(el, { textOverflow: 'clip', overflow: 'visible' }); return; }
+      if (cs.textOverflow === 'ellipsis' && el.scrollWidth <= el.clientWidth) { keep.push([el, { textOverflow: 'clip', overflow: 'visible' }]); return; }
       if (cs.whiteSpace !== 'normal') return;
       const tops = new Set();
       words.forEach(n => { const r = document.createRange(); r.selectNodeContents(n); [...r.getClientRects()].forEach(x => tops.add(Math.round(x.top))); });
-      if (tops.size === 1) hold(el, { whiteSpace: 'nowrap' });
+      if (tops.size === 1) keep.push([el, { whiteSpace: 'nowrap' }]);
     });
+    keep.forEach(([el, props]) => hold(el, props));
     // (an attribute named with a colon stops the picture's SVG: set aside while it's drawn, and put back)
     const aside = [], blanked = [];
     document.querySelectorAll('*').forEach(el => { for (const a of [...el.attributes]) if (a.name.includes(':')) { aside.push([el, a.name, a.value]); el.removeAttribute(a.name); } });
@@ -5269,7 +5279,7 @@ document.addEventListener('click', e => {
       pair.append(b, x);
       chips.insertBefore(pair, shotChip);
     });
-    addChip.hidden = shotChip.hidden = pics.length >= 4;  // (four pictures at most)
+    addChip.hidden = shotChip.hidden = pics.length + (taking ? 1 : 0) >= 4;  // (four pictures at most, the page's own counted while it's drawn)
   }
   function show(i) {
     at = i; drawChips();
@@ -5376,8 +5386,12 @@ document.addEventListener('click', e => {
   function take(file) {
     if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) return say('A picture as PNG, JPEG or WebP, please.');
     if (file.size > 8e6) return say('That picture is over 8 MB.');
-    if (pics.length >= 4) return say('Four pictures at most.');
+    // (four at most, counting the page's own picture while it's still being drawn and any still being read: the review
+    // of #417, five could be added on a slow page and Send then refused them all)
+    if (pics.length + reading + (taking ? 1 : 0) >= 4) return say('Four pictures at most.');
     const r = new FileReader();
+    reading += 1;
+    r.onloadend = () => { reading -= 1; };
     r.onload = () => { pics.push({ kind: 'added', full: r.result, safe: null, marks: [] }); say(''); show(pics.length - 1); };
     r.readAsDataURL(file);
   }

@@ -153,7 +153,7 @@ def fft_note(db: Session, note: FftNote, me_id: int | None) -> dict:
     return {"key": f"f{note.id}", "id": note.id, "title": title_of(note.text), "text": note.text, "at": note.created_at,
             "where": note.page, "href": fft_views.local_href(note.url), "says": says,
             "open": says["open"], "new": note.seen != (mark := fft_views.marker(db, note, me_id)), "new_reply": _line_of(mark) > _line_of(note.seen), "lines": lines,
-            "pics": [p for p in pics if p.note_id == note.id], "line_pics": {p.line_id: p for p in pics if p.line_id},
+            "pics": [p for p in pics if p.note_id == note.id], "line_pics": {lid: [p for p in pics if p.line_id == lid] for lid in {p.line_id for p in pics if p.line_id}},
             "kind_said": fft_views.KIND_SAID.get(note.kind, ""), "trying": trying, "admin": note.role == "admin",
             "closed_words": issue.close_words if issue is not None and issue.state == "closed" else "", "can_add": says["open"] or note.state == "waiting"}
 
@@ -221,6 +221,8 @@ def own_picture(request: Request, pic_id: int, db: Session = Depends(get_db)):
     line = db.get(FftLine, pic.line_id) if pic.line_id else None
     _own(db, request, pic.note_id or (line.note_id if line else 0))
     key = pic.safe_key if _looking(request) else pic.key
+    if not key:  # (a carried-over picture with no safe copy: never shown to anyone viewing as its sender)
+        raise HTTPException(404)
     return files.serve(key, next((t for t, (ext, _) in files.TYPES.items() if key.endswith(ext)), "image/png"), cache_control="private, no-store", release=db)
 
 

@@ -88,7 +88,7 @@
           {% if n.pics %}<span class="fft-thumbs">{% for p in n.pics %}<img class="fft-pic" src="/your-notes/pictures/{{ p.id }}" alt="{{ 'The page as you sent this' if p.kind == 'page' else 'Your picture' }}" loading="lazy">{% endfor %}</span>{% endif %}</div>
         {% for x in n.lines %}
         <div class="bub {{ 'you' if x.who == 'sender' else 'claude' if x.who == 'claude' else 'them' }}" data-line="{{ x.id }}"><small>{{ "You" if x.who == "sender" else "Claude" if x.who == "claude" else "An admin" }} · <time datetime="{{ x.created_at.isoformat() }}" data-clock="when">{{ x.created_at | ago }}</time></small><p>{{ x.text if x.who == "sender" else x.text | linked }}</p>
-          {% if n.line_pics.get(x.id) %}<span class="fft-thumbs"><img class="fft-pic" src="/your-notes/pictures/{{ n.line_pics[x.id].id }}" alt="Your picture" loading="lazy"></span>{% endif %}
+          {% if n.line_pics.get(x.id) %}<span class="fft-thumbs">{% for p in n.line_pics[x.id] %}<img class="fft-pic" src="/your-notes/pictures/{{ p.id }}" alt="Your picture" loading="lazy">{% endfor %}</span>{% endif %}
           {% if x.who == "sender" and not x.approved %}<span class="note">An admin reads it first, then Claude.</span>{% endif %}</div>
         {% endfor %}
         {% if n.closed_words %}<div class="bub them" data-closed-words><small>Why it's closed</small><p>{{ n.closed_words }}</p></div>{% endif %}

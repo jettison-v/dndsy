@@ -1,8 +1,9 @@
 {# Same as which issue? (screen 11; app/fft/feedback_page.py `same_window`): a waiting note joins an issue already filed,
-   or an open issue closes as the same as another. Its search swaps only the options. #}
+   or an open issue closes as the same as another. Its search swaps only the options. Nothing is picked for you, so
+   Enter in the search never joins on its own (the review of PR #417). #}
 {% set who = note.first_name if note else "" %}
 {% macro opts() %}<div class="fft-options" id="fft-same-options" role="radiogroup" aria-label="Issues">
-  {% for o in options %}<label class="fft-opt" data-option="{{ o.i.id }}"><input type="radio" name="{{ 'issue' if note else 'same_as' }}" value="{{ o.i.id }}" required{% if loop.first and options | length == 1 %} checked{% endif %}>
+  {% for o in options %}<label class="fft-opt" data-option="{{ o.i.id }}"><input type="radio" name="{{ 'issue' if note else 'same_as' }}" value="{{ o.i.id }}" required>
     <span><b>{{ o.i.title }}</b>{% set who_sent = senders(o.notes) %}{% if who_sent %} · {{ who_sent | join(", ") }}{% endif %} · {{ o.notes | length }} note{{ "s" if o.notes | length != 1 }}</span><small class="note">{{ o.word }}</small></label>
   {% else %}<p class="note">No issue matches{% if q %} “{{ q }}”{% endif %}.</p>{% endfor %}
 </div>{% endmacro %}

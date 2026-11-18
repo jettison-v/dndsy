@@ -1,7 +1,7 @@
 {# The round's card once every check is tried (Brett's round, Nov 18: a round ends only when he presses End round, since
    he may keep sending notes after the checks; app/fft/testing_page.py `card`). The same card, its corner and fold kept. #}
 {% from "_lists.html" import grip %}
-<aside class="check-card fft-card{{ ' folded' if folded }}" data-fft-card data-round-done data-corner="{{ corner }}" data-fb-skip aria-label="Testing: your round is open">
+<aside class="check-card fft-card{{ ' folded' if folded }}" data-check-card="done" data-fft-card data-round-done data-corner="{{ corner }}" data-fb-skip aria-label="Testing: your round is open">
   <div class="cc-top" data-cc-drag{% if folded %} hidden{% endif %}><span class="cc-label">{{ grip() }}Round open · {{ of }} check{{ "s" if of != 1 }} tried</span>
     <button type="button" class="btn link small" data-cc-fold aria-expanded="true" aria-label="Fold the card">—</button></div>
   <div class="cc-body"{% if folded %} hidden{% endif %}>
