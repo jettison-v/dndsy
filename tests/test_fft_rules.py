@@ -23,6 +23,7 @@ def _issue_with_check(db, title="Short Rest restores slots", area=None, devices=
     issue = rules.new_issue(db, "claude", title, area_id=area.id if area else None)
     check = rules.write_check(db, "claude", title="Short Rests keep slots", steps=["Press [Short Rest]."], expect="Slots stay spent.",
                               area_id=area.id if area else None, issue_ids=[issue.id], devices=devices)
+    rules.preflight(db, "claude", check, True)  # (R18: Claude's own try passed, so it can reach Brett)
     return issue, check
 
 
@@ -209,7 +210,9 @@ def test_r7_cant_try_later_blocked_and_wrong(db):
     rules.record_try(db, "user:1", check, result="cant", cant_kind="wrong", why="No player's note was open")
     assert rules.check_state(db, check)["turn"] == "claude"
     rules.new_version(db, "claude", check, steps=["Open note 2."], expect="e", why="Open a player's note straight away")
-    assert check.version == 2 and rules.check_state(db, check)["state"] == "to_try"
+    assert check.version == 2 and rules.check_state(db, check)["state"] == "preflight"  # (R18: each version, Claude's try first)
+    rules.preflight(db, "claude", check, True)
+    assert rules.check_state(db, check)["state"] == "to_try"
     rules.record_try(db, "user:1", check, result="cant", cant_kind="later")
     assert rules.check_state(db, check) | {} == {"state": "later", "turn": "brett", "devices": {"laptop": "later"}, "again": False}
     with pytest.raises(RuleError):
@@ -393,6 +396,7 @@ def test_invariants_hold_through_random_sequences(db):
                 rules.record_try(db, "user:1", check, result="cant", cant_kind="later")
             elif op == "version":
                 rules.new_version(db, "claude", check, steps=["s2"], expect="e", why="rewritten")
+                rules.preflight(db, "claude", check, True)
         except RuleError:
             pass
         db.flush()

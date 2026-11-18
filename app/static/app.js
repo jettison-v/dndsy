@@ -449,6 +449,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     bar.addEventListener('pointercancel', end);
   });
 
+  // The round's card keys (Found, Fixed, Tried, screen 2): P passed, F something's wrong, C can't try; never while typing
+  // or with a window open, and only while the card is open
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat || !/^[pfc]$/i.test(e.key)) return;
+    const a = document.activeElement;
+    if (a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) || document.querySelector('dialog[open], .peek.open')) return;
+    const b = document.querySelector('[data-fft-card]:not(.folded) [data-key="' + e.key.toLowerCase() + '"]');
+    if (b) { e.preventDefault(); b.click(); }
+  });
+
   // An action bar's ⋯ (_admin_bits.html more_menu): a choice in it, a click elsewhere or Escape closes it
   document.addEventListener('click', e => {
     document.querySelectorAll('details.act-more[open]').forEach(d => { if (!d.contains(e.target) || e.target.closest('.act-menu button')) d.open = false; });
@@ -4939,8 +4949,43 @@ document.addEventListener('click', e => {
   const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
   const chips = win.querySelector('[data-fb-chips]'), addChip = win.querySelector('.fb-add-pic'), stageNote = win.querySelector('[data-fb-stage-note]');
   const wrap = win.querySelector('[data-fb-wrap]'), canvas = win.querySelector('[data-fb-canvas]'), tools = win.querySelector('[data-fb-tools]'), edits = win.querySelector('[data-fb-edits]');
-  const covered = win.querySelector('[data-fb-covered]'), lineEl = win.querySelector('[data-fb-line]'), checkLine = win.querySelector('[data-fb-check-line]');
-  let pics = [], at = -1, html = '', ctx = {}, lib = null, taking = null, round = 0, why = '', kind = '', trying = null, hidden = false, hideCard = null;
+  const covered = win.querySelector('[data-fb-covered]'), lineEl = win.querySelector('[data-fb-line]'), titleEl = win.querySelector('[data-fb-title]');
+  const wrongParts = [...win.querySelectorAll('[data-fb-wrong]')], stillBox = win.querySelector('[data-fb-still]'), kindRow = win.querySelector('[data-fb-kind-row]');
+  const blockChips = [...win.querySelectorAll('[data-fb-block]')], stopsBox = win.querySelector('[data-fb-stops]');
+  let pics = [], at = -1, html = '', ctx = {}, lib = null, taking = null, round = 0, why = '', kind = '', checking = null, blocking = null, hidden = false, hideCard = null;
+  // Something's wrong… on a check (Testing, screen 3): whether it stops the check, picked each time like what it is
+  const pickBlock = v => {
+    blocking = v === 'yes' ? true : v === 'no' ? false : null;
+    blockChips.forEach(c => { const on = c.dataset.fbBlock === v; c.classList.toggle('on', on); c.setAttribute('aria-checked', on ? 'true' : 'false'); });
+    stopsBox.disabled = blocking !== true;
+    if (blocking !== true) stopsBox.checked = false;
+  };
+  blockChips.forEach(c => c.addEventListener('click', () => { pickBlock(c.dataset.fbBlock); say(''); }));
+  function checkMode(c) {  // the window as What's wrong? for a check, or back to Send a note
+    checking = c;
+    wrongParts.forEach(el => { el.hidden = !c; });
+    kindRow.hidden = !!c;
+    titleEl.textContent = c ? "What's wrong?" : 'Send a note';
+    pickBlock('');
+    stillBox.replaceChildren();
+    if (!c) return;
+    win.querySelector('[data-fb-wrong-where]').textContent = 'On ' + c.title;
+    fetch('/manage/testing/checks/' + c.id + '/wrong', { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : null)).then(j => {
+      if (!j || checking !== c) return;
+      c.try = j.try;
+      win.querySelector('[data-fb-wrong-where]').textContent = 'On ' + j.title + ' · ' + j.device + ' · v' + j.version + ' · askdnd' + (j.where === 'live' ? '.ai' : ' (' + j.where + ')') + ' as of ' + j.app_version;
+      const opt = (value, label, small) => {
+        const l = Object.assign(document.createElement('label'), { className: 'fft-opt' });
+        const i = Object.assign(document.createElement('input'), { type: 'radio', name: 'fb-still', value });
+        if (value === '') i.checked = true;
+        l.dataset.still = value;
+        l.append(i, Object.assign(document.createElement('span'), { textContent: label }), Object.assign(document.createElement('small'), { className: 'note', textContent: small }));
+        stillBox.append(l);
+      };
+      j.issues.forEach(i => opt(String(i.id), i.title, i.said + ' · still happening'));
+      if (j.issues.length) opt('', 'Something new', 'describe it below');
+    }).catch(() => { /* the window works without the list: it's something new */ });
+  }
   const kindChips = [...win.querySelectorAll('[data-fb-kind]')], ask = win.querySelector('[data-fb-ask]'), askFirst = ask.textContent;
   const pickKind = k => {
     kind = k;
@@ -5193,10 +5238,10 @@ document.addEventListener('click', e => {
     if (win.open) return;
     if (hidden) return back();
     const mine = ++round;
-    pics = []; at = -1; trying = (opts && opts.try) || null;
+    pics = []; at = -1;
     ctx = gather(); html = drawn();
-    form.reset(); say(''); send.disabled = false; pickKind(trying ? 'problem' : '');
-    if (checkLine) { checkLine.hidden = !trying; checkLine.querySelector('b').textContent = trying ? trying.title : ''; }
+    form.reset(); say(''); send.disabled = false; pickKind('');
+    checkMode((opts && opts.check) || null);
     show(-1); stageNote.textContent = "Taking the page's picture…";
     drawCtx();
     lineEl.textContent = '';
@@ -5237,18 +5282,28 @@ document.addEventListener('click', e => {
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const text = form.text.value.trim();
-    if (!kind) return say('Say what it is first: a problem, an idea or a question.');
-    if (!text) return say("Say what it's about first.");
+    if (checking && blocking === null) return say('Say whether it stops this check passing.');
+    if (!checking && !kind) return say('Say what it is first: a problem, an idea or a question.');
+    if (!text) return say(checking ? "Say what's wrong first." : "Say what it's about first.");
     send.disabled = true; say('');
     if (taking && !pics.some(p => p.kind === 'page')) { say("Finishing the page's picture…"); await taking; say(''); }
     try {
       const pictures = await outgoing();
-      const r = await fetch('/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, marked: pictures.reduce((n, p) => n + p.marks, 0) }, html, pictures: pictures.map(({ kind: k, full, safe }) => ({ kind: k, full, safe })), ...(trying ? { try: trying.id } : {}) }) });
+      const common = { text, url: location.href, context: { ...ctx, marked: pictures.reduce((n, p) => n + p.marks, 0) }, html, pictures: pictures.map(({ kind: k, full, safe }) => ({ kind: k, full, safe })) };
+      const still = checking && stillBox.querySelector('input:checked');
+      const r = await fetch(checking ? '/manage/testing/checks/' + checking.id + '/wrong' : '/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(checking ? { ...common, blocking, stops_round: stopsBox.checked, issue: still && still.value ? +still.value : null, try: checking.try || null } : { ...common, kind }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
+      const was = checking;
       close();
-      document.body.dispatchEvent(new CustomEvent('noteSent', { detail: { id: j.id, try: trying && trying.id } }));
+      if (was) {  // (from a check: the card shows what was sent, in place; on Testing, the page shows it)
+        const slot = document.getElementById('check-card');
+        if (slot && slot.querySelector('[data-fft-card]') && window.htmx) htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
+        else location.reload();
+        if (window.askdndToast) window.askdndToast(j.said || 'Sent');
+        return;
+      }
       if (window.askdndToast) window.askdndToast(j.said || 'Sent', { label: 'Notes you sent', run: () => { location.href = '/your-notes?tab=askdnd'; } });
     } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
   });
@@ -5261,7 +5316,7 @@ document.addEventListener('click', e => {
     const b = e.target.closest('[data-fb-open]');
     if (!b) return;
     e.preventDefault();
-    open(b.dataset.fbTry ? { try: { id: +b.dataset.fbTry, title: b.dataset.fbTryTitle || '' } } : null);
+    open(b.dataset.fbCheck ? { check: { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '' } } : null);
   });
   window.askdndSendNote = open;
   const logo = document.querySelector('.brand');

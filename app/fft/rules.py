@@ -7,7 +7,7 @@ Words: an actor is "user:<id>", "claude", "mini" (the Mac Mini's runs) or "askdn
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.fft.models import (
@@ -489,15 +489,20 @@ def record_try(db: Session, actor: str, check: FftCheck, *, result: str, device:
     return t
 
 
+def still_happening(db: Session, actor: str, issue: FftIssue, check: FftCheck | None = None) -> None:
+    """A fixed issue seen again: Claude's to fix (a closed one reopens, saying it came back)."""
+    if issue.state == "closed":
+        reopen(db, actor, issue)
+    elif issue.state in ("ready", "merge_ok", "fixing"):
+        issue.fixed_in, issue.confirm_by, issue.confirm_since = "", None, None
+        _set_issue(db, actor, issue, "to_fix", "issue_still_happening", check=check.id if check else None)
+
+
 def _name_issue(db: Session, actor: str, check: FftCheck, t: FftTry, f: Found) -> FftIssue:
     if f.issue_id:
         issue = db.get(FftIssue, f.issue_id)
         how = "still"
-        if issue.state == "closed":
-            reopen(db, actor, issue)  # (it came back)
-        elif issue.state in ("ready", "merge_ok", "fixing"):
-            issue.fixed_in, issue.confirm_by, issue.confirm_since = "", None, None
-            _set_issue(db, actor, issue, "to_fix", "issue_still_happening", check=check.id)
+        still_happening(db, actor, issue, check)
     else:
         issue = new_issue(db, actor, f.title, area_id=check.area_id, origin_try_id=t.id)
         how = "new"
@@ -507,6 +512,34 @@ def _name_issue(db: Session, actor: str, check: FftCheck, t: FftTry, f: Found) -
     for w in f.words:
         add_line(db, actor, w, issue=issue, to="claude", who="admin")
     return issue
+
+
+def add_found(db: Session, actor: str, t: FftTry, f: Found) -> FftIssue:
+    """Another issue on a try already failed (✗ Another…: the same button again, screen 4)."""
+    if t.result != "failed" or t.replaced:
+        raise RuleError("stale", "That try isn't a failed one any more.")
+    check = db.get(FftCheck, t.check_id)
+    if f.issue_id and db.scalar(select(FftTryIssue).where(FftTryIssue.try_id == t.id, FftTryIssue.issue_id == f.issue_id)):
+        raise RuleError("bad", "This try already named that issue.")
+    issue = _name_issue(db, actor, check, t, f)
+    _event(db, actor, "try_found", "try", t.id, area_id=check.area_id, issue=issue.id)
+    return issue
+
+
+def note_on_issue(db: Session, actor: str, issue: FftIssue, *, user_id: int | None, first_name: str, text: str, url: str = "",
+                  page: str = "", context: dict | None = None, html: str = "", try_id: int | None = None) -> FftNote:
+    """What an admin saw while trying a check, kept as their note on the issue it found (an admin's words need no
+    approval, R1): the words, the page, the pictures (kept by the caller)."""
+    if not (text or "").strip():
+        raise RuleError("bad", "Say what's wrong.")
+    note = FftNote(user_id=user_id, first_name=(first_name or "Someone").split(" ")[0][:60], role="admin", kind="problem",
+                   text=text.strip(), url=url[:1000], page=page[:120], context=_clean_context(context or {}), html=html or "",
+                   state="filed", filed_as="issue", issue_id=issue.id, try_id=try_id)
+    db.add(note)
+    db.flush()
+    _event(db, actor, "note_sent", "note", note.id, note_kind="problem", role="admin", staging=False)
+    _event(db, actor, "note_joined", "note", note.id, issue=issue.id, area_id=issue.area_id)
+    return note
 
 
 def _failing_elsewhere(db: Session, issue: FftIssue, check: FftCheck, device: str) -> bool:
@@ -558,7 +591,8 @@ def correct_try(db: Session, actor: str, t: FftTry, result: str, why: str, user_
     for ti in db.scalars(select(FftTryIssue).where(FftTryIssue.try_id == t.id)):
         issue = db.get(FftIssue, ti.issue_id)
         if ti.how == "new" and issue.origin_try_id == t.id and issue.state != "closed":
-            used = db.scalar(select(func.count()).select_from(FftNote).where(FftNote.issue_id == issue.id)) or issue.pr \
+            used = db.scalar(select(func.count()).select_from(FftNote).where(FftNote.issue_id == issue.id,  # (the tester's own note with this try doesn't count)
+                                                                              or_(FftNote.try_id.is_(None), FftNote.try_id != t.id))) or issue.pr \
                 or db.scalar(select(func.count()).select_from(FftTryIssue).where(FftTryIssue.issue_id == issue.id, FftTryIssue.try_id != t.id))
             if not used:
                 issue.close_reason = "withdrawn"
@@ -579,8 +613,8 @@ def correct_try(db: Session, actor: str, t: FftTry, result: str, why: str, user_
 def check_state(db: Session, check: FftCheck) -> dict:
     """Where a check stands, per required device and overall, worked out from its live tries and its issues (never
     kept): to_try (first time, or `again` once a fix is live), passed, failed (a try failed and its issues aren't
-    fixed), fixing (its fix isn't live yet), later, blocked, wrong (the check must be rewritten), retired; and whose
-    turn it is."""
+    fixed), fixing (its fix isn't live yet), later, blocked, wrong (the check must be rewritten), preflight (Claude
+    hasn't tried this version itself yet, R18), retired; and whose turn it is."""
     if check.retired:
         return {"state": "retired", "turn": "closed", "devices": {}, "again": False}
     blocking = _blocking_issues(db, check)
@@ -589,7 +623,7 @@ def check_state(db: Session, check: FftCheck) -> dict:
     again = False
     for dev in check.devices or ["laptop"]:
         last = db.scalar(select(FftTry).where(FftTry.check_id == check.id, FftTry.device == dev, FftTry.replaced.is_(False),
-                                              FftTry.actor == "person").order_by(FftTry.id.desc()))
+                                              FftTry.actor == ("mini" if dev == "mac_mini" else "person")).order_by(FftTry.id.desc()))
         if last is None or last.result == "untried":
             devices[dev] = "fixing" if open_claude else "to_try"
         elif last.result == "failed":
@@ -612,8 +646,10 @@ def check_state(db: Session, check: FftCheck) -> dict:
         state = "asks"
     turn = {"failed": "claude", "fixing": "claude", "wrong": "claude", "blocked": "claude", "to_try": "brett", "later": "brett",
             "asks": "brett", "passed": "closed"}[state]
-    if state == "to_try" and check.preflight == "failed":
-        state, turn = "wrong", "claude"  # (R18: it never reaches Brett until it passes its own try)
+    if turn == "brett" and not any(d != "mac_mini" for d in check.devices or ["laptop"]):
+        turn = "claude"  # (only the Mac Mini runs it: Claude's, never Brett's)
+    if state == "to_try" and check.preflight != "passed":  # (R18: it never reaches Brett until it passes its own try)
+        state, turn = ("wrong" if check.preflight == "failed" else "preflight"), "claude"
     return {"state": state, "turn": turn, "devices": devices, "again": again}
 
 

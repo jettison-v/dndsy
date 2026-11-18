@@ -4,9 +4,14 @@
    filled in here with where, when and how the page was. What it is is picked each time, never for you. #}
 <dialog class="fb-win" id="fb-win" aria-labelledby="fb-title">
   <form method="dialog" class="fb-form">
-    <div class="row"><h2 id="fb-title">Send a note</h2><button type="button" class="btn link peek-close" data-fb-cancel aria-label="Close">✕</button></div>
-    <p class="fb-check-line" data-fb-check-line hidden><span class="tag">Something's wrong</span> Trying: <b></b></p>
-    <div class="fb-kinds" role="radiogroup" aria-labelledby="fb-kind-q"><span class="note" id="fb-kind-q">What is it?</span>
+    <div class="row"><h2 id="fb-title" data-fb-title>Send a note</h2><button type="button" class="btn link peek-close" data-fb-cancel aria-label="Close">✕</button></div>
+    {# Something's wrong… on a check (Testing, screen 3): what's wrong there, still happening or new, and whether it stops
+       the check and your round (app/fft/testing_page.py `wrong`) #}
+    <div class="fb-wrong" data-fb-wrong hidden>
+      <p class="note" data-fb-wrong-where></p>
+      <div class="fft-options" role="radiogroup" aria-label="Still happening, or new?" data-fb-still></div>
+    </div>
+    <div class="fb-kinds" role="radiogroup" aria-labelledby="fb-kind-q" data-fb-kind-row><span class="note" id="fb-kind-q">What is it?</span>
       {% for k, said in feedback_kinds.items() %}<button type="button" class="chip" role="radio" aria-checked="false" data-fb-kind="{{ k }}" data-ask="{{ feedback_asks[k] }}">{{ said }}</button>{% endfor %}</div>
     <div class="fb-pic-chips row tight" role="tablist" aria-label="Pictures" data-fb-chips>
       <label class="chip fb-add-pic">+ Paste or add a picture<input type="file" accept="image/png,image/jpeg,image/webp" data-fb-file class="sr"></label>
@@ -23,6 +28,11 @@
       <p class="note fb-covered" data-fb-covered hidden>Your character's notes are covered in the copy an admin and Claude see; only you see them.</p>
     </div>
     <label class="field"><span data-fb-ask>What's it about?</span><textarea name="text" rows="3" required maxlength="4000"></textarea></label>
+    <div class="fb-wrong fb-blocks" data-fb-wrong hidden>
+      <div class="fb-kinds" role="radiogroup" aria-label="Does it stop this check passing?"><span class="note">Does it stop this check passing?</span>
+        <button type="button" class="chip" role="radio" aria-checked="false" data-fb-block="yes">It stops it</button><button type="button" class="chip" role="radio" aria-checked="false" data-fb-block="no">It doesn't (send it on its own)</button></div>
+      <label class="check"><input type="checkbox" data-fb-stops> It stops my round: Claude may fix it now</label>
+    </div>
     <details class="fold"><summary class="note">Sent with it, so Claude can see what you saw</summary><dl class="fb-ctx" data-fb-ctx></dl></details>
     <p class="use-said" role="alert" hidden data-fb-said></p>
     <div class="fb-sendline">

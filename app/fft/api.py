@@ -217,6 +217,12 @@ def _missing():
     raise HTTPException(404)
 
 
+def _area_given(db: Session, area_id) -> None:
+    """An area named in a body is a number and an area that exists (else a 400 saying so, never a database error)."""
+    if area_id is not None and (type(area_id) is not int or db.get(FftArea, area_id) is None):
+        raise HTTPException(400, "area_id: no such area (fft.py areas lists them)")
+
+
 # ------------------------------------------------------------------ changing (each through rules.py)
 
 
@@ -224,6 +230,7 @@ def _missing():
 def issue_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     actor = keys.require(db, x_fft_key, "write")
     body = body if isinstance(body, dict) else {}
+    _area_given(db, body.get("area_id"))
     try:
         i = rules.new_issue(db, actor.name, _str(body, "title", 120, need=True), area_id=body.get("area_id"))
     except rules.RuleError as e:
@@ -244,7 +251,8 @@ def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Heade
         if do == "title":
             i.title = _str(body, "title", 120, need=True).strip()
         elif do == "move":
-            rules.move_issue(db, actor.name, i, body.get("area_id") if body.get("area_id") is None else _int(body.get("area_id"), "area_id"))
+            _area_given(db, body.get("area_id"))
+            rules.move_issue(db, actor.name, i, body.get("area_id"))
         elif do == "start":
             rules.start_fixing(db, actor.name, i)
         elif do == "pr":
@@ -280,6 +288,9 @@ def check_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     devices = body.get("devices") or ["laptop"]
     if not isinstance(devices, list) or not all(d in rules.DEVICES for d in devices):
         raise HTTPException(400, f"devices: from {', '.join(rules.DEVICES)}")
+    _area_given(db, body.get("area_id"))
+    if any(db.get(FftIssue, i) is None for i in issue_ids):
+        raise HTTPException(400, "issues: one of them isn't an issue")
     try:
         c = rules.write_check(db, actor.name, title=_str(body, "title", 160, need=True), steps=_steps(body), expect=_str(body, "expect", need=True),
                               path=_str(body, "path", 500), why=_str(body, "why"), area_id=body.get("area_id"), devices=devices,

@@ -45,6 +45,7 @@ from app.feedback import router as feedback_router
 from app.fft.api import router as fft_router
 from app.fft.feedback_page import router as fft_feedback_router
 from app.fft.sending import router as fft_sending_router
+from app.fft.testing_page import router as fft_testing_router
 from app.fog import router as fog_router
 from app.for_claude import router as for_claude_router
 from app.giving import router as giving_router
@@ -288,6 +289,7 @@ app.include_router(initiative_router)  # the DM changes the fight's order (Labs:
 app.include_router(shifting_router)  # Wild Shape: shifting and leaving
 app.include_router(fft_sending_router)  # Found, Fixed, Tried: sending a note from any page (\\)
 app.include_router(fft_feedback_router)  # Found, Fixed, Tried: Manage › askdnd › Feedback (ahead of the old one it replaces)
+app.include_router(fft_testing_router)  # Found, Fixed, Tried: Manage › askdnd › Testing and the round's card (ahead of the old)
 app.include_router(feedback_router)  # notes for Claude from any page, and the queue
 app.include_router(fft_router)  # Found, Fixed, Tried: Claude's side, the staging relay and the Mac Mini, each by its own key
 app.include_router(testing_router)  # Testing in askdnd: checks for an admin to try (app/testing.py)

@@ -130,5 +130,19 @@ next`), Help's About and FAQ, the DM guide where it mentions feedback, docs/test
   Testing tests that sent through the old window, tests/browser/test_areas_order.py and test_check_rounds.py (slice 5
   brings Testing's). The old app/feedback.py routes the new ones shadow go in slice 6's clean-up; Claude's API doesn't
   list a picture added to a line yet.
-- **Slice 5, next**: Testing.
+- **Slice 5, done**: Manage › askdnd › Testing (app/fft/testing_page.py, `fft_testing.html`): For you as the view of
+  everything Brett's in the one order (checks for the device he's on or another he must use, Claude's questions and
+  decisions, fixes to OK, then the table's notes and ideas, then Roadmap steps), a check as the card will show it with
+  its devices, problems, why and history (struck-through corrections); Claude's and Done. The round (`_fft_card.html`:
+  left by default, drags, folds, keys P/F/C; ▶ Start round, ▶ Just this area, ▶ Try it as a round of one through its
+  character's eyes; Passed moves on with Undo; End round), Something's wrong… as the note window's check mode (still
+  happening or new, stops the check, stops the round; ✗ Another… adds to the same try), Can't try… and Change result…
+  windows (`_fft_cant.html`, `_fft_change.html`), questions answered there. Rules: R18 holds a check until Claude's
+  own try of that version passes (state `preflight`); a check only the Mac Mini runs is Claude's and the Mini's runs
+  count for its device; `add_found`, `note_on_issue`, `still_happening`; a correction withdraws an issue only that try
+  found even with the tester's own note on it. base.html shows a waiting corner card on any page. Found on the way:
+  Help's FAQ reused the ids `cards` (so every corner card on Help vanished into a folded answer) and `wild-shape`;
+  renamed, and the layout check now fails a page that repeats an id. Tests: tests/test_fft_testing.py,
+  tests/browser/test_fft_round.py; tests/test_testing.py retired.
+- **Slice 6, next**: Where it stands whole, live updates, menu counts, the carry-over, retiring the old modules.
 - At the merge: run `scripts/deploy_check.py --set-backup-watch` (app/fft joined BACKUP_WATCH).

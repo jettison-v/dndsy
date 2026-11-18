@@ -184,8 +184,10 @@ def test_a_check_must_follow_the_walkthroughs_rules(api, db):
     bad = api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": ["Type lots, then press Save."], "expect": "y"})
     assert bad.status_code == 400 and "two things" in bad.text
     assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": "Press [Save].", "expect": "y", "devices": ["toaster"]}).status_code == 400
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": "Press [Save].", "expect": "y", "area_id": 999}).status_code == 400
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": "Press [Save].", "expect": "y", "issues": [999]}).status_code == 400
     ok = api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "Saves", "steps": ["Press [Save]."], "expect": "It saves.", "devices": ["laptop", "iphone"]})
-    assert ok.status_code == 200 and ok.json()["steps"] == ["Press [Save]."] and ok.json()["state"] == "to_try"
+    assert ok.status_code == 200 and ok.json()["steps"] == ["Press [Save]."] and ok.json()["state"] == "preflight"  # (R18: Claude tries it first)
     cid = ok.json()["id"]
     assert api.post(f"/api/fft/checks/{cid}", headers=_as(CLAUDE), json={"do": "version", "steps": ["Press [Save]."], "expect": "Saved."}).status_code == 400  # (a version says why)
     v2 = api.post(f"/api/fft/checks/{cid}", headers=_as(CLAUDE), json={"do": "version", "steps": ["Press [Save]."], "expect": "Saved.", "why": "clearer"})
