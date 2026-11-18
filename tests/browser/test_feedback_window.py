@@ -17,7 +17,7 @@ def _rows(browser_db, sql, **params):
 def test_backslash_pick_what_it_is_and_send(people, server, browser_db):
     admin = people("admin")
     page = admin.open(f"/characters/{server['cole']}/battle")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_function("() => document.fonts.status === 'loaded'")  # (askdnd's script runs before load; the picture wants its fonts)
     page.keyboard.press("\\")
     win = page.locator("#fb-win")
     win.wait_for(state="visible", timeout=5000)
@@ -49,7 +49,7 @@ def test_marks_and_words_are_drawn_into_what_is_sent_and_private_parts_covered(p
     marked private (a player's character notes) is covered in the copy others see, and left whole in its sender's."""
     admin = people("admin")
     page = admin.open("/party")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_function("() => document.fonts.status === 'loaded'")  # (askdnd's script runs before load; the picture wants its fonts)
     page.evaluate("""() => {
       const box = Object.assign(document.createElement('div'), { textContent: 'My secret plan' });
       box.setAttribute('data-private', '');
@@ -92,7 +92,7 @@ def test_marks_and_words_are_drawn_into_what_is_sent_and_private_parts_covered(p
 def test_hide_while_i_take_a_screenshot_keeps_everything(people, server):
     admin = people("admin")
     page = admin.open("/party")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_function("() => document.fonts.status === 'loaded'")  # (askdnd's script runs before load; the picture wants its fonts)
     page.keyboard.press("\\")
     win = page.locator("#fb-win")
     win.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
@@ -115,7 +115,7 @@ def test_a_long_page_opens_at_once_and_draws_one_picture_of_what_is_on_screen(pe
     press while one is drawn waits for it, and a modal open on the page is in the picture where it is on screen."""
     admin = people("admin")
     page = admin.open(f"/characters/{server['cole']}/battle")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_function("() => document.fonts.status === 'loaded'")  # (askdnd's script runs before load; the picture wants its fonts)
     page.evaluate("""() => {  // a long list in a modal, as the item browser is
       const box = Object.assign(document.createElement('div'), { id: 'long' });
       Object.assign(box.style, { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '400px',
@@ -156,7 +156,7 @@ def test_a_page_holding_a_nul_character_still_gets_its_picture(people, server):
     characters XML can't hold are taken out before it's painted."""
     admin = people("admin")
     page = admin.open(f"/characters/{server['cole']}/battle")
-    page.wait_for_load_state("networkidle")
+    page.wait_for_function("() => document.fonts.status === 'loaded'")  # (askdnd's script runs before load; the picture wants its fonts)
     page.evaluate("() => document.querySelector('main').append(Object.assign(document.createElement('span'), { textContent: 'x\\u0000\\u0007y' }))")
     page.keyboard.press("\\")
     page.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
@@ -172,7 +172,7 @@ def test_the_window_fits_a_phone_and_a_laptop(people, server):
     for width in (375, 1280):
         page.set_viewport_size({"width": width, "height": 812 if width < 640 else 900})
         admin.open("/party")
-        page.wait_for_load_state("networkidle")
+        page.wait_for_function("() => document.fonts.status === 'loaded'")  # (askdnd's script runs before load; the picture wants its fonts)
         page.evaluate("document.dispatchEvent(new KeyboardEvent('keydown', { key: '\\\\', bubbles: true }))")
         page.locator("#fb-win [data-fb-wrap]").wait_for(state="visible", timeout=15000)
         found += problems(page, f"the window at {width}px")
@@ -213,3 +213,72 @@ def test_the_pages_picture_keeps_what_the_screen_shows_when_scrolled(people, ser
         return Image.open(io.BytesIO(png)).convert("L").resize((48, 96))
     diff = ImageStat.Stat(ImageChops.difference(small(screen), small(base64.b64decode(drawn.split(",", 1)[1])))).mean[0]
     assert diff < 12, f"the list in the page's picture isn't what the screen shows (they differ by {diff:.1f})"
+
+
+def test_an_arrow_looks_the_same_on_a_large_screenshot_as_on_a_small_one(people, server, tmp_path):
+    """Issue 16 (Brett's round, Nov 18): the arrow was too small on his screenshot. Marks were sized by the picture's own
+    width, so a large screenshot shown small in the window got a thin arrow with a small head. Now a mark is sized as it
+    looks on screen: the same arrow drawn across the same stretch of screen shows the same on either picture."""
+    import io
+
+    from PIL import Image
+
+    sizes, shown = {"small": (800, 500), "large": (3200, 2000)}, {}
+    for name, (w, h) in sizes.items():
+        Image.new("RGB", (w, h), (255, 255, 255)).save(tmp_path / f"{name}.png")
+    admin = people("admin")
+    page = admin.open("/party")
+    page.keyboard.press("\\")
+    win = page.locator("#fb-win")
+    canvas = win.locator("[data-fb-canvas]")
+    canvas.wait_for(state="visible", timeout=15000)
+    win.locator("[data-fb-tool=arrow]").click()
+    for name, (w, _h) in sizes.items():
+        win.locator("[data-fb-file]").set_input_files(str(tmp_path / f"{name}.png"))
+        page.wait_for_function(f"() => document.querySelector('[data-fb-canvas]').width === {w}")
+        box = canvas.bounding_box()
+        y = box["y"] + box["height"] / 2
+        page.mouse.move(box["x"] + 30, y)
+        page.mouse.down()
+        page.mouse.move(box["x"] + 230, y, steps=5)
+        page.mouse.up()
+        shot = Image.open(io.BytesIO(canvas.screenshot())).convert("RGB")
+        shown[name] = sum(1 for r, g, b in shot.getdata() if r > 200 and 120 < g < 200 and b < 90)  # (the mark's orange)
+    # (a 200-pixel arrow, its line 3.5 screen pixels and its head 20: about 700 pixels of orange on screen either way;
+    # before, about 230, a hairline with a small head)
+    assert min(shown.values()) > 500 and 0.8 < shown["large"] / shown["small"] < 1.25, shown
+    assert not admin.errors, admin.errors
+
+
+def test_words_on_one_line_on_screen_stay_on_one_line_in_the_pages_picture(people, server):
+    """Brett's round, Nov 18 (issues 20, 22; seen again walking issue 16): the page's picture drew "Party" as "Part" with
+    the "y" on a line of its own, character names the same, and the menu bar's "Main" as "M…": its letters can come out
+    a hair wider than the screen's, and a box as wide as its words then wraps or cuts the last of them. Words on one line
+    on screen stay on one, whole, in the picture: the letters reach as far right in the picture as on the screen."""
+    import base64
+    import io
+
+    from PIL import Image
+
+    admin = people("admin")
+    page = admin.open("/party")
+    page.set_viewport_size({"width": 1440, "height": 800})
+    page.wait_for_function("() => document.fonts.status === 'loaded'")
+    boxes = {what: page.locator(what).first.bounding_box() for what in ("h1", ".topbar .campaign-name")}
+    clips = {what: {"x": b["x"] - 4, "y": b["y"] - 4, "width": b["width"] + 60, "height": b["height"] * 2 + 8} for what, b in boxes.items()}
+    screens = {what: Image.open(io.BytesIO(page.screenshot(clip=c))).convert("L") for what, c in clips.items()}
+    page.keyboard.press("\\")
+    page.locator("#fb-win [data-fb-wrap]").wait_for(state="visible", timeout=15000)
+
+    def reach(im, b):  # (the right-most bright pixel on the words' own line: they're light on dark)
+        line = im.crop((0, 4, im.size[0], 4 + int(b["height"])))
+        px = line.load()
+        return max((x for x in range(line.size[0]) for y in range(line.size[1]) if px[x, y] > 170), default=-1)
+    for what, clip in clips.items():
+        drawn = page.evaluate("""b => { const c = document.querySelector('#fb-win [data-fb-canvas]'), o = document.createElement('canvas');
+            o.width = Math.round(b.width); o.height = Math.round(b.height); o.getContext('2d').drawImage(c, b.x, b.y, b.width, b.height, 0, 0, o.width, o.height);
+            return o.toDataURL('image/png'); }""", clip)
+        drawn = Image.open(io.BytesIO(base64.b64decode(drawn.split(",", 1)[1]))).convert("L").resize(screens[what].size)
+        on_screen, in_picture = reach(screens[what], boxes[what]), reach(drawn, boxes[what])
+        assert abs(in_picture - on_screen) <= 6, (what, on_screen, in_picture)  # (wrapped or cut, it fell well short)
+    assert not admin.errors, admin.errors

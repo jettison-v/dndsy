@@ -5144,6 +5144,20 @@ document.addEventListener('click', e => {
     scrolled.filter(([box]) => !gone.has(box)).forEach(([box, top, left]) => {
       [...box.children].forEach(ch => hold(ch, { translate: -left + 'px ' + -top + 'px' }));
     });
+    // (words the screen shows on one line stay on one: the picture's letters can come out a hair wider than the screen's,
+    // and a box as wide as its words then drops the last letter onto a line of its own, "Part / y"; Brett's round, Nov 18)
+    // (and a name the screen shows whole isn't cut short with … in the picture)
+    all.forEach(el => {
+      if (gone.has(el)) return;
+      const words = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
+      if (!words.length) return;
+      const cs = getComputedStyle(el);
+      if (cs.textOverflow === 'ellipsis' && el.scrollWidth <= el.clientWidth) { hold(el, { textOverflow: 'clip', overflow: 'visible' }); return; }
+      if (cs.whiteSpace !== 'normal') return;
+      const tops = new Set();
+      words.forEach(n => { const r = document.createRange(); r.selectNodeContents(n); [...r.getClientRects()].forEach(x => tops.add(Math.round(x.top))); });
+      if (tops.size === 1) hold(el, { whiteSpace: 'nowrap' });
+    });
     // (an attribute named with a colon stops the picture's SVG: set aside while it's drawn, and put back)
     const aside = [], blanked = [];
     document.querySelectorAll('*').forEach(el => { for (const a of [...el.attributes]) if (a.name.includes(':')) { aside.push([el, a.name, a.value]); el.removeAttribute(a.name); } });
@@ -5273,22 +5287,28 @@ document.addEventListener('click', e => {
   };
   addEventListener('resize', () => { if (win.open) fit(); });
   const MARK = '#f0a020';
+  // Marks are sized as they look on your screen, whatever the picture's own size (Brett's round, Nov 18, issue 16: on a
+  // large screenshot shown small, the arrow came out thin with a small head): each mark keeps `k`, the picture's pixels
+  // per screen pixel as it was drawn, so it's the same in the picture that's sent
+  const shownAt = () => canvas.width / (canvas.getBoundingClientRect().width || canvas.width);
   function paint(g, w, list) {
-    g.strokeStyle = g.fillStyle = MARK; g.lineWidth = Math.max(4, w / 300); g.lineCap = g.lineJoin = 'round';
+    g.strokeStyle = g.fillStyle = MARK; g.lineCap = g.lineJoin = 'round';
     for (const m of list) {
-      const [a, b] = [m.pts[0], m.pts[m.pts.length - 1]];
+      const k = m.k || Math.max(1, w / 800), [a, b] = [m.pts[0], m.pts[m.pts.length - 1]];
+      g.lineWidth = 3.5 * k;
       g.beginPath();
       if (m.tool === 'box') g.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-      else if (m.tool === 'draw') { m.pts.forEach((p, k) => (k ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
+      else if (m.tool === 'draw') { m.pts.forEach((p, n) => (n ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
       else if (m.tool === 'text') {
-        const size = Math.max(14, Math.round(w / 70));
+        const size = Math.round(16 * k), pad = 4 * k;
         g.font = '700 ' + size + 'px system-ui, sans-serif';
         const tw = g.measureText(m.text).width;
-        g.fillStyle = 'rgba(15,17,19,.85)'; g.fillRect(a.x - 4, a.y - size, tw + 8, size + 8);
+        g.fillStyle = 'rgba(15,17,19,.85)'; g.fillRect(a.x - pad, a.y - size, tw + 2 * pad, size + 2 * pad);
         g.fillStyle = MARK; g.fillText(m.text, a.x, a.y);
       } else {
-        const t = Math.atan2(b.y - a.y, b.x - a.x), hd = Math.max(g.lineWidth * 7, 26);  // (a head you see on any picture: Brett's round, Nov 18)
-        g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
+        const t = Math.atan2(b.y - a.y, b.x - a.x), hd = 20 * k;  // (its head 20 screen pixels long)
+        const end = { x: b.x - hd * 0.6 * Math.cos(t), y: b.y - hd * 0.6 * Math.sin(t) };  // (the shaft stops inside the head: a sharp point)
+        g.moveTo(a.x, a.y); g.lineTo(end.x, end.y); g.stroke();
         g.beginPath(); g.moveTo(b.x, b.y);
         g.lineTo(b.x - hd * Math.cos(t - 0.45), b.y - hd * Math.sin(t - 0.45)); g.lineTo(b.x - hd * Math.cos(t + 0.45), b.y - hd * Math.sin(t + 0.45));
         g.closePath(); g.fill();
@@ -5308,7 +5328,7 @@ document.addEventListener('click', e => {
     if (!pics[at]) return;
     e.preventDefault();
     if (tool === 'text') return placeText(e);
-    canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [point(e)] };
+    canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [point(e)], k: shownAt() };
   });
   canvas.addEventListener('pointermove', e => { if (!drag) return; const p = point(e); if (drag.tool === 'draw') drag.pts.push(p); else drag.pts[1] = p; redraw(); });
   canvas.addEventListener('pointerup', () => { if (drag && drag.pts.length > 1) pics[at].marks.push(drag); drag = null; redraw(); });
@@ -5325,7 +5345,7 @@ document.addEventListener('click', e => {
       if (ended) return;
       ended = true;
       const t = box.value.trim(); typingAt = null; box.remove();
-      if (keep && t && pics[at]) { pics[at].marks.push({ tool: 'text', pts: [p], text: t }); redraw(); }
+      if (keep && t && pics[at]) { pics[at].marks.push({ tool: 'text', pts: [p], text: t, k: shownAt() }); redraw(); }
     };
     box.addEventListener('keydown', k => { if (k.key === 'Enter') { k.preventDefault(); done(true); } else if (k.key === 'Escape') { k.preventDefault(); k.stopPropagation(); done(false); } });
     box.addEventListener('blur', () => done(true));
