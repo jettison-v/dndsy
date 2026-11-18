@@ -10,6 +10,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.fft import taxonomy
 from app.fft.models import (
     FftArea,
     FftCheck,
@@ -256,14 +257,36 @@ def _set_issue(db: Session, actor: str, issue: FftIssue, to: str, kind: str, **d
     _event(db, actor, kind, "issue", issue.id, area_id=issue.area_id, **{"from": was, "to": to}, **data)
 
 
-def new_issue(db: Session, actor: str, title: str, area_id: int | None = None, origin_try_id: int | None = None) -> FftIssue:
+def new_issue(db: Session, actor: str, title: str, area_id: int | None = None, origin_try_id: int | None = None,
+              feature: str = "") -> FftIssue:
     if not title.strip():
         raise RuleError("bad", "Give it a title.")
     issue = FftIssue(title=title.strip()[:120], area_id=area_id, origin_try_id=origin_try_id)
     db.add(issue)
     db.flush()
     _event(db, actor, "issue_new", "issue", issue.id, area_id=area_id, origin_try=origin_try_id)
+    if feature:
+        set_feature(db, actor, issue, feature)
     return issue
+
+
+def set_feature(db: Session, actor: str, issue: FftIssue, key: str) -> None:
+    """The Feature an issue is about (the Product Taxonomy; Brett, Nov 18). A fix goes into its Product Area's batch;
+    one in a Roadmap build's batch stays there. Its checks with no batch yet follow it."""
+    f = taxonomy.feature(key)
+    if f is None:
+        raise RuleError("bad", f"There's no Feature “{key}”: feedback.py features lists them.")
+    was = issue.feature
+    issue.feature = f.key
+    area = db.get(FftArea, issue.area_id) if issue.area_id else None
+    if area is None or area.key or area.archived:
+        into = taxonomy.batch(db, f.area)
+        if issue.area_id != into.id:
+            move_issue(db, actor, issue, into.id)
+    for c in db.scalars(select(FftCheck).join(FftCheckIssue, FftCheckIssue.check_id == FftCheck.id)
+                        .where(FftCheckIssue.issue_id == issue.id, FftCheck.area_id.is_(None))):
+        c.area_id = issue.area_id
+    _event(db, actor, "issue_feature", "issue", issue.id, area_id=issue.area_id, was=was, to=f.key)
 
 
 def move_issue(db: Session, actor: str, issue: FftIssue, area_id: int | None) -> None:
@@ -405,6 +428,8 @@ def write_check(db: Session, actor: str, *, title: str, steps: list[str], expect
     if not title.strip() or not steps:
         raise RuleError("bad", "A check needs its title and steps.")
     devices = [d for d in (devices or ["laptop"]) if d in DEVICES] or ["laptop"]
+    if area_id is None and issue_ids:  # (a check is tried with the batch its issues are in)
+        area_id = db.scalar(select(FftIssue.area_id).where(FftIssue.id.in_(issue_ids), FftIssue.area_id.is_not(None)).order_by(FftIssue.id))
     check = FftCheck(title=title.strip()[:160], area_id=area_id, devices=devices, minutes=max(1, min(60, minutes)), makes=makes)
     db.add(check)
     db.flush()
@@ -525,7 +550,9 @@ def _name_issue(db: Session, actor: str, check: FftCheck, t: FftTry, f: Found) -
         how = "still"
         still_happening(db, actor, issue, check)
     else:
-        issue = new_issue(db, actor, f.title, area_id=check.area_id, origin_try_id=t.id)
+        known = db.scalar(select(FftIssue.feature).join(FftCheckIssue, FftCheckIssue.issue_id == FftIssue.id)
+                          .where(FftCheckIssue.check_id == check.id, FftIssue.feature != "").order_by(FftIssue.id))
+        issue = new_issue(db, actor, f.title, area_id=check.area_id, origin_try_id=t.id, feature=known or "")  # (what its check tries)
         how = "new"
     db.add(FftTryIssue(try_id=t.id, issue_id=issue.id, blocking=f.blocking, how=how, stops_round=f.stops_round))
     if f.blocking:
@@ -751,7 +778,13 @@ def order_areas(db: Session, actor: str, item: FftItem, ids: list[int]) -> None:
     _event(db, actor, "areas_ordered", "item", item.id, order=[x for x in ids if x in rows])
 
 
+def _hand_made(area: FftArea) -> None:
+    if area.key:
+        raise RuleError("bad", "A Product Area's batch follows the list (app/data/taxonomy.json): change it there.")
+
+
 def rename_area(db: Session, actor: str, area: FftArea, title: str) -> None:
+    _hand_made(area)
     if not title.strip():
         raise RuleError("bad", "Give it a name.")
     was, area.title = area.title, title.strip()[:80]
@@ -760,6 +793,7 @@ def rename_area(db: Session, actor: str, area: FftArea, title: str) -> None:
 
 def move_area(db: Session, actor: str, area: FftArea, item: FftItem) -> None:
     """To another Roadmap item, at its end."""
+    _hand_made(area)
     was, area.item_id = area.item_id, item.id
     area.place = (db.scalar(select(func.max(FftArea.place)).where(FftArea.item_id == item.id, FftArea.id != area.id)) or 0) + 1
     _event(db, actor, "area_moved", "area", area.id, area_id=area.id, **{"from": was, "to": item.id})
@@ -767,6 +801,7 @@ def move_area(db: Session, actor: str, area: FftArea, item: FftItem) -> None:
 
 def merge_area(db: Session, actor: str, area: FftArea, into: FftArea) -> None:
     """Its issues and checks join another area; it's archived (kept, so its history reads)."""
+    _hand_made(area)
     if into.id == area.id or into.archived:
         raise RuleError("bad", "Merge it into another open area.")
     for i in db.scalars(select(FftIssue).where(FftIssue.area_id == area.id)):
@@ -779,6 +814,7 @@ def merge_area(db: Session, actor: str, area: FftArea, into: FftArea) -> None:
 
 def archive_area(db: Session, actor: str, area: FftArea) -> None:
     """Out of the list; only once nothing in it is open (an empty area drops off by itself)."""
+    _hand_made(area)
     if area_open_issues(db, area) or any(check_state(db, c)["turn"] != "closed" for c in area_checks(db, area)):
         raise RuleError("bad", "It still has open issues or checks: move or merge them first.")
     area.archived, area.lock_owner, area.lock_until = True, "", None

@@ -58,6 +58,7 @@ PAGES = (
     ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", "admin", ()),
     ("feedback", "Feedback", "/manage/feedback", "Every note and issue, and what became of it", ASKDND, "", "admin", ()),
     ("testing", "Testing", "/manage/testing", "What's your turn, and trying what Claude built", ASKDND, "", "admin", ()),
+    ("product-areas", "Product areas", "/manage/product-areas", "Every part of askdnd in two levels, and what's open in each", ASKDND, "", "admin", ()),
     ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, "", "admin", ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, "", "admin", ()),
     ("backups", "Backups", "/manage/backups", "Nightly backups, then imports", ASKDND, "", "admin", ()),
@@ -73,7 +74,7 @@ PAGES = (
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, "admin", ()),
 )
 IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "scene-notes", "places", "table", "house", "settings", "history",
-           "overview", "feedback", "testing", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
+           "overview", "feedback", "testing", "product-areas", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
 NEEDS = {"scene-notes": "vtt_table", "places": "vtt_table"}  # (a page that comes with a feature: listed only where it's on)
 UNLISTED = ("guide",)  # (a page of the list that no menu or list down the left shows: the DM guide is the account menu's)
 COUNTED = ("needs", "inbox", "feedback", "testing")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
@@ -142,6 +143,17 @@ def backup_status(db: Session) -> dict:
 
 def _plural(n: int, one: str, many: str | None = None) -> str:
     return f"{n} {one if n == 1 else (many or one + 's')}"
+
+
+def _product_areas(db: Session) -> str:
+    """The Overview card for Product areas: the list's size, and how many issues are open with no Feature yet."""
+    from app.fft import taxonomy
+    from app.fft.models import FftIssue
+
+    areas = taxonomy.areas()
+    loose = db.scalar(select(func.count()).select_from(FftIssue).where(FftIssue.state != "closed", FftIssue.feature == "")) or 0
+    return (f"{_plural(len(areas), 'Product Area')}, {_plural(sum(len(a.features) for a in areas), 'Feature')}"
+            + (f" · {loose} open with no Feature yet" if loose else ""))
 
 
 def needs(db: Session, user: dict) -> list[dict]:
@@ -286,6 +298,7 @@ def overview(request: Request, db: Session = Depends(get_db)):
         "campaigns": (f"{_plural(len(camps), 'campaign')}" + (f", {sum(1 for c in camps if c.is_test)} test" if any(c.is_test for c in camps) else ""), ""),
         "corrections": (f"{fixes} to build into askdnd" if fixes else "Nothing to build in", "warn" if fixes else "ok"),
         "documents": (_plural(len(documents.library()), "document"), ""),
+        "product-areas": (_product_areas(db), ""),
     }
     if config.DDB_BRIDGE:
         from app import ddb_bridge

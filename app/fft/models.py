@@ -32,12 +32,14 @@ class FftItem(_Stamped, Base):
 
 
 class FftArea(_Stamped, Base):
-    """A batch of Claude's work under one item (issues, a build slice, or both), tried together in rounds. One is
-    Claude's at a time: the lock has an owner and lapses (R11)."""
+    """A batch of Claude's work under one item, tried together in rounds: a Product Area's fixes under Fixes and polish
+    (`key` names it in app/data/taxonomy.json; Brett, Nov 18), or a Roadmap build's own (no key). One is Claude's at a
+    time: the lock has an owner and lapses (R11)."""
 
     __tablename__ = "fft_areas"
     id: Mapped[int] = mapped_column(primary_key=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("fft_items.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(20), default="", server_default="", index=True)
     title: Mapped[str] = mapped_column(String(80))
     place: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     round_no: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
@@ -65,6 +67,7 @@ class FftIssue(_Stamped, Base):
     __tablename__ = "fft_issues"
     id: Mapped[int] = mapped_column(primary_key=True)
     area_id: Mapped[int | None] = mapped_column(ForeignKey("fft_areas.id", ondelete="SET NULL"), nullable=True, index=True)
+    feature: Mapped[str] = mapped_column(String(20), default="", server_default="", index=True)  # what it's about (app/fft/taxonomy.py)
     title: Mapped[str] = mapped_column(String(120))
     # to_fix (queued), fixing (in hand), asks (Claude asks Brett), merge_ok (a player-prompted fix waits for Brett's OK,
     # R17), ready (fixed and live: ready to try), closed

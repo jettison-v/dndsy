@@ -203,8 +203,8 @@ def test_next_follows_the_one_order_and_says_what_it_skipped(api, db):
     db.add_all([first, second])
     db.flush()
     r = api.post("/api/fft/areas", headers=_as(CLAUDE), json={"do": "new", "item_id": second.id, "title": "Manage"})
-    area = r.json()["id"]
-    rules.new_issue(db, "claude", "Wraps badly", area_id=area)
+    assert r.status_code == 400 and "Product Area" in r.text  # (fixes are batched by Product Area, Nov 18: none made by hand)
+    area = rules.new_issue(db, "claude", "Wraps badly", feature="hp").area_id  # (Battle's batch, under Fixes and polish)
     db.flush()
     got = api.get("/api/fft/next", headers=_as(CLAUDE)).json()
     assert got["next"]["area_id"] == area and got["skipped"][0]["what"] == "Waiting on Brett"
@@ -216,11 +216,10 @@ def test_each_listener_has_its_own_read_mark(api, db):
     item = FftItem(title="Fixes and polish", section="now", place=1, standing=True)
     db.add(item)
     db.flush()
-    a = api.post("/api/fft/areas", headers=_as(CLAUDE), json={"do": "new", "item_id": item.id, "title": "Manage"}).json()["id"]
-    rules.new_issue(db, "user:1", "In the area", area_id=a)
+    a = rules.new_issue(db, "user:1", "In the area", feature="needs").area_id
     rules.new_issue(db, "user:1", "Elsewhere")
     _settle(db)
-    assert len(api.get("/api/fft/inbox?peek=1", headers=_as(CLAUDE)).json()["items"]) == 2  # (not the area Claude made)
+    assert len(api.get("/api/fft/inbox?peek=1", headers=_as(CLAUDE)).json()["items"]) == 4  # (both new, the first's Feature and its move)
     main = api.get("/api/fft/inbox", headers=_as(CLAUDE)).json()["items"]
     assert main and api.get("/api/fft/inbox", headers=_as(CLAUDE)).json()["items"] == []
     own = api.get(f"/api/fft/inbox?listener=area-{a}&area={a}", headers=_as(CLAUDE)).json()["items"]

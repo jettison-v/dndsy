@@ -1082,7 +1082,7 @@
  {
   "title": "Product Taxonomy",
   "kind": "design",
-  "status": "waiting on Brett's pick",
+  "status": "Brett picked two levels, A and A; built Nov 18",
   "date": "Nov 18",
   "what": "Brett's idea (Nov 17 and 18): a fixed two-level list, Product Area › Feature, every issue is sorted into, so requests group the same way and each session starts from the same place. The draft list (10 Product Areas, 62 Features, from docs/MAP.md), Feedback grouped by Product Area or with a menu, an issue's Feature and its Change… picker, and Where it stands with a session per Product Area or batches made by hand. Three picks and a notes box saved on the page.",
   "source": "docs/mockups/product-taxonomy/index.html",

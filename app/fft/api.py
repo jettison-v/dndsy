@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app import web
 from app.db import get_db
-from app.fft import keys, rules, sending, steps, views
+from app.fft import keys, rules, sending, steps, taxonomy, views
 from app.fft.models import (
     FftArea,
     FftCheck,
@@ -76,7 +76,7 @@ def _quoted(text: str, by: str) -> dict:
 
 
 def _line(line: FftLine, note: FftNote | None) -> dict:
-    by = "Claude" if line.who == "claude" else "An admin" if line.who == "admin" else (_by(note) if note else "Its sender")
+    by = {"claude": "Claude", "admin": "An admin", "askdnd": "askdnd"}.get(line.who) or (_by(note) if note else "Its sender")
     return {"id": line.id, "at": line.created_at.isoformat() if line.created_at else "", "to": line.to, **_quoted(line.text, by)}
 
 
@@ -100,7 +100,7 @@ def _approved_note(db: Session, note_id: int) -> FftNote:
 
 def issue_view(db: Session, issue: FftIssue, full: bool = True) -> dict:
     out = {"id": issue.id, "title": issue.title, "state": issue.state, "turn": rules.ISSUE_TURN[issue.state], "area_id": issue.area_id,
-           "pr": issue.pr, "reopened": issue.reopened, "close_reason": issue.close_reason, "from_player": issue.from_player,
+           "feature": issue.feature, "feature_path": taxonomy.path(issue.feature), "pr": issue.pr, "reopened": issue.reopened, "close_reason": issue.close_reason, "from_player": issue.from_player,
            "confirm_by_player": bool(issue.confirm_by)}
     if full:
         notes = db.scalars(select(FftNote).where(FftNote.issue_id == issue.id, FftNote.state == "filed").order_by(FftNote.id))
@@ -166,7 +166,7 @@ def note(note_id: int, page: int = 0, x_fft_key: str | None = Header(default=Non
 
 
 @router.get("/issues")
-def issues(state: str = "", area: int = 0, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+def issues(state: str = "", area: int = 0, feature: str = "", x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     keys.require(db, x_fft_key, "read")
     q = select(FftIssue).order_by(FftIssue.id)
     wanted = [s for s in state.split(",") if s in rules.ISSUE_STATES]
@@ -174,6 +174,8 @@ def issues(state: str = "", area: int = 0, x_fft_key: str | None = Header(defaul
         q = q.where(FftIssue.state.in_(wanted))
     if area:
         q = q.where(FftIssue.area_id == area)
+    if feature:
+        q = q.where(FftIssue.feature == feature)
     return _ok({"items": [issue_view(db, i, full=False) for i in db.scalars(q)]})
 
 
@@ -198,7 +200,7 @@ def areas(x_fft_key: str | None = Header(default=None), db: Session = Depends(ge
     out = []
     for item in db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)):
         out.append({"item": item.id, "title": item.title, "section": item.section, "standing": item.standing, "next_whose": item.next_whose,
-                    "areas": [{"id": a.id, "title": a.title, "turn": rules.area_turn(db, a), "round": a.round_no, "locked_by": a.lock_owner,
+                    "areas": [{"id": a.id, "key": a.key, "title": a.title, "turn": rules.area_turn(db, a), "round": a.round_no, "locked_by": a.lock_owner,
                                "issues": [i.id for i in rules.area_open_issues(db, a)], "checks": [c.id for c in rules.area_checks(db, a)]}
                               for a in db.scalars(select(FftArea).where(FftArea.item_id == item.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))]})
     return _ok({"items": out})
@@ -241,7 +243,7 @@ def issue_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     body = body if isinstance(body, dict) else {}
     _area_given(db, body.get("area_id"))
     try:
-        i = rules.new_issue(db, actor.name, _str(body, "title", 120, need=True), area_id=body.get("area_id"))
+        i = rules.new_issue(db, actor.name, _str(body, "title", 120, need=True), area_id=body.get("area_id"), feature=_str(body, "feature", 20))
     except rules.RuleError as e:
         _rule(e)
     db.commit()
@@ -250,7 +252,7 @@ def issue_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
 
 @router.post("/issues/{issue_id:int}")
 def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """One action at a time: title, move (area_id), start, pr, close (reason, words, same_as), reopen, line (words to
+    """One action at a time: title, feature (a key from app/data/taxonomy.json), move (area_id: a Roadmap build's batch), start, pr, close (reason, words, same_as), reopen, line (words to
     "senders" or "brett"). Claude may not close an issue as working: only a person confirms a fix (R16)."""
     actor = keys.require(db, x_fft_key, "write")
     body = body if isinstance(body, dict) else {}
@@ -259,6 +261,8 @@ def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Heade
     try:
         if do == "title":
             i.title = _str(body, "title", 120, need=True).strip()
+        elif do == "feature":
+            rules.set_feature(db, actor.name, i, _str(body, "feature", 20, need=True))
         elif do == "move":
             _area_given(db, body.get("area_id"))
             rules.move_issue(db, actor.name, i, body.get("area_id"))
@@ -280,7 +284,7 @@ def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Heade
                 raise HTTPException(400, 'to: "senders" or "brett"')
             rules.add_line(db, actor.name, _str(body, "words", need=True), issue=i, to=to)
         else:
-            raise HTTPException(400, "do: title, move, start, pr, close, reopen or line")
+            raise HTTPException(400, "do: title, feature, move, start, pr, close, reopen or line")
     except rules.RuleError as e:
         _rule(e)
     db.commit()
@@ -367,6 +371,8 @@ def area_change(body=web.JsonBody, x_fft_key: str | None = Header(default=None),
     try:
         if do == "new":
             item = db.get(FftItem, _int(body.get("item_id"), "item_id")) or _missing()
+            if item.standing:
+                raise HTTPException(400, "Fixes are batched by Product Area: give each issue its Feature (do: feature).")
             place = (max([a.place for a in db.scalars(select(FftArea).where(FftArea.item_id == item.id))], default=0)) + 1
             a = FftArea(item_id=item.id, title=_str(body, "title", 80, need=True).strip(), place=place)
             db.add(a)

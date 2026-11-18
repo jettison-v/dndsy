@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_lists.html" import count_pill %}
+{% block title %}Product areas · Manage · askdnd{% endblock %}
+{% block content %}
+{# Manage › askdnd › Product areas (app/fft/feedback_page.py `product_areas`; Brett chose two levels on
+   docs/mockups/product-taxonomy/, Nov 18): every part of askdnd, a Product Area per card and its Features under it,
+   each with its open issues. The list is app/data/taxonomy.json; docs/MAP.md follows its order. #}
+<main class="page manage-page" data-page="product-areas">
+  {% include "_manage_head.html" %}
+  <div class="title-row"><h1>Product areas</h1></div>
+  <p class="subtitle">Every part of askdnd in two levels: {{ cards | length }} Product Areas and {{ features }} Features. Every issue is about one Feature, and each Product Area is one batch of fixes. The number by a Feature is its open issues; press one to see them in Feedback. Only admins can see this page.</p>
+  {% if loose %}<p class="note" data-loose><a href="/manage/feedback?tab=open">{{ loose }} open issue{{ "s" if loose != 1 }} with no Feature yet</a>: Claude gives each one.</p>{% endif %}
+  <div class="pa-cards">
+    {% for c in cards %}
+    <section class="panel pa-card" data-pa="{{ c.a.key }}" aria-labelledby="pa-{{ c.a.key }}">
+      <header class="pa-head"><h2 id="pa-{{ c.a.key }}">{{ c.a.title }}</h2>{{ count_pill(c.n) }}<span class="note">{{ c.a.what }}</span></header>
+      <ul class="pa-feats">
+        {% for f, n in c.features %}<li data-feature="{{ f.key }}">{% if n %}<a href="/manage/feedback?tab=open&amp;pa={{ c.a.key }}&amp;feature={{ f.key }}">{{ f.title }}</a>{{ count_pill(n) }}{% else %}<span>{{ f.title }}</span>{% endif %}</li>{% endfor %}
+      </ul>
+    </section>
+    {% endfor %}
+  </div>
+</main>
+{% endblock %}

@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import access, picks
-from app.fft import rules
+from app.fft import rules, taxonomy
 from app.fft.models import FftArea, FftIdea, FftIssue, FftItem, FftLine, FftListener, FftNote, FftQuestion
 from app.models import User
 
@@ -328,7 +328,7 @@ def gaps(db: Session) -> list[dict]:
         if theirs and i.state != "asks" and (not mine or max(theirs) > max(mine)):
             out.append({"kind": "unanswered", "thing": "issue", "id": i.id, "title": i.title,
                         "says": "Said to Claude and not answered: reply (feedback.py issue <id> tell … --to brett) with what you'll do."})
-        if i.area_id is None:
-            out.append({"kind": "no_area", "thing": "issue", "id": i.id, "title": i.title,
-                        "says": "In no area: move it into one (feedback.py issue <id> move <area>)."})
+        if not taxonomy.feature(i.feature):  # (the Product Taxonomy, Nov 18: every issue in one Feature, so in its batch)
+            out.append({"kind": "no_feature", "thing": "issue", "id": i.id, "title": i.title,
+                        "says": "No Feature yet: give it one (feedback.py issue <id> feature <key>; feedback.py features lists them)."})
     return out

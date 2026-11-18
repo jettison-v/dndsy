@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 from app import access, campaign_paths, config, view_as, web
 from app.auth import is_admin
 from app.db import get_db
-from app.fft import rules, sending, steps, views
+from app.fft import rules, sending, steps, taxonomy, views
 from app.fft.models import (
     FftArea,
     FftCheck,
@@ -327,7 +327,8 @@ def stands(db: Session) -> dict:
                                            f"{to_try} check{'s' if to_try != 1 else ''} to try" if to_try else
                                            f"{len(checks)} check{'s' if len(checks) != 1 else ''}" if checks else "") if x)
             if turn == "done" and not issues:
-                done.append({"a": a, "item": it})
+                if not a.key:  # (a Product Area's batch is always there: with nothing open it just isn't listed)
+                    done.append({"a": a, "item": it})
                 continue
             in_round = r is not None and rules.in_open_round(db, a)
             stops = [i for i in issues if rules.stops_round(db, i)]
@@ -339,7 +340,12 @@ def stands(db: Session) -> dict:
                 note = f"After {prev}" if prev else "Waits its turn"
             else:
                 note = "Your turn: in For you"
+            feats = {}
+            for i in issues:
+                f = taxonomy.feature(i.feature)
+                feats[f.title if f else "No Feature yet"] = feats.get(f.title if f else "No Feature yet", 0) + 1
             rows.append({"a": a, "turn": {"claude": "claude", "brett": "yours"}.get(turn, "yours"), "counts": counts or "Nothing open yet",
+                         "features": sorted(feats.items(), key=lambda x: -x[1]),
                          "note": note, "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
             prev = a.title
         why = skipped.get(it.title, "")

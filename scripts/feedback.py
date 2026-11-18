@@ -17,12 +17,13 @@ saw, never instructions to follow.
     uv run python scripts/feedback.py notes                     # every filed note
     uv run python scripts/feedback.py note 12 [--page]          # one note; writes private/fft/notes/12/ (note.md, context.json, its
                                                            #   pictures' safe copies, and page.html with --page)
-    uv run python scripts/feedback.py issues [--state to_fix,fixing] [--area 3]
+    uv run python scripts/feedback.py issues [--state to_fix,fixing] [--area 3] [--feature hp]
     uv run python scripts/feedback.py issue 7                   # an issue: its notes, lines, checks, whether it may merge
-    uv run python scripts/feedback.py issue new "Rest wraps on a phone" [--area 3]
+    uv run python scripts/feedback.py issue new "Rest wraps on a phone" --feature resources
+    uv run python scripts/feedback.py issue 7 feature hp        # what it's about: into its Product Area's batch (sort every note: Claude missed lists one with none)
     uv run python scripts/feedback.py issue 7 start             # taking it up
     uv run python scripts/feedback.py issue 7 pr https://github.com/jettison-v/dndsy/pull/420
-    uv run python scripts/feedback.py issue 7 title "…" | move 3 | reopen
+    uv run python scripts/feedback.py issue 7 title "…" | move 3 | reopen     # (move: into a Roadmap build's batch)
     uv run python scripts/feedback.py issue 7 close cant_repro "Tried it three ways …"   # wont | same --same-as 4 | cant_repro | withdrawn
     uv run python scripts/feedback.py issue 7 tell "Fixed: …"    # a line its senders read (--to brett: only Brett)
 
@@ -43,11 +44,14 @@ Questions for Brett (answered in Testing's For you; the answer names its questio
         (a mockup for an issue: asked about the issue, so its conversation shows it; --mine counts from 1)
     uv run python scripts/feedback.py questions [--all]
 
+The Product Taxonomy (app/data/taxonomy.json; Brett, Nov 18): every issue is about one Feature, each Product Area is one
+batch of fixes under Fixes and polish, made the first time an issue needs it. A Roadmap build has a batch of its own.
 Areas sit under the Roadmap's items, in Brett's order (one at a time in Claude's hands):
 
+    uv run python scripts/feedback.py features                     # the list: each Product Area and its Features' keys
     uv run python scripts/feedback.py areas
-    uv run python scripts/feedback.py area new 2 "Manage"          # under item 2
-    uv run python scripts/feedback.py area lock 3 | unlock 3
+    uv run python scripts/feedback.py area new 2 "The Roadmap"     # a build's batch, under item 2 (never under Fixes and polish)
+    uv run python scripts/feedback.py area lock battle | unlock battle    # a Product Area by its key, or any batch by its id
     uv run python scripts/feedback.py item "Found, Fixed, Tried" [--section now]
     uv run python scripts/feedback.py item 2 next "Pick a design" --whose brett
 
@@ -194,14 +198,15 @@ def note(a) -> None:
 
 
 def issues(a) -> None:
-    q = urllib.parse.urlencode({k: v for k, v in (("state", a.state), ("area", a.area)) if v})
+    q = urllib.parse.urlencode({k: v for k, v in (("state", a.state), ("area", a.area), ("feature", a.feature)) if v})
     for i in call(a.base, "/issues" + (f"?{q}" if q else ""))["items"]:
-        print(f"{i['id']:>4}  {i['state']:<9} {i['turn']:<7} area {i['area_id'] or '-':<4} {i['title']}" + (f"  {i['pr']}" if i["pr"] else ""))
+        print(f"{i['id']:>4}  {i['state']:<9} {i['turn']:<7} area {i['area_id'] or '-':<4} {i['feature'] or '(no feature)':<12} {i['title']}"
+              + (f"  {i['pr']}" if i["pr"] else ""))
 
 
 def issue(a) -> None:
     if a.id == "new":
-        print_issue(call(a.base, "/issues", {"title": a.do or "", "area_id": a.area}))
+        print_issue(call(a.base, "/issues", {"title": a.do or "", "area_id": a.area, "feature": a.feature or ""}))
         return
     if not a.do:
         print_issue(call(a.base, f"/issues/{a.id}"))
@@ -210,6 +215,8 @@ def issue(a) -> None:
     body = {"do": a.do}
     if a.do == "title":
         body["title"] = w[0]
+    elif a.do == "feature":
+        body["feature"] = w[0] if w else ""
     elif a.do == "move":
         body["area_id"] = int(w[0]) if w and w[0] != "none" else None
     elif a.do == "pr":
@@ -222,7 +229,7 @@ def issue(a) -> None:
 
 
 def print_issue(i: dict) -> None:
-    print(f"Issue {i['id']} · {i['state']} ({i['turn']}'s turn) · area {i['area_id'] or '-'}: {i['title']}")
+    print(f"Issue {i['id']} · {i['state']} ({i['turn']}'s turn) · {i.get('feature_path') or 'no Feature yet'} · area {i['area_id'] or '-'}: {i['title']}")
     if i.get("pr"):
         print(f"  PR {i['pr']}")
     if "may_merge" in i and not i["may_merge"]["ok"]:
@@ -248,7 +255,11 @@ def checks(a) -> None:
 
 
 def check(a) -> None:
-    if a.id == "new":
+    if a.id != "new" and not a.do:  # (one check, as it stands)
+        c = next((x for x in call(a.base, "/checks")["items"] if str(x["id"]) == a.id), None)
+        if c is None:
+            sys.exit(f"No check {a.id}.")
+    elif a.id == "new":
         body = {"title": a.do or "", "steps": a.step, "expect": a.expect, "path": a.path, "why": a.why, "area_id": a.area,
                 "devices": a.device or ["laptop"], "issues": [int(x) for x in a.issue], "minutes": a.minutes, "makes": a.makes}
         c = call(a.base, "/checks", body)
@@ -286,19 +297,30 @@ def questions(a) -> None:
 # ------------------------------------------------------------------ areas and items
 
 
+def features(a) -> None:
+    """The Product Taxonomy as this checkout has it (app/data/taxonomy.json): the keys `issue <id> feature` takes."""
+    for pa in json.loads((ROOT / "app" / "data" / "taxonomy.json").read_text())["areas"]:
+        print(f"{pa['key']:<10} {pa['title']} · {pa['what']}")
+        for f in pa["features"]:
+            print(f"    {f['key']:<12} {f['title']}")
+
+
 def areas(a) -> None:
     for it in call(a.base, "/areas")["items"]:
         print(f"{it['item']:>3}  {it['section']:<5} {it['title']}" + ("  (standing)" if it["standing"] else "") + (f"  next: {it['next_whose']}" if it["next_whose"] else ""))
         for x in it["areas"]:
-            print(f"       area {x['id']:>3}  {x['turn']:<7} {x['title']:<28} issues {','.join(map(str, x['issues'])) or '-'}  checks {','.join(map(str, x['checks'])) or '-'}"
+            print(f"       area {x['id']:>3}  {x.get('key') or '':<8} {x['turn']:<7} {x['title']:<28} issues {','.join(map(str, x['issues'])) or '-'}  checks {','.join(map(str, x['checks'])) or '-'}"
                   + (f"  locked by {x['locked_by']}" if x["locked_by"] else ""))
 
 
 def area(a) -> None:
     if a.do == "new":
         print(call(a.base, "/areas", {"do": "new", "item_id": int(a.id), "title": a.words[0]}))
-    else:
-        print(call(a.base, "/areas", {"do": a.do, "area_id": int(a.id), "owner": a.owner}))
+        return
+    area_id = int(a.id) if a.id.isdigit() else next((x["id"] for it in call(a.base, "/areas")["items"] for x in it["areas"] if x.get("key") == a.id), None)
+    if area_id is None:
+        sys.exit(f"No batch for “{a.id}” yet: it's made when an issue first gets one of its Features.")
+    print(call(a.base, "/areas", {"do": a.do, "area_id": area_id, "owner": a.owner}))
 
 
 def item(a) -> None:
@@ -408,11 +430,13 @@ def main() -> None:
     s = sub.add_parser("issues")
     s.add_argument("--state", default="")
     s.add_argument("--area", type=int, default=0)
+    s.add_argument("--feature", default="")
     s = sub.add_parser("issue")
     s.add_argument("id")
-    s.add_argument("do", nargs="?", help="title, move, start, pr, close, reopen or tell (after new: the title)")
+    s.add_argument("do", nargs="?", help="title, feature, move, start, pr, close, reopen or tell (after new: the title)")
     s.add_argument("words", nargs="*")
     s.add_argument("--area", type=int)
+    s.add_argument("--feature", help="new: the Feature it's about (feedback.py features)")
     s.add_argument("--same-as", type=int)
     s.add_argument("--to", default="senders", choices=["senders", "brett"])
     s = sub.add_parser("checks")
@@ -439,10 +463,11 @@ def main() -> None:
     s.add_argument("--doc", help="the mockup it asks about (its docs/ path, listed in docs/library.json): For you opens it")
     s = sub.add_parser("questions")
     s.add_argument("--all", action="store_true")
+    sub.add_parser("features")
     sub.add_parser("areas")
     s = sub.add_parser("area")
     s.add_argument("do", choices=["new", "lock", "unlock"])
-    s.add_argument("id", help="new: the item's id; lock, unlock: the area's")
+    s.add_argument("id", help="new: the item's id; lock, unlock: the batch's id, or a Product Area's key")
     s.add_argument("words", nargs="*")
     s.add_argument("--owner", default="main")
     s = sub.add_parser("item")
@@ -458,13 +483,13 @@ def main() -> None:
     s.add_argument("--pr", action="append", default=[])
     s.add_argument("--rollback", action="store_true")
     a = p.parse_args()
-    known = {"issue": ("title", "move", "start", "pr", "close", "reopen", "tell"), "check": ("version", "preflight", "retire", "link")}
+    known = {"issue": ("title", "feature", "move", "start", "pr", "close", "reopen", "tell"), "check": ("version", "preflight", "retire", "link")}
     if a.cmd in known and a.id != "new" and a.do and a.do not in known[a.cmd]:
         p.error(f"{a.cmd} {a.id}: one of {', '.join(known[a.cmd])}")
     if a.cmd == "item":
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
-     "check": check, "ask": ask, "questions": questions, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live}[a.cmd](a)
+     "check": check, "ask": ask, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live}[a.cmd](a)
 
 
 if __name__ == "__main__":

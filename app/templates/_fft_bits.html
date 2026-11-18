@@ -22,8 +22,8 @@
 {# One line of a conversation: who to whom, the words. A player's line waiting for your approval says so, with Approve. #}
 {% macro convo_line(x, sender="", senders=[]) -%}
 {% set from_sender = x.who == "sender" %}
-<div class="bub {{ 'claude' if x.who == 'claude' else 'them' if from_sender else 'you' }}" data-line="{{ x.id }}">
-  <small>{{ "Claude" if x.who == "claude" else (sender or "Its sender") if from_sender else ("You" if x.user_id == me_id else "An admin") }}{% if x.to == "sender" %}, to {{ sender or (senders | join(", ") if senders else "its senders") }}{% elif not from_sender and x.who != "claude" %}, to Claude{% endif %}</small>
+<div class="bub {{ 'claude' if x.who == 'claude' else 'askdnd' if x.who == 'askdnd' else 'them' if from_sender else 'you' }}" data-line="{{ x.id }}">
+  <small>{{ "askdnd" if x.who == "askdnd" else "Claude" if x.who == "claude" else (sender or "Its sender") if from_sender else ("You" if x.user_id == me_id else "An admin") }}{% if x.to == "sender" %}, to {{ sender or (senders | join(", ") if senders else "its senders") }}{% elif not from_sender and x.who not in ("claude", "askdnd") %}, to Claude{% endif %}</small>
   <p>{{ x.text }}</p>
   {% if from_sender and not x.approved %}<form method="post" action="/manage/feedback/lines/{{ x.id }}" class="row tight"><span class="note">Claude reads it once you approve it.</span><button class="btn small" type="submit" data-do="approve-line">Approve</button></form>{% endif %}
 </div>

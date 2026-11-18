@@ -33,7 +33,7 @@
       <h3 class="plabel" id="fft-missed-h">Claude missed · {{ st.missed | length }}</h3>
       <p class="note">Things Claude left half done. Its session won't end a turn while any are here; if one stays, tell Claude in a note.</p>
       <ul class="fft-missed-list">{% for g in st.missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/testing?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
-        <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_area": "in no area"}[g.kind] }}</span></li>{% endfor %}</ul>
+        <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet"}[g.kind] }}</span></li>{% endfor %}</ul>
     </section>{% endif %}
     <p class="note">The Roadmap's order, by item: drag items, and areas within an item. Claude takes the first area that's its turn.</p>
     <ol class="fft-items" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item=".fft-item" data-sort-handle=".fft-item-head .grip">
@@ -47,7 +47,9 @@
             {{ grip() }}<span class="fft-area-name"><b>{{ r.a.title }}</b><span class="note">{{ r.counts }}</span></span>
             {{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}
             <span class="note fft-area-note">{{ r.note }}{% if r.locked %} · in hand ({{ r.locked }}){% endif %}</span>
-            <a class="btn small" href="/manage/feedback?tab=open&amp;area={{ r.a.id }}" data-do="open-area">Open</a>
+            <a class="btn small" href="/manage/feedback?tab=open&amp;{{ 'pa=' ~ r.a.key if r.a.key else 'area=' ~ r.a.id }}" data-do="open-area">Open</a>
+            {% if r.features %}<span class="fft-feat-tags" data-features>{% for t, n in r.features %}<span class="chip">{{ t }}{{ count_pill(n) }}</span>{% endfor %}</span>{% endif %}
+            {% if not r.a.key %}{# (a Product Area's batch follows app/data/taxonomy.json: nothing to rename, merge, move or archive) #}
             {% call more_menu("More for " ~ r.a.title) %}
               <button type="button" data-show="fft-rename-{{ r.a.id }}">Rename…</button>
               <button type="button" data-show="fft-merge-{{ r.a.id }}">Merge into…</button>
@@ -60,6 +62,7 @@
               <label class="field"><span>Its issues and checks join</span><select name="into" class="ls-select" required>{% for o in st.all_areas if o.id != r.a.id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Merge</button></div></form>
             <form method="post" action="/manage/testing/areas/{{ r.a.id }}" class="composer fb-fold fft-area-form" id="fft-moveto-{{ r.a.id }}" hidden><input type="hidden" name="do" value="move">
               <label class="field"><span>To the item</span><select name="item" class="ls-select" required>{% for o in st.all_items if o.id != x.it.id %}<option value="{{ o.id }}">{{ o.title }}</option>{% endfor %}</select></label><div class="row tight"><button class="btn primary small" type="submit">Move</button></div></form>
+            {% endif %}
           </li>{% endfor %}
         </ul>{% else %}<p class="note fft-empty-item">Nothing open under it.</p>{% endif %}
       </li>

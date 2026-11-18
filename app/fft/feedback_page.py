@@ -5,9 +5,12 @@ admins only, as a Reader: the list, and the open thing beside it.
   it as a new issue, Same as… an issue already filed (R2), an idea, a question answered, or decline it with why; a
   corner card offers Undo for a minute.
 - **Open**, **Ready to try**, **Closed**: issues, each with the notes that became it, its conversation (to Claude, or to
-  everyone who sent its notes), Move to another area…, Same as…, Close with a reason… (its senders read the reason),
+  everyone who sent its notes), its Product Area › Feature with Change… (the Product Taxonomy, Nov 18), Same as…, Close with a reason… (its senders read the reason),
   Reopen. A fix a player's words prompted waits for **OK to merge** (R17).
 - **Ideas**: what was taken up as an idea, until the Roadmap takes it.
+
+The issue tabs group their rows under Product Area headings (Brett chose A on docs/mockups/product-taxonomy/): a chip per
+Product Area with open work narrows the list, and the Features of the one pressed hang under it as a tray.
 
 Every change goes through app/fft/rules.py."""
 
@@ -19,7 +22,7 @@ from sqlalchemy.orm import Session
 from app import files, web
 from app.auth import is_admin
 from app.db import get_db
-from app.fft import rules, views
+from app.fft import rules, taxonomy, views
 from app.fft.models import FftArea, FftCheckIssue, FftEvent, FftIdea, FftIssue, FftLine, FftNote, FftPicture, FftQuestion
 from app.templating import templates
 
@@ -87,7 +90,6 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
         q = q.where(FftIssue.from_player.is_(True))
     elif chip == "checks":
         q = q.where(or_(FftIssue.origin_try_id.isnot(None), FftIssue.id.in_(select(FftCheckIssue.issue_id))))
-    areas = {a.id: a.title for a in db.scalars(select(FftArea))}
     for i in db.scalars(q.limit(300)):
         turn, name = views.issue_turn(db, i)
         word, tone = views.turn_pill(turn, name)
@@ -95,19 +97,43 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
         bits = [views.ISSUE_WORD[i.state] if i.state != "closed" else views.CLOSED_WORD.get(i.close_reason or "", "Closed")]
         if i.reopened and i.state != "closed":
             bits.append("came back")
-        if i.area_id in areas:
-            bits.append(areas[i.area_id])
+        f = taxonomy.feature(i.feature)
+        if f:
+            bits.append(f.title)
         if who := senders(notes):
             bits.append(", ".join(who))
         elif i.origin_try_id:
             bits.append("from a check")
-        out.append({"key": f"i{i.id}", "title": i.title, "word": word, "tone": tone, "sub": " · ".join(bits)})
+        out.append({"key": f"i{i.id}", "title": i.title, "word": word, "tone": tone, "sub": " · ".join(bits),
+                    "pa": f.area if f else "", "feature": f.key if f else ""})
     if tab == "closed" and not chip and not area:  # (notes decided without an issue: declined, or a question answered)
         for n in db.scalars(select(FftNote).where(or_(FftNote.state == "declined", FftNote.filed_as == "answered")).order_by(FftNote.id.desc()).limit(200)):
             word, tone = views.turn_pill("closed")
             out.append({"key": f"n{n.id}", "title": views.title_of(n.text), "word": "Answered" if n.filed_as == "answered" else "Declined",
                         "tone": tone, "sub": f"{n.first_name} · {views.KIND_SAID.get(n.kind, '').lower()}"})
     return out
+
+
+def by_area(listed: list[dict], pa: str, feature: str) -> dict:
+    """The issue tabs by Product Area: a chip per area with rows (its count), the Features of the one picked (theirs),
+    and the rows it shows under headings in the list's order, those with no Feature yet first."""
+    chips = [{"a": a, "n": sum(1 for r in listed if r.get("pa") == a.key)} for a in taxonomy.areas()]
+    chips = [c for c in chips if c["n"]]
+    unsorted = sum(1 for r in listed if r["key"][:1] == "i" and not r.get("pa"))
+    picked = taxonomy.area(pa)
+    feats = [{"f": f, "n": sum(1 for r in listed if r.get("feature") == f.key)} for f in picked.features] if picked else []
+    shown = [r for r in listed if (not picked or r.get("pa") == pa) and (not feature or r.get("feature") == feature)]
+    groups = []
+    loose = [r for r in shown if r["key"][:1] != "i"]  # (notes decided without an issue, on Closed)
+    if not picked and (nofeat := [r for r in shown if r["key"][:1] == "i" and not r.get("pa")]):
+        groups.append({"key": "", "title": "No Feature yet", "rows": nofeat})
+    for a in taxonomy.areas():
+        if mine := [r for r in shown if r.get("pa") == a.key]:
+            groups.append({"key": a.key, "title": a.title, "rows": mine})
+    if loose:
+        groups.append({"key": "notes", "title": "Notes decided", "rows": loose})
+    return {"chips": chips, "unsorted": unsorted, "pa": picked, "feats": [x for x in feats if x["n"]], "feature": feature if picked else "",
+            "groups": groups, "rows": [r for g in groups for r in g["rows"]]}
 
 
 def last_line(db: Session, note: FftNote) -> int:
@@ -132,21 +158,29 @@ def issue_view(db: Session, issue: FftIssue, viewer_id: int | None) -> dict:
     asked = [views.question_view(q) for q in db.scalars(select(FftQuestion).where(FftQuestion.about == "issue", FftQuestion.about_id == issue.id)
                                                            .order_by(FftQuestion.id))]
     return {"i": issue, "turn": turn, "pill": views.turn_pill(turn, name), "sentence": views.issue_sentence(db, issue), "asked": asked,
-            "area": db.get(FftArea, issue.area_id) if issue.area_id else None, "notes": [note_view(db, n, viewer_id) for n in notes],
+            "area": db.get(FftArea, issue.area_id) if issue.area_id else None, "feature": taxonomy.feature(issue.feature),
+            "pa": taxonomy.area(taxonomy.feature(issue.feature).area) if taxonomy.feature(issue.feature) else None, "notes": [note_view(db, n, viewer_id) for n in notes],
             "senders": senders(notes), "lines": list(db.scalars(select(FftLine).where(FftLine.issue_id == issue.id).order_by(FftLine.id))),
             "may_merge": rules.may_merge(db, issue), "events": events, "listening": views.listening(db),
             "checks": list(db.scalars(select(FftCheckIssue.check_id).where(FftCheckIssue.issue_id == issue.id)))}
 
 
 @router.get("/manage/feedback")
-def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: int = 0, db: Session = Depends(get_db)):
+def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: int = 0, pa: str = "", feature: str = "",
+         db: Session = Depends(get_db)):
     user, denied = _admin(request)
     if denied:
         return denied
     n = counts(db)
     tab = tab if tab in dict(TABS) else ("approve" if n["approve"] else "open")
     chip = chip if chip in ("players", "checks") else ""
+    keyed = db.get(FftArea, area) if area else None
+    if keyed is not None and keyed.key:  # (a Product Area's batch, as Where it stands links it: its chip)
+        pa, area = keyed.key, 0
     listed = rows(db, tab, chip, area)
+    grouped = by_area(listed, pa, feature) if tab in ("open", "ready", "closed") else None
+    if grouped:
+        listed = grouped["rows"]
     pick = open if any(r["key"] == open for r in listed) or open[:1] in ("n", "i", "d") else (listed[0]["key"] if listed else "")
     me = views.person(db, user)
     picked = None
@@ -158,7 +192,7 @@ def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: 
         picked = {"kind": "idea", "d": idea, "notes": [note_view(db, x, me["id"]) for x in db.scalars(select(FftNote).where(FftNote.idea_id == idea.id))]}
     return templates.TemplateResponse(request, "fft_feedback.html", {
         "tab": tab, "tabs": TABS, "counts": n, "rows": listed, "pick": pick, "picked": picked, "chip": chip, "area": area,
-        "areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))),
+        "grouped": grouped, "taxonomy": taxonomy.areas(),
         "kind_said": views.KIND_SAID, "closed_word": views.CLOSED_WORD, "issue_word": views.ISSUE_WORD, "me_id": me["id"],
         "toast": request.session.pop("toast", None)})
 
@@ -246,7 +280,7 @@ def note_undo(request: Request, note_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/manage/feedback/issues/{issue_id:int}")
-def issue_change(request: Request, issue_id: int, do: str = Form(...), words: str = Form(""), to: str = Form(""), area: int = Form(0),
+def issue_change(request: Request, issue_id: int, do: str = Form(...), words: str = Form(""), to: str = Form(""), feature: str = Form(""),
                  reason: str = Form(""), same_as: int = Form(0), note: int = Form(0), seen: str = Form(""), db: Session = Depends(get_db)):
     user, denied = _admin(request)
     if denied:
@@ -254,12 +288,9 @@ def issue_change(request: Request, issue_id: int, do: str = Form(...), words: st
     i = db.get(FftIssue, issue_id) or _missing()
     me = views.person(db, user)
     actor = f"user:{me['id']}"
-    if do == "move":
-        if area and db.get(FftArea, area) is None:
-            raise HTTPException(400, "No such area.")
-        _act(lambda: rules.move_issue(db, actor, i, area or None))
-        a = db.get(FftArea, area) if area else None
-        _said(request, f"Moved to {a.title}" if a else "Out of its area")
+    if do == "feature":
+        _act(lambda: rules.set_feature(db, actor, i, feature))
+        _said(request, f"Now in {taxonomy.path(i.feature)}: Claude sees it")
     elif do == "close":
         other = db.get(FftIssue, same_as) if same_as else None
         if reason == "same" and other is None:
@@ -388,3 +419,17 @@ templates.env.globals["event_words"] = views.event_words
 templates.env.globals["talk"] = views.talk
 templates.env.filters["local_href"] = views.local_href
 templates.env.filters["note_title"] = views.title_of
+
+
+@router.get("/manage/product-areas")
+def product_areas(request: Request, db: Session = Depends(get_db)):
+    """Manage › askdnd › Product areas (docs/mockups/product-taxonomy/, screen 1): the Product Taxonomy as askdnd keeps
+    it (app/data/taxonomy.json), each Feature with its open issues, a press away from them on Feedback."""
+    _, denied = _admin(request)
+    if denied:
+        return denied
+    open_by = dict(db.execute(select(FftIssue.feature, func.count()).where(FftIssue.state != "closed").group_by(FftIssue.feature)).all())
+    cards = [{"a": a, "n": sum(open_by.get(f.key, 0) for f in a.features), "features": [(f, open_by.get(f.key, 0)) for f in a.features]}
+             for a in taxonomy.areas()]
+    return templates.TemplateResponse(request, "manage_product_areas.html", {
+        "cards": cards, "features": sum(len(a.features) for a in taxonomy.areas()), "loose": open_by.get("", 0)})
