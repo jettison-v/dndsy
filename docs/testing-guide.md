@@ -33,6 +33,13 @@ Mac Mini's own runs are `mac_mini`).
    it takes Brett there, the card says *in a test campaign*, and the round ends back in his own campaign. Anything that
    can't be deleted afterwards (a homebrew item, today) must never be made in the table's campaign.
 10. **One check per thing tried**, in an area (`--area`).
+11. **Every check can end in ✓ Passed** (Brett on check 42, Nov 17: "This is the test case, it should pass"). A check
+    about Can't try…, Change result… or anything else that marks a check stops before the mark (open the reasons,
+    look, close it), or tries it on a check added for that, never on itself.
+12. **A check points at something that's there** (check 46, Nov 17: "a note a player sent" when none was open). Before
+    adding it, look that what its steps need exists where Brett tries it (a player's note, an issue, a spell), and give
+    its `path` straight to it (`/manage/feedback?tab=ready&open=i33`), not "find one"; and never at something another
+    check of the same round will close (check 13, Nov 18).
 
 ## Example
 

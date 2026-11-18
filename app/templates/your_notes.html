@@ -48,7 +48,7 @@
         <div class="nt-quote">{{ n.text }}</div>
         {% for m in n.earlier if m.mine %}<div class="fb-msg you"><small>You added</small>{{ m.text }}</div>{% endfor %}</section>
       <section class="nt-part"><h3 class="divider">What happened</h3>
-        {% for m in n.earlier if not m.mine %}<div class="fb-msg claude"><small>{{ m.who }}</small>{{ m.text }}</div>{% endfor %}
+        {% for m in n.earlier if not m.mine %}<div class="fb-msg claude"><small>{{ m.who }}</small>{{ m.text | linked }}</div>{% endfor %}
         <div class="nt-answer st-{{ n.dot }}{{ ' st-open' if n.open }}"><small>{{ n.label }}{% if n.answer %} · {{ n.answer.who }}{% endif %}</small><span class="nt-said">{{ n.answer.text if n.answer else n.says }}</span>
           {%- if n.landed %}<a class="nt-landed" href="{{ n.landed.href }}" data-no-peek>{{ n.landed.text }} →</a>{% endif %}</div></section>
     </article>
@@ -87,7 +87,7 @@
         <div class="bub you"><small>You</small><p>{{ n.text }}</p>
           {% if n.pics %}<span class="fft-thumbs">{% for p in n.pics %}<img class="fft-pic" src="/your-notes/pictures/{{ p.id }}" alt="{{ 'The page as you sent this' if p.kind == 'page' else 'Your picture' }}" loading="lazy">{% endfor %}</span>{% endif %}</div>
         {% for x in n.lines %}
-        <div class="bub {{ 'you' if x.who == 'sender' else 'claude' if x.who == 'claude' else 'them' }}" data-line="{{ x.id }}"><small>{{ "You" if x.who == "sender" else "Claude" if x.who == "claude" else "An admin" }}</small><p>{{ x.text }}</p>
+        <div class="bub {{ 'you' if x.who == 'sender' else 'claude' if x.who == 'claude' else 'them' }}" data-line="{{ x.id }}"><small>{{ "You" if x.who == "sender" else "Claude" if x.who == "claude" else "An admin" }} · <time datetime="{{ x.created_at.isoformat() }}" data-clock="when">{{ x.created_at | ago }}</time></small><p>{{ x.text if x.who == "sender" else x.text | linked }}</p>
           {% if n.line_pics.get(x.id) %}<span class="fft-thumbs"><img class="fft-pic" src="/your-notes/pictures/{{ n.line_pics[x.id].id }}" alt="Your picture" loading="lazy"></span>{% endif %}
           {% if x.who == "sender" and not x.approved %}<span class="note">An admin reads it first, then Claude.</span>{% endif %}</div>
         {% endfor %}

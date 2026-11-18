@@ -374,3 +374,18 @@ def test_found_on_a_check_lists_what_a_checks_try_turned_up(admin, db):
     page = admin.get("/manage/feedback?tab=open&chip=checks").text
     assert "Found on a check" in page and f'data-row="i{found.id}"' in page and f'data-row="i{written_for.id}"' not in page
     assert db.get(FftCheck, c.id)  # (still there: it just isn't what the chip lists)
+
+
+def test_claudes_addresses_are_links_a_senders_are_not(admin, sender, db):
+    """Brett's note 105 (Nov 17), carried into Found, Fixed, Tried: Claude's words show their https:// addresses as
+    links, in Feedback and on Notes you sent; a sender's words never become links."""
+    send(sender, text="See https://example.com/mine please.")
+    n = _note(db)
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})
+    issue = db.get(FftIssue, n.issue_id)
+    rules.add_line(db, "claude", "The mockup: https://claude.ai/artifact/abc.", issue=issue, to="sender")
+    db.flush()
+    page = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    assert '<a href="https://claude.ai/artifact/abc" target="_blank" rel="noopener">' in page
+    assert 'href="https://example.com/mine' not in page  # (the sender's own words stay words)
+    assert '<a href="https://claude.ai/artifact/abc"' in sender.get("/your-notes?tab=askdnd").text
