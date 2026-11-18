@@ -92,10 +92,6 @@ def attach_pictures(db: Session, stored: list[tuple[str, str, str]], *, note_id:
         db.add(FftPicture(note_id=note_id, line_id=line_id, kind=kind, key=full, safe_key=safe))
 
 
-def keep_pictures(db: Session, pics: list[dict], *, note_id: int | None = None, line_id: int | None = None, safe_only: bool = False) -> None:
-    attach_pictures(db, store_pictures(db, pics, safe_only), note_id=note_id, line_id=line_id)
-
-
 @router.post("/feedback")
 def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     user = real(request)

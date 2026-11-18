@@ -307,6 +307,10 @@ def event_words(ev) -> str:
         return f"Check {d.get('check')}: {ev.kind[4:]} on the {d.get('device')} ({d.get('where')})"
     if ev.kind == "question_answered":
         return f"Brett answered question {ev.thing_id}"
+    if ev.kind == "line_added":  # (its "to" is who it's for, never a state: the review of PR #417)
+        who = "Claude" if ev.actor == "claude" else "askdnd" if ev.actor == "askdnd" else "An admin" if ev.actor.startswith("user:") else "Someone"
+        to = {"sender": ", to its senders", "claude": ", to Claude"}.get(d.get("to") or "", "")
+        return f"{who} wrote on {ev.thing} {ev.thing_id}{to}"
     if ev.kind == "issue_feature":
         return f"Issue {ev.thing_id} is about {taxonomy.path(d.get('feature', '')) or d.get('feature')}" + (f" (was {taxonomy.path(d['was'])})" if d.get("was") else "")
     if "to" in d:

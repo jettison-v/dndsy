@@ -268,9 +268,10 @@ def add_to(request: Request, note_id: int, text: str = Form(""), pics: list[Uplo
     if not text.strip() and not added:
         raise HTTPException(400, "Write what you'd add first.")
     admin = note.role == "admin"
+    stored = sending.store_pictures(db, added)  # (uploaded before the line's event: T8, the review of PR #417)
     line = rules.add_line(db, f"user:{me_id}", text.strip() or "(a picture)", note=note, who="sender", user_id=me_id,
                           approved=admin or note.state == "waiting")  # (on a waiting note it waits with the note)
-    sending.keep_pictures(db, added, line_id=line.id)
+    sending.attach_pictures(db, stored, line_id=line.id)
     note.seen = note.told = fft_views.marker(db, note, me_id)
     db.commit()
     request.session["toast"] = web.notice("Added: it's with Claude" if admin else "Added: an admin reads it first")

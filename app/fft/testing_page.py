@@ -663,6 +663,7 @@ def wrong(request: Request, check_id: int, body=web.JsonBody, db: Session = Depe
     me = views.person(db, request.session.get("real_user") or user)
     actor = f"user:{me['id']}"
     found = rules.Found(issue_id=issue_id, title=views.title_of(text, 120), blocking=blocking, stops_round=stops and blocking)
+    stored = sending.store_pictures(db, pics)  # (uploaded before any event is written: T8, the review of PR #417)
     t = None
     try:
         prior = db.get(FftTry, body["try"]) if type(body.get("try")) is int else None
@@ -683,7 +684,7 @@ def wrong(request: Request, check_id: int, body=web.JsonBody, db: Session = Depe
                                    html=str(body.get("html") or "")[:sending.MAX_HTML], try_id=t.id if t else None)
     except rules.RuleError as e:
         raise HTTPException(409 if e.code == "stale" else 400, e.words) from e
-    sending.keep_pictures(db, pics, note_id=note.id)
+    sending.attach_pictures(db, stored, note_id=note.id)
     db.commit()
     return JSONResponse({"ok": True, "try": t.id if t else None, "issue": issue.id, "failed": bool(t),
                          "said": ("Failed: sent to Claude" if t and not prior else "Added to this try" if t else "Sent on its own: the check stays to try")})

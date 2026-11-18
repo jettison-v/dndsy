@@ -256,3 +256,18 @@ def test_a_question_sent_to_claude_is_a_gap_until_answered_and_its_sender_reads_
     assert n.filed_as == "answered" and line.to == "sender" and line.text == "Press End round on its card."
     assert ("question", n.id) not in {(g["kind"], g["id"]) for g in views.gaps(db)}
     assert api.post(f"/api/fft/notes/{n.id}", headers=_as(CLAUDE), json={"do": "answer", "words": "Again."}).status_code == 409
+
+
+def test_a_line_reads_as_a_line_and_a_rename_is_recorded(api, db):
+    """The review of PR #417: a line's event read "Issue 12: None → " in Claude's inbox; renaming through the API
+    left no event, so open pages never heard of it and History didn't show it."""
+    from app.fft import views
+
+    issue = rules.new_issue(db, "claude", "Coins are off")
+    rules.add_line(db, "user:1", "Sent to Claude", issue=issue, to="claude")
+    db.flush()
+    ev = db.scalar(select(FftEvent).where(FftEvent.kind == "line_added").order_by(FftEvent.id.desc()))
+    assert views.event_words(ev) == f"An admin wrote on issue {issue.id}, to Claude"
+    r = api.post(f"/api/fft/issues/{issue.id}", headers=_as(CLAUDE), json={"do": "title", "title": "Coins add up wrong"})
+    assert r.status_code == 200 and issue.title == "Coins add up wrong"
+    assert db.scalar(select(FftEvent).where(FftEvent.kind == "issue_title", FftEvent.thing_id == issue.id)) is not None

@@ -111,8 +111,14 @@ def _event(e: dict) -> str:
 # ------------------------------------------------------------------ the loop
 
 
+def _area_of(listener: str) -> str:
+    """An area's own listener (area-<id>) hears only that area (T8; the review of PR #417: it heard everything)."""
+    tail = listener.removeprefix("area-")
+    return f"&area={tail}" if listener.startswith("area-") and tail.isdigit() else ""
+
+
 def inbox(a) -> None:
-    got = call(a.base, f"/inbox?peek={int(a.peek)}&listener={urllib.parse.quote(a.listener)}")
+    got = call(a.base, f"/inbox?peek={int(a.peek)}&listener={urllib.parse.quote(a.listener)}{_area_of(a.listener)}")
     if not got["items"]:
         print("Nothing new.")
     for e in got["items"]:
@@ -122,7 +128,7 @@ def inbox(a) -> None:
 def _peek(base: str, listener: str) -> dict | None:
     """A read that rides out a deploy or a dropped connection (None), but ends the script on an answer that won't change
     by asking again: a wrong FEEDBACK_KEY (404) or a refusal, so `wait` never sits deaf for hours."""
-    req = urllib.request.Request(base.rstrip("/") + "/api/fft/inbox?peek=1&listener=" + urllib.parse.quote(listener),
+    req = urllib.request.Request(base.rstrip("/") + "/api/fft/inbox?peek=1&listener=" + urllib.parse.quote(listener) + _area_of(listener),
                                  headers={"X-Fft-Key": key(), "Accept": "application/json", "User-Agent": "askdnd-feedback-script"})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:

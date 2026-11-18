@@ -451,3 +451,70 @@ def test_every_state_change_writes_its_event(db):
     assert kinds == ["note_sent", "issue_new", "note_filed", "issue_fixing"]
     assert db.scalar(select(FftNote).where(FftNote.id == n.id)).state == "filed"
     assert db.scalar(select(FftRound)) is None and db.scalar(select(FftCheck)) is None
+
+
+# ------------------------------------------------------------------ the review of PR #417 (Nov 18)
+
+
+def test_correcting_a_try_puts_back_only_what_that_try_changed(db):
+    """A try named an issue that was already to fix (still happening): correcting it to passed must not mark that
+    issue fixed, let alone close it as working. One the try did move (ready → to fix) goes back to ready."""
+    issue, check = _issue_with_check(db)
+    rules.start_fixing(db, "claude", issue)
+    issue.state = "to_fix"  # (never fixed: as a carried-over failed check, or the Mac Mini's, names it)
+    db.flush()
+    t = rules.record_try(db, "user:1", check, result="failed", found=[Found(issue_id=issue.id)])
+    assert issue.state == "to_fix"
+    rules.correct_try(db, "user:1", t, "passed", "I misread it")
+    assert issue.state == "to_fix" and issue.close_reason != "works"  # (it was to fix before the try: it stays)
+
+    live, check2 = _issue_with_check(db, title="Another")
+    _live(db, live)
+    t2 = rules.record_try(db, "user:1", check2, result="failed", found=[Found(issue_id=live.id)])
+    assert live.state == "to_fix"  # (the try saw it again)
+    rules.correct_try(db, "user:1", t2, "untried", "Pressed the wrong one")
+    assert live.state == "ready"  # (what this try changed, put back)
+
+
+def test_undo_after_same_as_keeps_the_issue_that_was_there(db):
+    """Undo within a minute of joining a note to an issue that existed before takes the note back out, and leaves the
+    issue, its checks and its tries as they were; what the join set (a player's issue, waiting for Brett's OK) goes back."""
+    issue, check = _issue_with_check(db)
+    rules.start_fixing(db, "claude", issue)
+    issue.pr = "https://github.com/x/y/pull/1"
+    db.flush()
+    n = _player_note(db)
+    rules.join_issue(db, "user:1", n, issue)
+    assert issue.from_player and issue.state == "merge_ok"
+    rules.undo_decision(db, "user:1", n)
+    db.flush()
+    assert db.get(FftIssue, issue.id) is not None  # (never deleted)
+    assert not issue.from_player and issue.state == "fixing" and n.state == "waiting"
+
+
+def test_closing_a_players_issue_as_the_same_as_another_waits_for_bretts_ok_on_it(db):
+    """R17 through Close as the same: a player's words now share the other issue, so its fix waits for Brett's OK."""
+    theirs = rules.new_issue(db, "claude", "Coins are off")
+    theirs.from_player = True
+    ours, _ = _issue_with_check(db, title="Coins total")
+    rules.start_fixing(db, "claude", ours)
+    ours.pr = "https://github.com/x/y/pull/2"
+    db.flush()
+    rules.close(db, "claude", theirs, "same", same_as=ours)
+    assert ours.from_player and ours.state == "merge_ok"
+
+
+def test_unjoin_makes_a_recorded_issue_in_the_same_feature(db):
+    issue = rules.new_issue(db, "claude", "Coins are off", feature="hp")
+    a, b = _player_note(db), _player_note(db, text="Rest wraps.")
+    rules.join_issue(db, "user:1", a, issue)
+    rules.join_issue(db, "user:1", b, issue)
+    made = rules.unjoin(db, "user:1", b)
+    kinds = set(db.scalars(select(FftEvent.kind).where(FftEvent.thing == "issue", FftEvent.thing_id == made.id)))
+    assert "issue_new" in kinds and made.feature == "hp" and made.area_id == issue.area_id
+
+
+def test_an_areas_own_listener_hears_only_its_area(db):
+    li = rules.listener(db, "area-7")
+    assert li.area_id is None
+    assert rules.listener(db, "area-7", area_id=7).area_id == 7  # (one made before it said its area takes it now)

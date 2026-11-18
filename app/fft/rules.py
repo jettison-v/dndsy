@@ -145,12 +145,15 @@ def join_issue(db: Session, actor: str, note: FftNote, issue: FftIssue) -> FftIs
     if issue.state == "closed" and issue.close_reason == "same" and issue.same_as_id:
         issue = db.get(FftIssue, issue.same_as_id)
     note.state, note.filed_as, note.issue_id = "filed", "issue", issue.id
+    made_player = held = False
     if note.role != "admin":
-        issue.from_player = True
+        made_player, issue.from_player = not issue.from_player, True
         if issue.state == "fixing" and issue.pr:  # (R17: a fix a player's words now share waits for Brett's OK too)
             _set_issue(db, actor, issue, "merge_ok", "issue_merge_ok", pr=issue.pr)
+            held = True
     _approve_lines(db, note)
-    _event(db, actor, "note_joined", "note", note.id, issue=issue.id, area_id=issue.area_id)
+    _event(db, actor, "note_joined", "note", note.id, issue=issue.id, area_id=issue.area_id,
+           **({"made_player": True} if made_player else {}), **({"held": True} if held else {}))  # (what Undo puts back)
     return issue
 
 
@@ -158,12 +161,11 @@ def unjoin(db: Session, actor: str, note: FftNote) -> FftIssue:
     """A note joined by mistake leaves its issue and becomes an issue of its own."""
     if note.filed_as != "issue" or note.issue_id is None:
         raise RuleError("bad", "It isn't joined to an issue.")
-    was = note.issue_id
-    issue = FftIssue(title=_first_words(note.text)[:120], from_player=note.role != "admin")
-    db.add(issue)
-    db.flush()
+    was = db.get(FftIssue, note.issue_id)
+    issue = new_issue(db, actor, _first_words(note.text)[:120], feature=was.feature if was else "")  # (its own issue_new, and
+    issue.from_player = note.role != "admin"                                                      # the Feature it came from)
     note.issue_id = issue.id
-    _event(db, actor, "note_unjoined", "note", note.id, was=was, issue=issue.id)
+    _event(db, actor, "note_unjoined", "note", note.id, was=was.id if was else None, issue=issue.id)
     return issue
 
 
@@ -208,11 +210,18 @@ def undo_decision(db: Session, actor: str, note: FftNote) -> None:
         raise RuleError("late", "It's too late to undo that; change it from its page.")
     if note.filed_as == "issue" and note.issue_id:
         issue = db.get(FftIssue, note.issue_id)
-        others = db.scalar(select(func.count()).select_from(FftNote).where(FftNote.issue_id == issue.id, FftNote.id != note.id))
-        later = db.scalar(select(func.count()).select_from(FftEvent).where(FftEvent.thing == "issue", FftEvent.thing_id == issue.id,
-                                                                           FftEvent.kind != "issue_new"))
-        if not others and not later:
-            db.delete(issue)
+        others = list(db.scalars(select(FftNote).where(FftNote.issue_id == issue.id, FftNote.id != note.id)))
+        if last.kind == "note_filed":  # (an issue this note made: gone if nothing else came to it)
+            later = db.scalar(select(func.count()).select_from(FftEvent).where(FftEvent.thing == "issue", FftEvent.thing_id == issue.id,
+                                                                               FftEvent.kind != "issue_new"))
+            if not others and not later:
+                db.delete(issue)
+        else:  # (joined to an issue that was there before: it stays, as it was before the join; the review of PR #417)
+            said = last.data or {}
+            if said.get("made_player"):
+                issue.from_player = False
+            if said.get("held") and issue.state == "merge_ok":
+                _set_issue(db, actor, issue, "fixing", "issue_unmarked", undone=note.id)
     note.state, note.filed_as, note.issue_id, note.idea_id = "waiting", "", None, None
     _event(db, actor, "note_undone", "note", note.id)
 
@@ -268,6 +277,14 @@ def new_issue(db: Session, actor: str, title: str, area_id: int | None = None, o
     if feature:
         set_feature(db, actor, issue, feature)
     return issue
+
+
+def retitle(db: Session, actor: str, issue: FftIssue, title: str) -> None:
+    """A new title, with its event (the page's Rename… and Claude's do=title alike; the review of PR #417)."""
+    if not title.strip():
+        raise RuleError("bad", "Give it a title.")
+    issue.title = title.strip()[:120]
+    _event(db, actor, "issue_title", "issue", issue.id, area_id=issue.area_id)
 
 
 def set_feature(db: Session, actor: str, issue: FftIssue, key: str) -> None:
@@ -376,6 +393,10 @@ def close(db: Session, actor: str, issue: FftIssue, reason: str, words: str = ""
         if same_as is None or same_as.id == issue.id:
             raise RuleError("bad", "Same as which issue?")
         issue.same_as_id = same_as.id
+        if issue.from_player and not same_as.from_player:  # (R17, as join_issue: a fix a player's words now share waits
+            same_as.from_player = True                        # for Brett's OK; the review of PR #417)
+            if same_as.state == "fixing" and same_as.pr:
+                _set_issue(db, actor, same_as, "merge_ok", "issue_merge_ok", pr=same_as.pr)
         for note in db.scalars(select(FftNote).where(FftNote.issue_id == issue.id)):
             note.issue_id = same_as.id
         _relink(db, issue, same_as)  # (R8: a check this one held is now held by the other, never released early)
@@ -383,14 +404,15 @@ def close(db: Session, actor: str, issue: FftIssue, reason: str, words: str = ""
     _set_issue(db, actor, issue, "closed", "issue_closed", reason=reason)
 
 
-def reopen(db: Session, actor: str, issue: FftIssue) -> None:
-    """A closed issue came back: Claude's to fix again, and it says so."""
+def reopen(db: Session, actor: str, issue: FftIssue, by_try: int | None = None) -> None:
+    """A closed issue came back: Claude's to fix again, and it says so (`by_try`: the try that saw it again, so a
+    correction of that try puts back only what it changed)."""
     if issue.state != "closed":
         raise RuleError("stale", "It isn't closed.")
     issue.reopened += 1
     issue.close_reason = issue.close_words = ""
     issue.fixed_in, issue.confirm_by, issue.confirm_since = "", None, None
-    _set_issue(db, actor, issue, "to_fix", "issue_reopened")
+    _set_issue(db, actor, issue, "to_fix", "issue_reopened", **({"by_try": by_try} if by_try else {}))
 
 
 def confirm_due(db: Session, actor: str = "askdnd") -> list[int]:
@@ -545,20 +567,22 @@ def record_try(db: Session, actor: str, check: FftCheck, *, result: str, device:
     return t
 
 
-def still_happening(db: Session, actor: str, issue: FftIssue, check: FftCheck | None = None) -> None:
-    """A fixed issue seen again: Claude's to fix (a closed one reopens, saying it came back)."""
+def still_happening(db: Session, actor: str, issue: FftIssue, check: FftCheck | None = None, by_try: int | None = None) -> None:
+    """A fixed issue seen again: Claude's to fix (a closed one reopens, saying it came back). `by_try`: the try that saw
+    it, kept on the event so correcting that try undoes only this (the review of PR #417)."""
     if issue.state == "closed":
-        reopen(db, actor, issue)
+        reopen(db, actor, issue, by_try=by_try)
     elif issue.state in ("ready", "merge_ok", "fixing"):
         issue.fixed_in, issue.confirm_by, issue.confirm_since = "", None, None
-        _set_issue(db, actor, issue, "to_fix", "issue_still_happening", check=check.id if check else None)
+        _set_issue(db, actor, issue, "to_fix", "issue_still_happening", check=check.id if check else None,
+                   **({"by_try": by_try} if by_try else {}))
 
 
 def _name_issue(db: Session, actor: str, check: FftCheck, t: FftTry, f: Found) -> FftIssue:
     if f.issue_id:
         issue = db.get(FftIssue, f.issue_id)
         how = "still"
-        still_happening(db, actor, issue, check)
+        still_happening(db, actor, issue, check, by_try=t.id)
     else:
         known = db.scalar(select(FftIssue.feature).join(FftCheckIssue, FftCheckIssue.issue_id == FftIssue.id)
                           .where(FftCheckIssue.check_id == check.id, FftIssue.feature != "").order_by(FftIssue.id))
@@ -677,12 +701,15 @@ def correct_try(db: Session, actor: str, t: FftTry, result: str, why: str, user_
             # (withdrawn, or kept for its other uses: either way this check no longer holds it, R6)
             db.execute(FftCheckIssue.__table__.delete().where(FftCheckIssue.check_id == check.id, FftCheckIssue.issue_id == issue.id))
         elif ti.how == "still" and issue.state == "to_fix":
+            # (only what this try changed goes back: an issue already to fix when it was named stays to fix)
             prior = db.scalar(select(FftEvent.data).where(FftEvent.thing == "issue", FftEvent.thing_id == issue.id,
-                                                          FftEvent.kind.in_(("issue_still_happening", "issue_reopened"))).order_by(FftEvent.id.desc()))
-            back = (prior or {}).get("from", "ready")
-            if back == "closed":
-                issue.close_reason = "works"
-            _set_issue(db, actor, issue, back if back in ISSUE_STATES else "ready", "issue_unmarked", by_correction=new.id)
+                                                          FftEvent.kind.in_(("issue_still_happening", "issue_reopened")),
+                                                          FftEvent.data["by_try"].as_integer() == t.id).order_by(FftEvent.id.desc()))
+            back = (prior or {}).get("from")
+            if back in ISSUE_STATES and back != "to_fix":
+                if back == "closed":
+                    issue.close_reason = "works"
+                _set_issue(db, actor, issue, back, "issue_unmarked", by_correction=new.id)
     if t.result == "passed":  # (a pass undone: what it closed as working is ready to try again, R5 and R6)
         for ev in db.scalars(select(FftEvent).where(FftEvent.kind == "issue_closed", FftEvent.thing == "issue",
                                                     FftEvent.data["by_try"].as_integer() == t.id)):
@@ -991,6 +1018,8 @@ def listener(db: Session, name: str, area_id: int | None = None) -> FftListener:
         li = FftListener(name=name[:60], area_id=area_id)
         db.add(li)
         db.flush()
+    elif area_id is not None and li.area_id != area_id:  # (one made before it said its area hears only that area now)
+        li.area_id = area_id
     return li
 
 

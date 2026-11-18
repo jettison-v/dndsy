@@ -125,3 +125,49 @@ def test_migrations_go_down_and_up_and_match_models(db_engine):
     finally:
         subprocess.run(["alembic", "downgrade", "base"], env=env, capture_output=True)
         Base.metadata.create_all(db_engine)
+
+
+CARRY = """
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine, text
+import os
+
+cfg = Config("alembic.ini")
+command.downgrade(cfg, "base")
+command.upgrade(cfg, "b4d6f8a0c2e3")  # (main before Found, Fixed, Tried: what askdnd.ai runs)
+engine = create_engine(os.environ["DATABASE_URL"])
+with engine.begin() as c:
+    c.execute(text("INSERT INTO areas (title, place, fixing) VALUES ('Manage', 1, false)"))
+    c.execute(text("INSERT INTO feedback (sender, text, status, kind) VALUES ('Dev (admin)', 'Rest wraps on a phone.', 'new', 'broken')"))
+    c.execute(text("INSERT INTO feedback (sender, text, status, kind) VALUES ('Dev (admin)', 'A dice tray.', 'planned', 'idea')"))
+engine.dispose()
+command.upgrade(cfg, "heads")
+engine = create_engine(os.environ["DATABASE_URL"])
+with engine.connect() as c:
+    print("CARRIED", c.execute(text("SELECT count(*) FROM fft_issues")).scalar(), c.execute(text("SELECT count(*) FROM fft_ideas")).scalar(),
+          c.execute(text("SELECT count(*) FROM fft_areas WHERE title = 'Manage'")).scalar())
+engine.dispose()
+command.downgrade(cfg, "base")
+"""
+
+
+def test_open_feedback_on_askdnd_ai_carries_over_through_every_migration(db_engine):
+    """The review of PR #417 (Nov 18): the carry-over ran before the columns it writes existed, so a database with open
+    Feedback, as askdnd.ai has, failed the deploy, while the stairs above, on an empty database, passed. From main's
+    last revision with an open note, an idea and an area, every migration runs and they arrive in the new tool."""
+    import os
+
+    url = db_engine.url.render_as_string(hide_password=False)
+    env = {"DATABASE_URL": url, "PATH": os.environ["PATH"]}
+    from app.db import Base
+    from tests.conftest import drop_everything
+
+    drop_everything(db_engine)
+    try:
+        run = subprocess.run([sys.executable, "-c", CARRY], env=env, capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr[-4000:]
+        assert "CARRIED 1 1 1" in run.stdout, run.stdout[-2000:]
+    finally:
+        subprocess.run(["alembic", "downgrade", "base"], env=env, capture_output=True)
+        Base.metadata.create_all(db_engine)

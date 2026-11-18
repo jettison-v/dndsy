@@ -391,10 +391,10 @@ def issue_change(request: Request, issue_id: int, do: str = Form(...), words: st
         _said(request, "Unjoined: it's an issue of its own")
         return _back(request, f"i{made.id}")
     elif do == "title":
-        if not words.strip():
-            raise HTTPException(400, "Give it a title.")
-        i.title = words.strip()[:120]
-        rules._event(db, actor, "issue_title", "issue", i.id, area_id=i.area_id)
+        try:
+            rules.retitle(db, actor, i, words)
+        except rules.RuleError as e:
+            raise HTTPException(400, e.words) from e
         _said(request, "Renamed")
     else:
         raise HTTPException(400)

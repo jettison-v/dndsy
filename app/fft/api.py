@@ -279,7 +279,7 @@ def issue_change(issue_id: int, body=web.JsonBody, x_fft_key: str | None = Heade
     do = _str(body, "do", 20, need=True)
     try:
         if do == "title":
-            i.title = _str(body, "title", 120, need=True).strip()
+            rules.retitle(db, actor.name, i, _str(body, "title", 120, need=True))
         elif do == "feature":
             rules.set_feature(db, actor.name, i, _str(body, "feature", 20, need=True))
         elif do == "move":
@@ -456,6 +456,10 @@ def relay(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: S
     """A note sent on staging, relayed here: it always waits for an admin (T6), whoever it says sent it."""
     keys.require(db, x_fft_key, "relay")
     body = body if isinstance(body, dict) else {}
+    raw = body.get("pictures") or []
+    if not isinstance(raw, list) or len(raw) > sending.MAX_PICS or not all(sending.image(x) for x in raw):
+        raise HTTPException(400, f"pictures: up to {sending.MAX_PICS} safe copies as data: URLs")
+    stored = sending.store_pictures(db, [{"full": x, "safe": x, "kind": "added"} for x in raw], safe_only=True)  # (before the event: T8)
     try:
         n = rules.send_note(db, user_id=None, first_name=_str(body, "first_name", 60) or "Someone", role=_str(body, "role", 12) or "member",
                             kind=_str(body, "kind", 10), text=_str(body, "text", need=True), url=_str(body, "url", 1000), page=_str(body, "page", 120),
@@ -463,10 +467,7 @@ def relay(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: S
                             staging=True)
     except rules.RuleError as e:
         _rule(e)
-    raw = body.get("pictures") or []
-    if not isinstance(raw, list) or len(raw) > sending.MAX_PICS or not all(sending.image(x) for x in raw):
-        raise HTTPException(400, f"pictures: up to {sending.MAX_PICS} safe copies as data: URLs")
-    sending.keep_pictures(db, [{"full": x, "safe": x, "kind": "added"} for x in raw], note_id=n.id, safe_only=True)
+    sending.attach_pictures(db, stored, note_id=n.id)
     db.commit()
     return _ok({"id": n.id, "waits": n.state == "waiting"})
 
