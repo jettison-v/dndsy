@@ -310,3 +310,67 @@ def test_a_page_with_a_nul_character_still_sends(admin, db):
     assert send(admin, html="<main>Bag\u0000 of Holding</main>", context={"page": "Cole\u0000"}).status_code == 200
     n = _note(db)
     assert n.html == "<main>Bag of Holding</main>" and n.context["page"] == "Cole"
+
+
+# ------------------------------------------------------------------ the reader in sections (Brett's pick A, issue 4)
+
+
+def test_an_issue_reads_in_sections_its_new_lines_marked_until_opened(admin, sender, db):
+    """Issues 4, 31, 32 (Brett's round, Nov 18): the reader "all just blends together". An issue reads in sections, Where
+    it stands, What was found, Conversation, then History folded; a note's words come before its pictures, in a part of
+    their own; each line says when, and what was said since you last opened the issue is marked New (never your own
+    words), until you open it."""
+    from datetime import timedelta
+
+    from app.fft.models import FftSeen
+    from app.models import User
+
+    send(sender)
+    n = _note(db)
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})
+    issue = db.get(FftIssue, n.issue_id)
+    me = db.scalar(select(User).where(User.email == "admin@example.com"))
+    if me is None:
+        me = User(email="admin@example.com", name="Dev Admin")
+        db.add(me)
+        db.flush()
+    old = rules.add_line(db, "claude", "Seen this one already.", issue=issue)
+    old.created_at = rules.now() - timedelta(hours=3)
+    seen = db.scalar(select(FftSeen).where(FftSeen.user_id == me.id, FftSeen.issue_id == issue.id))  # (approving it opened it)
+    if seen is None:
+        seen = FftSeen(user_id=me.id, issue_id=issue.id, at=rules.now())
+        db.add(seen)
+    seen.at = rules.now() - timedelta(hours=1)
+    newer = rules.add_line(db, "claude", "Something new since then.", issue=issue)
+    mine = rules.add_line(db, "user:1", "My own words.", issue=issue, user_id=me.id)
+    db.flush()
+    page = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    order = [page.index(f'data-sec="{k}"') for k in ("stands", "found", "talk", "history")]
+    assert order == sorted(order)  # (in that order)
+    report = page[page.index(f'data-report="{n.id}"'):]
+    assert report.index('class="fft-words"') < report.index('class="fft-thumbs"')  # (words first, its pictures apart)
+    assert f'data-line="{newer.id}" data-new' in page and f'data-line="{old.id}" data-new' not in page
+    assert f'data-line="{mine.id}" data-new' not in page  # (never your own words)
+    assert 'data-clock="when"' in page  # (each line says when)
+    again = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
+    assert "data-new" not in again  # (opened: seen)
+
+
+def test_found_on_a_check_lists_what_a_checks_try_turned_up(admin, db):
+    """Issue 33 (Brett's question, Nov 18: "What does From checks mean?"): the chip said neither of the two things it
+    showed. Found on a check lists the issues a check's try turned up; an issue a check is only written for isn't one."""
+    from app.fft.models import FftCheck, FftTry, FftTryIssue
+
+    found = rules.new_issue(db, "claude", "Turned up by a check")
+    written_for = rules.new_issue(db, "claude", "A check was written for it")
+    db.flush()
+    c = rules.write_check(db, "claude", title="A check", steps=["Look."], expect="It shows.", issue_ids=[written_for.id])
+    db.flush()
+    t = FftTry(check_id=c.id, version=1, device="laptop", result="failed")
+    db.add(t)
+    db.flush()
+    db.add(FftTryIssue(try_id=t.id, issue_id=found.id))
+    db.flush()
+    page = admin.get("/manage/feedback?tab=open&chip=checks").text
+    assert "Found on a check" in page and f'data-row="i{found.id}"' in page and f'data-row="i{written_for.id}"' not in page
+    assert db.get(FftCheck, c.id)  # (still there: it just isn't what the chip lists)

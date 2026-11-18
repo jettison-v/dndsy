@@ -4244,6 +4244,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .bub { max-width: 88%; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); display: grid; gap: 2px; font-size: var(--fs-sm); min-width: 0; overflow-wrap: anywhere; }
 .bub p { margin: 0; white-space: pre-wrap; }
 .bub > small { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.bub > small time { font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--muted); }  /* (when it was said, quieter than who: issue 32) */
 .bub.them { justify-self: start; background: var(--surface-2); border: 1px solid var(--line-soft); border-bottom-left-radius: var(--r-xs); }
 .bub.them > small { color: var(--muted); }
 .bub.claude { justify-self: start; background: var(--violet-soft); border: 1px solid var(--line-soft); border-bottom-left-radius: var(--r-xs); }
@@ -4338,24 +4339,43 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fb-line.fb-listening::before, .fft-listen { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px var(--green-soft); vertical-align: middle; }
 
 /* Feedback's evidence (Found, Fixed, Tried, screens 10 and 13): a note's safe pictures, who and where, its words */
-.fft-report { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-3); align-items: start; padding: var(--sp-2) 0; border-top: 1px solid var(--line-soft); }
-.fft-report:first-of-type { border-top: 0; }
-.fft-report:not(:has(.fft-thumbs)) { grid-template-columns: minmax(0, 1fr); }
+.fft-report { display: grid; gap: var(--sp-2); padding: var(--sp-2) 0; border-top: 1px solid var(--line-soft); }  /* (its words, then its pictures in a part of their own: issue 31) */
+.fft-report:first-of-type { border-top: 0; padding-top: 0; }
 .fft-report-body { display: grid; gap: var(--sp-1); min-width: 0; }
 .fft-report-body p { margin: 0; }
 .fft-words { white-space: pre-wrap; overflow-wrap: anywhere; }
+/* A reader's parts as cards (Brett's pick A, Nov 18, docs/mockups/fft-reader/, issue 4; _admin_bits.html rd_section):
+   a small label and its count over what's in it; where it stands has its edge in its state's colour; History folds */
+.rd-sec { display: grid; background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--r-lg); min-width: 0; }
+.rd-sec-h { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--line-soft); }
+.rd-sec-label { margin: 0; font-size: var(--fs-xs); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text); }
+.rd-sec-in { display: grid; gap: var(--sp-3); padding: var(--sp-3); min-width: 0; }
+.rd-sec[data-tone] { border-left: 3px solid var(--line-strong); }
+.rd-sec[data-tone="ask"], .rd-sec[data-tone="again"] { border-left-color: var(--amber); }
+.rd-sec[data-tone="claude"], .rd-sec[data-tone="pick"] { border-left-color: var(--violet); }
+.rd-sec[data-tone="ready"] { border-left-color: var(--blue); }
+.rd-sec[data-tone="failed"] { border-left-color: var(--red); }
+.rd-sec[data-tone="passed"] { border-left-color: var(--green); }
+.rd-sec-fold > .rd-sec-h { cursor: pointer; list-style: none; border-bottom: 0; }
+.rd-sec-fold > .rd-sec-h::-webkit-details-marker { display: none; }
+.rd-sec-fold[open] > .rd-sec-h { border-bottom: 1px solid var(--line-soft); }
+.rd-sec-show { margin-left: auto; }
+.rd-sec-show::after { content: " ▾"; }
+.rd-sec-fold[open] .rd-sec-show::after { content: " ▴"; }
+.fft-trial { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-1) var(--sp-3); align-items: center; }
+.fft-trial-sub { grid-column: 2 / -1; }
+.bub.is-new { box-shadow: inset 3px 0 0 var(--red); }  /* (said since you last looked, with its New tag: issue 32) */
 .fft-thumbs { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
 .fft-pic { display: block; cursor: zoom-in; width: 168px; max-width: 100%; height: 108px; object-fit: cover; object-position: top left; border-radius: var(--r-md); border: 1px solid var(--line-strong); }
 .fft-covered { color: var(--amber); }
-.fft-reports { display: grid; gap: 0; }
 .fft-approve { display: grid; gap: var(--sp-2); }
 .fft-options { display: grid; gap: var(--sp-1); }
 .fft-opt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--sp-2); align-items: center; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); cursor: pointer; text-align: left; color: var(--text); font: inherit; }
 .fft-opt:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
 .fft-opt.btn-plain { grid-template-columns: minmax(0, 1fr); }
 .fft-unjoin { margin: 0; }
-.fft-history .tl { margin: var(--sp-2) 0 0; padding-left: var(--sp-4); display: grid; gap: var(--sp-1); font-size: var(--fs-sm); }
-@media (max-width: 640px) { .fft-report { grid-template-columns: minmax(0, 1fr); } .fft-pic { width: 100%; height: auto; max-height: 180px; } }
+.fft-history .tl { margin: 0; padding-left: var(--sp-4); display: grid; gap: var(--sp-1); font-size: var(--fs-sm); }
+@media (max-width: 640px) { .fft-pic { width: 100%; height: auto; max-height: 180px; } }
 
 /* Testing (Found, Fixed, Tried, screens 1–8): For you's groups by area, a check's devices and problems, what the card
    will say, its history; the round's card keys and foot; Where it stands until slice 6 draws it whole */

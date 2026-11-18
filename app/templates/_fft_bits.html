@@ -1,14 +1,14 @@
 {# Found, Fixed, Tried's shared pieces (app/fft; Manage › askdnd › Design system › Admin): a note as evidence, a line of
    conversation, an issue's history. Imported `with context` (they read `me_id`). #}
 {% from "_admin_bits.html" import state_word %}
+{% from "_lists.html" import count_pill %}
 
-{# A note as evidence (screens 10, 13): its safe pictures, who sent it and when, from which page, its words. `unjoin`: the
-   issue's change address, for a note joined to it by mistake. #}
+{# A note as evidence (screens 10, 13): who sent it and when, from which page, its words, then its safe pictures in a part
+   of their own. `unjoin`: the issue's change address, for a note joined to it by mistake. #}
 {% macro report(v, unjoin="") -%}{% set n = v.n %}
 <div class="fft-report" data-report="{{ n.id }}">
-  {% if v.pics %}<div class="fft-thumbs">{% for p in v.pics %}<img class="fft-pic" src="/manage/feedback/pictures/{{ p.id }}" alt="{{ 'The page' if p.kind == 'page' else 'A picture they added' }}" loading="lazy">{% endfor %}</div>{% endif %}
   <div class="fft-report-body">
-    <p class="note"><b>{{ "You" if v.mine else n.first_name }}</b> · <time datetime="{{ n.created_at.isoformat() }}" data-clock="date">{{ n.created_at | ago }}</time>
+    <p class="note"><b>{{ "You" if v.mine else n.first_name }}</b> · <time datetime="{{ n.created_at.isoformat() }}" data-clock="when">{{ n.created_at | ago }}</time>
       {% if n.page or n.url %} · {% set href = n.url | local_href %}{% if href %}<a href="{{ href }}">{{ n.page or "the page" }}</a>{% else %}{{ n.page }}{% endif %}{% endif %}
       {% if n.context.viewing_as %} · viewing as {{ n.context.viewing_as }}{% endif %}
       {% if v.covered %} · <span class="fft-covered" data-covered>safe copy: {{ n.first_name }}'s character notes covered (only {{ n.first_name }} sees the full picture)</span>{% endif %}
@@ -16,35 +16,38 @@
     <p class="fft-words">{{ n.text }}</p>
     {% if unjoin %}<form method="post" action="{{ unjoin }}" class="fft-unjoin"><input type="hidden" name="do" value="unjoin"><input type="hidden" name="note" value="{{ n.id }}"><button class="btn link small" type="submit" data-do="unjoin">Unjoin: an issue of its own</button></form>{% endif %}
   </div>
+  {# (its pictures in a part of their own, under its words: beside them the words were squeezed; Brett's round, Nov 18, issue 31) #}
+  {% if v.pics %}<div class="fft-thumbs" aria-label="Its pictures">{% for p in v.pics %}<img class="fft-pic" src="/manage/feedback/pictures/{{ p.id }}" alt="{{ 'The page' if p.kind == 'page' else 'A picture they added' }}" loading="lazy">{% endfor %}</div>{% endif %}
 </div>
 {%- endmacro %}
 
-{# One line of a conversation: who to whom, the words. A player's line waiting for your approval says so, with Approve. #}
-{% macro convo_line(x, sender="", senders=[]) -%}
+{# One line of a conversation: who to whom, when (your own clock: 9:31 AM today, the day before that), New when it came
+   since you last looked (`new`; issue 32), the words. A player's line waiting for your approval says so, with Approve. #}
+{% macro convo_line(x, sender="", senders=[], new=False) -%}
 {% set from_sender = x.who == "sender" %}
-<div class="bub {{ 'claude' if x.who == 'claude' else 'askdnd' if x.who == 'askdnd' else 'them' if from_sender else 'you' }}" data-line="{{ x.id }}">
-  <small>{{ "askdnd" if x.who == "askdnd" else "Claude" if x.who == "claude" else (sender or "Its sender") if from_sender else ("You" if x.user_id == me_id else "An admin") }}{% if x.to == "sender" %}, to {{ sender or (senders | join(", ") if senders else "its senders") }}{% elif not from_sender and x.who not in ("claude", "askdnd") %}, to Claude{% endif %}</small>
+<div class="bub {{ 'claude' if x.who == 'claude' else 'askdnd' if x.who == 'askdnd' else 'them' if from_sender else 'you' }}{{ ' is-new' if new }}" data-line="{{ x.id }}"{% if new %} data-new{% endif %}>
+  <small>{{ "askdnd" if x.who == "askdnd" else "Claude" if x.who == "claude" else (sender or "Its sender") if from_sender else ("You" if x.user_id == me_id else "An admin") }}{% if x.to == "sender" %}, to {{ sender or (senders | join(", ") if senders else "its senders") }}{% elif not from_sender and x.who not in ("claude", "askdnd") %}, to Claude{% endif %} · <time datetime="{{ x.created_at.isoformat() }}" data-clock="when">{{ x.created_at | ago }}</time>{% if new %} <span class="tag new">New</span>{% endif %}</small>
   <p>{{ x.text }}</p>
   {% if from_sender and not x.approved %}<form method="post" action="/manage/feedback/lines/{{ x.id }}" class="row tight"><span class="note">Claude reads it once you approve it.</span><button class="btn small" type="submit" data-do="approve-line">Approve</button></form>{% endif %}
 </div>
 {%- endmacro %}
 
-{# An issue's history, folded (screen 13): every change, newest first. #}
+{# An issue's history, a folded section (screen 13; Brett's pick A): every change, newest first. #}
 {% macro history(events) -%}
-{% if events %}<details class="fold fft-history" data-history><summary class="note">History · {{ events | length }} event{{ "s" if events | length != 1 }}</summary>
-  <ol class="tl">{% for e in events %}<li><span>{{ event_words(e) }}</span> <span class="note tl-when"><time datetime="{{ e.at.isoformat() }}" data-clock="date">{{ e.at | ago }}</time></span></li>{% endfor %}</ol></details>{% endif %}
+{% if events %}<details class="rd-sec rd-sec-fold fft-history" data-history data-sec="history"><summary class="rd-sec-h"><h3 class="rd-sec-label">History</h3>{{ count_pill(events | length) }}<span class="rd-sec-show note">Show</span></summary>
+  <div class="rd-sec-in"><ol class="tl">{% for e in events %}<li><span>{{ event_words(e) }}</span> <span class="note tl-when"><time datetime="{{ e.at.isoformat() }}" data-clock="date">{{ e.at | ago }}</time></span></li>{% endfor %}</ol></div></details>{% endif %}
 {%- endmacro %}
 
 {# A question Claude asked about the issue, in its conversation (Brett, Nov 17: "this should also have been added to the
    Feedback record as a conversation bubble"): its words, the mockup it asks on, the answers to tap with Claude's pick, and
    the answer once given. Answered in For you only (R13), so a question still open links there. #}
-{% macro asked_bub(qv) -%}{% set q = qv.q %}{% set doc = qv.doc %}
-<div class="bub claude fft-asked" data-question="{{ q.id }}">
-  <small>Claude asked</small>
+{% macro asked_bub(qv, new=False) -%}{% set q = qv.q %}{% set doc = qv.doc %}
+<div class="bub claude fft-asked{{ ' is-new' if new }}" data-question="{{ q.id }}"{% if new %} data-new{% endif %}>
+  <small>Claude asked · <time datetime="{{ q.created_at.isoformat() }}" data-clock="when">{{ q.created_at | ago }}</time>{% if new %} <span class="tag new">New</span>{% endif %}</small>
   <p>{{ q.text }}</p>
   {% if doc %}<p class="row tight fft-doc"><a class="btn small" href="{{ doc.href }}" data-modal-url="{{ doc.href }}?part=1" data-modal-size="full" data-open-doc title="{{ doc.title }}">Open mockup</a>{% if doc.link %}<a class="note" href="{{ doc.link }}" target="_blank" rel="noopener">on claude.ai ↗</a>{% endif %}</p>{% endif %}
   {% if q.choices %}<ul class="fft-asked-choices">{% for ch in q.choices %}<li data-choice="{{ loop.index0 }}"{% if q.answer_choice == loop.index0 %} class="on"{% endif %}><b>{{ ch.label }}</b>{% if q.mine == loop.index0 %} <span class="note">Claude's pick</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
-  {% if q.answered_at %}<div class="fft-answered" data-answered><small>{{ "You" if q.answered_by == me_id else "An admin" }} answered</small><p>{% if qv.picked %}<b>{{ qv.picked.label }}</b>{% if q.answer_text %} · {% endif %}{% endif %}{{ q.answer_text }}</p></div>
+  {% if q.answered_at %}<div class="fft-answered" data-answered><small>{{ "You" if q.answered_by == me_id else "An admin" }} answered · <time datetime="{{ q.answered_at.isoformat() }}" data-clock="when">{{ q.answered_at | ago }}</time></small><p>{% if qv.picked %}<b>{{ qv.picked.label }}</b>{% if q.answer_text %} · {% endif %}{% endif %}{{ q.answer_text }}</p></div>
   {% else %}<p class="row tight"><a class="btn primary small" href="/manage/testing?open=q{{ q.id }}" data-do="answer">Answer</a></p>{% endif %}
 </div>
 {%- endmacro %}

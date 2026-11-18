@@ -23,7 +23,20 @@ from app import files, web
 from app.auth import is_admin
 from app.db import get_db
 from app.fft import rules, taxonomy, views
-from app.fft.models import FftArea, FftCheckIssue, FftEvent, FftIdea, FftIssue, FftLine, FftNote, FftPicture, FftQuestion
+from app.fft.models import (
+    FftArea,
+    FftCheck,
+    FftEvent,
+    FftIdea,
+    FftIssue,
+    FftLine,
+    FftNote,
+    FftPicture,
+    FftQuestion,
+    FftSeen,
+    FftTry,
+    FftTryIssue,
+)
 from app.templating import templates
 
 router = APIRouter()
@@ -81,7 +94,7 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
         return out
     if tab == "ideas":
         for d in db.scalars(select(FftIdea).where(FftIdea.state != "declined").order_by(FftIdea.id.desc())):
-            word, tone = ("On the Roadmap", "claude") if d.state == "roadmap" else ("Built", "quiet") if d.state == "shipped" else ("New idea", "ask")
+            word, tone = idea_word(d)
             out.append({"key": f"d{d.id}", "title": d.title, "word": word, "tone": tone, "sub": ""})
         return out
     q = _issue_q(tab).order_by(FftIssue.id.desc())
@@ -89,8 +102,9 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
         q = q.where(FftIssue.area_id == area)
     if chip == "players":
         q = q.where(FftIssue.from_player.is_(True))
-    elif chip == "checks":
-        q = q.where(or_(FftIssue.origin_try_id.isnot(None), FftIssue.id.in_(select(FftCheckIssue.issue_id))))
+    elif chip == "checks":  # (Found on a check: what a check's try turned up; an issue a check is written for shows it in
+        # Where it stands. Brett's round, Nov 18, issue 33: "From checks" said neither)
+        q = q.where(or_(FftIssue.origin_try_id.isnot(None), FftIssue.id.in_(select(FftTryIssue.issue_id))))
     for i in db.scalars(q.limit(300)):
         turn, name = views.issue_turn(db, i)
         word, tone = views.turn_pill(turn, name)
@@ -121,6 +135,15 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
 
 
 LOOSE = {"questions": "Questions for Claude", "notes": "Notes decided"}  # (rows that are notes, not issues: their group)
+
+
+def idea_word(d: FftIdea) -> tuple[str, str]:
+    """An idea's state as a word and its tone (its row, and Where it stands in the reader)."""
+    return {"roadmap": ("On the Roadmap", "claude"), "shipped": ("Built", "quiet"), "declined": ("Declined", "quiet")}.get(d.state, ("New idea", "ask"))
+
+
+IDEA_SAYS = {"roadmap": "On the Roadmap: it waits its turn there.", "shipped": "Built: it's in askdnd.", "declined": "Not taken up: its senders read why.",
+             "new": "New: put it on the Roadmap, mark it built, or decline it with why."}
 
 
 def by_area(listed: list[dict], pa: str, feature: str) -> dict:
@@ -172,7 +195,47 @@ def issue_view(db: Session, issue: FftIssue, viewer_id: int | None) -> dict:
             "pa": taxonomy.area(taxonomy.feature(issue.feature).area) if taxonomy.feature(issue.feature) else None, "notes": [note_view(db, n, viewer_id) for n in notes],
             "senders": senders(notes), "lines": list(db.scalars(select(FftLine).where(FftLine.issue_id == issue.id).order_by(FftLine.id))),
             "may_merge": rules.may_merge(db, issue), "events": events, "listening": views.listening(db),
-            "checks": views.issue_checks(db, issue)}
+            "checks": views.issue_checks(db, issue), "found": found_on_checks(db, issue), **new_since(db, issue, viewer_id, asked)}
+
+
+DEVICE = {"laptop": "on the laptop", "iphone": "on the iPhone", "ipad": "on the iPad", "mac_mini": "on the Mac Mini"}
+
+
+def found_on_checks(db: Session, issue: FftIssue) -> list[dict]:
+    """The tries of checks that found this issue (Something's wrong…, Brett's pick A on docs/mockups/fft-reader/: What was
+    found holds them with its notes): the check, the device, when, and whether it stopped the check or the round."""
+    out = []
+    for t, ti, c in db.execute(select(FftTry, FftTryIssue, FftCheck).join(FftTryIssue, FftTryIssue.try_id == FftTry.id)
+                               .join(FftCheck, FftCheck.id == FftTry.check_id)
+                               .where(FftTryIssue.issue_id == issue.id, FftTry.replaced.is_(False)).order_by(FftTry.id)):
+        out.append({"t": t, "check": c, "device": DEVICE.get(t.device, t.device), "blocking": ti.blocking, "stops_round": ti.stops_round,
+                    "still": ti.how == "still"})
+    return out
+
+
+def new_since(db: Session, issue: FftIssue, viewer_id: int | None, asked: list[dict]) -> dict:
+    """What in an issue's conversation is new since this person last opened it (issue 32): lines and questions said after
+    their read mark (`FftSeen`) by someone else. Never opened: everything someone else said is new."""
+    seen = db.scalar(select(FftSeen.at).where(FftSeen.user_id == viewer_id, FftSeen.issue_id == issue.id)) if viewer_id else None
+    after = (lambda at: at is not None and at > seen) if seen else (lambda at: at is not None)
+    lines = db.scalars(select(FftLine).where(or_(FftLine.issue_id == issue.id,
+                                                 FftLine.note_id.in_(select(FftNote.id).where(FftNote.issue_id == issue.id)))))
+    return {"seen_at": seen,
+            "new_lines": {x.id for x in lines if after(x.created_at) and not (x.user_id and x.user_id == viewer_id)},
+            "new_asked": {a["q"].id for a in asked if after(a["q"].created_at)}}
+
+
+def mark_seen(db: Session, viewer_id: int | None, issue: FftIssue) -> None:
+    """This person has the issue open: what's said in it until now isn't new to them any more (a read mark, not a state,
+    like Notes you sent's `seen`: rules.py keeps the states)."""
+    if not viewer_id:
+        return
+    row = db.scalar(select(FftSeen).where(FftSeen.user_id == viewer_id, FftSeen.issue_id == issue.id))
+    if row is None:
+        db.add(FftSeen(user_id=viewer_id, issue_id=issue.id, at=rules.now()))
+    else:
+        row.at = rules.now()
+    db.commit()
 
 
 @router.get("/manage/feedback")
@@ -198,8 +261,9 @@ def page(request: Request, tab: str = "", open: str = "", chip: str = "", area: 
         picked = {"kind": "note", **note_view(db, note, me["id"])} | ({"issue": issue_view(db, db.get(FftIssue, note.issue_id), me["id"])} if note.issue_id else {})
     elif pick[:1] == "i" and pick[1:].isdigit() and (issue := db.get(FftIssue, int(pick[1:]))):
         picked = {"kind": "issue", **issue_view(db, issue, me["id"])}
+        mark_seen(db, me["id"], issue)  # (drawn with what's new marked, then it's seen)
     elif pick[:1] == "d" and pick[1:].isdigit() and (idea := db.get(FftIdea, int(pick[1:]))):
-        picked = {"kind": "idea", "d": idea, "notes": [note_view(db, x, me["id"]) for x in db.scalars(select(FftNote).where(FftNote.idea_id == idea.id))]}
+        picked = {"kind": "idea", "d": idea, "word": idea_word(idea), "says": IDEA_SAYS.get(idea.state, ""), "notes": [note_view(db, x, me["id"]) for x in db.scalars(select(FftNote).where(FftNote.idea_id == idea.id))]}
     return templates.TemplateResponse(request, "fft_feedback.html", {
         "tab": tab, "tabs": TABS, "counts": n, "rows": listed, "pick": pick, "picked": picked, "chip": chip, "area": area,
         "grouped": grouped, "taxonomy": taxonomy.areas(),

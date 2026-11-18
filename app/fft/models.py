@@ -283,3 +283,16 @@ class FftKey(_Stamped, Base):
     actor: Mapped[str] = mapped_column(String(20))  # claude, relay, mini
     scopes: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     revoked: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+
+
+class FftSeen(Base):
+    """When a person last opened an issue in Feedback (Brett's round, Nov 18, issue 32: a conversation's lines say when
+    they were said and which are new since you last looked). Anything said there after it, by someone else, is new."""
+
+    __tablename__ = "fft_seen"
+    __table_args__ = (UniqueConstraint("user_id", "issue_id"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    workspace_id: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    issue_id: Mapped[int] = mapped_column(ForeignKey("fft_issues.id", ondelete="CASCADE"), index=True)
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

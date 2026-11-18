@@ -48,8 +48,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       const d = new Date(t.getAttribute('datetime'));
       if (isNaN(d)) return;
       const o = { hour: 'numeric', minute: '2-digit' };
-      if (t.dataset.clock === 'date') Object.assign(o, { month: 'short', day: 'numeric' }, d.getFullYear() !== year ? { year: 'numeric' } : {});
-      t.textContent = d.toLocaleString([], o);
+      // ('when': the time alone today, Yesterday and the time, else the day and the time; a conversation's lines, issue 32)
+      const day = n => new Date(Date.now() - n * 864e5).toDateString(), ago = t.dataset.clock === 'when' ? [0, 1].find(n => d.toDateString() === day(n)) : undefined;
+      if (t.dataset.clock === 'date' || (t.dataset.clock === 'when' && ago === undefined)) Object.assign(o, { month: 'short', day: 'numeric' }, d.getFullYear() !== year ? { year: 'numeric' } : {});
+      t.textContent = (ago === 1 ? 'Yesterday, ' : '') + d.toLocaleString([], o);
       t.title = d.toLocaleString([], { dateStyle: 'full', timeStyle: 'short' });
     });
   }
