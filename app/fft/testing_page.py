@@ -681,7 +681,7 @@ def wrong(request: Request, check_id: int, body=web.JsonBody, db: Session = Depe
         context = body.get("context") if isinstance(body.get("context"), dict) else {}
         note = rules.note_on_issue(db, actor, issue, user_id=me["id"], first_name=me["first_name"], text=text, url=str(body.get("url") or ""),
                                    page=str(context.get("page") or ""), context=context | {"check": c.id, "blocking": blocking},
-                                   html=str(body.get("html") or "")[:sending.MAX_HTML], try_id=t.id if t else None)
+                                   html=sending.safe_html(str(body.get("html") or "")[:sending.MAX_HTML]), try_id=t.id if t else None)
     except rules.RuleError as e:
         raise HTTPException(409 if e.code == "stale" else 400, e.words) from e
     sending.attach_pictures(db, stored, note_id=note.id)

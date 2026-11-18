@@ -335,3 +335,50 @@ def test_a_picture_you_added_can_be_taken_away_and_the_pages_stays(people, serve
     (nid,), = _rows(browser_db, "SELECT id FROM fft_notes ORDER BY id DESC LIMIT 1")
     assert sorted(k for (k,) in _rows(browser_db, "SELECT kind FROM fft_pictures WHERE note_id = :n", n=nid)) == ["added", "page"]
     assert not admin.errors, admin.errors
+
+
+def test_a_private_part_in_a_scrolled_box_is_covered_where_it_shows(people, server, browser_db):
+    """A standing rule (Brett, 2026-10-17: character notes are visible to players but NOT the DM; T5). The review of PR
+    #417 (Nov 18): the private parts were measured after the picture had moved a scrolled box's rows up by its scroll,
+    so the covering landed above a player's note in the copy an admin, the DM and Claude see; and a window labelled
+    with the note's title kept that label in the page as drawn. The private part is covered where the screen shows it,
+    and the label goes."""
+    import io
+
+    from PIL import Image
+
+    engine = create_engine(browser_db[0])  # (an account row, so the note is its sender's and Notes you sent serves its full copy)
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO users (email, name, feedback) VALUES ('admin@example.com', 'Dev Admin', true) ON CONFLICT (email) DO NOTHING"))
+    engine.dispose()
+    admin = people("admin")
+    page = admin.open("/party")
+    page.wait_for_function("() => document.fonts.status === 'loaded'")
+    page.evaluate("""() => {
+      const box = Object.assign(document.createElement('div'), { id: 'scrolly' });
+      box.setAttribute('aria-label', 'Rob the bank at dawn');  // (a window labelled with a player's note's own title)
+      Object.assign(box.style, { position: 'fixed', top: '140px', left: '420px', width: '300px', height: '240px', overflowY: 'auto', zIndex: 40, background: 'rgb(255, 255, 255)' });
+      box.innerHTML = '<div style="height: 600px"></div><div data-private style="height: 80px; background: rgb(20, 160, 20); color: white">My secret plan</div><div style="height: 600px"></div>';
+      document.body.append(box);
+      box.scrollTop = 500;
+    }""")
+    r = page.evaluate("() => { const e = document.querySelector('#scrolly [data-private]').getBoundingClientRect(); return {x: e.x + e.width / 2, y: e.y + e.height / 2}; }")
+    page.keyboard.press("\\")
+    win = page.locator("#fb-win")
+    win.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
+    page.click("[data-fb-kind=problem]")
+    page.fill("#fb-win textarea[name=text]", "Scrolled and private.")
+    page.click("[data-fb-send]")
+    page.locator("#cards > .card").first.wait_for(timeout=10000)
+    (pid, full, safe), = _rows(browser_db, "SELECT p.id, p.key, p.safe_key FROM fft_pictures p JOIN fft_notes n ON n.id = p.note_id WHERE n.text = 'Scrolled and private.' AND p.kind = 'page'")
+    assert safe and safe != full  # (a safe copy was made)
+    base = server["base"]
+    shown = Image.open(io.BytesIO(page.request.get(f"{base}/your-notes/pictures/{pid}").body())).convert("RGB")  # (its sender's own)
+    covered = Image.open(io.BytesIO(page.request.get(f"{base}/manage/feedback/pictures/{pid}").body())).convert("RGB")  # (what others see)
+    sx, sy = shown.size[0] / page.viewport_size["width"], shown.size[1] / page.viewport_size["height"]
+    at = (int(r["x"] * sx), int(r["y"] * sy))
+    assert shown.getpixel(at)[1] > 120  # (the private part, green, where the screen shows it)
+    assert covered.getpixel(at)[1] < 120 or covered.getpixel(at) != shown.getpixel(at)  # (covered there in the safe copy)
+    (html,), = _rows(browser_db, "SELECT html FROM fft_notes WHERE text = 'Scrolled and private.'")
+    assert "Rob the bank" not in html and "My secret plan" not in html  # (nor its title, in the page as drawn)
+    assert not admin.errors, admin.errors

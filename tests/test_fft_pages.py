@@ -389,3 +389,18 @@ def test_claudes_addresses_are_links_a_senders_are_not(admin, sender, db):
     assert '<a href="https://claude.ai/artifact/abc" target="_blank" rel="noopener">' in page
     assert 'href="https://example.com/mine' not in page  # (the sender's own words stay words)
     assert '<a href="https://claude.ai/artifact/abc"' in sender.get("/your-notes?tab=askdnd").text
+
+
+def test_a_standing_rule_the_page_as_drawn_never_keeps_a_players_private_parts(admin, sender, db):
+    """A standing rule (Brett, 2026-10-17: character notes are visible to players but NOT the DM; T5): the page as drawn
+    is kept with every [data-private] part emptied, whatever the browser sent (the review of PR #417: only app.js
+    emptied them; an older app.js in a tab left open would have sent them). An admin reading it sees the emptied copy."""
+    page = ('<html><body><aside class="peek"><div data-private class="nt"><p>My secret plan</p><img src="x"></div>'
+            '<p>The party</p><input data-private value="hidden words"></aside></body></html>')
+    send(sender, html=page)
+    n = _note(db)
+    assert "My secret plan" not in n.html and "hidden words" not in n.html and "The party" in n.html
+    assert n.html.count('data-private="emptied"') == 2
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})
+    drawn = admin.get(f"/manage/feedback/notes/{n.id}/page").text
+    assert "My secret plan" not in drawn and "The party" in drawn

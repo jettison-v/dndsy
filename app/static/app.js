@@ -5130,6 +5130,9 @@ document.addEventListener('click', e => {
     // page with nothing scrolled. Only what's below or right of the screen is left out (what's above it holds up what's
     // on it: left out, everything under it moved up). A part that stays put as you scroll is held where it is, and
     // what's scrolled inside a box is moved up by as much; all put back once it's drawn, its scrolling too.
+    // (the private parts measured as the screen shows them, before anything is held or moved for the drawing: measured
+    // after, a part inside a scrolled box was off by its scroll, and the covering missed it; the review of #417)
+    const rects = privateRects();
     const all = [...document.body.querySelectorAll('*')];
     const past = n => { const r = n.getBoundingClientRect(); return (r.width || r.height) && (r.top > innerHeight || r.left > innerWidth); };
     const gone = new Set(all.filter(past));
@@ -5184,7 +5187,6 @@ document.addEventListener('click', e => {
       c.parentElement.append(im);
       stills.push(im);
     });
-    const rects = privateRects();
     try {
       const svg = (await h.toSvg(document.body, options)).replace(/%(?:0[0-8BbCcEeFf]|1[0-9A-Fa-f])/g, '');
       const im = new Image();
@@ -5210,6 +5212,8 @@ document.addEventListener('click', e => {
       el.replaceChildren();
       [...el.attributes].forEach(a => { if (a.name !== 'class' && a.name !== 'data-private') el.removeAttribute(a.name); });
       el.setAttribute('data-private', 'emptied');
+      // (a window holding it is labelled with its title, a player's note's own: never in the copy; the review of #417)
+      for (let up = el.parentElement; up; up = up.parentElement) ['aria-label', 'title'].forEach(n => up.removeAttribute(n));
     });
     copy.querySelectorAll('#fb-win, script').forEach(el => el.remove());
     return copy.outerHTML.slice(0, 3000000);

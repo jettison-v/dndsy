@@ -12,6 +12,7 @@ waits for an admin (T6). The answer says truthfully what happens next (`views.se
 
 import base64
 import json
+from html.parser import HTMLParser
 import os
 import re
 import urllib.error
@@ -69,6 +70,67 @@ def _pictures(body: dict) -> list[dict]:
     return out
 
 
+VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"}
+
+
+class _Private(HTMLParser):
+    """The page as drawn, re-written with every [data-private] part emptied."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.out, self.skip = [], 0
+
+    def handle_starttag(self, tag, attrs):
+        if self.skip:
+            self.skip += int(tag not in VOID)
+        elif any(k == "data-private" for k, _ in attrs):
+            self.out.append(f'<{tag} data-private="emptied">')
+            self.skip = int(tag not in VOID)
+        else:
+            self.out.append(self.get_starttag_text())
+
+    def handle_startendtag(self, tag, attrs):
+        if not self.skip:
+            self.out.append(f'<{tag} data-private="emptied">' if any(k == "data-private" for k, _ in attrs) else self.get_starttag_text())
+
+    def handle_endtag(self, tag):
+        if self.skip:
+            if tag in VOID:
+                return
+            self.skip -= 1
+            if self.skip:
+                return
+        self.out.append(f"</{tag}>")
+
+    def handle_data(self, data):
+        if not self.skip:
+            self.out.append(data)
+
+    def handle_entityref(self, name):
+        if not self.skip:
+            self.out.append(f"&{name};")
+
+    def handle_charref(self, name):
+        if not self.skip:
+            self.out.append(f"&#{name};")
+
+    def handle_decl(self, decl):
+        self.out.append(f"<!{decl}>")
+
+
+def safe_html(html: str) -> str:
+    """The page as drawn, kept only with every private part emptied (a player's character notes: T5), whatever the
+    browser sent: app.js empties them first, and this makes sure (an older app.js in a tab left open, a part it
+    missed; the review of PR #417). Anything it can't read whole is dropped from where it went wrong."""
+    p = _Private()
+    try:
+        p.feed(html)
+        p.close()
+    except Exception:  # noqa: BLE001 (a page that can't be read isn't kept)
+        return ""
+    return "".join(p.out)
+
+
 def store_pictures(db: Session, pics: list[dict], safe_only: bool = False) -> list[tuple[str, str, str]]:
     """Each picture into file storage first: (full key, safe key, kind). Done before a note's event is written, so a
     slow upload never holds a change open that Claude's inbox may already have passed (T8)."""
@@ -118,7 +180,7 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     if try_id is not None and db.get(FftTry, try_id) is None:
         raise HTTPException(400, "That try isn't there.")
     fields = {"kind": kind, "text": text, "url": str(body.get("url") or "")[:1000], "page": str(context.get("page") or "")[:120],
-              "context": context, "html": str(body.get("html") or "")[:MAX_HTML]}
+              "context": context, "html": safe_html(str(body.get("html") or "")[:MAX_HTML])}
     if config.STAGING:
         sent = relay(me, fields, pics)
         if "id" in sent:
