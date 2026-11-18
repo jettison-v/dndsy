@@ -286,7 +286,7 @@ def set_feature(db: Session, actor: str, issue: FftIssue, key: str) -> None:
     for c in db.scalars(select(FftCheck).join(FftCheckIssue, FftCheckIssue.check_id == FftCheck.id)
                         .where(FftCheckIssue.issue_id == issue.id, FftCheck.area_id.is_(None))):
         c.area_id = issue.area_id
-    _event(db, actor, "issue_feature", "issue", issue.id, area_id=issue.area_id, was=was, to=f.key)
+    _event(db, actor, "issue_feature", "issue", issue.id, area_id=issue.area_id, was=was, feature=f.key)  # (never "to": that's a state)
 
 
 def move_issue(db: Session, actor: str, issue: FftIssue, area_id: int | None) -> None:

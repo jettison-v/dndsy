@@ -11,8 +11,8 @@ from sqlalchemy import select
 
 from app import config
 from app.db import get_db
-from app.fft import rules, taxonomy
-from app.fft.models import FftArea, FftIssue, FftItem, FftTryIssue
+from app.fft import rules, taxonomy, views
+from app.fft.models import FftArea, FftEvent, FftIssue, FftItem, FftTryIssue
 from app.importer import import_bundle
 from app.main import app
 from tests.table_setup import BUNDLE
@@ -68,6 +68,9 @@ def test_a_feature_puts_an_issue_in_its_product_areas_batch_made_when_first_need
     assert db.get(FftArea, other.area_id).key == "rolls" and other.feature == "dice"
     with pytest.raises(rules.RuleError):
         rules.set_feature(db, "claude", other, "nonsense")
+    ev = db.scalars(select(FftEvent).where(FftEvent.kind == "issue_feature", FftEvent.thing_id == other.id).order_by(FftEvent.id)).all()[-1]
+    assert "to" not in ev.data  # (an issue event's "to" is its state: the record's replay reads it)
+    assert views.event_words(ev) == f"Issue {other.id} is about Rolls and dice › Dice (was Battle › Death saves)"
 
 
 def test_an_issue_in_a_builds_batch_stays_there_and_its_checks_follow_it(db):

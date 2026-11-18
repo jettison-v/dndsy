@@ -275,6 +275,8 @@ def event_words(ev) -> str:
         return f"Check {d.get('check')}: {ev.kind[4:]} on the {d.get('device')} ({d.get('where')})"
     if ev.kind == "question_answered":
         return f"Brett answered question {ev.thing_id}"
+    if ev.kind == "issue_feature":
+        return f"Issue {ev.thing_id} is about {taxonomy.path(d.get('feature', '')) or d.get('feature')}" + (f" (was {taxonomy.path(d['was'])})" if d.get("was") else "")
     if "to" in d:
         return f"{ev.thing.title()} {ev.thing_id}: {d.get('from')} → {d.get('to')}"
     return f"{ev.thing.title()} {ev.thing_id}: {ev.kind.replace('_', ' ')}"
