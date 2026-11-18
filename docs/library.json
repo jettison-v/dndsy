@@ -1055,7 +1055,7 @@
  {
   "title": "Found, Fixed, Tried: the build plan",
   "kind": "plan",
-  "status": "Building",
+  "status": "Built: for your local trial",
   "date": "Nov 17",
   "what": "How v2 is built: one branch, Brett tries it locally, one merge replaces today's Feedback and Testing; old tables kept a few days; the model in app/fft/ (its own tables), the rules R1–R18 in one place with their tests, the trust layer tests first, and the slices.",
   "source": "docs/plans/2026-11-17-found-fixed-tried-build.md",
@@ -1073,7 +1073,7 @@
  {
   "title": "Found, Fixed, Tried: Screens",
   "kind": "design",
-  "status": "v2: for your verdict",
+  "status": "v2: built",
   "date": "Nov 17",
   "what": "The agreed model drawn as askdnd's screens, clickable: For you, trying a check, Something's wrong…, Failed with problems, Change result, Can't try…, a question and a mockup as one entry, Feedback's list, an issue with its reports, Ideas, and Where it stands. One verdict saved on the page.",
   "source": "docs/mockups/found-fixed-tried/index.html",
