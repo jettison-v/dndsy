@@ -1073,11 +1073,20 @@
  {
   "title": "Feedback's Reader: Sections",
   "kind": "design",
-  "status": "waiting on Brett's pick",
+  "status": "Brett picked A (sections as cards)",
   "date": "Nov 17",
   "what": "Brett's note on his local trial: Feedback's reader \"all just blends together\". Today's reader and three ways to split it into sections (cards, tabs inside the issue, the story and a column of facts), each showing the issue's check and Claude's question with its answer. One pick saved on the page.",
   "source": "docs/mockups/fft-reader/index.html",
   "link": "https://claude.ai/artifact/Er4mH2fa5VeF7epiRGaqrt"
+ },
+ {
+  "title": "Product Taxonomy",
+  "kind": "design",
+  "status": "waiting on Brett's pick",
+  "date": "Nov 18",
+  "what": "Brett's idea (Nov 17 and 18): a fixed two-level list, Product Area › Feature, every issue is sorted into, so requests group the same way and each session starts from the same place. The draft list (10 Product Areas, 62 Features, from docs/MAP.md), Feedback grouped by Product Area or with a menu, an issue's Feature and its Change… picker, and Where it stands with a session per Product Area or batches made by hand. Three picks and a notes box saved on the page.",
+  "source": "docs/mockups/product-taxonomy/index.html",
+  "link": "https://claude.ai/artifact/D672VnBzfYXTKUK4R6vkYD"
  },
  {
   "title": "Found, Fixed, Tried: Screens",
