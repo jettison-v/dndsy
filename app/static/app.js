@@ -5004,13 +5004,13 @@ document.addEventListener('click', e => {
 // after the window shows (html-to-image, vendored; the window left out), only what's on screen, and comes as two copies:
 // the full one, its sender's alone, and the safe copy with every [data-private] part on screen (a player's character
 // notes) covered, which an admin, the DM and Claude see (T5). More pictures are pasted (⌘V), dropped or chosen. Each
-// picture is marked with Box, Arrow, Draw and Text; Undo and Clear sit apart. Hide while I take a screenshot puts the
-// window away, keeping everything, until Back to it (or a paste) brings it back.
+// picture is marked with Box, Arrow, Draw and Text; Undo and Clear sit apart. Take a screenshot puts the window away,
+// keeping everything, until Back to it (or a paste) brings it back; Cancel closes it (Brett's pick 3A, issue 18).
 (function () {
   const win = document.getElementById('fb-win');
   if (!win || document.body.dataset.feedback === undefined) return;
   const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
-  const chips = win.querySelector('[data-fb-chips]'), addChip = win.querySelector('.fb-add-pic'), stageNote = win.querySelector('[data-fb-stage-note]');
+  const chips = win.querySelector('[data-fb-chips]'), addChip = win.querySelector('.fb-add-pic'), shotChip = win.querySelector('[data-fb-shot]'), stageNote = win.querySelector('[data-fb-stage-note]');
   const wrap = win.querySelector('[data-fb-wrap]'), canvas = win.querySelector('[data-fb-canvas]'), tools = win.querySelector('[data-fb-tools]'), edits = win.querySelector('[data-fb-edits]');
   const covered = win.querySelector('[data-fb-covered]'), lineEl = win.querySelector('[data-fb-line]'), titleEl = win.querySelector('[data-fb-title]');
   const wrongParts = [...win.querySelectorAll('[data-fb-wrong]')], stillBox = win.querySelector('[data-fb-still]'), kindRow = win.querySelector('[data-fb-kind-row]');
@@ -5253,7 +5253,7 @@ document.addEventListener('click', e => {
       const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip' + (i === at ? ' on' : ''), textContent: name });
       b.dataset.fbPic = String(i); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(i === at));
       b.addEventListener('click', () => show(i));
-      if (p.kind === 'page') { chips.insertBefore(b, addChip); return; }  // (the page's own picture stays: it says where you were; Brett's round, Nov 18)
+      if (p.kind === 'page') { chips.insertBefore(b, shotChip); return; }  // (the page's own picture stays: it says where you were; Brett's round, Nov 18)
       // (a picture you added: one pill, its name and its ✕, each a button of its own)
       const pair = Object.assign(document.createElement('span'), { className: 'chip chip-pair' + (i === at ? ' on' : '') });
       pair.dataset.fbPic = String(i); b.className = 'chip-name'; delete b.dataset.fbPic;
@@ -5261,9 +5261,9 @@ document.addEventListener('click', e => {
       x.dataset.fbUnpic = String(i); x.setAttribute('aria-label', 'Remove ' + name);
       x.addEventListener('click', () => { pics.splice(i, 1); show(pics.length ? Math.min(at > i ? at - 1 : at, pics.length - 1) : -1); if (!pics.length) stageNote.textContent = 'No picture: paste or add one if it helps.'; });
       pair.append(b, x);
-      chips.insertBefore(pair, addChip);
+      chips.insertBefore(pair, shotChip);
     });
-    addChip.hidden = pics.length >= 4;
+    addChip.hidden = shotChip.hidden = pics.length >= 4;  // (four pictures at most)
   }
   function show(i) {
     at = i; drawChips();
@@ -5420,7 +5420,7 @@ document.addEventListener('click', e => {
     pics.unshift({ kind: 'page', full: got.full, safe: got.safe, marks: [] });
     show(at < 0 ? 0 : at + 1);
   }
-  function hide() {  // Hide while I take a screenshot: everything kept; a card says how, and brings it back
+  function hide() {  // Take a screenshot: everything kept; a card says how, and brings it back
     hidden = true; win.close();
     const mac = /Mac/.test(navigator.platform || navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent);
     const box = document.createElement('div');
@@ -5435,9 +5435,9 @@ document.addEventListener('click', e => {
     hideCard = null;
     if (!win.open) win.showModal();
   }
-  win.querySelector('[data-fb-hide]').addEventListener('click', hide);
+  shotChip.addEventListener('click', hide);
   const close = () => { win.close(); hidden = false; pics = []; };
-  win.querySelector('[data-fb-cancel]').addEventListener('click', close);
+  win.querySelectorAll('[data-fb-cancel]').forEach(b => b.addEventListener('click', close));  // (✕ and Cancel)
   win.addEventListener('cancel', e => { if (typingAt) { e.preventDefault(); return; } pics = []; });
   form.addEventListener('submit', async e => {
     e.preventDefault();

@@ -14,7 +14,10 @@
     <div class="fb-kinds" role="radiogroup" aria-labelledby="fb-kind-q" data-fb-kind-row><span class="note" id="fb-kind-q">What is it?</span>
       {% for k, said in feedback_kinds.items() %}<button type="button" class="chip" role="radio" aria-checked="false" data-fb-kind="{{ k }}" data-ask="{{ feedback_asks[k] }}">{{ said }}</button>{% endfor %}</div>
     <div class="fb-pic-chips row tight" role="tablist" aria-label="Pictures" data-fb-chips>
-      <label class="chip fb-add-pic">+ Paste or add a picture<input type="file" accept="image/png,image/jpeg,image/webp" data-fb-file class="sr"></label>
+      {# (screenshot first, Brett's pick 3A, issue 18: Take a screenshot steps the window aside and says how, a paste brings it back
+         with the picture added; + picks a file; the pictures sit before both) #}
+      <button type="button" class="chip" data-fb-shot>Take a screenshot</button>
+      <label class="chip fb-add-pic" title="Add a picture from a file (or paste one: ⌘V or Ctrl+V)">+<span class="sr"> Add a picture</span><input type="file" accept="image/png,image/jpeg,image/webp" data-fb-file class="sr"></label>
     </div>
     <div class="fb-stage" data-fb-stage>
       <p class="note fb-stage-note" data-fb-stage-note>Taking the page's picture…</p>
@@ -37,7 +40,7 @@
     <p class="use-said" role="alert" hidden data-fb-said></p>
     <div class="fb-sendline">
       <button type="submit" class="btn primary" data-fb-send>Send</button>
-      <button type="button" class="btn" data-fb-hide>Hide while I take a screenshot</button>
+      <button type="button" class="btn" data-fb-cancel>Cancel</button>
       <span class="note fb-line" data-fb-line></span>
     </div>
   </form>

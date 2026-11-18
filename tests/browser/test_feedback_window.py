@@ -1,6 +1,6 @@
 """Send a note in a real page (Found, Fixed, Tried: app/fft/sending.py, app.js "send a note"; screen 9 of
 docs/mockups/found-fixed-tried/): \\ opens the window at once and the page's picture follows, marked with Box, Arrow,
-Draw and Text; Hide while I take a screenshot puts it away and brings it back; Send keeps where, when and how the page
+Draw and Text; Take a screenshot puts it away and brings it back (Cancel closes it); Send keeps where, when and how the page
 was, and the safe copy of the picture with the sender's private parts covered."""
 
 from sqlalchemy import create_engine, text
@@ -89,7 +89,9 @@ def test_marks_and_words_are_drawn_into_what_is_sent_and_private_parts_covered(p
     assert not admin.errors, admin.errors
 
 
-def test_hide_while_i_take_a_screenshot_keeps_everything(people, server):
+def test_take_a_screenshot_keeps_everything_and_cancel_closes(people, server):
+    """Brett's pick 3A (issue 18): Take a screenshot sits with the pictures and steps the window aside with a corner card
+    that says how; Back to it brings it back as it was. Cancel, beside Send, closes it."""
     admin = people("admin")
     page = admin.open("/party")
     page.wait_for_function("() => document.fonts.status === 'loaded'")  # (askdnd's script runs before load; the picture wants its fonts)
@@ -98,7 +100,8 @@ def test_hide_while_i_take_a_screenshot_keeps_everything(people, server):
     win.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
     page.click("[data-fb-kind=question]")
     page.fill("#fb-win textarea[name=text]", "Half written.")
-    win.locator("[data-fb-hide]").click()
+    assert win.locator("[data-fb-hide]").count() == 0  # (Cancel took Hide's place)
+    win.locator("[data-fb-shot]").click()
     win.wait_for(state="hidden")
     card = page.locator("#cards > .card", has=page.locator(".card-act"))
     card.wait_for()
@@ -106,6 +109,22 @@ def test_hide_while_i_take_a_screenshot_keeps_everything(people, server):
     win.wait_for(state="visible")
     assert page.locator("#fb-win textarea[name=text]").input_value() == "Half written."
     assert page.locator("[data-fb-kind=question]").get_attribute("aria-checked") == "true"
+    win.locator("[data-fb-shot]").click()  # (again, and this time paste the screenshot)
+    win.wait_for(state="hidden")
+    page.evaluate("""async () => {
+      const c = Object.assign(document.createElement('canvas'), { width: 300, height: 200 });
+      c.getContext('2d').fillRect(0, 0, 300, 200);
+      const blob = await new Promise(ok => c.toBlob(ok, 'image/png')), dt = new DataTransfer();
+      dt.items.add(new File([blob], 'shot.png', { type: 'image/png' }));
+      document.body.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true }));
+    }""")
+    win.wait_for(state="visible")  # (the paste brings it back, the picture added and on the stage)
+    page.wait_for_function("() => document.querySelectorAll('#fb-win [data-fb-pic]').length === 2 && document.querySelector('#fb-win [data-fb-canvas]').width === 300")
+    chips = page.evaluate("() => [...document.querySelector('#fb-win [data-fb-chips]').children].filter(c => !c.hidden).map(c => c.dataset.fbShot !== undefined ? 'shot' : c.classList.contains('fb-add-pic') ? 'add' : 'pic')")
+    assert chips == ["pic", "pic", "shot", "add"]  # (the pictures, then Take a screenshot and +)
+    win.locator(".fb-sendline [data-fb-cancel]").click()  # Cancel
+    win.wait_for(state="hidden")
+    page.wait_for_function("() => !document.querySelector('#cards > .card:not(.out) .card-act')")  # (no card left waiting)
     assert not admin.errors, admin.errors
 
 
