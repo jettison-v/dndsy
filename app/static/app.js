@@ -5104,9 +5104,18 @@ document.addEventListener('click', e => {
     const link = document.querySelector('link[rel="stylesheet"][href^="https://fonts.googleapis.com/"]');
     if (!link) return '';
     const css = await (await fetch(link.href)).text();
-    // (only the faces the page is showing: a font not in this browser yet stays out of the page, display=optional, so
-    // it stays out of the picture too)
-    const shown = new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/["']/g, '') + ' ' + f.weight));
+    // (only the faces the page is drawing with: a font loaded too late on a first visit stays out of the page for that
+    // visit, display=optional, though it counts as loaded; drawn in the picture, its wider letters wrapped the page's
+    // words, GitHub's machines, Nov 18. A face is in use when a word set in it, with a plain fallback, comes out a
+    // different width from the fallback alone)
+    const probe = document.createElement('span');
+    Object.assign(probe.style, { position: 'absolute', left: '-9999px', top: '0', fontSize: '40px', whiteSpace: 'nowrap', visibility: 'hidden' });
+    probe.textContent = 'Hamburgefonstiv 0123';
+    document.body.append(probe);
+    const width = (family, weight) => { probe.style.fontFamily = family; probe.style.fontWeight = weight; return probe.getBoundingClientRect().width; };
+    const used = f => { const fam = f.family.replace(/["']/g, ''); return width(`"${fam}", monospace`, f.weight) !== width('monospace', f.weight); };
+    const shown = new Set([...document.fonts].filter(f => f.status === 'loaded' && used(f)).map(f => f.family.replace(/["']/g, '') + ' ' + f.weight));
+    probe.remove();
     const faces = css.split('@font-face').slice(1).map(b => '@font-face' + b.slice(0, b.indexOf('}') + 1))
       .filter(f => /U\+0000-00FF/.test(f) && shown.has(((/font-family\s*:\s*'?([^';]+)/.exec(f) || [])[1] || '') + ' ' + ((/font-weight\s*:\s*(\d+)/.exec(f) || [])[1] || '')));
     const inline = await Promise.all(faces.map(async f => {
