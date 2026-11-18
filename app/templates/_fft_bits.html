@@ -1,0 +1,36 @@
+{# Found, Fixed, Tried's shared pieces (app/fft; Manage › askdnd › Design system › Admin): a note as evidence, a line of
+   conversation, an issue's history. Imported `with context` (they read `me_id`). #}
+{% from "_admin_bits.html" import state_word %}
+
+{# A note as evidence (screens 10, 13): its safe pictures, who sent it and when, from which page, its words. `unjoin`: the
+   issue's change address, for a note joined to it by mistake. #}
+{% macro report(v, unjoin="") -%}{% set n = v.n %}
+<div class="fft-report" data-report="{{ n.id }}">
+  {% if v.pics %}<div class="fft-thumbs">{% for p in v.pics %}<img class="fft-pic" src="/manage/feedback/pictures/{{ p.id }}" alt="{{ 'The page' if p.kind == 'page' else 'A picture they added' }}" loading="lazy">{% endfor %}</div>{% endif %}
+  <div class="fft-report-body">
+    <p class="note"><b>{{ "You" if v.mine else n.first_name }}</b> · <time datetime="{{ n.created_at.isoformat() }}" data-clock="date">{{ n.created_at | ago }}</time>
+      {% if n.page or n.url %} · {% set href = n.url | local_href %}{% if href %}<a href="{{ href }}">{{ n.page or "the page" }}</a>{% else %}{{ n.page }}{% endif %}{% endif %}
+      {% if n.context.viewing_as %} · viewing as {{ n.context.viewing_as }}{% endif %}
+      {% if v.covered %} · <span class="fft-covered" data-covered>safe copy: {{ n.first_name }}'s character notes covered (only {{ n.first_name }} sees the full picture)</span>{% endif %}
+      {% if n.html %} · <a href="/manage/feedback/notes/{{ n.id }}/page" target="_blank" rel="noopener">the page as drawn</a>{% endif %}</p>
+    <p class="fft-words">{{ n.text }}</p>
+    {% if unjoin %}<form method="post" action="{{ unjoin }}" class="fft-unjoin"><input type="hidden" name="do" value="unjoin"><input type="hidden" name="note" value="{{ n.id }}"><button class="btn link small" type="submit" data-do="unjoin">Unjoin: an issue of its own</button></form>{% endif %}
+  </div>
+</div>
+{%- endmacro %}
+
+{# One line of a conversation: who to whom, the words. A player's line waiting for your approval says so, with Approve. #}
+{% macro convo_line(x, sender="", senders=[]) -%}
+{% set from_sender = x.who == "sender" %}
+<div class="bub {{ 'claude' if x.who == 'claude' else 'them' if from_sender else 'you' }}" data-line="{{ x.id }}">
+  <small>{{ "Claude" if x.who == "claude" else (sender or "Its sender") if from_sender else ("You" if x.user_id == me_id else "An admin") }}{% if x.to == "sender" %}, to {{ sender or (senders | join(", ") if senders else "its senders") }}{% elif not from_sender and x.who != "claude" %}, to Claude{% endif %}</small>
+  <p>{{ x.text }}</p>
+  {% if from_sender and not x.approved %}<form method="post" action="/manage/feedback/lines/{{ x.id }}" class="row tight"><span class="note">Claude reads it once you approve it.</span><button class="btn small" type="submit" data-do="approve-line">Approve</button></form>{% endif %}
+</div>
+{%- endmacro %}
+
+{# An issue's history, folded (screen 13): every change, newest first. #}
+{% macro history(events) -%}
+{% if events %}<details class="fold fft-history" data-history><summary class="note">History · {{ events | length }} event{{ "s" if events | length != 1 }}</summary>
+  <ol class="tl">{% for e in events %}<li><span>{{ event_words(e) }}</span> <span class="note tl-when"><time datetime="{{ e.at.isoformat() }}" data-clock="date">{{ e.at | ago }}</time></span></li>{% endfor %}</ol></details>{% endif %}
+{%- endmacro %}

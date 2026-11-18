@@ -1,28 +1,34 @@
-{# Feedback for Claude (app/feedback.py; docs/mockups/feedback-queue/): only on the page for someone who can send one
-   (feedback_send). app.js "feedback for Claude" opens it with \ (or the account menu, More, three taps on the logo),
-   takes the page's picture first, and sends what's filled in here with where, when and how the page was. What it is
-   (something broken, an idea, a question; feedback.KINDS, Brett Nov 16) is picked each time, never for you. #}
+{# Send a note (screen 9 of docs/mockups/found-fixed-tried/; app/fft/sending.py): only on the page for someone who can
+   send one (feedback_send). app.js "send a note" opens it with \ (or the account menu, More, pressing and holding the
+   logo), takes the page's picture (with your character's notes covered in the copy others see), and sends what's
+   filled in here with where, when and how the page was. What it is is picked each time, never for you. #}
 <dialog class="fb-win" id="fb-win" aria-labelledby="fb-title">
   <form method="dialog" class="fb-form">
-    <div class="row"><h2 id="fb-title">Feedback for Claude</h2><span class="note">Goes to the queue, not to Claude right away</span></div>
-    <p class="fb-check-line" data-fb-check-line hidden><span class="tag">Failed</span> A check: <b></b></p>{# (Failed… on a check: Testing, app/testing.py) #}
+    <div class="row"><h2 id="fb-title">Send a note</h2><button type="button" class="btn link peek-close" data-fb-cancel aria-label="Close">✕</button></div>
+    <p class="fb-check-line" data-fb-check-line hidden><span class="tag">Something's wrong</span> Trying: <b></b></p>
     <div class="fb-kinds" role="radiogroup" aria-labelledby="fb-kind-q"><span class="note" id="fb-kind-q">What is it?</span>
-      {% for k, (said, _, ask) in feedback_kinds.items() %}<button type="button" class="chip" role="radio" aria-checked="false" data-fb-kind="{{ k }}" data-ask="{{ ask }}">{{ said }}</button>{% endfor %}</div>
-    <label class="field"><span data-fb-ask>What's it about?</span><textarea name="text" rows="4" required maxlength="4000"></textarea></label>
-    <div class="row start tight"><button type="button" class="btn small" data-fb-point>Point at it</button><span class="note" data-fb-pointed>Click the thing you mean, if it helps</span></div>
-    <div class="fb-shots">
-      <figure class="fb-shot"><img data-fb-shot alt="The page, as you opened this" hidden><span class="note" data-fb-shot-note>Taking the page's picture…</span><figcaption class="note">The page, as you opened this <button type="button" class="btn link small" data-fb-mark hidden>✎ Mark it</button></figcaption></figure>
-      <label class="fb-drop" data-fb-drop><img data-fb-pasted alt="Your screenshot" hidden><span data-fb-drop-note><b>Add your own screenshot</b><br>Paste it here (<kbd>⌘⌃⇧4</kbd>, then <kbd>⌘V</kbd>), drop it, or choose one</span><input type="file" accept="image/png,image/jpeg,image/webp" data-fb-file class="sr"></label>
+      {% for k, said in feedback_kinds.items() %}<button type="button" class="chip" role="radio" aria-checked="false" data-fb-kind="{{ k }}" data-ask="{{ feedback_asks[k] }}">{{ said }}</button>{% endfor %}</div>
+    <div class="fb-pic-chips row tight" role="tablist" aria-label="Pictures" data-fb-chips>
+      <label class="chip fb-add-pic">+ Paste or add a picture<input type="file" accept="image/png,image/jpeg,image/webp" data-fb-file class="sr"></label>
     </div>
-    <div class="fb-markview" data-fb-markview hidden>{# (marking the picture: a box, an arrow or a line, drawn into it; Testing's 3A, every note) #}
-      <div class="row tight fb-mark-tools" role="group" aria-label="Mark the picture">
-        <button type="button" class="chip" data-fb-tool="box" aria-pressed="true">▢ Box</button><button type="button" class="chip" data-fb-tool="arrow" aria-pressed="false">➜ Arrow</button><button type="button" class="chip" data-fb-tool="draw" aria-pressed="false">✎ Draw</button>
-        <button type="button" class="btn link small" data-fb-undo>↶ Undo</button><button type="button" class="btn link small" data-fb-clear>Clear</button></div>
-      <canvas class="fb-mark-canvas" data-fb-canvas aria-label="The page's picture: drag to mark it"></canvas>
-      <div class="row"><span class="note">Drag on the picture to mark what you mean.</span><span class="row tight"><button type="button" class="btn small" data-fb-mark-cancel>Cancel</button><button type="button" class="btn primary small" data-fb-mark-done>Done</button></span></div>
+    <div class="fb-stage" data-fb-stage>
+      <p class="note fb-stage-note" data-fb-stage-note>Taking the page's picture…</p>
+      <div class="fb-canvas-wrap" data-fb-wrap hidden><canvas class="fb-mark-canvas" data-fb-canvas aria-label="The picture: drag to mark it"></canvas></div>
+      <div class="fb-tools" role="group" aria-label="Mark it" data-fb-tools hidden>
+        {% for t, label in (("box", "Box"), ("arrow", "Arrow"), ("draw", "Draw"), ("text", "Text")) %}<button type="button" class="chip" data-fb-tool="{{ t }}" aria-pressed="{{ 'true' if loop.first else 'false' }}">{{ label }}</button>{% endfor %}
+      </div>
+      <div class="fb-tools fb-tools-end" role="group" aria-label="Change the marks" data-fb-edits hidden>{# (apart from the drawing tools: a different kind of action; Brett, Nov 17) #}
+        <button type="button" class="chip" data-fb-undo>↶ Undo</button><button type="button" class="chip" data-fb-clear>Clear</button>
+      </div>
+      <p class="note fb-covered" data-fb-covered hidden>Your character's notes are covered in the copy an admin and Claude see; only you see them.</p>
     </div>
+    <label class="field"><span data-fb-ask>What's it about?</span><textarea name="text" rows="3" required maxlength="4000"></textarea></label>
     <details class="fold"><summary class="note">Sent with it, so Claude can see what you saw</summary><dl class="fb-ctx" data-fb-ctx></dl></details>
     <p class="use-said" role="alert" hidden data-fb-said></p>
-    <div class="row"><span></span><span class="row tight"><button type="button" class="btn small" data-fb-cancel>Cancel</button><button type="submit" class="btn primary small" data-fb-send>Send</button></span></div>
+    <div class="fb-sendline">
+      <button type="submit" class="btn primary" data-fb-send>Send</button>
+      <button type="button" class="btn" data-fb-hide>Hide while I take a screenshot</button>
+      <span class="note fb-line" data-fb-line></span>
+    </div>
   </form>
 </dialog>

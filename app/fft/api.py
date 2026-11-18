@@ -11,13 +11,12 @@ from sqlalchemy.orm import Session
 
 from app import web
 from app.db import get_db
-from app.fft import keys, rules, steps
+from app.fft import keys, rules, sending, steps, views
 from app.fft.models import (
     FftArea,
     FftCheck,
     FftCheckIssue,
     FftCheckVersion,
-    FftEvent,
     FftIssue,
     FftItem,
     FftLine,
@@ -120,26 +119,6 @@ def check_view(db: Session, check: FftCheck) -> dict:
             "issues": list(db.scalars(select(FftCheckIssue.issue_id).where(FftCheckIssue.check_id == check.id)))}
 
 
-def event_says(db: Session, ev: FftEvent) -> str:
-    """One line for Claude's inbox, never quoting what a player wrote before it's approved (T1)."""
-    d = ev.data or {}
-    if ev.kind == "note_sent":
-        return "A note from a player waits for Brett's approval" if d.get("role") != "admin" or d.get("staging") else f"Brett sent a note ({d.get('note_kind')})"
-    if ev.kind == "line_added" and not d.get("approved", True):
-        return "A player added to their note (it waits for Brett's approval)"
-    if ev.kind == "note_filed":
-        return f"Note {ev.thing_id} filed as {d.get('as_')}" + (f": issue {d['issue']}" if d.get("issue") else "")
-    if ev.kind == "note_joined":
-        return f"Note {ev.thing_id} joined issue {d.get('issue')}"
-    if ev.kind in ("try_passed", "try_failed", "try_cant"):
-        return f"Check {d.get('check')}: {ev.kind[4:]} on the {d.get('device')} ({d.get('where')})"
-    if ev.kind == "question_answered":
-        return f"Brett answered question {ev.thing_id}"
-    if "to" in d:
-        return f"{ev.thing.title()} {ev.thing_id}: {d.get('from')} → {d.get('to')}"
-    return f"{ev.thing.title()} {ev.thing_id}: {ev.kind.replace('_', ' ')}"
-
-
 # ------------------------------------------------------------------ reading
 
 
@@ -150,7 +129,7 @@ def inbox(listener: str = "main", peek: int = 0, area: int = 0, x_fft_key: str |
     actor = keys.require(db, x_fft_key, "read")
     rows = [e for e in rules.unread(db, li, peek=bool(peek)) if e.actor != actor.name]  # (not what it did itself)
     out = [{"id": e.id, "at": e.at.isoformat() if e.at else "", "kind": e.kind, "thing": e.thing, "thing_id": e.thing_id,
-            "area_id": e.area_id, "says": event_says(db, e)} for e in rows]
+            "area_id": e.area_id, "says": views.event_words(e)} for e in rows]
     db.commit()
     return _ok({"items": out, "listening": True})
 
@@ -438,6 +417,10 @@ def relay(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: S
                             staging=True)
     except rules.RuleError as e:
         _rule(e)
+    raw = body.get("pictures") or []
+    if not isinstance(raw, list) or len(raw) > sending.MAX_PICS or not all(sending.image(x) for x in raw):
+        raise HTTPException(400, f"pictures: up to {sending.MAX_PICS} safe copies as data: URLs")
+    sending.keep_pictures(db, [{"full": x, "safe": x, "kind": "added"} for x in raw], note_id=n.id, safe_only=True)
     db.commit()
     return _ok({"id": n.id, "waits": n.state == "waiting"})
 

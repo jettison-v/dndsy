@@ -101,7 +101,10 @@ class FftNote(_Stamped, Base):
     issue_id: Mapped[int | None] = mapped_column(ForeignKey("fft_issues.id", ondelete="SET NULL"), nullable=True, index=True)
     idea_id: Mapped[int | None] = mapped_column(ForeignKey("fft_ideas.id", ondelete="SET NULL"), nullable=True)
     try_id: Mapped[int | None] = mapped_column(ForeignKey("fft_tries.id", ondelete="SET NULL", use_alter=True, name="fft_notes_try_fkey"), nullable=True)
-    seen_line: Mapped[int] = mapped_column(Integer, default=0, server_default="0")  # the last line its sender has seen ("new reply")
+    # What its sender last saw and last had a corner card about, as "<where it stands>:<last line to them>" (web.marker):
+    # different from now is "new" on Notes you sent and the menu's count (seen), and one card (told)
+    seen: Mapped[str] = mapped_column(String(40), default="", server_default="")
+    told: Mapped[str] = mapped_column(String(40), default="", server_default="")
     staging: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())  # relayed from staging: always waits (T6)
 
 

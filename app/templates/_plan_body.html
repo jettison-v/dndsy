@@ -4,7 +4,7 @@
 {% from "_form_list.html" import form_list %}
 {% from "_notes_macros.html" import note_summary %}
 {% from "_lists.html" import empty_state, count_pill %}
-<section class="section" data-tour="plan">
+<section class="section" data-tour="plan" data-private>
   <div class="tabbar" role="tablist">
     {% for kind, meta, notes in player_notes %}<button type="submit" role="tab" aria-selected="{{ 'true' if loop.first else 'false' }}" data-tab="t-{{ kind }}" title="{{ meta.plural }}">{{ meta.tab }}{% if notes %}{{ count_pill(notes | length) }}{% endif %}</button>
     {% endfor %}<button type="submit" role="tab" aria-selected="false" data-tab="t-forget" title="Reminders">Reminders{% if reminders %}{{ count_pill(reminders | length) }}{% endif %}</button>

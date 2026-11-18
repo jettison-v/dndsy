@@ -3,9 +3,11 @@ tabs that say who reads it.
 
 - **About the story**: corrections and additions to a recap, an entry or the glossary (`Fact`, `Suggestion`), which
   the DM reads and decides on: Waiting, Added, Used, Not used (`suggestions.outcome`).
-- **About askdnd**: notes sent with \\ (`Feedback`), which an admin reads first, then Claude: Waiting for an admin,
-  With Claude, Planned, Fixed, Closed (an idea: On the Roadmap, Built; a question: Answered; `feedback.says`), with
-  the replies meant for the sender and Add to it (app/feedback.py). Shown to anyone who can send one or has.
+- **Product Feedback**: notes sent with \\ (Found, Fixed, Tried: app/fft; screen 15), which an admin reads first, then
+  Claude. Each says whose turn it is and what that means (`fft.views.sender_says`), its conversation (only the lines
+  meant for its sender: never another sender's words or the issue's title, R2), Add to it (a player's waits for an
+  admin, T1) and, for a fix it prompted, Does it work now? (R5). Counted: what's still open. Shown to anyone who can send
+  one or has.
 
 **Knowing something moved**: each note remembers what its author last saw (`seen`: the badge on their picture, More
 on a phone and each tab's "new", cleared when they open that tab) and what they last had a corner card about (`told`:
@@ -13,18 +15,21 @@ one card per change, which doesn't clear the badge). News is a change only: a su
 used), a note sent to Claude, planned, fixed or closed, or a reply.
 """
 
-import re
+import base64
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse, RedirectResponse
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
-from app import access, feedback, picks, view_as, web
+from app import access, files, picks, view_as, web
 from app.auth import current_user
 from app.db import get_db
 from app.extraction import session_label
-from app.models import Entity, Fact, Feedback, GameSession, GlossaryTerm, Status, Suggestion
+from app.fft import rules, sending
+from app.fft import views as fft_views
+from app.fft.models import FftCheck, FftCheckIssue, FftCheckVersion, FftIssue, FftLine, FftNote, FftPicture, FftQuestion
+from app.models import Entity, Fact, GameSession, GlossaryTerm, Status, Suggestion
 from app.suggestions import outcome
 from app.templating import templates
 
@@ -42,22 +47,8 @@ def _short(text: str) -> str:
 # three parts: what you asked (a title, its first sentence), what happened (the answer: Claude's, an admin's or the
 # DM's words, else what its status means) and where it stands (a track of steps, the one it's at lit).
 
-TITLE_MOST = 90
+title_of = fft_views.title_of  # (a note's title: its first sentence; one way for both tabs)
 
-
-def title_of(text: str) -> str:
-    """A note's title: its first sentence (or line), cut at a word to about one line, so a list of notes is a list of
-    different things (the row clips it further to its width; the note beside it shows it whole)."""
-    first = re.split(r"(?<=[.!?])\s|\n", (text or "").strip(), maxsplit=1)[0].strip() or "A note"
-    if len(first) <= TITLE_MOST:
-        return first
-    cut = first[:TITLE_MOST].rsplit(" ", 1)[0] if " " in first[:TITLE_MOST] else first[:TITLE_MOST - 1]
-    return cut.rstrip(" ,;:") + "…"
-
-
-ASKDND_STEPS = feedback.STEPS["broken"]  # (an idea's and a question's: feedback.STEPS)
-ASKDND_REACHED = {"review": 0, "new": 1, "question": 1, "planned": 2, "done": 3}
-ASKDND_DOT = {"review": "wait", "new": "claude", "question": "claude", "planned": "planned", "done": "done", "deleted": "closed"}
 STORY_DOT = {"Waiting": "wait", "Added": "done", "Used": "used", "Not used": "closed"}
 
 
@@ -72,23 +63,6 @@ def track(steps: tuple, reached: int, stop: str = "") -> list[dict]:
 
 def _when(at) -> float:
     return at.timestamp() if at else 0.0
-
-
-def askdnd_note(fb) -> dict:
-    """A note about askdnd as its sender sees it, in the shape both tabs share."""
-    n = {**feedback.for_sender(fb), "new": _feedback_new(fb, "seen")}
-    replies = [m for m in n["thread"] if not m["mine"]]
-    answer = replies[-1] if replies else None
-    page = n["page"] or ""
-    closed = fb.status == "deleted"
-    return {"key": f"f{fb.id}", "id": fb.id, "kind": "askdnd", "title": fb.title or title_of(fb.text), "text": fb.text, "at": fb.created_at,
-            "where": page, "href": n["url"], "from": page.rsplit(" · ", 1)[-1] if page else "Another page",
-            "label": n["label"], "dot": ASKDND_DOT.get(fb.status, "claude"), "open": fb.status not in ("done", "deleted"),
-            "answer": answer, "says": n["says"], "landed": None, "earlier": [m for m in n["thread"] if m is not answer],
-            "track": track(feedback.STEPS.get(fb.kind, ASKDND_STEPS), feedback.REACHED.get(fb.kind, ASKDND_REACHED).get(fb.status, 0),
-                           "Closed" if closed else ""),
-            "new": n["new"], "can_add": n["can_add"], "what": feedback.KINDS[fb.kind][0] if fb.kind in feedback.KINDS else "", "what_key": fb.kind,
-            "shots": [w for w, k in (("shot", fb.shot_key), ("pasted", fb.pasted_key)) if k]}  # (the pictures sent with it: Brett, Nov 16)
 
 
 def story_note(r: dict) -> dict:
@@ -146,19 +120,35 @@ def _story_new(x, field: str) -> bool:
     return x.status != "pending" and getattr(x, field) != x.status
 
 
-# ------------------------------------------------------------------ about askdnd (an admin, then Claude)
 
 
-def _feedback_new(fb, field: str) -> bool:
-    return fb.status != "review" and getattr(fb, field) != feedback.marker(fb)
+# ------------------------------------------------------------------ Product Feedback (an admin, then Claude: app/fft)
 
 
-def notes_of(db: Session, user: dict | None) -> list[Feedback]:
-    """The notes about askdnd this person sent: the page's person, so an admin viewing as Mark sees Mark's (Brett, Nov 7)."""
-    me = picks.user_row(db, user) if user else None
-    if me is None:
-        return []
-    return list(db.scalars(select(Feedback).where(Feedback.user_id == me.id).order_by(Feedback.id.desc()).limit(200)))
+def _me(db: Session, user: dict | None):
+    """The page's person (an admin viewing as Mark sees Mark's notes, Brett, Nov 7)."""
+    return picks.user_row(db, user) if user else None
+
+
+def fft_note(db: Session, note: FftNote, me_id: int | None) -> dict:
+    """A note about askdnd as its sender reads it."""
+    says = fft_views.sender_says(db, note, me_id)
+    issue = db.get(FftIssue, note.issue_id) if note.issue_id else None
+    lines = fft_views.sender_lines(db, note)
+    pics = list(db.scalars(select(FftPicture).where(or_(FftPicture.note_id == note.id, FftPicture.line_id.in_([x.id for x in lines] or [0])))
+                           .order_by(FftPicture.id)))
+    trying = None
+    if issue is not None and issue.state == "ready" and issue.confirm_by and issue.confirm_by == me_id:
+        v = db.execute(select(FftCheckVersion).join(FftCheckIssue, FftCheckIssue.check_id == FftCheckVersion.check_id)
+                       .join(FftCheck, FftCheck.id == FftCheckVersion.check_id)
+                       .where(FftCheckIssue.issue_id == issue.id, FftCheck.version == FftCheckVersion.version, FftCheck.retired.is_(False))).scalars().first()
+        trying = {"issue": issue.id, "steps": v.steps if v else [], "expect": v.expect if v else ""}
+    return {"key": f"f{note.id}", "id": note.id, "title": title_of(note.text), "text": note.text, "at": note.created_at,
+            "where": note.page, "href": fft_views.local_href(note.url), "says": says,
+            "open": says["open"], "new": note.seen != fft_views.marker(db, note, me_id), "lines": lines,
+            "pics": [p for p in pics if p.note_id == note.id], "line_pics": {p.line_id: p for p in pics if p.line_id},
+            "kind_said": fft_views.KIND_SAID.get(note.kind, ""), "trying": trying, "admin": note.role == "admin",
+            "closed_words": issue.close_words if issue is not None and issue.state == "closed" else "", "can_add": says["open"] or note.state == "waiting"}
 
 
 def shows_askdnd(user: dict, notes: list) -> bool:
@@ -170,71 +160,60 @@ def _looking(request: Request) -> bool:
     return view_as.viewing(request.session) is not None
 
 
-def _kept(db: Session, request: Request, fb) -> bool:
-    """A note's pictures are kept from an admin who is its sender's DM (feedback.kept_from, the outside review's C9).
-    View as already refuses such an admin (app/view_as.py); this checks the real person signed in again, so a change
-    there can never show them."""
-    if not _looking(request):
-        return False
-    real = (request.session.get("real_user") or {}).get("email")
-    return feedback.kept_from(db, fb, real)
-
-
 # ------------------------------------------------------------------ the page
 
 
 @router.get("/your-notes")
 def page(request: Request, tab: str = "", note: str = "", db: Session = Depends(get_db)):
-    """Your notes: About the story and About askdnd, the tab with news first."""
+    """Notes you sent: The Story and Product Feedback, the tab with news first."""
     user = current_user(request)
     if not user:
         return RedirectResponse("/login", status_code=303)
+    me = _me(db, user)
     rows = story(db, user)
-    notes = notes_of(db, user)
+    notes = fft_views.notes_of(db, me.id if me else None)
     askdnd = shows_askdnd(user, notes)
-    news = {"story": sum(r["new"] for r in rows), "askdnd": sum(_feedback_new(fb, "seen") for fb in notes)}
+    shaped = [fft_note(db, n, me.id if me else None) for n in notes]
+    news = {"story": sum(r["new"] for r in rows), "askdnd": sum(n["new"] for n in shaped)}
     if tab not in TABS or (tab == "askdnd" and not askdnd):
         tab = "askdnd" if askdnd and news["askdnd"] and not news["story"] else "story" if rows or not askdnd else "askdnd"
-    from app import testing
-
-    trying = {fb.id: testing.view(c) for fb in notes if (c := testing.player_check(db, fb))}  # (Does it work now?: 6C)
-    lists = {"story": ranked([story_note(r) for r in rows]), "askdnd": ranked([{**askdnd_note(fb), "trying": trying.get(fb.id)} for fb in notes])}
+    lists = {"story": ranked([story_note(r) for r in rows]), "askdnd": ranked(shaped)}
     if not _looking(request):  # (the tab it opens on is seen; the other when it's opened, `seen`)
-        _mark(rows, notes, tab)
-        news[tab] = 0
+        _mark(db, rows, notes, tab, me.id if me else None)
         db.commit()
     return templates.TemplateResponse(request, "your_notes.html", {
         "tab": tab, "lists": lists, "note": note, "askdnd": askdnd, "news": news, "toast": request.session.pop("toast", None),
-        "kept": {fb.id for fb in notes if _kept(db, request, fb)}})
+        "open_count": sum(1 for n in shaped if n["open"]), "looking": _looking(request)})
 
 
-def _mark(rows: list[dict], notes: list, tab: str) -> None:
+def _mark(db: Session, rows: list[dict], notes: list, tab: str, me_id: int | None) -> None:
     """A tab opened: its notes are seen (the badge) and need no card."""
     if tab == "story":
         for r in rows:
             r["x"].seen = r["x"].told = r["x"].status
     else:
-        for fb in notes:
-            fb.seen = fb.told = feedback.marker(fb)
+        for n in notes:
+            n.seen = n.told = fft_views.marker(db, n, me_id)
 
 
-@router.get("/your-notes/feedback/{feedback_id:int}/pic/{pic_id:int}")
-def own_picture(request: Request, feedback_id: int, pic_id: int, db: Session = Depends(get_db)):
-    """A screenshot you added to your own note."""
-    fb = next((x for x in notes_of(db, current_user(request)) if x.id == feedback_id), None)
-    if fb is None or _kept(db, request, fb):
+def _own(db: Session, request: Request, note_id: int) -> tuple[FftNote, int]:
+    me = _me(db, current_user(request))
+    note = db.get(FftNote, note_id)
+    if me is None or note is None or note.user_id != me.id:
         raise HTTPException(404)
-    return feedback.picture_of(db, fb, pic_id)
+    return note, me.id
 
 
-@router.get("/your-notes/feedback/{feedback_id:int}/{which}")
-def own_shot(request: Request, feedback_id: int, which: str, db: Session = Depends(get_db)):
-    """The pictures you sent with your own note (Brett, Nov 16): the page as you opened the window (`shot`) and the
-    screenshot you pasted (`pasted`)."""
-    fb = next((x for x in notes_of(db, current_user(request)) if x.id == feedback_id), None)
-    if fb is None or which not in ("shot", "pasted") or _kept(db, request, fb):
+@router.get("/your-notes/pictures/{pic_id:int}")
+def own_picture(request: Request, pic_id: int, db: Session = Depends(get_db)):
+    """A picture you sent: the full copy, yours alone (T5). An admin viewing as you sees its safe copy."""
+    pic = db.get(FftPicture, pic_id)
+    if pic is None:
         raise HTTPException(404)
-    return feedback._shot(db, feedback_id, which)
+    line = db.get(FftLine, pic.line_id) if pic.line_id else None
+    _own(db, request, pic.note_id or (line.note_id if line else 0))
+    key = pic.safe_key if _looking(request) else pic.key
+    return files.serve(key, next((t for t, (ext, _) in files.TYPES.items() if key.endswith(ext)), "image/png"), cache_control="private, no-store", release=db)
 
 
 @router.get("/your-notes/seen")
@@ -244,66 +223,70 @@ def seen(request: Request, tab: str = "", db: Session = Depends(get_db)):
     user = current_user(request)
     if not user or tab not in TABS:
         return JSONResponse({"count": 0}, headers={"Cache-Control": "no-store"})
-    rows, notes = story(db, user), notes_of(db, user)
+    me = _me(db, user)
+    me_id = me.id if me else None
+    rows, notes = story(db, user), fft_views.notes_of(db, me_id)
     if not _looking(request):
-        _mark(rows, notes, tab)
+        _mark(db, rows, notes, tab, me_id)
         db.commit()
-    count = sum(_story_new(r["x"], "seen") for r in rows) + sum(_feedback_new(fb, "seen") for fb in notes)
+    count = sum(_story_new(r["x"], "seen") for r in rows) + sum(n.seen != fft_views.marker(db, n, me_id) for n in notes)
     return JSONResponse({"count": count}, headers={"Cache-Control": "no-store"})
 
 
-@router.post("/your-notes/feedback/{feedback_id:int}")
-def add_to(request: Request, feedback_id: int, text: str = Form(""), pics: list[UploadFile] = File(default=[]),
-           db: Session = Depends(get_db)):
-    """Add to your own note about askdnd, words and screenshots (feedback 64, Nov 16). From a player it goes to an admin
-    first, as a new note does (Brett, Nov 6)."""
-    user = current_user(request)
-    fb = next((x for x in notes_of(db, user) if x.id == feedback_id), None)
-    if fb is None or fb.status == "deleted":
-        raise HTTPException(404)
-    added = feedback.add_pictures(db, fb, pics)
+def _uploads(db: Session, pics: list[UploadFile] | None) -> list[dict]:
+    """Screenshots added with Add to it, as the sending window's pictures (a picture you add is yours to share)."""
+    out = []
+    for up in [u for u in pics or [] if u is not None and u.filename]:
+        if up.content_type not in ("image/png", "image/jpeg", "image/webp"):
+            raise HTTPException(400, "A screenshot as PNG, JPEG or WebP, please.")
+        data = up.file.read(sending.MAX_PIC_BYTES + 1)
+        if len(data) > sending.MAX_PIC_BYTES:
+            raise HTTPException(400, "A screenshot is over 8 MB.")
+        url = f"data:{up.content_type};base64," + base64.b64encode(data).decode()
+        out.append({"full": url, "safe": url, "kind": "added"})
+    if len(out) > sending.MAX_PICS:
+        raise HTTPException(400, f"{sending.MAX_PICS} screenshots at most, at a time.")
+    return out
+
+
+@router.post("/your-notes/notes/{note_id:int}")
+def add_to(request: Request, note_id: int, text: str = Form(""), pics: list[UploadFile] = File(default=[]), db: Session = Depends(get_db)):
+    """Add to your own note, words and screenshots (feedback 64). A player's goes to an admin first, as a note does (T1)."""
+    note, me_id = _own(db, request, note_id)
+    if _looking(request):
+        raise HTTPException(403, "Viewing as someone changes nothing for them.")
+    added = _uploads(db, pics)
     if not text.strip() and not added:
         raise HTTPException(400, "Write what you'd add first.")
-    fb.thread = [*(fb.thread or []), {"who": "sender", "text": text.strip()[:feedback.MAX_TEXT], "at": feedback.now_iso(),
-                                      **({"pics": added} if added else {})}]
-    admin = access.level((user or {}).get("email")) == access.ADMIN
-    fb.status = ("planned" if fb.status == "planned" else "new") if admin else "review"
-    fb.seen = fb.told = feedback.marker(fb)
-    if admin:  # (a player's waits for an admin's Approve, as a new note does)
-        feedback.tell_claude(db, fb, "added", "added to")
+    admin = note.role == "admin"
+    line = rules.add_line(db, f"user:{me_id}", text.strip() or "(a picture)", note=note, who="sender", user_id=me_id,
+                          approved=admin or note.state == "waiting")  # (on a waiting note it waits with the note)
+    sending.keep_pictures(db, added, line_id=line.id)
+    note.seen = note.told = fft_views.marker(db, note, me_id)
     db.commit()
-    request.session["toast"] = web.notice("Added: an admin reads it first" if not admin else "Added: it's with Claude")
-    return RedirectResponse(f"/your-notes?tab=askdnd&note=f{fb.id}", status_code=303)
+    request.session["toast"] = web.notice("Added: it's with Claude" if admin else "Added: an admin reads it first")
+    return RedirectResponse(f"/your-notes?tab=askdnd&note=f{note.id}", status_code=303)
 
 
-@router.post("/your-notes/feedback/{feedback_id:int}/works")
-def works(request: Request, feedback_id: int, answer: str = Form(""), text: str = Form(""), db: Session = Depends(get_db)):
-    """Does it work now? (Testing, Brett's 6C): the sender of a fixed note says. Yes passes its check; Still broken fails
-    it, and what they write goes to the note, which goes back as Add to it does (to an admin first, from a player)."""
-    from app import testing
-
-    user = current_user(request)
-    fb = next((x for x in notes_of(db, user) if x.id == feedback_id), None)
-    c = testing.player_check(db, fb) if fb is not None and fb.status != "deleted" else None  # (a closed note isn't reopened)
-    if c is None or answer not in ("yes", "no"):
+@router.post("/your-notes/notes/{note_id:int}/works")
+def works(request: Request, note_id: int, answer: str = Form(""), text: str = Form(""), db: Session = Depends(get_db)):
+    """Does it work now? (R5): the player whose note prompted a fix says. Yes closes it as working; Still broken makes it
+    Claude's again, their words waiting for an admin (T1)."""
+    note, me_id = _own(db, request, note_id)
+    issue = db.get(FftIssue, note.issue_id) if note.issue_id else None
+    if _looking(request) or issue is None or answer not in ("yes", "no"):
         raise HTTPException(404)
-    testing.answered(db, c, answer == "yes", text.strip())
-    from app import for_claude
-
-    for_claude.tell(db, "works", f"Note {fb.id}: its sender says " + ("it works now" if answer == "yes" else "it's still broken: " + " ".join(text.split())[:200]),
-                    feedback_id=fb.id, check_id=c.id, area_id=c.area_id)
-    if answer == "no":
-        fb.thread = [*(fb.thread or []), {"who": "sender", "text": ("Still broken. " + text.strip()).strip()[:feedback.MAX_TEXT], "at": feedback.now_iso()}]
-        admin = access.level((user or {}).get("email")) == access.ADMIN
-        fb.status = "new" if admin else "review"
-        fb.seen = fb.told = feedback.marker(fb)
+    try:
+        rules.player_confirms(db, f"user:{me_id}", issue, answer == "yes", text.strip(), user_id=me_id)
+    except rules.RuleError as e:
+        raise HTTPException(409, e.words) from e
+    note.seen = note.told = fft_views.marker(db, note, me_id)
     db.commit()
-    request.session["toast"] = web.notice("Thanks: it's marked fixed" if answer == "yes" else "Sent back: it's not fixed yet")
-    return RedirectResponse(f"/your-notes?tab=askdnd&note=f{fb.id}", status_code=303)
+    request.session["toast"] = web.notice("Thanks: it's marked working" if answer == "yes" else "Sent back: it's not fixed yet")
+    return RedirectResponse(f"/your-notes?tab=askdnd&note=f{note.id}", status_code=303)
 
 
 STORY_NEWS = {"Added": "The DM added your note", "Used": "The DM used your note", "Not used": "The DM didn't use your note"}
-ASKDND_NEWS = {"new": "Sent to Claude", "planned": "Planned", "done": "Fixed", "deleted": "Closed"}
 
 
 @router.get("/your-notes/news")
@@ -314,26 +297,27 @@ def news(request: Request, db: Session = Depends(get_db)):
     user = current_user(request)
     if not user:
         return JSONResponse({"count": 0, "tabs": {}, "cards": []})
+    me = _me(db, user)
+    me_id = me.id if me else None
     rows = story(db, user)
-    notes = notes_of(db, user)
-    tabs = {"story": sum(r["new"] for r in rows), "askdnd": sum(_feedback_new(fb, "seen") for fb in notes)}
-    cards, tab_of = [], []
+    notes = fft_views.notes_of(db, me_id)
+    markers = {n.id: fft_views.marker(db, n, me_id) for n in notes}
+    tabs = {"story": sum(r["new"] for r in rows), "askdnd": sum(n.seen != markers[n.id] for n in notes)}
     if _looking(request):
         return JSONResponse({"count": sum(tabs.values()), "tabs": tabs, "cards": []}, headers={"Cache-Control": "no-store"})
+    cards, tab_of = [], []
     for r in rows:
         x = r["x"]
         if _story_new(x, "told"):
             cards.append(f"{STORY_NEWS.get(outcome(x.status)['label'], 'Your note moved')}: “{_short(x.text)}”")
             tab_of.append("story")
             x.told = x.status
-    for fb in notes:
-        if _feedback_new(fb, "told"):
-            was = (fb.told or "review:0").split(":")[0]
-            now = feedback.marker(fb)
-            moved = feedback.says(fb)[0] if fb.status in ("planned", "done") else ASKDND_NEWS.get(fb.status, "Moved")
-            cards.append(f"{moved if now.split(':')[0] != was else 'A reply'}: “{_short(fb.text)}”")
+    for n in notes:
+        if n.told != markers[n.id]:
+            was, now = (n.told or ":").split(":")[0], markers[n.id].split(":")[0]
+            cards.append(f"{now if now != was else 'A reply'}: “{_short(n.text)}”")
             tab_of.append("askdnd")
-            fb.told = now
+            n.told = markers[n.id]
     if cards:
         db.commit()
     if len(cards) > MOST_CARDS:
@@ -344,14 +328,14 @@ def news(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"count": sum(tabs.values()), "tabs": tabs, "cards": shown}, headers={"Cache-Control": "no-store"})
 
 
-ASKS_SEEN = "asks_seen"  # (the latest of Claude's questions an admin had a card about, on this device's session)
+ASKS_SEEN = "fft_asks_seen"  # (the newest of Claude's questions an admin had a card about, on this device's session)
 
 
 def _new_asks(request: Request, db: Session) -> int:
     """Claude's questions asked since this admin's last card about them (one card, then quiet until another comes)."""
-    times = [q["at"] for fb in feedback.asks(db) if (q := feedback.question_of(fb)) and q.get("at")]
-    seen = request.session.get(ASKS_SEEN) or ""
-    fresh = [t for t in times if t > seen]
+    ids = list(db.scalars(select(FftQuestion.id).where(FftQuestion.answered_at.is_(None))))
+    seen = request.session.get(ASKS_SEEN) or 0
+    fresh = [i for i in ids if i > seen]
     if fresh:
-        request.session[ASKS_SEEN] = max(times)
+        request.session[ASKS_SEEN] = max(ids)
     return len(fresh)

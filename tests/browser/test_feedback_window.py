@@ -1,58 +1,111 @@
-"""Feedback for Claude in a real page (app/feedback.py, app.js "feedback for Claude"; Brett, 2026-11-03,
-docs/mockups/feedback-queue/): \\ opens the window at once and the page's picture follows, Point at it marks a thing on
-the page, and Send puts the note in the queue with where, when and how the page was."""
+"""Send a note in a real page (Found, Fixed, Tried: app/fft/sending.py, app.js "send a note"; screen 9 of
+docs/mockups/found-fixed-tried/): \\ opens the window at once and the page's picture follows, marked with Box, Arrow,
+Draw and Text; Hide while I take a screenshot puts it away and brings it back; Send keeps where, when and how the page
+was, and the safe copy of the picture with the sender's private parts covered."""
 
 from sqlalchemy import create_engine, text
 
 
-def test_backslash_point_and_send(people, server, browser_db):
+def _rows(browser_db, sql, **params):
+    engine = create_engine(browser_db[0])
+    with engine.connect() as conn:
+        rows = conn.execute(text(sql), params).all()
+    engine.dispose()
+    return rows
+
+
+def test_backslash_pick_what_it_is_and_send(people, server, browser_db):
     admin = people("admin")
     page = admin.open(f"/characters/{server['cole']}/battle")
     page.wait_for_load_state("networkidle")
     page.keyboard.press("\\")
     win = page.locator("#fb-win")
     win.wait_for(state="visible", timeout=5000)
-    page.locator("[data-fb-shot]").wait_for(state="visible", timeout=15000)  # the page's picture, taken as it opened
+    win.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)  # the page's picture, taken as it opened
+    assert win.locator("[data-fb-pic]").count() == 1 and win.locator("[data-fb-pic].on").count() == 1  # (The page, chosen)
     page.fill("#fb-win textarea[name=text]", "Speed should show the swim speed too.")
-    page.click("[data-fb-point]")
-    page.locator("#fb-win").wait_for(state="hidden", timeout=5000)
-    page.click("h1")  # (pointing: the next click marks it)
-    win.wait_for(state="visible", timeout=5000)
-    assert "Pointed at" in page.locator("[data-fb-pointed]").inner_text()
     page.click("[data-fb-send]")  # (what it is, never picked for you: Send asks for it first)
-    page.locator("[data-fb-said]").wait_for(state="visible", timeout=5000)
-    assert page.locator("#fb-win").is_visible()
+    win.locator("[data-fb-said]").wait_for(state="visible", timeout=5000)
     page.click("[data-fb-kind=idea]")
     assert page.locator("[data-fb-kind=idea]").get_attribute("aria-checked") == "true"
     assert page.locator("[data-fb-ask]").evaluate("e => e.textContent === document.querySelector('[data-fb-kind=idea]').dataset.ask")
-    assert page.locator("[data-fb-said]").is_hidden()  # (the box's question is the idea's own)
+    assert win.locator("[data-fb-line]").inner_text()  # (the line beside Send says what happens next)
     page.click("[data-fb-send]")
-    page.locator("#cards > .card", has_text="In the queue").wait_for(timeout=10000)
-    engine = create_engine(browser_db[0])
-    with engine.connect() as conn:
-        row = conn.execute(text("SELECT text, context, shot_key, length(html), kind FROM feedback ORDER BY id DESC LIMIT 1")).one()
-    engine.dispose()
-    words, ctx, shot, html, kind = row
-    assert words == "Speed should show the swim speed too." and shot and html > 1000 and kind == "idea"
-    assert ctx["window"] and ctx["browser"] and ctx["pointed"]["label"] and ctx["signed_in_as"].endswith("(admin)")
+    page.locator("#cards > .card").first.wait_for(timeout=10000)
+    (words, ctx, html, kind, state), = _rows(browser_db, "SELECT text, context, length(html), kind, state FROM fft_notes ORDER BY id DESC LIMIT 1")
+    assert words == "Speed should show the swim speed too." and html > 1000 and kind == "idea" and state == "filed"
+    assert ctx["window"] and ctx["browser"] and "signed_in_as" not in ctx
+    assert _rows(browser_db, "SELECT count(*) FROM fft_pictures")[0][0] == 1
     page.keyboard.press("\\")  # (again, in a field: typing a backslash there never opens it)
     win.wait_for(state="visible", timeout=5000)
     assert page.locator("[data-fb-kind].on").count() == 0  # (opened again: nothing picked)
     page.fill("#fb-win textarea[name=text]", "a \\ b")
     assert page.locator("#fb-win textarea[name=text]").input_value() == "a \\ b"
-    # A note's screenshots (here on the queue, as on Notes you sent) show large over the page, never in a new tab, and
-    # the ✕ closes them (Brett, Nov 16)
-    page.keyboard.press("Escape")
-    admin.open("/manage/feedback?tab=new")
-    pic = page.locator("[data-note-read] .fb-pic").first  # (the Reader opens on the newest note: Readers, Rebuilt)
-    pic.wait_for()
-    before = page.url
-    pic.click()
-    big = page.locator("dialog.pic-big[open]")
-    big.wait_for()
-    assert big.locator("img").is_visible() and page.url == before and len(page.context.pages) == 1
-    big.locator(".pic-big-x").click()
-    page.wait_for_function("!document.querySelector('dialog.pic-big')")
+    assert not admin.errors, admin.errors
+
+
+def test_marks_and_words_are_drawn_into_what_is_sent_and_private_parts_covered(people, server, browser_db):
+    """Box, Arrow, Draw and Text on the picture (Undo and Clear apart); what's sent carries them. A part of the page
+    marked private (a player's character notes) is covered in the copy others see, and left whole in its sender's."""
+    admin = people("admin")
+    page = admin.open("/party")
+    page.wait_for_load_state("networkidle")
+    page.evaluate("""() => {
+      const box = Object.assign(document.createElement('div'), { textContent: 'My secret plan' });
+      box.setAttribute('data-private', '');
+      Object.assign(box.style, { position: 'fixed', top: '120px', left: '120px', width: '220px', height: '80px', background: 'rgb(30, 200, 30)', zIndex: 40 });
+      document.body.append(box);
+    }""")
+    page.keyboard.press("\\")
+    win = page.locator("#fb-win")
+    canvas = win.locator("[data-fb-canvas]")
+    canvas.wait_for(state="visible", timeout=15000)
+    assert win.locator("[data-fb-covered]").is_visible()  # (it says so)
+    box = canvas.bounding_box()
+    page.mouse.move(box["x"] + 40, box["y"] + 40)
+    page.mouse.down()
+    page.mouse.move(box["x"] + 200, box["y"] + 120, steps=5)
+    page.mouse.up()
+    win.locator("[data-fb-undo]").click()  # (Undo takes the box away; drawn again)
+    page.mouse.move(box["x"] + 40, box["y"] + 40)
+    page.mouse.down()
+    page.mouse.move(box["x"] + 200, box["y"] + 120, steps=5)
+    page.mouse.up()
+    win.locator("[data-fb-tool=text]").click()
+    page.mouse.click(box["x"] + 60, box["y"] + 60)
+    win.locator(".fb-text-input").fill("Should be centered")
+    page.keyboard.press("Enter")
+    assert win.locator(".fb-text-input").count() == 0 and win.is_visible()
+    page.fill("#fb-win textarea[name=text]", "This, marked.")
+    page.click("[data-fb-kind=problem]")
+    page.click("[data-fb-send]")
+    page.locator("#cards > .card").first.wait_for(timeout=10000)
+    (marked,), = _rows(browser_db, "SELECT context->>'marked' FROM fft_notes WHERE text = 'This, marked.'")
+    assert marked == "2"
+    (full, safe), = _rows(browser_db, "SELECT p.key, p.safe_key FROM fft_pictures p JOIN fft_notes n ON n.id = p.note_id WHERE n.text = 'This, marked.'")
+    assert full and safe and full != safe  # (the safe copy, with the private part covered, is its own picture)
+    (html,), = _rows(browser_db, "SELECT html FROM fft_notes WHERE text = 'This, marked.'")
+    assert "My secret plan" not in html and 'data-private="emptied"' in html
+    assert not admin.errors, admin.errors
+
+
+def test_hide_while_i_take_a_screenshot_keeps_everything(people, server):
+    admin = people("admin")
+    page = admin.open("/party")
+    page.wait_for_load_state("networkidle")
+    page.keyboard.press("\\")
+    win = page.locator("#fb-win")
+    win.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
+    page.click("[data-fb-kind=question]")
+    page.fill("#fb-win textarea[name=text]", "Half written.")
+    win.locator("[data-fb-hide]").click()
+    win.wait_for(state="hidden")
+    card = page.locator("#cards > .card", has=page.locator(".card-act"))
+    card.wait_for()
+    card.locator(".card-act").click()  # Back to it
+    win.wait_for(state="visible")
+    assert page.locator("#fb-win textarea[name=text]").input_value() == "Half written."
+    assert page.locator("[data-fb-kind=question]").get_attribute("aria-checked") == "true"
     assert not admin.errors, admin.errors
 
 
@@ -71,12 +124,12 @@ def test_a_long_page_opens_at_once_and_draws_one_picture_of_what_is_on_screen(pe
       document.body.append(box);
       window.scrollTo(0, 400);
     }""")
-    page.evaluate("""() => {  // which comes first, the window or its picture (the order is the promise, not a time:
-      window.__fbFirst = '';      // a second on GitHub's shared machines missed now and then, Nov 6)
+    page.evaluate("""() => {  // which comes first, the window or its picture (the order is the promise, not a time)
+      window.__fbFirst = '';
       const seen = () => {
         if (window.__fbFirst) return;
-        const win = document.querySelector('#fb-win'), shot = document.querySelector('[data-fb-shot]');
-        if (shot && shot.checkVisibility()) window.__fbFirst = 'picture';
+        const win = document.querySelector('#fb-win'), pic = document.querySelector('[data-fb-wrap]');
+        if (pic && pic.checkVisibility()) window.__fbFirst = 'picture';
         else if (win && win.checkVisibility()) window.__fbFirst = 'window';  // (a fixed window has no offsetParent)
       };
       new MutationObserver(seen).observe(document.body, { subtree: true, childList: true, attributes: true });
@@ -87,14 +140,11 @@ def test_a_long_page_opens_at_once_and_draws_one_picture_of_what_is_on_screen(pe
     page.keyboard.press("Escape")
     page.wait_for_timeout(100)  # (Chrome closes the window just after the key; a person is never quicker)
     page.keyboard.press("\\")  # (again at once, while the first picture is drawn: one picture, not two)
-    page.locator("[data-fb-shot]").wait_for(state="visible", timeout=15000)
-    red = page.evaluate("""async () => {  // the modal's red at the picture's centre: it was drawn where it is on screen
-      const img = document.querySelector('[data-fb-shot]');
-      await img.decode();
-      const c = Object.assign(document.createElement('canvas'), { width: img.naturalWidth, height: img.naturalHeight });
-      const g = c.getContext('2d');
-      g.drawImage(img, 0, 0);
-      const [r, gr, b] = g.getImageData(img.naturalWidth / 2 + 150, img.naturalHeight / 2 + 120, 1, 1).data;
+    page.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
+    page.wait_for_function("() => { const c = document.querySelector('[data-fb-canvas]'); return c && c.width > 100; }")
+    red = page.evaluate("""() => {  // the modal's red near the picture's centre: drawn where it is on screen
+      const c = document.querySelector('[data-fb-canvas]'), g = c.getContext('2d');
+      const [r, gr, b] = g.getImageData(c.width / 2 + 150, c.height / 2 + 120, 1, 1).data;
       return r > 150 && gr < 90 && b < 90;
     }""")
     assert red
@@ -102,80 +152,19 @@ def test_a_long_page_opens_at_once_and_draws_one_picture_of_what_is_on_screen(pe
 
 
 def test_a_page_holding_a_nul_character_still_gets_its_picture(people, server):
-    """Brett, Nov 4: on beta the picture never came ("No picture this time"), and the note itself answered 500. A NUL
-    character in the page (another extension's text; Postgres refuses it too) makes the picture's SVG invalid XML, which
-    stopped the whole drawing: characters XML can't hold are taken out before it's painted."""
+    """Brett, Nov 4: a NUL character in the page made the picture's SVG invalid XML, which stopped the whole drawing:
+    characters XML can't hold are taken out before it's painted."""
     admin = people("admin")
     page = admin.open(f"/characters/{server['cole']}/battle")
     page.wait_for_load_state("networkidle")
     page.evaluate("() => document.querySelector('main').append(Object.assign(document.createElement('span'), { textContent: 'x\\u0000\\u0007y' }))")
     page.keyboard.press("\\")
-    page.locator("[data-fb-shot]").wait_for(state="visible", timeout=15000)
+    page.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
     assert not admin.errors, admin.errors
 
 
-def test_point_at_leaves_the_roll_window_open_to_point_inside_it(people, server):
-    """Brett, Nov 9: "clicking Point at closes all modals". Point at, its click and Escape belong to Feedback for Claude:
-    the roll window under it stays open, and pointing at its Advantage marks it without pressing it."""
-    admin = people("admin")
-    page = admin.open(f"/characters/{server['cole']}/battle")
-    page.locator(".roll-hit:visible").first.click()
-    page.locator(".roll-win").wait_for()
-    page.keyboard.press("\\")
-    page.locator("#fb-win").wait_for(state="visible")
-    page.locator("#fb-win [data-fb-point]").click()
-    page.locator(".roll-win [data-mode='adv']").click()
-    page.locator("#fb-win").wait_for(state="visible")
-    assert page.locator(".roll-win").count() == 1 and "Advantage" in page.locator("[data-fb-pointed]").inner_text()
-    assert page.locator(".roll-win [data-mode='adv']").get_attribute("aria-pressed") == "false"
-    page.keyboard.press("Escape")
-    assert page.locator("#fb-win").is_hidden() and page.locator(".roll-win").count() == 1
-    assert not admin.errors, admin.errors
-
-
-def test_marking_the_picture_draws_into_what_is_sent(people, server, browser_db):
-    """Testing's 3A, for every note (Brett, Nov 16): ✎ Mark it opens the page's picture large in the same window; a box
-    or an arrow dragged on it is drawn into the picture that's sent; Cancel and Escape go back with it as it was."""
-    admin = people("admin")
-    page = admin.open("/party")
-    page.wait_for_load_state("networkidle")
-    page.keyboard.press("\\")
-    win = page.locator("#fb-win")
-    mark = win.locator("[data-fb-mark]")
-    mark.wait_for(state="visible", timeout=15000)  # (once there's a picture)
-    first = win.locator("[data-fb-shot]").get_attribute("src")
-
-    mark.click()
-    canvas = win.locator("[data-fb-canvas]")
-    canvas.wait_for()
-    page.keyboard.press("Escape")  # (back to the note, the window still open, the picture as it was)
-    assert win.is_visible() and win.locator("[data-fb-markview]").is_hidden() and win.locator("[data-fb-shot]").get_attribute("src") == first
-
-    mark.click()
-    canvas.wait_for(state="visible")  # (it opens once the picture has loaded into it)
-    box = canvas.bounding_box()
-    page.mouse.move(box["x"] + 40, box["y"] + 40)
-    page.mouse.down()
-    page.mouse.move(box["x"] + 200, box["y"] + 120, steps=5)
-    page.mouse.up()
-    win.locator("[data-fb-mark-done]").click()
-    marked = win.locator("[data-fb-shot]").get_attribute("src")
-    assert marked != first and marked.startswith("data:image/jpeg")
-
-    page.fill("#fb-win textarea[name=text]", "This, marked.")
-    page.click("[data-fb-kind=broken]")
-    page.click("[data-fb-send]")
-    page.locator("#cards > .card").first.wait_for(timeout=10000)
-    engine = create_engine(browser_db[0])
-    with engine.connect() as conn:
-        row = conn.execute(text("SELECT shot_key, context->>'marked' FROM feedback WHERE text = 'This, marked.'")).first()
-    engine.dispose()
-    assert row and row[0] and row[1] == "1"  # (sent with its picture, which carries one mark)
-    assert not admin.errors, admin.errors
-
-
-def test_marking_fits_a_phone_and_a_laptop(people, server):
-    """The marking view at a phone's width and a laptop's: the picture large, its tools wrapped, nothing spilling."""
+def test_the_window_fits_a_phone_and_a_laptop(people, server):
+    """The window with its picture at a phone's width and a laptop's: the tools wrapped, nothing spilling."""
     from tests.browser.test_layout import problems
 
     admin = people("admin")
@@ -185,9 +174,7 @@ def test_marking_fits_a_phone_and_a_laptop(people, server):
         admin.open("/party")
         page.wait_for_load_state("networkidle")
         page.evaluate("document.dispatchEvent(new KeyboardEvent('keydown', { key: '\\\\', bubbles: true }))")
-        page.locator("#fb-win [data-fb-mark]").wait_for(state="visible", timeout=15000)
-        page.locator("#fb-win [data-fb-mark]").click()
-        page.locator("#fb-win [data-fb-canvas]").wait_for(state="visible")
-        found += problems(page, f"marking at {width}px")
+        page.locator("#fb-win [data-fb-wrap]").wait_for(state="visible", timeout=15000)
+        found += problems(page, f"the window at {width}px")
     assert not found, "\n".join(found)
     assert not admin.errors, admin.errors

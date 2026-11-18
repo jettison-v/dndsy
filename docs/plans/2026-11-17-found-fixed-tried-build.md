@@ -115,5 +115,20 @@ next`), Help's About and FAQ, the DM guide where it mentions feedback, docs/test
   issue as working), app/fft/steps.py (the walkthrough's rules, moved from app/testing.py, which imports them),
   `scripts/fft.py` (tried against the local server end to end), tests/test_fft_api.py (the privacy tests from
   privacy-rules, ported, plus keys and listeners). Left for slice 3: a picture added to a line (`_line` lists none yet).
-- **Slice 3, next**: sending, approving, Notes you sent.
+- **Slices 3 and 4, done together** (approving lives on the Feedback page, so they're one piece): sending
+  (app/fft/sending.py, `_feedback_window.html`, app.js "send a note": Send a note with nothing picked, pictures as chips,
+  Box, Arrow, Draw and Text with Undo and Clear apart, Hide while I take a screenshot, the truthful line from
+  `/feedback/line`; the page's picture as a full copy for its sender and a safe copy with `[data-private]` parts covered,
+  marked on Plan, Battle's combos, the note panel and form; the page as drawn with those parts emptied; staging relays
+  safe copies with a first name), Manage › askdnd › Feedback (app/fft/feedback_page.py, `fft_feedback.html`,
+  `_fft_bits.html`, `_fft_same.html`, `_fft_close.html`: To approve with Undo in the corner card, Same as…, Open, Ready
+  to try, Closed, Ideas, the issue page, Close with a reason, Reopen, OK to merge, a player's later line approved), Notes
+  you sent's Product Feedback tab (app/your_notes.py on fft notes: whose turn, the lines meant for you, Add to it, Does
+  it work now?, new reply). app/fft/views.py holds the words (whose turn, sentences, first-sentence titles, local links).
+  Tests: tests/test_fft_pages.py, tests/browser/test_feedback_window.py (rewritten), tests/browser/test_fft_feedback.py.
+  Retired with what they tested: tests/test_feedback.py, test_areas.py, test_check_issues.py, test_questions.py, the
+  Testing tests that sent through the old window, tests/browser/test_areas_order.py and test_check_rounds.py (slice 5
+  brings Testing's). The old app/feedback.py routes the new ones shadow go in slice 6's clean-up; Claude's API doesn't
+  list a picture added to a line yet.
+- **Slice 5, next**: Testing.
 - At the merge: run `scripts/deploy_check.py --set-backup-watch` (app/fft joined BACKUP_WATCH).

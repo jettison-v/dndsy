@@ -161,6 +161,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   }
   // A message: its text, or {text, kind} from the server (web.notice); action: {label, run}, a button on the card
   function toast(message, action, kind) {
+    // (an Undo the server offers with what it did, web.notice's `undo`: a POST to that address of askdnd's own; Feedback's
+    // approvals, for a minute)
+    if (message && typeof message === 'object' && typeof message.undo === 'string' && message.undo.startsWith('/') && !message.undo.startsWith('//')) {
+      const to = message.undo;
+      action = { label: 'Undo', run: () => fetch(to, { method: 'POST', headers: { Accept: 'application/json' } }).then(r => { if (r.redirected) location.href = r.url; else if (r.ok) location.reload(); else r.text().then(t => toast({ text: t || "It's too late to undo that.", kind: 'warn' })); }) };
+    }
     if (message && typeof message === 'object') { kind = message.kind; message = message.text; }
     if (message) card(document.createTextNode(message), { kind: kind || 'ok', action });
   }
@@ -1584,8 +1590,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
 
   // A select with data-autosave saves as you pick (Manage › Table)
   document.addEventListener('change', e => { if (e.target.matches('select[data-autosave]')) e.target.form.requestSubmit(); });
-  // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures).
-  document.addEventListener('change', e => { if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit(); });
+  // A file picker with data-autosubmit sends its form as soon as a file is chosen (entity pictures); a select with it, as
+  // soon as one is picked (Feedback's area)
+  document.addEventListener('change', e => {
+    if (e.target.matches('input[type=file][data-autosubmit]') && e.target.files.length) e.target.form.requestSubmit();
+    else if (e.target.matches('select[data-autosubmit]')) e.target.form.requestSubmit();
+  });
 
   // Sticky headings sit below the top bar.
   function stickTop() {
@@ -4914,22 +4924,23 @@ document.addEventListener('click', e => {
   document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-ib]'); if (root) start(root); });
 })();
 
-// ---------------------------------------------------------------- feedback for Claude
-// (app/feedback.py; Brett, 2026-11-03, docs/mockups/feedback-queue/) A note for Claude from any page, for whoever the
-// page lets send one (body[data-feedback]: admins and the accounts switched on for it on Accounts). \ opens it (never
-// while typing), as do the account menu's item and More's (admins), and pressing and holding the askdnd logo (a phone,
-// as a test account). The window opens at once; the page's picture is drawn just after (html-to-image, vendored; the
-// window itself is left out of it), only what's on screen, one at a time, and sent with the note, where it was pointed at, a pasted or chosen screenshot, the page as drawn, and where, when
-// and how the page was.
+// ---------------------------------------------------------------- send a note
+// (Found, Fixed, Tried: app/fft/sending.py; screen 9 of docs/mockups/found-fixed-tried/) A note from any page, for
+// whoever the page lets send one (body[data-feedback]). \ opens it (never while typing), as do the account menu's item
+// and More's, and pressing and holding the askdnd logo. What it is is picked each time. The page's picture is drawn just
+// after the window shows (html-to-image, vendored; the window left out), only what's on screen, and comes as two copies:
+// the full one, its sender's alone, and the safe copy with every [data-private] part on screen (a player's character
+// notes) covered, which an admin, the DM and Claude see (T5). More pictures are pasted (⌘V), dropped or chosen. Each
+// picture is marked with Box, Arrow, Draw and Text; Undo and Clear sit apart. Hide while I take a screenshot puts the
+// window away, keeping everything, until Back to it (or a paste) brings it back.
 (function () {
   const win = document.getElementById('fb-win');
   if (!win || document.body.dataset.feedback === undefined) return;
   const form = win.querySelector('form'), said = win.querySelector('[data-fb-said]'), send = win.querySelector('[data-fb-send]');
-  const shotImg = win.querySelector('[data-fb-shot]'), shotNote = win.querySelector('[data-fb-shot-note]');
-  const pastedImg = win.querySelector('[data-fb-pasted]'), dropNote = win.querySelector('[data-fb-drop-note]'), pointedNote = win.querySelector('[data-fb-pointed]');
-  let shot = null, pasted = null, html = '', pointed = null, ctx = {}, outlined = null, lib = null, taking = null, round = 0, why = '', kind = '', check = null;
-  const checkLine = win.querySelector('[data-fb-check-line]');
-  // What it is (Brett, Nov 16): picked each time, never for you; the box's question follows it (feedback.KINDS)
+  const chips = win.querySelector('[data-fb-chips]'), addChip = win.querySelector('.fb-add-pic'), stageNote = win.querySelector('[data-fb-stage-note]');
+  const wrap = win.querySelector('[data-fb-wrap]'), canvas = win.querySelector('[data-fb-canvas]'), tools = win.querySelector('[data-fb-tools]'), edits = win.querySelector('[data-fb-edits]');
+  const covered = win.querySelector('[data-fb-covered]'), lineEl = win.querySelector('[data-fb-line]'), checkLine = win.querySelector('[data-fb-check-line]');
+  let pics = [], at = -1, html = '', ctx = {}, lib = null, taking = null, round = 0, why = '', kind = '', trying = null, hidden = false, hideCard = null;
   const kindChips = [...win.querySelectorAll('[data-fb-kind]')], ask = win.querySelector('[data-fb-ask]'), askFirst = ask.textContent;
   const pickKind = k => {
     kind = k;
@@ -4952,29 +4963,38 @@ document.addEventListener('click', e => {
     return (r.width || r.height) && (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth);
   };
   const BLANK = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-  async function picture() {  // what's on screen: the page drawn again as an image (the 3D dice and some fonts may differ)
+  // The parts of the page that are a player's own (their character's notes): where they are on screen, to cover
+  const privateRects = () => [...document.querySelectorAll('[data-private]')].map(el => el.getBoundingClientRect())
+    .filter(r => r.width && r.height && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth);
+  function cover(c, rects) {  // the safe copy: each private part painted over, hatched, saying what it was
+    const g = c.getContext('2d');
+    rects.forEach(r => {
+      g.save();
+      g.fillStyle = getComputedStyle(document.body).backgroundColor || '#15171a'; g.fillRect(r.left, r.top, r.width, r.height);
+      g.beginPath(); g.rect(r.left, r.top, r.width, r.height); g.clip();
+      g.strokeStyle = 'rgba(128,128,128,.35)'; g.lineWidth = 2;
+      for (let x = r.left - r.height; x < r.right; x += 14) { g.beginPath(); g.moveTo(x, r.bottom); g.lineTo(x + r.height, r.top); g.stroke(); }
+      g.fillStyle = 'rgba(128,128,128,.9)'; g.font = '600 13px system-ui, sans-serif';
+      g.fillText('Private notes', r.left + 10, r.top + 22);
+      g.restore();
+    });
+  }
+  async function picture() {  // what's on screen, drawn again as an image (the 3D dice and some fonts may differ)
     let h;
     try { h = await loadLib(); } catch (e) { why = "the picture's code didn't load"; return null; }
-    // (fonts aren't embedded: Google's stylesheet can't be read from here, so the picture uses the browser's own font)
     const options = {
       quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK,
       backgroundColor: getComputedStyle(document.body).backgroundColor,
-      // (scrolled by a margin, not a transform: a transform would carry what's fixed on screen, a modal like the item
-      // browser, down the whole page's height and out of the picture)
+      // (scrolled by a margin, not a transform: a transform would carry what's fixed on screen down the page's height)
       style: { margin: '0', marginTop: -scrollY + 'px', marginLeft: -scrollX + 'px' },
-      // (not this window or the corner cards, and not Battle's condition edge: its border-image comes out as a wash over
-      // the whole picture)
-      // Only what's on screen: anything hidden or scrolled out of view is left out, so a long list (the item browser's
-      // 1,289 rows) costs what its visible rows cost (Brett, Nov 3: it was slow, and froze the tab once)
+      // (not this window, the corner cards or Battle's condition edge; only what's on screen, so a long list costs what
+      // its visible rows cost)
       filter: n => !(n.id === 'fb-win' || n.id === 'cards' || n.id === 'check-card' || (n.classList && n.classList.contains('cond-halo')) || n.hidden || offscreen(n)),
     };
-    // An attribute named with a colon (htmx's hx-on::after-request) is fine in a page but not in the picture's SVG, where
-    // it stops the whole drawing: they're set aside while it's drawn, and put back
+    // (an attribute named with a colon stops the picture's SVG: set aside while it's drawn, and put back)
     const aside = [], blanked = [];
-    document.querySelectorAll('*').forEach(el => { for (const at of [...el.attributes]) if (at.name.includes(':')) { aside.push([el, at.name, at.value]); el.removeAttribute(at.name); } });
-    // A picture the page couldn't load would stop the drawing, and one from another site (a D&D Beyond portrait, an
-    // item's picture) can't be read from here: each is drawn blank at its own size, so what's around it stays in place
-    // (left out, the item browser's details ran into each other)
+    document.querySelectorAll('*').forEach(el => { for (const a of [...el.attributes]) if (a.name.includes(':')) { aside.push([el, a.name, a.value]); el.removeAttribute(a.name); } });
+    // (a picture from another site can't be read from here: drawn blank at its own size)
     document.querySelectorAll('img').forEach(im => {
       if (im.complete && im.naturalWidth && im.src.startsWith(location.origin + '/')) return;
       const r = im.getBoundingClientRect();
@@ -4982,8 +5002,7 @@ document.addEventListener('click', e => {
       Object.assign(im.style, { width: r.width + 'px', height: r.height + 'px' });
       im.removeAttribute('srcset'); im.src = BLANK;
     });
-    // The 3D dice are drawn in WebGL, which keeps no copy of its last frame, so a copy of the page drew them blank
-    // (feedback 7): each box on screen draws once more and is copied at once into a picture over its canvas
+    // (the 3D dice keep no copy of their last frame: each box on screen draws once more into a picture over its canvas)
     const stills = [];
     (window.askdndDice || []).forEach(b => {
       const c = b.renderer && b.renderer.domElement, r = c && c.getBoundingClientRect();
@@ -4996,24 +5015,33 @@ document.addEventListener('click', e => {
       c.parentElement.append(im);
       stills.push(im);
     });
+    const rects = privateRects();
     try {
-      // Drawn as an SVG first: a character XML can't hold (a NUL, another control character; another extension's text
-      // carried one on Nov 4) stopped the whole picture, so they're taken out before it's painted
       const svg = (await h.toSvg(document.body, options)).replace(/%(?:0[0-8BbCcEeFf]|1[0-9A-Fa-f])/g, '');
       const im = new Image();
       await new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error("the page's drawing wouldn't load")); im.src = svg; });
       const c = Object.assign(document.createElement('canvas'), { width: innerWidth, height: innerHeight }), g = c.getContext('2d');
       g.fillStyle = options.backgroundColor; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
-      return c.toDataURL('image/jpeg', 0.8);
+      const full = c.toDataURL('image/jpeg', 0.8);
+      if (!rects.length) return { full, safe: null };
+      cover(c, rects);
+      return { full, safe: c.toDataURL('image/jpeg', 0.8) };
     } catch (e) { why = (e && (e.message || e.type)) || 'unknown'; return null; } finally {
       stills.forEach(im => im.remove());
       aside.forEach(([el, name, value]) => el.setAttribute(name, value));
       blanked.forEach(([im, src, srcset, w, hgt]) => { if (srcset !== null) im.setAttribute('srcset', srcset); if (src !== null) im.setAttribute('src', src); else im.removeAttribute('src'); im.style.width = w; im.style.height = hgt; });
     }
   }
+  // The page as drawn, with its private parts emptied (only ever shown to an admin as text, and to Claude on request)
+  function drawn() {
+    const copy = document.documentElement.cloneNode(true);
+    copy.querySelectorAll('[data-private]').forEach(el => { el.replaceChildren(); el.setAttribute('data-private', 'emptied'); });
+    copy.querySelectorAll('#fb-win, script').forEach(el => el.remove());
+    return copy.outerHTML.slice(0, 3000000);
+  }
   function browser() {
     const ua = navigator.userAgent, d = navigator.userAgentData;
-    const brands = d && d.brands ? d.brands.filter(b => !/Not.?A.?Brand/i.test(b.brand)) : [];  // (the made-up one every Chrome lists)
+    const brands = d && d.brands ? d.brands.filter(b => !/Not.?A.?Brand/i.test(b.brand)) : [];
     const brand = brands.find(b => b.brand !== 'Chromium') || brands[0] || null;
     const safari = /Version\/([\d.]+).*Safari/.exec(ua), firefox = /Firefox\/([\d.]+)/.exec(ua);
     const name = brand ? brand.brand + ' ' + brand.version : safari ? 'Safari ' + safari[1] : firefox ? 'Firefox ' + firefox[1] : ua.slice(0, 60);
@@ -5043,152 +5071,185 @@ document.addEventListener('click', e => {
      ['askdnd bridge', ctx.extension], ['Live pill', ctx.live], ['Page errors', String(ctx.errors.length)], ['The page itself', 'As drawn (' + Math.round(html.length / 1024) + ' KB)']]
       .filter(([, v]) => v).forEach(([k, v]) => { dl.append(Object.assign(document.createElement('dt'), { textContent: k }), Object.assign(document.createElement('dd'), { textContent: v })); });
   }
-  function unmark() { if (outlined) outlined.classList.remove('fb-pointed'); outlined = null; }
-  async function open(forCheck) {
-    if (win.open) return;
-    const mine = ++round;
-    unmark(); pointed = null; pasted = null; shot = null;
-    ctx = gather(); html = document.documentElement.outerHTML.slice(0, 3000000);
-    form.reset(); say(''); send.disabled = false; pickKind('');
-    // Failed… on a check (Testing, Brett's 3A): Something's broken picked, the check named, and the note tied to it
-    check = forCheck || null;
-    if (check && check.fail) pickKind('broken');  // (Failed…: broken; + Issue: picked, as any note)
-    if (checkLine) {
-      checkLine.hidden = !check;
-      checkLine.querySelector('b').textContent = check ? check.title : '';
-      checkLine.querySelector('.tag').hidden = !(check && check.fail);
-    }
-    shotImg.hidden = true; shotNote.hidden = false; shotNote.textContent = "Taking the page's picture…";
-    win.querySelector('[data-fb-mark]').hidden = true; form.classList.remove('marking'); win.querySelector('[data-fb-markview]').hidden = true;
-    pastedImg.hidden = true; dropNote.hidden = false; pointedNote.textContent = 'Click the thing you mean, if it helps';
-    drawCtx();
-    win.showModal();
-    form.text.focus();
-    // The picture once the window has shown (it's left out of the picture), and never two at once: pressing \ again
-    // while one is drawn waits for that one
-    await new Promise(r => { requestAnimationFrame(() => setTimeout(r, 0)); setTimeout(r, 100); });  // (a tab out of sight never paints)
-    taking = taking || picture().finally(() => { taking = null; });
-    const pic = await taking;
-    if (mine !== round) return;  // (closed and opened again meanwhile: the newer window draws its own)
-    shot = pic;
-    if (!shot) ctx.picture = 'Not taken: ' + why;  // (so a note says why it came without one)
-    if (shot) { shotImg.src = shot; shotImg.hidden = false; shotNote.hidden = true; } else shotNote.textContent = "No picture this time: paste one if it helps";
-    win.querySelector('[data-fb-mark]').hidden = !shot;  // (marking it, once there's a picture)
+  // ---- the pictures: a chip each, the chosen one on the stage with its marks
+  function drawChips() {
+    chips.querySelectorAll('[data-fb-pic]').forEach(c => c.remove());
+    let added = 0;
+    pics.forEach((p, i) => {
+      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip' + (i === at ? ' on' : ''), textContent: p.kind === 'page' ? 'The page' : 'Your picture ' + (++added) });
+      b.dataset.fbPic = String(i); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(i === at));
+      b.addEventListener('click', () => show(i));
+      chips.insertBefore(b, addChip);
+    });
+    addChip.hidden = pics.length >= 4;
   }
-  function describe(el) {
-    const t = el.closest('[aria-label], [title], [data-tour], .nt, .ri, button, a, h1, h2, h3, label, li, td') || el;
-    const words = (t.getAttribute('aria-label') || t.getAttribute('title') || t.textContent || '').trim().replace(/\s+/g, ' ');
-    return words.slice(0, 60) || t.tagName.toLowerCase();
+  function show(i) {
+    at = i; drawChips();
+    const p = pics[i];
+    wrap.hidden = tools.hidden = edits.hidden = !p; stageNote.hidden = !!p;
+    covered.hidden = !(p && p.safe);
+    if (!p) return;
+    const im = new Image();
+    im.onload = () => { p.img = im; canvas.width = im.naturalWidth; canvas.height = im.naturalHeight; redraw(); };
+    im.src = p.full;
   }
-  function where(el) {  // a short path to it, for finding it in the page's HTML
-    const out = [];
-    for (let n = el; n && n !== document.body && out.length < 6; n = n.parentElement) {
-      out.unshift(n.tagName.toLowerCase() + (n.id ? '#' + n.id : '') + (n.classList.length ? '.' + [...n.classList].slice(0, 2).join('.') : ''));
-    }
-    return out.join(' > ');
-  }
-  win.querySelector('[data-fb-point]').addEventListener('click', () => {
-    win.close();
-    document.body.classList.add('fb-pointing');
-    const done = () => { document.removeEventListener('click', pick, true); document.removeEventListener('keydown', esc, true); document.body.classList.remove('fb-pointing'); win.showModal(); };
-    const pick = e => {
-      e.preventDefault(); e.stopPropagation();
-      unmark();
-      outlined = e.target; outlined.classList.add('fb-pointed');
-      pointed = { label: describe(e.target), path: where(e.target), text: (e.target.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 160) };
-      pointedNote.textContent = 'Pointed at: ' + pointed.label;
-      done();
-    };
-    const esc = e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(); } };
-    setTimeout(() => { document.addEventListener('click', pick, true); document.addEventListener('keydown', esc, true); }, 0);
-  });
-  function take(file) {
-    if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) return say('A picture as PNG, JPEG or WebP, please.');
-    if (file.size > 8e6) return say('That picture is over 8 MB.');
-    const r = new FileReader();
-    r.onload = () => { pasted = r.result; pastedImg.src = pasted; pastedImg.hidden = false; dropNote.hidden = true; say(''); };
-    r.readAsDataURL(file);
-  }
-  win.addEventListener('paste', e => {
-    const f = [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
-    if (f) { e.preventDefault(); take(f); }
-  });
-  const drop = win.querySelector('[data-fb-drop]');
-  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
-  drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('over'); take(e.dataTransfer.files[0]); });
-  win.querySelector('[data-fb-file]').addEventListener('change', e => take(e.target.files[0]));
-  win.querySelector('[data-fb-cancel]').addEventListener('click', () => { win.close(); unmark(); });
-  win.addEventListener('cancel', unmark);
-  // Marking the picture (Testing's 3A, for every note): a box, an arrow or a line, drawn at the picture's own size and
-  // kept in it when Done is pressed; Cancel (or Escape) goes back with the picture as it was
-  const markBtn = win.querySelector('[data-fb-mark]'), markView = win.querySelector('[data-fb-markview]'), canvas = win.querySelector('[data-fb-canvas]');
-  let marks = [], tool = 'box', drag = null, base = null;
-  const redraw = () => {
-    const g = canvas.getContext('2d'), w = canvas.width;
-    g.drawImage(base, 0, 0);
-    g.strokeStyle = g.fillStyle = '#e5484d'; g.lineWidth = Math.max(3, w / 320); g.lineCap = g.lineJoin = 'round';
-    for (const m of drag ? [...marks, drag] : marks) {
+  const MARK = '#f0a020';
+  function paint(g, w, list) {
+    g.strokeStyle = g.fillStyle = MARK; g.lineWidth = Math.max(3, w / 320); g.lineCap = g.lineJoin = 'round';
+    for (const m of list) {
       const [a, b] = [m.pts[0], m.pts[m.pts.length - 1]];
       g.beginPath();
       if (m.tool === 'box') g.strokeRect(Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(b.x - a.x), Math.abs(b.y - a.y));
-      else if (m.tool === 'draw') { m.pts.forEach((p, i) => (i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
-      else {
-        const t = Math.atan2(b.y - a.y, b.x - a.x), h = g.lineWidth * 5;
+      else if (m.tool === 'draw') { m.pts.forEach((p, k) => (k ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y))); g.stroke(); }
+      else if (m.tool === 'text') {
+        const size = Math.max(14, Math.round(w / 70));
+        g.font = '700 ' + size + 'px system-ui, sans-serif';
+        const tw = g.measureText(m.text).width;
+        g.fillStyle = 'rgba(15,17,19,.85)'; g.fillRect(a.x - 4, a.y - size, tw + 8, size + 8);
+        g.fillStyle = MARK; g.fillText(m.text, a.x, a.y);
+      } else {
+        const t = Math.atan2(b.y - a.y, b.x - a.x), hd = g.lineWidth * 5;
         g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
         g.beginPath(); g.moveTo(b.x, b.y);
-        g.lineTo(b.x - h * Math.cos(t - 0.45), b.y - h * Math.sin(t - 0.45)); g.lineTo(b.x - h * Math.cos(t + 0.45), b.y - h * Math.sin(t + 0.45));
+        g.lineTo(b.x - hd * Math.cos(t - 0.45), b.y - hd * Math.sin(t - 0.45)); g.lineTo(b.x - hd * Math.cos(t + 0.45), b.y - hd * Math.sin(t + 0.45));
         g.closePath(); g.fill();
       }
     }
+  }
+  let tool = 'box', drag = null, typingAt = null;
+  const redraw = () => {
+    const p = pics[at];
+    if (!p || !p.img) return;
+    const g = canvas.getContext('2d');
+    g.drawImage(p.img, 0, 0);
+    paint(g, canvas.width, drag ? [...p.marks, drag] : p.marks);
   };
-  const marking = on => { markView.hidden = !on; form.classList.toggle('marking', on); };
-  const at = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; };
-  markBtn.addEventListener('click', () => {
-    if (!shot) return;
-    base = new Image();
-    base.onload = () => { canvas.width = base.naturalWidth; canvas.height = base.naturalHeight; marks = []; redraw(); marking(true); };
-    base.src = shot;
+  const point = e => { const r = canvas.getBoundingClientRect(); return { x: (e.clientX - r.left) * canvas.width / r.width, y: (e.clientY - r.top) * canvas.height / r.height }; };
+  canvas.addEventListener('pointerdown', e => {
+    if (!pics[at]) return;
+    e.preventDefault();
+    if (tool === 'text') return placeText(e);
+    canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [point(e)] };
   });
-  canvas.addEventListener('pointerdown', e => { e.preventDefault(); canvas.setPointerCapture(e.pointerId); drag = { tool, pts: [at(e)] }; });
-  canvas.addEventListener('pointermove', e => { if (!drag) return; const p = at(e); if (drag.tool === 'draw') drag.pts.push(p); else drag.pts[1] = p; redraw(); });
-  canvas.addEventListener('pointerup', () => { if (drag && drag.pts.length > 1) marks.push(drag); drag = null; redraw(); });
-  canvas.addEventListener('pointercancel', () => { drag = null; redraw(); });  // (a gesture the browser took over: no half mark)
+  canvas.addEventListener('pointermove', e => { if (!drag) return; const p = point(e); if (drag.tool === 'draw') drag.pts.push(p); else drag.pts[1] = p; redraw(); });
+  canvas.addEventListener('pointerup', () => { if (drag && drag.pts.length > 1) pics[at].marks.push(drag); drag = null; redraw(); });
+  canvas.addEventListener('pointercancel', () => { drag = null; redraw(); });
+  function placeText(e) {  // Text: a box where you clicked; Enter (or leaving it) puts the words on the picture
+    if (typingAt) typingAt.blur();
+    const r = canvas.getBoundingClientRect(), wr = wrap.getBoundingClientRect(), p = point(e);
+    const box = Object.assign(document.createElement('input'), { type: 'text', className: 'fb-text-input', maxLength: 80, placeholder: 'Type, then Enter' });
+    box.setAttribute('aria-label', 'Words on the picture');
+    Object.assign(box.style, { left: (e.clientX - wr.left) + 'px', top: (e.clientY - wr.top - 14) + 'px', maxWidth: (r.right - e.clientX) + 'px' });
+    wrap.append(box); box.focus(); typingAt = box;
+    let ended = false;
+    const done = keep => {  // (once: removing the box blurs it, which would end it again)
+      if (ended) return;
+      ended = true;
+      const t = box.value.trim(); typingAt = null; box.remove();
+      if (keep && t && pics[at]) { pics[at].marks.push({ tool: 'text', pts: [p], text: t }); redraw(); }
+    };
+    box.addEventListener('keydown', k => { if (k.key === 'Enter') { k.preventDefault(); done(true); } else if (k.key === 'Escape') { k.preventDefault(); k.stopPropagation(); done(false); } });
+    box.addEventListener('blur', () => done(true));
+  }
   win.querySelectorAll('[data-fb-tool]').forEach(b => b.addEventListener('click', () => {
     tool = b.dataset.fbTool;
     win.querySelectorAll('[data-fb-tool]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
   }));
-  win.querySelector('[data-fb-undo]').addEventListener('click', () => { marks.pop(); redraw(); });
-  win.querySelector('[data-fb-clear]').addEventListener('click', () => { marks = []; redraw(); });
-  win.querySelector('[data-fb-mark-cancel]').addEventListener('click', () => marking(false));
-  win.querySelector('[data-fb-mark-done]').addEventListener('click', () => {
-    if (marks.length) { shot = canvas.toDataURL('image/jpeg', 0.85); shotImg.src = shot; ctx.marked = String(marks.length); }
-    marking(false);
+  win.querySelector('[data-fb-undo]').addEventListener('click', () => { if (pics[at]) { pics[at].marks.pop(); redraw(); } });
+  win.querySelector('[data-fb-clear]').addEventListener('click', () => { if (pics[at]) { pics[at].marks = []; redraw(); } });
+  // What's sent: each picture with its marks drawn in, the full copy and (where there is one) the safe copy
+  const flat = (src, marks) => (!marks.length ? Promise.resolve(src) : new Promise(ok => {
+    const im = new Image();
+    im.onload = () => {
+      const c = Object.assign(document.createElement('canvas'), { width: im.naturalWidth, height: im.naturalHeight }), g = c.getContext('2d');
+      g.drawImage(im, 0, 0); paint(g, c.width, marks); ok(c.toDataURL('image/jpeg', 0.85));
+    };
+    im.onerror = () => ok(src);
+    im.src = src;
+  }));
+  const outgoing = () => Promise.all(pics.map(async p => ({ kind: p.kind, full: await flat(p.full, p.marks), safe: p.safe ? await flat(p.safe, p.marks) : null, marks: p.marks.length })));
+  function take(file) {
+    if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) return say('A picture as PNG, JPEG or WebP, please.');
+    if (file.size > 8e6) return say('That picture is over 8 MB.');
+    if (pics.length >= 4) return say('Four pictures at most.');
+    const r = new FileReader();
+    r.onload = () => { pics.push({ kind: 'added', full: r.result, safe: null, marks: [] }); say(''); show(pics.length - 1); };
+    r.readAsDataURL(file);
+  }
+  const pasted = e => [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
+  win.addEventListener('paste', e => { const f = pasted(e); if (f) { e.preventDefault(); take(f); } });
+  document.addEventListener('paste', e => {  // (hidden for a screenshot: pasting it anywhere brings the window back with it)
+    if (!hidden) return;
+    const f = pasted(e);
+    if (f) { e.preventDefault(); back(); take(f); }
   });
-  win.addEventListener('cancel', e => { if (!markView.hidden) { e.preventDefault(); marking(false); } }, true);
+  const stage = win.querySelector('[data-fb-stage]');
+  stage.addEventListener('dragover', e => { e.preventDefault(); stage.classList.add('over'); });
+  stage.addEventListener('dragleave', () => stage.classList.remove('over'));
+  stage.addEventListener('drop', e => { e.preventDefault(); stage.classList.remove('over'); take(e.dataTransfer.files[0]); });
+  win.querySelector('[data-fb-file]').addEventListener('change', e => { take(e.target.files[0]); e.target.value = ''; });
+  // ---- opening, hiding for a screenshot, closing
+  async function open(opts) {
+    if (win.open) return;
+    if (hidden) return back();
+    const mine = ++round;
+    pics = []; at = -1; trying = (opts && opts.try) || null;
+    ctx = gather(); html = drawn();
+    form.reset(); say(''); send.disabled = false; pickKind(trying ? 'problem' : '');
+    if (checkLine) { checkLine.hidden = !trying; checkLine.querySelector('b').textContent = trying ? trying.title : ''; }
+    show(-1); stageNote.textContent = "Taking the page's picture…";
+    drawCtx();
+    lineEl.textContent = '';
+    fetch('/feedback/line', { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : null)).then(j => {
+      if (!j) return;
+      lineEl.textContent = j.line; lineEl.classList.toggle('fb-listening', !!j.listening);
+    }).catch(() => { /* the line stays empty */ });
+    win.showModal();
+    form.text.focus();
+    // (the picture once the window has shown, so it's left out; never two at once)
+    await new Promise(r => { requestAnimationFrame(() => setTimeout(r, 0)); setTimeout(r, 100); });
+    taking = taking || picture().finally(() => { taking = null; });
+    const got = await taking;
+    if (mine !== round) return;
+    if (!got) { ctx.picture = 'Not taken: ' + why; stageNote.textContent = 'No picture of the page this time: paste one if it helps.'; return; }
+    pics.unshift({ kind: 'page', full: got.full, safe: got.safe, marks: [] });
+    show(at < 0 ? 0 : at + 1);
+  }
+  function hide() {  // Hide while I take a screenshot: everything kept; a card says how, and brings it back
+    hidden = true; win.close();
+    const mac = /Mac/.test(navigator.platform || navigator.userAgent) && !/iPhone|iPad/.test(navigator.userAgent);
+    const box = document.createElement('div');
+    box.append(Object.assign(document.createElement('b'), { textContent: 'Your note is waiting' }), document.createElement('br'),
+      document.createTextNode(/iPhone|iPad/.test(navigator.userAgent) ? 'Take your screenshot (the side and volume-up buttons), then Back to it and add it.'
+        : mac ? 'Take your screenshot: ⇧⌘3 for the whole screen, ⇧⌘4 for a part (hold ⌃ too to copy it), then ⌘V here.' : 'Take your screenshot, then paste it here (Ctrl+V).'));
+    hideCard = window.askdndCard ? window.askdndCard(box, { kind: 'info', stay: true, actions: [{ label: 'Back to it', run: back }] }) : null;
+  }
+  function back() {
+    hidden = false;
+    if (hideCard && hideCard._close) hideCard._close();
+    hideCard = null;
+    if (!win.open) win.showModal();
+  }
+  win.querySelector('[data-fb-hide]').addEventListener('click', hide);
+  const close = () => { win.close(); hidden = false; pics = []; };
+  win.querySelector('[data-fb-cancel]').addEventListener('click', close);
+  win.addEventListener('cancel', e => { if (typingAt) { e.preventDefault(); return; } pics = []; });
   form.addEventListener('submit', async e => {
     e.preventDefault();
     const text = form.text.value.trim();
-    if (!kind) return say('Pick what it is first: something broken, an idea or a question.');
+    if (!kind) return say('Say what it is first: a problem, an idea or a question.');
     if (!text) return say("Say what it's about first.");
     send.disabled = true; say('');
-    if (taking && !shot) { say("Finishing the page's picture…"); shot = await taking; say(''); }  // (Send pressed before it was drawn)
+    if (taking && !pics.some(p => p.kind === 'page')) { say("Finishing the page's picture…"); await taking; say(''); }
     try {
+      const pictures = await outgoing();
       const r = await fetch('/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, pointed }, html, shot, pasted, ...(check ? { check: check.id, fail: check.fail } : {}) }) });
+        body: JSON.stringify({ text, kind, url: location.href, context: { ...ctx, marked: pictures.reduce((n, p) => n + p.marks, 0) }, html, pictures: pictures.map(({ kind: k, full, safe }) => ({ kind: k, full, safe })), ...(trying ? { try: trying.id } : {}) }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.detail || "Couldn't send it: askdnd answered " + r.status + '.');
-      win.close(); unmark();
-      if (check) {  // (sent from a check: the card stays on it, listing it, for the next issue or Done · Next check; 2A)
-        const slot = document.getElementById('check-card');
-        if (slot && slot.querySelector('[data-check-card="' + check.id + '"]')) {
-          htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
-          if (window.askdndToast) window.askdndToast('Sent: it\'s tied to the check');
-        } else location.reload();  // (from the Reader: it shows the check failed, with what was sent)
-        return;
-      }
-      if (window.askdndToast) window.askdndToast(j.review ? 'Sent · an admin reads it before it goes to Claude' : 'In the queue · ' + j.waiting + ' new',
-        { label: 'Your notes', run: () => { location.href = '/your-notes?tab=askdnd'; } });  // (where it goes from here)
+      close();
+      document.body.dispatchEvent(new CustomEvent('noteSent', { detail: { id: j.id, try: trying && trying.id } }));
+      if (window.askdndToast) window.askdndToast(j.said || 'Sent', { label: 'Notes you sent', run: () => { location.href = '/your-notes?tab=askdnd'; } });
     } catch (err) { send.disabled = false; say(err.message || "Couldn't send it."); }
   });
   // \ anywhere but a field; the menus' item; pressing and holding the logo
@@ -5200,8 +5261,9 @@ document.addEventListener('click', e => {
     const b = e.target.closest('[data-fb-open]');
     if (!b) return;
     e.preventDefault();
-    open(b.dataset.fbCheck ? { id: +b.dataset.fbCheck, title: b.dataset.fbCheckTitle || '', fail: !('fbIssue' in b.dataset) } : null);
+    open(b.dataset.fbTry ? { try: { id: +b.dataset.fbTry, title: b.dataset.fbTryTitle || '' } } : null);
   });
+  window.askdndSendNote = open;
   const logo = document.querySelector('.brand');
   if (logo) {
     let held = null, fired = false;
@@ -5950,7 +6012,7 @@ document.addEventListener('change', e => {
 // or Esc closes it. A picture that is itself a button or link (your creature's, which opens the Picture window; a
 // party card) keeps doing that.
 (() => {
-  const PICS = '.ws-pic, .ep-pic img, .ep-mark, .peek-pic, img.portrait, .ib-pic, .fm-pic, .fb-pic';  // (.fb-pic: a feedback note's screenshots, Nov 16)
+  const PICS = '.ws-pic, .ep-pic img, .ep-mark, .peek-pic, img.portrait, .ib-pic, .fm-pic, .fb-pic, .fft-pic';  // (.fb-pic: a feedback note's screenshots, Nov 16)
   const big = pic => pic.matches(PICS) && !pic.closest('a, button, [data-panel-url], [data-modal-url], [data-use-url], label');
   document.addEventListener('click', e => {
     const pic = e.target.closest && e.target.closest('img');

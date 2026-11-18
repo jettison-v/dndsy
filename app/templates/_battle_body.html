@@ -180,7 +180,7 @@
   <div class="lower">
     {% if show_picks %}{% include "_forget.html" %}{% endif %}{# (the DM never sees a player's reminders: no card saying so; the UI review) #}
     {% if show_picks and (combos or can_pick) %}
-    <div class="section">
+    <div class="section" data-private>{# (a player's own notes: blurred in a feedback note's safe copy, app/fft) #}
       <div class="sec-head"><h2>Battle combos</h2>{% if can_pick %}<a class="head-add" href="#" data-modal-url="/characters/{{ c.id }}/notes/new?kind=combo" data-modal-size="large">+ Battle combo</a>{% endif %}</div>
       {% for n in combos %}
       <details class="combo-fold"><summary><b>{{ n.title }}</b>{% if n.data.when %} <span class="muted">· {{ n.data.when }}</span>{% endif %}</summary>{{ combo_body(n, nl) }}</details>
