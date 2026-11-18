@@ -12,11 +12,11 @@ waits for an admin (T6). The answer says truthfully what happens next (`views.se
 
 import base64
 import json
-from html.parser import HTMLParser
 import os
 import re
 import urllib.error
 import urllib.request
+from html.parser import HTMLParser
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -126,7 +126,7 @@ def safe_html(html: str) -> str:
     try:
         p.feed(html)
         p.close()
-    except Exception:  # noqa: BLE001 (a page that can't be read isn't kept)
+    except Exception:
         return ""
     return "".join(p.out)
 
