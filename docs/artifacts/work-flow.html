@@ -65,6 +65,7 @@ ol.points li::marker { color: var(--muted); font-weight: 600; }
 .draft { display: grid; gap: 18px; }
 .block { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; }
 .block ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+ol.points ol { margin: 8px 0 0; padding-left: 20px; display: grid; gap: 4px; }
 .who { font: 700 11px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; padding: 3px 7px; border-radius: 4px; justify-self: start; }
 .who.you { color: var(--you); background: var(--you-soft); }
 .who.claude { color: var(--claude); background: var(--claude-soft); }
@@ -228,6 +229,76 @@ footer { font-size: 13px; color: var(--faint); }
       </ul>
     </div>
     <p class="rule" id="pace-rule"><b>The pace rule.</b> The speed comes from logging and grouping work, never from cutting steps. Every change gets the whole scope, the design system, code review and testing, however it arrived and however many came in at once.</p>
+  </section>
+
+  <section id="dev-plan-steps" class="draft">
+    <h2>How Claude carries out a dev plan</h2>
+    <p class="lede">What we agreed, written down (your comment, Nov 18). Every change goes through every step, however it arrived.</p>
+    <ol class="points">
+      <li id="step-read"><b>Read it whole.</b> The inbox, every open issue and failed check in the Product Area together, its section in docs/MAP.md and the decisions behind it.</li>
+      <li id="step-plan"><b>Write the plan.</b> One fix for the whole area, not one per note. Anything that's a design choice becomes a mockup or a question in For you, and the plan waits for your answer.</li>
+      <li id="step-build"><b>Build one fix at a time</b>, on a branch:
+        <ol>
+          <li>reproduce the problem;</li>
+          <li>fix it from the design system (a new piece goes there first);</li>
+          <li>add a test that fails without the fix;</li>
+          <li>look at it in a browser on a laptop and a phone, for every person, place and state;</li>
+          <li>write its check, and try it first.</li>
+        </ol></li>
+      <li id="step-review"><b>Review the whole change.</b> The code review at high effort, the before-and-after pictures of every main page, the full test suite, and the pull request's Robust and Review sections.</li>
+      <li id="step-ready"><b>Ready to test.</b> On the test environment (see below), with its checks in For you, and an email.</li>
+      <li id="step-ship"><b>Ship.</b> Once your round passes: merge when the checks are green, follow the deploy, and mark its fixes live.</li>
+    </ol>
+  </section>
+
+  <section id="environments" class="draft">
+    <h2>Testing, delays and environments: my suggestion</h2>
+    <p class="lede">You asked for mine before you ideate. In short: you test once, on staging, and Claude never waits on you.</p>
+    <div class="block" id="env-roles">
+      <span class="who both">Three places, one job each</span>
+      <ul>
+        <li><b>Your Mac (local):</b> Claude's workbench only. It goes stale, so you never need it.</li>
+        <li><b>Staging</b> (staging.askdnd.ai): where you test. It's always running, in the cloud, works on your phone, and holds a copy of last night's real data. When work is ready, Claude puts it there, so whenever you start a round it has the right code.</li>
+        <li><b>Production</b> (askdnd.ai): where the table plays. Feedback, Work and Testing live here, because they're about the real product. A note sent from staging already lands here marked Staging.</li>
+      </ul>
+    </div>
+    <div class="block" id="env-once">
+      <span class="who you">Test once</span>
+      <ul>
+        <li>What passed on staging goes to production as exactly the same code, so you don't test it again.</li>
+        <li>Production gets the automatic checks instead: the Mac Mini's run after every deploy, and Sentry.</li>
+        <li>You only test on production what staging can't show: Google sign-in, the real D&amp;D Beyond.</li>
+      </ul>
+    </div>
+    <div class="block" id="env-waiting">
+      <span class="who claude">When you can't test yet</span>
+      <ul>
+        <li>Claude goes on to the next Ready item, each on its own branch, and nothing merges.</li>
+        <li>When you start a round, every plan that's ready to test goes to staging together, and you test them as one batch.</li>
+        <li>A round never waits for Claude, and Claude never waits for a round.</li>
+      </ul>
+    </div>
+    <p class="note">The cost: one staging deploy per batch, not one per round of fixes. Your earlier "try it locally first" saved deploys, but a stale local copy costs more in the end. Your call.</p>
+  </section>
+
+  <section id="cohesion" class="draft">
+    <h2>Keeping it one product: my suggestion</h2>
+    <div class="block" id="cohesion-every">
+      <span class="who claude">Every plan, automatically</span>
+      <ul>
+        <li>The design system first, and the shared pieces reused.</li>
+        <li>The tests that already guard cohesion run on every change: one count pill, no new references to display text, the layout at every width, a picture of every main page before and after.</li>
+        <li>No extra step for you.</li>
+      </ul>
+    </div>
+    <div class="block" id="cohesion-pass">
+      <span class="who you">A cohesion pass, as a Work item</span>
+      <ul>
+        <li>Every Monday, or after every five plans, whichever comes first, Claude adds a Cohesion pass to the Work list.</li>
+        <li>It looks for pieces built twice, pages that drifted from the design system, and code to reuse. It reports what it found as issues, sorted like any other.</li>
+        <li>You mark it Ready like anything else, so it's in the same flow, not bolted on. It doesn't depend on lines of code; it's the regular look a growing product needs, and more so once several chats build at once.</li>
+      </ul>
+    </div>
   </section>
 
   <footer>Source: docs/artifacts/work-flow.html in the askdnd repo. Nothing here is built yet.</footer>
