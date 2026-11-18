@@ -5083,11 +5083,35 @@ document.addEventListener('click', e => {
       g.restore();
     });
   }
-  async function picture() {  // what's on screen, drawn again as an image (the 3D dice and some fonts may differ)
+  // askdnd's own fonts (the page's Google Fonts, their Latin faces) as data, made once a visit: the picture is drawn in
+  // them, not in a wider stand-in that wraps words onto lines the page doesn't have (Brett's round, Nov 18: a heading
+  // wrapped over its rows in the picture, never on the page)
+  let fontsCSS = null;
+  const embedFonts = () => fontsCSS || (fontsCSS = (async () => {
+    await document.fonts.ready;
+    const link = document.querySelector('link[rel="stylesheet"][href^="https://fonts.googleapis.com/"]');
+    if (!link) return '';
+    const css = await (await fetch(link.href)).text();
+    // (only the faces the page is showing: a font not in this browser yet stays out of the page, display=optional, so
+    // it stays out of the picture too)
+    const shown = new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/["']/g, '') + ' ' + f.weight));
+    const faces = css.split('@font-face').slice(1).map(b => '@font-face' + b.slice(0, b.indexOf('}') + 1))
+      .filter(f => /U\+0000-00FF/.test(f) && shown.has(((/font-family:\s*'?([^';]+)/.exec(f) || [])[1] || '') + ' ' + ((/font-weight:\s*(\d+)/.exec(f) || [])[1] || '')));
+    const inline = await Promise.all(faces.map(async f => {
+      const m = f.match(/url\((https:[^)]+)\)/);
+      if (!m) return '';
+      const blob = await (await fetch(m[1])).blob();
+      const data = await new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(blob); });
+      return f.replace(m[1], data);
+    }));
+    return inline.join('\n');
+  })().catch(() => ''));
+  async function picture() {  // what's on screen, drawn again as an image (the 3D dice may differ)
     let h;
     try { h = await loadLib(); } catch (e) { why = "the picture's code didn't load"; return null; }
+    const fonts = await embedFonts();
     const options = {
-      quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK,
+      quality: 0.8, pixelRatio: 1, width: innerWidth, height: innerHeight, skipFonts: true, imagePlaceholder: BLANK, ...(fonts ? { fontEmbedCSS: fonts } : {}),
       backgroundColor: getComputedStyle(document.body).backgroundColor,
       // (scrolled by a margin, not a transform: a transform would carry what's fixed on screen down the page's height)
       style: { margin: '0', marginTop: -scrollY + 'px', marginLeft: -scrollX + 'px' },

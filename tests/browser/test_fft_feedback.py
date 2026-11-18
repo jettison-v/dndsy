@@ -130,3 +130,20 @@ def test_picks_on_a_mockup_save_in_askdnd_and_come_back(people, server, browser_
     frame = again.frame_locator("iframe.doc-frame")
     frame.locator("form.decide .saved").filter(has_text="these are your picks").wait_for()
     assert frame.locator("input[name=shot][value=browser]").is_checked() and frame.locator("form.decide textarea").input_value() == "Fifteen minutes is fine."
+
+
+def test_a_long_area_heading_wraps_above_its_rows_never_over_them(people, server, browser_db):
+    """Brett's round, Nov 18: FEEDBACK AND TESTING wrapped over its first row. A Product Area's heading in Feedback's
+    list is the lists' group heading: however long, it pushes its rows down."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        conn.execute(text("INSERT INTO fft_issues (title, feature, workspace_id) VALUES ('Temp HP box is cramped', 'hp', 1)"))
+    engine.dispose()
+    admin = people("admin")
+    page = admin.open("/manage/feedback?tab=open")
+    page.set_viewport_size({"width": 1000, "height": 800})
+    head = page.locator('.reader-rows > [data-group="battle"]')
+    head.wait_for()
+    head.locator("span").first.evaluate("s => { s.textContent = 'Battle, with a name long enough to wrap onto a second line and a third'; }")
+    box, row = head.bounding_box(), page.locator(".reader-rows > [data-group] + .fb-row").first.bounding_box()
+    assert box["height"] > 40 and box["y"] + box["height"] <= row["y"] + 0.5  # (it grew, and the row starts below it)

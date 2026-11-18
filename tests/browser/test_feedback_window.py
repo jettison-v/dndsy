@@ -178,3 +178,38 @@ def test_the_window_fits_a_phone_and_a_laptop(people, server):
         found += problems(page, f"the window at {width}px")
     assert not found, "\n".join(found)
     assert not admin.errors, admin.errors
+
+
+def test_the_pages_picture_keeps_what_the_screen_shows_when_scrolled(people, server, browser_db):
+    """Brett's round, Nov 18: with the page scrolled, the page's picture came out with Feedback's list blank and its
+    issue shifted up (what was above the screen was left out, so all below it moved up). The list scrolled inside its
+    box and the page scrolled too: the picture's list area holds the same rows the screen does."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        for n in range(30):
+            conn.execute(text("INSERT INTO fft_issues (title, feature, workspace_id) VALUES (:t, 'hp', 1)"), {"t": f"Row number {n} in a long list"})
+    engine.dispose()
+    admin = people("admin")
+    page = admin.open("/manage/feedback?tab=open")
+    page.set_viewport_size({"width": 1280, "height": 720})
+    nav = page.locator(".reader-nav")
+    nav.wait_for()
+    page.evaluate("() => { scrollTo(0, 140); document.querySelector('.reader-nav').scrollTop = 600; }")
+    box = nav.bounding_box()
+    clip = {"x": box["x"], "y": box["y"], "width": box["width"], "height": min(box["height"], 400)}
+    screen = page.screenshot(clip=clip)  # (the list as the screen shows it)
+    page.keyboard.press("\\")
+    win = page.locator("#fb-win")
+    win.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
+    drawn = page.evaluate("""b => { const c = document.querySelector('#fb-win [data-fb-canvas]'), o = document.createElement('canvas');
+        o.width = Math.round(b.width); o.height = Math.round(b.height); o.getContext('2d').drawImage(c, b.x, b.y, b.width, b.height, 0, 0, o.width, o.height);
+        return o.toDataURL('image/png'); }""", clip)
+    import base64
+    import io
+
+    from PIL import Image, ImageChops, ImageStat
+
+    def small(png):
+        return Image.open(io.BytesIO(png)).convert("L").resize((48, 96))
+    diff = ImageStat.Stat(ImageChops.difference(small(screen), small(base64.b64decode(drawn.split(",", 1)[1])))).mean[0]
+    assert diff < 12, f"the list in the page's picture isn't what the screen shows (they differ by {diff:.1f})"
