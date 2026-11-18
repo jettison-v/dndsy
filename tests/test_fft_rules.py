@@ -120,6 +120,17 @@ def test_r5_an_issue_closes_only_once_every_device_its_checks_need_has_passed(db
     assert early.state == "ready" and early.close_reason == ""
 
 
+def test_a_check_retired_by_mistake_comes_back_as_it_was(db):
+    issue, check = _issue_with_check(db)
+    rules.retire(db, "claude", check, "no longer needed")
+    with pytest.raises(rules.RuleError):
+        rules.restore(db, "claude", check, "")  # (say why)
+    rules.restore(db, "claude", check, "retired by mistake")
+    assert not check.retired and check.version == 1
+    with pytest.raises(rules.RuleError):
+        rules.restore(db, "claude", check, "again")
+
+
 def test_r4_r5_a_fix_goes_live_the_check_comes_back_and_a_pass_closes_it(db):
     issue, check = _issue_with_check(db)
     assert rules.check_state(db, check)["state"] == "fixing"  # (its fix isn't live: Claude's)

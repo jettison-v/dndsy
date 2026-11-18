@@ -462,6 +462,16 @@ def retire(db: Session, actor: str, check: FftCheck, why: str = "") -> None:
     _event(db, actor, "check_retired", "check", check.id, area_id=check.area_id, why=why[:300])
 
 
+def restore(db: Session, actor: str, check: FftCheck, why: str) -> None:
+    """A check retired by mistake, back as it was (its versions and tries untouched)."""
+    if not check.retired:
+        raise RuleError("stale", "It isn't retired.")
+    if not why.strip():
+        raise RuleError("bad", "Say why it's back.")
+    check.retired = False
+    _event(db, actor, "check_restored", "check", check.id, area_id=check.area_id, why=why[:300])
+
+
 def link_issue(db: Session, actor: str, check: FftCheck, issue: FftIssue) -> None:
     if db.get(FftCheckIssue, (check.id, issue.id)) is None:
         db.add(FftCheckIssue(check_id=check.id, issue_id=issue.id))
