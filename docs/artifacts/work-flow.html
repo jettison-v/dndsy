@@ -83,21 +83,21 @@ td a { white-space: nowrap; }
 
 <div class="wrap">
   <header style="display:grid;gap:10px">
-    <span class="eyebrow">Draft for Brett · Nov 18 · version 4, with your comments</span>
+    <span class="eyebrow">Draft for Brett · Nov 18 · version 5, with your comments</span>
     <h1>askdnd Work Flow</h1>
-    <p class="lede">How a note or a Roadmap item becomes work that's built and tested, and where you steer it. This is a draft for us to agree on before anything in askdnd changes. Comment on any part of it, and use Send to Claude on a thread so it reaches Claude.</p>
+    <p class="lede">How a note or a Roadmap item becomes work that's built and tested, and where you steer it. This is a draft for us to agree on before anything in askdnd changes. Comment on any part of it, then tell Claude in chat when you're done: Claude reads them all together.</p>
     <div class="key"><span><i class="sw you"></i>Your step</span><span><i class="sw claude"></i>Claude's step</span><span><i class="sw gray"></i>What comes in, or ends</span></div>
   </header>
 
   <section id="answered" class="draft">
     <h2>Your comments, and where they're answered</h2>
-    <p class="lede">Each of your comments on this page, in the order you wrote them. Once you're happy with an answer, resolve its thread on the page: they weren't sent to Claude, so Claude can't.</p>
+    <p class="lede">Each of your comments on this page, in the order you wrote them. Once you're happy with an answer, resolve its thread on the page.</p>
     <div class="table-wrap">
       <table>
         <thead><tr><th>You asked</th><th>What changed</th><th>Where</th></tr></thead>
         <tbody>
           <tr><td>Start automatically, through Ready</td><td>Start is gone. You mark items Ready, and Claude works through them from the top whenever it's free.</td><td><a href="#the-flow">A note's flow</a>, <a href="#today">What changes</a></td></tr>
-          <tr><td>How are comments sure to reach Claude?</td><td>A mockup inside askdnd saves each comment and pick as a note, which wakes the listening session. Until then, use Send to Claude on a thread.</td><td><a href="#today">What changes › Mockups</a></td></tr>
+          <tr><td>How are comments sure to reach Claude?</td><td>They can't reach Claude while it's in the middle of other work, here or in askdnd: Claude reads them when it finishes what it's doing. So: comment on everything, then tell Claude you're done, and it reads them all together (your comment, Nov 18: one at a time gives a poorer answer anyway).</td><td><a href="#today">What changes › Mockups</a></td></tr>
           <tr><td>How is "nothing waits 15 minutes" true?</td><td>Only while a session is open and listening. Otherwise a wait always shows: amber after 15 minutes. A session starting by itself would need a scheduled job.</td><td><a href="#draft-triage">Level 1 triage</a></td></tr>
           <tr><td>Roadmap items get their own flow</td><td>A diagram of their own; one item can span several Product Areas.</td><td><a href="#roadmap-flow">A Roadmap item's flow</a></td></tr>
           <tr><td>Testing delays, environments, close-out</td><td>Test once on staging; Claude goes on with the next Ready item while you can't test; a cohesion pass on the Work list.</td><td><a href="#environments">Environments</a>, <a href="#cohesion">One product</a></td></tr>
@@ -207,7 +207,7 @@ td a { white-space: nowrap; }
         <tbody>
           <tr><td>Ordering</td><td>Testing › Where it stands, and the Roadmap page outside askdnd</td><td>Work: one list in askdnd, in your order</td></tr>
           <tr><td>Starting</td><td>Nothing to press: Claude takes the top of the order whenever free</td><td>Still on its own, for speed, but only through what you've marked Ready, top first (your comment, Nov 18)</td></tr>
-          <tr><td>Mockups</td><td>On claude.ai (a comment reaches Claude only if it's sent to Claude) and in Testing › For you</td><td>Inside askdnd, on the plan they decide, listed in For you. Each comment and pick is saved in askdnd as a note, which wakes the listening Claude session straight away (as picks already do; issue 30)</td></tr>
+          <tr><td>Mockups</td><td>On claude.ai, and in Testing › For you; a comment sent to Claude waits until Claude finishes the work it's on</td><td>Inside askdnd, on the plan they decide, listed in For you, picks saved there (as they already are). You comment on the whole mockup, then press Done commenting (or tell Claude in chat), and Claude reads every comment and pick together and answers them in one go (issue 30)</td></tr>
           <tr><td>Dev plan</td><td>A batch: a group of issues, no plan or state</td><td>The batch plus its scope, its questions and a state</td></tr>
           <tr><td>Failed check</td><td>An issue in the area, picked up the next time the area comes up</td><td>Reopens the same plan as a revision, right away</td></tr>
           <tr><td>Ready to test</td><td>Told in chat</td><td>Also an email to the admins</td></tr>
