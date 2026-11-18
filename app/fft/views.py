@@ -80,12 +80,23 @@ def first_name_of(db: Session, user_id: int | None) -> str:
     return ((u.name or "").split(" ")[0] if u else "") or "A player"
 
 
+CHECK_WORD = {"to_try": "To try", "again": "To try again", "later": "Later", "asks": "Claude asks", "failed": "Failed",
+              "fixing": "Being fixed", "wrong": "Being rewritten", "blocked": "Blocked", "preflight": "Claude tries it first",
+              "passed": "Passed", "retired": "Retired"}  # (where a check stands, in words: `rules.check_state`)
+
+
+def check_word(st: dict) -> str:
+    return CHECK_WORD["again"] if st["again"] and st["state"] == "to_try" else CHECK_WORD.get(st["state"], st["state"])
+
+
 def issue_checks(db: Session, issue: FftIssue) -> list[dict]:
-    """The checks that try an issue's fix, each with where it stands (`rules.check_state`), retired ones left out."""
+    """The checks that try an issue's fix, each with where it stands (`rules.check_state`) and that in words, retired
+    ones left out."""
     out = []
     for c in db.scalars(select(FftCheck).join(FftCheckIssue, FftCheckIssue.check_id == FftCheck.id)
                         .where(FftCheckIssue.issue_id == issue.id, FftCheck.retired.is_(False)).order_by(FftCheck.id)):
-        out.append({"c": c, **rules.check_state(db, c)})
+        st = rules.check_state(db, c)
+        out.append({"c": c, **st, "word": check_word(st)})
     return out
 
 
@@ -115,12 +126,12 @@ def issue_sentence(db: Session, issue: FftIssue) -> str:
     if issue.state == "ready":
         if issue.confirm_by:
             return f"Live: {first_name_of(db, issue.confirm_by)} is asked whether it works now (yours if they haven't said in {rules.CONFIRM_DAYS} days)."
-        cs = issue_checks(db, issue)
-        yours = [x for x in cs if x["turn"] == "brett"]
-        if yours:
-            return "Live: try it with " + ", ".join(f"“{x['c'].title}”" for x in yours) + " in Testing's For you."
+        cs = issue_checks(db, issue)  # (named, each with where it stands, under this line: _fft_bits.html its_checks)
+        one = len(cs) == 1
+        if any(x["turn"] == "brett" for x in cs):
+            return "Live: try " + ("its check" if one else "its checks") + " in Testing's For you."
         if cs:
-            return "Live, but its check can't be tried yet (" + ", ".join(f"“{x['c'].title}”, {x['state']}" for x in cs) + "): Claude's to sort out."
+            return "Live, but " + ("its check" if one else "its checks") + " can't be tried yet: Claude's to sort out."
         return "Live: Claude still owes it a check to try."
     said = CLOSED_WORD.get(issue.close_reason or "", "Closed")
     if issue.close_reason == "same" and issue.same_as_id:

@@ -5087,7 +5087,8 @@ document.addEventListener('click', e => {
       g.restore();
     });
   }
-  // askdnd's own fonts (the page's Google Fonts, their Latin faces) as data, made once a visit: the picture is drawn in
+  // askdnd's own fonts (the page's Google Fonts, their Latin faces) as data, made once a visit (read from their stylesheet,
+  // never setting a font: tests/test_design.py): the picture is drawn in
   // them, not in a wider stand-in that wraps words onto lines the page doesn't have (Brett's round, Nov 18: a heading
   // wrapped over its rows in the picture, never on the page)
   let fontsCSS = null;
@@ -5100,7 +5101,7 @@ document.addEventListener('click', e => {
     // it stays out of the picture too)
     const shown = new Set([...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/["']/g, '') + ' ' + f.weight));
     const faces = css.split('@font-face').slice(1).map(b => '@font-face' + b.slice(0, b.indexOf('}') + 1))
-      .filter(f => /U\+0000-00FF/.test(f) && shown.has(((/font-family:\s*'?([^';]+)/.exec(f) || [])[1] || '') + ' ' + ((/font-weight:\s*(\d+)/.exec(f) || [])[1] || '')));
+      .filter(f => /U\+0000-00FF/.test(f) && shown.has(((/font-family\s*:\s*'?([^';]+)/.exec(f) || [])[1] || '') + ' ' + ((/font-weight\s*:\s*(\d+)/.exec(f) || [])[1] || '')));
     const inline = await Promise.all(faces.map(async f => {
       const m = f.match(/url\((https:[^)]+)\)/);
       if (!m) return '';

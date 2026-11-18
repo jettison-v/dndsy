@@ -314,7 +314,7 @@ header.top { display: grid; gap: 10px; }
   const NAMES = ["queue", "split", "shot"];
   let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
-  const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };  // (state: what a test reads, never the words)
   const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
     return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
   const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
@@ -324,9 +324,9 @@ header.top { display: grid; gap: 10px; }
     if (e.source !== parent || !d || d.askdnd !== "picks") return;
     inAskdnd = true;
     if (d.loaded) {
-      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true); }
-      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet");
-    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true); btn.disabled = false; }
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
     else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
   });
   form.addEventListener("submit", async e => {

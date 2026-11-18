@@ -44,9 +44,6 @@ ROUND = "fft_round"  # the session's open round: {"id", "checks", "i", "device",
 SHOWS = (("foryou", "For you"), ("stands", "Where it stands"), ("claudes", "Claude's"), ("done", "Done"))
 PEOPLES = ("laptop", "iphone", "ipad")  # (Brett's devices; the Mac Mini's runs are Claude's)
 DEVICE_SAID = {"laptop": "your laptop", "iphone": "your iPhone", "ipad": "your iPad", "mac_mini": "the Mac Mini"}
-STATE_WORD = {"to_try": "To try", "again": "To try again", "later": "Later", "asks": "Claude asks", "failed": "Failed",
-              "fixing": "Being fixed", "wrong": "Being rewritten", "blocked": "Blocked", "preflight": "Claude tries it first",
-              "passed": "Passed", "retired": "Retired"}
 
 
 def _admin(request: Request):
@@ -95,7 +92,7 @@ def check_view(db: Session, c: FftCheck, device: str = "laptop") -> dict:
     v = version_of(db, c)
     st = rules.check_state(db, c)
     mine = [d for d in (c.devices or ["laptop"]) if d in PEOPLES and st["devices"].get(d) in ("to_try", "later")]
-    word = "To try again" if st["again"] and st["state"] == "to_try" else STATE_WORD.get(st["state"], st["state"])
+    word = views.check_word(st)
     issues = list(db.scalars(select(FftIssue).join(FftCheckIssue, FftCheckIssue.issue_id == FftIssue.id).where(FftCheckIssue.check_id == c.id)))
     return {"c": c, "v": v, "steps": steps.walk("\n".join(v.steps)) if v else [], "state": st, "word": word,
             "turn": {"brett": "yours", "claude": "claude", "closed": "closed"}[st["turn"]], "mine": mine,
@@ -266,7 +263,7 @@ def page(request: Request, show: str = "", open: str = "", db: Session = Depends
     db.commit()
     return templates.TemplateResponse(request, "fft_testing.html", {
         "show": show, "shows": SHOWS, "groups": groups, "pick": pick, "picked": picked, "summary": summary(mine),
-        "round_n": len(round_checks), "round_open": request.session.get(ROUND), "device": device, "device_said": DEVICE_SAID,
+        "round_n": len(round_checks), "round_open": request.session.get(ROUND), "device": device, "device_said": DEVICE_SAID, "check_words": views.CHECK_WORD,
         "me_id": me["id"], "stands": stands(db) if show == "stands" else None, "listening": views.listening(db),
         "toast": request.session.pop("toast", None)})
 
@@ -280,7 +277,8 @@ def _picked(db: Session, pick: str, device: str) -> dict | None:
     if kind == "q" and (q := db.get(FftQuestion, ident)):
         return {"kind": "question", "q": q, "about": _about(db, q), "doc": views.doc_of(q.doc_path)}
     if kind == "i" and (i := db.get(FftIssue, ident)):
-        return {"kind": "issue", "i": i, "sentence": views.issue_sentence(db, i), "pill": views.turn_pill(*views.issue_turn(db, i))}
+        return {"kind": "issue", "i": i, "sentence": views.issue_sentence(db, i), "pill": views.turn_pill(*views.issue_turn(db, i)),
+                "checks": views.issue_checks(db, i)}
     if kind == "n" and (n := db.get(FftNote, ident)):
         return {"kind": "note", "n": n}
     if kind == "d" and (d := db.get(FftIdea, ident)):

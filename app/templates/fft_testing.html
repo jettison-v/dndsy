@@ -2,6 +2,7 @@
 {% from "_admin_bits.html" import state_word, state_line, more_menu %}
 {% from "_lists.html" import empty_state, count_pill, grip %}
 {% from "_check_steps.html" import walkthrough %}
+{% from "_fft_bits.html" import its_checks with context %}
 {% block title %}Testing · Manage · askdnd{% endblock %}
 {% block head %}{% if show == "stands" %}<script src="{{ static('vendor/sortablejs-1.15.2/Sortable.min.js') }}" defer></script>{% endif %}{% endblock %}
 {% block content %}
@@ -96,7 +97,7 @@
         <h2 class="nt-h">{{ c.title }}</h2>
         {% set w = {"yours": ("Yours", "ask"), "claude": ("Claude's", "claude"), "closed": ("Done", "quiet")}[picked.turn] %}
         {{ state_line(w[0], w[1], picked.sentence) }}
-        <div class="fft-devices" data-devices>{% for d, s in picked.devices.items() %}<span data-device="{{ d }}"><b>{{ device_said[d].replace("your ", "") | capitalize }}</b> · {{ s.replace("_", " ") }}</span>{% endfor %}</div>
+        <div class="fft-devices" data-devices>{% for d, s in picked.devices.items() %}<span data-device="{{ d }}"><b>{{ device_said[d].replace("your ", "") | capitalize }}</b> · {{ check_words.get(s, s) }}</span>{% endfor %}</div>
         {% if picked.turn == "yours" %}
         <div class="act-bar" data-check-acts>
           <form method="post" action="/manage/testing/checks/{{ c.id }}/go"><button class="btn primary small" type="submit" data-do="try-it">▶ Try it</button></form>
@@ -138,6 +139,7 @@
       <article class="reader-article fb-read" data-fft-elsewhere="{{ pick }}">
         {% if picked.kind == "issue" %}{% set i = picked.i %}
           <h2 class="nt-h">{{ i.title }}</h2>{{ state_line(picked.pill[0], picked.pill[1], picked.sentence) }}
+          {{ its_checks(picked.checks) }}
           <div class="act-bar"><a class="btn primary small" href="/manage/feedback?tab={{ 'ready' if i.state == 'ready' else 'open' }}&amp;open=i{{ i.id }}">Open it in Feedback</a></div>
         {% elif picked.kind == "note" %}{% set n = picked.n %}
           <h2 class="nt-h">{{ n.text | note_title }}</h2>{{ state_line("Yours", "ask", n.first_name ~ "'s note waits for you: Claude sees none of it until you approve it.") }}

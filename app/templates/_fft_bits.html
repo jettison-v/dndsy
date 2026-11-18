@@ -48,3 +48,9 @@
   {% else %}<p class="row tight"><a class="btn primary small" href="/manage/testing?open=q{{ q.id }}" data-do="answer">Answer</a></p>{% endif %}
 </div>
 {%- endmacro %}
+
+{# The checks that try an issue's fix, each a link to it in Testing with where it stands in Testing's words (Brett's round,
+   Nov 18, issue 26: a live issue named no check). `checks`: views.issue_checks. #}
+{% macro its_checks(checks) -%}
+{% if checks %}<p class="note fft-its-checks" data-its-checks>{{ "Its check" if checks | length == 1 else "Its checks" }}: {% for x in checks %}<a href="/manage/testing?open=c{{ x.c.id }}" data-check="{{ x.c.id }}">{{ x.c.title }}</a> · {{ x.word }}{{ "; " if not loop.last }}{% endfor %}</p>{% endif %}
+{%- endmacro %}

@@ -4230,7 +4230,7 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 /* Testing's check (Readers, Rebuilt): the card's walkthrough as it'll show, why in words, then the history badge */
 /* Feedback's Reader (Readers, Rebuilt, Board 3): what they saw first (the picture large, the page's facts beside it),
    the conversation as messages, one box to write to Claude or to them */
-.fb-read { display: grid; gap: var(--sp-3); }
+.fb-read { display: grid; gap: var(--sp-3); align-content: start; }  /* (its lines from the top, never spread down a tall reading pane: issue 26) */
 .fb-reader .fb-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--sp-2); align-items: start; }
 .fb-reader .fb-row .nt-sum { grid-column: 1 / -1; }
 .fb-fold { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }

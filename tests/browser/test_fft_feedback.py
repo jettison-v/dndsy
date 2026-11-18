@@ -52,7 +52,8 @@ def test_approve_undo_and_write_to_the_one_who_sent_it(people, server, browser_d
     row = mine.locator(f'[data-note="f{nid}"]')
     row.wait_for()
     assert row.locator("[data-new-reply]").count() == 1 and row.locator('[data-turn="claude"]').count() == 1
-    assert "it's being fixed" in mine.locator(f'[data-fft-yours-note="{nid}"]').inner_text()
+    lid, = _one(browser_db[0], "SELECT id FROM fft_lines WHERE text = :t", t="Thanks: it's being fixed.")
+    assert mine.locator(f'[data-fft-yours-note="{nid}"] [data-line="{lid}"]').count() == 1  # (the reply reached its sender)
     assert not admin.errors, admin.errors
     assert not player.errors, player.errors
 
@@ -116,19 +117,18 @@ def test_picks_on_a_mockup_save_in_askdnd_and_come_back(people, server, browser_
     admin.allow("lacks the 'allow-same-origin' flag")  # (the test's own watcher, reading storage inside the sealed frame)
     page = admin.open(f"/manage/documents/{doc_id(path)}")
     frame = page.frame_locator("iframe.doc-frame")
-    said = frame.locator("form.decide .saved")
-    said.filter(has_text="Nothing saved yet").wait_for()
+    frame.locator('form.decide .saved[data-state="none"]').wait_for()
     for name, value in (("queue", "quiet"), ("split", "issue"), ("shot", "browser")):
         frame.locator(f"input[name={name}][value={value}]").check()
     frame.locator("form.decide textarea").fill("Fifteen minutes is fine.")
     frame.locator("form.decide button[type=submit]").click()
-    said.filter(has_text="Saved in askdnd").wait_for()
+    frame.locator('form.decide .saved[data-state="saved"]').wait_for()
     answered, picks, words = _one(browser_db[0], "SELECT answered_at, picks, answer_text FROM fft_questions WHERE id = :i", i=qid)
     assert answered is not None and [p["value"] for p in picks] == ["quiet", "issue", "browser"]
     assert words.startswith("Picks: 1 A") and words.endswith("Fifteen minutes is fine.")
     again = admin.open(f"/manage/documents/{doc_id(path)}")
     frame = again.frame_locator("iframe.doc-frame")
-    frame.locator("form.decide .saved").filter(has_text="these are your picks").wait_for()
+    frame.locator('form.decide .saved[data-state="loaded"]').wait_for()
     assert frame.locator("input[name=shot][value=browser]").is_checked() and frame.locator("form.decide textarea").input_value() == "Fifteen minutes is fine."
 
 

@@ -265,3 +265,30 @@ def test_try_it_sees_a_check_through_its_players_eyes(admin, db):
     assert f'data-check-card="{c.id}"' in admin.get("/manage/testing/card").text
     r = admin.post(f"/manage/testing/checks/{c.id}/try", data={"result": "passed"}, follow_redirects=False)
     assert r.status_code == 303 and "Viewing as" not in admin.get("/").text
+
+
+def test_a_live_issue_names_its_checks_and_is_claudes_while_they_cant_be_tried(admin, db):
+    """Issue 26 (Brett's round, Nov 18): an issue said Ready to try and Yours without naming its check, while that check
+    was blocked. A live issue names its checks with where each stands, in Testing's words; while none of them is Brett's
+    to try (blocked, being rewritten), the issue is Claude's."""
+    from app.fft import views
+
+    issue = rules.new_issue(db, "claude", "The card runs off the top", feature="testing")
+    c = _check(db, title="A long check stays on screen", issue=issue)
+    rules.start_fixing(db, "claude", issue)
+    rules.fix_live(db, "askdnd", issue, "abc123")
+    db.flush()
+    assert views.issue_turn(db, issue) == ("yours", "")
+    assert views.issue_sentence(db, issue) == "Live: try its check in Testing's For you."
+    page = admin.get(f"/manage/feedback?tab=ready&open=i{issue.id}").text
+    assert f'data-check="{c.id}"' in page and "· To try" in page and "· to_try" not in page
+
+    blocker = rules.new_issue(db, "claude", "The page won't load")
+    db.flush()
+    admin.post(f"/manage/testing/checks/{c.id}/try", data={"result": "cant", "cant": "blocked", "blocked_by": blocker.id})
+    db.expire_all()
+    assert views.issue_turn(db, issue) == ("claude", "")  # (nothing to try: never Yours)
+    assert views.issue_sentence(db, issue) == "Live, but its check can't be tried yet: Claude's to sort out."
+    assert "· Blocked" in admin.get(f"/manage/feedback?tab=ready&open=i{issue.id}").text
+    assert f'data-check="{c.id}"' in admin.get(f"/manage/testing?show=claudes&open=i{issue.id}").text  # (Testing names it too: Claude's list)
+    assert '<span data-device="laptop"><b>Laptop</b> · Blocked</span>' in admin.get(f"/manage/testing?show=claudes&open=c{c.id}").text  # (Testing's words, never a code)
