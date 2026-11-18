@@ -42,7 +42,7 @@
 <div class="bub claude fft-asked" data-question="{{ q.id }}">
   <small>Claude asked</small>
   <p>{{ q.text }}</p>
-  {% if doc %}<p class="row tight fft-doc"><a class="btn small" href="{{ doc.href }}" data-open-doc>Open “{{ doc.title }}”</a>{% if doc.link %}<a class="note" href="{{ doc.link }}" target="_blank" rel="noopener">on claude.ai ↗</a>{% endif %}</p>{% endif %}
+  {% if doc %}<p class="row tight fft-doc"><a class="btn small" href="{{ doc.href }}" data-open-doc title="{{ doc.title }}">Open mockup</a>{% if doc.link %}<a class="note" href="{{ doc.link }}" target="_blank" rel="noopener">on claude.ai ↗</a>{% endif %}</p>{% endif %}
   {% if q.choices %}<ul class="fft-asked-choices">{% for ch in q.choices %}<li data-choice="{{ loop.index0 }}"{% if q.answer_choice == loop.index0 %} class="on"{% endif %}><b>{{ ch.label }}</b>{% if q.mine == loop.index0 %} <span class="note">Claude's pick</span>{% endif %}</li>{% endfor %}</ul>{% endif %}
   {% if q.answered_at %}<div class="fft-answered" data-answered><small>{{ "You" if q.answered_by == me_id else "An admin" }} answered</small><p>{% if qv.picked %}<b>{{ qv.picked.label }}</b>{% if q.answer_text %} · {% endif %}{% endif %}{{ q.answer_text }}</p></div>
   {% else %}<p class="row tight"><a class="btn primary small" href="/manage/testing?open=q{{ q.id }}" data-do="answer">Answer in For you</a></p>{% endif %}

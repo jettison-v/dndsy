@@ -221,7 +221,7 @@ def test_a_mockup_asked_about_an_issue_opens_from_for_you_and_shows_in_its_conve
                   choices=[{"label": "Cards"}, {"label": "Tabs"}], mine=0, doc_path="docs/mockups/fft-reader/index.html")
     db.flush()
     page = admin.get(f"/manage/testing?open=q{q.id}").text
-    assert 'href="/manage/documents/mockups-fft-reader-index" data-open-doc' in page and "Feedback&#39;s Reader: Sections" in page
+    assert 'href="/manage/documents/mockups-fft-reader-index" data-open-doc>Open mockup</a>' in page and "Feedback&#39;s Reader: Sections" in page
     reader = admin.get(f"/manage/feedback?tab=open&open=i{issue.id}").text
     assert f'data-question="{q.id}"' in reader and f'href="/manage/testing?open=q{q.id}" data-do="answer"' in reader
     assert reader.index("I&#39;ll draw it.") < reader.index(f'data-question="{q.id}"')
