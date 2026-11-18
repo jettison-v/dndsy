@@ -123,6 +123,16 @@ def test_a_round_goes_page_to_page_and_passed_moves_on_with_undo(admin, db):
     assert ended.actor.startswith("user:")  # (whose hand ended it)
 
 
+def test_try_it_on_one_check_ends_with_it(admin, db):
+    """▶ Try it on one check isn't a round to Brett: passing it ends the round it opened, so nothing is left open that
+    stops a merge (R11); only a round he started with ▶ Start round waits for End round (his round, Nov 18)."""
+    c = _check(db)
+    admin.post(f"/manage/testing/checks/{c.id}/go")
+    assert rules.round_open(db) is not None
+    admin.post(f"/manage/testing/checks/{c.id}/try", data={"result": "passed"})
+    assert rules.round_open(db) is None and "data-round-done" not in admin.get("/manage/testing/card").text
+
+
 def test_while_a_round_is_open_nothing_merges(admin, db):
     """R11."""
     issue = rules.new_issue(db, "claude", "Something else")

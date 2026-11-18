@@ -63,6 +63,10 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   // done 4 seconds, for your information and someone's roll 6, refused 10, an error until closed; one with a button
   // (Undo, Keep going) 20. Hovering a card keeps it. The server says which kind (web.notice: its text alone is "done").
   const CARD = { ok: ['✓', 4000], info: ['i', 6000], roll: ['', 6000], warn: ['!', 10000], error: ['✕', 0], heal: ['+', 0] };
+  // (a round's card, app/fft/testing_page.py, sits at the foot of the screen too: its height is kept in --cc-h so the corner
+  // cards stack just above it where they share a corner, never over it; Brett's round, Nov 18, issue 28)
+  const ccSlot = document.getElementById('check-card');
+  if (ccSlot && window.ResizeObserver) new ResizeObserver(() => document.documentElement.style.setProperty('--cc-h', ccSlot.offsetHeight + 'px')).observe(ccSlot);
   function card(content, { kind = 'ok', action, actions, icon, stay } = {}) {
     const box = $('#cards');
     if (!box || !content) return null;

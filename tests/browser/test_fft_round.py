@@ -163,3 +163,51 @@ def _long_check_on_screen(people, server, cid, size, corner):
     card.locator('[data-do="passed"]').wait_for()
     assert card.evaluate("c => c.getBoundingClientRect().top") >= page.evaluate("() => document.querySelector('.topbar').getBoundingClientRect().bottom")
     assert not admin.errors, admin.errors
+
+
+@pytest.mark.parametrize("size,corner", [((1440, 800), "bl"), ((1440, 800), "br"), ((375, 700), "bl"), ((375, 700), "br")], ids=plain_id)
+def test_after_the_last_check_the_round_waits_for_end_round(people, server, browser_db, size, corner):
+    """Issue 28 (Brett's round, Nov 18): the round ended by itself after the last check, so End round was nowhere to be
+    found. Now the last check takes you to Testing with a corner card saying so, the round's card says it's still open
+    with End round on it, and the round ends only when you press it."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:  # (the file shares one database: only this case's two checks are in its round)
+        conn.execute(text("UPDATE fft_checks SET retired = true"))
+    engine.dispose()
+    first, second = _checks(browser_db[0], "/party", "/help")
+    try:
+        admin = people("admin")
+        page = admin.page
+        page.set_viewport_size({"width": size[0], "height": size[1]})
+        admin.context.add_cookies([{"name": "askdnd-cc", "value": f"open.{corner}", "url": server["base"]}])
+        admin.open("/manage/testing")
+        page.locator('[data-do="start-round"]').click()
+        page.wait_for_url("**/party")
+        page.locator(f'[data-check-card="{first}"]').wait_for()
+        page.keyboard.press("p")
+        page.wait_for_url("**/help")
+        page.locator(f'[data-check-card="{second}"]').wait_for()
+        page.keyboard.press("p")
+        page.wait_for_url("**/manage/testing**")
+        done = page.locator("[data-round-done]")
+        done.wait_for()
+        page.locator("#cards > .card").first.wait_for()  # (Passed, with Undo)
+        page.wait_for_function("() => document.getAnimations().every(a => a.playState !== 'running')")
+        apart = page.evaluate("""() => { const c = document.querySelector('#cards > .card').getBoundingClientRect(),
+          r = document.querySelector('[data-round-done]').getBoundingClientRect();
+          return c.bottom <= r.top || c.right <= r.left || c.left >= r.right; }""")
+        assert apart, page.evaluate("() => [getComputedStyle(document.documentElement).getPropertyValue('--cc-h'), getComputedStyle(document.querySelector('#cards')).bottom, document.querySelector('#check-card').getBoundingClientRect().toJSON(), document.querySelector('#cards > .card').getBoundingClientRect().toJSON(), document.querySelector('[data-round-done]').dataset.corner]")  # (corner cards stack above the round's card, never over it; on a phone too)
+        assert _one(browser_db[0], "SELECT count(*) FROM fft_rounds WHERE ended_at IS NULL") == [(1,)]
+        end = done.locator('[data-do="end-round"]')
+        assert end.is_visible()
+        end.click()
+        page.wait_for_url("**/manage/testing**")
+        page.wait_for_function("() => !document.querySelector('[data-round-done]')")
+        assert _one(browser_db[0], "SELECT count(*) FROM fft_rounds WHERE ended_at IS NULL") == [(0,)]
+        assert not admin.errors, admin.errors
+    finally:
+        engine = create_engine(browser_db[0])
+        with engine.begin() as conn:
+            conn.execute(text("DELETE FROM fft_checks WHERE id IN (:a, :b)"), {"a": first, "b": second})
+            conn.execute(text("UPDATE fft_rounds SET ended_at = now() WHERE ended_at IS NULL"))
+        engine.dispose()

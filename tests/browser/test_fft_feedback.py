@@ -145,5 +145,5 @@ def test_a_long_area_heading_wraps_above_its_rows_never_over_them(people, server
     head = page.locator('.reader-rows > [data-group="battle"]')
     head.wait_for()
     head.locator("span").first.evaluate("s => { s.textContent = 'Battle, with a name long enough to wrap onto a second line and a third'; }")
-    box, row = head.bounding_box(), page.locator(".reader-rows > [data-group] + .fb-row").first.bounding_box()
+    box, row = head.bounding_box(), page.locator('.reader-rows > [data-group="battle"] + .fb-row').bounding_box()
     assert box["height"] > 40 and box["y"] + box["height"] <= row["y"] + 0.5  # (it grew, and the row starts below it)

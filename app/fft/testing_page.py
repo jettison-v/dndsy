@@ -416,9 +416,9 @@ def _round(request: Request) -> dict | None:
 
 
 def _next_page(db: Session, request: Request) -> str:
-    """The round's next check's page, or For you when every check is tried. The round stays open until Brett presses End
-    round (his round, Nov 18: he may keep sending notes after the checks); only a round of one that joined his open
-    round lets go of it, leaving his round as it was."""
+    """The round's next check's page, or For you when every check is tried. A round stays open until Brett presses End
+    round (his round, Nov 18: he may keep sending notes after the checks). ▶ Try it on one check isn't a round to him: it
+    ends with its check (leaving a round it joined as it was)."""
     r = _round(request)
     if r is None:
         return BACK
@@ -429,10 +429,9 @@ def _next_page(db: Session, request: Request) -> str:
             return enter(request, db, c, page_of(db, c))
         r["i"] += 1
     request.session[ROUND] = r
-    if r.get("one") and not r.get("owns", True):
+    if r.get("one"):
         return _end(request, db)
-    _home(request, db, r)
-    request.session["toast"] = web.notice("That was the last check. The round stays open while you send notes: End round when you're done.", "info")
+    _home(request, db, r)  # (the round's card says it stays open, with End round on it: _fft_card_done.html)
     return leave(request, f"{BACK}?show=foryou")
 
 
