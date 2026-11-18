@@ -73,6 +73,9 @@ header.top { display: grid; gap: 10px; }
 .chip { display: inline-flex; gap: 6px; align-items: center; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font: 600 .78rem/1 var(--sans); white-space: nowrap; cursor: pointer; color: var(--text); }
 .chip.on { background: var(--blue-soft); border-color: var(--blue); color: var(--strong); }
 .chip.dim { color: var(--muted); }
+/* the Features of the Product Area picked above: a tray hung under that area, not a second line of areas */
+.feat-tray { margin-left: 18px; padding: 8px 10px; border-left: 2px solid var(--blue); background: var(--surface); border-radius: 0 10px 10px 0; }
+.feat-tray .of { font: 700 .7rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--blue); margin-right: 4px; white-space: nowrap; }
 .chip .count { font-size: .72rem; }
 .sel { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); font-size: .84rem; color: var(--text); }
 .sel::after { content: "▾"; color: var(--faint); }
@@ -206,7 +209,7 @@ header.top { display: grid; gap: 10px; }
         <h2 class="pt">Feedback</h2>
         <div class="tabs"><span class="tab">To approve</span><span class="tab on">Open <span class="count">9</span></span><span class="tab">Ready to try <span class="count">6</span></span><span class="tab">Closed</span><span class="tab">Ideas</span></div>
         <div class="chips" id="fbA-chips" role="group" aria-label="Product Area"></div>
-        <div class="chips" id="fbA-feats" role="group" aria-label="Feature" hidden></div>
+        <div class="chips feat-tray" id="fbA-feats" role="group" aria-label="Feature" hidden></div>
         <div class="reader">
           <div class="rlist" id="fbA-list"></div>
           <div class="detail" id="fbA-detail"></div>
@@ -365,6 +368,7 @@ header.top { display: grid; gap: 10px; }
       b.addEventListener("click", () => { fArea = fArea === ak ? "" : ak; fFeat = ""; renderA(); }); chipsA.append(b);
     });
     featsA.hidden = !fArea; featsA.replaceChildren();
+    if (fArea) featsA.append(el("span", "of", AREA[fArea][1] + "'s features ›"));
     if (fArea) AREA[fArea][3].forEach(([fk, fname]) => {
       const n = ISSUES.filter(x => x[1] === fk).length; if (!n) return;
       const b = el("button", "chip" + (fFeat === fk ? " on" : " dim"), fname); b.type = "button"; b.dataset.feature = fk; b.append(count(n));
