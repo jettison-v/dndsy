@@ -1089,6 +1089,15 @@
   "link": "https://claude.ai/artifact/D672VnBzfYXTKUK4R6vkYD"
  },
  {
+  "title": "Feedback and Testing, Round 2",
+  "kind": "design",
+  "status": "waiting on Brett's pick",
+  "date": "Nov 18",
+  "what": "Three decisions from Brett's round on Nov 18: what Claude missed becomes (a quiet count of what's in Claude's hands, amber only when something waits too long, or a queue always shown), splitting a note into several issues (Split… on any issue, or only while approving), and a screenshot-first Send a note (Take a screenshot steps aside and you paste, or the browser takes the tab). Three picks and a notes box saved on the page.",
+  "source": "docs/mockups/fft-round-2/index.html",
+  "link": "https://claude.ai/artifact/FrF4GE6KaAiQbXeiAmpmn6"
+ },
+ {
   "title": "Found, Fixed, Tried: Screens",
   "kind": "design",
   "status": "v2: built",
