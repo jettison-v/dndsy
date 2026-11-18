@@ -197,7 +197,7 @@ def send(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
     db.commit()
     waits = note.state == "waiting"
     return JSONResponse({"ok": True, "id": note.id, "waits": waits,
-                         "said": "Sent: an admin reads it first, then Claude." if waits else views.send_line(db, True).replace("Claude is listening: it", "Sent: Claude")})
+                         "said": views.send_line(db, not waits, sent=True)})
 
 
 SEND = None  # tests replace it: (url, payload, key) -> dict

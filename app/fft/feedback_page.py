@@ -409,11 +409,10 @@ def idea_change(request: Request, idea_id: int, do: str = Form(...), words: str 
     if denied:
         return denied
     d = db.get(FftIdea, idea_id) or _missing()
-    if do not in ("roadmap", "shipped", "declined", "new"):
-        raise HTTPException(400)
-    was, d.state = d.state, do
-    d.reason = words.strip()[:500] if do == "declined" else d.reason
-    rules._event(db, f"user:{views.person(db, user)['id']}", "idea_" + do, "idea", d.id, **{"from": was, "to": do})
+    try:
+        rules.idea_state(db, f"user:{views.person(db, user)['id']}", d, do, words)
+    except rules.RuleError as e:
+        raise HTTPException(400, e.words) from e
     db.commit()
     _said(request, {"roadmap": "On the Roadmap", "shipped": "Marked built", "declined": "Declined", "new": "Back to new"}[do])
     return RedirectResponse(f"{BACK}?tab=ideas&open=d{d.id}", status_code=303)

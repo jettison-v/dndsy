@@ -16,7 +16,7 @@ from starlette.responses import PlainTextResponse
 
 CHANGES = {"POST", "PUT", "PATCH", "DELETE"}
 COOKIE = "askdnd_session"
-OWN_PROOF = (b"x-askdnd-bridge", b"x-feedback-key", b"x-fft-key", b"authorization")
+OWN_PROOF = (b"x-askdnd-bridge", b"x-fft-key", b"authorization")
 
 
 def from_elsewhere(headers: dict[bytes, bytes]) -> bool:

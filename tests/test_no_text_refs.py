@@ -18,7 +18,7 @@ KINDS = {
     # a server test checking a page's words ('>Needs you<' in page)
     "server tests": (["tests/*.py"], r"[\"']>[A-Z][a-z][^<\"']{2,40}<"),
     # the app deciding by a display label (a roll named "Initiative", a page labelled "Sessions")
-    "app logic": (["app/*.py", "app/templates/*.html"], r"\blabel\s*==\s*[\"']|\.label\s*==|label\.startswith\([\"']|selectattr\(\"label\""),
+    "app logic": (["app/**/*.py", "app/templates/*.html"], r"\blabel\s*==\s*[\"']|\.label\s*==|label\.startswith\([\"']|selectattr\(\"label\""),
     # app.js deciding by what an element says
     "app.js": (["app/static/app.js"], r"textContent\s*(?:===|==|!==)|(?:textContent|innerText)\.(?:includes|startsWith|indexOf|match)\("),
 }

@@ -292,3 +292,32 @@ def test_a_live_issue_names_its_checks_and_is_claudes_while_they_cant_be_tried(a
     assert "· Blocked" in admin.get(f"/manage/feedback?tab=ready&open=i{issue.id}").text
     assert f'data-check="{c.id}"' in admin.get(f"/manage/testing?show=claudes&open=i{issue.id}").text  # (Testing names it too: Claude's list)
     assert '<span data-device="laptop"><b>Laptop</b> · Blocked</span>' in admin.get(f"/manage/testing?show=claudes&open=c{c.id}").text  # (Testing's words, never a code)
+
+
+def test_bretts_order_and_an_area_with_open_work_never_archived(admin, db):
+    """The review of PR #417: Brett's order (dragging items and areas) and the area actions had no test once the old
+    browser test went. The order is kept as dragged; an area with open issues is never archived (pick_next skips an
+    archived area, so its work would never reach Claude)."""
+    from app.fft.models import FftArea, FftItem
+
+    build = FftItem(title="A build", section="now", place=5)
+    db.add(build)
+    db.flush()
+    a = rules.new_area(db, "claude", build, "First")
+    b = rules.new_area(db, "claude", build, "Second")
+    other = FftItem(title="Another", section="next", place=6)
+    db.add(other)
+    db.flush()
+    assert admin.post("/manage/testing/order", data={"column": "items", "keys": [str(other.id), str(build.id)]}).status_code == 200
+    db.expire_all()
+    assert db.get(FftItem, other.id).place < db.get(FftItem, build.id).place
+    assert admin.post("/manage/testing/order", data={"column": f"item-{build.id}", "keys": [str(b.id), str(a.id)]}).status_code == 200
+    db.expire_all()
+    assert db.get(FftArea, b.id).place < db.get(FftArea, a.id).place
+    issue = rules.new_issue(db, "claude", "Still open", area_id=a.id)
+    db.flush()
+    with pytest.raises(rules.RuleError):
+        rules.archive_area(db, "claude", db.get(FftArea, a.id))
+    rules.close(db, "claude", issue, "withdrawn")
+    rules.archive_area(db, "claude", db.get(FftArea, a.id))
+    assert db.get(FftArea, a.id).archived

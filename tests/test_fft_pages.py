@@ -423,3 +423,22 @@ def test_every_picture_added_to_a_note_shows_and_one_without_a_safe_copy_is_neve
     admin.post("/view-as", data={"email": "player@example.com"})
     assert admin.get(f"/your-notes/pictures/{page.id}").status_code == 404
     admin.post("/view-as/stop")
+
+
+def test_an_idea_goes_on_the_roadmap_is_built_or_declined_with_why(admin, sender, db):
+    """The review of PR #417: an idea's changes were untested (and made outside the rules)."""
+    from app.fft.models import FftEvent
+
+    send(sender, kind="idea", text="A dice tray.")
+    n = _note(db)
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "idea"})
+    idea = db.get(FftIdea, n.idea_id)
+    for to in ("roadmap", "shipped"):
+        admin.post(f"/manage/feedback/ideas/{idea.id}", data={"do": to})
+        db.refresh(idea)
+        assert idea.state == to
+    admin.post(f"/manage/feedback/ideas/{idea.id}", data={"do": "declined", "words": "Out of scope."})
+    db.refresh(idea)
+    assert idea.state == "declined" and idea.reason == "Out of scope."
+    assert admin.post(f"/manage/feedback/ideas/{idea.id}", data={"do": "lost"}).status_code == 400
+    assert list(db.scalars(select(FftEvent.kind).where(FftEvent.thing == "idea", FftEvent.thing_id == idea.id)))[-3:] == ["idea_roadmap", "idea_shipped", "idea_declined"]

@@ -24,6 +24,7 @@ from app.fft.models import (
     FftPicture,
     FftQuestion,
 )
+from app.models import Character
 
 router = APIRouter(prefix="/api/fft")
 NO_STORE = {"Cache-Control": "no-store"}
@@ -323,11 +324,14 @@ def check_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     _area_given(db, body.get("area_id"))
     if any(db.get(FftIssue, i) is None for i in issue_ids):
         raise HTTPException(400, "issues: one of them isn't an issue")
+    who = body.get("as_character")
+    if who is not None and (type(who) is not int or db.get(Character, who) is None):
+        raise HTTPException(400, "as_character: a character's id")
     try:
         c = rules.write_check(db, actor.name, title=_str(body, "title", 160, need=True), steps=_steps(body), expect=_str(body, "expect", need=True),
                               path=_str(body, "path", 500), why=_str(body, "why"), area_id=body.get("area_id"), devices=devices,
                               issue_ids=issue_ids, minutes=body.get("minutes") if type(body.get("minutes")) is int else 2,
-                              makes=body.get("makes") is True)
+                              makes=body.get("makes") is True, as_character=who)
     except rules.RuleError as e:
         _rule(e)
     db.commit()
@@ -390,24 +394,10 @@ def area_change(body=web.JsonBody, x_fft_key: str | None = Header(default=None),
     try:
         if do == "new":
             item = db.get(FftItem, _int(body.get("item_id"), "item_id")) or _missing()
-            if item.standing:
-                raise HTTPException(400, "Fixes are batched by Product Area: give each issue its Feature (do: feature).")
-            place = (max([a.place for a in db.scalars(select(FftArea).where(FftArea.item_id == item.id))], default=0)) + 1
-            a = FftArea(item_id=item.id, title=_str(body, "title", 80, need=True).strip(), place=place)
-            db.add(a)
-            db.flush()
-            rules._event(db, actor.name, "area_new", "area", a.id, area_id=a.id, item=item.id)
-            out = {"id": a.id}
+            out = {"id": rules.new_area(db, actor.name, item, _str(body, "title", 80, need=True)).id}
         elif do == "item":
-            section = _str(body, "section", 10) or "next"
-            if section not in ("now", "next", "later"):
-                raise HTTPException(400, "section: now, next or later")
-            place = (max([i.place for i in db.scalars(select(FftItem))], default=0)) + 1
-            it = FftItem(title=_str(body, "title", 120, need=True).strip(), section=section, standing=body.get("standing") is True, place=place)
-            db.add(it)
-            db.flush()
-            rules._event(db, actor.name, "item_new", "item", it.id)
-            out = {"id": it.id}
+            out = {"id": rules.new_item(db, actor.name, _str(body, "title", 120, need=True), _str(body, "section", 10) or "next",
+                                        body.get("standing") is True).id}
         elif do in ("lock", "unlock"):
             a = db.get(FftArea, _int(body.get("area_id"), "area_id")) or _missing()
             owner = f"{actor.name}:{_str(body, 'owner', 40) or 'main'}"
@@ -415,11 +405,7 @@ def area_change(body=web.JsonBody, x_fft_key: str | None = Header(default=None),
             out = {"id": a.id, "locked_by": a.lock_owner}
         elif do == "next":
             it = db.get(FftItem, _int(body.get("item_id"), "item_id")) or _missing()
-            whose = _str(body, "whose", 10)
-            if whose not in ("brett", "claude", ""):
-                raise HTTPException(400, 'whose: "brett", "claude" or ""')
-            it.next_step, it.next_whose = _str(body, "step", 200), whose
-            rules._event(db, actor.name, "item_next", "item", it.id, whose=whose)
+            rules.item_next(db, actor.name, it, _str(body, "step", 200), _str(body, "whose", 10))
             out = {"id": it.id}
         else:
             raise HTTPException(400, "do: new, item, lock, unlock or next")

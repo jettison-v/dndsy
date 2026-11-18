@@ -518,3 +518,29 @@ def test_an_areas_own_listener_hears_only_its_area(db):
     li = rules.listener(db, "area-7")
     assert li.area_id is None
     assert rules.listener(db, "area-7", area_id=7).area_id == 7  # (one made before it said its area takes it now)
+
+
+def test_a_check_that_makes_something_runs_in_a_test_campaign(db):
+    """The old tool refused it; the review of PR #417 found the new one didn't, so Brett could be sent to make things in
+    the table's own campaign. A check that makes something needs a page in a test campaign, written or rewritten."""
+    from app.models import Campaign
+
+    db.add(Campaign(name="Lab", slug="lab", is_test=True))
+    db.add(Campaign(name="Main", slug="main-table"))
+    db.flush()
+    with pytest.raises(RuleError):
+        rules.write_check(db, "claude", title="Make an item", steps=["Press [+ New]."], expect="It's there.", path="/c/main-table/dm/items/new", makes=True)
+    c = rules.write_check(db, "claude", title="Make an item", steps=["Press [+ New]."], expect="It's there.", path="/c/lab/dm/items/new", makes=True)
+    with pytest.raises(RuleError):
+        rules.new_version(db, "claude", c, steps=["Press [+ New]."], expect="It's there.", path="/c/main-table/dm/items/new", why="moved")
+    assert rules.write_check(db, "claude", title="Look", steps=["Look."], expect="It's there.", path="/c/main-table/party").makes is False
+
+
+def test_an_issue_asked_about_while_its_fix_is_under_way_goes_back_to_fixing(db):
+    """The review of PR #417: answered, it went back to to fix, so its merged fix wasn't marked live."""
+    issue, _ = _issue_with_check(db)
+    rules.start_fixing(db, "claude", issue)
+    q = rules.ask(db, "claude", about="issue", about_id=issue.id, text="Which way?")
+    assert issue.state == "asks"
+    rules.answer(db, "user:1", q, choice=None, text="This way.")
+    assert issue.state == "fixing"

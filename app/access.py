@@ -199,7 +199,7 @@ def level(email: str | None, rows: dict[str, dict] | None = None) -> str | None:
 
 
 def sends_feedback(email: str | None, rows: dict[str, dict] | None = None) -> bool:
-    """Whether this person can send feedback for Claude (app/feedback.py): admins, and accounts switched on for it on
+    """Whether this person can send notes about askdnd (app/fft/sending.py): admins, and accounts switched on for it on
     Manage › Accounts (Brett's test accounts, Nov 3)."""
     if level(email, rows) == ADMIN:
         return True

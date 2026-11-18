@@ -272,7 +272,8 @@ def check(a) -> None:
             sys.exit(f"No check {a.id}.")
     elif a.id == "new":
         body = {"title": a.do or "", "steps": a.step, "expect": a.expect, "path": a.path, "why": a.why, "area_id": a.area,
-                "devices": a.device or ["laptop"], "issues": [int(x) for x in a.issue], "minutes": a.minutes, "makes": a.makes}
+                "devices": a.device or ["laptop"], "issues": [int(x) for x in a.issue], "minutes": a.minutes, "makes": a.makes,
+                "as_character": a.as_character}
         c = call(a.base, "/checks", body)
     else:
         w, body = a.words, {"do": a.do}
@@ -465,6 +466,7 @@ def main() -> None:
     s.add_argument("--issue", action="append", default=[])
     s.add_argument("--device", action="append", default=[])
     s.add_argument("--minutes", type=int, default=2)
+    s.add_argument("--as-character", type=int, default=None, help="tried through this character's player's eyes (View as): its id")
     s.add_argument("--makes", action="store_true", help="it makes something: its page is in a test campaign (docs/testing-guide.md)")
     s = sub.add_parser("ask")
     s.add_argument("about", choices=["issue", "check", "area", "document"])

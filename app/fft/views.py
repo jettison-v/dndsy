@@ -263,11 +263,13 @@ def listening(db: Session) -> bool:
     return bool(last and rules.now() - last < LISTENING)
 
 
-def send_line(db: Session, admin: bool) -> str:
-    """The truthful line beside Send (screen 9)."""
+def send_line(db: Session, admin: bool, sent: bool = False) -> str:
+    """The truthful line beside Send (screen 9), or once it's sent (`sent`): the same truth, said as done."""
     if not admin:
-        return "An admin reads it first, then Claude."
-    return "Claude is listening: it reads it within a minute." if listening(db) else "It waits for Claude's next session."
+        return "Sent: an admin reads it first, then Claude." if sent else "An admin reads it first, then Claude."
+    if listening(db):
+        return "Sent: Claude reads it within a minute." if sent else "Claude is listening: it reads it within a minute."
+    return "Sent: it waits for Claude's next session." if sent else "It waits for Claude's next session."
 
 
 # ------------------------------------------------------------------ counts

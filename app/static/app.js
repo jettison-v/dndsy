@@ -414,8 +414,8 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     else if (e.target.matches('[data-hb-name]')) form.querySelectorAll('[data-hb-piece]').forEach(hbDraw);
   }));
 
-  // The step card (Testing, app/testing.py; Brett's 2A, and his 6A, Nov 17): — folds it to a pill and the pill brings it
-  // back; its top bar drags it to any corner, where it settles. Both kept in a cookie (testing.card_prefs), so the
+  // The round's card (Testing, app/fft/testing_page.py; Brett's 2A, and his 6A, Nov 17): — folds it to a pill and the pill
+  // brings it back; its top bar drags it to any corner, where it settles. Both kept in a cookie (testing_page.card_prefs), so the
   // server draws it as it was left on the next page: never open and then folding (note 85).
   const ccPrefs = cc => { document.cookie = 'askdnd-cc=' + (cc.classList.contains('folded') ? 'folded.' : '') + (cc.dataset.corner || 'br') + '; path=/; max-age=31536000; samesite=lax'; };
   const ccFold = cc => {

@@ -26,8 +26,8 @@ from app.models import User
 
 router = APIRouter()
 STOP = "/view-as/stop"
-FEEDBACK = "/feedback"  # (a note for Claude is the admin's own, sent while viewing as someone: app/feedback.py)
-TESTING = "/manage/testing"  # (a check is the admin's own, tried while viewing as someone: app/testing.py, Go)
+FEEDBACK = "/feedback"  # (a note is the admin's own, sent while viewing as someone: app/fft/sending.py)
+TESTING = "/manage/testing"  # (a check is the admin's own, tried while viewing as someone: app/fft/testing_page.py, Try it)
 
 
 def viewing(session: dict | None) -> dict | None:

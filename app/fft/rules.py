@@ -443,16 +443,86 @@ def player_confirms(db: Session, actor: str, issue: FftIssue, works: bool, words
 # ------------------------------------------------------------------ checks (R7, R16, R18)
 
 
+IDEA_STATES = ("new", "roadmap", "shipped", "declined")
+
+
+def idea_state(db: Session, actor: str, idea: FftIdea, to: str, words: str = "") -> None:
+    """An idea taken onto the Roadmap, built, back to new, or declined with why (its senders read it)."""
+    if to not in IDEA_STATES:
+        raise RuleError("bad", "On the Roadmap, built, back to new, or declined.")
+    was, idea.state = idea.state, to
+    if to == "declined":
+        idea.reason = words.strip()[:500]
+    _event(db, actor, "idea_" + to, "idea", idea.id, **{"from": was, "to": to})
+
+
+def new_area(db: Session, actor: str, item: FftItem, title: str) -> FftArea:
+    """A Roadmap build's own batch (fixes are batched by Product Area: taxonomy.batch)."""
+    if item.standing:
+        raise RuleError("bad", "Fixes are batched by Product Area: give each issue its Feature (do: feature).")
+    if not title.strip():
+        raise RuleError("bad", "Give it a title.")
+    place = (db.scalar(select(func.max(FftArea.place)).where(FftArea.item_id == item.id)) or 0) + 1
+    a = FftArea(item_id=item.id, title=title.strip()[:80], place=place)
+    db.add(a)
+    db.flush()
+    _event(db, actor, "area_new", "area", a.id, area_id=a.id, item=item.id)
+    return a
+
+
+def new_item(db: Session, actor: str, title: str, section: str = "next", standing: bool = False) -> FftItem:
+    if section not in ("now", "next", "later"):
+        raise RuleError("bad", "section: now, next or later")
+    if not title.strip():
+        raise RuleError("bad", "Give it a title.")
+    it = FftItem(title=title.strip()[:120], section=section, standing=standing, place=(db.scalar(select(func.max(FftItem.place))) or 0) + 1)
+    db.add(it)
+    db.flush()
+    _event(db, actor, "item_new", "item", it.id)
+    return it
+
+
+def item_next(db: Session, actor: str, item: FftItem, step: str, whose: str) -> None:
+    """A Roadmap item's next step and whose it is."""
+    if whose not in ("brett", "claude", ""):
+        raise RuleError("bad", 'whose: "brett", "claude" or ""')
+    item.next_step, item.next_whose = step[:200], whose
+    _event(db, actor, "item_next", "item", item.id, whose=whose)
+
+
+def test_campaign_of(db: Session, path: str) -> str:
+    """The test campaign a check's page is in (its name), or "": `/c/<slug>/…`, or a character in one."""
+    import re
+
+    from app.models import Campaign, CampaignCharacter
+
+    m = re.match(r"^/c/([^/?#]+)", path or "")
+    if m:
+        camp = db.scalar(select(Campaign).where(Campaign.slug == m.group(1)))
+        return camp.name if camp is not None and camp.is_test else ""
+    m = re.match(r"^/characters/(\d+)", path or "")
+    if m:
+        camp = db.scalar(select(Campaign).join(CampaignCharacter, CampaignCharacter.campaign_id == Campaign.id)
+                         .where(CampaignCharacter.character_id == int(m.group(1)), CampaignCharacter.left_on.is_(None), Campaign.is_test.is_(True)))
+        return camp.name if camp is not None else ""
+    return ""
+
+
 def write_check(db: Session, actor: str, *, title: str, steps: list[str], expect: str, path: str = "", why: str = "",
                 area_id: int | None = None, devices: list[str] | None = None, issue_ids: list[int] | None = None,
-                minutes: int = 2, makes: bool = False) -> FftCheck:
-    """A check: what to try, version 1. One that `makes` something runs in a test campaign (docs/testing-guide.md)."""
+                minutes: int = 2, makes: bool = False, as_character: int | None = None) -> FftCheck:
+    """A check: what to try, version 1. One that `makes` something runs in a test campaign, never the table's
+    (docs/testing-guide.md; the old tool refused it, and the review of PR #417 found the new one didn't).
+    `as_character`: tried through that character's player's eyes (View as)."""
     if not title.strip() or not steps:
         raise RuleError("bad", "A check needs its title and steps.")
+    if makes and not test_campaign_of(db, path):
+        raise RuleError("bad", "A check that makes something runs in a test campaign: give it a page in one (/c/<test campaign>/…).")
     devices = [d for d in (devices or ["laptop"]) if d in DEVICES] or ["laptop"]
     if area_id is None and issue_ids:  # (a check is tried with the batch its issues are in)
         area_id = db.scalar(select(FftIssue.area_id).where(FftIssue.id.in_(issue_ids), FftIssue.area_id.is_not(None)).order_by(FftIssue.id))
-    check = FftCheck(title=title.strip()[:160], area_id=area_id, devices=devices, minutes=max(1, min(60, minutes)), makes=makes)
+    check = FftCheck(title=title.strip()[:160], area_id=area_id, devices=devices, minutes=max(1, min(60, minutes)), makes=makes,
+                     as_character=as_character)
     db.add(check)
     db.flush()
     db.add(FftCheckVersion(check_id=check.id, version=1, path=path[:500], steps=steps, expect=expect, why=why))
@@ -466,6 +536,8 @@ def new_version(db: Session, actor: str, check: FftCheck, *, steps: list[str], e
     """R7: every edit is a new version; earlier tries keep theirs. Its pre-flight starts again (R18)."""
     if not why.strip():
         raise RuleError("bad", "Say why it changed.")
+    if check.makes and not test_campaign_of(db, path):
+        raise RuleError("bad", "A check that makes something runs in a test campaign: give it a page in one (/c/<test campaign>/…).")
     check.version += 1
     check.preflight = ""
     db.add(FftCheckVersion(check_id=check.id, version=check.version, path=path[:500], steps=steps, expect=expect, why=why))
@@ -998,8 +1070,12 @@ def answer(db: Session, actor: str, q: FftQuestion, *, choice: int | None, text:
         if issue is not None and issue.state == "asks":
             open_q = db.scalar(select(func.count()).select_from(FftQuestion).where(FftQuestion.about == "issue", FftQuestion.about_id == issue.id,
                                                                                    FftQuestion.answered_at.is_(None), FftQuestion.id != q.id))
-            if not open_q:
-                _set_issue(db, actor, issue, "to_fix", "issue_answered", question=q.id)
+            if not open_q:  # (back to where it was when Claude asked: a fix under way stays under way, so it goes live
+                # with its merge; the review of PR #417)
+                asked = db.scalar(select(FftEvent.data).where(FftEvent.thing == "issue", FftEvent.thing_id == issue.id,
+                                                              FftEvent.kind == "issue_asks").order_by(FftEvent.id.desc()))
+                back = (asked or {}).get("from")
+                _set_issue(db, actor, issue, back if back in ("to_fix", "fixing") else "to_fix", "issue_answered", question=q.id)
     if q.about == "check" and q.about_id:
         c = db.get(FftCheck, q.about_id)
         if c is not None:

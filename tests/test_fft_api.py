@@ -271,3 +271,80 @@ def test_a_line_reads_as_a_line_and_a_rename_is_recorded(api, db):
     r = api.post(f"/api/fft/issues/{issue.id}", headers=_as(CLAUDE), json={"do": "title", "title": "Coins add up wrong"})
     assert r.status_code == 200 and issue.title == "Coins add up wrong"
     assert db.scalar(select(FftEvent).where(FftEvent.kind == "issue_title", FftEvent.thing_id == issue.id)) is not None
+
+
+def test_a_new_check_can_be_tried_through_a_characters_eyes(api, db):
+    """The review of PR #417: checks could no longer name a character (View as), only carried-over ones did."""
+    from app.importer import import_bundle
+    from tests.table_setup import BUNDLE, char
+
+    import_bundle(db, BUNDLE)
+    cole = char(db, "Cole")
+    db.flush()
+    r = api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "Cole's Battle", "steps": ["Look."], "expect": "It shows.",
+                                                                "path": f"/characters/{cole.id}/battle", "as_character": cole.id})
+    assert r.status_code == 200 and db.get(FftCheck, r.json()["id"]).as_character == cole.id
+    assert api.post("/api/fft/checks", headers=_as(CLAUDE), json={"title": "x", "steps": ["Look."], "expect": "x", "as_character": 999999}).status_code == 400
+
+
+def test_claudes_lines_go_to_the_senders_or_only_to_brett_and_questions_are_checked(api, db):
+    """The review of PR #417: where Claude's lines go was untested (swapped, a line meant for Brett would show to every
+    player who sent a note on the issue), and so were a question's checks."""
+    n = _player_note(db)
+    rules.file_issue(db, "user:1", n)
+    db.flush()
+    issue = db.get(FftIssue, n.issue_id)
+    for to in ("senders", "brett"):
+        assert api.post(f"/api/fft/issues/{issue.id}", headers=_as(CLAUDE), json={"do": "line", "to": to, "words": f"For {to}"}).status_code == 200
+    lines = {x.text: x.to for x in db.scalars(select(FftLine).where(FftLine.issue_id == issue.id))}
+    assert lines == {"For senders": "sender", "For brett": ""}
+    assert api.post(f"/api/fft/issues/{issue.id}", headers=_as(CLAUDE), json={"do": "line", "to": "everyone", "words": "x"}).status_code == 400
+    ok = api.post("/api/fft/questions", headers=_as(CLAUDE), json={"about": "issue", "about_id": issue.id, "text": "Which?",
+                                                                   "choices": [{"label": "A"}, {"label": "B"}], "mine": 0})
+    assert ok.status_code == 200
+    for bad in ({"choices": [{"label": "A"}]}, {"choices": [{"label": "A"}, {"label": "B"}], "mine": 5}, {"choices": "A"}):
+        r = api.post("/api/fft/questions", headers=_as(CLAUDE), json={"about": "issue", "about_id": issue.id, "text": "Which?", **bad})
+        assert r.status_code == 400, bad
+
+
+def test_live_marks_only_fixes_askdnd_runs(monkeypatch):
+    """R4, `feedback.py live` (deploy_check.py runs it after each deploy): an issue whose PR is merged and inside the
+    running commit is live; one whose PR isn't merged, or was merged after what runs, waits. Its test went with the old
+    tool (the review of PR #417)."""
+    import io
+    import json as _json
+    import subprocess as sp
+    from types import SimpleNamespace
+
+    from scripts import feedback as fbs
+
+    issues = [{"id": 1, "pr": "https://github.com/jettison-v/dndsy/pull/10"}, {"id": 2, "pr": "https://github.com/jettison-v/dndsy/pull/11"},
+              {"id": 3, "pr": "https://github.com/jettison-v/dndsy/pull/12"}, {"id": 4, "pr": ""}]
+    posted = []
+    monkeypatch.setattr(fbs, "call", lambda base, path, body=None, raw=False: (posted.append((path, body)) or {"live": [1]}) if body else {"items": issues})
+    asked = []
+    monkeypatch.setattr(fbs.urllib.request, "urlopen", lambda req, timeout=0: (asked.append(req), io.BytesIO(b'{"version": "abc123"}'))[1])
+    prs = {"10": {"state": "MERGED", "mergeCommit": {"oid": "inside"}}, "11": {"state": "OPEN", "mergeCommit": None},
+           "12": {"state": "MERGED", "mergeCommit": {"oid": "later"}}}
+
+    def run(cmd, **kw):
+        if cmd[:3] == ["gh", "pr", "view"]:
+            return sp.CompletedProcess(cmd, 0, stdout=_json.dumps(prs[cmd[3]]))
+        if cmd[:2] == ["git", "merge-base"]:
+            return sp.CompletedProcess(cmd, 0 if cmd[3] == "inside" and cmd[4] == "abc123" else 1)
+        return sp.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(sp, "run", run)
+    fbs.live(SimpleNamespace(base="https://askdnd.example"))
+    assert posted == [("/deploy", {"commit": "abc123", "prs": ["https://github.com/jettison-v/dndsy/pull/10"]})]
+    assert asked[0].get_header("User-agent") == "askdnd-feedback-script"  # (askdnd.ai turns a bare client away: 403)
+
+
+def test_claudes_words_link_their_addresses_and_escape_the_rest():
+    """`render.linked` (note 105) returns Markup: its test went with the old tool (the review of PR #417)."""
+    from app.render import linked
+
+    out = str(linked('See <b>this</b>: https://claude.ai/artifact/abc. Done'))
+    assert "&lt;b&gt;this&lt;/b&gt;" in out
+    assert '<a href="https://claude.ai/artifact/abc" target="_blank" rel="noopener">https://claude.ai/artifact/abc</a>.' in out
+    assert 'https://x.y/"onmouseover=' not in str(linked('https://x.y/"onmouseover=alert(1)'))
