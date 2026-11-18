@@ -312,7 +312,7 @@ def note_change(request: Request, note_id: int, do: str = Form(...), issue: int 
         _said(request, f"Joined “{made.title}”", undo)
         key = f"i{made.id}"
     elif do == "idea":
-        made = _act(lambda: rules.file_idea(db, actor, note))
+        _act(lambda: rules.file_idea(db, actor, note))
         _said(request, "Approved as an idea", undo)
         key = ""
     elif do == "answer":

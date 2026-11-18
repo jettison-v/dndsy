@@ -785,11 +785,10 @@ def correct_try(db: Session, actor: str, t: FftTry, result: str, why: str, user_
     if t.result == "passed":  # (a pass undone: what it closed as working is ready to try again, R5 and R6)
         for ev in db.scalars(select(FftEvent).where(FftEvent.kind == "issue_closed", FftEvent.thing == "issue",
                                                     FftEvent.data["by_try"].as_integer() == t.id)):
-            if True:
-                issue = db.get(FftIssue, ev.thing_id)
-                if issue is not None and issue.state == "closed" and issue.close_reason == "works":
-                    issue.close_reason = ""
-                    _set_issue(db, actor, issue, "ready", "issue_unmarked", by_correction=new.id)
+            issue = db.get(FftIssue, ev.thing_id)
+            if issue is not None and issue.state == "closed" and issue.close_reason == "works":
+                issue.close_reason = ""
+                _set_issue(db, actor, issue, "ready", "issue_unmarked", by_correction=new.id)
     if result == "passed":
         _passed(db, actor, check, new, user_id)
     return new

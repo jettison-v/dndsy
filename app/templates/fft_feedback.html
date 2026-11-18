@@ -15,22 +15,22 @@
     {% for key, label in tabs %}<a href="?tab={{ key }}" class="{{ 'on' if key == tab }}" data-tab="{{ key }}">{{ label }}{{ count_pill(counts[key]) }}</a>{% endfor %}
   </nav>
   {% set g = grouped %}
-  {% macro q(chip_=chip, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area %}&amp;area={{ area }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}
+  {% macro here_with(chip_=chip, pa_=(g.pa.key if g and g.pa else ""), feat_=(g.feature if g else "")) %}?tab={{ tab }}{% if chip_ %}&amp;chip={{ chip_ }}{% endif %}{% if area %}&amp;area={{ area }}{% endif %}{% if pa_ %}&amp;pa={{ pa_ }}{% endif %}{% if feat_ %}&amp;feature={{ feat_ }}{% endif %}{% endmacro %}
   {% if g %}
   {# The Product Taxonomy (Brett chose A on docs/mockups/product-taxonomy/): a chip per Product Area with work here; the
      Features of the one pressed hang under it as a tray, not a second line of areas (Brett's comment on the mockup). #}
   <div class="fb-kind-chips" role="group" aria-label="Show only">
-    {% for k, label in (("players", "From players"), ("checks", "Found on a check")) %}<a href="{{ q(chip_=("" if k == chip else k)) }}" class="chip{{ ' on' if k == chip }}" data-chip="{{ k }}"{% if k == chip %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
+    {% for k, label in (("players", "From players"), ("checks", "Found on a check")) %}<a href="{{ here_with(chip_=("" if k == chip else k)) }}" class="chip{{ ' on' if k == chip }}" data-chip="{{ k }}"{% if k == chip %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
   </div>
   {% if g.chips %}
   <div class="fb-kind-chips fft-pa-chips" role="group" aria-label="Product Area" data-pa-chips>
-    <a href="{{ q(pa_="", feat_="") }}" class="chip{{ ' on' if not g.pa }}" data-pa=""{% if not g.pa %} aria-current="true"{% endif %}>Every Product Area{{ count_pill(g.chips | sum(attribute="n") + g.unsorted) }}</a>
-    {% for c in g.chips %}<a href="{{ q(pa_=("" if g.pa and g.pa.key == c.a.key else c.a.key), feat_="") }}" class="chip{{ ' on' if g.pa and g.pa.key == c.a.key }}" data-pa="{{ c.a.key }}"{% if g.pa and g.pa.key == c.a.key %} aria-current="true"{% endif %}>{{ c.a.title }}{{ count_pill(c.n) }}</a>{% endfor %}
+    <a href="{{ here_with(pa_="", feat_="") }}" class="chip{{ ' on' if not g.pa }}" data-pa=""{% if not g.pa %} aria-current="true"{% endif %}>Every Product Area{{ count_pill(g.chips | sum(attribute="n") + g.unsorted) }}</a>
+    {% for c in g.chips %}<a href="{{ here_with(pa_=("" if g.pa and g.pa.key == c.a.key else c.a.key), feat_="") }}" class="chip{{ ' on' if g.pa and g.pa.key == c.a.key }}" data-pa="{{ c.a.key }}"{% if g.pa and g.pa.key == c.a.key %} aria-current="true"{% endif %}>{{ c.a.title }}{{ count_pill(c.n) }}</a>{% endfor %}
   </div>
   {% if g.pa %}
   <div class="fb-kind-chips fft-feat-tray" role="group" aria-label="{{ g.pa.title }}'s features" data-feat-tray="{{ g.pa.key }}">
     <span class="fft-feat-of">{{ g.pa.title }}'s features ›</span>
-    {% for x in g.feats %}<a href="{{ q(feat_=("" if g.feature == x.f.key else x.f.key)) }}" class="chip{{ ' on' if g.feature == x.f.key }}" data-feature="{{ x.f.key }}"{% if g.feature == x.f.key %} aria-current="true"{% endif %}>{{ x.f.title }}{{ count_pill(x.n) }}</a>{% endfor %}
+    {% for x in g.feats %}<a href="{{ here_with(feat_=("" if g.feature == x.f.key else x.f.key)) }}" class="chip{{ ' on' if g.feature == x.f.key }}" data-feature="{{ x.f.key }}"{% if g.feature == x.f.key %} aria-current="true"{% endif %}>{{ x.f.title }}{{ count_pill(x.n) }}</a>{% endfor %}
   </div>
   {% endif %}{% endif %}
   {% endif %}
@@ -40,7 +40,7 @@
     <aside class="reader-nav" aria-label="{{ dict(tabs)[tab] }}">
       <div class="reader-rows">
         {% macro row(r) %}
-        <a class="rd-item fb-row{{ ' sel' if r.key == pick }}" href="{{ q() }}&amp;open={{ r.key }}" data-row="{{ r.key }}"{% if r.key == pick %} aria-current="true"{% endif %}>
+        <a class="rd-item fb-row{{ ' sel' if r.key == pick }}" href="{{ here_with() }}&amp;open={{ r.key }}" data-row="{{ r.key }}"{% if r.key == pick %} aria-current="true"{% endif %}>
           <span class="ts-title">{{ r.title }}</span>{{ state_word(r.word, r.tone, ' data-turn="' ~ r.tone ~ '"') }}
           {% if r.sub %}<span class="nt-sum">{{ r.sub }}</span>{% endif %}
         </a>

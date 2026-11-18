@@ -119,7 +119,7 @@ def document_page(request: Request, did: str, page: str = "", part: int = 0):
     pages = pages_of(entry) if entry else []
     if not pages:
         return web.not_found(request, "That document isn't in the library.")
-    current = page if page in pages else pages[0]
+    current = next((p for p in pages if p == page), pages[0])  # (one of its own listed pages, never the address's text)
     body = None
     if current.endswith(".md"):
         body = Markup(markdown_to_html((DOCS / current).read_text(), lambda _name: None))  # noqa: S704
