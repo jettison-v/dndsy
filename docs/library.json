@@ -1071,6 +1071,15 @@
   "link": "https://claude.ai/artifact/Wa9Eh4jCBhd5Cxqx9pX3k6"
  },
  {
+  "title": "Feedback's Reader: Sections",
+  "kind": "design",
+  "status": "waiting on Brett's pick",
+  "date": "Nov 17",
+  "what": "Brett's note on his local trial: Feedback's reader \"all just blends together\". Today's reader and three ways to split it into sections (cards, tabs inside the issue, the story and a column of facts), each showing the issue's check and Claude's question with its answer. One pick saved on the page.",
+  "source": "docs/mockups/fft-reader/index.html",
+  "link": "https://claude.ai/artifact/Er4mH2fa5VeF7epiRGaqrt"
+ },
+ {
   "title": "Found, Fixed, Tried: Screens",
   "kind": "design",
   "status": "v2: built",
