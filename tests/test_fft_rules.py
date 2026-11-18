@@ -100,6 +100,26 @@ def test_a_players_added_words_wait_for_approval(db):
 # ------------------------------------------------------------------ fixing, trying, passing
 
 
+def test_r5_an_issue_closes_only_once_every_device_its_checks_need_has_passed(db):
+    """Brett's round, Nov 18: passing a check on the laptop closed issues whose checks still waited for the iPhone. An
+    issue closes as working only once every device each of its checks needs has passed; one closed early goes back to
+    ready to try."""
+    issue, check = _issue_with_check(db, devices=["laptop", "iphone"])
+    _live(db, issue)
+    rules.record_try(db, "user:1", check, result="passed", device="laptop", user_id=None)
+    assert issue.state == "ready"  # (the iPhone still to try)
+    rules.record_try(db, "user:1", check, result="passed", device="iphone", user_id=None)
+    assert issue.state == "closed" and issue.close_reason == "works"
+    with pytest.raises(rules.RuleError):
+        rules.back_to_ready(db, "claude", issue)  # (closed rightly: nothing left to try)
+    early, both = _issue_with_check(db, title="Closed too soon", devices=["laptop", "iphone"])
+    _live(db, early)
+    early.state, early.close_reason = "closed", "works"  # (as the old rule left it)
+    db.flush()
+    rules.back_to_ready(db, "claude", early)
+    assert early.state == "ready" and early.close_reason == ""
+
+
 def test_r4_r5_a_fix_goes_live_the_check_comes_back_and_a_pass_closes_it(db):
     issue, check = _issue_with_check(db)
     assert rules.check_state(db, check)["state"] == "fixing"  # (its fix isn't live: Claude's)

@@ -590,6 +590,24 @@ def note_on_issue(db: Session, actor: str, issue: FftIssue, *, user_id: int | No
     return note
 
 
+def _untried_anywhere(db: Session, issue: FftIssue) -> bool:
+    """Does a check of this issue still wait for a person on one of its devices (the Mac Mini's runs confirm nothing)?"""
+    for c in db.scalars(select(FftCheck).join(FftCheckIssue, FftCheckIssue.check_id == FftCheck.id)
+                        .where(FftCheckIssue.issue_id == issue.id, FftCheck.retired.is_(False))):
+        if any(state != "passed" for dev, state in check_state(db, c)["devices"].items() if dev != "mac_mini"):
+            return True
+    return False
+
+
+def back_to_ready(db: Session, actor: str, issue: FftIssue) -> None:
+    """An issue closed as working while a check of it still waited for a device: back to ready to try (the rule above
+    keeps it from happening again)."""
+    if issue.state != "closed" or issue.close_reason != "works" or not _untried_anywhere(db, issue):
+        raise RuleError("stale", "It's not one closed early.")
+    issue.close_reason = ""
+    _set_issue(db, actor, issue, "ready", "issue_live", again="a device left to try")
+
+
 def _failing_elsewhere(db: Session, issue: FftIssue, check: FftCheck, device: str) -> bool:
     """Is this issue still failing on another check, or on another device this check requires?"""
     rows = db.execute(select(FftTry.check_id, FftTry.device, FftTry.id).join(FftTryIssue, FftTryIssue.try_id == FftTry.id)
@@ -606,12 +624,13 @@ def _failing_elsewhere(db: Session, issue: FftIssue, check: FftCheck, device: st
 
 
 def _passed(db: Session, actor: str, check: FftCheck, t: FftTry, user_id: int | None) -> None:
-    """R5: only blocking issues, fixed and live, with no failing try left elsewhere, close: works now (or wait for the
-    player who reported it). An automated pass confirms nothing (R16)."""
+    """R5: only blocking issues, fixed and live, with no failing try left elsewhere and every device each of their checks
+    needs passed, close: works now (or wait for the player who reported it). An automated pass confirms nothing (R16).
+    (Brett's round, Nov 18: a laptop pass closed issues whose checks still waited for the iPhone.)"""
     if actor == "mini":
         return
     for issue in _blocking_issues(db, check):
-        if issue.state != "ready" or _failing_elsewhere(db, issue, check, t.device):
+        if issue.state != "ready" or _failing_elsewhere(db, issue, check, t.device) or _untried_anywhere(db, issue):
             continue
         if issue.confirm_by and issue.confirm_by != user_id:
             continue  # (a player's to confirm first; Brett's after three days)
