@@ -116,8 +116,9 @@ def test_migrations_go_down_and_up_and_match_models(db_engine):
     url = db_engine.url.render_as_string(hide_password=False)
     env = {"DATABASE_URL": url, "PATH": os.environ["PATH"]}
     from app.db import Base
+    from tests.conftest import drop_everything
 
-    Base.metadata.drop_all(db_engine)
+    drop_everything(db_engine)
     try:
         run = subprocess.run([sys.executable, "-c", STAIRS], env=env, capture_output=True, text=True)
         assert run.returncode == 0, run.stderr[-4000:]

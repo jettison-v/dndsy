@@ -1118,3 +1118,7 @@ class UsageEvent(Base):
     page: Mapped[str] = mapped_column(String(30), default="", server_default="")
     version: Mapped[str] = mapped_column(String(12), default="", server_default="")  # the deploy it happened on
 
+
+
+# Found, Fixed, Tried (app/fft/): its own tables, registered here so the metadata and migrations see them
+from app.fft import models as _fft_models  # noqa: F401
