@@ -4326,7 +4326,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fb-stage-note { margin: auto; text-align: center; }
 .fb-canvas-wrap { position: relative; min-width: 0; }
 .fb-canvas-wrap .fb-mark-canvas { display: block; height: auto; max-width: 100%; }  /* (its width set to keep its shape: app.js fit) */
-.fb-tools { display: flex; flex-wrap: wrap; gap: var(--sp-1); }
+.fb-tools { display: flex; flex-wrap: wrap; gap: var(--sp-1); align-items: flex-start; align-content: flex-start; }  /* (a chip keeps its height when the tools beside it wrap to two rows on a phone) */
 .fb-stage:has(.fb-canvas-wrap:not([hidden])) { grid-template-columns: minmax(0, 1fr) auto; }
 .fb-stage .fb-canvas-wrap, .fb-stage .fb-stage-note, .fb-stage .fb-covered { grid-column: 1 / -1; }
 .fb-tools-end { justify-content: flex-end; }

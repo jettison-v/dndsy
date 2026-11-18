@@ -112,6 +112,7 @@ Read these before designing or building any page; sessions that skipped them pro
 - **One tab style:** the underline tabs (`.tabbar`) on the page itself, as on Campaign. Never a band wider than the content. On a phone a row that doesn't fit scrolls sideways with the open tab always in view, and fades the edge it's cut at (`.cut-l`, `.cut-r`; Brett 2026-11-02, the UI pass).
 - **A page's own action** (`.title-row > .title-action`) stays at the right end of the title row at every width, a secondary button; the title wraps beside it. Red stays for the one next step on a page. Page titles are 26px on phones (Brett 2026-11-02, the UI pass).
 - **Chips are blue when on**, everywhere: filters, History's Show, the shared lists (Brett 2026-11-02, the UI pass).
+- **A chip you can take away** (`.chip.chip-pair`: `.chip-name` and `.chip-x`, each its own button, one pill with a hairline between; Brett's round, Nov 18, issue 21): the name picks it, the ✕ takes it away, its aria-label naming what. Send a note's pictures you added; never on something that must stay (the page's own picture).
 - **Lists get filters.** Anything people browse (names, spells, items, quests) has search and chip filters with live
   counts, not just a scroll.
 - **Size to the content.** Diagrams, windows and cards are as big as what's in them; no large empty frames.

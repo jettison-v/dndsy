@@ -282,3 +282,37 @@ def test_words_on_one_line_on_screen_stay_on_one_line_in_the_pages_picture(peopl
         on_screen, in_picture = reach(screens[what], boxes[what]), reach(drawn, boxes[what])
         assert abs(in_picture - on_screen) <= 6, (what, on_screen, in_picture)  # (wrapped or cut, it fell well short)
     assert not admin.errors, admin.errors
+
+
+def test_a_picture_you_added_can_be_taken_away_and_the_pages_stays(people, server, browser_db, tmp_path):
+    """Issue 21 (Brett's round, Nov 18): there was no way to remove a picture he'd added. Each one he adds is one pill,
+    its name and its ✕; the ✕ takes it away (the one on the stage moves to its neighbour), and what's sent is what's
+    left. The page's own picture has no ✕: it says where you were."""
+    from PIL import Image
+
+    for n, colour in ((1, (200, 30, 30)), (2, (30, 30, 200))):
+        Image.new("RGB", (600, 400), colour).save(tmp_path / f"p{n}.png")
+    admin = people("admin")
+    page = admin.open("/party")
+    page.keyboard.press("\\")
+    win = page.locator("#fb-win")
+    win.locator("[data-fb-wrap]").wait_for(state="visible", timeout=15000)
+    for n in (1, 2):
+        win.locator("[data-fb-file]").set_input_files(str(tmp_path / f"p{n}.png"))
+        page.wait_for_function(f"() => document.querySelectorAll('#fb-win [data-fb-pic]').length === {n + 1}")
+    pics = win.locator("[data-fb-pic]")
+    assert pics.nth(0).locator("[data-fb-unpic]").count() == 0  # (the page's own: no ✕)
+    assert win.locator("[data-fb-unpic]").count() == 2
+    second = pics.nth(2)
+    assert "on" in second.get_attribute("class")  # (the one just added is on the stage)
+    second.locator("[data-fb-unpic]").click()  # (take away the one on the stage)
+    page.wait_for_function("() => document.querySelectorAll('#fb-win [data-fb-pic]').length === 2")
+    assert "on" in pics.nth(1).get_attribute("class")  # (its neighbour takes the stage)
+    page.wait_for_function("() => { const c = document.querySelector('#fb-win [data-fb-canvas]'); return c.width === 600 && c.getContext('2d').getImageData(5, 5, 1, 1).data[0] > 150; }")
+    page.click("[data-fb-kind=problem]")
+    page.fill("#fb-win textarea[name=text]", "Two pictures, one taken away.")
+    page.click("[data-fb-send]")
+    page.locator("#cards > .card").first.wait_for(timeout=10000)
+    (nid,), = _rows(browser_db, "SELECT id FROM fft_notes ORDER BY id DESC LIMIT 1")
+    assert sorted(k for (k,) in _rows(browser_db, "SELECT kind FROM fft_pictures WHERE note_id = :n", n=nid)) == ["added", "page"]
+    assert not admin.errors, admin.errors
