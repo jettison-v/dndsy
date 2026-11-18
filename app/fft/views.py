@@ -160,6 +160,8 @@ def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, ide
         return out("closed", "Not taken up: the admin's words are below.", open_=False)
     if note.filed_as == "answered":
         return out("closed", "Answered: below.", open_=False, word="Answered")
+    if note.filed_as == "question":  # (sent for Claude to answer, waiting: issue 27)
+        return out("claude", "A question for Claude: the answer comes here.")
     if note.filed_as == "idea":
         idea = (db.get(FftIdea, note.idea_id) if note.idea_id else None) if idea is _FETCH else idea
         st = idea.state if idea else "new"

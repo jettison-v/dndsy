@@ -182,6 +182,26 @@ def test_an_idea_a_question_answered_and_declined_with_why(admin, sender, db):
     assert "Only the DM can." in mine and "the 2024 rules work" in mine and 'data-turn="closed"' in mine
 
 
+def test_a_question_an_admin_sends_waits_on_open_for_claude_then_its_answer_comes_back(admin, db):
+    """Issue 27 (Brett's round, Nov 18): an admin's question is filed for Claude to answer, but it showed nowhere in
+    Feedback and its sender read it as Closed. It waits on Open under Questions for Claude, Claude's turn, and its
+    sender reads that it's with Claude; once answered, the answer is theirs to read and it moves to Closed."""
+    admin.post("/feedback", json={"text": "How do I end a round?", "kind": "question", "url": "/manage/testing", "html": "<main></main>",
+                                  "context": {"page": "Testing"}, "pictures": []})
+    q = _note(db)
+    assert q.filed_as == "question"
+    page = admin.get("/manage/feedback?tab=open").text
+    assert 'data-group="questions"' in page and f'data-row="n{q.id}"' in page
+    assert f'data-note="f{q.id}"' in admin.get("/your-notes?tab=askdnd").text
+    mine = admin.get(f"/your-notes?tab=askdnd&note=f{q.id}").text
+    assert 'data-turn="claude"' in mine and 'data-turn="closed"' not in mine
+    rules.answer_note(db, "claude", q, "Press End round on the round's card.")
+    db.flush()
+    assert f'data-row="n{q.id}"' not in admin.get("/manage/feedback?tab=open").text
+    assert f'data-row="n{q.id}"' in admin.get("/manage/feedback?tab=closed").text
+    assert "Press End round on the round" in admin.get(f"/your-notes?tab=askdnd&note=f{q.id}").text
+
+
 # ------------------------------------------------------------------ an issue (screens 13, 14)
 
 

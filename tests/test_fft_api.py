@@ -13,7 +13,7 @@ from sqlalchemy import select, update
 from app import config
 from app.db import get_db
 from app.fft import keys, rules
-from app.fft.models import FftCheck, FftEvent, FftIssue, FftItem, FftKey, FftNote
+from app.fft.models import FftCheck, FftEvent, FftIssue, FftItem, FftKey, FftLine, FftNote
 from app.main import app
 
 CLAUDE, RELAY, MINI = "c" * 40, "r" * 40, "m" * 40
@@ -233,3 +233,26 @@ def test_the_inbox_leaves_out_what_claude_did_itself(api, db):
     _settle(db)
     says = [i["says"] for i in api.get("/api/fft/inbox", headers=_as(CLAUDE)).json()["items"]]
     assert says and not any("Claude's own" in s for s in says) and any("filed as issue" in s for s in says)
+
+
+def test_a_question_sent_to_claude_is_a_gap_until_answered_and_its_sender_reads_the_answer(api, db):
+    """Issue 27 (Brett's round, Nov 18): a question an admin sends is filed for Claude to answer, but Claude had no way
+    to answer it and Claude missed didn't list it. It's a gap until answered; the answer goes to its sender."""
+    from app.fft import views
+
+    n = rules.send_note(db, user_id=None, first_name="Dev", role="admin", kind="question", text="How do I end a round?")
+    db.flush()
+    assert n.filed_as == "question"
+    assert {(g["kind"], g["id"]) for g in views.gaps(db)} >= {("question", n.id)}
+    problem = rules.send_note(db, user_id=None, first_name="Dev", role="admin", kind="problem", text="The card is too tall.")
+    db.flush()
+    r = api.post(f"/api/fft/notes/{problem.id}", headers=_as(CLAUDE), json={"do": "answer", "words": "Like this."})
+    assert r.status_code == 409  # (only a question waiting for its answer)
+    assert api.post(f"/api/fft/notes/{n.id}", headers=_as(RELAY), json={"do": "answer", "words": "x"}).status_code == 403
+    r = api.post(f"/api/fft/notes/{n.id}", headers=_as(CLAUDE), json={"do": "answer", "words": "Press End round on its card."})
+    assert r.status_code == 200
+    db.refresh(n)
+    line = db.scalar(select(FftLine).where(FftLine.note_id == n.id))
+    assert n.filed_as == "answered" and line.to == "sender" and line.text == "Press End round on its card."
+    assert ("question", n.id) not in {(g["kind"], g["id"]) for g in views.gaps(db)}
+    assert api.post(f"/api/fft/notes/{n.id}", headers=_as(CLAUDE), json={"do": "answer", "words": "Again."}).status_code == 409

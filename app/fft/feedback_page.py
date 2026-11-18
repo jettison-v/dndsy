@@ -47,7 +47,8 @@ def _issue_q(tab: str):
 
 def counts(db: Session) -> dict:
     by = dict(db.execute(select(FftIssue.state, func.count()).group_by(FftIssue.state)).all())
-    return {"approve": views.to_approve(db), "open": sum(by.get(s, 0) for s in OPEN_STATES), "ready": by.get("ready", 0),
+    asked = db.scalar(select(func.count()).select_from(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question")) or 0
+    return {"approve": views.to_approve(db), "open": sum(by.get(s, 0) for s in OPEN_STATES) + asked, "ready": by.get("ready", 0),
             "closed": 0,  # (a closed thing isn't counted: a count means there's something there to do)
             "ideas": db.scalar(select(func.count()).select_from(FftIdea).where(FftIdea.state.in_(("new", "roadmap")))) or 0}
 
@@ -106,12 +107,20 @@ def rows(db: Session, tab: str, chip: str = "", area: int = 0) -> list[dict]:
             bits.append("from a check")
         out.append({"key": f"i{i.id}", "title": i.title, "word": word, "tone": tone, "sub": " · ".join(bits),
                     "pa": f.area if f else "", "feature": f.key if f else ""})
+    if tab == "open" and not chip and not area:  # (a question sent for Claude to answer, waiting: Claude's; issue 27)
+        for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
+            word, tone = views.turn_pill("claude")
+            out.append({"key": f"n{n.id}", "title": views.title_of(n.text), "word": word, "tone": tone,
+                        "sub": f"A question · {n.first_name}", "loose": "questions"})
     if tab == "closed" and not chip and not area:  # (notes decided without an issue: declined, or a question answered)
         for n in db.scalars(select(FftNote).where(or_(FftNote.state == "declined", FftNote.filed_as == "answered")).order_by(FftNote.id.desc()).limit(200)):
             word, tone = views.turn_pill("closed")
             out.append({"key": f"n{n.id}", "title": views.title_of(n.text), "word": "Answered" if n.filed_as == "answered" else "Declined",
-                        "tone": tone, "sub": f"{n.first_name} · {views.KIND_SAID.get(n.kind, '').lower()}"})
+                        "tone": tone, "sub": f"{n.first_name} · {views.KIND_SAID.get(n.kind, '').lower()}", "loose": "notes"})
     return out
+
+
+LOOSE = {"questions": "Questions for Claude", "notes": "Notes decided"}  # (rows that are notes, not issues: their group)
 
 
 def by_area(listed: list[dict], pa: str, feature: str) -> dict:
@@ -124,14 +133,15 @@ def by_area(listed: list[dict], pa: str, feature: str) -> dict:
     feats = [{"f": f, "n": sum(1 for r in listed if r.get("feature") == f.key)} for f in picked.features] if picked else []
     shown = [r for r in listed if (not picked or r.get("pa") == pa) and (not feature or r.get("feature") == feature)]
     groups = []
-    loose = [r for r in shown if r["key"][:1] != "i"]  # (notes decided without an issue, on Closed)
+    if questions := [r for r in shown if r.get("loose") == "questions"]:  # (first on Open: each a quick answer)
+        groups.append({"key": "questions", "title": LOOSE["questions"], "rows": questions})
     if not picked and (nofeat := [r for r in shown if r["key"][:1] == "i" and not r.get("pa")]):
         groups.append({"key": "", "title": "No Feature yet", "rows": nofeat})
     for a in taxonomy.areas():
         if mine := [r for r in shown if r.get("pa") == a.key]:
             groups.append({"key": a.key, "title": a.title, "rows": mine})
-    if loose:
-        groups.append({"key": "notes", "title": "Notes decided", "rows": loose})
+    if decided := [r for r in shown if r.get("loose") == "notes"]:  # (on Closed: notes decided without an issue)
+        groups.append({"key": "notes", "title": LOOSE["notes"], "rows": decided})
     return {"chips": chips, "unsorted": unsorted, "pa": picked, "feats": [x for x in feats if x["n"]], "feature": feature if picked else "",
             "groups": groups, "rows": [r for g in groups for r in g["rows"]]}
 
