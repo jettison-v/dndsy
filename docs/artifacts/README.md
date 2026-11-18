@@ -14,6 +14,7 @@ where each opens from its copy here; `scripts/library.py` writes the roadmap's t
 
 | Page | Link on claude.ai | Here | What it was |
 |---|---|---|---|
+| askdnd Work Flow | [TbkPaPK9FbmrFT8hSFpx8g](https://claude.ai/artifact/TbkPaPK9FbmrFT8hSFpx8g) | `work-flow.html` | Brett, Nov 18: the macro workflow drawn to agree on before askdnd changes: triage, the Work list and Start, the dev plan, For you, testing rounds; a draft for his comments |
 | Recording to Recap | [NpPqj4ifE2zKdXAJgZQBaM](https://claude.ai/artifact/NpPqj4ifE2zKdXAJgZQBaM) | `recording-to-recap.html` | Brett's steps after a game night: MacWhisper, the Processor's four steps, publishing the recap, where the files are (Nov 6; kept current) |
 | askdnd Test Steps | [Jbd6VR8w6thqm951FxKqGV](https://claude.ai/artifact/Jbd6VR8w6thqm951FxKqGV) | `test-steps.html` | Moved into askdnd's Testing (Manage › askdnd › Testing) on Nov 16; kept as the record of what passed before. Brett, Nov 13: the steps to try each change, marked Passed, Failed (a note for Claude) or Skip; Claude writes collections `groups` and `steps` with ArtifactData and reads `results` |
 | Roll Data Review | [7a59GHvU73NwkYRPYDNeBK](https://claude.ai/artifact/7a59GHvU73NwkYRPYDNeBK) | `roll-data-review.html` | Brett, Nov 10: before filling the roll engine from the whole 2024 PHB and DMG, a devil's-advocate look at its data's shape and the structure recommended (one effect shape, a file per book) |

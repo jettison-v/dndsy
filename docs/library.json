@@ -1366,5 +1366,14 @@
   "what": "Brett, Nov 13: every change Claude builds lands with the steps to try it; Brett marks each Passed, Failed (with a note Claude reads) or Skip. The steps and marks are in the page's own store (groups, steps, results).",
   "source": "docs/artifacts/test-steps.html",
   "link": "https://claude.ai/artifact/Jbd6VR8w6thqm951FxKqGV"
+ },
+ {
+  "title": "askdnd Work Flow",
+  "kind": "plan",
+  "status": "Draft",
+  "date": "Nov 18",
+  "what": "How a note or a Roadmap item becomes built and tested work, and where you steer it: Work, Start, the dev plan, For you. Drawn to agree on before askdnd changes.",
+  "source": "docs/artifacts/work-flow.html",
+  "link": "https://claude.ai/artifact/TbkPaPK9FbmrFT8hSFpx8g"
  }
 ]

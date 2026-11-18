@@ -1,0 +1,210 @@
+<title>askdnd Work Flow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd's work flow (Brett, Nov 18: "document the macro workflow"): how a note or a Roadmap item becomes tested work,
+   drawn for Brett to comment on before anything in askdnd changes. Source kept as docs/artifacts/work-flow.html.
+   Layout: one reading column, two diagrams, then the points to agree and the draft filled in. askdnd's colors, dark first. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --line: #34383e;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #6f6b64;
+  --you: #e8826a; --you-soft: rgba(232, 130, 106, .14);
+  --claude: #b9a3e3; --claude-soft: rgba(185, 163, 227, .14);
+  --gray-soft: rgba(162, 157, 147, .10);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f;
+  --you: #b5482c; --you-soft: rgba(181, 72, 44, .09);
+  --claude: #6b4fa3; --claude-soft: rgba(107, 79, 163, .09);
+  --gray-soft: rgba(107, 101, 92, .07);
+  color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --line: #dcd7cd;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f;
+  --you: #b5482c; --you-soft: rgba(181, 72, 44, .09);
+  --claude: #6b4fa3; --claude-soft: rgba(107, 79, 163, .09);
+  --gray-soft: rgba(107, 101, 92, .07);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.65 var(--sans); }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 40px 72px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 40px; }
+h1, h2, h3 { color: var(--strong); text-wrap: balance; margin: 0; }
+h1 { font: 700 34px/1.15 var(--cond); letter-spacing: .01em; }
+h2 { font: 700 22px/1.2 var(--cond); letter-spacing: .02em; }
+h3 { font-size: 16px; }
+p { margin: 0; max-width: 68ch; }
+section { display: grid; gap: 14px; }
+.eyebrow { font: 700 12px/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.lede { color: var(--muted); }
+.key { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13px; color: var(--muted); }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; }
+.sw.you { background: var(--you-soft); border-color: var(--you); }
+.sw.claude { background: var(--claude-soft); border-color: var(--claude); }
+.sw.gray { background: var(--gray-soft); border-color: var(--faint); }
+figure { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 20px 16px 14px; display: grid; gap: 10px; overflow-x: auto; }
+figcaption { font-size: 13px; color: var(--muted); }
+svg { width: 100%; max-width: 680px; height: auto; justify-self: center; display: block; }
+svg .you rect { fill: var(--you-soft); stroke: var(--you); }
+svg .claude rect { fill: var(--claude-soft); stroke: var(--claude); }
+svg .gray rect { fill: var(--gray-soft); stroke: var(--faint); }
+svg rect { stroke-width: 1.2; }
+svg .t { fill: var(--strong); font: 600 15px var(--sans); }
+svg .s { fill: var(--muted); font: 400 13px var(--sans); }
+svg .ln { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+svg .head { fill: var(--muted); }
+ol.points { margin: 0; padding-left: 22px; display: grid; gap: 12px; max-width: 70ch; }
+ol.points li::marker { color: var(--muted); font-weight: 600; }
+.points b, .draft b { color: var(--strong); }
+.draft { display: grid; gap: 18px; }
+.block { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; }
+.block ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.who { font: 700 11px/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; padding: 3px 7px; border-radius: 4px; justify-self: start; }
+.who.you { color: var(--you); background: var(--you-soft); }
+.who.claude { color: var(--claude); background: var(--claude-soft); }
+.who.both { color: var(--muted); background: var(--gray-soft); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+th { font: 700 12px/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+td:first-child { color: var(--strong); font-weight: 600; white-space: nowrap; }
+.rule { border-left: 3px solid var(--claude); padding: 4px 0 4px 16px; }
+footer { font-size: 13px; color: var(--faint); }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px">
+    <span class="eyebrow">Draft for Brett · Nov 18</span>
+    <h1>askdnd Work Flow</h1>
+    <p class="lede">How a note or a Roadmap item becomes work that's built and tested, and where you steer it. This is a draft for us to agree on before anything in askdnd changes. Comment on any part of it.</p>
+    <div class="key"><span><i class="sw you"></i>Your step</span><span><i class="sw claude"></i>Claude's step</span><span><i class="sw gray"></i>What comes in, or ends</span></div>
+  </header>
+
+  <section id="the-flow">
+    <h2>The flow</h2>
+    <figure>
+      <svg viewBox="0 0 680 720" role="img" aria-label="Notes and Roadmap items go through triage into a Work list you order; you press Start on one, Claude runs its dev plan, you test it in a round; a pass is done, a failure or note goes back to the same plan.">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M1 1L9 5L1 9z"/></marker></defs>
+        <g class="gray"><rect x="120" y="30" width="210" height="56" rx="8"/><text class="t" x="225" y="53" text-anchor="middle">A note</text><text class="s" x="225" y="73" text-anchor="middle">Feedback, from anyone</text></g>
+        <g class="gray"><rect x="350" y="30" width="210" height="56" rx="8"/><text class="t" x="455" y="53" text-anchor="middle">A Roadmap item</text><text class="s" x="455" y="73" text-anchor="middle">Bigger work, from you</text></g>
+        <line class="ln" x1="225" y1="86" x2="225" y2="126" marker-end="url(#ah)"/>
+        <line class="ln" x1="455" y1="86" x2="455" y2="126" marker-end="url(#ah)"/>
+        <g class="claude"><rect x="120" y="130" width="440" height="56" rx="8"/><text class="t" x="340" y="153" text-anchor="middle">Level 1 triage, always on</text><text class="s" x="340" y="173" text-anchor="middle">Feature, split, title, answer questions</text></g>
+        <line class="ln" x1="340" y1="186" x2="340" y2="226" marker-end="url(#ah)"/>
+        <g class="you"><rect x="120" y="230" width="440" height="56" rx="8"/><text class="t" x="340" y="253" text-anchor="middle">Work list, in your order</text><text class="s" x="340" y="273" text-anchor="middle">Product Areas and Roadmap items</text></g>
+        <line class="ln" x1="340" y1="286" x2="340" y2="326" marker-end="url(#ah)"/>
+        <g class="you"><rect x="120" y="330" width="440" height="56" rx="8"/><text class="t" x="340" y="353" text-anchor="middle">You press Start</text><text class="s" x="340" y="373" text-anchor="middle">On one area or item, when Claude is free</text></g>
+        <line class="ln" x1="340" y1="386" x2="340" y2="426" marker-end="url(#ah)"/>
+        <g class="claude"><rect x="120" y="430" width="440" height="56" rx="8"/><text class="t" x="340" y="453" text-anchor="middle">Dev plan</text><text class="s" x="340" y="473" text-anchor="middle">Scope, your input, build, review</text></g>
+        <line class="ln" x1="340" y1="486" x2="340" y2="526" marker-end="url(#ah)"/>
+        <g class="you"><rect x="120" y="530" width="440" height="56" rx="8"/><text class="t" x="340" y="553" text-anchor="middle">Testing round</text><text class="s" x="340" y="573" text-anchor="middle">You try it on your Mac, then End round</text></g>
+        <line class="ln" x1="225" y1="586" x2="225" y2="626" marker-end="url(#ah)"/>
+        <line class="ln" x1="470" y1="586" x2="470" y2="626" marker-end="url(#ah)"/>
+        <g class="gray"><rect x="120" y="630" width="210" height="56" rx="8"/><text class="t" x="225" y="653" text-anchor="middle">Passed</text><text class="s" x="225" y="673" text-anchor="middle">Merged, live, done</text></g>
+        <g class="gray"><rect x="380" y="630" width="240" height="56" rx="8"/><text class="t" x="500" y="653" text-anchor="middle">Failed, or a note</text><text class="s" x="500" y="673" text-anchor="middle">Back to the same plan</text></g>
+        <path class="ln" d="M605 630 L605 458 L564 458" marker-end="url(#ah)"/>
+      </svg>
+      <figcaption>Triage runs on everything as it arrives. Building starts only from your Start. A failed check or a note sent during the round goes back into the same plan as a revision.</figcaption>
+    </figure>
+  </section>
+
+  <section id="inside-a-plan">
+    <h2>Inside a dev plan</h2>
+    <figure>
+      <svg viewBox="0 0 680 520" role="img" aria-label="Claude scopes every open issue in the area together, asks for your input in For you, updates the plan, builds with tests, code review and a design check, then has it ready to test on your Mac and emails you.">
+        <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M1 1L9 5L1 9z"/></marker></defs>
+        <g class="claude"><rect x="120" y="30" width="440" height="56" rx="8"/><text class="t" x="340" y="53" text-anchor="middle">Scope</text><text class="s" x="340" y="73" text-anchor="middle">Read every open issue in it, together</text></g>
+        <line class="ln" x1="340" y1="86" x2="340" y2="126" marker-end="url(#ah2)"/>
+        <g class="you"><rect x="120" y="130" width="440" height="56" rx="8"/><text class="t" x="340" y="153" text-anchor="middle">Your input</text><text class="s" x="340" y="173" text-anchor="middle">Mockups and questions, in For you</text></g>
+        <line class="ln" x1="340" y1="186" x2="340" y2="226" marker-end="url(#ah2)"/>
+        <g class="claude"><rect x="120" y="230" width="440" height="56" rx="8"/><text class="t" x="340" y="253" text-anchor="middle">Plan updated</text><text class="s" x="340" y="273" text-anchor="middle">Your picks and comments folded in</text></g>
+        <line class="ln" x1="340" y1="286" x2="340" y2="326" marker-end="url(#ah2)"/>
+        <g class="claude"><rect x="120" y="330" width="440" height="56" rx="8"/><text class="t" x="340" y="353" text-anchor="middle">Build</text><text class="s" x="340" y="373" text-anchor="middle">Code, tests, code review, design check</text></g>
+        <line class="ln" x1="340" y1="386" x2="340" y2="426" marker-end="url(#ah2)"/>
+        <g class="claude"><rect x="120" y="430" width="440" height="56" rx="8"/><text class="t" x="340" y="453" text-anchor="middle">Ready to test</text><text class="s" x="340" y="473" text-anchor="middle">On your Mac, checks tried first, email sent</text></g>
+        <path class="ln" d="M564 258 L605 258 L605 158 L564 158" marker-end="url(#ah2)"/>
+      </svg>
+      <figcaption>Your input is the only step that waits on you. The loop on the right is for when your comments raise a new question: it comes back to you before anything is built.</figcaption>
+    </figure>
+  </section>
+
+  <section id="to-agree">
+    <h2>Four points to agree</h2>
+    <ol class="points">
+      <li id="point-names"><b>Names.</b> <b>Feedback</b> stays as where notes come in. Testing › Where it stands becomes <b>Work</b>: the ordered list of Product Areas and Roadmap items, each with a Start button and its plan. <b>Testing</b> keeps only the testing rounds. <b>For you</b> sits above all three and gathers everything waiting on you: decisions on a plan and checks to try.</li>
+      <li id="point-where"><b>Where you test.</b> On your Mac, before merge, as you do today. The cloud (staging or beta) only for what your Mac can't show: Google sign-in, several people on different devices, phones on the real site.</li>
+      <li id="point-plan"><b>The dev plan is a real thing in askdnd.</b> It's the Product Area's existing batch, given a short written scope and a state: Scoping, Waiting on you, Building, Ready to test, Done. Your approvals attach to it and failed tests return to it. An area may hold Plans A, B and C. "C waits for B" comes later, once we need it.</li>
+      <li id="point-waiting"><b>While a plan waits on your input,</b> Claude doesn't start another plan. Triage keeps running, and nothing you'd need to look at gets built in the meantime. Two plans at once only through a second chat (the fresh-session trial).</li>
+    </ol>
+  </section>
+
+  <section id="today">
+    <h2>What changes from today</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Piece</th><th>Today</th><th>Proposed</th></tr></thead>
+        <tbody>
+          <tr><td>Ordering</td><td>Testing › Where it stands, and the Roadmap page outside askdnd</td><td>Work: one list in askdnd, in your order</td></tr>
+          <tr><td>Starting</td><td>Nothing to press: Claude takes the top of the order whenever free</td><td>You press Start; Claude builds only what you started</td></tr>
+          <tr><td>Mockups</td><td>On claude.ai (comments reach Claude only at the end of a turn) and in Testing › For you</td><td>Inside askdnd, on the plan they decide, listed in For you; comments reach Claude as you write them (issue 30)</td></tr>
+          <tr><td>Dev plan</td><td>A batch: a group of issues, no plan or state</td><td>The batch plus its scope, its questions and a state</td></tr>
+          <tr><td>Failed check</td><td>An issue in the area, picked up the next time the area comes up</td><td>Reopens the same plan as a revision, right away</td></tr>
+          <tr><td>Ready to test</td><td>Told in chat</td><td>Also an email to whoever pressed Start</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="your-draft" class="draft">
+    <h2>Your draft, filled in</h2>
+    <div class="block" id="draft-triage">
+      <span class="who claude">Claude · always running</span>
+      <h3>Level 1 triage</h3>
+      <ul>
+        <li>Every issue gets its Product Area and Feature.</li>
+        <li>A note with several ideas is split into one issue each. The note itself is kept whole as shared evidence, pictures included, and nothing is deleted.</li>
+        <li>Duplicates are joined, and each issue gets a clear title.</li>
+        <li>Questions are answered. A question that will lead to a change becomes Something's wrong or An idea, or a new issue is opened from it.</li>
+        <li>Nothing waits on Claude more than 15 minutes (your pick 1A).</li>
+        <li>Triage never builds anything.</li>
+      </ul>
+    </div>
+    <div class="block" id="draft-one-off">
+      <span class="who both">Anyone · any time</span>
+      <h3>One-off feedback</h3>
+      <ul>
+        <li>A player's note waits in To approve until an admin files it. An admin's note is open straight away.</li>
+        <li>It goes into triage, then sits in its Product Area on the Work list until that area is started.</li>
+      </ul>
+    </div>
+    <div class="block" id="draft-development">
+      <span class="who you">You start it</span>
+      <h3>Structured development</h3>
+      <ul>
+        <li>You press Start on one Product Area or Roadmap item on the Work list. Start works only when Claude is free. Otherwise it says what Claude is on and offers to queue it next.</li>
+        <li>Claude first makes sure triage is finished for that area, then scopes it whole and writes the plan (or Plans A, B and C).</li>
+        <li>Mockups and questions go to For you. Claude stays on this plan until you've answered.</li>
+        <li>Build: code, tests, code review at high effort, the design check, every person and every place (CLAUDE.md › Before calling a change done).</li>
+        <li>Ready to test on your Mac, with each check tried by Claude first, and an email to you.</li>
+      </ul>
+    </div>
+    <div class="block" id="draft-testing">
+      <span class="who you">You start it</span>
+      <h3>Testing round</h3>
+      <ul>
+        <li>You press Start round. The checks run page to page, and the round stays open until you press End round.</li>
+        <li>A failed check, or a note you send during the round, goes back into the same plan as a revision. A truly new idea becomes its own issue in triage.</li>
+        <li>Once every check passes: merge, deploy, and the plan is Done.</li>
+      </ul>
+    </div>
+    <p class="rule" id="pace-rule"><b>The pace rule.</b> The speed comes from logging and grouping work, never from cutting steps. Every change gets the whole scope, the design system, code review and testing, however it arrived and however many came in at once.</p>
+  </section>
+
+  <footer>Source: docs/artifacts/work-flow.html in the askdnd repo. Nothing here is built yet.</footer>
+</div>
