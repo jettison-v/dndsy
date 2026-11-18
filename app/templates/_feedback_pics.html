@@ -1,18 +1,7 @@
-{# Screenshots added to a note after it was sent (Add to it, on Notes you sent and the feedback queue; feedback 64,
-   Nov 16; app/feedback.py add_pictures). The field: a file picker that looks like a regular button, and pasting a
+{# Screenshots added to a note after it was sent (Add to it on Notes you sent; feedback 64, Nov 16; app/your_notes.py
+   `_uploads`). The field: a file picker that looks like a regular button, and pasting a
    screenshot into the form adds it too (app.js "screenshots in Add to it"). #}
 {% macro pics_field() -%}
 <div class="fb-pics-field row tight"><label class="btn small">Add screenshots<input type="file" name="pics" multiple accept="image/png,image/jpeg,image/webp" class="sr" data-pics-input></label>
   <span class="note" data-pics-said>Or paste one here (<kbd>⌘V</kbd>)</span></div>
-{%- endmacro %}
-
-{# The pictures a note was sent with, by name ("shot": the page as the window opened, "pasted"); a tap shows one large over
-   the page, in the one large-picture view (app.js "a picture, large"), never a new tab (Brett, Nov 16) #}
-{% macro sent_pics(names, base) -%}
-{% if names %}<span class="fb-thread-pics">{% for w in names %}<img class="fb-pic" src="{{ base }}/{{ w }}" alt="{{ 'The page as you sent this' if w == 'shot' else 'Your screenshot' }}" loading="lazy">{% endfor %}</span>{% endif %}
-{%- endmacro %}
-
-{# The screenshots a thread entry came with, each opening at full size #}
-{% macro added_pics(ids, base) -%}
-{% if ids %}<span class="fb-thread-pics">{% for p in ids %}<img class="fb-pic" src="{{ base }}/pic/{{ p }}" alt="A screenshot added to the note" loading="lazy">{% endfor %}</span>{% endif %}
 {%- endmacro %}

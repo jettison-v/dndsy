@@ -3781,8 +3781,6 @@ kbd { display: inline-block; border: 1px solid var(--line-strong); border-bottom
 .fb-form h2 { margin: 0; font-size: var(--fs-lg); color: var(--text-strong); }
 .fb-form textarea { width: 100%; }
 .nt-kind { justify-self: start; align-self: flex-start; width: fit-content; }  /* a note's kind, its own size (Notes you sent) */
-.fb-thread-pics { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-top: var(--sp-2); }  /* screenshots added with Add to it (feedback 64) */
-.fb-thread-pics img { display: block; max-width: 100%; max-height: 120px; border-radius: var(--r-md); border: 1px solid var(--line); }
 .fb-kinds { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); }  /* what it is: three chips, none on until picked */
 .fb-kind-chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); margin: var(--sp-2) 0; }  /* the queue, by kind */
 .fb-kind-chips .chip { text-decoration: none; color: var(--text); }
@@ -4173,35 +4171,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .card.k-heal { border-color: var(--green); }
 
 /* Testing (app/testing.py; docs/mockups/testing/, Brett's picks, Nov 16): the Reader of checks, and the step card */
-.tests-reader .ts-ready { margin: 0 0 var(--sp-2); }
-.ts-chips { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); }
-.ts-chips .chip { text-decoration: none; color: var(--text); }
-.ts-group { margin: var(--sp-3) 0 var(--sp-1); padding: 0 var(--sp-2); font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
-.ts-group form { display: contents; }
-.ts-group .btn { text-transform: none; letter-spacing: 0; font-weight: 600; }
-/* Where it stands (Working with Claude, Brett's picks Nov 17): an area a row, dragged into his order; the one in
-   Claude's hands first and lit; whether Claude is listening on top */
-.ar { display: grid; gap: var(--sp-3); }
-.ar-listen { margin: 0; display: flex; gap: var(--sp-2); align-items: baseline; font-size: var(--fs-sm); color: var(--muted); }
-.ar-listen b { color: var(--text-strong); }
-.ar-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-2); }
-.ar-row { display: grid; grid-template-columns: auto minmax(0, 1.2fr) minmax(0, 2fr) auto; gap: var(--sp-3); align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
-.ar-row.now { border-color: var(--blue); box-shadow: inset 3px 0 0 var(--blue); }
-.ar-row.ar-move { cursor: grab; }
-.ar-ord { display: inline-flex; align-items: center; gap: var(--sp-2); min-width: 2.2em; color: var(--muted); font-size: var(--fs-sm); }
-.ar-area { display: grid; gap: 2px; min-width: 0; }
-.ar-area > b { color: var(--text-strong); overflow-wrap: anywhere; }
-.ar-what summary { cursor: pointer; }
-.ar-items { margin: var(--sp-1) 0 0; padding-left: 1.1em; display: grid; gap: 2px; font-size: var(--fs-sm); }
-.ar-next { justify-self: end; }
-.ar-done summary { cursor: pointer; }
-@media (max-width: 900px) {
-  .ar-row { grid-template-columns: auto minmax(0, 1fr); }
-  .ar-row .st-track, .ar-next { grid-column: 2; justify-self: start; }
-}
-.ts-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--sp-2); align-items: start; }
-.ts-row .ts-title { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.ts-row .nt-sum { grid-column: 1 / -1; }
 .ts-where { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; color: var(--muted); font-size: var(--fs-sm); margin: 0; }
 /* Admin pieces (Readers, Rebuilt: Brett's picks, Nov 17; _admin_bits.html): a state as a word in its colour, the line
    that says what it means, the action bar (one main button, the marks as a small set, ⋯ for the rest), the timeline */
@@ -4242,19 +4211,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .tl .tl-passed::before { background: var(--green); } .tl .tl-claude::before { background: var(--violet); }
 .tl-when { white-space: nowrap; }
 /* Testing's check (Readers, Rebuilt): the card's walkthrough as it'll show, why in words, then the history badge */
-.ts-check { display: grid; gap: var(--sp-3); }
-.ts-plabel { display: block; font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: var(--sp-1); }
-.ts-preview { background: var(--surface-2); border: 1px solid var(--line-soft); border-top: 3px solid var(--blue); border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-2); }
-.ts-see { border-top: 1px solid var(--line-soft); padding-top: var(--sp-2); }
-.ts-see p, .ts-why p { margin: 0; }
-.ts-said { color: var(--muted); }
-.skip-why { display: grid; gap: var(--sp-2); background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); }
-.skip-whys { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); min-width: 0; }
-.skip-whys .chip input { margin: 0 4px 0 0; accent-color: var(--blue); }
-.skip-whys .chip:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
-.cc-skip > summary { list-style: none; }
-.cc-skip > summary::-webkit-details-marker { display: none; }
-.cc-skip[open] { flex-basis: 100%; }
 /* Feedback's Reader (Readers, Rebuilt, Board 3): what they saw first (the picture large, the page's facts beside it),
    the conversation as messages, one box to write to Claude or to them */
 .fb-read { display: grid; gap: var(--sp-3); }
@@ -4285,22 +4241,16 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .composer-to .chip:has(input:checked) { border-color: var(--blue); background: var(--blue-soft); }
 @media (max-width: 900px) { .fb-evidence { grid-template-columns: minmax(0, 1fr); } .bub { max-width: 100%; } }
 .ts-do { margin: 0; padding-left: 1.2em; display: grid; gap: var(--sp-1); }
-.ts-from { display: grid; gap: var(--sp-2); }
 .ts-read p { margin: 0; }  /* (the article's grid spaces its parts, as Notes you sent's: no paragraph's own margin on top) */
-.ts-acts { flex-wrap: wrap; }
-.ts-acts form, .cc-acts form { display: contents; }
+.cc-acts form { display: contents; }
 .btn.ts-pass { background: var(--green-soft); border-color: var(--green); color: var(--text); }
-.fb-check-line { display: flex; gap: var(--sp-2); align-items: center; margin: 0; color: var(--muted); font-size: var(--fs-sm); }
 .check-card-slot { position: fixed; right: max(var(--sp-4), env(safe-area-inset-right, 0px)); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px)); z-index: 15; width: min(360px, calc(100vw - 2 * var(--sp-4))); }
 .check-card { background: var(--surface); border: 1px solid var(--line-strong); border-top: 3px solid var(--blue); border-radius: var(--r-lg); box-shadow: var(--lift); padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-2); font-size: var(--fs-sm); }
 .check-card.folded { background: none; border: 0; box-shadow: none; padding: 0; justify-items: end; }
 .cc-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
 .cc-label { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); display: inline-flex; align-items: center; gap: var(--sp-2); }
 .cc-body { display: grid; gap: var(--sp-2); }
-.cc-prog { height: 4px; border-radius: var(--r-xs); background: var(--surface-3); overflow: hidden; }
-.cc-prog i { display: block; height: 100%; background: var(--blue); }
 .cc-title { margin: 0; font-weight: 600; color: var(--text); }
-.cc-do { margin: 0; padding-left: 1.2em; display: grid; gap: 2px; }
 .cc-exp { background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); color: var(--muted); }
 .cc-exp b { display: block; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 2px; }
 .cc-acts { flex-wrap: wrap; gap: var(--sp-2); }
@@ -4312,9 +4262,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .cc-top[data-cc-drag] { cursor: grab; touch-action: none; user-select: none; }
 .check-card.dragging { cursor: grabbing; opacity: .92; }
 .cc-gap { flex: 1; }
-.cc-issues { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--sp-1); font-size: var(--fs-sm); }
-.cc-issues li { display: flex; flex-wrap: wrap; gap: 4px var(--sp-2); align-items: baseline; background: var(--surface-2); border-radius: var(--r-md); padding: var(--sp-1) var(--sp-2); }
-.cc-issue-text { min-width: 0; overflow-wrap: anywhere; color: var(--text); }
 /* A check's steps as a walkthrough (Brett's 3A, Nov 17): one action a line, ticked as you go; what to type dashed, a
    button drawn as one, why under it */
 .walk { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); counter-reset: walk; }
@@ -4327,7 +4274,6 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .walk-why { display: block; color: var(--muted); font-size: var(--fs-xs); }
 code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px dashed var(--line-strong); color: var(--text-strong); border-radius: var(--r-xs); padding: 0 5px; overflow-wrap: anywhere; }
 .press { display: inline-block; font-size: .92em; font-weight: 600; background: var(--surface-3); border: 1px solid var(--line-strong); color: var(--text-strong); border-radius: var(--r-sm); padding: 0 6px; line-height: 1.5; }
-.ts-hist li { white-space: normal; }  /* (a step's name wraps, never widens the page: note 95) */
 /* Claude's questions and picks in For you (Brett's 5A and Board 3, Nov 17): a question amber "?", a pick violet "◇";
    answers to tap, Claude's own marked; a pick's drawings side by side, one press each */
 .qa-form { display: grid; gap: var(--sp-3); }
@@ -4409,3 +4355,18 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-stand-item h3 { margin: 0; font-size: var(--fs-md); }
 .fft-stand-area { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--sp-2); }
 .fft-stand-area .nt-sum { grid-column: 1 / -1; }
+.fft-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-lg); background: var(--surface-2); border: 1px solid var(--line); }
+.fft-banner form { margin-left: auto; }
+.fft-items { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-4); }
+.fft-item { display: grid; gap: var(--sp-2); }
+.fft-item-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-2); }
+.fft-item-head .note { margin-left: auto; }
+.fft-areas { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
+.fft-area { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1.2fr) auto auto; gap: var(--sp-1) var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+.fft-area-name { display: grid; min-width: 0; }
+.fft-area-note { min-width: 0; }
+.fft-area-form { grid-column: 1 / -1; }
+.fft-done { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-1); }
+.fft-done li { display: flex; gap: var(--sp-2); align-items: baseline; }
+.fft-done form { display: inline; }
+@media (max-width: 900px) { .fft-area { grid-template-columns: auto minmax(0, 1fr) auto; } .fft-area-note { grid-column: 2 / -1; } }

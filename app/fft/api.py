@@ -220,7 +220,7 @@ def _missing():
 def _area_given(db: Session, area_id) -> None:
     """An area named in a body is a number and an area that exists (else a 400 saying so, never a database error)."""
     if area_id is not None and (type(area_id) is not int or db.get(FftArea, area_id) is None):
-        raise HTTPException(400, "area_id: no such area (fft.py areas lists them)")
+        raise HTTPException(400, "area_id: no such area (feedback.py areas lists them)")
 
 
 # ------------------------------------------------------------------ changing (each through rules.py)
@@ -294,7 +294,8 @@ def check_new(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
     try:
         c = rules.write_check(db, actor.name, title=_str(body, "title", 160, need=True), steps=_steps(body), expect=_str(body, "expect", need=True),
                               path=_str(body, "path", 500), why=_str(body, "why"), area_id=body.get("area_id"), devices=devices,
-                              issue_ids=issue_ids, minutes=body.get("minutes") if type(body.get("minutes")) is int else 2)
+                              issue_ids=issue_ids, minutes=body.get("minutes") if type(body.get("minutes")) is int else 2,
+                              makes=body.get("makes") is True)
     except rules.RuleError as e:
         _rule(e)
     db.commit()

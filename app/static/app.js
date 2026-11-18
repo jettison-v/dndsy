@@ -1192,6 +1192,12 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
   document.addEventListener('askdnd:live', e => {
     const t = e.detail.type;
     if (t === 'game') { showInPlace(); return; }
+    if (t === 'fft') {  // (Found, Fixed, Tried changed: Feedback, Testing and Notes you sent show their new copy; a round's card too)
+      if (document.querySelector('[data-fft-page], [data-fft-yours]')) showInPlace();
+      const slot = document.getElementById('check-card');
+      if (slot && window.htmx && !slot.contains(document.activeElement)) htmx.ajax('GET', '/manage/testing/card?at=' + encodeURIComponent(location.pathname), { target: slot, swap: 'innerHTML' });
+      return;
+    }
     if (t === 'table') { if (/^(\/c\/[^/]+)?\/table$/.test(location.pathname)) showInPlace(); return; }  // (askdnd's table: a place, a token, a scene)
     if (t === 'deliver') { window.postMessage({ askdndBridge: 'deliver', ddbId: String(e.detail.ddb) }, location.origin); return; }  // (a change another one waited for may go now: ddb_bridge._release)  // the fight moved on: every page, once it isn't in the way of a pop-up
     if (t !== 'character' && t !== 'resync') return;
@@ -1481,12 +1487,16 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     if (!window.Sortable) return;
     document.querySelectorAll('[data-sort-column]').forEach(list => {
       if (list._sortable) return;
+      // (only the list's own rows: a list inside a row, Where it stands' areas inside its items, keeps its own order; a
+      // list may name its handle, data-sort-handle, so dragging an inner row never drags the outer one)
+      const rows = () => [...list.children].filter(el => el.matches(list.dataset.sortItem || '.move'));
       list._sortable = Sortable.create(list, {
         draggable: list.dataset.sortItem || '.move', animation: 150, delay: 180, delayOnTouchOnly: true, ghostClass: 'drag-ghost',
+        ...(list.dataset.sortHandle ? { handle: list.dataset.sortHandle } : {}),
         onEnd: () => {
           const body = new URLSearchParams({ column: list.dataset.sortColumn });
-          list.querySelectorAll('[data-key]').forEach(m => body.append('keys', m.dataset.key));
-          list.querySelectorAll('[data-sort-n]').forEach((n, i) => { n.textContent = i + (+list.dataset.sortFrom || 1); });  // (numbered rows: Testing's areas)
+          rows().forEach(m => { const k = m.dataset.key || (m.querySelector('[data-key]') || m).dataset.key; if (k) body.append('keys', k); });
+          rows().forEach((m, i) => { const n = m.querySelector('[data-sort-n]'); if (n) n.textContent = i + (+list.dataset.sortFrom || 1); });  // (numbered rows: Where it stands' items)
           fetch(list.dataset.sortUrl, { method: 'POST', body }).then(r => { if (!r.ok) toast("Couldn't save the order", null, 'error'); });
         },
       });
@@ -6149,7 +6159,7 @@ document.addEventListener('askdnd:mention', e => {
     const a = tab.querySelector('[data-note-read]:not([hidden])');
     tab.querySelectorAll('[data-note]').forEach(r => r.classList.toggle('sel', !!a && r.dataset.note === a.dataset.noteRead));
   });
-  fetch('/your-notes/news', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+  const news = () => fetch('/your-notes/news', { headers: { Accept: 'application/json' }, cache: 'no-store' })
     .then(r => (r.ok ? r.json() : { count: 0, cards: [] }))
     .then(j => {
       badge(j.count);
@@ -6157,6 +6167,10 @@ document.addEventListener('askdnd:mention', e => {
       (j.cards || []).forEach(c => window.askdndToast && window.askdndToast(c.text, { label: 'See it', run: () => { location.href = c.href; } }, 'info'));
     })
     .catch(() => {});
+  news();
+  // A change in Found, Fixed, Tried (app/fft/live.py): the badge and its card come at once, not on the next page
+  let newsTick = null;
+  document.addEventListener('askdnd:live', e => { if (e.detail.type === 'fft') { clearTimeout(newsTick); newsTick = setTimeout(news, 400); } });
 })();
 
 // ---------------------------------------------------------------- markers instead of inline handlers

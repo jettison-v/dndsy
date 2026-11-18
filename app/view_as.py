@@ -71,7 +71,7 @@ class ViewAs:
             if session and session.get("view_as"):
                 session.pop("view_as", None)  # no longer allowed (removed, or no longer an admin)
             return await self.app(scope, receive, send)
-        if scope["path"] in (STOP, FEEDBACK) or scope["path"].startswith(TESTING):  # stopping, a note for Claude and testing are the real person's
+        if scope["path"] == STOP or scope["path"].startswith((FEEDBACK, TESTING)):  # stopping, a note for Claude (and its line) and testing are the real person's
             return await self.app(scope, receive, send)
         if scope["method"] not in ("GET", "HEAD"):
             return await _refuse(scope, session, target)(scope, receive, send)

@@ -380,11 +380,12 @@ def player_confirms(db: Session, actor: str, issue: FftIssue, works: bool, words
 
 def write_check(db: Session, actor: str, *, title: str, steps: list[str], expect: str, path: str = "", why: str = "",
                 area_id: int | None = None, devices: list[str] | None = None, issue_ids: list[int] | None = None,
-                minutes: int = 2) -> FftCheck:
+                minutes: int = 2, makes: bool = False) -> FftCheck:
+    """A check: what to try, version 1. One that `makes` something runs in a test campaign (docs/testing-guide.md)."""
     if not title.strip() or not steps:
         raise RuleError("bad", "A check needs its title and steps.")
     devices = [d for d in (devices or ["laptop"]) if d in DEVICES] or ["laptop"]
-    check = FftCheck(title=title.strip()[:160], area_id=area_id, devices=devices, minutes=max(1, min(60, minutes)))
+    check = FftCheck(title=title.strip()[:160], area_id=area_id, devices=devices, minutes=max(1, min(60, minutes)), makes=makes)
     db.add(check)
     db.flush()
     db.add(FftCheckVersion(check_id=check.id, version=1, path=path[:500], steps=steps, expect=expect, why=why))
@@ -701,6 +702,56 @@ def unlock_area(db: Session, owner: str, area: FftArea) -> None:
     _event(db, owner, "area_unlocked", "area", area.id, area_id=area.id)
 
 
+def order_items(db: Session, actor: str, ids: list[int]) -> None:
+    """Brett's one order: the Roadmap's items, top first (on Where it stands until the Roadmap page exists)."""
+    rows = {it.id: it for it in db.scalars(select(FftItem))}
+    for n, i in enumerate(x for x in ids if x in rows):
+        rows[i].place = n + 1
+    _event(db, actor, "items_ordered", "item", 0, order=[x for x in ids if x in rows])
+
+
+def order_areas(db: Session, actor: str, item: FftItem, ids: list[int]) -> None:
+    """An item's areas in Brett's order; Claude takes the first that's its turn (R15)."""
+    rows = {a.id: a for a in db.scalars(select(FftArea).where(FftArea.item_id == item.id))}
+    for n, i in enumerate(x for x in ids if x in rows):
+        rows[i].place = n + 1
+    _event(db, actor, "areas_ordered", "item", item.id, order=[x for x in ids if x in rows])
+
+
+def rename_area(db: Session, actor: str, area: FftArea, title: str) -> None:
+    if not title.strip():
+        raise RuleError("bad", "Give it a name.")
+    was, area.title = area.title, title.strip()[:80]
+    _event(db, actor, "area_renamed", "area", area.id, area_id=area.id, was=was)
+
+
+def move_area(db: Session, actor: str, area: FftArea, item: FftItem) -> None:
+    """To another Roadmap item, at its end."""
+    was, area.item_id = area.item_id, item.id
+    area.place = (db.scalar(select(func.max(FftArea.place)).where(FftArea.item_id == item.id, FftArea.id != area.id)) or 0) + 1
+    _event(db, actor, "area_moved", "area", area.id, area_id=area.id, **{"from": was, "to": item.id})
+
+
+def merge_area(db: Session, actor: str, area: FftArea, into: FftArea) -> None:
+    """Its issues and checks join another area; it's archived (kept, so its history reads)."""
+    if into.id == area.id or into.archived:
+        raise RuleError("bad", "Merge it into another open area.")
+    for i in db.scalars(select(FftIssue).where(FftIssue.area_id == area.id)):
+        i.area_id = into.id
+    for c in db.scalars(select(FftCheck).where(FftCheck.area_id == area.id)):
+        c.area_id = into.id
+    area.archived, area.lock_owner, area.lock_until = True, "", None
+    _event(db, actor, "area_merged", "area", area.id, area_id=into.id, into=into.id)
+
+
+def archive_area(db: Session, actor: str, area: FftArea) -> None:
+    """Out of the list; only once nothing in it is open (an empty area drops off by itself)."""
+    if area_open_issues(db, area) or any(check_state(db, c)["turn"] != "closed" for c in area_checks(db, area)):
+        raise RuleError("bad", "It still has open issues or checks: move or merge them first.")
+    area.archived, area.lock_owner, area.lock_until = True, "", None
+    _event(db, actor, "area_archived", "area", area.id, area_id=area.id)
+
+
 def area_open_issues(db: Session, area: FftArea) -> list[FftIssue]:
     return list(db.scalars(select(FftIssue).where(FftIssue.area_id == area.id, FftIssue.state != "closed")))
 
@@ -718,7 +769,7 @@ def area_turn(db: Session, area: FftArea) -> str:
     """Whose turn an area is: claude (issues to fix, checks failed or wrong), brett (checks to try, questions), done."""
     issues = area_open_issues(db, area)
     states = [check_state(db, c)["state"] for c in area_checks(db, area)]
-    if any(i.state in ("to_fix", "fixing") for i in issues) or any(s in ("failed", "fixing", "wrong", "blocked") for s in states):
+    if any(i.state in ("to_fix", "fixing") for i in issues) or any(s in ("failed", "fixing", "wrong", "blocked", "preflight") for s in states):
         return "claude"
     if any(i.state in ("asks", "merge_ok", "ready") for i in issues) or any(s in ("to_try", "later", "asks") for s in states):
         return "brett"

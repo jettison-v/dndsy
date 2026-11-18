@@ -307,14 +307,98 @@ def _last_failed(db: Session, c: FftCheck, device: str) -> FftTry | None:
     return t if t is not None and t.result == "failed" and not t.replaced else None
 
 
-def stands(db: Session) -> list[dict]:
-    """Where it stands (slice 6 draws it whole): the items in order, their areas, whose turn each is."""
-    out = []
-    for it in db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)):
-        areas = [{"a": a, "turn": rules.area_turn(db, a), "issues": len(rules.area_open_issues(db, a)), "checks": len(rules.area_checks(db, a))}
-                 for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))]
-        out.append({"it": it, "areas": areas})
-    return out
+def stands(db: Session) -> dict:
+    """Where it stands (screen 16): the Roadmap's items in Brett's order, each with its areas in his order; whose turn
+    each area is and what that means; the area Claude takes next (R15) and why the ones above it were skipped; an
+    empty area dropped off (Done, folded)."""
+    pick = rules.pick_next(db)
+    skipped = dict(pick.skipped)
+    r = rules.round_open(db)
+    items, done = [], []
+    prev = None
+    for n, it in enumerate(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)), 1):
+        rows = []
+        for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
+            issues, checks = rules.area_open_issues(db, a), rules.area_checks(db, a)
+            turn = rules.area_turn(db, a)
+            to_try = sum(1 for c in checks if rules.check_state(db, c)["state"] == "to_try")
+            counts = ", ".join(x for x in (f"{len(issues)} issue{'s' if len(issues) != 1 else ''}" if issues else "",
+                                           f"{to_try} check{'s' if to_try != 1 else ''} to try" if to_try else
+                                           f"{len(checks)} check{'s' if len(checks) != 1 else ''}" if checks else "") if x)
+            if turn == "done" and not issues:
+                done.append({"a": a, "item": it})
+                continue
+            in_round = r is not None and rules.in_open_round(db, a)
+            stops = [i for i in issues if rules.stops_round(db, i)]
+            if pick.area is not None and pick.area.id == a.id:
+                note = ("Blocker: Claude fixes it now" if pick.blocker else "Next for Claude") + (" · building on a branch; merges when your round ends" if r else "")
+            elif in_round:
+                note = "In your open round" + (f" · {len(stops)} issue{'s' if len(stops) != 1 else ''} stop{'s' if len(stops) == 1 else ''} your round (Claude may fix {'that one' if len(stops) == 1 else 'those'} now)" if stops else "")
+            elif turn == "claude":
+                note = f"After {prev}" if prev else "Waits its turn"
+            else:
+                note = "Your turn: in For you"
+            rows.append({"a": a, "turn": {"claude": "claude", "brett": "yours"}.get(turn, "yours"), "counts": counts or "Nothing open yet",
+                         "note": note, "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
+            prev = a.title
+        why = skipped.get(it.title, "")
+        items.append({"it": it, "n": n, "areas": rows, "why": f"skipped: {why}" if why else ""})
+    li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()
+    return {"rows": items, "done": done, "round": r, "listener": li, "listening": views.listening(db),
+            "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
+            "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))}
+
+
+@router.post("/manage/testing/order")
+def order(request: Request, column: str = Form(...), keys: list[str] = Form(default=[]), db: Session = Depends(get_db)):
+    """Drag and drop on Where it stands: the items' order, or one item's areas' (Brett's one order, R15)."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    actor = f"user:{views.person(db, user)['id']}"
+    ids = [int(k) for k in keys if k.isdigit()]
+    if column == "items":
+        rules.order_items(db, actor, ids)
+    elif column.startswith("item-") and column[5:].isdigit() and (it := db.get(FftItem, int(column[5:]))):
+        rules.order_areas(db, actor, it, ids)
+    else:
+        raise HTTPException(400)
+    db.commit()
+    return JSONResponse({"ok": True})
+
+
+@router.post("/manage/testing/areas/{area_id:int}")
+def area_change(request: Request, area_id: int, do: str = Form(...), title: str = Form(""), into: int = Form(0), item: int = Form(0),
+                db: Session = Depends(get_db)):
+    """Rename…, Merge into…, Move to another item…, Archive."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    a = db.get(FftArea, area_id) or _missing()
+    actor = f"user:{views.person(db, user)['id']}"
+    try:
+        if do == "rename":
+            rules.rename_area(db, actor, a, title)
+            said = "Renamed"
+        elif do == "merge":
+            target = db.get(FftArea, into) or _missing()
+            rules.merge_area(db, actor, a, target)
+            said = f"Merged into {target.title}"
+        elif do == "move":
+            target = db.get(FftItem, item) or _missing()
+            rules.move_area(db, actor, a, target)
+            said = f"Moved to {target.title}"
+        elif do == "archive":
+            rules.archive_area(db, actor, a)
+            said = "Archived"
+        else:
+            raise HTTPException(400)
+    except rules.RuleError as e:
+        request.session["toast"] = web.notice(e.words, "warn")
+        return RedirectResponse(f"{BACK}?show=stands", status_code=303)
+    db.commit()
+    request.session["toast"] = said
+    return RedirectResponse(f"{BACK}?show=stands", status_code=303)
 
 
 # ------------------------------------------------------------------ trying a check

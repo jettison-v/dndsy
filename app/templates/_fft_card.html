@@ -2,7 +2,7 @@
    askdnd page while a round is open, left by default; its top bar drags it to any corner, — folds it (both kept on the
    device: testing_page.card_prefs). The walkthrough, what you should see, ✓ Passed, ✗ Something's wrong…, Can't try…
    (keys P, F, C), End round. After a fail: what was sent, ✗ Another…, Change result…, Next check →. Never in a note's
-   picture. #}
+   picture. `sample`: drawn on the Design system page, with no address to open. #}
 {% from "_lists.html" import grip %}
 {% from "_check_steps.html" import walkthrough %}
 <aside class="check-card fft-card{{ ' folded' if folded }}{{ ' fft-card-failed' if failed }}" data-check-card="{{ c.id }}" data-fft-card data-corner="{{ corner }}" data-fb-skip aria-label="Testing: {{ c.title }}">
@@ -24,7 +24,7 @@
     <div class="row cc-acts">
       <form method="post" action="/manage/testing/checks/{{ c.id }}/try"><input type="hidden" name="result" value="passed"><input type="hidden" name="seen" value="{{ devices.get(device, '') }}"><button class="btn small ts-pass" type="submit" data-do="passed" data-key="p">✓ Passed</button></form>
       <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-do="wrong" data-key="f">✗ Something's wrong…</button>
-      <button type="button" class="btn link small" data-modal-url="/manage/testing/checks/{{ c.id }}/cant" data-do="cant" data-key="c">Can't try…</button>
+      <button type="button" class="btn link small"{% if not sample %} data-modal-url="/manage/testing/checks/{{ c.id }}/cant"{% endif %} data-do="cant" data-key="c">Can't try…</button>
     </div>
     {% endif %}
     <div class="row cc-foot"><span class="note fft-keys">{% if not failed %}<kbd>P</kbd> passed · <kbd>F</kbd> wrong · <kbd>C</kbd> can't try{% endif %}</span>

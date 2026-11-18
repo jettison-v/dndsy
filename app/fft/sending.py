@@ -159,6 +159,15 @@ def line(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"line": views.send_line(db, admin), "listening": admin and views.listening(db)}, headers={"Cache-Control": "no-store"})
 
 
+def shows_menu(request: Request) -> bool:
+    """The account menu's item, and More's on a phone: admins only, as the page is seen (viewing as a player, a player's
+    menus)."""
+    from app.auth import is_admin
+
+    return is_admin(current_user(request))
+
+
 templates.env.globals["feedback_send"] = can_send
+templates.env.globals["feedback_menu"] = shows_menu
 templates.env.globals["feedback_kinds"] = views.KIND_SAID
 templates.env.globals["feedback_asks"] = views.KIND_ASK
