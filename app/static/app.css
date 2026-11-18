@@ -50,6 +50,7 @@
   /* Controls (search box, selects, buttons): 32px tall on desktop, 44px on phones (Brett, 2026-10-22) */
   --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5l3 3 3-3' fill='none' stroke='%23a29d93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");  /* every dropdown's and the Filters control's arrow, one drawing (Nov 16) */
   --control-h: 32px; --control-h-sm: 26px; --chip-h: 28px; --bar-h: 36px;  /* the last is everything in the menu bar */
+  --bottom-nav-h: 0px;  /* the phone's bottom menu (.bottom-nav, under 900px): what sits at the foot of the screen clears it */
   --manage-cross-w: 104px;  /* Manage's way to the other half (.manage-cross), and the room kept for it */
   --selected-bg: #2a3550;  /* a chip or view that's on: blue on a dark tint */
   /* Panels and modals: side panel (also inside a modal) · regular modal (forms) · large (a Wild Shape form, combos,
@@ -897,6 +898,7 @@ table.list td a:hover { color: var(--text-strong); text-decoration: underline; }
   .bn-char > span:not(.char-av, .cond-dots) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.2; }
   .menu.sheet-menu { position: fixed; z-index: 40; top: auto; left: auto; right: 8px; bottom: calc(64px + env(safe-area-inset-bottom)); max-height: calc(100vh - 140px); overflow-y: auto; }
   body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+  :root { --bottom-nav-h: 64px; }
   .live-ago:has(.lw-short) .lw-long { display: none; }
   .lw-short { display: inline; }
   .live .menu.live-menu { position: fixed; top: 64px; right: 12px; }
@@ -4256,15 +4258,15 @@ body:has(.dice-throw.on) .roll-win:not(:hover) { opacity: .45; }
 .ts-read p { margin: 0; }  /* (the article's grid spaces its parts, as Notes you sent's: no paragraph's own margin on top) */
 .cc-acts form { display: contents; }
 .btn.ts-pass { background: var(--green-soft); border-color: var(--green); color: var(--text); }
-.check-card-slot { position: fixed; right: max(var(--sp-4), env(safe-area-inset-right, 0px)); bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px)); z-index: 15; width: min(360px, calc(100vw - 2 * var(--sp-4))); }
+.check-card-slot { position: fixed; right: max(var(--sp-4), env(safe-area-inset-right, 0px)); bottom: calc(var(--sp-4) + var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); z-index: 15; width: min(360px, calc(100vw - 2 * var(--sp-4))); }
 .check-card { background: var(--surface); border: 1px solid var(--line-strong); border-top: 3px solid var(--blue); border-radius: var(--r-lg); box-shadow: var(--lift); padding: var(--sp-3) var(--sp-4); display: grid; gap: var(--sp-2); font-size: var(--fs-sm); }
 .check-card.folded { background: none; border: 0; box-shadow: none; padding: 0; justify-items: end; }
 .cc-top { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); }
 .cc-label { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); display: inline-flex; align-items: center; gap: var(--sp-2); }
 .cc-body { display: grid; gap: var(--sp-2); }
 /* Never taller than the screen (Brett's round, Nov 18: the top was cut off): its steps scroll inside it, the top bar
-   stays put and the last row of buttons stays in sight at its foot */
-.check-card:not(.folded) { max-height: calc(100dvh - var(--bar-h) - 4 * var(--sp-4) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); grid-template-rows: auto minmax(0, 1fr); }
+   stays put and the last row of buttons stays in sight at its foot; on a phone it clears the bottom menu too */
+.check-card:not(.folded) { max-height: calc(100dvh - var(--bar-h) - var(--bottom-nav-h) - 4 * var(--sp-4) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); grid-template-rows: auto minmax(0, 1fr); }
 .check-card:not(.folded) > .cc-body { overflow-y: auto; overscroll-behavior: contain; align-content: start; }
 .cc-end { display: grid; gap: var(--sp-2); position: sticky; bottom: 0; background: var(--surface); padding-top: var(--sp-2); }
 .cc-title { margin: 0; font-weight: 600; color: var(--text); }
