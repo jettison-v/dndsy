@@ -77,15 +77,45 @@ th { font: 700 12px/1.2 var(--cond); letter-spacing: .1em; text-transform: upper
 td:first-child { color: var(--strong); font-weight: 600; white-space: nowrap; }
 .rule { border-left: 3px solid var(--claude); padding: 4px 0 4px 16px; }
 footer { font-size: 13px; color: var(--faint); }
+a { color: var(--claude); text-underline-offset: 2px; }
+td a { white-space: nowrap; }
 </style>
 
 <div class="wrap">
   <header style="display:grid;gap:10px">
-    <span class="eyebrow">Draft for Brett · Nov 18</span>
+    <span class="eyebrow">Draft for Brett · Nov 18 · version 4, with your comments</span>
     <h1>askdnd Work Flow</h1>
     <p class="lede">How a note or a Roadmap item becomes work that's built and tested, and where you steer it. This is a draft for us to agree on before anything in askdnd changes. Comment on any part of it, and use Send to Claude on a thread so it reaches Claude.</p>
     <div class="key"><span><i class="sw you"></i>Your step</span><span><i class="sw claude"></i>Claude's step</span><span><i class="sw gray"></i>What comes in, or ends</span></div>
   </header>
+
+  <section id="answered" class="draft">
+    <h2>Your comments, and where they're answered</h2>
+    <p class="lede">Each of your comments on this page, in the order you wrote them. Once you're happy with an answer, resolve its thread on the page: they weren't sent to Claude, so Claude can't.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>You asked</th><th>What changed</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td>Start automatically, through Ready</td><td>Start is gone. You mark items Ready, and Claude works through them from the top whenever it's free.</td><td><a href="#the-flow">A note's flow</a>, <a href="#today">What changes</a></td></tr>
+          <tr><td>How are comments sure to reach Claude?</td><td>A mockup inside askdnd saves each comment and pick as a note, which wakes the listening session. Until then, use Send to Claude on a thread.</td><td><a href="#today">What changes › Mockups</a></td></tr>
+          <tr><td>How is "nothing waits 15 minutes" true?</td><td>Only while a session is open and listening. Otherwise a wait always shows: amber after 15 minutes. A session starting by itself would need a scheduled job.</td><td><a href="#draft-triage">Level 1 triage</a></td></tr>
+          <tr><td>Roadmap items get their own flow</td><td>A diagram of their own; one item can span several Product Areas.</td><td><a href="#roadmap-flow">A Roadmap item's flow</a></td></tr>
+          <tr><td>Testing delays, environments, close-out</td><td>Test once on staging; Claude goes on with the next Ready item while you can't test; a cohesion pass on the Work list.</td><td><a href="#environments">Environments</a>, <a href="#cohesion">One product</a></td></tr>
+          <tr><td>How a dev plan is carried out</td><td>Written down step by step.</td><td><a href="#dev-plan-steps">How Claude carries out a dev plan</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="block" id="decide">
+      <span class="who you">Still yours to decide</span>
+      <ul>
+        <li>Rounds on staging instead of your Mac: one staging deploy per batch.</li>
+        <li>The cohesion pass: every Monday, or after every five plans, whichever comes first?</li>
+        <li>Whether a note can also be tied to a Roadmap item.</li>
+        <li>Whether a Claude session should start by itself when something waits (a scheduled job, and its cost).</li>
+        <li>The four points to agree, below.</li>
+      </ul>
+    </div>
+  </section>
 
   <section id="the-flow">
     <h2>A note's flow</h2>
@@ -102,7 +132,7 @@ footer { font-size: 13px; color: var(--faint); }
         <line class="ln" x1="340" y1="386" x2="340" y2="426" marker-end="url(#ah)"/>
         <g class="claude"><rect x="120" y="430" width="440" height="56" rx="8"/><text class="t" x="340" y="453" text-anchor="middle">Dev plan</text><text class="s" x="340" y="473" text-anchor="middle">Scope, your input, build, review</text></g>
         <line class="ln" x1="340" y1="486" x2="340" y2="526" marker-end="url(#ah)"/>
-        <g class="you"><rect x="120" y="530" width="440" height="56" rx="8"/><text class="t" x="340" y="553" text-anchor="middle">Testing round</text><text class="s" x="340" y="573" text-anchor="middle">You try it on your Mac, then End round</text></g>
+        <g class="you"><rect x="120" y="530" width="440" height="56" rx="8"/><text class="t" x="340" y="553" text-anchor="middle">Testing round</text><text class="s" x="340" y="573" text-anchor="middle">You try it on staging, then End round</text></g>
         <line class="ln" x1="225" y1="586" x2="225" y2="626" marker-end="url(#ah)"/>
         <line class="ln" x1="470" y1="586" x2="470" y2="626" marker-end="url(#ah)"/>
         <g class="gray"><rect x="120" y="630" width="210" height="56" rx="8"/><text class="t" x="225" y="653" text-anchor="middle">Passed</text><text class="s" x="225" y="673" text-anchor="middle">Merged, live, done</text></g>
@@ -128,7 +158,7 @@ footer { font-size: 13px; color: var(--faint); }
         <line class="ln" x1="340" y1="386" x2="340" y2="426" marker-end="url(#ah3)"/>
         <g class="claude"><rect x="120" y="430" width="440" height="56" rx="8"/><text class="t" x="340" y="453" text-anchor="middle">Dev plans, one or more</text><text class="s" x="340" y="473" text-anchor="middle">May span several Product Areas</text></g>
         <line class="ln" x1="340" y1="486" x2="340" y2="526" marker-end="url(#ah3)"/>
-        <g class="you"><rect x="120" y="530" width="440" height="56" rx="8"/><text class="t" x="340" y="553" text-anchor="middle">Testing round</text><text class="s" x="340" y="573" text-anchor="middle">You try it on your Mac, then End round</text></g>
+        <g class="you"><rect x="120" y="530" width="440" height="56" rx="8"/><text class="t" x="340" y="553" text-anchor="middle">Testing round</text><text class="s" x="340" y="573" text-anchor="middle">You try it on staging, then End round</text></g>
         <line class="ln" x1="225" y1="586" x2="225" y2="626" marker-end="url(#ah3)"/>
         <line class="ln" x1="470" y1="586" x2="470" y2="626" marker-end="url(#ah3)"/>
         <g class="gray"><rect x="120" y="630" width="210" height="56" rx="8"/><text class="t" x="225" y="653" text-anchor="middle">Passed</text><text class="s" x="225" y="673" text-anchor="middle">Merged, live, done</text></g>
@@ -142,7 +172,7 @@ footer { font-size: 13px; color: var(--faint); }
   <section id="inside-a-plan">
     <h2>Inside a dev plan</h2>
     <figure>
-      <svg viewBox="0 0 680 520" role="img" aria-label="Claude scopes every open issue in the area together, asks for your input in For you, updates the plan, builds with tests, code review and a design check, then has it ready to test on your Mac and emails you.">
+      <svg viewBox="0 0 680 520" role="img" aria-label="Claude scopes every open issue in the area together, asks for your input in For you, updates the plan, builds with tests, code review and a design check, then has it ready to test on staging and emails you.">
         <defs><marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M1 1L9 5L1 9z"/></marker></defs>
         <g class="claude"><rect x="120" y="30" width="440" height="56" rx="8"/><text class="t" x="340" y="53" text-anchor="middle">Scope</text><text class="s" x="340" y="73" text-anchor="middle">Read every open issue in it, together</text></g>
         <line class="ln" x1="340" y1="86" x2="340" y2="126" marker-end="url(#ah2)"/>
@@ -152,7 +182,7 @@ footer { font-size: 13px; color: var(--faint); }
         <line class="ln" x1="340" y1="286" x2="340" y2="326" marker-end="url(#ah2)"/>
         <g class="claude"><rect x="120" y="330" width="440" height="56" rx="8"/><text class="t" x="340" y="353" text-anchor="middle">Build</text><text class="s" x="340" y="373" text-anchor="middle">Code, tests, code review, design check</text></g>
         <line class="ln" x1="340" y1="386" x2="340" y2="426" marker-end="url(#ah2)"/>
-        <g class="claude"><rect x="120" y="430" width="440" height="56" rx="8"/><text class="t" x="340" y="453" text-anchor="middle">Ready to test</text><text class="s" x="340" y="473" text-anchor="middle">On your Mac, checks tried first, email sent</text></g>
+        <g class="claude"><rect x="120" y="430" width="440" height="56" rx="8"/><text class="t" x="340" y="453" text-anchor="middle">Ready to test</text><text class="s" x="340" y="473" text-anchor="middle">On staging, checks tried first, email sent</text></g>
         <path class="ln" d="M564 258 L605 258 L605 158 L564 158" marker-end="url(#ah2)"/>
       </svg>
       <figcaption>Your input is the only step that waits on you. The loop on the right is for when your comments raise a new question: it comes back to you before anything is built.</figcaption>
@@ -163,7 +193,7 @@ footer { font-size: 13px; color: var(--faint); }
     <h2>Four points to agree</h2>
     <ol class="points">
       <li id="point-names"><b>Names.</b> <b>Feedback</b> stays as where notes come in. Testing › Where it stands becomes <b>Work</b>: the ordered list of Product Areas and Roadmap items, each with a Ready mark and its plan. <b>Testing</b> keeps only the testing rounds. <b>For you</b> sits above all three and gathers everything waiting on you: decisions on a plan and checks to try.</li>
-      <li id="point-where"><b>Where you test.</b> On your Mac, before merge, as you do today. The cloud (staging or beta) only for what your Mac can't show: Google sign-in, several people on different devices, phones on the real site.</li>
+      <li id="point-where"><b>Where you test.</b> On staging, once, before merge (see <a href="#environments">Testing, delays and environments</a>): it never goes stale, works on your phone and holds last night's data, and what passes there goes to production unchanged. Production only for what staging can't show: Google sign-in, the real D&amp;D Beyond. (Today's round is on your Mac, because Feedback and Testing aren't on staging until this branch merges.)</li>
       <li id="point-plan"><b>The dev plan is a real thing in askdnd.</b> It's the Product Area's existing batch, given a short written scope and a state: Scoping, Waiting on you, Building, Ready to test, Done. Your approvals attach to it and failed tests return to it. An area may hold Plans A, B and C. "C waits for B" comes later, once we need it.</li>
       <li id="point-waiting"><b>While a plan waits on your input,</b> Claude doesn't start another plan. Triage keeps running, and nothing you'd need to look at gets built in the meantime. Two plans at once only through a second chat (the fresh-session trial).</li>
     </ol>
@@ -216,7 +246,7 @@ footer { font-size: 13px; color: var(--faint); }
         <li>Claude first makes sure triage is finished for that area, then scopes it whole and writes the plan (or Plans A, B and C).</li>
         <li>Mockups and questions go to For you. Claude stays on this plan until you've answered.</li>
         <li>Build: code, tests, code review at high effort, the design check, every person and every place (CLAUDE.md › Before calling a change done).</li>
-        <li>Ready to test on your Mac, with each check tried by Claude first, and an email to you.</li>
+        <li>Ready to test on staging, with each check tried by Claude first, and an email to you.</li>
       </ul>
     </div>
     <div class="block" id="draft-testing">
