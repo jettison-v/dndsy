@@ -23,8 +23,9 @@
     {% for k, label in (("players", "From players"), ("checks", "Found on a check")) %}<a href="{{ here_with(chip_=("" if k == chip else k)) }}" class="chip{{ ' on' if k == chip }}" data-chip="{{ k }}"{% if k == chip %} aria-current="true"{% endif %}>{{ label }}</a>{% endfor %}
   </div>
   {% if g.chips %}
+  {% set every_n = g.chips | sum(attribute="n") %}
   <div class="fb-kind-chips fft-pa-chips" role="group" aria-label="Product Area" data-pa-chips>
-    <a href="{{ here_with(pa_="", feat_="") }}" class="chip{{ ' on' if not g.pa }}" data-pa=""{% if not g.pa %} aria-current="true"{% endif %}>Every Product Area{{ count_pill(g.chips | sum(attribute="n") + g.unsorted) }}</a>
+    <a href="{{ here_with(pa_="", feat_="") }}" class="chip{{ ' on' if not g.pa }}" data-pa=""{% if not g.pa %} aria-current="true"{% endif %}>Every Product Area{{ count_pill(every_n + g.unsorted) }}</a>
     {% for c in g.chips %}<a href="{{ here_with(pa_=("" if g.pa and g.pa.key == c.a.key else c.a.key), feat_="") }}" class="chip{{ ' on' if g.pa and g.pa.key == c.a.key }}" data-pa="{{ c.a.key }}"{% if g.pa and g.pa.key == c.a.key %} aria-current="true"{% endif %}>{{ c.a.title }}{{ count_pill(c.n) }}</a>{% endfor %}
   </div>
   {% if g.pa %}
