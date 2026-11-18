@@ -203,6 +203,8 @@ def test_after_the_last_check_the_round_waits_for_end_round(people, server, brow
         end.click()
         page.wait_for_url("**/manage/testing**")
         page.wait_for_function("() => !document.querySelector('[data-round-done]')")
+        page.locator("#cards > .card").first.wait_for()  # (a corner card says it ended: Claude may merge again)
+        assert page.locator('[data-do="end-round"]').count() == 0
         assert _one(browser_db[0], "SELECT count(*) FROM fft_rounds WHERE ended_at IS NULL") == [(0,)]
         assert not admin.errors, admin.errors
     finally:
