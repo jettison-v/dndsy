@@ -100,3 +100,16 @@ character notes blurred at capture), shown to approvers and Claude; scoped keys;
 
 docs/MAP.md (Feedback for Claude, Testing in askdnd: replaced by one section), CLAUDE.md (the loop: `feedback.py
 next`), Help's About and FAQ, the DM guide where it mentions feedback, docs/testing-guide.md, docs/DECISIONS.md.
+
+## Progress (kept current on the branch)
+
+- **Slice 1, done** (cb9c09ca): app/fft/models.py (17 tables, migration 8de6dc8271e6 with the two circular links added
+  by hand), app/fft/rules.py (R1–R18; `check_state` works a check's state out per device; `pick_next` is R15),
+  tests/test_fft_rules.py (each rule, a randomized invariant run, the record matching the rows). Test databases now
+  drop tables one per transaction (tests/conftest.py `drop_everything`).
+- **Slice 2, building**: app/fft/keys.py (a key per actor and place, hashed, with scopes), app/fft/api.py (Claude's
+  API under /api/fft: approved words only, first names, quoted and labelled, the page only on request), the new CLI
+  `scripts/fft.py` (it becomes scripts/feedback.py at the merge: the old CLI keeps talking to askdnd.ai's old tool
+  until then, so the listener loop isn't broken mid-build), tests/test_fft_api.py (the privacy tests from branch
+  privacy-rules, ported).
+- At the merge: run `scripts/deploy_check.py --set-backup-watch` (app/fft joined BACKUP_WATCH).
