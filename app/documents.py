@@ -37,7 +37,10 @@ KINDS = (
     ("design", "Designs", "Mockups and proposals, with what was chosen and whether it's built"),
     ("earlier", "Earlier and superseded", "Kept for the record; a newer page took over"),
 )
-SANDBOX = ("sandbox allow-scripts allow-popups allow-popups-to-escape-sandbox; default-src 'self' 'unsafe-inline' data: blob:; "
+# (allow-forms so a mockup's form reaches its own script, its Save my picks; form-action 'none' so no form sends anywhere:
+# Brett's round, Nov 18)
+SANDBOX = ("sandbox allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox; form-action 'none'; "
+           "default-src 'self' 'unsafe-inline' data: blob:; "
            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; "
            "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com; "
            "img-src 'self' data: blob: https:")

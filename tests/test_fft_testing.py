@@ -6,7 +6,7 @@ import pytest
 from sqlalchemy import select
 
 from app.fft import rules
-from app.fft.models import FftArea, FftCheck, FftIdea, FftIssue, FftItem, FftNote, FftRound, FftTry
+from app.fft.models import FftArea, FftCheck, FftEvent, FftIdea, FftIssue, FftItem, FftNote, FftRound, FftTry
 from app.importer import import_bundle
 from tests.table_setup import BUNDLE
 
@@ -114,7 +114,13 @@ def test_a_round_goes_page_to_page_and_passed_moves_on_with_undo(admin, db):
     assert rules.check_state(db, first)["state"] == "to_try" and f'data-check-card="{first.id}"' in admin.get("/manage/testing/card").text
     admin.post(f"/manage/testing/checks/{first.id}/try", data={"result": "passed"})
     r = admin.post(f"/manage/testing/checks/{second.id}/try", data={"result": "passed"}, follow_redirects=False)
-    assert r.headers["location"].startswith("/manage/testing") and rules.round_open(db) is None  # (the last one ends it)
+    assert r.headers["location"].startswith("/manage/testing") and rules.round_open(db) is not None  # (the last one doesn't end it)
+    card = admin.get("/manage/testing/card").text
+    assert "data-round-done" in card and 'data-do="end-round"' in card  # (Brett's round, Nov 18: only End round ends it)
+    admin.post("/manage/testing/round/end")
+    assert rules.round_open(db) is None and "data-round-done" not in admin.get("/manage/testing/card").text
+    ended = db.scalar(select(FftEvent).where(FftEvent.kind == "round_ended").order_by(FftEvent.id.desc()))
+    assert ended.actor.startswith("user:")  # (whose hand ended it)
 
 
 def test_while_a_round_is_open_nothing_merges(admin, db):

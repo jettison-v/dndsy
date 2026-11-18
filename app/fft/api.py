@@ -165,6 +165,25 @@ def note(note_id: int, page: int = 0, x_fft_key: str | None = Header(default=Non
     return _ok(note_view(db, _approved_note(db, note_id), page=bool(page)))
 
 
+@router.post("/notes/{note_id:int}")
+def note_answer(note_id: int, body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
+    """A question someone sent, answered (do: answer, words): its sender reads it on Notes you sent (Brett's round,
+    Nov 18: a question filed for Claude to answer had no way to be). Only a question that's waiting."""
+    actor = keys.require(db, x_fft_key, "write")
+    body = body if isinstance(body, dict) else {}
+    n = _approved_note(db, note_id)
+    if _str(body, "do", 20) != "answer":
+        raise HTTPException(400, "do: answer")
+    if n.filed_as != "question":
+        raise HTTPException(409, f"It's filed as {n.filed_as or 'nothing yet'}, not a question waiting for its answer.")
+    try:
+        rules.answer_note(db, actor.name, n, _str(body, "words", need=True))
+    except rules.RuleError as e:
+        _rule(e)
+    db.commit()
+    return _ok(note_view(db, n))
+
+
 @router.get("/issues")
 def issues(state: str = "", area: int = 0, feature: str = "", x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     keys.require(db, x_fft_key, "read")

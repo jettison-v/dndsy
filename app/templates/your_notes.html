@@ -63,13 +63,13 @@
    askdnd, open ones first, each with whose turn it is, what that means, the conversation meant for you, Add to it, and
    for a fix you prompted, Does it work now? #}
 {% macro fft_reader(notes) %}
-<div class="reader rows notes-reader" data-fft-yours>
+<div class="reader rows notes-reader fb-reader" data-fft-yours>{# (its rows are Feedback's: the title, its pill, the line under; Brett's round, Nov 18) #}
   <aside class="reader-nav" aria-label="Your notes">
     <p class="note rhead">Counted: what's still open. Your notes only.</p>
     <div class="reader-rows">
       {% for n in notes %}
       {% if not n.open and (loop.first or loop.previtem.open) %}<h3 class="divider fft-closed-head">Closed</h3>{% endif %}
-      <a class="rd-item nt-row{{ ' sel' if note == n.key or (not note and loop.first) }}" data-note="{{ n.key }}" href="/your-notes?tab=askdnd&amp;note={{ n.key }}">
+      <a class="rd-item fb-row{{ ' sel' if note == n.key or (not note and loop.first) }}" data-note="{{ n.key }}" href="/your-notes?tab=askdnd&amp;note={{ n.key }}">
         <span class="ts-title">{{ n.title }}</span>{{ state_word(n.says.word, n.says.tone, ' data-turn="' ~ n.says.turn ~ '"') }}
         <span class="nt-sum">{{ n.at.strftime("%b %-d") }}{% if n.new %} · <span class="notes-dot" title="New since you last looked" data-new-reply>new reply</span>{% elif n.trying %} · Does it work now?{% endif %}</span>
       </a>

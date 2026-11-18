@@ -924,15 +924,19 @@ def ask(db: Session, actor: str, *, about: str, about_id: int | None, text: str,
     return q
 
 
-def answer(db: Session, actor: str, q: FftQuestion, *, choice: int | None, text: str = "", user_id: int | None = None) -> None:
-    """R13: the answer names its question, so a newer one can't take it; it moves the thing back to Claude."""
+def answer(db: Session, actor: str, q: FftQuestion, *, choice: int | None, text: str = "", user_id: int | None = None,
+           picks: list | None = None) -> None:
+    """R13: the answer names its question, so a newer one can't take it; it moves the thing back to Claude. `picks`: the
+    picks made on its mockup, saved from inside askdnd, which answer it on their own (Brett's round, Nov 18)."""
     if q.answered_at is not None:
         raise RuleError("stale", "It's already answered.")
-    if choice is None and not text.strip():
+    if choice is None and not text.strip() and not picks:
         raise RuleError("bad", "Pick an answer or write one.")
     if choice is not None and not 0 <= choice < len(q.choices or []):
         raise RuleError("bad", "That isn't one of its answers.")
     q.answer_choice, q.answer_text, q.answered_at, q.answered_by = choice, text.strip(), now(), user_id
+    if picks:
+        q.picks = picks
     if q.about == "issue" and q.about_id:
         issue = db.get(FftIssue, q.about_id)
         if issue is not None and issue.state == "asks":

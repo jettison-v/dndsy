@@ -98,3 +98,35 @@ def test_back_to_a_window_keeps_what_was_typed(people, server, browser_db):
     page.wait_for_url("**/manage/feedback?**")
     assert _one(browser_db[0], "SELECT i.state, i.close_words FROM fft_issues i JOIN fft_notes n ON n.issue_id = i.id WHERE n.id = :i", i=nid) == ("closed", "Typed before Same as")
     assert not admin.errors, admin.errors
+
+
+def test_picks_on_a_mockup_save_in_askdnd_and_come_back(people, server, browser_db):
+    """Brett's round, Nov 18: picks made on a mockup opened inside askdnd were lost (its sealed frame could only save on
+    claude.ai). Save my picks hands them to askdnd, which answers the mockup's question with them, and opening the
+    mockup again shows them."""
+    from app.documents import doc_id
+
+    path = "docs/mockups/fft-round-2/index.html"
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        qid = conn.execute(text("INSERT INTO fft_questions (about, about_id, doc_path, text, choices, workspace_id) VALUES "
+                                "('document', NULL, :p, 'Which?', '[]', 1) RETURNING id"), {"p": path}).scalar()
+    engine.dispose()
+    admin = people("admin")
+    admin.allow("lacks the 'allow-same-origin' flag")  # (the test's own watcher, reading storage inside the sealed frame)
+    page = admin.open(f"/manage/documents/{doc_id(path)}")
+    frame = page.frame_locator("iframe.doc-frame")
+    said = frame.locator("form.decide .saved")
+    said.filter(has_text="Nothing saved yet").wait_for()
+    for name, value in (("queue", "quiet"), ("split", "issue"), ("shot", "browser")):
+        frame.locator(f"input[name={name}][value={value}]").check()
+    frame.locator("form.decide textarea").fill("Fifteen minutes is fine.")
+    frame.locator("form.decide button[type=submit]").click()
+    said.filter(has_text="Saved in askdnd").wait_for()
+    answered, picks, words = _one(browser_db[0], "SELECT answered_at, picks, answer_text FROM fft_questions WHERE id = :i", i=qid)
+    assert answered is not None and [p["value"] for p in picks] == ["quiet", "issue", "browser"]
+    assert words.startswith("Picks: 1 A") and words.endswith("Fifteen minutes is fine.")
+    again = admin.open(f"/manage/documents/{doc_id(path)}")
+    frame = again.frame_locator("iframe.doc-frame")
+    frame.locator("form.decide .saved").filter(has_text="these are your picks").wait_for()
+    assert frame.locator("input[name=shot][value=browser]").is_checked() and frame.locator("form.decide textarea").input_value() == "Fifteen minutes is fine."

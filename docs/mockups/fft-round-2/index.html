@@ -307,32 +307,50 @@ header.top { display: grid; gap: 10px; }
   go("q1");
 })();
 (() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
   const form = document.querySelector("form.decide");
   const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
   const NAMES = ["queue", "split", "shot"];
-  let db = null;
+  let db = null, inAskdnd = false;
   const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
   const show = (text, ok) => { said.textContent = text; said.classList.toggle("ok", !!ok); };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
   form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
   form.addEventListener("submit", async e => {
     e.preventDefault();
-    if (!db) { show("Open this page on claude.ai, signed in, to save (On claude.ai ↗ above it in askdnd)."); return; }
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Manage › Documents) or on claude.ai, signed in, to save."); return; }
     btn.disabled = true;
-    const at = new Date().toISOString(), doc = { notes: form.querySelector("textarea").value.trim(), at };
-    NAMES.forEach(n => { const v = form.querySelector(`input[name=${n}]:checked`); doc[n] = v ? v.value : ""; });
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
     try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
     catch (err) { show("Couldn't save it. Try again."); }
     btn.disabled = false;
   });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
   (async () => {
     try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
-    if (!db) { show("Open this page on claude.ai, signed in, to save."); return; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
     try {
       const d = await db.collection("answers").doc("verdict").get();
       if (!d.exists) { show("Nothing saved yet"); return; }
       const a = d.data();
-      NAMES.forEach(n => form.querySelectorAll(`input[name=${n}]`).forEach(i => { i.checked = a[n] === i.value; }));
-      form.querySelector("textarea").value = a.notes || "";
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
       show("Saved " + when(a.at) + " · change anything and Save again", true);
     } catch (err) { show("Nothing saved yet"); }
   })();

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app import access, picks
 from app.fft import rules, taxonomy
-from app.fft.models import FftArea, FftIdea, FftIssue, FftItem, FftLine, FftListener, FftNote, FftQuestion
+from app.fft.models import FftArea, FftCheck, FftCheckIssue, FftIdea, FftIssue, FftItem, FftLine, FftListener, FftNote, FftQuestion
 from app.models import User
 
 KIND_SAID = {"problem": "A problem", "idea": "An idea", "question": "A question"}  # (in the window, nothing picked first)
@@ -80,10 +80,23 @@ def first_name_of(db: Session, user_id: int | None) -> str:
     return ((u.name or "").split(" ")[0] if u else "") or "A player"
 
 
+def issue_checks(db: Session, issue: FftIssue) -> list[dict]:
+    """The checks that try an issue's fix, each with where it stands (`rules.check_state`), retired ones left out."""
+    out = []
+    for c in db.scalars(select(FftCheck).join(FftCheckIssue, FftCheckIssue.check_id == FftCheck.id)
+                        .where(FftCheckIssue.issue_id == issue.id, FftCheck.retired.is_(False)).order_by(FftCheck.id)):
+        out.append({"c": c, **rules.check_state(db, c)})
+    return out
+
+
 def issue_turn(db: Session, issue: FftIssue) -> tuple[str, str]:
-    """(turn, the player's first name when it's theirs): a fix a player reported is theirs to confirm first (R5)."""
+    """(turn, the player's first name when it's theirs): a fix a player reported is theirs to confirm first (R5). A
+    ready issue whose checks are all Claude's (blocked, wrong, still failing) is Claude's too, never Yours with nothing
+    to try (Brett's round, Nov 18)."""
     if issue.state == "ready" and issue.confirm_by:
         return "player", first_name_of(db, issue.confirm_by)
+    if issue.state == "ready" and (cs := issue_checks(db, issue)) and not any(x["turn"] == "brett" for x in cs):
+        return "claude", ""
     return {"brett": "yours", "claude": "claude", "closed": "closed"}[rules.ISSUE_TURN[issue.state]], ""
 
 
@@ -102,7 +115,13 @@ def issue_sentence(db: Session, issue: FftIssue) -> str:
     if issue.state == "ready":
         if issue.confirm_by:
             return f"Live: {first_name_of(db, issue.confirm_by)} is asked whether it works now (yours if they haven't said in {rules.CONFIRM_DAYS} days)."
-        return "Live: try it, in Testing."
+        cs = issue_checks(db, issue)
+        yours = [x for x in cs if x["turn"] == "brett"]
+        if yours:
+            return "Live: try it with " + ", ".join(f"“{x['c'].title}”" for x in yours) + " in Testing's For you."
+        if cs:
+            return "Live, but its check can't be tried yet (" + ", ".join(f"“{x['c'].title}”, {x['state']}" for x in cs) + "): Claude's to sort out."
+        return "Live: Claude still owes it a check to try."
     said = CLOSED_WORD.get(issue.close_reason or "", "Closed")
     if issue.close_reason == "same" and issue.same_as_id:
         other = db.get(FftIssue, issue.same_as_id)
@@ -288,10 +307,11 @@ def event_words(ev) -> str:
 def gaps(db: Session) -> list[dict]:
     """What Claude left half done, each Claude's to close now (Brett, Nov 17: "how are we going to make sure that you do
     not miss something?"): a fix with no check to try it; a check Claude hasn't tried itself (R18); something said on an
-    open issue, a note, a failed try, a line or an answer, that Claude hasn't replied to; an open issue in no area.
+    open issue, a note, a failed try, a line or an answer, that Claude hasn't replied to; an open issue with no Feature; a
+    question sent to Claude and not yet answered.
     `feedback.py gaps` prints them, Claude Code's end-of-turn hook won't let a turn end on one, and Where it stands
     shows them as Claude missed. Nothing waiting on Brett is a gap."""
-    from app.fft.models import FftCheck, FftCheckIssue, FftTry, FftTryIssue
+    from app.fft.models import FftTry, FftTryIssue
 
     out = []
     checked = set(db.scalars(select(FftCheckIssue.issue_id).join(FftCheck, FftCheck.id == FftCheckIssue.check_id)
@@ -333,4 +353,7 @@ def gaps(db: Session) -> list[dict]:
         if not taxonomy.feature(i.feature):  # (the Product Taxonomy, Nov 18: every issue in one Feature, so in its batch)
             out.append({"kind": "no_feature", "thing": "issue", "id": i.id, "title": i.title,
                         "says": "No Feature yet: give it one (feedback.py issue <id> feature <key>; feedback.py features lists them)."})
+    for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
+        out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
+                    "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})
     return out

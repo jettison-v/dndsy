@@ -6,5 +6,5 @@
     <button class="btn link peek-close" type="button" aria-label="Close">✕</button></div>
 </div>
 <div class="peek-body doc-window">
-  <iframe class="doc-frame" src="{{ frame }}" title="{{ e.title }}" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"></iframe>
+  <iframe class="doc-frame" src="{{ frame }}" data-doc="{{ e.source }}" title="{{ e.title }}" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer"></iframe>
 </div>

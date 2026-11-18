@@ -32,8 +32,8 @@
     {% if st.missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
       <h3 class="plabel" id="fft-missed-h">Claude missed · {{ st.missed | length }}</h3>
       <p class="note">Things Claude left half done. Its session won't end a turn while any are here; if one stays, tell Claude in a note.</p>
-      <ul class="fft-missed-list">{% for g in st.missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/testing?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
-        <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet"}[g.kind] }}</span></li>{% endfor %}</ul>
+      <ul class="fft-missed-list">{% for g in st.missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/testing?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=closed&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
+        <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet", "question": "a question you sent, not answered yet"}[g.kind] }}</span></li>{% endfor %}</ul>
     </section>{% endif %}
     <p class="note">The Roadmap's order, by item: drag items, and areas within an item. Claude takes the first area that's its turn.</p>
     <ol class="fft-items" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item=".fft-item" data-sort-handle=".fft-item-head .grip">

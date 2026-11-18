@@ -4968,6 +4968,31 @@ document.addEventListener('click', e => {
   document.addEventListener('panel:loaded', e => { const root = e.target.querySelector('[data-ib]'); if (root) start(root); });
 })();
 
+// ---------------------------------------------------------------- picks from a mockup
+// A mockup opened inside askdnd (Documents, For you's Open mockup) sits in a sealed frame that can't save anything
+// itself, so its Save my picks hands its picks here, which saves them as the answer to the question asking about it,
+// and opening it again shows them (Brett's round, Nov 18: his picks were lost). The frame names nothing: askdnd knows
+// which document each of its frames holds (`data-doc`), and answers only a frame of its own.
+(() => {
+  const frameOf = src => [...document.querySelectorAll('iframe.doc-frame[data-doc]')].find(f => f.contentWindow === src);
+  addEventListener('message', async e => {
+    const d = e.data, f = frameOf(e.source);
+    if (!f || !d || typeof d !== 'object' || !/^picks-(load|save)$/.test(d.askdnd || '')) return;
+    const reply = msg => e.source.postMessage({ askdnd: 'picks', ...msg }, '*');
+    try {
+      if (d.askdnd === 'picks-load') {
+        const r = await fetch('/manage/testing/picks?doc=' + encodeURIComponent(f.dataset.doc), { headers: { Accept: 'application/json' } });
+        if (r.ok) reply({ ...(await r.json()), loaded: true });
+        return;
+      }
+      const r = await fetch('/manage/testing/picks', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ doc: f.dataset.doc, picks: Array.isArray(d.picks) ? d.picks : [], notes: String(d.notes || '') }) });
+      const j = await r.json().catch(() => ({}));
+      reply(r.ok ? { saved: true, at: j.at, picks: d.picks, notes: d.notes } : { saved: false, said: j.detail || "Couldn't save them. Try again." });
+    } catch (err) { reply({ saved: false, said: "Couldn't reach askdnd. Try again." }); }
+  });
+})();
+
 // ---------------------------------------------------------------- send a note
 // (Found, Fixed, Tried: app/fft/sending.py; screen 9 of docs/mockups/found-fixed-tried/) A note from any page, for
 // whoever the page lets send one (body[data-feedback]). \ opens it (never while typing), as do the account menu's item
@@ -5066,10 +5091,30 @@ document.addEventListener('click', e => {
       backgroundColor: getComputedStyle(document.body).backgroundColor,
       // (scrolled by a margin, not a transform: a transform would carry what's fixed on screen down the page's height)
       style: { margin: '0', marginTop: -scrollY + 'px', marginLeft: -scrollX + 'px' },
-      // (not this window, the corner cards or Battle's condition edge; only what's on screen, so a long list costs what
-      // its visible rows cost)
-      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || n.id === 'check-card' || (n.classList && n.classList.contains('cond-halo')) || n.hidden || offscreen(n)),
+      // (not this window, the corner cards or Battle's condition edge; nothing below the screen, so a long list costs
+      // what its rows down to the screen's foot cost)
+      filter: n => !(n.id === 'fb-win' || n.id === 'cards' || n.id === 'check-card' || (n.classList && n.classList.contains('cond-halo')) || n.hidden || gone.has(n)),
     };
+    // True to what's on screen (Brett's round, Nov 18: parts of the page came out blank). The picture is drawn from the
+    // page with nothing scrolled. Only what's below or right of the screen is left out (what's above it holds up what's
+    // on it: left out, everything under it moved up). A part that stays put as you scroll is held where it is, and
+    // what's scrolled inside a box is moved up by as much; all put back once it's drawn, its scrolling too.
+    const all = [...document.body.querySelectorAll('*')];
+    const past = n => { const r = n.getBoundingClientRect(); return (r.width || r.height) && (r.top > innerHeight || r.left > innerWidth); };
+    const gone = new Set(all.filter(past));
+    const scrolled = all.filter(el => el.scrollTop || el.scrollLeft).map(el => [el, el.scrollTop, el.scrollLeft]);
+    const held = [];
+    const hold = (el, props) => { held.push([el, el.getAttribute('style')]); Object.assign(el.style, props); };
+    all.filter(el => !gone.has(el) && getComputedStyle(el).position === 'sticky').map(el => {
+      const stuck = el.getBoundingClientRect(), was = el.getAttribute('style');
+      Object.assign(el.style, { position: 'relative', top: '0px', left: '0px' });
+      const free = el.getBoundingClientRect();
+      if (was === null) el.removeAttribute('style'); else el.setAttribute('style', was);
+      return [el, stuck.top - free.top, stuck.left - free.left];
+    }).forEach(([el, dy, dx]) => { if (Math.abs(dy) > 0.5 || Math.abs(dx) > 0.5) hold(el, { position: 'relative', top: dy + 'px', left: dx + 'px' }); });
+    scrolled.filter(([box]) => !gone.has(box)).forEach(([box, top, left]) => {
+      [...box.children].forEach(ch => hold(ch, { translate: -left + 'px ' + -top + 'px' }));
+    });
     // (an attribute named with a colon stops the picture's SVG: set aside while it's drawn, and put back)
     const aside = [], blanked = [];
     document.querySelectorAll('*').forEach(el => { for (const a of [...el.attributes]) if (a.name.includes(':')) { aside.push([el, a.name, a.value]); el.removeAttribute(a.name); } });
@@ -5106,6 +5151,8 @@ document.addEventListener('click', e => {
       cover(c, rects);
       return { full, safe: c.toDataURL('image/jpeg', 0.8) };
     } catch (e) { why = (e && (e.message || e.type)) || 'unknown'; return null; } finally {
+      held.reverse().forEach(([el, style]) => { if (style === null) el.removeAttribute('style'); else el.setAttribute('style', style); });
+      scrolled.forEach(([el, top, left]) => { el.scrollTop = top; el.scrollLeft = left; });
       stills.forEach(im => im.remove());
       aside.forEach(([el, name, value]) => el.setAttribute(name, value));
       blanked.forEach(([im, src, srcset, w, hgt]) => { if (srcset !== null) im.setAttribute('srcset', srcset); if (src !== null) im.setAttribute('src', src); else im.removeAttribute('src'); im.style.width = w; im.style.height = hgt; });
@@ -5156,13 +5203,22 @@ document.addEventListener('click', e => {
   }
   // ---- the pictures: a chip each, the chosen one on the stage with its marks
   function drawChips() {
-    chips.querySelectorAll('[data-fb-pic]').forEach(c => c.remove());
+    chips.querySelectorAll('[data-fb-pic], [data-fb-unpic]').forEach(c => c.remove());
     let added = 0;
     pics.forEach((p, i) => {
-      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip' + (i === at ? ' on' : ''), textContent: p.kind === 'page' ? 'The page' : 'Your picture ' + (++added) });
+      const name = p.kind === 'page' ? 'The page' : 'Your picture ' + (++added);
+      const b = Object.assign(document.createElement('button'), { type: 'button', className: 'chip' + (i === at ? ' on' : ''), textContent: name });
       b.dataset.fbPic = String(i); b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(i === at));
       b.addEventListener('click', () => show(i));
-      chips.insertBefore(b, addChip);
+      if (p.kind === 'page') { chips.insertBefore(b, addChip); return; }  // (the page's own picture stays: it says where you were; Brett's round, Nov 18)
+      // (a picture you added: one pill, its name and its ✕, each a button of its own)
+      const pair = Object.assign(document.createElement('span'), { className: 'chip chip-pair' + (i === at ? ' on' : '') });
+      pair.dataset.fbPic = String(i); b.className = 'chip-name'; delete b.dataset.fbPic;
+      const x = Object.assign(document.createElement('button'), { type: 'button', className: 'chip-x', textContent: '✕' });
+      x.dataset.fbUnpic = String(i); x.setAttribute('aria-label', 'Remove ' + name);
+      x.addEventListener('click', () => { pics.splice(i, 1); show(pics.length ? Math.min(at > i ? at - 1 : at, pics.length - 1) : -1); if (!pics.length) stageNote.textContent = 'No picture: paste or add one if it helps.'; });
+      pair.append(b, x);
+      chips.insertBefore(pair, addChip);
     });
     addChip.hidden = pics.length >= 4;
   }
@@ -5189,7 +5245,7 @@ document.addEventListener('click', e => {
   addEventListener('resize', () => { if (win.open) fit(); });
   const MARK = '#f0a020';
   function paint(g, w, list) {
-    g.strokeStyle = g.fillStyle = MARK; g.lineWidth = Math.max(3, w / 320); g.lineCap = g.lineJoin = 'round';
+    g.strokeStyle = g.fillStyle = MARK; g.lineWidth = Math.max(4, w / 300); g.lineCap = g.lineJoin = 'round';
     for (const m of list) {
       const [a, b] = [m.pts[0], m.pts[m.pts.length - 1]];
       g.beginPath();
@@ -5202,7 +5258,7 @@ document.addEventListener('click', e => {
         g.fillStyle = 'rgba(15,17,19,.85)'; g.fillRect(a.x - 4, a.y - size, tw + 8, size + 8);
         g.fillStyle = MARK; g.fillText(m.text, a.x, a.y);
       } else {
-        const t = Math.atan2(b.y - a.y, b.x - a.x), hd = g.lineWidth * 5;
+        const t = Math.atan2(b.y - a.y, b.x - a.x), hd = Math.max(g.lineWidth * 7, 26);  // (a head you see on any picture: Brett's round, Nov 18)
         g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke();
         g.beginPath(); g.moveTo(b.x, b.y);
         g.lineTo(b.x - hd * Math.cos(t - 0.45), b.y - hd * Math.sin(t - 0.45)); g.lineTo(b.x - hd * Math.cos(t + 0.45), b.y - hd * Math.sin(t + 0.45));

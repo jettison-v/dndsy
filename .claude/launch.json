@@ -76,6 +76,20 @@
         "cd ../dndsy-feedback && uv run --env-file ../dndsy/.env uvicorn app.main:app --port 8003"
       ],
       "port": 8003
+    },
+    {
+      "name": "web-claude",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "--env-file",
+        ".env",
+        "uvicorn",
+        "app.main:app",
+        "--port",
+        "8004"
+      ],
+      "port": 8004
     }
   ]
 }

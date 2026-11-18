@@ -15,7 +15,7 @@ Every change goes through app/fft/rules.py."""
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import access, campaign_paths, config, view_as, web
@@ -416,7 +416,9 @@ def _round(request: Request) -> dict | None:
 
 
 def _next_page(db: Session, request: Request) -> str:
-    """The round's next check's page, or For you when it's done."""
+    """The round's next check's page, or For you when every check is tried. The round stays open until Brett presses End
+    round (his round, Nov 18: he may keep sending notes after the checks); only a round of one that joined his open
+    round lets go of it, leaving his round as it was."""
     r = _round(request)
     if r is None:
         return BACK
@@ -427,19 +429,29 @@ def _next_page(db: Session, request: Request) -> str:
             return enter(request, db, c, page_of(db, c))
         r["i"] += 1
     request.session[ROUND] = r
-    return _end(request, db)
+    if r.get("one") and not r.get("owns", True):
+        return _end(request, db)
+    _home(request, db, r)
+    request.session["toast"] = web.notice("That was the last check. The round stays open while you send notes: End round when you're done.", "info")
+    return leave(request, f"{BACK}?show=foryou")
 
 
 def _end(request: Request, db: Session) -> str:
     r = request.session.pop(ROUND, None)
     if r and r.get("owns", True) and (row := db.get(rules.FftRound, r["id"])) and row.ended_at is None:  # (a round of one never ends the round it joined)
-        rules.end_round(db, "user", row)
+        user = request.session.get("real_user") or request.session.get("user")
+        rules.end_round(db, f"user:{views.person(db, user)['id']}" if user else "askdnd", row)
+    _home(request, db, r)
+    return leave(request, f"{BACK}?show=foryou")
+
+
+def _home(request: Request, db: Session, r: dict | None) -> None:
+    """Back in the campaign the round started in (a check that makes something runs in a test campaign)."""
     was = (r or {}).get("home")
     email = ((request.session.get("user") or {}).get("email") or "").lower()
     here = access.current_campaign(email)
     if was and email and (here is None or here["id"] != was):
         campaign_paths.remember_in(db, email, was)
-    return leave(request, f"{BACK}?show=foryou")
 
 
 def enter(request: Request, db: Session, c: FftCheck, path: str) -> str:
@@ -751,6 +763,56 @@ def answer(request: Request, question_id: int, choice: str = Form(""), text: str
     return RedirectResponse(BACK, status_code=303)
 
 
+# Picks made on a mockup opened inside askdnd (Brett's round, Nov 18: they could only save on claude.ai, so his were
+# lost). The mockup's Save my picks hands them to its askdnd page (app.js "picks from a mockup"), which saves them here as
+# the answer to the newest question asking about that mockup; opening it again shows them.
+
+
+def _doc_question(db: Session, doc: str, open_only: bool) -> FftQuestion | None:
+    q = select(FftQuestion).where(FftQuestion.doc_path == doc)
+    if open_only:
+        q = q.where(FftQuestion.answered_at.is_(None))
+    return db.scalar(q.order_by(FftQuestion.id.desc()))
+
+
+def _picks_said(picks: list) -> str:
+    return "Picks: " + "; ".join(f"{p.get('label') or p.get('value')}" for p in picks if p.get("value"))
+
+
+@router.get("/manage/testing/picks")
+def picks_read(request: Request, doc: str = "", db: Session = Depends(get_db)):
+    _, denied = _admin(request)
+    if denied:
+        return denied
+    asked = _doc_question(db, doc, open_only=True)
+    done = db.scalar(select(FftQuestion).where(FftQuestion.doc_path == doc, func.jsonb_array_length(FftQuestion.picks) > 0).order_by(FftQuestion.answered_at.desc()))
+    return {"open": asked is not None, "picks": done.picks if done else [], "notes": done.answer_text.split("\n\n", 1)[1] if done and "\n\n" in done.answer_text else "",
+            "at": done.answered_at.isoformat() if done and done.answered_at else ""}
+
+
+@router.post("/manage/testing/picks")
+def picks_save(request: Request, body=web.JsonBody, db: Session = Depends(get_db)):
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    body = body if isinstance(body, dict) else {}
+    doc, notes = str(body.get("doc", ""))[:300], str(body.get("notes", ""))[:4000].strip()
+    raw = body.get("picks") if isinstance(body.get("picks"), list) else []
+    picks = [{k: str(p.get(k, ""))[:200] for k in ("name", "value", "label")} for p in raw[:20] if isinstance(p, dict)]
+    if not any(p["value"] for p in picks):
+        raise HTTPException(400, "Pick something first.")
+    q = _doc_question(db, doc, open_only=True)
+    if q is None:
+        raise HTTPException(409, "There's no open question about this mockup: its picks are already in. Send a note to change one.")
+    me = views.person(db, user)
+    try:
+        rules.answer(db, f"user:{me['id']}", q, choice=None, text=_picks_said(picks) + (f"\n\n{notes}" if notes else ""), user_id=me["id"], picks=picks)
+    except rules.RuleError as e:
+        raise HTTPException(409 if e.code == "stale" else 400, e.words) from e
+    db.commit()
+    return {"ok": True, "at": q.answered_at.isoformat()}
+
+
 # ------------------------------------------------------------------ the card (on every page while a round is open)
 
 
@@ -760,8 +822,10 @@ def card(request: Request, at: str = "", db: Session = Depends(get_db)):
     if denied:
         return denied
     r = _round(request)
-    if r is None or r["i"] >= len(r["checks"]):
+    if r is None:
         return templates.TemplateResponse(request, "_fft_card_empty.html", {})
+    if r["i"] >= len(r["checks"]):  # (every check tried: the round stays open until End round)
+        return templates.TemplateResponse(request, "_fft_card_done.html", {"of": len(r["checks"]), **card_prefs(request)})
     c = db.get(FftCheck, r["checks"][r["i"]])
     if c is None:
         return templates.TemplateResponse(request, "_fft_card_empty.html", {})

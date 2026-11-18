@@ -162,7 +162,7 @@ def issue_view(db: Session, issue: FftIssue, viewer_id: int | None) -> dict:
             "pa": taxonomy.area(taxonomy.feature(issue.feature).area) if taxonomy.feature(issue.feature) else None, "notes": [note_view(db, n, viewer_id) for n in notes],
             "senders": senders(notes), "lines": list(db.scalars(select(FftLine).where(FftLine.issue_id == issue.id).order_by(FftLine.id))),
             "may_merge": rules.may_merge(db, issue), "events": events, "listening": views.listening(db),
-            "checks": list(db.scalars(select(FftCheckIssue.check_id).where(FftCheckIssue.issue_id == issue.id)))}
+            "checks": views.issue_checks(db, issue)}
 
 
 @router.get("/manage/feedback")

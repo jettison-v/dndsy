@@ -17,7 +17,7 @@
   {% if body %}
   <article class="section doc-text">{{ body }}</article>
   {% else %}
-  <iframe class="doc-frame" src="{{ frame }}" title="{{ e.title }}" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" loading="lazy"></iframe>
+  <iframe class="doc-frame" src="{{ frame }}" data-doc="{{ e.source }}" title="{{ e.title }}" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" loading="lazy"></iframe>
   {% endif %}
 </main>
 {% endblock %}

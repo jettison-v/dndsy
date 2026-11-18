@@ -12,6 +12,12 @@
     <p class="cc-title">{{ c.title }}{% if c.makes %} <span class="tag draft">in a test campaign</span>{% endif %}</p>
     {% if failed %}
     <p class="state-line" data-cc-failed><span class="state-word sw-failed">✗ Failed</span><span>{{ sent }} issue{{ "s" if sent != 1 }} sent · now Claude's</span></p>
+    {% else %}
+    {{ walkthrough({"id": c.id, "steps": steps}) }}
+    {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}
+    {% endif %}
+    <div class="cc-end">{# (stays in sight at the card's foot while its steps scroll: Brett's round, Nov 18) #}
+    {% if failed %}
     <div class="row cc-acts">
       <button type="button" class="btn small" data-fb-open data-fb-check="{{ c.id }}" data-fb-check-title="{{ c.title }}" data-fb-another data-do="another">✗ Another…</button>
       <button type="button" class="btn link small" data-modal-url="/manage/testing/tries/{{ failed.id }}/change" data-do="change">Change result…</button>
@@ -19,8 +25,6 @@
       <form method="post" action="/manage/testing/round/next"><button class="btn small primary" type="submit" data-do="next">Next check →</button></form>
     </div>
     {% else %}
-    {{ walkthrough({"id": c.id, "steps": steps}) }}
-    {% if v and v.expect %}<div class="cc-exp"><b>You should see</b>{{ v.expect }}</div>{% endif %}
     {% if sample %}<div class="row cc-acts"><button class="btn small ts-pass" type="button">✓ Passed</button><button type="button" class="btn small">✗ Something's wrong…</button><button type="button" class="btn link small">Can't try…</button></div>
     {% else %}<div class="row cc-acts">
       <form method="post" action="/manage/testing/checks/{{ c.id }}/try"><input type="hidden" name="result" value="passed"><input type="hidden" name="seen" value="{{ devices.get(device, '') }}"><button class="btn small ts-pass" type="submit" data-do="passed" data-key="p">✓ Passed</button></form>
@@ -30,6 +34,7 @@
     {% endif %}
     <div class="row cc-foot"><span class="note fft-keys">{% if not failed %}<kbd>P</kbd> passed · <kbd>F</kbd> wrong · <kbd>C</kbd> can't try{% endif %}</span>
       {% if sample %}<button class="btn link small" type="button">End round</button>{% else %}<form method="post" action="/manage/testing/round/end" class="cc-stop"><button class="btn link small" type="submit" data-do="end-round">End round</button></form>{% endif %}</div>
+    </div>
   </div>
   <button type="button" class="cc-pill"{% if not sample %} data-cc-fold{% endif %}{% if not folded %} hidden{% endif %}>Check {{ n }} of {{ of }}</button>
 </aside>

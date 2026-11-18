@@ -237,6 +237,8 @@ class FftQuestion(_Stamped, Base):
     mine: Mapped[int | None] = mapped_column(Integer, nullable=True)  # Claude's pick (shown, never preselected)
     answer_choice: Mapped[int | None] = mapped_column(Integer, nullable=True)
     answer_text: Mapped[str] = mapped_column(Text, default="", server_default="")
+    # Picks made on its mockup, saved from inside askdnd (Brett's round, Nov 18): [{"name", "value", "label"}]
+    picks: Mapped[list] = mapped_column(JSONB, default=list, server_default="[]")
     answered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     answered_by: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
