@@ -469,6 +469,7 @@ a .count, h3.divider .count { background: color-mix(in srgb, currentColor 16%, t
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .stack { display: grid; gap: 10px; }
+.stack > * { min-width: 0; }  /* (a grid row may shrink to its box: a select with a long option otherwise widened the whole Can't try… window; Brett's round, Nov 18) */
 /* Spacing helpers on the space scale (DESIGN.md › Space), for a block whose parent isn't a .row or .stack: space above or
    below it, or none. They win over component rules, as the inline styles they replaced did (2026-10-27: no inline spacing
    on any page; tests/test_design_system.py) */
@@ -497,7 +498,7 @@ input[type=number] { width: 6em; }
   input[type=number], input[type=date], input[type=time], input[type=datetime-local], input[type=month], input[type=week] { font-size: max(var(--fs-md), 1em) !important; }
 }
 textarea:focus, input:focus, select:focus { border-color: var(--red); outline: none; }
-select { width: auto; max-width: 100%; padding: 0 28px 0 var(--sp-2); }  /* a long option (a campaign's name) never pushes the page wider */
+select { width: auto; max-width: 100%; min-width: 0; padding: 0 28px 0 var(--sp-2); }  /* a long option (a campaign's name, an issue's title) never pushes the page or its box wider: in a grid too */
 /* One drawn arrow for every dropdown, centred in its box (Brett, Nov 16: the browser's own arrow sat a little off in a 32px field) */
 select:not([multiple]):not([size]) { appearance: none; -webkit-appearance: none; background-image: var(--chevron); background-repeat: no-repeat; background-position: right 9px center; background-size: 12px 12px; }
 input[type=file] { color: var(--muted); font: inherit; font-size: var(--fs-sm); max-width: 100%; }
@@ -4411,7 +4412,10 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-area-form { grid-column: 1 / -1; }
 .fft-feat-tags { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--sp-1); }  /* a Product Area's open issues by Feature */
 /* Manage › askdnd › Product areas: a card per Product Area, its Features under it (docs/mockups/product-taxonomy/, 1) */
-.pa-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: var(--sp-3); align-items: start; }
+/* Packed cards (docs/DESIGN.md › Packed cards): columns of cards, each its own height, none split; a long one never
+   leaves a gap beside short ones (Brett's round, Nov 18, issue 26: rows as tall as their longest card left ragged gaps) */
+.packed { columns: 280px; column-gap: var(--sp-3); }
+.packed > * { break-inside: avoid; margin: 0 0 var(--sp-3); }
 .pa-card { padding: 0; display: grid; }
 .pa-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1) var(--sp-2); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--line); }
 .pa-head h2 { margin: 0; font-size: var(--fs-md); flex: 1; }

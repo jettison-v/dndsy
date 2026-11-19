@@ -1055,7 +1055,7 @@
  {
   "title": "Found, Fixed, Tried: the build plan",
   "kind": "plan",
-  "status": "Built: for your local trial",
+  "status": "Built: live on askdnd.ai",
   "date": "Nov 17",
   "what": "How v2 is built: one branch, Brett tries it locally, one merge replaces today's Feedback and Testing; old tables kept a few days; the model in app/fft/ (its own tables), the rules R1–R18 in one place with their tests, the trust layer tests first, and the slices.",
   "source": "docs/plans/2026-11-17-found-fixed-tried-build.md",
@@ -1370,7 +1370,7 @@
  {
   "title": "askdnd Work Flow",
   "kind": "plan",
-  "status": "Draft",
+  "status": "Draft: waiting on your comments",
   "date": "Nov 18",
   "what": "How a note or a Roadmap item becomes built and tested work, and where you steer it: Work, Start, the dev plan, For you. Drawn to agree on before askdnd changes.",
   "source": "docs/artifacts/work-flow.html",

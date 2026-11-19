@@ -64,18 +64,28 @@
    for a fix you prompted, Does it work now? #}
 {% macro fft_reader(notes) %}
 <div class="reader rows notes-reader fb-reader" data-fft-yours>{# (its rows are Feedback's: the title, its pill, the line under; Brett's round, Nov 18) #}
-  <aside class="reader-nav" aria-label="Your notes">
-    <p class="note rhead">Counted: what's still open. Your notes only.</p>
-    <div class="reader-rows">
+  <aside class="reader-nav" data-list="notes-askdnd" data-noun="note" data-nouns="notes" data-default-sort="default" aria-label="Your notes">
+    {% if notes %}<div class="reader-nav-head">{# (the lists' own search and filters, as on About the story; Brett's round, Nov 18, issues 30 and 31) #}
+      {{ search_box("Search your notes") }}
+      {% set kinds = [] %}{% for n in notes if n.kind_said and n.kind_said not in kinds %}{% set _ = kinds.append(n.kind_said) %}{% endfor %}
+      {% set stands = [] %}{% for w in ("Open", "Closed") if (w == "Open") in (notes | map(attribute="open") | list) %}{% set _ = stands.append(w) %}{% endfor %}
+      {% set fgroups = [{"key": "status", "label": "Where it stands", "values": stands}, {"key": "new", "label": "Since you looked", "values": ["New to you"]}] %}
+      {% if kinds | length > 1 %}{% set _ = fgroups.append({"key": "kind", "label": "What it is", "values": kinds}) %}{% endif %}
+      {{ filters_above(fgroups) }}
+    </div>{% endif %}
+    <div class="reader-rows" data-ls-rows>
       {% for n in notes %}
-      {% if not n.open and (loop.first or loop.previtem.open) %}<div class="ls-grouphead" data-group="closed"><span>Closed</span>{{ count_pill(notes | rejectattr("open") | list | length) }}</div>{% endif %}{# (the lists' group heading, as on Feedback) #}
-      <a class="rd-item fb-row{{ ' sel' if note == n.key or (not note and loop.first) }}" data-note="{{ n.key }}" href="/your-notes?tab=askdnd&amp;note={{ n.key }}">
+      {% if not n.open and (loop.first or loop.previtem.open) %}<div class="ls-grouphead" data-group="closed" data-label="Closed"><span>Closed</span>{{ count_pill(notes | rejectattr("open") | list | length) }}</div>{% endif %}{# (the lists' group heading, as on Feedback) #}
+      <a class="rd-item fb-row{{ ' sel' if note == n.key or (not note and loop.first) }}" data-note="{{ n.key }}" href="/your-notes?tab=askdnd&amp;note={{ n.key }}"
+         data-ls-row data-name="{{ [n.title, n.text, n.kind_said] | join(' ') | lower }}" data-sort-default="{{ loop.index }}"{% if not n.open %} data-group-default="Closed"{% endif %}
+         data-f='{{ {"status": "Open" if n.open else "Closed", "new": "New to you" if n.new else "", "kind": n.kind_said} | tojson }}'>
         <span class="ts-title">{{ n.title }}</span>{{ state_word(n.says.word, n.says.tone, ' data-turn="' ~ n.says.turn ~ '"') }}
         <span class="nt-sum">{{ n.at.strftime("%b %-d") }}{% if n.new %} · <span class="notes-dot" title="New since you last looked" data-new-reply="{{ 'reply' if n.new_reply else 'moved' }}">{{ "new reply" if n.new_reply else "updated" }}</span>{% elif n.trying %} · Does it work now?{% endif %}</span>
       </a>
       {% endfor %}
     </div>
     {% if not notes %}{{ empty_state("Nothing sent yet. Press \\ on any page to send a note.") }}{% endif %}
+    <p class="note ls-empty" data-ls-empty hidden>Nothing matches.</p>
   </aside>
   <div class="notes-read">
     {% for n in notes %}
@@ -100,11 +110,11 @@
           <button class="btn small" type="button" data-show="fft-still-{{ n.id }}" data-works="no">Still broken…</button></div>
         <form method="post" action="/your-notes/notes/{{ n.id }}/works" class="composer fb-fold" id="fft-still-{{ n.id }}" hidden><input type="hidden" name="answer" value="no">
           <label class="field"><span>What still happens</span><textarea name="text" rows="2"></textarea></label>
-          <div class="row tight"><button class="btn small primary" type="submit">Send it back</button><span class="note">Goes to an admin first, then Claude.</span></div></form>
+          <div class="row tight"><button class="btn small primary" type="submit">Send it back</button><button class="btn link small" type="button" data-cancel="fft-still-{{ n.id }}">Cancel</button><span class="note">Goes to an admin first, then Claude.</span></div></form>
       </section>{% endif %}
       {% if n.can_add and not looking %}
       <form method="post" action="/your-notes/notes/{{ n.id }}" class="composer" enctype="multipart/form-data" data-pics data-composer>
-        <label class="field"><span>{{ "Your answer" if n.says.asked else "Something to add" }}</span><textarea name="text" rows="2"></textarea></label>
+        <label class="field"><span>Something to add</span><textarea name="text" rows="2"></textarea></label>
         {{ pics_field() }}
         <div class="row tight"><button class="btn small primary" type="submit" data-composer-send>Send</button><span class="note">{{ "Goes to Claude." if n.admin else "Goes to an admin first, then Claude." }}</span></div>
       </form>{% endif %}

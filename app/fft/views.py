@@ -146,13 +146,14 @@ def issue_sentence(db: Session, issue: FftIssue) -> str:
 _FETCH = object()  # (not given: sender_says looks it up itself)
 
 
-def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, idea=_FETCH, lines: list | None = None) -> dict:
-    """What a note's sender reads on Notes you sent: {turn, word, tone, sentence, open, asked}. Never another sender's
-    words, the issue's title or anything only an admin sees (R2). `issue`, `idea` and `lines` (sender_lines) may be
-    given, already read (`markers`, for many notes at once)."""
-    def out(turn, sentence, open_=True, word=None, asked=False):
+def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, idea=_FETCH) -> dict:
+    """What a note's sender reads on Notes you sent: {turn, word, tone, sentence, open}. Never another sender's words,
+    the issue's title or anything only an admin sees (R2). `issue` and `idea` may be given, already read (`markers`, for
+    many notes at once). A line to them is a new reply, never "asked you something": a line isn't marked a question,
+    and its words don't decide (Brett's round, Nov 18, issue 32 on askdnd.ai)."""
+    def out(turn, sentence, open_=True, word=None):
         w, tone = turn_pill(turn)
-        return {"turn": turn, "word": word or w, "tone": tone, "sentence": sentence, "open": open_, "asked": asked}
+        return {"turn": turn, "word": word or w, "tone": tone, "sentence": sentence, "open": open_}
 
     if note.state == "waiting":
         return out("player", "An admin reads it first, then Claude.", word="With an admin")
@@ -182,15 +183,7 @@ def sender_says(db: Session, note: FftNote, me_id: int | None, issue=_FETCH, ide
         if issue.confirm_by and issue.confirm_by == me_id:
             return out("yours", "Fixed and live: does it work now?")
         return out("claude", "Fixed and live: being tried.", word="Fixed")
-    asked = _asked(lines if lines is not None else sender_lines(db, note))
-    return out("claude", "Claude is fixing it" + (", and asked you something." if asked else "."), asked=asked)
-
-
-def _asked(lines: list) -> bool:
-    """Claude's or an admin's last line to its senders is newer than anything the sender said."""
-    last_to = max((x.id for x in lines if x.to == "sender"), default=0)
-    last_from = max((x.id for x in lines if x.who == "sender"), default=0)
-    return bool(last_to and last_to > last_from)
+    return out("claude", "Claude is fixing it.")
 
 
 def _their_lines(note: FftNote):
@@ -229,7 +222,7 @@ def markers(db: Session, notes: list[FftNote], me_id: int | None) -> dict[int, s
     for n in notes:
         mine = [x for x in lines if (x.note_id == n.id or (n.issue_id and x.issue_id == n.issue_id and x.to == "sender"))
                 and (x.who == "sender" or x.to == "sender")]
-        word = sender_says(db, n, me_id, issue=issues.get(n.issue_id), idea=ideas.get(n.idea_id), lines=mine)["word"]
+        word = sender_says(db, n, me_id, issue=issues.get(n.issue_id), idea=ideas.get(n.idea_id))["word"]
         out[n.id] = f"{word}:{max((x.id for x in mine if x.who != 'sender'), default=0)}"[:40]
     return out
 
