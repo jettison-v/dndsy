@@ -4,8 +4,10 @@ replays the events and checks they reproduce the rows. Words people write live i
 they can be erased without breaking the record (T7)."""
 
 from datetime import datetime
+from typing import ClassVar
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, false, func
+from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -37,6 +39,8 @@ class FftArea(_Stamped, Base):
     time: the lock has an owner and lapses (R11)."""
 
     __tablename__ = "fft_areas"
+    __mapper_args__: ClassVar[dict] = {"eager_defaults": False}  # (the lane columns' defaults are read when used, never fetched on insert:
+    # the carry-over migration writes areas before they exist)
     id: Mapped[int] = mapped_column(primary_key=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("fft_items.id", ondelete="CASCADE"), index=True)
     key: Mapped[str] = mapped_column(String(20), default="", server_default="", index=True)
@@ -46,6 +50,14 @@ class FftArea(_Stamped, Base):
     lock_owner: Mapped[str] = mapped_column(String(60), default="", server_default="")
     lock_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     archived: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false())
+    # The lane its plan takes (the work flow's slice 3, Brett's picks Nov 19): ship (no test from Brett), look (merged,
+    # Brett tries the batch after), careful (his round first). Picked by rules (app/fft/lanes.py), moved up by anyone,
+    # down only by an admin, with who and why; an incident keeps it at careful until `careful_until` (30 days). No
+    # Python default: a row the carry-over migration (0c3e5a7b9d14) writes through this model never names them.
+    lane: Mapped[str] = mapped_column(String(10), server_default="")
+    lane_by: Mapped[str] = mapped_column(String(80), server_default="")
+    lane_why: Mapped[str] = mapped_column(String(300), server_default="")
+    careful_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, server_default=sa_text("NULL"))
 
 
 class FftIdea(_Stamped, Base):

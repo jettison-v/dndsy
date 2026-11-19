@@ -166,8 +166,9 @@ def test_claude_cannot_close_an_issue_as_working(api, db):
     assert r.status_code == 200 and r.json()["state"] == "closed"
 
 
-def test_a_fix_a_player_prompted_waits_for_brett_and_deploy_marks_the_rest_ready(api, db):
-    """R17 and R4: a player-prompted fix's pull request waits for Brett's OK; the deploy makes the others ready to try."""
+def test_a_fix_a_player_prompted_merges_like_any_and_deploy_marks_them_ready(api, db):
+    """R4, with R17 retired (Brett's pick 5, Nov 19: approving a player's note is the OK): a player-prompted fix's pull
+    request waits for no second OK; the deploy makes both ready to try."""
     mine = rules.new_issue(db, "claude", "Brett's")
     n = _player_note(db)
     theirs = rules.file_issue(db, "user:1", n)
@@ -175,9 +176,30 @@ def test_a_fix_a_player_prompted_waits_for_brett_and_deploy_marks_the_rest_ready
     pr1, pr2 = "https://github.com/x/y/pull/1", "https://github.com/x/y/pull/2"
     assert api.post(f"/api/fft/issues/{mine.id}", headers=_as(CLAUDE), json={"do": "pr", "pr": pr1}).json()["state"] == "to_fix"
     got = api.post(f"/api/fft/issues/{theirs.id}", headers=_as(CLAUDE), json={"do": "pr", "pr": pr2}).json()
-    assert got["state"] == "merge_ok" and got["may_merge"]["ok"] is False
+    assert got["state"] == "to_fix" and got["may_merge"]["ok"] is True
     r = api.post("/api/fft/deploy", headers=_as(CLAUDE), json={"commit": "abc", "prs": [pr1, pr2]})
-    assert r.json()["live"] == [mine.id] and db.get(FftIssue, theirs.id).state == "merge_ok"
+    assert sorted(r.json()["live"]) == sorted([mine.id, theirs.id]) and db.get(FftIssue, theirs.id).state == "ready"
+
+
+def test_claude_moves_a_plan_up_a_lane_never_down_and_marks_an_incident(api, db):
+    """The work flow's slice 3 (Nov 19): Claude's key sets a plan's lane upward only; an incident is Careful for 30 days."""
+    item = rules.new_item(db, "claude", "Items that bring a creature", "now", False)
+    a = rules.new_area(db, "claude", item, "Battle")
+    db.flush()
+    up = api.post("/api/fft/areas", headers=_as(CLAUDE), json={"do": "lane", "area_id": a.id, "lane": "careful", "why": "It touches sign-in"})
+    assert up.status_code == 200 and up.json()["lane"] == "careful"
+    down = api.post("/api/fft/areas", headers=_as(CLAUDE), json={"do": "lane", "area_id": a.id, "lane": "ship"})
+    assert down.status_code in (400, 409) and db.get(rules.FftArea, a.id).lane == "careful"
+    hit = api.post("/api/fft/areas", headers=_as(CLAUDE), json={"do": "incident", "area_id": a.id, "why": "Hit points vanished"})
+    assert hit.status_code == 200 and hit.json()["careful_until"]
+
+
+def test_the_freeze_answers_anyone_with_only_whether_its_on(api, db):
+    """GitHub's tests ask it with no key: it says only whether deploys are frozen."""
+    assert api.get("/api/fft/freeze").json() == {"frozen": False}
+    rules.set_freeze(db, "user:1", True, by="Brett")
+    db.flush()
+    assert api.get("/api/fft/freeze").json() == {"frozen": True}
 
 
 def test_a_check_must_follow_the_walkthroughs_rules(api, db):

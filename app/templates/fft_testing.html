@@ -26,19 +26,26 @@
   {# ---- Where it stands (screen 16): the same queue as the Roadmap, in its order, by item; drag items, and areas within
      an item. Claude takes the first area that's its turn (R15). #}
   <section class="fft-stands" data-stands>
-    <div class="fft-banner" data-listening="{{ 1 if st.listening else 0 }}">
-      {% if st.listening %}<span class="fb-line fb-listening">Claude is listening{% if st.listener %} ({{ st.listener.name }}, heard <time datetime="{{ st.listener.heard_at.isoformat() }}" data-clock="ago">{{ st.listener.heard_at | ago }}</time>){% endif %}</span>
-      {% else %}<span class="fb-line">No Claude session is listening{% if st.listener and st.listener.heard_at %} (last heard <time datetime="{{ st.listener.heard_at.isoformat() }}" data-clock="ago">{{ st.listener.heard_at | ago }}</time>){% endif %}</span><span class="note">· What you send waits and is read at the next session's start. To start one, open the Claude app and say "check askdnd".</span>{% endif %}
-      {% if st.round %}<span class="note">· A round is open: nothing merges to askdnd.ai until you end it; Claude only sorts what you send.</span>
+    {# How things stand, one bar (Brett, Nov 19: the listening line and the freeze "could be a single UI element"):
+       whether Claude is listening, an open round with End round, and the game-night freeze with its switch. The
+       how-to sentences are its parts' mouse-overs. #}
+    <div class="fft-banner fft-status" data-listening="{{ 1 if st.listening else 0 }}" data-freeze="{{ 1 if st.freeze.on else 0 }}">
+      {% if st.listening %}<span class="fb-line fb-listening fft-stat" data-stat="listening">Claude is listening{% if st.listener %} <span class="note">({{ st.listener.name }}, heard <time datetime="{{ st.listener.heard_at.isoformat() }}" data-clock="ago">{{ st.listener.heard_at | ago }}</time>)</span>{% endif %}</span>
+      {% else %}<span class="fb-line fft-stat" data-stat="listening" title="What you send waits and is read at the next session's start. To start one, open the Claude app and say &quot;check askdnd&quot;.">Claude isn't listening{% if st.listener and st.listener.heard_at %} <span class="note">(last heard <time datetime="{{ st.listener.heard_at.isoformat() }}" data-clock="ago">{{ st.listener.heard_at | ago }}</time>)</span>{% endif %}</span>{% endif %}
+      {% if st.round %}<span class="fb-line fft-stat" data-stat="round" title="Nothing merges to askdnd.ai until you end it; Claude only sorts what you send.">A round is open</span>
         <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form>{% endif %}
+      {# The game-night freeze (Brett, Nov 19: a switch, on before a game, off after; the work flow's slice 3) #}
+      <span class="fb-line fft-stat fft-freeze" data-stat="freeze" title="{{ 'Nothing deploys to askdnd.ai until you turn it off; Claude goes on building.' if st.freeze.on else 'Turn it on before a game: nothing deploys to askdnd.ai until you turn it off.' }}">
+        {% if st.freeze.on %}<b>Game-night freeze on</b>{% if st.freeze.by %} <span class="note">({{ st.freeze.by }}, <time datetime="{{ st.freeze.since }}" data-clock="ago">{{ st.freeze.since }}</time>)</span>{% endif %}{% else %}Game-night freeze off{% endif %}</span>
+      <form method="post" action="/manage/testing/freeze" class="fft-freeze-form"><input type="hidden" name="on" value="{{ 0 if st.freeze.on else 1 }}"><button class="btn small{{ ' primary' if st.freeze.on }}" type="submit" data-do="{{ 'freeze-off' if st.freeze.on else 'freeze-on' }}">{{ "Turn off" if st.freeze.on else "Turn on" }}</button></form>
     </div>
     {% if st.missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
       <h3 class="plabel" id="fft-missed-h">Claude missed · {{ st.missed | length }}</h3>
       <p class="note">Things Claude left half done. Its session won't end a turn while any are here; if one stays, tell Claude in a note.</p>
-      <ul class="fft-missed-list">{% for g in st.missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/for-you?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
-        <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet", "question": "a question you sent, not answered yet"}[g.kind] }}</span></li>{% endfor %}</ul>
+      <ul class="fft-missed-list">{% for g in st.missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/testing?show=stands' if g.thing == 'area' else '/manage/for-you?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
+        <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet", "question": "a question you sent, not answered yet", "no_lane": "a fix waiting with no lane"}[g.kind] }}</span></li>{% endfor %}</ul>
     </section>{% endif %}
-    <p class="note">The Roadmap's order, by item: drag items, and areas within an item. Claude takes the first area that's its turn.</p>
+    <p class="note">Your work queue: drag to reorder. Claude takes the first area that's its turn.</p>{# (Brett, Nov 19: it's the work queue, not the Roadmap) #}
     <ol class="fft-items" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item=".fft-item" data-sort-handle=".fft-item-head .grip">
       {% for x in st.rows %}
       <li class="fft-item" data-key="{{ x.it.id }}" data-item="{{ x.it.id }}">
@@ -46,10 +53,13 @@
           <span class="note">{% if x.it.next_whose == "brett" %}{{ state_word("Yours", "ask") }} {{ x.it.next_step }}{% elif x.why %}{{ x.why }}{% endif %}</span></div>
         {% if x.areas %}<ul class="fft-areas" data-sort-column="item-{{ x.it.id }}" data-sort-url="/manage/testing/order" data-sort-item=".fft-area" data-sort-handle=".fft-area > .grip">
           {% for r in x.areas %}{% set w = {"yours": ("Yours", "ask"), "claude": ("Claude's", "claude")}[r.turn] %}
-          <li class="fft-area" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}">
-            {{ grip() }}<span class="fft-area-name"><b>{{ r.a.title }}</b><span class="note">{{ r.counts }}</span></span>
-            {{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}
-            <span class="note fft-area-note">{{ r.note }}{% if r.locked %} · in hand ({{ r.locked }}){% endif %}</span>
+          <li class="fft-area{{ ' is-next' if r.next }}" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}"{% if r.next %} data-next="{{ r.next }}"{% endif %}>
+            {{ grip() }}<span class="fft-area-name">{% if r.next %}<span class="fft-kicker" title="{{ r.about }}">{{ "Blocker: Claude's now" if r.next == "blocker" else "Claude's next" }}</span>{% endif %}<b>{{ r.a.title }}</b><span class="note">{{ r.counts }}</span></span>
+            {% if r.turn == "yours" %}{{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}{% else %}<span></span>{% endif %}{# (Brett, Nov 19: only Yours, the exception; Claude's is every other row) #}
+            <span class="note fft-area-note"{% if r.about %} title="{{ r.about }}"{% endif %}>{{ r.note }}</span>
+            {# Its lane, opened from the lane itself (a menu like ⋯, the tag as its face: "Lane" until one is set) #}
+            <details class="act-more fft-lane" data-lane="{{ r.lane }}"><summary aria-label="Lane for {{ r.a.title }}" title="{{ r.a.lane_why or '' }}"><span class="state-word lane-tag" data-lane-tag="{{ r.lane or 'none' }}">{{ st.lane_said[r.lane] if r.lane else "Lane" }} ▾</span></summary>
+              <div class="act-menu" role="group" aria-label="Lane for {{ r.a.title }}">{% for l in st.lanes %}<form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="lane"><input type="hidden" name="lane" value="{{ l }}"><button type="submit" data-lane-pick="{{ l }}"{% if l == r.lane %} aria-current="true"{% endif %}{% if r.incident and l != "careful" %} disabled{% endif %}>{{ st.lane_said[l] }}</button></form>{% endfor %}</div></details>
             <a class="btn small" href="/manage/feedback?tab=open&amp;{{ 'pa=' ~ r.a.key if r.a.key else 'area=' ~ r.a.id }}" data-do="open-area">Open</a>
             {% if r.features %}<span class="fft-feat-tags" data-features>{% for t, n in r.features %}<span class="chip">{{ t }}{{ count_pill(n) }}</span>{% endfor %}</span>{% endif %}
             {% if not r.a.key %}{# (a Product Area's batch follows app/data/taxonomy.json: nothing to rename, merge, move or archive) #}

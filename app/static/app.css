@@ -4416,10 +4416,32 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-item-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-2); }
 .fft-item-head .note { margin-left: auto; }
 .fft-areas { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
-.fft-area { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1.2fr) auto auto; gap: var(--sp-1) var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+.fft-area { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1.2fr) auto auto auto; gap: var(--sp-1) var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
 .fft-area-name { display: grid; min-width: 0; }
+/* The area Claude takes next (Brett's pick B, Nov 19, docs/mockups/next-marker/): its row stands out, a violet edge and
+   "Claude's next" over its name; a blocker in red */
+.fft-area.is-next { border-color: var(--violet); box-shadow: inset 4px 0 0 var(--violet); }
+.fft-area.is-next[data-next="blocker"] { border-color: var(--red); box-shadow: inset 4px 0 0 var(--red); }
+.fft-kicker { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--violet); }
+[data-next="blocker"] .fft-kicker { color: var(--red); }
 .fft-area-note { min-width: 0; }
 .fft-area-form { grid-column: 1 / -1; }
+/* A plan's lane (the work flow's slice 3, Nov 19): Ship green, Look blue, Careful red, as the Work Flow Map draws them;
+   its ⋯ changes it (Brett's word, down too) */
+.fft-lane { line-height: 1; }
+.fft-lane > summary { display: inline-flex; align-items: center; border: 0; min-width: 0; min-height: 0; }  /* (its pill is its face, the same pill as whose turn it is) */
+.lane-tag[data-lane-tag="none"] { color: var(--muted); background: transparent; box-shadow: inset 0 0 0 1px var(--line); }  /* (an outline, not a border: the same size as the others) */
+.lane-tag[data-lane-tag="ship"] { color: var(--green); background: var(--green-soft); }
+.lane-tag[data-lane-tag="look"] { color: var(--blue); background: var(--blue-soft); }
+.lane-tag[data-lane-tag="careful"] { color: var(--red); background: var(--red-soft); }
+/* How things stand, one bar (Nov 19): its parts side by side, a rule between them; the freeze's switch at its end; amber
+   while the freeze is on */
+.fft-status .fft-stat + .fft-stat, .fft-status form + .fft-stat { padding-left: var(--sp-3); border-left: 1px solid var(--line); }
+.fft-status .fft-stat[title] { cursor: help; }
+.fft-status form { margin-left: 0; }
+.fft-status .fft-freeze-form { margin-left: auto; }
+.fft-status[data-freeze="1"] { border-color: var(--amber); background: var(--amber-soft); }
+@media (max-width: 640px) { .fft-status .fft-stat + .fft-stat, .fft-status form + .fft-stat { padding-left: 0; border-left: 0; } }  /* (a line each on a phone: no rule at a line's start) */
 .fft-feat-tags { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--sp-1); }  /* a Product Area's open issues by Feature */
 /* Manage › askdnd › Product areas: a card per Product Area, its Features under it (docs/mockups/product-taxonomy/, 1) */
 /* Packed cards (docs/DESIGN.md › Packed cards): columns of cards, each its own height, none split; a long one never
@@ -4437,7 +4459,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-done { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-1); }
 .fft-done li { display: flex; gap: var(--sp-2); align-items: baseline; }
 .fft-done form { display: inline; }
-@media (max-width: 900px) { .fft-area { grid-template-columns: auto minmax(0, 1fr) auto; } .fft-area-note { grid-column: 2 / -1; } }
+@media (max-width: 900px) { .fft-area { grid-template-columns: auto minmax(0, 1fr) auto; } .fft-area-note, .fft-lane { grid-column: 2 / -1; justify-self: start; } }
 /* A question Claude asked, in an issue's conversation (app/templates/_fft_bits.html `asked_bub`) */
 .fft-asked { gap: var(--sp-2); }
 .fft-asked .fft-doc { flex-wrap: wrap; }

@@ -4,6 +4,7 @@ the same transaction (`_event`). Nothing else sets a state. Callers commit; a re
 
 Words: an actor is "user:<id>", "claude", "mini" (the Mac Mini's runs) or "askdnd" (askdnd by itself)."""
 
+import json
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 
@@ -146,11 +147,8 @@ def join_issue(db: Session, actor: str, note: FftNote, issue: FftIssue) -> FftIs
         issue = db.get(FftIssue, issue.same_as_id)
     note.state, note.filed_as, note.issue_id = "filed", "issue", issue.id
     made_player = held = False
-    if note.role != "admin":
+    if note.role != "admin":  # (R17 retired, Nov 19: approving a player's note is the OK for its fix; nothing is held)
         made_player, issue.from_player = not issue.from_player, True
-        if issue.state == "fixing" and issue.pr:  # (R17: a fix a player's words now share waits for Brett's OK too)
-            _set_issue(db, actor, issue, "merge_ok", "issue_merge_ok", pr=issue.pr)
-            held = True
     _approve_lines(db, note)
     _event(db, actor, "note_joined", "note", note.id, issue=issue.id, area_id=issue.area_id,
            **({"made_player": True} if made_player else {}), **({"held": True} if held else {}))  # (what Undo puts back)
@@ -320,32 +318,101 @@ def start_fixing(db: Session, actor: str, issue: FftIssue) -> None:
 
 
 def fix_ready(db: Session, actor: str, issue: FftIssue, pr: str) -> None:
-    """Claude's fix is in a pull request. R17: one a player's words prompted waits for Brett's OK to merge."""
+    """Claude's fix is in a pull request. (R17 retired, Brett's pick 5, Nov 19: approving a player's note is the OK
+    for its fix, and its plan's lane decides the testing; nothing waits for a second OK.)"""
     if issue.state not in ("to_fix", "fixing"):
         raise RuleError("stale", f"It's {issue.state}.")
     if not pr.startswith("https://"):
         raise RuleError("bad", "The fix's pull request is an https:// link.")
     issue.pr = pr
-    if issue.from_player:
-        _set_issue(db, actor, issue, "merge_ok", "issue_merge_ok", pr=pr)
-    else:
-        _event(db, actor, "issue_pr", "issue", issue.id, area_id=issue.area_id, pr=pr)
+    _event(db, actor, "issue_pr", "issue", issue.id, area_id=issue.area_id, pr=pr)
 
 
 def ok_merge(db: Session, actor: str, issue: FftIssue) -> None:
-    """Brett's OK on a player-prompted fix (R17): it may merge."""
+    """Brett's OK on a player-prompted fix (R17, retired Nov 19: kept for an issue still held from before)."""
     if issue.state != "merge_ok":
         raise RuleError("stale", f"It's {issue.state}, not waiting for your OK.")
     _set_issue(db, actor, issue, "fixing", "issue_merge_okd")
 
 
 def may_merge(db: Session, issue: FftIssue) -> tuple[bool, str]:
-    """R11 and R17: may this issue's fix merge to askdnd.ai now?"""
+    """R11 and the game-night freeze: may this issue's fix merge to askdnd.ai now?"""
     if issue.state == "merge_ok":
-        return False, "It waits for Brett's OK to merge (a player's words prompted it)."
+        return False, "It waits for Brett's OK to merge (held from before R17 was retired)."
+    if frozen(db):
+        return False, "The game-night freeze is on: nothing merges until Brett turns it off (a fix for something broken at the table, with his OK)."
     if round_open(db) and not stops_round(db, issue):
         return False, "Brett's round is open: nothing merges until it ends (only an issue that stops his round may)."
     return True, ""
+
+
+
+# ------------------------------------------------------------------ lanes, incidents and the freeze (the work flow, slice 3)
+
+LANES = ("ship", "look", "careful")  # (Brett's picks, Nov 19: how much of his testing a plan needs)
+LANE_SAID = {"ship": "Ship", "look": "Look", "careful": "Careful", "": "No lane yet"}
+INCIDENT_DAYS = 30
+FREEZE = "fft_freeze"  # (a ToolSetting: who turned it on and when, or empty; Brett, Nov 19: a switch, kept by hand)
+
+
+def lane_of(area: FftArea) -> str:
+    """The lane its plan takes: Careful while an incident's 30 days run, whatever was picked."""
+    if area.careful_until and area.careful_until > now():
+        return "careful"
+    return area.lane or ""
+
+
+def set_lane(db: Session, actor: str, area: FftArea, lane: str, why: str = "", admin: bool = False) -> None:
+    """A plan's lane: up by anyone (rules, Claude, Brett), saying why; down only on an admin's word; never below
+    Careful while an incident's days run. Kept with who and why, and an event."""
+    if lane not in LANES:
+        raise RuleError("bad", "Ship, Look or Careful.")
+    was = area.lane or ""
+    if was and LANES.index(lane) < LANES.index(was) and not admin:
+        raise RuleError("bad", f"It's {LANE_SAID[was]}: only Brett moves a plan down a lane.")
+    if lane != "careful" and lane_of(area) == "careful" and area.careful_until and area.careful_until > now():
+        raise RuleError("bad", f"An incident keeps it Careful until {area.careful_until:%b %-d}.")
+    if lane == was:
+        return
+    area.lane, area.lane_by, area.lane_why = lane, actor[:80], why.strip()[:300]
+    _event(db, actor, "area_lane", "area", area.id, area_id=area.id, **{"from": was, "to": lane, "why": area.lane_why})
+
+
+def incident(db: Session, actor: str, area: FftArea, why: str = "") -> None:
+    """It broke at the table (a leak, a broken game night): only that Product Area is Careful for 30 days."""
+    area.careful_until = now() + timedelta(days=INCIDENT_DAYS)
+    was = area.lane or ""
+    area.lane, area.lane_by, area.lane_why = "careful", actor[:80], (why.strip() or "An incident at the table")[:300]
+    _event(db, actor, "area_incident", "area", area.id, area_id=area.id, **{"from": was, "until": area.careful_until.isoformat(), "why": area.lane_why})
+
+
+def freeze_state(db: Session) -> dict:
+    """The game-night freeze: {"on": bool, "by": who, "since": iso}."""
+    from app.models import ToolSetting
+
+    row = db.get(ToolSetting, FREEZE)
+    try:
+        data = json.loads(row.value) if row is not None and row.value else {}
+    except ValueError:
+        data = {}
+    return {"on": bool(data), "by": data.get("by", ""), "since": data.get("since", "")}
+
+
+def frozen(db: Session) -> bool:
+    return freeze_state(db)["on"]
+
+
+def set_freeze(db: Session, actor: str, on: bool, by: str = "") -> None:
+    """Brett's switch (Nov 19): on before a game, off after. While it's on, nothing merges and GitHub's tests stop a
+    deploy (the Server tests' first step asks /api/fft/freeze); a fix for something broken at the table may go."""
+    from app.models import ToolSetting
+
+    if frozen(db) == on:
+        return
+    row = db.get(ToolSetting, FREEZE) or ToolSetting(key=FREEZE)
+    row.value = json.dumps({"by": by or actor, "since": now().isoformat()}) if on else ""
+    db.merge(row)
+    _event(db, actor, "freeze_on" if on else "freeze_off", "tool", 0)
 
 
 def fix_live(db: Session, actor: str, issue: FftIssue, commit: str) -> None:
@@ -393,10 +460,8 @@ def close(db: Session, actor: str, issue: FftIssue, reason: str, words: str = ""
         if same_as is None or same_as.id == issue.id:
             raise RuleError("bad", "Same as which issue?")
         issue.same_as_id = same_as.id
-        if issue.from_player and not same_as.from_player:  # (R17, as join_issue: a fix a player's words now share waits
-            same_as.from_player = True                        # for Brett's OK; the review of PR #417)
-            if same_as.state == "fixing" and same_as.pr:
-                _set_issue(db, actor, same_as, "merge_ok", "issue_merge_ok", pr=same_as.pr)
+        if issue.from_player and not same_as.from_player:  # (a player's words now share it; R17 retired, nothing held)
+            same_as.from_player = True
         for note in db.scalars(select(FftNote).where(FftNote.issue_id == issue.id)):
             note.issue_id = same_as.id
         _relink(db, issue, same_as)  # (R8: a check this one held is now held by the other, never released early)

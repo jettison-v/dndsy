@@ -8,9 +8,10 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import select, update
 
-from app.fft import rules
+from app.fft import lanes, rules
 from app.fft.models import FftArea, FftCheck, FftEvent, FftIssue, FftItem, FftNote, FftRound, FftTry
 from app.fft.rules import Found, RuleError
+from tests.table_setup import plain_id
 
 
 def _player_note(db, text="The coins don't add up.", kind="problem", uid=None):
@@ -262,15 +263,79 @@ def test_r18_a_check_that_fails_its_own_try_never_reaches_brett(db):
 # ------------------------------------------------------------------ merging, rounds, the order
 
 
-def test_r17_a_player_prompted_fix_waits_for_brett_to_ok_the_merge(db):
+def test_approving_a_players_note_is_the_ok_for_its_fix(db):
+    """Brett's pick 5 (Nov 19, Work Flow, Sized to Grow; R17 retired): approving a player's note is the OK for its fix,
+    so its pull request waits for no second OK; its plan's lane decides the testing."""
     n = _player_note(db)
     issue = rules.file_issue(db, "user:1", n)
     rules.start_fixing(db, "claude", issue)
     rules.fix_ready(db, "claude", issue, "https://github.com/x/y/pull/1")
-    assert issue.state == "merge_ok" and rules.ISSUE_TURN[issue.state] == "brett"
-    assert not rules.may_merge(db, issue)[0]
-    rules.ok_merge(db, "user:1", issue)
-    assert issue.state == "fixing" and rules.may_merge(db, issue)[0]
+    assert issue.state == "fixing" and issue.pr and rules.may_merge(db, issue)[0]
+    held = rules.new_issue(db, "claude", "Held from before")
+    held.state = "merge_ok"  # (one held before R17 went still needs its OK)
+    assert not rules.may_merge(db, held)[0]
+    rules.ok_merge(db, "user:1", held)
+    assert held.state == "fixing"
+
+
+def test_a_plans_lane_goes_up_by_anyone_and_down_only_on_bretts_word(db):
+    """The work flow's slice 3 (Brett's picks, Nov 19): Ship, Look or Careful; Claude moves a plan up, saying why,
+    never down; Brett may move it either way; each change is kept with who and why."""
+    a = _area(db, "Battle")
+    rules.set_lane(db, "claude", a, "look", "People see it")
+    rules.set_lane(db, "claude", a, "careful", "It touches sign-in")
+    with pytest.raises(rules.RuleError):
+        rules.set_lane(db, "claude", a, "ship")
+    rules.set_lane(db, "user:1", a, "look", "Brett chose it", admin=True)
+    assert rules.lane_of(a) == "look" and a.lane_by == "user:1"
+    moves = [e.data for e in db.scalars(select(FftEvent).where(FftEvent.kind == "area_lane", FftEvent.thing_id == a.id).order_by(FftEvent.id))]
+    assert [(m["from"], m["to"]) for m in moves] == [("", "look"), ("look", "careful"), ("careful", "look")]
+    with pytest.raises(rules.RuleError):
+        rules.set_lane(db, "claude", a, "fast")
+
+
+def test_an_incident_keeps_only_its_area_careful_for_30_days(db):
+    a, b = _area(db, "Battle"), _area(db, "Sheet")
+    rules.set_lane(db, "claude", a, "look")
+    rules.incident(db, "claude", a, "Hit points vanished mid-fight")
+    assert rules.lane_of(a) == "careful" and rules.lane_of(b) == ""
+    with pytest.raises(rules.RuleError):
+        rules.set_lane(db, "user:1", a, "look", admin=True)  # (not even Brett, until the days are up)
+    a.careful_until = rules.now() - timedelta(minutes=1)
+    rules.set_lane(db, "user:1", a, "look", admin=True)
+    assert rules.lane_of(a) == "look"
+
+
+def test_the_game_night_freeze_holds_every_merge_until_its_turned_off(db):
+    """Brett, Nov 19: a switch, on before a game and off after; while it's on nothing merges."""
+    issue, _ = _issue_with_check(db)
+    rules.start_fixing(db, "claude", issue)
+    assert rules.may_merge(db, issue)[0] and not rules.frozen(db)
+    rules.set_freeze(db, "user:1", True, by="Brett")
+    assert rules.frozen(db) and not rules.may_merge(db, issue)[0] and rules.freeze_state(db)["by"] == "Brett"
+    rules.set_freeze(db, "user:1", False)
+    assert not rules.frozen(db) and rules.may_merge(db, issue)[0]
+    assert [e.kind for e in db.scalars(select(FftEvent).where(FftEvent.kind.like("freeze_%")).order_by(FftEvent.id))] == ["freeze_on", "freeze_off"]
+
+
+@pytest.mark.parametrize(("files", "lane"), [
+    (["tests/test_x.py", "docs/MAP.md"], "ship"),
+    (["app/fft/rules.py"], "ship"),
+    (["app/templates/party.html", "app/fft/rules.py"], "look"),
+    (["app/static/app.css"], "look"),
+    (["app/access.py", "app/templates/party.html"], "careful"),
+    (["extension/askdnd-bridge/vtt-page.js"], "careful"),
+], ids=plain_id)
+def test_the_lane_is_picked_from_the_files_a_change_touches(files, lane):
+    assert lanes.pick(files)[0] == lane
+
+
+def test_a_database_change_that_alters_data_is_careful_and_one_that_only_adds_isnt():
+    adds = "def upgrade():\n    op.add_column('x', sa.Column('y', sa.String()))\ndef downgrade():\n    op.drop_column('x', 'y')\n"
+    alters = "def upgrade():\n    op.execute(\"UPDATE x SET y = 1\")\n"
+    f = "migrations/versions/2026_12_09-abc_x.py"
+    assert lanes.pick([f], read=lambda _: adds)[0] == "ship"  # (its downgrade's drop doesn't count)
+    assert lanes.pick([f], read=lambda _: alters)[0] == "careful"
 
 
 def test_r11_nothing_merges_while_a_round_is_open_except_what_stops_it(db):
@@ -478,22 +543,23 @@ def test_correcting_a_try_puts_back_only_what_that_try_changed(db):
 
 def test_undo_after_same_as_keeps_the_issue_that_was_there(db):
     """Undo within a minute of joining a note to an issue that existed before takes the note back out, and leaves the
-    issue, its checks and its tries as they were; what the join set (a player's issue, waiting for Brett's OK) goes back."""
+    issue, its checks and its tries as they were; what the join set (a player's issue) goes back."""
     issue, check = _issue_with_check(db)
     rules.start_fixing(db, "claude", issue)
     issue.pr = "https://github.com/x/y/pull/1"
     db.flush()
     n = _player_note(db)
     rules.join_issue(db, "user:1", n, issue)
-    assert issue.from_player and issue.state == "merge_ok"
+    assert issue.from_player and issue.state == "fixing"  # (R17 retired, Nov 19: nothing is held for a second OK)
     rules.undo_decision(db, "user:1", n)
     db.flush()
     assert db.get(FftIssue, issue.id) is not None  # (never deleted)
     assert not issue.from_player and issue.state == "fixing" and n.state == "waiting"
 
 
-def test_closing_a_players_issue_as_the_same_as_another_waits_for_bretts_ok_on_it(db):
-    """R17 through Close as the same: a player's words now share the other issue, so its fix waits for Brett's OK."""
+def test_closing_a_players_issue_as_the_same_as_another_makes_that_one_a_players(db):
+    """Close as the same: a player's words now share the other issue (its sender hears its outcome); since R17 went
+    (Nov 19) its fix waits for no second OK."""
     theirs = rules.new_issue(db, "claude", "Coins are off")
     theirs.from_player = True
     ours, _ = _issue_with_check(db, title="Coins total")
@@ -501,7 +567,7 @@ def test_closing_a_players_issue_as_the_same_as_another_waits_for_bretts_ok_on_i
     ours.pr = "https://github.com/x/y/pull/2"
     db.flush()
     rules.close(db, "claude", theirs, "same", same_as=ours)
-    assert ours.from_player and ours.state == "merge_ok"
+    assert ours.from_player and ours.state == "fixing"
 
 
 def test_unjoin_makes_a_recorded_issue_in_the_same_feature(db):
@@ -544,3 +610,10 @@ def test_an_issue_asked_about_while_its_fix_is_under_way_goes_back_to_fixing(db)
     assert issue.state == "asks"
     rules.answer(db, "user:1", q, choice=None, text="This way.")
     assert issue.state == "fixing"
+
+
+def test_an_add_only_sql_line_doesnt_make_a_plan_careful():
+    f = "migrations/versions/2026_12_09-abc_x.py"
+    index = "def upgrade():\n    op.execute(\"CREATE INDEX x_y ON x (y)\")\n"
+    assert lanes.pick([f], read=lambda _: index)[0] == "ship"
+    assert lanes.higher("careful", "look") and not lanes.higher("look", "careful")

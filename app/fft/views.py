@@ -320,7 +320,7 @@ def gaps(db: Session) -> list[dict]:
     """What Claude left half done, each Claude's to close now (Brett, Nov 17: "how are we going to make sure that you do
     not miss something?"): a fix with no check to try it; a check Claude hasn't tried itself (R18); something said on an
     open issue, a note, a failed try, a line or an answer, that Claude hasn't replied to; an open issue with no Feature; a
-    question sent to Claude and not yet answered.
+    question sent to Claude and not yet answered; a fix in a pull request whose plan has no lane (Nov 19).
     `feedback.py gaps` prints them, Claude Code's end-of-turn hook won't let a turn end on one, and Where it stands
     shows them as Claude missed. Nothing waiting on Brett is a gap."""
     from app.fft.models import FftTry, FftTryIssue
@@ -365,6 +365,10 @@ def gaps(db: Session) -> list[dict]:
         if not taxonomy.feature(i.feature):  # (the Product Taxonomy, Nov 18: every issue in one Feature, so in its batch)
             out.append({"kind": "no_feature", "thing": "issue", "id": i.id, "title": i.title,
                         "says": "No Feature yet: give it one (feedback.py issue <id> feature <key>; feedback.py features lists them)."})
+    for a in db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.id)):  # (Brett, Nov 19: a fix never
+        if not rules.lane_of(a) and any(i.pr and i.area_id == a.id for i in issues):  # goes without its lane)
+            out.append({"kind": "no_lane", "thing": "area", "id": a.id, "title": a.title,
+                        "says": "A fix in a pull request with no lane: feedback.py lane --area <id> (or attach its pull request again)."})
     for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
         out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
                     "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})

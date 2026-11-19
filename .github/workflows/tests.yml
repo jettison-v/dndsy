@@ -36,6 +36,28 @@ env:
   FIXTURES_KEY: ${{ secrets.FIXTURES_KEY }}
 
 jobs:
+  # Brett's game-night freeze (Nov 19: a switch on Testing › Where it stands, on before a game, off after; the work
+  # flow's slice 3). While it's on this job fails, so the run fails and Railway doesn't deploy: nothing reaches
+  # askdnd.ai until he turns it off and the run is re-run. A commit (or pull request title) saying [table-fix] goes,
+  # with his OK. If askdnd.ai doesn't answer, it holds nothing.
+  freeze:
+    name: Game-night freeze
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Is the game-night freeze on?
+        env:
+          SAID: ${{ github.event.head_commit.message || github.event.pull_request.title }}
+        run: |
+          frozen=$(curl -fsS --max-time 20 https://askdnd.ai/api/fft/freeze | python3 -c 'import json, sys; print(json.load(sys.stdin)["frozen"])') \
+            || { echo "askdnd.ai didn't answer: holding nothing."; exit 0; }
+          if [ "$frozen" = "True" ]; then
+            case "$SAID" in *"[table-fix]"*) echo "Frozen, but this is a table fix: it goes."; exit 0;; esac
+            echo "::error::The game-night freeze is on: nothing deploys to askdnd.ai until Brett turns it off. Re-run this run then."
+            exit 1
+          fi
+          echo "Not frozen."
+
   server:
     name: Server tests
     runs-on: ubuntu-latest

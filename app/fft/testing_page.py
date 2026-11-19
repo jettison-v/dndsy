@@ -363,7 +363,6 @@ def stands(db: Session) -> dict:
     skipped = dict(pick.skipped)
     r = rules.round_open(db)
     items, done = [], []
-    prev = None
     for n, it in enumerate(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)), 1):
         rows = []
         for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
@@ -379,26 +378,32 @@ def stands(db: Session) -> dict:
                 continue
             in_round = r is not None and rules.in_open_round(db, a)
             stops = [i for i in issues if rules.stops_round(db, i)]
-            if pick.area is not None and pick.area.id == a.id:
-                note = ("Blocker: Claude fixes it now" if pick.blocker else "Next for Claude") + (" · building on a branch; merges when your round ends" if r else "")
+            # (Brett, Nov 19: "wordy and does not add a lot of value. Next has some value": a word only where it says
+            # something the pills don't; the rest is on mouse-over)
+            nxt = pick.area is not None and pick.area.id == a.id
+            if nxt:  # (Brett's pick B, Nov 19: the row stands out, "Claude's next" over its name; no word at the end)
+                note, about = "", ("Claude fixes it now, ahead of everything" if pick.blocker else "Claude takes it next")
+                about += "; it merges when your round ends" if r else ""
             elif in_round:
-                note = "In your open round" + (f" · {len(stops)} issue{'s' if len(stops) != 1 else ''} stop{'s' if len(stops) == 1 else ''} your round (Claude may fix {'that one' if len(stops) == 1 else 'those'} now)" if stops else "")
-            elif turn == "claude":
-                note = f"After {prev}" if prev else "Waits its turn"
+                note = "In your round"
+                about = (f"{len(stops)} issue{'s' if len(stops) != 1 else ''} in it stop{'s' if len(stops) == 1 else ''} your round: Claude may fix "
+                         f"{'that one' if len(stops) == 1 else 'those'} now") if stops else "Its checks are in your open round"
+                note += f" · {len(stops)} stop{'s' if len(stops) == 1 else ''} it" if stops else ""
             else:
-                note = "Your turn: in For you"
+                note, about = "", ""
             feats = {}
             for i in issues:
                 f = taxonomy.feature(i.feature)
                 feats[f.title if f else "No Feature yet"] = feats.get(f.title if f else "No Feature yet", 0) + 1
             rows.append({"a": a, "turn": {"claude": "claude", "brett": "yours"}.get(turn, "yours"), "counts": counts or "Nothing open yet",
+                         "lane": rules.lane_of(a), "incident": bool(a.careful_until and a.careful_until > rules.now()),
                          "features": sorted(feats.items(), key=lambda x: -x[1]),
-                         "note": note, "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
-            prev = a.title
+                         "note": note, "about": about, "next": "blocker" if nxt and pick.blocker else "next" if nxt else "", "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
         why = skipped.get(it.title, "")
         items.append({"it": it, "n": n, "areas": rows, "why": f"skipped: {why}" if why else ""})
     li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()
     return {"rows": items, "done": done, "round": r, "listener": li, "listening": views.listening(db), "missed": views.gaps(db),
+            "freeze": rules.freeze_state(db), "lanes": rules.LANES, "lane_said": rules.LANE_SAID,
             "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
             "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))}
 
@@ -423,8 +428,8 @@ def order(request: Request, column: str = Form(...), keys: list[str] = Form(defa
 
 @router.post("/manage/testing/areas/{area_id:int}")
 def area_change(request: Request, area_id: int, do: str = Form(...), title: str = Form(""), into: int = Form(0), item: int = Form(0),
-                db: Session = Depends(get_db)):
-    """Rename…, Merge into…, Move to another item…, Archive."""
+                lane: str = Form(""), db: Session = Depends(get_db)):
+    """Rename…, Merge into…, Move to another item…, Archive, and its lane (Ship, Look, Careful)."""
     user, denied = _admin(request)
     if denied:
         return denied
@@ -445,6 +450,9 @@ def area_change(request: Request, area_id: int, do: str = Form(...), title: str 
         elif do == "archive":
             rules.archive_area(db, actor, a)
             said = "Archived"
+        elif do == "lane":  # (Brett's word: any lane, down too; kept with who)
+            rules.set_lane(db, actor, a, lane, "Brett chose it", admin=True)
+            said = f"{a.title}: {rules.LANE_SAID[lane]}"
         else:
             raise HTTPException(400)
     except rules.RuleError as e:
@@ -452,6 +460,19 @@ def area_change(request: Request, area_id: int, do: str = Form(...), title: str 
         return RedirectResponse(f"{BACK}?show=stands", status_code=303)
     db.commit()
     request.session["toast"] = said
+    return RedirectResponse(f"{BACK}?show=stands", status_code=303)
+
+
+@router.post("/manage/testing/freeze")
+def freeze(request: Request, on: str = Form(...), db: Session = Depends(get_db)):
+    """The game-night freeze (Brett, Nov 19: a switch he turns on before a game and off after)."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    me = views.person(db, user)
+    rules.set_freeze(db, f"user:{me["id"]}", on == "1", by=me["first_name"])
+    db.commit()
+    request.session["toast"] = "Game-night freeze on: nothing deploys until you turn it off" if on == "1" else "Freeze off: deploys go again"
     return RedirectResponse(f"{BACK}?show=stands", status_code=303)
 
 
