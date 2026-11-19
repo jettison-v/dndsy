@@ -173,6 +173,8 @@
   <section class="section" id="surfaces">
     <h2>Sections and tiles</h2>
     {{ ds("Section", ".section", "A card on the page background. This page is made of them.") }}
+    {{ ds("Packed cards", ".packed > .panel", "Cards of different heights side by side, packed into columns so a long one never leaves a gap beside the short ones (Manage › askdnd › Product areas; Brett's round, Nov 18, issue 26). They read down each column, then across; a card never splits between columns.") }}
+    <div class="packed"><div class="panel"><b>Battle</b><p class="note">Hit points · Conditions · Death saves · Casting · Items · Resources</p></div><div class="panel"><b>Rolls and dice</b></div><div class="panel"><b>The table</b><p class="note">Live · Party</p></div><div class="panel"><b>Manage</b></div></div>
     {{ ds("Stat", ".stats > .stat", "A big number with what it means (Manage › Usage). .attention adds a red edge.") }}
     <div class="stats"><div class="stat"><span>This month</span><b>$4.20</b><small>$15.80 left of $20.00</small></div><div class="stat attention"><span>Backups</span><b>2 days</b><small>Last backup failed</small></div><div class="stat"><span>All time</span><b>$31.06</b><small>48 drafts</small></div></div>
     {{ ds("Battle bar", ".battlebar", "The top of Battle, scrolling with the page: the resources row (Focus Points, Inspiration, Rest), then the number tiles beside the stacked saves, with a line under it.") }}

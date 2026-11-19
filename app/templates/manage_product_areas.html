@@ -10,7 +10,7 @@
   <div class="title-row"><h1>Product areas</h1></div>
   <p class="subtitle">Every part of askdnd in two levels: {{ cards | length }} Product Areas and {{ features }} Features. Every issue is about one Feature, and each Product Area is one batch of fixes. The number by a Feature is its open issues; press one to see them in Feedback. Only admins can see this page.</p>
   {% if loose %}<p class="note" data-loose><a href="/manage/feedback?tab=open">{{ loose }} open issue{{ "s" if loose != 1 }} with no Feature yet</a>: Claude gives each one.</p>{% endif %}
-  <div class="pa-cards">
+  <div class="packed pa-cards">
     {% for c in cards %}
     <section class="panel pa-card" data-pa="{{ c.a.key }}" aria-labelledby="pa-{{ c.a.key }}">
       <header class="pa-head"><h2 id="pa-{{ c.a.key }}">{{ c.a.title }}</h2>{{ count_pill(c.n) }}<span class="note">{{ c.a.what }}</span></header>
