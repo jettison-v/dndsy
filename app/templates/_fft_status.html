@@ -2,21 +2,32 @@
    open round with End round. Right: how Claude works, one choice of three (his words, Nov 19, with Deploy Freeze for
    his "Dev Freeze": development goes on, only deploying stops): Local Testing, visible changes wait for his try on his
    Mac; Independent Work (the default), they merge and he tries them after; Deploy Freeze, nothing deploys (game night).
-   Two can't be on at once. The how-to sentences are mouse-overs. `bar` is testing_page.status(), `back` the page it's on. #}
+   Two can't be on at once. What each part means is one ⓘ beside the choice, opening a short section under the bar (Brett, Nov 19: no
+   question-mark pointers; one place for the bar's help). `bar` is testing_page.status(), `back` the page it's on. #}
 {% set mode = bar.mode %}
 <div class="fft-banner fft-status" data-listening="{{ 1 if bar.listening else 0 }}" data-mode="{{ mode }}">
   <div class="fft-status-left">
     {% if bar.listening %}<span class="fb-listening fft-stat" data-stat="listening">Claude is listening{% if bar.listener %} <span class="note">({{ bar.listener.name }}, heard <time datetime="{{ bar.listener.heard_at.isoformat() }}" data-clock="ago">{{ bar.listener.heard_at | ago }}</time>)</span>{% endif %}</span>
-    {% else %}<span class="fft-stat" data-stat="listening" title="What you send waits and is read at the next session's start. To start one, open the Claude app and say &quot;check askdnd&quot;.">Claude isn't listening{% if bar.listener and bar.listener.heard_at %} <span class="note">(last heard <time datetime="{{ bar.listener.heard_at.isoformat() }}" data-clock="ago">{{ bar.listener.heard_at | ago }}</time>)</span>{% endif %}</span>{% endif %}
-    {% if bar.round %}<span class="fft-stat" data-stat="round" title="Nothing merges to askdnd.ai until you end it; Claude only sorts what you send.">A round is open</span>
+    {% else %}<span class="fft-stat" data-stat="listening">Claude isn't listening{% if bar.listener and bar.listener.heard_at %} <span class="note">(last heard <time datetime="{{ bar.listener.heard_at.isoformat() }}" data-clock="ago">{{ bar.listener.heard_at | ago }}</time>)</span>{% endif %}</span>{% endif %}
+    {% if bar.round %}<span class="fft-stat" data-stat="round">A round is open</span>
       <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form>{% endif %}
   </div>
   <div class="fft-status-right">
     <span class="note fft-mode-note" data-mode-note>{% if mode == "available" %}until <time datetime="{{ bar.available.until }}" data-clock="when">{{ bar.available.until }}</time>{% elif mode == "frozen" %}since <time datetime="{{ bar.freeze.since }}" data-clock="when">{{ bar.freeze.since }}</time>{% elif bar.available.ended %}Local Testing ended: {{ bar.available.why }}{% endif %}</span>
     <form method="post" action="/manage/for-you/mode" class="seg fft-mode" role="group" aria-label="How Claude works"><input type="hidden" name="back" value="{{ back }}">
-      <button type="submit" name="mode" value="available" aria-pressed="{{ 'true' if mode == 'available' else 'false' }}" data-mode-pick="available" title="You're around: visible (Look) changes wait for your try on your Mac before they merge. Ends after 2 hours, or sooner if you're quiet in askdnd for 30 minutes or a try waits 30 minutes.">Local Testing</button>
-      <button type="submit" name="mode" value="independent" aria-pressed="{{ 'true' if mode == 'independent' else 'false' }}" data-mode-pick="independent" title="Claude merges visible changes when their tests pass, and you try them after they're live. Careful changes still wait for your try first.">Independent Work</button>
-      <button type="submit" name="mode" value="frozen" aria-pressed="{{ 'true' if mode == 'frozen' else 'false' }}" data-mode-pick="frozen" title="Game night: nothing deploys to askdnd.ai until you choose another; Claude goes on building on branches.">Deploy Freeze</button>
+      <button type="submit" name="mode" value="available" aria-pressed="{{ 'true' if mode == 'available' else 'false' }}" data-mode-pick="available">Local Testing</button>
+      <button type="submit" name="mode" value="independent" aria-pressed="{{ 'true' if mode == 'independent' else 'false' }}" data-mode-pick="independent">Independent Work</button>
+      <button type="submit" name="mode" value="frozen" aria-pressed="{{ 'true' if mode == 'frozen' else 'false' }}" data-mode-pick="frozen">Deploy Freeze</button>
     </form>
+    <button type="button" class="btn link small fft-bar-i" data-menu="fft-bar-help" aria-expanded="false" aria-controls="fft-bar-help" aria-label="What this bar means">ⓘ</button>
   </div>
 </div>
+<section class="fft-bar-help" id="fft-bar-help" hidden aria-label="What this bar means">
+  <dl>
+    <dt>Claude listening</dt><dd>While a Claude session runs, what you send reaches Claude within minutes. When none is, it waits for the next one: open the Claude app and say "check askdnd".</dd>
+    <dt>A round is open</dt><dd>Nothing merges to askdnd.ai until you end it; Claude only sorts what you send meanwhile.</dd>
+    <dt>Local Testing</dt><dd>You're around: visible changes wait for your try on your Mac before they merge (a Try on your Mac item in For you, and a notification). It ends after 2 hours, or sooner if you're quiet in askdnd for 30 minutes or a try waits 30 minutes.</dd>
+    <dt>Independent Work</dt><dd>The default. Claude merges visible changes when their tests pass, and you try them on askdnd.ai after they're live. Careful changes (who sees what, sign-in, spending, the D&amp;D Beyond bridge) still wait for your try first.</dd>
+    <dt>Deploy Freeze</dt><dd>Game night: nothing deploys to askdnd.ai until you choose another. Claude goes on building on branches.</dd>
+  </dl>
+</section>

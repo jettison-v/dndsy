@@ -414,8 +414,8 @@ def set_freeze(db: Session, actor: str, on: bool, by: str = "") -> None:
     row.value = json.dumps({"by": by or actor, "since": now().isoformat()}) if on else ""
     db.merge(row)
     _event(db, actor, "freeze_on" if on else "freeze_off", "tool", 0)
-    if on and available_state(db)["on"]:  # (game night: nobody is trying things locally)
-        set_available(db, "askdnd", False, why="the deploy freeze went on")
+    if on and available_state(db)["on"]:  # (game night: nobody is trying things locally; Brett chose it, so no why to show)
+        set_available(db, actor, False)
 
 
 # ------------------------------------------------------------------ Available (Brett, Nov 19: local tries while he's around)

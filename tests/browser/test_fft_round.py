@@ -259,7 +259,7 @@ def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, br
                             {"i": item}).scalar()
         conn.execute(text("INSERT INTO fft_issues (title, state, area_id, feature, from_player, reopened, workspace_id) "
                           "VALUES ('A long name wraps', 'to_fix', :a, 'homebrew', false, 0, 1)"), {"a": area})
-        conn.execute(text("INSERT INTO fft_listeners (name, heard_at, workspace_id) VALUES ('main', now(), 1)"))
+        conn.execute(text("INSERT INTO fft_listeners (name, heard_at, workspace_id) VALUES ('main', now(), 1) ON CONFLICT DO NOTHING"))
         conn.execute(text("INSERT INTO tool_settings (key, value) VALUES ('fft_available', :v) ON CONFLICT (key) DO UPDATE SET value = :v"),
                      {"v": json.dumps({"by": "Dev", "actor": "user:0", "since": "2099-01-01T00:00:00+00:00", "until": "2099-01-01T02:00:00+00:00"})})
     engine.dispose()
@@ -274,7 +274,7 @@ def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, br
         assert abs((m["y"] + m["height"] / 2) - (o["y"] + o["height"] / 2)) < 6 and m["x"] > o["x"], f"⋯ off its row at {width}px"
         bar = [x for x in page.evaluate(CHECK, {"baseline": True}) if "fft-status" in x["where"]]  # (Nov 19: squeezed, off baseline)
         assert not bar, f"the status bar at {width}px: {bar}"
-        right = page.locator(".fft-mode").bounding_box()
+        right = page.locator(".fft-status-right").bounding_box()  # (the choice and its ⓘ)
         bar_box = page.locator(".fft-status").bounding_box()
         assert bar_box["x"] + bar_box["width"] - (right["x"] + right["width"]) < 40, f"the choice isn't at the bar's right end at {width}px"
         for grey in page.locator(".fft-status .note").all():

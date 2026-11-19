@@ -661,7 +661,7 @@ def test_available_turns_itself_off_on_any_of_its_signals(db):
         rules.now = real
         rules.set_available(db, "user:1", True)
         rules.set_freeze(db, "user:1", True)
-        assert rules.available_state(db)["why"] == "the deploy freeze went on"
+        assert not rules.available_state(db)["on"] and not rules.available_state(db)["why"]  # (his own choice: nothing to explain)
         rules.set_mode(db, "user:1", "available")
         assert rules.mode_of(db) == "available" and not rules.frozen(db)  # (one at a time, Brett, Nov 19)
         rules.set_mode(db, "user:1", "independent")
