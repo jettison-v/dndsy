@@ -108,6 +108,7 @@ def test_for_you_is_its_own_page_grouped_by_what_you_do(admin, db):
     assert admin.get("/manage/testing", follow_redirects=False).status_code == 200
     assert admin.get("/manage/for-you/count").json() == {"n": 4}
     assert "data-for-you-count" in admin.get("/party").text  # (the badge's place on the Admin gear, on every page)
+    assert "4 waiting on you: " in admin.get("/manage/askdnd").text  # (its card on Overview says how much)
     menu = admin.get("/manage/feedback").text
     assert 'data-item="for-you"' in menu and 'data-manage-count="for-you"' in menu and 'data-manage-count="testing"' not in menu
 

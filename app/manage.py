@@ -301,6 +301,7 @@ def overview(request: Request, db: Session = Depends(get_db)):
         "corrections": (f"{fixes} to build into askdnd" if fixes else "Nothing to build in", "warn" if fixes else "ok"),
         "documents": (_plural(len(documents.library()), "document"), ""),
         "product-areas": (_product_areas(db), ""),
+        "for-you": _for_you_state(db, request),
     }
     if config.DDB_BRIDGE:
         from app import ddb_bridge
@@ -311,6 +312,14 @@ def overview(request: Request, db: Session = Depends(get_db)):
     cards = [p | {"state": state.get(p["key"], ("", ""))} for p in pages_for(user, "/manage/askdnd")
              if p["group"] == ASKDND and p["key"] != "overview"]
     return templates.TemplateResponse(request, "manage_askdnd.html", {"cards": cards})
+
+
+def _for_you_state(db: Session, request: Request) -> tuple[str, str]:
+    """For you's card on Overview: how much waits on you (its summary line); waiting is normal, so no warning tone."""
+    from app.fft import testing_page
+
+    s = testing_page.summary(testing_page.for_you(db, testing_page.device_of(request)))
+    return (f"{s["n"]} waiting on you: {s["line"]}" if s["n"] else "Nothing waiting on you", "")
 
 
 # ------------------------------------------------------------------ old addresses (Manage layout, 2026-10-23)
