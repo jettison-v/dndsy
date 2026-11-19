@@ -218,3 +218,28 @@ def test_after_the_last_check_the_round_waits_for_end_round(people, server, brow
             conn.execute(text("DELETE FROM fft_checks WHERE id IN (:a, :b)"), {"a": first, "b": second})
             conn.execute(text("UPDATE fft_rounds SET ended_at = now() WHERE ended_at IS NULL"))
         engine.dispose()
+
+
+def test_counts_never_blink_between_manage_pages(people, server, browser_db):
+    """Issue 46 (Brett, Nov 19: Manage's list redrew its counts on every click, so they blinked out and back): the
+    counts this tab last heard show at once on the next page, before their fresh answer comes."""
+    import time
+
+    _checks(browser_db[0], "/party")
+    admin = people("admin")
+    page = admin.open("/manage/feedback")
+    side = '.manage-side [data-manage-count="for-you"]'
+    page.wait_for_function(f"() => !document.querySelector('{side}').hidden")
+    page.wait_for_function("() => !document.querySelector('[data-for-you-count]').hidden")
+
+    def slow(route):
+        time.sleep(1.5)
+        route.continue_()
+
+    page.route("**/manage/counts", slow)
+    page.route("**/manage/for-you/count", slow)
+    page.goto(server["base"] + "/manage/documents", wait_until="domcontentloaded")
+    assert page.evaluate(f"() => !document.querySelector('{side}').hidden && !document.querySelector('[data-for-you-count]').hidden")
+    page.unroute("**/manage/counts")
+    page.unroute("**/manage/for-you/count")
+    assert not admin.errors, admin.errors
