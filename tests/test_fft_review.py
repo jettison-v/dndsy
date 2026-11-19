@@ -63,14 +63,14 @@ def test_a_corrected_try_lets_go_of_an_issue_it_named_that_others_use(db):
     assert x.state != "closed" and rules.check_state(db, c)["state"] == "passed"
 
 
-def test_a_player_joining_an_issue_whose_fix_is_ready_waits_for_your_ok(db):
-    """R17."""
+def test_a_player_joining_an_issue_whose_fix_is_ready_holds_nothing(db):
+    """R17 retired (Brett's pick 5, Nov 19): approving a player's note is the OK, so joining it holds no fix."""
     issue = rules.new_issue(db, "claude", "Mine first")
     rules.start_fixing(db, "claude", issue)
     rules.fix_ready(db, "claude", issue, "https://github.com/x/y/pull/9")
     n = rules.send_note(db, user_id=None, first_name="Trah", role="player", kind="problem", text="Me too")
     rules.join_issue(db, "user:1", n, issue)
-    assert issue.state == "merge_ok" and not rules.may_merge(db, issue)[0]
+    assert issue.state == "fixing" and issue.from_player and rules.may_merge(db, issue)[0]
 
 
 def test_an_area_lock_is_its_owners(db):
