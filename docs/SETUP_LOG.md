@@ -1128,3 +1128,13 @@ tools move with each Xcode, so pin what the machine runs (macOS, Xcode, simulato
 **Why:** on Nov 17 five fixes went by with no check for you to try and three of your answers went unanswered. Each was in the record, but nothing looked. A skill would have been more instructions to remember; the hook doesn't depend on remembering.
 **Where it's all kept:** the rule in `CLAUDE.md`; the list in `app/fft/views.py` (`gaps`) with its API in `app/fft/api.py`; the panel in `app/templates/fft_testing.html` (`data-missed`); the command and the hook's logic in `scripts/feedback.py` (`gaps`); the hook's switch in `.claude/settings.json`; the tests in `tests/test_fft_gaps.py`. The hook is part of the repo, so every Claude session in this folder gets it, a fresh one included.
 **Reuse:** to take Feedback and Testing to another project, copy `app/fft/` with its templates and `scripts/feedback.py`, and add the same Stop hook to that project's `.claude/settings.json`. The general idea works anywhere: let the app work out "what's unfinished" from its own records, show it to you, and have the assistant's end-of-turn hook refuse to stop while that list isn't empty, with a way out so it can never loop.
+
+## One clean environment: from a local trial to askdnd.ai (Nov 18)
+**What:** Found, Fixed, Tried had been tried on the local copy of beta (localhost:8000), with your notes, issues and checks living only in that copy. Today it merged (PR #417) and deployed to askdnd.ai, where four things happened in order:
+1. **The old feedback carried over by itself**: a one-time migration turned the old Feedback for Claude's open notes into 27 notes and 19 issues, each still with your words.
+2. **Each issue got its Feature** (the Product Taxonomy), so every one sits in its Product Area's batch.
+3. **The local trial's open issues were filed on askdnd.ai** (17 of them), each with a line quoting your note and Claude's reply, so nothing you wrote locally is lost when the local copy is next refreshed.
+4. **Claude now listens on askdnd.ai**, not on localhost.
+
+**Why:** two environments with different records made it unclear which one held the truth, and checks were being tried on a copy that didn't have the fixes. One place for the record removes that whole class of confusion.
+**Reuse:** try a new internal tool on a local copy first, but keep the trial short and plan the move: carry the data over with a migration, not by hand; copy across anything only the trial holds, with who said it; then point every listener and script at the one live place, and say out loud that the trial copy is now scratch.

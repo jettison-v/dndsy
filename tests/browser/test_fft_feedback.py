@@ -153,3 +153,32 @@ def test_a_long_area_heading_wraps_above_its_rows_never_over_them(people, server
     head.locator("span").first.evaluate("s => { s.textContent = 'Battle, with a name long enough to wrap onto a second line and a third'; }")
     box, row = head.bounding_box(), page.locator('.reader-rows > [data-group="battle"] + .fb-row').bounding_box()
     assert box["height"] > 40 and box["y"] + box["height"] <= row["y"] + 0.5  # (it grew, and the row starts below it)
+
+
+def test_change_and_rename_close_with_cancel_or_escape_and_change_nothing(people, server, browser_db):
+    """Issue 25 on askdnd.ai (Brett's round, Nov 18): Change… on an issue opened its picker with only Save, so nothing
+    but saving closed it; Rename… the same. Every folded form has Cancel beside its button, and Escape inside it is
+    its Cancel; neither changes the issue."""
+    nid = _waiting_note(browser_db[0], "The rest button is grey.")
+    admin = people("admin")
+    page = admin.open(f"/manage/feedback?tab=approve&open=n{nid}")
+    page.locator(f'[data-fft-note="{nid}"] [data-do="issue"]').click()
+    page.wait_for_url("**/manage/feedback?tab=open&open=i*")
+    iid, feature, title = _one(browser_db[0], "SELECT i.id, i.feature, i.title FROM fft_issues i JOIN fft_notes n ON n.issue_id = i.id WHERE n.id = :i", i=nid)
+    form = page.locator(f"#fft-feature-{iid}")
+    page.locator('[data-fft-issue] [data-do="feature"]').click()
+    assert form.is_visible()
+    form.locator("[data-cancel]").click()
+    assert form.is_hidden()
+    page.locator('[data-fft-issue] [data-do="feature"]').click()
+    assert form.is_visible()
+    page.keyboard.press("Escape")  # (the picker has the focus: Escape inside it)
+    assert form.is_hidden()
+    page.locator("[data-fft-issue] details.act-more summary").click()
+    page.locator(f'[data-show="fft-title-{iid}"]').click()
+    rename = page.locator(f"#fft-title-{iid}")
+    rename.locator("input[name=words]").fill("Something else")
+    page.keyboard.press("Escape")
+    assert rename.is_hidden()
+    assert _one(browser_db[0], "SELECT feature, title FROM fft_issues WHERE id = :i", i=iid) == (feature, title)
+    assert not admin.errors, admin.errors

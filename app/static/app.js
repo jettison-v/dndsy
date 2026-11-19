@@ -539,7 +539,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       e.preventDefault();
       (show.dataset.hide || '').split(' ').filter(Boolean).forEach(id => { const el = document.getElementById(id); if (el) el.hidden = true; });
       target.hidden = false;
-      const field = target.querySelector('textarea, input[type=text]');
+      const field = target.querySelector('textarea, input[type=text]') || target.querySelector('select');  // (else its picker: then Escape, inside it, is its Cancel)
       if (field) field.focus();
     }
     const cancel = e.target.closest('[data-cancel]');
@@ -549,7 +549,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       form.hidden = true;
       (cancel.dataset.restore || '').split(' ').filter(Boolean).forEach(id => { const el = document.getElementById(id); if (el) el.hidden = false; });
       const toggle = document.querySelector(`[data-show="${CSS.escape(form.id)}"]`);  // (back to what opened it, for the keyboard)
-      if (toggle && toggle.checkVisibility()) toggle.focus();
+      if (toggle && (!toggle.checkVisibility || toggle.checkVisibility())) toggle.focus();
     }
   });
   // A folded form (Change…, Rename…, Decline with why…): Escape inside it is its Cancel (Brett's round, Nov 18: only
@@ -3982,7 +3982,7 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
     // row on each press (a bookmark) made the page jump to the top.
     const scroller = root.closest('.peek-body'), y = window.scrollY, sy = scroller ? scroller.scrollTop : 0;
     const heads = new Map([...box.querySelectorAll('.ls-grouphead')].map(h => [h.dataset.label, h]));
-    const want = [];
+    const want = [], shownIn = {};
     let last = null;
     sorted.forEach(r => {
       const g = groupOf(r);
@@ -3996,8 +3996,11 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
         }
         want.push(h);
       }
+      if (g != null && !r.hidden) shownIn[g] = (shownIn[g] || 0) + 1;
       want.push(r);
     });
+    // (a heading's count, where it has one, is what shows under it: searching or filtering, not every row)
+    want.forEach(h => { const n = h.matches('.ls-grouphead') && h.querySelector('.count'); if (n) n.textContent = shownIn[h.dataset.label] || 0; });
     heads.forEach(h => h.remove());
     const now = [...box.children].filter(n => n.matches('[data-ls-row], .ls-grouphead'));
     if (now.length !== want.length || now.some((n, i) => n !== want[i])) want.forEach(n => box.appendChild(n));
