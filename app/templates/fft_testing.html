@@ -53,13 +53,13 @@
           <span class="note">{% if x.it.next_whose == "brett" %}{{ state_word("Yours", "ask") }} {{ x.it.next_step }}{% elif x.why %}{{ x.why }}{% endif %}</span></div>
         {% if x.areas %}<ul class="fft-areas" data-sort-column="item-{{ x.it.id }}" data-sort-url="/manage/testing/order" data-sort-item=".fft-area" data-sort-handle=".fft-area > .grip">
           {% for r in x.areas %}{% set w = {"yours": ("Yours", "ask"), "claude": ("Claude's", "claude")}[r.turn] %}
-          <li class="fft-area" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}">
-            {{ grip() }}<span class="fft-area-name"><b>{{ r.a.title }}</b><span class="note">{{ r.counts }}</span></span>
+          <li class="fft-area{{ ' is-next' if r.next }}" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}"{% if r.next %} data-next="{{ r.next }}"{% endif %}>
+            {{ grip() }}<span class="fft-area-name">{% if r.next %}<span class="fft-kicker" title="{{ r.about }}">{{ "Blocker: Claude's now" if r.next == "blocker" else "Claude's next" }}</span>{% endif %}<b>{{ r.a.title }}</b><span class="note">{{ r.counts }}</span></span>
             {% if r.turn == "yours" %}{{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}{% else %}<span></span>{% endif %}{# (Brett, Nov 19: only Yours, the exception; Claude's is every other row) #}
+            <span class="note fft-area-note"{% if r.about %} title="{{ r.about }}"{% endif %}>{{ r.note }}</span>
             {# Its lane, opened from the lane itself (a menu like ⋯, the tag as its face: "Lane" until one is set) #}
             <details class="act-more fft-lane" data-lane="{{ r.lane }}"><summary aria-label="Lane for {{ r.a.title }}" title="{{ r.a.lane_why or '' }}"><span class="state-word lane-tag" data-lane-tag="{{ r.lane or 'none' }}">{{ st.lane_said[r.lane] if r.lane else "Lane" }} ▾</span></summary>
               <div class="act-menu" role="group" aria-label="Lane for {{ r.a.title }}">{% for l in st.lanes %}<form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="lane"><input type="hidden" name="lane" value="{{ l }}"><button type="submit" data-lane-pick="{{ l }}"{% if l == r.lane %} aria-current="true"{% endif %}{% if r.incident and l != "careful" %} disabled{% endif %}>{{ st.lane_said[l] }}</button></form>{% endfor %}</div></details>
-            <span class="note fft-area-note"{% if r.about %} title="{{ r.about }}"{% endif %}>{{ r.note }}</span>
             <a class="btn small" href="/manage/feedback?tab=open&amp;{{ 'pa=' ~ r.a.key if r.a.key else 'area=' ~ r.a.id }}" data-do="open-area">Open</a>
             {% if r.features %}<span class="fft-feat-tags" data-features>{% for t, n in r.features %}<span class="chip">{{ t }}{{ count_pill(n) }}</span>{% endfor %}</span>{% endif %}
             {% if not r.a.key %}{# (a Product Area's batch follows app/data/taxonomy.json: nothing to rename, merge, move or archive) #}

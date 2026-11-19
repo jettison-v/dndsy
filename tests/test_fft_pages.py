@@ -273,6 +273,7 @@ def test_where_it_stands_shows_each_plans_lane_and_the_freeze_switch(admin, play
     db.flush()
     page = admin.get("/manage/testing?show=stands").text
     assert 'data-lane-tag="careful"' in page and 'data-freeze="0"' in page and 'data-do="freeze-on"' in page
+    assert f'data-area="{a.id}" data-next="next"' in page and 'data-turn="claude"' not in page  # (Brett's picks, Nov 19: the next row stands out; the turn pill only when Yours)
     admin.post(f"/manage/testing/areas/{a.id}", data={"do": "lane", "lane": "look"})
     assert rules.lane_of(a) == "look"  # (Brett's word moves it down)
     admin.post("/manage/testing/freeze", data={"on": "1"})

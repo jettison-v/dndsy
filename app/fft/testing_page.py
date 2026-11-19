@@ -380,8 +380,9 @@ def stands(db: Session) -> dict:
             stops = [i for i in issues if rules.stops_round(db, i)]
             # (Brett, Nov 19: "wordy and does not add a lot of value. Next has some value": a word only where it says
             # something the pills don't; the rest is on mouse-over)
-            if pick.area is not None and pick.area.id == a.id:
-                note, about = ("Blocker", "Claude fixes it now, ahead of everything") if pick.blocker else ("Next", "Claude takes it next")
+            nxt = pick.area is not None and pick.area.id == a.id
+            if nxt:  # (Brett's pick B, Nov 19: the row stands out, "Claude's next" over its name; no word at the end)
+                note, about = "", ("Claude fixes it now, ahead of everything" if pick.blocker else "Claude takes it next")
                 about += "; it merges when your round ends" if r else ""
             elif in_round:
                 note = "In your round"
@@ -397,7 +398,7 @@ def stands(db: Session) -> dict:
             rows.append({"a": a, "turn": {"claude": "claude", "brett": "yours"}.get(turn, "yours"), "counts": counts or "Nothing open yet",
                          "lane": rules.lane_of(a), "incident": bool(a.careful_until and a.careful_until > rules.now()),
                          "features": sorted(feats.items(), key=lambda x: -x[1]),
-                         "note": note, "about": about, "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
+                         "note": note, "about": about, "next": "blocker" if nxt and pick.blocker else "next" if nxt else "", "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
         why = skipped.get(it.title, "")
         items.append({"it": it, "n": n, "areas": rows, "why": f"skipped: {why}" if why else ""})
     li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()

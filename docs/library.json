@@ -1415,7 +1415,7 @@
  {
   "title": "Claude's Next, Marked",
   "kind": "design",
-  "status": "Waiting on your pick",
+  "status": "Decided: B, the row stands out (built in PR 420)",
   "date": "Nov 19",
   "what": "Four ways to show which area Claude takes next on Testing › Where it stands, now that the turn pill shows only Yours: a pill by its name, the row standing out, a line above it, or in the status bar.",
   "source": "docs/mockups/next-marker/index.html",
