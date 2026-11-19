@@ -2,7 +2,7 @@
    open round with End round. Right: how Claude works, one choice of three (his words, Nov 19, with Deploy Freeze for
    his "Dev Freeze": development goes on, only deploying stops): Local Testing, visible changes wait for his try on his
    Mac; Independent Work (the default), they merge and he tries them after; Deploy Freeze, nothing deploys (game night).
-   Two can't be on at once. What each part means is one ⓘ beside the choice, opening a short section under the bar (Brett, Nov 19: no
+   Two can't be on at once. What each part means is one Help ▾ button beside the choice, opening a short section under the bar (Brett, Nov 19: no
    question-mark pointers; one place for the bar's help). `bar` is testing_page.status(), `back` the page it's on. #}
 {% set mode = bar.mode %}
 <div class="fft-banner fft-status" data-listening="{{ 1 if bar.listening else 0 }}" data-mode="{{ mode }}">
@@ -19,7 +19,7 @@
       <button type="submit" name="mode" value="independent" aria-pressed="{{ 'true' if mode == 'independent' else 'false' }}" data-mode-pick="independent">Independent Work</button>
       <button type="submit" name="mode" value="frozen" aria-pressed="{{ 'true' if mode == 'frozen' else 'false' }}" data-mode-pick="frozen">Deploy Freeze</button>
     </form>
-    <button type="button" class="btn link small fft-bar-i" data-menu="fft-bar-help" aria-expanded="false" aria-controls="fft-bar-help" aria-label="What this bar means">ⓘ</button>
+    <button type="button" class="btn small fft-bar-i" data-menu="fft-bar-help" aria-expanded="false" aria-controls="fft-bar-help">Help <span class="fft-chev" aria-hidden="true">▾</span></button>
   </div>
 </div>
 <section class="fft-bar-help" id="fft-bar-help" hidden aria-label="What this bar means">

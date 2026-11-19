@@ -502,5 +502,5 @@ def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
     admin.post("/manage/for-you/mode", data={"mode": "frozen", "back": "stands"})  # (Frozen ends Available: one at a time)
     assert not rules.available_state(db)["on"] and rules.frozen(db) and rules.mode_of(db) == "frozen"
     page = admin.get("/manage/for-you").text
-    assert 'aria-controls="fft-bar-help"' in page and 'id="fft-bar-help" hidden' in page  # (one ⓘ for the bar's help, Nov 19)
+    assert 'aria-controls="fft-bar-help"' in page and 'id="fft-bar-help" hidden' in page  # (one Help ▾ for the bar's help, Nov 19)
     assert "Local Testing ended" not in page  # (he chose it: nothing to explain)

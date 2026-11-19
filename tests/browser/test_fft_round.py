@@ -274,9 +274,15 @@ def test_the_status_bar_and_a_build_batchs_menu_hold_together(people, server, br
         assert abs((m["y"] + m["height"] / 2) - (o["y"] + o["height"] / 2)) < 6 and m["x"] > o["x"], f"⋯ off its row at {width}px"
         bar = [x for x in page.evaluate(CHECK, {"baseline": True}) if "fft-status" in x["where"]]  # (Nov 19: squeezed, off baseline)
         assert not bar, f"the status bar at {width}px: {bar}"
-        right = page.locator(".fft-status-right").bounding_box()  # (the choice and its ⓘ)
+        right = page.locator(".fft-status-right").bounding_box()  # (the choice and its Help)
         bar_box = page.locator(".fft-status").bounding_box()
         assert bar_box["x"] + bar_box["width"] - (right["x"] + right["width"]) < 40, f"the choice isn't at the bar's right end at {width}px"
+        help_btn = page.locator(".fft-bar-i")
+        assert page.locator("#fft-bar-help").is_hidden() and help_btn.get_attribute("aria-expanded") == "false"
+        help_btn.click()
+        assert page.locator("#fft-bar-help").is_visible() and help_btn.get_attribute("aria-expanded") == "true"  # (it opens the section)
+        help_btn.click()
+        assert page.locator("#fft-bar-help").is_hidden()
         for grey in page.locator(".fft-status .note").all():
             tops = grey.evaluate("e => [...e.getClientRects()].map(r => Math.round(r.top))")
             assert max(tops) - min(tops) < 4, f"a grey part split over lines at {width}px: {tops}"
