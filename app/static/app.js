@@ -5234,10 +5234,10 @@ document.addEventListener('click', e => {
     // one line in its two-line box).
     const realStyle = window.getComputedStyle;
     const SIDE = { 'margin-left': 0, 'margin-inline-start': 0, 'margin-right': 1, 'margin-inline-end': 1 };
-    const said = (t, el, name) => {
+    const styleOf = (t, el, name) => {
       const m = sideMargins.get(el);
       if (m && name in SIDE) return m[SIDE[name]];
-      const v = name => (m && name in SIDE ? m[SIDE[name]] : t.getPropertyValue(name));
+      const v = side => (m && side in SIDE ? m[SIDE[side]] : t.getPropertyValue(side));
       if (name === 'margin') return [v('margin-top'), m ? m[1] : v('margin-right'), v('margin-bottom'), m ? m[0] : v('margin-left')].join(' ');
       if (name === 'margin-inline') return m ? m.join(' ') : [v('margin-left'), v('margin-right')].join(' ');
       if (name === 'margin-block') return [v('margin-top'), v('margin-bottom')].join(' ');
@@ -5246,7 +5246,7 @@ document.addEventListener('click', e => {
     window.getComputedStyle = function (el, pseudo) {
       const cs = realStyle.call(window, el, pseudo);
       return new Proxy(cs, { get(t, k) {
-        if (k === 'getPropertyValue') return name => said(t, pseudo ? null : el, name);
+        if (k === 'getPropertyValue') return name => styleOf(t, pseudo ? null : el, name);
         const v = Reflect.get(t, k);
         return typeof v === 'function' ? v.bind(t) : v;
       } });
