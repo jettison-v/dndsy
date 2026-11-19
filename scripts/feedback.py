@@ -393,19 +393,19 @@ def incident(a) -> None:
 
 
 def freeze(a) -> None:
-    """Whether Brett's game-night freeze is on (he turns it on and off on Testing › Where it stands)."""
+    """Whether Brett's Deploy Freeze is on (his choice in the bar on For you and Where it stands)."""
     req = urllib.request.Request(a.base.rstrip("/") + "/api/fft/freeze", headers={"User-Agent": "askdnd-feedback-script"})
     on = json.loads(urllib.request.urlopen(req, timeout=30).read())["frozen"]
-    print("Game-night freeze is ON: nothing merges or deploys until Brett turns it off (a [table-fix] commit, with his OK)." if on
-          else "Game-night freeze is off.")
+    print("Deploy Freeze is ON: nothing merges or deploys until Brett chooses another (a [table-fix] commit, with his OK)." if on
+          else "No deploy freeze.")
     if on and a.check:
         sys.exit(1)
 
 
 def available(a) -> None:
-    """Whether Brett is Available (Look work waits for his try on his Mac), and the local tries with his answers."""
+    """Whether Brett chose Local Testing (Look work waits for his try on his Mac), and the local tries with his answers."""
     st = call(a.base, "/available")
-    print(f"Available until {st['until']}." if st["on"] else "Not available" + (f" (off: {st['why']})." if st.get("why") else "."))
+    print(f"Local Testing until {st['until']}: Look work waits for his try." if st["on"] else "Not Local Testing: no local tries" + (f" (it ended: {st['why']})." if st.get("why") else "."))
     for t in st["tries"][:8]:
         said = {"": "waiting", "good": "looks good: merge it", "off": "something's off", "left": "left: merge it as Look work"}[t["answer"]]
         print(f"  local {t['id']} · {said} · {t['title']}" + (f"  {t['pr']}" if t["pr"] else ""))
@@ -586,15 +586,15 @@ def main() -> None:
     s = sub.add_parser("incident", help="it broke at the table: that Product Area is Careful for 30 days")
     s.add_argument("area")
     s.add_argument("words", nargs="*")
-    sub.add_parser("available", help="whether Brett is Available for local tries, and their answers")
-    s = sub.add_parser("local", help="a change for Brett's try on his Mac, while he's Available")
+    sub.add_parser("available", help="whether Brett chose Local Testing, and the local tries' answers")
+    s = sub.add_parser("local", help="a change for Brett's try on his Mac, while he's in Local Testing")
     s.add_argument("title")
     s.add_argument("--area")
     s.add_argument("--changed", action="append", default=[], help="a line of what changed (repeat)")
     s.add_argument("--look", default="", help="what to look at")
     s.add_argument("--path", default="/", help="the page to open, like /party")
     s.add_argument("--pr", default="")
-    s = sub.add_parser("freeze", help="whether Brett's game-night freeze is on")
+    s = sub.add_parser("freeze", help="whether Brett's Deploy Freeze is on")
     s.add_argument("--check", action="store_true", help="exit 1 while it's on")
     sub.add_parser("live", help="after a deploy: fixes now live become ready to try (deploy_check.py runs it)")
     s = sub.add_parser("deploy")

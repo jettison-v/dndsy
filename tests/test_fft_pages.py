@@ -272,15 +272,15 @@ def test_where_it_stands_shows_each_plans_lane_and_the_freeze_switch(admin, play
     rules.set_lane(db, "claude", a, "careful", "It touches sign-in")
     db.flush()
     page = admin.get("/manage/testing?show=stands").text
-    assert 'data-lane-tag="careful"' in page and 'data-freeze="0"' in page and 'data-do="freeze-on"' in page
+    assert 'data-lane-tag="careful"' in page and 'data-mode="independent"' in page and 'data-mode-pick="frozen"' in page
     assert f'data-area="{a.id}" data-next="next"' in page and 'data-turn="claude"' not in page  # (Brett's picks, Nov 19: the next row stands out; the turn pill only when Yours)
     admin.post(f"/manage/testing/areas/{a.id}", data={"do": "lane", "lane": "look"})
     assert rules.lane_of(a) == "look"  # (Brett's word moves it down)
-    admin.post("/manage/testing/freeze", data={"on": "1"})
-    assert rules.frozen(db) and 'data-freeze="1"' in admin.get("/manage/testing?show=stands").text
-    player.post("/manage/testing/freeze", data={"on": "0"})
+    admin.post("/manage/for-you/mode", data={"mode": "frozen", "back": "stands"})
+    assert rules.frozen(db) and 'data-mode="frozen"' in admin.get("/manage/testing?show=stands").text
+    player.post("/manage/for-you/mode", data={"mode": "independent"})
     assert rules.frozen(db)  # (admins only)
-    admin.post("/manage/testing/freeze", data={"on": "0"})
+    admin.post("/manage/for-you/mode", data={"mode": "independent"})
     assert not rules.frozen(db)
 
 
@@ -484,10 +484,10 @@ def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
     """Brett, Nov 19 (docs/mockups/available/): the Available switch in the status bar on For you and Where it stands;
     a change waiting for his try on his Mac comes first in For you, with its link, Looks good and Something's off."""
     page = admin.get("/manage/for-you").text
-    assert 'data-available="0"' in page and 'data-do="available-on"' in page
-    admin.post("/manage/for-you/available", data={"on": "1"})
+    assert 'data-mode="independent"' in page and 'data-mode-pick="available"' in page  # (the default: Work independently)
+    admin.post("/manage/for-you/mode", data={"mode": "available"})
     assert rules.available_state(db)["on"]
-    assert 'data-available="1"' in admin.get("/manage/testing?show=stands").text
+    assert 'data-mode="available"' in admin.get("/manage/testing?show=stands").text
     lt = rules.new_local_try(db, "claude", "Battle: the Count pill", None, ["The Count is a pill beside the turn."], "A fight running.", "/party")
     db.flush()
     page = admin.get("/manage/for-you").text
@@ -497,7 +497,7 @@ def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
     assert lt.answer == ""  # (admins only)
     admin.post(f"/manage/for-you/local/{lt.id}", data={"answer": "off", "words": "The pill wraps on a phone."})
     assert lt.answer == "off" and lt.words == "The pill wraps on a phone."
-    player.post("/manage/for-you/available", data={"on": "0"})
+    player.post("/manage/for-you/mode", data={"mode": "independent"})
     assert rules.available_state(db)["on"]
-    admin.post("/manage/for-you/available", data={"on": "0", "back": "stands"})
-    assert not rules.available_state(db)["on"]
+    admin.post("/manage/for-you/mode", data={"mode": "frozen", "back": "stands"})  # (Frozen ends Available: one at a time)
+    assert not rules.available_state(db)["on"] and rules.frozen(db) and rules.mode_of(db) == "frozen"

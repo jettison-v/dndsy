@@ -15,7 +15,7 @@ trying what Claude built.
 
 Every change goes through app/fft/rules.py."""
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
@@ -313,8 +313,10 @@ def status(db: Session) -> dict:
     """The status bar on For you and Where it stands (_fft_status.html): Available, Claude listening, an open round,
     the game-night freeze. Available turns itself off here when one of its signals says so."""
     li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()
-    return {"available": rules.check_available(db), "listening": views.listening(db), "listener": li,
-            "round": rules.round_open(db), "freeze": rules.freeze_state(db)}
+    av = rules.check_available(db)
+    av["ended"] = bool(av["why"] and av["off_at"] and rules.now() - datetime.fromisoformat(av["off_at"]) < timedelta(hours=2))  # (said for a while)
+    return {"available": av, "listening": views.listening(db), "listener": li, "round": rules.round_open(db),
+            "freeze": rules.freeze_state(db), "mode": rules.mode_of(db)}
 
 
 def _render(request: Request, db: Session, user: dict, show: str, open: str):
@@ -485,30 +487,21 @@ def area_change(request: Request, area_id: int, do: str = Form(...), title: str 
     return RedirectResponse(f"{BACK}?show=stands", status_code=303)
 
 
-@router.post("/manage/testing/freeze")
-def freeze(request: Request, on: str = Form(...), back: str = Form(""), db: Session = Depends(get_db)):
-    """The game-night freeze (Brett, Nov 19: a switch he turns on before a game and off after)."""
+@router.post("/manage/for-you/mode")
+def mode(request: Request, mode: str = Form(...), back: str = Form(""), db: Session = Depends(get_db)):
+    """How Claude works (Brett, Nov 19): Local Testing, Independent Work or Deploy Freeze, one choice."""
     user, denied = _admin(request)
     if denied:
         return denied
     me = views.person(db, user)
-    rules.set_freeze(db, f"user:{me["id"]}", on == "1", by=me["first_name"])
+    try:
+        rules.set_mode(db, f"user:{me['id']}", mode, by=me["first_name"])
+    except rules.RuleError as e:
+        raise HTTPException(400, e.words) from e
     db.commit()
-    request.session["toast"] = "Game-night freeze on: nothing deploys until you turn it off" if on == "1" else "Freeze off: deploys go again"
-    return RedirectResponse(FOR_YOU if back == "foryou" else f"{BACK}?show=stands", status_code=303)
-
-
-@router.post("/manage/for-you/available")
-def available(request: Request, on: str = Form(...), back: str = Form(""), db: Session = Depends(get_db)):
-    """Brett's Available switch (Nov 19): while it's on, Look work waits for his try on his Mac."""
-    user, denied = _admin(request)
-    if denied:
-        return denied
-    me = views.person(db, user)
-    rules.set_available(db, f"user:{me['id']}", on == "1", by=me["first_name"])
-    db.commit()
-    request.session["toast"] = (f"Available for {rules.AVAILABLE_HOURS} hours: visible changes wait for your try on your Mac" if on == "1"
-                                else "Not available: visible changes merge, and you try them after they're live")
+    request.session["toast"] = {"available": f"Local Testing for {rules.AVAILABLE_HOURS} hours: visible changes wait for your try on your Mac",
+                                "independent": "Independent Work: visible changes merge, and you try them after they're live",
+                                "frozen": "Deploy Freeze: nothing deploys to askdnd.ai until you choose another"}[mode]
     return RedirectResponse(f"{BACK}?show=stands" if back == "stands" else FOR_YOU, status_code=303)
 
 

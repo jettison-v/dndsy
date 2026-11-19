@@ -415,7 +415,7 @@ def set_freeze(db: Session, actor: str, on: bool, by: str = "") -> None:
     db.merge(row)
     _event(db, actor, "freeze_on" if on else "freeze_off", "tool", 0)
     if on and available_state(db)["on"]:  # (game night: nobody is trying things locally)
-        set_available(db, "askdnd", False, why="game night")
+        set_available(db, "askdnd", False, why="the deploy freeze went on")
 
 
 # ------------------------------------------------------------------ Available (Brett, Nov 19: local tries while he's around)
@@ -459,6 +459,26 @@ def set_available(db: Session, actor: str, on: bool, by: str = "", why: str = ""
     _event(db, actor, "available_on" if on else "available_off", "tool", 0, **({"why": why} if why else {}))
 
 
+MODES = ("available", "independent", "frozen")  # (Brett, Nov 19: one choice, said Local Testing, Independent Work, Deploy Freeze)
+
+
+def mode_of(db: Session) -> str:
+    """How Claude works now: frozen (game night), available (Brett tries visible work on his Mac first), or
+    independent (the default: it merges, he tries it after)."""
+    return "frozen" if frozen(db) else "available" if available_state(db)["on"] else "independent"
+
+
+def set_mode(db: Session, actor: str, mode: str, by: str = "") -> None:
+    """Brett's one choice. Each mode turns the others off: Frozen ends Available, Available ends the freeze."""
+    if mode not in MODES:
+        raise RuleError("bad", "Local Testing, Independent Work or Deploy Freeze.")
+    if mode == "frozen":
+        set_freeze(db, actor, True, by=by)  # (it ends Available: game night)
+    else:
+        set_freeze(db, actor, False)
+        set_available(db, actor, mode == "available", by=by)
+
+
 def check_available(db: Session, last_seen: datetime | None = None) -> dict:
     """Turns Available off by itself (Brett, Nov 19: "smarter … the duration can be the back stop"): quiet in askdnd for
     30 minutes, a local try unanswered for 30 minutes, or the 2 hours are up. Read wherever it's shown or asked."""
@@ -488,7 +508,7 @@ def new_local_try(db: Session, actor: str, title: str, area: FftArea | None, cha
                   pr: str = "") -> FftLocalTry:
     """Claude's change, waiting for Brett's try on his Mac. Only while he's Available."""
     if not available_state(db)["on"]:
-        raise RuleError("bad", "Brett isn't Available: Look work merges, and he tries it after it's live.")
+        raise RuleError("bad", "Brett isn't in Local Testing: Look work merges, and he tries it after it's live.")
     if not title.strip() or not changed:
         raise RuleError("bad", "Say what it is and what changed.")
     if not path.startswith("/"):

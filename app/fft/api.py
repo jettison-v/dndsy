@@ -425,7 +425,7 @@ def area_change(body=web.JsonBody, x_fft_key: str | None = Header(default=None),
 
 @router.get("/available")
 def available(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """Whether Brett is Available (Look work then waits for his try on his Mac), and each local try with its answer."""
+    """Whether Brett chose Local Testing (Look work then waits for his try on his Mac), and each local try with its answer."""
     keys.require(db, x_fft_key, "read")
     st = rules.check_available(db)
     db.commit()
@@ -437,7 +437,7 @@ def available(x_fft_key: str | None = Header(default=None), db: Session = Depend
 
 @router.post("/local")
 def local_try(body=web.JsonBody, x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
-    """Claude's change, waiting for Brett's try on his Mac while he's Available (refused when he isn't)."""
+    """Claude's change, waiting for Brett's try on his Mac while he's in Local Testing (refused when he isn't)."""
     actor = keys.require(db, x_fft_key, "write")
     body = body if isinstance(body, dict) else {}
     rules.check_available(db)
@@ -449,7 +449,7 @@ def local_try(body=web.JsonBody, x_fft_key: str | None = Header(default=None), d
         lt = rules.new_local_try(db, actor.name, _str(body, "title", 120, need=True), area, changed, _str(body, "look_at", 1000),
                                  _str(body, "path", 300) or "/", _str(body, "pr", 300))
     except rules.RuleError as e:
-        db.commit()  # (Available may have just turned itself off)
+        db.commit()  # (Local Testing may have just ended by itself)
         _rule(e)
     db.commit()
     return _ok({"id": lt.id})
