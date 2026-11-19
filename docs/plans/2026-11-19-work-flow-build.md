@@ -69,6 +69,16 @@ look at every person and width), tried by Brett locally first while the old rule
 - Claude takes everything above the line (R15 changes); goes on while a plan waits on Brett, at most two waiting, never
   two touching the same files; the one-area lock allows it.
 - Testing becomes each plan's history, opened from Work. The Roadmap page points to Work.
+- **Scheduled work** (Brett, Nov 19: "Scheduled work, such as this mobile sweep, should display somewhere on askdnd.ai so
+  we know it is being done … a recurring section on the Work page"): a section listing each recurring job (the weekly
+  phone sweep, the Mac Mini's nightly live test and iPhone check, the morning D&D Beyond drift check, the 6 AM feedback
+  check) with its schedule, last run, result and what it produced (a pull request, a check), and next run. Each job
+  reports its run to askdnd (an `/api/fft` call at its end), so a job that didn't run shows as late.
+- **How we work** (Brett, Nov 19: "the methodology used / steps taken in our repeatable development process"): the
+  process on Work itself, from the engine's settings: the lanes and what each needs, the deploy control's choices,
+  every plan's steps (read it whole, write the plan, build one fix at a time, look at it, review it all, checks tried
+  first), what runs on every change and what runs weekly. Made from the same settings the tools follow, so it can't
+  drift from what's done.
 
 ### 5 · What players see (Small)
 

@@ -1,0 +1,188 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Deploy Controls</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* How Claude's work reaches the live site, as one control in the status bar on For you and Where it stands (Brett,
+   Nov 19: "I do not want to use Game Night, remember this module needs to be reusable. Also, I might want to pause
+   deployments for other reasons. I also think a label for the selector would add a lot. Something about deployment.
+   Maybe they are separate selector."). Five ways, drawn in askdnd's look at a laptop's width; each is clickable.
+   Source: docs/mockups/deploy-controls/index.html. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f;
+  --brand: #d64545; --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16); --selected-bg: rgba(126, 166, 224, .18);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.05rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 82ch; }
+#opts { display: grid; gap: 14px; }
+.opt { display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.opt-h { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.opt-h .mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.opt .why { color: var(--muted); font-size: .9rem; max-width: 90ch; }
+.page { background: var(--bg); border: 1px solid #4a4f57; border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 9px 14px; font-size: .9rem; }
+.bar[data-tone="local"] { border-color: var(--green); background: var(--green-soft); }
+.bar[data-tone="paused"] { border-color: var(--amber); background: var(--amber-soft); }
+.left { display: flex; gap: 12px; align-items: baseline; }
+.right { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: flex-end; margin-left: auto; }
+.note { color: var(--muted); font-size: .84rem; white-space: nowrap; }
+.lbl { color: var(--muted); font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.seg { display: inline-flex; gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; }
+.seg button { background: none; border: 0; border-radius: 6px; color: var(--muted); padding: 0 12px; min-height: 30px; font: 500 .875rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--selected-bg); color: var(--strong); box-shadow: inset 0 0 0 1px var(--blue); }
+.btn { display: inline-flex; align-items: center; min-height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.sw { display: inline-flex; align-items: center; gap: 8px; background: none; border: 0; color: var(--text); font: inherit; cursor: pointer; padding: 0; }
+.sw i { width: 32px; height: 18px; border-radius: 999px; background: var(--surface-3); position: relative; }
+.sw i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--faint); }
+.sw[aria-pressed="true"] i { background: var(--amber); } .sw[aria-pressed="true"] i::after { left: 16px; background: #fff; }
+.reason { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .9rem; }
+.reason input { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font: 16px/1.2 var(--sans); min-width: 0; flex: 1 1 220px; }
+.reason[hidden] { display: none; }
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.o { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.o:has(input:checked) { border-color: var(--amber); }
+.decide label.o small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide .mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--brand); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Deploy Controls</h1>
+    <p class="lede">One control in the bar on For you and Where it stands says how Claude's finished work reaches the live site. It has to make sense for any product (this module may come with you), so nothing about game night: <b>Paused</b> is for any reason. Each version below is clickable; the bar turns green while changes wait for your try, and amber while deploys are paused. Careful changes always wait for your try, whatever is chosen.</p>
+  </header>
+  <div id="opts"></div>
+
+  <form class="decide" aria-label="Your picks">
+    <fieldset><legend>1 · Which control</legend>
+      <label class="o"><input type="radio" name="shape" value="a"><span>A · "Deploys": After my local try · When tests pass · Paused <span class="mine">my pick</span></span><small>Reads as a sentence: Deploys when tests pass. Explicit, and general.</small></label>
+      <label class="o"><input type="radio" name="shape" value="b"><span>B · "Releases": Review first · Continuous · Paused</span><small>The words a software team uses; shorter, more technical.</small></label>
+      <label class="o"><input type="radio" name="shape" value="c"><span>C · Two controls: "Me" Around · Away, and a "Deploys paused" switch</span><small>Your presence and the pause apart; while paused, Around has no effect.</small></label>
+      <label class="o"><input type="radio" name="shape" value="d"><span>D · "Visible changes": Wait for my try · Go live when tested · Hold</span><small>Names what it acts on; Hold reads as all changes, not only visible ones.</small></label>
+      <label class="o"><input type="radio" name="shape" value="e"><span>E · A, with a reason when pausing</span><small>Pausing asks why (optional), and the bar says it: "Paused: game night", "Paused: a demo tomorrow".</small></label>
+    </fieldset>
+    <fieldset><legend>2 · When you pause deploys</legend>
+      <label class="o"><input type="radio" name="reason" value="ask"><span>A · Ask why, optional, shown in the bar <span class="mine">my pick</span></span><small>Anyone looking (a teammate later) sees why it's paused.</small></label>
+      <label class="o"><input type="radio" name="reason" value="none"><span>B · No reason</span><small>One press, nothing more.</small></label>
+    </fieldset>
+    <label><b>Anything else</b> <textarea name="notes" placeholder="Optional: other words you'd use"></textarea></label>
+    <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  // Each version: its label, its choices [key, words, tone, the bar's note], and why
+  const OPTS = [
+    { k: "a", name: "A · One selector, “Deploys”", mine: true, label: "Deploys", choices: [
+        ["local", "After my local try", "local", "until 5:20 PM"], ["auto", "When tests pass", "", ""], ["paused", "Paused", "paused", "since 4:02 PM"]],
+      why: "Says what it controls (deploys) and when they happen, in plain words. Works for any product. “After my local try” ends by itself after 2 hours or when you go quiet." },
+    { k: "b", name: "B · One selector, “Releases”", label: "Releases", choices: [
+        ["local", "Review first", "local", "until 5:20 PM"], ["auto", "Continuous", "", ""], ["paused", "Paused", "paused", "since 4:02 PM"]],
+      why: "Shorter, and familiar to developers (continuous delivery), but “Continuous” and “Review first” need the Help to say what they mean here." },
+    { k: "c", name: "C · Two controls, “Me” and a pause switch", two: true,
+      why: "Separates who's around from the pause. Clear on its own, but two controls for one decision, and Around does nothing while deploys are paused." },
+    { k: "d", name: "D · One selector, “Visible changes”", label: "Visible changes", choices: [
+        ["local", "Wait for my try", "local", "until 5:20 PM"], ["auto", "Go live when tested", "", ""], ["paused", "Hold", "paused", "since 4:02 PM"]],
+      why: "Names what it acts on, but Hold stops every deploy (not only visible changes), so the label and the third choice disagree." },
+    { k: "e", name: "E · A, with a reason when pausing", label: "Deploys", reason: true, choices: [
+        ["local", "After my local try", "local", "until 5:20 PM"], ["auto", "When tests pass", "", ""], ["paused", "Paused", "paused", "Paused: a demo tomorrow · since 4:02 PM"]],
+      why: "As A; pressing Paused asks why (optional) and the bar says it, so anyone looking knows. Try pressing Paused." },
+  ];
+  const box = document.getElementById("opts");
+  const el = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+  OPTS.forEach(o => {
+    const card = el(`<section class="opt"><div class="opt-h"><h2>${o.name}</h2>${o.mine ? '<span class="mine">my pick</span>' : ""}</div><p class="why">${o.why}</p><div class="page"></div></section>`);
+    const page = card.querySelector(".page");
+    box.append(card);
+    if (o.two) {
+      let here = false, paused = false;
+      const draw = () => {
+        page.replaceChildren(el(`<div class="bar" data-tone="${paused ? "paused" : here ? "local" : ""}"><div class="left"><span>Claude is listening <span class="note">(heard 1 minute ago)</span></span></div>
+          <div class="right"><span class="lbl">Me</span><span class="seg"><button type="button" data-v="here" aria-pressed="${here}">Around</button><button type="button" data-v="away" aria-pressed="${!here}">Away</button></span>
+          <span class="lbl">Deploys</span><button type="button" class="sw" data-v="pause" aria-pressed="${paused}"><i></i>${paused ? "Paused" : "On"}</button>${paused ? '<span class="note">since 4:02 PM</span>' : ""}<span class="btn">Help ▾</span></div></div>`));
+        page.querySelectorAll("[data-v]").forEach(b => b.addEventListener("click", () => { if (b.dataset.v === "pause") paused = !paused; else here = b.dataset.v === "here"; draw(); }));
+      };
+      draw();
+      return;
+    }
+    let cur = "auto", asking = false;
+    const draw = () => {
+      const c = o.choices.find(x => x[0] === cur);
+      page.replaceChildren(el(`<div class="bar" data-tone="${c[2]}"><div class="left"><span>Claude is listening <span class="note">(heard 1 minute ago)</span></span></div>
+        <div class="right">${c[3] ? `<span class="note">${c[3]}</span>` : ""}<span class="lbl">${o.label}</span><span class="seg">${o.choices.map(x => `<button type="button" data-v="${x[0]}" aria-pressed="${x[0] === cur}">${x[1]}</button>`).join("")}</span><span class="btn">Help ▾</span></div></div>`));
+      if (asking) page.append(el(`<div class="reason"><b>Why pause?</b><input placeholder="Optional, e.g. a demo tomorrow" value="a demo tomorrow"><span class="btn" data-ok>Pause deploys</span><span class="btn" data-cancel style="background:none">Cancel</span></div>`));
+      page.querySelectorAll("[data-v]").forEach(b => b.addEventListener("click", () => { if (o.reason && b.dataset.v === "paused" && cur !== "paused") { asking = true; draw(); return; } cur = b.dataset.v; asking = false; draw(); }));
+      const ok = page.querySelector("[data-ok]"), no = page.querySelector("[data-cancel]");
+      if (ok) ok.addEventListener("click", () => { cur = "paused"; asking = false; draw(); });
+      if (no) no.addEventListener("click", () => { asking = false; draw(); });
+    };
+    draw();
+  });
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["shape", "reason"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Manage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>
