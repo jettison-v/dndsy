@@ -70,11 +70,11 @@
           <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve" class="composer fb-fold" id="fft-answer-{{ n.id }}" hidden>
             <input type="hidden" name="do" value="answer"><input type="hidden" name="seen" value="{{ v.seen }}">
             <label class="field"><span>Your answer, for {{ n.first_name }} (on Notes you sent)</span><textarea name="words" rows="2" required maxlength="4000"></textarea></label>
-            <div class="row tight"><button class="btn primary small" type="submit">Answer</button></div></form>
+            <div class="row tight"><button class="btn primary small" type="submit">Answer</button><button class="btn link small" type="button" data-cancel="fft-answer-{{ n.id }}">Cancel</button></div></form>
           <form method="post" action="/manage/feedback/notes/{{ n.id }}?tab=approve" class="composer fb-fold" id="fft-decline-{{ n.id }}" hidden>
             <input type="hidden" name="do" value="decline"><input type="hidden" name="seen" value="{{ v.seen }}">
             <label class="field"><span>Why, for {{ n.first_name }} (they read it on Notes you sent; leave it blank if you like)</span><textarea name="words" rows="2" maxlength="1000"></textarea></label>
-            <div class="row tight"><button class="btn small danger" type="submit">Decline</button></div></form>
+            <div class="row tight"><button class="btn small danger" type="submit">Decline</button><button class="btn link small" type="button" data-cancel="fft-decline-{{ n.id }}">Cancel</button></div></form>
           <p class="note">Whichever you press, a corner card offers Undo for a minute. {{ n.first_name }} hears the outcome on Notes you sent.</p>
         </div>
         {% endcall %}
@@ -104,7 +104,7 @@
         <h2 class="nt-h">{{ i.title }}</h2>
         <form method="post" action="/manage/feedback/issues/{{ i.id }}?tab={{ tab }}" class="composer fb-fold" id="fft-feature-{{ i.id }}" hidden><input type="hidden" name="do" value="feature">
           <label class="field"><span>Which Feature is this about?</span><select name="feature" class="ls-select" required data-feature-pick>{% if not v.feature %}<option value="">Pick one</option>{% endif %}{% for a in taxonomy %}<optgroup label="{{ a.title }}">{% for f in a.features %}<option value="{{ f.key }}"{% if f.key == i.feature %} selected{% endif %}>{{ f.title }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>
-          <div class="row tight"><button class="btn primary small" type="submit">Save</button></div></form>
+          <div class="row tight"><button class="btn primary small" type="submit">Save</button><button class="btn link small" type="button" data-cancel="fft-feature-{{ i.id }}">Cancel</button></div></form>
         {% call rd_section("Where it stands", tone=v.pill[1], attrs=' data-sec="stands"') %}
         {{ state_line(v.pill[0], v.pill[1], v.sentence) }}
         {{ its_checks(v.checks) }}
@@ -121,7 +121,7 @@
         </div>
         <form method="post" action="/manage/feedback/issues/{{ i.id }}?tab={{ tab }}" class="composer fb-fold" id="fft-title-{{ i.id }}" hidden><input type="hidden" name="do" value="title">
           <label class="field"><span>Title</span><input type="text" name="words" value="{{ i.title }}" maxlength="120" required></label>
-          <div class="row tight"><button class="btn primary small" type="submit">Rename</button></div></form>
+          <div class="row tight"><button class="btn primary small" type="submit">Rename</button><button class="btn link small" type="button" data-cancel="fft-title-{{ i.id }}">Cancel</button></div></form>
         {% endcall %}
         {% if v.found or v.notes %}{% call rd_section("What was found", count=(v.found | length) + (v.notes | length), attrs=' data-sec="found"') %}
         {% for f in v.found %}<div class="fft-trial" data-try="{{ f.t.id }}">{{ state_word({"failed": "Failed", "passed": "Passed"}.get(f.t.result, "Can't try"), {"failed": "failed", "passed": "passed"}.get(f.t.result, "quiet")) }}
@@ -160,7 +160,7 @@
           <button class="btn link small" type="button" data-show="fft-idea-no-{{ d.id }}">Decline with why…</button></div>
         <form method="post" action="/manage/feedback/ideas/{{ d.id }}" class="composer fb-fold" id="fft-idea-no-{{ d.id }}" hidden><input type="hidden" name="do" value="declined">
           <label class="field"><span>Why (those who sent it read it)</span><textarea name="words" rows="2" maxlength="500"></textarea></label>
-          <div class="row tight"><button class="btn small danger" type="submit">Decline</button></div></form>
+          <div class="row tight"><button class="btn small danger" type="submit">Decline</button><button class="btn link small" type="button" data-cancel="fft-idea-no-{{ d.id }}">Cancel</button></div></form>
         {% endcall %}
         {% if picked.notes %}{% call rd_section("Its notes", count=picked.notes | length, attrs=' data-sec="found"') %}{% for nv in picked.notes %}{{ report(nv) }}{% endfor %}{% endcall %}{% endif %}
       </article>

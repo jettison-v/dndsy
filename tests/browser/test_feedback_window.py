@@ -303,6 +303,38 @@ def test_words_on_one_line_on_screen_stay_on_one_line_in_the_pages_picture(peopl
     assert not admin.errors, admin.errors
 
 
+def test_a_one_line_step_keeps_the_why_under_it_wrapping_in_the_pages_picture(people, server):
+    """Issue 44 (Brett's round, Nov 18): in the page's picture of Testing, a check's first step held its own one line,
+    and the why under it, inside the same box, ran on in one line past the reading pane. What's inside a one-line box
+    wraps in the picture as it does on screen."""
+    import base64
+    import io
+
+    from PIL import Image
+
+    admin = people("admin")
+    page = admin.open("/party")
+    page.set_viewport_size({"width": 1280, "height": 800})
+    page.wait_for_function("() => document.fonts.status === 'loaded'")
+    page.evaluate("""() => { const d = document.createElement('div'); d.id = 'zz-step';
+        Object.assign(d.style, { position: 'relative', zIndex: 50, width: '260px', height: '100px', overflow: 'hidden', background: '#000', color: '#fff', font: '16px/20px sans-serif' });  // (a fixed box: nothing below moves up into it)
+        d.append('Look here.');
+        const why = document.createElement('span'); why.style.display = 'block';
+        why.textContent = 'this checks that the words under a one line step keep wrapping inside its box, as on screen';
+        d.append(why); document.querySelector('main').prepend(d); window.scrollTo(0, 0); }""")
+    box = page.locator("#zz-step").bounding_box()
+    assert page.evaluate("document.querySelector('#zz-step span').getClientRects()[0].height") >= 60  # (on screen: the why on three lines or more)
+    page.keyboard.press("\\")
+    page.locator("#fb-win [data-fb-wrap]").wait_for(state="visible", timeout=15000)
+    drawn = page.evaluate("""b => { const c = document.querySelector('#fb-win [data-fb-canvas]'), o = document.createElement('canvas');
+        o.width = Math.round(b.width); o.height = Math.round(b.height); o.getContext('2d').drawImage(c, b.x, b.y, b.width, b.height, 0, 0, o.width, o.height);
+        return o.toDataURL('image/png'); }""", box)
+    im = Image.open(io.BytesIO(base64.b64decode(drawn.split(",", 1)[1]))).convert("L")
+    third = im.crop((0, 44, im.size[0], 60)).load()  # (the why's second line, under the step's and the why's first: one only wrapping makes)
+    assert any(third[x, y] > 170 for x in range(im.size[0]) for y in range(16)), "the why ran on in one line: nothing under its first line"
+    assert not admin.errors, admin.errors
+
+
 def test_a_picture_you_added_can_be_taken_away_and_the_pages_stays(people, server, browser_db, tmp_path):
     """Issue 21 (Brett's round, Nov 18): there was no way to remove a picture he'd added. Each one he adds is one pill,
     its name and its ✕; the ✕ takes it away (the one on the stage moves to its neighbour), and what's sent is what's

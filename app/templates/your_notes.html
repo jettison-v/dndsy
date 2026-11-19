@@ -100,7 +100,7 @@
           <button class="btn small" type="button" data-show="fft-still-{{ n.id }}" data-works="no">Still broken…</button></div>
         <form method="post" action="/your-notes/notes/{{ n.id }}/works" class="composer fb-fold" id="fft-still-{{ n.id }}" hidden><input type="hidden" name="answer" value="no">
           <label class="field"><span>What still happens</span><textarea name="text" rows="2"></textarea></label>
-          <div class="row tight"><button class="btn small primary" type="submit">Send it back</button><span class="note">Goes to an admin first, then Claude.</span></div></form>
+          <div class="row tight"><button class="btn small primary" type="submit">Send it back</button><button class="btn link small" type="button" data-cancel="fft-still-{{ n.id }}">Cancel</button><span class="note">Goes to an admin first, then Claude.</span></div></form>
       </section>{% endif %}
       {% if n.can_add and not looking %}
       <form method="post" action="/your-notes/notes/{{ n.id }}" class="composer" enctype="multipart/form-data" data-pics data-composer>

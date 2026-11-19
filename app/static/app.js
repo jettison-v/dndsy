@@ -548,8 +548,21 @@ const feedbackBusy = e => !!(e && e.target && e.target.closest && e.target.close
       const form = document.getElementById(cancel.dataset.cancel);
       form.hidden = true;
       (cancel.dataset.restore || '').split(' ').filter(Boolean).forEach(id => { const el = document.getElementById(id); if (el) el.hidden = false; });
+      const toggle = document.querySelector(`[data-show="${CSS.escape(form.id)}"]`);  // (back to what opened it, for the keyboard)
+      if (toggle && toggle.checkVisibility()) toggle.focus();
     }
   });
+  // A folded form (Change…, Rename…, Decline with why…): Escape inside it is its Cancel (Brett's round, Nov 18: only
+  // Save closed Change…). Caught first, so it closes the form and not the window or page around it.
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    const form = e.target.closest && e.target.closest('form.fb-fold:not([hidden])');
+    const cancel = form && form.querySelector('[data-cancel]');
+    if (!cancel) return;
+    e.preventDefault();
+    e.stopPropagation();
+    cancel.click();
+  }, true);
 
   // @-mentions: in any textarea (or input[data-mention]), typing "@" and a few
   // letters suggests entity names (incl. aliases and known misspellings);
@@ -5179,7 +5192,11 @@ document.addEventListener('click', e => {
       if (cs.whiteSpace !== 'normal') return;
       const tops = new Set();
       words.forEach(n => { const r = document.createRange(); r.selectNodeContents(n); [...r.getClientRects()].forEach(x => tops.add(Math.round(x.top))); });
-      if (tops.size === 1) keep.push([el, { whiteSpace: 'nowrap' }]);
+      if (tops.size !== 1) return;
+      keep.push([el, { whiteSpace: 'nowrap' }]);
+      // (only its own words: what's inside it wraps as it did, or a step's why under its one-line step ran on past the
+      // pane in one line; Brett's round, Nov 18. One inside that's on one line too is held after this, by its own turn)
+      [...el.children].forEach(ch => { if (getComputedStyle(ch).whiteSpace === 'normal') keep.push([ch, { whiteSpace: 'normal' }]); });
     });
     keep.forEach(([el, props]) => hold(el, props));
     // (an attribute named with a colon stops the picture's SVG: set aside while it's drawn, and put back)
