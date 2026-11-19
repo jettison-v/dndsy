@@ -243,3 +243,31 @@ def test_counts_never_blink_between_manage_pages(people, server, browser_db):
     page.unroute("**/manage/counts")
     page.unroute("**/manage/for-you/count")
     assert not admin.errors, admin.errors
+
+
+def test_where_it_stands_keeps_a_build_batchs_menu_on_its_row_and_grey_parts_whole(people, server, browser_db):
+    """Issue 38 (Brett, Nov 19): a grey part of the status bar moves to the next line whole, never split; and a build
+    batch's ⋯ stays at its row's right end, never on a line of its own under its Features."""
+    engine = create_engine(browser_db[0])
+    with engine.begin() as conn:
+        item = conn.execute(text("INSERT INTO fft_items (title, place, section, standing, next_whose, next_step, workspace_id) "
+                                 "VALUES ('Items that bring a creature', 5, 'next', false, '', '', 1) RETURNING id")).scalar()
+        area = conn.execute(text("INSERT INTO fft_areas (item_id, key, title, place, workspace_id) VALUES (:i, '', 'Item Builder', 1, 1) RETURNING id"),
+                            {"i": item}).scalar()
+        conn.execute(text("INSERT INTO fft_issues (title, state, area_id, feature, from_player, reopened, workspace_id) "
+                          "VALUES ('A long name wraps', 'to_fix', :a, 'homebrew', false, 0, 1)"), {"a": area})
+        conn.execute(text("INSERT INTO fft_listeners (name, heard_at, workspace_id) VALUES ('main', now(), 1)"))
+    engine.dispose()
+    admin = people("admin")
+    page = admin.page
+    for width in (1000, 1280):
+        page.set_viewport_size({"width": width, "height": 900})
+        admin.open("/manage/testing?show=stands")
+        row = page.locator(f'[data-area="{area}"]')
+        menu, opener = row.locator("> .act-more:not(.fft-lane) summary"), row.locator('[data-do="open-area"]')
+        m, o = menu.bounding_box(), opener.bounding_box()
+        assert abs((m["y"] + m["height"] / 2) - (o["y"] + o["height"] / 2)) < 6 and m["x"] > o["x"], f"⋯ off its row at {width}px"
+        for grey in page.locator(".fft-status .note").all():
+            tops = grey.evaluate("e => [...e.getClientRects()].map(r => Math.round(r.top))")
+            assert max(tops) - min(tops) < 4, f"a grey part split over lines at {width}px: {tops}"
+    assert not admin.errors, admin.errors

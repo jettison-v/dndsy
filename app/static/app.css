@@ -4438,6 +4438,8 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
    while the freeze is on */
 .fft-status .fft-stat + .fft-stat, .fft-status form + .fft-stat { padding-left: var(--sp-3); border-left: 1px solid var(--line); }
 .fft-status .fft-stat[title] { cursor: help; }
+.fft-status .note { white-space: nowrap; }  /* (a grey part moves to the next line whole, never split: issue 38) */
+@media (min-width: 901px) { .fft-area > .act-more:not(.fft-lane) { grid-column: -2; grid-row: 1; } }  /* (a build batch's ⋯ at the row's right end, never on a line of its own under the Features) */
 .fft-status form { margin-left: 0; }
 .fft-status .fft-freeze-form { margin-left: auto; }
 .fft-status[data-freeze="1"] { border-color: var(--amber); background: var(--amber-soft); }

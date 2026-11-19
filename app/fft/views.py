@@ -360,7 +360,7 @@ def gaps(db: Session) -> list[dict]:
         theirs = [at for at, claude in said[i.id] if not claude]
         mine = [at for at, claude in said[i.id] if claude]
         if theirs and i.state != "asks" and (not mine or max(theirs) > max(mine)):
-            out.append({"kind": "unanswered", "thing": "issue", "id": i.id, "title": i.title,
+            out.append({"kind": "unanswered", "thing": "issue", "id": i.id, "title": i.title, "since": max(theirs),
                         "says": "Said to Claude and not answered: reply (feedback.py issue <id> tell … --to brett) with what you'll do."})
         if not taxonomy.feature(i.feature):  # (the Product Taxonomy, Nov 18: every issue in one Feature, so in its batch)
             out.append({"kind": "no_feature", "thing": "issue", "id": i.id, "title": i.title,
@@ -372,4 +372,29 @@ def gaps(db: Session) -> list[dict]:
     for n in db.scalars(select(FftNote).where(FftNote.state == "filed", FftNote.filed_as == "question").order_by(FftNote.id)):
         out.append({"kind": "question", "thing": "note", "id": n.id, "title": title_of(n.text),
                     "says": "A question sent to Claude, waiting for its answer (feedback.py note <id> --answer \"…\")."})
+    return _since(db, out)
+
+
+GAP_GRACE = timedelta(minutes=30)  # (Brett, Nov 19, issue 39: what just happened isn't missed yet)
+
+
+def _since(db: Session, out: list[dict]) -> list[dict]:
+    """When each gap began: the last thing that happened to it (its newest event), else when it was made."""
+    from app.fft.models import FftEvent
+
+    for g in out:
+        if g.get("since"):
+            continue
+        at = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.thing == g["thing"], FftEvent.thing_id == g["id"]))
+        if g["thing"] == "area":
+            at = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.kind == "issue_pr", FftEvent.area_id == g["id"])) or at
+        row = {"issue": FftIssue, "check": FftCheck, "note": FftNote, "area": FftArea}[g["thing"]]
+        g["since"] = at or getattr(db.get(row, g["id"]), "created_at", None) or rules.now()
     return out
+
+
+def missed(db: Session) -> list[dict]:
+    """Claude missed, as Brett sees it on Where it stands: only what has waited longer than GAP_GRACE (Claude's own
+    end-of-turn check still sees every gap at once)."""
+    cut = rules.now() - GAP_GRACE
+    return [g for g in gaps(db) if g["since"] <= cut]
