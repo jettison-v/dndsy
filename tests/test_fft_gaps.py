@@ -59,6 +59,26 @@ def test_a_fix_with_no_lane_is_a_gap(db):
     assert not [g for g in views.gaps(db) if g["kind"] == "no_lane"]
 
 
+def test_brett_sees_a_gap_only_once_it_has_waited(db):
+    """Issue 39 (Brett, Nov 19): what just happened isn't missed yet. Where it stands shows a gap only once it has
+    waited GAP_GRACE; Claude's own end-of-turn check sees it at once."""
+    issue = rules.new_issue(db, "claude", "Fresh", feature="feedback")
+    rules.fix_ready(db, "claude", issue, "https://github.com/jettison-v/dndsy/pull/421")
+    db.flush()
+    assert any(g["thing"] == "issue" and g["id"] == issue.id for g in views.gaps(db))
+    assert not views.missed(db)
+    for g in views.gaps(db):
+        assert g["since"] is not None
+    later = rules.now() + views.GAP_GRACE + timedelta(minutes=1)
+    import app.fft.rules as r
+    real = r.now
+    r.now = lambda: later
+    try:
+        assert {(g["kind"], g["id"]) for g in views.missed(db) if g["thing"] == "issue"} == {("no_check", issue.id)}
+    finally:
+        r.now = real
+
+
 def test_whatever_is_said_to_claude_waits_for_its_reply(db):
     """A note filed on an issue, a line from Brett, an answer to Claude's question: each is a gap until Claude says
     something after it. A question waiting on Brett isn't."""
@@ -108,6 +128,13 @@ def test_claude_reads_its_gaps_and_brett_sees_them_on_where_it_stands(db, admin,
         assert [(g["kind"], g["id"]) for g in got] == [("no_feature", issue.id)]
     finally:
         app.dependency_overrides[get_db] = before
+    page = admin.get("/manage/testing?show=stands").text
+    assert "data-missed" not in page  # (just made: not missed yet, issue 39)
+    from sqlalchemy import update
+
+    from app.fft.models import FftEvent
+    db.execute(update(FftEvent).where(FftEvent.thing == "issue", FftEvent.thing_id == issue.id).values(at=rules.now() - timedelta(hours=1)))
+    db.flush()
     page = admin.get("/manage/testing?show=stands").text
     assert "data-missed" in page and 'data-gap="no_feature"' in page and f"open=i{issue.id}" in page
 

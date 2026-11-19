@@ -1397,7 +1397,7 @@
  {
   "title": "The work flow: build plan",
   "kind": "plan",
-  "status": "Building: slice 2 (For you) on a branch",
+  "status": "Building: slices 2 and 3 live (PRs 419, 420); the two audits come next, then slices 4 to 7",
   "date": "Nov 19",
   "what": "The seven slices that build the Work Flow Map as Brett agreed it: For you its own page, lanes on every plan, Work with a cut line, what players see, staging rounds for Careful work, checked live; what's decided, and what waits for the Team level.",
   "source": "docs/plans/2026-11-19-work-flow-build.md",

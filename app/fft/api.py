@@ -230,7 +230,7 @@ def areas(x_fft_key: str | None = Header(default=None), db: Session = Depends(ge
 def gaps(x_fft_key: str | None = Header(default=None), db: Session = Depends(get_db)):
     """What Claude left half done (views.gaps): Claude Code's end-of-turn hook reads it."""
     keys.require(db, x_fft_key, "read")
-    return _ok({"items": views.gaps(db)})
+    return _ok({"items": [g | {"since": g["since"].isoformat()} for g in views.gaps(db)]})
 
 
 @router.get("/questions")
