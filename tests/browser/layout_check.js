@@ -9,6 +9,9 @@
 // - "breaks a word": a heading or a bold name wrapped inside a word rather than between words
 // - "cuts its hint": a box's placeholder longer than the box
 // - "unreadable": words drawn in a scaling picture (an SVG's <text>) under 9px
+// - "squeezed": words in a row broke onto a second line although every part of the row would fit on one (Nov 19)
+// - "off baseline", only when asked ({baseline: true}; the Live UI Audit makes it always): two neighbouring parts of a row,
+//   on one line, whose words don't share a baseline (Nov 19)
 // - "repeats an id": two elements with one id, so a script finds the wrong one (Help's FAQ had id="cards", the corner
 //   cards' own: every card on Help landed in a folded answer; Nov 17)
 // - "misaligned", only when asked ({rows: true}): rows of one list whose small last item (an icon, a ↗) doesn't line up
@@ -186,6 +189,89 @@ ask => {
       const [mode, most] = Object.entries(counts).map(([k, n]) => [+k, ends.filter(e => Math.abs(e.end - +k) <= 2).length]).sort((a, b) => b[1] - a[1])[0];
       if (most * 2 <= ends.length || most === ends.length) continue;
       ends.filter(e => Math.abs(e.end - mode) > 2).forEach(e => add('misaligned', e.row, `its last item ends at ${e.end}px, ${most} of ${ends.length} rows at ${mode}px: ${e.row.textContent}`));
+    }
+  }
+  // A row whose words wrap although the row has room (Brett, Nov 19: "alignment is off again … a check for alignment
+  // and wrapping that is more robust"): in a flex row, a part's line of words broke onto a second line, yet every part
+  // at its natural one-line width would fit in the row. Typically parts sized as equal shares (flex: 1) when their
+  // words differ in length. Each part's natural width is measured on a copy laid out beside it, out of the row.
+  const inlineLike = el => /^inline/.test(getComputedStyle(el).display);
+  const brokenLine = part => {  // (words in one line box of this part, on two lines; a stacked name and sub-line is fine)
+    const groups = new Map(), walk = document.createTreeWalker(part, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.textContent.trim() || !shown(n.parentElement)) continue;
+      let box = n.parentElement;
+      while (box !== part && inlineLike(box)) box = box.parentElement;
+      const range = document.createRange(); range.selectNodeContents(n);
+      const tops = [...range.getClientRects()].filter(r => r.width > 1).map(r => r.top);
+      if (!groups.has(box)) groups.set(box, []);
+      groups.get(box).push(...tops);
+    }
+    for (const [box, tops] of groups) {
+      const line = parseFloat(getComputedStyle(box).lineHeight) || parseFloat(getComputedStyle(box).fontSize) * 1.2;
+      if (tops.length > 1 && Math.max(...tops) - Math.min(...tops) >= line * 0.8) return true;
+    }
+    return false;
+  };
+  for (const row of document.body.querySelectorAll('*')) {
+    const cs = getComputedStyle(row);
+    if (!/flex$/.test(cs.display) || !cs.flexDirection.startsWith('row') || !shown(row) || contained(row)) continue;
+    const parts = [...row.children].filter(c => shown(c) && !['absolute', 'fixed'].includes(getComputedStyle(c).position));
+    if (parts.length < 2) continue;
+    const squeezed = parts.find(brokenLine);
+    if (!squeezed) continue;
+    let need = 0;
+    for (const c of parts) {
+      const copy = c.cloneNode(true);
+      Object.assign(copy.style, { position: 'absolute', visibility: 'hidden', width: 'max-content', maxWidth: 'none', flex: 'none' });
+      copy.removeAttribute('id');
+      row.appendChild(copy);
+      const ccs = getComputedStyle(c);
+      need += copy.getBoundingClientRect().width + parseFloat(ccs.marginLeft) + parseFloat(ccs.marginRight);
+      copy.remove();
+    }
+    let items = parts.length;
+    for (const n of row.childNodes) {  // (loose words are a part of the row too: "Passive" before its skills)
+      if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+      const range = document.createRange(); range.selectNodeContents(n);
+      need += [...range.getClientRects()].reduce((w, r) => w + r.width, 0);
+      items += 1;
+    }
+    need += (parseFloat(cs.columnGap) || 0) * (items - 1);
+    const room = row.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    if (need <= room - 2) add('squeezed', squeezed, `wraps with ${Math.round(room - need)}px to spare in its row: ${squeezed.textContent}`);
+  }
+  // Words side by side in a row that don't share a line (Brett, Nov 19: "the vertical alignment between Available and
+  // until"): two neighbouring parts of a flex row, on the same line, whose text baselines differ by more than 2px.
+  // Typically a bold label and a smaller grey note centred as boxes (align-items: center) instead of on their
+  // baselines. A part drawn as a box (a pill, a bordered button) is centred on purpose and left out.
+  const boxed = el => { const c = getComputedStyle(el); return c.backgroundColor !== 'rgba(0, 0, 0, 0)' && c.backgroundColor !== 'transparent' || parseFloat(c.borderTopWidth) > 0 || el.matches('input, select, textarea, img, svg'); };
+  const ctx = document.createElement('canvas').getContext('2d');
+  const baseline = part => {  // (where its first words sit: their box's top plus the font's ascent, wherever they are)
+    const walk = document.createTreeWalker(part, NodeFilter.SHOW_TEXT);
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.textContent.trim() || !shown(n.parentElement)) continue;
+      for (let e = n.parentElement; e && e !== part.parentElement; e = e.parentElement) if (boxed(e)) return null;
+      const range = document.createRange(); range.selectNodeContents(n);
+      const r = [...range.getClientRects()].find(x => x.width > 1);
+      if (!r) continue;
+      const fs = getComputedStyle(n.parentElement);
+      ctx.font = `${fs.fontStyle} ${fs.fontWeight} ${fs.fontSize} ${fs.fontFamily}`;
+      return r.top + ctx.measureText('Hg').fontBoundingBoxAscent;
+    }
+    return null;
+  };
+  // (Asked for, {baseline: true}, until the Live UI Audit has lined up the ~20 places it finds today; then always: Nov 19)
+  if (ask && ask.baseline) for (const row of document.body.querySelectorAll('*')) {
+    const cs = getComputedStyle(row);
+    if (!/flex$/.test(cs.display) || !cs.flexDirection.startsWith('row') || !shown(row) || contained(row)) continue;
+    const parts = [...row.children].filter(c => shown(c) && !['absolute', 'fixed'].includes(getComputedStyle(c).position));
+    for (let i = 1; i < parts.length; i++) {
+      const a = parts[i - 1], b = parts[i], ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      if (ra.bottom <= rb.top || rb.bottom <= ra.top) continue;  // (on different lines of a wrapping row)
+      const ya = baseline(a), yb = baseline(b);
+      if (ya === null || yb === null) continue;
+      if (Math.abs(ya - yb) > 2) add('off baseline', b, `${Math.round(Math.abs(ya - yb))}px off its neighbour's line: ${a.textContent.trim().slice(0, 30)} | ${b.textContent}`);
     }
   }
   const ids = new Map();

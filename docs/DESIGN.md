@@ -138,6 +138,11 @@ A 13–14" laptop, about 1280–1512px wide and 800 tall: about 95% of play is a
 Pages are used from 375px phones to wide monitors, and the in-between widths (a laptop with a side panel, a half-screen
 window) are where things break. The rules:
 
+- **A row's parts are as wide as their words, and side-by-side words share a line** (Brett, Nov 19: "alignment is off
+  again … that seems to happen a lot"). Never equal shares (`flex: 1`) for parts whose words differ: a part breaks onto
+  two lines only when the row truly has no room (the check's `squeezed`). A bold label beside a smaller note lines up on
+  their baselines (`align-items: baseline`; a control in the row `align-self: center`), never centred as boxes (`off
+  baseline`, a report until the Live UI Audit makes it a rule).
 - **Nothing scrolls sideways.** The page is never wider than the window. A wide table scrolls inside its own box, or
   (better) switches to its compact layout: a record table (`table.list.stacked`) becomes one block per row on a phone,
   its first cell whole, the rest after it on a wrapping line, each named by its `data-label` when the value alone
