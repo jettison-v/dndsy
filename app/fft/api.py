@@ -220,7 +220,7 @@ def areas(x_fft_key: str | None = Header(default=None), db: Session = Depends(ge
     out = []
     for item in db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)):
         out.append({"item": item.id, "title": item.title, "section": item.section, "standing": item.standing, "next_whose": item.next_whose,
-                    "areas": [{"id": a.id, "key": a.key, "title": a.title, "turn": rules.area_turn(db, a), "round": a.round_no, "locked_by": a.lock_owner,
+                    "areas": [{"id": a.id, "key": a.key, "title": a.title, "turn": rules.area_turn(db, a), "lane": rules.lane_of(a), "round": a.round_no, "locked_by": a.lock_owner,
                                "issues": [i.id for i in rules.area_open_issues(db, a)], "checks": [c.id for c in rules.area_checks(db, a)]}
                               for a in db.scalars(select(FftArea).where(FftArea.item_id == item.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id))]})
     return _ok({"items": out})

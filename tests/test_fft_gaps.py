@@ -27,7 +27,7 @@ def table(db):
 
 
 def _kinds(db, issue_id=None):
-    return {g["kind"] for g in views.gaps(db) if issue_id is None or g["id"] == issue_id}
+    return {g["kind"] for g in views.gaps(db) if issue_id is None or (g["thing"] == "issue" and g["id"] == issue_id)}
 
 
 def test_a_standing_rule_a_fix_without_a_check_is_a_gap(db):
@@ -36,6 +36,7 @@ def test_a_standing_rule_a_fix_without_a_check_is_a_gap(db):
     issue = rules.new_issue(db, "claude", "Back clears what you typed", feature="feedback")
     assert not _kinds(db)
     rules.fix_ready(db, "claude", issue, "https://github.com/jettison-v/dndsy/pull/417")
+    rules.set_lane(db, "claude", db.get(rules.FftArea, issue.area_id), "look")  # (its lane: the next test's gap)
     assert _kinds(db, issue.id) == {"no_check"}
     check = rules.write_check(db, "claude", title="Back keeps what you typed", steps=["Press [Back]."], expect="It's kept.",
                               issue_ids=[issue.id])
@@ -44,6 +45,18 @@ def test_a_standing_rule_a_fix_without_a_check_is_a_gap(db):
     assert not views.gaps(db)
     rules.retire(db, "claude", check, "Replaced")
     assert _kinds(db, issue.id) == {"no_check"}  # (a retired check tries nothing)
+
+
+def test_a_fix_with_no_lane_is_a_gap(db):
+    """Brett, Nov 19: a fix never goes without its lane (Ship, Look, Careful decide whether he tries it first). A plan
+    with a fix in a pull request and no lane is a gap until it has one; a plan with nothing in hand needs none."""
+    issue = rules.new_issue(db, "claude", "The Count wraps", feature="feedback")
+    area = db.get(rules.FftArea, issue.area_id)
+    assert not [g for g in views.gaps(db) if g["kind"] == "no_lane"]
+    rules.fix_ready(db, "claude", issue, "https://github.com/jettison-v/dndsy/pull/420")
+    assert [(g["thing"], g["id"]) for g in views.gaps(db) if g["kind"] == "no_lane"] == [("area", area.id)]
+    rules.set_lane(db, "claude", area, "look", "People see it")
+    assert not [g for g in views.gaps(db) if g["kind"] == "no_lane"]
 
 
 def test_whatever_is_said_to_claude_waits_for_its_reply(db):

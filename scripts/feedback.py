@@ -236,7 +236,34 @@ def issue(a) -> None:
         body |= {"reason": w[0], "words": w[1] if len(w) > 1 else "", "same_as": a.same_as}
     elif a.do == "tell":
         body = {"do": "line", "to": a.to, "words": w[0]}
-    print_issue(call(a.base, f"/issues/{a.id}", body))
+    got = call(a.base, f"/issues/{a.id}", body)
+    print_issue(got)
+    if a.do == "pr" and got.get("area_id"):  # (Brett, Nov 19: a fix never goes without its lane: attaching it picks one)
+        lane_from_pr(a, got["area_id"], w[0])
+
+
+def lane_from_pr(a, area_id: int, pr: str) -> None:
+    """The plan's lane from the files its pull request touches (app/fft/lanes.py), only ever up."""
+    import subprocess
+
+    sys.path.insert(0, str(ROOT))
+    from app.fft import lanes
+
+    files = subprocess.run(["gh", "pr", "view", pr, "--json", "files", "-q", ".files[].path"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+    if not files:
+        print("  Lane: couldn't read the pull request's files; set it with feedback.py lane --area " + str(area_id))
+        return
+    diff = subprocess.run(["gh", "pr", "diff", pr], cwd=ROOT, capture_output=True, text=True).stdout
+    parts = {}
+    for chunk in diff.split("diff --git a/")[1:]:
+        parts[chunk.split(" ", 1)[0]] = "\n".join(x[1:] for x in chunk.splitlines() if x.startswith("+"))
+    picked, why = lanes.pick(files, read=lambda f: parts.get(f, ""))
+    now = next((x.get("lane", "") for it in call(a.base, "/areas")["items"] for x in it["areas"] if x["id"] == area_id), "")
+    if now and not lanes.higher(picked, now):
+        print(f"  Lane: {now} (this change alone would be {picked})")
+        return
+    call(a.base, "/areas", {"do": "lane", "area_id": area_id, "lane": picked, "why": why})
+    print(f"  Lane: {picked} · {why}")
 
 
 def print_issue(i: dict) -> None:
