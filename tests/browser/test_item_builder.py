@@ -68,7 +68,7 @@ def test_an_item_is_built_a_piece_at_a_time_and_reads_the_same_everywhere(people
 def test_the_item_builders_open_pieces_fit_every_width(people, server):
     """Each piece opened (a roll with a save, a bonus, charges) holds together at every width: its chips wrap, nothing
     spills or overlaps (the layout check every main page gets)."""
-    from tests.browser.test_layout import WIDTHS, problems
+    from tests.browser.test_layout import POLISH_FROM, WIDTHS, problems
 
     dm = people("dm")
     page, found = dm.page, []
@@ -81,6 +81,6 @@ def test_the_item_builders_open_pieces_fit_every_width(people, server):
             form.locator("[data-hb-add] > summary").click()
             form.locator(f'[data-hb-new="{kind}"]').click()
         form.locator('[data-hb-piece="roll"][data-open] [data-pick="save"]').click()
-        found += problems(page, f"the item builder at {width}px")
+        found += problems(page, f"the item builder at {width}px", hard_only=width < POLISH_FROM)  # (DM Tools: polish is the weekly sweep's)
     assert not found, "\n".join(found)
     assert dm.errors == []

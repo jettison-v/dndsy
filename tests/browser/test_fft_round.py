@@ -82,7 +82,7 @@ def test_a_round_page_to_page_with_its_card(people, server, browser_db):
 
 
 def test_testing_holds_together_at_every_width(people, server, browser_db):
-    from tests.browser.test_layout import problems
+    from tests.browser.test_layout import POLISH_FROM, problems
 
     _checks(browser_db[0], "/party")
     admin = people("admin")
@@ -91,7 +91,7 @@ def test_testing_holds_together_at_every_width(people, server, browser_db):
         page.set_viewport_size({"width": width, "height": 812 if width < 640 else 900})
         for path, said in (("/manage/for-you", "For you"), ("/manage/testing", "Testing")):
             admin.open(path)
-            found += problems(page, f"{said} at {width}px")
+            found += problems(page, f"{said} at {width}px", hard_only=width < POLISH_FROM)  # (admin pages: polish is the weekly sweep's)
     assert not found, "\n".join(found)
     assert not admin.errors, admin.errors
 
