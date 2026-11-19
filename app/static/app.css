@@ -2769,7 +2769,7 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
 .ds-later { flex-basis: 100%; font-size: var(--fs-xs); color: var(--amber); }
 .ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
 .ds-row + .ds-row { margin-top: var(--sp-3); }
-.ds-badge-host { position: relative; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-md); background: var(--chrome); color: var(--text); }  /* (a menu-bar button, to show its badge on) */
+.ds-badge-host { position: relative; display: inline-grid; place-items: center; height: 36px; padding: 0 28px 0 10px; border-radius: var(--r-md); background: var(--chrome); color: var(--text); }  /* (a menu-bar button, to show its badge on) */
 .ds-sample { margin: 0; }
 .ds-edge { position: relative; height: 96px; max-width: 520px; border-radius: var(--r-lg); background: var(--bg); overflow: hidden; }
 .ds-edge .cond-halo { position: absolute; z-index: auto; }  /* (on the page it's fixed to the window) */
@@ -4064,8 +4064,9 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .manage.admin > button.admin-gear { font-size: var(--fs-lg); padding: 0 10px; position: relative; }
 /* For you's count (Nov 19): the same badge, amber as Yours is; on the Admin gear, and on a phone's More beside Notes you sent's */
 .notes-dot-badge.for-you-badge { background: var(--amber); color: var(--chrome); }
-.admin-gear .for-you-badge { top: -6px; right: -8px; }
-.bottom-nav .for-you-badge { right: auto; left: 8px; }
+.manage.admin > button.admin-gear:has(> .for-you-badge:not([hidden])) { padding-right: 28px; }  /* (room for it inside the button: never over the gear, never outside) */
+.admin-gear .for-you-badge { top: 4px; right: 4px; }
+.bottom-nav .for-you-badge { top: 50%; right: auto; left: 6px; transform: translateY(-50%); }  /* (beside More, on its line: Notes you sent's keeps the corner) */
 /* An attack in Table rolls, one card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with
    its total on the right, as the damage row (.roll-dmg-line) already was; a replaced roll struck, what was applied in green */
 .roll-beat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }
