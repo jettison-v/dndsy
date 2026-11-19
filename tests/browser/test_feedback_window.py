@@ -335,6 +335,37 @@ def test_a_one_line_step_keeps_the_why_under_it_wrapping_in_the_pages_picture(pe
     assert not admin.errors, admin.errors
 
 
+def test_on_a_wide_screen_the_pages_picture_keeps_the_page_centred(people, server):
+    """Issue 29 (Brett's round, Nov 18, on a 2560-wide screen): the page's picture drew the centred page and menu bar
+    against the left edge. Once a picture from another site was blanked for the drawing, Chrome gave a part centred by
+    auto margins 0px, and the drawing copied that. The heading starts as far left in the picture as on the screen."""
+    import base64
+    import io
+
+    from PIL import Image
+
+    admin = people("admin")
+    page = admin.open("/party")
+    page.set_viewport_size({"width": 2560, "height": 1100})
+    page.wait_for_function("() => document.fonts.status === 'loaded'")
+    b = page.locator("h1").first.bounding_box()
+    clip = {"x": b["x"] - 400, "y": b["y"], "width": b["width"] + 800, "height": b["height"]}
+    screen = Image.open(io.BytesIO(page.screenshot(clip=clip))).convert("L")
+    page.keyboard.press("\\")
+    page.locator("#fb-win [data-fb-wrap]").wait_for(state="visible", timeout=15000)
+    drawn = page.evaluate("""b => { const c = document.querySelector('#fb-win [data-fb-canvas]'), o = document.createElement('canvas');
+        o.width = Math.round(b.width); o.height = Math.round(b.height); o.getContext('2d').drawImage(c, b.x, b.y, b.width, b.height, 0, 0, o.width, o.height);
+        return o.toDataURL('image/png'); }""", clip)
+    drawn = Image.open(io.BytesIO(base64.b64decode(drawn.split(",", 1)[1]))).convert("L").resize(screen.size)
+
+    def start(im):  # (the left-most bright pixel: the heading's first letter, light on dark)
+        px = im.load()
+        return min((x for x in range(im.size[0]) for y in range(im.size[1]) if px[x, y] > 170), default=-1)
+    on_screen, in_picture = start(screen), start(drawn)
+    assert on_screen > 0 and abs(in_picture - on_screen) <= 6, (on_screen, in_picture)
+    assert not admin.errors, admin.errors
+
+
 def test_a_picture_you_added_can_be_taken_away_and_the_pages_stays(people, server, browser_db, tmp_path):
     """Issue 21 (Brett's round, Nov 18): there was no way to remove a picture he'd added. Each one he adds is one pill,
     its name and its ✕; the ✕ takes it away (the one on the stage moves to its neighbour), and what's sent is what's

@@ -5198,6 +5198,8 @@ document.addEventListener('click', e => {
       // pane in one line; Brett's round, Nov 18. One inside that's on one line too is held after this, by its own turn)
       [...el.children].forEach(ch => { if (getComputedStyle(ch).whiteSpace === 'normal') keep.push([ch, { whiteSpace: 'normal' }]); });
     });
+    const sideMargins = new Map();  // (each part's side margins as the screen has them: see the drawing, below)
+    all.forEach(el => { if (gone.has(el)) return; const cs = getComputedStyle(el); if (cs.marginLeft !== '0px' || cs.marginRight !== '0px') sideMargins.set(el, [cs.marginLeft, cs.marginRight]); });
     keep.forEach(([el, props]) => hold(el, props));
     // (an attribute named with a colon stops the picture's SVG: set aside while it's drawn, and put back)
     const aside = [], blanked = [];
@@ -5223,8 +5225,35 @@ document.addEventListener('click', e => {
       c.parentElement.append(im);
       stills.push(im);
     });
+    // The drawing copies each part's computed style, read through getComputedStyle; while it reads, two of its answers
+    // are put right (Brett's round, Nov 18, issues 29 and 31 on askdnd.ai). A part's side margins are the ones measured
+    // before anything was changed for the drawing: once a picture from another site is blanked, Chrome gives a part
+    // centred by auto margins 0px until that picture loads, and its shorthand margin is 0px too, so the page and the
+    // menu bar were drawn against the left edge, more so the wider the screen. And a font size is given so the drawing
+    // doesn't shave it (it took up to a pixel off every size: narrower letters, so a title the screen wraps fitted on
+    // one line in its two-line box).
+    const realStyle = window.getComputedStyle;
+    const SIDE = { 'margin-left': 0, 'margin-inline-start': 0, 'margin-right': 1, 'margin-inline-end': 1 };
+    const said = (t, el, name) => {
+      const m = sideMargins.get(el);
+      if (m && name in SIDE) return m[SIDE[name]];
+      const v = name => (m && name in SIDE ? m[SIDE[name]] : t.getPropertyValue(name));
+      if (name === 'margin') return [v('margin-top'), m ? m[1] : v('margin-right'), v('margin-bottom'), m ? m[0] : v('margin-left')].join(' ');
+      if (name === 'margin-inline') return m ? m.join(' ') : [v('margin-left'), v('margin-right')].join(' ');
+      if (name === 'margin-block') return [v('margin-top'), v('margin-bottom')].join(' ');
+      return name === 'font-size' ? t.getPropertyValue(name) + ' ' : t.getPropertyValue(name);
+    };
+    window.getComputedStyle = function (el, pseudo) {
+      const cs = realStyle.call(window, el, pseudo);
+      return new Proxy(cs, { get(t, k) {
+        if (k === 'getPropertyValue') return name => said(t, pseudo ? null : el, name);
+        const v = Reflect.get(t, k);
+        return typeof v === 'function' ? v.bind(t) : v;
+      } });
+    };
+    const draw = async () => { try { return await h.toSvg(document.body, options); } finally { window.getComputedStyle = realStyle; } };
     try {
-      const svg = (await h.toSvg(document.body, options)).replace(/%(?:0[0-8BbCcEeFf]|1[0-9A-Fa-f])/g, '');
+      const svg = (await draw()).replace(/%(?:0[0-8BbCcEeFf]|1[0-9A-Fa-f])/g, '');
       const im = new Image();
       await new Promise((ok, no) => { im.onload = ok; im.onerror = () => no(new Error("the page's drawing wouldn't load")); im.src = svg; });
       const c = Object.assign(document.createElement('canvas'), { width: innerWidth, height: innerHeight }), g = c.getContext('2d');
