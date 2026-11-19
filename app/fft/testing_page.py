@@ -363,7 +363,6 @@ def stands(db: Session) -> dict:
     skipped = dict(pick.skipped)
     r = rules.round_open(db)
     items, done = [], []
-    prev = None
     for n, it in enumerate(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id)), 1):
         rows = []
         for a in db.scalars(select(FftArea).where(FftArea.item_id == it.id, FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)):
@@ -379,14 +378,18 @@ def stands(db: Session) -> dict:
                 continue
             in_round = r is not None and rules.in_open_round(db, a)
             stops = [i for i in issues if rules.stops_round(db, i)]
+            # (Brett, Nov 19: "wordy and does not add a lot of value. Next has some value": a word only where it says
+            # something the pills don't; the rest is on mouse-over)
             if pick.area is not None and pick.area.id == a.id:
-                note = ("Blocker: Claude fixes it now" if pick.blocker else "Next for Claude") + (" · building on a branch; merges when your round ends" if r else "")
+                note, about = ("Blocker", "Claude fixes it now, ahead of everything") if pick.blocker else ("Next", "Claude takes it next")
+                about += "; it merges when your round ends" if r else ""
             elif in_round:
-                note = "In your open round" + (f" · {len(stops)} issue{'s' if len(stops) != 1 else ''} stop{'s' if len(stops) == 1 else ''} your round (Claude may fix {'that one' if len(stops) == 1 else 'those'} now)" if stops else "")
-            elif turn == "claude":
-                note = f"After {prev}" if prev else "Waits its turn"
+                note = "In your round"
+                about = (f"{len(stops)} issue{'s' if len(stops) != 1 else ''} in it stop{'s' if len(stops) == 1 else ''} your round: Claude may fix "
+                         f"{'that one' if len(stops) == 1 else 'those'} now") if stops else "Its checks are in your open round"
+                note += f" · {len(stops)} stop{'s' if len(stops) == 1 else ''} it" if stops else ""
             else:
-                note = "Your turn: in For you"
+                note, about = "", ""
             feats = {}
             for i in issues:
                 f = taxonomy.feature(i.feature)
@@ -394,8 +397,7 @@ def stands(db: Session) -> dict:
             rows.append({"a": a, "turn": {"claude": "claude", "brett": "yours"}.get(turn, "yours"), "counts": counts or "Nothing open yet",
                          "lane": rules.lane_of(a), "incident": bool(a.careful_until and a.careful_until > rules.now()),
                          "features": sorted(feats.items(), key=lambda x: -x[1]),
-                         "note": note, "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
-            prev = a.title
+                         "note": note, "about": about, "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
         why = skipped.get(it.title, "")
         items.append({"it": it, "n": n, "areas": rows, "why": f"skipped: {why}" if why else ""})
     li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()

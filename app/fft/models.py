@@ -4,6 +4,7 @@ replays the events and checks they reproduce the rows. Words people write live i
 they can be erased without breaking the record (T7)."""
 
 from datetime import datetime
+from typing import ClassVar
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, false, func
 from sqlalchemy import text as sa_text
@@ -38,7 +39,7 @@ class FftArea(_Stamped, Base):
     time: the lock has an owner and lapses (R11)."""
 
     __tablename__ = "fft_areas"
-    __mapper_args__ = {"eager_defaults": False}  # (the lane columns' defaults are read when used, never fetched on insert:
+    __mapper_args__: ClassVar[dict] = {"eager_defaults": False}  # (the lane columns' defaults are read when used, never fetched on insert:
     # the carry-over migration writes areas before they exist)
     id: Mapped[int] = mapped_column(primary_key=True)
     item_id: Mapped[int] = mapped_column(ForeignKey("fft_items.id", ondelete="CASCADE"), index=True)
