@@ -1411,5 +1411,14 @@
   "what": "One page for when something broke on askdnd.ai: rolling back in Railway (steps you can follow alone), what Claude does after (the rollback in Found, Fixed, Tried, the incident, the fix first), and what not to do.",
   "source": "docs/undo.md",
   "link": ""
+ },
+ {
+  "title": "Claude's Next, Marked",
+  "kind": "design",
+  "status": "Waiting on your pick",
+  "date": "Nov 19",
+  "what": "Four ways to show which area Claude takes next on Testing › Where it stands, now that the turn pill shows only Yours: a pill by its name, the row standing out, a line above it, or in the status bar.",
+  "source": "docs/mockups/next-marker/index.html",
+  "link": "https://claude.ai/artifact/TW4UbGQWJ1rU4A9LrnXzzh"
  }
 ]

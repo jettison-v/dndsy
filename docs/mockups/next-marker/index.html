@@ -1,0 +1,204 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Claude's Next, Marked</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Where Claude's next area shows on Testing › Where it stands (Brett, Nov 19: "we should figure out a different place
+   or way to show next … The word seems lost"; the turn pill now shows only Yours). Drawn in askdnd's look, laptop
+   first; four ways, one at a time. Source: docs/mockups/next-marker/index.html. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f; --link: #f08a8a;
+  --brand: #d64545; --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15); --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --red: #ef7b7b; --red-soft: rgba(239, 123, 123, .14); --green: #5bbf7f;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 24px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+h2 { font-size: 1.05rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+.lede { color: var(--muted); max-width: 78ch; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button { font: 600 .86rem/1 var(--sans); color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+.tabs button[aria-pressed="true"] { background: var(--amber-soft); border-color: var(--amber); color: var(--strong); }
+.why { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--amber); border-radius: 10px; padding: 12px 14px; font-size: .92rem; }
+.why b { color: var(--strong); }
+
+/* askdnd's page */
+.app { border: 1px solid #4a4f57; border-radius: 12px; overflow: hidden; }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--brand); padding: 9px 14px; font-size: .86rem; color: var(--muted); }
+.mbar b { color: #fff; } .mbar .sp { flex: 1; }
+.page { padding: 18px 20px 24px; display: grid; gap: 12px; }
+.pt { font-size: 1.5rem; font-weight: 700; color: var(--strong); }
+.subtabs { display: flex; gap: 16px; border-bottom: 1px solid var(--line); font-size: .9rem; color: var(--muted); }
+.subtabs span { padding-bottom: 8px; } .subtabs .on { color: var(--strong); border-bottom: 2px solid var(--brand); }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; font-size: .9rem; }
+.bar .sep { width: 1px; align-self: stretch; background: var(--line); }
+.bar .note { color: var(--muted); font-size: .84rem; }
+.bar .btn { margin-left: auto; }
+.btn { display: inline-flex; align-items: center; min-height: 28px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .8rem/1 var(--sans); }
+.item-h { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--strong); margin-top: 6px; }
+.tag { font-size: .7rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.rows { display: grid; gap: 6px; }
+.row { position: relative; display: grid; grid-template-columns: 16px minmax(0, 1fr) auto auto auto; gap: 4px 14px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.grip { color: var(--faint); letter-spacing: -2px; }
+.nm { display: grid; gap: 2px; min-width: 0; } .nm b { color: var(--strong); } .nm small { color: var(--muted); font-size: .82rem; }
+.feats { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: .74rem; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.pill { font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; line-height: 1.2; }
+.pill.yours { color: var(--amber); background: var(--amber-soft); }
+.pill.look { color: var(--blue); background: var(--blue-soft); }
+.pill.careful { color: var(--red); background: var(--red-soft); }
+.pill.none { color: var(--muted); box-shadow: inset 0 0 0 1px var(--line); }
+.pill.next { color: var(--violet); background: var(--violet-soft); }
+.slot { min-width: 0; }
+.shotnote { font-size: .84rem; color: var(--muted); padding: 10px 20px 14px; border-top: 1px solid var(--line-soft); }
+
+/* B: the row stands out */
+.v-b .row.is-next { border-color: var(--violet); box-shadow: inset 4px 0 0 var(--violet); }
+.v-b .kicker { font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--violet); }
+/* C: a line above it */
+.marker { display: flex; align-items: center; gap: 10px; color: var(--violet); font: 700 .7rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+.marker::before, .marker::after { content: ""; flex: 1; border-top: 2px dashed var(--violet); opacity: .7; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt:has(input:checked) { border-color: var(--amber); }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide .mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--brand); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+@media (max-width: 760px) { .row { grid-template-columns: 14px minmax(0, 1fr) auto; } .row .slot, .row .lane { grid-column: 2; justify-self: start; } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Claude's Next, Marked</h1>
+    <p class="lede">On Testing › Where it stands, "Next" sat at the end of a row in grey, and got lost. The turn pill now shows only <b>Yours</b>. Here are four ways to show which area Claude takes next. Each is drawn on the page as it is now; pick one at the bottom.</p>
+  </header>
+  <div class="tabs" role="group" aria-label="Ways to show Next">
+    <button type="button" data-v="a" aria-pressed="false">A · A pill by its name</button>
+    <button type="button" data-v="b" aria-pressed="true">B · The row stands out</button>
+    <button type="button" data-v="c" aria-pressed="false">C · A line above it</button>
+    <button type="button" data-v="d" aria-pressed="false">D · In the status bar</button>
+  </div>
+  <p class="why" id="why"></p>
+
+  <div class="app">
+    <div class="mbar"><b>askdnd</b><span>Campaign</span><span>Table</span><span class="sp"></span><span>Manage ▾</span><span>⚙</span></div>
+    <div class="page" id="page">
+      <span class="pt">Testing</span>
+      <div class="subtabs"><span class="on">Where it stands</span><span>Claude's</span><span>Done</span></div>
+      <div class="bar"><span>Claude is listening <span class="note">(heard 2 minutes ago)</span></span><span class="sep"></span><span id="bar-next" hidden>Next: <b>Feedback and Testing</b></span><span class="sep" id="bar-sep" hidden></span><span>Game-night freeze off</span><span class="btn">Turn on</span></div>
+      <div class="item-h"><span class="grip">⋮⋮</span>1 · Fixes and polish <span class="tag">standing</span></div>
+      <div class="rows" id="rows"></div>
+    </div>
+    <p class="shotnote">Drawn with today's areas. A row is <b>Yours</b> only when something in it waits on you (here, Manage has a check to try); every other row is Claude's and shows no pill.</p>
+  </div>
+
+  <form class="decide" aria-label="Your pick">
+    <fieldset><legend>How should Claude's next area show?</legend>
+      <label class="opt"><input type="radio" name="next" value="a"><span>A · A pill by its name</span><small>"Claude's next" in violet right after the area's name, where your eye starts.</small></label>
+      <label class="opt"><input type="radio" name="next" value="b"><span>B · The row stands out <span class="mine">my pick</span></span><small>A violet edge down the row's left and "Claude's next" above its name: you see it without reading.</small></label>
+      <label class="opt"><input type="radio" name="next" value="c"><span>C · A line above it</span><small>A violet line in the list, "Claude takes this next", like the cut line Work will have.</small></label>
+      <label class="opt"><input type="radio" name="next" value="d"><span>D · In the status bar</span><small>"Next: Feedback and Testing" at the top with Claude's listening and the freeze; nothing on the rows.</small></label>
+    </fieldset>
+    <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const AREAS = [
+    { name: "Feedback and Testing", sub: "22 issues, 5 checks to try", lane: ["look", "Look"], feats: ["Testing 9", "Feedback 6", "Sending a note 5", "Where it stands 2"], next: true },
+    { name: "Manage", sub: "3 issues, 2 checks", lane: ["none", "Lane"], feats: ["Needs you and Inbox 1", "Overview and Documents 1", "DM Tools and homebrew items 1"], yours: true },
+    { name: "Getting around", sub: "1 issue, 1 check", lane: ["careful", "Careful"], feats: ["Menus and the menu bar 1"] },
+  ];
+  const WHY = {
+    a: "<b>A · A pill by its name.</b> The same violet pill family as the others, but at the start of the row, so it's read with the name. Small, and still a word to find.",
+    b: "<b>B · The row stands out.</b> The next row gets a violet edge and a small label over its name. You see which one it is before reading anything; the other rows stay quiet. My pick.",
+    c: "<b>C · A line above it.</b> A marker in the list itself. Clear, and it previews Work's cut line; but two kinds of line in one list later could confuse.",
+    d: "<b>D · In the status bar.</b> One place says what Claude does next, with whether it's listening. The rows stay clean, but you match the name to a row yourself.",
+  };
+  const rows = document.getElementById("rows"), why = document.getElementById("why");
+  const el = (html) => { const t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstElementChild; };
+  function draw(v) {
+    document.querySelectorAll("[data-v]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+    document.getElementById("page").className = "page v-" + v;
+    why.innerHTML = WHY[v];
+    document.getElementById("bar-next").hidden = document.getElementById("bar-sep").hidden = v !== "d";
+    rows.replaceChildren();
+    AREAS.forEach(a => {
+      if (a.next && v === "c") rows.append(el('<div class="marker">Claude takes this next</div>'));
+      const r = el(`<div class="row${a.next ? " is-next" : ""}"><span class="grip">⋮⋮</span>
+        <span class="nm">${a.next && v === "b" ? '<span class="kicker">Claude\'s next</span>' : ""}<b>${a.name}${a.next && v === "a" ? ' <span class="pill next">Claude\'s next</span>' : ""}</b><small>${a.sub}</small></span>
+        <span class="slot">${a.yours ? '<span class="pill yours">Yours</span>' : ""}</span>
+        <span class="lane"><span class="pill ${a.lane[0]}">${a.lane[1]} ▾</span></span>
+        <span class="btn">Open</span>
+        <span class="feats">${a.feats.map(f => `<span class="chip">${f}</span>`).join("")}</span></div>`);
+      rows.append(r);
+    });
+  }
+  document.querySelectorAll("[data-v]").forEach(b => b.addEventListener("click", () => draw(b.dataset.v)));
+  draw("b");
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["next"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? lab.firstChild.textContent.trim() : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Manage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

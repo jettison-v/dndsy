@@ -45,7 +45,7 @@
       <ul class="fft-missed-list">{% for g in st.missed %}<li data-gap="{{ g.kind }}"><a href="{{ '/manage/for-you?open=c' ~ g.id if g.thing == 'check' else '/manage/feedback?tab=open&open=n' ~ g.id if g.thing == 'note' else '/manage/feedback?tab=open&open=i' ~ g.id }}">{{ g.title }}</a>
         <span class="note">· {{ {"no_check": "fixed, with no check for you to try", "not_tried": "a check Claude hasn't tried itself", "unanswered": "you said something Claude hasn't answered", "no_feature": "no Feature yet", "question": "a question you sent, not answered yet"}[g.kind] }}</span></li>{% endfor %}</ul>
     </section>{% endif %}
-    <p class="note">The Roadmap's order, by item: drag items, and areas within an item. Claude takes the first area that's its turn.</p>
+    <p class="note">Your work queue: drag to reorder. Claude takes the first area that's its turn.</p>{# (Brett, Nov 19: it's the work queue, not the Roadmap) #}
     <ol class="fft-items" data-sort-column="items" data-sort-url="/manage/testing/order" data-sort-item=".fft-item" data-sort-handle=".fft-item-head .grip">
       {% for x in st.rows %}
       <li class="fft-item" data-key="{{ x.it.id }}" data-item="{{ x.it.id }}">
@@ -55,7 +55,7 @@
           {% for r in x.areas %}{% set w = {"yours": ("Yours", "ask"), "claude": ("Claude's", "claude")}[r.turn] %}
           <li class="fft-area" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}">
             {{ grip() }}<span class="fft-area-name"><b>{{ r.a.title }}</b><span class="note">{{ r.counts }}</span></span>
-            {{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}
+            {% if r.turn == "yours" %}{{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}{% else %}<span></span>{% endif %}{# (Brett, Nov 19: only Yours, the exception; Claude's is every other row) #}
             {# Its lane, opened from the lane itself (a menu like ⋯, the tag as its face: "Lane" until one is set) #}
             <details class="act-more fft-lane" data-lane="{{ r.lane }}"><summary aria-label="Lane for {{ r.a.title }}" title="{{ r.a.lane_why or '' }}"><span class="state-word lane-tag" data-lane-tag="{{ r.lane or 'none' }}">{{ st.lane_said[r.lane] if r.lane else "Lane" }} ▾</span></summary>
               <div class="act-menu" role="group" aria-label="Lane for {{ r.a.title }}">{% for l in st.lanes %}<form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="lane"><input type="hidden" name="lane" value="{{ l }}"><button type="submit" data-lane-pick="{{ l }}"{% if l == r.lane %} aria-current="true"{% endif %}{% if r.incident and l != "careful" %} disabled{% endif %}>{{ st.lane_said[l] }}</button></form>{% endfor %}</div></details>
