@@ -23,6 +23,7 @@ from app.fft.models import (
     FftItem,
     FftLine,
     FftListener,
+    FftLocalTry,
     FftNote,
     FftQuestion,
     FftRound,
@@ -413,6 +414,103 @@ def set_freeze(db: Session, actor: str, on: bool, by: str = "") -> None:
     row.value = json.dumps({"by": by or actor, "since": now().isoformat()}) if on else ""
     db.merge(row)
     _event(db, actor, "freeze_on" if on else "freeze_off", "tool", 0)
+    if on and available_state(db)["on"]:  # (game night: nobody is trying things locally)
+        set_available(db, "askdnd", False, why="game night")
+
+
+# ------------------------------------------------------------------ Available (Brett, Nov 19: local tries while he's around)
+
+AVAILABLE = "fft_available"  # (a ToolSetting: {"by", "since", "until"} while on; {"off_at", "why"} after)
+AVAILABLE_HOURS = 2  # (his pick: the backstop)
+QUIET_MINUTES = 30  # (his pick of three signals: quiet in askdnd, a try unanswered, game night)
+
+
+def available_state(db: Session) -> dict:
+    """{"on", "by", "since", "until", "off_at", "why"}: whether Brett is around to try Look work on his Mac."""
+    from app.models import ToolSetting
+
+    row = db.get(ToolSetting, AVAILABLE)
+    try:
+        data = json.loads(row.value) if row is not None and row.value else {}
+    except ValueError:
+        data = {}
+    return {"on": bool(data.get("since")), "by": data.get("by", ""), "actor": data.get("actor", ""), "since": data.get("since", ""), "until": data.get("until", ""),
+            "off_at": data.get("off_at", ""), "why": data.get("why", "")}
+
+
+def set_available(db: Session, actor: str, on: bool, by: str = "", why: str = "") -> None:
+    """Brett's switch. On: Look work waits for his try on his Mac (a local try in For you) until it's off. Off, by
+    hand or by itself (`why`): every local try still waiting is left, and merges as Look work does."""
+    from app.models import ToolSetting
+
+    st = available_state(db)
+    if st["on"] == on:
+        return
+    row = db.get(ToolSetting, AVAILABLE) or ToolSetting(key=AVAILABLE)
+    t = now()
+    if on:
+        row.value = json.dumps({"by": by or actor, "actor": actor, "since": t.isoformat(), "until": (t + timedelta(hours=AVAILABLE_HOURS)).isoformat()})
+    else:
+        row.value = json.dumps({"off_at": t.isoformat(), "why": why})
+        for lt in db.scalars(select(FftLocalTry).where(FftLocalTry.answer == "")):
+            lt.answer, lt.answered_at = "left", t
+            _event(db, "askdnd", "local_left", "local", lt.id, area_id=lt.area_id, why=why or "turned off")
+    db.merge(row)
+    _event(db, actor, "available_on" if on else "available_off", "tool", 0, **({"why": why} if why else {}))
+
+
+def check_available(db: Session, last_seen: datetime | None = None) -> dict:
+    """Turns Available off by itself (Brett, Nov 19: "smarter … the duration can be the back stop"): quiet in askdnd for
+    30 minutes, a local try unanswered for 30 minutes, or the 2 hours are up. Read wherever it's shown or asked."""
+    st = available_state(db)
+    if not st["on"]:
+        return st
+    t = now()
+    quiet = timedelta(minutes=QUIET_MINUTES)
+    since = datetime.fromisoformat(st["since"])
+    acted = db.scalar(select(func.max(FftEvent.at)).where(FftEvent.actor == st["actor"])) if st["actor"] else None  # (his own presses)
+    if last_seen is None and st["actor"].startswith("user:") and st["actor"][5:].isdigit():  # (his pages: the gear's count marks them)
+        from app.models import User
+
+        u = db.get(User, int(st["actor"][5:]))
+        last_seen = u.last_seen_at if u is not None else None
+    seen = max([x for x in (last_seen, acted, since) if x is not None])
+    waiting = db.scalar(select(func.min(FftLocalTry.created_at)).where(FftLocalTry.answer == ""))
+    why = ("the 2 hours are up" if t >= datetime.fromisoformat(st["until"]) else
+           "a try waited 30 minutes" if waiting is not None and t - waiting >= quiet else
+           "quiet for 30 minutes" if t - seen >= quiet else "")
+    if why:
+        set_available(db, "askdnd", False, why=why)
+    return available_state(db)
+
+
+def new_local_try(db: Session, actor: str, title: str, area: FftArea | None, changed: list[str], look_at: str, path: str,
+                  pr: str = "") -> FftLocalTry:
+    """Claude's change, waiting for Brett's try on his Mac. Only while he's Available."""
+    if not available_state(db)["on"]:
+        raise RuleError("bad", "Brett isn't Available: Look work merges, and he tries it after it's live.")
+    if not title.strip() or not changed:
+        raise RuleError("bad", "Say what it is and what changed.")
+    if not path.startswith("/"):
+        raise RuleError("bad", "The page to open is a path on askdnd, like /party.")
+    lt = FftLocalTry(title=title.strip()[:120], area_id=area.id if area else None, changed=[c.strip()[:300] for c in changed if c.strip()][:8],
+                     look_at=look_at.strip()[:1000], path=path[:300], pr=pr[:300])
+    db.add(lt)
+    db.flush()
+    _event(db, actor, "local_new", "local", lt.id, area_id=lt.area_id)
+    return lt
+
+
+def answer_local_try(db: Session, actor: str, lt: FftLocalTry, answer: str, words: str = "") -> None:
+    """Looks good (it may merge) or Something's off (his words go to Claude; it goes back to its plan)."""
+    if lt.answer:
+        raise RuleError("stale", "It's been answered already.")
+    if answer not in ("good", "off"):
+        raise RuleError("bad", "Looks good, or something's off.")
+    if answer == "off" and not words.strip():
+        raise RuleError("bad", "Say what's off.")
+    lt.answer, lt.words, lt.answered_at = answer, words.strip()[:4000], now()
+    _event(db, actor, "local_" + answer, "local", lt.id, area_id=lt.area_id, **({"words": lt.words} if lt.words else {}))
 
 
 def fix_live(db: Session, actor: str, issue: FftIssue, commit: str) -> None:

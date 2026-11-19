@@ -478,3 +478,26 @@ def test_an_idea_goes_on_the_roadmap_is_built_or_declined_with_why(admin, sender
     assert idea.state == "declined" and idea.reason == "Out of scope."
     assert admin.post(f"/manage/feedback/ideas/{idea.id}", data={"do": "lost"}).status_code == 400
     assert list(db.scalars(select(FftEvent.kind).where(FftEvent.thing == "idea", FftEvent.thing_id == idea.id)))[-3:] == ["idea_roadmap", "idea_shipped", "idea_declined"]
+
+
+def test_the_available_switch_and_a_local_try_in_for_you(admin, player, db):
+    """Brett, Nov 19 (docs/mockups/available/): the Available switch in the status bar on For you and Where it stands;
+    a change waiting for his try on his Mac comes first in For you, with its link, Looks good and Something's off."""
+    page = admin.get("/manage/for-you").text
+    assert 'data-available="0"' in page and 'data-do="available-on"' in page
+    admin.post("/manage/for-you/available", data={"on": "1"})
+    assert rules.available_state(db)["on"]
+    assert 'data-available="1"' in admin.get("/manage/testing?show=stands").text
+    lt = rules.new_local_try(db, "claude", "Battle: the Count pill", None, ["The Count is a pill beside the turn."], "A fight running.", "/party")
+    db.flush()
+    page = admin.get("/manage/for-you").text
+    assert 'data-section="local"' in page and f'data-row="l{lt.id}"' in page and "1 change to try on your Mac" in page
+    assert f'data-fft-local="{lt.id}"' in page and "localhost:8004/dev/login?next=/party" in page and "The Count is a pill" in page
+    player.post(f"/manage/for-you/local/{lt.id}", data={"answer": "good"})
+    assert lt.answer == ""  # (admins only)
+    admin.post(f"/manage/for-you/local/{lt.id}", data={"answer": "off", "words": "The pill wraps on a phone."})
+    assert lt.answer == "off" and lt.words == "The pill wraps on a phone."
+    player.post("/manage/for-you/available", data={"on": "0"})
+    assert rules.available_state(db)["on"]
+    admin.post("/manage/for-you/available", data={"on": "0", "back": "stands"})
+    assert not rules.available_state(db)["on"]

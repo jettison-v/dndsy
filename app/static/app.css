@@ -4443,7 +4443,21 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-status form { margin-left: 0; }
 .fft-status .fft-freeze-form { margin-left: auto; }
 .fft-status[data-freeze="1"] { border-color: var(--amber); background: var(--amber-soft); }
-@media (max-width: 640px) { .fft-status .fft-stat + .fft-stat, .fft-status form + .fft-stat { padding-left: 0; border-left: 0; } }  /* (a line each on a phone: no rule at a line's start) */
+/* The Available switch (Brett, Nov 19; docs/mockups/available/): a switch, green while he's around to try things on his
+   Mac; the bar turns green with it */
+.fft-switch { display: inline-flex; align-items: center; gap: var(--sp-2); padding: 0; border: 0; background: none; color: var(--text); font: inherit; cursor: pointer; }
+.fft-switch i { width: 32px; height: 18px; border-radius: var(--r-pill); background: var(--surface-3); position: relative; flex: none; }
+.fft-switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--faint); transition: left .15s; }
+.fft-switch[aria-pressed="true"] { color: var(--text-strong); font-weight: 700; }
+.fft-switch[aria-pressed="true"] i { background: var(--green); }
+.fft-switch[aria-pressed="true"] i::after { left: 16px; background: var(--text-strong); }
+.fft-status .fft-avail-form { margin: 0; }
+.fft-status + .reader, .fft-status + .empty-state { margin-top: var(--sp-3); }  /* (For you: room between the bar and the list) */
+.fft-status .fft-avail-note + .fft-stat { padding-left: var(--sp-3); border-left: 1px solid var(--line); }
+.fft-status[data-available="1"] { border-color: var(--green); background: var(--green-soft); }
+.fft-local-kick { color: var(--green); }
+.fft-local-list { margin: 0 0 var(--sp-2); padding-left: 1.2em; display: grid; gap: var(--sp-1); }
+@media (max-width: 640px) { .fft-status .fft-stat + .fft-stat, .fft-status form + .fft-stat, .fft-status .fft-avail-note + .fft-stat { padding-left: 0; border-left: 0; } }  /* (a line each on a phone: no rule at a line's start) */
 .fft-feat-tags { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--sp-1); }  /* a Product Area's open issues by Feature */
 /* Manage › askdnd › Product areas: a card per Product Area, its Features under it (docs/mockups/product-taxonomy/, 1) */
 /* Packed cards (docs/DESIGN.md › Packed cards): columns of cards, each its own height, none split; a long one never

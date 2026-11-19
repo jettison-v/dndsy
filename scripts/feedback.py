@@ -402,6 +402,26 @@ def freeze(a) -> None:
         sys.exit(1)
 
 
+def available(a) -> None:
+    """Whether Brett is Available (Look work waits for his try on his Mac), and the local tries with his answers."""
+    st = call(a.base, "/available")
+    print(f"Available until {st['until']}." if st["on"] else "Not available" + (f" (off: {st['why']})." if st.get("why") else "."))
+    for t in st["tries"][:8]:
+        said = {"": "waiting", "good": "looks good: merge it", "off": "something's off", "left": "left: merge it as Look work"}[t["answer"]]
+        print(f"  local {t['id']} · {said} · {t['title']}" + (f"  {t['pr']}" if t["pr"] else ""))
+        if t.get("words"):
+            print(f"    {_quote(t['words'])}")
+
+
+def local(a) -> None:
+    """A change for Brett's try on his Mac (only while he's Available): what changed, what to look at, the page. Then
+    send him a push notification (PushNotification) and keep the local server (preview "web-claude", port 8004) on the
+    branch until he answers."""
+    got = call(a.base, "/local", {"title": a.title, "area_id": _area_id(a, a.area) if a.area else None, "changed": a.changed,
+                                  "look_at": a.look, "path": a.path, "pr": a.pr})
+    print(f"Local try {got['id']} is in Brett's For you. Now send the push notification, and keep port 8004 on this branch.")
+
+
 def item(a) -> None:
     if a.next is not None:
         print(call(a.base, "/areas", {"do": "next", "item_id": int(a.title_or_id), "step": a.next, "whose": a.whose}))
@@ -566,6 +586,14 @@ def main() -> None:
     s = sub.add_parser("incident", help="it broke at the table: that Product Area is Careful for 30 days")
     s.add_argument("area")
     s.add_argument("words", nargs="*")
+    sub.add_parser("available", help="whether Brett is Available for local tries, and their answers")
+    s = sub.add_parser("local", help="a change for Brett's try on his Mac, while he's Available")
+    s.add_argument("title")
+    s.add_argument("--area")
+    s.add_argument("--changed", action="append", default=[], help="a line of what changed (repeat)")
+    s.add_argument("--look", default="", help="what to look at")
+    s.add_argument("--path", default="/", help="the page to open, like /party")
+    s.add_argument("--pr", default="")
     s = sub.add_parser("freeze", help="whether Brett's game-night freeze is on")
     s.add_argument("--check", action="store_true", help="exit 1 while it's on")
     sub.add_parser("live", help="after a deploy: fixes now live become ready to try (deploy_check.py runs it)")
@@ -581,7 +609,7 @@ def main() -> None:
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
      "check": check, "ask": ask, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
-     "lane": lane, "incident": incident, "freeze": freeze}[a.cmd](a)
+     "lane": lane, "incident": incident, "freeze": freeze, "available": available, "local": local}[a.cmd](a)
 
 
 if __name__ == "__main__":

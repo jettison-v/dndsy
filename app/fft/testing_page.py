@@ -15,7 +15,8 @@ trying what Claude built.
 
 Every change goes through app/fft/rules.py."""
 
-from urllib.parse import urlencode
+from datetime import timedelta
+from urllib.parse import quote, urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -35,6 +36,7 @@ from app.fft.models import (
     FftIdea,
     FftIssue,
     FftItem,
+    FftLocalTry,
     FftNote,
     FftQuestion,
     FftTry,
@@ -46,6 +48,7 @@ router = APIRouter()
 BACK = "/manage/testing"
 FOR_YOU = "/manage/for-you"  # (Brett, Nov 19: For you left Testing for a page of its own; the work flow's slice 2)
 MINE = (BACK, FOR_YOU)
+LOCAL = "http://localhost:8004"  # (Claude's local server on Brett's Mac: preview "web-claude"; a local try opens there)
 ROUND = "fft_round"  # the session's open round: {"id", "checks", "i", "device", "home"}
 SHOWS = (("stands", "Where it stands"), ("claudes", "Claude's"), ("done", "Done"))
 PEOPLES = ("laptop", "iphone", "ipad")  # (Brett's devices; the Mac Mini's runs are Claude's)
@@ -159,9 +162,9 @@ def history(db: Session, c: FftCheck) -> list[dict]:
 # ------------------------------------------------------------------ For you: everything that's Brett's turn
 
 
-SECTIONS = (("try", "Try"), ("decide", "Decide"), ("look", "Look at"), ("table", "From the table"), ("roadmap", "From the Roadmap"))
+SECTIONS = (("local", "Try on your Mac"), ("try", "Try"), ("decide", "Decide"), ("look", "Look at"), ("table", "From the table"), ("roadmap", "From the Roadmap"))
 SECTION_ORDER = {k: n for n, (k, _) in enumerate(SECTIONS)}
-SECTION_OF = {"check": "try", "question": "decide", "decision": "decide", "merge": "look", "ready": "look", "note": "table", "idea": "table",
+SECTION_OF = {"local": "local", "check": "try", "question": "decide", "decision": "decide", "merge": "look", "ready": "look", "note": "table", "idea": "table",
               "roadmap": "roadmap"}
 
 
@@ -213,6 +216,8 @@ def for_you(db: Session, device: str) -> list[dict]:
     for i in db.scalars(select(FftIssue).where(FftIssue.state == "ready", FftIssue.confirm_by.is_(None)).order_by(FftIssue.id)):
         if not db.scalar(select(FftCheckIssue.check_id).where(FftCheckIssue.issue_id == i.id)):
             rows.append((area_key(i.area_id), i.area_id, {"key": f"i{i.id}", "title": i.title, "kind": "ready", "sub": "Fixed and live, with no check: does it work?"}))
+    for lt in db.scalars(select(FftLocalTry).where(FftLocalTry.answer == "").order_by(FftLocalTry.id)):  # (while he's Available)
+        rows.append((area_key(lt.area_id), lt.area_id, {"key": f"l{lt.id}", "title": lt.title, "kind": "local", "sub": "Ready on your Mac"}))
     for _, aid, row in sorted(rows, key=lambda r: (SECTION_ORDER[SECTION_OF[r[2]["kind"]]], r[0])):
         a = areas.get(aid) if aid else None
         if row["kind"] == "check":  # (a group per area: ▶ Just this area starts a round of its checks)
@@ -233,7 +238,8 @@ def summary(groups: list[dict]) -> dict:
     rows = [r for g in groups for r in g["rows"]]
     count = lambda kind: sum(1 for r in rows if r["kind"] == kind)
     checks = [r for r in rows if r["kind"] == "check"]
-    bits = [(len(checks), "check", "checks", f" (about {sum(r['minutes'] for r in checks)} minutes)" if checks else ""),
+    bits = [(count("local"), "change to try on your Mac", "changes to try on your Mac", ""),
+            (len(checks), "check", "checks", f" (about {sum(r['minutes'] for r in checks)} minutes)" if checks else ""),
             (count("question"), "question", "questions", ""), (count("decision"), "decision", "decisions", ""),
             (count("merge"), "fix to OK", "fixes to OK", ""), (count("ready"), "fix to look at", "fixes to look at", ""),
             (count("note"), "note to approve", "notes to approve", ""), (count("idea"), "idea", "ideas", ""),
@@ -284,18 +290,31 @@ def for_you_page(request: Request, open: str = "", db: Session = Depends(get_db)
 
 
 @router.get("/manage/for-you/count")
-def for_you_count(request: Request, db: Session = Depends(get_db)):
+def for_you_count(request: Request, seen: int = 0, db: Session = Depends(get_db)):
     """For you's count, for the Admin gear's badge on every page an admin opens (fetched after the page shows, and again
     on a live change). Only reads: R5's due confirmations are moved by the pages that show them (For you, Testing,
     Feedback), so a background fetch never writes or announces a change of its own."""
-    _, denied = _admin(request)
+    user, denied = _admin(request)
     if denied:
         return denied
+    if seen:  # (a page of his just showed: Available's "quiet for 30 minutes" reads it; at most a write a minute)
+        row = views.person(db, user)["row"]
+        if row is not None and (row.last_seen_at is None or rules.now() - row.last_seen_at > timedelta(minutes=1)):
+            row.last_seen_at = rules.now()
+            db.commit()
     return JSONResponse({"n": summary(for_you(db, device_of(request)))["n"]}, headers={"Cache-Control": "no-store"})
 
 
 def _key(open: str) -> str:
-    return open if open[:1] in ("c", "q", "i", "n", "d", "r") and open[1:].isdigit() else ""
+    return open if open[:1] in ("c", "q", "i", "n", "d", "r", "l") and open[1:].isdigit() else ""
+
+
+def status(db: Session) -> dict:
+    """The status bar on For you and Where it stands (_fft_status.html): Available, Claude listening, an open round,
+    the game-night freeze. Available turns itself off here when one of its signals says so."""
+    li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()
+    return {"available": rules.check_available(db), "listening": views.listening(db), "listener": li,
+            "round": rules.round_open(db), "freeze": rules.freeze_state(db)}
 
 
 def _render(request: Request, db: Session, user: dict, show: str, open: str):
@@ -314,6 +333,7 @@ def _render(request: Request, db: Session, user: dict, show: str, open: str):
         "show": show, "shows": SHOWS, "sections": dict(SECTIONS), "groups": groups, "pick": pick, "picked": picked, "summary": summary(mine),
         "round_n": len(round_checks), "round_open": request.session.get(ROUND), "device": device, "device_said": DEVICE_SAID, "check_words": views.CHECK_WORD,
         "me_id": me["id"], "stands": stands(db) if show == "stands" else None, "listening": views.listening(db), "here_path": FOR_YOU if show == "foryou" else BACK,
+        "status": status(db) if show == "foryou" else None,
         "toast": request.session.pop("toast", None)})
 
 
@@ -334,6 +354,8 @@ def _picked(db: Session, pick: str, device: str) -> dict | None:
         return {"kind": "idea", "d": d}
     if kind == "r" and (it := db.get(FftItem, ident)):
         return {"kind": "roadmap", "it": it}
+    if kind == "l" and (lt := db.get(FftLocalTry, ident)):
+        return {"kind": "local", "lt": lt, "area": db.get(FftArea, lt.area_id) if lt.area_id else None, "open": LOCAL + "/dev/login?next=" + quote(lt.path, safe="/?=&")}
     return None
 
 
@@ -402,7 +424,7 @@ def stands(db: Session) -> dict:
         why = skipped.get(it.title, "")
         items.append({"it": it, "n": n, "areas": rows, "why": f"skipped: {why}" if why else ""})
     li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()
-    return {"rows": items, "done": done, "round": r, "listener": li, "listening": views.listening(db), "missed": views.missed(db),
+    return {"rows": items, "done": done, "round": r, "listener": li, "listening": views.listening(db), "missed": views.missed(db), "status": status(db),
             "freeze": rules.freeze_state(db), "lanes": rules.LANES, "lane_said": rules.LANE_SAID,
             "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
             "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))}
@@ -464,7 +486,7 @@ def area_change(request: Request, area_id: int, do: str = Form(...), title: str 
 
 
 @router.post("/manage/testing/freeze")
-def freeze(request: Request, on: str = Form(...), db: Session = Depends(get_db)):
+def freeze(request: Request, on: str = Form(...), back: str = Form(""), db: Session = Depends(get_db)):
     """The game-night freeze (Brett, Nov 19: a switch he turns on before a game and off after)."""
     user, denied = _admin(request)
     if denied:
@@ -473,7 +495,39 @@ def freeze(request: Request, on: str = Form(...), db: Session = Depends(get_db))
     rules.set_freeze(db, f"user:{me["id"]}", on == "1", by=me["first_name"])
     db.commit()
     request.session["toast"] = "Game-night freeze on: nothing deploys until you turn it off" if on == "1" else "Freeze off: deploys go again"
-    return RedirectResponse(f"{BACK}?show=stands", status_code=303)
+    return RedirectResponse(FOR_YOU if back == "foryou" else f"{BACK}?show=stands", status_code=303)
+
+
+@router.post("/manage/for-you/available")
+def available(request: Request, on: str = Form(...), back: str = Form(""), db: Session = Depends(get_db)):
+    """Brett's Available switch (Nov 19): while it's on, Look work waits for his try on his Mac."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    me = views.person(db, user)
+    rules.set_available(db, f"user:{me['id']}", on == "1", by=me["first_name"])
+    db.commit()
+    request.session["toast"] = (f"Available for {rules.AVAILABLE_HOURS} hours: visible changes wait for your try on your Mac" if on == "1"
+                                else "Not available: visible changes merge, and you try them after they're live")
+    return RedirectResponse(f"{BACK}?show=stands" if back == "stands" else FOR_YOU, status_code=303)
+
+
+@router.post("/manage/for-you/local/{try_id:int}")
+def local_answer(request: Request, try_id: int, answer: str = Form(...), words: str = Form(""), db: Session = Depends(get_db)):
+    """Looks good (Claude merges it) or Something's off… (his words go back to Claude)."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    lt = db.get(FftLocalTry, try_id) or _missing()
+    me = views.person(db, user)
+    try:
+        rules.answer_local_try(db, f"user:{me['id']}", lt, answer, words)
+    except rules.RuleError as e:
+        request.session["toast"] = web.notice(e.words, "warn")
+        return RedirectResponse(f"{FOR_YOU}?open=l{lt.id}", status_code=303)
+    db.commit()
+    request.session["toast"] = "Looks good: Claude merges it" if answer == "good" else "Sent to Claude: it goes back to its plan"
+    return RedirectResponse(FOR_YOU, status_code=303)
 
 
 # ------------------------------------------------------------------ trying a check

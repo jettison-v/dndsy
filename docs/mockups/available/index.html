@@ -1,0 +1,274 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Available to Try Locally</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Available (Brett, Nov 19: "a flag … I can toggle to say Available, so I can check work locally … a For You item
+   (hopefully a desktop notification), a link to start and test the local environment, and a similar description of
+   what you provide in the chat"). Drawn in askdnd's look, laptop first: the switch, For you while it's on, the
+   notification, turning it off. Source: docs/mockups/available/index.html. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f; --link: #f08a8a;
+  --brand: #d64545; --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --violet: #b9a3e3; --violet-soft: rgba(185, 163, 227, .15); --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --red: #ef7b7b; --red-soft: rgba(239, 123, 123, .14); --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.5 var(--sans); margin: 0; }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 22px; }
+h1 { font-size: 1.6rem; margin: 0; color: var(--strong); }
+p { margin: 0; }
+b { color: var(--strong); }
+.lede { color: var(--muted); max-width: 80ch; }
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.tabs button { font: 600 .86rem/1 var(--sans); color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; cursor: pointer; }
+.tabs button[aria-pressed="true"] { background: var(--amber-soft); border-color: var(--amber); color: var(--strong); }
+.why { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--amber); border-radius: 10px; padding: 12px 14px; font-size: .92rem; display: grid; gap: 6px; }
+
+.app { border: 1px solid #4a4f57; border-radius: 12px; overflow: hidden; position: relative; }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--brand); padding: 9px 14px; font-size: .86rem; color: var(--muted); }
+.mbar b { color: #fff; } .mbar .sp { flex: 1; }
+.gear { position: relative; border: 1px solid #3a3e44; border-radius: 8px; padding: 2px 26px 2px 9px; color: #ebe7df; }
+.gear i { position: absolute; top: 3px; right: 4px; font-style: normal; font: 700 .68rem/1 var(--sans); background: var(--amber); color: var(--chrome); border-radius: 999px; padding: 2px 5px; }
+.shell { display: grid; grid-template-columns: 170px minmax(0, 1fr); }
+.side { border-right: 1px solid var(--line-soft); padding: 14px 10px; display: grid; gap: 2px; align-content: start; font-size: .84rem; color: var(--muted); }
+.side span { padding: 5px 9px; border-radius: 7px; display: flex; justify-content: space-between; } .side .on { background: var(--surface-2); color: var(--strong); font-weight: 600; }
+.side .c { background: var(--red); color: #fff; border-radius: 999px; font-size: .7rem; padding: 0 6px; }
+.page { padding: 18px 20px 24px; display: grid; gap: 12px; align-content: start; min-width: 0; }
+.title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.pt { font-size: 1.5rem; font-weight: 700; color: var(--strong); }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); white-space: nowrap; }
+.btn.go { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.soft { background: transparent; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 9px 14px; font-size: .9rem; }
+.bar .sep { width: 1px; align-self: stretch; background: var(--line); }
+.bar .note { color: var(--muted); font-size: .84rem; white-space: nowrap; }
+.bar.avail { border-color: var(--green); background: var(--green-soft); }
+.bar[hidden] { display: none; }
+.switch { display: inline-flex; align-items: center; gap: 8px; }
+.switch i { width: 32px; height: 18px; border-radius: 999px; background: var(--surface-3); position: relative; display: inline-block; }
+.switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--faint); }
+.switch.on i { background: var(--green); } .switch.on i::after { left: 16px; background: #fff; }
+.ml { margin-left: auto; }
+.grp { font: 700 .7rem/1 var(--sans); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding-top: 6px; }
+.item { display: grid; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.item.local { border-color: var(--green); box-shadow: inset 4px 0 0 var(--green); }
+.item h3 { margin: 0; font-size: 1rem; color: var(--strong); }
+.kick { font: 800 .68rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+.pill { font-size: .72rem; font-weight: 700; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.look { color: var(--blue); background: var(--blue-soft); } .pill.yours { color: var(--amber); background: var(--amber-soft); }
+.item ul { margin: 0; padding-left: 18px; display: grid; gap: 3px; font-size: .9rem; }
+.item .small { color: var(--muted); font-size: .84rem; }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.mini { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: .9rem; }
+.mini small { color: var(--muted); }
+
+/* the notification, as macOS draws one */
+.desk { background: linear-gradient(135deg, #2a3140, #1b1f27); border-radius: 12px; min-height: 300px; position: relative; padding: 18px; }
+.notif { position: absolute; top: 18px; right: 18px; width: min(360px, calc(100% - 36px)); background: rgba(40, 42, 48, .92); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 12px 14px; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 2px 10px; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+.notif .ic { grid-row: span 3; width: 34px; height: 34px; border-radius: 8px; background: #d97757; display: grid; place-items: center; color: #fff; font-weight: 800; }
+.notif .ap { font-size: .75rem; color: var(--muted); display: flex; justify-content: space-between; }
+.notif b { font-size: .9rem; } .notif p { font-size: .86rem; color: var(--text); }
+.desk .cap { position: absolute; left: 18px; bottom: 16px; right: 18px; color: var(--muted); font-size: .86rem; }
+
+/* picks */
+.decide { display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt:has(input:checked) { border-color: var(--amber); }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide .mine { color: var(--amber); font-size: .66rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 70px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; } .decide .saved.ok { color: var(--green); }
+.decide .go { min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--brand); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+[data-view] { display: none; } [data-view].shown { display: block; }
+@media (max-width: 760px) { .shell { grid-template-columns: minmax(0, 1fr); } .side { display: none; } }
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:8px">
+    <h1>Available to Try Locally</h1>
+    <p class="lede">While you say you're available, visible changes (the Look lane) wait for your try on your Mac before they merge, the way Careful work does today. Everything else stays as it is: tests, review, Claude tries it first. Four screens, then your picks.</p>
+  </header>
+  <div class="tabs" role="group" aria-label="Screens">
+    <button type="button" data-tab="switch" aria-pressed="true">1 · The switch</button>
+    <button type="button" data-tab="foryou" aria-pressed="false">2 · For you while it's on</button>
+    <button type="button" data-tab="notif" aria-pressed="false">3 · The notification</button>
+    <button type="button" data-tab="off" aria-pressed="false">4 · Turning it off</button>
+  </div>
+  <div class="why" id="why"></div>
+
+  <!-- 1 · the switch -->
+  <div class="app" data-view="switch">
+    <div class="mbar"><b>askdnd</b><span>Campaign</span><span>Table</span><span class="sp"></span><span>Manage ▾</span><span class="gear">⚙<i>2</i></span></div>
+    <div class="shell">
+      <nav class="side"><span class="on">For you <span class="c">2</span></span><span>Overview</span><span>Feedback</span><span>Testing</span></nav>
+      <div class="page">
+        <div class="title"><span class="pt">For you</span><span class="btn go">▶ Start round · 2 checks</span></div>
+        <div class="bar avail" id="bar-on">
+          <span class="switch on"><i></i><b>Available</b></span><span class="note">until 6:40 PM · Look work waits for your local try</span>
+          <span class="sep"></span><span>Claude is listening <span class="note">(heard 1 minute ago)</span></span>
+          <span class="sep"></span><span>Game-night freeze off</span><span class="btn ml">Turn on</span>
+        </div>
+        <div class="bar" id="bar-off" hidden>
+          <span class="switch"><i></i>Available</span><span class="note">off · Look work merges; you try it after it's live</span>
+          <span class="sep"></span><span>Claude is listening <span class="note">(heard 1 minute ago)</span></span>
+          <span class="sep"></span><span>Game-night freeze off</span><span class="btn ml">Turn on</span>
+        </div>
+        <p class="row"><span class="btn soft" data-flip>Flip the switch</span><span class="small" style="color:var(--muted);font-size:.84rem">(try it: the bar is the same one Where it stands has, now on For you too)</span></p>
+        <div class="grp">Try</div>
+        <div class="mini"><span><b>Feedback and Testing: 2 checks</b> <small>· on askdnd.ai · about 4 minutes</small></span><span class="btn">▶ Just this area</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 · For you while it's on -->
+  <div class="app" data-view="foryou">
+    <div class="mbar"><b>askdnd</b><span>Campaign</span><span>Table</span><span class="sp"></span><span>Manage ▾</span><span class="gear">⚙<i>3</i></span></div>
+    <div class="shell">
+      <nav class="side"><span class="on">For you <span class="c">3</span></span><span>Overview</span><span>Feedback</span><span>Testing</span></nav>
+      <div class="page">
+        <div class="title"><span class="pt">For you</span></div>
+        <div class="bar avail"><span class="switch on"><i></i><b>Available</b></span><span class="note">until 6:40 PM</span><span class="sep"></span><span>Claude is listening</span></div>
+        <div class="grp">Try on your Mac</div>
+        <div class="item local">
+          <span class="kick">Ready on your Mac · 2 minutes ago</span>
+          <div class="row"><h3>Battle: the Count pill and status marks</h3><span class="pill look">Look</span></div>
+          <p class="small">What changed, in the words Claude would have used in chat:</p>
+          <ul>
+            <li>The Count is a pill beside the turn, not a line under it.</li>
+            <li>Status marks sit in one row under a creature's name, never above it.</li>
+            <li>Nothing else on Battle moves.</li>
+          </ul>
+          <p class="small"><b>Look at:</b> Battle with a fight running; a creature with three or more marks; a phone-width window.</p>
+          <div class="acts"><span class="btn go">Open on your Mac ↗</span><span class="btn">Looks good</span><span class="btn">Something's off…</span></div>
+          <p class="small">Opens localhost:8004, signed in, on Battle. Looks good merges it; Something's off… is a note on this plan, with a picture.</p>
+        </div>
+        <div class="grp">Try</div>
+        <div class="mini"><span><b>Feedback and Testing: 2 checks</b> <small>· on askdnd.ai · about 4 minutes</small></span><span class="btn">▶ Just this area</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 · the notification -->
+  <div data-view="notif">
+    <div class="desk">
+      <div class="notif"><span class="ic">✳</span><span class="ap"><span>Claude</span><span>now</span></span><b>Ready to try on your Mac: Battle</b><p>The Count pill and status marks. It's in For you.</p></div>
+      <p class="cap">A push notification from the Claude app, on your Mac (and your phone, if the app is there), the moment a local try lands in For you. Clicking it opens For you. Nothing is sent while you're not Available.</p>
+    </div>
+  </div>
+
+  <!-- 4 · turning it off -->
+  <div class="app" data-view="off">
+    <div class="mbar"><b>askdnd</b><span>Campaign</span><span>Table</span><span class="sp"></span><span>Manage ▾</span><span class="gear">⚙<i>3</i></span></div>
+    <div class="shell">
+      <nav class="side"><span class="on">For you <span class="c">3</span></span><span>Overview</span><span>Feedback</span><span>Testing</span></nav>
+      <div class="page">
+        <div class="title"><span class="pt">For you</span></div>
+        <div class="bar"><span class="switch"><i></i>Available</span><span class="note">off since 6:40 PM (4 hours)</span><span class="sep"></span><span>Claude is listening</span></div>
+        <div class="grp">Try</div>
+        <div class="item">
+          <span class="kick" style="color:var(--amber)">Live · merged when Available turned off</span>
+          <div class="row"><h3>Battle: the Count pill and status marks</h3><span class="pill look">Look</span></div>
+          <p class="small">You weren't available any more, so it merged as Look work does, and its check is here to try on askdnd.ai when it suits you.</p>
+          <div class="acts"><span class="btn">▶ Try it</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form class="decide" aria-label="Your picks">
+    <fieldset><legend>1 · Where the switch lives</legend>
+      <label class="opt"><input type="radio" name="where" value="both"><span>A · In the status bar, on For you and Where it stands <span class="mine">my pick</span></span><small>One bar, the same on both pages: Available, Claude listening, the freeze.</small></label>
+      <label class="opt"><input type="radio" name="where" value="foryou"><span>B · On For you only</span><small>Where you are when you're trying things.</small></label>
+      <label class="opt"><input type="radio" name="where" value="gear"><span>C · In the gear's menu</span><small>From any page, one click.</small></label>
+    </fieldset>
+    <fieldset><legend>2 · It turns itself off after</legend>
+      <label class="opt"><input type="radio" name="hours" value="2"><span>A · 2 hours</span><small>Short sessions; turn it on again for more.</small></label>
+      <label class="opt"><input type="radio" name="hours" value="4"><span>B · 4 hours <span class="mine">my pick</span></span><small>An evening.</small></label>
+      <label class="opt"><input type="radio" name="hours" value="day"><span>C · At midnight</span><small>Once a day.</small></label>
+    </fieldset>
+    <fieldset><legend>3 · How you hear a try is ready</legend>
+      <label class="opt"><input type="radio" name="notify" value="app"><span>A · A push notification from the Claude app <span class="mine">my pick</span></span><small>On your Mac and phone; nothing to set up.</small></label>
+      <label class="opt"><input type="radio" name="notify" value="email"><span>B · An email</span><small>Slower, and in your inbox.</small></label>
+      <label class="opt"><input type="radio" name="notify" value="none"><span>C · Only the gear's count</span><small>No interruption.</small></label>
+    </fieldset>
+    <fieldset><legend>4 · A local try still waiting when it turns off</legend>
+      <label class="opt"><input type="radio" name="left" value="merge"><span>A · It merges, and you try it on askdnd.ai later <span class="mine">my pick</span></span><small>As Look work does when you're not available (screen 4).</small></label>
+      <label class="opt"><input type="radio" name="left" value="wait"><span>B · It keeps waiting for your local try</span><small>Nothing visible merges untried, but work can pile up.</small></label>
+    </fieldset>
+    <label><b>Anything else</b> <textarea name="notes" placeholder="Optional"></textarea></label>
+    <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const WHY = {
+    switch: "<b>The switch.</b> In the status bar, on For you and Where it stands. On, it's green and says until when (it turns itself off). While it's on, a visible (Look) change waits for your local try before it merges. Off, Look work merges and you try it after it's live, as now.",
+    foryou: "<b>For you while it's on.</b> A local try comes first, under Try on your Mac: what changed in plain words, what to look at, and one button that opens my local server on your Mac, signed in, on the right page. Looks good merges it; Something's off… is a note on the plan with a picture.",
+    notif: "<b>The notification.</b> When a local try lands, the Claude app sends a push notification, so you needn't watch the page.",
+    off: "<b>Turning it off.</b> By hand, or by itself after the hours you pick. A local try still waiting merges and becomes a check on askdnd.ai for later; nothing waits on you while you're away.",
+  };
+  const tabs = document.querySelectorAll("[data-tab]"), why = document.getElementById("why");
+  const show = k => { tabs.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.tab === k))); document.querySelectorAll("[data-view]").forEach(v => v.classList.toggle("shown", v.dataset.view === k)); why.innerHTML = WHY[k]; };
+  tabs.forEach(b => b.addEventListener("click", () => show(b.dataset.tab)));
+  document.querySelector("[data-flip]").addEventListener("click", () => { const on = document.getElementById("bar-on"), off = document.getElementById("bar-off"); on.hidden = !on.hidden; off.hidden = !off.hidden; });
+  show("switch");
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this mockup's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["where", "hours", "notify", "left"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value)) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page in askdnd (For you, or Manage › Documents) or on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it from here", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page in askdnd or on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>
