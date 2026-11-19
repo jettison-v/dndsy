@@ -38,7 +38,7 @@ def _one(url, sql, **params):
 def test_a_round_page_to_page_with_its_card(people, server, browser_db):
     first, second = _checks(browser_db[0], "/party", "/help")
     admin = people("admin")
-    page = admin.open("/manage/testing")
+    page = admin.open("/manage/for-you")
     page.locator('[data-do="start-round"]').click()
     page.wait_for_url("**/party")
     card = page.locator(f'[data-check-card="{first}"]')
@@ -72,7 +72,7 @@ def test_a_round_page_to_page_with_its_card(people, server, browser_db):
     page.locator('[data-check-card] [data-do="next"]').click()
     page.wait_for_url("**/help")
     page.locator('[data-check-card] [data-do="end-round"]').click()
-    page.wait_for_url("**/manage/testing**")
+    page.wait_for_url("**/manage/for-you**")
     assert page.locator("[data-check-card]").count() == 0
     assert _one(browser_db[0], "SELECT count(*) FROM fft_rounds WHERE ended_at IS NULL") == [(0,)]
     assert not admin.errors, admin.errors
@@ -86,8 +86,9 @@ def test_testing_holds_together_at_every_width(people, server, browser_db):
     page, found = admin.page, []
     for width in (375, 768, 1280):
         page.set_viewport_size({"width": width, "height": 812 if width < 640 else 900})
-        admin.open("/manage/testing")
-        found += problems(page, f"Testing at {width}px")
+        for path, said in (("/manage/for-you", "For you"), ("/manage/testing", "Testing")):
+            admin.open(path)
+            found += problems(page, f"{said} at {width}px")
     assert not found, "\n".join(found)
     assert not admin.errors, admin.errors
 
@@ -130,7 +131,7 @@ def _long_check_on_screen(people, server, cid, size, corner):
     page = admin.page
     page.set_viewport_size({"width": size[0], "height": size[1]})
     admin.context.add_cookies([{"name": "askdnd-cc", "value": f"open.{corner}", "url": server["base"]}])
-    admin.open("/manage/testing")
+    admin.open("/manage/for-you")
     page.locator('[data-do="start-round"]').click()
     page.wait_for_url("**/party")
     card = page.locator(f'[data-check-card="{cid}"]')
@@ -180,7 +181,7 @@ def test_after_the_last_check_the_round_waits_for_end_round(people, server, brow
         page = admin.page
         page.set_viewport_size({"width": size[0], "height": size[1]})
         admin.context.add_cookies([{"name": "askdnd-cc", "value": f"open.{corner}", "url": server["base"]}])
-        admin.open("/manage/testing")
+        admin.open("/manage/for-you")
         page.locator('[data-do="start-round"]').click()
         page.wait_for_url("**/party")
         page.locator(f'[data-check-card="{first}"]').wait_for()
@@ -188,7 +189,7 @@ def test_after_the_last_check_the_round_waits_for_end_round(people, server, brow
         page.wait_for_url("**/help")
         page.locator(f'[data-check-card="{second}"]').wait_for()
         page.keyboard.press("p")
-        page.wait_for_url("**/manage/testing**")
+        page.wait_for_url("**/manage/for-you**")
         done = page.locator("[data-round-done]")
         done.wait_for()
         page.locator("#cards > .card").first.wait_for()  # (Passed, with Undo)
@@ -205,7 +206,7 @@ def test_after_the_last_check_the_round_waits_for_end_round(people, server, brow
         done.locator(".cc-pill").click()
         end.wait_for()
         end.click()
-        page.wait_for_url("**/manage/testing**")
+        page.wait_for_url("**/manage/for-you**")
         page.wait_for_function("() => !document.querySelector('[data-round-done]')")
         page.locator("#cards > .card").first.wait_for()  # (a corner card says it ended: Claude may merge again)
         assert page.locator('[data-do="end-round"]').count() == 0
@@ -217,3 +218,28 @@ def test_after_the_last_check_the_round_waits_for_end_round(people, server, brow
             conn.execute(text("DELETE FROM fft_checks WHERE id IN (:a, :b)"), {"a": first, "b": second})
             conn.execute(text("UPDATE fft_rounds SET ended_at = now() WHERE ended_at IS NULL"))
         engine.dispose()
+
+
+def test_counts_never_blink_between_manage_pages(people, server, browser_db):
+    """Issue 46 (Brett, Nov 19: Manage's list redrew its counts on every click, so they blinked out and back): the
+    counts this tab last heard show at once on the next page, before their fresh answer comes."""
+    import time
+
+    _checks(browser_db[0], "/party")
+    admin = people("admin")
+    page = admin.open("/manage/feedback")
+    side = '.manage-side [data-manage-count="for-you"]'
+    page.wait_for_function(f"() => !document.querySelector('{side}').hidden")
+    page.wait_for_function("() => !document.querySelector('[data-for-you-count]').hidden")
+
+    def slow(route):
+        time.sleep(1.5)
+        route.continue_()
+
+    page.route("**/manage/counts", slow)
+    page.route("**/manage/for-you/count", slow)
+    page.goto(server["base"] + "/manage/documents", wait_until="domcontentloaded")
+    assert page.evaluate(f"() => !document.querySelector('{side}').hidden && !document.querySelector('[data-for-you-count]').hidden")
+    page.unroute("**/manage/counts")
+    page.unroute("**/manage/for-you/count")
+    assert not admin.errors, admin.errors

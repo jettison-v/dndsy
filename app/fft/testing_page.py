@@ -1,17 +1,21 @@
 """Manage › askdnd › Testing (screens 1–8 of docs/mockups/found-fixed-tried/): everything that's Brett's turn, and
 trying what Claude built.
 
-- **For you** is a view of everything Brett's, in the one order (the Roadmap's items, their areas): checks to try (on
-  the device he's on, or another he must use), Claude's questions and decisions, fixes waiting for his OK to merge,
-  then the table's notes to approve and ideas to place, then Roadmap steps that are his. One pill on each: Yours.
+- **For you** (its own page, `/manage/for-you`, since Nov 19, the work flow's slice 2; its count on the Admin gear):
+  everything that's Brett's turn, grouped by what he does with it: Try (checks on the device he's on or another he must
+  use, a group per area in the one order), Decide (Claude's questions and decisions), Look at (fixes waiting for his OK
+  to merge, fixes live with no check), From the table (notes to approve, ideas to place), From the Roadmap (steps that
+  are his). One pill on each: Yours. Testing keeps Where it stands, Claude's and Done.
 - **A check**: the walkthrough the card will show, what he should see, why it's there (what was found, what changed),
   ▶ Try it, ✓ Passed, ✗ Something's wrong…, Can't try…; its history (every try, version and fix).
 - **A round** (▶ Start round): the checks for this device page by page with the card (left by default, draggable,
   folds; keys P, F, C). Passed moves on with Undo in the corner card; Something's wrong… fails the try with its first
   issue, and the card offers ✗ Another…, Change result… and Next check →. While a round is open nothing merges (R11).
-- **Claude's** and **Done**: what's with Claude, and what passed.
+- **Where it stands**, **Claude's** and **Done**: the one order by area, what's with Claude, and what passed.
 
 Every change goes through app/fft/rules.py."""
+
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -40,8 +44,10 @@ from app.templating import templates
 
 router = APIRouter()
 BACK = "/manage/testing"
+FOR_YOU = "/manage/for-you"  # (Brett, Nov 19: For you left Testing for a page of its own; the work flow's slice 2)
+MINE = (BACK, FOR_YOU)
 ROUND = "fft_round"  # the session's open round: {"id", "checks", "i", "device", "home"}
-SHOWS = (("foryou", "For you"), ("stands", "Where it stands"), ("claudes", "Claude's"), ("done", "Done"))
+SHOWS = (("stands", "Where it stands"), ("claudes", "Claude's"), ("done", "Done"))
 PEOPLES = ("laptop", "iphone", "ipad")  # (Brett's devices; the Mac Mini's runs are Claude's)
 DEVICE_SAID = {"laptop": "your laptop", "iphone": "your iPhone", "ipad": "your iPad", "mac_mini": "the Mac Mini"}
 
@@ -85,7 +91,7 @@ def version_of(db: Session, c: FftCheck) -> FftCheckVersion | None:
 
 def page_of(db: Session, c: FftCheck) -> str:
     v = version_of(db, c)
-    return v.path if v is not None and steps.local_path(v.path) else f"{BACK}?open=c{c.id}"
+    return v.path if v is not None and steps.local_path(v.path) else f"{FOR_YOU}?open=c{c.id}"
 
 
 def check_view(db: Session, c: FftCheck, device: str = "laptop") -> dict:
@@ -153,15 +159,23 @@ def history(db: Session, c: FftCheck) -> list[dict]:
 # ------------------------------------------------------------------ For you: everything that's Brett's turn
 
 
+SECTIONS = (("try", "Try"), ("decide", "Decide"), ("look", "Look at"), ("table", "From the table"), ("roadmap", "From the Roadmap"))
+SECTION_ORDER = {k: n for n, (k, _) in enumerate(SECTIONS)}
+SECTION_OF = {"check": "try", "question": "decide", "decision": "decide", "merge": "look", "ready": "look", "note": "table", "idea": "table",
+              "roadmap": "roadmap"}
+
+
 def for_you(db: Session, device: str) -> list[dict]:
-    """Groups of rows, in the one order: each area's checks, questions and fixes to OK; then the table's; then the
-    Roadmap's. Each row: key, title, sub, kind, area_id."""
+    """Groups of rows by what Brett does with them (the Work Flow Map's For you, Nov 19): Try (checks, a group per area
+    in the one order), Decide (Claude's questions and decisions), Look at (fixes to OK, fixes live with no check), From
+    the table (notes to approve, ideas to place), From the Roadmap (steps that are his). Within each, the one order.
+    Each group: key, title, section, rows, area_id, checks; each row: key, title, sub, kind."""
     groups: dict = {}
     order: list = []
 
     def put(gkey, gtitle, row, area_id=None):
         if gkey not in groups:
-            groups[gkey] = {"key": gkey, "title": gtitle, "rows": [], "area_id": area_id, "checks": 0}
+            groups[gkey] = {"key": gkey, "title": gtitle, "section": SECTION_OF[row["kind"]], "rows": [], "area_id": area_id, "checks": 0}
             order.append(gkey)
         groups[gkey]["rows"].append(row)
         if row["kind"] == "check" and row.get("here"):
@@ -199,9 +213,12 @@ def for_you(db: Session, device: str) -> list[dict]:
     for i in db.scalars(select(FftIssue).where(FftIssue.state == "ready", FftIssue.confirm_by.is_(None)).order_by(FftIssue.id)):
         if not db.scalar(select(FftCheckIssue.check_id).where(FftCheckIssue.issue_id == i.id)):
             rows.append((area_key(i.area_id), i.area_id, {"key": f"i{i.id}", "title": i.title, "kind": "ready", "sub": "Fixed and live, with no check: does it work?"}))
-    for _, aid, row in sorted(rows, key=lambda r: r[0]):
+    for _, aid, row in sorted(rows, key=lambda r: (SECTION_ORDER[SECTION_OF[r[2]["kind"]]], r[0])):
         a = areas.get(aid) if aid else None
-        put(f"a{aid or 0}", a.title if a else "In no area yet", row, aid)
+        if row["kind"] == "check":  # (a group per area: ▶ Just this area starts a round of its checks)
+            put(f"a{aid or 0}", a.title if a else "In no area yet", row, aid)
+        else:  # (one group each, the area named on the row)
+            put(SECTION_OF[row["kind"]], dict(SECTIONS)[SECTION_OF[row["kind"]]], row | {"sub": f"{a.title} · {row['sub']}" if a else row["sub"]})
     for n in db.scalars(select(FftNote).where(FftNote.state == "waiting").order_by(FftNote.id)):
         put("table", "From the table", {"key": f"n{n.id}", "title": views.title_of(n.text), "kind": "note", "sub": f"{n.first_name}'s note waits for you"})
     for d in db.scalars(select(FftIdea).where(FftIdea.state == "new").order_by(FftIdea.id)):
@@ -246,25 +263,57 @@ def others(db: Session, show: str, device: str) -> list[dict]:
 
 @router.get("/manage/testing")
 def page(request: Request, show: str = "", open: str = "", db: Session = Depends(get_db)):
+    """Testing: Where it stands, Claude's and Done. For you has a page of its own (an old link to it goes there)."""
     user, denied = _admin(request)
     if denied:
         return denied
+    if show == "foryou" or (not show and open):  # (For you's rows were /manage/testing?open=…: links in notes, toasts, bookmarks)
+        keep = {k: v for k, v in (("open", _key(open)), ("device", request.query_params.get("device", ""))) if v}
+        return RedirectResponse(FOR_YOU + ("?" + urlencode(keep) if keep else ""), status_code=303)
+    show = show if show in dict(SHOWS) else "stands"
+    return _render(request, db, user, show, open)
+
+
+@router.get("/manage/for-you")
+def for_you_page(request: Request, open: str = "", db: Session = Depends(get_db)):
+    """Manage › askdnd › For you: everything that's Brett's turn, by what he does with it (the work flow's slice 2)."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    return _render(request, db, user, "foryou", open)
+
+
+@router.get("/manage/for-you/count")
+def for_you_count(request: Request, db: Session = Depends(get_db)):
+    """For you's count, for the Admin gear's badge on every page an admin opens (fetched after the page shows, and again
+    on a live change). Only reads: R5's due confirmations are moved by the pages that show them (For you, Testing,
+    Feedback), so a background fetch never writes or announces a change of its own."""
+    _, denied = _admin(request)
+    if denied:
+        return denied
+    return JSONResponse({"n": summary(for_you(db, device_of(request)))["n"]}, headers={"Cache-Control": "no-store"})
+
+
+def _key(open: str) -> str:
+    return open if open[:1] in ("c", "q", "i", "n", "d", "r") and open[1:].isdigit() else ""
+
+
+def _render(request: Request, db: Session, user: dict, show: str, open: str):
     rules._expire_rounds(db)
     rules.confirm_due(db)  # (R5: a player's three days to say whether it works are up: it's yours)
     device = device_of(request)
-    show = show if show in dict(SHOWS) else "foryou"
     groups = for_you(db, device) if show == "foryou" else others(db, show, device) if show in ("claudes", "done") else []
     keys = [r["key"] for g in groups for r in g["rows"]]
-    pick = open if open[:1] in ("c", "q", "i", "n", "d", "r") and open[1:].isdigit() else (keys[0] if keys else "")
+    pick = _key(open) or (keys[0] if keys else "")
     picked = _picked(db, pick, device)
     mine = for_you(db, device) if show != "foryou" else groups
     round_checks = [r for g in mine for r in g["rows"] if r["kind"] == "check" and r.get("here")]
     me = views.person(db, user)
     db.commit()
     return templates.TemplateResponse(request, "fft_testing.html", {
-        "show": show, "shows": SHOWS, "groups": groups, "pick": pick, "picked": picked, "summary": summary(mine),
+        "show": show, "shows": SHOWS, "sections": dict(SECTIONS), "groups": groups, "pick": pick, "picked": picked, "summary": summary(mine),
         "round_n": len(round_checks), "round_open": request.session.get(ROUND), "device": device, "device_said": DEVICE_SAID, "check_words": views.CHECK_WORD,
-        "me_id": me["id"], "stands": stands(db) if show == "stands" else None, "listening": views.listening(db),
+        "me_id": me["id"], "stands": stands(db) if show == "stands" else None, "listening": views.listening(db), "here_path": FOR_YOU if show == "foryou" else BACK,
         "toast": request.session.pop("toast", None)})
 
 
@@ -293,7 +342,7 @@ def _about(db: Session, q: FftQuestion) -> dict:
     if q.about == "issue" and q.about_id and (i := db.get(FftIssue, q.about_id)):
         return {"said": f"the issue “{i.title}”", "href": f"/manage/feedback?tab=open&open=i{i.id}"}
     if q.about == "check" and q.about_id and (c := db.get(FftCheck, q.about_id)):
-        return {"said": f"the check “{c.title}”", "href": f"{BACK}?open=c{c.id}"}
+        return {"said": f"the check “{c.title}”", "href": f"{FOR_YOU}?open=c{c.id}"}
     if q.about == "area" and q.about_id and (a := db.get(FftArea, q.about_id)):
         return {"said": f"the {a.title} area", "href": f"{BACK}?show=stands"}
     if q.about == "document" and (doc := views.doc_of(q.doc_path)):
@@ -419,7 +468,7 @@ def _next_page(db: Session, request: Request) -> str:
     ends with its check (leaving a round it joined as it was)."""
     r = _round(request)
     if r is None:
-        return BACK
+        return FOR_YOU
     while r["i"] < len(r["checks"]):
         c = db.get(FftCheck, r["checks"][r["i"]])
         if c is not None and check_view(db, c, r["device"])["here"]:
@@ -430,7 +479,7 @@ def _next_page(db: Session, request: Request) -> str:
     if r.get("one"):
         return _end(request, db)
     _home(request, db, r)  # (the round's card says it stays open, with End round on it: _fft_card_done.html)
-    return leave(request, f"{BACK}?show=foryou")
+    return leave(request, FOR_YOU)
 
 
 def _end(request: Request, db: Session) -> str:
@@ -439,7 +488,7 @@ def _end(request: Request, db: Session) -> str:
         user = request.session.get("real_user") or request.session.get("user")
         rules.end_round(db, f"user:{views.person(db, user)['id']}" if user else "askdnd", row)
     _home(request, db, r)
-    return leave(request, f"{BACK}?show=foryou")
+    return leave(request, FOR_YOU)
 
 
 def _home(request: Request, db: Session, r: dict | None) -> None:
@@ -469,7 +518,7 @@ def enter(request: Request, db: Session, c: FftCheck, path: str) -> str:
             target = {"email": owner.email.lower(), "name": (owner.name if owner.name and owner.name != owner.email else None) or owner.email}
     if target:
         request.session["view_as"] = target
-        request.session["view_as_back"] = BACK
+        request.session["view_as_back"] = FOR_YOU
         request.session["view_as_testing"] = True
     else:
         leave(request, "")
@@ -494,7 +543,7 @@ def round_start(request: Request, area: int = Form(0), db: Session = Depends(get
     ids = [int(r["key"][1:]) for g in groups if not area or g["area_id"] == area for r in g["rows"] if r["kind"] == "check" and r.get("here")]
     if not ids:
         request.session["toast"] = web.notice("Nothing to try on this device right now.", "info")
-        return RedirectResponse(BACK, status_code=303)
+        return RedirectResponse(FOR_YOU, status_code=303)
     me = views.person(db, user)
     try:
         r = rules.open_round(db, f"user:{me['id']}", me["id"], area or None)
@@ -591,7 +640,7 @@ def tried(request: Request, check_id: int, result: str = Form(...), cant: str = 
         r = _round(request)
         r["i"] += 1
         request.session[ROUND] = r
-    to = _next_page(db, request) if on_round else f"{BACK}?open=c{c.id}"
+    to = _next_page(db, request) if on_round else f"{FOR_YOU}?open=c{c.id}"
     db.commit()
     said = f"Passed: {c.title}" if result == "passed" else {"later": "Later: it stays yours", "blocked": "Blocked: it comes back when that's fixed",
                                                              "wrong": "Sent to Claude to rewrite"}.get(cant, "Saved")
@@ -612,14 +661,14 @@ def undo(request: Request, try_id: int, db: Session = Depends(get_db)):
         rules.correct_try(db, f"user:{me['id']}", t, "untried", "Undone", user_id=me["id"])
     except rules.RuleError as e:
         request.session["toast"] = web.notice(e.words, "warn")
-        return RedirectResponse(f"{BACK}?open=c{c.id}", status_code=303)
+        return RedirectResponse(f"{FOR_YOU}?open=c{c.id}", status_code=303)
     r = _round(request)
     if r and c.id in r["checks"]:
         r["i"] = r["checks"].index(c.id)
         request.session[ROUND] = r
     db.commit()
     request.session["toast"] = "Undone: it's to try again"
-    return RedirectResponse(page_of(db, c) if r else f"{BACK}?open=c{c.id}", status_code=303)
+    return RedirectResponse(page_of(db, c) if r else f"{FOR_YOU}?open=c{c.id}", status_code=303)
 
 
 # ------------------------------------------------------------------ Something's wrong… (screen 3)
@@ -735,7 +784,7 @@ def change(request: Request, try_id: int, result: str = Form(...), why: str = Fo
     db.commit()
     request.session["toast"] = "Corrected: the history keeps both"
     c = db.get(FftCheck, t.check_id)
-    return RedirectResponse(page_of(db, c) if _on_round(request, c) else f"{BACK}?open=c{c.id}", status_code=303)
+    return RedirectResponse(page_of(db, c) if _on_round(request, c) else f"{FOR_YOU}?open=c{c.id}", status_code=303)
 
 
 # ------------------------------------------------------------------ questions and decisions (screen 8)
@@ -754,11 +803,11 @@ def answer(request: Request, question_id: int, choice: str = Form(""), text: str
     except rules.RuleError as e:
         if e.code == "bad":
             request.session["toast"] = web.notice(e.words, "warn")
-            return RedirectResponse(f"{BACK}?open=q{q.id}", status_code=303)
+            return RedirectResponse(f"{FOR_YOU}?open=q{q.id}", status_code=303)
         raise HTTPException(409, e.words) from e
     db.commit()
     request.session["toast"] = "Answered: Claude reads it"
-    return RedirectResponse(BACK, status_code=303)
+    return RedirectResponse(FOR_YOU, status_code=303)
 
 
 # Picks made on a mockup opened inside askdnd (Brett's round, Nov 18: they could only save on claude.ai, so his were
@@ -827,8 +876,8 @@ def card(request: Request, at: str = "", db: Session = Depends(get_db)):
     c = db.get(FftCheck, r["checks"][r["i"]])
     if c is None:
         return templates.TemplateResponse(request, "_fft_card_empty.html", {})
-    if at.startswith(BACK) and not (version_of(db, c) and version_of(db, c).path.startswith(BACK)):
-        return templates.TemplateResponse(request, "_fft_card_empty.html", {})  # (on Testing itself, only a check about Testing)
+    if at.startswith(MINE) and not (version_of(db, c) and version_of(db, c).path.startswith(MINE)):
+        return templates.TemplateResponse(request, "_fft_card_empty.html", {})  # (on Testing or For you, only a check about them)
     cv = check_view(db, c, r["device"])
     last = _last_failed(db, c, r["device"])
     sent = len(list(db.scalars(select(FftTryIssue.issue_id).where(FftTryIssue.try_id == last.id)))) if last else 0

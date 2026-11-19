@@ -69,6 +69,20 @@
       "port": 8020
     },
     {
+      "name": "artifacts",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8021",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "docs/artifacts"
+      ],
+      "port": 8021
+    },
+    {
       "name": "web-feedback",
       "runtimeExecutable": "sh",
       "runtimeArgs": [

@@ -120,7 +120,7 @@ def issue_sentence(db: Session, issue: FftIssue) -> str:
     if issue.state == "fixing":
         return f"Claude is fixing it{where}."
     if issue.state == "asks":
-        return "Claude asked you something: answer it in Testing's For you."
+        return "Claude asked you something: answer it in For you."
     if issue.state == "merge_ok":
         return "A player's words prompted this fix: it merges once you say so."
     if issue.state == "ready":
@@ -129,7 +129,7 @@ def issue_sentence(db: Session, issue: FftIssue) -> str:
         cs = issue_checks(db, issue)  # (named, each with where it stands, under this line: _fft_bits.html its_checks)
         one = len(cs) == 1
         if any(x["turn"] == "brett" for x in cs):
-            return "Live: try " + ("its check" if one else "its checks") + " in Testing's For you."
+            return "Live: try " + ("its check" if one else "its checks") + " in For you."
         if cs:
             return "Live, but " + ("its check" if one else "its checks") + " can't be tried yet: Claude's to sort out."
         return "Live: Claude still owes it a check to try."

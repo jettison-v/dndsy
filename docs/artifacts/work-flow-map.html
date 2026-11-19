@@ -1,0 +1,859 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>askdnd Work Flow Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* askdnd Work Flow Map (Brett, Nov 18: "a process flow diagram showing the different workflows and how something would
+   flow through the system … all paths, but digestible"). Reworked Nov 19 with Brett's nine picks on Work Flow, Sized to
+   Grow (docs/artifacts/work-flow-sized.html): three lanes after Build (Ship, Look, Careful), one list with a cut line,
+   the reviewers' corrections and the paths they found missing. Source: docs/artifacts/work-flow-map.html. Laptop first. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --chrome: #0f1113; --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f; --link: #f08a8a;
+  --brand: #d64545;
+  --you: #e8826a; --you-soft: rgba(232, 130, 106, .15);
+  --claude: #b9a3e3; --claude-soft: rgba(185, 163, 227, .15);
+  --gray: #8f8a81; --gray-soft: rgba(162, 157, 147, .10);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --red: #ef7b7b; --red-soft: rgba(239, 123, 123, .14);
+  --hi: #f2c14e;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #dcd7cd; --line-soft: #e7e3db; --line-strong: #c6c0b4;
+  --chrome: #2a2723; --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f; --link: #b83232;
+  --brand: #c43c3c;
+  --you: #b5482c; --you-soft: rgba(181, 72, 44, .10);
+  --claude: #6b4fa3; --claude-soft: rgba(107, 79, 163, .10);
+  --gray: #7a746a; --gray-soft: rgba(107, 101, 92, .07);
+  --blue: #2f5f9e; --blue-soft: rgba(47, 95, 158, .10);
+  --green: #2c8a52; --green-soft: rgba(44, 138, 82, .10);
+  --amber: #a86f00; --amber-soft: rgba(168, 111, 0, .10);
+  --red: #b83232; --red-soft: rgba(184, 50, 50, .08);
+  --hi: #b07d00;
+  color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #dcd7cd; --line-soft: #e7e3db; --line-strong: #c6c0b4;
+  --chrome: #2a2723; --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f; --link: #b83232;
+  --brand: #c43c3c;
+  --you: #b5482c; --you-soft: rgba(181, 72, 44, .10);
+  --claude: #6b4fa3; --claude-soft: rgba(107, 79, 163, .10);
+  --gray: #7a746a; --gray-soft: rgba(107, 101, 92, .07);
+  --blue: #2f5f9e; --blue-soft: rgba(47, 95, 158, .10);
+  --green: #2c8a52; --green-soft: rgba(44, 138, 82, .10);
+  --amber: #a86f00; --amber-soft: rgba(168, 111, 0, .10);
+  --red: #b83232; --red-soft: rgba(184, 50, 50, .08);
+  --hi: #b07d00;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1400px; margin: 0 auto; padding-block: 32px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 48px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 700 2.1rem/1.1 var(--cond); letter-spacing: .01em; }
+h2 { font: 700 1.45rem/1.2 var(--cond); letter-spacing: .02em; }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+b { color: var(--strong); font-weight: 600; }
+a { color: var(--link); text-underline-offset: 2px; }
+button { font: inherit; color: inherit; }
+section { display: grid; gap: 16px; min-width: 0; }
+.eyebrow { font: 700 .75rem/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.lede { color: var(--muted); max-width: 78ch; }
+.sec-head { display: grid; gap: 6px; }
+.sec-head .n { font: 700 .75rem/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+
+/* header */
+header.top { display: grid; gap: 14px; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+.how div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; font-size: .9rem; }
+.how .k { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--hi); }
+.changed { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--hi); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; }
+.changed .k { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--hi); }
+.changed ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .9rem; columns: 2 360px; column-gap: 28px; }
+.changed li { break-inside: avoid; margin-bottom: 4px; }
+.key { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .85rem; color: var(--muted); align-items: center; }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; display: inline-block; }
+.sw.you { background: var(--you-soft); border-color: var(--you); }
+.sw.claude { background: var(--claude-soft); border-color: var(--claude); }
+.sw.gray { background: var(--gray-soft); border-color: var(--gray); }
+.sw.ship { background: var(--green-soft); border-color: var(--green); }
+.sw.look { background: var(--blue-soft); border-color: var(--blue); }
+.sw.careful { background: var(--red-soft); border-color: var(--red); }
+.tag { display: inline-block; font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; vertical-align: 1px; white-space: nowrap; }
+.tag.new { color: var(--hi); background: var(--amber-soft); }
+.tag.part { color: var(--blue); background: var(--blue-soft); }
+.tag.has { color: var(--green); background: var(--green-soft); }
+
+/* the map */
+.paths { display: grid; gap: 10px; }
+.pgroup { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pgroup .g { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); min-width: 150px; }
+.pbtn { display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: 600 .84rem/1 var(--sans); cursor: pointer; white-space: nowrap; }
+.pbtn:hover { border-color: var(--line-strong); }
+.pbtn[aria-pressed="true"] { background: var(--amber-soft); border-color: var(--hi); color: var(--strong); }
+.mapbox { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 10px 8px; overflow-x: auto; }
+.mapbox svg { display: block; width: 100%; min-width: 1160px; height: auto; }
+#map .col-h { fill: var(--faint); font: 700 12px var(--cond); letter-spacing: .14em; text-transform: uppercase; }
+#map .col-band { fill: var(--surface-2); opacity: .45; }
+#map .lane-band { stroke-width: 1; stroke-dasharray: 4 4; }
+#map .lane-band.ship { fill: var(--green-soft); stroke: var(--green); }
+#map .lane-band.look { fill: var(--blue-soft); stroke: var(--blue); }
+#map .lane-band.careful { fill: var(--red-soft); stroke: var(--red); }
+#map .node rect { stroke-width: 1.3; transition: opacity .2s; }
+#map .node.you rect { fill: var(--you-soft); stroke: var(--you); }
+#map .node.claude rect { fill: var(--claude-soft); stroke: var(--claude); }
+#map .node.gray rect { fill: var(--gray-soft); stroke: var(--gray); }
+#map .node .t { fill: var(--strong); font: 600 13.5px var(--sans); }
+#map .node .s { fill: var(--muted); font: 400 11.5px var(--sans); }
+#map .node { transition: opacity .2s; cursor: default; }
+#map .node.dim { opacity: .18; }
+#map .node.on rect { stroke-width: 2.2; }
+#map .node.focus rect { stroke: var(--hi); stroke-width: 3; }
+#map .edge path { fill: none; stroke: var(--line-strong); stroke-width: 1.4; transition: opacity .2s; }
+#map .edge.dim { opacity: .14; }
+#map .edge.on path { stroke: var(--hi); stroke-width: 2.4; }
+#map .edge .lb { font: 500 10.5px var(--sans); fill: var(--muted); }
+#map .edge.on .lb { fill: var(--strong); font-weight: 600; }
+#map .edge .lb.ship, #map .edge.on .lb.ship { fill: var(--green); font: 700 12px var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+#map .edge .lb.look, #map .edge.on .lb.look { fill: var(--blue); font: 700 12px var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+#map .edge .lb.careful, #map .edge.on .lb.careful { fill: var(--red); font: 700 12px var(--cond); letter-spacing: .1em; text-transform: uppercase; }
+#map .edge .lbg { fill: var(--surface); }
+#map .badge text { fill: #15171a; font: 700 11px var(--sans); }
+.mapnote { font-size: .82rem; color: var(--faint); padding: 4px 6px 0; }
+
+/* the steps of a path */
+.walk { display: grid; gap: 14px; }
+.walk-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.walk-head h3 { font: 700 1.2rem/1.2 var(--cond); letter-spacing: .02em; }
+.walk-head p { color: var(--muted); font-size: .92rem; }
+ol.steps { list-style: none; margin: 0; padding: 0; columns: 2 420px; column-gap: 18px; }
+ol.steps li { break-inside: avoid; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 2px 10px; padding: 10px 12px; margin: 0 0 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: default; }
+ol.steps li:hover, ol.steps li.focus { border-color: var(--hi); }
+ol.steps .num { grid-row: span 3; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 .8rem/1 var(--sans); border: 1.5px solid; }
+ol.steps .num.you { color: var(--you); border-color: var(--you); background: var(--you-soft); }
+ol.steps .num.claude { color: var(--claude); border-color: var(--claude); background: var(--claude-soft); }
+ol.steps .num.gray { color: var(--gray); border-color: var(--gray); background: var(--gray-soft); }
+ol.steps .st { font-weight: 600; color: var(--strong); }
+ol.steps .see, ol.steps .behind { font-size: .88rem; }
+ol.steps .see::before { content: "You see "; font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
+ol.steps .behind { color: var(--muted); }
+ol.steps .behind::before { content: "Behind it "; font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
+
+/* cards */
+.truth { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.card .k { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; }
+.card .k.you { color: var(--you); } .card .k.claude { color: var(--claude); } .card .k.gray { color: var(--muted); } .card .k.hi { color: var(--hi); }
+.card p, .card li { font-size: .92rem; }
+.card ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+
+/* lanes */
+.lanes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.lane { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+.lane h3 { font: 700 1.15rem/1.1 var(--cond); letter-spacing: .04em; text-transform: uppercase; }
+.lane.ship { border-top: 4px solid var(--green); } .lane.ship h3 { color: var(--green); }
+.lane.look { border-top: 4px solid var(--blue); } .lane.look h3 { color: var(--blue); }
+.lane.careful { border-top: 4px solid var(--red); } .lane.careful h3 { color: var(--red); }
+.lane p { font-size: .9rem; }
+.lane .you-do { font-size: .9rem; color: var(--strong); }
+.lane .you-do::before { content: "You "; font: 700 .68rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--you); margin-right: 4px; }
+.lane .goes { color: var(--muted); font-size: .86rem; }
+.always { display: grid; gap: 8px; }
+.always .k { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--green); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { display: inline-flex; align-items: center; min-height: 28px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-size: .84rem; }
+
+/* askdnd screens */
+.shots { display: flex; flex-wrap: wrap; gap: 6px; }
+.app { border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: var(--bg); }
+.mbar { display: flex; align-items: center; gap: 14px; background: var(--chrome); border-bottom: 2px solid var(--brand); padding: 9px 14px; font-size: .86rem; color: #a29d93; flex-wrap: wrap; }
+.mbar .logo { width: 22px; height: 22px; border-radius: 6px; background: var(--brand); }
+.mbar b { color: #fff; }
+.mbar .sp { flex: 1; }
+.mbar .fy { display: inline-flex; gap: 6px; align-items: center; border: 1px solid #3a3e44; border-radius: 8px; padding: 3px 9px; color: #ebe7df; }
+.mbar .fy .count { background: var(--you); color: #15171a; }
+.shell { display: grid; grid-template-columns: 180px minmax(0, 1fr); }
+.side { border-right: 1px solid var(--line-soft); padding: 14px 10px; display: grid; gap: 2px; align-content: start; font-size: .84rem; color: var(--muted); }
+.side span { padding: 5px 9px; border-radius: 7px; display: flex; justify-content: space-between; gap: 6px; }
+.side span.on { background: var(--surface-2); color: var(--strong); font-weight: 600; }
+.side .h { font: 700 .66rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding: 12px 9px 4px; }
+.page { padding: 16px 18px 22px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.page .pt { font: 700 1.45rem/1.2 var(--sans); color: var(--strong); }
+.ptop { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.count { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.45em; padding: 0 .45em; border-radius: 999px; background: var(--surface-3); color: var(--text); font: 600 .78em/1 var(--sans); font-variant-numeric: tabular-nums; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); color: var(--text); font: 600 .82rem/1 var(--sans); white-space: nowrap; }
+.btn.go { background: var(--brand); border-color: var(--brand); color: #fff; }
+.listen { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: .86rem; color: var(--muted); }
+.listen .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); display: inline-block; }
+.grp { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--faint); padding-top: 6px; display: flex; gap: 6px; align-items: center; }
+.rows { display: grid; gap: 6px; }
+.wrow { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto; gap: 4px 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; }
+.wrow.held { opacity: .7; }
+.wrow .grip { color: var(--faint); font-size: .9rem; letter-spacing: -2px; }
+.wrow .nm { display: grid; gap: 1px; min-width: 0; }
+.wrow .nm b { font-size: .92rem; }
+.wrow .nm small { color: var(--muted); font-size: .8rem; }
+.wrow .what { grid-column: 2 / -1; color: var(--muted); font-size: .8rem; }
+.cut { display: flex; align-items: center; gap: 10px; color: var(--hi); font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; }
+.cut::before, .cut::after { content: ""; flex: 1; border-top: 2px dashed var(--hi); }
+.stage { display: inline-flex; align-items: center; min-height: 24px; padding: 0 9px; border-radius: 999px; font: 600 .76rem/1 var(--sans); white-space: nowrap; border: 1px solid; }
+.stage.build { color: var(--claude); background: var(--claude-soft); border-color: transparent; }
+.stage.wait { color: var(--you); background: var(--you-soft); border-color: transparent; }
+.stage.test { color: var(--you); background: var(--you-soft); border-color: transparent; }
+.stage.off { color: var(--muted); background: transparent; border-color: var(--line); }
+.lanechip { display: inline-flex; align-items: center; min-height: 22px; padding: 0 8px; border-radius: 6px; font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; border: 1px solid; }
+.lanechip.ship { color: var(--green); border-color: var(--green); }
+.lanechip.look { color: var(--blue); border-color: var(--blue); }
+.lanechip.careful { color: var(--red); border-color: var(--red); }
+.lanechip.none { color: var(--faint); border-color: var(--line); }
+.fy-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.fy-item small { color: var(--muted); font-size: .8rem; grid-column: 1; }
+.fy-item .acts { grid-row: span 2; grid-column: 2; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.chip { display: inline-flex; align-items: center; min-height: 26px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); font: 600 .78rem/1 var(--sans); white-space: nowrap; }
+.chip.mine { border-color: var(--hi); }
+.shotnote { font-size: .84rem; color: var(--muted); padding: 10px 18px 14px; border-top: 1px solid var(--line-soft); }
+.shotnote b { color: var(--text); }
+
+/* table */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 820px; font-size: .9rem; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: 0; }
+th { font: 700 .72rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+td.n { color: var(--faint); font-weight: 700; width: 36px; }
+td.nm { color: var(--strong); font-weight: 600; width: 190px; }
+td.sz { white-space: nowrap; color: var(--muted); }
+tr.done td { color: var(--muted); }
+.has-list { font-size: .9rem; color: var(--muted); max-width: 110ch; }
+
+/* environments */
+.envfig { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 12px 12px; overflow-x: auto; display: grid; gap: 8px; margin: 0; }
+.envfig svg { width: 100%; max-width: 1000px; min-width: 760px; height: auto; display: block; justify-self: center; }
+#env .box rect { stroke-width: 1.3; }
+#env .box.mac rect { fill: var(--gray-soft); stroke: var(--gray); }
+#env .box.stg rect { fill: var(--red-soft); stroke: var(--red); }
+#env .box.prod rect { fill: var(--green-soft); stroke: var(--green); }
+#env .t { fill: var(--strong); font: 700 15px var(--sans); }
+#env .u { fill: var(--muted); font: 500 12px var(--sans); }
+#env .s { fill: var(--text); font: 400 12.5px var(--sans); }
+#env .ln { stroke: var(--line-strong); stroke-width: 1.6; fill: none; }
+#env .ln.dash { stroke-dasharray: 5 5; }
+#env .lb { fill: var(--muted); font: 500 12px var(--sans); }
+#env .head { fill: var(--line-strong); }
+.envfig figcaption { font-size: .85rem; color: var(--muted); padding: 0 6px; }
+
+/* plan steps */
+ol.plan { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; counter-reset: p; }
+ol.plan li { counter-increment: p; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; font-size: .88rem; align-content: start; }
+ol.plan li::before { content: counter(p); font: 700 .8rem/1 var(--sans); color: var(--claude); }
+ol.plan li b { font-size: .95rem; }
+
+/* picks */
+.decide { display: grid; gap: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide legend small { font-weight: 400; color: var(--muted); }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt:has(input:checked) { border-color: var(--hi); }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide .mine { color: var(--hi); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 90px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; }
+.decide .saved.ok { color: var(--green); }
+.decide .go { display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--brand); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+.decide .go:disabled { opacity: .6; }
+footer { font-size: .84rem; color: var(--faint); display: grid; gap: 4px; }
+@media (max-width: 1000px) {
+  .lanes { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  .side { display: none; }
+  .wrow { grid-template-columns: 14px minmax(0, 1fr) auto; }
+  .wrow .lanechip { grid-column: 2; justify-self: start; grid-row: 2; }
+  .wrow .what { grid-row: 3; }
+  .pgroup .g { min-width: 0; width: 100%; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">For Brett · Nov 19 · reworked with your picks</span>
+    <h1>askdnd Work Flow Map</h1>
+    <p class="lede">Everything that can come into askdnd, and every path it can take until it's live, on one map. After it's built, each change goes one of three ways: <b>Ship</b>, <b>Look</b> or <b>Careful</b>. Pick a path and it lights up, numbered, with what you'd see at each step and what's behind it. After the map: the lanes, the screens you'd use, what gets built and in what order, where things run, and two small choices left.</p>
+    <div class="how">
+      <div><span class="k">1 · Follow the paths</span>Pick one at a time under the map. Hover a step to find it on the map.</div>
+      <div><span class="k">2 · Comment anywhere</span>Select any words or a part of the map and add a comment. No need to send each one to Claude.</div>
+      <div><span class="k">3 · Your picks</span>All made: your nine on Work Flow, Sized to Grow and the last two in chat (Nov 19).</div>
+      <div><span class="k">4 · Tell me you're done</span>Say so in chat. I read every comment and pick together, then write the build plan.</div>
+    </div>
+    <div class="changed"><span class="k">What changed with your picks (Nov 19)</span>
+      <ul>
+        <li><b>Three lanes after Build.</b> Ship needs nothing from you; Look you try after it's live; Careful gets one round on staging and ships exactly as tested.</li>
+        <li><b>One list with a cut line</b> instead of a Ready switch. Claude takes everything above the line; a player's bug lands above it.</li>
+        <li><b>Approving a player's note is your OK</b> for its fix. The "OK to merge" step is gone.</li>
+        <li><b>No local copy to keep fresh.</b> Look work is tried on askdnd.ai, after it's live.</li>
+        <li><b>Game night:</b> no deploys in the 6 hours before a game.</li>
+        <li><b>Staging is for Careful work only,</b> refreshed before each round and never during one.</li>
+        <li><b>Facts corrected:</b> staging's data, Google sign-in on staging, how many staging deploys, every Exists and New tag, an idle round ending after 12 hours, "me too" gone.</li>
+        <li><b>New paths:</b> still broken after it's live, it broke at the table, a vague note, a joined note, a note on a plan being built, held or dropped plans, a plan moving up a lane, D&amp;D Beyond work, game night.</li>
+      </ul>
+    </div>
+    <div class="key"><span><i class="sw you"></i>Your step</span><span><i class="sw claude"></i>Claude's step</span><span><i class="sw gray"></i>Comes in, waits, or ends</span><span><i class="sw ship"></i>Ship</span><span><i class="sw look"></i>Look</span><span><i class="sw careful"></i>Careful</span><span><span class="tag has">Exists</span> in askdnd today</span><span><span class="tag part">Partly new</span> some of it exists</span><span><span class="tag new">New</span> to build</span></div>
+  </header>
+
+  <section id="map-sec">
+    <div class="sec-head"><span class="n">The map</span><h2>Every path, start to live</h2>
+      <p class="lede">Seven stages, left to right. Things come in on the left. After Claude builds it, each plan takes its lane: Ship along the top, Look in the middle, Careful below. Arrows going back are the loops: a question for you, something wrong, a test you can't do yet.</p></div>
+    <div class="paths" id="paths" aria-label="Pick a path"></div>
+    <div class="mapbox">
+      <svg id="map" viewBox="0 0 1550 750" role="img" aria-label="The askdnd work flow: notes, Roadmap items and things Claude finds come in; they are approved and sorted, wait on Work in one ordered list, and Claude takes what's above the cut line. Claude plans and builds each one, then it takes one of three lanes: Ship merges with no test from you; Look merges and you try the batch on askdnd.ai; Careful goes to staging for your round, then merges as tested and is checked live. Anything wrong goes back to the same plan."></svg>
+    </div>
+    <p class="mapnote">On a phone the map scrolls sideways. The numbers on the map match the steps below.</p>
+    <div class="walk" id="walk" aria-live="polite"></div>
+  </section>
+
+  <section id="lanes">
+    <div class="sec-head"><span class="n">The lanes</span><h2>How much testing a change needs</h2>
+      <p class="lede">Each plan gets one lane, picked by rules from what it touches. You can tap a plan up a lane; Claude can move one up too, saying why; down only on your word. In every lane you test a thing once at most.</p></div>
+    <div class="lanes">
+      <div class="lane ship"><h3>Ship</h3>
+        <p>Nothing a person would notice, or a fix to a known error: work behind the scenes, tests, dependency updates, a fix for an error Sentry caught, a word changed.</p>
+        <p class="you-do">Nothing. It's on Work's Done list if you'd like to read it.</p>
+        <p class="goes">Tests and the full code review, merged, then Claude checks it on askdnd.ai.</p></div>
+      <div class="lane look"><h3>Look</h3>
+        <p>Something people see, within one Product Area. Most fixes and polish.</p>
+        <p class="you-do">Try the batch once, on askdnd.ai, when it suits you.</p>
+        <p class="goes">Tests, review, pictures before and after, and Claude tries it first. Merged, behind a Labs switch if it's big. Anything wrong is undone the same day, or fixed.</p></div>
+      <div class="lane careful"><h3>Careful</h3>
+        <p>Who sees what, signing in, spending, the D&amp;D Beyond bridge and extension, and database changes that alter or remove data.</p>
+        <p class="you-do">One round on staging. You don't test it again on askdnd.ai.</p>
+        <p class="goes">One round branch on staging, Claude tries it there first. Passed: it merges exactly as tested, in one deploy, then automatic checks on askdnd.ai (Claude, the Mac Mini, a live D&amp;D Beyond run where it applies).</p></div>
+    </div>
+    <div class="truth">
+      <div class="card"><span class="k hi">The dial: askdnd is at Start</span><p>Each check is a setting per lane and level, so the same tools could come with you to another company and start light there too. <b>Team</b> (a second builder, a second table or DM, about 15 regular users) adds staging for Look work, release notes and a second tester. <b>Company</b> (paying customers, people building alongside Claude) adds approval by someone else. askdnd would notice a trigger and tell you; you decide. The detail is on <a href="https://claude.ai/artifact/R3m7fRvZ664fGwnuSSzHBn">Work Flow, Sized to Grow</a>.</p></div>
+      <div class="card"><span class="k you">Your time: about 2 hours a week now, 1 hour later</span><p>Careful rounds come first in For you, each with its minutes. Look batches wait for when you have time, and that's safe because they're already live and Claude tried them first. Ship needs none. At most two plans wait on you at once. Once you're working full time, Look batches will simply wait a little longer.</p></div>
+    </div>
+    <div class="always"><span class="k">At every level, even now</span>
+      <div class="chips"><span>Privacy and who-sees-what tests</span><span>Backups, with a restore that's been tried</span><span>Database changes only add; removals come later</span><span>A Labs switch for risky features</span><span>No deploys 6 hours before a game</span><span>The full record: who decided what, which lane, what was tried, where, on which version</span></div>
+      <p class="lede" style="font-size:.86rem">If something goes wrong at the table (a leak, a broken game night), only that Product Area moves to Careful for 30 days, with one line in the decision log.</p></div>
+  </section>
+
+  <section id="moves">
+    <div class="sec-head"><span class="n">What makes it move</span><h2>Who has to be there, and when</h2>
+      <p class="lede">The map only moves when someone's there to move it. Here's what that means in practice, so nothing on it promises more than it does.</p></div>
+    <div class="truth">
+      <div class="card"><span class="k claude">Claude moves only while a chat is open</span><p>Claude does its work in a chat in the desktop app. With one open, it listens to askdnd and works down the list above the cut line on its own. With none open, nothing moves, and Work says so plainly: "Claude isn't listening". Starting Claude on a schedule waits for the Team level.</p></div>
+      <div class="card"><span class="k claude">Claude hears askdnd between steps</span><p>A note or an answer reaches Claude when it finishes what it's doing: a few minutes, sometimes longer in the middle of a big build. It's never lost. The end-of-turn check won't let Claude stop while anything said to it has no reply.</p></div>
+      <div class="card"><span class="k you">Your answers reach Claude by themselves</span><p>An answer you tap in For you, or picks you save on a mockup in askdnd, land in Claude's inbox. <b>Comments on a claude.ai page like this one don't:</b> tell Claude in chat when you're done, and it reads them all together.</p></div>
+      <div class="card"><span class="k gray">Never waiting on each other</span><p>While a plan waits on you, Claude goes on to the next row above the line, on its own branch. Ship and Look keep merging while you test. Only a Careful round holds merges, and an idle round ends itself after 12 hours.</p></div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <div class="sec-head"><span class="n">What you'd use</span><h2>Two new pages in askdnd</h2>
+      <p class="lede"><b>Work</b> is today's Testing › Where it stands, made its own page: one ordered list with a cut line. <b>For you</b> leaves Testing and gets its own page and its count on the menu bar, because it gathers everything waiting on you. Feedback stays as it is, and <b>Testing</b> becomes each plan's history, opened from its row on Work. Drawn with made-up items.</p></div>
+    <div class="shots" id="shots">
+      <button type="button" class="pbtn" data-shot="work" aria-pressed="true">Work</button>
+      <button type="button" class="pbtn" data-shot="foryou" aria-pressed="false">For you</button>
+    </div>
+
+    <div class="app" data-screen="work">
+      <div class="mbar"><i class="logo"></i><b>askdnd</b><span>Campaign</span><span>Table</span><span class="sp"></span><span class="fy">For you <span class="count">4</span></span><span>Manage ▾</span></div>
+      <div class="shell">
+        <nav class="side" aria-label="Manage"><span class="h">Building askdnd</span><span>For you <span class="count">4</span></span><span>Feedback</span><span class="on">Work</span><span class="h">The table</span><span>Accounts</span><span>Campaigns</span><span>Documents</span></nav>
+        <div class="page">
+          <div class="ptop"><span class="pt">Work</span><span class="btn">+ Add a Roadmap item</span></div>
+          <div class="listen"><i class="dot"></i><b>Claude is listening</b><span>· building Battle, since 8:10pm</span><span>· on staging: Sign-in, round 1 (version 812)</span></div>
+          <div class="rows">
+            <div class="wrow"><span class="grip">⋮⋮</span><span class="nm"><b>Sign-in</b><small>Product Area · 2 issues</small></span><span class="lanechip careful">Careful</span><span class="stage test">Your round on staging</span><span class="what">5 checks, each tried by Claude first · about 15 minutes · nothing else merges until it's done</span></div>
+            <div class="wrow"><span class="grip">⋮⋮</span><span class="nm"><b>Battle</b><small>Product Area · 4 issues, one from a player</small></span><span class="lanechip look">Look</span><span class="stage build">Building</span><span class="what">Plan: the Count pill and status marks, one fix for all four. Open the plan</span></div>
+            <div class="wrow"><span class="grip">⋮⋮</span><span class="nm"><b>Items that bring a creature</b><small>Roadmap item · touches Battle and Sheet</small></span><span class="lanechip look">Look</span><span class="stage wait">Waiting on you</span><span class="what">2 questions and a mockup in For you · Claude went on to the next row meanwhile</span></div>
+          </div>
+          <div class="cut">Claude takes everything above this line</div>
+          <div class="rows">
+            <div class="wrow held"><span class="grip">⋮⋮</span><span class="nm"><b>Sheet</b><small>Product Area · 6 issues</small></span><span class="lanechip none">No plan yet</span><span class="stage off">Held</span></div>
+            <div class="wrow held"><span class="grip">⋮⋮</span><span class="nm"><b>Campaign</b><small>Product Area · 2 issues</small></span><span class="lanechip none">No plan yet</span><span class="stage off">Held</span></div>
+          </div>
+          <div class="grp">Live, try when it suits you <span class="count">1</span></div>
+          <div class="rows">
+            <div class="wrow"><span class="grip"></span><span class="nm"><b>Dice</b><small>Product Area · 3 issues</small></span><span class="lanechip look">Look</span><span class="stage test">Live: try the batch</span><span class="what">Live since Tuesday · 3 checks on askdnd.ai, about 5 minutes</span></div>
+          </div>
+          <div class="grp">Done <span class="count">12</span> <span style="text-transform:none;letter-spacing:0;font:500 .8rem var(--sans)">folded · Ship changes land here too</span></div>
+        </div>
+      </div>
+      <p class="shotnote"><b>What you do here:</b> drag rows into your order; drag one below the line to hold it. Claude takes the top row above the line whenever it's free. Each row's stage is worked out from what's true, never set by hand: Planning, Waiting on you, Building, Held for game night, Your round on staging, Live: try the batch, Done. One plan per Product Area at a time; a Roadmap item can reach into several.</p>
+    </div>
+
+    <div class="app" data-screen="foryou" hidden>
+      <div class="mbar"><i class="logo"></i><b>askdnd</b><span>Campaign</span><span>Table</span><span class="sp"></span><span class="fy">For you <span class="count">4</span></span><span>Manage ▾</span></div>
+      <div class="shell">
+        <nav class="side" aria-label="Manage"><span class="h">Building askdnd</span><span class="on">For you <span class="count">4</span></span><span>Feedback</span><span>Work</span><span class="h">The table</span><span>Accounts</span><span>Campaigns</span><span>Documents</span></nav>
+        <div class="page">
+          <div class="ptop"><span class="pt">For you</span></div>
+          <div class="grp">Try <span class="count">2</span></div>
+          <div class="rows">
+            <div class="fy-item"><b>Sign-in: your round on staging · about 15 minutes</b><small>Careful · 5 checks, each tried by Claude first · ships exactly as you tried it</small><span class="acts"><span class="btn go">Start round on staging</span></span></div>
+            <div class="fy-item"><b>Dice: try the batch on askdnd.ai · about 5 minutes</b><small>Look · live since Tuesday · whenever it suits you</small><span class="acts"><span class="btn">Start</span></span></div>
+          </div>
+          <div class="grp">Decide <span class="count">1</span></div>
+          <div class="rows">
+            <div class="fy-item"><b>Items that bring a creature: which window opens first?</b><small>A question on its plan · Claude's pick marked · a mockup to go with it</small><span class="acts"><span class="chip mine">The item's window</span><span class="chip">The creature's</span></span></div>
+          </div>
+          <div class="grp">Send to a player <span class="count">1</span></div>
+          <div class="rows">
+            <div class="fy-item"><b>A question for the sender of "the map button does nothing"</b><small>Claude couldn't tell which map · send it as it is, or change it first</small><span class="acts"><span class="btn">Send</span><span class="btn">Change</span></span></div>
+          </div>
+        </div>
+      </div>
+      <p class="shotnote"><b>What you do here:</b> everything waiting on you, in one place, and nothing else: rounds and batches to try, decisions on a plan, questions to send on to a player. Answering one sends it straight back to Claude. There's no "OK to merge": approving a player's note was your OK.</p>
+    </div>
+  </section>
+
+  <section id="built">
+    <div class="sec-head"><span class="n">How it's built</span><h2>What gets built, in order</h2>
+      <p class="lede">Much of the map is already in askdnd. Each slice goes through the full process, works on its own, and goes in the lane its rules pick, so we can stop after any of them. Your biggest pain, knowing what waits on you, comes first.</p></div>
+    <p class="has-list"><span class="tag has">Exists</span> &nbsp;Notes with pictures, approving a player's note, declining with why, Claude's inbox and the end-of-turn check, Product Areas and Features, issues in batches, Roadmap items in your order, ideas, questions with picks on mockups, checks with versions, rounds, tries (each marked laptop or phone), notes relayed from staging, the deploy marking fixes live so their checks come back to you, the sender being told, Labs switches, the staging copy and its refresh.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Slice</th><th>In askdnd</th><th>Claude's side</th><th>Size</th></tr></thead>
+        <tbody>
+          <tr class="done"><td class="n">1</td><td class="nm">The map</td><td colspan="2">This page, reworked with your picks.</td><td class="sz">Done Nov 19</td></tr>
+          <tr><td class="n">2</td><td class="nm">For you, its own page</td><td>For you leaves Testing for its own page, with its count on the menu bar: rounds and batches to try, decisions, fixes to look at, the table's notes and ideas.</td><td>Nothing new.</td><td class="sz">Small</td></tr>
+          <tr><td class="n">3</td><td class="nm">Lanes on every plan</td><td>Each plan shows its lane; one tap moves it up. No deploys in the 6 hours before a game, taken from the session's date. An incident moves its Product Area to Careful for 30 days.</td><td>Rules pick the lane from what a plan touches, and the Careful rules are checked automatically. Database changes only add, checked. A one-page undo checklist.</td><td class="sz">Medium</td></tr>
+          <tr><td class="n">4</td><td class="nm">Work, with a cut line</td><td>Work becomes its own page: one ordered list, a cut line, players' bugs above it, held rows below. Each row's stage is worked out from what's true. One plan per Product Area; a plan's scope freezes once planning starts. Testing becomes each plan's history. The Roadmap page points to Work.</td><td>Claude takes everything above the line, top first, and goes on while a plan waits on you (at most two waiting, never two touching the same files). The one-area-at-a-time lock changes to allow it.</td><td class="sz">Medium</td></tr>
+          <tr><td class="n">5</td><td class="nm">What players see</td><td>Plain stages on a note: Waiting its turn, Being built, Brett is trying it, Live. A notice when an idea joins a Roadmap item, and when it ships. A joined note's sender follows the one it joined. One line in the send window says who reads a note.</td><td>Each issue keeps where it came from. A vague note gets a question back, through you (Send to a player, in For you), never a "can't reproduce".</td><td class="sz">Small</td></tr>
+          <tr><td class="n">6</td><td class="nm">Staging rounds, Careful only</td><td>An "on staging" state; Work shows what's on staging now. Tries are kept on askdnd.ai with staging's version, and a pass carries through the merge. A fix mid-round resets only the checks it touched.</td><td>One round branch, merged whole. One database change per round (the script refuses a second). A staging-only sign-in for Claude. Staging refreshed before each round, never during one. A check that setting names match.</td><td class="sz">Medium</td></tr>
+          <tr><td class="n">7</td><td class="nm">Checked live</td><td>A problem found after a deploy names the plan it came from.</td><td>After each deploy, Claude re-runs the plan's checks on askdnd.ai; bridge work adds the live D&amp;D Beyond run before it counts as done.</td><td class="sz">Small</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="lede">Each slice also updates what points at it: Help, the DM guide, docs/MAP.md, the Roadmap. <b>Waits for the Team level:</b> Look changes going through staging, starting Claude on a schedule, release notes, two plans in one Product Area at once, refreshing staging every night, a second tester.</p>
+    <div class="card" id="roadmap-later"><span class="k gray">Built so a Roadmap can follow</span>
+      <p>A Roadmap feature isn't scoped yet. When it comes, it should only add views (an item's page, its progress, what shipped, its linked ideas, players weighing in), never rework what's built here. Three rules in these slices keep it that way:</p>
+      <ul>
+        <li><b>Order, the cut line, the lane and the stage belong to the plan, not the Roadmap item.</b> Claude takes plans, so Work orders plans; an item groups its plans. One order only, never a second list on a Roadmap page.</li>
+        <li><b>A Roadmap item can hold many plans over time</b> (phase 1 now, phase 2 later, ideas parked for a later phase).</li>
+        <li><b>An item's status is worked out from its plans, never kept by hand.</b> Whose turn it is moves onto the plan as its stage; Work doesn't use the item's hand-set now, next or later and next step.</li>
+      </ul>
+      <p>Linking ideas and issues to an item already fits: they hang off the item, and its plan answers each one.</p>
+    </div>
+  </section>
+
+  <section id="where">
+    <div class="sec-head"><span class="n">Where it runs</span><h2>Three places, one job each</h2>
+      <p class="lede">You test a thing once at most: Careful work on staging, Look work on askdnd.ai after it's live. Your Mac is Claude's workbench and never yours to keep fresh.</p></div>
+    <figure class="envfig">
+      <svg id="env" viewBox="0 0 1040 280" role="img" aria-label="Claude builds on the Mac. Ship and Look work goes straight to askdnd.ai once its tests pass. Careful work goes to staging for your round, and what passes is merged to askdnd.ai exactly as tested. Notes and tries made on staging are kept on askdnd.ai.">
+        <defs><marker id="eah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M1 1L9 5L1 9z"/></marker></defs>
+        <path class="ln" d="M145 56 L145 24 L895 24 L895 52" marker-end="url(#eah)"/><text class="lb" x="520" y="44" text-anchor="middle">Ship and Look: merged once the tests and review pass</text>
+        <g class="box mac"><rect x="10" y="56" width="270" height="160" rx="10"/><text class="t" x="28" y="86">Your Mac</text><text class="u" x="28" y="106">Claude's workbench</text><text class="s" x="28" y="138">Builds and runs the tests</text><text class="s" x="28" y="160">Claude tries Look work here first</text><text class="s" x="28" y="182">You never need it</text></g>
+        <g class="box stg"><rect x="385" y="56" width="270" height="160" rx="10"/><text class="t" x="403" y="86">staging.askdnd.ai</text><text class="u" x="403" y="106">Careful rounds only</text><text class="s" x="403" y="138">Refreshed before each round</text><text class="s" x="403" y="160">Google sign-in works here</text><text class="s" x="403" y="182">No bridge, drafting or email</text></g>
+        <g class="box prod"><rect x="760" y="56" width="270" height="160" rx="10"/><text class="t" x="778" y="86">askdnd.ai</text><text class="u" x="778" y="106">Where the table plays</text><text class="s" x="778" y="138">You try Look batches here</text><text class="s" x="778" y="160">Checked after every deploy</text><text class="s" x="778" y="182">by Claude and the Mac Mini</text></g>
+        <line class="ln" x1="280" y1="128" x2="381" y2="128" marker-end="url(#eah)"/><text class="lb" x="332" y="118" text-anchor="middle">a Careful round</text>
+        <line class="ln" x1="655" y1="128" x2="756" y2="128" marker-end="url(#eah)"/><text class="lb" x="707" y="118" text-anchor="middle">as tested</text>
+        <path class="ln dash" d="M520 216 L520 256 L895 256 L895 220" marker-end="url(#eah)"/><text class="lb" x="707" y="248" text-anchor="middle">your tries and notes on staging are kept on askdnd.ai</text>
+      </svg>
+      <figcaption>Staging can't show the D&amp;D Beyond bridge and extension, recap drafting or email, so bridge work gets the live check on askdnd.ai. Each fix to a failed check is another staging deploy; only Careful work uses staging, so there are few. A check keeps the setting names (never their values) the same on staging, askdnd.ai and the example file.</figcaption>
+    </figure>
+  </section>
+
+  <section id="plan-steps">
+    <div class="sec-head"><span class="n">Inside "Claude builds it"</span><h2>Every plan, the same steps</h2>
+      <p class="lede">However a change arrived, whichever lane it takes. The lanes change how much of your time it needs, never these steps.</p></div>
+    <ol class="plan">
+      <li><b>Read it whole</b>Every open issue and failed check in it together, its part of docs/MAP.md and the decisions behind it.</li>
+      <li><b>Write the plan</b>One fix for all of it, not one per note, and its lane. A design choice becomes a question or a mockup in For you.</li>
+      <li><b>Build, one fix at a time</b>Reproduce it, fix it from the design system, add a test that fails without the fix. Database changes only add.</li>
+      <li><b>Look at it</b>In a browser on a laptop and a phone, for every person (player, DM, admin, View as), every place and every state.</li>
+      <li><b>Review it all</b>The code review at high effort, pictures of every main page before and after, the full test suite.</li>
+      <li><b>Checks, tried first</b>Each check written one action a step and tried by Claude before it reaches you: on staging for Careful work, before merging for Look.</li>
+    </ol>
+  </section>
+
+  <section id="picks">
+    <div class="sec-head"><span class="n">Your choices</span><h2>Two picks left</h2>
+      <p class="lede">The first version of this map had six picks. Your nine picks on Work Flow, Sized to Grow settled four of them (where you test, what Claude does while a plan waits, when no chat is open, the cohesion pass). These two are still open. My pick is marked on each.</p></div>
+    <form class="decide" aria-label="Your picks">
+      <fieldset><legend>1 · A note tied to a Roadmap item</legend>
+        <label class="opt"><input type="radio" name="tie" value="yes"><span>A · Yes, Claude may put an issue into a Roadmap item's plan <span class="mine">my pick</span></span><small>When a note is about something a Roadmap item is about to rebuild, it's fixed there, not patched in its Product Area first. Claude says so on the issue, and the sender sees it.</small></label>
+        <label class="opt"><input type="radio" name="tie" value="no"><span>B · No, notes stay in their Product Area</span><small>A Roadmap item's plan lists the issues it touches, but they're fixed in their own plan.</small></label>
+      </fieldset>
+      <fieldset><legend>2 · The names <small>(For you, Feedback, Work, Testing)</small></legend>
+        <label class="opt"><input type="radio" name="names" value="yes"><span>A · As drawn <span class="mine">my pick</span></span><small>For you for everything waiting on you; Feedback for what comes in; Work for the one list and its plans; Testing for each plan's history, opened from Work.</small></label>
+        <label class="opt"><input type="radio" name="names" value="other"><span>B · Different words</span><small>Say which below.</small></label>
+      </fieldset>
+      <label><b>Anything else</b> <span class="lede" style="font-size:.86rem">(a path that's missing, a step that's wrong, a word you'd say differently)</span><textarea name="notes" placeholder="Optional"></textarea></label>
+      <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+    </form>
+  </section>
+
+  <footer>
+    <span>Nothing on this page is built yet. Reworked Nov 19 from your picks on <a href="https://claude.ai/artifact/R3m7fRvZ664fGwnuSSzHBn">Work Flow, Sized to Grow</a>; it replaced the earlier <a href="https://claude.ai/artifact/TbkPaPK9FbmrFT8hSFpx8g">askdnd Work Flow</a> draft.</span>
+    <span>Source: docs/artifacts/work-flow-map.html in the askdnd repo.</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  // ------------------------------------------------------------ the map's pieces
+  const W = 172, H = 66, COLX = [10, 222, 474, 686, 898, 1110, 1322], TALL = 750;
+  const COLS = ["Comes in", "Sorted", "On Work", "Planned", "Built", "Tried", "Live"];
+  // The lanes, drawn behind the Tried and Live columns: [key, top, bottom]
+  const LANES = [["ship", 40, 128], ["look", 142, 332], ["careful", 342, 632]];
+  // id: [column, top, who, title, sub line, what you see, what's behind it, has | part | new]
+  const N = {
+    player:   [0, 44,  "gray",   "A player's note", "problem, idea or question",
+               "A player sends a note from any page, with a picture of it. One line in the send window says who reads it.", "The note waits for an admin; nothing reaches Claude yet. The line about who reads it is new.", "part"],
+    staging:  [0, 134, "gray",   "A note on staging", "sent while trying a round",
+               "A note sent from staging.askdnd.ai.", "It lands on askdnd.ai's Feedback marked Staging and waits for an admin, so a refresh never loses it.", "has"],
+    admin:    [0, 224, "gray",   "Your note", "an admin's: no approval",
+               "You send a note, the same way anyone does.", "An admin's note is open at once and goes straight to Claude.", "has"],
+    found:    [0, 314, "gray",   "Claude finds it", "Sentry, nightly tests, review",
+               "An issue Claude opened, saying where it came from.", "From Sentry, the Mac Mini's nightly tests, the iPhone check or a code review. Today an issue has no source of its own; it gets one.", "part"],
+    roadmap:  [0, 404, "gray",   "A Roadmap item", "bigger work, from you",
+               "You press + Add a Roadmap item on Work and describe it in a few words.", "Roadmap items exist today, in your order; adding one on Work is new.", "part"],
+    cohesion: [0, 494, "gray",   "A cohesion pass", "after a Roadmap item",
+               "When a Roadmap item is done, Claude looks over the whole product.", "A habit, with no screen of its own: pieces built twice, pages that drifted from the design system, code to reuse.", "new"],
+    table:    [0, 594, "gray",   "It broke at the table", "a leak, a broken game",
+               "Someone tells you, or Sentry does, during or after a game.", "An incident: the one thing that goes ahead of everything.", "new"],
+    approve:  [1, 89,  "you",    "You approve it", "also your OK for its fix",
+               "Feedback › To approve: approve it, or decline it saying why (the sender reads that).", "Only now can Claude see it. Approving a player's note is also your OK for its fix; its lane decides the testing.", "part"],
+    triage:   [1, 264, "claude", "Claude sorts it", "Feature, title, split, join",
+               "Within minutes, while a chat is open: its Product Area and Feature and a clear title; split if it holds several things, joined if it's a duplicate.", "Claude's inbox. Sorting never builds anything.", "has"],
+    askback:  [1, 354, "claude", "Claude asks back", "a vague note, through you",
+               "In For you: a question Claude wrote for the sender. Send it as it is, or change it first.", "The sender answers in Notes you sent, and the answer comes back to Claude.", "new"],
+    scope:    [1, 444, "claude", "Claude scopes it", "which areas, how big",
+               "The item says which Product Areas it touches and roughly how big it is.", "The item gets its own plan, which can reach into several Product Areas.", "new"],
+    undo:     [1, 594, "claude", "Claude undoes it", "the last deploy, at once",
+               "The last deploy is undone, and you're told what went back.", "Safe because database changes only add. A one-page undo checklist you could follow yourself.", "part"],
+    closed:   [2, 44,  "gray",   "Answered or closed", "the sender is told why",
+               "The sender reads it in Notes you sent: answered, a duplicate, or won't do, and why.", "Closed with its reason; nothing is deleted.", "has"],
+    ideas:    [2, 154, "you",    "On the Ideas list", "you accept or decline",
+               "You accept it onto a Roadmap item, or decline it saying why.", "An idea, with the notes that joined it. Its senders hear when it joins an item, and again when it ships.", "part"],
+    work:     [2, 264, "you",    "On Work", "one list, in your order",
+               "Its row on Work: a Product Area's fixes, or a Roadmap item. A player's bug lands above the line.", "Today's Testing › Where it stands, made its own page. A new note joins its area's open plan until planning starts.", "part"],
+    line:     [2, 384, "you",    "Above the line", "Claude may take it",
+               "Everything above the cut line is Claude's to take, top first. Drag a row below the line to hold it.", "One control instead of a Ready switch plus an order.", "new"],
+    parked:   [2, 504, "gray",   "Held or dropped", "nothing is lost",
+               "You drag a row below the line, or drop a plan.", "Its branch is parked and its issues go back to their Product Area.", "new"],
+    ask:      [3, 144, "you",    "You answer in For you", "questions and mockups",
+               "A question to tap, or a mockup to look at and make picks on, then Save.", "A question on the plan; your answer goes straight to Claude's inbox.", "has"],
+    plan:     [3, 264, "claude", "Claude writes the plan", "one fix, and its lane",
+               "The row says Planning; open it to read the plan: one fix for everything in it, and its lane.", "Rules pick the lane from what the plan touches. Its stage is worked out from what's true, never set by hand.", "new"],
+    next:     [3, 384, "claude", "Claude goes on", "to the next row",
+               "The waiting row keeps its place, and the next row says Planning.", "Its own branch; nothing merges. At most two plans wait on you, never two touching the same files.", "part"],
+    freeze:   [4, 144, "gray",   "Held for game night", "no deploys 6 hours before",
+               "A plan ready in the 6 hours before a game waits; Work says until when.", "Taken from the session's date in askdnd. A fix for something broken at the table may go, with your OK.", "new"],
+    build:    [4, 264, "claude", "Claude builds it", "tests, review, tried first",
+               "The row says Building.", "Every plan, the same steps (further down): one fix at a time on a branch, tests, the code review, pictures before and after, every check tried by Claude.", "has"],
+    lanechg:  [4, 364, "you",    "Moved up a lane", "one tap on its row",
+               "On the plan's row, you tap a higher lane. Claude can move one up too, and says why.", "Down only on your word, kept on the plan with who and when.", "new"],
+    cant:     [4, 454, "you",    "Can't try yet", "later, blocked, or wrong",
+               "Later, blocked by something, or the check itself is wrong (Claude rewrites it).", "It stays in For you. An idle round ends itself after 12 hours, so other work can merge.", "has"],
+    stage:    [5, 354, "claude", "On staging", "a round, tried by Claude first",
+               "A round in For you, its checks each tried by Claude first; Work shows what's on staging.", "The round's plans go up together on one branch, staging refreshed first. One database change per round. Claude signs in with a staging-only key.", "part"],
+    round:    [5, 454, "you",    "You test it", "one round, on staging",
+               "Start round; each check opens on staging; Passed, Something's wrong or Can't try; then End round.", "Your tries are kept on askdnd.ai with staging's version. Nothing else merges while a Careful round is open.", "part"],
+    failed:   [5, 664, "you",    "Something's wrong", "in a try, or still broken",
+               "You say what happened, with a picture.", "It goes back into the same plan, which says Building again. Only the checks its fix touched come back to you.", "part"],
+    shiplive: [6, 52,  "claude", "Merged, checked live", "no test from you",
+               "Nothing to do. It's on Work's Done list if you'd like to read it.", "Merged once the tests and review pass; Claude checks it on askdnd.ai after the deploy.", "has"],
+    lookmerge:[6, 154, "claude", "Merged and live", "a Labs switch if it's big",
+               "The row says Live: try the batch.", "Merged once the tests and review pass and Claude has tried it. A big piece waits behind a Labs switch.", "has"],
+    lookyou:  [6, 254, "you",    "You try the batch", "on askdnd.ai, once",
+               "In For you: the batch's checks, tried once on askdnd.ai, when it suits you.", "Anything wrong is undone the same day, or fixed.", "has"],
+    cmerge:   [6, 454, "claude", "Merged as tested", "one deploy, no second test",
+               "Nothing to do: you don't test it again on askdnd.ai.", "The round branch merges whole, exactly what you tried, in one deploy.", "new"],
+    clive:    [6, 554, "claude", "Checked live", "automatic checks only",
+               "Nothing to do unless a check finds something.", "After the deploy, Claude re-runs the plan's checks on askdnd.ai and the Mac Mini runs its quick check; bridge work adds a live D&D Beyond run. A problem found names its plan.", "part"],
+    done:     [6, 664, "gray",   "Done, senders told", "a player confirms their fix",
+               "Each sender reads how it was addressed and taps Yes, it works, or Still broken (after three days unanswered, it's yours to confirm).", "The plan is Done and its row folds away on Work. A player's note shows plain stages all along: Waiting its turn, Being built, Brett is trying it, Live.", "part"],
+  };
+  // [from, to, from side, to side, label, label dx, label dy, from offset, to offset, curve, label class]
+  const E = [
+    ["player", "approve", "r", "l"],
+    ["staging", "approve", "r", "l"],
+    ["approve", "triage", "b", "t", "approved", 34, 0],
+    ["approve", "closed", "r", "l", "declined", 0, -6],
+    ["admin", "triage", "r", "l"],
+    ["found", "triage", "r", "l"],
+    ["triage", "closed", "r", "l", "answered", 6, 4, .2],
+    ["triage", "ideas", "r", "l", "an idea", 6, -2, .35],
+    ["triage", "work", "r", "l", "a problem", 0, -10, .5],
+    ["triage", "askback", "b", "t", "too vague", -40, 0, .3, .3],
+    ["askback", "triage", "t", "b", "they answer", 46, 0, .7, .7],
+    ["ideas", "closed", "t", "b", "declined", 34, 0],
+    ["ideas", "work", "b", "t", "accepted", 36, 0],
+    ["roadmap", "scope", "r", "l"],
+    ["cohesion", "scope", "r", "l"],
+    ["scope", "work", "r", "l", "", 0, 0, .5, .75],
+    ["table", "undo", "r", "l"],
+    ["undo", "line", "r", "l", "first in line", 0, 12, .5, .75],
+    ["work", "line", "b", "t", "above the line", 48, 0],
+    ["line", "parked", "b", "t", "held", -24, 0, .3, .3],
+    ["parked", "line", "t", "b", "moved up", 36, 0, .7, .7],
+    ["line", "plan", "r", "l", "Claude is free", 6, -8, .3, .5],
+    ["plan", "ask", "t", "b", "a choice", -30, 0, .3, .3],
+    ["ask", "plan", "b", "t", "your answer", 44, 0, .7, .7],
+    ["plan", "next", "b", "t", "waits on you", 46, 0],
+    ["next", "line", "l", "r", "", 0, 0, .5, .8],
+    ["plan", "build", "r", "l"],
+    ["build", "freeze", "t", "b", "game night soon", 0, 10, .7, .7],
+    ["freeze", "build", "b", "t", "after the game", 0, -10, .3, .3],
+    ["lanechg", "build", "t", "b"],
+    ["build", "shiplive", "r", "l", "Ship", 64, -76, .15, .5, null, "ship"],
+    ["build", "lookmerge", "r", "l", "Look", 40, -36, .35, .5, null, "look"],
+    ["build", "stage", "r", "l", "Careful", 66, -10, .75, .3, null, "careful"],
+    ["lookmerge", "lookyou", "b", "t"],
+    ["lookyou", "failed", "l", "r", "", 0, 0, .5, .25, 16],
+    ["stage", "round", "b", "t"],
+    ["round", "cant", "l", "r", "", 0, 0, .3, .3],
+    ["cant", "round", "r", "l", "", 0, 0, .7, .7],
+    ["round", "cmerge", "r", "l", "passed", 0, -10],
+    ["round", "failed", "b", "t", "something's wrong", 0, 0],
+    ["failed", "build", "l", "r", "same plan", 0, 140, .4, .6, 16],
+    ["cmerge", "clive", "b", "t"],
+    ["clive", "done", "b", "t"],
+    ["shiplive", "done", "r", "r", "", 0, 0, .5, .3],
+    ["lookyou", "done", "r", "r", "", 0, 0, .5, .55],
+    ["done", "failed", "l", "r", "still broken", 0, -12, .7, .7],
+  ];
+  // Paths: [key, group, button label, heading, one line, [steps: id or [id, see, behind]], extra edges]
+  const P = [
+    ["bug", "Comes in", "A player's bug", "A player finds a bug", "The most common path: from a player's note to the fix, live, with the player told. Most fixes are Look.",
+      ["player", ["approve", "Feedback › To approve: approve it, or decline it saying why.", "Approving it is also your OK for its fix; nothing waits for you after your test."], "triage", ["work", "Its row on Work, above the line: a player's bug lands there.", "It joins its Product Area's open plan."], "line", ["plan", "Planning, then its lane. Most fixes are Look.", "Rules pick the lane from what the plan touches."], "build", "lookmerge", "lookyou", "done"]],
+    ["mine", "Comes in", "Your own note", "You send a note yourself", "The same, without the approval: an admin's note goes straight to Claude.",
+      ["admin", "triage", "work", "line", "plan", "build", "lookmerge", "lookyou", ["done", "You read how it was addressed in Notes you sent, and confirm it.", "The plan is Done and its row folds away on Work."]]],
+    ["idea", "Comes in", "An idea", "Someone has an idea", "An idea waits on the Ideas list until you take it onto a Roadmap item. Then it's built like any Roadmap item.",
+      ["player", "approve", "triage", "ideas", ["work", "Accepted onto a Roadmap item, it waits on Work with that item.", "Its senders are told it joined the item, and told again when it ships."], "line", "plan", "ask", "plan", "build", "lookmerge", "lookyou", "done"]],
+    ["question", "Comes in", "A question", "Someone asks a question", "Answered and closed. If the answer is \"that's a bug\", it becomes an issue and takes the bug's path.",
+      ["player", "approve", ["triage", "Claude answers it, or turns it into an issue or an idea when that's what it really is.", "A reply to the sender."], "closed"]],
+    ["declined", "Comes in", "A note you decline", "You decline a player's note", "Nothing reaches Claude. The player reads why.",
+      ["player", ["approve", "You decline it, saying why in a sentence.", "The note is kept, declined, with your words."], ["closed", "The player reads your reason in Notes you sent.", "Nothing reaches Claude."]]],
+    ["vague", "Comes in", "A vague note", "A note too vague to act on", "Claude asks the sender, through you, instead of closing it as \"can't reproduce\".",
+      ["player", "approve", ["triage", "Claude can't tell what's wrong from it.", "It isn't closed."], "askback", ["triage", "Their answer comes back, and Claude sorts the note now.", "Then it goes on like any other note."], "work"]],
+    ["joined", "Comes in", "A note joined to another", "A note joins another", "The same problem, sent twice. Its sender follows the note it joined, all the way to \"Does it work now?\".",
+      ["player", "approve", ["triage", "Claude joins it to the earlier note about the same thing.", "The sender is told which note theirs joined, and follows it from then on."], "work", "line", "plan", "build", "lookmerge", "lookyou", ["done", "Every sender of the joined notes is asked \"Does it work now?\".", "A note split in two shows all its parts."]]],
+    ["stagingnote", "Comes in", "A note from staging", "Someone sends a note while on staging", "It's relayed to askdnd.ai and waits for you, so refreshing staging never loses one.",
+      ["staging", "approve", "triage", "work", "line"]],
+    ["found", "Comes in", "Something Claude finds", "Claude finds a problem itself", "From Sentry, the nightly tests or a review. A fix to an error Sentry caught is usually Ship: nothing for you to try.",
+      ["found", "triage", "work", "line", ["plan", "Planning: its lane is Ship.", "A fix to a known error, nothing a person would notice."], "build", "shiplive"]],
+    ["roadmap", "Bigger work", "A Roadmap item", "You add a Roadmap item", "Bigger work from you, often touching several Product Areas, usually with a decision or two on the way.",
+      ["roadmap", "scope", "work", "line", "plan", "ask", ["plan", "The plan's updated with your answer. A new question comes back to you before anything's built.", "Your picks and words, kept with the question."], "build", ["lookmerge", "Live, behind a Labs switch while it's big.", "You turn it on for the table when you're happy with it."], "lookyou", "done"]],
+    ["cohesion", "Bigger work", "A cohesion pass", "A Roadmap item is done: a cohesion pass", "A look at the whole product at the end of each Roadmap item. What it finds is planned like anything else.",
+      ["cohesion", ["scope", "Claude sizes what it found.", "Each finding becomes an issue in its Product Area, or one plan."], "work", "line", "plan", "build", "lookmerge", "lookyou", "done"]],
+    ["ship", "By lane", "Ship", "A Ship plan", "Nothing a person would notice. No test from you.",
+      [["plan", "The plan's lane is Ship: work behind the scenes, tests, a dependency update, a fix for an error Sentry caught, a word changed.", "Picked by rules from what it touches."], "build", "shiplive", ["done", "It's on Work's Done list, to read if you like.", "No round and no check for you."]]],
+    ["look", "By lane", "Look", "A Look plan", "Something people see. It goes live, and you try the batch once, when it suits you.",
+      [["plan", "The plan's lane is Look: something people see, within one Product Area.", "Most fixes and polish."], "build", "lookmerge", "lookyou", ["done", "Passed: Done.", "Something wrong is undone the same day, or fixed."]]],
+    ["careful", "By lane", "Careful", "A Careful plan", "Where a mistake hurts people or can't be undone. One round on staging, and it ships exactly as you tried it.",
+      [["plan", "The plan's lane is Careful: who sees what, signing in, spending, the D&D Beyond bridge, or a database change that alters or removes data.", "Checked by rules; you or Claude can also move a plan up to Careful."], "build", "stage", "round", "cmerge", "clive", "done"]],
+    ["ddb", "By lane", "D&D Beyond work", "Work on the D&D Beyond bridge", "Always Careful. Staging can't reach the real D&D Beyond, so it isn't done until the live check passes.",
+      [["plan", "Bridge or extension work: Careful.", "Staging has no bridge, so part of it can only be checked live."], "build", ["stage", "On staging: the parts staging can show.", "No bridge, no recap drafting and no email there."], "round", "cmerge", ["clive", "The live test on the real D&D Beyond runs on askdnd.ai.", "It counts as done only once that passes."], "done"]],
+    ["decision", "Along the way", "A plan needs your decision", "A plan needs your decision", "The plan waits for you; Claude doesn't.",
+      [["plan", "Planning shows a design choice to make.", "Claude writes the question, with its pick marked, or a mockup."], "ask", ["plan", "The plan's updated with your answer.", "A new question comes back to you before anything's built."], "next"]],
+    ["fail", "Along the way", "A check fails", "Something's wrong in your round", "It goes back into the same plan, not to the end of the line, and only what changed comes back to you.",
+      ["stage", "round", "failed", ["build", "The row says Building again.", "A revision of the same plan, on the same branch."], ["stage", "The checks the fix touched are back in For you; your other passes stand.", "Staging changes only between your tries, and the round says so."], ["round", "You try those again.", "A new try; the old one stays in the record."], "cmerge"]],
+    ["cant", "Along the way", "You can't test yet", "You can't test yet", "Nothing merges from that round and nothing's lost. Claude goes on to the next row meanwhile.",
+      ["stage", "round", "cant", ["round", "When you can, it's still in For you, still on staging.", "An idle round ends itself after 12 hours, so Ship and Look can merge; it opens again when you start."]], [["cant", "round"]]],
+    ["blocker", "Along the way", "Something stops your round", "Something stops your round", "Mark it as stopping your round, and Claude fixes only that, at once, ahead of everything else.",
+      ["round", ["failed", "You mark it as stopping your round.", "A blocker goes first, before anything above the line."], ["build", "Claude fixes only that.", "The rest of the plan waits for the round."], ["stage", "Back on staging, and the round shows what changed.", "Only the checks it touched reset."], ["round", "Your round goes on.", "The same round, still open."]]],
+    ["lane", "Along the way", "A plan moves up a lane", "A plan moves up a lane", "You think a Look plan needs your round first. One tap.",
+      [["plan", "The plan shows the lane its rules picked: say, Look.", "Picked from what it touches."], "lanechg", "build", "stage", "round", "cmerge", "clive", "done"]],
+    ["parked", "Along the way", "You hold or drop a plan", "You hold or drop a plan", "Drag it below the line, or drop it. Nothing is lost.",
+      ["work", "line", ["parked", "You drag it below the line, or drop it.", "Its branch is parked and its issues go back to their Product Area."], ["line", "Later you move it back above the line.", "Claude picks up where it stopped."]]],
+    ["building", "Along the way", "A note on a plan being built", "A note about something already being built", "It waits for the next plan in its Product Area, so what you're testing doesn't change under you.",
+      ["player", "approve", ["triage", "It's about something a plan is already building.", "A plan's scope freezes once planning starts."], ["work", "It waits on Work for the next plan in its Product Area.", "A blocker is the exception: it goes first."], "line"]],
+    ["freeze", "Along the way", "Game night is close", "A plan is ready just before a game", "No deploys in the 6 hours before a game, in any lane.",
+      [["build", "Built and ready to merge.", "Any lane."], "freeze", ["build", "After the game, it goes on.", "A fix for something broken at the table may go during the freeze, with your OK."], "lookmerge", "lookyou"]],
+    ["still", "When it goes wrong", "Still broken after it's live", "Still broken after it's live", "Back to Claude on the same plan, and the sender is told.",
+      [["done", "A player taps Still broken…, or you do.", "The plan isn't Done after all."], ["failed", "What's wrong, in their words, with a picture.", "Back to the same plan; the sender is told."], "build", "lookmerge", "lookyou", "done"]],
+    ["table", "When it goes wrong", "It broke at the table", "It broke at the table", "Undo first, then the fix goes ahead of everything, in the Careful lane.",
+      ["table", "undo", ["line", "Its fix goes to the top of Work.", "Its Product Area is Careful for 30 days, with one line in the decision log."], ["plan", "A Careful plan, whatever it touches.", "The area stays Careful until the 30 days are up."], "build", "stage", "round", "cmerge", "clive", "done"]],
+    ["all", "", "All paths", "All paths at once", "Every way in and every loop. Pick a path above to follow one.", []],
+  ];
+  const TAGS = { has: "Exists", part: "Partly new", new: "New" };
+
+  // ------------------------------------------------------------ drawing
+  const svg = document.getElementById("map"), NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); (parent || svg).appendChild(e); return e; };
+  const box = id => { const [c, y] = N[id]; return { x: COLX[c], y, w: W, h: H }; };
+  const anchor = (id, side, f) => { const b = box(id); f = f == null ? .5 : f;
+    return side === "r" ? [b.x + b.w, b.y + b.h * f] : side === "l" ? [b.x, b.y + b.h * f] : side === "t" ? [b.x + b.w * f, b.y] : [b.x + b.w * f, b.y + b.h]; };
+  const push = (p, side, d) => side === "r" ? [p[0] + d, p[1]] : side === "l" ? [p[0] - d, p[1]] : side === "t" ? [p[0], p[1] - d] : [p[0], p[1] + d];
+
+  const defs = el("defs", {});
+  [["ah", "var(--line-strong)"], ["ah-on", "var(--hi)"]].forEach(([id, fill]) => {
+    const m = el("marker", { id, viewBox: "0 0 10 10", refX: 9, refY: 5, markerWidth: 6.5, markerHeight: 6.5, orient: "auto-start-reverse" }, defs);
+    el("path", { d: "M1 1L9 5L1 9z", style: `fill:${fill}` }, m);
+  });
+  COLX.forEach((x, i) => {
+    el("rect", { class: "col-band", x: x - 8, y: 6, width: W + 16, height: TALL - 14, rx: 10 });
+    el("text", { class: "col-h", x: x + W / 2, y: 28, "text-anchor": "middle" }).textContent = COLS[i];
+  });
+  LANES.forEach(([k, top, bottom]) => el("rect", { class: "lane-band " + k, x: COLX[5] - 6, y: top, width: COLX[6] + W - COLX[5] + 12, height: bottom - top, rx: 10 }));
+  const labelLayer = document.createElementNS(NS, "g");
+  const edgeEls = E.map(([a, b, sa, sb, label, dx, dy, fa, fb, curve, cls]) => {
+    const p1 = anchor(a, sa, fa), p2 = anchor(b, sb, fb);
+    const dist = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+    const k = curve || Math.max(22, Math.min(60, dist / 2.4));
+    const c1 = push(p1, sa, k), c2 = push(p2, sb, k);
+    const end = push(p2, sb, 3);
+    const g = el("g", { class: "edge", "data-a": a, "data-b": b });
+    el("path", { d: `M${p1[0]} ${p1[1]} C${c1[0]} ${c1[1]} ${c2[0]} ${c2[1]} ${end[0]} ${end[1]}`, "marker-end": "url(#ah)" }, g);
+    const lg = el("g", { class: "edge lbl", "data-a": a, "data-b": b }, labelLayer);
+    if (label) {
+      const mx = (p1[0] + 3 * c1[0] + 3 * c2[0] + p2[0]) / 8 + (dx || 0), my = (p1[1] + 3 * c1[1] + 3 * c2[1] + p2[1]) / 8 + (dy || 0);
+      const bg = el("rect", { class: "lbg", rx: 3 }, lg);
+      const t = el("text", { class: "lb" + (cls ? " " + cls : ""), x: mx, y: my + 3.5, "text-anchor": "middle" }, lg);
+      t.textContent = label;
+      requestAnimationFrame(() => { try { const bb = t.getBBox(); bg.setAttribute("x", bb.x - 3); bg.setAttribute("y", bb.y - 1); bg.setAttribute("width", bb.width + 6); bg.setAttribute("height", bb.height + 2); } catch (e) { /* not drawn yet */ } });
+    }
+    return [g, lg];
+  });
+  const nodeEls = {};
+  Object.entries(N).forEach(([id, [, , who, title, sub]]) => {
+    const b = box(id);
+    const g = el("g", { class: `node ${who}`, "data-id": id });
+    el("rect", { x: b.x, y: b.y, width: W, height: H, rx: 9 }, g);
+    el("text", { class: "t", x: b.x + 12, y: b.y + 26 }, g).textContent = title;
+    el("text", { class: "s", x: b.x + 12, y: b.y + 46 }, g).textContent = sub;
+    nodeEls[id] = g;
+  });
+  svg.appendChild(labelLayer);
+  const badges = el("g", { class: "badges" });
+
+  // ------------------------------------------------------------ paths
+  const pathsBox = document.getElementById("paths"), walk = document.getElementById("walk");
+  const groups = {};
+  P.forEach(([key, grp, label]) => {
+    const g = grp || "Or";
+    if (!groups[g]) { const row = document.createElement("div"); row.className = "pgroup"; row.innerHTML = `<span class="g"></span>`; row.querySelector(".g").textContent = g; pathsBox.appendChild(row); groups[g] = row; }
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "pbtn"; b.dataset.path = key; b.textContent = label; b.setAttribute("aria-pressed", "false");
+    b.addEventListener("click", () => pick(key));
+    groups[g].appendChild(b);
+  });
+  const focus = id => {
+    Object.values(nodeEls).forEach(g => g.classList.toggle("focus", g.dataset.id === id));
+    walk.querySelectorAll("li").forEach(li => li.classList.toggle("focus", li.dataset.node === id));
+  };
+  const pick = key => {
+    const [, , , heading, line, steps, extra] = P.find(p => p[0] === key);
+    pathsBox.querySelectorAll(".pbtn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.path === key)));
+    const ids = steps.map(s => Array.isArray(s) ? s[0] : s);
+    const all = key === "all";
+    const pairs = new Set();
+    ids.forEach((id, i) => { if (i) pairs.add(ids[i - 1] + ">" + id); });
+    (extra || []).forEach(([a, b]) => pairs.add(a + ">" + b));
+    Object.values(nodeEls).forEach(g => { const on = ids.includes(g.dataset.id); g.classList.toggle("dim", !all && !on); g.classList.toggle("on", on); g.classList.remove("focus"); });
+    edgeEls.forEach(([g, lg]) => {
+      const on = pairs.has(g.dataset.a + ">" + g.dataset.b);
+      [g, lg].forEach(x => { x.classList.toggle("on", on); x.classList.toggle("dim", !all && !on); });
+      g.querySelector("path").setAttribute("marker-end", on ? "url(#ah-on)" : "url(#ah)");
+    });
+    // badges: a node's step numbers
+    badges.replaceChildren();
+    const nums = {};
+    ids.forEach((id, i) => { (nums[id] = nums[id] || []).push(i + 1); });
+    Object.entries(nums).forEach(([id, list]) => {
+      const b = box(id), txt = list.join(", "), w = Math.max(20, 9 + txt.length * 7);
+      const g = el("g", { class: "badge" }, badges);
+      el("rect", { x: b.x + W - w + 6, y: b.y - 8, width: w, height: 20, rx: 10, style: "fill:var(--hi)" }, g);
+      el("text", { x: b.x + W - w / 2 + 6, y: b.y + 6, "text-anchor": "middle" }, g).textContent = txt;
+    });
+    // the steps
+    walk.replaceChildren();
+    const head = document.createElement("div"); head.className = "walk-head";
+    head.innerHTML = "<h3></h3><p></p>"; head.querySelector("h3").textContent = heading; head.querySelector("p").textContent = line;
+    walk.appendChild(head);
+    if (!steps.length) return;
+    const ol = document.createElement("ol"); ol.className = "steps";
+    steps.forEach((s, i) => {
+      const id = Array.isArray(s) ? s[0] : s, n = N[id];
+      const see = Array.isArray(s) ? s[1] : n[5], behind = Array.isArray(s) ? s[2] : n[6];
+      const li = document.createElement("li"); li.dataset.node = id;
+      li.innerHTML = `<span class="num ${n[2]}"></span><span class="st"></span><span class="see"></span><span class="behind"></span>`;
+      li.querySelector(".num").textContent = i + 1;
+      li.querySelector(".st").textContent = n[3] + " ";
+      const tag = document.createElement("span"); tag.className = "tag " + n[7]; tag.textContent = TAGS[n[7]];
+      li.querySelector(".st").appendChild(tag);
+      li.querySelector(".see").textContent = see;
+      li.querySelector(".behind").textContent = behind;
+      li.addEventListener("mouseenter", () => focus(id));
+      li.addEventListener("mouseleave", () => focus(null));
+      ol.appendChild(li);
+    });
+    walk.appendChild(ol);
+  };
+  Object.values(nodeEls).forEach(g => { g.addEventListener("mouseenter", () => focus(g.dataset.id)); g.addEventListener("mouseleave", () => focus(null)); });
+  pick("bug");
+
+  // ------------------------------------------------------------ screens
+  const shots = document.querySelectorAll("#shots .pbtn");
+  shots.forEach(b => b.addEventListener("click", () => {
+    shots.forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    document.querySelectorAll("[data-screen]").forEach(s => { s.hidden = s.dataset.screen !== b.dataset.shot; });
+  }));
+})();
+(() => {
+  // Your picks save where you are: inside askdnd (Documents, or Open mockup in For you), askdnd keeps them as your answer
+  // to this page's question; on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["tie", "names"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").firstChild.textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it when you say you're done", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

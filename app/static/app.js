@@ -4738,18 +4738,52 @@ document.addEventListener('click', e => {
 // ---------------------------------------------------------------- Manage counts
 // Beside Needs you, Inbox and Feedback (app/manage.py counts): asked for once, when the Manage or Admin menu opens or a Manage page
 // loads, so no other page waits for them
+// (issue 46, Nov 19: the counts blinked out and back on every click down Manage's list) The last counts this tab heard
+// are shown at once, kept in sessionStorage, and the fresh ones replace them when they come.
 (function () {
   let asked = false;
+  const at = document.querySelector('[data-manage-counts]'), KEY = 'askdnd-manage-counts:' + (at ? at.dataset.manageCounts : '');  // (a campaign's own)
+  const show = c => document.querySelectorAll('[data-manage-count]').forEach(el => {
+    if (!(el.dataset.manageCount in c)) return;
+    const n = c[el.dataset.manageCount]; el.textContent = n || ''; el.hidden = !n;
+  });
+  try { show(JSON.parse(sessionStorage.getItem(KEY) || '{}')); } catch (e) { /* (no storage: they come with the answer) */ }
   function fill() {
     const src = document.querySelector('[data-manage-counts]');
     if (asked || !src) return;
     asked = true;
     fetch(src.dataset.manageCounts, { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : {})).then(c => {
-      document.querySelectorAll('[data-manage-count]').forEach(el => { const n = c[el.dataset.manageCount]; el.textContent = n || ''; el.hidden = !n; });
+      show(c);
+      try { sessionStorage.setItem(KEY, JSON.stringify(Object.assign(JSON.parse(sessionStorage.getItem(KEY) || '{}'), c))); } catch (e) { /* (fine) */ }
     }).catch(() => {});
   }
   if (document.querySelector('.manage-side')) fill();
-  document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"], [data-menu="admin-menu"]')) fill(); });
+  document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"], [data-menu="admin-menu"], [data-menu="more-menu"]')) fill(); });
+})();
+
+// ---------------------------------------------------------------- For you's count on the Admin gear
+// (Brett, Nov 19, the work flow's slice 2: a count on the gear, For you first in its menu) Everything waiting on him,
+// asked for once the page has shown (no page waits for it) and again when Found, Fixed, Tried changes; hidden at zero
+(function () {
+  const gear = document.querySelector('[data-for-you-count]');
+  if (!gear) return;
+  const btn = gear.closest('button'), said = btn.getAttribute('aria-label');
+  const KEY = 'askdnd-for-you-count';  // (the last count, shown at once so it never blinks between pages: issue 46)
+  let tick = null;
+  function put(n) {
+    document.querySelectorAll('[data-for-you-count], [data-manage-count="for-you"]').forEach(el => { el.textContent = n || ''; el.hidden = !n; });
+    btn.setAttribute('aria-label', n ? said + ', ' + n + ' waiting on you' : said);
+  }
+  try { const was = sessionStorage.getItem(KEY); if (was !== null) put(Number(was)); } catch (e) { /* (no storage: it comes with the answer) */ }
+  function ask() {
+    fetch('/manage/for-you/count', { headers: { Accept: 'application/json' }, cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => {
+      if (!j) return;
+      put(j.n);
+      try { sessionStorage.setItem(KEY, String(j.n || 0)); } catch (e) { /* (fine) */ }
+    }).catch(() => {});
+  }
+  if (document.readyState === 'complete') setTimeout(ask, 300); else addEventListener('load', () => setTimeout(ask, 300));
+  document.addEventListener('askdnd:live', e => { if (e.detail.type === 'fft') { clearTimeout(tick); tick = setTimeout(ask, 400); } });
 })();
 
 // ---------------------------------------------------------------- Changing spells and forms
