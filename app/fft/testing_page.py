@@ -392,6 +392,7 @@ def stands(db: Session) -> dict:
                 f = taxonomy.feature(i.feature)
                 feats[f.title if f else "No Feature yet"] = feats.get(f.title if f else "No Feature yet", 0) + 1
             rows.append({"a": a, "turn": {"claude": "claude", "brett": "yours"}.get(turn, "yours"), "counts": counts or "Nothing open yet",
+                         "lane": rules.lane_of(a), "incident": bool(a.careful_until and a.careful_until > rules.now()),
                          "features": sorted(feats.items(), key=lambda x: -x[1]),
                          "note": note, "locked": a.lock_owner if a.lock_until and a.lock_until > rules.now() else ""})
             prev = a.title
@@ -399,6 +400,7 @@ def stands(db: Session) -> dict:
         items.append({"it": it, "n": n, "areas": rows, "why": f"skipped: {why}" if why else ""})
     li = db.scalars(select(rules.FftListener).order_by(rules.FftListener.heard_at.desc().nulls_last())).first()
     return {"rows": items, "done": done, "round": r, "listener": li, "listening": views.listening(db), "missed": views.gaps(db),
+            "freeze": rules.freeze_state(db), "lanes": rules.LANES, "lane_said": rules.LANE_SAID,
             "all_items": list(db.scalars(select(FftItem).order_by(FftItem.place, FftItem.id))),
             "all_areas": list(db.scalars(select(FftArea).where(FftArea.archived.is_(False)).order_by(FftArea.place, FftArea.id)))}
 
@@ -423,8 +425,8 @@ def order(request: Request, column: str = Form(...), keys: list[str] = Form(defa
 
 @router.post("/manage/testing/areas/{area_id:int}")
 def area_change(request: Request, area_id: int, do: str = Form(...), title: str = Form(""), into: int = Form(0), item: int = Form(0),
-                db: Session = Depends(get_db)):
-    """Rename…, Merge into…, Move to another item…, Archive."""
+                lane: str = Form(""), db: Session = Depends(get_db)):
+    """Rename…, Merge into…, Move to another item…, Archive, and its lane (Ship, Look, Careful)."""
     user, denied = _admin(request)
     if denied:
         return denied
@@ -445,6 +447,9 @@ def area_change(request: Request, area_id: int, do: str = Form(...), title: str 
         elif do == "archive":
             rules.archive_area(db, actor, a)
             said = "Archived"
+        elif do == "lane":  # (Brett's word: any lane, down too; kept with who)
+            rules.set_lane(db, actor, a, lane, "Brett chose it", admin=True)
+            said = f"{a.title}: {rules.LANE_SAID[lane]}"
         else:
             raise HTTPException(400)
     except rules.RuleError as e:
@@ -452,6 +457,19 @@ def area_change(request: Request, area_id: int, do: str = Form(...), title: str 
         return RedirectResponse(f"{BACK}?show=stands", status_code=303)
     db.commit()
     request.session["toast"] = said
+    return RedirectResponse(f"{BACK}?show=stands", status_code=303)
+
+
+@router.post("/manage/testing/freeze")
+def freeze(request: Request, on: str = Form(...), db: Session = Depends(get_db)):
+    """The game-night freeze (Brett, Nov 19: a switch he turns on before a game and off after)."""
+    user, denied = _admin(request)
+    if denied:
+        return denied
+    me = views.person(db, user)
+    rules.set_freeze(db, f"user:{me["id"]}", on == "1", by=me["first_name"])
+    db.commit()
+    request.session["toast"] = "Game-night freeze on: nothing deploys until you turn it off" if on == "1" else "Freeze off: deploys go again"
     return RedirectResponse(f"{BACK}?show=stands", status_code=303)
 
 

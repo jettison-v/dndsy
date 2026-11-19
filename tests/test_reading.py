@@ -32,7 +32,8 @@ MAIN = "Mainmark Harbor"  # anything of Main's, for the DM of another campaign
 # for whoever's there, which answers someone signed out with nothing (a count of 0, no cards, no heals)
 PUBLIC = {"/login", "/health", "/auth/google", "/auth/callback", "/dev/login", "/rules/terms.json", "/email/stop",
           "/admin/notes/callback", "/bridge/health", "/help",
-          "/heals/waiting", "/manage/counts", "/your-notes/news", "/your-notes/seen"}
+          "/heals/waiting", "/manage/counts", "/your-notes/news", "/your-notes/seen",
+          "/api/fft/freeze"}  # (only whether deploys are frozen: GitHub's tests ask it, Nov 19)
 
 
 def reading_routes() -> list[tuple[str, dict]]:

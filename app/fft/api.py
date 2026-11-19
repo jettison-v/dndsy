@@ -407,12 +407,27 @@ def area_change(body=web.JsonBody, x_fft_key: str | None = Header(default=None),
             it = db.get(FftItem, _int(body.get("item_id"), "item_id")) or _missing()
             rules.item_next(db, actor.name, it, _str(body, "step", 200), _str(body, "whose", 10))
             out = {"id": it.id}
+        elif do == "lane":  # (up only: Claude never moves a plan down a lane; Brett does, on his page)
+            a = db.get(FftArea, _int(body.get("area_id"), "area_id")) or _missing()
+            rules.set_lane(db, actor.name, a, _str(body, "lane", 10, need=True), _str(body, "why", 300))
+            out = {"id": a.id, "lane": rules.lane_of(a), "why": a.lane_why}
+        elif do == "incident":
+            a = db.get(FftArea, _int(body.get("area_id"), "area_id")) or _missing()
+            rules.incident(db, actor.name, a, _str(body, "why", 300))
+            out = {"id": a.id, "lane": rules.lane_of(a), "careful_until": a.careful_until.isoformat()}
         else:
-            raise HTTPException(400, "do: new, item, lock, unlock or next")
+            raise HTTPException(400, "do: new, item, lock, unlock, next, lane or incident")
     except rules.RuleError as e:
         _rule(e)
     db.commit()
     return _ok(out)
+
+
+@router.get("/freeze")
+def freeze(db: Session = Depends(get_db)):
+    """Public, and only this (Brett, Nov 19: a switch he turns on before a game): whether deploys are frozen. GitHub's
+    Server tests ask it first, so while it's on nothing deploys to askdnd.ai (a commit saying [table-fix] goes)."""
+    return _ok({"frozen": rules.frozen(db)})
 
 
 @router.post("/deploy")

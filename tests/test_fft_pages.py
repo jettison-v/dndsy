@@ -251,17 +251,36 @@ def test_an_issue_moves_closes_with_a_reason_its_senders_read_and_reopens(admin,
     assert r.status_code == 409 and i.state == "to_fix"  # (R14: a stale page's change is refused)
 
 
-def test_a_fix_a_player_prompted_waits_for_your_ok(admin, sender, db):
-    """R17: Claude's fix for a player's note waits for Brett's OK to merge."""
+def test_a_fix_a_player_prompted_asks_no_second_ok(admin, sender, db):
+    """Brett's pick 5 (Nov 19; R17 retired): approving a player's note is the OK for its fix, so its issue offers no
+    OK to merge and may merge."""
     send(sender)
     n = _note(db)
     admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})
     i = db.get(FftIssue, n.issue_id)
     rules.fix_ready(db, "claude", i, "https://github.com/x/y/pull/1")
     db.flush()
-    assert 'data-do="ok_merge"' in admin.get(f"/manage/feedback?tab=open&open=i{i.id}").text
-    admin.post(f"/manage/feedback/issues/{i.id}", data={"do": "ok_merge"})
-    assert i.state == "fixing" and rules.may_merge(db, i)[0]
+    assert 'data-do="ok_merge"' not in admin.get(f"/manage/feedback?tab=open&open=i{i.id}").text
+    assert rules.may_merge(db, i)[0]
+
+
+def test_where_it_stands_shows_each_plans_lane_and_the_freeze_switch(admin, player, db):
+    """The work flow's slice 3 (Nov 19): each area's lane, changed by Brett either way; the game-night freeze switch."""
+    item = rules.new_item(db, "claude", "Items that bring a creature", "now", False)
+    a = rules.new_area(db, "claude", item, "Battle")
+    rules.new_issue(db, "claude", "The Count wraps", area_id=a.id)
+    rules.set_lane(db, "claude", a, "careful", "It touches sign-in")
+    db.flush()
+    page = admin.get("/manage/testing?show=stands").text
+    assert 'data-lane-tag="careful"' in page and 'data-freeze="0"' in page and 'data-do="freeze-on"' in page
+    admin.post(f"/manage/testing/areas/{a.id}", data={"do": "lane", "lane": "look"})
+    assert rules.lane_of(a) == "look"  # (Brett's word moves it down)
+    admin.post("/manage/testing/freeze", data={"on": "1"})
+    assert rules.frozen(db) and 'data-freeze="1"' in admin.get("/manage/testing?show=stands").text
+    player.post("/manage/testing/freeze", data={"on": "0"})
+    assert rules.frozen(db)  # (admins only)
+    admin.post("/manage/testing/freeze", data={"on": "0"})
+    assert not rules.frozen(db)
 
 
 def test_lines_to_claude_stay_between_you_and_claude(admin, sender, db):

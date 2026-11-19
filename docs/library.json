@@ -1402,5 +1402,14 @@
   "what": "The seven slices that build the Work Flow Map as Brett agreed it: For you its own page, lanes on every plan, Work with a cut line, what players see, staging rounds for Careful work, checked live; what's decided, and what waits for the Team level.",
   "source": "docs/plans/2026-11-19-work-flow-build.md",
   "link": ""
+ },
+ {
+  "title": "Undo a bad deploy",
+  "kind": "guide",
+  "status": "Current",
+  "date": "Nov 19",
+  "what": "One page for when something broke on askdnd.ai: rolling back in Railway (steps you can follow alone), what Claude does after (the rollback in Found, Fixed, Tried, the incident, the fix first), and what not to do.",
+  "source": "docs/undo.md",
+  "link": ""
  }
 ]

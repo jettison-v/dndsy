@@ -329,10 +329,50 @@ def area(a) -> None:
     if a.do == "new":
         print(call(a.base, "/areas", {"do": "new", "item_id": int(a.id), "title": a.words[0]}))
         return
-    area_id = int(a.id) if a.id.isdigit() else next((x["id"] for it in call(a.base, "/areas")["items"] for x in it["areas"] if x.get("key") == a.id), None)
+    print(call(a.base, "/areas", {"do": a.do, "area_id": _area_id(a, a.id), "owner": a.owner}))
+
+
+def _area_id(a, ident: str) -> int:
+    area_id = int(ident) if ident.isdigit() else next((x["id"] for it in call(a.base, "/areas")["items"] for x in it["areas"] if x.get("key") == ident), None)
     if area_id is None:
-        sys.exit(f"No batch for “{a.id}” yet: it's made when an issue first gets one of its Features.")
-    print(call(a.base, "/areas", {"do": a.do, "area_id": area_id, "owner": a.owner}))
+        sys.exit(f"No batch for “{ident}” yet: it's made when an issue first gets one of its Features.")
+    return area_id
+
+
+def lane(a) -> None:
+    """The lane this branch's change takes (app/fft/lanes.py on the files it touches against origin/main), set on its
+    plan: up only (Claude never moves a plan down a lane; Brett does). --to sets one higher by hand, with --why."""
+    import subprocess
+
+    sys.path.insert(0, str(ROOT))
+    from app.fft import lanes
+
+    subprocess.run(["git", "fetch", "-q", "origin"], cwd=ROOT, check=False)
+    files = subprocess.run(["git", "diff", "--name-only", f"{a.base_ref}...HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+    files += subprocess.run(["git", "diff", "--name-only", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+    files += subprocess.run(["git", "ls-files", "--others", "--exclude-standard"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+    files = sorted(set(files))
+    picked, why = lanes.pick(files, read=lambda f: (ROOT / f).read_text() if (ROOT / f).exists() else "")
+    if a.to and lanes.higher(a.to, picked):  # (only ever up from what the rules picked)
+        picked, why = a.to, a.why or f"Claude moved it up from {picked}: {why}"
+    print(f"{picked}: {why}")
+    if a.area:
+        print(call(a.base, "/areas", {"do": "lane", "area_id": _area_id(a, a.area), "lane": picked, "why": why}))
+
+
+def incident(a) -> None:
+    """It broke at the table: only that Product Area is Careful for 30 days (add a line to docs/DECISIONS.md too)."""
+    print(call(a.base, "/areas", {"do": "incident", "area_id": _area_id(a, a.area), "why": " ".join(a.words)}))
+
+
+def freeze(a) -> None:
+    """Whether Brett's game-night freeze is on (he turns it on and off on Testing › Where it stands)."""
+    req = urllib.request.Request(a.base.rstrip("/") + "/api/fft/freeze", headers={"User-Agent": "askdnd-feedback-script"})
+    on = json.loads(urllib.request.urlopen(req, timeout=30).read())["frozen"]
+    print("Game-night freeze is ON: nothing merges or deploys until Brett turns it off (a [table-fix] commit, with his OK)." if on
+          else "Game-night freeze is off.")
+    if on and a.check:
+        sys.exit(1)
 
 
 def item(a) -> None:
@@ -491,6 +531,16 @@ def main() -> None:
     s.add_argument("--section", default="next", choices=["now", "next", "later"])
     s.add_argument("--standing", action="store_true")
     s.add_argument("--whose", default="", choices=["", "brett", "claude"])
+    s = sub.add_parser("lane", help="the lane this branch's change takes (Ship, Look, Careful), set on its plan with --area")
+    s.add_argument("--area", help="the plan's batch: its id or a Product Area's key")
+    s.add_argument("--to", choices=["look", "careful"], help="move it up by hand")
+    s.add_argument("--why", default="")
+    s.add_argument("--base-ref", default="origin/main")
+    s = sub.add_parser("incident", help="it broke at the table: that Product Area is Careful for 30 days")
+    s.add_argument("area")
+    s.add_argument("words", nargs="*")
+    s = sub.add_parser("freeze", help="whether Brett's game-night freeze is on")
+    s.add_argument("--check", action="store_true", help="exit 1 while it's on")
     sub.add_parser("live", help="after a deploy: fixes now live become ready to try (deploy_check.py runs it)")
     s = sub.add_parser("deploy")
     s.add_argument("commit")
@@ -503,7 +553,8 @@ def main() -> None:
     if a.cmd == "item":
         a.next = a.step if a.next == "next" else None
     {"inbox": inbox, "wait": wait, "next": next_, "gaps": gaps, "notes": notes, "note": note, "issues": issues, "issue": issue, "checks": checks,
-     "check": check, "ask": ask, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live}[a.cmd](a)
+     "check": check, "ask": ask, "questions": questions, "features": features, "areas": areas, "area": area, "item": item, "deploy": deploy, "live": live,
+     "lane": lane, "incident": incident, "freeze": freeze}[a.cmd](a)
 
 
 if __name__ == "__main__":

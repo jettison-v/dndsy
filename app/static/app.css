@@ -4416,10 +4416,18 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-item-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-1) var(--sp-2); }
 .fft-item-head .note { margin-left: auto; }
 .fft-areas { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-1); }
-.fft-area { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1.2fr) auto auto; gap: var(--sp-1) var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
+.fft-area { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto minmax(0, 1.2fr) auto auto; gap: var(--sp-1) var(--sp-3); align-items: center; padding: var(--sp-2) var(--sp-3); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); }
 .fft-area-name { display: grid; min-width: 0; }
 .fft-area-note { min-width: 0; }
 .fft-area-form { grid-column: 1 / -1; }
+/* A plan's lane (the work flow's slice 3, Nov 19): Ship green, Look blue, Careful red, as the Work Flow Map draws them;
+   its ⋯ changes it (Brett's word, down too) */
+.fft-lane > summary { border: 0; min-width: 0; min-height: 0; }  /* (the tag is its face) */
+.lane-tag[data-lane-tag="none"] { color: var(--muted); background: transparent; border: 1px dashed var(--line); }
+.lane-tag[data-lane-tag="ship"] { color: var(--green); background: var(--green-soft); }
+.lane-tag[data-lane-tag="look"] { color: var(--blue); background: var(--blue-soft); }
+.lane-tag[data-lane-tag="careful"] { color: var(--red); background: var(--red-soft); }
+.fft-freeze[data-freeze="1"] { border-color: var(--amber); background: var(--amber-soft); }
 .fft-feat-tags { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: var(--sp-1); }  /* a Product Area's open issues by Feature */
 /* Manage › askdnd › Product areas: a card per Product Area, its Features under it (docs/mockups/product-taxonomy/, 1) */
 /* Packed cards (docs/DESIGN.md › Packed cards): columns of cards, each its own height, none split; a long one never
@@ -4437,7 +4445,7 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
 .fft-done { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-1); }
 .fft-done li { display: flex; gap: var(--sp-2); align-items: baseline; }
 .fft-done form { display: inline; }
-@media (max-width: 900px) { .fft-area { grid-template-columns: auto minmax(0, 1fr) auto; } .fft-area-note { grid-column: 2 / -1; } }
+@media (max-width: 900px) { .fft-area { grid-template-columns: auto minmax(0, 1fr) auto; } .fft-area-note, .fft-lane { grid-column: 2 / -1; justify-self: start; } }
 /* A question Claude asked, in an issue's conversation (app/templates/_fft_bits.html `asked_bub`) */
 .fft-asked { gap: var(--sp-2); }
 .fft-asked .fft-doc { flex-wrap: wrap; }

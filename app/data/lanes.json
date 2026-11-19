@@ -1,0 +1,9 @@
+{
+  "_about": "Which lane a plan takes, from the files its change touches (the work flow's slice 3; Brett's picks, Nov 19). The engine (app/fft/lanes.py) knows nothing of askdnd: this file is askdnd's own. careful: who sees what, signing in, spending, the D&D Beyond bridge and extension, and a database change that alters or removes data (a migration matching careful_migration). look: anything a person sees. Everything else is ship. Globs as fnmatch reads them.",
+  "careful": [
+    "app/access.py", "app/auth.py", "app/same_site.py", "app/view_as.py", "app/spending.py", "app/fft/keys.py",
+    "app/ddb_bridge.py", "app/gamelog.py", "extension/*"
+  ],
+  "careful_migration": ["op.drop_column", "op.drop_table", "op.alter_column", "op.drop_constraint", "op.rename_table", "UPDATE ", "DELETE ", "DROP ", "ALTER ", "TRUNCATE"],
+  "look": ["app/templates/*", "app/static/*", "app/data/*.json"]
+}

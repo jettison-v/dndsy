@@ -32,6 +32,13 @@
       {% if st.round %}<span class="note">· A round is open: nothing merges to askdnd.ai until you end it; Claude only sorts what you send.</span>
         <form method="post" action="/manage/testing/round/end"><button class="btn small" type="submit" data-do="end-round">End round</button></form>{% endif %}
     </div>
+    {# The game-night freeze (Brett, Nov 19: a switch, on before a game, off after; the work flow's slice 3) #}
+    <div class="fft-banner fft-freeze" data-freeze="{{ 1 if st.freeze.on else 0 }}">
+      {% if st.freeze.on %}<span class="fb-line"><b>Game-night freeze is on</b>{% if st.freeze.by %} ({{ st.freeze.by }}, <time datetime="{{ st.freeze.since }}" data-clock="ago">{{ st.freeze.since }}</time>){% endif %}</span><span class="note">· Nothing deploys to askdnd.ai until you turn it off; Claude goes on building.</span>
+        <form method="post" action="/manage/testing/freeze"><input type="hidden" name="on" value="0"><button class="btn small primary" type="submit" data-do="freeze-off">Turn off</button></form>
+      {% else %}<span class="fb-line">Game-night freeze is off</span><span class="note">· Turn it on before a game: nothing deploys to askdnd.ai until you turn it off.</span>
+        <form method="post" action="/manage/testing/freeze"><input type="hidden" name="on" value="1"><button class="btn small" type="submit" data-do="freeze-on">Turn on</button></form>{% endif %}
+    </div>
     {% if st.missed %}<section class="panel fft-missed" data-missed aria-labelledby="fft-missed-h">
       <h3 class="plabel" id="fft-missed-h">Claude missed · {{ st.missed | length }}</h3>
       <p class="note">Things Claude left half done. Its session won't end a turn while any are here; if one stays, tell Claude in a note.</p>
@@ -49,6 +56,9 @@
           <li class="fft-area" data-key="{{ r.a.id }}" data-area="{{ r.a.id }}">
             {{ grip() }}<span class="fft-area-name"><b>{{ r.a.title }}</b><span class="note">{{ r.counts }}</span></span>
             {{ state_word(w[0], w[1], ' data-turn="' ~ w[1] ~ '"') }}
+            {# Its lane, opened from the lane itself (a menu like ⋯, the tag as its face: "Lane" until one is set) #}
+            <details class="act-more fft-lane" data-lane="{{ r.lane }}"><summary aria-label="Lane for {{ r.a.title }}" title="{{ r.a.lane_why or '' }}"><span class="tag lane-tag" data-lane-tag="{{ r.lane or 'none' }}">{{ st.lane_said[r.lane] if r.lane else "Lane" }} ▾</span></summary>
+              <div class="act-menu" role="group" aria-label="Lane for {{ r.a.title }}">{% for l in st.lanes %}<form method="post" action="/manage/testing/areas/{{ r.a.id }}"><input type="hidden" name="do" value="lane"><input type="hidden" name="lane" value="{{ l }}"><button type="submit" data-lane-pick="{{ l }}"{% if l == r.lane %} aria-current="true"{% endif %}{% if r.incident and l != "careful" %} disabled{% endif %}>{{ st.lane_said[l] }}</button></form>{% endfor %}</div></details>
             <span class="note fft-area-note">{{ r.note }}{% if r.locked %} · in hand ({{ r.locked }}){% endif %}</span>
             <a class="btn small" href="/manage/feedback?tab=open&amp;{{ 'pa=' ~ r.a.key if r.a.key else 'area=' ~ r.a.id }}" data-do="open-area">Open</a>
             {% if r.features %}<span class="fft-feat-tags" data-features>{% for t, n in r.features %}<span class="chip">{{ t }}{{ count_pill(n) }}</span>{% endfor %}</span>{% endif %}
