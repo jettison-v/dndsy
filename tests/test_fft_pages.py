@@ -215,6 +215,22 @@ def test_a_note_that_only_moved_on_says_updated_and_one_with_a_reply_says_new_re
     assert 'data-new-reply="reply"' in sender.get("/your-notes?tab=askdnd").text
 
 
+def test_a_reply_to_a_sender_is_a_new_reply_never_a_question_and_the_list_has_its_filters(admin, sender, db):
+    """Issues 30 to 32 on askdnd.ai (Brett's round, Nov 18): Claude's reply on a note read "Claude is fixing it, and asked
+    you something" and its box "Your answer", though the reply asked nothing (a line isn't marked a question, and its
+    words never decide); and About askdnd's list had no search or filters, only a Counted line."""
+    send(sender, text="The page's picture leaves out the menu bar.")
+    n = _note(db)
+    admin.post(f"/manage/feedback/notes/{n.id}", data={"do": "issue"})
+    rules.add_line(db, "claude", "Thanks: I'll fix it after your round.", issue=db.get(FftIssue, n.issue_id), to="sender")
+    db.flush()
+    page = sender.get("/your-notes?tab=askdnd").text
+    assert "asked you something" not in page and "Your answer" not in page and "Something to add" in page
+    assert 'data-new-reply="reply"' in page
+    assert 'data-list="notes-askdnd"' in page and "data-ls-above" in page and "data-ls-row" in page
+    assert "Counted:" not in page
+
+
 # ------------------------------------------------------------------ an issue (screens 13, 14)
 
 
