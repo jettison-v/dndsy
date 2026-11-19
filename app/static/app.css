@@ -2769,6 +2769,7 @@ button.head-add { background: none; border: 0; padding: 0; font-family: inherit;
 .ds-later { flex-basis: 100%; font-size: var(--fs-xs); color: var(--amber); }
 .ds-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
 .ds-row + .ds-row { margin-top: var(--sp-3); }
+.ds-badge-host { position: relative; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-md); background: var(--chrome); color: var(--text); }  /* (a menu-bar button, to show its badge on) */
 .ds-sample { margin: 0; }
 .ds-edge { position: relative; height: 96px; max-width: 520px; border-radius: var(--r-lg); background: var(--bg); overflow: hidden; }
 .ds-edge .cond-halo { position: absolute; z-index: auto; }  /* (on the page it's fixed to the window) */
@@ -4060,7 +4061,11 @@ dialog.pic-big img { display: block; max-width: 94vw; max-height: 90vh; width: a
 .tale-acts .tale-listen { margin-top: 0; }
 .tale-acts .tale-more-link { margin: 0; }
 /* The Admin menu's door: a gear, admins only (feedback 57: it needn't be found, and the bar needs the room) */
-.manage.admin > button.admin-gear { font-size: var(--fs-lg); padding: 0 10px; }
+.manage.admin > button.admin-gear { font-size: var(--fs-lg); padding: 0 10px; position: relative; }
+/* For you's count (Nov 19): the same badge, amber as Yours is; on the Admin gear, and on a phone's More beside Notes you sent's */
+.notes-dot-badge.for-you-badge { background: var(--amber); color: var(--chrome); }
+.admin-gear .for-you-badge { top: -6px; right: -8px; }
+.bottom-nav .for-you-badge { right: auto; left: 8px; }
 /* An attack in Table rolls, one card per action (Brett chose the Roll Card Prototype, Nov 9): a row per step, each with
    its total on the right, as the damage row (.roll-dmg-line) already was; a replaced roll struck, what was applied in green */
 .roll-beat { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); font-size: var(--fs-xs); color: var(--muted); }
@@ -4382,6 +4387,10 @@ code.typed { font: 600 .95em/1.3 var(--sans); background: var(--bg); border: 1px
    will say, its history; the round's card keys and foot; Where it stands until slice 6 draws it whole */
 .fft-group { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); margin: var(--sp-3) 0 var(--sp-1); padding: 0 var(--sp-2); }
 .fft-group:first-child { margin-top: 0; }
+/* For you's sections (the work flow's slice 2, Nov 19): Try, Decide, Look at, From the table, From the Roadmap */
+.fft-section { margin: var(--sp-4) 0 var(--sp-1); padding: 0 var(--sp-2); font-size: var(--fs-sm); font-weight: 700; color: var(--text-strong); }
+.fft-section:first-child { margin-top: 0; }
+.fft-section + .fft-group { margin-top: var(--sp-1); }
 .fft-group-name { font-size: var(--fs-xs); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .fft-group form { display: contents; }
 .fft-devices { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); font-size: var(--fs-sm); color: var(--muted); }

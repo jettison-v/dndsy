@@ -4749,7 +4749,26 @@ document.addEventListener('click', e => {
     }).catch(() => {});
   }
   if (document.querySelector('.manage-side')) fill();
-  document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"], [data-menu="admin-menu"]')) fill(); });
+  document.addEventListener('click', e => { if (e.target.closest('[data-menu="manage-menu"], [data-menu="admin-menu"], [data-menu="more-menu"]')) fill(); });
+})();
+
+// ---------------------------------------------------------------- For you's count on the Admin gear
+// (Brett, Nov 19, the work flow's slice 2: a count on the gear, For you first in its menu) Everything waiting on him,
+// asked for once the page has shown (no page waits for it) and again when Found, Fixed, Tried changes; hidden at zero
+(function () {
+  const gear = document.querySelector('[data-for-you-count]');
+  if (!gear) return;
+  const btn = gear.closest('button'), said = btn.getAttribute('aria-label');
+  let tick = null;
+  function ask() {
+    fetch('/manage/for-you/count', { headers: { Accept: 'application/json' }, cache: 'no-store' }).then(r => (r.ok ? r.json() : null)).then(j => {
+      if (!j) return;
+      document.querySelectorAll('[data-for-you-count], [data-manage-count="for-you"]').forEach(el => { el.textContent = j.n || ''; el.hidden = !j.n; });
+      btn.setAttribute('aria-label', j.n ? said + ', ' + j.n + ' waiting on you' : said);
+    }).catch(() => {});
+  }
+  if (document.readyState === 'complete') setTimeout(ask, 300); else addEventListener('load', () => setTimeout(ask, 300));
+  document.addEventListener('askdnd:live', e => { if (e.detail.type === 'fft') { clearTimeout(tick); tick = setTimeout(ask, 400); } });
 })();
 
 // ---------------------------------------------------------------- Changing spells and forms

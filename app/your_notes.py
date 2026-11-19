@@ -336,7 +336,7 @@ def news(request: Request, db: Session = Depends(get_db)):
         cards, tab_of = [f"{len(cards)} of your notes moved on"], [max(set(tab_of), key=tab_of.count)]
     shown = [{"text": c, "href": f"/your-notes?tab={t}"} for c, t in zip(cards, tab_of, strict=True)]
     if access.level((user or {}).get("email")) == access.ADMIN and (asked := _new_asks(request, db)):  # (Working with Claude, 5A)
-        shown.append({"text": f"Claude asked you {asked} question{'s' if asked != 1 else ''}", "href": "/manage/testing"})
+        shown.append({"text": f"Claude asked you {asked} question{'s' if asked != 1 else ''}", "href": "/manage/for-you"})
     return JSONResponse({"count": sum(tabs.values()), "tabs": tabs, "cards": shown}, headers={"Cache-Control": "no-store"})
 
 

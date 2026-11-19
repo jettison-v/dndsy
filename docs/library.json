@@ -1370,10 +1370,37 @@
  {
   "title": "askdnd Work Flow",
   "kind": "plan",
-  "status": "Draft: waiting on your comments",
+  "status": "Replaced by askdnd Work Flow Map, Nov 18",
   "date": "Nov 18",
-  "what": "How a note or a Roadmap item becomes built and tested work, and where you steer it: Work, Start, the dev plan, For you. Drawn to agree on before askdnd changes.",
+  "what": "How a note or a Roadmap item becomes built and tested work, and where you steer it: Work, Start, the dev plan, For you. Drawn to agree on before askdnd changes; its comments are answered on the Work Flow Map.",
   "source": "docs/artifacts/work-flow.html",
   "link": "https://claude.ai/artifact/TbkPaPK9FbmrFT8hSFpx8g"
+ },
+ {
+  "title": "askdnd Work Flow Map",
+  "kind": "plan",
+  "status": "Current: reworked with your picks; two small picks left",
+  "date": "Nov 19",
+  "what": "Every path a note, a Roadmap item or a fix can take through askdnd, one at a time on one map, each step with what you see and what's behind it (exists, partly new or new). After Build, each plan takes a lane: Ship, Look or Careful. Then the lanes, the Work and For you screens, seven slices to build, where it runs, and two picks left.",
+  "source": "docs/artifacts/work-flow-map.html",
+  "link": "https://claude.ai/artifact/XXXctxQxhvzXx6mM3Ysmqq"
+ },
+ {
+  "title": "Work Flow, Sized to Grow",
+  "kind": "plan",
+  "status": "Decided: your picks Nov 19; the map follows them",
+  "date": "Nov 19",
+  "what": "The six reviews of the Work Flow Map (Product, Engineering, Quality, DevOps, a player, a founder) in one proposal: three lanes (Ship, Look, Careful), a dial of levels (Start, Team, Company) so the feedback tools can come along to a future company, the first build, every finding with Claude's take, paths to add, and nine picks.",
+  "source": "docs/artifacts/work-flow-sized.html",
+  "link": "https://claude.ai/artifact/R3m7fRvZ664fGwnuSSzHBn"
+ },
+ {
+  "title": "The work flow: build plan",
+  "kind": "plan",
+  "status": "Building: slice 2 (For you) on a branch",
+  "date": "Nov 19",
+  "what": "The seven slices that build the Work Flow Map as Brett agreed it: For you its own page, lanes on every plan, Work with a cut line, what players see, staging rounds for Careful work, checked live; what's decided, and what waits for the Team level.",
+  "source": "docs/plans/2026-11-19-work-flow-build.md",
+  "link": ""
  }
 ]

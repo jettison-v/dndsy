@@ -122,7 +122,7 @@
     {% endif %}
     {% if admin_pages %}{% set on_admin = admin_pages | selectattr("here") | list %}
     <div class="manage admin">
-      <button type="button" class="admin-gear{{ ' active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true" aria-label="Admin" title="Admin: askdnd, for every campaign"><span aria-hidden="true">⚙</span></button>{# a gear: admins only, it needn't be found (feedback 57) #}
+      <button type="button" class="admin-gear{{ ' active' if on_admin }}" data-menu="admin-menu" aria-haspopup="true" aria-label="Admin" title="Admin: askdnd, for every campaign"><span aria-hidden="true">⚙</span><span class="notes-dot-badge for-you-badge" data-for-you-count hidden></span></button>{# a gear: admins only, it needn't be found (feedback 57) #}
       <div class="menu manage-menu" id="admin-menu" data-door="admin" hidden{% if cbase %} data-manage-counts="{{ cbase }}/manage/counts"{% endif %}>
         <div class="menu-head tool"><b>askdnd admin</b><span>Every campaign</span></div>
         {{ menu_groups(admin_pages) }}
@@ -146,7 +146,7 @@
   <a href="{{ cbase }}/campaign" class="{{ 'active' if path.startswith('/campaign') or path.startswith('/sessions/') }}">Campaign</a>
   {% if tn.mine %}<a href="/characters/{{ tn.mine.id }}{{ tn.suffix }}" class="bn-char{{ ' active' if mine_here }}" aria-label="Your character: {{ tn.mine.name }}{% if tn.mine.conditions %} ({{ tn.mine.conditions | join(', ') }}){% endif %}">{{ avatar(tn.mine) }}<span>{{ tn.mine.name }}</span><span class="cond-dots" data-cond-dots data-character="{{ tn.mine.id }}"{% if tn.mine.conditions %} title="{{ tn.mine.conditions | join(', ') }}"{% endif %}>{% for n in (tn.mine.conditions or [])[:4] %}<i data-cond="{{ cond_slug(n) }}"></i>{% endfor %}</span></a>{% endif %}
   <button type="button" data-menu="party-menu-m" aria-haspopup="true" aria-controls="party-menu-m" class="{{ 'active' if path.startswith('/party') or (tn.here and not mine_here) }}">Party</button>
-  <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/manage') or path.startswith('/admin') or path == '/your-notes' }}"><span class="notes-dot-badge" data-notes-count hidden></span>More</button>
+  <button type="button" data-menu="more-menu" aria-haspopup="true" class="{{ 'active' if path.startswith('/manage') or path.startswith('/admin') or path == '/your-notes' }}"><span class="notes-dot-badge" data-notes-count hidden></span>{% if is_admin %}<span class="notes-dot-badge for-you-badge" data-manage-count="for-you" hidden></span>{% endif %}More</button>
 </nav>
 {{ party_menu("party-menu-m", tn, "sheet-menu") }}
 <div class="menu more-menu sheet-menu" id="more-menu" data-door="more" hidden>{# a phone's More: the three doors stacked, the same groups and names #}

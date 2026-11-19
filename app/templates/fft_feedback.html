@@ -125,7 +125,7 @@
         {% endcall %}
         {% if v.found or v.notes %}{% call rd_section("What was found", count=(v.found | length) + (v.notes | length), attrs=' data-sec="found"') %}
         {% for f in v.found %}<div class="fft-trial" data-try="{{ f.t.id }}">{{ state_word({"failed": "Failed", "passed": "Passed"}.get(f.t.result, "Can't try"), {"failed": "failed", "passed": "passed"}.get(f.t.result, "quiet")) }}
-          <span><a href="/manage/testing?open=c{{ f.check.id }}">{{ f.check.title }}</a> <span class="note">(check) · {{ f.device }}</span></span>
+          <span><a href="/manage/for-you?open=c{{ f.check.id }}">{{ f.check.title }}</a> <span class="note">(check) · {{ f.device }}</span></span>
           <time class="note" datetime="{{ f.t.created_at.isoformat() }}" data-clock="when">{{ f.t.created_at | ago }}</time>
           {% if f.stops_round or not f.blocking or f.still %}<span class="note fft-trial-sub">{{ "Marked as stopping the round." if f.stops_round else "Sent on its own: it doesn't stop the check." if not f.blocking else "" }}{{ " Still happening from before." if f.still }}</span>{% endif %}</div>{% endfor %}
         {% for nv in v.notes %}{{ report(nv, unjoin=("/manage/feedback/issues/" ~ i.id ~ "?tab=" ~ tab) if v.notes | length > 1 and i.state != "closed" else "") }}{% endfor %}

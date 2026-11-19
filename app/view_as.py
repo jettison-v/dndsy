@@ -27,7 +27,7 @@ from app.models import User
 router = APIRouter()
 STOP = "/view-as/stop"
 FEEDBACK = "/feedback"  # (a note is the admin's own, sent while viewing as someone: app/fft/sending.py)
-TESTING = "/manage/testing"  # (a check is the admin's own, tried while viewing as someone: app/fft/testing_page.py, Try it)
+TESTING = ("/manage/testing", "/manage/for-you")  # (a check is the admin's own, tried while viewing as someone: app/fft/testing_page.py, Try it)
 
 
 def viewing(session: dict | None) -> dict | None:
@@ -71,7 +71,7 @@ class ViewAs:
             if session and session.get("view_as"):
                 session.pop("view_as", None)  # no longer allowed (removed, or no longer an admin)
             return await self.app(scope, receive, send)
-        if scope["path"] == STOP or scope["path"].startswith((FEEDBACK, TESTING)):  # stopping, a note for Claude (and its line) and testing are the real person's
+        if scope["path"] == STOP or scope["path"].startswith((FEEDBACK, *TESTING)):  # stopping, a note for Claude (and its line) and testing are the real person's
             return await self.app(scope, receive, send)
         if scope["method"] not in ("GET", "HEAD"):
             return await _refuse(scope, session, target)(scope, receive, send)

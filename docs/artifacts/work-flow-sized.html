@@ -1,0 +1,511 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Work Flow, Sized to Grow</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+/* Work Flow, Sized to Grow (Brett, Nov 19: "integrate the feedback into a completely new tab or a new document with your
+   suggestions … easier than trying to digest the text in the chat"; the lens: askdnd is loved, likely never monetized, but the
+   feedback tools should come along to a future startup: able to scale, without the weight of a mature process at the start).
+   Gathers the six reviews of the Work Flow Map (VP Product, VP Engineering, VP QA, VP DevOps, a Player, a multi-time founder)
+   into one proposal. The map (docs/artifacts/work-flow-map.html) is unchanged until Brett agrees.
+   Source: docs/artifacts/work-flow-sized.html. Laptop first. Same look as the map. */
+:root {
+  --bg: #15171a; --surface: #1f2226; --surface-2: #272b30; --surface-3: #30353b; --line: #34383e; --line-soft: #2c3036; --line-strong: #4a4f57;
+  --text: #ebe7df; --strong: #ffffff; --muted: #a29d93; --faint: #7d786f; --link: #f08a8a;
+  --brand: #d64545;
+  --you: #e8826a; --you-soft: rgba(232, 130, 106, .15);
+  --claude: #b9a3e3; --claude-soft: rgba(185, 163, 227, .15);
+  --gray: #8f8a81; --gray-soft: rgba(162, 157, 147, .10);
+  --blue: #7ea6e0; --blue-soft: rgba(126, 166, 224, .16);
+  --green: #5bbf7f; --green-soft: rgba(91, 191, 127, .15);
+  --amber: #e8b34b; --amber-soft: rgba(232, 179, 75, .15);
+  --red: #ef7b7b; --red-soft: rgba(239, 123, 123, .14);
+  --hi: #f2c14e;
+  --sans: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --cond: "Roboto Condensed", "Arial Narrow", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #dcd7cd; --line-soft: #e7e3db; --line-strong: #c6c0b4;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f; --link: #b83232;
+  --brand: #c43c3c;
+  --you: #b5482c; --you-soft: rgba(181, 72, 44, .10);
+  --claude: #6b4fa3; --claude-soft: rgba(107, 79, 163, .10);
+  --gray: #7a746a; --gray-soft: rgba(107, 101, 92, .07);
+  --blue: #2f5f9e; --blue-soft: rgba(47, 95, 158, .10);
+  --green: #2c8a52; --green-soft: rgba(44, 138, 82, .10);
+  --amber: #a86f00; --amber-soft: rgba(168, 111, 0, .10);
+  --red: #b83232; --red-soft: rgba(184, 50, 50, .08);
+  --hi: #b07d00;
+  color-scheme: light;
+} }
+:root[data-theme="light"] {
+  --bg: #f6f4ef; --surface: #ffffff; --surface-2: #efece5; --surface-3: #e4e0d7; --line: #dcd7cd; --line-soft: #e7e3db; --line-strong: #c6c0b4;
+  --text: #2a2723; --strong: #111111; --muted: #6b655c; --faint: #918a7f; --link: #b83232;
+  --brand: #c43c3c;
+  --you: #b5482c; --you-soft: rgba(181, 72, 44, .10);
+  --claude: #6b4fa3; --claude-soft: rgba(107, 79, 163, .10);
+  --gray: #7a746a; --gray-soft: rgba(107, 101, 92, .07);
+  --blue: #2f5f9e; --blue-soft: rgba(47, 95, 158, .10);
+  --green: #2c8a52; --green-soft: rgba(44, 138, 82, .10);
+  --amber: #a86f00; --amber-soft: rgba(168, 111, 0, .10);
+  --red: #b83232; --red-soft: rgba(184, 50, 50, .08);
+  --hi: #b07d00;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.55 var(--sans); }
+.wrap { max-width: 1240px; margin: 0 auto; padding-block: 32px 80px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 52px; }
+h1, h2, h3 { color: var(--strong); margin: 0; text-wrap: balance; }
+h1 { font: 700 2.1rem/1.1 var(--cond); letter-spacing: .01em; }
+h2 { font: 700 1.45rem/1.2 var(--cond); letter-spacing: .02em; }
+h3 { font: 600 1rem/1.3 var(--sans); }
+p { margin: 0; }
+ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+b { color: var(--strong); font-weight: 600; }
+a { color: var(--link); text-underline-offset: 2px; }
+section { display: grid; gap: 16px; min-width: 0; scroll-margin-top: 60px; }
+.eyebrow { font: 700 .75rem/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.lede { color: var(--muted); max-width: 80ch; }
+.sec-head { display: grid; gap: 6px; }
+.sec-head .n { font: 700 .75rem/1 var(--cond); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+
+/* top */
+header.top { display: grid; gap: 14px; }
+.jump { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 10px 0; font: 600 .86rem/1.2 var(--sans); }
+.jump a { color: var(--muted); text-decoration: none; }
+.jump a:hover { color: var(--strong); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.who { display: flex; flex-wrap: wrap; gap: 6px; }
+.who span { font: 600 .8rem/1 var(--sans); padding: 6px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--muted); }
+.lens { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--you); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; max-width: 900px; }
+.lens .k { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--you); }
+
+/* the idea */
+.idea { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.card .k { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--hi); }
+.card p, .card li { font-size: .92rem; }
+
+/* lanes */
+.lanes { display: grid; gap: 12px; }
+.lane { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px 18px; }
+.lane .name { display: grid; gap: 6px; align-content: start; }
+.lane .name h3 { font: 700 1.25rem/1 var(--cond); letter-spacing: .03em; }
+.lane .name p { font-size: .86rem; color: var(--muted); }
+.lane.ship { border-left: 4px solid var(--green); } .lane.ship h3 { color: var(--green); }
+.lane.look { border-left: 4px solid var(--blue); } .lane.look h3 { color: var(--blue); }
+.lane.careful { border-left: 4px solid var(--red); } .lane.careful h3 { color: var(--red); }
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; align-items: stretch; list-style: none; margin: 0; padding: 0; }
+.flow li { display: flex; align-items: stretch; gap: 6px; font-size: .86rem; min-width: 0; }
+.flow li .st { flex: 1; padding: 7px 10px; border-radius: 9px; border: 1.3px solid; line-height: 1.3; min-width: 0; }
+.flow li:not(:last-child)::after { align-self: center; }
+.flow li .st.claude { background: var(--claude-soft); border-color: var(--claude); }
+.flow li .st.you { background: var(--you-soft); border-color: var(--you); }
+.flow li .st.gray { background: var(--gray-soft); border-color: var(--gray); }
+.flow li:not(:last-child)::after { content: "→"; color: var(--faint); }
+.lane .what { grid-column: 2; font-size: .86rem; color: var(--muted); }
+.lane .what b { color: var(--text); }
+.key { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: .85rem; color: var(--muted); align-items: center; }
+.key span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 14px; height: 14px; border-radius: 4px; border: 1.5px solid; display: inline-block; }
+.sw.you { background: var(--you-soft); border-color: var(--you); }
+.sw.claude { background: var(--claude-soft); border-color: var(--claude); }
+.sw.gray { background: var(--gray-soft); border-color: var(--gray); }
+
+/* the dial */
+.tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 860px; font-size: .88rem; }
+th, td { text-align: left; vertical-align: top; padding: 11px 14px; border-bottom: 1px solid var(--line-soft); }
+thead th { font: 700 .74rem/1.2 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+thead th.ship { color: var(--green); } thead th.look { color: var(--blue); } thead th.careful { color: var(--red); }
+tbody th { width: 190px; color: var(--strong); font-weight: 600; }
+tbody th small { display: block; font-weight: 400; color: var(--muted); font-size: .8rem; margin-top: 4px; line-height: 1.4; }
+tbody tr.now { background: var(--amber-soft); }
+tbody tr.now th::after { content: "askdnd today"; display: inline-block; margin-left: 8px; font: 700 .62rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--hi); vertical-align: 2px; }
+tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
+td .plus { color: var(--faint); }
+.always { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: grid; gap: 6px; font-size: .9rem; }
+.always .k { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--green); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { padding: 5px 9px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); font-size: .84rem; }
+
+/* build order */
+ol.plan { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; counter-reset: p; }
+ol.plan li { counter-increment: p; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 4px; font-size: .88rem; align-content: start; }
+ol.plan li::before { content: counter(p); font: 700 .8rem/1 var(--sans); color: var(--claude); }
+ol.plan li b { font-size: .95rem; }
+.later { display: grid; gap: 6px; font-size: .9rem; }
+.later .k { font: 700 .7rem/1 var(--cond); letter-spacing: .12em; text-transform: uppercase; color: var(--blue); }
+
+/* findings */
+.tagkey { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: .84rem; color: var(--muted); align-items: center; }
+.tag { display: inline-block; font: 700 .64rem/1 var(--cond); letter-spacing: .09em; text-transform: uppercase; padding: 4px 6px; border-radius: 4px; white-space: nowrap; }
+.tag.fix { color: var(--red); background: var(--red-soft); }
+.tag.now { color: var(--green); background: var(--green-soft); }
+.tag.team { color: var(--blue); background: var(--blue-soft); }
+.tag.yours { color: var(--hi); background: var(--amber-soft); }
+.tag.no { color: var(--muted); background: var(--gray-soft); }
+details.theme { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+details.theme > summary { cursor: pointer; list-style: none; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+details.theme > summary::-webkit-details-marker { display: none; }
+details.theme > summary::before { content: "▸"; color: var(--faint); width: 12px; }
+details.theme[open] > summary::before { content: "▾"; }
+details.theme > summary h3 { font: 700 1.08rem/1.2 var(--cond); letter-spacing: .02em; }
+details.theme > summary .sum { color: var(--muted); font-size: .88rem; }
+.rows { display: grid; border-top: 1px solid var(--line-soft); }
+.row { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.25fr) 116px; gap: 6px 18px; padding: 12px 16px; border-bottom: 1px solid var(--line-soft); font-size: .89rem; }
+.row:last-child { border-bottom: 0; }
+.row .said b { display: block; margin-bottom: 2px; }
+.row .by { color: var(--faint); font-size: .8rem; margin-top: 4px; }
+.row .mine { color: var(--text); }
+.row .mine::before { content: "My take "; font: 700 .66rem/1 var(--cond); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
+.row .verdict { justify-self: end; }
+
+/* paths */
+.paths { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px; }
+.paths .card h3 { font-size: .95rem; }
+
+/* picks */
+.decide { display: grid; gap: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.decide fieldset { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; }
+.decide legend { font-weight: 700; color: var(--strong); margin-bottom: 4px; }
+.decide legend small { font-weight: 400; color: var(--muted); }
+.decide .why { font-size: .84rem; color: var(--muted); margin: -2px 0 4px; max-width: 90ch; }
+.decide label.opt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); cursor: pointer; font-size: .9rem; }
+.decide label.opt:has(input:checked) { border-color: var(--hi); }
+.decide label.opt small { grid-column: 2; color: var(--muted); font-size: .84rem; }
+.decide .mine { color: var(--hi); font: 700 .66rem/1 var(--cond); letter-spacing: .08em; text-transform: uppercase; margin-left: 6px; }
+.decide textarea { width: 100%; min-height: 110px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: 16px/1.4 var(--sans); }
+.decide .sendline { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.decide .saved { color: var(--muted); font-size: .86rem; }
+.decide .saved.ok { color: var(--green); }
+.decide .go { display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; border-radius: 8px; border: 0; background: var(--brand); color: #fff; font: 600 .9rem/1 var(--sans); cursor: pointer; }
+.decide .go:disabled { opacity: .6; }
+.pickgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 20px 28px; }
+footer { font-size: .84rem; color: var(--faint); display: grid; gap: 4px; }
+@media (max-width: 760px) {
+  .lane { grid-template-columns: minmax(0, 1fr); }
+  .lane .what { grid-column: 1; }
+  .row { grid-template-columns: minmax(0, 1fr); }
+  .row .verdict { justify-self: start; grid-row: 1; }
+  .pickgrid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1000px) {
+  .flow { grid-template-columns: minmax(0, 1fr); }
+  .flow li:not(:last-child)::after { content: "↓"; }
+  .flow li { flex-direction: column; align-items: stretch; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">For Brett · Nov 19 · a proposal, nothing built</span>
+    <h1>Work Flow, Sized to Grow</h1>
+    <p class="lede">Six people reviewed the <a href="https://claude.ai/artifact/XXXctxQxhvzXx6mM3Ysmqq">Work Flow Map</a>. This page puts what they said into one proposal, with my take on every finding and the choices that are yours at the bottom. <b>Your picks are in (Nov 19), and the map now follows them.</b></p>
+    <div class="who"><span>VP of Product</span><span>VP of Engineering</span><span>VP of Quality</span><span>VP of DevOps</span><span>A player</span><span>A multi-time founder</span></div>
+    <div class="lens"><span class="k">Your lens (Nov 19)</span>
+      <p>askdnd will be used and loved, and most likely never make money. But if you start or join another company, you'd want to bring these feedback tools with you. So they have to be <b>able to scale, without the drag of a mature process at the start</b>.</p></div>
+  </header>
+
+  <nav class="jump" aria-label="On this page">
+    <a href="#idea">The idea</a><a href="#lanes">Three lanes</a><a href="#dial">The dial</a><a href="#portable">Built to take with you</a><a href="#build">What gets built first</a><a href="#findings">Every finding</a><a href="#paths">Paths to add</a><a href="#picks">Your picks</a>
+  </nav>
+
+  <section id="idea">
+    <div class="sec-head"><span class="n">1 · The idea</span><h2>One engine, with a dial</h2>
+      <p class="lede">The four VPs mostly added process. The founder said most of it is too much for one table. Both are right, for different stages of a company. So don't pick one process. Build an engine where each check is a setting, start it light, and turn it up when something real changes.</p></div>
+    <div class="idea">
+      <div class="card"><span class="k">Lanes: each change gets one</span><p>How much testing a change needs depends on what could go wrong. <b>Ship</b>, <b>Look</b> and <b>Careful</b>. Rules pick the lane from what the change touches. You can move a change up a lane in one tap; Claude can move it up but never down.</p></div>
+      <div class="card"><span class="k">Levels: the whole product has one</span><p><b>Start</b>, <b>Team</b>, <b>Company</b>. Each level turns more checks on in each lane. askdnd is at Start and may stay there. Clear triggers say when to step up, and stepping up changes settings, not code.</p></div>
+      <div class="card"><span class="k">The record is full from day one</span><p>Who decided what, which lane, what was tried, where, on which version. It costs little to keep now, and it's the one thing you can't add later for the past. A bigger company needs exactly this record.</p></div>
+      <div class="card"><span class="k">Some things never get skipped</span><p>A few protect people's data and game night at every level, even at five people. They're listed under the dial.</p></div>
+    </div>
+  </section>
+
+  <section id="lanes">
+    <div class="sec-head"><span class="n">2 · Three lanes, at askdnd's level today</span><h2>How a change moves, by lane</h2>
+      <p class="lede">In every lane you test a thing once at most. Your example, skipping a final test on askdnd.ai when it already passed on staging, is how the Careful lane works.</p></div>
+    <div class="key"><span><i class="sw claude"></i>Claude or automatic</span><span><i class="sw you"></i>You</span><span><i class="sw gray"></i>Nobody needs to act</span></div>
+    <div class="lanes">
+      <div class="lane ship">
+        <div class="name"><h3>Ship</h3><p>Nothing a person would notice, or a fix to a known error.</p></div>
+        <ol class="flow">
+          <li><span class="st claude">Claude builds it</span></li>
+          <li><span class="st claude">Automatic tests and the full code review</span></li>
+          <li><span class="st claude">Merges to askdnd.ai</span></li>
+          <li><span class="st claude">Claude checks it there</span></li>
+          <li><span class="st gray">On your Shipped list, to read if you like</span></li>
+        </ol>
+        <p class="what"><b>What goes here:</b> work behind the scenes, tests, dependency updates, a fix for an error Sentry caught, a word changed. <b>Today:</b> mostly how these already merge.</p>
+      </div>
+      <div class="lane look">
+        <div class="name"><h3>Look</h3><p>Something people see, within one Product Area.</p></div>
+        <ol class="flow">
+          <li><span class="st claude">Claude builds it</span></li>
+          <li><span class="st claude">Tests, review, before-and-after pictures, Claude tries it first</span></li>
+          <li><span class="st claude">Merges to askdnd.ai (behind a Labs switch if it's big)</span></li>
+          <li><span class="st you">You try the batch once, on askdnd.ai, when it suits you</span></li>
+          <li><span class="st claude">Anything wrong is undone the same day, or fixed</span></li>
+        </ol>
+        <p class="what"><b>What goes here:</b> most fixes and polish. <b>Today:</b> close to your "test once after a batch" rule from Nov 16, minus the local copy.</p>
+      </div>
+      <div class="lane careful">
+        <div class="name"><h3>Careful</h3><p>Where a mistake hurts people or can't be undone.</p></div>
+        <ol class="flow">
+          <li><span class="st claude">Claude builds it on a round branch</span></li>
+          <li><span class="st claude">Tests, review, Claude tries it on staging</span></li>
+          <li><span class="st you">You try it on staging, one round</span></li>
+          <li><span class="st claude">Passed: merges exactly as tested, one deploy</span></li>
+          <li><span class="st claude">Automatic checks on askdnd.ai (Claude, the Mac Mini, a live D&amp;D Beyond run where it applies)</span></li>
+        </ol>
+        <p class="what"><b>What goes here</b> (my suggestion, pick 2): who sees what, signing in, spending, the D&amp;D Beyond bridge and extension, and database changes that alter or remove data. <b>You don't test it again on askdnd.ai.</b></p>
+      </div>
+    </div>
+    <div class="card"><span class="k">Game night</span><p>No deploys in any lane for a set time before a game (pick 7), taken from the session's date in askdnd. Ship-lane fixes for something broken at the table are the one exception, and only with your OK.</p></div>
+  </section>
+
+  <section id="dial">
+    <div class="sec-head"><span class="n">3 · The dial</span><h2>What each level turns on</h2>
+      <p class="lede">Each cell adds to the one above it. askdnd is at Start. The triggers are suggestions; askdnd would notice them and tell you, and you decide whether to step up.</p></div>
+    <div class="tablebox"><table>
+      <thead><tr><th>Level, and what moves you there</th><th class="ship">Ship</th><th class="look">Look</th><th class="careful">Careful</th></tr></thead>
+      <tbody>
+        <tr class="now"><th>Start<small>One owner who also tests, an AI builder, a handful of people using it.</small></th>
+          <td>Tests and code review. Claude checks it on the live site after.</td>
+          <td>Claude tries it first. You try the batch after it's live. Undo the same day.</td>
+          <td>Your round on staging before it merges. A live D&amp;D Beyond check where it applies. Merges as tested.</td></tr>
+        <tr><th>Team<small>A second builder working at the same time, a second table or DM, or about 15+ regular users.</small></th>
+          <td><span class="plus">+</span> Each builder's work reviewed by the other side.</td>
+          <td><span class="plus">+</span> Goes through staging before merging. Players get short release notes.</td>
+          <td><span class="plus">+</span> A second tester (the DM or a player). At most two plans waiting on testers, enforced.</td></tr>
+        <tr><th>Company<small>Paying customers, or people building alongside Claude.</small></th>
+          <td><span class="plus">+</span> Approved by someone other than its builder.</td>
+          <td><span class="plus">+</span> Behind a switch by default; turned on for everyone after a few days.</td>
+          <td><span class="plus">+</span> Approved by someone other than the owner. A practiced undo. Someone on call during peak use.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="always"><span class="k">At every level, even now</span>
+      <div class="chips"><span>Privacy and who-sees-what tests</span><span>Backups, with a restore that's been tried</span><span>Database changes only add; removals come later</span><span>A Labs switch for risky features</span><span>The game-night freeze</span><span>The full record</span></div>
+      <p class="lede" style="font-size:.86rem">If something goes wrong at the table (a leak, a broken game night), only that Product Area moves to Careful for 30 days, with one line in the decision log. The whole product doesn't step up a level.</p></div>
+  </section>
+
+  <section id="portable">
+    <div class="sec-head"><span class="n">4 · Built to take with you</span><h2>What makes it reusable, and what we don't build yet</h2></div>
+    <div class="idea">
+      <div class="card"><span class="k">Settings, not code</span><p>Each check is a setting per lane and level, kept in askdnd's database. Changing one is recorded with who and why. A new company starts at Start with the same engine.</p></div>
+      <div class="card"><span class="k">Roles, not people</span><p>Owner, builder, tester, reporter, admin. Today you're owner, tester and admin; Claude is the builder; the players report. A person could be a builder too: same branches, same checks, same "try it first".</p></div>
+      <div class="card"><span class="k">Nothing D&amp;D in the engine</span><p>What's askdnd's own is configuration: the Product Areas, which files make a change Careful, the environments, game dates. Another product brings its own.</p></div>
+      <div class="card"><span class="k">Not now</span><p>Pulling it out of askdnd into its own package, several products at once, accounts for other companies. Those wait until there really is a next company; they'd be a project of their own then.</p></div>
+    </div>
+  </section>
+
+  <section id="build">
+    <div class="sec-head"><span class="n">5 · What gets built first</span><h2>The first build, in order</h2>
+      <p class="lede">Each step is useful alone. Your biggest pain, knowing what waits on you, comes first.</p></div>
+    <ol class="plan">
+      <li><b>Fix the map</b>The facts the reviewers caught, the lanes, the paths below. A drawing, once you've made your picks.</li>
+      <li><b>For you, its own page</b>Everything waiting on you, in one place. Mostly exists inside Testing today.</li>
+      <li><b>Lanes on every plan</b>Picked by rules, one tap to move up, the Careful rules checked automatically. The game-night freeze and the undo checklist come with it.</li>
+      <li><b>Work, with a cut line</b>One ordered list; Claude takes everything above the line. Each plan's stage is worked out from what's true, never moved by hand. Players see the same stages, in plain words.</li>
+      <li><b>Staging rounds, for Careful only</b>Done properly: an "on staging" state, one round branch merged as tested, one database change per round, Claude able to sign in there, tries kept on askdnd.ai.</li>
+      <li><b>The live D&amp;D Beyond step</b>For bridge work: the live test and its checks on askdnd.ai before it counts as done.</li>
+    </ol>
+    <div class="later card"><span class="k">Waits for the Team level</span><p>Look changes going through staging, a scheduled check that starts Claude when no chat is open, release notes, two plans in one Product Area at once, nightly staging refresh, the cohesion pass as a screen. <b>Cut:</b> slice 6 (the cohesion pass as a scheduled slice) becomes a habit at the end of each Roadmap item.</p></div>
+  </section>
+
+  <section id="findings">
+    <div class="sec-head"><span class="n">6 · Every finding</span><h2>What each reviewer said, and my take</h2>
+      <p class="lede">Grouped by theme; open one at a time. Each has who raised it and where it lands.</p></div>
+    <div class="tagkey"><span><span class="tag fix">Fix the map</span> a fact I got wrong</span><span><span class="tag now">First build</span> do it now</span><span><span class="tag team">Team level</span> later, behind a trigger</span><span><span class="tag yours">Your call</span> a pick below</span><span><span class="tag no">Not doing</span> and why</span></div>
+
+    <details class="theme" open><summary><h3>Things the map got wrong</h3><span class="sum">5 · all fixed on the map once we agree</span></summary><div class="rows">
+      <div class="row"><div class="said"><b>Staging doesn't have "last night's real data".</b>It's refreshed only when someone runs the refresh; nothing schedules it.<div class="by">DevOps · Quality · Engineering</div></div><div class="mine">Say "refreshed before each Careful round, never during one." Nightly can wait for the Team level.</div><div class="verdict"><span class="tag fix">Fix the map</span></div></div>
+      <div class="row"><div class="said"><b>Google sign-in does work on staging.</b>What staging can't show is the D&amp;D Beyond bridge and extension, recap drafting, and email.<div class="by">DevOps · Quality</div></div><div class="mine">Put an honest "what staging can't show" list on the map. Add a check that the setting <i>names</i> (never values) match between staging, askdnd.ai and the example file.</div><div class="verdict"><span class="tag fix">Fix the map</span></div></div>
+      <div class="row"><div class="said"><b>It isn't one staging deploy per batch.</b>Every fix to a failed check is another one.<div class="by">DevOps · Engineering</div></div><div class="mine">Say so. With lanes, only Careful work uses staging, so it's few.</div><div class="verdict"><span class="tag fix">Fix the map</span></div></div>
+      <div class="row"><div class="said"><b>Some Exists and New tags are wrong.</b>Ordering on Work and "Claude goes on" mostly exist. "Where a note came from" doesn't: an issue has no source. A try counts as staging only when made on staging's own copy, which a refresh wipes.<div class="by">Engineering</div></div><div class="mine">Correct every tag, and add the source to an issue in the first build.</div><div class="verdict"><span class="tag fix">Fix the map</span></div></div>
+      <div class="row"><div class="said"><b>"Nothing merges meanwhile" isn't quite so.</b>An idle round ends itself after 12 hours.<div class="by">Engineering</div></div><div class="mine">Say so on the map.</div><div class="verdict"><span class="tag fix">Fix the map</span></div></div>
+    </div></details>
+
+    <details class="theme"><summary><h3>Testing on staging</h3><span class="sum">11 · the big one; with lanes it only applies to Careful work</span></summary><div class="rows">
+      <div class="row"><div class="said"><b>A pass on staging closes nothing today.</b>A fix becomes "ready to try" only once it's live, so after merging the check comes back and you'd test twice.<div class="by">Engineering · Quality</div></div><div class="mine">A new "on staging" state. A pass on the version you tried carries through the merge.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>A player's fix waits for your OK before you can even try it.</b>So the "passed, now OK it" card on the map could never appear.<div class="by">Engineering · the player found it unfair</div></div><div class="mine">You already approve a player's note when it comes in. Let that approval be the OK, and let the lane decide the testing.</div><div class="verdict"><span class="tag yours">Pick 5</span></div></div>
+      <div class="row"><div class="said"><b>Merging plans one by one changes what you tested.</b>Each is rebased onto the last, so what ships isn't what you tried. The staging script also takes one branch.<div class="by">Engineering · Quality · DevOps · Product</div></div><div class="mine">One round branch holds the round's plans. It goes on staging and merges as a whole, in one deploy. Nothing else merges while a Careful round is open.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Two database changes in one round break staging.</b>The staging script only warns.<div class="by">DevOps · Engineering</div></div><div class="mine">One database change per round, and the script refuses rather than warns.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Claude can't sign in on staging,</b> so "Claude tries it first" can't happen there. A "tried" mark also keeps no proof.<div class="by">Quality</div></div><div class="mine">A sign-in key that works on staging only, for Claude's test account. Each try keeps its version and pictures.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Tries made on staging's own Testing page vanish</b> on the next refresh, and Claude never sees them.<div class="by">DevOps · Engineering</div></div><div class="mine">Tries are kept on askdnd.ai, marked staging, with staging's version. Never refresh during a round.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Changing staging in the middle of your round</b> means your earlier passes were on other code.<div class="by">Quality</div></div><div class="mine">Staging changes only between rounds. If a fix must go up mid-round, the round shows it and resets only the checks it touched.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Re-test only what changed.</b>A revision resets just the checks its change touched; Claude re-tries the rest.<div class="by">Quality</div></div><div class="mine">Agree. It's what keeps rounds short.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>What is on staging right now?</b>Today only a version number answers it.<div class="by">DevOps</div></div><div class="mine">Record which plans and versions went up, and show it on Work.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>If one plan in a round fails,</b> do the others wait?<div class="by">Quality · Engineering</div></div><div class="mine">Plans that don't share files with the failed one may go on; the others wait. Rarely matters at Start, since rounds are small.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Refresh staging every night.</b><div class="by">Engineering asked</div></div><div class="mine">Before each Careful round is enough now.</div><div class="verdict"><span class="tag team">Team level</span></div></div>
+    </div></details>
+
+    <details class="theme"><summary><h3>Plans and Work</h3><span class="sum">9 · mostly about not keeping things twice</span></summary><div class="rows">
+      <div class="row"><div class="said"><b>A plan's stage should be worked out, never moved by hand,</b> or it drifts from what's true.<div class="by">Engineering · Founder</div></div><div class="mine">Agree. Same rule we set for the Roadmap.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>A new note can land in a plan you're testing.</b>Today a note joins its Product Area's oldest batch.<div class="by">Engineering</div></div><div class="mine">One open plan per area takes in new notes; a plan's scope freezes once planning starts. A blocker is the exception.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>"Claude goes on" is bigger than drawn:</b> the one-area-at-a-time lock has to change. Medium, not small.<div class="by">Engineering</div></div><div class="mine">Agree on the size.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>At most two plans waiting on you, not three,</b> and never two that touch the same files.<div class="by">Quality · Product · Founder</div></div><div class="mine">Agree. Two, as a rule now; enforced by the tool at Team.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Ready plus order is two controls for one decision.</b><div class="by">Product · Founder</div></div><div class="mine">One ordered list with a cut line: Claude takes what's above it.</div><div class="verdict"><span class="tag yours">Pick 6</span></div></div>
+      <div class="row"><div class="said"><b>Should a player's bug be Ready by default?</b><div class="by">Product</div></div><div class="mine">Yes: it lands above the line, and you can drag it below.</div><div class="verdict"><span class="tag yours">Pick 6</span></div></div>
+      <div class="row"><div class="said"><b>Testing is nearly empty</b> once For you and Work leave it.<div class="by">Product</div></div><div class="mine">Testing becomes each plan's history, opened from its row on Work.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>The Roadmap page should stop listing to-dos</b> the day Work exists.<div class="by">Product</div></div><div class="mine">Agree; it points to Work for what's next.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Ideas pass two of your gates</b>: approve, then accept. Collapse them?<div class="by">Product</div></div><div class="mine">Keep both: approving is the privacy look at a player's words; accepting is the product decision. Your own ideas skip the first.</div><div class="verdict"><span class="tag no">Not doing</span></div></div>
+    </div></details>
+
+    <details class="theme"><summary><h3>Speed and simplicity</h3><span class="sum">6 · where the founder pushed back</span></summary><div class="rows">
+      <div class="row"><div class="said"><b>A lane that needs no test from you.</b>Backend work, Sentry fixes and dependency updates already merge when green.<div class="by">Product · Founder</div></div><div class="mine">That's the Ship lane.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Slice order: For you first.</b>It's small and it's your biggest pain.<div class="by">Product · Founder</div></div><div class="mine">Agree, with lanes right after it.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>A weekly cohesion pass is too much</b> for one table.<div class="by">Product · Founder</div></div><div class="mine">I change my pick: one at the end of each Roadmap item, as a habit, with no screen of its own.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>When no chat is open,</b> a plain script on the Mac Mini checks for waiting work and only then starts Claude, with a heartbeat on Work.<div class="by">DevOps</div></div><div class="mine">Right way to do it, when it's needed. For now, Work says when Claude isn't listening.</div><div class="verdict"><span class="tag team">Team level</span></div></div>
+      <div class="row"><div class="said"><b>Two plans in one Product Area at once.</b><div class="by">Founder: too early</div></div><div class="mine">One plan per area until there are two builders.</div><div class="verdict"><span class="tag team">Team level</span></div></div>
+      <div class="row"><div class="said"><b>About 240 changes a week:</b> a pace you want, or a sign to batch more?<div class="by">Founder</div></div><div class="mine">Lanes answer most of it: Ship can stay fast because it costs you nothing, and your time goes to Careful.</div><div class="verdict"><span class="tag yours">Your notes</span></div></div>
+    </div></details>
+
+    <details class="theme"><summary><h3>Safety</h3><span class="sum">5 · the never-skip list</span></summary><div class="rows">
+      <div class="row"><div class="said"><b>Undoing a bad deploy is a trap</b> when it changed the database: the old code crashes on the new database.<div class="by">DevOps · Founder</div></div><div class="mine">Database changes only add (remove in a later change), so old code always runs. A one-page undo checklist you could follow yourself.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>D&amp;D Beyond work can't be tried on staging.</b><div class="by">Quality · Founder</div></div><div class="mine">A "live check" step before it counts as done: the live test and its checks on askdnd.ai. A staging extension can come later.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>A deploy freeze before game night.</b>It's the one real "production event".<div class="by">Founder</div></div><div class="mine">Agree. Length is pick 7.</div><div class="verdict"><span class="tag yours">Pick 7</span></div></div>
+      <div class="row"><div class="said"><b>An incident moves its area to Careful for 30 days.</b><div class="by">Founder</div></div><div class="mine">Agree. Only the area, not the whole product.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Nothing re-runs a plan's checks after it's live,</b> and nothing ties a new problem back to the plan that caused it.<div class="by">Quality</div></div><div class="mine">Claude's after-deploy check runs the plan's checks on askdnd.ai; a problem found there names the plan it came from.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+    </div></details>
+
+    <details class="theme"><summary><h3>The player</h3><span class="sum">8 · mostly cheap, and they matter</span></summary><div class="rows">
+      <div class="row"><div class="said"><b>"Claude's" hides the real wait.</b>Two weeks of "Claude's" looks like the AI is stuck.<div class="by">Player · Product</div></div><div class="mine">Plain stages from the plan: Waiting its turn, Being built, Brett is trying it, Live. A rough time only once we've measured some.</div><div class="verdict"><span class="tag yours">Pick 8</span></div></div>
+      <div class="row"><div class="said"><b>If my note is joined to another,</b> do I still hear when it's fixed?<div class="by">Player</div></div><div class="mine">Yes: you follow the note yours joined, and you're asked "Does it work now?" too. Split notes show all their parts.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Tell me when my idea joins a Roadmap item,</b> and when it ships.<div class="by">Player</div></div><div class="mine">Agree. Two short notices.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Ask me back</b> instead of closing a vague note as "can't reproduce".<div class="by">Player</div></div><div class="mine">Agree: a question to the sender, through you, in their Notes you sent.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>Who sees my words and my picture?</b>What's covered besides character notes? Does the DM read my notes?<div class="by">Player</div></div><div class="mine">One plain line in the send window naming who reads it and what's covered.</div><div class="verdict"><span class="tag now">First build</span></div></div>
+      <div class="row"><div class="said"><b>"Me too" doesn't make sense</b> when I can't see others' notes.<div class="by">Player</div></div><div class="mine">Drop it from the map; joining duplicates does the job.</div><div class="verdict"><span class="tag fix">Fix the map</span></div></div>
+      <div class="row"><div class="said"><b>Confirming a fix should be one tap.</b>Following steps is a chore.<div class="by">Player</div></div><div class="mine">It is one tap today ("Yes, it works", or "Still broken…"). Keep it that way.</div><div class="verdict"><span class="tag no">Not doing</span></div></div>
+      <div class="row"><div class="said"><b>Can I see the Roadmap?</b><div class="by">Player</div></div><div class="mine">Not in this work. Ideas tell their sender where they went; a players' Roadmap is a product question for later.</div><div class="verdict"><span class="tag no">Not doing</span></div></div>
+    </div></details>
+  </section>
+
+  <section id="paths">
+    <div class="sec-head"><span class="n">7 · Paths to add to the map</span><h2>What the map doesn't show yet</h2></div>
+    <div class="paths">
+      <div class="card"><h3>It broke at the table</h3><p>Undo the deploy (safe, because database changes only add), the area moves to Careful, the fix goes first.</p></div>
+      <div class="card"><h3>"Still broken" after it's live</h3><p>Back to Claude on the same plan; the sender is told.</p></div>
+      <div class="card"><h3>You drop a plan or move it below the line</h3><p>Its branch is parked, its issues go back to their area, nothing is lost.</p></div>
+      <div class="card"><h3>D&amp;D Beyond work</h3><p>Merged, then the live check on askdnd.ai before it counts as done.</p></div>
+      <div class="card"><h3>A note about a plan already being built</h3><p>It waits for the next plan in its area, unless it's a blocker.</p></div>
+      <div class="card"><h3>A vague note</h3><p>A question goes back to the sender, through you.</p></div>
+      <div class="card"><h3>A note joined to another</h3><p>Its sender follows the one it joined, through to "Does it work now?".</p></div>
+      <div class="card"><h3>A change moves lanes</h3><p>You tap it up; Claude can move it up too; down only on your word, kept on the plan.</p></div>
+    </div>
+  </section>
+
+  <section id="picks">
+    <div class="sec-head"><span class="n">8 · Your picks</span><h2>Nine choices</h2>
+      <p class="lede">Each has my pick marked. Pick what you'd like, add anything in your own words, and Save. Change them any time. When you're done, tell me in chat and I'll bring the map in line and write the build plan.</p></div>
+    <form class="decide" aria-label="Your picks">
+      <div class="pickgrid">
+      <fieldset><legend>1 · The shape</legend>
+        <label class="opt"><input type="radio" name="shape" value="dial"><span>A · Lanes and levels, as above <span class="mine">my pick</span></span><small>Light now, each check a setting, triggers to step up.</small></label>
+        <label class="opt"><input type="radio" name="shape" value="lanes"><span>B · Lanes only, no levels</span><small>Simpler to explain; stepping up later means new design work.</small></label>
+        <label class="opt"><input type="radio" name="shape" value="one"><span>C · One path for every change</span><small>The map as drawn: every change through staging and your round.</small></label>
+      </fieldset>
+      <fieldset><legend>2 · What makes a change Careful</legend>
+        <label class="opt"><input type="radio" name="careful" value="core"><span>A · Who sees what, sign-in, spending, the bridge, data-changing database changes <span class="mine">my pick</span></span><small>Where a mistake hurts people or can't be undone. Few changes a week.</small></label>
+        <label class="opt"><input type="radio" name="careful" value="play"><span>B · A, plus anything used during a game</span><small>Battle, the roll card, hit points. Safer at the table; most UI work then goes through staging.</small></label>
+        <label class="opt"><input type="radio" name="careful" value="player"><span>C · A, plus any fix a player's note prompted</span><small>The founder's list. Players' fixes always get your round first.</small></label>
+      </fieldset>
+      <fieldset><legend>3 · The Look lane</legend>
+        <label class="opt"><input type="radio" name="look" value="after"><span>A · Merges, you try the batch after, on askdnd.ai <span class="mine">my pick</span></span><small>Fast; a slip is undone the same day. No local copy to keep fresh.</small></label>
+        <label class="opt"><input type="radio" name="look" value="staging"><span>B · Through staging first, like Careful</span><small>Nothing visible reaches the table untried, at the cost of a round each time.</small></label>
+        <label class="opt"><input type="radio" name="look" value="local"><span>C · On your Mac first, as now</span><small>No deploy to test, but the local copy goes stale.</small></label>
+      </fieldset>
+      <fieldset><legend>4 · Careful, after it passed on staging</legend>
+        <label class="opt"><input type="radio" name="staged" value="ship"><span>A · Ships as tested; askdnd.ai gets automatic checks only <span class="mine">my pick</span></span><small>Your example. You test once; Claude, the Mac Mini and a live D&amp;D Beyond run check askdnd.ai.</small></label>
+        <label class="opt"><input type="radio" name="staged" value="again"><span>B · You also try it on askdnd.ai</span><small>Twice the testing, for the riskiest changes only.</small></label>
+      </fieldset>
+      <fieldset><legend>5 · A fix a player's note prompted</legend>
+        <label class="opt"><input type="radio" name="playerok" value="intake"><span>A · Your approval of the note is the OK; the lane decides testing <span class="mine">my pick</span></span><small>One look at a player's words, when they come in. Their fixes move like yours.</small></label>
+        <label class="opt"><input type="radio" name="playerok" value="after"><span>B · Your OK after it passes your test</span><small>Keeps today's extra look, moved to where it can work.</small></label>
+        <label class="opt"><input type="radio" name="playerok" value="today"><span>C · Keep it as today, before merging</span><small>Then the card the map drew can't appear; you'd OK before trying.</small></label>
+      </fieldset>
+      <fieldset><legend>6 · Ordering on Work</legend>
+        <label class="opt"><input type="radio" name="order" value="line"><span>A · One list with a cut line; players' bugs land above it <span class="mine">my pick</span></span><small>One control. Claude takes everything above the line; drag a row below to hold it.</small></label>
+        <label class="opt"><input type="radio" name="order" value="linebelow"><span>B · A cut line; everything new lands below it</span><small>Nothing starts until you move it up.</small></label>
+        <label class="opt"><input type="radio" name="order" value="ready"><span>C · A Ready switch plus order, as drawn</span><small>Two controls.</small></label>
+      </fieldset>
+      <fieldset><legend>7 · Game night</legend>
+        <label class="opt"><input type="radio" name="freeze" value="24"><span>A · No deploys for 24 hours before a game <span class="mine">my pick</span></span><small>Except an urgent fix with your OK.</small></label>
+        <label class="opt"><input type="radio" name="freeze" value="6"><span>B · 6 hours before</span><small>Shorter; last-day fixes can still land.</small></label>
+        <label class="opt"><input type="radio" name="freeze" value="none"><span>C · No freeze</span><small>Rely on undo.</small></label>
+      </fieldset>
+      <fieldset><legend>8 · What a player sees of their note</legend>
+        <label class="opt"><input type="radio" name="stages" value="plain"><span>A · Plain stages from the plan <span class="mine">my pick</span></span><small>Waiting its turn, Being built, Brett is trying it, Live. A rough time once we've measured.</small></label>
+        <label class="opt"><input type="radio" name="stages" value="today"><span>B · As today: whose turn it is</span><small>"With an admin", "Claude's".</small></label>
+      </fieldset>
+      <fieldset><legend>9 · Your testing time <small>(the founder: design to this number)</small></legend>
+        <label class="opt"><input type="radio" name="minutes" value="30"><span>A · About 30 minutes a week</span><small>Careful rounds only, and a quick look at Look batches.</small></label>
+        <label class="opt"><input type="radio" name="minutes" value="60"><span>B · About an hour a week</span><small>Room for a Look batch each week as well.</small></label>
+        <label class="opt"><input type="radio" name="minutes" value="more"><span>C · More, while askdnd is growing fast</span><small>Say how much below.</small></label>
+      </fieldset>
+      </div>
+      <label><b>Anything else</b> <span class="lede" style="font-size:.86rem">(the founder also asked: the worst failure you'd accept on game night; whether the DM or a player could be a second tester; which trigger would make askdnd a "team"; and whether ~240 changes a week is a pace you want)</span><textarea name="notes" placeholder="Optional"></textarea></label>
+      <div class="sendline"><button class="go" type="submit">Save my picks</button><span class="saved" aria-live="polite"></span></div>
+    </form>
+  </section>
+
+  <footer>
+    <span>Nothing here is built. The <a href="https://claude.ai/artifact/XXXctxQxhvzXx6mM3Ysmqq">Work Flow Map</a> was reworked from your picks on Nov 19.</span>
+    <span>Source: docs/artifacts/work-flow-sized.html in the askdnd repo.</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  // Your picks save where you are: inside askdnd (Documents), askdnd keeps them as your answer to this page's question;
+  // on claude.ai, in the page's own store. Either way they're shown when you come back.
+  const form = document.querySelector("form.decide");
+  const said = form.querySelector(".saved"), btn = form.querySelector("button[type=submit]");
+  const NAMES = ["shape", "careful", "look", "staged", "playerok", "order", "freeze", "stages", "minutes"];
+  let db = null, inAskdnd = false;
+  const when = iso => { try { return new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; } };
+  const show = (text, ok, state) => { said.textContent = text; said.classList.toggle("ok", !!ok); said.dataset.state = state || ""; };
+  const picks = () => NAMES.map(n => { const v = form.querySelector(`input[name=${n}]:checked`); const lab = v && v.closest("label").querySelector("span");
+    return { name: n, value: v ? v.value : "", label: lab ? (form.querySelector(`input[name=${n}]`).closest("fieldset").querySelector("legend").firstChild.textContent.split("·")[0].trim() + " " + lab.firstChild.textContent.trim()) : "" }; });
+  const fill = (list, notes) => { (list || []).forEach(p => form.querySelectorAll(`input[name=${p.name}]`).forEach(i => { i.checked = i.value === p.value; })); form.querySelector("textarea").value = notes || ""; };
+  form.addEventListener("input", () => show("Not saved yet"));
+  addEventListener("message", e => {
+    const d = e.data;
+    if (e.source !== parent || !d || d.askdnd !== "picks") return;
+    inAskdnd = true;
+    if (d.loaded) {
+      if (d.picks && d.picks.length) { fill(d.picks, d.notes); show("Saved in askdnd " + when(d.at) + " · these are your picks", true, "loaded"); }
+      else show(d.open ? "Nothing saved yet: Save my picks answers its question in askdnd" : "Nothing saved yet", false, "none");
+    } else if (d.saved) { show("Saved in askdnd " + when(d.at) + " · Claude reads it now", true, "saved"); btn.disabled = false; }
+    else { show(d.said || "Couldn't save it. Try again."); btn.disabled = false; }
+  });
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const list = picks(), notes = form.querySelector("textarea").value.trim();
+    if (!list.some(p => p.value) && !notes) { show("Pick something first."); return; }
+    if (inAskdnd) { btn.disabled = true; show("Saving…"); parent.postMessage({ askdnd: "picks-save", picks: list, notes }, "*"); return; }
+    if (!db) { show("Open this page on claude.ai, signed in, to save."); return; }
+    btn.disabled = true;
+    const at = new Date().toISOString(), doc = { notes, at };
+    list.forEach(p => { doc[p.name] = p.value; });
+    try { await db.collection("answers").doc("verdict").set(doc); show("Saved " + when(at) + " · Claude reads it when you say you're done", true); }
+    catch (err) { show("Couldn't save it. Try again."); }
+    btn.disabled = false;
+  });
+  if (parent !== window) parent.postMessage({ askdnd: "picks-load" }, "*");
+  (async () => {
+    try { db = window.claude ? await window.claude.use("db") : null; } catch (e) { db = null; }
+    if (!db) { if (!inAskdnd && parent === window) show("Open this page on claude.ai, signed in, to save."); return; }
+    try {
+      const d = await db.collection("answers").doc("verdict").get();
+      if (!d.exists) { show("Nothing saved yet"); return; }
+      const a = d.data();
+      fill(NAMES.map(n => ({ name: n, value: a[n] })), a.notes);
+      show("Saved " + when(a.at) + " · change anything and Save again", true);
+    } catch (err) { show("Nothing saved yet"); }
+  })();
+})();
+</script>

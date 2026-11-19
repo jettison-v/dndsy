@@ -6,7 +6,7 @@
 {% set camp = here.name if here else "This campaign" %}
 {% set mine = manage_pages | selectattr("group", "equalto", grp) | selectattr("listed") | list %}
 {% set camp_home = manage_pages | selectattr("group", "equalto", "campaign") | first %}
-{% set admin_home = manage_pages | selectattr("group", "equalto", "askdnd") | first %}
+{% set admin_home = manage_pages | selectattr("key", "equalto", "overview") | first or manage_pages | selectattr("group", "equalto", "askdnd") | first %}{# (Admin opens on its Overview; For you, first in its list, is on the gear) #}
 {% macro manage_list() %}
   {% for p in mine %}{% if p.section and loop.changed(p.section) %}<span class="manage-sec">{{ p.section }}</span>{% endif %}{% if p.planned %}<span class="manage-planned" data-item="{{ p.key }}" title="{{ p.about }}">{{ p.label }} <small>planned</small></span>{% else %}<a href="{{ p.href }}" class="{{ 'on' if p.here }}" data-item="{{ p.key }}"{% if p.here %} aria-current="page"{% endif %}>{{ p.label }}{% if p.counted and cbase %}<span class="mcount" data-manage-count="{{ p.key }}" hidden></span>{% endif %}</a>{% endif %}{% endfor %}
 {% endmacro %}

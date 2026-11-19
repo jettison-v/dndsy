@@ -55,9 +55,11 @@ PAGES = (
     ("history", "History", "/manage/history", "This campaign's changes, with Restore", CAMPAIGN, TABLE, "review", ()),
     # (the DM guide is read, not run: it's in the account menu's Help, not Manage's list; UNLISTED)
     ("guide", "DM guide", "/manage/dm-guide", "How the campaign record works, and getting through the backlog", CAMPAIGN, TABLE, "moderate", ()),
+    # (For you: everything waiting on Brett, its count on the Admin gear; Brett, Nov 19, the work flow's slice 2)
+    ("for-you", "For you", "/manage/for-you", "Everything waiting on you: checks to try, questions, notes and ideas", ASKDND, "", "admin", ()),
     ("overview", "Overview", "/manage/askdnd", "How askdnd stands: spending, backups, accounts, tools", ASKDND, "", "admin", ()),
     ("feedback", "Feedback", "/manage/feedback", "Every note and issue, and what became of it", ASKDND, "", "admin", ()),
-    ("testing", "Testing", "/manage/testing", "What's your turn, and trying what Claude built", ASKDND, "", "admin", ()),
+    ("testing", "Testing", "/manage/testing", "Where each area stands, what's with Claude, what passed", ASKDND, "", "admin", ()),
     ("product-areas", "Product areas", "/manage/product-areas", "Every part of askdnd in two levels, and what's open in each", ASKDND, "", "admin", ()),
     ("documents", "Documents", "/manage/documents", "Every guide, plan and design made for askdnd, in one place", ASKDND, "", "admin", ()),
     ("usage", "Usage", "/manage/usage", "Claude spending and balance", ASKDND, "", "admin", ()),
@@ -74,10 +76,10 @@ PAGES = (
     ("design", "Design system", "/manage/design", "Every component and token, for building askdnd", ASKDND, TUNING, "admin", ()),
 )
 IN_MENU = ("needs", "inbox", "sessions", "dm-tools", "scene-notes", "places", "table", "house", "settings", "history",
-           "overview", "feedback", "testing", "product-areas", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
+           "for-you", "overview", "feedback", "testing", "product-areas", "documents", "usage", "backups", "accounts", "campaigns")  # a group's rows; the rest on its line
 NEEDS = {"scene-notes": "vtt_table", "places": "vtt_table"}  # (a page that comes with a feature: listed only where it's on)
 UNLISTED = ("guide",)  # (a page of the list that no menu or list down the left shows: the DM guide is the account menu's)
-COUNTED = ("needs", "inbox", "feedback", "testing")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
+COUNTED = ("needs", "inbox", "feedback", "for-you")  # with a count of what's waiting (filled in by /manage/counts as the menu opens)
 
 
 def may(user: dict | None, allowed) -> bool:
@@ -267,8 +269,8 @@ def counts(request: Request, db: Session = Depends(get_db)):
     from app.suggestions import waiting_count
 
     user = current_user(request)
-    # (Feedback: notes waiting for your approval; Testing: everything that's your turn, For you's count)
-    mine = {"feedback": fft_views.to_approve(db), "testing": testing_page.summary(testing_page.for_you(db, testing_page.device_of(request)))["n"]} if is_admin(user) else {}
+    # (Feedback: notes waiting for your approval; For you: everything that's your turn)
+    mine = {"feedback": fft_views.to_approve(db), "for-you": testing_page.summary(testing_page.for_you(db, testing_page.device_of(request)))["n"]} if is_admin(user) else {}
     if not user or not can_moderate(user) or web.campaign(db) is None:
         return JSONResponse(mine, headers={"Cache-Control": "no-store"})
     return JSONResponse({"needs": len(needs(db, user)), "inbox": waiting_count(db), **mine}, headers={"Cache-Control": "no-store"})

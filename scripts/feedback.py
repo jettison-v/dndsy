@@ -38,7 +38,7 @@ runs it first (`preflight`); only a passed preflight reaches Brett (R18):
     uv run python scripts/feedback.py check 4 preflight pass|fail ["why"]
     uv run python scripts/feedback.py check 4 retire "…" | link 9
 
-Questions for Brett (answered in Testing's For you; the answer names its question):
+Questions for Brett (answered in For you; the answer names its question):
 
     uv run python scripts/feedback.py ask issue 7 "Keep the free-form box?" --choice "Keep it|checked as you type" --choice "Remove it" --mine 1
     uv run python scripts/feedback.py ask issue 4 "Which reader?" --doc docs/mockups/fft-reader/index.html --choice "A|…" --choice "B|…" --mine 1
